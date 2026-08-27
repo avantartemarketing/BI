@@ -1,6 +1,8 @@
 /* Paid ROI (spec §4.6) — wide 2-col card.
  * Daily spend bars (own axis, bottom band) + actual ROI line + modelled decline
- * dotted from today's L3D ROI to close: roi(i) = roiDeclineModel.start × dailyFactor^i.
+ * dotted to close, anchored at the line's last actual point so dot and line
+ * always meet: roi(i) = lastDailyRoi × roiDeclineModel.dailyFactor^i (falls
+ * back to roiDeclineModel.start at today when there are no daily ROI points).
  * Real-data bridges: paid.daily starts at private-room open, so points are mapped to
  * campaign day via date − windowStart and clipped to day 1..of; roi is null on
  * zero-entry days — the line connects across the gaps (null points skipped);
@@ -51,21 +53,24 @@ export default function PaidRoi({ snap }) {
     .filter((p) => p.d >= 1 && p.d <= of);
 
   const roiPts = pts.filter((p) => p.roi !== null);
-  const last24 = roiPts.length ? roiPts[roiPts.length - 1].roi : null;
+  const lastRoiPt = roiPts.length ? roiPts[roiPts.length - 1] : null;
+  const last24 = lastRoiPt ? lastRoiPt.roi : null;
 
-  // modelled decline from today's L3D ROI to close
+  // modelled decline to close, anchored on the last actual point (L3D level at
+  // today only when there are no daily ROI points to anchor to)
   const model = paid.roiDeclineModel || {};
-  const declStart = model.start ?? null;
   const factor = model.dailyFactor ?? null;
-  const showModel = !complete && declStart !== null && factor !== null && today <= of;
+  const anchor = lastRoiPt
+    ? { d: lastRoiPt.d, v: lastRoiPt.roi }
+    : model.start !== null && model.start !== undefined ? { d: today, v: model.start } : null;
+  const showModel = !complete && anchor !== null && factor !== null && anchor.d <= of;
   const decline = showModel
-    ? Array.from({ length: of - today + 1 }, (_, i) => ({
-        d: today + i,
-        v: declStart * Math.pow(factor, i),
+    ? Array.from({ length: of - anchor.d + 1 }, (_, i) => ({
+        d: anchor.d + i,
+        v: anchor.v * Math.pow(factor, i),
       }))
     : [];
   const declineEnd = decline.length ? decline[decline.length - 1].v : null;
-  const finalVal = paid.budget?.finalDayRoi ?? declineEnd;
 
   // ----- ROI y-domain: series ∪ target ± 12%, snapped to 0.25, clamped at 0 -----
   const domVals = [
@@ -119,10 +124,10 @@ export default function PaidRoi({ snap }) {
     ],
   };
   const todayTip =
-    "ROI last 3 days " + fmt(paid.l3dRoi, 2) +
-    "\nLast 24h " + fmt(last24, 2) +
+    "Last 24h " + fmt(last24, 2) +
+    "\nROI last 3 days " + fmt(paid.l3dRoi, 2) +
     "\nTarget " + fmt(paid.roiTarget, 2);
-  const projTip = "Projected ROI at close " + fmt(finalVal, 2) + "\nTarget " + fmt(paid.roiTarget, 2);
+  const projTip = "Projected ROI at close " + fmt(declineEnd, 2) + "\nTarget " + fmt(paid.roiTarget, 2);
   const finalTip = "ROI final " + fmt(paid.cumRoi, 2) + "\nTarget " + fmt(paid.roiTarget, 2);
 
   const statVal = { fontSize: 13, fontWeight: 600, color: C.ink };
@@ -145,7 +150,6 @@ export default function PaidRoi({ snap }) {
 
   const todayFrac = (today - 1) / DAYS;
   const showTodayLabel = !complete && todayFrac >= 0.06 && todayFrac <= 0.94;
-  const lastRoiPt = roiPts.length ? roiPts[roiPts.length - 1] : null;
 
   const byDay = new Map(pts.map((p) => [p.d, p]));
   const declByDay = new Map(decline.map((p) => [p.d, p.v]));
@@ -224,12 +228,12 @@ export default function PaidRoi({ snap }) {
               );
             })()}
 
-            {/* today dot on the modelled level (L3D ROI) */}
-            {!complete && declStart !== null && (
+            {/* current dot on the line's last actual point (projection anchor) */}
+            {!complete && anchor !== null && (
               <div
                 title={todayTip}
                 style={{
-                  position: "absolute", left: leftPct(today), top: topPct(declStart),
+                  position: "absolute", left: leftPct(anchor.d), top: topPct(anchor.v),
                   width: 10, height: 10, margin: "-5px 0 0 -5px", borderRadius: "50%",
                   background: C.orange, boxShadow: "0 0 0 2px #fff",
                 }}
