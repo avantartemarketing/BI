@@ -195,7 +195,7 @@ export default function Trajectory({ snap }) {
                     <div style={{ position: "absolute", left: `${(hover.i / N) * 100}%`, top: pctTop(y(val)), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: C.orange, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
                   )}
                   <div className="chart-tip" style={{ left: `${(hover.i / N) * 100}%`, top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
-                    <div className="t-head">Day {hover.i}{hp.date ? " · " + hp.date : ""}</div>
+                    <div className="t-head">Day {hover.i}</div>
                     {hp.actual !== null && hp.actual !== undefined && (
                       <div className="t-row"><span>Secured</span><span className="v">{fmt(hp.actual)}</span></div>
                     )}

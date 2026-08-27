@@ -144,7 +144,6 @@ export default function PaidRoi({ snap }) {
   const lastRoiPt = roiPts.length ? roiPts[roiPts.length - 1] : null;
 
   const byDay = new Map(pts.map((p) => [p.d, p]));
-  const dateByDay = new Map(daily.map((d2, i) => [dayIndex(d2.date, snap.windowStart, (snap.day ?? 0) - (n - 1 - i)), d2.date]));
   const declByDay = new Map(decline.map((p) => [p.d, p.v]));
 
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
@@ -203,7 +202,6 @@ export default function PaidRoi({ snap }) {
               const roiV = p && p.roi !== null && p.roi !== undefined ? p.roi : null;
               const markV = roiV ?? projV ?? null;
               const flip = (hover - 1) / DAYS > 0.6;
-              const dt = dateByDay.get(hover);
               if (!p && projV === undefined) return null;
               return (
                 <>
@@ -212,7 +210,7 @@ export default function PaidRoi({ snap }) {
                     <div style={{ position: "absolute", left: leftPct(hover), top: topPct(markV), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: roiV !== null ? C.orange : C.orangeLight, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
                   )}
                   <div className="chart-tip" style={{ left: leftPct(hover), top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
-                    <div className="t-head">Day {hover}{dt ? " · " + dt : ""}</div>
+                    <div className="t-head">Day {hover}</div>
                     {roiV !== null && <div className="t-row"><span>ROI</span><span className="v">{fmt(roiV, 2)}</span></div>}
                     {roiV === null && projV !== undefined && <div className="t-row"><span>ROI projected</span><span className="v">{fmt(projV, 2)}</span></div>}
                     {p && <div className="t-row"><span>Spend</span><span className="v">£{fmt(p.spend, 2)}</span></div>}
