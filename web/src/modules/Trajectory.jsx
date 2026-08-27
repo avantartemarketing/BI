@@ -1,5 +1,7 @@
 /* Entry trajectory (spec §4.2, relabelled for LE).
- * Cumulative entries vs plan per channel group; projection linear from today to close.
+ * Cumulative entries vs plan per channel group; the forward projection follows the
+ * channel's historic shape curve (paid: projected spend ÷ projected efficiency) —
+ * per-day values computed in the ETL (docs §5.4).
  * Real-data bridge: daily[] arrays start at private-room open, so the series is
  * sliced to the campaign window (windowStart .. windowEnd = of+1 points, index = day). */
 import React, { useMemo, useState } from "react";
@@ -32,14 +34,16 @@ function seriesFor(snap, sel) {
   const n = sliced.reduce((m, s) => Math.max(m, s.length), 0);
   const pts = [];
   for (let i = 0; i < n; i++) {
-    let a = null, p = null;
+    let a = null, p = null, pr = null;
     for (const s of sliced) {
       const d = s[i];
       if (!d) continue;
       if (d.actual !== null && d.actual !== undefined) a = (a ?? 0) + d.actual;
       if (d.plan !== null && d.plan !== undefined) p = (p ?? 0) + d.plan;
+      // shaped forward path: only meaningful once every group projects (future days)
+      if (d.proj !== null && d.proj !== undefined) pr = (pr ?? 0) + d.proj;
     }
-    pts.push({ actual: a, plan: p });
+    pts.push({ actual: a, plan: p, proj: pr });
   }
   const sum = (f) => channels.reduce((t, c) => t + (c[f] ?? 0), 0);
   return { now: sum("now"), exp: sum("exp"), proj: sum("proj"), target: sum("target"), pts };
@@ -105,11 +109,20 @@ export default function Trajectory({ snap }) {
           .join(" ")
       : "";
 
+  // Projection follows the historic channel shape (etl emits per-day `proj` values);
+  // straight-line fallback only if no shaped path is present.
   const showProjSeg = !complete && day < of;
-  const projPath = showProjSeg
-    ? "M" + x(todayIdx).toFixed(1) + "," + y(nowVal).toFixed(1) +
-      " L" + X1 + "," + y(s.proj).toFixed(1)
-    : "";
+  let projPath = "";
+  if (showProjSeg) {
+    const segs = ["M" + x(todayIdx).toFixed(1) + "," + y(nowVal).toFixed(1)];
+    s.pts.forEach((p, i) => {
+      if (i > todayIdx && p.proj !== null && p.proj !== undefined) {
+        segs.push("L" + x(i).toFixed(1) + "," + y(p.proj).toFixed(1));
+      }
+    });
+    if (segs.length === 1) segs.push("L" + X1 + "," + y(s.proj).toFixed(1));
+    projPath = segs.join(" ");
+  }
 
   const projPct = s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
   const pctColor = projPct !== null && projPct >= 100 ? C.ink : C.red;

@@ -379,57 +379,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                          pr_units=("Product_Units_Private_Room", "sum"))
                     .reset_index())
 
-    channels_out = []
-    hero_now = hero_exp = hero_target = hero_proj = 0.0
-    funnel_by_group = {}
-    for g, spec in DISPLAY_GROUPS.items():
-        sub = by_group_day[by_group_day["group"] == g].set_index("event_date")
-        tgt = gtargets[g]["entries"]
-        sess_tgt = gtargets[g]["sessions"]
-        daily = []
-        cum_a = cum_s = 0.0
-        for d in days:
-            row = sub.loc[d] if d in sub.index else None
-            cum_a += float(row["entries"]) if row is not None else 0.0
-            cum_s += float(row["sessions"]) if row is not None else 0.0
-            p = pdsa_for(release, d)
-            plan = tgt * curve_value(curves, g, "entries", p)
-            if d <= as_of:
-                daily.append({"date": d.isoformat(), "actual": round(cum_a, 2),
-                              "plan": round(plan, 2)})
-            else:
-                daily.append({"date": d.isoformat(), "actual": None, "plan": round(plan, 2)})
-        pdsa_today = pdsa_for(release, min(as_of, launch_end))
-        exp = tgt * curve_value(curves, g, "entries", pdsa_today)
-        sess_exp = sess_tgt * curve_value(curves, g, "sessions", pdsa_today)
-        now = cum_a if complete else (daily[day_idx + (announce - window_start).days]["actual"]
-                                      if 0 <= day_idx + (announce - window_start).days < len(daily) else cum_a)
-        now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
-        if complete:
-            proj = now
-        else:
-            remaining = tgt * (1 - curve_value(curves, g, "entries", pdsa_today))
-            blend = 0.5 + 0.5 * min(max((now / exp) if exp else 1.0, 0.25), 2.0)
-            proj = now + remaining * blend
-        # two-factor decomposition: traffic + conversion = gap (docs §9)
-        conv_exp = (exp / sess_exp) if sess_exp else 0.0
-        conv_act = (now / cum_s) if cum_s else 0.0
-        traffic = (cum_s - sess_exp) * conv_exp
-        conversion = (conv_act - conv_exp) * cum_s
-        funnel_by_group[g] = {
-            "sessions_actual": round(cum_s, 1), "sessions_expected": round(sess_exp, 1),
-            "conv_actual": conv_act, "conv_expected": conv_exp,
-            "contrib_traffic": round(traffic, 1), "contrib_conversion": round(conversion, 1),
-        }
-        channels_out.append({
-            "key": g, "name": spec["name"],
-            "now": round(now, 1), "exp": round(exp, 1),
-            "proj": round(proj, 1), "target": round(tgt, 1),
-            "daily": daily,
-        })
-        hero_now += now; hero_exp += exp; hero_target += tgt; hero_proj += proj
-
-    # ---- paid block (docs §7)
+    # ---- paid actuals + forward model, computed first: the paid channel's projection
+    # is projected spend ÷ projected cost-per-entry, not a trajectory curve (docs §5.4)
     camp = release.get("campaign_name")
     psp = spend[spend["campaign_name"] == camp] if camp else spend.iloc[0:0]
     psp = psp[(psp["spend_date"] >= window_start) & (psp["spend_date"] <= min(as_of, launch_end))]
@@ -454,9 +405,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         roi = ((1 - cann) * ppu_aa / (adj_cpe * aa_budget_share)) if adj_cpe else None
         paid_daily.append({"date": d.isoformat(), "spend": round(s, 2), "entries": e,
                            "roi": round(roi, 3) if roi else None})
-    # trailing 3-day adjusted CPE over days with entries
+    # trailing 3-day CPE over days with entries (adjusted = per expected-converting unit)
     recent = [(r["spend"], r["entries"]) for r in paid_daily if r["entries"] > 0][-3:]
-    l3d_cpe = (sum(s for s, _ in recent) / (sum(e for _, e in recent) * (1 - drop))) if recent else None
+    l3d_raw_cpe = (sum(s for s, _ in recent) / sum(e for _, e in recent)) if recent else None
+    l3d_cpe = l3d_raw_cpe / (1 - drop) if l3d_raw_cpe else None
     cum_adj_cpe = cum_spend / (cum_pentries * (1 - drop)) if cum_pentries else None
     cum_roi = ((1 - cann) * ppu_aa / (cum_adj_cpe * aa_budget_share)) if cum_adj_cpe else None
     l3d_roi = ((1 - cann) * ppu_aa / (l3d_cpe * aa_budget_share)) if l3d_cpe else None
@@ -480,9 +432,97 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     cap = "supply" if supply_spend <= roi_spend else "roi_floor"
     current_daily = float(spend_day.get(as_of, spend_day.iloc[-1] if len(spend_day) else 0.0))
 
+    drift = b["spend_rules"]["cpe_daily_drift_by_third"]
     third = min(int(max(pdsa_for(release, as_of), 0) * 3), 2)
-    daily_factor = round(1 / (1 + b["spend_rules"]["cpe_daily_drift_by_third"][third]), 4)
+    daily_factor = round(1 / (1 + drift[third]), 4)
 
+    # forward path: projected spend ÷ projected cost-per-entry per future day.
+    # Projections describe the CURRENT trajectory (spend run-rate as-is); the
+    # recommended budget is the intervention shown alongside, not the projection.
+    # Efficiency decays by the launch-window-third drift tiers (5%/7%/10% per day).
+    planned_spend = current_daily if current_daily > 0 else (
+        recommended if (days_left and recommended not in (0.0, math.inf)) else 0.0)
+    paid_future = {}          # date -> cumulative projected entries beyond today
+    future_cum = 0.0
+    cpe_fwd = l3d_raw_cpe
+    if not complete:
+        prev_curve = curve_value(curves, "paid", "entries", pdsa_for(release, as_of))
+        for d in daterange(as_of + timedelta(days=1), launch_end):
+            if cpe_fwd and planned_spend:
+                t3 = min(int(max(pdsa_for(release, d), 0) * 3), 2)
+                cpe_fwd = cpe_fwd * (1 + drift[t3])
+                future_cum += planned_spend / cpe_fwd
+            else:
+                # no spend history yet: fall back to the paid target trajectory
+                cv = curve_value(curves, "paid", "entries", pdsa_for(release, d))
+                future_cum += gtargets["paid"]["entries"] * max(cv - prev_curve, 0.0)
+                prev_curve = cv
+            paid_future[d] = future_cum
+
+    channels_out = []
+    hero_now = hero_exp = hero_target = hero_proj = 0.0
+    funnel_by_group = {}
+    for g, spec in DISPLAY_GROUPS.items():
+        sub = by_group_day[by_group_day["group"] == g].set_index("event_date")
+        tgt = gtargets[g]["entries"]
+        sess_tgt = gtargets[g]["sessions"]
+        daily = []
+        cum_a = cum_s = 0.0
+        for d in days:
+            row = sub.loc[d] if d in sub.index else None
+            cum_a += float(row["entries"]) if row is not None else 0.0
+            cum_s += float(row["sessions"]) if row is not None else 0.0
+            p = pdsa_for(release, d)
+            plan = tgt * curve_value(curves, g, "entries", p)
+            daily.append({"date": d.isoformat(),
+                          "actual": round(cum_a, 2) if d <= as_of else None,
+                          "plan": round(plan, 2), "proj": None})
+        pdsa_today = pdsa_for(release, min(as_of, launch_end))
+        w = curve_value(curves, g, "entries", pdsa_today)   # share of campaign observed, per historic shape
+        exp = tgt * w
+        sess_exp = sess_tgt * curve_value(curves, g, "sessions", pdsa_today)
+        now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
+        # Forward projection (docs §5.4): the remaining volume follows this channel's
+        # HISTORIC shape curve; its level scales with demonstrated performance
+        # (actual/expected), trusted in proportion to how much of the campaign the
+        # curve says we have observed. Paid instead projects spend ÷ efficiency.
+        if complete:
+            proj = now
+        elif g == "paid":
+            proj = now + future_cum
+            for d, cum_f in paid_future.items():
+                i = (d - window_start).days
+                if 0 <= i < len(daily):
+                    daily[i]["proj"] = round(now + cum_f, 2)
+        else:
+            r_perf = min(max((now / exp) if exp > 0 else 1.0, 0.25), 2.5)
+            r_shrunk = 1 + w * (r_perf - 1)
+            proj = now + tgt * (1 - w) * r_shrunk
+            for d in daterange(as_of + timedelta(days=1), launch_end):
+                i = (d - window_start).days
+                cv = curve_value(curves, g, "entries", pdsa_for(release, d))
+                frac = (cv - w) / (1 - w) if w < 1 else 1.0
+                if 0 <= i < len(daily):
+                    daily[i]["proj"] = round(now + (proj - now) * max(min(frac, 1.0), 0.0), 2)
+        # two-factor decomposition: traffic + conversion = gap (docs §9)
+        conv_exp = (exp / sess_exp) if sess_exp else 0.0
+        conv_act = (now / cum_s) if cum_s else 0.0
+        traffic = (cum_s - sess_exp) * conv_exp
+        conversion = (conv_act - conv_exp) * cum_s
+        funnel_by_group[g] = {
+            "sessions_actual": round(cum_s, 1), "sessions_expected": round(sess_exp, 1),
+            "conv_actual": conv_act, "conv_expected": conv_exp,
+            "contrib_traffic": round(traffic, 1), "contrib_conversion": round(conversion, 1),
+        }
+        channels_out.append({
+            "key": g, "name": spec["name"],
+            "now": round(now, 1), "exp": round(exp, 1),
+            "proj": round(proj, 1), "target": round(tgt, 1),
+            "daily": daily,
+        })
+        hero_now += now; hero_exp += exp; hero_target += tgt; hero_proj += proj
+
+    # ---- paid block output (docs §7; inputs computed above, before the channel loop)
     paid_out = {
         "daily": paid_daily,
         "spendToDate": round(cum_spend, 2),
@@ -504,9 +544,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "daysLeft": days_left,
         },
         "unitTarget": targets["paid"]["units"],
-        "unitProjected": round(cum_pentries * (1 - drop), 1),
+        "entriesProjected": round(cum_pentries + future_cum, 1),
+        "unitProjected": round((cum_pentries + future_cum) * (1 - drop), 1),
         "spendBudget": round(targets["paid"]["budget"], 2),
-        "spendProjectedTotal": round(cum_spend + (recommended if recommended != math.inf else 0) * days_left, 2),
+        "spendProjectedTotal": round(cum_spend + (planned_spend or 0) * days_left, 2),
         "profitPerUnitAA": round(ppu_aa, 2),
         "profitPerUnitArtist": round(ppu_artist, 2),
         "aaBudgetShare": aa_budget_share,
@@ -546,7 +587,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     unconverted = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
     sold_predicted = unconverted * b["eligible_entry_to_order"]
     pdsa_today = pdsa_for(release, min(as_of, launch_end))
-    future_entries = 0.0 if complete else hero_target * (1 - curve_value(curves, None, "entries", pdsa_today)) * b["eligible_entry_to_order"]
+    # entries still to come = the shaped projection beyond today (docs §5.4), converting at 0.8
+    future_entries = 0.0 if complete else max(hero_proj - hero_now, 0.0) * b["eligible_entry_to_order"]
     sellthrough = {
         "edition": release["edition_size"],
         "sold": round(units_sold, 0),

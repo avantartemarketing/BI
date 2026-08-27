@@ -365,6 +365,31 @@ pooled per-display-group curves where n permits, else the all-channel curve. The
 curve should eventually be derived from the **planned send schedule** (Announcement, Early
 Access 1–3, Sustain, Last Chance 48/24h — the taxonomy in §8) rather than history alone.
 
+### 5.4 Forward projection of entries
+Projections describe the **current trajectory**; the paid-spend recommendation is the
+intervention shown alongside, never baked into the projection.
+
+**Organic channels** — the remaining volume follows the channel's *historic shape curve*;
+its level scales with demonstrated performance, trusted in proportion to how much of the
+campaign the curve says has been observed:
+```
+w        = curve_channel(pdsa_today)                 # share of campaign observed
+r        = clamp(actual / expected, 0.25, 2.5)       # demonstrated performance
+proj     = actual + target × (1 − w) × (1 + w × (r − 1))
+path(d)  = actual + (proj − actual) × (curve(pdsa_d) − w) / (1 − w)   # shaped, not linear
+```
+Early in a campaign (w small) the future is the plan; late, it scales with what the channel
+has actually delivered.
+
+**Paid** — projection = **projected spend ÷ projected efficiency**, day by day:
+```
+spend_fwd(d) = current daily spend run-rate            # not the recommendation
+cpe_fwd(d)   = trailing-3-day CPE × Π (1 + drift)      # drift 5%/7%/10%/day by window third
+entries_fwd  = Σ spend_fwd(d) / cpe_fwd(d)
+```
+Fallback when no spend history exists yet: paid target × remaining share of the paid curve.
+Projected *purchases* from any projected entries convert at the 0.8 eligible-entry→order rate.
+
 ---
 
 ## 6. Actuals and live status
@@ -471,7 +496,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Hero "Entries vs targets" | to date | Σ channels cumulative eligible entries (LE currency) |
 | | expected today | Σ channels `target_total × curve(pdsa_today)` (§5) |
 | | delta | actual − expected (must equal Σ channel gaps = Σ funnel contributions) |
-| | projected at close | model output stored on the day's snapshot (never re-derived client-side) |
+| | projected at close | §5.4: organic follows the channel's historic shape curve scaled by demonstrated performance; paid = projected spend ÷ projected efficiency. Stored on the day's snapshot (never re-derived client-side) |
 | | target | §3 channel targets summed |
 | Sidebar status | on-pace % | `heroDelta / expectedToday(total)` |
 | Trajectory | plan line | per-channel plan curve × target (§5) |
