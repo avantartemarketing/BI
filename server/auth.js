@@ -18,6 +18,16 @@ const SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("he
 if (!process.env.SESSION_SECRET) {
   console.warn("auth: SESSION_SECRET not set — sessions will not survive restarts");
 }
+// Password login (magic-link kept dormant below): allow-listed emails, one shared
+// password stored as a SHA-256 hash. Override without code changes via
+// LOGIN_USERS (comma-separated emails) and LOGIN_PASSWORD (plaintext, hashed at boot).
+const crypto_sha = (s) => crypto.createHash("sha256").update(s, "utf8").digest("hex");
+const ALLOWED_USERS = (process.env.LOGIN_USERS || "tom.lloyd@avantarte.com,fatima@avantarte.com")
+  .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+const PASSWORD_HASH = process.env.LOGIN_PASSWORD
+  ? crypto_sha(process.env.LOGIN_PASSWORD)
+  : "08f489b7d0593eceaba28695ada6a038e6f35f944bf8f958f4e89fea66387c2c";
+
 const RESEND_KEY = process.env.RESEND_API_KEY || "";
 const MAIL_FROM = process.env.MAIL_FROM || `Launch BI <login@${DOMAIN}>`;
 const COOKIE = "lbi_session";
@@ -112,35 +122,35 @@ const LOGIN_HTML = `<!doctype html>
   h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
   p { font-size: 12.5px; color: #6c6b68; margin-top: 6px; line-height: 1.5; }
   input { width: 100%; height: 36px; border: 1px solid #e5e4df; border-radius: 8px; padding: 0 12px;
-          font-family: inherit; font-size: 13px; margin-top: 18px; }
+          font-family: inherit; font-size: 13px; margin-top: 12px; }
   input:focus { outline: 2px solid #f7c4ad; outline-offset: -1px; }
-  button { width: 100%; margin-top: 10px; height: 36px; border-radius: 8px; border: 1px solid #141413;
+  button { width: 100%; margin-top: 12px; height: 36px; border-radius: 8px; border: 1px solid #141413;
            background: #141413; color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
   button:hover { background: #2e2d2b; }
-  .msg { margin-top: 14px; font-size: 12.5px; display: none; }
-  .msg.ok { color: #0f7052; } .msg.err { color: #b8461d; }
+  .msg { margin-top: 14px; font-size: 12.5px; display: none; color: #b8461d; }
 </style></head><body>
 <div class="card">
   <h1>Launch Performance</h1>
-  <p>Sign in with your __DOMAIN__ email — we'll send you a one-time link.</p>
+  <p>Sign in with your __DOMAIN__ account.</p>
   <form id="f">
     <input id="email" type="email" placeholder="you@__DOMAIN__" autocomplete="email" required autofocus>
-    <button type="submit">Email me a sign-in link</button>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit">Sign in</button>
   </form>
-  <div id="ok" class="msg ok">Check your inbox — the link works once and expires in 15 minutes.</div>
-  <div id="err" class="msg err"></div>
+  <div id="err" class="msg"></div>
 </div>
 <script>
   document.getElementById('f').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const ok = document.getElementById('ok'), err = document.getElementById('err');
-    ok.style.display = err.style.display = 'none';
+    const err = document.getElementById('err');
+    err.style.display = 'none';
     try {
-      const res = await fetch('/auth/request', { method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ email: document.getElementById('email').value.trim() }) });
-      const d = await res.json();
-      if (res.ok) { ok.style.display = 'block'; }
-      else { err.textContent = d.error || 'Something went wrong.'; err.style.display = 'block'; }
+      const res = await fetch('/auth/login', { method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email: document.getElementById('email').value.trim(),
+                               password: document.getElementById('pw').value }) });
+      if (res.ok) { location.href = '/'; return; }
+      const d = await res.json().catch(() => ({}));
+      err.textContent = d.error || 'Sign-in failed.'; err.style.display = 'block';
     } catch { err.textContent = 'Network error.'; err.style.display = 'block'; }
   });
 </script></body></html>`.replaceAll("__DOMAIN__", DOMAIN);
@@ -150,6 +160,27 @@ function install(app) {
 
   app.get("/healthz", (_req, res) => res.json({ ok: true }));
   app.get("/login", (_req, res) => res.type("html").send(LOGIN_HTML));
+
+  app.post("/auth/login", (req, res) => {
+    const email = String((req.body && req.body.email) || "").trim().toLowerCase();
+    const password = String((req.body && req.body.password) || "");
+    const ip = req.ip || "?";
+    if (rateLimited("lip:" + ip, 20) || rateLimited("lem:" + email, 10)) {
+      return res.status(429).json({ error: "Too many attempts — try again in a few minutes." });
+    }
+    const hash = crypto_sha(password);
+    const okUser = ALLOWED_USERS.includes(email);
+    const okPw = hash.length === PASSWORD_HASH.length &&
+      crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(PASSWORD_HASH));
+    if (!okUser || !okPw) {
+      return res.status(401).json({ error: "Wrong email or password." });
+    }
+    const session = sign({ kind: "session", email, exp: Date.now() + SESSION_TTL_MS });
+    res.setHeader("Set-Cookie",
+      `${COOKIE}=${encodeURIComponent(session)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL_MS / 1000}` +
+      (req.secure ? "; Secure" : ""));
+    res.json({ ok: true });
+  });
 
   app.post("/auth/request", async (req, res) => {
     const email = String((req.body && req.body.email) || "").trim().toLowerCase();
