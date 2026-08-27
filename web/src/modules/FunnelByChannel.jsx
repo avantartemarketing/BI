@@ -43,11 +43,13 @@ function buildRung([label, v, ref, unit, inv, note]) {
   const dAbs = isPct ? Math.abs(v - ref).toFixed(1) + "pt" : Math.abs(Math.round(relPct)) + "%";
   const dPos = isPct ? v - ref >= 0 : relPct >= 0;
   const eff = inv ? -relPct : relPct;
+  // Inverted (cost) metrics plot by their JUDGED direction: bad always goes left,
+  // good always right — an over-benchmark cost per entry sits left, not right.
   return {
     label,
     neutral: false,
-    up: relPct >= 0,
-    dev: Math.max(4, Math.min(96, 50 + (relPct / SCALE) * 46)),
+    up: eff >= 0,
+    dev: Math.max(4, Math.min(96, 50 + (eff / SCALE) * 46)),
     delta: (dPos ? "+" : MINUS) + dAbs,
     rag: eff >= 0 ? C.green : eff > -10 ? C.amber : C.red,
     tip:
