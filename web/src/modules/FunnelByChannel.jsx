@@ -8,7 +8,7 @@
  *   Paid      — Spend vs pro-rata budget (un-inverted per artboard) · Cost per
  *               entry vs cost-per-purchase target × 0.8 (inverted) · Session → entry
  * Rung mechanics per spec: relPct=(v/ref−1)×100; dot x = clamp(50+relPct/25×46, 4, 96);
- * delta = pt diff for '%' units else %; RAG on eff = inv ? −relPct : relPct.
+ * delta = relative % vs reference for every unit; RAG on eff = inv ? −relPct : relPct.
  * Null value or missing/zero reference → neutral: centred grey dot, delta '–'. */
 import React from "react";
 import { Card, GROUP_DOTS, C, fmt, fmtMoney, MINUS, useTip } from "../ui.jsx";
@@ -41,9 +41,8 @@ function buildRung([label, v, ref, unit, inv, note]) {
     };
   }
   const relPct = (v / ref - 1) * 100;
-  const isPct = unit === "%";
-  const dAbs = isPct ? Math.abs(v - ref).toFixed(1) + "pt" : Math.abs(Math.round(relPct)) + "%";
-  const dPos = isPct ? v - ref >= 0 : relPct >= 0;
+  const dAbs = Math.abs(Math.round(relPct)) + "%";
+  const dPos = relPct >= 0;
   const eff = inv ? -relPct : relPct;
   // Inverted (cost) metrics plot by their JUDGED direction: bad always goes left,
   // good always right — an over-benchmark cost per entry sits left, not right.
