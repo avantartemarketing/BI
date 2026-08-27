@@ -6,7 +6,7 @@
  * zero-entry days — the line connects across the gaps (null points skipped);
  * the y-domain (series ∪ target ± 12%, snapped to 0.25) is clamped at 0 since a
  * negative ROI axis is meaningless; complete releases draw actuals only. */
-import React from "react";
+import React, { useState } from "react";
 import { Card, QBadge, GROUP_DOTS, C, fmt } from "../ui.jsx";
 
 const W = 480, H = 200, BAND_TOP = 132;
@@ -21,6 +21,7 @@ function dayIndex(dateStr, windowStart, fallback) {
 }
 
 export default function PaidRoi({ snap }) {
+  const [hover, setHover] = useState(null);   // day number
   const paid = snap.paid || {};
   const daily = paid.daily || [];
   const complete = !!snap.complete;
@@ -142,6 +143,10 @@ export default function PaidRoi({ snap }) {
   const showTodayLabel = !complete && todayFrac >= 0.06 && todayFrac <= 0.94;
   const lastRoiPt = roiPts.length ? roiPts[roiPts.length - 1] : null;
 
+  const byDay = new Map(pts.map((p) => [p.d, p]));
+  const dateByDay = new Map(daily.map((d2, i) => [dayIndex(d2.date, snap.windowStart, (snap.day ?? 0) - (n - 1 - i)), d2.date]));
+  const declByDay = new Map(decline.map((p) => [p.d, p.v]));
+
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const xLabel = { position: "absolute", top: "100%", paddingTop: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
 
@@ -156,7 +161,15 @@ export default function PaidRoi({ snap }) {
       <div style={{ height: 12, flex: "0 0 12px" }} />
       <div className="body">
         <div style={{ position: "relative", flex: 1 }}>
-          <div style={{ position: "absolute", left: 48, right: 56, top: 0, bottom: 24 }}>
+          <div
+            style={{ position: "absolute", left: 48, right: 56, top: 0, bottom: 24 }}
+            onMouseMove={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const frac = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1);
+              setHover(Math.min(Math.max(Math.round(frac * DAYS) + 1, 1), of));
+            }}
+            onMouseLeave={() => setHover(null)}
+          >
             <svg
               viewBox={`0 0 ${W} ${H}`}
               preserveAspectRatio="none"
@@ -182,6 +195,32 @@ export default function PaidRoi({ snap }) {
                   stroke={C.todayLine} strokeWidth="1" vectorEffect="non-scaling-stroke" />
               )}
             </svg>
+
+            {/* hover: guide line + marker + light popup */}
+            {hover !== null && (() => {
+              const p = byDay.get(hover);
+              const projV = declByDay.get(hover);
+              const roiV = p && p.roi !== null && p.roi !== undefined ? p.roi : null;
+              const markV = roiV ?? projV ?? null;
+              const flip = (hover - 1) / DAYS > 0.6;
+              const dt = dateByDay.get(hover);
+              if (!p && projV === undefined) return null;
+              return (
+                <>
+                  <div style={{ position: "absolute", left: leftPct(hover), top: 0, bottom: 0, width: 1, background: "#ddd9cf", pointerEvents: "none" }} />
+                  {markV !== null && markV !== undefined && (
+                    <div style={{ position: "absolute", left: leftPct(hover), top: topPct(markV), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: roiV !== null ? C.orange : C.orangeLight, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
+                  )}
+                  <div className="chart-tip" style={{ left: leftPct(hover), top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
+                    <div className="t-head">Day {hover}{dt ? " · " + dt : ""}</div>
+                    {roiV !== null && <div className="t-row"><span>ROI</span><span className="v">{fmt(roiV, 2)}</span></div>}
+                    {roiV === null && projV !== undefined && <div className="t-row"><span>ROI projected</span><span className="v">{fmt(projV, 2)}</span></div>}
+                    {p && <div className="t-row"><span>Spend</span><span className="v">£{fmt(p.spend, 2)}</span></div>}
+                    {p && <div className="t-row"><span>Entries</span><span className="v">{fmt(p.entries ?? 0)}</span></div>}
+                  </div>
+                </>
+              );
+            })()}
 
             {/* today dot on the modelled level (L3D ROI) */}
             {!complete && declStart !== null && (

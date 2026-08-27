@@ -719,6 +719,12 @@ def main():
               f"target={snap['hero']['target']} proj={snap['hero']['projected']}")
     (APP / "index.json").write_text(json.dumps(
         {"asOf": as_of.isoformat(), "releases": index}, indent=1))
+    # inputs document for the Target setting tab (server + web read this)
+    (APP / "inputs.json").write_text(json.dumps({
+        "benchmarks": BENCH,
+        "channel_quality_default": INPUTS["channel_quality_default"],
+        "releases": {r["id"]: r for r in INPUTS["releases"]},
+    }, indent=1))
     print(f"wrote {len(index)} releases -> {APP}")
 
 

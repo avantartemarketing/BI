@@ -5,4 +5,11 @@ services:
     plan: starter
     buildCommand: npm ci && npm run build
     startCommand: npm start
-    healthCheckPath: /api/index
+    healthCheckPath: /healthz
+    envVars:
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: RESEND_API_KEY   # Resend API key for magic-link emails (sign-in links land in the Render logs until set)
+        sync: false
+      - key: MAIL_FROM        # verified sender, e.g. "Launch BI <login@avantarte.com>"
+        sync: false

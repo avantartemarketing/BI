@@ -1,0 +1,392 @@
+{
+ "benchmarks": {
+  "_comment": "Frozen v1 benchmark values, transcribed from the LE_Full Release sheet of LAUNCH PERFORMANCE OVERVIEW (quartiles over the historical release panel; Low=P25, Medium=median, High=P75) and New Paid Data Analysis (cost per purchase). See docs/DATA_MODEL.md \u00a74 for provenance and the recomputation policy. Currency GBP.",
+  "as_of": "2026-08-27",
+  "order_split": {
+   "_meaning": "channel share of unadjusted draw+preorder units; renormalise over non-N/A channels at use",
+   "AA Email Auto": {
+    "Low": 0.01276042967,
+    "Medium": 0.02244052599,
+    "High": 0.07901250651
+   },
+   "AA Email Man": {
+    "Low": 0.1941443861,
+    "Medium": 0.3053846154,
+    "High": 0.4383269442
+   },
+   "AA Meta": {
+    "Low": 0.04073571657,
+    "Medium": 0.06291226913,
+    "High": 0.1216470469
+   },
+   "AA Other": {
+    "Low": 0.00448463503,
+    "Medium": 0.007692307692,
+    "High": 0.009619376472
+   },
+   "AA X": {
+    "Low": 0.01265822785,
+    "Medium": 0.05882352941,
+    "High": 0.1666666667
+   },
+   "Direct": {
+    "Low": 0.1227050272,
+    "Medium": 0.1666666667,
+    "High": 0.2099780702
+   },
+   "Organic Search": {
+    "Low": 0.04758763664,
+    "Medium": 0.07610636646,
+    "High": 0.1145604396
+   },
+   "Other": {
+    "Low": 0.007462686567,
+    "Medium": 0.01408450704,
+    "High": 0.02284117528
+   },
+   "Referral Artist": {
+    "Low": 0.0621589752,
+    "Medium": 0.1052631579,
+    "High": 0.2307692308
+   },
+   "Referral Meta": {
+    "Low": 0.009514355814,
+    "Medium": 0.02631578947,
+    "High": 0.07168815337
+   },
+   "Referral Other": {
+    "Low": 0.01457140107,
+    "Medium": 0.02905720242,
+    "High": 0.04991665905
+   },
+   "Referral X": {
+    "Low": 0.1397058824,
+    "Medium": 0.25,
+    "High": 0.3636363636
+   }
+  },
+  "session_to_eligible_entry": {
+   "_meaning": "unique eligible entries / unadjusted sessions",
+   "AA Email Auto": {
+    "Low": 0.006159558264,
+    "Medium": 0.04744255004,
+    "High": 0.3039215686
+   },
+   "AA Email Man": {
+    "Low": 0.006741978581,
+    "Medium": 0.01049868766,
+    "High": 0.0174023717
+   },
+   "AA Meta": {
+    "Low": 0.00929860701,
+    "Medium": 0.01402805611,
+    "High": 0.02578955136
+   },
+   "AA Other": {
+    "Low": 0.03956043956,
+    "Medium": 0.07142857143,
+    "High": 0.1607142857
+   },
+   "AA X": {
+    "Low": 0.01325555386,
+    "Medium": 0.02467105263,
+    "High": 0.03535353535
+   },
+   "Direct": {
+    "Low": 0.008974358974,
+    "Medium": 0.01860465116,
+    "High": 0.03007784855
+   },
+   "Organic Search": {
+    "Low": 0.01720453876,
+    "Medium": 0.03063965885,
+    "High": 0.06696832579
+   },
+   "Other": {
+    "Low": 0.01377410468,
+    "Medium": 0.01724137931,
+    "High": 0.03516295026
+   },
+   "Referral Artist": {
+    "Low": 0.005970149254,
+    "Medium": 0.01342281879,
+    "High": 0.02380952381
+   },
+   "Referral Meta": {
+    "Low": 0.007227545883,
+    "Medium": 0.01511177007,
+    "High": 0.03573426573
+   },
+   "Referral Other": {
+    "Low": 0.01694915254,
+    "Medium": 0.03217158177,
+    "High": 0.06666666667
+   },
+   "Referral X": {
+    "Low": 0.009273570325,
+    "Medium": 0.03018867925,
+    "High": 0.03448275862
+   }
+  },
+  "paid_share_of_units": {
+   "Low": 0.07894736842,
+   "Medium": 0.2619047619,
+   "High": 0.390145584
+  },
+  "paid_session_to_eligible_entry": {
+   "Low": 0.001630314566,
+   "Medium": 0.004209871287,
+   "High": 0.01212556089
+  },
+  "pv_other_share_of_units": {
+   "Low": 0.2878787879,
+   "Medium": 0.4666666667,
+   "High": 0.7115384615
+  },
+  "cost_per_purchase": {
+   "Low": 128.75,
+   "Median": 177,
+   "High": 291
+  },
+  "email_session_to_purchase": 0.01136363636,
+  "eligible_entry_to_order": 0.8,
+  "target_buffer": 0.75,
+  "cannibalisation": 0.2,
+  "paid_drop_off": 0.2,
+  "cpe_growth_factor": 1.5,
+  "target_roi_aa": 1.1,
+  "roi_floor": 1.0,
+  "spend_rules": {
+   "decrease_below_cum_roi": 0.9,
+   "increase_above_cum_roi": 1.3,
+   "max_daily_change": 0.3,
+   "ignore_change_below": 0.1,
+   "forced_decrease_after_days_below_target": 3,
+   "cpe_daily_drift_by_third": [
+    0.05,
+    0.07,
+    0.1
+   ]
+  },
+  "frame_conversion": 0.35,
+  "frame_profit_per_unit": 94,
+  "budget_sense_check_max_pct_of_launch_value": 0.06
+ },
+ "channel_quality_default": {
+  "AA Email Auto": "High",
+  "AA Email Man": "High",
+  "AA Meta": "Medium",
+  "AA Other": "Medium",
+  "AA X": "Low",
+  "Direct": "Medium",
+  "Organic Search": "Medium",
+  "Other": "Medium",
+  "Referral Artist": "Medium",
+  "Referral Meta": "Medium",
+  "Referral Other": "N/A",
+  "Referral X": "N/A"
+ },
+ "releases": {
+  "glennligon_le_26": {
+   "id": "glennligon_le_26",
+   "release_name": "Glenn Ligon \u00b7 Multiple \u00b7 2026 Q3",
+   "campaign_code": "GlennLigon_LE_26",
+   "campaign_name": "GlennLigon_LE_26 \u00b7 Enter draw",
+   "marketing_lead": "Maria",
+   "private_room_open": "2026-07-31",
+   "announce_date": "2026-08-17",
+   "launch_end": "2026-09-17",
+   "edition_size": 150,
+   "unit_price": 3000,
+   "artist_profit": 182790,
+   "aa_group_profit": 219793,
+   "artist_profit_share": 0.5,
+   "framing_available": true,
+   "paid_channel_size": "Medium",
+   "reference_point": "Medium",
+   "paid_conv_quality": "Medium",
+   "cpp_pick": "Median",
+   "channel_quality_overrides": {}
+  },
+  "dali_le_26": {
+   "id": "dali_le_26",
+   "release_name": "Salvador Dali Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "campaign_code": "SalvadorDali_LE_26",
+   "campaign_name": "SalvadorDali_LE_26 \u00b7 Enter draw",
+   "marketing_lead": "Clare",
+   "private_room_open": "2026-08-19",
+   "announce_date": "2026-08-21",
+   "launch_end": "2026-09-11",
+   "edition_size": 1200,
+   "unit_price": 500,
+   "artist_profit": 0,
+   "aa_group_profit": 335178,
+   "artist_profit_share": 0,
+   "framing_available": true,
+   "paid_channel_size": "High",
+   "reference_point": "Medium",
+   "paid_conv_quality": "Medium",
+   "cpp_pick": "Median",
+   "channel_quality_overrides": {
+    "Referral Artist": "N/A"
+   }
+  },
+  "abdulnasser_le_26": {
+   "id": "abdulnasser_le_26",
+   "release_name": "Abdulnasser Gharem \u00b7 Hemisphere \u00b7 2026 Q3",
+   "campaign_code": "Abdulnasser_LE_26",
+   "campaign_name": "Abdulnasser_LE_26 \u00b7 Enter draw",
+   "marketing_lead": "Maria",
+   "private_room_open": "2026-06-23",
+   "announce_date": "2026-07-27",
+   "launch_end": "2026-08-25",
+   "edition_size": 40,
+   "unit_price": 4000,
+   "artist_profit": 43904,
+   "aa_group_profit": 85820,
+   "artist_profit_share": 0.5,
+   "framing_available": true,
+   "paid_channel_size": "High",
+   "reference_point": "Medium",
+   "paid_conv_quality": "Medium",
+   "cpp_pick": "High",
+   "channel_quality_overrides": {}
+  },
+  "zengfanzhi_le_26": {
+   "id": "zengfanzhi_le_26",
+   "release_name": "Zeng Fanzhi \u00b7 Multiple \u00b7 2026 Q3",
+   "campaign_code": "ZengFanzhi_LE_26",
+   "campaign_name": "ZengFanzhi_LE_26 \u00b7 Enter draw",
+   "marketing_lead": "Maria",
+   "private_room_open": "2026-06-29",
+   "announce_date": "2026-07-29",
+   "launch_end": "2026-08-26",
+   "edition_size": 100,
+   "unit_price": 2500,
+   "artist_profit": 80605,
+   "aa_group_profit": 117936,
+   "artist_profit_share": 0.5,
+   "framing_available": true,
+   "paid_channel_size": "High",
+   "reference_point": "Medium",
+   "paid_conv_quality": "Medium",
+   "cpp_pick": "Median",
+   "channel_quality_overrides": {}
+  },
+  "mondrian_le_26": {
+   "id": "mondrian_le_26",
+   "release_name": "Piet Mondrian Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "campaign_code": "PietMondrian_LE_26",
+   "campaign_name": "PietMondrian_LE_26 \u00b7 Enter draw",
+   "marketing_lead": "Clare",
+   "private_room_open": "2026-06-23",
+   "announce_date": "2026-07-24",
+   "launch_end": "2026-08-18",
+   "edition_size": 900,
+   "unit_price": 500,
+   "artist_profit": 0,
+   "aa_group_profit": 221529,
+   "artist_profit_share": 0,
+   "framing_available": true,
+   "paid_channel_size": "High",
+   "reference_point": "Medium",
+   "paid_conv_quality": "Medium",
+   "cpp_pick": "Median",
+   "channel_quality_overrides": {},
+   "draw_entries_file": "draw_mondrian_entries.csv",
+   "products": [
+    {
+     "name": "Composition with Red, Yellow",
+     "edition": null
+    },
+    {
+     "name": "Composition with Large Red Plane",
+     "edition": null
+    },
+    {
+     "name": "Tableau no.1",
+     "edition": null
+    }
+   ]
+  },
+  "julianschnabel_le_26": {
+   "id": "julianschnabel_le_26",
+   "release_name": "Julian Schnabel \u00b7 Multiple \u00b7 2026 Q3",
+   "campaign_code": "JulianSchnabel_LE_26",
+   "campaign_name": null,
+   "_campaign_note": "Campaign Name cell is empty on the source tab -> paid spend actuals structurally zero in the sheet; fix when the Meta campaign exists.",
+   "marketing_lead": "Maria",
+   "private_room_open": "2026-06-30",
+   "announce_date": "2026-09-01",
+   "launch_end": "2026-09-25",
+   "edition_size": 500,
+   "unit_price": 1500,
+   "artist_profit": 254165,
+   "aa_group_profit": 335957,
+   "artist_profit_share": 0.5,
+   "framing_available": true,
+   "paid_channel_size": "Medium",
+   "reference_point": "Medium",
+   "paid_conv_quality": "Medium",
+   "cpp_pick": "Median",
+   "channel_quality_overrides": {}
+  },
+  "parra_le_26": {
+   "id": "parra_le_26",
+   "release_name": "Parra \u00b7 Multiple \u00b7 2026 Q3",
+   "campaign_code": "Parra_LE_26",
+   "campaign_name": "Parra_LE_26 \u00b7 Enter draw",
+   "marketing_lead": "Clare",
+   "private_room_open": "2026-07-29",
+   "announce_date": "2026-07-31",
+   "launch_end": "2026-08-21",
+   "edition_size": 300,
+   "unit_price": 650,
+   "artist_profit": 26925,
+   "aa_group_profit": 46652,
+   "artist_profit_share": 0.5,
+   "framing_available": true,
+   "paid_channel_size": "High",
+   "reference_point": "Medium",
+   "paid_conv_quality": "Medium",
+   "cpp_pick": "Median",
+   "channel_quality_overrides": {
+    "Referral Artist": "High"
+   }
+  },
+  "jamesjean_blossom_26": {
+   "id": "jamesjean_blossom_26",
+   "release_name": "James Jean \u00b7 Multiple \u00b7 2026 Q3",
+   "campaign_code": "JamesJean_Blossom_26",
+   "campaign_name": "JamesJean_Blossom_26 \u00b7 Enter draw",
+   "marketing_lead": "Clare",
+   "private_room_open": "2026-07-28",
+   "announce_date": "2026-07-30",
+   "launch_end": "2026-08-20",
+   "edition_size": 600,
+   "unit_price": 700,
+   "artist_profit": 111445,
+   "aa_group_profit": 132117,
+   "artist_profit_share": 0.5,
+   "framing_available": true,
+   "paid_channel_size": "High",
+   "reference_point": "Medium",
+   "paid_conv_quality": "Medium",
+   "cpp_pick": "Median",
+   "channel_quality_overrides": {
+    "Referral Artist": "High"
+   },
+   "draw_entries_file": "draw_jamesjean_blossom_entries.csv",
+   "products": [
+    {
+     "name": "Blossom Print",
+     "edition": null
+    },
+    {
+     "name": "Blossom Vase",
+     "edition": null
+    }
+   ]
+  }
+ }
+}

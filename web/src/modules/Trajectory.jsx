@@ -34,16 +34,17 @@ function seriesFor(snap, sel) {
   const n = sliced.reduce((m, s) => Math.max(m, s.length), 0);
   const pts = [];
   for (let i = 0; i < n; i++) {
-    let a = null, p = null, pr = null;
+    let a = null, p = null, pr = null, dt = null;
     for (const s of sliced) {
       const d = s[i];
       if (!d) continue;
+      if (!dt) dt = d.date;
       if (d.actual !== null && d.actual !== undefined) a = (a ?? 0) + d.actual;
       if (d.plan !== null && d.plan !== undefined) p = (p ?? 0) + d.plan;
       // shaped forward path: only meaningful once every group projects (future days)
       if (d.proj !== null && d.proj !== undefined) pr = (pr ?? 0) + d.proj;
     }
-    pts.push({ actual: a, plan: p, proj: pr });
+    pts.push({ date: dt, actual: a, plan: p, proj: pr });
   }
   const sum = (f) => channels.reduce((t, c) => t + (c[f] ?? 0), 0);
   return { now: sum("now"), exp: sum("exp"), proj: sum("proj"), target: sum("target"), pts };
@@ -51,6 +52,7 @@ function seriesFor(snap, sel) {
 
 export default function Trajectory({ snap }) {
   const [sel, setSel] = useState("all");
+  const [hover, setHover] = useState(null);   // {i, frac}
   const channels = snap.channels || [];
   const of = snap.of || 1;
   const day = Math.max(0, Math.min(snap.day ?? 0, of));
@@ -143,7 +145,15 @@ export default function Trajectory({ snap }) {
       <div className="spacer-16" />
       <div className="body">
         <div style={{ position: "relative", flex: 1 }}>
-          <div style={{ position: "absolute", left: 40, right: 48, top: 0, bottom: 24 }}>
+          <div
+            style={{ position: "absolute", left: 40, right: 48, top: 0, bottom: 24 }}
+            onMouseMove={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const frac = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1);
+              setHover({ i: Math.round(frac * N), frac });
+            }}
+            onMouseLeave={() => setHover(null)}
+          >
             <svg
               viewBox={`0 0 ${X1} ${Y0}`}
               preserveAspectRatio="none"
@@ -172,6 +182,33 @@ export default function Trajectory({ snap }) {
               <line x1="0" y1={y(s.target).toFixed(1)} x2={X1} y2={y(s.target).toFixed(1)}
                 stroke={C.targetLine} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
             </svg>
+
+            {/* hover: guide line + marker + light popup */}
+            {hover && s.pts[hover.i] && (() => {
+              const hp = s.pts[hover.i];
+              const val = hp.actual ?? hp.proj ?? hp.plan;
+              const flip = hover.i / N > 0.6;
+              return (
+                <>
+                  <div style={{ position: "absolute", left: `${(hover.i / N) * 100}%`, top: 0, bottom: 0, width: 1, background: C.dotted ?? "#ddd9cf", pointerEvents: "none" }} />
+                  {val !== null && val !== undefined && (
+                    <div style={{ position: "absolute", left: `${(hover.i / N) * 100}%`, top: pctTop(y(val)), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: C.orange, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
+                  )}
+                  <div className="chart-tip" style={{ left: `${(hover.i / N) * 100}%`, top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
+                    <div className="t-head">Day {hover.i}{hp.date ? " · " + hp.date : ""}</div>
+                    {hp.actual !== null && hp.actual !== undefined && (
+                      <div className="t-row"><span>Secured</span><span className="v">{fmt(hp.actual)}</span></div>
+                    )}
+                    {hp.proj !== null && hp.proj !== undefined && hover.i > day && (
+                      <div className="t-row"><span>Projected</span><span className="v">{fmt(hp.proj)}</span></div>
+                    )}
+                    {hp.plan !== null && hp.plan !== undefined && (
+                      <div className="t-row"><span>Plan</span><span className="v">{fmt(hp.plan)}</span></div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
 
             {/* today dot */}
             <div

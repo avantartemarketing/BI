@@ -14,6 +14,10 @@ const DECISIONS_PATH = process.env.DECISIONS_PATH || path.join(ROOT, "data", "de
 
 app.use(express.json());
 
+// magic-link login (avantarte.com only) — installs /login, /auth/* and the gate;
+// every route registered after this line requires a signed session cookie.
+require("./auth").install(app);
+
 app.get("/api/index", (_req, res) => res.sendFile(path.join(DATA, "index.json")));
 app.get("/api/curves", (_req, res) => res.sendFile(path.join(DATA, "curves.json")));
 app.get("/api/releases/:id", (req, res) => {
@@ -21,6 +25,106 @@ app.get("/api/releases/:id", (req, res) => {
   const file = path.join(DATA, "releases", `${id}.json`);
   if (!fs.existsSync(file)) return res.status(404).json({ error: "unknown release" });
   res.sendFile(file);
+});
+
+// ---- target-setting inputs (docs §3; the Target setting tab) ----
+const { retargetSnapshot } = require("./retarget");
+const INPUTS_PATH = path.join(DATA, "inputs.json");
+const TARGETS_LOG = process.env.TARGETS_LOG || path.join(ROOT, "data", "targets.log.jsonl");
+const modelPromise = import("../shared/targetModel.mjs");
+
+const PICKS = {
+  paid_channel_size: ["Small", "Medium", "Large", "Low", "High"],
+  reference_point: ["Low", "Medium", "High"],
+  paid_conv_quality: ["Low", "Medium", "High"],
+  cpp_pick: ["Low", "Median", "High"],
+};
+const QUALITIES = ["High", "Medium", "Low", "N/A"];
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function readInputsDoc() {
+  return JSON.parse(fs.readFileSync(INPUTS_PATH, "utf8"));
+}
+
+app.get("/api/inputs/:id", (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  const doc = readInputsDoc();
+  const inputs = doc.releases[id];
+  if (!inputs) return res.status(404).json({ error: "unknown release" });
+  res.json({
+    inputs,
+    channel_quality_default: doc.channel_quality_default,
+    benchmarks: doc.benchmarks,
+  });
+});
+
+app.post("/api/inputs/:id", async (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  const doc = readInputsDoc();
+  const current = doc.releases[id];
+  if (!current) return res.status(404).json({ error: "unknown release" });
+  const body = (req.body && req.body.inputs) || {};
+
+  const next = { ...current };
+  const errors = [];
+  for (const f of ["edition_size", "unit_price", "artist_profit", "aa_group_profit"]) {
+    if (body[f] !== undefined) {
+      const v = Number(body[f]);
+      if (!Number.isFinite(v) || v < 0) errors.push(`${f} must be a non-negative number`);
+      else next[f] = f === "edition_size" ? Math.round(v) : v;
+    }
+  }
+  if (body.artist_profit_share !== undefined) {
+    const v = Number(body.artist_profit_share);
+    if (!Number.isFinite(v) || v < 0 || v > 1) errors.push("artist_profit_share must be 0..1");
+    else next.artist_profit_share = v;
+  }
+  if (body.framing_available !== undefined) next.framing_available = !!body.framing_available;
+  for (const [f, allowed] of Object.entries(PICKS)) {
+    if (body[f] !== undefined) {
+      if (!allowed.includes(body[f])) errors.push(`${f} must be one of ${allowed.join("/")}`);
+      else next[f] = body[f];
+    }
+  }
+  for (const f of ["private_room_open", "announce_date", "launch_end"]) {
+    if (body[f] !== undefined) {
+      if (!DATE_RE.test(String(body[f]))) errors.push(`${f} must be YYYY-MM-DD`);
+      else next[f] = body[f];
+    }
+  }
+  for (const f of ["marketing_lead", "budget_file", "campaign_name"]) {
+    if (body[f] !== undefined) next[f] = body[f] === null ? null : String(body[f]).slice(0, 200);
+  }
+  if (body.channel_quality_overrides !== undefined) {
+    const ov = {};
+    for (const [c, q] of Object.entries(body.channel_quality_overrides || {})) {
+      if (!(c in doc.channel_quality_default)) errors.push(`unknown channel ${c}`);
+      else if (!QUALITIES.includes(q)) errors.push(`bad quality for ${c}`);
+      else if (doc.channel_quality_default[c] !== q) ov[c] = q;
+    }
+    next.channel_quality_overrides = ov;
+  }
+  if (new Date(next.launch_end) <= new Date(next.announce_date)) {
+    errors.push("launch_end must be after announce_date");
+  }
+  if (errors.length) return res.status(400).json({ error: errors.join("; ") });
+
+  const snapPath = path.join(DATA, "releases", `${id}.json`);
+  if (!fs.existsSync(snapPath)) return res.status(404).json({ error: "no snapshot for release" });
+  const snap = JSON.parse(fs.readFileSync(snapPath, "utf8"));
+  const curves = JSON.parse(fs.readFileSync(path.join(DATA, "curves.json"), "utf8"));
+  const bench = doc.benchmarks;
+  const mergedForModel = { ...next, channel_quality_default: doc.channel_quality_default };
+  const { computeTargets } = await modelPromise;
+  const updated = retargetSnapshot(snap, mergedForModel, bench, curves, computeTargets);
+
+  doc.releases[id] = next;
+  fs.writeFileSync(INPUTS_PATH, JSON.stringify(doc, null, 1));
+  fs.writeFileSync(snapPath, JSON.stringify(updated, null, 1));
+  fs.appendFileSync(TARGETS_LOG, JSON.stringify({
+    ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard",
+  }) + "\n");
+  res.json({ snapshot: updated });
 });
 
 app.get("/api/decisions", (_req, res) => {

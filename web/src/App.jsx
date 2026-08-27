@@ -10,6 +10,7 @@ import PaidSpend from "./modules/PaidSpend.jsx";
 import SellThrough from "./modules/SellThrough.jsx";
 import Geo from "./modules/Geo.jsx";
 import Waterfall from "./modules/Waterfall.jsx";
+import TargetSetting from "./TargetSetting.jsx";
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -55,10 +56,25 @@ export default function App() {
         {groups.live.map((r) => <ReleaseRow key={r.id} r={r} active={r.id === releaseId} onClick={() => setReleaseId(r.id)} />)}
         {groups.closed.length > 0 && <div className="section-label">Closed</div>}
         {groups.closed.map((r) => <ReleaseRow key={r.id} r={r} active={r.id === releaseId} onClick={() => setReleaseId(r.id)} />)}
+        <SessionFooter />
       </nav>
       <main className="content">
-        {snap ? <ReleasePage snap={snap} /> : <div style={{ color: "#6c6b68" }}>Loading…</div>}
+        {snap ? <ReleasePage snap={snap} onSaved={setSnap} /> : <div style={{ color: "#6c6b68" }}>Loading…</div>}
       </main>
+    </div>
+  );
+}
+
+function SessionFooter() {
+  const [email, setEmail] = useState(null);
+  useEffect(() => {
+    fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then((d) => setEmail(d?.email ?? null)).catch(() => {});
+  }, []);
+  if (!email) return null;
+  return (
+    <div style={{ marginTop: 24, padding: "10px 12px", borderTop: "1px solid #f2f0ea", fontSize: 11.5, color: "#6c6b68", display: "flex", gap: 8, alignItems: "center" }}>
+      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={email}>{email}</span>
+      <a href="/auth/logout" style={{ color: "#6c6b68" }}>Sign out</a>
     </div>
   );
 }
@@ -75,10 +91,12 @@ function ReleaseRow({ r, active, onClick }) {
   );
 }
 
-function ReleasePage({ snap }) {
+function ReleasePage({ snap, onSaved }) {
+  const [tab, setTab] = useState("overview");
+  useEffect(() => setTab("overview"), [snap.id]);
   return (
     <>
-      <header className="page-header">
+      <header className="page-header" style={{ marginBottom: 0 }}>
         <span className="name">{snap.artist} — {snap.title}</span>
         <span className={`badge ${snap.type.toLowerCase()}`}>{snap.type}</span>
         <span className="chip">Day {snap.day} of {snap.of}</span>
@@ -87,6 +105,11 @@ function ReleasePage({ snap }) {
           Sources fresh · data through {snap.asOf}
         </span>
       </header>
+      <nav className="tabs" style={{ marginTop: 20 }}>
+        <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
+        <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>Target setting</button>
+      </nav>
+      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : (
       <div className="grid">
         <HeroBar snap={snap} />
         <ChannelsVsTargets snap={snap} />
@@ -99,6 +122,7 @@ function ReleasePage({ snap }) {
         <Geo snap={snap} />
         <Waterfall snap={snap} />
       </div>
+      )}
     </>
   );
 }
