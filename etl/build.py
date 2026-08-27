@@ -739,11 +739,20 @@ def main():
               f"target={snap['hero']['target']} proj={snap['hero']['projected']}")
     (APP / "index.json").write_text(json.dumps(
         {"asOf": as_of.isoformat(), "releases": index}, indent=1))
-    # inputs document for the Target setting tab (server + web read this)
+    # inputs document for the Target setting tab (server + web read this);
+    # meta_campaigns feeds the Meta-campaign matcher (most recently active first)
+    camp = (spend.groupby("campaign_name")
+                 .agg(spend=("spend", "sum"), last=("spend_date", "max"))
+                 .reset_index()
+                 .sort_values(["last", "spend"], ascending=False))
     (APP / "inputs.json").write_text(json.dumps({
         "benchmarks": BENCH,
         "channel_quality_default": INPUTS["channel_quality_default"],
         "releases": {r["id"]: r for r in INPUTS["releases"]},
+        "meta_campaigns": [
+            {"name": r.campaign_name, "spend": round(float(r.spend), 2), "last": r.last.isoformat()}
+            for r in camp.itertuples()
+        ],
     }, indent=1))
     print(f"wrote {len(index)} releases -> {APP}")
 

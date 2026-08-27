@@ -57,6 +57,13 @@ export default function App() {
         {groups.live.map((r) => <ReleaseRow key={r.id} r={r} active={r.id === releaseId} onClick={() => setReleaseId(r.id)} />)}
         {groups.closed.length > 0 && <div className="section-label">Closed</div>}
         {groups.closed.map((r) => <ReleaseRow key={r.id} r={r} active={r.id === releaseId} onClick={() => setReleaseId(r.id)} />)}
+        <div style={{ marginTop: 20, padding: "0 12px" }}>
+          <a href="/methodology" target="_blank" rel="noreferrer"
+            style={{ fontSize: 11.5, color: "#6c6b68", textDecoration: "none" }}
+            title="How every target is derived — the full target-setting methodology">
+            Methodology ↗
+          </a>
+        </div>
         <SessionFooter />
       </nav>
       <main className="content">

@@ -62,6 +62,16 @@ const Field = ({ label, tip, children }) => (
   </div>
 );
 
+/* Match status for the Meta-campaign picker, against the live spend feed. */
+function CampaignHint({ value, campaigns }) {
+  const v = (value || "").trim();
+  const style = { fontSize: 11.5, marginTop: 4, color: C.muted };
+  if (!v) return <div style={style}>no campaign matched — paid modules stay empty</div>;
+  const hit = (campaigns || []).find((c) => c.name === v);
+  if (!hit) return <div style={{ ...style, color: C.amber }}>no spend rows with this exact name yet</div>;
+  return <div style={style}>{fmtMoney(hit.spend)} spend · last active {hit.last}</div>;
+}
+
 function ScaleHeader() {
   return (
     <div style={{ display: "flex", gap: 12 }}>
@@ -116,10 +126,15 @@ export default function TargetSetting({ snap, onSaved }) {
     try {
       const res = await fetch(`/api/inputs/${snap.id}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inputs: { ...inp, channel_quality_overrides: qual } }),
+        body: JSON.stringify({ inputs: {
+          ...inp,
+          campaign_name: (inp.campaign_name || "").trim() || null,
+          channel_quality_overrides: qual,
+        } }),
       });
       const d = await res.json();
       if (!res.ok) { setError(d.error || `save failed (${res.status})`); return; }
+      if (d.warning) setError(d.warning);
       onSaved(d.snapshot);
       setSavedFlash(true); setTimeout(() => setSavedFlash(false), 2500);
     } catch (e) { setError(String(e)); } finally { setSaving(false); }
@@ -142,9 +157,13 @@ export default function TargetSetting({ snap, onSaved }) {
             <Field label="Release name" tip="Simple Release Name — the join key across every feed; changing it would orphan the actuals, so it is fixed here.">
               <input className="control ro" value={snap.releaseName} readOnly />
             </Field>
-            <Field label="Meta campaign" tip="Ad campaign name in Meta — where paid spend actuals are read from.">
-              <input className="control" value={inp.campaign_name || ""} placeholder="e.g. GlennLigon_LE_26 · Enter draw"
-                onChange={set("campaign_name")} />
+            <Field label="Meta campaign" tip="Which Meta ad campaign this release's paid actuals are read from — rows matching this exact name in the live spend feed. Saving a change re-attributes the paid numbers.">
+              <input className="control" list="meta-campaigns" value={inp.campaign_name || ""}
+                placeholder="— not matched —" onChange={set("campaign_name")} />
+              <datalist id="meta-campaigns">
+                {(meta.meta_campaigns || []).map((c) => <option key={c.name} value={c.name} />)}
+              </datalist>
+              <CampaignHint value={inp.campaign_name} campaigns={meta.meta_campaigns} />
             </Field>
             <Field label="Marketing lead">
               <input className="control" value={inp.marketing_lead || ""} onChange={set("marketing_lead")} />

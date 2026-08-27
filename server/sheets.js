@@ -224,7 +224,7 @@ function writeAtomic(file, text) {
   fs.renameSync(tmp, file);
 }
 
-function runEtl() {
+function runEtlOnce() {
   return new Promise((resolve, reject) => {
     execFile("python3", [path.join(ROOT, "etl", "build.py")],
       { cwd: ROOT, timeout: 5 * 60 * 1000, maxBuffer: 16 * 1024 * 1024 },
@@ -233,6 +233,14 @@ function runEtl() {
         else resolve(stdout.trim().split("\n").slice(-3).join(" | "));
       });
   });
+}
+
+// only one build.py at a time (a save-triggered rerun can race the scheduler)
+let etlLock = Promise.resolve();
+function runEtl() {
+  const p = etlLock.then(runEtlOnce);
+  etlLock = p.catch(() => {});
+  return p;
 }
 
 let running = null;
@@ -276,4 +284,4 @@ function startScheduler() {
   console.log(`sheets: live refresh every ${mins}m from sheet ${SHEET_ID.slice(0, 8)}…`);
 }
 
-module.exports = { refresh, startScheduler, convertAcrossTime, convertSpend, normDate, parseCsv };
+module.exports = { refresh, startScheduler, runEtl, convertAcrossTime, convertSpend, normDate, parseCsv };

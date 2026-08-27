@@ -18,6 +18,9 @@ app.use(express.json());
 // every route registered after this line requires a signed session cookie.
 require("./auth").install(app);
 
+// methodology page (markdown-rendered; behind the session gate like the app)
+require("./methodology").install(app);
+
 app.get("/api/index", (_req, res) => res.sendFile(path.join(DATA, "index.json")));
 app.get("/api/curves", (_req, res) => res.sendFile(path.join(DATA, "curves.json")));
 app.get("/api/releases/:id", (req, res) => {
@@ -55,6 +58,7 @@ app.get("/api/inputs/:id", (req, res) => {
     inputs,
     channel_quality_default: doc.channel_quality_default,
     benchmarks: doc.benchmarks,
+    meta_campaigns: doc.meta_campaigns || [],
   });
 });
 
@@ -124,6 +128,22 @@ app.post("/api/inputs/:id", async (req, res) => {
   fs.appendFileSync(TARGETS_LOG, JSON.stringify({
     ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard",
   }) + "\n");
+
+  // A changed Meta-campaign match re-attributes paid spend, which only the full
+  // ETL can do — rerun it (build.py overlays the inputs just saved) and return
+  // the rebuilt snapshot. On failure the retargeted snapshot still stands.
+  if ((next.campaign_name || null) !== (current.campaign_name || null)) {
+    try {
+      await sheets.runEtl();
+      return res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")) });
+    } catch (e) {
+      return res.json({
+        snapshot: updated,
+        warning: "Saved, but paid spend could not be re-attributed yet (" +
+          String((e && e.message) || e).slice(0, 200) + ") — it will catch up on the next data refresh.",
+      });
+    }
+  }
   res.json({ snapshot: updated });
 });
 
