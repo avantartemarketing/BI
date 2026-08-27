@@ -9,7 +9,7 @@
    "day": 9,
    "of": 31,
    "complete": false,
-   "statusPct": 0.4081,
+   "statusPct": 0.614,
    "ok": true
   },
   {
@@ -20,8 +20,8 @@
    "day": 5,
    "of": 21,
    "complete": false,
-   "statusPct": 0.1108,
-   "ok": true
+   "statusPct": -0.281,
+   "ok": false
   },
   {
    "id": "abdulnasser_le_26",
@@ -31,7 +31,7 @@
    "day": 29,
    "of": 29,
    "complete": true,
-   "statusPct": -0.6111,
+   "statusPct": -0.625,
    "ok": false
   },
   {
@@ -42,7 +42,7 @@
    "day": 28,
    "of": 28,
    "complete": true,
-   "statusPct": -0.6421,
+   "statusPct": -0.4,
    "ok": false
   },
   {
@@ -53,7 +53,7 @@
    "day": 25,
    "of": 25,
    "complete": true,
-   "statusPct": -0.0332,
+   "statusPct": 0.0,
    "ok": true
   },
   {
@@ -75,7 +75,7 @@
    "day": 21,
    "of": 21,
    "complete": true,
-   "statusPct": -0.0718,
+   "statusPct": 0.0,
    "ok": true
   },
   {
@@ -86,8 +86,8 @@
    "day": 21,
    "of": 21,
    "complete": true,
-   "statusPct": -0.1146,
-   "ok": false
+   "statusPct": -0.091,
+   "ok": true
   }
  ]
 }

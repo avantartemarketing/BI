@@ -1,7 +1,8 @@
-/* Entries vs targets — hero module (spec §4.1, LE relabel per §6).
- * Single 24px bar on the shared 120%-of-target track: projected fill,
- * overshoot hatch past the target tick, to-date fill, expected + target ticks.
- * All methodology lives in title tooltips, never captions. */
+/* Units vs sellout — hero module (spec §4.1, unified secured-units currency, docs §6.4):
+ * secured units = units sold (all routes incl. private room) + 0.8 × eligible entry
+ * units not yet converted, capped at the edition size. Single 24px bar on the shared
+ * 120%-of-target track: projected fill, overshoot hatch past the target tick,
+ * to-date fill, expected + target ticks. Methodology in title tooltips, never captions. */
 import React from "react";
 import { Card, TrackBar, GROUP_DOTS, C, fmt, fmtSigned, MINUS } from "../ui.jsx";
 
@@ -33,10 +34,26 @@ export default function HeroBar({ snap }) {
   const expPct = target > 0 ? Math.min((exp / target) * TICK, 100) : 0;
   const showExp = exp > 0 && target > 0;
 
+  const oversub = hero.oversubscribedUnits ?? 0;
+  const unitsTip =
+    "Secured units = units sold (all routes incl. private room) + 0.8 × eligible " +
+    "entry units not yet converted, capped at the edition size.";
+
   return (
-    <Card dot={GROUP_DOTS.volume} title="Entries vs targets">
+    <Card
+      dot={GROUP_DOTS.volume}
+      title="Units vs sellout"
+      right={oversub > 0 ? (
+        <span
+          className="hint-dotted"
+          title={`Entries in hand exceed the units left to sell by ${fmt(oversub)} units — surplus demand cannot convert.`}
+        >
+          oversubscribed +{fmt(oversub)}
+        </span>
+      ) : null}
+    >
       <div className="spacer-8" />
-      <div className="lead">
+      <div className="lead" title={unitsTip}>
         {fmt(now)}
         <span className="delta" style={{ color: delta >= 0 ? C.ink : C.red }}>
           {fmtSigned(delta)}
@@ -69,9 +86,9 @@ export default function HeroBar({ snap }) {
           height={24}
           tips={{
             proj: projTip,
-            now: `${fmt(now)} entries to date`,
+            now: `${fmt(now)} units secured to date`,
             exp: `${fmt(exp)} expected by day ${day}`,
-            overshoot: `Beyond target ${MINUS} ${fmt(over)} entries of overshoot`,
+            overshoot: `Beyond sellout ${MINUS} ${fmt(over)} units of overshoot`,
             target: `Target ${fmt(target)} at close`,
           }}
         />
@@ -79,7 +96,7 @@ export default function HeroBar({ snap }) {
         <div style={{ position: "relative", height: 20, marginTop: 8 }}>
           <div style={{ position: "absolute", left: 0, top: 4, fontSize: 12, color: C.muted }}>0</div>
           <div style={{ position: "absolute", right: 0, top: 4, fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
-            target {fmt(target)}
+            sellout {fmt(target)}
           </div>
         </div>
       </div>
@@ -95,10 +112,14 @@ export default function HeroBar({ snap }) {
           <span style={{ color: C.muted }}>Projected at close</span>
           <span className="val">{fmt(proj)}</span>
         </div>
-        <div className="legend-row">
+        <div className="legend-row" title={oversub > 0
+          ? "Projected demand beyond the sellout — cannot convert to sales"
+          : undefined}>
           <span className="swatch" style={{ background: HATCH }} />
-          <span style={{ color: C.muted }}>{over >= 0 ? "Over target" : "Under target"}</span>
-          <span className="val">{fmtSigned(over)}</span>
+          <span style={{ color: C.muted }}>
+            {oversub > 0 ? "Oversubscribed" : over >= 0 ? "Over target" : "Under target"}
+          </span>
+          <span className="val">{oversub > 0 ? "+" + fmt(oversub) : fmtSigned(over)}</span>
         </div>
       </div>
     </Card>

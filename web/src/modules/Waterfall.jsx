@@ -9,7 +9,7 @@ import { Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned } from "../ui.jsx";
 
 const STEP_TIPS = {
   organic_traffic: "Organic sessions vs plan",
-  organic_conversion: "Session → entry vs benchmark",
+  organic_conversion: "Session → sale vs benchmark",
   paid_spend: "Spend vs plan",
   paid_efficiency: "Entries per pound vs target",
 };
@@ -48,7 +48,7 @@ export default function Waterfall({ snap }) {
   const net = projection - target;
   const netC = net >= 0 ? C.green : C.red;
   const closeWord = complete ? "Final" : "Projected";
-  const netTip = `${closeWord} ${fmt(projection)} at close vs target ${fmt(target)}\nContributors sum exactly to the gap`;
+  const netTip = `${closeWord} ${fmt(projection)} at close vs target ${fmt(target)}\nContributors sum exactly to the gap\nProjection here is unconstrained demand — the hero caps at the sellout`;
 
   const anchorRow = (label, value, x, tip) => (
     <div
@@ -108,7 +108,7 @@ export default function Waterfall({ snap }) {
         {path.map((p) => {
           const v = p.value ?? 0;
           const up = v >= 0;
-          const tip = `${p.label}\n${fmtSigned(v)} entries — ${STEP_TIPS[p.key] || p.label}\nRunning total ${fmt(p.to)}`;
+          const tip = `${p.label}\n${fmtSigned(v)} units — ${STEP_TIPS[p.key] || p.label}\nRunning total ${fmt(p.to)}`;
           return (
             <div
               key={p.key}
@@ -151,7 +151,7 @@ export default function Waterfall({ snap }) {
         }}
       >
         <QBadge tip="Contributors sum exactly to the gap" />
-        <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>entries at close</span>
+        <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>units at close</span>
       </div>
     </Card>
   );

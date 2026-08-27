@@ -182,18 +182,27 @@ def compute_targets(release: dict) -> dict:
 
 
 def group_targets(targets: dict) -> dict:
-    """Roll per-channel targets up to display groups; currency = eligible entries."""
+    """Roll per-channel targets up to display groups.
+
+    `units` is the secured-units target (draw/pre-order purchases per channel;
+    private-room units ride with AA Email per the workbook convention — the
+    template models all PR purchases through the email channel; paid = paid
+    units). Group unit targets sum exactly to the edition size (sellout).
+    """
     out = {}
     for g, spec in DISPLAY_GROUPS.items():
         if g == "paid":
             out[g] = {"entries": targets["paid"]["eligible_entries"],
                       "purchases": targets["paid"]["units"],
+                      "units": float(targets["paid"]["units"]),
                       "sessions": targets["paid"]["sessions"]}
         else:
             chans = [c for c in spec["channels"] if c in targets["per_channel"]]
+            purchases = sum(targets["per_channel"][c]["purchases"] for c in chans)
             out[g] = {
                 "entries": sum(targets["per_channel"][c]["eligible_entries"] for c in chans),
-                "purchases": sum(targets["per_channel"][c]["purchases"] for c in chans),
+                "purchases": purchases,
+                "units": purchases + (targets["pr_units"] if g == "aa_email" else 0.0),
                 "sessions": sum(targets["per_channel"][c]["sessions"] for c in chans),
             }
     return out
@@ -462,45 +471,51 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     channels_out = []
     hero_now = hero_exp = hero_target = hero_proj = 0.0
     funnel_by_group = {}
+    e2o = b["eligible_entry_to_order"]
     for g, spec in DISPLAY_GROUPS.items():
         sub = by_group_day[by_group_day["group"] == g].set_index("event_date")
-        tgt = gtargets[g]["entries"]
+        # SECURED UNITS — the unified page currency (docs §6.4):
+        #   secured = units sold (all routes) + 0.8 x eligible entry units not yet
+        #   converted. Group unit targets sum to the edition size (sellout).
+        tgt = gtargets[g]["units"]
         sess_tgt = gtargets[g]["sessions"]
         daily = []
-        cum_a = cum_s = 0.0
+        cum_u = cum_nc = cum_s = 0.0
         for d in days:
             row = sub.loc[d] if d in sub.index else None
-            cum_a += float(row["entries"]) if row is not None else 0.0
+            cum_u += float(row["units"]) if row is not None else 0.0
+            cum_nc += float(row["entries_no_conv"]) if row is not None else 0.0
             cum_s += float(row["sessions"]) if row is not None else 0.0
             p = pdsa_for(release, d)
-            plan = tgt * curve_value(curves, g, "entries", p)
+            plan = tgt * curve_value(curves, g, "units", p)
             daily.append({"date": d.isoformat(),
-                          "actual": round(cum_a, 2) if d <= as_of else None,
+                          "actual": round(cum_u + e2o * cum_nc, 2) if d <= as_of else None,
                           "plan": round(plan, 2), "proj": None})
         pdsa_today = pdsa_for(release, min(as_of, launch_end))
-        w = curve_value(curves, g, "entries", pdsa_today)   # share of campaign observed, per historic shape
+        w = curve_value(curves, g, "units", pdsa_today)   # share of campaign observed, per historic shape
         exp = tgt * w
         sess_exp = sess_tgt * curve_value(curves, g, "sessions", pdsa_today)
         now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
         # Forward projection (docs §5.4): the remaining volume follows this channel's
         # HISTORIC shape curve; its level scales with demonstrated performance
         # (actual/expected), trusted in proportion to how much of the campaign the
-        # curve says we have observed. Paid instead projects spend ÷ efficiency.
+        # curve says we have observed. Paid instead projects spend ÷ efficiency
+        # (future entries convert to units at 0.8).
         if complete:
             proj = now
         elif g == "paid":
-            proj = now + future_cum
+            proj = now + future_cum * e2o
             for d, cum_f in paid_future.items():
                 i = (d - window_start).days
                 if 0 <= i < len(daily):
-                    daily[i]["proj"] = round(now + cum_f, 2)
+                    daily[i]["proj"] = round(now + cum_f * e2o, 2)
         else:
             r_perf = min(max((now / exp) if exp > 0 else 1.0, 0.25), 2.5)
             r_shrunk = 1 + w * (r_perf - 1)
             proj = now + tgt * (1 - w) * r_shrunk
             for d in daterange(as_of + timedelta(days=1), launch_end):
                 i = (d - window_start).days
-                cv = curve_value(curves, g, "entries", pdsa_for(release, d))
+                cv = curve_value(curves, g, "units", pdsa_for(release, d))
                 frac = (cv - w) / (1 - w) if w < 1 else 1.0
                 if 0 <= i < len(daily):
                     daily[i]["proj"] = round(now + (proj - now) * max(min(frac, 1.0), 0.0), 2)
@@ -587,8 +602,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     unconverted = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
     sold_predicted = unconverted * b["eligible_entry_to_order"]
     pdsa_today = pdsa_for(release, min(as_of, launch_end))
-    # entries still to come = the shaped projection beyond today (docs §5.4), converting at 0.8
-    future_entries = 0.0 if complete else max(hero_proj - hero_now, 0.0) * b["eligible_entry_to_order"]
+    # units still to come = the shaped secured-units projection beyond today (docs §5.4/§6.4)
+    future_entries = 0.0 if complete else max(hero_proj - hero_now, 0.0)
     sellthrough = {
         "edition": release["edition_size"],
         "sold": round(units_sold, 0),
@@ -598,13 +613,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     sellthrough["pct"] = round(min((sellthrough["sold"] + sellthrough["soldPredicted"]
                                     + sellthrough["futureEntriesPredicted"]) / release["edition_size"], 1.0), 4)
 
-    # ---- waterfall (docs §9): contributors to projection - target, in entries
+    # ---- waterfall (docs §9): contributors to projection - target, in secured units
     organic_groups = [g for g in DISPLAY_GROUPS if g != "paid"]
     wf_traffic = sum(funnel_by_group[g]["contrib_traffic"] for g in organic_groups)
     wf_conv = sum(funnel_by_group[g]["contrib_conversion"] for g in organic_groups)
-    spend_planned_to_date = targets["paid"]["budget"] * curve_value(curves, "paid", "entries", pdsa_today)
+    spend_planned_to_date = targets["paid"]["budget"] * curve_value(curves, "paid", "units", pdsa_today)
     wf_paid_spend = ((cum_spend - spend_planned_to_date) / targets["paid"]["cost_per_purchase"]
-                     * b["eligible_entry_to_order"]) if targets["paid"]["cost_per_purchase"] else 0.0
+                     ) if targets["paid"]["cost_per_purchase"] else 0.0
     paid_gap = funnel_by_group["paid"]["contrib_traffic"] + funnel_by_group["paid"]["contrib_conversion"]
     wf_paid_eff = paid_gap - wf_paid_spend
     # scale contributor gaps (to-date) to close: same blend factor as projections
@@ -628,7 +643,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     draw = load_draw(release)
 
     day_n = max(min((as_of - announce).days, L), 0)
-    status_pct = (hero_now - hero_exp) / hero_exp if hero_exp else 0.0
+    edition = float(release["edition_size"])
+    status_pct = (min(hero_now, edition) - hero_exp) / hero_exp if hero_exp else 0.0
     snap = {
         "id": release["id"],
         "releaseName": name,
@@ -645,10 +661,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "artistProfitPerUnit": round(ppu_artist, 2), "aaProfitPerUnit": round(ppu_aa, 2),
             "artistProfitShare": release["artist_profit_share"],
         },
+        "currency": "units",
         "hero": {
-            "now": round(hero_now, 0), "expectedToday": round(hero_exp, 0),
-            "delta": round(hero_now - hero_exp, 0),
-            "projected": round(hero_proj, 0), "target": round(hero_target, 0),
+            "now": round(min(hero_now, edition), 0), "expectedToday": round(hero_exp, 0),
+            "delta": round(min(hero_now, edition) - hero_exp, 0),
+            "projected": round(min(hero_proj, edition), 0), "target": round(hero_target, 0),
+            "oversubscribedUnits": round(max(max(hero_now, hero_proj) - edition, 0), 0),
             "statusPct": round(status_pct, 4), "ok": status_pct >= -0.1,
         },
         "targets": targets, "groupTargets": gtargets,

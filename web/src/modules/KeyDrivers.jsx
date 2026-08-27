@@ -31,7 +31,7 @@ export default function KeyDrivers({ snap }) {
     const f = fbg[g.key];
     if (!f) return;
     all.push({ ...g, step: "Traffic", v: f.contrib_traffic ?? 0 });
-    all.push({ ...g, step: "Session → entry", v: f.contrib_conversion ?? 0 });
+    all.push({ ...g, step: "Conversion", v: f.contrib_conversion ?? 0 });
   });
   const rows = all
     .filter((r) => (isPos ? r.v > 0 : r.v < 0))
@@ -46,14 +46,14 @@ export default function KeyDrivers({ snap }) {
         <span className="seg">
           <button
             className={isPos ? "active" : ""}
-            title={"Steps adding entries vs expected\n" + NOTE}
+            title={"Steps adding units vs expected\n" + NOTE}
             onClick={() => setSide("pos")}
           >
             Adding
           </button>
           <button
             className={isPos ? "" : "active"}
-            title={"Steps costing entries vs expected\n" + NOTE}
+            title={"Steps costing units vs expected\n" + NOTE}
             onClick={() => setSide("neg")}
           >
             Costing
@@ -65,7 +65,7 @@ export default function KeyDrivers({ snap }) {
       <div className="body">
         {rows.length === 0 ? (
           <div className="empty-state">
-            {isPos ? "No steps adding entries vs expected yet" : "No steps costing entries vs expected"}
+            {isPos ? "No steps adding units vs expected yet" : "No steps costing units vs expected"}
           </div>
         ) : (
           rows.map((r, i) => (
@@ -86,7 +86,7 @@ export default function KeyDrivers({ snap }) {
               </div>
               <div
                 className="num"
-                title={`${r.name} · ${r.step}\n${fmtSigned(r.v, 1)} entries vs expected today`}
+                title={`${r.name} · ${r.step}\n${fmtSigned(r.v, 1)} units vs expected today`}
                 style={{
                   fontSize: 13.5, fontWeight: 600, textAlign: "right",
                   color: r.v > 0 ? C.green : C.red,

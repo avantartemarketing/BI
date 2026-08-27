@@ -1,5 +1,5 @@
-/* Entry trajectory (spec §4.2, relabelled for LE).
- * Cumulative entries vs plan per channel group; the forward projection follows the
+/* Unit trajectory (spec §4.2, adapted: unified secured-units currency, docs §6.4).
+ * Cumulative secured units (sales + 0.8 × unconverted entries) vs plan per group; the forward projection follows the
  * channel's historic shape curve (paid: projected spend ÷ projected efficiency) —
  * per-day values computed in the ETL (docs §5.4).
  * Real-data bridge: daily[] arrays start at private-room open, so the series is
@@ -74,7 +74,7 @@ export default function Trajectory({ snap }) {
 
   if (!s.pts.length) {
     return (
-      <Card dot={GROUP_DOTS.volume} title="Entry trajectory" right={right}>
+      <Card dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
         <div className="empty-state">No daily series yet.</div>
       </Card>
     );
@@ -127,17 +127,19 @@ export default function Trajectory({ snap }) {
   const projPct = s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
   const pctColor = projPct !== null && projPct >= 100 ? C.ink : C.red;
   const nowTip =
-    fmt(s.now) + " entries to date · " + fmt(s.exp) + " expected by day " + day;
+    fmt(s.now) + " units secured to date · " + fmt(s.exp) + " expected by day " + day;
   const projTip = complete
-    ? fmt(s.now) + " entries at close" + (projPct !== null ? " · " + projPct + "% of target" : "")
-    : "Projected " + fmt(s.proj) + " at close" + (projPct !== null ? " · " + projPct + "% of target" : "");
+    ? fmt(s.now) + " units at close" + (projPct !== null ? " · " + projPct + "% of target" : "")
+    : "Projected " + fmt(s.proj) + " at close" + (projPct !== null ? " · " + projPct + "% of target" : "") +
+      (sel === "all" && projPct !== null && projPct > 100
+        ? " · demand beyond the sellout cannot convert" : "");
   const showTodayLabel = !complete && todayFrac >= 0.08 && todayFrac <= 0.92;
 
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const xLabel = { position: "absolute", top: "100%", paddingTop: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
 
   return (
-    <Card dot={GROUP_DOTS.volume} title="Entry trajectory" right={right}>
+    <Card dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
       <div className="spacer-16" />
       <div className="body">
         <div style={{ position: "relative", flex: 1 }}>

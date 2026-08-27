@@ -116,7 +116,7 @@ export default function FunnelByChannel({ snap }) {
   };
   const conv = (k) => {
     const g = fbg[k] || {};
-    return ["Session → entry", pct(g.conv_actual), pct(g.conv_expected), "%"];
+    return ["Session → sale", pct(g.conv_actual), pct(g.conv_expected), "%"];
   };
 
   const spendPlan = of > 0 && paid.spendBudget ? (paid.spendBudget * day) / of : null;

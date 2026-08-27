@@ -413,6 +413,21 @@ campaign-date records with launch timestamps ~1 day apart); metrics are split ac
 - `% sellout = projected_purchases / target_purchases` (release-level: vs edition size).
 - Conversion actual = projected purchases ÷ sessions, compared to the target conversion.
 
+### 6.3½ Secured units — the unified page currency
+The hero, trajectory, and channels modules run on one unified metric of sales plus
+entries:
+```
+secured units = units sold (all routes, incl. private room)
+              + 0.8 × eligible entry units NOT yet converted
+```
+Only *unconverted* entries carry the 0.8 discount (a converted entry is already a sale —
+counting all entries would double-count). Group unit targets sum exactly to the edition
+size, so the hero target = sellout (private-room units ride with the AA Email group, the
+workbook's own convention). The hero is **capped at edition size**; entries beyond the
+units left to sell are shown as an oversubscription signal, not as bar overshoot.
+Funnel diagnostics and the paid module stay denominated in entries/spend — the things
+marketing moves directly.
+
 ### 6.3 Sell-through prediction (per product — LE)
 From draw data + orders:
 `sold` (units sold to date) + `sold_predicted` (eligible entries in hand × 0.8, allocated per
