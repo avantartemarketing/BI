@@ -1,4 +1,5 @@
-sources/
+sources/*
+!sources/all_sent_emails.csv
 __pycache__/
 node_modules/
 dist/

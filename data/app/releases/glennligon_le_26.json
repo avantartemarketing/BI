@@ -1608,7 +1608,7 @@
      "date": "2026-09-01",
      "actual": null,
      "plan": 5.26,
-     "proj": 14.12
+     "proj": 14.13
     },
     {
      "date": "2026-09-02",
@@ -1656,7 +1656,7 @@
      "date": "2026-09-09",
      "actual": null,
      "plan": 16.55,
-     "proj": 18.0
+     "proj": 18.01
     },
     {
      "date": "2026-09-10",
@@ -1674,7 +1674,7 @@
      "date": "2026-09-12",
      "actual": null,
      "plan": 18.01,
-     "proj": 18.88
+     "proj": 18.89
     },
     {
      "date": "2026-09-13",
@@ -1686,13 +1686,13 @@
      "date": "2026-09-14",
      "actual": null,
      "plan": 21.08,
-     "proj": 19.34
+     "proj": 19.35
     },
     {
      "date": "2026-09-15",
      "actual": null,
      "plan": 21.08,
-     "proj": 19.54
+     "proj": 19.55
     },
     {
      "date": "2026-09-16",
@@ -1911,16 +1911,16 @@
    },
    {
     "date": "2026-08-26",
-    "spend": 241.04,
+    "spend": 241.1,
     "entries": 1.0,
-    "roi": 7.956
+    "roi": 7.954
    }
   ],
-  "spendToDate": 4086.89,
+  "spendToDate": 4086.95,
   "entriesToDate": 12.0,
   "cumRoi": 5.631,
   "l3dRoi": 9.673,
-  "l3dCpe": 247.81,
+  "l3dCpe": 247.82,
   "cumCpe": 425.72,
   "roiDeclineModel": {
    "start": 9.673,
@@ -1928,12 +1928,12 @@
   },
   "roiTarget": 1.1,
   "budget": {
-   "current": 241.04,
-   "recommended": 702.89,
+   "current": 241.1,
+   "recommended": 702.92,
    "cap": "supply",
-   "finalDayRoi": 6.449,
+   "finalDayRoi": 6.448,
    "floor": 1.0,
-   "budgetToSellOut": 15463.5,
+   "budgetToSellOut": 15464.17,
    "entriesNeeded": 41.6,
    "daysLeft": 22
   },
@@ -1941,7 +1941,7 @@
   "entriesProjected": 25.1,
   "unitProjected": 20.1,
   "spendBudget": 6903,
-  "spendProjectedTotal": 9389.77,
+  "spendProjectedTotal": 9391.15,
   "profitPerUnitAA": 1498.19,
   "profitPerUnitArtist": 1218.6,
   "aaBudgetShare": 0.5

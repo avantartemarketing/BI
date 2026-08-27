@@ -42,6 +42,17 @@ APP = DATA / "app"
 BENCH = json.loads((ROOT / "etl" / "benchmarks.json").read_text())
 INPUTS = json.loads((ROOT / "etl" / "release_inputs.json").read_text())
 
+# Target inputs saved from the dashboard's Target setting tab live in
+# data/app/inputs.json (the server rewrites it on save). When the live refresh
+# reruns this ETL in-process, those edits must win over the repo defaults.
+_live_inputs = APP / "inputs.json"
+if _live_inputs.exists():
+    try:
+        _saved = json.loads(_live_inputs.read_text()).get("releases", {})
+        INPUTS["releases"] = [_saved.get(r["id"], r) for r in INPUTS["releases"]]
+    except (ValueError, KeyError) as e:
+        print(f"warning: ignoring saved inputs overlay: {e}")
+
 ORGANIC_CHANNELS = list(INPUTS["channel_quality_default"].keys())
 
 # Display grouping (docs §1.3). AA Other goes to search/direct/other (the sheet dropped it).
@@ -91,6 +102,15 @@ def load_spend() -> pd.DataFrame:
 
 
 def load_emails() -> pd.DataFrame:
+    # Klaviyo aggregates are not in the live sheet; run without them if absent
+    if not (SOURCES / "all_sent_emails.csv").exists():
+        print("warning: sources/all_sent_emails.csv missing — email panels will be empty")
+        return pd.DataFrame({
+            "name": pd.Series(dtype=str), "sent_at": pd.Series(dtype="datetime64[ns]"),
+            "campaign": pd.Series(dtype=str), "delivered": pd.Series(dtype=float),
+            "opened": pd.Series(dtype=float), "clicked": pd.Series(dtype=float),
+            "unsubscribed": pd.Series(dtype=float), "email_type": pd.Series(dtype=str),
+        })
     df = pd.read_csv(SOURCES / "all_sent_emails.csv")
     df = df.rename(columns={
         "Email Name": "name", "Send Date (Your time zone)": "sent_at",

@@ -127,6 +127,16 @@ app.post("/api/inputs/:id", async (req, res) => {
   res.json({ snapshot: updated });
 });
 
+// ---- live data refresh (Google Sheet -> sources -> ETL; server/sheets.js) ----
+const sheets = require("./sheets");
+app.post("/api/refresh", async (_req, res) => {
+  try {
+    res.json(await sheets.refresh());
+  } catch (e) {
+    res.status(502).json({ error: String((e && e.message) || e) });
+  }
+});
+
 app.get("/api/decisions", (_req, res) => {
   if (!fs.existsSync(DECISIONS_PATH)) return res.json([]);
   const rows = fs.readFileSync(DECISIONS_PATH, "utf8").trim().split("\n").filter(Boolean).map(JSON.parse);
@@ -146,4 +156,7 @@ app.use(express.static(DIST));
 app.get(/.*/, (_req, res) => res.sendFile(path.join(DIST, "index.html")));
 
 const port = process.env.PORT || 10000;
-app.listen(port, () => console.log(`launch-bi listening on :${port}`));
+app.listen(port, () => {
+  console.log(`launch-bi listening on :${port}`);
+  sheets.startScheduler();
+});

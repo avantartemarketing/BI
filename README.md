@@ -38,7 +38,26 @@ Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :517
 
 ## Refreshing data
 
-Drop the source exports into `sources/` (file names in `etl/*.py` headers), then:
+**Live (production):** the server pulls two tabs of the *LE Paid Calculator* Google Sheet
+on boot and every hour (`server/sheets.js`), rewrites `sources/across_time.csv` and
+`data/spend_daily.csv`, and reruns the ETL in place — no redeploy needed. Force a pull
+with `POST /api/refresh` (signed-in session required). Configuration:
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON` — a Google service-account key (Sheets API enabled);
+  share the sheet with the key's `client_email` as **Viewer** and the sheet can stay
+  Restricted. While unset, the fetch falls back to the public CSV export, which only
+  works while the sheet is link-shared.
+- `SHEET_ID`, `SHEET_FUNNEL_TAB`, `SHEET_SPEND_TAB`, `REFRESH_MINUTES` — optional
+  overrides; `SHEETS_REFRESH=off` disables the scheduler.
+
+Target inputs saved from the dashboard survive the rerun (`build.py` overlays
+`data/app/inputs.json` over the repo defaults). If a pull or the ETL fails, the previous
+snapshots keep serving. Email sends (`sources/all_sent_emails.csv`, aggregate stats only)
+and Instagram content (`data/content_posts.csv`) are not in the sheet — refresh those by
+dropping new exports and committing.
+
+**Manual (local):** drop the source exports into `sources/` (file names in `etl/*.py`
+headers), then:
 
 ```bash
 pip install openpyxl pandas
@@ -49,8 +68,8 @@ The committed `data/app/*` snapshots were built from exports current to **2026-0
 Draw-entry CSVs contain customer emails — they stay in `sources/` and only aggregated,
 anonymised numbers reach `data/`.
 
-In production this should be pointed at BigQuery
-(`avantarte-data-production.AA_company_tables.*`) instead of file exports — the sheet
+Longer term this should be pointed at BigQuery
+(`avantarte-data-production.AA_company_tables.*`) instead of the sheet — the sheet
 pipeline's accumulators are already silently truncating history (docs §11).
 
 ## Signing in

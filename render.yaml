@@ -3,13 +3,17 @@ services:
     name: avantarte-launch-bi
     runtime: node
     plan: starter
-    buildCommand: npm ci && npm run build
+    # pandas powers the on-box ETL rerun for the live sheet refresh; if the
+    # install fails the app still serves the committed snapshots
+    buildCommand: npm ci && npm run build && (python3 -m pip install --user --quiet pandas || pip3 install --user --quiet pandas || echo "pandas install failed — live refresh disabled")
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:
       - key: SESSION_SECRET
         generateValue: true
-      - key: RESEND_API_KEY   # Resend API key for magic-link emails (sign-in links land in the Render logs until set)
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON   # service-account key JSON (share the sheet with its client_email); falls back to the public link while unset
         sync: false
-      - key: MAIL_FROM        # verified sender, e.g. "Launch BI <login@avantarte.com>"
+      - key: RESEND_API_KEY   # only for the dormant magic-link flow
+        sync: false
+      - key: MAIL_FROM        # only for the dormant magic-link flow
         sync: false
