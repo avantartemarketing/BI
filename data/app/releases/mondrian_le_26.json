@@ -1,0 +1,2188 @@
+{
+ "id": "mondrian_le_26",
+ "releaseName": "Piet Mondrian Estate \u00b7 Multiple \u00b7 2026 Q3",
+ "artist": "Piet Mondrian Estate",
+ "title": "Multiple",
+ "type": "LE",
+ "campaignCode": "PietMondrian_LE_26",
+ "campaignName": "PietMondrian_LE_26 \u00b7 Enter draw",
+ "marketingLead": "Clare",
+ "privateRoomOpen": "2026-06-23",
+ "windowStart": "2026-07-24",
+ "windowEnd": "2026-08-18",
+ "campaignLengthDays": 25,
+ "day": 25,
+ "of": 25,
+ "asOf": "2026-08-26",
+ "complete": true,
+ "economics": {
+  "unitPrice": 500,
+  "launchValue": 450000,
+  "artistProfitPerUnit": 0.0,
+  "aaProfitPerUnit": 279.04,
+  "artistProfitShare": 0
+ },
+ "hero": {
+  "now": 778.0,
+  "expectedToday": 805.0,
+  "delta": -27.0,
+  "projected": 778.0,
+  "target": 805.0,
+  "statusPct": -0.0332,
+  "ok": true
+ },
+ "targets": {
+  "edition_size": 900,
+  "paid_pct": 0.390145584,
+  "paid_units": 351,
+  "organic_units": 549,
+  "pr_other_pct": 0.4666666667,
+  "pr_units": 256.2000000183,
+  "draw_units": 292.7999999817,
+  "per_channel": {
+   "AA Email Auto": {
+    "quality": "High",
+    "order_split": 0.07988818140143841,
+    "purchases": 23.391259512879216,
+    "eligible_entries": 29.23907439109902,
+    "sessions": 96.20598671488634,
+    "session_to_entry": 0.3039215686
+   },
+   "AA Email Man": {
+    "quality": "High",
+    "order_split": 0.4431848067869601,
+    "purchases": 129.76451141911164,
+    "eligible_entries": 162.20563927388955,
+    "sessions": 9320.892696131157,
+    "session_to_entry": 0.0174023717
+   },
+   "AA Meta": {
+    "quality": "Medium",
+    "order_split": 0.06360950931226893,
+    "purchases": 18.624864325468288,
+    "eligible_entries": 23.281080406835358,
+    "sessions": 1659.6084464075727,
+    "session_to_entry": 0.01402805611
+   },
+   "AA Other": {
+    "quality": "Medium",
+    "order_split": 0.007777559521117083,
+    "purchases": 2.2772694276407526,
+    "eligible_entries": 2.8465867845509405,
+    "sessions": 39.852214982916124,
+    "session_to_entry": 0.07142857143
+   },
+   "AA X": {
+    "quality": "Low",
+    "order_split": 0.012798515670092743,
+    "purchases": 3.7474053879689424,
+    "eligible_entries": 4.684256734961178,
+    "sessions": 353.38068740351963,
+    "session_to_entry": 0.01325555386
+   },
+   "Direct": {
+    "quality": "Medium",
+    "order_split": 0.16851378966464678,
+    "purchases": 49.340837610724776,
+    "eligible_entries": 61.67604701340597,
+    "sessions": 3315.087527467834,
+    "session_to_entry": 0.01860465116
+   },
+   "Organic Search": {
+    "quality": "Medium",
+    "order_split": 0.07694983336329586,
+    "purchases": 22.53091120736485,
+    "eligible_entries": 28.163639009206058,
+    "sessions": 919.1890532164348,
+    "session_to_entry": 0.03063965885
+   },
+   "Other": {
+    "quality": "Medium",
+    "order_split": 0.014240601938364662,
+    "purchases": 4.16964824729257,
+    "eligible_entries": 5.212060309115712,
+    "sessions": 302.2994979347573,
+    "session_to_entry": 0.01724137931
+   },
+   "Referral Artist": {
+    "quality": "Medium",
+    "order_split": 0.10642976187749667,
+    "purchases": 31.16263427578336,
+    "eligible_entries": 38.9532928447292,
+    "sessions": 2902.020317353118,
+    "session_to_entry": 0.01342281879
+   },
+   "Referral Meta": {
+    "quality": "Medium",
+    "order_split": 0.026607440464318753,
+    "purchases": 7.7906585674656155,
+    "eligible_entries": 9.73832320933202,
+    "sessions": 644.4197578591148,
+    "session_to_entry": 0.01511177007
+   },
+   "Referral Other": {
+    "quality": "N/A",
+    "order_split": 0.0,
+    "purchases": 0.0,
+    "eligible_entries": 0.0,
+    "sessions": 0.0,
+    "session_to_entry": 0.0
+   },
+   "Referral X": {
+    "quality": "N/A",
+    "order_split": 0.0,
+    "purchases": 0.0,
+    "eligible_entries": 0.0,
+    "sessions": 0.0,
+    "session_to_entry": 0.0
+   }
+  },
+  "pr_sessions": 22545.60000882499,
+  "paid": {
+   "units": 351,
+   "eligible_entries": 438.75,
+   "sessions": 104219.33833341922,
+   "session_to_entry": 0.004209871287,
+   "cost_per_purchase": 177,
+   "budget": 62127,
+   "budget_pct_of_launch_value": 0.13806,
+   "sense_check_breached": true
+  },
+  "launch_value": 450000,
+  "organic_sessions_draw": 19552.95618547131,
+  "total_sessions": 146317.8945277155,
+  "buffer": 0.75
+ },
+ "groupTargets": {
+  "aa_email": {
+   "entries": 191.44471366498857,
+   "purchases": 153.15577093199084,
+   "sessions": 9417.098682846043
+  },
+  "aa_social": {
+   "entries": 27.965337141796535,
+   "purchases": 22.37226971343723,
+   "sessions": 2012.9891338110924
+  },
+  "referral_artist": {
+   "entries": 38.9532928447292,
+   "purchases": 31.16263427578336,
+   "sessions": 2902.020317353118
+  },
+  "search_direct_other": {
+   "entries": 107.6366563256107,
+   "purchases": 86.10932506048856,
+   "sessions": 5220.848051461057
+  },
+  "paid": {
+   "entries": 438.75,
+   "purchases": 351,
+   "sessions": 104219.33833341922
+  }
+ },
+ "channels": [
+  {
+   "key": "aa_email",
+   "name": "AA Email",
+   "now": 269.0,
+   "exp": 191.4,
+   "proj": 269.0,
+   "target": 191.4,
+   "daily": [
+    {
+     "date": "2026-06-23",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-24",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-25",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-26",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-27",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-28",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-29",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-30",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-01",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-02",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-03",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-04",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-05",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-06",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-07",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-08",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-09",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-10",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-11",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-12",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-13",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-14",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-15",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-16",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-17",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-18",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-19",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-20",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-21",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-22",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-23",
+     "actual": 0.0,
+     "plan": 14.22
+    },
+    {
+     "date": "2026-07-24",
+     "actual": 119.0,
+     "plan": 71.1
+    },
+    {
+     "date": "2026-07-25",
+     "actual": 144.0,
+     "plan": 76.43
+    },
+    {
+     "date": "2026-07-26",
+     "actual": 150.0,
+     "plan": 88.54
+    },
+    {
+     "date": "2026-07-27",
+     "actual": 159.0,
+     "plan": 101.35
+    },
+    {
+     "date": "2026-07-28",
+     "actual": 165.0,
+     "plan": 111.6
+    },
+    {
+     "date": "2026-07-29",
+     "actual": 167.0,
+     "plan": 118.85
+    },
+    {
+     "date": "2026-07-30",
+     "actual": 168.0,
+     "plan": 121.24
+    },
+    {
+     "date": "2026-07-31",
+     "actual": 170.0,
+     "plan": 130.78
+    },
+    {
+     "date": "2026-08-01",
+     "actual": 171.0,
+     "plan": 136.75
+    },
+    {
+     "date": "2026-08-02",
+     "actual": 172.0,
+     "plan": 136.75
+    },
+    {
+     "date": "2026-08-03",
+     "actual": 178.0,
+     "plan": 136.75
+    },
+    {
+     "date": "2026-08-04",
+     "actual": 214.0,
+     "plan": 148.97
+    },
+    {
+     "date": "2026-08-05",
+     "actual": 220.0,
+     "plan": 154.75
+    },
+    {
+     "date": "2026-08-06",
+     "actual": 223.0,
+     "plan": 156.84
+    },
+    {
+     "date": "2026-08-07",
+     "actual": 225.0,
+     "plan": 157.25
+    },
+    {
+     "date": "2026-08-08",
+     "actual": 225.0,
+     "plan": 157.25
+    },
+    {
+     "date": "2026-08-09",
+     "actual": 228.0,
+     "plan": 157.25
+    },
+    {
+     "date": "2026-08-10",
+     "actual": 228.0,
+     "plan": 157.49
+    },
+    {
+     "date": "2026-08-11",
+     "actual": 228.0,
+     "plan": 159.12
+    },
+    {
+     "date": "2026-08-12",
+     "actual": 230.0,
+     "plan": 161.64
+    },
+    {
+     "date": "2026-08-13",
+     "actual": 231.0,
+     "plan": 162.94
+    },
+    {
+     "date": "2026-08-14",
+     "actual": 233.0,
+     "plan": 162.94
+    },
+    {
+     "date": "2026-08-15",
+     "actual": 233.0,
+     "plan": 162.94
+    },
+    {
+     "date": "2026-08-16",
+     "actual": 233.0,
+     "plan": 163.7
+    },
+    {
+     "date": "2026-08-17",
+     "actual": 256.0,
+     "plan": 170.17
+    },
+    {
+     "date": "2026-08-18",
+     "actual": 269.0,
+     "plan": 191.44
+    }
+   ]
+  },
+  {
+   "key": "aa_social",
+   "name": "AA Meta",
+   "now": 33.0,
+   "exp": 28.0,
+   "proj": 33.0,
+   "target": 28.0,
+   "daily": [
+    {
+     "date": "2026-06-23",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-24",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-25",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-26",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-27",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-28",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-29",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-30",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-01",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-02",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-03",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-04",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-05",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-06",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-07",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-08",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-09",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-10",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-11",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-12",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-13",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-14",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-15",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-16",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-17",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-18",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-19",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-20",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-21",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-22",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-23",
+     "actual": 0.0,
+     "plan": 2.37
+    },
+    {
+     "date": "2026-07-24",
+     "actual": 2.0,
+     "plan": 11.83
+    },
+    {
+     "date": "2026-07-25",
+     "actual": 5.0,
+     "plan": 13.55
+    },
+    {
+     "date": "2026-07-26",
+     "actual": 6.0,
+     "plan": 14.63
+    },
+    {
+     "date": "2026-07-27",
+     "actual": 9.0,
+     "plan": 15.49
+    },
+    {
+     "date": "2026-07-28",
+     "actual": 11.0,
+     "plan": 16.35
+    },
+    {
+     "date": "2026-07-29",
+     "actual": 13.0,
+     "plan": 17.21
+    },
+    {
+     "date": "2026-07-30",
+     "actual": 15.0,
+     "plan": 17.68
+    },
+    {
+     "date": "2026-07-31",
+     "actual": 19.0,
+     "plan": 17.8
+    },
+    {
+     "date": "2026-08-01",
+     "actual": 20.0,
+     "plan": 17.8
+    },
+    {
+     "date": "2026-08-02",
+     "actual": 23.0,
+     "plan": 18.48
+    },
+    {
+     "date": "2026-08-03",
+     "actual": 25.0,
+     "plan": 21.19
+    },
+    {
+     "date": "2026-08-04",
+     "actual": 25.0,
+     "plan": 21.19
+    },
+    {
+     "date": "2026-08-05",
+     "actual": 26.0,
+     "plan": 21.69
+    },
+    {
+     "date": "2026-08-06",
+     "actual": 26.0,
+     "plan": 22.37
+    },
+    {
+     "date": "2026-08-07",
+     "actual": 26.0,
+     "plan": 22.88
+    },
+    {
+     "date": "2026-08-08",
+     "actual": 26.0,
+     "plan": 22.88
+    },
+    {
+     "date": "2026-08-09",
+     "actual": 26.0,
+     "plan": 22.88
+    },
+    {
+     "date": "2026-08-10",
+     "actual": 26.0,
+     "plan": 22.88
+    },
+    {
+     "date": "2026-08-11",
+     "actual": 26.0,
+     "plan": 23.62
+    },
+    {
+     "date": "2026-08-12",
+     "actual": 26.0,
+     "plan": 24.74
+    },
+    {
+     "date": "2026-08-13",
+     "actual": 26.0,
+     "plan": 24.74
+    },
+    {
+     "date": "2026-08-14",
+     "actual": 26.0,
+     "plan": 24.74
+    },
+    {
+     "date": "2026-08-15",
+     "actual": 27.0,
+     "plan": 24.74
+    },
+    {
+     "date": "2026-08-16",
+     "actual": 27.0,
+     "plan": 24.74
+    },
+    {
+     "date": "2026-08-17",
+     "actual": 33.0,
+     "plan": 25.38
+    },
+    {
+     "date": "2026-08-18",
+     "actual": 33.0,
+     "plan": 27.97
+    }
+   ]
+  },
+  {
+   "key": "referral_artist",
+   "name": "Referral artist",
+   "now": 0.0,
+   "exp": 39.0,
+   "proj": 0.0,
+   "target": 39.0,
+   "daily": [
+    {
+     "date": "2026-06-23",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-24",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-25",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-26",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-27",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-28",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-29",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-30",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-01",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-02",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-03",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-04",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-05",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-06",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-07",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-08",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-09",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-10",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-11",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-12",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-13",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-14",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-15",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-16",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-17",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-18",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-19",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-20",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-21",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-22",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-23",
+     "actual": 0.0,
+     "plan": 3.07
+    },
+    {
+     "date": "2026-07-24",
+     "actual": 0.0,
+     "plan": 15.34
+    },
+    {
+     "date": "2026-07-25",
+     "actual": 0.0,
+     "plan": 22.04
+    },
+    {
+     "date": "2026-07-26",
+     "actual": 0.0,
+     "plan": 24.36
+    },
+    {
+     "date": "2026-07-27",
+     "actual": 0.0,
+     "plan": 24.89
+    },
+    {
+     "date": "2026-07-28",
+     "actual": 0.0,
+     "plan": 25.04
+    },
+    {
+     "date": "2026-07-29",
+     "actual": 0.0,
+     "plan": 25.04
+    },
+    {
+     "date": "2026-07-30",
+     "actual": 0.0,
+     "plan": 25.04
+    },
+    {
+     "date": "2026-07-31",
+     "actual": 0.0,
+     "plan": 25.04
+    },
+    {
+     "date": "2026-08-01",
+     "actual": 0.0,
+     "plan": 25.04
+    },
+    {
+     "date": "2026-08-02",
+     "actual": 0.0,
+     "plan": 25.94
+    },
+    {
+     "date": "2026-08-03",
+     "actual": 0.0,
+     "plan": 29.51
+    },
+    {
+     "date": "2026-08-04",
+     "actual": 0.0,
+     "plan": 29.51
+    },
+    {
+     "date": "2026-08-05",
+     "actual": 0.0,
+     "plan": 30.22
+    },
+    {
+     "date": "2026-08-06",
+     "actual": 0.0,
+     "plan": 30.69
+    },
+    {
+     "date": "2026-08-07",
+     "actual": 0.0,
+     "plan": 30.69
+    },
+    {
+     "date": "2026-08-08",
+     "actual": 0.0,
+     "plan": 30.69
+    },
+    {
+     "date": "2026-08-09",
+     "actual": 0.0,
+     "plan": 30.69
+    },
+    {
+     "date": "2026-08-10",
+     "actual": 0.0,
+     "plan": 30.69
+    },
+    {
+     "date": "2026-08-11",
+     "actual": 0.0,
+     "plan": 31.64
+    },
+    {
+     "date": "2026-08-12",
+     "actual": 0.0,
+     "plan": 33.52
+    },
+    {
+     "date": "2026-08-13",
+     "actual": 0.0,
+     "plan": 35.41
+    },
+    {
+     "date": "2026-08-14",
+     "actual": 0.0,
+     "plan": 35.41
+    },
+    {
+     "date": "2026-08-15",
+     "actual": 0.0,
+     "plan": 35.41
+    },
+    {
+     "date": "2026-08-16",
+     "actual": 0.0,
+     "plan": 35.47
+    },
+    {
+     "date": "2026-08-17",
+     "actual": 0.0,
+     "plan": 36.24
+    },
+    {
+     "date": "2026-08-18",
+     "actual": 0.0,
+     "plan": 38.95
+    }
+   ]
+  },
+  {
+   "key": "search_direct_other",
+   "name": "Search / direct / other",
+   "now": 190.0,
+   "exp": 107.6,
+   "proj": 190.0,
+   "target": 107.6,
+   "daily": [
+    {
+     "date": "2026-06-23",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-24",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-25",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-26",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-27",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-28",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-29",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-30",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-01",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-02",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-03",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-04",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-05",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-06",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-07",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-08",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-09",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-10",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-11",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-12",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-13",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-14",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-15",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-16",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-17",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-18",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-19",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-20",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-21",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-22",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-23",
+     "actual": 0.0,
+     "plan": 2.09
+    },
+    {
+     "date": "2026-07-24",
+     "actual": 9.0,
+     "plan": 10.45
+    },
+    {
+     "date": "2026-07-25",
+     "actual": 21.0,
+     "plan": 15.85
+    },
+    {
+     "date": "2026-07-26",
+     "actual": 36.0,
+     "plan": 19.45
+    },
+    {
+     "date": "2026-07-27",
+     "actual": 66.0,
+     "plan": 26.21
+    },
+    {
+     "date": "2026-07-28",
+     "actual": 91.0,
+     "plan": 34.54
+    },
+    {
+     "date": "2026-07-29",
+     "actual": 109.0,
+     "plan": 36.33
+    },
+    {
+     "date": "2026-07-30",
+     "actual": 114.0,
+     "plan": 44.22
+    },
+    {
+     "date": "2026-07-31",
+     "actual": 118.0,
+     "plan": 51.72
+    },
+    {
+     "date": "2026-08-01",
+     "actual": 129.0,
+     "plan": 56.3
+    },
+    {
+     "date": "2026-08-02",
+     "actual": 138.0,
+     "plan": 58.27
+    },
+    {
+     "date": "2026-08-03",
+     "actual": 144.0,
+     "plan": 60.81
+    },
+    {
+     "date": "2026-08-04",
+     "actual": 148.0,
+     "plan": 61.31
+    },
+    {
+     "date": "2026-08-05",
+     "actual": 149.0,
+     "plan": 64.31
+    },
+    {
+     "date": "2026-08-06",
+     "actual": 152.0,
+     "plan": 67.11
+    },
+    {
+     "date": "2026-08-07",
+     "actual": 158.0,
+     "plan": 69.03
+    },
+    {
+     "date": "2026-08-08",
+     "actual": 159.0,
+     "plan": 71.31
+    },
+    {
+     "date": "2026-08-09",
+     "actual": 163.0,
+     "plan": 71.31
+    },
+    {
+     "date": "2026-08-10",
+     "actual": 163.0,
+     "plan": 72.65
+    },
+    {
+     "date": "2026-08-11",
+     "actual": 164.0,
+     "plan": 75.34
+    },
+    {
+     "date": "2026-08-12",
+     "actual": 166.0,
+     "plan": 78.04
+    },
+    {
+     "date": "2026-08-13",
+     "actual": 174.0,
+     "plan": 78.04
+    },
+    {
+     "date": "2026-08-14",
+     "actual": 176.0,
+     "plan": 79.84
+    },
+    {
+     "date": "2026-08-15",
+     "actual": 176.0,
+     "plan": 83.73
+    },
+    {
+     "date": "2026-08-16",
+     "actual": 177.0,
+     "plan": 87.42
+    },
+    {
+     "date": "2026-08-17",
+     "actual": 182.0,
+     "plan": 93.15
+    },
+    {
+     "date": "2026-08-18",
+     "actual": 190.0,
+     "plan": 107.64
+    }
+   ]
+  },
+  {
+   "key": "paid",
+   "name": "Paid",
+   "now": 286.0,
+   "exp": 438.8,
+   "proj": 286.0,
+   "target": 438.8,
+   "daily": [
+    {
+     "date": "2026-06-23",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-24",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-25",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-26",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-27",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-28",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-29",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-06-30",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-01",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-02",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-03",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-04",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-05",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-06",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-07",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-08",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-09",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-10",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-11",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-12",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-13",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-14",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-15",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-16",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-17",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-18",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-19",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-20",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-21",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-22",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-23",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-24",
+     "actual": 0.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-25",
+     "actual": 11.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-26",
+     "actual": 24.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-27",
+     "actual": 71.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-28",
+     "actual": 136.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-29",
+     "actual": 164.0,
+     "plan": 0.0
+    },
+    {
+     "date": "2026-07-30",
+     "actual": 182.0,
+     "plan": 7.3
+    },
+    {
+     "date": "2026-07-31",
+     "actual": 200.0,
+     "plan": 32.9
+    },
+    {
+     "date": "2026-08-01",
+     "actual": 225.0,
+     "plan": 48.75
+    },
+    {
+     "date": "2026-08-02",
+     "actual": 245.0,
+     "plan": 55.25
+    },
+    {
+     "date": "2026-08-03",
+     "actual": 262.0,
+     "plan": 81.26
+    },
+    {
+     "date": "2026-08-04",
+     "actual": 268.0,
+     "plan": 87.75
+    },
+    {
+     "date": "2026-08-05",
+     "actual": 270.0,
+     "plan": 123.49
+    },
+    {
+     "date": "2026-08-06",
+     "actual": 273.0,
+     "plan": 155.99
+    },
+    {
+     "date": "2026-08-07",
+     "actual": 273.0,
+     "plan": 174.11
+    },
+    {
+     "date": "2026-08-08",
+     "actual": 275.0,
+     "plan": 188.05
+    },
+    {
+     "date": "2026-08-09",
+     "actual": 275.0,
+     "plan": 200.12
+    },
+    {
+     "date": "2026-08-10",
+     "actual": 276.0,
+     "plan": 203.14
+    },
+    {
+     "date": "2026-08-11",
+     "actual": 276.0,
+     "plan": 209.63
+    },
+    {
+     "date": "2026-08-12",
+     "actual": 276.0,
+     "plan": 219.38
+    },
+    {
+     "date": "2026-08-13",
+     "actual": 279.0,
+     "plan": 219.38
+    },
+    {
+     "date": "2026-08-14",
+     "actual": 279.0,
+     "plan": 238.89
+    },
+    {
+     "date": "2026-08-15",
+     "actual": 279.0,
+     "plan": 262.04
+    },
+    {
+     "date": "2026-08-16",
+     "actual": 282.0,
+     "plan": 303.47
+    },
+    {
+     "date": "2026-08-17",
+     "actual": 286.0,
+     "plan": 365.64
+    },
+    {
+     "date": "2026-08-18",
+     "actual": 286.0,
+     "plan": 438.75
+    }
+   ]
+  }
+ ],
+ "funnelByGroup": {
+  "aa_email": {
+   "sessions_actual": 11662.0,
+   "sessions_expected": 9417.1,
+   "conv_actual": 0.023066369404904818,
+   "conv_expected": 0.020329479398333117,
+   "contrib_traffic": 45.6,
+   "contrib_conversion": 31.9
+  },
+  "aa_social": {
+   "sessions_actual": 731.0,
+   "sessions_expected": 2013.0,
+   "conv_actual": 0.04514363885088919,
+   "conv_expected": 0.013892443169254049,
+   "contrib_traffic": -17.8,
+   "contrib_conversion": 22.8
+  },
+  "referral_artist": {
+   "sessions_actual": 54.0,
+   "sessions_expected": 2896.8,
+   "conv_actual": 0.0,
+   "conv_expected": 0.01344702343217792,
+   "contrib_traffic": -38.2,
+   "contrib_conversion": -0.7
+  },
+  "search_direct_other": {
+   "sessions_actual": 7028.0,
+   "sessions_expected": 5169.7,
+   "conv_actual": 0.02703471826977803,
+   "conv_expected": 0.02082074295593544,
+   "contrib_traffic": 38.7,
+   "contrib_conversion": 43.7
+  },
+  "paid": {
+   "sessions_actual": 18372.0,
+   "sessions_expected": 104219.3,
+   "conv_actual": 0.01556716742869584,
+   "conv_expected": 0.004209871287,
+   "contrib_traffic": -361.4,
+   "contrib_conversion": 208.7
+  }
+ },
+ "paid": {
+  "daily": [
+   {
+    "date": "2026-06-23",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-06-24",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-06-25",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-06-26",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-06-27",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-06-28",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-06-29",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-06-30",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-01",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-02",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-03",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-04",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-05",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-06",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-07",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-08",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-09",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-10",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-11",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-12",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-13",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-14",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-15",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-16",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-17",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-18",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-19",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-20",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-21",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-22",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-23",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-24",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-07-25",
+    "spend": 62.25,
+    "entries": 11.0,
+    "roi": 31.558
+   },
+   {
+    "date": "2026-07-26",
+    "spend": 182.07,
+    "entries": 13.0,
+    "roi": 12.751
+   },
+   {
+    "date": "2026-07-27",
+    "spend": 705.77,
+    "entries": 47.0,
+    "roi": 11.893
+   },
+   {
+    "date": "2026-07-28",
+    "spend": 1114.57,
+    "entries": 65.0,
+    "roi": 10.415
+   },
+   {
+    "date": "2026-07-29",
+    "spend": 841.23,
+    "entries": 28.0,
+    "roi": 5.944
+   },
+   {
+    "date": "2026-07-30",
+    "spend": 556.47,
+    "entries": 18.0,
+    "roi": 5.777
+   },
+   {
+    "date": "2026-07-31",
+    "spend": 428.53,
+    "entries": 18.0,
+    "roi": 7.501
+   },
+   {
+    "date": "2026-08-01",
+    "spend": 475.17,
+    "entries": 25.0,
+    "roi": 9.396
+   },
+   {
+    "date": "2026-08-02",
+    "spend": 437.54,
+    "entries": 20.0,
+    "roi": 8.163
+   },
+   {
+    "date": "2026-08-03",
+    "spend": 545.34,
+    "entries": 17.0,
+    "roi": 5.567
+   },
+   {
+    "date": "2026-08-04",
+    "spend": 268.61,
+    "entries": 6.0,
+    "roi": 3.989
+   },
+   {
+    "date": "2026-08-05",
+    "spend": 0.0,
+    "entries": 2.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-06",
+    "spend": 0.0,
+    "entries": 3.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-07",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-08",
+    "spend": 0.0,
+    "entries": 2.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-09",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-10",
+    "spend": 0.0,
+    "entries": 1.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-11",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-12",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-13",
+    "spend": 0.0,
+    "entries": 3.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-14",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-15",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-16",
+    "spend": 0.0,
+    "entries": 3.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-17",
+    "spend": 0.0,
+    "entries": 4.0,
+    "roi": null
+   },
+   {
+    "date": "2026-08-18",
+    "spend": 0.0,
+    "entries": 0.0,
+    "roi": null
+   }
+  ],
+  "spendToDate": 5617.55,
+  "entriesToDate": 286.0,
+  "cumRoi": 9.092,
+  "l3dRoi": null,
+  "l3dCpe": null,
+  "cumCpe": 24.55,
+  "roiDeclineModel": {
+   "start": null,
+   "dailyFactor": 0.9091
+  },
+  "roiTarget": 1.1,
+  "budget": {
+   "current": 0.0,
+   "recommended": 0.0,
+   "cap": "supply",
+   "finalDayRoi": null,
+   "floor": 1.0,
+   "budgetToSellOut": null,
+   "entriesNeeded": 0,
+   "daysLeft": 0
+  },
+  "unitTarget": 351,
+  "unitProjected": 228.8,
+  "spendBudget": 62127,
+  "spendProjectedTotal": 5617.55,
+  "profitPerUnitAA": 279.04,
+  "profitPerUnitArtist": 0.0,
+  "aaBudgetShare": 1.0
+ },
+ "email": {
+  "sends": 4,
+  "delivered": 200007,
+  "opened": 35443,
+  "clicked": 8019,
+  "openRate": 0.1772,
+  "clickRate": 0.0401,
+  "sequence": [
+   {
+    "name": "Early Access (LE) Plain text",
+    "date": "2026-07-20",
+    "delivered": 5640,
+    "opened": 2229,
+    "clicked": 1391
+   },
+   {
+    "name": "Early Access (LE) Plain text (Free shipping test variation)",
+    "date": "2026-07-22",
+    "delivered": 5720,
+    "opened": 2238,
+    "clicked": 1432
+   },
+   {
+    "name": "Announcement (LE)",
+    "date": "2026-07-24",
+    "delivered": 135347,
+    "opened": 16832,
+    "clicked": 3562
+   },
+   {
+    "name": "Sustain (LE) V2",
+    "date": "2026-08-04",
+    "delivered": 53300,
+    "opened": 14144,
+    "clicked": 1634
+   }
+  ]
+ },
+ "social": {
+  "posts": 4,
+  "stories": 7,
+  "impressions": 206371,
+  "engagements": 4157
+ },
+ "sellthrough": {
+  "edition": 900,
+  "sold": 884.0,
+  "soldPredicted": 16.0,
+  "futureEntriesPredicted": 0.0,
+  "pct": 1.0
+ },
+ "draw": {
+  "entrants": 213,
+  "eligible": 213,
+  "tier_mix": {
+   "Patron": 3,
+   "Potential": 66,
+   "Prospect": 139,
+   "Premium": 3,
+   "N/A": 2
+  },
+  "framed_share": 0.2019,
+  "preorder_share": 0.6385,
+  "units_demanded": 342,
+  "surplus_entries": 86,
+  "per_product": [
+   {
+    "name": "Composition with Red, Yellow",
+    "entries": 213
+   },
+   {
+    "name": "Composition with Large Red Plane",
+    "entries": 110
+   },
+   {
+    "name": "Tableau no.1",
+    "entries": 105
+   }
+  ]
+ },
+ "geo": null,
+ "waterfall": {
+  "target": 805.0,
+  "projection": 778.0,
+  "steps": [
+   {
+    "key": "organic_traffic",
+    "label": "Organic traffic",
+    "value": 28.0
+   },
+   {
+    "key": "organic_conversion",
+    "label": "Organic conversion",
+    "value": 98.0
+   },
+   {
+    "key": "paid_spend",
+    "label": "Paid spend",
+    "value": -256.0
+   },
+   {
+    "key": "paid_efficiency",
+    "label": "Paid efficiency",
+    "value": 103.0
+   }
+  ]
+ },
+ "benchmarks": {
+  "chargeDropOff": 0.19999999999999996,
+  "cannibalisation": 0.2,
+  "targetBuffer": 0.75
+ }
+}

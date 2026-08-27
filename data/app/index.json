@@ -1,0 +1,93 @@
+{
+ "asOf": "2026-08-26",
+ "releases": [
+  {
+   "id": "glennligon_le_26",
+   "name": "Glenn Ligon \u2014 Multiple",
+   "releaseName": "Glenn Ligon \u00b7 Multiple \u00b7 2026 Q3",
+   "type": "LE",
+   "day": 9,
+   "of": 31,
+   "complete": false,
+   "statusPct": 0.4081,
+   "ok": true
+  },
+  {
+   "id": "dali_le_26",
+   "name": "Salvador Dali Estate \u2014 Multiple",
+   "releaseName": "Salvador Dali Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "type": "LE",
+   "day": 5,
+   "of": 21,
+   "complete": false,
+   "statusPct": 0.1108,
+   "ok": true
+  },
+  {
+   "id": "abdulnasser_le_26",
+   "name": "Abdulnasser Gharem \u2014 Hemisphere",
+   "releaseName": "Abdulnasser Gharem \u00b7 Hemisphere \u00b7 2026 Q3",
+   "type": "LE",
+   "day": 29,
+   "of": 29,
+   "complete": true,
+   "statusPct": -0.6111,
+   "ok": false
+  },
+  {
+   "id": "zengfanzhi_le_26",
+   "name": "Zeng Fanzhi \u2014 Multiple",
+   "releaseName": "Zeng Fanzhi \u00b7 Multiple \u00b7 2026 Q3",
+   "type": "LE",
+   "day": 28,
+   "of": 28,
+   "complete": true,
+   "statusPct": -0.6421,
+   "ok": false
+  },
+  {
+   "id": "mondrian_le_26",
+   "name": "Piet Mondrian Estate \u2014 Multiple",
+   "releaseName": "Piet Mondrian Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "type": "LE",
+   "day": 25,
+   "of": 25,
+   "complete": true,
+   "statusPct": -0.0332,
+   "ok": true
+  },
+  {
+   "id": "julianschnabel_le_26",
+   "name": "Julian Schnabel \u2014 Multiple",
+   "releaseName": "Julian Schnabel \u00b7 Multiple \u00b7 2026 Q3",
+   "type": "LE",
+   "day": 0,
+   "of": 24,
+   "complete": false,
+   "statusPct": 0.0,
+   "ok": true
+  },
+  {
+   "id": "parra_le_26",
+   "name": "Parra \u2014 Multiple",
+   "releaseName": "Parra \u00b7 Multiple \u00b7 2026 Q3",
+   "type": "LE",
+   "day": 21,
+   "of": 21,
+   "complete": true,
+   "statusPct": -0.0718,
+   "ok": true
+  },
+  {
+   "id": "jamesjean_blossom_26",
+   "name": "James Jean \u2014 Multiple",
+   "releaseName": "James Jean \u00b7 Multiple \u00b7 2026 Q3",
+   "type": "LE",
+   "day": 21,
+   "of": 21,
+   "complete": true,
+   "statusPct": -0.1146,
+   "ok": false
+  }
+ ]
+}
