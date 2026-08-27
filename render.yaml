@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: avantarte-launch-bi
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/index

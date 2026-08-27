@@ -1,0 +1,21 @@
+{
+  "name": "avantarte-launch-bi",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Avant Arte launch performance dashboard (LE-first)",
+  "scripts": {
+    "dev": "vite --config web/vite.config.js",
+    "build": "vite build --config web/vite.config.js",
+    "start": "node server/index.js",
+    "etl": "python3 etl/extract_spend.py && python3 etl/extract_content.py && python3 etl/build.py"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.3.6"
+  }
+}

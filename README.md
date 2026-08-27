@@ -1,0 +1,68 @@
+# Avant Arte Launch BI
+
+Launch-performance dashboard for releases (LE-first), built from the reverse-engineered
+target-setting model. **Read [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) first** — it specifies
+how every number and target is calculated, where each feed comes from, and the data-quality
+issues found in the current tooling.
+
+## Layout
+
+```
+docs/DATA_MODEL.md      the specification: target model, benchmarks, across-time curves,
+                        paid model, draw-entry semantics, metric map, data-quality register
+etl/                    Python pipeline
+  release_inputs.json     hand-entered launch inputs per release (the human decisions)
+  benchmarks.json         frozen benchmark values (v1; recompute policy in docs §4)
+  extract_spend.py        Meta spend by campaign × day  (from the workbook snapshot)
+  extract_content.py      Emplifi posts by campaign     (from the content export)
+  build.py                computes targets, trajectory curves, and per-release snapshots
+data/
+  spend_daily.csv         extracted spend facts
+  content_posts.csv       extracted content facts
+  app/                    what the UI reads: index.json, curves.json, releases/<id>.json
+server/index.js         Express service: serves the SPA + /api/* + the spend decision log
+web/                    React (Vite) SPA — the dashboard per the design handoff
+render.yaml             Render deployment (single web service)
+sources/                NOT in git: raw exports (workbooks, CSVs, draw entries with PII)
+```
+
+## Running locally
+
+```bash
+npm ci
+npm run build          # builds web/dist
+npm start              # serves on :10000
+```
+
+Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :5173, proxies /api).
+
+## Refreshing data
+
+Drop the source exports into `sources/` (file names in `etl/*.py` headers), then:
+
+```bash
+pip install openpyxl pandas
+npm run etl
+```
+
+The committed `data/app/*` snapshots were built from exports current to **2026-08-27**.
+Draw-entry CSVs contain customer emails — they stay in `sources/` and only aggregated,
+anonymised numbers reach `data/`.
+
+In production this should be pointed at BigQuery
+(`avantarte-data-production.AA_company_tables.*`) instead of file exports — the sheet
+pipeline's accumulators are already silently truncating history (docs §11).
+
+## Deploying on Render
+
+The repo ships `render.yaml` — create a Blueprint service from the repo and Render will
+`npm ci && npm run build` then `npm start`. The paid-spend decision log
+(`POST /api/decisions`) appends to `data/decisions.log.jsonl`; attach a persistent disk and
+set `DECISIONS_PATH` if the log must survive deploys.
+
+## What the dashboard shows
+
+One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
+trajectory vs the pooled across-time plan curve, funnel diagnostics with contribution
+decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), predicted
+sell-through, projection-vs-target waterfall. Formulas for every module: docs §9.
