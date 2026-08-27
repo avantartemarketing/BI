@@ -60,11 +60,11 @@ export default function ChannelsVsTargets({ snap }) {
                   height={20}
                   radius={5}
                   tips={{
-                    proj: `Projected ${fmt(proj)} at close`,
-                    now: `${fmt(now)} to date`,
-                    exp: `${fmt(exp)} expected by today`,
-                    overshoot: `Over target by ${overF}`,
-                    target: `Target ${fmt(target)}`,
+                    proj: { head: "Projected at close", rows: [{ label: "Units", value: fmt(proj) }] },
+                    now: { head: "Secured to date", rows: [{ label: "Units", value: fmt(now) }] },
+                    exp: { head: "Expected by today", rows: [{ label: "Units", value: fmt(exp) }] },
+                    overshoot: { head: "Over target", rows: [{ label: "Units", value: "+" + overF }] },
+                    target: { head: "Target", rows: [{ label: "Units", value: fmt(target) }] },
                   }}
                 />
               </div>

@@ -11,7 +11,7 @@
  * delta = pt diff for '%' units else %; RAG on eff = inv ? −relPct : relPct.
  * Null value or missing/zero reference → neutral: centred grey dot, delta '–'. */
 import React from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtMoney, MINUS } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, fmtMoney, MINUS, useTip } from "../ui.jsx";
 
 const SCALE = 25;
 const RING = "0 0 0 1px rgba(20,20,19,.45)";
@@ -31,11 +31,13 @@ function buildRung([label, v, ref, unit, inv, note]) {
   if (noVal || noRef) {
     return {
       label, neutral: true, delta: "–", rag: C.muted, dev: 50,
-      tip:
-        label +
-        "\nActual  " + fmtVal(v, unit) +
-        "\nNo reference for this step" +
-        (note ? "\n" + note : ""),
+      tip: {
+        head: label,
+        rows: [
+          { label: "Actual", value: fmtVal(v, unit) },
+          { label: "Reference", value: "–" },
+        ],
+      },
     };
   }
   const relPct = (v / ref - 1) * 100;
@@ -52,19 +54,24 @@ function buildRung([label, v, ref, unit, inv, note]) {
     dev: Math.max(4, Math.min(96, 50 + (eff / SCALE) * 46)),
     delta: (dPos ? "+" : MINUS) + dAbs,
     rag: eff >= 0 ? C.green : eff > -10 ? C.amber : C.red,
-    tip:
-      label +
-      "\n" + (relPct >= 0 ? "+" : MINUS) + Math.abs(relPct).toFixed(1) + "% vs target" +
-      "\nActual  " + fmtVal(v, unit) +
-      "\nTarget  " + fmtVal(ref, unit) +
-      (note ? "\n" + note : ""),
+    tip: {
+      head: label,
+      rows: [
+        { label: "Actual", value: fmtVal(v, unit) },
+        { label: "Target", value: fmtVal(ref, unit) },
+        { label: "vs target",
+          value: (relPct >= 0 ? "+" : MINUS) + Math.abs(relPct).toFixed(1) + "%",
+          color: eff >= 0 ? C.green : eff > -10 ? C.amber : C.red },
+      ],
+    },
   };
 }
 
 function Rung({ r }) {
+  const tipApi = useTip();
   return (
     <div
-      title={r.tip}
+      {...tipApi.props(r.tip)}
       style={{
         height: 28, flex: "0 0 28px", display: "grid",
         gridTemplateColumns: "112px 1fr 56px", gap: 10, alignItems: "center",

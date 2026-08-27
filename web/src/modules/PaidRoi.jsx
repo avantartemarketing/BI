@@ -110,10 +110,14 @@ export default function PaidRoi({ snap }) {
   // ----- lead + header stats -----
   const leadVal = complete ? paid.cumRoi : paid.l3dRoi;
   const leadCaption = complete ? "ROI final" : "ROI last 3 days";
-  const moreTip =
-    "ROI total " + fmt(paid.cumRoi, 2) +
-    (paid.l3dCpe !== null && paid.l3dCpe !== undefined ? "\n£/entry L3D " + fmt(paid.l3dCpe, 2) : "") +
-    (paid.cumCpe !== null && paid.cumCpe !== undefined ? "\n£/entry total " + fmt(paid.cumCpe, 2) : "");
+  const moreTip = {
+    head: "Paid ROI",
+    rows: [
+      { label: "ROI total", value: fmt(paid.cumRoi, 2) },
+      { label: "£/entry L3D", value: fmt(paid.l3dCpe, 2) },
+      { label: "£/entry total", value: fmt(paid.cumCpe, 2) },
+    ],
+  };
   const todayTip =
     "ROI last 3 days " + fmt(paid.l3dRoi, 2) +
     "\nLast 24h " + fmt(last24, 2) +
@@ -155,7 +159,7 @@ export default function PaidRoi({ snap }) {
       <div className="lead">{fmt(leadVal, 2)}</div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flex: "0 0 auto" }}>
         <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>{leadCaption}</span>
-        <QBadge tip={moreTip} />
+        <QBadge content={moreTip} />
       </div>
       <div style={{ height: 12, flex: "0 0 12px" }} />
       <div className="body">

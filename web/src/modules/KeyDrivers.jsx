@@ -4,7 +4,7 @@
  * (Traffic = contrib_traffic, Session → entry = contrib_conversion) — top 4
  * by |value| of the chosen sign. Methodology note lives in tooltips only. */
 import React from "react";
-import { Card, GROUP_DOTS, C, fmtSigned } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, fmtSigned, useTip } from "../ui.jsx";
 
 const GROUPS = [
   { key: "aa_email", name: "AA Email", short: "Email" },
@@ -18,6 +18,7 @@ const NOTE =
   "Each step's contribution is repriced one-at-a-time vs plan; together the steps sum to the gap vs expected today.";
 
 export default function KeyDrivers({ snap }) {
+  const tipApi = useTip();
   const [side, setSide] = React.useState(null);
   React.useEffect(() => setSide(null), [snap?.id]);
 
@@ -86,7 +87,10 @@ export default function KeyDrivers({ snap }) {
               </div>
               <div
                 className="num"
-                title={`${r.name} · ${r.step}\n${fmtSigned(r.v, 1)} units vs expected today`}
+                {...tipApi.props({
+                  head: `${r.name} · ${r.step}`,
+                  rows: [{ label: "vs expected today", value: fmtSigned(r.v, 1) + " units", color: r.v >= 0 ? "#0f7052" : "#b8461d" }],
+                })}
                 style={{
                   fontSize: 13.5, fontWeight: 600, textAlign: "right",
                   color: r.v > 0 ? C.green : C.red,

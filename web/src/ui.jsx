@@ -4,7 +4,65 @@
  *  target = ink 2px tick (or #b8b3a6 line) · expected tick on bars = white 2px + ink ring
  *  overshoot = 135° hatch · bar tracks run to 120% of reference, target tick at 83.3%.
  */
-import React from "react";
+import React, { createContext, useContext, useMemo, useRef, useState } from "react";
+
+/* ---- the popup system (agreed on the Dashboard Popups canvas) ----
+ * One chrome, three tiers: chart readouts (inline, .chart-tip), element details
+ * (this fixed singleton layer, 150ms, header + label/value rows ONLY — no prose),
+ * methodology (same layer, 300ms, titled prose for ? badges).
+ * Content: { head, rows?: [{ label, value, color? }], body? } */
+const TipCtx = createContext(null);
+
+export function TipProvider({ children }) {
+  const [tip, setTip] = useState(null);
+  const timer = useRef(null);
+  const api = useMemo(() => ({
+    show(el, content, delay) {
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => {
+        const r = el.getBoundingClientRect();
+        const below = r.top < 160;
+        setTip({
+          x: Math.min(Math.max(r.left + r.width / 2, 140), window.innerWidth - 140),
+          y: below ? r.bottom + 10 : r.top - 10,
+          below, content,
+        });
+      }, delay);
+    },
+    hide() { clearTimeout(timer.current); setTip(null); },
+  }), []);
+  return (
+    <TipCtx.Provider value={api}>
+      {children}
+      {tip && (
+        <div className="sys-tip" style={{
+          left: tip.x, top: tip.y,
+          transform: `translate(-50%, ${tip.below ? "0" : "-100%"})`,
+        }}>
+          {tip.content.head && <div className="t-head">{tip.content.head}</div>}
+          {(tip.content.rows || []).map((r, i) => (
+            <div className="t-row" key={i}>
+              <span>{r.label}</span>
+              <span className="v" style={r.color ? { color: r.color } : undefined}>{r.value}</span>
+            </div>
+          ))}
+          {tip.content.body && <div className="t-body">{tip.content.body}</div>}
+        </div>
+      )}
+    </TipCtx.Provider>
+  );
+}
+
+export function useTip() {
+  const ctx = useContext(TipCtx);
+  return useMemo(() => ({
+    props: (content, delay = 150) => (content && ctx ? {
+      onMouseEnter: (e) => ctx.show(e.currentTarget, content, delay),
+      onMouseLeave: ctx.hide,
+    } : {}),
+  }), [ctx]);
+}
+
 
 export const C = {
   orange: "#eb6834", orangeLight: "#f7c4ad", rust: "#8f3415",
@@ -69,7 +127,9 @@ export function Card({ tall, wide, dot, title, right, children, style }) {
   );
 }
 
-export function QBadge({ tip }) {
+export function QBadge({ tip, content }) {
+  const t = useTip();
+  if (content) return <span className="qbadge" {...t.props(content, 300)}>?</span>;
   return <span className="qbadge" title={tip}>?</span>;
 }
 
@@ -80,6 +140,8 @@ export function TrackBar({
   now, exp, proj, target, height = 20,
   tips = {}, radius = 4,
 }) {
+  const t = useTip();
+  const tp = (x) => t.props(typeof x === "string" ? { head: x } : x);
   const TICK = 100 / 1.2; // 83.333
   const scale = target > 0 ? TICK / target : 0;
   const pct = (v) => Math.max(0, Math.min(v * scale, 100));
@@ -89,27 +151,27 @@ export function TrackBar({
   const hatch = `repeating-linear-gradient(135deg, ${C.orange} 0 1.5px, ${C.orangeLight} 1.5px 5px)`;
   return (
     <div style={{ position: "relative", height, background: C.track, borderRadius: radius }}>
-      <div title={tips.proj} style={{
+      <div {...tp(tips.proj)} style={{
         position: "absolute", inset: 0, width: `${projW}%`,
         background: C.orangeLight, borderRadius: radius,
       }} />
       {overshoot && (
-        <div title={tips.overshoot} style={{
+        <div {...tp(tips.overshoot)} style={{
           position: "absolute", top: 0, bottom: 0, left: `${TICK}%`,
           width: `${Math.max(projW - TICK, 0)}%`, background: hatch,
         }} />
       )}
-      <div title={tips.now} style={{
+      <div {...tp(tips.now)} style={{
         position: "absolute", inset: 0, width: `${nowW}%`,
         background: C.orange, borderRadius: radius,
       }} />
       {exp !== undefined && exp !== null && (
-        <div title={tips.exp} style={{
+        <div {...tp(tips.exp)} style={{
           position: "absolute", top: 0, bottom: 0, left: `calc(${pct(exp)}% - 1px)`, width: 2,
           background: C.white, boxShadow: "0 0 0 1px rgba(20,20,19,.45)",
         }} />
       )}
-      <div title={tips.target} style={{
+      <div {...tp(tips.target)} style={{
         position: "absolute", top: 0, bottom: 0, left: `calc(${TICK}% - 1px)`, width: 2,
         background: C.ink,
       }} />
@@ -117,8 +179,10 @@ export function TrackBar({
   );
 }
 
-export function Lozenge({ dir, children, tip, color }) {
+export function Lozenge({ dir, children, tip, content, color }) {
+  const t = useTip();
   const cls = color || (dir === "up" ? "up" : dir === "down" ? "down" : "neutral");
+  if (content) return <span className={`lozenge ${cls}`} {...t.props(content)}>{children}</span>;
   return <span className={`lozenge ${cls}`} title={tip}>{children}</span>;
 }
 

@@ -6,21 +6,19 @@
  * product" mini-table (per-product eligible entries; the feed carries no
  * per-product edition sizes yet). Horizontal legend at the bottom, no rule. */
 import React from "react";
-import { Card, GROUP_DOTS, C, fmt, ragColor } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, ragColor, useTip } from "../ui.jsx";
 
 const SEGS = [
-  { key: "sold", color: C.rust, label: "Sold", tip: (v) => `${fmt(v)} sold` },
-  {
-    key: "soldPredicted", color: C.orange, label: "Sold predicted",
-    tip: (v) => `${fmt(v)} sales predicted from entries in hand`,
-  },
-  {
-    key: "futureEntriesPredicted", color: C.orangeLight, label: "Future entries",
-    tip: (v) => `${fmt(v)} sales predicted from entries still to come`,
-  },
+  { key: "sold", color: C.rust, label: "Sold",
+    tip: (v) => ({ head: "Sold", rows: [{ label: "Units", value: fmt(v) }] }) },
+  { key: "soldPredicted", color: C.orange, label: "Sold predicted",
+    tip: (v) => ({ head: "Sold predicted", rows: [{ label: "Units", value: fmt(v) }, { label: "From", value: "entries in hand" }] }) },
+  { key: "futureEntriesPredicted", color: C.orangeLight, label: "Future entries",
+    tip: (v) => ({ head: "Future entries", rows: [{ label: "Units", value: fmt(v) }, { label: "From", value: "entries still to come" }] }) },
 ];
 
 export default function SellThrough({ snap }) {
+  const tipApi = useTip();
   const st = snap?.sellthrough;
   const draw = snap?.draw;
 
@@ -67,7 +65,7 @@ export default function SellThrough({ snap }) {
             {SEGS.map((s) => (
               <div
                 key={s.key}
-                title={s.tip(st[s.key] ?? 0)}
+                {...tipApi.props(s.tip(st[s.key] ?? 0))}
                 style={{ width: `${w(st[s.key] ?? 0)}%`, background: s.color }}
               />
             ))}
@@ -93,7 +91,7 @@ export default function SellThrough({ snap }) {
                   </div>
                   <div style={{ position: "relative", height: 14, background: C.track, borderRadius: 4 }}>
                     <div
-                      title={`${fmt(p.entries)} eligible entries · edition size not in feed yet`}
+                      {...tipApi.props({ head: p.name, rows: [{ label: "Eligible entries", value: fmt(p.entries) }] })}
                       style={{
                         position: "absolute", left: 0, top: 0, bottom: 0,
                         width: `${maxEntries > 0 ? ((p.entries ?? 0) / maxEntries) * 100 : 0}%`,

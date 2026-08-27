@@ -5,7 +5,7 @@
  * Projection is a stored model output — never re-derived here; on a complete
  * release it equals the actual close. */
 import React from "react";
-import { Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned, useTip } from "../ui.jsx";
 
 const STEP_TIPS = {
   organic_traffic: "Organic sessions vs plan",
@@ -15,6 +15,7 @@ const STEP_TIPS = {
 };
 
 export default function Waterfall({ snap }) {
+  const tipApi = useTip();
   const wf = snap?.waterfall;
 
   if (!wf) {
@@ -48,7 +49,14 @@ export default function Waterfall({ snap }) {
   const net = projection - target;
   const netC = net >= 0 ? C.green : C.red;
   const closeWord = complete ? "Final" : "Projected";
-  const netTip = `${closeWord} ${fmt(projection)} at close vs target ${fmt(target)}\nContributors sum exactly to the gap\nProjection here is unconstrained demand — the hero caps at the sellout`;
+  const netTip = {
+    head: closeWord + " at close",
+    rows: [
+      { label: "Projection", value: fmt(projection) },
+      { label: "Target", value: fmt(target) },
+      { label: "Gap", value: fmtSigned(net), color: netC },
+    ],
+  };
 
   const anchorRow = (label, value, x, tip) => (
     <div
@@ -60,7 +68,7 @@ export default function Waterfall({ snap }) {
       <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
       <div style={{ position: "relative", height: 14 }}>
         <div
-          title={tip}
+          {...tipApi.props(tip)}
           style={{
             position: "absolute", left: `${X(x)}%`, top: -2, bottom: -2,
             width: 2, background: C.ink,
@@ -80,7 +88,7 @@ export default function Waterfall({ snap }) {
       right={
         <span
           className="num"
-          title={netTip}
+          {...tipApi.props(netTip)}
           style={{ fontSize: 13.5, fontWeight: 600, color: netC, whiteSpace: "nowrap" }}
         >
           {fmtSigned(net)}
@@ -103,12 +111,18 @@ export default function Waterfall({ snap }) {
           ))}
         </div>
 
-        {anchorRow("Target", target, target, `Target ${fmt(target)}`)}
+        {anchorRow("Target", target, target, { head: "Target", rows: [{ label: "Units", value: fmt(target) }] })}
 
         {path.map((p) => {
           const v = p.value ?? 0;
           const up = v >= 0;
-          const tip = `${p.label}\n${fmtSigned(v)} units — ${STEP_TIPS[p.key] || p.label}\nRunning total ${fmt(p.to)}`;
+          const tip = {
+            head: p.label,
+            rows: [
+              { label: "Contribution", value: fmtSigned(v) + " units", color: up ? "#0f7052" : C.red },
+              { label: "Running total", value: fmt(p.to) },
+            ],
+          };
           return (
             <div
               key={p.key}
@@ -122,7 +136,7 @@ export default function Waterfall({ snap }) {
               </div>
               <div style={{ position: "relative", height: 14 }}>
                 <div
-                  title={tip}
+                  {...tipApi.props(tip)}
                   style={{
                     position: "absolute", top: 0, bottom: 0,
                     left: `${X(Math.min(p.from, p.to))}%`,
@@ -141,7 +155,7 @@ export default function Waterfall({ snap }) {
           );
         })}
 
-        {anchorRow("Projection", projection, projection, `${closeWord} ${fmt(projection)} at close`)}
+        {anchorRow("Projection", projection, projection, { head: closeWord + " demand at close", rows: [{ label: "Units", value: fmt(projection) }] })}
       </div>
       <div style={{ height: 12, flexShrink: 0 }} />
       <div
@@ -150,7 +164,7 @@ export default function Waterfall({ snap }) {
           alignItems: "center", flexShrink: 0,
         }}
       >
-        <QBadge tip="Contributors sum exactly to the gap" />
+        <QBadge content={{ head: "Projection vs target", body: "Contributors sum exactly to the gap between target and projected demand at close. Demand here is unconstrained — the hero caps at the sellout." }} />
         <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>units at close</span>
       </div>
     </Card>

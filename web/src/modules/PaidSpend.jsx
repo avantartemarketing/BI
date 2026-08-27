@@ -5,12 +5,13 @@
  * append-only decision log. Complete releases: projection = actual, recommendation "—",
  * buttons disabled. Pre-launch releases (no campaign yet) disable the buttons too. */
 import React, { useState } from "react";
-import { Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, MINUS, postDecision } from "../ui.jsx";
+import { Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, MINUS, postDecision, useTip } from "../ui.jsx";
 
 const money = (v) => "£" + fmt(Math.round(v ?? 0));
 const moneyK = (v) => "£" + fmtK(v ?? 0);
 
 export default function PaidSpend({ snap }) {
+  const tipApi = useTip();
   const paid = snap.paid || {};
   const budget = paid.budget || {};
   const complete = !!snap.complete;
@@ -23,58 +24,68 @@ export default function PaidSpend({ snap }) {
   const floorF = fmt(budget.floor ?? 1, 1);
 
   // ----- lozenge (recommended vs current), voice per §6.3 / §4.7 -----
-  const lozTip = noCampaign
-    ? "No paid campaign live yet"
-    : budget.cap === "supply"
-      ? "Daily budget " + money(cur) + " → " + money(rec) +
-        "\nSupply caps spend before the ROI floor binds: beyond " + money(rec) +
-        "/day, forecast entries exceed the units left to sell."
-      : d !== null && d < 0
-        ? "Daily budget " + money(cur) + " → " + money(rec) +
-          "\nFinal-day ROI would fall below the " + floorF +
-          " floor at the current budget, so spend pulls back — final-day ROI projected " +
-          fmt(budget.finalDayRoi, 2) + "."
-        : "Daily budget " + money(cur) + " → " + money(rec) +
-          "\nFinal-day ROI projected " + fmt(budget.finalDayRoi, 2) + " — above the " +
-          floorF + " floor, so spend rises. Below the floor, spend pulls back.";
+  const lozTip = noCampaign ? { head: "No paid campaign live yet" } : {
+    head: "Daily budget",
+    rows: [
+      { label: "Current", value: money(cur) },
+      { label: "Recommended", value: money(rec) },
+      { label: "Final-day ROI", value: fmt(budget.finalDayRoi, 2) },
+      { label: "ROI floor", value: floorF },
+    ],
+  };
   const loz =
     d === null || d === 0 ? (
-      <Lozenge dir="neutral" tip={lozTip}>—</Lozenge>
+      <Lozenge dir="neutral" content={lozTip}>—</Lozenge>
     ) : d > 0 ? (
-      <Lozenge dir="up" tip={lozTip}>{"▲ +£" + fmt(d)}</Lozenge>
+      <Lozenge dir="up" content={lozTip}>{"▲ +£" + fmt(d)}</Lozenge>
     ) : (
-      <Lozenge dir="down" tip={lozTip}>{"▼ " + MINUS + "£" + fmt(-d)}</Lozenge>
+      <Lozenge dir="down" content={lozTip}>{"▼ " + MINUS + "£" + fmt(-d)}</Lozenge>
     );
 
   // ----- "Capped by" row -----
   const showCap = !complete && !noCampaign && (rec ?? 0) > 0;
   const capLabel = budget.cap === "supply" ? "Supply — sell-out" : "ROI floor";
-  const capTip =
-    budget.cap === "supply"
-      ? "Sell-out caps spend: " + money(rec) + "/day covers the " + fmt(budget.entriesNeeded) +
-        " entries still needed at forecast cost per entry.\nThe ROI floor is not binding — final-day ROI projected " +
-        fmt(budget.finalDayRoi, 2) + " vs the " + floorF + " floor."
-      : "The ROI floor binds: beyond " + money(rec) +
-        "/day the final-day ROI is projected to fall below the " + floorF +
-        " floor.\nFinal-day ROI projected " + fmt(budget.finalDayRoi, 2) + ".";
+  const capTip = budget.cap === "supply" ? {
+    head: "Supply — sell-out",
+    rows: [
+      { label: "Spend cap", value: money(rec) + " / day" },
+      { label: "Entries needed", value: fmt(budget.entriesNeeded) },
+      { label: "Final-day ROI", value: fmt(budget.finalDayRoi, 2) },
+    ],
+  } : {
+    head: "ROI floor",
+    rows: [
+      { label: "Floor", value: floorF },
+      { label: "Final-day ROI", value: fmt(budget.finalDayRoi, 2) },
+      { label: "Spend cap", value: money(rec) + " / day" },
+    ],
+  };
 
   // ----- bars (120% track, target tick at 83.3%) -----
   const entriesNow = Math.round((paid.daily || []).reduce((t, x) => t + (x.entries ?? 0), 0));
   const entriesProj = complete ? entriesNow : (paid.unitProjected ?? entriesNow);
   const entriesTarget = paid.unitTarget ?? 0;
   const entriesPct = entriesTarget > 0 ? Math.round((entriesProj / entriesTarget) * 100) : null;
-  const entriesTip = complete
-    ? fmt(entriesNow) + " paid entries at close vs the " + fmt(entriesTarget) + " target"
-    : fmt(entriesNow) + " paid entries to date · projected " + fmt(entriesProj) +
-      " at close vs the " + fmt(entriesTarget) + " target";
+  const entriesTip = {
+    head: "Paid entries",
+    rows: [
+      { label: "To date", value: fmt(entriesNow) },
+      ...(complete ? [] : [{ label: "Projected", value: fmt(entriesProj) }]),
+      { label: "Target", value: fmt(entriesTarget) },
+    ],
+  };
 
   const spendNow = paid.spendToDate ?? 0;
   const spendProj = complete ? spendNow : (paid.spendProjectedTotal ?? spendNow);
   const spendTarget = paid.spendBudget ?? 0;
-  const spendTip = complete
-    ? moneyK(spendNow) + " spent at close vs the " + moneyK(spendTarget) + " budget"
-    : moneyK(spendNow) + " spent to date · " + moneyK(spendProj) +
-      " projected by day " + (snap.of ?? "–") + " vs the " + moneyK(spendTarget) + " budget";
+  const spendTip = {
+    head: "Spend",
+    rows: [
+      { label: "To date", value: moneyK(spendNow) },
+      ...(complete ? [] : [{ label: "Projected", value: moneyK(spendProj) }]),
+      { label: "Budget", value: moneyK(spendTarget) },
+    ],
+  };
 
   // ----- decision buttons -----
   const actionable = !complete && !noCampaign &&
@@ -112,7 +123,7 @@ export default function PaidSpend({ snap }) {
       {showCap && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
           <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Capped by</span>
-          <Lozenge color="blue" tip={capTip}>{capLabel}</Lozenge>
+          <Lozenge color="blue" content={capTip}>{capLabel}</Lozenge>
         </div>
       )}
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 20 }}>
@@ -127,14 +138,12 @@ export default function PaidSpend({ snap }) {
             tips={{
               now: entriesTip,
               proj: entriesTip,
-              target: "Target " + fmt(entriesTarget) + " paid entries at close",
-              overshoot: "Over target by " + fmt(Math.max(0, entriesProj - entriesTarget)) + " entries",
+              target: { head: "Target", rows: [{ label: "Paid entries", value: fmt(entriesTarget) }] },
+              overshoot: { head: "Over target", rows: [{ label: "Entries", value: "+" + fmt(Math.max(0, entriesProj - entriesTarget)) }] },
             }}
           />
           <span
-            title={complete
-              ? fmt(entriesNow) + " paid entries at close vs the " + fmt(entriesTarget) + " target"
-              : "Projected " + fmt(entriesProj) + " paid entries at close vs the " + fmt(entriesTarget) + " target"}
+            {...tipApi.props(entriesTip)}
             style={{ ...rightLabel, color: entriesPct !== null && entriesProj >= entriesTarget ? C.ink : C.red }}
           >
             {entriesPct !== null ? entriesPct + "%" : "–"}
@@ -151,11 +160,11 @@ export default function PaidSpend({ snap }) {
             tips={{
               now: spendTip,
               proj: spendTip,
-              target: "Budget " + moneyK(spendTarget),
-              overshoot: "Over budget by " + moneyK(Math.max(0, spendProj - spendTarget)),
+              target: { head: "Budget", rows: [{ label: "Spend", value: moneyK(spendTarget) }] },
+              overshoot: { head: "Over budget", rows: [{ label: "Spend", value: "+" + moneyK(Math.max(0, spendProj - spendTarget)) }] },
             }}
           />
-          <span title={spendTip} style={rightLabel}>{moneyK(spendProj)}</span>
+          <span {...tipApi.props(spendTip)} style={rightLabel}>{moneyK(spendProj)}</span>
         </div>
         <div style={{ height: 14, display: "flex", gap: 14, alignItems: "center" }}>
           <div style={legendItem}><span style={sw(C.orange)} />To date</div>

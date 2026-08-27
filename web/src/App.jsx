@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { fmtSigned, fmtPct } from "./ui.jsx";
+import { fmtSigned, fmtPct, TipProvider, useTip } from "./ui.jsx";
 import HeroBar from "./modules/HeroBar.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
 import FunnelByChannel from "./modules/FunnelByChannel.jsx";
@@ -49,6 +49,7 @@ export default function App() {
   if (error) return <div style={{ padding: 40 }}>Failed to load: {error}</div>;
 
   return (
+    <TipProvider>
     <div className="app">
       <nav className="sidebar">
         <h1>Launch Performance</h1>
@@ -62,6 +63,7 @@ export default function App() {
         {snap ? <ReleasePage snap={snap} onSaved={setSnap} /> : <div style={{ color: "#6c6b68" }}>Loading…</div>}
       </main>
     </div>
+    </TipProvider>
   );
 }
 
@@ -80,10 +82,18 @@ function SessionFooter() {
 }
 
 function ReleaseRow({ r, active, onClick }) {
-  const delta = `${r.statusPct >= 0 ? "+" : ""}${Math.round(r.statusPct * 100)}% vs expected`;
-  const tip = `${r.type === "LE" ? "Limited edition" : "Timed launch"} · day ${r.day} of ${r.of} · ${delta}`;
+  const t = useTip();
+  const pct = Math.round(r.statusPct * 100);
+  const content = {
+    head: r.name,
+    rows: [
+      { label: "Day", value: `${r.day} of ${r.of}` },
+      { label: "vs expected", value: `${pct >= 0 ? "+" : ""}${pct}%`, color: pct >= 0 ? "#0f7052" : "#b8461d" },
+      { label: "Status", value: r.complete ? "closed" : "live" },
+    ],
+  };
   return (
-    <button className={`release-row${active ? " active" : ""}`} onClick={onClick} title={tip}>
+    <button className={`release-row${active ? " active" : ""}`} onClick={onClick} {...t.props(content)}>
       <span className="dot" style={{ background: r.ok ? "#0f7052" : "#b8461d" }} />
       <span className="nm">{r.name}</span>
       <span className="typ">{r.type}</span>
