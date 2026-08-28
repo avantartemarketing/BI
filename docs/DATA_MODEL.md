@@ -455,7 +455,9 @@ entry actuals = daily funnel `Draw_Entries_Eligible_Units` filtered to **channel
 ```
 drop_off        = 0.2
 cannibalisation = 0.2
-CPE(day)        = spend(day) / entries(day)
+CPE(window)     = spend / entries over the trailing 3 CALENDAR days (dashboard
+                  headline + chart line; a window with spend and 0 entries shows
+                  ROI 0 and an unknown CPE)
 adjCPE(day)     = spend(day) / (entries(day) × (1 − drop_off))          # cost per expected-converting unit
 ROI_party(day)  = (1 − cannibalisation) × profit_per_unit_party / (adjCPE × budget_share_party)
 cum versions    = same on Σ spend / Σ entries

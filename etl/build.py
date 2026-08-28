@@ -476,25 +476,38 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     ppu_artist = (release["artist_profit"] / release["edition_size"]) if release["edition_size"] else 0
     aa_budget_share = 1.0 if release["artist_profit_share"] == 0 else 0.5
 
+    # daily 'roi' is the trailing-3-CALENDAR-day rolling ROI: a window with
+    # spend but no entries is a genuine 0, a window with no spend is null
     paid_daily = []
     cum_spend = cum_pentries = 0.0
+    win3: list[tuple[float, float]] = []
     for d in days:
         if d > min(as_of, launch_end):
             break
         s = float(spend_day.get(d, 0.0))
         e = float(paid_entries_day.get(d, 0.0))
         cum_spend += s; cum_pentries += e
-        adj_cpe = s / (e * (1 - drop)) if e else None
-        roi = ((1 - cann) * ppu_aa / (adj_cpe * aa_budget_share)) if adj_cpe else None
+        win3.append((s, e))
+        if len(win3) > 3:
+            win3.pop(0)
+        s3 = sum(x for x, _ in win3); e3 = sum(y for _, y in win3)
+        if s3 <= 0:
+            roi3 = None
+        elif e3 <= 0:
+            roi3 = 0.0
+        else:
+            roi3 = (1 - cann) * ppu_aa / ((s3 / (e3 * (1 - drop))) * aa_budget_share)
         paid_daily.append({"date": d.isoformat(), "spend": round(s, 2), "entries": e,
-                           "roi": round(roi, 3) if roi else None})
-    # trailing 3-day CPE over days with entries (adjusted = per expected-converting unit)
-    recent = [(r["spend"], r["entries"]) for r in paid_daily if r["entries"] > 0][-3:]
-    l3d_raw_cpe = (sum(s for s, _ in recent) / sum(e for _, e in recent)) if recent else None
+                           "roi": round(roi3, 3) if roi3 is not None else None})
+    # trailing 3-calendar-day CPE (adjusted = per expected-converting unit);
+    # CPE stays unknown when the window bought no entries - the ROI reads 0
+    s3 = sum(x for x, _ in win3); e3 = sum(y for _, y in win3)
+    l3d_raw_cpe = s3 / e3 if e3 > 0 else None
     l3d_cpe = l3d_raw_cpe / (1 - drop) if l3d_raw_cpe else None
     cum_adj_cpe = cum_spend / (cum_pentries * (1 - drop)) if cum_pentries else None
     cum_roi = ((1 - cann) * ppu_aa / (cum_adj_cpe * aa_budget_share)) if cum_adj_cpe else None
-    l3d_roi = ((1 - cann) * ppu_aa / (l3d_cpe * aa_budget_share)) if l3d_cpe else None
+    l3d_roi = ((1 - cann) * ppu_aa / (l3d_cpe * aa_budget_share)) if l3d_cpe \
+        else (0.0 if s3 > 0 else None)
 
     forecast_cpe = l3d_cpe * b["cpe_growth_factor"] if l3d_cpe else None
     final_day_roi = ((1 - cann) * ppu_aa / (forecast_cpe * aa_budget_share)) if forecast_cpe else None
@@ -617,10 +630,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "spendToDate": round(cum_spend, 2),
         "entriesToDate": cum_pentries,
         "cumRoi": round(cum_roi, 3) if cum_roi else None,
-        "l3dRoi": round(l3d_roi, 3) if l3d_roi else None,
+        "l3dRoi": round(l3d_roi, 3) if l3d_roi is not None else None,
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
         "cumCpe": round(cum_adj_cpe, 2) if cum_adj_cpe else None,
-        "roiDeclineModel": {"start": round(l3d_roi, 3) if l3d_roi else None,
+        "roiDeclineModel": {"start": round(l3d_roi, 3) if l3d_roi is not None else None,
                             "dailyFactor": daily_factor},
         "roiTarget": b["target_roi_aa"],
         "budget": {

@@ -1,11 +1,12 @@
 /* Paid ROI (spec §4.6) - wide 2-col card.
  * Daily spend bars (own axis, bottom band) + actual ROI line + modelled decline
  * dotted to close, anchored at the line's last actual point so dot and line
- * always meet: roi(i) = lastDailyRoi × roiDeclineModel.dailyFactor^i (falls
+ * always meet: roi(i) = lastRoi × roiDeclineModel.dailyFactor^i (falls
  * back to roiDeclineModel.start at today when there are no daily ROI points).
- * Real-data bridges: paid.daily starts at private-room open, so points are mapped to
- * campaign day via date − windowStart and clipped to day 1..of; roi is null on
- * zero-entry days - the line connects across the gaps (null points skipped);
+ * The line is the trailing-3-calendar-day rolling ROI, matching the headline:
+ * a window with spend but no entries is a genuine 0, a window with no spend is
+ * null (the line skips it). Points are mapped to campaign day via
+ * date − windowStart and clipped to day 1..of;
  * the y-domain (series ∪ target ± 12%, snapped to 0.25) is clamped at 0 since a
  * negative ROI axis is meaningless; complete releases draw actuals only. */
 import React, { useState } from "react";
@@ -55,7 +56,6 @@ export default function PaidRoi({ snap }) {
 
   const roiPts = pts.filter((p) => p.roi !== null);
   const lastRoiPt = roiPts.length ? roiPts[roiPts.length - 1] : null;
-  const last24 = lastRoiPt ? lastRoiPt.roi : null;
 
   // modelled decline to close, anchored on the last actual point (L3D level at
   // today only when there are no daily ROI points to anchor to)
@@ -125,8 +125,7 @@ export default function PaidRoi({ snap }) {
     ],
   };
   const todayTip =
-    "Last 24h " + fmt(last24, 2) +
-    "\nROI last 3 days " + fmt(paid.l3dRoi, 2) +
+    "ROI last 3 days " + fmt(paid.l3dRoi, 2) +
     "\nTarget " + fmt(paid.roiTarget, 2);
   const projTip = "Projected ROI at close " + fmt(declineEnd, 2) + "\nTarget " + fmt(paid.roiTarget, 2);
   const finalTip = "ROI final " + fmt(paid.cumRoi, 2) + "\nTarget " + fmt(paid.roiTarget, 2);
@@ -220,9 +219,7 @@ export default function PaidRoi({ snap }) {
                   )}
                   <div className="chart-tip" style={{ left: leftPct(hover), top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
                     <div className="t-head">Day {hover}</div>
-                    {/* ROI is undefined on zero-entry days - say so rather than
-                        letting the bridged line imply a value */}
-                    {p && <div className="t-row"><span>ROI</span><span className="v">{roiV !== null ? fmt(roiV, 2) : "–"}</span></div>}
+                    {p && <div className="t-row"><span>ROI (3d)</span><span className="v">{roiV !== null ? fmt(roiV, 2) : "–"}</span></div>}
                     {roiV === null && projV !== undefined && <div className="t-row"><span>ROI projected</span><span className="v">{fmt(projV, 2)}</span></div>}
                     {p && <div className="t-row"><span>Spend</span><span className="v">£{fmt(p.spend, 2)}</span></div>}
                     {p && <div className="t-row"><span>Entries</span><span className="v">{fmt(p.entries ?? 0)}</span></div>}

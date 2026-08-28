@@ -189,6 +189,10 @@ adjusted CPE = spend / (entries × 0.8)                cost per expected-convert
 ROI          = (1 − 0.2 cannibalisation) × profit per unit / (adjusted CPE × budget share)
 ```
 
+The headline and the chart line are the **trailing-3-calendar-day** rolling
+version of this: a window with spend but no entries reads as ROI 0 (money out,
+nothing in), and CPE is treated as unknown until entries return.
+
 **Budget to sell out** (the sizing decision):
 
 ```
