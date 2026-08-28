@@ -149,9 +149,15 @@ app.post("/api/inputs/:id", async (req, res) => {
 
 // ---- live data refresh (Google Sheet -> sources -> ETL; server/sheets.js) ----
 const sheets = require("./sheets");
-// what the last refresh did, feed by feed - open in the browser to debug
-app.get("/api/refresh/status", (_req, res) =>
-  res.json(sheets.status() || { note: "no refresh attempted since boot yet" }));
+// what the last refresh did, feed by feed - open in the browser to debug;
+// ?run=1 forces a fresh attempt first (gated behind the session like the app)
+app.get("/api/refresh/status", async (req, res) => {
+  if (req.query.run) {
+    try { return res.json(await sheets.refresh()); }
+    catch (e) { return res.status(502).json({ error: String((e && e.message) || e) }); }
+  }
+  res.json(sheets.status() || { note: "no refresh attempted since boot yet" });
+});
 app.post("/api/refresh", async (_req, res) => {
   try {
     res.json(await sheets.refresh());

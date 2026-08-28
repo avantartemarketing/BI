@@ -5,7 +5,7 @@ services:
     plan: starter
     # pandas powers the on-box ETL rerun for the live sheet refresh; if the
     # install fails the app still serves the committed snapshots
-    buildCommand: npm ci && npm run build && (python3 -m pip install --user --quiet pandas || pip3 install --user --quiet pandas || echo "pandas install failed - live refresh disabled")
+    buildCommand: npm ci && npm run build && ((python3 -m venv .venv && .venv/bin/pip install --quiet pandas) || echo "pandas install failed - live refresh disabled")
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:

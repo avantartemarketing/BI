@@ -225,8 +225,10 @@ function writeAtomic(file, text) {
 }
 
 function runEtlOnce() {
+  const venvPy = path.join(ROOT, ".venv", "bin", "python3");
+  const py = fs.existsSync(venvPy) ? venvPy : "python3";
   return new Promise((resolve, reject) => {
-    execFile("python3", [path.join(ROOT, "etl", "build.py")],
+    execFile(py, [path.join(ROOT, "etl", "build.py")],
       { cwd: ROOT, timeout: 5 * 60 * 1000, maxBuffer: 16 * 1024 * 1024 },
       (err, stdout, stderr) => {
         if (err) reject(new Error(`etl failed: ${(stderr || err.message).slice(-800)}`));
@@ -298,7 +300,8 @@ async function refresh() {
       try {
         out.etl = await runEtl();
       } catch (e) {
-        out.etl = "etl failed: " + String((e && e.message) || e).slice(0, 300);
+        const msg = String((e && e.message) || e).slice(0, 300);
+        out.etl = msg.startsWith("etl failed") ? msg : "etl failed: " + msg;
         out.ok = false;
         console.error("sheets: " + out.etl);
       }
