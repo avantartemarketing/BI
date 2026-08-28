@@ -13,7 +13,7 @@
  * delta = relative % vs reference for every unit; RAG on eff = inv ? −relPct : relPct.
  * Null value or missing/zero reference → neutral: centred grey dot, delta '–'. */
 import React from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtMoney, MINUS, useTip } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned, fmtMoney, MINUS, useTip } from "../ui.jsx";
 
 const SCALE = 25;
 const RING = "0 0 0 1px rgba(20,20,19,.45)";
@@ -109,7 +109,112 @@ function Rung({ r }) {
   );
 }
 
+/* Waterfall view: expected -> actual secured units today, stepped by the same
+ * funnel components at group level (Traffic and Conversion per display group,
+ * the §4.5 one-at-a-time repricing - steps sum exactly to the gap; any rounding
+ * residual is parked on the largest step). Same visual language as the
+ * Projection-vs-target waterfall: ink anchor ticks, floating step bars, grey
+ * connector drops. */
+function FunnelWaterfall({ snap }) {
+  const tipApi = useTip();
+  const fbg = snap?.funnelByGroup || {};
+  const exp = snap?.hero?.expectedToday ?? 0;
+  const now = snap?.hero?.now ?? 0;
+  const day = snap?.day ?? 0;
+
+  const steps = [];
+  for (const [k, name] of [
+    ["aa_email", "Email"], ["aa_social", "Meta"], ["referral_artist", "Referral"],
+    ["search_direct_other", "Search"], ["paid", "Paid"],
+  ]) {
+    const g = fbg[k];
+    if (!g) continue;
+    steps.push({ key: k + "-t", label: name + " · Traffic", value: g.contrib_traffic ?? 0 });
+    steps.push({ key: k + "-c", label: name + " · Conv", value: g.contrib_conversion ?? 0 });
+  }
+  if (!steps.length) return <div className="empty-state">No funnel data yet</div>;
+  const residual = (now - exp) - steps.reduce((a, s) => a + s.value, 0);
+  const biggest = steps.reduce((a, b) => (Math.abs(b.value) > Math.abs(a.value) ? b : a));
+  biggest.value += residual;
+
+  let cum = exp;
+  const path = steps.map((s) => { const from = cum; cum += s.value; return { ...s, from, to: cum }; });
+  const levels = [exp, ...path.map((p) => p.to)];
+  const lo = Math.min(...levels), hi = Math.max(...levels);
+  const pad = (hi - lo) * 0.1 || 1;
+  const span = hi + pad - (lo - pad);
+  const X = (v) => ((v - (lo - pad)) / span) * 100;
+  const nRows = steps.length + 2;
+
+  const anchorRow = (label, value, tip) => (
+    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "112px 1fr 56px", gap: 10, alignItems: "center", minHeight: 0 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
+      <div style={{ position: "relative", height: 14 }}>
+        <div {...tipApi.props(tip)} style={{ position: "absolute", left: `${X(value)}%`, top: -2, bottom: -2, width: 2, background: C.ink }} />
+      </div>
+      <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>{fmt(value)}</div>
+    </div>
+  );
+
+  return (
+    <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
+      <div style={{ position: "absolute", left: 122, right: 66, top: 0, bottom: 0, pointerEvents: "none" }}>
+        {levels.map((v, i) => (
+          <div key={i} style={{
+            position: "absolute", left: `${X(v)}%`,
+            top: `${((i + 0.5) / nRows) * 100}%`, height: `${(1 / nRows) * 100}%`,
+            width: 1, background: C.planGrey,
+          }} />
+        ))}
+      </div>
+
+      {anchorRow("Expected today", exp,
+        { head: `Expected by day ${day}`, rows: [{ label: "Secured units", value: fmt(exp) }] })}
+      {path.map((p) => {
+        const up = p.value >= 0;
+        const tip = {
+          head: p.label,
+          rows: [
+            { label: "vs expected", value: fmtSigned(p.value, 1) + " units", color: up ? C.green : C.red },
+            { label: "Running total", value: fmt(p.to, 1) },
+          ],
+        };
+        return (
+          <div key={p.key} style={{ flex: 1, display: "grid", gridTemplateColumns: "112px 1fr 56px", gap: 10, alignItems: "center", minHeight: 0 }}>
+            <div style={{ fontSize: 12.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {p.label}
+            </div>
+            <div style={{ position: "relative", height: 14 }}>
+              <div {...tipApi.props(tip)} style={{
+                position: "absolute", top: 0, bottom: 0,
+                left: `${X(Math.min(p.from, p.to))}%`,
+                width: `${Math.max(1.2, Math.abs(X(p.to) - X(p.from)))}%`,
+                background: up ? C.wfGreen : C.red, borderRadius: 3,
+              }} />
+            </div>
+            <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: up ? C.green : C.red }}>
+              {fmtSigned(p.value, 1)}
+            </div>
+          </div>
+        );
+      })}
+      {anchorRow("Actual today", now,
+        { head: "Secured to date", rows: [{ label: "Secured units", value: fmt(now) }] })}
+
+      <div style={{ height: 24, flex: "0 0 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <QBadge content={{
+          head: "Target to actual",
+          body: "Each funnel component is repriced one-at-a-time vs plan; together the steps sum to the gap between expected and actual secured units today.",
+        }} />
+        <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>secured units, day {day}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function FunnelByChannel({ snap }) {
+  const [view, setView] = React.useState("funnel"); // 'funnel' | 'wf'
+  React.useEffect(() => setView("funnel"), [snap?.id]);
   const fbg = snap?.funnelByGroup || {};
   const email = snap?.email || {};
   const social = snap?.social || {};
@@ -177,8 +282,21 @@ export default function FunnelByChannel({ snap }) {
   ];
 
   return (
-    <Card tall dot={GROUP_DOTS.funnel} title="Funnel by channel">
+    <Card
+      tall
+      dot={GROUP_DOTS.funnel}
+      title="Funnel by channel"
+      right={
+        <span className="seg">
+          <button className={view === "funnel" ? "active" : ""} onClick={() => setView("funnel")}
+            title="Each funnel metric as a deviation vs its reference">Funnel</button>
+          <button className={view === "wf" ? "active" : ""} onClick={() => setView("wf")}
+            title="Waterfall from expected to actual secured units today, stepped by the same funnel components">Waterfall</button>
+        </span>
+      }
+    >
       <div className="spacer-16" />
+      {view === "wf" ? <FunnelWaterfall snap={snap} /> : (
       <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", gap: 16 }}>
         {/* shared centre reference line behind all groups (112px label + 10 gap / 56px delta + 10 gap) */}
         <div style={{ position: "absolute", left: 122, right: 66, top: 0, bottom: 0, pointerEvents: "none" }}>
@@ -196,6 +314,7 @@ export default function FunnelByChannel({ snap }) {
           </div>
         ))}
       </div>
+      )}
     </Card>
   );
 }
