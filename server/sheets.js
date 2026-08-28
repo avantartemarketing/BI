@@ -246,50 +246,72 @@ function runEtl() {
 let running = null;
 let lastRefresh = null; // last attempt's outcome, for /api/refresh/status
 
+/* The three feeds are independent - each is attempted on every refresh and one
+ * failing never blocks the others. The ETL reruns when any feed updated. The
+ * result never throws: read `ok` (every attempted feed succeeded) and the
+ * per-feed fields. */
 async function refresh() {
   if (running) return running; // serialize concurrent calls
   running = (async () => {
     const started = Date.now();
-    const sa = serviceAccount();
-    const token = sa ? await accessToken(sa) : null;
-    const [funnel, spend] = await Promise.all([
-      fetchTab(FUNNEL_TAB, token), fetchTab(SPEND_TAB, token),
-    ]);
-    const at = convertAcrossTime(funnel);
-    const sp = convertSpend(spend);
-    if (at.rows < 100) throw new Error(`funnel tab suspiciously small (${at.rows} rows) - not overwriting`);
-    writeAtomic(ACROSS_TIME, at.csv);
-    writeAtomic(SPEND_DAILY, sp.csv);
-    // email stats from HubSpot when a token is present; failure keeps the last CSV
-    let emails;
+    const out = { ok: true };
+    let updated = false;
+
     try {
-      emails = await require("./hubspot").refreshEmails();
+      const sa = serviceAccount();
+      const token = sa ? await accessToken(sa) : null;
+      const [funnel, spend] = await Promise.all([
+        fetchTab(FUNNEL_TAB, token), fetchTab(SPEND_TAB, token),
+      ]);
+      const at = convertAcrossTime(funnel);
+      const sp = convertSpend(spend);
+      if (at.rows < 100) throw new Error(`funnel tab suspiciously small (${at.rows} rows) - not overwriting`);
+      writeAtomic(ACROSS_TIME, at.csv);
+      writeAtomic(SPEND_DAILY, sp.csv);
+      out.sheet = `funnel ${at.rows} rows, spend ${sp.rows} rows (${token ? "service-account" : "public-link"})`;
+      updated = true;
     } catch (e) {
-      emails = "hubspot failed: " + String((e && e.message) || e).slice(0, 160);
-      console.error("sheets: " + emails);
+      out.sheet = "sheet failed: " + String((e && e.message) || e).slice(0, 300);
+      out.ok = false;
+      console.error("sheets: " + out.sheet);
     }
-    // artist posts from Notion when a token is present; failure keeps the last CSV
-    let notion;
+
     try {
-      notion = await require("./notion").refreshArtistPosts();
+      out.emails = await require("./hubspot").refreshEmails();
+      if (!out.emails.startsWith("hubspot off")) updated = true;
     } catch (e) {
-      notion = "notion failed: " + String((e && e.message) || e).slice(0, 160);
-      console.error("sheets: " + notion);
+      out.emails = "hubspot failed: " + String((e && e.message) || e).slice(0, 300);
+      out.ok = false;
+      console.error("sheets: " + out.emails);
     }
-    const etl = await runEtl();
-    return {
-      ok: true, auth: token ? "service-account" : "public-link",
-      funnelRows: at.rows, funnelDropped: at.dropped, spendRows: sp.rows,
-      emails, notion, etl, tookMs: Date.now() - started,
-    };
+
+    try {
+      out.notion = await require("./notion").refreshArtistPosts();
+      if (!out.notion.startsWith("notion off")) updated = true;
+    } catch (e) {
+      out.notion = "notion failed: " + String((e && e.message) || e).slice(0, 300);
+      out.ok = false;
+      console.error("sheets: " + out.notion);
+    }
+
+    if (updated) {
+      try {
+        out.etl = await runEtl();
+      } catch (e) {
+        out.etl = "etl failed: " + String((e && e.message) || e).slice(0, 300);
+        out.ok = false;
+        console.error("sheets: " + out.etl);
+      }
+    } else {
+      out.etl = "skipped - no feed updated";
+    }
+    out.tookMs = Date.now() - started;
+    return out;
   })();
   try {
     const result = await running;
     lastRefresh = { at: new Date().toISOString(), ...result };
     return result;
-  } catch (e) {
-    lastRefresh = { at: new Date().toISOString(), ok: false, error: String((e && e.message) || e) };
-    throw e;
   } finally { running = null; }
 }
 
@@ -304,9 +326,9 @@ function startScheduler() {
   }
   const mins = Math.max(5, Number(process.env.REFRESH_MINUTES) || 60);
   const tick = (label) => refresh()
-    .then((r) => console.log(`sheets: ${label} refresh ok - funnel ${r.funnelRows} rows, ` +
-      `spend ${r.spendRows} rows, ${r.emails}, ${r.notion}, ${r.auth}, ${r.tookMs}ms | ${r.etl}`))
-    .catch((e) => console.error(`sheets: ${label} refresh failed - ${e.message}`));
+    .then((r) => console.log(`sheets: ${label} refresh ${r.ok ? "ok" : "with failures"} - ` +
+      `${r.sheet} | ${r.emails} | ${r.notion} | ${r.tookMs}ms | ${r.etl}`))
+    .catch((e) => console.error(`sheets: ${label} refresh crashed - ${e.message}`));
   setTimeout(() => tick("boot"), 8000);
   setInterval(() => tick("scheduled"), mins * 60 * 1000).unref();
   console.log(`sheets: live refresh every ${mins}m from sheet ${SHEET_ID.slice(0, 8)}…`);
