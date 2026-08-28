@@ -1,7 +1,8 @@
 /* Channels vs targets (spec §4.3, LE relabel per §6).
- * The four non-paid display groups, each on its own 120%-of-target track
- * (target tick fixed at 83.3%); right-hand text = proj / target + signed
- * delta % (ink when >= 0, red when negative). Tooltips per spec voice. */
+ * The four non-paid display groups, each on its own vs-target track (tick at
+ * 83.3% = a 120%-of-target scale, widening per row when a bar would overflow
+ * so heavy overperformance is never cropped); right-hand text = proj / target
+ * + signed delta % (ink when >= 0, red when negative). Tooltips per spec voice. */
 import React from "react";
 import { Card, TrackBar, GROUP_DOTS, C, fmt, MINUS } from "../ui.jsx";
 

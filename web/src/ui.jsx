@@ -133,9 +133,11 @@ export function QBadge({ tip, content }) {
   return <span className="qbadge" title={tip}>?</span>;
 }
 
-/* Horizontal bar on the 120%-of-target track (target tick fixed at 83.3%).
- * Layers: projected fill (light) -> overshoot hatch past the target tick ->
- * to-date fill (orange) -> expected tick (white + ink ring) -> target tick (ink). */
+/* Horizontal bar on a vs-target track. The target tick sits at 83.3% (a
+ * 120%-of-target track) unless a value would overflow - then the scale widens
+ * so the largest bar fits with a little headroom and the tick slides left.
+ * Layers: projected fill (light) -> to-date fill (orange) ->
+ * expected tick (white + ink ring) -> target tick (ink). */
 export function TrackBar({
   now, exp, proj, target, height = 20,
   tips = {}, radius = 4,
@@ -143,24 +145,19 @@ export function TrackBar({
   const t = useTip();
   const tp = (x) => t.props(typeof x === "string" ? { head: x } : x);
   const TICK = 100 / 1.2; // 83.333
-  const scale = target > 0 ? TICK / target : 0;
-  const pct = (v) => Math.max(0, Math.min(v * scale, 100));
+  const maxData = Math.max(now ?? 0, proj ?? 0, exp ?? 0);
+  const maxV = Math.max(target > 0 ? target * 1.2 : 0, maxData * 1.04);
+  const scale = maxV > 0 ? 100 / maxV : 0;
+  const pct = (v) => Math.max(0, Math.min((v ?? 0) * scale, 100));
   const projW = pct(proj);
   const nowW = pct(now);
-  const overshoot = proj > target && target > 0;
-  const hatch = `repeating-linear-gradient(135deg, ${C.orange} 0 1.5px, ${C.orangeLight} 1.5px 5px)`;
+  const tickPct = target > 0 ? pct(target) : TICK;
   return (
     <div style={{ position: "relative", height, background: C.track, borderRadius: radius }}>
       <div {...tp(tips.proj)} style={{
         position: "absolute", inset: 0, width: `${projW}%`,
         background: C.orangeLight, borderRadius: radius,
       }} />
-      {overshoot && (
-        <div {...tp(tips.overshoot)} style={{
-          position: "absolute", top: 0, bottom: 0, left: `${TICK}%`,
-          width: `${Math.max(projW - TICK, 0)}%`, background: hatch,
-        }} />
-      )}
       <div {...tp(tips.now)} style={{
         position: "absolute", inset: 0, width: `${nowW}%`,
         background: C.orange, borderRadius: radius,
@@ -172,7 +169,7 @@ export function TrackBar({
         }} />
       )}
       <div {...tp(tips.target)} style={{
-        position: "absolute", top: 0, bottom: 0, left: `calc(${TICK}% - 1px)`, width: 2,
+        position: "absolute", top: 0, bottom: 0, left: `calc(${tickPct}% - 1px)`, width: 2,
         background: C.ink,
       }} />
     </div>
