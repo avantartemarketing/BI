@@ -2435,19 +2435,19 @@
     "date": "2026-07-31",
     "spend": 529.04,
     "entries": 1.0,
-    "roi": 3.899
+    "roi": 3.119
    },
    {
     "date": "2026-08-01",
     "spend": 134.99,
     "entries": 0.0,
-    "roi": 3.659
+    "roi": 2.927
    },
    {
     "date": "2026-08-02",
     "spend": 0.42,
     "entries": 0.0,
-    "roi": 5.246
+    "roi": 4.196
    },
    {
     "date": "2026-08-03",
@@ -2477,37 +2477,37 @@
     "date": "2026-08-07",
     "spend": 92.98,
     "entries": 1.0,
-    "roi": 37.486
+    "roi": 29.989
    },
    {
     "date": "2026-08-08",
     "spend": 165.34,
     "entries": 0.0,
-    "roi": 13.493
+    "roi": 10.794
    },
    {
     "date": "2026-08-09",
     "spend": 418.54,
     "entries": 2.0,
-    "roi": 15.448
+    "roi": 12.359
    },
    {
     "date": "2026-08-10",
     "spend": 721.42,
     "entries": 4.0,
-    "roi": 16.021
+    "roi": 12.817
    },
    {
     "date": "2026-08-11",
     "spend": 1113.34,
     "entries": 0.0,
-    "roi": 9.281
+    "roi": 7.425
    },
    {
     "date": "2026-08-12",
     "spend": 1247.16,
     "entries": 0.0,
-    "roi": 4.524
+    "roi": 3.619
    },
    {
     "date": "2026-08-13",
@@ -2590,7 +2590,7 @@
   ],
   "spendToDate": 7482.43,
   "entriesToDate": 8.0,
-  "cumRoi": 3.727,
+  "cumRoi": 2.981,
   "l3dRoi": null,
   "l3dCpe": null,
   "cumCpe": 1169.13,
@@ -2695,7 +2695,7 @@
  },
  "benchmarks": {
   "chargeDropOff": 0.19999999999999996,
-  "cannibalisation": 0,
+  "cannibalisation": 0.2,
   "targetBuffer": 0.75
  }
 }

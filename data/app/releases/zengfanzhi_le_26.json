@@ -2261,67 +2261,67 @@
     "date": "2026-08-02",
     "spend": 176.7,
     "entries": 2.0,
-    "roi": 8.832
+    "roi": 7.066
    },
    {
     "date": "2026-08-03",
     "spend": 180.99,
     "entries": 2.0,
-    "roi": 13.894
+    "roi": 11.115
    },
    {
     "date": "2026-08-04",
     "spend": 523.98,
     "entries": 2.0,
-    "roi": 13.2
+    "roi": 10.56
    },
    {
     "date": "2026-08-05",
     "spend": 718.57,
     "entries": 1.0,
-    "roi": 6.813
+    "roi": 5.45
    },
    {
     "date": "2026-08-06",
     "spend": 843.27,
     "entries": 1.0,
-    "roi": 3.72
+    "roi": 2.976
    },
    {
     "date": "2026-08-07",
     "spend": 587.73,
     "entries": 3.0,
-    "roi": 4.512
+    "roi": 3.609
    },
    {
     "date": "2026-08-08",
     "spend": 285.03,
     "entries": 1.0,
-    "roi": 5.651
+    "roi": 4.521
    },
    {
     "date": "2026-08-09",
     "spend": 332.58,
     "entries": 0.0,
-    "roi": 6.437
+    "roi": 5.149
    },
    {
     "date": "2026-08-10",
     "spend": 217.74,
     "entries": 1.0,
-    "roi": 4.644
+    "roi": 3.715
    },
    {
     "date": "2026-08-11",
     "spend": 148.94,
     "entries": 0.0,
-    "roi": 2.774
+    "roi": 2.219
    },
    {
     "date": "2026-08-12",
     "spend": 114.62,
     "entries": 0.0,
-    "roi": 4.03
+    "roi": 3.224
    },
    {
     "date": "2026-08-13",
@@ -2351,19 +2351,19 @@
     "date": "2026-08-17",
     "spend": 115.58,
     "entries": 1.0,
-    "roi": 16.782
+    "roi": 13.425
    },
    {
     "date": "2026-08-18",
     "spend": 301.6,
     "entries": 0.0,
-    "roi": 4.649
+    "roi": 3.719
    },
    {
     "date": "2026-08-19",
     "spend": 363.24,
     "entries": 0.0,
-    "roi": 2.485
+    "roi": 1.988
    },
    {
     "date": "2026-08-20",
@@ -2410,7 +2410,7 @@
   ],
   "spendToDate": 5386.98,
   "entriesToDate": 16.0,
-  "cumRoi": 5.761,
+  "cumRoi": 4.609,
   "l3dRoi": null,
   "l3dCpe": null,
   "cumCpe": 420.86,
@@ -2508,7 +2508,7 @@
  },
  "benchmarks": {
   "chargeDropOff": 0.19999999999999996,
-  "cannibalisation": 0,
+  "cannibalisation": 0.2,
   "targetBuffer": 0.75
  }
 }

@@ -2277,7 +2277,7 @@
  },
  "benchmarks": {
   "chargeDropOff": 0.19999999999999996,
-  "cannibalisation": 0,
+  "cannibalisation": 0.2,
   "targetBuffer": 0.75
  }
 }

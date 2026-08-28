@@ -1037,43 +1037,43 @@
     "date": "2026-08-03",
     "spend": 382.48,
     "entries": 7.0,
-    "roi": 4.588
+    "roi": 3.67
    },
    {
     "date": "2026-08-04",
     "spend": 446.18,
     "entries": 15.0,
-    "roi": 7.319
+    "roi": 5.855
    },
    {
     "date": "2026-08-05",
     "spend": 611.76,
     "entries": 16.0,
-    "roi": 7.953
+    "roi": 6.362
    },
    {
     "date": "2026-08-06",
     "spend": 647.66,
     "entries": 13.0,
-    "roi": 7.777
+    "roi": 6.221
    },
    {
     "date": "2026-08-07",
     "spend": 276.23,
     "entries": 3.0,
-    "roi": 6.282
+    "roi": 5.025
    },
    {
     "date": "2026-08-08",
     "spend": 0.0,
     "entries": 1.0,
-    "roi": 5.547
+    "roi": 4.437
    },
    {
     "date": "2026-08-09",
     "spend": 0.0,
     "entries": 1.0,
-    "roi": 5.457
+    "roi": 4.365
    },
    {
     "date": "2026-08-10",
@@ -1097,65 +1097,65 @@
     "date": "2026-08-13",
     "spend": 143.5,
     "entries": 7.0,
-    "roi": 14.705
+    "roi": 11.764
    },
    {
     "date": "2026-08-14",
     "spend": 141.33,
     "entries": 6.0,
-    "roi": 13.759
+    "roi": 11.007
    },
    {
     "date": "2026-08-15",
     "spend": 65.97,
     "entries": 3.0,
-    "roi": 13.749
+    "roi": 10.999
    },
    {
     "date": "2026-08-16",
     "spend": 97.64,
     "entries": 2.0,
-    "roi": 10.874
+    "roi": 8.699
    },
    {
     "date": "2026-08-17",
     "spend": 40.91,
     "entries": 2.0,
-    "roi": 10.318
+    "roi": 8.254
    },
    {
     "date": "2026-08-18",
     "spend": 100.87,
     "entries": 0.0,
-    "roi": 5.036
+    "roi": 4.029
    },
    {
     "date": "2026-08-19",
     "spend": 36.97,
     "entries": 1.0,
-    "roi": 5.059
+    "roi": 4.047
    },
    {
     "date": "2026-08-20",
     "spend": 140.26,
     "entries": 6.0,
-    "roi": 7.588
+    "roi": 6.07
    },
    {
     "date": "2026-08-21",
     "spend": 63.4,
     "entries": 3.0,
-    "roi": 12.528
+    "roi": 10.022
    }
   ],
   "spendToDate": 3272.64,
   "entriesToDate": 86.0,
-  "cumRoi": 7.922,
-  "l3dRoi": 12.528,
+  "cumRoi": 6.337,
+  "l3dRoi": 10.022,
   "l3dCpe": 30.08,
   "cumCpe": 47.57,
   "roiDeclineModel": {
-   "start": 12.528,
+   "start": 10.022,
    "dailyFactor": 0.9091
   },
   "roiTarget": 1.1,
@@ -1163,7 +1163,7 @@
    "current": 63.4,
    "recommended": 0.0,
    "cap": "supply",
-   "finalDayRoi": 8.352,
+   "finalDayRoi": 6.681,
    "floor": 1.0,
    "budgetToSellOut": 0.0,
    "entriesNeeded": 0,
@@ -1269,7 +1269,7 @@
  },
  "benchmarks": {
   "chargeDropOff": 0.19999999999999996,
-  "cannibalisation": 0,
+  "cannibalisation": 0.2,
   "targetBuffer": 0.75
  }
 }

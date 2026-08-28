@@ -1871,37 +1871,37 @@
     "date": "2026-08-19",
     "spend": 275.51,
     "entries": 1.0,
-    "roi": 5.711
+    "roi": 2.284
    },
    {
     "date": "2026-08-20",
     "spend": 318.13,
     "entries": 4.0,
-    "roi": 15.266
+    "roi": 6.107
    },
    {
     "date": "2026-08-21",
     "spend": 508.99,
     "entries": 4.0,
-    "roi": 17.037
+    "roi": 6.815
    },
    {
     "date": "2026-08-22",
     "spend": 637.72,
     "entries": 2.0,
-    "roi": 14.249
+    "roi": 5.7
    },
    {
     "date": "2026-08-23",
     "spend": 836.16,
     "entries": 0.0,
-    "roi": 6.316
+    "roi": 2.526
    },
    {
     "date": "2026-08-24",
     "spend": 690.4,
     "entries": 0.0,
-    "roi": 1.929
+    "roi": 0.772
    },
    {
     "date": "2026-08-25",
@@ -1913,25 +1913,25 @@
     "date": "2026-08-26",
     "spend": 241.1,
     "entries": 1.0,
-    "roi": 1.469
+    "roi": 0.588
    }
   ],
   "spendToDate": 4086.95,
   "entriesToDate": 12.0,
-  "cumRoi": 6.129,
-  "l3dRoi": 1.469,
+  "cumRoi": 2.451,
+  "l3dRoi": 0.588,
   "l3dCpe": 1775.59,
   "cumCpe": 425.72,
   "roiDeclineModel": {
-   "start": 1.469,
+   "start": 0.588,
    "dailyFactor": 0.9524
   },
   "roiTarget": 1.1,
   "budget": {
    "current": 241.1,
-   "recommended": 4933.51,
+   "recommended": 1973.4,
    "cap": "roi_floor",
-   "finalDayRoi": 0.98,
+   "finalDayRoi": 0.392,
    "floor": 1.0,
    "budgetToSellOut": 110796.66,
    "entriesNeeded": 41.6,
@@ -1944,7 +1944,7 @@
   "spendProjectedTotal": 9391.15,
   "profitPerUnitAA": 1304.53,
   "profitPerUnitArtist": 1179.19,
-  "aaBudgetShare": 0.5
+  "aaBudgetShare": 1.0
  },
  "email": {
   "sends": 3,
@@ -2023,7 +2023,7 @@
  },
  "benchmarks": {
   "chargeDropOff": 0.19999999999999996,
-  "cannibalisation": 0,
+  "cannibalisation": 0.2,
   "targetBuffer": 0.75
  }
 }

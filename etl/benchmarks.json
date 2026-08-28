@@ -1,5 +1,5 @@
 {
- "_comment": "Benchmark values v2, transcribed from the 2026-08-28 LAUNCH PERFORMANCE OVERVIEW (recomputed panel; quartiles over the historical release panel; Low=P25, Medium=median, High=P75). Cannibalisation set to 0 per the updated PROFIT CALC block. See docs/DATA_MODEL.md #4 for provenance and the recomputation policy. Currency GBP.",
+ "_comment": "Benchmark values v2, transcribed from the 2026-08-28 LAUNCH PERFORMANCE OVERVIEW (recomputed panel; quartiles over the historical release panel; Low=P25, Medium=median, High=P75). Cannibalisation 0.2 - the LE standard per the workbook's spend rules (per-release tabs can show 0 via a broken template cell reference; do not transcribe those). See docs/DATA_MODEL.md #4 for provenance and the recomputation policy. Currency GBP.",
  "as_of": "2026-08-28",
  "order_split": {
   "_meaning": "channel share of unadjusted draw+preorder units; renormalise over non-N/A channels at use",
@@ -150,7 +150,7 @@
  "email_session_to_purchase": 0.01072708223,
  "eligible_entry_to_order": 0.8,
  "target_buffer": 0.75,
- "cannibalisation": 0,
+ "cannibalisation": 0.2,
  "paid_drop_off": 0.2,
  "cpe_growth_factor": 1.5,
  "target_roi_aa": 1.1,

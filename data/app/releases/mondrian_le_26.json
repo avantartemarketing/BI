@@ -2189,79 +2189,79 @@
     "date": "2026-07-25",
     "spend": 62.25,
     "entries": 11.0,
-    "roi": 39.447
+    "roi": 31.558
    },
    {
     "date": "2026-07-26",
     "spend": 182.07,
     "entries": 13.0,
-    "roi": 21.929
+    "roi": 17.543
    },
    {
     "date": "2026-07-27",
     "spend": 705.77,
     "entries": 47.0,
-    "roi": 16.682
+    "roi": 13.346
    },
    {
     "date": "2026-07-28",
     "spend": 1114.57,
     "entries": 65.0,
-    "roi": 13.935
+    "roi": 11.148
    },
    {
     "date": "2026-07-29",
     "spend": 841.23,
     "entries": 28.0,
-    "roi": 11.742
+    "roi": 9.394
    },
    {
     "date": "2026-07-30",
     "spend": 556.47,
     "entries": 18.0,
-    "roi": 9.863
+    "roi": 7.891
    },
    {
     "date": "2026-07-31",
     "spend": 428.53,
     "entries": 18.0,
-    "roi": 7.823
+    "roi": 6.259
    },
    {
     "date": "2026-08-01",
     "spend": 475.17,
     "entries": 25.0,
-    "roi": 9.326
+    "roi": 7.461
    },
    {
     "date": "2026-08-02",
     "spend": 437.54,
     "entries": 20.0,
-    "roi": 10.486
+    "roi": 8.389
    },
    {
     "date": "2026-08-03",
     "spend": 545.34,
     "entries": 17.0,
-    "roi": 9.493
+    "roi": 7.594
    },
    {
     "date": "2026-08-04",
     "spend": 268.61,
     "entries": 6.0,
-    "roi": 7.67
+    "roi": 6.136
    },
    {
     "date": "2026-08-05",
     "spend": 0.0,
     "entries": 2.0,
-    "roi": 6.857
+    "roi": 5.485
    },
    {
     "date": "2026-08-06",
     "spend": 0.0,
     "entries": 3.0,
-    "roi": 9.142
+    "roi": 7.313
    },
    {
     "date": "2026-08-07",
@@ -2338,7 +2338,7 @@
   ],
   "spendToDate": 5617.55,
   "entriesToDate": 286.0,
-  "cumRoi": 11.365,
+  "cumRoi": 9.092,
   "l3dRoi": null,
   "l3dCpe": null,
   "cumCpe": 24.55,
@@ -2478,7 +2478,7 @@
  },
  "benchmarks": {
   "chargeDropOff": 0.19999999999999996,
-  "cannibalisation": 0,
+  "cannibalisation": 0.2,
   "targetBuffer": 0.75
  }
 }

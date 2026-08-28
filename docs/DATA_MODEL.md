@@ -50,9 +50,17 @@ Derived economics:
   = 1,465.29 + 0.35 × 94 = **1,498.19**
 
 Global constants (from the workbook's "PROFIT CALC - DO NOT CHANGE" block):
-`frame_conversion = 0.35`, `frame_profit = £94/unit`, `cannibalisation = 0`
-(changed from 0.20 in the 2026-08-28 workbook revision - every live LE sheet now carries 0;
-the TL historical panel still shows 0.10, see §11).
+`frame_conversion = 0.35`, `frame_profit = £94/unit`, `cannibalisation = 0.2`
+(the LE standard per the spend rules. The 2026-08-28 tab revision left several
+per-release cannibalisation cells reading 0 via the broken template reference
+(issue 14, §11) - those cells are display artefacts, not the constant. The TL
+historical panel still shows 0.10.)
+
+Paid budget share (who funds the ads; distinct from profit share): the workbook's
+"Artist budget share (%) / AA budget share (%)" rows where present - Glenn Ligon
+is overridden to 100% AA ("he's not sharing paid budget"). Model input
+`aa_budget_share` (optional per release); default 100% AA when
+`artist_profit_share = 0` (commission / rev-share deals), else 50/50.
 
 ### 1.2 Campaign code (cross-system join key)
 `campaign_code` (e.g. `GlennLigon_LE_26`) joins the release to:
@@ -454,7 +462,7 @@ entry actuals = daily funnel `Draw_Entries_Eligible_Units` filtered to **channel
 
 ```
 drop_off        = 0.2
-cannibalisation = 0        # 0.2 before the 2026-08-28 revision
+cannibalisation = 0.2      # LE standard (spend rules); ignore per-tab cells showing 0 (issue 14)
 CPE(window)     = spend / entries over the trailing 3 CALENDAR days (dashboard
                   headline + chart line; a window with spend and 0 entries shows
                   ROI 0 and an unknown CPE)

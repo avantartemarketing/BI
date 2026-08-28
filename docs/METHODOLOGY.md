@@ -37,6 +37,7 @@ projections immediately - no data rebuild needed.
 | Edition size, unit price | Sellout target and launch value (size × price) |
 | Private room opens / announce / draw close | The campaign clock every curve runs on |
 | Artist profit, AA Group profit, profit share | Per-unit economics feeding paid ROI |
+| Paid budget share | Who funds the ads. Default: 50/50, or 100% AA on commission / rev-share deals; overridable per release (Glenn Ligon = 100% AA) |
 | Framing available | Adds 0.35 conversion × £94 profit per frame to AA profit/unit |
 | Paid channel size (Small / Medium / Large) | Which quartile of historical paid share to plan for |
 | Private room share (Low / Medium / High) | Quartile of the private-room + other share |
@@ -186,7 +187,7 @@ from the Paid Social channel:
 
 ```
 adjusted CPE = spend / (entries × 0.8)                cost per expected-converting unit
-ROI          = profit per unit / (adjusted CPE × budget share)   (cannibalisation is 0 in the current model)
+ROI          = (1 − 0.2 cannibalisation) × profit per unit / (adjusted CPE × budget share)
 ```
 
 The headline and the chart line are the **trailing-3-calendar-day** rolling

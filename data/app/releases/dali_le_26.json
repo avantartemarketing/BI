@@ -1025,41 +1025,41 @@
     "date": "2026-08-22",
     "spend": 124.66,
     "entries": 2.0,
-    "roi": 4.007
+    "roi": 3.206
    },
    {
     "date": "2026-08-23",
     "spend": 356.81,
     "entries": 13.0,
-    "roi": 7.782
+    "roi": 6.225
    },
    {
     "date": "2026-08-24",
     "spend": 1551.55,
     "entries": 13.0,
-    "roi": 3.44
+    "roi": 2.752
    },
    {
     "date": "2026-08-25",
     "spend": 805.95,
     "entries": 19.0,
-    "roi": 4.141
+    "roi": 3.313
    },
    {
     "date": "2026-08-26",
     "spend": 2013.73,
     "entries": 32.0,
-    "roi": 3.657
+    "roi": 2.926
    }
   ],
   "spendToDate": 4852.7,
   "entriesToDate": 79.0,
-  "cumRoi": 4.066,
-  "l3dRoi": 3.657,
+  "cumRoi": 3.253,
+  "l3dRoi": 2.926,
   "l3dCpe": 85.38,
   "cumCpe": 76.78,
   "roiDeclineModel": {
-   "start": 3.657,
+   "start": 2.926,
    "dailyFactor": 0.9524
   },
   "roiTarget": 1.1,
@@ -1067,7 +1067,7 @@
    "current": 2013.73,
    "recommended": 8360.94,
    "cap": "supply",
-   "finalDayRoi": 2.438,
+   "finalDayRoi": 1.95,
    "floor": 1.0,
    "budgetToSellOut": 133775.01,
    "entriesNeeded": 1044.6,
@@ -1137,7 +1137,7 @@
  },
  "benchmarks": {
   "chargeDropOff": 0.19999999999999996,
-  "cannibalisation": 0,
+  "cannibalisation": 0.2,
   "targetBuffer": 0.75
  }
 }

@@ -517,7 +517,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     ppu_aa = release["aa_group_profit"] / release["edition_size"] + (
         b["frame_conversion"] * b["frame_profit_per_unit"] if release["framing_available"] else 0)
     ppu_artist = (release["artist_profit"] / release["edition_size"]) if release["edition_size"] else 0
-    aa_budget_share = 1.0 if release["artist_profit_share"] == 0 else 0.5
+    # Who funds the ads. Explicit per-release override (the workbook's "AA budget
+    # share (%)" row - e.g. Glenn Ligon 100% AA); default: commission/rev-share
+    # deals (artist profit share 0) are AA-funded, otherwise split 50/50.
+    aa_budget_share = release.get("aa_budget_share")
+    if aa_budget_share is None:
+        aa_budget_share = 1.0 if release["artist_profit_share"] == 0 else 0.5
 
     # daily 'roi' is the trailing-3-CALENDAR-day rolling ROI: a window with
     # spend but no entries is a genuine 0, a window with no spend is null

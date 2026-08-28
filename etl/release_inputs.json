@@ -29,6 +29,7 @@
    "artist_profit": 176879.0,
    "aa_group_profit": 190745.0,
    "artist_profit_share": 0.5,
+   "aa_budget_share": 1.0,
    "framing_available": true,
    "paid_channel_size": "Medium",
    "reference_point": "Medium",
