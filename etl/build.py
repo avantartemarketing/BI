@@ -656,10 +656,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     }
 
     # ---- email funnel (docs §8): launch-window customer sends for this campaign
-    em = emails[(emails["campaign"] == release["campaign_code"])
-                & (emails["sent_at"].dt.date >= window_start)
-                & (emails["sent_at"].dt.date <= min(as_of, launch_end))
-                & (emails["email_type"].isin(["GEN", "CUS", "INS"]))]
+    em_all = emails[(emails["campaign"] == release["campaign_code"])
+                    & (emails["sent_at"].dt.date >= window_start)
+                    & (emails["sent_at"].dt.date <= min(as_of, launch_end))]
+    em = em_all[em_all["email_type"].isin(["GEN", "CUS", "INS"])]
+    if em.empty and not em_all.empty:
+        # source without the Klaviyo name convention (e.g. HubSpot) - keep all
+        # campaign-matched sends except operational types
+        em = em_all[~em_all["email_type"].isin(["TRNS", "AUT", "FREQ", "TEST"])]
     email_out = {
         "sends": int(len(em)),
         "delivered": int(em["delivered"].sum()),

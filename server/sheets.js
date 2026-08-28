@@ -244,6 +244,7 @@ function runEtl() {
 }
 
 let running = null;
+let lastRefresh = null; // last attempt's outcome, for /api/refresh/status
 
 async function refresh() {
   if (running) return running; // serialize concurrent calls
@@ -282,7 +283,18 @@ async function refresh() {
       emails, notion, etl, tookMs: Date.now() - started,
     };
   })();
-  try { return await running; } finally { running = null; }
+  try {
+    const result = await running;
+    lastRefresh = { at: new Date().toISOString(), ...result };
+    return result;
+  } catch (e) {
+    lastRefresh = { at: new Date().toISOString(), ok: false, error: String((e && e.message) || e) };
+    throw e;
+  } finally { running = null; }
+}
+
+function status() {
+  return lastRefresh;
 }
 
 function startScheduler() {
@@ -300,4 +312,4 @@ function startScheduler() {
   console.log(`sheets: live refresh every ${mins}m from sheet ${SHEET_ID.slice(0, 8)}…`);
 }
 
-module.exports = { refresh, startScheduler, runEtl, convertAcrossTime, convertSpend, normDate, parseCsv };
+module.exports = { refresh, status, startScheduler, runEtl, convertAcrossTime, convertSpend, normDate, parseCsv };

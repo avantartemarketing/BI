@@ -149,6 +149,9 @@ app.post("/api/inputs/:id", async (req, res) => {
 
 // ---- live data refresh (Google Sheet -> sources -> ETL; server/sheets.js) ----
 const sheets = require("./sheets");
+// what the last refresh did, feed by feed - open in the browser to debug
+app.get("/api/refresh/status", (_req, res) =>
+  res.json(sheets.status() || { note: "no refresh attempted since boot yet" }));
 app.post("/api/refresh", async (_req, res) => {
   try {
     res.json(await sheets.refresh());
