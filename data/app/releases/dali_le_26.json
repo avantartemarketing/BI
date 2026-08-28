@@ -1065,12 +1065,14 @@
   "roiTarget": 1.1,
   "budget": {
    "current": 2013.73,
-   "recommended": 8360.94,
+   "recommended": 6023.57,
    "cap": "supply",
    "finalDayRoi": 1.95,
    "floor": 1.0,
-   "budgetToSellOut": 133775.01,
-   "entriesNeeded": 1044.6,
+   "budgetToSellOut": 96377.05,
+   "entriesNeeded": 752.6,
+   "selloutGap": 627.1,
+   "organicFuture": 251.1,
    "daysLeft": 16
   },
   "unitTarget": 438,

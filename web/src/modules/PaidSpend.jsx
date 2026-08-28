@@ -29,6 +29,9 @@ export default function PaidSpend({ snap }) {
     rows: [
       { label: "Current", value: money(cur) },
       { label: "Recommended", value: money(rec) },
+      ...(typeof budget.selloutGap === "number"
+        ? [{ label: "Sell-out gap (units)", value: fmt(budget.selloutGap) }]
+        : []),
       { label: "Final-day ROI", value: fmt(budget.finalDayRoi, 2) },
       { label: "ROI floor", value: floorF },
     ],
@@ -50,6 +53,9 @@ export default function PaidSpend({ snap }) {
     rows: [
       { label: "Spend cap", value: money(rec) + " / day" },
       { label: "Entries needed", value: fmt(budget.entriesNeeded) },
+      ...(typeof budget.organicFuture === "number"
+        ? [{ label: "Organic still to come", value: fmt(budget.organicFuture) }]
+        : []),
       { label: "Final-day ROI", value: fmt(budget.finalDayRoi, 2) },
     ],
   } : {

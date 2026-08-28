@@ -2607,6 +2607,8 @@
    "floor": 1.0,
    "budgetToSellOut": null,
    "entriesNeeded": 24.0,
+   "selloutGap": 20.0,
+   "organicFuture": 0.0,
    "daysLeft": 0
   },
   "unitTarget": 15,

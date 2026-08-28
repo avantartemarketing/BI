@@ -1165,8 +1165,10 @@
    "cap": "supply",
    "finalDayRoi": 1.181,
    "floor": 1.0,
-   "budgetToSellOut": 1851.91,
-   "entriesNeeded": 5.4,
+   "budgetToSellOut": 1975.37,
+   "entriesNeeded": 5.8,
+   "selloutGap": 4.8,
+   "organicFuture": 0.0,
    "daysLeft": 0
   },
   "unitTarget": 219,

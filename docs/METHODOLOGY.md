@@ -194,13 +194,21 @@ The headline and the chart line are the **trailing-3-calendar-day** rolling
 version of this: a window with spend but no entries reads as ROI 0 (money out,
 nothing in), and CPE is treated as unknown until entries return.
 
-**Budget to sell out** (the sizing decision):
+**Budget to sell out** (the sizing decision). Paid is sized to top up only the
+gap organic is *not* on course to fill - not to buy the whole remaining edition
+by itself:
 
 ```
-entries needed  = inventory left × 1.2 − entries already banked
+secured now     = units sold + 0.8 × entries banked        (all channels)
+organic to come = shape-following organic projection of further secured units (§6)
+sell-out gap    = max(edition size − secured now − organic to come, 0)
+entries needed  = sell-out gap × 1.2
 forecast CPE    = trailing-3-day adjusted CPE × 1.5   (assumed deterioration to close)
 budget          = entries needed × forecast CPE
 ```
+
+A launch pacing well ahead organically can therefore read a recommendation of
+£0/day: nothing extra is needed to secure sell-out, whatever the current ROI.
 
 **Pacing rules:** target ROI (AA) **1.1**, floor **1.0**. Cumulative ROI below
 0.9 → decrease; 0.9–1.3 → maintain; above 1.3 → increase. Daily changes are

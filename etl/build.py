@@ -563,7 +563,27 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     units_sold = float(win["Total_Product_Units"].sum())
     entries_banked = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
     inventory_left = max(release["edition_size"] - units_sold, 0)
-    entries_needed = max(inventory_left * (1 + drop) - entries_banked, 0)
+    # Sell-out sizing: paid only tops up the gap ORGANIC is not on course to
+    # fill. Net off what is already secured (banked entries count at 0.8) plus
+    # the same shape-following organic projection the channel loop below runs
+    # (docs §5.4), then price only the residual entries.
+    secured_now = units_sold + b["eligible_entry_to_order"] * entries_banked
+    organic_future = 0.0
+    if not complete:
+        pdsa_now = pdsa_for(release, min(as_of, launch_end))
+        obs = by_group_day[by_group_day["event_date"] <= min(as_of, launch_end)]
+        for og in DISPLAY_GROUPS:
+            if og == "paid":
+                continue
+            sub_g = obs[obs["group"] == og]
+            now_g = (float(sub_g["units"].sum())
+                     + b["eligible_entry_to_order"] * float(sub_g["entries_no_conv"].sum()))
+            tgt_g = gtargets[og]["units"]
+            w_g = curve_value(curves, og, "units", pdsa_now)
+            r_perf = min(max((now_g / (tgt_g * w_g)) if tgt_g * w_g > 0 else 1.0, 0.25), 2.5)
+            organic_future += tgt_g * (1 - w_g) * (1 + w_g * (r_perf - 1))
+    sellout_gap = max(release["edition_size"] - secured_now - organic_future, 0.0)
+    entries_needed = sellout_gap * (1 + drop)
     days_left = max((launch_end - as_of).days, 0)
     supply_spend = (entries_needed * forecast_cpe / days_left) if (forecast_cpe and days_left) else 0.0
     # ROI floor: max spend/day keeping final-day ROI >= floor
@@ -691,6 +711,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "floor": b["roi_floor"],
             "budgetToSellOut": round(entries_needed * forecast_cpe, 2) if forecast_cpe else None,
             "entriesNeeded": round(entries_needed, 1),
+            "selloutGap": round(sellout_gap, 1),
+            "organicFuture": round(organic_future, 1),
             "daysLeft": days_left,
         },
         "unitTarget": targets["paid"]["units"],

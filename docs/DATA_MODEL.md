@@ -473,16 +473,22 @@ cum versions    = same on Σ spend / Σ entries
 `budget_share` = who pays for ads (AA/artist), e.g. 100/0 (Glenn Ligon), 33/66 (Jaume Plensa);
 distinct from `profit_share`.
 
-**Budget to sell out** (the sizing decision):
+**Budget to sell out** (the sizing decision). The workbook nets off a manual
+`organic_topup` estimate; the dashboard automates it with the shape-following
+organic projection (§5.4), so paid is sized to top up only the gap organic is
+not on course to fill:
 ```
-inventory_left   = edition_size − units_sold_total            # lifetime funnel col S
-entries_banked   = draw_entries_units_no_conv                 # lifetime funnel col Z
-entries_needed   = inventory_left × (1 + drop_off) − entries_banked − organic_topup   # organic_topup = manual estimate
+secured_now      = units_sold_total + 0.8 × entries_banked    # all channels
+organic_future   = Σ over organic groups of (proj − now)      # §5.4 projection
+sellout_gap      = max(edition_size − secured_now − organic_future, 0)
+entries_needed   = sellout_gap × (1 + drop_off)
 forecast_CPE     = trailing_3day_adjCPE × 1.5                 # 1.5 = assumed CPE deterioration to launch
 budget_to_sellout= entries_needed × forecast_CPE
 daily_spend      = budget_to_sellout / days_until_launch
 ROI_check_party  = profit_per_unit_party / (forecast_CPE × budget_share_party)
 ```
+A launch pacing well ahead organically reads a recommendation of £0/day -
+nothing extra is needed to secure sell-out, whatever the current ROI.
 
 **Pacing rules** (v1 rules engine; target and thresholds):
 - Target ROI (AA) = **1.1** (last-day forecast).

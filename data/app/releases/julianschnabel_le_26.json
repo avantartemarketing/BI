@@ -2210,7 +2210,9 @@
    "finalDayRoi": null,
    "floor": 1.0,
    "budgetToSellOut": null,
-   "entriesNeeded": 600.0,
+   "entriesNeeded": 147.6,
+   "selloutGap": 123.0,
+   "organicFuture": 377.0,
    "daysLeft": 30
   },
   "unitTarget": 123,

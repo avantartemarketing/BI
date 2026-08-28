@@ -1166,7 +1166,9 @@
    "finalDayRoi": 6.681,
    "floor": 1.0,
    "budgetToSellOut": 0.0,
-   "entriesNeeded": 0,
+   "entriesNeeded": 0.0,
+   "selloutGap": 0.0,
+   "organicFuture": 0.0,
    "daysLeft": 0
   },
   "unitTarget": 109,
