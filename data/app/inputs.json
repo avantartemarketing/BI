@@ -1,23 +1,23 @@
 {
  "benchmarks": {
-  "_comment": "Frozen v1 benchmark values, transcribed from the LE_Full Release sheet of LAUNCH PERFORMANCE OVERVIEW (quartiles over the historical release panel; Low=P25, Medium=median, High=P75) and New Paid Data Analysis (cost per purchase). See docs/DATA_MODEL.md \u00a74 for provenance and the recomputation policy. Currency GBP.",
-  "as_of": "2026-08-27",
+  "_comment": "Benchmark values v2, transcribed from the 2026-08-28 LAUNCH PERFORMANCE OVERVIEW (recomputed panel; quartiles over the historical release panel; Low=P25, Medium=median, High=P75). Cannibalisation set to 0 per the updated PROFIT CALC block. See docs/DATA_MODEL.md #4 for provenance and the recomputation policy. Currency GBP.",
+  "as_of": "2026-08-28",
   "order_split": {
    "_meaning": "channel share of unadjusted draw+preorder units; renormalise over non-N/A channels at use",
    "AA Email Auto": {
-    "Low": 0.01276042967,
-    "Medium": 0.02244052599,
-    "High": 0.07901250651
+    "Low": 0.0125,
+    "Medium": 0.02302503882,
+    "High": 0.07894736842
    },
    "AA Email Man": {
-    "Low": 0.1941443861,
-    "Medium": 0.3053846154,
-    "High": 0.4383269442
+    "Low": 0.2,
+    "Medium": 0.3233307148,
+    "High": 0.4444444444
    },
    "AA Meta": {
-    "Low": 0.04073571657,
-    "Medium": 0.06291226913,
-    "High": 0.1216470469
+    "Low": 0.04149377593,
+    "Medium": 0.0625,
+    "High": 0.1111111111
    },
    "AA Other": {
     "Low": 0.00448463503,
@@ -25,62 +25,62 @@
     "High": 0.009619376472
    },
    "AA X": {
-    "Low": 0.01265822785,
-    "Medium": 0.05882352941,
-    "High": 0.1666666667
+    "Low": 0.02139843279,
+    "Medium": 0.07107843137,
+    "High": 0.1916666667
    },
    "Direct": {
-    "Low": 0.1227050272,
-    "Medium": 0.1666666667,
-    "High": 0.2099780702
+    "Low": 0.1187908497,
+    "Medium": 0.1575614726,
+    "High": 0.2081567797
    },
    "Organic Search": {
-    "Low": 0.04758763664,
-    "Medium": 0.07610636646,
-    "High": 0.1145604396
+    "Low": 0.04752481468,
+    "Medium": 0.07117432905,
+    "High": 0.1105056283
    },
    "Other": {
-    "Low": 0.007462686567,
-    "Medium": 0.01408450704,
-    "High": 0.02284117528
+    "Low": 0.007738836506,
+    "Medium": 0.01758216874,
+    "High": 0.02777777778
    },
    "Referral Artist": {
-    "Low": 0.0621589752,
+    "Low": 0.05151790134,
     "Medium": 0.1052631579,
-    "High": 0.2307692308
+    "High": 0.225333722
    },
    "Referral Meta": {
-    "Low": 0.009514355814,
+    "Low": 0.009521282997,
     "Medium": 0.02631578947,
-    "High": 0.07168815337
+    "High": 0.0715677961
    },
    "Referral Other": {
-    "Low": 0.01457140107,
-    "Medium": 0.02905720242,
-    "High": 0.04991665905
+    "Low": 0.01538461538,
+    "Medium": 0.02777777778,
+    "High": 0.04761904762
    },
    "Referral X": {
     "Low": 0.1397058824,
     "Medium": 0.25,
-    "High": 0.3636363636
+    "High": 0.375
    }
   },
   "session_to_eligible_entry": {
    "_meaning": "unique eligible entries / unadjusted sessions",
    "AA Email Auto": {
-    "Low": 0.006159558264,
+    "Low": 0.003828814077,
     "Medium": 0.04744255004,
     "High": 0.3039215686
    },
    "AA Email Man": {
-    "Low": 0.006741978581,
-    "Medium": 0.01049868766,
-    "High": 0.0174023717
+    "Low": 0.006864350592,
+    "Medium": 0.01099830795,
+    "High": 0.01738003584
    },
    "AA Meta": {
-    "Low": 0.00929860701,
-    "Medium": 0.01402805611,
-    "High": 0.02578955136
+    "Low": 0.009101349214,
+    "Medium": 0.01472964409,
+    "High": 0.02702089385
    },
    "AA Other": {
     "Low": 0.03956043956,
@@ -88,70 +88,70 @@
     "High": 0.1607142857
    },
    "AA X": {
-    "Low": 0.01325555386,
-    "Medium": 0.02467105263,
-    "High": 0.03535353535
+    "Low": 0.01123595506,
+    "Medium": 0.02302631579,
+    "High": 0.0303030303
    },
    "Direct": {
-    "Low": 0.008974358974,
-    "Medium": 0.01860465116,
-    "High": 0.03007784855
+    "Low": 0.009006248878,
+    "Medium": 0.01830791493,
+    "High": 0.03014514627
    },
    "Organic Search": {
-    "Low": 0.01720453876,
-    "Medium": 0.03063965885,
-    "High": 0.06696832579
+    "Low": 0.01777777778,
+    "Medium": 0.03278688525,
+    "High": 0.06349206349
    },
    "Other": {
-    "Low": 0.01377410468,
-    "Medium": 0.01724137931,
-    "High": 0.03516295026
+    "Low": 0.009708737864,
+    "Medium": 0.02127659574,
+    "High": 0.03684210526
    },
    "Referral Artist": {
-    "Low": 0.005970149254,
+    "Low": 0.006396588486,
     "Medium": 0.01342281879,
-    "High": 0.02380952381
+    "High": 0.02200671391
    },
    "Referral Meta": {
-    "Low": 0.007227545883,
-    "Medium": 0.01511177007,
-    "High": 0.03573426573
+    "Low": 0.008055447429,
+    "Medium": 0.01612903226,
+    "High": 0.03005497615
    },
    "Referral Other": {
-    "Low": 0.01694915254,
-    "Medium": 0.03217158177,
-    "High": 0.06666666667
+    "Low": 0.0177789548,
+    "Medium": 0.03342519384,
+    "High": 0.06610576923
    },
    "Referral X": {
-    "Low": 0.009273570325,
-    "Medium": 0.03018867925,
-    "High": 0.03448275862
+    "Low": 0.008410720104,
+    "Medium": 0.02393939394,
+    "High": 0.150862069
    }
   },
   "paid_share_of_units": {
-   "Low": 0.07894736842,
-   "Medium": 0.2619047619,
-   "High": 0.390145584
+   "Low": 0.07825814536,
+   "Medium": 0.2464953271,
+   "High": 0.3647751136
   },
   "paid_session_to_eligible_entry": {
-   "Low": 0.001630314566,
-   "Medium": 0.004209871287,
-   "High": 0.01212556089
+   "Low": 0.001546790664,
+   "Medium": 0.004143253907,
+   "High": 0.00978063652
   },
   "pv_other_share_of_units": {
-   "Low": 0.2878787879,
-   "Medium": 0.4666666667,
-   "High": 0.7115384615
+   "Low": 0.2464788732,
+   "Medium": 0.4610655738,
+   "High": 0.7105263158
   },
   "cost_per_purchase": {
    "Low": 128.75,
    "Median": 177,
    "High": 291
   },
-  "email_session_to_purchase": 0.01136363636,
+  "email_session_to_purchase": 0.01072708223,
   "eligible_entry_to_order": 0.8,
   "target_buffer": 0.75,
-  "cannibalisation": 0.2,
+  "cannibalisation": 0,
   "paid_drop_off": 0.2,
   "cpe_growth_factor": 1.5,
   "target_roi_aa": 1.1,
@@ -198,8 +198,8 @@
    "launch_end": "2026-09-17",
    "edition_size": 150,
    "unit_price": 3000,
-   "artist_profit": 182790,
-   "aa_group_profit": 219793,
+   "artist_profit": 176879.0,
+   "aa_group_profit": 190745.0,
    "artist_profit_share": 0.5,
    "framing_available": true,
    "paid_channel_size": "Medium",
@@ -316,7 +316,7 @@
    "campaign_name": null,
    "_campaign_note": "Campaign Name cell is empty on the source tab -> paid spend actuals structurally zero in the sheet; fix when the Meta campaign exists.",
    "marketing_lead": "Maria",
-   "private_room_open": "2026-06-30",
+   "private_room_open": "2026-07-30",
    "announce_date": "2026-09-01",
    "launch_end": "2026-09-25",
    "edition_size": 500,

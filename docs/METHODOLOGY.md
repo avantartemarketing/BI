@@ -60,7 +60,7 @@ and only change deliberately, so targets never drift silently.
 ### Step 1 - split the edition into paid vs organic
 
 ```
-paid_pct      = paid-share benchmark for the size pick    (Low 7.9% · Medium 26.2% · High 39.0%)
+paid_pct      = paid-share benchmark for the size pick    (Low 7.8% · Medium 24.6% · High 36.5%)
 paid_units    = round(edition_size × paid_pct)
 organic_units = edition_size − paid_units
 ```
@@ -68,7 +68,7 @@ organic_units = edition_size − paid_units
 ### Step 2 - split organic into draw vs private room
 
 ```
-pr_share    = private-room + other share benchmark        (Low 28.8% · Medium 46.7% · High 71.2%)
+pr_share    = private-room + other share benchmark        (Low 24.6% · Medium 46.1% · High 71.1%)
 pr_units    = organic_units × pr_share
 draw_units  = organic_units − pr_units
 ```
@@ -101,7 +101,7 @@ target_sessions(c) = target_entries(c) / conv(c, quality)   (session → eligibl
 ```
 
 Private-room sessions are modelled separately and email-only:
-`pr_units ÷ 0.011364` (the median email session → purchase rate).
+`pr_units ÷ 0.010727` (the median email session → purchase rate).
 
 ### Step 5 - paid targets and budget
 
@@ -122,10 +122,10 @@ below buffer is red.
 
 ### Worked example - Glenn Ligon (edition 150)
 
-150 units → paid **39** (Medium, 26.2%) + organic 111 → private room **51.8**
-(Medium, 46.7%) + draw **59.2** → e.g. AA Email Man: 26.2 purchases → 32.8
-entries → 1,885 sessions. Total organic draw sessions 3,953; private-room
-sessions 4,558; paid sessions 11,580; paid budget = £177 × 39 = **£6,903**.
+150 units → paid **37** (Medium, 24.6%) + organic 113 → private room **52.1**
+(Medium, 46.1%) + draw **60.9** → e.g. AA Email Man: 27.3 purchases → 34.1
+entries → 1,961 sessions. Total organic draw sessions 4,076; private-room
+sessions 4,857; paid sessions 11,163; paid budget = £177 × 37 = **£6,549**.
 
 ## 5. Targets across time: the campaign clock
 
@@ -186,7 +186,7 @@ from the Paid Social channel:
 
 ```
 adjusted CPE = spend / (entries × 0.8)                cost per expected-converting unit
-ROI          = (1 − 0.2 cannibalisation) × profit per unit / (adjusted CPE × budget share)
+ROI          = profit per unit / (adjusted CPE × budget share)   (cannibalisation is 0 in the current model)
 ```
 
 The headline and the chart line are the **trailing-3-calendar-day** rolling

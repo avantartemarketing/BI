@@ -38,8 +38,8 @@ Attributes (hand-entered per release today, in the LAUNCH INPUT block of each re
 | `edition_size` (units) | G77 | 150 |
 | `unit_price` | G79 | 3,000 |
 | `launch_value` | `=price × size` | 450,000 |
-| `artist_profit` (total) | G81 | 182,790 |
-| `aa_group_profit` (total) | G82 | 219,793 |
+| `artist_profit` (total) | G81 | 176,879 |
+| `aa_group_profit` (total) | G82 | 190,745 |
 | `artist_profit_share` (who pays ads) | G85 | 0.5 (0 for estates on commission/rev-share) |
 | `framing_available` | G87 | Yes |
 
@@ -50,9 +50,9 @@ Derived economics:
   = 1,465.29 + 0.35 × 94 = **1,498.19**
 
 Global constants (from the workbook's "PROFIT CALC - DO NOT CHANGE" block):
-`frame_conversion = 0.35`, `frame_profit = £94/unit`, `cannibalisation = 0.20`
-(⚠ the TL historical panel uses 0.10 - see §11; **0.20 is canonical** for LE, it is what every
-live calculator uses).
+`frame_conversion = 0.35`, `frame_profit = £94/unit`, `cannibalisation = 0`
+(changed from 0.20 in the 2026-08-28 workbook revision - every live LE sheet now carries 0;
+the TL historical panel still shows 0.10, see §11).
 
 ### 1.2 Campaign code (cross-system join key)
 `campaign_code` (e.g. `GlennLigon_LE_26`) joins the release to:
@@ -219,7 +219,7 @@ target_sessions(c)         = target_eligible_entries(c) / conv(c)
 
 Private-room sessions are modelled separately, email-only:
 `target_pr_sessions = pr_units / email_session_to_purchase` where
-`email_session_to_purchase = 0.011364` (median AA Email Man session→purchase across the panel).
+`email_session_to_purchase = 0.010727` (median AA Email Man session→purchase across the panel; v2 recompute).
 
 ### Step 5 - paid targets and budget
 ```
@@ -303,7 +303,7 @@ Keep 0.8 as the planning constant; surface the per-channel table as diagnostics.
 (mixing LE + TL): **Low £128.75 / Median £177 / High £291**. Companion stats (static): ROI
 2.2/3.4/6.9, paid % of units .11/.21/.31.
 
-**F. Email-only session → purchase** (private room divisor): median .011364.
+**F. Email-only session → purchase** (private room divisor): median .010727 (v2).
 
 Recomputation policy for the rebuild: recompute quartiles nightly from BigQuery over a
 **correctly filtered panel** (year ≥ 2024, exclude undersubscribed: oversubscription ≤ 10 units,
@@ -454,7 +454,7 @@ entry actuals = daily funnel `Draw_Entries_Eligible_Units` filtered to **channel
 
 ```
 drop_off        = 0.2
-cannibalisation = 0.2
+cannibalisation = 0        # 0.2 before the 2026-08-28 revision
 CPE(window)     = spend / entries over the trailing 3 CALENDAR days (dashboard
                   headline + chart line; a window with spend and 0 entries shows
                   ROI 0 and an unknown CPE)

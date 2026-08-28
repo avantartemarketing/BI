@@ -9,7 +9,7 @@
    "day": 9,
    "of": 31,
    "complete": false,
-   "statusPct": 0.5494,
+   "statusPct": 0.5263,
    "ok": true
   },
   {
@@ -20,7 +20,7 @@
    "day": 5,
    "of": 21,
    "complete": false,
-   "statusPct": -0.2797,
+   "statusPct": -0.3077,
    "ok": false
   },
   {
