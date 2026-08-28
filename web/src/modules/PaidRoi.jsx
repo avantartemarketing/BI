@@ -220,7 +220,9 @@ export default function PaidRoi({ snap }) {
                   )}
                   <div className="chart-tip" style={{ left: leftPct(hover), top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
                     <div className="t-head">Day {hover}</div>
-                    {roiV !== null && <div className="t-row"><span>ROI</span><span className="v">{fmt(roiV, 2)}</span></div>}
+                    {/* ROI is undefined on zero-entry days - say so rather than
+                        letting the bridged line imply a value */}
+                    {p && <div className="t-row"><span>ROI</span><span className="v">{roiV !== null ? fmt(roiV, 2) : "–"}</span></div>}
                     {roiV === null && projV !== undefined && <div className="t-row"><span>ROI projected</span><span className="v">{fmt(projV, 2)}</span></div>}
                     {p && <div className="t-row"><span>Spend</span><span className="v">£{fmt(p.spend, 2)}</span></div>}
                     {p && <div className="t-row"><span>Entries</span><span className="v">{fmt(p.entries ?? 0)}</span></div>}

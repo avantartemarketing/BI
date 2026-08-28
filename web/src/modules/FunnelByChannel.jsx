@@ -4,9 +4,11 @@
  *   AA Email  - Delivered emails (no ref) · Open rate vs 19.6% · Click rate vs
  *               4.3% (historical LE launch-send medians) · Session → entry
  *   AA Meta   - Posts + stories (no ref) · Sessions · Session → entry
- *   Referral artist / Search-direct-other - Sessions · Session → entry
+ *   Referral artist - Posts (artist accounts; no feed yet, renders neutral) ·
+ *               Sessions · Session → entry
+ *   Search-direct-other - Sessions · Session → entry
  *   Paid      - Spend vs pro-rata budget (un-inverted per artboard) · Cost per
- *               entry vs cost-per-purchase target × 0.8 (inverted) · Session → entry
+ *               entry vs cost-per-purchase target × 0.8 (inverted)
  * Rung mechanics per spec: relPct=(v/ref−1)×100; dot x = clamp(50+relPct/25×46, 4, 96);
  * delta = relative % vs reference for every unit; RAG on eff = inv ? −relPct : relPct.
  * Null value or missing/zero reference → neutral: centred grey dot, delta '–'. */
@@ -149,7 +151,16 @@ export default function FunnelByChannel({ snap }) {
         conv("aa_social"),
       ],
     },
-    { name: "Referral artist", rungs: [sess("referral_artist"), conv("referral_artist")] },
+    {
+      name: "Referral artist",
+      rungs: [
+        // artist-account posts are not in the Emplifi export yet (AA profiles
+        // only) - the slot renders neutral until that feed exists
+        ["Posts", null, null, "count"],
+        sess("referral_artist"),
+        conv("referral_artist"),
+      ],
+    },
     { name: "Search / direct / other", rungs: [sess("search_direct_other"), conv("search_direct_other")] },
     {
       name: "Paid",
@@ -158,7 +169,6 @@ export default function FunnelByChannel({ snap }) {
           "Plan: campaign budget × share of days elapsed"],
         ["Cost per entry", paid.l3dCpe ?? null, cpeRef, "eur", true,
           "Last 3 days; reference = paid cost-per-purchase target × 0.8"],
-        conv("paid"),
       ],
     },
   ];
