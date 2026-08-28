@@ -1,7 +1,7 @@
 /* Funnel by channel (spec §4.4, LE relabel per §6). Tall card (1 col × 2 rows).
  * Five display groups; rungs are built from real snapshot data instead of the
  * mock's static list:
- *   AA Email  - Delivered emails (no ref) · Open rate vs 19.6% · Click rate vs
+ *   AA Email  - Delivered emails vs cohort-median delivery curve · Open rate vs 19.6% · Click rate vs
  *               4.3% (historical LE launch-send medians) · Session → entry
  *   AA Meta   - Posts + stories (no ref) · Sessions · Session → entry
  *   Referral artist - Posts (artist accounts; no feed yet, renders neutral) ·
@@ -241,7 +241,9 @@ export default function FunnelByChannel({ snap }) {
     {
       name: "AA Email",
       rungs: [
-        ["Delivered emails", email.delivered ?? null, null, "count"],
+        // reference = cohort median delivered total x pooled delivery-timing
+        // curve at today's pdsa (computed in the ETL as email.deliveredTarget)
+        ["Delivered emails", email.delivered ?? null, email.deliveredTarget ?? null, "count"],
         ["Open rate", pct(email.openRate), 19.6, "%", false, REF_NOTE],
         ["Click rate", pct(email.clickRate), 4.3, "%", false, REF_NOTE],
         conv("aa_email"),

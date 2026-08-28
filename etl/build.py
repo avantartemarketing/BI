@@ -287,6 +287,48 @@ def pdsa_for(release: dict, d: date) -> float:
     return (d - a).days / L if L else 0.0
 
 
+def email_delivered_benchmark(emails: pd.DataFrame, as_of: date) -> dict | None:
+    """Delivered-emails target: median total among completed campaigns, plus the
+    pooled cumulative delivery-timing curve on the standard pdsa grid (email
+    volume is send-driven and spiky - a pro-rata line would misread early
+    campaigns). None until >= 2 completed campaigns have send data."""
+    if emails.empty:
+        return None
+    shares, totals = [], []
+    for r in INPUTS["releases"]:
+        end = date.fromisoformat(r["launch_end"])
+        if end >= as_of:
+            continue
+        start = date.fromisoformat(r["private_room_open"])
+        ann = date.fromisoformat(r["announce_date"])
+        L = max((end - ann).days, 1)
+        sub = emails[(emails["campaign"] == r["campaign_code"])
+                     & (emails["sent_at"].dt.date >= start)
+                     & (emails["sent_at"].dt.date <= end)]
+        core = sub[sub["email_type"].isin(["GEN", "CUS", "INS"])]
+        if core.empty and not sub.empty:
+            core = sub[~sub["email_type"].isin(["TRNS", "AUT", "FREQ", "TEST"])]
+        total = float(core["delivered"].sum())
+        if total < 100:
+            continue
+        c = core.assign(pdsa=[(d.date() - ann).days / L for d in core["sent_at"]]).sort_values("pdsa")
+        cum = c["delivered"].cumsum() / total
+        row = []
+        for t in CURVE_GRID:
+            sel = cum[c["pdsa"] <= t]
+            row.append(float(sel.iloc[-1]) if len(sel) else 0.0)
+        shares.append(row)
+        totals.append(total)
+    if len(totals) < 2:
+        return None
+    med = pd.DataFrame(shares).median().tolist()
+    for i in range(1, len(med)):
+        med[i] = max(med[i], med[i - 1])
+    top = med[-1] or 1.0
+    return {"total": float(pd.Series(totals).median()),
+            "curve": [round(min(v / top, 1.0), 4) for v in med]}
+
+
 def build_curves(at: pd.DataFrame) -> dict:
     df = at[~at["campaign_stage"].isin(CLEAN_EXCLUDE_STAGES)].copy()
     df = df[df["pct_days_since_announcement"].notna()]
@@ -425,7 +467,8 @@ def daterange(a: date, b: date):
 def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   emails: pd.DataFrame, content: pd.DataFrame, curves: dict,
                   as_of: date, artist_posts: pd.DataFrame | None = None,
-                  posts_bench: dict | None = None) -> dict:
+                  posts_bench: dict | None = None,
+                  email_bench: dict | None = None) -> dict:
     b = BENCH
     name = release["release_name"]
     announce = date.fromisoformat(release["announce_date"])
@@ -677,6 +720,23 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             for _, r in em.sort_values("sent_at").iterrows()
         ],
     }
+    # expected delivered by today: cohort median total x pooled delivery-timing curve
+    email_out["deliveredTarget"] = None
+    if email_bench:
+        p = pdsa_for(release, min(as_of, launch_end))
+        grid, cur = CURVE_GRID, email_bench["curve"]
+        if p <= grid[0]:
+            w = 0.0
+        elif p >= grid[-1]:
+            w = 1.0
+        else:
+            w = 1.0
+            for i in range(1, len(grid)):
+                if p <= grid[i]:
+                    f = (p - grid[i - 1]) / (grid[i] - grid[i - 1])
+                    w = cur[i - 1] + f * (cur[i] - cur[i - 1])
+                    break
+        email_out["deliveredTarget"] = round(email_bench["total"] * w, 1)
 
     # ---- social content
     ct = content[(content["campaign_code"] == release["campaign_code"])
@@ -800,6 +860,7 @@ def main():
     content = load_content()
     artist_posts = load_artist_posts()
     posts_bench = artist_posts_benchmarks(artist_posts, as_of)
+    email_bench = email_delivered_benchmark(emails, as_of)
 
     APP.mkdir(parents=True, exist_ok=True)
     (APP / "releases").mkdir(exist_ok=True)
@@ -811,7 +872,7 @@ def main():
     index = []
     for release in INPUTS["releases"]:
         snap = build_release(release, at, spend, emails, content, curves, as_of,
-                             artist_posts, posts_bench)
+                             artist_posts, posts_bench, email_bench)
         (APP / "releases" / f"{release['id']}.json").write_text(json.dumps(snap, indent=1))
         index.append({
             "id": snap["id"], "name": f"{snap['artist']} - {snap['title']}",

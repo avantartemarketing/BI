@@ -3309,7 +3309,8 @@
   "clicked": 0,
   "openRate": null,
   "clickRate": null,
-  "sequence": []
+  "sequence": [],
+  "deliveredTarget": 0.0
  },
  "social": {
   "posts": 0,
