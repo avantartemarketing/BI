@@ -3,29 +3,29 @@
  "releases": [
   {
    "id": "glennligon_le_26",
-   "name": "Glenn Ligon \u2014 Multiple",
+   "name": "Glenn Ligon - Multiple",
    "releaseName": "Glenn Ligon \u00b7 Multiple \u00b7 2026 Q3",
    "type": "LE",
    "day": 9,
    "of": 31,
    "complete": false,
-   "statusPct": 0.614,
+   "statusPct": 0.5494,
    "ok": true
   },
   {
    "id": "dali_le_26",
-   "name": "Salvador Dali Estate \u2014 Multiple",
+   "name": "Salvador Dali Estate - Multiple",
    "releaseName": "Salvador Dali Estate \u00b7 Multiple \u00b7 2026 Q3",
    "type": "LE",
    "day": 5,
    "of": 21,
    "complete": false,
-   "statusPct": -0.281,
+   "statusPct": -0.2797,
    "ok": false
   },
   {
    "id": "abdulnasser_le_26",
-   "name": "Abdulnasser Gharem \u2014 Hemisphere",
+   "name": "Abdulnasser Gharem - Hemisphere",
    "releaseName": "Abdulnasser Gharem \u00b7 Hemisphere \u00b7 2026 Q3",
    "type": "LE",
    "day": 29,
@@ -36,7 +36,7 @@
   },
   {
    "id": "zengfanzhi_le_26",
-   "name": "Zeng Fanzhi \u2014 Multiple",
+   "name": "Zeng Fanzhi - Multiple",
    "releaseName": "Zeng Fanzhi \u00b7 Multiple \u00b7 2026 Q3",
    "type": "LE",
    "day": 28,
@@ -47,7 +47,7 @@
   },
   {
    "id": "mondrian_le_26",
-   "name": "Piet Mondrian Estate \u2014 Multiple",
+   "name": "Piet Mondrian Estate - Multiple",
    "releaseName": "Piet Mondrian Estate \u00b7 Multiple \u00b7 2026 Q3",
    "type": "LE",
    "day": 25,
@@ -58,7 +58,7 @@
   },
   {
    "id": "julianschnabel_le_26",
-   "name": "Julian Schnabel \u2014 Multiple",
+   "name": "Julian Schnabel - Multiple",
    "releaseName": "Julian Schnabel \u00b7 Multiple \u00b7 2026 Q3",
    "type": "LE",
    "day": 0,
@@ -69,7 +69,7 @@
   },
   {
    "id": "parra_le_26",
-   "name": "Parra \u2014 Multiple",
+   "name": "Parra - Multiple",
    "releaseName": "Parra \u00b7 Multiple \u00b7 2026 Q3",
    "type": "LE",
    "day": 21,
@@ -80,7 +80,7 @@
   },
   {
    "id": "jamesjean_blossom_26",
-   "name": "James Jean \u2014 Multiple",
+   "name": "James Jean - Multiple",
    "releaseName": "James Jean \u00b7 Multiple \u00b7 2026 Q3",
    "type": "LE",
    "day": 21,

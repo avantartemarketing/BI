@@ -104,7 +104,7 @@ def load_spend() -> pd.DataFrame:
 def load_emails() -> pd.DataFrame:
     # Klaviyo aggregates are not in the live sheet; run without them if absent
     if not (SOURCES / "all_sent_emails.csv").exists():
-        print("warning: sources/all_sent_emails.csv missing — email panels will be empty")
+        print("warning: sources/all_sent_emails.csv missing - email panels will be empty")
         return pd.DataFrame({
             "name": pd.Series(dtype=str), "sent_at": pd.Series(dtype="datetime64[ns]"),
             "campaign": pd.Series(dtype=str), "delivered": pd.Series(dtype=float),
@@ -205,7 +205,7 @@ def group_targets(targets: dict) -> dict:
     """Roll per-channel targets up to display groups.
 
     `units` is the secured-units target (draw/pre-order purchases per channel;
-    private-room units ride with AA Email per the workbook convention — the
+    private-room units ride with AA Email per the workbook convention - the
     template models all PR purchases through the email channel; paid = paid
     units). Group unit targets sum exactly to the edition size (sellout).
     """
@@ -298,6 +298,12 @@ def build_curves(at: pd.DataFrame) -> dict:
         for m in metrics:
             c = curve_from(sub, m, clean)
             curves["groups"][g][m] = c  # may be None -> UI/build falls back to all
+    # Paid units book on the draw-close date (winners are allocated then), so a
+    # units-shaped paid plan cliffs ~46 pts on the final day while the plotted
+    # actual (secured units) accrues entry-timed. Plan paid units on the entries
+    # shape instead - demand timing, not allocation bookkeeping (docs §5.3).
+    if curves["groups"].get("paid", {}).get("entries"):
+        curves["groups"]["paid"]["units"] = curves["groups"]["paid"]["entries"]
     # p25/p75 band for the all-entries curve (status guardrails)
     return curves
 
@@ -494,7 +500,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     e2o = b["eligible_entry_to_order"]
     for g, spec in DISPLAY_GROUPS.items():
         sub = by_group_day[by_group_day["group"] == g].set_index("event_date")
-        # SECURED UNITS — the unified page currency (docs §6.4):
+        # SECURED UNITS - the unified page currency (docs §6.4):
         #   secured = units sold (all routes) + 0.8 x eligible entry units not yet
         #   converted. Group unit targets sum to the edition size (sellout).
         tgt = gtargets[g]["units"]
@@ -729,7 +735,7 @@ def main():
         snap = build_release(release, at, spend, emails, content, curves, as_of)
         (APP / "releases" / f"{release['id']}.json").write_text(json.dumps(snap, indent=1))
         index.append({
-            "id": snap["id"], "name": f"{snap['artist']} — {snap['title']}",
+            "id": snap["id"], "name": f"{snap['artist']} - {snap['title']}",
             "releaseName": snap["releaseName"], "type": snap["type"],
             "day": snap["day"], "of": snap["of"], "complete": snap["complete"],
             "statusPct": snap["hero"]["statusPct"], "ok": snap["hero"]["ok"],

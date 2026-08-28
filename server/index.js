@@ -1,6 +1,6 @@
 /* Minimal web service for Render: serves the built SPA + the snapshot data +
  * an append-only paid-spend decision log (see docs/DATA_MODEL.md §9).
- * Note: Render's disk is ephemeral on the free tier — the decision log resets on
+ * Note: Render's disk is ephemeral on the free tier - the decision log resets on
  * deploy; point DECISIONS_PATH at a persistent disk when one is attached. */
 const express = require("express");
 const fs = require("fs");
@@ -14,7 +14,7 @@ const DECISIONS_PATH = process.env.DECISIONS_PATH || path.join(ROOT, "data", "de
 
 app.use(express.json());
 
-// magic-link login (avantarte.com only) — installs /login, /auth/* and the gate;
+// magic-link login (avantarte.com only) - installs /login, /auth/* and the gate;
 // every route registered after this line requires a signed session cookie.
 require("./auth").install(app);
 
@@ -130,7 +130,7 @@ app.post("/api/inputs/:id", async (req, res) => {
   }) + "\n");
 
   // A changed Meta-campaign match re-attributes paid spend, which only the full
-  // ETL can do — rerun it (build.py overlays the inputs just saved) and return
+  // ETL can do - rerun it (build.py overlays the inputs just saved) and return
   // the rebuilt snapshot. On failure the retargeted snapshot still stands.
   if ((next.campaign_name || null) !== (current.campaign_name || null)) {
     try {
@@ -140,7 +140,7 @@ app.post("/api/inputs/:id", async (req, res) => {
       return res.json({
         snapshot: updated,
         warning: "Saved, but paid spend could not be re-attributed yet (" +
-          String((e && e.message) || e).slice(0, 200) + ") — it will catch up on the next data refresh.",
+          String((e && e.message) || e).slice(0, 200) + ") - it will catch up on the next data refresh.",
       });
     }
   }

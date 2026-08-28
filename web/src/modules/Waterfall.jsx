@@ -1,8 +1,8 @@
-/* Projection vs target (spec §4.10) — horizontal waterfall.
+/* Projection vs target (spec §4.10) - horizontal waterfall.
  * Target and Projection are level ink anchor ticks (never floor-anchored
  * columns); the four contributor bars step between running levels with grey
  * 1px connector drops. x-scale = [min, max of running levels] ± 10% pad.
- * Projection is a stored model output — never re-derived here; on a complete
+ * Projection is a stored model output - never re-derived here; on a complete
  * release it equals the actual close. */
 import React from "react";
 import { Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned, useTip } from "../ui.jsx";
@@ -164,7 +164,7 @@ export default function Waterfall({ snap }) {
           alignItems: "center", flexShrink: 0,
         }}
       >
-        <QBadge content={{ head: "Projection vs target", body: "Contributors sum exactly to the gap between target and projected demand at close. Demand here is unconstrained — the hero caps at the sellout." }} />
+        <QBadge content={{ head: "Projection vs target", body: "Contributors sum exactly to the gap between target and projected demand at close. Demand here is unconstrained - the hero caps at the sellout." }} />
         <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>units at close</span>
       </div>
     </Card>

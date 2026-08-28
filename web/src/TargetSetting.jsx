@@ -1,4 +1,4 @@
-/* Target setting tab — the settled design (see the Release Target Setting canvas):
+/* Target setting tab - the settled design (see the Release Target Setting canvas):
  * inputs left (Release & timeline, Economics with derived per-unit fields, Model
  * levers as notched sliders + 6×2 channel-quality slider grid), derived targets
  * rail right, recomputing live via the shared target model. Save persists inputs
@@ -66,7 +66,7 @@ const Field = ({ label, tip, children }) => (
 function CampaignHint({ value, campaigns }) {
   const v = (value || "").trim();
   const style = { fontSize: 11.5, marginTop: 4, color: C.muted };
-  if (!v) return <div style={style}>no campaign matched — paid modules stay empty</div>;
+  if (!v) return <div style={style}>no campaign matched - paid modules stay empty</div>;
   const hit = (campaigns || []).find((c) => c.name === v);
   if (!hit) return <div style={{ ...style, color: C.amber }}>no spend rows with this exact name yet</div>;
   return <div style={style}>{fmtMoney(hit.spend)} spend · last active {hit.last}</div>;
@@ -154,12 +154,12 @@ export default function TargetSetting({ snap, onSaved }) {
         <Card dot="#b8862d" title="Release & timeline">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "16px 20px" }}>
-            <Field label="Release name" tip="Simple Release Name — the join key across every feed; changing it would orphan the actuals, so it is fixed here.">
+            <Field label="Release name" tip="Simple Release Name - the join key across every feed; changing it would orphan the actuals, so it is fixed here.">
               <input className="control ro" value={snap.releaseName} readOnly />
             </Field>
-            <Field label="Meta campaign" tip="Which Meta ad campaign this release's paid actuals are read from — rows matching this exact name in the live spend feed. Saving a change re-attributes the paid numbers.">
+            <Field label="Meta campaign" tip="Which Meta ad campaign this release's paid actuals are read from - rows matching this exact name in the live spend feed. Saving a change re-attributes the paid numbers.">
               <input className="control" list="meta-campaigns" value={inp.campaign_name || ""}
-                placeholder="— not matched —" onChange={set("campaign_name")} />
+                placeholder="- not matched -" onChange={set("campaign_name")} />
               <datalist id="meta-campaigns">
                 {(meta.meta_campaigns || []).map((c) => <option key={c.name} value={c.name} />)}
               </datalist>
@@ -186,7 +186,7 @@ export default function TargetSetting({ snap, onSaved }) {
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
             <span className="chip" title="Announce → draw close. The campaign clock runs on this window.">Campaign {days} days</span>
-            <span className="chip" title="Private room runs from opening to announce — early-access units land here.">Private room {prDays} days pre-announce</span>
+            <span className="chip" title="Private room runs from opening to announce - early-access units land here.">Private room {prDays} days pre-announce</span>
           </div>
         </Card>
 
@@ -199,7 +199,7 @@ export default function TargetSetting({ snap, onSaved }) {
             <Field label="Unit price (£)">
               <input className="control num" value={inp.unit_price} onChange={setNum("unit_price")} />
             </Field>
-            <Field label="Launch value" tip="Edition size × unit price — derived.">
+            <Field label="Launch value" tip="Edition size × unit price - derived.">
               <input className="control ro num" value={fmtMoney(derived.launch_value)} readOnly />
             </Field>
             <Field label="Artist profit (total £)">
@@ -208,7 +208,7 @@ export default function TargetSetting({ snap, onSaved }) {
             <Field label="AA Group profit (total £)">
               <input className="control num" value={inp.aa_group_profit} onChange={setNum("aa_group_profit")} />
             </Field>
-            <Field label="Artist profit share" tip="Who pays for paid ads. 0% for commission / rev-share estates — AA then carries 100% of spend.">
+            <Field label="Artist profit share" tip="Who pays for paid ads. 0% for commission / rev-share estates - AA then carries 100% of spend.">
               <input className="control num" value={Math.round((inp.artist_profit_share ?? 0) * 100) + "%"}
                 onChange={(e) => setInp({ ...inp, artist_profit_share: clamp((parseInt(String(e.target.value).replace(/[^0-9]/g, ""), 10) || 0) / 100, 0, 1) })} />
             </Field>
@@ -225,10 +225,10 @@ export default function TargetSetting({ snap, onSaved }) {
                 })}
               </div>
             </Field>
-            <Field label="Artist profit / unit" tip="Artist total profit ÷ edition size — derived.">
+            <Field label="Artist profit / unit" tip="Artist total profit ÷ edition size - derived.">
               <input className="control ro num" value={fmtMoney(derived.ppu_artist, 2)} readOnly />
             </Field>
-            <Field label="AA profit / unit" tip={`Includes framing: ${b.frame_conversion} conversion × £${b.frame_profit_per_unit} per frame when available — derived.`}>
+            <Field label="AA profit / unit" tip={`Includes framing: ${b.frame_conversion} conversion × £${b.frame_profit_per_unit} per frame when available - derived.`}>
               <input className="control ro num" value={fmtMoney(derived.ppu_aa, 2)} readOnly />
             </Field>
           </div>
@@ -276,7 +276,7 @@ export default function TargetSetting({ snap, onSaved }) {
                 <span style={{ width: 120, flex: "0 0 120px", fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c}</span>
                 <Slider options={["N/A", "Low", "Medium", "High"]} value={qual[c]}
                   onChange={(v) => setQual({ ...qual, [c]: v })}
-                  tip={`${c} — ${qual[c]}${qual[c] === "N/A" ? " (channel excluded)" : " quartile"}`} />
+                  tip={`${c} - ${qual[c]}${qual[c] === "N/A" ? " (channel excluded)" : " quartile"}`} />
               </div>
             ))}
           </div>
@@ -286,7 +286,7 @@ export default function TargetSetting({ snap, onSaved }) {
       <div style={{ width: 384, flex: "0 0 384px", position: "sticky", top: 28 }}>
         <Card dot="#8a7a52" title="Derived targets">
           <div className="spacer-8" />
-          <div className="lead" title="Secured-units sellout target — the hero target on the Overview tab.">{fmt(derived.edition_size)}</div>
+          <div className="lead" title="Secured-units sellout target - the hero target on the Overview tab.">{fmt(derived.edition_size)}</div>
           <div className="lead-caption">sellout units</div>
           <div className="spacer-16" />
           <div className="legend-rows" style={{ marginTop: 0 }}>

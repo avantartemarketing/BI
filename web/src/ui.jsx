@@ -8,7 +8,7 @@ import React, { createContext, useContext, useMemo, useRef, useState } from "rea
 
 /* ---- the popup system (agreed on the Dashboard Popups canvas) ----
  * One chrome, three tiers: chart readouts (inline, .chart-tip), element details
- * (this fixed singleton layer, 150ms, header + label/value rows ONLY — no prose),
+ * (this fixed singleton layer, 150ms, header + label/value rows ONLY - no prose),
  * methodology (same layer, 300ms, titled prose for ? badges).
  * Content: { head, rows?: [{ label, value, color? }], body? } */
 const TipCtx = createContext(null);

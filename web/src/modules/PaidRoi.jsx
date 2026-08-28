@@ -1,11 +1,11 @@
-/* Paid ROI (spec §4.6) — wide 2-col card.
+/* Paid ROI (spec §4.6) - wide 2-col card.
  * Daily spend bars (own axis, bottom band) + actual ROI line + modelled decline
  * dotted to close, anchored at the line's last actual point so dot and line
  * always meet: roi(i) = lastDailyRoi × roiDeclineModel.dailyFactor^i (falls
  * back to roiDeclineModel.start at today when there are no daily ROI points).
  * Real-data bridges: paid.daily starts at private-room open, so points are mapped to
  * campaign day via date − windowStart and clipped to day 1..of; roi is null on
- * zero-entry days — the line connects across the gaps (null points skipped);
+ * zero-entry days - the line connects across the gaps (null points skipped);
  * the y-domain (series ∪ target ± 12%, snapped to 0.25) is clamped at 0 since a
  * negative ROI axis is meaningless; complete releases draw actuals only. */
 import React, { useState } from "react";
@@ -48,6 +48,7 @@ export default function PaidRoi({ snap }) {
     .map((d, i) => ({
       d: dayIndex(d.date, snap.windowStart, (snap.day ?? 0) - (n - 1 - i)),
       spend: d.spend ?? 0,
+      entries: d.entries ?? null,
       roi: d.roi ?? null,
     }))
     .filter((p) => p.d >= 1 && p.d <= of);

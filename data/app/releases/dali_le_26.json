@@ -25,12 +25,12 @@
  "currency": "units",
  "hero": {
   "now": 308.0,
-  "expectedToday": 428.0,
-  "delta": -120.0,
+  "expectedToday": 427.0,
+  "delta": -119.0,
   "projected": 772.0,
   "target": 1200.0,
   "oversubscribedUnits": 0,
-  "statusPct": -0.281,
+  "statusPct": -0.2797,
   "ok": false
  },
  "targets": {
@@ -808,7 +808,7 @@
    "key": "paid",
    "name": "Paid",
    "now": 62.4,
-   "exp": 8.2,
+   "exp": 7.4,
    "proj": 280.6,
    "target": 468.0,
    "daily": [
@@ -857,97 +857,97 @@
     {
      "date": "2026-08-26",
      "actual": 62.4,
-     "plan": 8.2,
+     "plan": 7.42,
      "proj": null
     },
     {
      "date": "2026-08-27",
      "actual": null,
-     "plan": 10.76,
+     "plan": 39.92,
      "proj": 84.86
     },
     {
      "date": "2026-08-28",
      "actual": null,
-     "plan": 32.26,
+     "plan": 51.99,
      "proj": 105.86
     },
     {
      "date": "2026-08-29",
      "actual": null,
-     "plan": 43.04,
+     "plan": 73.46,
      "proj": 125.48
     },
     {
      "date": "2026-08-30",
      "actual": null,
-     "plan": 53.14,
+     "plan": 91.62,
      "proj": 143.81
     },
     {
      "date": "2026-08-31",
      "actual": null,
-     "plan": 62.56,
+     "plan": 127.1,
      "proj": 160.95
     },
     {
      "date": "2026-09-01",
      "actual": null,
-     "plan": 95.14,
+     "plan": 168.38,
      "proj": 176.97
     },
     {
      "date": "2026-09-02",
      "actual": null,
-     "plan": 129.12,
+     "plan": 189.97,
      "proj": 191.94
     },
     {
      "date": "2026-09-03",
      "actual": null,
-     "plan": 130.05,
+     "plan": 206.72,
      "proj": 205.93
     },
     {
      "date": "2026-09-04",
      "actual": null,
-     "plan": 132.4,
+     "plan": 216.68,
      "proj": 218.64
     },
     {
      "date": "2026-09-05",
      "actual": null,
-     "plan": 156.08,
+     "plan": 221.63,
      "proj": 230.2
     },
     {
      "date": "2026-09-06",
      "actual": null,
-     "plan": 211.07,
+     "plan": 234.0,
      "proj": 240.72
     },
     {
      "date": "2026-09-07",
      "actual": null,
-     "plan": 212.31,
+     "plan": 238.96,
      "proj": 250.27
     },
     {
      "date": "2026-09-08",
      "actual": null,
-     "plan": 222.63,
+     "plan": 264.66,
      "proj": 258.96
     },
     {
      "date": "2026-09-09",
      "actual": null,
-     "plan": 252.95,
+     "plan": 299.93,
      "proj": 266.85
     },
     {
      "date": "2026-09-10",
      "actual": null,
-     "plan": 263.19,
+     "plan": 375.16,
      "proj": 274.03
     },
     {
@@ -996,9 +996,9 @@
    "sessions_actual": 3788.0,
    "sessions_expected": 9929.0,
    "conv_actual": 0.016473072861668426,
-   "conv_expected": 0.0008259820772361211,
-   "contrib_traffic": -5.1,
-   "contrib_conversion": 59.3
+   "conv_expected": 0.0007469750959352747,
+   "contrib_traffic": -4.6,
+   "contrib_conversion": 59.6
   }
  },
  "paid": {
@@ -1113,22 +1113,22 @@
    {
     "key": "organic_traffic",
     "label": "Organic traffic",
-    "value": -710.0
+    "value": -716.0
    },
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": 90.0
+    "value": 91.0
    },
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": 68.0
+    "value": 72.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": 124.0
+    "value": 125.0
    }
   ]
  },

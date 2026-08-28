@@ -1,4 +1,4 @@
-/* GET /methodology — docs/METHODOLOGY.md rendered as a tidy standalone page.
+/* GET /methodology - docs/METHODOLOGY.md rendered as a tidy standalone page.
  * Tiny renderer for the subset of markdown that file uses (headings, paragraphs,
  * lists, tables, fenced code, `code`, **bold**, links, hr). Cached by mtime. */
 const fs = require("fs");

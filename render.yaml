@@ -5,13 +5,15 @@ services:
     plan: starter
     # pandas powers the on-box ETL rerun for the live sheet refresh; if the
     # install fails the app still serves the committed snapshots
-    buildCommand: npm ci && npm run build && (python3 -m pip install --user --quiet pandas || pip3 install --user --quiet pandas || echo "pandas install failed — live refresh disabled")
+    buildCommand: npm ci && npm run build && (python3 -m pip install --user --quiet pandas || pip3 install --user --quiet pandas || echo "pandas install failed - live refresh disabled")
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:
       - key: SESSION_SECRET
         generateValue: true
       - key: GOOGLE_SERVICE_ACCOUNT_JSON   # service-account key JSON (share the sheet with its client_email); falls back to the public link while unset
+        sync: false
+      - key: HUBSPOT_TOKEN   # HubSpot Private App token (Marketing Email read scope) - live email delivered/open/click stats
         sync: false
       - key: RESEND_API_KEY   # only for the dormant magic-link flow
         sync: false

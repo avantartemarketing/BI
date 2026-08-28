@@ -81,7 +81,7 @@ async function listTabs(token) {
 
 /* Returns the tab as an array of row arrays (strings/numbers; dates as Sheets
  * serial numbers when authenticated, locale-formatted strings via the public
- * fallback — normDate handles both). */
+ * fallback - normDate handles both). */
 async function fetchTab(tab, token) {
   if (token) {
     const range = encodeURIComponent(`'${tab.replace(/'/g, "''")}'`);
@@ -91,8 +91,8 @@ async function fetchTab(tab, token) {
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       let hint = "";
-      if (res.status === 400) hint = ` — tabs on the sheet: ${(await listTabs(token)).join(" | ")}`;
-      if (res.status === 403) hint = " — is the sheet shared with the service account email?";
+      if (res.status === 400) hint = ` - tabs on the sheet: ${(await listTabs(token)).join(" | ")}`;
+      if (res.status === 403) hint = " - is the sheet shared with the service account email?";
       throw new Error(`Sheets API ${res.status} for tab "${tab}"${hint} ${text.slice(0, 200)}`);
     }
     const body = await res.json();
@@ -103,7 +103,7 @@ async function fetchTab(tab, token) {
   const res = await fetch(url, { redirect: "follow" });
   const text = await res.text();
   if (!res.ok || text.startsWith("<")) {
-    throw new Error(`public CSV export failed for tab "${tab}" (${res.status}) — ` +
+    throw new Error(`public CSV export failed for tab "${tab}" (${res.status}) - ` +
       "set GOOGLE_SERVICE_ACCOUNT_JSON or keep the sheet link-shared");
   }
   return parseCsv(text);
@@ -256,14 +256,22 @@ async function refresh() {
     ]);
     const at = convertAcrossTime(funnel);
     const sp = convertSpend(spend);
-    if (at.rows < 100) throw new Error(`funnel tab suspiciously small (${at.rows} rows) — not overwriting`);
+    if (at.rows < 100) throw new Error(`funnel tab suspiciously small (${at.rows} rows) - not overwriting`);
     writeAtomic(ACROSS_TIME, at.csv);
     writeAtomic(SPEND_DAILY, sp.csv);
+    // email stats from HubSpot when a token is present; failure keeps the last CSV
+    let emails;
+    try {
+      emails = await require("./hubspot").refreshEmails();
+    } catch (e) {
+      emails = "hubspot failed: " + String((e && e.message) || e).slice(0, 160);
+      console.error("sheets: " + emails);
+    }
     const etl = await runEtl();
     return {
       ok: true, auth: token ? "service-account" : "public-link",
       funnelRows: at.rows, funnelDropped: at.dropped, spendRows: sp.rows,
-      etl, tookMs: Date.now() - started,
+      emails, etl, tookMs: Date.now() - started,
     };
   })();
   try { return await running; } finally { running = null; }
@@ -276,9 +284,9 @@ function startScheduler() {
   }
   const mins = Math.max(5, Number(process.env.REFRESH_MINUTES) || 60);
   const tick = (label) => refresh()
-    .then((r) => console.log(`sheets: ${label} refresh ok — funnel ${r.funnelRows} rows, ` +
-      `spend ${r.spendRows} rows, ${r.auth}, ${r.tookMs}ms | ${r.etl}`))
-    .catch((e) => console.error(`sheets: ${label} refresh failed — ${e.message}`));
+    .then((r) => console.log(`sheets: ${label} refresh ok - funnel ${r.funnelRows} rows, ` +
+      `spend ${r.spendRows} rows, ${r.emails}, ${r.auth}, ${r.tookMs}ms | ${r.etl}`))
+    .catch((e) => console.error(`sheets: ${label} refresh failed - ${e.message}`));
   setTimeout(() => tick("boot"), 8000);
   setInterval(() => tick("scheduled"), mins * 60 * 1000).unref();
   console.log(`sheets: live refresh every ${mins}m from sheet ${SHEET_ID.slice(0, 8)}…`);

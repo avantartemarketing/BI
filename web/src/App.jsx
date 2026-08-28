@@ -60,7 +60,7 @@ export default function App() {
         <div style={{ marginTop: 20, padding: "0 12px" }}>
           <a href="/methodology" target="_blank" rel="noreferrer"
             style={{ fontSize: 11.5, color: "#6c6b68", textDecoration: "none" }}
-            title="How every target is derived — the full target-setting methodology">
+            title="How every target is derived - the full target-setting methodology">
             Methodology ↗
           </a>
         </div>
@@ -114,7 +114,7 @@ function ReleasePage({ snap, onSaved }) {
   return (
     <>
       <header className="page-header" style={{ marginBottom: 0 }}>
-        <span className="name">{snap.artist} — {snap.title}</span>
+        <span className="name">{snap.artist} - {snap.title}</span>
         <span className={`badge ${snap.type.toLowerCase()}`}>{snap.type}</span>
         <span className="chip">Day {snap.day} of {snap.of}</span>
         {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}

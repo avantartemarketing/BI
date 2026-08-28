@@ -1,6 +1,6 @@
 # Target-setting methodology
 
-How every target on the Launch Performance dashboard is derived — the inputs, the
+How every target on the Launch Performance dashboard is derived - the inputs, the
 benchmarks behind each pick, the step-by-step model, and how a launch-total target
 becomes a day-by-day expectation and a forward projection.
 
@@ -20,17 +20,17 @@ secured units = units sold (all routes, incl. private room)
 ```
 
 An eligible draw entry is worth 0.8 of a sale because historically 80% of eligible
-entries convert to orders. Only *unconverted* entries carry the discount — a
+entries convert to orders. Only *unconverted* entries carry the discount - a
 converted entry is already a sale, so counting both would double-count. The hero
 target equals the edition size (sellout); demand beyond it shows as
 **oversubscribed**, not as bar overshoot. Funnel and paid modules stay denominated
-in sessions, entries and spend — the things marketing moves directly.
+in sessions, entries and spend - the things marketing moves directly.
 
 ## 2. The inputs (Target setting tab)
 
 Each release carries a small set of human decisions, editable on its **Target
 setting** tab. Saving recomputes the release's targets, plan curves and
-projections immediately — no data rebuild needed.
+projections immediately - no data rebuild needed.
 
 | Input | What it does |
 | --- | --- |
@@ -49,7 +49,7 @@ projections immediately — no data rebuild needed.
 
 Every reference number in the model is a **quartile of the historical LE release
 panel**: Low = 25th percentile, Medium = median, High = 75th percentile. Picking
-"High" for a channel does not inflate the total — it changes that channel's
+"High" for a channel does not inflate the total - it changes that channel's
 *share* of a fixed total, because shares are renormalised (step 3 below).
 
 The benchmark tables are frozen as a versioned file (`etl/benchmarks.json`, dated)
@@ -57,7 +57,7 @@ and only change deliberately, so targets never drift silently.
 
 ## 4. The target model, step by step
 
-### Step 1 — split the edition into paid vs organic
+### Step 1 - split the edition into paid vs organic
 
 ```
 paid_pct      = paid-share benchmark for the size pick    (Low 7.9% · Medium 26.2% · High 39.0%)
@@ -65,7 +65,7 @@ paid_units    = round(edition_size × paid_pct)
 organic_units = edition_size − paid_units
 ```
 
-### Step 2 — split organic into draw vs private room
+### Step 2 - split organic into draw vs private room
 
 ```
 pr_share    = private-room + other share benchmark        (Low 28.8% · Medium 46.7% · High 71.2%)
@@ -76,7 +76,7 @@ draw_units  = organic_units − pr_units
 Private-room units ride with the AA Email group in channel roll-ups (the
 workbook's own convention), so group targets still sum exactly to the edition.
 
-### Step 3 — split draw units across the organic channels
+### Step 3 - split draw units across the organic channels
 
 Each of the 12 organic channels has an **order-split benchmark** (its historical
 share of draw + pre-order units) at the picked quality. Shares are renormalised
@@ -93,7 +93,7 @@ Email Man **High**, AA Meta **Medium**, AA Other **Medium**, AA X **Low**, Direc
 **Medium** (N/A for estates, High for hype artists), Referral Meta **Medium**,
 Referral Other **N/A**, Referral X **N/A**.
 
-### Step 4 — back out entries and sessions per channel
+### Step 4 - back out entries and sessions per channel
 
 ```
 target_entries(c)  = target_purchases(c) / 0.8              (eligible entry → order rate)
@@ -103,7 +103,7 @@ target_sessions(c) = target_entries(c) / conv(c, quality)   (session → eligibl
 Private-room sessions are modelled separately and email-only:
 `pr_units ÷ 0.011364` (the median email session → purchase rate).
 
-### Step 5 — paid targets and budget
+### Step 5 - paid targets and budget
 
 ```
 paid_entries      = paid_units / 0.8
@@ -111,16 +111,16 @@ paid_sessions     = paid_entries / paid conversion pick     (Medium = 0.42%)
 paid_budget       = cost-per-purchase pick × paid_units     (£128.75 / £177 / £291)
 ```
 
-Sense check: **paid budget should stay under 6% of launch value** — the dashboard
+Sense check: **paid budget should stay under 6% of launch value** - the dashboard
 flags a breach but does not block it.
 
-### Step 6 — buffer
+### Step 6 - buffer
 
-`target inc. buffer = 0.75 × target` — a 25% haircut on any target, used as the
+`target inc. buffer = 0.75 × target` - a 25% haircut on any target, used as the
 amber warning line. Above target is green, between buffer and target is amber,
 below buffer is red.
 
-### Worked example — Glenn Ligon (edition 150)
+### Worked example - Glenn Ligon (edition 150)
 
 150 units → paid **39** (Medium, 26.2%) + organic 111 → private room **51.8**
 (Medium, 46.7%) + draw **59.2** → e.g. AA Email Man: 26.2 purchases → 32.8
@@ -132,17 +132,24 @@ sessions 4,558; paid sessions 11,580; paid budget = £177 × 39 = **£6,903**.
 A launch-total target is spread over days using **pooled historical curves**, not
 straight lines.
 
-1. Every day of a campaign is stamped with `pdsa` — percent of days since
+1. Every day of a campaign is stamped with `pdsa` - percent of days since
    announcement (0 = announce, 1 = draw close; negative = early access).
-2. For each completed, clean historical LE (fully observed window, ≥20 entries —
+2. For each completed, clean historical LE (fully observed window, ≥20 entries -
    currently ~15 releases, growing as campaigns close), compute the cumulative
    share of its final total reached at each pdsa, per metric and per channel
    group.
 3. The **median across releases is the target trajectory**; the 25th–75th
    percentile band is the guardrail shading on the trajectory chart.
-4. `expected today = target_total × curve(pdsa_today)` — this is the "expected"
+4. `expected today = target_total × curve(pdsa_today)` - this is the "expected"
    tick every module compares against. Channel groups with thin history fall back
    to the all-channel curve.
+
+One deliberate exception: the **paid unit plan follows the entry-timed shape**,
+not the unit-booking shape. Historically ~98% of paid draw units are *recorded*
+on the draw-close date (winners are allocated then), so a booking-shaped plan
+would cliff ~46% of the paid target onto the final day while the secured-units
+actual accrues as entries arrive. Entry timing reflects when the demand actually
+came in; a genuine (smaller) last-chance surge remains in the curve.
 
 The campaign stages shown in the header follow the same clock: Early access
 (before announce), Sustain 1–3 (thirds of the window), Last chance (draw-close
@@ -150,7 +157,7 @@ day onward).
 
 ## 6. Forward projections
 
-Projections describe the **current trajectory** — the paid-spend recommendation
+Projections describe the **current trajectory** - the paid-spend recommendation
 is the intervention shown alongside, never baked into the projection.
 
 **Organic channels.** The remaining volume follows the channel's historic shape;
@@ -206,5 +213,5 @@ capped at ±30% and changes under 10% are ignored. Forecast ROI below target for
 - **Benchmarks** are frozen quartiles of the historical panel, versioned and
   dated; recomputing them is a deliberate act, not a side effect of new data.
 
-Open-ended judgement calls — the size pick, channel qualities, the Meta campaign
-match — live on each release's Target setting tab, where every change is logged.
+Open-ended judgement calls - the size pick, channel qualities, the Meta campaign
+match - live on each release's Target setting tab, where every change is logged.

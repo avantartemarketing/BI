@@ -6,18 +6,40 @@
  *
  * Email delivery uses Resend (RESEND_API_KEY + MAIL_FROM on a verified domain).
  * Without a key the link is printed to the server log only (fish it out of the
- * Render logs) — it is never returned to the browser.
+ * Render logs) - it is never returned to the browser.
  *
  * Set SESSION_SECRET in production; the per-boot fallback signs everyone out on
  * each deploy. Used-token and rate-limit state is in-memory (fine for one
  * instance; resets on deploy). */
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 
 const DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN || "avantarte.com").toLowerCase();
-const SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
-if (!process.env.SESSION_SECRET) {
-  console.warn("auth: SESSION_SECRET not set — sessions will not survive restarts");
+
+// Sessions must survive restarts or everyone re-logs-in on every deploy: use
+// SESSION_SECRET when set (the durable option - survives deploys too), else a
+// generated secret persisted to disk (survives restarts; a fresh deploy wipes
+// the disk on Render, so set the env var there).
+function loadSecret() {
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  const p = path.resolve(__dirname, "..", "data", ".session_secret");
+  try {
+    const s = fs.readFileSync(p, "utf8").trim();
+    if (s.length >= 32) return s;
+  } catch {}
+  const s = crypto.randomBytes(32).toString("hex");
+  try {
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, s, { mode: 0o600 });
+    console.warn("auth: SESSION_SECRET not set - generated one in data/.session_secret " +
+      "(set SESSION_SECRET in the environment so sign-ins also survive deploys)");
+  } catch {
+    console.warn("auth: SESSION_SECRET not set and disk not writable - sessions reset on restart");
+  }
+  return s;
 }
+const SECRET = loadSecret();
 // Password login (magic-link kept dormant below): allow-listed emails, one shared
 // password stored as a SHA-256 hash. Override without code changes via
 // LOGIN_USERS (comma-separated emails) and LOGIN_PASSWORD (plaintext, hashed at boot).
@@ -32,7 +54,14 @@ const RESEND_KEY = process.env.RESEND_API_KEY || "";
 const MAIL_FROM = process.env.MAIL_FROM || `Launch BI <login@${DOMAIN}>`;
 const COOKIE = "lbi_session";
 const LINK_TTL_MS = 15 * 60 * 1000;
-const SESSION_TTL_MS = 30 * 24 * 3600 * 1000;
+const SESSION_TTL_MS = 90 * 24 * 3600 * 1000;
+
+// one Set-Cookie shape everywhere (login, verify, sliding renewal)
+const sessionCookie = (req, email) => {
+  const token = sign({ kind: "session", email, exp: Date.now() + SESSION_TTL_MS });
+  return `${COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; ` +
+    `Max-Age=${SESSION_TTL_MS / 1000}` + (req.secure ? "; Secure" : "");
+};
 
 const b64u = (buf) => Buffer.from(buf).toString("base64url");
 const sign = (payload) => {
@@ -88,7 +117,7 @@ function sessionFrom(req) {
 
 async function sendMagicLink(email, link) {
   if (!RESEND_KEY) {
-    console.log(`auth: RESEND_API_KEY not set — magic link for ${email}: ${link}`);
+    console.log(`auth: RESEND_API_KEY not set - magic link for ${email}: ${link}`);
     return { ok: true, delivered: false };
   }
   const res = await fetch("https://api.resend.com/emails", {
@@ -166,7 +195,7 @@ function install(app) {
     const password = String((req.body && req.body.password) || "");
     const ip = req.ip || "?";
     if (rateLimited("lip:" + ip, 20) || rateLimited("lem:" + email, 10)) {
-      return res.status(429).json({ error: "Too many attempts — try again in a few minutes." });
+      return res.status(429).json({ error: "Too many attempts - try again in a few minutes." });
     }
     const hash = crypto_sha(password);
     const okUser = ALLOWED_USERS.includes(email);
@@ -175,10 +204,7 @@ function install(app) {
     if (!okUser || !okPw) {
       return res.status(401).json({ error: "Wrong email or password." });
     }
-    const session = sign({ kind: "session", email, exp: Date.now() + SESSION_TTL_MS });
-    res.setHeader("Set-Cookie",
-      `${COOKIE}=${encodeURIComponent(session)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL_MS / 1000}` +
-      (req.secure ? "; Secure" : ""));
+    res.setHeader("Set-Cookie", sessionCookie(req, email));
     res.json({ ok: true });
   });
 
@@ -186,7 +212,7 @@ function install(app) {
     const email = String((req.body && req.body.email) || "").trim().toLowerCase();
     const ip = req.ip || "?";
     if (rateLimited("ip:" + ip, 20) || rateLimited("em:" + email, 5)) {
-      return res.status(429).json({ error: "Too many requests — try again in a few minutes." });
+      return res.status(429).json({ error: "Too many requests - try again in a few minutes." });
     }
     if (!/^[^\s@]+@[^\s@]+$/.test(email) || !email.endsWith("@" + DOMAIN)) {
       return res.status(400).json({ error: `Use your @${DOMAIN} email address.` });
@@ -195,7 +221,7 @@ function install(app) {
     const token = sign({ kind: "login", id, email, exp: Date.now() + LINK_TTL_MS });
     const link = `${req.protocol}://${req.get("host")}/auth/verify?token=${encodeURIComponent(token)}`;
     const sent = await sendMagicLink(email, link);
-    if (!sent.ok) return res.status(502).json({ error: "Could not send the email — try again or contact the admin." });
+    if (!sent.ok) return res.status(502).json({ error: "Could not send the email - try again or contact the admin." });
     res.json({ ok: true });
   });
 
@@ -207,10 +233,7 @@ function install(app) {
         'That sign-in link is invalid or has already been used. <a href="/login">Request a new one</a>.</body>');
     }
     usedTokens.set(payload.id, payload.exp);
-    const session = sign({ kind: "session", email: payload.email, exp: Date.now() + SESSION_TTL_MS });
-    res.setHeader("Set-Cookie",
-      `${COOKIE}=${encodeURIComponent(session)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_TTL_MS / 1000}` +
-      (req.secure ? "; Secure" : ""));
+    res.setHeader("Set-Cookie", sessionCookie(req, payload.email));
     res.redirect("/");
   });
 
@@ -225,9 +248,17 @@ function install(app) {
     res.json({ email: s.email });
   });
 
-  // the gate: everything below /auth, /login, /healthz requires a session
+  // the gate: everything below /auth, /login, /healthz requires a session.
+  // Sliding renewal: any activity in the back half of a session's life reissues
+  // the cookie for a fresh 90 days, so active users stay signed in indefinitely.
   app.use((req, res, next) => {
-    if (sessionFrom(req)) return next();
+    const s = sessionFrom(req);
+    if (s) {
+      if (s.exp - Date.now() < SESSION_TTL_MS / 2) {
+        res.setHeader("Set-Cookie", sessionCookie(req, s.email));
+      }
+      return next();
+    }
     if (req.path.startsWith("/api/")) return res.status(401).json({ error: "not signed in" });
     return res.redirect("/login");
   });

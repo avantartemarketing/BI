@@ -1,4 +1,4 @@
-/* Units vs sellout — hero module (spec §4.1, unified secured-units currency, docs §6.4):
+/* Units vs sellout - hero module (spec §4.1, unified secured-units currency, docs §6.4):
  * secured units = units sold (all routes incl. private room) + 0.8 × eligible entry
  * units not yet converted, capped at the edition size. Single 24px bar on the shared
  * 120%-of-target track: projected fill, overshoot hatch past the target tick,

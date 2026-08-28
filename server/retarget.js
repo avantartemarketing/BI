@@ -5,7 +5,7 @@
  * recomputed exactly: channel unit targets, daily plan curves, expected-today,
  * organic shaped projections, hero (capped at edition, oversubscription), rail
  * numbers, sell-through, waterfall (rescaled to the new gap, still reconciling).
- * Actual-derived paid fields (spend, CPE, ROI, recommendation) are untouched —
+ * Actual-derived paid fields (spend, CPE, ROI, recommendation) are untouched -
  * the paid forward projection is spend-based and carries over as (proj − now).
  * The daily date domain refreshes only on a full ETL run (a date change here
  * updates the campaign clock/labels, not the array bounds). */

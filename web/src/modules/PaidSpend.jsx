@@ -2,7 +2,7 @@
  * Lead = recommended daily budget with an arrow lozenge vs current; "Capped by" row
  * names the binding limit (supply sell-out vs ROI floor); two 120%-track bars put
  * paid entries and spend on the same visual scale; footer buttons write to the
- * append-only decision log. Complete releases: projection = actual, recommendation "—",
+ * append-only decision log. Complete releases: projection = actual, recommendation "-",
  * buttons disabled. Pre-launch releases (no campaign yet) disable the buttons too. */
 import React, { useState } from "react";
 import { Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, MINUS, postDecision, useTip } from "../ui.jsx";
@@ -35,7 +35,7 @@ export default function PaidSpend({ snap }) {
   };
   const loz =
     d === null || d === 0 ? (
-      <Lozenge dir="neutral" content={lozTip}>—</Lozenge>
+      <Lozenge dir="neutral" content={lozTip}>-</Lozenge>
     ) : d > 0 ? (
       <Lozenge dir="up" content={lozTip}>{"▲ +£" + fmt(d)}</Lozenge>
     ) : (
@@ -44,9 +44,9 @@ export default function PaidSpend({ snap }) {
 
   // ----- "Capped by" row -----
   const showCap = !complete && !noCampaign && (rec ?? 0) > 0;
-  const capLabel = budget.cap === "supply" ? "Supply — sell-out" : "ROI floor";
+  const capLabel = budget.cap === "supply" ? "Supply - sell-out" : "ROI floor";
   const capTip = budget.cap === "supply" ? {
-    head: "Supply — sell-out",
+    head: "Supply - sell-out",
     rows: [
       { label: "Spend cap", value: money(rec) + " / day" },
       { label: "Entries needed", value: fmt(budget.entriesNeeded) },
@@ -111,7 +111,7 @@ export default function PaidSpend({ snap }) {
       <div className="spacer-8" />
       <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 auto" }}>
         {complete ? (
-          <div className="lead" title="Campaign closed" style={{ color: C.muted }}>—</div>
+          <div className="lead" title="Campaign closed" style={{ color: C.muted }}>-</div>
         ) : (
           <>
             <div className="lead">{money(rec)}</div>
@@ -180,7 +180,7 @@ export default function PaidSpend({ snap }) {
           className="btn primary"
           disabled={disabled}
           style={btnStyle}
-          title={btnTitle("Writes the daily budget to Meta via the Marketing API — logged")}
+          title={btnTitle("Writes the daily budget to Meta via the Marketing API - logged")}
           onClick={() => act("implement")}
         >
           {decision === "implement" ? "✓ Applied" : "Implement"}
@@ -189,7 +189,7 @@ export default function PaidSpend({ snap }) {
           className="btn secondary"
           disabled={disabled}
           style={btnStyle}
-          title={btnTitle("Keeps the current budget — logged")}
+          title={btnTitle("Keeps the current budget - logged")}
           onClick={() => act("ignore")}
         >
           {decision === "ignore" ? "Logged" : "Ignore"}

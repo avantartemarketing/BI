@@ -1,17 +1,17 @@
 /* Organic funnel / funnel key drivers (spec §4.5, LE relabel per §6).
  * Three-state seg: Funnel (default) | Adding | Costing.
  *
- * Funnel — the organic funnel at a grouped level (the four non-paid display
+ * Funnel - the organic funnel at a grouped level (the four non-paid display
  * groups combined) as deviation rungs vs target, per the agreed design:
- *   Top of funnel  — emails delivered + posts/stories; no targets yet, so the
+ *   Top of funnel  - emails delivered + posts/stories; no targets yet, so the
  *                    rung is neutral and the counts live in the hover popup
- *   Mid funnel     — sessions vs expected today
- *   Low funnel     — session → entry conversion vs expected (entry-weighted:
+ *   Mid funnel     - sessions vs expected today
+ *   Low funnel     - session → entry conversion vs expected (entry-weighted:
  *                    Σ sessions×conv / Σ sessions on each side)
  * Rung mechanics as in Funnel by channel: eff = relPct, dot x = clamp(50 +
  * eff/25×46, 4, 96), RAG green / amber (> −10) / red.
  *
- * Adding | Costing — per-group step contributions from funnelByGroup, top 4 by
+ * Adding | Costing - per-group step contributions from funnelByGroup, top 4 by
  * |value| of the chosen sign. Methodology notes live in tooltips only. */
 import React from "react";
 import { Card, GROUP_DOTS, C, fmt, fmtSigned, MINUS, useTip } from "../ui.jsx";

@@ -1,11 +1,11 @@
 /* Funnel by channel (spec §4.4, LE relabel per §6). Tall card (1 col × 2 rows).
  * Five display groups; rungs are built from real snapshot data instead of the
  * mock's static list:
- *   AA Email  — Delivered emails (no ref) · Open rate vs 19.6% · Click rate vs
+ *   AA Email  - Delivered emails (no ref) · Open rate vs 19.6% · Click rate vs
  *               4.3% (historical LE launch-send medians) · Session → entry
- *   AA Meta   — Posts + stories (no ref) · Sessions · Session → entry
- *   Referral artist / Search-direct-other — Sessions · Session → entry
- *   Paid      — Spend vs pro-rata budget (un-inverted per artboard) · Cost per
+ *   AA Meta   - Posts + stories (no ref) · Sessions · Session → entry
+ *   Referral artist / Search-direct-other - Sessions · Session → entry
+ *   Paid      - Spend vs pro-rata budget (un-inverted per artboard) · Cost per
  *               entry vs cost-per-purchase target × 0.8 (inverted) · Session → entry
  * Rung mechanics per spec: relPct=(v/ref−1)×100; dot x = clamp(50+relPct/25×46, 4, 96);
  * delta = relative % vs reference for every unit; RAG on eff = inv ? −relPct : relPct.
@@ -45,7 +45,7 @@ function buildRung([label, v, ref, unit, inv, note]) {
   const dPos = relPct >= 0;
   const eff = inv ? -relPct : relPct;
   // Inverted (cost) metrics plot by their JUDGED direction: bad always goes left,
-  // good always right — an over-benchmark cost per entry sits left, not right.
+  // good always right - an over-benchmark cost per entry sits left, not right.
   return {
     label,
     neutral: false,

@@ -71,7 +71,7 @@ export default function SellThrough({ snap }) {
             ))}
           </div>
 
-          {/* demand by product — only when the draw feed is present */}
+          {/* demand by product - only when the draw feed is present */}
           {products.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 0 }}>
               <div style={{ fontSize: 12, color: C.muted }}>Demand by product</div>
@@ -105,7 +105,7 @@ export default function SellThrough({ snap }) {
                 </div>
               ))}
               <div
-                title="Units demanded sums every eligible product entry — one entrant can demand several units across products"
+                title="Units demanded sums every eligible product entry - one entrant can demand several units across products"
                 style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}
               >
                 {fmt(draw.units_demanded)} units demanded · {fmt(draw.eligible)} eligible entrants

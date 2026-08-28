@@ -1,14 +1,14 @@
-# Avant Arte Launch BI — Data Model (v1, LE-first)
+# Avant Arte Launch BI - Data Model (v1, LE-first)
 
 This document specifies how every number and target on the Launch Performance dashboard is
 calculated. It is the result of reverse-engineering the current tooling:
 
-- **LAUNCH PERFORMANCE OVERVIEW** (Google Sheet snapshot) — the per-release target model + actuals
-- **LE Paid Calculator** — the in-flight paid-spend decision tool
-- **`Across time.csv`** — the new daily funnel export with campaign-clock columns (the across-time
+- **LAUNCH PERFORMANCE OVERVIEW** (Google Sheet snapshot) - the per-release target model + actuals
+- **LE Paid Calculator** - the in-flight paid-spend decision tool
+- **`Across time.csv`** - the new daily funnel export with campaign-clock columns (the across-time
   target enabler)
-- **Draw entry exports** (`draw_…entries_N.csv`) — per-entrant demand data
-- **All Sent Emails** (Klaviyo export) and **All editions content** (Emplifi export) — channel
+- **Draw entry exports** (`draw_…entries_N.csv`) - per-entrant demand data
+- **All Sent Emails** (Klaviyo export) and **All editions content** (Emplifi export) - channel
   activity data feeding the funnel diagnostics
 
 LE (Limited Edition, sold by draw / pre-order) is specified fully; TL (Timed Launch, sold by
@@ -49,17 +49,17 @@ Derived economics:
 - `aa_profit_per_unit = aa_profit_per_unit_ex_framing + (framing_available ? frame_conversion × frame_profit : 0)`
   = 1,465.29 + 0.35 × 94 = **1,498.19**
 
-Global constants (from the workbook's "PROFIT CALC — DO NOT CHANGE" block):
+Global constants (from the workbook's "PROFIT CALC - DO NOT CHANGE" block):
 `frame_conversion = 0.35`, `frame_profit = £94/unit`, `cannibalisation = 0.20`
-(⚠ the TL historical panel uses 0.10 — see §11; **0.20 is canonical** for LE, it is what every
+(⚠ the TL historical panel uses 0.10 - see §11; **0.20 is canonical** for LE, it is what every
 live calculator uses).
 
 ### 1.2 Campaign code (cross-system join key)
 `campaign_code` (e.g. `GlennLigon_LE_26`) joins the release to:
 - **Meta ads**: `campaign_name = '{code} · Enter draw'` in `meta_ads_insights` (campaign_id has
-  lost float precision in the export — join on name only).
+  lost float precision in the export - join on name only).
 - **Email**: Klaviyo `Campaign` column equals the code exactly (join `Campaign == campaign_code`,
-  i.e. prefix-match the sheet's `{code} · Enter draw`). Never parse email names — 19% don't
+  i.e. prefix-match the sheet's `{code} · Enter draw`). Never parse email names - 19% don't
   contain the code.
 - **Instagram/X content**: Emplifi `Labels` (semicolon-separated, order varies) contains the code;
   strip the generic tokens (`Edition`, `Reel`, `Make-Ready`, free-text artist tags) to find it.
@@ -76,7 +76,7 @@ Normalisation rules:
   `adjusted(c) = x(c) + untracked × x(c) / Σ tracked x`. This is applied to *actuals* before
   comparing to targets. Conversion-rate *benchmarks*, by convention, use **unadjusted**
   denominators (the sheet is consistent about this; keep it).
-- **Paid Search** has no benchmarks, no spend feed, and never appears in the daily export —
+- **Paid Search** has no benchmarks, no spend feed, and never appears in the daily export -
   every "Total Paid" benchmark is an alias of Paid Social. Model paid = Paid Social; keep Paid
   Search only as a raw actuals bucket.
 
@@ -95,7 +95,7 @@ include it in Search/direct/other in the rebuild and note the delta vs the sheet
 
 ### 1.4 Product (per-release, for multi-work releases)
 From draw entry exports and the sell-through module: `{ product_name, edition, sold, … }`.
-Product names contain commas (`Composition with Red, Yellow`) — **never comma-split a product
+Product names contain commas (`Composition with Red, Yellow`) - **never comma-split a product
 list without matching against the release's known product set**.
 
 ### 1.5 The campaign clock (the new across-time structure)
@@ -112,7 +112,7 @@ The daily funnel export now carries 5 computed columns (upstream in BigQuery), t
 
 **`pdsa` is the normalised campaign clock: 0 = announcement, 1 = launch/draw close, < 0 = early
 access (private room), > 1 = last chance & after.** It lets campaigns of different lengths
-(observed 7–107 days, mode 28) be pooled on one axis — this is what makes targets-across-time
+(observed 7–107 days, mode 28) be pooled on one axis - this is what makes targets-across-time
 possible (§5).
 
 Stage boundary rules (verified empirically):
@@ -158,7 +158,7 @@ empirically on the Mondrian and James Jean Blossom draws):
 | `Opportunity Cost` | `max(n_products_entered − MaxQuantity, 0)` computed at entry time (can go stale after edits) = the allocator's slack |
 | `PreOrder` | pre-order/auto-purchase commitment flag |
 | `Winner` / `Claimed` / `KYC Completed` | allocation outcome (all "No" in pre-draw snapshots) |
-| `Shopify Draft Order ID` | assigned at **entry** time (pre-auth) — not a win signal |
+| `Shopify Draft Order ID` | assigned at **entry** time (pre-auth) - not a win signal |
 | `Exclusion` / `Removal` / `Processing Error` | eligibility: eligible ⇔ all three empty |
 
 **Units demanded** (the number to show against edition size):
@@ -167,7 +167,7 @@ empirically on the Mondrian and James Jean Blossom draws):
 `total_units_demanded = Σ wanted_units`.
 
 **Allocation rule** (as practised): winners are allocated to maximise sell-through across
-products — an entrant who entered N products but wants M < N is awarded the M **least-demanded**
+products - an entrant who entered N products but wants M < N is awarded the M **least-demanded**
 products among those they entered, draw weighted by `Score`. Equivalent to capacitated matching;
 `Σ Opportunity Cost` measures the flexibility available.
 
@@ -178,7 +178,7 @@ products among those they entered, draw weighted by `Score`. Equivalent to capac
 This reproduces the LE_Template TARGET SETTING block exactly. All benchmarks are quartiles of
 the historical release panel (§4).
 
-### Step 1 — split edition into paid vs organic
+### Step 1 - split edition into paid vs organic
 ```
 paid_pct      = benchmark("paid share of units", size_pick)      # Low .0789 / Medium .2619 / High .3901
 paid_units    = round(edition_size × paid_pct)
@@ -188,7 +188,7 @@ organic_units = edition_size − paid_units
 Live releases use Medium (Glenn Ligon, Schnabel) or High (Dali, Mondrian, Zeng Fanzhi, Parra,
 James Jean, Abdulnasser).
 
-### Step 2 — split organic into Draw/Pre-order vs Private-Room/Other
+### Step 2 - split organic into Draw/Pre-order vs Private-Room/Other
 ```
 pr_other_pct = benchmark("PV+Other share of units", reference_point)   # Low .2879 / Medium .4667 / High .7115
 pr_units     = organic_units × pr_other_pct
@@ -196,7 +196,7 @@ draw_units   = organic_units − pr_units
 ```
 Every live release uses Medium (0.4667). Overridable per release (never used so far).
 
-### Step 3 — channel targets for draw/pre-order purchases
+### Step 3 - channel targets for draw/pre-order purchases
 Each of the 12 organic channels gets a **quality pick** (High/Medium/Low = which quartile of the
 historical distribution to use; N/A = channel doesn't exist for this release, e.g. Referral
 Artist for an estate). The default row used by every live release:
@@ -210,7 +210,7 @@ order_split(c)      = share(c) / Σ share                               # renorm
 target_purchases(c) = draw_units × order_split(c)
 ```
 
-### Step 4 — back out entries and sessions per channel
+### Step 4 - back out entries and sessions per channel
 ```
 target_eligible_entries(c) = target_purchases(c) / 0.8            # 0.8 = eligible-entry → order rate ("1 − drop-off")
 conv(c)                    = benchmark("session → eligible entry", c, quality(c))   # §4 table B
@@ -221,7 +221,7 @@ Private-room sessions are modelled separately, email-only:
 `target_pr_sessions = pr_units / email_session_to_purchase` where
 `email_session_to_purchase = 0.011364` (median AA Email Man session→purchase across the panel).
 
-### Step 5 — paid targets and budget
+### Step 5 - paid targets and budget
 ```
 paid_eligible_entries = paid_units / 0.8
 paid_conv             = benchmark("session → eligible entry", Paid Social, quality_pick)  # Medium = 0.0042099 on all live releases
@@ -229,11 +229,11 @@ target_paid_sessions  = paid_eligible_entries / paid_conv
 cost_per_purchase     = CPP benchmark pick                        # Low 128.75 / Median 177 / High 291
 paid_budget           = cost_per_purchase × paid_units
 ```
-Sense check: `paid_budget / launch_value ≤ 6%` (flag only — 4 of 8 live releases breach it:
+Sense check: `paid_budget / launch_value ≤ 6%` (flag only - 4 of 8 live releases breach it:
 Dali & Mondrian 13.8%, Parra 10.6%, James Jean 9.9%).
 
-### Step 6 — buffer
-`target_inc_buffer = 0.75 × target` for any metric ("Target inc. buffer") — a 25% haircut used
+### Step 6 - buffer
+`target_inc_buffer = 0.75 × target` for any metric ("Target inc. buffer") - a 25% haircut used
 as the amber line on charts.
 
 ### Worked example (Glenn Ligon · Multiple · 2026 Q3)
@@ -246,13 +246,13 @@ AA Email Man target purchases 26.2, entries 32.8, sessions 1,885 … total organ
 ## 4. Benchmarks (how the reference numbers are computed)
 
 Panel: all releases in the funnel import **not** marked excluded on `Release Selection`
-(intended rule: exclude pre-2024 + manual exclusions; currently 142 included — see §11 for the
+(intended rule: exclude pre-2024 + manual exclusions; currently 142 included - see §11 for the
 leaks). For each per-release ratio, zero values are blanked (survivorship: benchmark conditions
 on the channel having converted at least once).
 
 **"Quality"/"size" = which quartile you pick, not an attribute of the release:**
 `Low = 25th percentile, Medium = median (order-split & session-conv tables) or mean (PV-conv and
-EE→order tables — inconsistent, see §11), High = 75th percentile.`
+EE→order tables - inconsistent, see §11), High = 75th percentile.`
 
 Key benchmark values in force (LE):
 
@@ -315,14 +315,14 @@ frozen values above.
 ## 5. Targets across time (the new capability)
 
 The sheet distributes nothing over days (its only daily notion is a run-rate: remaining units ÷
-remaining days). The across-time columns enable proper **plan curves** — the design brief
+remaining days). The across-time columns enable proper **plan curves** - the design brief
 requires `expectedToday(channel)` from "channel-shaped curves, never straight lines".
 
 ### 5.1 Method
 1. Take completed, clean LE campaigns (campaign window fully observed, ≥ 20 draw entries;
-   currently n = 18 from the export — grows over time).
+   currently n = 18 from the export - grows over time).
 2. For each, compute cumulative share of the campaign's final total at each pdsa, per metric
-   (sessions, draw entries, units) — and per channel where volume allows.
+   (sessions, draw entries, units) - and per channel where volume allows.
 3. Pool across releases on the pdsa axis: **median = the target trajectory; p25/p75 = guardrail
    band**.
 4. A release's daily plan = `target_total(metric, channel) × curve(pdsa of that day)`.
@@ -349,27 +349,38 @@ Cumulative share of campaign total at pdsa ≤ t (median across releases):
 
 Shape facts the dashboard should encode:
 - **Announcement burst**: ~24% of sessions / ~27% of entries land in the first 10% of the campaign.
-- **Launch cliff**: the final decile carries ~17% of sessions and ~26–30% of units — daily
+- **Launch cliff**: the final decile carries ~17% of sessions and ~26–30% of units - daily
   pacing must be piecewise, never linear.
 - **Early access**: ~7% of sessions, ~0 draw entries (draws open at announcement), but ~13% of
-  units — 79% of Private-Room units transact pre-announcement. Private-room targets should be
+  units - 79% of Private-Room units transact pre-announcement. Private-room targets should be
   phased into EA, draw targets should not start before pdsa = 0.
 - Stage split of totals (pooled): sessions EA .11 / S1 .32 / S2 .17 / S3 .36 / LC .04;
   units .17 / .28 / .16 / .25 / .13.
-- Dispersion is wide (sessions p25–p75 at mid-campaign: .41–.81) — always show the band, and
+- Dispersion is wide (sessions p25–p75 at mid-campaign: .41–.81) - always show the band, and
   status vs plan should use the band, not the median alone, before shouting red.
 
 ### 5.3 Per-channel curves
 Email is spike-driven (sends), socials are post-driven, search/direct is smooth. v1 ships:
 pooled per-display-group curves where n permits, else the all-channel curve. The email plan
 curve should eventually be derived from the **planned send schedule** (Announcement, Early
-Access 1–3, Sustain, Last Chance 48/24h — the taxonomy in §8) rather than history alone.
+Access 1–3, Sustain, Last Chance 48/24h - the taxonomy in §8) rather than history alone.
+
+**Paid units plan uses the entries shape.** Historical `Total_Product_Units` for the paid
+group books ~98.6% of draw units on the draw-close date (winners are allocated then), so a
+units-shaped plan cliffs ~46% of the paid target onto the final day while the plotted
+actual (secured units, §6.3½) accrues entry-timed - the plan would read "behind" all
+campaign and "catch up" in one fictional day. `build_curves` therefore substitutes the paid
+group's entries curve for its units curve (final step 0.21 instead of 0.46 - the genuine
+last-chance surge remains). Verified 2026-08-28: dropping each historical release's close
+day removes the units-curve jump entirely, proving it is allocation bookkeeping, not
+last-day demand; a historical secured-units curve is NOT reconstructable because the export
+retroactively reclassifies converted entries out of `*_No_Conv`.
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
 intervention shown alongside, never baked into the projection.
 
-**Organic channels** — the remaining volume follows the channel's *historic shape curve*;
+**Organic channels** - the remaining volume follows the channel's *historic shape curve*;
 its level scales with demonstrated performance, trusted in proportion to how much of the
 campaign the curve says has been observed:
 ```
@@ -381,7 +392,7 @@ path(d)  = actual + (proj − actual) × (curve(pdsa_d) − w) / (1 − w)   # s
 Early in a campaign (w small) the future is the plan; late, it scales with what the channel
 has actually delivered.
 
-**Paid** — projection = **projected spend ÷ projected efficiency**, day by day:
+**Paid** - projection = **projected spend ÷ projected efficiency**, day by day:
 ```
 spend_fwd(d) = current daily spend run-rate            # not the recommendation
 cpe_fwd(d)   = trailing-3-day CPE × Π (1 + drift)      # drift 5%/7%/10%/day by window third
@@ -396,13 +407,13 @@ Projected *purchases* from any projected entries convert at the 0.8 eligible-ent
 
 ### 6.1 Daily actuals (grain: channel × day × release)
 From the daily funnel feed: sessions (`Sessions_Total`), page views, draw entries,
-`Draw_Entries_Eligible_Units` (AC — the "eligible entries" actual),
-`Draw_Entries_Total_Units_No_Conv` (AB — eligible entered units not yet converted),
-`Total_Product_Units` (U — units sold), customer/unit splits by route (Draw / Preorder App /
+`Draw_Entries_Eligible_Units` (AC - the "eligible entries" actual),
+`Draw_Entries_Total_Units_No_Conv` (AB - eligible entered units not yet converted),
+`Total_Product_Units` (U - units sold), customer/unit splits by route (Draw / Preorder App /
 Private Room / Presale Offered / Other).
 
 ⚠ The raw daily export can contain **two sub-records per (channel, day, release)** (two
-campaign-date records with launch timestamps ~1 day apart); metrics are split across the pair —
+campaign-date records with launch timestamps ~1 day apart); metrics are split across the pair -
 **sum them**, never de-duplicate.
 
 ### 6.2 Launch-to-date actuals vs target
@@ -413,22 +424,22 @@ campaign-date records with launch timestamps ~1 day apart); metrics are split ac
 - `% sellout = projected_purchases / target_purchases` (release-level: vs edition size).
 - Conversion actual = projected purchases ÷ sessions, compared to the target conversion.
 
-### 6.3½ Secured units — the unified page currency
+### 6.3½ Secured units - the unified page currency
 The hero, trajectory, and channels modules run on one unified metric of sales plus
 entries:
 ```
 secured units = units sold (all routes, incl. private room)
               + 0.8 × eligible entry units NOT yet converted
 ```
-Only *unconverted* entries carry the 0.8 discount (a converted entry is already a sale —
+Only *unconverted* entries carry the 0.8 discount (a converted entry is already a sale -
 counting all entries would double-count). Group unit targets sum exactly to the edition
 size, so the hero target = sellout (private-room units ride with the AA Email group, the
 workbook's own convention). The hero is **capped at edition size**; entries beyond the
 units left to sell are shown as an oversubscription signal, not as bar overshoot.
-Funnel diagnostics and the paid module stay denominated in entries/spend — the things
+Funnel diagnostics and the paid module stay denominated in entries/spend - the things
 marketing moves directly.
 
-### 6.3 Sell-through prediction (per product — LE)
+### 6.3 Sell-through prediction (per product - LE)
 From draw data + orders:
 `sold` (units sold to date) + `sold_predicted` (eligible entries in hand × 0.8, allocated per
 product by the demand model) + `future_entries_predicted` (remaining plan curve × conversion).
@@ -473,7 +484,7 @@ ROI_check_party  = profit_per_unit_party / (forecast_CPE × budget_share_party)
 
 This maps 1:1 onto the design's Paid module contract:
 `roiDeclineModel = { start: today's actual ROI, dailyFactor }` (dailyFactor ≈ 1/(1+tier drift));
-`recommended = min(spend at ROI floor, spend at supply cap)`, `cap ∈ {roi_floor, supply}` —
+`recommended = min(spend at ROI floor, spend at supply cap)`, `cap ∈ {roi_floor, supply}` -
 supply cap = the budget-to-sell-out logic (spending beyond it buys entries exceeding the units
 left); ROI floor = 1.0/1.1 last-day forecast rule.
 
@@ -496,7 +507,7 @@ be attributed to one release.
 Post/story-level per platform (instagram 90%, twitter/X since 2025-08). Join via Labels →
 campaign code. Useful metrics: impressions, reach, engagements (+ rates, verified =
 engagements/impressions and /reach), saves (posts), story views/exits/taps/completion, video
-views. Two owned profiles (Avant Arte ~2.9M followers; Avant Insiders ~74k) — normalise
+views. Two owned profiles (Avant Arte ~2.9M followers; Avant Insiders ~74k) - normalise
 per-1000-followers separately. Funnel-module rungs "Posts" and "Sessions/post" = count of posts
 for the campaign in the window; sessions from the funnel feed ÷ posts.
 
@@ -524,7 +535,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Paid ROI | series | §7 daily ROI (AA); decline model start = today's ROI |
 | Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), `cap` recorded; Implement → append-only decision log |
 | Sell-through | segments | §6.3 (LE: sold / sold-predicted / future-entries-predicted) |
-| Entries by country | top 5 | geo split of entries (requires country dim in the daily feed — **currently missing; needs adding to the BigQuery export**) |
+| Entries by country | top 5 | geo split of entries (requires country dim in the daily feed - **currently missing; needs adding to the BigQuery export**) |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
 
 LE benchmark fields carried on the release document: `chargeDropOff = 0.2`,
@@ -563,41 +574,41 @@ store per release, fetched per release+day"; projections are stored, not client-
 ## 11. Data-quality register (found during reverse-engineering; fix upstream)
 
 Benchmark-panel integrity:
-1. Release Selection's pre-2024 exclusion rule is only partially applied — 21 pre-2024 releases
+1. Release Selection's pre-2024 exclusion rule is only partially applied - 21 pre-2024 releases
    still leak into every benchmark; the undersubscription screen (oversubscription ≤ 10 → exclude)
    is #REF!-broken beyond release #73, and the 51 releases it flagged are still in the panel.
 2. "Medium" is MEDIAN in some tables and AVERAGE in others (and in two totals rows of the
    session-conv table only); averages make Medium > High for AA X / Referral X page-view conv.
 3. The email-only conversion benchmark's range covers only the first 73 alphabetical releases.
 4. CPP benchmark = quartiles over 22 hand-curated rows mixing LE and TL, hardcoded to rows
-   10–42 — newly appended campaigns never enter it.
+   10–42 - newly appended campaigns never enter it.
 5. Survivorship: all per-release ratios blank out zeros before quartiling.
 
 Pipeline integrity:
 6. LE daily accumulator truncated at exactly 100k rows (data before 2025-12-20 already lost);
    `Across time.csv` is a 50k-row export cut mid-date. Go straight to BigQuery.
-7. `Maurizio Cattelan · Window · 2026 Q1` has launch < announcement (negative campaign length) —
+7. `Maurizio Cattelan · Window · 2026 Q1` has launch < announcement (negative campaign length) -
    fix the campaign-dates table.
 8. 58% of daily rows are `Missing campaign dates` (back catalog without announcement dates).
-9. `campaign_id` in Meta exports mangled to float — join on campaign_name.
-10. Campaign Mapping sheet's static columns are misaligned against a live UNIQUE spill — do not
+9. `campaign_id` in Meta exports mangled to float - join on campaign_name.
+10. Campaign Mapping sheet's static columns are misaligned against a live UNIQUE spill - do not
     use; the reliable link is each release's (release_name, campaign_name) pair.
 11. `untracked` vs `Untracked` case; header typos (`Eligable`, `reachs`).
 
 Model bugs found in the sheet (the rebuild should implement the *intent*):
 12. "Spend for tomorrow" is clamped to £2 (`min(spend, 2.0)` where 2.0 is a per-unit step;
     open comment "should this be 669?"). Intended cap: ±30%/max-increase rules.
-13. ROI shows positive with 0 entries (division fallback) — rebuild should show 0/–.
+13. ROI shows positive with 0 entries (division fallback) - rebuild should show 0/–.
 14. Template's cannibalisation cell reference is broken (G90 → empty cell); live value 0.2.
 15. Paid Performance box keys off a hand-typed "Today's date" that goes stale.
 16. AA Other silently missing from chart groupings; template tab is a filled copy of
     GlennLigon_LE_26 (double-counting hazard when aggregating tabs).
-17. Cannibalisation is 0.2 in LE/calculators but 0.1 in the TL historical panel — pick one per
+17. Cannibalisation is 0.2 in LE/calculators but 0.1 in the TL historical panel - pick one per
     release type and record it on the release document.
 18. JaumePlen paid tab sizes budget on edition 300 but profits on edition 100.
-19. Two generations of entry-counting in paid trackers (eligible units vs total units) — CPE not
+19. Two generations of entry-counting in paid trackers (eligible units vs total units) - CPE not
     comparable across generations; standardise on `Draw_Entries_Eligible_Units`.
-20. Draw entry exports: `Opportunity Cost` goes stale after entry edits — recompute, don't trust.
+20. Draw entry exports: `Opportunity Cost` goes stale after entry edits - recompute, don't trust.
 
 ---
 
@@ -608,6 +619,6 @@ Model bugs found in the sheet (the rebuild should implement the *intent*):
 - **Per-channel trajectory curves** stabilise as clean completed releases accrue (currently 18);
   until n is sufficient per channel, fall back to the all-channel curve.
 - Whether the "Paid" display channel is a separate lens vs AA Meta (design mock conflates them;
-  data model keeps Paid Social separate — recommended).
+  data model keeps Paid Social separate - recommended).
 - Draw-entry exports are point-in-time; a post-draw export (winners/claims populated) is needed
   to measure the 0.8 drop-off and win/claim rates for real.

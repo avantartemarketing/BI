@@ -1,6 +1,6 @@
 /* Unit trajectory (spec §4.2, adapted: unified secured-units currency, docs §6.4).
  * Cumulative secured units (sales + 0.8 × unconverted entries) vs plan per group; the forward projection follows the
- * channel's historic shape curve (paid: projected spend ÷ projected efficiency) —
+ * channel's historic shape curve (paid: projected spend ÷ projected efficiency) -
  * per-day values computed in the ETL (docs §5.4).
  * Real-data bridge: daily[] arrays start at private-room open, so the series is
  * sliced to the campaign window (windowStart .. windowEnd = of+1 points, index = day). */

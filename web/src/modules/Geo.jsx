@@ -1,5 +1,5 @@
 /* Entries by country (spec §4.9).
- * The country dimension is not in the BigQuery funnel feed yet (docs §12) —
+ * The country dimension is not in the BigQuery funnel feed yet (docs §12) -
  * snap.geo is null for every release, so this renders the module chrome with
  * an empty state (an allowed visible caption) to keep the 10-module grid
  * shape. If geo data ever arrives it renders the top-5 layout per spec. */
