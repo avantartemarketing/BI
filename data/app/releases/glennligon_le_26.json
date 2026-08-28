@@ -1981,7 +1981,9 @@
   "posts": 1,
   "stories": 1,
   "impressions": 12150,
-  "engagements": 21
+  "engagements": 21,
+  "artistPosts": null,
+  "artistPostsTarget": null
  },
  "sellthrough": {
   "edition": 150,

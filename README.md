@@ -63,6 +63,16 @@ email name; the GEN/CUS/INS send-type filter still reads the name convention. Wi
 the token the committed CSV snapshot is used. Instagram content
 (`data/content_posts.csv`) remains a manual export.
 
+Artist-account posts refresh from the team's **Notion log**: set `NOTION_TOKEN` to an
+internal-integration secret (notion.so → Settings → Integrations → develop your own)
+and share the artist-posts database page with that integration. Each refresh queries
+the database (`server/notion.js`), matches rows to releases by campaign code / release
+name / artist name found in any text column, and writes `data/artist_posts.csv`. The
+Referral artist "Posts" funnel rung compares posts to date against the tier benchmark:
+median posts among completed campaigns in the same Referral Artist tier (the channel
+quality pick), pro-rated by days elapsed - the same benchmark-by-cohort approach as
+every other channel. `NOTION_ARTIST_POSTS_DB` overrides the database id.
+
 **Manual (local):** drop the source exports into `sources/` (file names in `etl/*.py`
 headers), then:
 

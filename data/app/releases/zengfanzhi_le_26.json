@@ -2466,7 +2466,9 @@
   "posts": 1,
   "stories": 4,
   "impressions": 15688,
-  "engagements": 61
+  "engagements": 61,
+  "artistPosts": null,
+  "artistPostsTarget": null
  },
  "sellthrough": {
   "edition": 100,

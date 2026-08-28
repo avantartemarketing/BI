@@ -3315,7 +3315,9 @@
   "posts": 0,
   "stories": 0,
   "impressions": 0,
-  "engagements": 0
+  "engagements": 0,
+  "artistPosts": null,
+  "artistPostsTarget": null
  },
  "sellthrough": {
   "edition": 500,

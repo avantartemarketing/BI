@@ -132,6 +132,53 @@ def load_content() -> pd.DataFrame:
     return df
 
 
+def load_artist_posts() -> pd.DataFrame:
+    # Artist-account posts from the Notion log (server/notion.js writes this
+    # during the live refresh); optional until a NOTION_TOKEN is configured
+    p = DATA / "artist_posts.csv"
+    if not p.exists():
+        return pd.DataFrame({"campaign_code": pd.Series(dtype=str),
+                             "date": pd.Series(dtype="object"),
+                             "posts": pd.Series(dtype=float)})
+    df = pd.read_csv(p)
+    df["date"] = pd.to_datetime(df["date"]).dt.date
+    return df
+
+
+def referral_artist_tier(release: dict) -> str:
+    default = INPUTS["channel_quality_default"].get("Referral Artist", "Medium")
+    return (release.get("channel_quality_overrides") or {}).get("Referral Artist", default)
+
+
+def artist_posts_benchmarks(ap: pd.DataFrame, as_of: date) -> dict:
+    """Referral-artist tier -> expected posts per campaign, the same quartile
+    approach as the other channels: pool completed campaigns in the same
+    Referral Artist tier and take the median post count (all-tier median while
+    per-tier history is thin, None until >= 2 completed campaigns have data)."""
+    if ap.empty:
+        return {}
+    by_tier, totals = defaultdict(list), []
+    for r in INPUTS["releases"]:
+        end = date.fromisoformat(r["launch_end"])
+        if end >= as_of:
+            continue
+        tier = referral_artist_tier(r)
+        if tier == "N/A":
+            continue
+        start = date.fromisoformat(r["private_room_open"])
+        n = float(ap[(ap["campaign_code"] == r["campaign_code"])
+                     & (ap["date"] >= start) & (ap["date"] <= end)]["posts"].sum())
+        by_tier[tier].append(n)
+        totals.append(n)
+    out = {}
+    for tier, xs in by_tier.items():
+        if len(xs) >= 2:
+            out[tier] = float(pd.Series(xs).median())
+    if len(totals) >= 2:
+        out["_all"] = float(pd.Series(totals).median())
+    return out
+
+
 # ---------------------------------------------------------------- target model (docs §3)
 
 def quality_for(release: dict, channel: str) -> str:
@@ -377,7 +424,8 @@ def daterange(a: date, b: date):
 
 def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   emails: pd.DataFrame, content: pd.DataFrame, curves: dict,
-                  as_of: date) -> dict:
+                  as_of: date, artist_posts: pd.DataFrame | None = None,
+                  posts_bench: dict | None = None) -> dict:
     b = BENCH
     name = release["release_name"]
     announce = date.fromisoformat(release["announce_date"])
@@ -623,6 +671,17 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "impressions": int(pd.to_numeric(ct["Total impressions"], errors="coerce").fillna(0).sum()),
         "engagements": int(pd.to_numeric(ct["Engagements"], errors="coerce").fillna(0).sum()),
     }
+    # artist-account posts (Notion log) + tier benchmark, None until the feed exists
+    tier = referral_artist_tier(release)
+    if artist_posts is None or artist_posts.empty:
+        social_out["artistPosts"] = None
+    else:
+        apw = artist_posts[(artist_posts["campaign_code"] == release["campaign_code"])
+                           & (artist_posts["date"] >= window_start)
+                           & (artist_posts["date"] <= min(as_of, launch_end))]
+        social_out["artistPosts"] = int(apw["posts"].sum())
+    pb = posts_bench or {}
+    social_out["artistPostsTarget"] = None if tier == "N/A" else pb.get(tier, pb.get("_all"))
 
     # ---- sell-through (release level; per-product editions not in feeds yet)
     unconverted = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
@@ -722,6 +781,8 @@ def main():
     spend = load_spend()
     emails = load_emails()
     content = load_content()
+    artist_posts = load_artist_posts()
+    posts_bench = artist_posts_benchmarks(artist_posts, as_of)
 
     APP.mkdir(parents=True, exist_ok=True)
     (APP / "releases").mkdir(exist_ok=True)
@@ -732,7 +793,8 @@ def main():
 
     index = []
     for release in INPUTS["releases"]:
-        snap = build_release(release, at, spend, emails, content, curves, as_of)
+        snap = build_release(release, at, spend, emails, content, curves, as_of,
+                             artist_posts, posts_bench)
         (APP / "releases" / f"{release['id']}.json").write_text(json.dumps(snap, indent=1))
         index.append({
             "id": snap["id"], "name": f"{snap['artist']} - {snap['title']}",

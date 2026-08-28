@@ -267,11 +267,19 @@ async function refresh() {
       emails = "hubspot failed: " + String((e && e.message) || e).slice(0, 160);
       console.error("sheets: " + emails);
     }
+    // artist posts from Notion when a token is present; failure keeps the last CSV
+    let notion;
+    try {
+      notion = await require("./notion").refreshArtistPosts();
+    } catch (e) {
+      notion = "notion failed: " + String((e && e.message) || e).slice(0, 160);
+      console.error("sheets: " + notion);
+    }
     const etl = await runEtl();
     return {
       ok: true, auth: token ? "service-account" : "public-link",
       funnelRows: at.rows, funnelDropped: at.dropped, spendRows: sp.rows,
-      emails, etl, tookMs: Date.now() - started,
+      emails, notion, etl, tookMs: Date.now() - started,
     };
   })();
   try { return await running; } finally { running = null; }
@@ -285,7 +293,7 @@ function startScheduler() {
   const mins = Math.max(5, Number(process.env.REFRESH_MINUTES) || 60);
   const tick = (label) => refresh()
     .then((r) => console.log(`sheets: ${label} refresh ok - funnel ${r.funnelRows} rows, ` +
-      `spend ${r.spendRows} rows, ${r.emails}, ${r.auth}, ${r.tookMs}ms | ${r.etl}`))
+      `spend ${r.spendRows} rows, ${r.emails}, ${r.notion}, ${r.auth}, ${r.tookMs}ms | ${r.etl}`))
     .catch((e) => console.error(`sheets: ${label} refresh failed - ${e.message}`));
   setTimeout(() => tick("boot"), 8000);
   setInterval(() => tick("scheduled"), mins * 60 * 1000).unref();

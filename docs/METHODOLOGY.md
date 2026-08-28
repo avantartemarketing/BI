@@ -208,8 +208,14 @@ capped at ±30% and changes under 10% are ignored. Forecast ROI below target for
 - **Daily funnel** (sessions, entries, units by channel × day) and **Meta spend**
   are pulled live from the *LE Paid Calculator* Google Sheet on boot and every
   hour; the dashboard header shows the latest complete day.
-- **Email** (Klaviyo sends) and **Instagram content** (Emplifi) are uploaded
-  snapshots, refreshed manually.
+- **Email** stats pull live from HubSpot when connected (otherwise an uploaded
+  snapshot); **Instagram content** (Emplifi) is an uploaded snapshot.
+- **Artist posts** pull live from the team's Notion log when connected. Their
+  benchmark follows the same cohort approach as every other channel: expected
+  posts = the median artist-post count among completed campaigns in the same
+  **Referral Artist tier** (the channel-quality pick on the Target setting tab),
+  pro-rated by days elapsed. It stays blank until at least two completed
+  campaigns in the cohort have logged posts.
 - **Benchmarks** are frozen quartiles of the historical panel, versioned and
   dated; recomputing them is a deliberate act, not a side effect of new data.
 

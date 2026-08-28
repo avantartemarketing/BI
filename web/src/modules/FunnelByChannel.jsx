@@ -154,9 +154,12 @@ export default function FunnelByChannel({ snap }) {
     {
       name: "Referral artist",
       rungs: [
-        // artist-account posts are not in the Emplifi export yet (AA profiles
-        // only) - the slot renders neutral until that feed exists
-        ["Posts", null, null, "count"],
+        // artist-account posts from the Notion log; reference = tier benchmark
+        // (median posts among completed campaigns in the same Referral Artist
+        // tier) pro-rated by days elapsed. Neutral until the feed/benchmark exist.
+        ["Posts", social.artistPosts ?? null,
+          of > 0 && social.artistPostsTarget ? (social.artistPostsTarget * day) / of : null,
+          "count"],
         sess("referral_artist"),
         conv("referral_artist"),
       ],
