@@ -40,15 +40,10 @@ function loadSecret() {
   return s;
 }
 const SECRET = loadSecret();
-// Password login (magic-link kept dormant below): allow-listed emails, one shared
-// password stored as a SHA-256 hash. Override without code changes via
-// LOGIN_USERS (comma-separated emails) and LOGIN_PASSWORD (plaintext, hashed at boot).
-const crypto_sha = (s) => crypto.createHash("sha256").update(s, "utf8").digest("hex");
-const ALLOWED_USERS = (process.env.LOGIN_USERS || "tom.lloyd@avantarte.com,fatima@avantarte.com")
-  .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-const PASSWORD_HASH = process.env.LOGIN_PASSWORD
-  ? crypto_sha(process.env.LOGIN_PASSWORD)
-  : "08f489b7d0593eceaba28695ada6a038e6f35f944bf8f958f4e89fea66387c2c";
+// Password login (magic-link kept dormant below): per-user accounts managed on
+// the dashboard's Permissions tab (server/users.js; seeded from LOGIN_USERS /
+// LOGIN_PASSWORD when the store file is missing).
+const users = require("./users");
 
 const RESEND_KEY = process.env.RESEND_API_KEY || "";
 const MAIL_FROM = process.env.MAIL_FROM || `Launch BI <login@${DOMAIN}>`;
@@ -110,9 +105,12 @@ function parseCookies(req) {
   return out;
 }
 
+// A session is only as good as its account: removing a user on the Permissions
+// tab invalidates their (otherwise stateless, 90-day) cookie immediately.
 function sessionFrom(req) {
   const payload = verify(parseCookies(req)[COOKIE] || "");
-  return payload && payload.kind === "session" ? payload : null;
+  if (!payload || payload.kind !== "session") return null;
+  return users.exists(payload.email) ? payload : null;
 }
 
 async function sendMagicLink(email, link) {
@@ -197,11 +195,8 @@ function install(app) {
     if (rateLimited("lip:" + ip, 20) || rateLimited("lem:" + email, 10)) {
       return res.status(429).json({ error: "Too many attempts - try again in a few minutes." });
     }
-    const hash = crypto_sha(password);
-    const okUser = ALLOWED_USERS.includes(email);
-    const okPw = hash.length === PASSWORD_HASH.length &&
-      crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(PASSWORD_HASH));
-    if (!okUser || !okPw) {
+    const user = users.get(email);
+    if (!user || !users.verifyPassword(user, password)) {
       return res.status(401).json({ error: "Wrong email or password." });
     }
     res.setHeader("Set-Cookie", sessionCookie(req, email));
@@ -245,7 +240,8 @@ function install(app) {
   app.get("/auth/me", (req, res) => {
     const s = sessionFrom(req);
     if (!s) return res.status(401).json({ error: "not signed in" });
-    res.json({ email: s.email });
+    const u = users.get(s.email);
+    res.json({ email: s.email, admin: !!(u && u.admin) });
   });
 
   // the gate: everything below /auth, /login, /healthz requires a session.
@@ -264,4 +260,4 @@ function install(app) {
   });
 }
 
-module.exports = { install };
+module.exports = { install, sessionFrom, DOMAIN };

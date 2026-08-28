@@ -14,12 +14,71 @@ const DECISIONS_PATH = process.env.DECISIONS_PATH || path.join(ROOT, "data", "de
 
 app.use(express.json());
 
-// magic-link login (avantarte.com only) - installs /login, /auth/* and the gate;
+// password login (avantarte.com only) - installs /login, /auth/* and the gate;
 // every route registered after this line requires a signed session cookie.
-require("./auth").install(app);
+const auth = require("./auth");
+auth.install(app);
 
 // methodology page (markdown-rendered; behind the session gate like the app)
 require("./methodology").install(app);
+
+// ---- permissions (the Permissions tab; admin-only user management) ----
+const users = require("./users");
+function adminSession(req, res) {
+  const s = auth.sessionFrom(req);
+  const u = s && users.get(s.email);
+  if (!u || !u.admin) {
+    res.status(403).json({ error: "Admins only." });
+    return null;
+  }
+  return s;
+}
+app.get("/api/users", (req, res) => {
+  const s = adminSession(req, res);
+  if (!s) return;
+  res.json({ users: users.list().map((u) => ({ ...u, self: u.email === s.email })) });
+});
+app.post("/api/users", (req, res) => {
+  const s = adminSession(req, res);
+  if (!s) return;
+  const body = req.body || {};
+  const email = String(body.email || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+$/.test(email) || !email.endsWith("@" + auth.DOMAIN)) {
+    return res.status(400).json({ error: `Use an @${auth.DOMAIN} email address.` });
+  }
+  const existing = users.get(email);
+  const change = {};
+  if (body.password !== undefined && body.password !== "") {
+    if (typeof body.password !== "string" || body.password.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters." });
+    }
+    change.password = body.password;
+  } else if (!existing) {
+    return res.status(400).json({ error: "A password is required for a new user." });
+  }
+  if (body.admin !== undefined) {
+    // never let the last admin demote themselves - that orphans the tab
+    if (existing && existing.admin && !body.admin && users.adminCount() === 1) {
+      return res.status(400).json({ error: "Cannot demote the last admin." });
+    }
+    change.admin = !!body.admin;
+  }
+  const saved = users.upsert(email, change, s.email);
+  res.json({ ok: true, user: { ...saved, self: saved.email === s.email }, created: !existing });
+});
+app.delete("/api/users/:email", (req, res) => {
+  const s = adminSession(req, res);
+  if (!s) return;
+  const email = String(req.params.email || "").trim().toLowerCase();
+  if (email === s.email) return res.status(400).json({ error: "You cannot remove yourself." });
+  const target = users.get(email);
+  if (!target) return res.status(404).json({ error: "No such user." });
+  if (target.admin && users.adminCount() === 1) {
+    return res.status(400).json({ error: "Cannot remove the last admin." });
+  }
+  users.remove(email, s.email);
+  res.json({ ok: true });
+});
 
 app.get("/api/index", (_req, res) => res.sendFile(path.join(DATA, "index.json")));
 app.get("/api/curves", (_req, res) => res.sendFile(path.join(DATA, "curves.json")));

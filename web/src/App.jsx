@@ -11,6 +11,7 @@ import SellThrough from "./modules/SellThrough.jsx";
 import Geo from "./modules/Geo.jsx";
 import Waterfall from "./modules/Waterfall.jsx";
 import TargetSetting from "./TargetSetting.jsx";
+import Permissions from "./Permissions.jsx";
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -23,6 +24,11 @@ export default function App() {
   const [releaseId, setReleaseId] = useState(null);
   const [snap, setSnap] = useState(null);
   const [error, setError] = useState(null);
+  const [me, setMe] = useState(null); // { email, admin }
+
+  useEffect(() => {
+    fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {});
+  }, []);
 
   useEffect(() => {
     getJSON("/api/index").then((ix) => {
@@ -64,21 +70,17 @@ export default function App() {
             Methodology ↗
           </a>
         </div>
-        <SessionFooter />
+        <SessionFooter email={me?.email} />
       </nav>
       <main className="content">
-        {snap ? <ReleasePage snap={snap} onSaved={setSnap} /> : <div style={{ color: "#6c6b68" }}>Loading…</div>}
+        {snap ? <ReleasePage snap={snap} onSaved={setSnap} admin={!!me?.admin} /> : <div style={{ color: "#6c6b68" }}>Loading…</div>}
       </main>
     </div>
     </TipProvider>
   );
 }
 
-function SessionFooter() {
-  const [email, setEmail] = useState(null);
-  useEffect(() => {
-    fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then((d) => setEmail(d?.email ?? null)).catch(() => {});
-  }, []);
+function SessionFooter({ email }) {
   if (!email) return null;
   return (
     <div style={{ marginTop: 24, padding: "10px 12px", borderTop: "1px solid #f2f0ea", fontSize: 11.5, color: "#6c6b68", display: "flex", gap: 8, alignItems: "center" }}>
@@ -108,9 +110,10 @@ function ReleaseRow({ r, active, onClick }) {
   );
 }
 
-function ReleasePage({ snap, onSaved }) {
+function ReleasePage({ snap, onSaved, admin }) {
   const [tab, setTab] = useState("overview");
-  useEffect(() => setTab("overview"), [snap.id]);
+  // switching release resets to Overview, but the app-level Permissions tab survives
+  useEffect(() => setTab((t) => (t === "permissions" ? t : "overview")), [snap.id]);
   return (
     <>
       <header className="page-header" style={{ marginBottom: 0 }}>
@@ -125,8 +128,12 @@ function ReleasePage({ snap, onSaved }) {
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>Target setting</button>
+        {admin && (
+          <button className={`tab${tab === "permissions" ? " active" : ""}`} onClick={() => setTab("permissions")}>Permissions</button>
+        )}
       </nav>
-      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : (
+      {tab === "permissions" ? <Permissions /> :
+      tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : (
       <div className="grid">
         <HeroBar snap={snap} />
         <ChannelsVsTargets snap={snap} />

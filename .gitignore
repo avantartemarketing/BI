@@ -5,6 +5,8 @@ node_modules/
 dist/
 .venv/
 data/.session_secret
+data/users.json
+data/users.log.jsonl
 data/targets.log.jsonl
 data/decisions.log.jsonl
 data/artist_posts.csv
