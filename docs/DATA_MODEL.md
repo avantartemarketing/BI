@@ -384,6 +384,21 @@ day removes the units-curve jump entirely, proving it is allocation bookkeeping,
 last-day demand; a historical secured-units curve is NOT reconstructable because the export
 retroactively reclassifies converted entries out of `*_No_Conv`.
 
+**Curves are tier-blind, and that is deliberate.** A channel's quality pick sets its
+LEVEL (which quartile of the share panel it plans for) but every release shares one pooled
+median SHAPE per display group. Tested 2026-08-29 with `etl/analysis/tier_curve_probe.py`:
+split the clean panel in half by each group's realised share, difference each group's curve
+against that release's own all-channel curve (so a release that simply ran early does not
+read as a tier effect in all five of its groups), then permutation-test the gap. Across 11
+testable group x metric combinations **nothing survives Benjamini-Hochberg FDR at 5%** -
+closest is search/direct/other sessions at p=0.011 against a 0.0045 threshold. Paid is the
+one coherent pattern (the three most suggestive results after search/direct/other, gaps of
+17-21 pts) and the one with real stakes: cohorted paid curves would move Dali's expected
+paid units today from 7.0 to 60.3, the difference between "on plan" and "far behind". High
+stakes on a coin flip, so the pooled curve stands. Two channel groups (AA Meta, Referral
+Artist) cannot be tested at all - only 5 of 15 releases carry >= 10 units in them. Re-run
+the probe at ~25-30 clean releases.
+
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
 intervention shown alongside, never baked into the projection.
