@@ -25,6 +25,7 @@ export default function App() {
   const [snap, setSnap] = useState(null);
   const [error, setError] = useState(null);
   const [me, setMe] = useState(null); // { email, admin }
+  const [view, setView] = useState("release"); // "release" | "permissions" (app-level, not per-release)
 
   useEffect(() => {
     fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {});
@@ -60,9 +61,21 @@ export default function App() {
       <nav className="sidebar">
         <h1>Launch Performance</h1>
         <div className="section-label">Live releases</div>
-        {groups.live.map((r) => <ReleaseRow key={r.id} r={r} active={r.id === releaseId} onClick={() => setReleaseId(r.id)} />)}
+        {groups.live.map((r) => <ReleaseRow key={r.id} r={r} active={view === "release" && r.id === releaseId} onClick={() => { setReleaseId(r.id); setView("release"); }} />)}
         {groups.closed.length > 0 && <div className="section-label">Closed</div>}
-        {groups.closed.map((r) => <ReleaseRow key={r.id} r={r} active={r.id === releaseId} onClick={() => setReleaseId(r.id)} />)}
+        {groups.closed.map((r) => <ReleaseRow key={r.id} r={r} active={view === "release" && r.id === releaseId} onClick={() => { setReleaseId(r.id); setView("release"); }} />)}
+        {me?.admin && (
+          <>
+            <div className="section-label">Settings</div>
+            <button
+              className={`release-row${view === "permissions" ? " active" : ""}`}
+              onClick={() => setView("permissions")}
+              title="Manage who can sign in to the dashboard"
+            >
+              <span className="nm">Permissions</span>
+            </button>
+          </>
+        )}
         <div style={{ marginTop: 20, padding: "0 12px" }}>
           <a href="/methodology" target="_blank" rel="noreferrer"
             style={{ fontSize: 11.5, color: "#6c6b68", textDecoration: "none" }}
@@ -73,7 +86,8 @@ export default function App() {
         <SessionFooter email={me?.email} />
       </nav>
       <main className="content">
-        {snap ? <ReleasePage snap={snap} onSaved={setSnap} admin={!!me?.admin} /> : <div style={{ color: "#6c6b68" }}>Loading…</div>}
+        {view === "permissions" && me?.admin ? <Permissions me={me} /> :
+          snap ? <ReleasePage snap={snap} onSaved={setSnap} /> : <div style={{ color: "#6c6b68" }}>Loading…</div>}
       </main>
     </div>
     </TipProvider>
@@ -110,10 +124,9 @@ function ReleaseRow({ r, active, onClick }) {
   );
 }
 
-function ReleasePage({ snap, onSaved, admin }) {
+function ReleasePage({ snap, onSaved }) {
   const [tab, setTab] = useState("overview");
-  // switching release resets to Overview, but the app-level Permissions tab survives
-  useEffect(() => setTab((t) => (t === "permissions" ? t : "overview")), [snap.id]);
+  useEffect(() => setTab("overview"), [snap.id]);
   return (
     <>
       <header className="page-header" style={{ marginBottom: 0 }}>
@@ -128,12 +141,8 @@ function ReleasePage({ snap, onSaved, admin }) {
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>Target setting</button>
-        {admin && (
-          <button className={`tab${tab === "permissions" ? " active" : ""}`} onClick={() => setTab("permissions")}>Permissions</button>
-        )}
       </nav>
-      {tab === "permissions" ? <Permissions /> :
-      tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : (
+      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : (
       <div className="grid">
         <HeroBar snap={snap} />
         <ChannelsVsTargets snap={snap} />
