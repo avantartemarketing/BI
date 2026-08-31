@@ -32,6 +32,7 @@ import pathlib
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
+import numpy as np
 import pandas as pd
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -143,6 +144,47 @@ def load_artist_posts() -> pd.DataFrame:
     df = pd.read_csv(p)
     df["date"] = pd.to_datetime(df["date"]).dt.date
     return df
+
+
+# clock columns are per-row facts, not volumes - never redistribute them
+_CLOCK_COLS = {"days_since_announcement", "days_until_launch",
+               "pct_days_since_announcement", "pct_days_until_launch"}
+
+
+def redistribute_untracked(df: pd.DataFrame) -> pd.DataFrame:
+    """Spread the Untracked channel pro-rata over the tracked ones (docs §1.3).
+
+    Untracked carries real demand - up to a quarter of a release's units - and
+    no display group claims it, so leaving it in place drops it from every
+    channel rollup while the release-level sums still count it. That mismatch
+    is what let hero.now print below sellthrough.sold, which is arithmetically
+    impossible for secured units. Folding it in here, before anything reads the
+    frame, keeps both paths on one basis.
+
+    Shares come from the same day's tracked mix. A day carrying untracked
+    volume with nothing tracked to spread it over would lose that volume, so
+    it is pooled and shared out on the release's overall mix instead.
+    """
+    unt = df[df["channel"] == "Untracked"]
+    tracked = df[df["channel"] != "Untracked"].copy()
+    if unt.empty or tracked.empty:
+        return tracked
+    cols = [c for c in df.select_dtypes(include="number").columns if c not in _CLOCK_COLS]
+    for m in cols:
+        u_by_day = unt.groupby("event_date")[m].sum()
+        if float(u_by_day.abs().sum()) == 0:
+            continue
+        t_by_day = tracked.groupby("event_date")[m].sum()
+        vals = tracked[m].to_numpy(dtype=float)
+        rows_u = tracked["event_date"].map(u_by_day).fillna(0.0).to_numpy(dtype=float)
+        rows_t = tracked["event_date"].map(t_by_day).fillna(0.0).to_numpy(dtype=float)
+        add = np.where(rows_t > 0, rows_u * vals / np.where(rows_t > 0, rows_t, 1.0), 0.0)
+        orphan = float(u_by_day[t_by_day.reindex(u_by_day.index).fillna(0.0) <= 0].sum())
+        rel_total = float(vals.sum())
+        if orphan and rel_total > 0:
+            add = add + orphan * vals / rel_total
+        tracked[m] = vals + add
+    return tracked
 
 
 def referral_artist_tier(release: dict) -> str:
@@ -483,14 +525,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     rat["group"] = rat["channel"].map(GROUP_OF)
     window_start = min(pr_open, announce)
     win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= min(as_of, launch_end + timedelta(days=2)))]
-
-    # untracked redistribution for cumulative channel actuals (docs §1.3)
-    def redistribute(series: dict[str, float]) -> dict[str, float]:
-        untracked = series.pop("Untracked", 0.0)
-        tracked_sum = sum(series.values())
-        if tracked_sum <= 0:
-            return series
-        return {c: v + untracked * v / tracked_sum for c, v in series.items()}
+    # Fold Untracked into the tracked channels ONCE, here, so the group rollups
+    # below and the release-level sums further down agree (docs §1.3).
+    win = redistribute_untracked(win)
 
     # daily series per display group: actual cumulative entries + plan
     days = list(daterange(window_start, launch_end))
@@ -891,6 +928,46 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
 
 # ---------------------------------------------------------------- main
 
+def check_snapshot(snap: dict) -> None:
+    """Cross-check a snapshot's own arithmetic before it is written.
+
+    These are relationships that must hold by definition, so a breach means a
+    code path disagrees with another one - the class of bug where two cards
+    print different answers for the same quantity. Cheap to run, and it fails
+    the build rather than shipping a number that cannot be true.
+    """
+    rid = snap.get("id", "?")
+    hero, sell = snap.get("hero") or {}, snap.get("sellthrough") or {}
+    now, sold = hero.get("now"), sell.get("sold")
+    edition = (snap.get("sellthrough") or {}).get("edition")
+    # hero.now is deliberately capped at the edition (demand beyond sellout is
+    # reported as oversubscribedUnits, not bar overshoot), so every check below
+    # only bites while the release is under that cap.
+    capped = edition is not None and now is not None and now >= edition - 0.5
+    problems = []
+    # secured = units sold + 0.8 x unconverted entries, so it cannot be below sold
+    if not capped and now is not None and sold is not None and now < sold - 0.5:
+        problems.append(f"hero.now {now} < sellthrough.sold {sold} - secured units cannot be below units sold")
+    # group targets are a partition of the edition
+    gt = snap.get("groupTargets") or {}
+    if gt:
+        tot = sum((g or {}).get("units", 0) for g in gt.values())
+        edition = (snap.get("targets") or {}).get("edition_size")
+        if edition and abs(tot - edition) > 1.0:
+            problems.append(f"group unit targets sum to {tot:.1f}, edition size is {edition}")
+    # channel actuals should roll up to the hero
+    ch = snap.get("channels") or []
+    if ch and now is not None:
+        roll = sum(c.get("now") or 0 for c in ch)
+        if capped:
+            if roll < (edition or 0) - 1.0:
+                problems.append(f"hero.now is capped at the edition but channels only sum to {roll:.1f}")
+        elif abs(roll - now) > 1.0:
+            problems.append(f"channel actuals sum to {roll:.1f} but hero.now is {now}")
+    if problems:
+        raise AssertionError(f"{rid}: " + "; ".join(problems))
+
+
 def main():
     at = load_across_time()
     as_of = at["event_date"].max() - timedelta(days=1)  # last full day (export cut mid-day)
@@ -912,6 +989,7 @@ def main():
     for release in INPUTS["releases"]:
         snap = build_release(release, at, spend, emails, content, curves, as_of,
                              artist_posts, posts_bench, email_bench)
+        check_snapshot(snap)
         (APP / "releases" / f"{release['id']}.json").write_text(json.dumps(snap, indent=1))
         index.append({
             "id": snap["id"], "name": f"{snap['artist']} - {snap['title']}",

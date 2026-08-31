@@ -142,9 +142,16 @@ function FunnelWaterfall({ snap }) {
     steps.push({ key: k + "-c", label: cLabel, note: cNote, value: g.contrib_conversion ?? 0 });
   }
   if (!steps.length) return <div className="empty-state">No funnel data yet</div>;
+  // Fold rounding back into the largest step, but ONLY rounding. On a sold-out
+  // release the hero gap is capped at the edition while the steps are not, so
+  // the difference is real and absorbing it silently overstated the top driver
+  // by up to 23% - on the card whose whole job is naming that driver.
   const residual = (now - exp) - steps.reduce((a, s) => a + s.value, 0);
-  const biggest = steps.reduce((a, b) => (Math.abs(b.value) > Math.abs(a.value) ? b : a));
-  biggest.value += residual;
+  if (Math.abs(residual) <= 0.5) {
+    const biggest = steps.reduce((a, b) => (Math.abs(b.value) > Math.abs(a.value) ? b : a));
+    biggest.value += residual;
+  }
+  const capped = Math.abs(residual) > 0.5;
 
   let cum = exp;
   const path = steps.map((s) => { const from = cum; cum += s.value; return { ...s, from, to: cum }; });
@@ -216,7 +223,9 @@ function FunnelWaterfall({ snap }) {
           head: "Target to actual",
           body: "Each funnel component is repriced one-at-a-time vs plan; together the steps sum to the gap between expected and actual secured units today.",
         }} />
-        <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>secured units, day {day}</span>
+        <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
+          {capped ? "steps exceed the gap - sellout caps it" : `secured units, day ${day}`}
+        </span>
       </div>
     </div>
   );

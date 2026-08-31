@@ -124,6 +124,46 @@ function ReleaseRow({ r, active, onClick }) {
   );
 }
 
+/* The header used to assert "Sources fresh" as a literal, so a broken hourly
+ * ingestion - expired token, un-shared sheet, an ETL exception - looked
+ * identical to a healthy one while the page served frozen numbers. This reads
+ * the status the server already records and says which it is. */
+function Freshness({ asOf }) {
+  const t = useTip();
+  const [st, setSt] = useState(undefined); // undefined = still asking
+  useEffect(() => {
+    let live = true;
+    const poll = () => fetch("/api/refresh/status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (live) setSt(d); })
+      .catch(() => { if (live) setSt(null); });
+    poll();
+    const id = setInterval(poll, 5 * 60 * 1000);
+    return () => { live = false; clearInterval(id); };
+  }, []);
+
+  const feeds = st && [["Sheet", st.sheet], ["Email", st.emails], ["Notion", st.notion], ["ETL", st.etl]]
+    .filter(([, v]) => v !== undefined && v !== null);
+  const stale = st && st.ok === false;
+  const label = st === undefined ? "Checking sources…"
+    : st === null || !st.at ? "Source status unknown"
+    : stale ? "Sources stale" : "Sources fresh";
+  const color = st === undefined ? "#6c6b68" : stale ? "#b8461d" : st && st.at ? "#6c6b68" : "#8a5f00";
+  const tip = {
+    head: label,
+    body: st && st.at
+      ? `Last refresh attempt ${new Date(st.at).toLocaleString()}`
+      : "The dashboard has not been able to read the refresh status.",
+    rows: feeds ? feeds.map(([k, v]) => ({ label: k, value: String(v).slice(0, 70) })) : [],
+  };
+  return (
+    <span className="freshness" style={{ color }} {...t.props(tip)}>
+      {stale && <span aria-hidden="true">⚠ </span>}
+      {label} · data through {asOf}
+    </span>
+  );
+}
+
 function ReleasePage({ snap, onSaved }) {
   const [tab, setTab] = useState("overview");
   useEffect(() => setTab("overview"), [snap.id]);
@@ -134,9 +174,7 @@ function ReleasePage({ snap, onSaved }) {
         <span className={`badge ${snap.type.toLowerCase()}`}>{snap.type}</span>
         <span className="chip">Day {snap.day} of {snap.of}</span>
         {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
-        <span className="freshness" title="Latest complete day in the daily funnel export">
-          Sources fresh · data through {snap.asOf}
-        </span>
+        <Freshness asOf={snap.asOf} />
       </header>
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>

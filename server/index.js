@@ -95,6 +95,14 @@ const INPUTS_PATH = path.join(DATA, "inputs.json");
 const TARGETS_LOG = process.env.TARGETS_LOG || path.join(ROOT, "data", "targets.log.jsonl");
 const modelPromise = import("../shared/targetModel.mjs");
 
+// Express 4 does not catch a rejection from an async handler, and Node exits on
+// an unhandled one - which would take the SPA down with it, since the same
+// process serves it. Every async route goes through here.
+const route = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch((e) => {
+  console.error(`${req.method} ${req.originalUrl} failed:`, e);
+  if (!res.headersSent) res.status(500).json({ error: "Something went wrong saving that - nothing was changed." });
+});
+
 const PICKS = {
   paid_channel_size: ["Small", "Medium", "Large", "Low", "High"],
   reference_point: ["Low", "Medium", "High"],
@@ -121,7 +129,7 @@ app.get("/api/inputs/:id", (req, res) => {
   });
 });
 
-app.post("/api/inputs/:id", async (req, res) => {
+app.post("/api/inputs/:id", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   const doc = readInputsDoc();
   const current = doc.releases[id];
@@ -133,8 +141,14 @@ app.post("/api/inputs/:id", async (req, res) => {
   for (const f of ["edition_size", "unit_price", "artist_profit", "aa_group_profit"]) {
     if (body[f] !== undefined) {
       const v = Number(body[f]);
-      if (!Number.isFinite(v) || v < 0) errors.push(`${f} must be a non-negative number`);
-      else next[f] = f === "edition_size" ? Math.round(v) : v;
+      // edition_size is a divisor throughout the model - zero freezes every
+      // release's rebuild, not just this one
+      const floor = f === "edition_size" ? 1 : 0;
+      if (!Number.isFinite(v) || v < floor) {
+        errors.push(f === "edition_size"
+          ? "edition size must be at least 1"
+          : `${f} must be a non-negative number`);
+      } else next[f] = f === "edition_size" ? Math.round(v) : v;
     }
   }
   if (body.artist_profit_share !== undefined) {
@@ -204,26 +218,26 @@ app.post("/api/inputs/:id", async (req, res) => {
     }
   }
   res.json({ snapshot: updated });
-});
+}));
 
 // ---- live data refresh (Google Sheet -> sources -> ETL; server/sheets.js) ----
 const sheets = require("./sheets");
 // what the last refresh did, feed by feed - open in the browser to debug;
 // ?run=1 forces a fresh attempt first (gated behind the session like the app)
-app.get("/api/refresh/status", async (req, res) => {
+app.get("/api/refresh/status", route(async (req, res) => {
   if (req.query.run) {
     try { return res.json(await sheets.refresh()); }
     catch (e) { return res.status(502).json({ error: String((e && e.message) || e) }); }
   }
   res.json(sheets.status() || { note: "no refresh attempted since boot yet" });
-});
-app.post("/api/refresh", async (_req, res) => {
+}));
+app.post("/api/refresh", route(async (_req, res) => {
   try {
     res.json(await sheets.refresh());
   } catch (e) {
     res.status(502).json({ error: String((e && e.message) || e) });
   }
-});
+}));
 
 app.get("/api/decisions", (_req, res) => {
   if (!fs.existsSync(DECISIONS_PATH)) return res.json([]);
