@@ -1,78 +1,181 @@
-/* Channels vs targets (spec §4.3, LE relabel per §6).
- * The four non-paid display groups, each on its own vs-target track (tick at
- * 83.3% = a 120%-of-target scale, widening per row when a bar would overflow
- * so heavy overperformance is never cropped); right-hand text = proj / target
- * + signed delta % (ink when >= 0, red when negative). Tooltips per spec voice. */
-import React from "react";
-import { Card, TrackBar, GROUP_DOTS, C, fmt, MINUS } from "../ui.jsx";
+/* Channels vs targets (spec §4.3, LE relabel per §6) - column form.
+ *
+ * All five display groups (paid included) as columns rising from a baseline.
+ * The TARGET is a wide pale block behind a narrower bar, so it stays readable
+ * when a bar overtakes it: the block's shoulders show either side, and the
+ * block shows above the bar when a channel is short. Colour above the block
+ * top = over the reference.
+ *
+ * Two toggles, both defaulting to the left option:
+ *   Today | At close  - actuals vs where the plan says we should be by now,
+ *                       or the projection vs the full target (only "at close"
+ *                       carries a projected band).
+ *   % | Units         - % puts every channel on one 100% scale, so the pale
+ *                       blocks line up into a shared reference across the card;
+ *                       Units keeps real magnitudes, so each block is that
+ *                       channel's own target drawn to scale.
+ * Right-hand delta per column: proj (or actual) vs its reference, green when
+ * at or above, red below. */
+import React, { useState } from "react";
+import { Card, GROUP_DOTS, C, fmt, MINUS, useTip } from "../ui.jsx";
+
+const BAR_INSET = "19%";   // bar is narrower than the target block behind it
 
 export default function ChannelsVsTargets({ snap }) {
-  const rows = (snap?.channels || []).filter((c) => c.key !== "paid");
+  const t = useTip();
+  const [when, setWhen] = useState("today");   // today | close
+  const [scale, setScale] = useState("pct");   // pct | units
+  const rows = snap?.channels || [];
+  const today = when === "today";
+  const pct = scale === "pct";
+
+  // Today compares actuals with the plan to date; at close compares the
+  // projection with the full target (docs §5.4 / §9).
+  const base = rows.map((c) => {
+    const ref = (today ? c.exp : c.target) ?? 0;
+    const bar = (today ? c.now : c.proj) ?? 0;
+    const now = c.now ?? 0;
+    return {
+      key: c.key, name: c.name, ref, bar, now,
+      delta: ref > 0 ? Math.round((bar / ref - 1) * 100) : null,
+    };
+  });
+
+  // one scale across the card: % normalises each channel to its own reference,
+  // units keeps them comparable in secured units
+  const val = (v, ref) => (pct ? (ref > 0 ? (v / ref) * 100 : 0) : v);
+  const max = Math.max(
+    ...base.map((r) => val(r.bar, r.ref)),
+    ...base.map((r) => (pct ? 100 : r.ref)),
+    1,
+  ) * 1.02;
+  const h = (v) => Math.max(0, Math.min((v / max) * 100, 100));
+
+  const cols = base.map((r) => ({
+    ...r,
+    refH: h(pct ? 100 : r.ref),
+    barH: h(val(r.bar, r.ref)),
+    nowH: h(val(r.now, r.ref)),
+  }));
+
+  const refLabel = today ? "Expected today" : "Target";
+  const unit = (v) => fmt(v, v < 10 && v > 0 ? 1 : 0);
+
+  const seg = (opts, value, set) => (
+    <span className="seg compact">
+      {opts.map(([v, label, tip]) => (
+        <button key={v} className={value === v ? "active" : ""} onClick={() => set(v)} title={tip}>
+          {label}
+        </button>
+      ))}
+    </span>
+  );
+
+  const swatch = (bg) => ({ width: 9, height: 9, borderRadius: 2, background: bg, flex: "0 0 9px" });
+  const legendItem = { display: "flex", alignItems: "center", gap: 5 };
 
   return (
     <Card
       dot={GROUP_DOTS.volume}
       title="Channels vs targets"
-      right={<span style={{ whiteSpace: "nowrap" }}>at close</span>}
     >
-      <div className="spacer-16" />
-      <div className="body">
-        {rows.length === 0 ? (
-          <div className="empty-state">No channel data yet</div>
-        ) : (
-          rows.map((c) => {
-            const now = c.now ?? 0;
-            const exp = c.exp ?? 0;
-            const proj = c.proj ?? 0;
-            const target = c.target ?? 0;
-            const dPct = target > 0 ? Math.round((proj / target - 1) * 100) : null;
-            const deltaText =
-              dPct === null ? "–" : (dPct >= 0 ? "+" : MINUS) + Math.abs(dPct) + "%";
-            const overF = fmt(Math.max(0, proj - target));
-            return (
-              <div
-                key={c.key}
-                style={{
-                  flex: 1, display: "flex", flexDirection: "column",
-                  justifyContent: "center", gap: 4, minHeight: 0,
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-                  <div style={{ fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {c.name}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
-                    <span className="num" style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
-                      {fmt(proj)} / {fmt(target)}
-                    </span>
-                    <span
-                      className="num"
-                      style={{ fontSize: 12, fontWeight: 600, color: dPct !== null && dPct < 0 ? C.red : C.ink }}
-                    >
-                      {deltaText}
-                    </span>
-                  </div>
-                </div>
-                <TrackBar
-                  now={now}
-                  exp={exp > 0 ? exp : null}
-                  proj={proj}
-                  target={target}
-                  height={20}
-                  radius={5}
-                  tips={{
-                    proj: { head: "Projected at close", rows: [{ label: "Units", value: fmt(proj) }] },
-                    now: { head: "Secured to date", rows: [{ label: "Units", value: fmt(now) }] },
-                    exp: { head: "Expected by today", rows: [{ label: "Units", value: fmt(exp) }] },
-                    overshoot: { head: "Over target", rows: [{ label: "Units", value: "+" + overF }] },
-                    target: { head: "Target", rows: [{ label: "Units", value: fmt(target) }] },
-                  }}
-                />
-              </div>
-            );
-          })
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, margin: "10px 0 12px", flex: "0 0 auto" }}>
+        {seg(
+          [["today", "Today", "Secured so far vs what the plan expects by today"],
+           ["close", "At close", "Projected at close vs the full target"]],
+          when, setWhen,
+        )}
+        {seg(
+          [["pct", "%", "Every channel against its own reference, on one 100% scale"],
+           ["units", "Units", "Secured units, so channels are comparable in size"]],
+          scale, setScale,
         )}
       </div>
+      {cols.length === 0 ? (
+        <div className="empty-state">No channel data yet</div>
+      ) : (
+        <div className="body" style={{ gap: 6 }}>
+          <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "stretch", gap: 8 }}>
+            {cols.map((c) => {
+              const refTip = {
+                head: refLabel,
+                rows: [{ label: "Units", value: unit(c.ref) }],
+              };
+              const nowTip = { head: "Secured to date", rows: [{ label: "Units", value: unit(c.now) }] };
+              const barTip = today ? nowTip : {
+                head: "Projected at close",
+                rows: [
+                  { label: "Units", value: unit(c.bar) },
+                  { label: "Target", value: unit(c.ref) },
+                ],
+              };
+              return (
+                <div key={c.key} style={{ flex: 1, minWidth: 0, position: "relative" }}>
+                  <div
+                    {...t.props(refTip)}
+                    style={{
+                      position: "absolute", left: 0, right: 0, bottom: 0,
+                      height: `${c.refH}%`, background: C.track, borderRadius: 4,
+                    }}
+                  />
+                  {!today && (
+                    <div
+                      {...t.props(barTip)}
+                      style={{
+                        position: "absolute", left: BAR_INSET, right: BAR_INSET, bottom: 0,
+                        height: `${c.barH}%`, background: C.orangeLight, borderRadius: 3,
+                      }}
+                    />
+                  )}
+                  <div
+                    {...t.props(nowTip)}
+                    style={{
+                      position: "absolute", left: BAR_INSET, right: BAR_INSET, bottom: 0,
+                      height: `${c.nowH}%`, background: C.orange, borderRadius: 3,
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {cols.map((c) => (
+              <div key={c.key} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+                <div
+                  title={c.name}
+                  style={{
+                    fontSize: 9, color: C.muted, lineHeight: 1.2, height: 22, overflow: "hidden",
+                    display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                  }}
+                >
+                  {c.name}
+                </div>
+                <div
+                  className="num"
+                  style={{
+                    fontSize: 11, fontWeight: 600,
+                    color: c.delta === null ? C.muted : c.delta >= 0 ? C.green : C.red,
+                  }}
+                >
+                  {c.delta === null ? "–" : (c.delta >= 0 ? "+" : MINUS) + Math.abs(c.delta) + "%"}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div
+            style={{
+              display: "flex", alignItems: "center", gap: 14, flex: "0 0 auto",
+              marginTop: 4, paddingTop: 10, borderTop: `1px solid ${C.hairline}`,
+              fontSize: 10.5, color: C.muted,
+            }}
+          >
+            <span style={legendItem}><span style={swatch(C.orange)} />To date</span>
+            {!today && <span style={legendItem}><span style={swatch(C.orangeLight)} />Projected</span>}
+            <span style={legendItem}><span style={swatch(C.track)} />{refLabel}</span>
+            <span style={{ marginLeft: "auto" }}>{pct ? "reference = 100%" : "secured units"}</span>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

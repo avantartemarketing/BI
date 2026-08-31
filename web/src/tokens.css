@@ -157,6 +157,8 @@ button[title], select[title] { cursor: pointer; }
   background: var(--card); color: var(--muted); border: none; cursor: pointer;
 }
 .seg button.active { background: var(--ink); color: #fff; }
+/* two segs in one card header (channels vs targets) need to fit 352px */
+.seg.compact button { font-size: 11px; padding: 2px 8px; }
 
 /* buttons (paid spend) */
 .btn-row { display: flex; gap: 8px; margin-top: auto; }
