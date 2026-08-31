@@ -131,8 +131,8 @@ function FunnelWaterfall({ snap }) {
     ["aa_social", "Meta sessions", "Meta → sale", "sessions vs plan", "session → sale rate vs plan"],
     ["referral_artist", "Artist sessions", "Artist → sale", "sessions vs plan", "session → sale rate vs plan"],
     ["search_direct_other", "Direct sessions", "Direct → sale", "sessions vs plan", "session → sale rate vs plan"],
-    ["paid", "Paid spend", "Paid cost per entry", "paid sessions vs plan - what spend bought",
-      "paid session → sale rate vs plan - the flip side of cost per entry"],
+    ["paid", "Paid spend", "Paid efficiency", "paid sessions vs plan - what spend bought",
+      "paid session → sale rate vs plan - the cost-per-entry side of the ledger"],
   ];
   const steps = [];
   for (const [k, tLabel, cLabel, tNote, cNote] of STEP_NAMES) {
