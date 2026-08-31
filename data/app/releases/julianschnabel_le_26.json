@@ -195,6 +195,7 @@
    "exp": 0.0,
    "proj": 280.9,
    "target": 280.9,
+   "parts": [],
    "daily": [
     {
      "date": "2026-07-30",
@@ -553,6 +554,7 @@
    "exp": 0.0,
    "proj": 17.2,
    "target": 17.2,
+   "parts": [],
    "daily": [
     {
      "date": "2026-07-30",
@@ -906,11 +908,12 @@
   },
   {
    "key": "referral_artist",
-   "name": "Referral artist",
+   "name": "Artist",
    "now": 0.0,
    "exp": 0.0,
    "proj": 21.5,
    "target": 21.5,
+   "parts": [],
    "daily": [
     {
      "date": "2026-07-30",
@@ -1264,11 +1267,12 @@
   },
   {
    "key": "search_direct_other",
-   "name": "Search / direct / other",
+   "name": "Direct etc.",
    "now": 0.0,
    "exp": 0.0,
    "proj": 57.4,
    "target": 57.4,
+   "parts": [],
    "daily": [
     {
      "date": "2026-07-30",
@@ -1627,6 +1631,7 @@
    "exp": 0.0,
    "proj": 123.0,
    "target": 123.0,
+   "parts": [],
    "daily": [
     {
      "date": "2026-07-30",

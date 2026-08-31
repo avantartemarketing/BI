@@ -195,6 +195,16 @@
    "exp": 136.5,
    "proj": 124.2,
    "target": 136.5,
+   "parts": [
+    {
+     "name": "AA Email Man",
+     "value": 68.2
+    },
+    {
+     "name": "AA Email Auto",
+     "value": 56.0
+    }
+   ],
    "daily": [
     {
      "date": "2026-07-29",
@@ -349,6 +359,12 @@
    "exp": 7.8,
    "proj": 30.4,
    "target": 7.8,
+   "parts": [
+    {
+     "name": "AA Meta",
+     "value": 30.4
+    }
+   ],
    "daily": [
     {
      "date": "2026-07-29",
@@ -498,11 +514,17 @@
   },
   {
    "key": "referral_artist",
-   "name": "Referral artist",
+   "name": "Artist",
    "now": 25.4,
    "exp": 20.8,
    "proj": 25.4,
    "target": 20.8,
+   "parts": [
+    {
+     "name": "Referral Artist",
+     "value": 25.4
+    }
+   ],
    "daily": [
     {
      "date": "2026-07-29",
@@ -652,11 +674,33 @@
   },
   {
    "key": "search_direct_other",
-   "name": "Search / direct / other",
+   "name": "Direct etc.",
    "now": 58.0,
    "exp": 25.9,
    "proj": 58.0,
    "target": 25.9,
+   "parts": [
+    {
+     "name": "Direct",
+     "value": 43.4
+    },
+    {
+     "name": "Organic Search",
+     "value": 11.6
+    },
+    {
+     "name": "Other",
+     "value": 1.0
+    },
+    {
+     "name": "Referral Meta",
+     "value": 1.0
+    },
+    {
+     "name": "Referral Other",
+     "value": 1.0
+    }
+   ],
    "daily": [
     {
      "date": "2026-07-29",
@@ -811,6 +855,12 @@
    "exp": 109.0,
    "proj": 85.4,
    "target": 109.0,
+   "parts": [
+    {
+     "name": "Paid Social",
+     "value": 85.4
+    }
+   ],
    "daily": [
     {
      "date": "2026-07-29",

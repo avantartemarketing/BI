@@ -59,9 +59,9 @@ ORGANIC_CHANNELS = list(INPUTS["channel_quality_default"].keys())
 DISPLAY_GROUPS = {
     "aa_email": {"name": "AA Email", "channels": ["AA Email Auto", "AA Email Man"]},
     "aa_social": {"name": "AA Meta", "channels": ["AA Meta", "AA X"]},
-    "referral_artist": {"name": "Referral artist", "channels": ["Referral Artist"]},
+    "referral_artist": {"name": "Artist", "channels": ["Referral Artist"]},
     "search_direct_other": {
-        "name": "Search / direct / other",
+        "name": "Direct etc.",
         "channels": ["Direct", "Organic Search", "Other", "AA Other",
                      "Referral Meta", "Referral Other", "Referral X"],
     },
@@ -684,10 +684,22 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "conv_actual": conv_act, "conv_expected": conv_exp,
             "contrib_traffic": round(traffic, 1), "contrib_conversion": round(conversion, 1),
         }
+        # what a grouped column is made of, secured units to date, biggest first
+        parts = []
+        for ch in spec["channels"]:
+            sub_ch = win[win["channel"] == ch]
+            if sub_ch.empty:
+                continue
+            v = (float(sub_ch["Total_Product_Units"].sum())
+                 + e2o * float(sub_ch["Draw_Entries_Total_Units_No_Conv"].sum()))
+            if v > 0.05:
+                parts.append({"name": ch, "value": round(v, 1)})
+        parts.sort(key=lambda x: -x["value"])
         channels_out.append({
             "key": g, "name": spec["name"],
             "now": round(now, 1), "exp": round(exp, 1),
             "proj": round(proj, 1), "target": round(tgt, 1),
+            "parts": parts,
             "daily": daily,
         })
         hero_now += now; hero_exp += exp; hero_target += tgt; hero_proj += proj

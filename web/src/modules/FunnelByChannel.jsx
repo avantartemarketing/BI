@@ -122,15 +122,24 @@ function FunnelWaterfall({ snap }) {
   const now = snap?.hero?.now ?? 0;
   const day = snap?.day ?? 0;
 
+  // Step names mirror the funnel view's own rungs rather than abstract
+  // traffic/conversion: the volume half of each group is what its funnel calls
+  // the traffic rung (spend, for paid, since that is what buys paid sessions)
+  // and the rate half is its conversion rung.
+  const STEP_NAMES = [
+    ["aa_email", "Email sessions", "Email → sale", "sessions vs plan", "session → sale rate vs plan"],
+    ["aa_social", "Meta sessions", "Meta → sale", "sessions vs plan", "session → sale rate vs plan"],
+    ["referral_artist", "Artist sessions", "Artist → sale", "sessions vs plan", "session → sale rate vs plan"],
+    ["search_direct_other", "Direct sessions", "Direct → sale", "sessions vs plan", "session → sale rate vs plan"],
+    ["paid", "Paid spend", "Paid cost per entry", "paid sessions vs plan - what spend bought",
+      "paid session → sale rate vs plan - the flip side of cost per entry"],
+  ];
   const steps = [];
-  for (const [k, name] of [
-    ["aa_email", "Email"], ["aa_social", "Meta"], ["referral_artist", "Referral"],
-    ["search_direct_other", "Search"], ["paid", "Paid"],
-  ]) {
+  for (const [k, tLabel, cLabel, tNote, cNote] of STEP_NAMES) {
     const g = fbg[k];
     if (!g) continue;
-    steps.push({ key: k + "-t", label: name + " · Traffic", value: g.contrib_traffic ?? 0 });
-    steps.push({ key: k + "-c", label: name + " · Conv", value: g.contrib_conversion ?? 0 });
+    steps.push({ key: k + "-t", label: tLabel, note: tNote, value: g.contrib_traffic ?? 0 });
+    steps.push({ key: k + "-c", label: cLabel, note: cNote, value: g.contrib_conversion ?? 0 });
   }
   if (!steps.length) return <div className="empty-state">No funnel data yet</div>;
   const residual = (now - exp) - steps.reduce((a, s) => a + s.value, 0);
@@ -147,7 +156,7 @@ function FunnelWaterfall({ snap }) {
   const nRows = steps.length + 2;
 
   const anchorRow = (label, value, tip) => (
-    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "112px 1fr 56px", gap: 10, alignItems: "center", minHeight: 0 }}>
+    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "128px 1fr 52px", gap: 10, alignItems: "center", minHeight: 0 }}>
       <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
       <div style={{ position: "relative", height: 14 }}>
         <div {...tipApi.props(tip)} style={{ position: "absolute", left: `${X(value)}%`, top: -2, bottom: -2, width: 2, background: C.ink }} />
@@ -158,7 +167,7 @@ function FunnelWaterfall({ snap }) {
 
   return (
     <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
-      <div style={{ position: "absolute", left: 122, right: 66, top: 0, bottom: 0, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", left: 138, right: 62, top: 0, bottom: 0, pointerEvents: "none" }}>
         {levels.map((v, i) => (
           <div key={i} style={{
             position: "absolute", left: `${X(v)}%`,
@@ -174,14 +183,15 @@ function FunnelWaterfall({ snap }) {
         const up = p.value >= 0;
         const tip = {
           head: p.label,
+          body: p.note,
           rows: [
             { label: "vs expected", value: fmtSigned(p.value, 1) + " units", color: up ? C.green : C.red },
             { label: "Running total", value: fmt(p.to, 1) },
           ],
         };
         return (
-          <div key={p.key} style={{ flex: 1, display: "grid", gridTemplateColumns: "112px 1fr 56px", gap: 10, alignItems: "center", minHeight: 0 }}>
-            <div style={{ fontSize: 12.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <div key={p.key} style={{ flex: 1, display: "grid", gridTemplateColumns: "128px 1fr 52px", gap: 10, alignItems: "center", minHeight: 0 }}>
+            <div style={{ fontSize: 11.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {p.label}
             </div>
             <div style={{ position: "relative", height: 14 }}>
@@ -213,8 +223,8 @@ function FunnelWaterfall({ snap }) {
 }
 
 export default function FunnelByChannel({ snap }) {
-  const [view, setView] = React.useState("funnel"); // 'funnel' | 'wf'
-  React.useEffect(() => setView("funnel"), [snap?.id]);
+  const [view, setView] = React.useState("wf"); // 'wf' | 'funnel' - waterfall leads
+  React.useEffect(() => setView("wf"), [snap?.id]);
   const fbg = snap?.funnelByGroup || {};
   const email = snap?.email || {};
   const social = snap?.social || {};
@@ -301,7 +311,7 @@ export default function FunnelByChannel({ snap }) {
       {view === "wf" ? <FunnelWaterfall snap={snap} /> : (
       <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", gap: 16 }}>
         {/* shared centre reference line behind all groups (112px label + 10 gap / 56px delta + 10 gap) */}
-        <div style={{ position: "absolute", left: 122, right: 66, top: 0, bottom: 0, pointerEvents: "none" }}>
+        <div style={{ position: "absolute", left: 138, right: 62, top: 0, bottom: 0, pointerEvents: "none" }}>
           <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 1, background: "#ddd9cf" }} />
         </div>
         {groups.map((g) => (

@@ -36,7 +36,7 @@ export default function ChannelsVsTargets({ snap }) {
     const bar = (today ? c.now : c.proj) ?? 0;
     const now = c.now ?? 0;
     return {
-      key: c.key, name: c.name, ref, bar, now,
+      key: c.key, name: c.name, parts: c.parts || [], ref, bar, now,
       delta: ref > 0 ? Math.round((bar / ref - 1) * 100) : null,
     };
   });
@@ -142,7 +142,11 @@ export default function ChannelsVsTargets({ snap }) {
             {cols.map((c) => (
               <div key={c.key} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
                 <div
-                  title={c.name}
+                  {...t.props(c.parts && c.parts.length > 1 ? {
+                    head: c.name,
+                    body: "Secured units to date, by channel",
+                    rows: c.parts.map((p) => ({ label: p.name, value: unit(p.value) })),
+                  } : { head: c.name })}
                   style={{
                     fontSize: 9, color: C.muted, lineHeight: 1.2, height: 22, overflow: "hidden",
                     display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
