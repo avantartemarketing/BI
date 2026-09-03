@@ -243,7 +243,9 @@ async function refresh() {
       try {
         const pulled = await bq.pull();
         writeAtomic(ACROSS_TIME, pulled.acrossTime);
-        writeAtomic(SPEND_DAILY, pulled.spendDaily);
+        // null when the account cannot see the spend table - the previous
+        // spend_daily.csv keeps serving rather than being blanked
+        if (pulled.spendDaily) writeAtomic(SPEND_DAILY, pulled.spendDaily);
         out.bigquery = pulled.summary;
         bqDone = true;
         updated = true;

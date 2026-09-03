@@ -159,7 +159,9 @@ silently truncate (the LE daily tab is capped at exactly 100k rows and has lost 
 error - the window shortens as new launches push older days off the end - so the feed refuses a
 pull that would replace a materially longer history with a shorter one (`BQ_ALLOW_SHRINK=1`
 overrides). A BigQuery failure falls back to the sheet but leaves the header reading **Sources
-stale**, so a truncated copy is never served as if it were whole.
+stale**, so a truncated copy is never served as if it were whole. The funnel table is required;
+spend is optional, since a service account is easily granted one dataset and not the other -
+losing paid spend does not also cost us the funnel.
 
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down

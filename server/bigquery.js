@@ -19,7 +19,9 @@
  *   BQ_DATASET                     default AA_company_tables
  *   BQ_SINCE                       history window start    default 2025-01-01
  * The service account needs BigQuery Data Viewer on the dataset and BigQuery
- * Job User on the project. Set BIGQUERY=off to force the sheet path back on. */
+ * Job User on the project. Spend is optional - if the account cannot see
+ * meta_ads_insights_export the funnel still refreshes (BQ_SPEND=off skips it
+ * outright). Set BIGQUERY=off to force the sheet path back on. */
 const fs = require("fs");
 const path = require("path");
 const { serviceAccount, accessToken } = require("./googleAuth");
@@ -168,30 +170,57 @@ function guardShrink(label, got, file) {
   }
 }
 
-/* Pulls both tables and returns the two CSVs plus a one-line summary. Writing
- * is the caller's job (sheets.js writes atomically and then reruns the ETL). */
+/* Pulls the funnel table, and the spend table when the account can see it.
+ *
+ * The funnel table is required - it is the dashboard. Spend is optional on
+ * purpose: a service account can easily be granted one dataset and not the
+ * other, and losing paid spend is not a reason to also lose the funnel. When
+ * spend is denied the previous data/spend_daily.csv keeps serving and the
+ * summary says so, rather than the whole refresh failing with a 403.
+ *
+ * Writing is the caller's job (sheets.js writes atomically, then reruns the
+ * ETL); spendDaily comes back null when there was nothing new to write. */
 async function pull() {
   const sa = configured();
   if (!sa) return null;
   const token = await accessToken(sa, "bigquery");
   const { convertAcrossTime, convertSpend } = require("./sheets");
 
-  const [funnel, spend] = await Promise.all([fetchFunnel(token), fetchSpend(token)]);
+  const wantSpend = process.env.BQ_SPEND !== "off";
+  const [funnel, spend] = await Promise.all([
+    fetchFunnel(token),
+    wantSpend ? fetchSpend(token).catch((e) => ({ error: e })) : Promise.resolve(null),
+  ]);
+
   if (!funnel.header.includes("event_date") || !funnel.header.includes("simple_release_name")) {
     throw new Error(`${FUNNEL_TABLE} is missing event_date/simple_release_name - ` +
       `columns: ${funnel.header.slice(0, 6).join(", ")}…`);
   }
   const at = convertAcrossTime([funnel.header, ...funnel.rows]);
-  const sp = convertSpend([spend.header, ...spend.rows]);
   if (at.rows < 100) throw new Error(`funnel query returned ${at.rows} rows - not overwriting`);
   guardShrink("funnel query", at.rows, ACROSS_TIME);
-  guardShrink("spend query", sp.rows, SPEND_DAILY);
 
-  const gb = ((funnel.bytes + spend.bytes) / 1e9).toFixed(2);
-  const cached = funnel.cached && spend.cached ? ", cache hit" : "";
+  let spendCsv = null;
+  let spendNote;
+  if (!wantSpend) {
+    spendNote = "spend skipped (BQ_SPEND=off)";
+  } else if (spend.error) {
+    // keep the note short - the full 403 is long and this goes in the header tooltip
+    spendNote = `spend unavailable, keeping the last file (${String(spend.error.message || spend.error)
+      .replace(/\s+/g, " ").slice(0, 120)})`;
+  } else {
+    const sp = convertSpend([spend.header, ...spend.rows]);
+    guardShrink("spend query", sp.rows, SPEND_DAILY);
+    spendCsv = sp.csv;
+    spendNote = `spend ${sp.rows} rows`;
+  }
+
+  const bytes = funnel.bytes + ((spend && !spend.error && spend.bytes) || 0);
+  const gb = (bytes / 1e9).toFixed(2);
+  const cached = funnel.cached && (!spend || spend.error || spend.cached) ? ", cache hit" : "";
   return {
-    acrossTime: at.csv, spendDaily: sp.csv,
-    summary: `funnel ${at.rows} rows, spend ${sp.rows} rows since ${SINCE} ` +
+    acrossTime: at.csv, spendDaily: spendCsv,
+    summary: `funnel ${at.rows} rows, ${spendNote}, since ${SINCE} ` +
       `(${gb} GB scanned${cached}, ${sa._env})`,
   };
 }

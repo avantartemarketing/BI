@@ -63,6 +63,12 @@ handful of complete campaigns rather than the hundreds we have run.
 - `BIGQUERY=off` forces the sheet path back on. `BQ_ALLOW_SHRINK=1` disables the guard
   that refuses to replace a long history with a much shorter one.
 
+The funnel table is required; **spend is optional**. A service account granted the funnel
+dataset but not `meta_ads_insights_export` still refreshes the funnel - the previous
+`data/spend_daily.csv` keeps serving and the refresh note says spend was unavailable and
+why, rather than the whole pull failing on a 403. `BQ_SPEND=off` skips the spend query
+outright.
+
 Check the connection without writing anything: `node server/bigquery.js` prints the row
 counts and GB scanned; add `--write` to replace the CSVs.
 
