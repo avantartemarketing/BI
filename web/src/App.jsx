@@ -142,7 +142,8 @@ function Freshness({ asOf }) {
     return () => { live = false; clearInterval(id); };
   }, []);
 
-  const feeds = st && [["Sheet", st.sheet], ["Email", st.emails], ["Notion", st.notion], ["ETL", st.etl]]
+  const feeds = st && [["BigQuery", st.bigquery], ["Sheet", st.sheet], ["Email", st.emails],
+    ["Notion", st.notion], ["ETL", st.etl]]
     .filter(([, v]) => v !== undefined && v !== null);
   const stale = st && st.ok === false;
   const label = st === undefined ? "Checking sources…"

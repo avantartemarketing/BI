@@ -38,10 +38,39 @@ Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :517
 
 ## Refreshing data
 
-**Live (production):** the server pulls two tabs of the *LE Paid Calculator* Google Sheet
-on boot and every hour (`server/sheets.js`), rewrites `sources/across_time.csv` and
-`data/spend_daily.csv`, and reruns the ETL in place - no redeploy needed. Force a pull
-with `POST /api/refresh` (signed-in session required). Configuration:
+**Live (production):** on boot and every hour the server rewrites
+`sources/across_time.csv` and `data/spend_daily.csv` and reruns the ETL in place - no
+redeploy needed. Force a pull with `POST /api/refresh` (signed-in session required).
+There are two paths to the same two files, and BigQuery wins whenever it is configured.
+
+### BigQuery (preferred; `server/bigquery.js`)
+
+Reads `le_funnel_report_split_touch_export` and `meta_ads_insights_export` straight from
+`avantarte-data-production.AA_company_tables` - the origin of every funnel and spend
+number in the dashboard. Prefer it: the sheet tabs below are query *exports* capped at
+50,000 rows per tab, and that cap does not error. It silently drops the oldest days as
+new launches push rows off the end, which is why the across-time curves are fitted on a
+handful of complete campaigns rather than the hundreds we have run.
+
+- `BIGQUERY_SERVICE_ACCOUNT_JSON` - the key file's contents, verbatim (falls back to
+  `GOOGLE_SERVICE_ACCOUNT_JSON` if one account does both jobs). The account needs
+  **BigQuery Data Viewer** on the dataset and **BigQuery Job User** on the project.
+- `BQ_PROJECT` (default `avantarte-data-production`), `BQ_DATASET` (default
+  `AA_company_tables`), `BQ_FUNNEL_TABLE`, `BQ_SPEND_TABLE`, `BQ_LOCATION`.
+- `BQ_SINCE` (default `2025-01-01`) - how far back to pull. Widening it is the whole
+  point of this path; it also sets the bill, since BigQuery charges per byte scanned and
+  both queries filter on the partition column.
+- `BIGQUERY=off` forces the sheet path back on. `BQ_ALLOW_SHRINK=1` disables the guard
+  that refuses to replace a long history with a much shorter one.
+
+Check the connection without writing anything: `node server/bigquery.js` prints the row
+counts and GB scanned; add `--write` to replace the CSVs.
+
+### Google Sheet (fallback; `server/sheets.js`)
+
+Pulls two tabs of the *LE Paid Calculator* sheet. Used when BigQuery is unconfigured, and
+attempted as a fallback when a BigQuery pull fails - in that case the header reads
+**Sources stale**, because the numbers on screen came from the truncated copy.
 
 - `GOOGLE_SERVICE_ACCOUNT_JSON` - a Google service-account key (Sheets API enabled);
   share the sheet with the key's `client_email` as **Viewer** and the sheet can stay
@@ -49,6 +78,9 @@ with `POST /api/refresh` (signed-in session required). Configuration:
   works while the sheet is link-shared.
 - `SHEET_ID`, `SHEET_FUNNEL_TAB`, `SHEET_SPEND_TAB`, `REFRESH_MINUTES` - optional
   overrides; `SHEETS_REFRESH=off` disables the scheduler.
+
+Whichever path ran, and whether it worked, is on `GET /api/refresh/status` and in the
+tooltip behind the header's source-freshness line.
 
 Target inputs saved from the dashboard survive the rerun (`build.py` overlays
 `data/app/inputs.json` over the repo defaults). If a pull or the ETL fails, the previous

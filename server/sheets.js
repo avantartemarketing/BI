@@ -1,4 +1,8 @@
-/* Live data ingestion from the "LE Paid Calculator" Google Sheet.
+/* Live data ingestion + the refresh scheduler.
+ *
+ * Two paths write the same two files. BigQuery is the origin and is preferred
+ * when a key is configured (server/bigquery.js); this Google Sheet path is the
+ * fallback, and is capped at 50,000 rows per tab by the sheet export itself.
  *
  * Pulls two tabs and rewrites the ETL inputs, then reruns the ETL so the
  * dashboard serves fresh snapshots without a redeploy:
@@ -25,48 +29,12 @@ const ACROSS_TIME = path.join(ROOT, "sources", "across_time.csv");
 const SPEND_DAILY = path.join(ROOT, "data", "spend_daily.csv");
 
 // ---------------------------------------------------------------- auth
-
-function serviceAccount() {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!raw) return null;
-  try {
-    const sa = JSON.parse(raw);
-    if (!sa.client_email || !sa.private_key) throw new Error("missing client_email/private_key");
-    return sa;
-  } catch (e) {
-    throw new Error(`GOOGLE_SERVICE_ACCOUNT_JSON is not a valid service-account key: ${e.message}`);
-  }
-}
-
-let cachedToken = null; // { token, exp }
-
-async function accessToken(sa) {
-  if (cachedToken && Date.now() < cachedToken.exp - 60_000) return cachedToken.token;
-  const b64u = (s) => Buffer.from(s).toString("base64url");
-  const now = Math.floor(Date.now() / 1000);
-  const unsigned =
-    b64u(JSON.stringify({ alg: "RS256", typ: "JWT" })) + "." +
-    b64u(JSON.stringify({
-      iss: sa.client_email,
-      scope: "https://www.googleapis.com/auth/spreadsheets.readonly",
-      aud: "https://oauth2.googleapis.com/token",
-      iat: now, exp: now + 3600,
-    }));
-  const sig = crypto.createSign("RSA-SHA256").update(unsigned).sign(sa.private_key);
-  const jwt = unsigned + "." + sig.toString("base64url");
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: "grant_type=" + encodeURIComponent("urn:ietf:params:oauth:grant-type:jwt-bearer") +
-      "&assertion=" + encodeURIComponent(jwt),
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok || !body.access_token) {
-    throw new Error(`Google token exchange failed (${res.status}): ${body.error_description || body.error || "?"}`);
-  }
-  cachedToken = { token: body.access_token, exp: (now + (body.expires_in || 3600)) * 1000 };
-  return cachedToken.token;
-}
+// The JWT/RS256 exchange lives in googleAuth.js - BigQuery needs the same
+// machinery with a different scope, and one cache keyed only by account would
+// hand the wrong token to whichever feed asked second.
+const googleAuth = require("./googleAuth");
+const serviceAccount = () => googleAuth.serviceAccount("GOOGLE_SERVICE_ACCOUNT_JSON");
+const accessToken = (sa) => googleAuth.accessToken(sa, "sheets");
 
 // ---------------------------------------------------------------- fetch
 
@@ -259,7 +227,36 @@ async function refresh() {
     const out = { ok: true };
     let updated = false;
 
-    try {
+    // BigQuery is the same data without the sheet's 50k-row export cap, so it
+    // wins when configured. If it fails we still try the sheet - a shorter
+    // history beats a frozen one - but ok stays false so the header says stale
+    // rather than quietly serving the truncated fallback as if nothing broke.
+    let bqDone = false;
+    const bq = require("./bigquery");
+    let bqOn = false;
+    try { bqOn = !!bq.configured(); } catch (e) {
+      out.bigquery = "bigquery misconfigured: " + String((e && e.message) || e).slice(0, 300);
+      out.ok = false;
+      console.error("sheets: " + out.bigquery);
+    }
+    if (bqOn) {
+      try {
+        const pulled = await bq.pull();
+        writeAtomic(ACROSS_TIME, pulled.acrossTime);
+        writeAtomic(SPEND_DAILY, pulled.spendDaily);
+        out.bigquery = pulled.summary;
+        bqDone = true;
+        updated = true;
+      } catch (e) {
+        out.bigquery = "bigquery failed: " + String((e && e.message) || e).slice(0, 300);
+        out.ok = false;
+        console.error("sheets: " + out.bigquery);
+      }
+    }
+
+    if (bqDone) {
+      out.sheet = "skipped - BigQuery is the source";
+    } else try {
       const sa = serviceAccount();
       const token = sa ? await accessToken(sa) : null;
       const [funnel, spend] = await Promise.all([
@@ -330,11 +327,15 @@ function startScheduler() {
   const mins = Math.max(5, Number(process.env.REFRESH_MINUTES) || 60);
   const tick = (label) => refresh()
     .then((r) => console.log(`sheets: ${label} refresh ${r.ok ? "ok" : "with failures"} - ` +
-      `${r.sheet} | ${r.emails} | ${r.notion} | ${r.tookMs}ms | ${r.etl}`))
+      `${r.bigquery ? r.bigquery + " | " : ""}${r.sheet} | ${r.emails} | ${r.notion} | ` +
+      `${r.tookMs}ms | ${r.etl}`))
     .catch((e) => console.error(`sheets: ${label} refresh crashed - ${e.message}`));
   setTimeout(() => tick("boot"), 8000);
   setInterval(() => tick("scheduled"), mins * 60 * 1000).unref();
   console.log(`sheets: live refresh every ${mins}m from sheet ${SHEET_ID.slice(0, 8)}…`);
 }
 
-module.exports = { refresh, status, startScheduler, runEtl, convertAcrossTime, convertSpend, normDate, parseCsv };
+module.exports = {
+  refresh, status, startScheduler, runEtl, writeAtomic,
+  convertAcrossTime, convertSpend, normDate, parseCsv,
+};

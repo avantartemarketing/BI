@@ -149,9 +149,17 @@ All funnel data originates in BigQuery `avantarte-data-production.AA_company_tab
 | Emplifi content export | post/story | impressions, reach, engagements, saves, story metrics | social funnel rungs |
 | Draw entries export | entrant × draw | tier, score, products, MaxQuantity, winner/claim flags | demand, allocation, sell-through prediction |
 
-**The dashboard should read the BigQuery tables directly** (the sheet pipeline's accumulator tabs
-are already silently truncating: the LE daily tab is capped at exactly 100k rows and has lost
-everything before 2025-12-20; `Across time.csv` is a 50k-row export cut mid-date at 2026-05-04).
+**The dashboard reads the BigQuery tables directly when a key is configured**
+(`server/bigquery.js`, `BIGQUERY_SERVICE_ACCOUNT_JSON`): `le_funnel_report_split_touch_export`
+and `meta_ads_insights_export` are pulled from `BQ_SINCE` (default 2025-01-01) into the same two
+CSVs the sheet path writes, so `build.py` is unchanged and the feeds are interchangeable. The
+sheet path remains as the fallback, and is the reason to prefer BigQuery: its accumulator tabs
+silently truncate (the LE daily tab is capped at exactly 100k rows and has lost everything before
+2025-12-20; `Across time.csv` is a 50k-row export cut mid-date at 2026-05-04). Truncation does not
+error - the window shortens as new launches push older days off the end - so the feed refuses a
+pull that would replace a materially longer history with a shorter one (`BQ_ALLOW_SHRINK=1`
+overrides). A BigQuery failure falls back to the sheet but leaves the header reading **Sources
+stale**, so a truncated copy is never served as if it were whole.
 
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down
@@ -617,7 +625,8 @@ Benchmark-panel integrity:
 
 Pipeline integrity:
 6. LE daily accumulator truncated at exactly 100k rows (data before 2025-12-20 already lost);
-   `Across time.csv` is a 50k-row export cut mid-date. Go straight to BigQuery.
+   `Across time.csv` is a 50k-row export cut mid-date. **Fixed** where a BigQuery key is set -
+   the feed reads the tables directly (§2); unset, the sheet cap still applies.
 7. `Maurizio Cattelan · Window · 2026 Q1` has launch < announcement (negative campaign length) -
    fix the campaign-dates table.
 8. 58% of daily rows are `Missing campaign dates` (back catalog without announcement dates).
