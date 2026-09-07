@@ -127,35 +127,37 @@ function csvCell(v) {
   return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 
-/* Funnel tab -> across_time.csv (build.py expects event_date as DD/MM/YYYY). */
-function convertAcrossTime(values) {
-  if (!values.length) throw new Error("funnel tab came back empty");
-  const header = values[0].map((h) => String(h ?? "").trim());
+/* Row-wise converters, shared by the sheet path (whole tab in memory) and the
+ * BigQuery path (one page at a time, streamed to disk). Each takes the header
+ * row and returns { header: csv header line, row(cells) -> csv line or null,
+ * dropped: rows skipped for an unreadable date }. */
+
+/* Funnel rows -> across_time.csv (build.py expects event_date as DD/MM/YYYY). */
+function acrossTimeWriter(headerRow) {
+  const header = headerRow.map((h) => String(h ?? "").trim());
   while (header.length && header[header.length - 1] === "") header.pop();
   const di = header.indexOf("event_date");
   if (di < 0 || !header.includes("simple_release_name")) {
-    throw new Error(`funnel tab header not recognised: ${header.slice(0, 5).join(", ")}…`);
+    throw new Error(`funnel header not recognised: ${header.slice(0, 5).join(", ")}…`);
   }
-  const out = [header.map(csvCell).join(",")];
-  let dropped = 0;
-  for (let r = 1; r < values.length; r++) {
-    const row = values[r];
-    if (!row || !row.length || row.every((c) => c === "" || c === null || c === undefined)) continue;
-    const d = normDate(row[di]);
-    if (!d) { dropped++; continue; }
-    const cells = header.map((_, i) => (i === di ? fmtDMY(d) : csvCell(row[i])));
-    out.push(cells.join(","));
-  }
-  return { csv: out.join("\n") + "\n", rows: out.length - 1, dropped };
+  const w = {
+    header: header.map(csvCell).join(","),
+    dropped: 0,
+    row(cells) {
+      if (!cells || !cells.length || cells.every((c) => c === "" || c === null || c === undefined)) return null;
+      const d = normDate(cells[di]);
+      if (!d) { w.dropped++; return null; }
+      const out = new Array(header.length);
+      for (let i = 0; i < header.length; i++) out[i] = i === di ? fmtDMY(d) : csvCell(cells[i]);
+      return out.join(",");
+    },
+  };
+  return w;
 }
 
-/* Meta ads tab -> spend_daily.csv (same mapping as etl/extract_spend.py). */
-function convertSpend(values) {
-  let rows = values;
-  // the _export variant carries a "Custom query:" banner row above the header
-  if (rows.length && rows[0].length <= 1) rows = rows.slice(1);
-  if (!rows.length) throw new Error("spend tab came back empty");
-  const header = rows[0].map((h) => String(h ?? "").trim().toLowerCase());
+/* Meta ads rows -> spend_daily.csv (same mapping as etl/extract_spend.py). */
+function spendWriter(headerRow) {
+  const header = headerRow.map((h) => String(h ?? "").trim().toLowerCase());
   const col = (name, alt) => {
     const i = header.indexOf(name);
     return i >= 0 ? i : header.indexOf(alt ?? name);
@@ -166,19 +168,47 @@ function convertSpend(values) {
     clicks: col("link_clicks"), spend: col("spend"),
   };
   if (ci.name < 0 || ci.date < 0 || ci.spend < 0) {
-    throw new Error(`spend tab header not recognised: ${header.join(", ")}`);
+    throw new Error(`spend header not recognised: ${header.join(", ")}`);
   }
-  const out = ["campaign_name,spend_date,impressions,reach,link_clicks,spend"];
+  const w = {
+    header: "campaign_name,spend_date,impressions,reach,link_clicks,spend",
+    dropped: 0,
+    row(cells) {
+      if (!cells || !cells[ci.name]) return null;
+      const d = normDate(cells[ci.date]);
+      if (!d) { w.dropped++; return null; }
+      return [
+        csvCell(cells[ci.name]), fmtISO(d),
+        Number(cells[ci.imp]) || 0, Number(cells[ci.reach]) || 0,
+        Number(cells[ci.clicks]) || 0, Number(cells[ci.spend]) || 0,
+      ].join(",");
+    },
+  };
+  return w;
+}
+
+/* Whole-tab forms, used by the sheet path. */
+function convertAcrossTime(values) {
+  if (!values.length) throw new Error("funnel tab came back empty");
+  const w = acrossTimeWriter(values[0]);
+  const out = [w.header];
+  for (let r = 1; r < values.length; r++) {
+    const line = w.row(values[r]);
+    if (line !== null) out.push(line);
+  }
+  return { csv: out.join("\n") + "\n", rows: out.length - 1, dropped: w.dropped };
+}
+
+function convertSpend(values) {
+  let rows = values;
+  // the _export variant carries a "Custom query:" banner row above the header
+  if (rows.length && rows[0].length <= 1) rows = rows.slice(1);
+  if (!rows.length) throw new Error("spend tab came back empty");
+  const w = spendWriter(rows[0]);
+  const out = [w.header];
   for (let r = 1; r < rows.length; r++) {
-    const row = rows[r];
-    if (!row || !row[ci.name]) continue;
-    const d = normDate(row[ci.date]);
-    if (!d) continue;
-    out.push([
-      csvCell(row[ci.name]), fmtISO(d),
-      Number(row[ci.imp]) || 0, Number(row[ci.reach]) || 0,
-      Number(row[ci.clicks]) || 0, Number(row[ci.spend]) || 0,
-    ].join(","));
+    const line = w.row(rows[r]);
+    if (line !== null) out.push(line);
   }
   return { csv: out.join("\n") + "\n", rows: out.length - 1 };
 }
@@ -214,6 +244,7 @@ function runEtl() {
 }
 
 let running = null;
+let runningSince = null;
 let lastRefresh = null; // last attempt's outcome, for /api/refresh/status
 
 /* The three feeds are independent - each is attempted on every refresh and one
@@ -222,6 +253,7 @@ let lastRefresh = null; // last attempt's outcome, for /api/refresh/status
  * per-feed fields. */
 async function refresh() {
   if (running) return running; // serialize concurrent calls
+  runningSince = new Date().toISOString();
   running = (async () => {
     const started = Date.now();
     const out = { ok: true };
@@ -241,11 +273,10 @@ async function refresh() {
     }
     if (bqOn) {
       try {
+        // streams straight to disk and swaps the files in atomically; when the
+        // account cannot see the spend table the previous spend_daily.csv is
+        // left in place rather than blanked
         const pulled = await bq.pull();
-        writeAtomic(ACROSS_TIME, pulled.acrossTime);
-        // null when the account cannot see the spend table - the previous
-        // spend_daily.csv keeps serving rather than being blanked
-        if (pulled.spendDaily) writeAtomic(SPEND_DAILY, pulled.spendDaily);
         out.bigquery = pulled.summary;
         bqDone = true;
         updated = true;
@@ -314,11 +345,14 @@ async function refresh() {
     const result = await running;
     lastRefresh = { at: new Date().toISOString(), ...result };
     return result;
-  } finally { running = null; }
+  } finally { running = null; runningSince = null; }
 }
 
+/* The last attempt's outcome plus whether one is in flight right now. A full
+ * refresh (multi-year BigQuery pull + ETL) takes minutes - longer than Render's
+ * proxy will hold a request open - so callers start one and poll this. */
 function status() {
-  return lastRefresh;
+  return { running: !!running, runningSince, ...(lastRefresh || {}) };
 }
 
 function startScheduler() {
@@ -339,5 +373,5 @@ function startScheduler() {
 
 module.exports = {
   refresh, status, startScheduler, runEtl, writeAtomic,
-  convertAcrossTime, convertSpend, normDate, parseCsv,
+  convertAcrossTime, convertSpend, acrossTimeWriter, spendWriter, normDate, parseCsv,
 };

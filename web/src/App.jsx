@@ -141,18 +141,29 @@ function Freshness({ asOf }) {
     const id = setInterval(poll, 5 * 60 * 1000);
     return () => { live = false; clearInterval(id); };
   }, []);
+  useEffect(() => {
+    if (!st || !st.running) return;
+    const id = setInterval(() => fetch("/api/refresh/status")
+      .then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setSt(d); }).catch(() => {}), 15 * 1000);
+    return () => clearInterval(id);
+  }, [st && st.running]);
 
   const feeds = st && [["BigQuery", st.bigquery], ["Sheet", st.sheet], ["Email", st.emails],
     ["Notion", st.notion], ["ETL", st.etl]]
     .filter(([, v]) => v !== undefined && v !== null);
   const stale = st && st.ok === false;
+  const running = st && st.running;
   const label = st === undefined ? "Checking sources…"
+    : running && !st.at ? "Refreshing sources…"
     : st === null || !st.at ? "Source status unknown"
     : stale ? "Sources stale" : "Sources fresh";
   const color = st === undefined ? "#6c6b68" : stale ? "#b8461d" : st && st.at ? "#6c6b68" : "#8a5f00";
   const tip = {
-    head: label,
-    body: st && st.at
+    head: running ? `${label} (refresh in progress)` : label,
+    body: running
+      ? `A refresh started ${new Date(st.runningSince).toLocaleTimeString()} is still running` +
+        (st.at ? `; the figures below are from the previous one at ${new Date(st.at).toLocaleString()}.` : ".")
+      : st && st.at
       ? `Last refresh attempt ${new Date(st.at).toLocaleString()}`
       : "The dashboard has not been able to read the refresh status.",
     rows: feeds ? feeds.map(([k, v]) => ({ label: k, value: String(v).slice(0, 70) })) : [],

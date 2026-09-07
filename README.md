@@ -40,7 +40,12 @@ Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :517
 
 **Live (production):** on boot and every hour the server rewrites
 `sources/across_time.csv` and `data/spend_daily.csv` and reruns the ETL in place - no
-redeploy needed. Force a pull with `POST /api/refresh` (signed-in session required).
+redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
+(signed-in session required): both **start** the refresh and return at once with
+`running: true`; poll `GET /api/refresh/status` for the outcome, or hover the header's
+source-freshness line, which shows the same thing. A refresh is a multi-year BigQuery pull
+plus the ETL and takes a few minutes - longer than Render's proxy will hold a request
+open, so an endpoint that waited for it came back as a 502.
 There are two paths to the same two files, and BigQuery wins whenever it is configured.
 
 ### BigQuery (preferred; `server/bigquery.js`)
@@ -59,7 +64,7 @@ handful of complete campaigns rather than the hundreds we have run.
   `AA_company_tables`), `BQ_FUNNEL_TABLE`, `BQ_SPEND_TABLE`, `BQ_LOCATION`.
 - `BQ_SINCE` (default `2025-01-01`) - how far back to pull. Widening it is the whole
   point of this path; it also sets the bill, since BigQuery charges per byte scanned and
-  both queries filter on the partition column.
+  both queries filter on the partition column - and the memory, see below.
 - `BIGQUERY=off` forces the sheet path back on. `BQ_ALLOW_SHRINK=1` disables the guard
   that refuses to replace a long history with a much shorter one.
 
@@ -71,6 +76,23 @@ outright.
 
 Check the connection without writing anything: `node server/bigquery.js` prints the row
 counts and GB scanned; add `--write` to replace the CSVs.
+
+**Memory on the 512 MB starter instance.** Results are streamed to disk a page at a time
+and the start script caps Node's heap at 192 MB, so the pull itself is flat (~150 MB)
+however deep `BQ_SINCE` goes. The ETL is what scales: pandas peaks at roughly 90 MB plus
+0.4 MB per 1,000 funnel rows, and the table runs about 430 rows a day. Measured:
+
+| `BQ_SINCE` | funnel rows | ETL peak | with Node | on 512 MB |
+|---|---|---|---|---|
+| 2025-01-01 | ~260k | ~175 MB | ~325 MB | comfortable |
+| 2024-01-01 | ~420k | ~240 MB | ~390 MB | comfortable |
+| 2023-01-01 | ~575k | ~300 MB | ~450 MB | fits, little headroom |
+
+Deeper than that wants Render's 2 GB plan. The history only earns its keep once the
+upstream table carries announcement dates for the back catalogue (data-quality issue 8),
+so there is no rush to reach for it. If the process is ever OOM-killed mid-refresh the
+symptom is the whole app going 502 for a moment and the header reading **Source status
+unknown** afterwards; shorten `BQ_SINCE`.
 
 ### Google Sheet (fallback; `server/sheets.js`)
 

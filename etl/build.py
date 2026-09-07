@@ -75,11 +75,32 @@ CURVE_GRID = [round(-0.6 + 0.05 * i, 2) for i in range(int((1.15 + 0.6) / 0.05) 
 
 # ---------------------------------------------------------------- loading
 
+# The daily funnel export has 34 columns; the build reads these 13 by name.
+# Loading only them, with the three labels as categories for the parse and the
+# fan-out groupby, keeps a multi-year BigQuery pull inside the 512 MB Render
+# instance: the full frame costs ~0.6 MB per 1k rows, this ~0.15. A column has
+# to be added here before it can be used below - a typo in a name fails loudly.
+FUNNEL_LABELS = ["AA_session_custom_channel_group_split_touch", "simple_release_name", "campaign_stage"]
+FUNNEL_COLS = FUNNEL_LABELS + [
+    "event_date", "Sessions_Total", "Total_Product_Units", "Product_Units_Private_Room",
+    "Draw_Entries_Total_Units_No_Conv", "Draw_Entries_Eligible_Units",
+    "days_since_announcement", "days_until_launch",
+    "pct_days_since_announcement", "pct_days_until_launch",
+]
+
+
 def load_across_time() -> pd.DataFrame:
-    df = pd.read_csv(SOURCES / "across_time.csv")
+    df = pd.read_csv(SOURCES / "across_time.csv", usecols=lambda c: c in FUNNEL_COLS,
+                     dtype={c: "category" for c in FUNNEL_LABELS})
+    missing = [c for c in FUNNEL_COLS if c not in df.columns]
+    if missing:
+        raise SystemExit(f"across_time.csv is missing columns the build needs: {missing}")
     df = df.rename(columns={"AA_session_custom_channel_group_split_touch": "channel"})
     df["event_date"] = pd.to_datetime(df["event_date"], format="%d/%m/%Y").dt.date
-    # normalise channel case (feed says 'untracked')
+    # normalise channel case (feed says 'untracked'); the label is categorical
+    # here, so the target value must exist as a category before assignment
+    if "Untracked" not in df["channel"].cat.categories:
+        df["channel"] = df["channel"].cat.add_categories(["Untracked"])
     df.loc[df["channel"].str.lower() == "untracked", "channel"] = "Untracked"
     df = df[df["simple_release_name"].notna()]
     keys = ["channel", "event_date", "simple_release_name"]
@@ -91,8 +112,13 @@ def load_across_time() -> pd.DataFrame:
     agg = {c: "sum" for c in metric_cols}
     for c in ["campaign_stage"] + clock:
         agg[c] = "first"
-    df = (df.groupby(["channel", "event_date", "simple_release_name"], as_index=False)
+    df = (df.groupby(["channel", "event_date", "simple_release_name"], as_index=False, observed=True)
             .agg(agg))
+    # back to plain labels: the rest of the build compares, maps and assigns
+    # them freely, and categorical semantics (unobserved groups, new-value
+    # assignment) are a trap there. The parse-and-groupby peak is what mattered.
+    for c in ["channel", "simple_release_name", "campaign_stage"]:
+        df[c] = df[c].astype(object)
     return df
 
 

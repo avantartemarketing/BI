@@ -4,13 +4,18 @@
  * This replaces the Google Sheet relay for the two files the ETL reads:
  *   le_funnel_report_split_touch_export -> sources/across_time.csv
  *   meta_ads_insights_export            -> data/spend_daily.csv
- * Same two files, same converters as the sheet path, so build.py is unchanged
- * and the two feeds are interchangeable.
+ * Same two files, same row converters as the sheet path (sheets.js), so
+ * build.py is unchanged and the two feeds are interchangeable.
  *
  * Why bother: the sheet tabs are query exports capped at 50,000 rows, cut mid
  * date. That cap does not error - it silently shortens the history window as
  * new launches push older days off the end, which is what limits the curve
  * panel to a handful of complete campaigns. Reading the table removes the cap.
+ *
+ * Memory: results are STREAMED to disk a page at a time. A pull back to 2023
+ * is ~575k rows x 33 columns; held in memory as the API's row objects that is
+ * ~900 MB, and the Render instance has 512. Holding it killed the process,
+ * which Render reports as a 502. Nothing here keeps more than one page.
  *
  * Setup (env vars only - never commit a key):
  *   BIGQUERY_SERVICE_ACCOUNT_JSON  the key file's contents, verbatim
@@ -36,6 +41,12 @@ const FUNNEL_TABLE = process.env.BQ_FUNNEL_TABLE || "le_funnel_report_split_touc
 const SPEND_TABLE = process.env.BQ_SPEND_TABLE || "meta_ads_insights_export";
 const SINCE = process.env.BQ_SINCE || "2025-01-01";
 const LOCATION = process.env.BQ_LOCATION || undefined; // e.g. "EU"; omit to let BQ infer
+// One page is the only thing held in memory. 5k rows of the 33-column funnel
+// table is ~6 MB of API JSON; with the heap capped at 192 MB in package.json's
+// start script (V8 otherwise lets garbage pile up to whatever the box allows)
+// the process peaks around 150 MB on a 575k-row pull, leaving the ETL its share
+// of the 512 MB instance.
+const PAGE_ROWS = 5000;
 
 // Table/dataset names are interpolated into SQL (BigQuery has no bind syntax
 // for identifiers), so they are whitelisted rather than trusted.
@@ -55,13 +66,14 @@ function configured() {
   return sa;
 }
 
-/* Runs one query and returns { header, rows, bytes, cached }.
+/* Runs one query, streaming the result: onHeader(columnNames) once, then
+ * onRows(rows) per page, where each row is an array of strings ("" for NULL -
+ * values arrive as strings whatever the column type; the converters and pandas
+ * both cope). Resolves to { header, rows: count, bytes, cached }.
  *
  * jobs.query returns the first page inline and the rest through
- * getQueryResults; a two-year pull of the funnel table is several hundred
- * thousand rows, so paging is not optional. Values arrive as strings (or null)
- * regardless of column type - the converters and pandas both cope. */
-async function query(token, sql, params = {}, { pageRows = 20000 } = {}) {
+ * getQueryResults. Nothing accumulates: each page is handed on and dropped. */
+async function query(token, sql, params = {}, { pageRows = PAGE_ROWS, onHeader, onRows } = {}) {
   const queryParameters = Object.entries(params).map(([name, p]) => ({
     name, parameterType: { type: p.type }, parameterValue: { value: p.value },
   }));
@@ -101,7 +113,6 @@ async function query(token, sql, params = {}, { pageRows = 20000 } = {}) {
   const bytes = Number(body.totalBytesProcessed || 0);
   const cached = !!body.cacheHit;
 
-  // a query that outran timeoutMs comes back incomplete - poll the job
   const results = `${base}/queries/${job.jobId}?` +
     (job.location ? `location=${encodeURIComponent(job.location)}&` : "");
   const get = async (qs) => {
@@ -110,6 +121,7 @@ async function query(token, sql, params = {}, { pageRows = 20000 } = {}) {
     if (!res.ok) throw new Error(`BigQuery ${res.status}: ${(json.error && json.error.message) || "?"}`);
     return json;
   };
+  // a query that outran timeoutMs comes back incomplete - poll the job
   let waited = 0;
   while (!body.jobComplete) {
     if (waited > 10 * 60_000) throw new Error("BigQuery job did not finish within 10 minutes");
@@ -118,38 +130,72 @@ async function query(token, sql, params = {}, { pageRows = 20000 } = {}) {
   }
 
   const header = (body.schema && body.schema.fields ? body.schema.fields : []).map((f) => f.name);
-  const rows = [];
+  const total = Number(body.totalRows || 0);
+  if (onHeader) onHeader(header);
+
+  let count = 0;
   const take = (b) => {
-    for (const r of b.rows || []) rows.push((r.f || []).map((c) => (c.v === null ? "" : c.v)));
+    const rows = (b.rows || []).map((r) => (r.f || []).map((c) => (c.v === null || c.v === undefined ? "" : c.v)));
+    count += rows.length;
+    if (onRows && rows.length) onRows(rows);
   };
   take(body);
   let pageToken = body.pageToken;
+  body = null;   // the first page is done with - let it go before fetching the next
   while (pageToken) {
     const page = await get(`maxResults=${pageRows}&pageToken=${encodeURIComponent(pageToken)}`);
     take(page);
     pageToken = page.pageToken;
   }
-  const total = Number(body.totalRows || rows.length);
-  if (rows.length < total) {
-    throw new Error(`BigQuery paging stopped early: ${rows.length} of ${total} rows`);
+  if (count < total) {
+    throw new Error(`BigQuery paging stopped early: ${count} of ${total} rows`);
   }
-  return { header, rows, bytes, cached };
+  return { header, rows: count, bytes, cached };
 }
 
 const since = { type: "DATE", value: SINCE };
 
-async function fetchFunnel(token) {
-  const sql =
-    `SELECT * FROM \`${PROJECT}.${DATASET}.${FUNNEL_TABLE}\`\n` +
-    "WHERE event_date >= @since\nORDER BY event_date";
-  return query(token, sql, { since });
-}
+const funnelSql = () =>
+  `SELECT * FROM \`${PROJECT}.${DATASET}.${FUNNEL_TABLE}\`\n` +
+  "WHERE event_date >= @since\nORDER BY event_date";
+const spendSql = () =>
+  `SELECT * FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
+  "WHERE spend_date >= @since\nORDER BY campaign_name, spend_date";
 
-async function fetchSpend(token) {
-  const sql =
-    `SELECT * FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
-    "WHERE spend_date >= @since\nORDER BY campaign_name, spend_date";
-  return query(token, sql, { since });
+/* Streams one table through a row converter into dest + ".tmp". Returns the
+ * kept-row count and the tmp path; the caller validates and renames, so a
+ * failed pull never touches the live file. With write=false nothing is
+ * written and only the counts come back (the CLI's dry run). */
+async function streamTable(token, sql, makeWriter, dest, write) {
+  const tmp = dest + ".tmp";
+  let fd = null, writer = null, kept = 0;
+  try {
+    if (write) {
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fd = fs.openSync(tmp, "w");
+    }
+    const q = await query(token, sql, { since }, {
+      onHeader(header) {
+        writer = makeWriter(header);   // throws if the columns are not what build.py needs
+        if (fd !== null) fs.writeSync(fd, writer.header + "\n");
+      },
+      onRows(rows) {
+        const lines = [];
+        for (const r of rows) {
+          const line = writer.row(r);
+          if (line !== null) lines.push(line);
+        }
+        kept += lines.length;
+        if (fd !== null && lines.length) fs.writeSync(fd, lines.join("\n") + "\n");
+      },
+    });
+    if (fd !== null) { fs.closeSync(fd); fd = null; }
+    return { tmp: write ? tmp : null, rows: kept, dropped: writer ? writer.dropped : 0, bytes: q.bytes, cached: q.cached };
+  } catch (e) {
+    if (fd !== null) { try { fs.closeSync(fd); } catch {} }
+    try { fs.unlinkSync(tmp); } catch {}
+    throw e;
+  }
 }
 
 function existingRows(file) {
@@ -170,7 +216,8 @@ function guardShrink(label, got, file) {
   }
 }
 
-/* Pulls the funnel table, and the spend table when the account can see it.
+/* Pulls the funnel table, and the spend table when the account can see it,
+ * and (unless write=false) replaces the two CSVs atomically.
  *
  * The funnel table is required - it is the dashboard. Spend is optional on
  * purpose: a service account can easily be granted one dataset and not the
@@ -178,49 +225,49 @@ function guardShrink(label, got, file) {
  * spend is denied the previous data/spend_daily.csv keeps serving and the
  * summary says so, rather than the whole refresh failing with a 403.
  *
- * Writing is the caller's job (sheets.js writes atomically, then reruns the
- * ETL); spendDaily comes back null when there was nothing new to write. */
-async function pull() {
+ * Resolves to { funnelRows, spendRows (null when not written), summary }. */
+async function pull({ write = true } = {}) {
   const sa = configured();
   if (!sa) return null;
   const token = await accessToken(sa, "bigquery");
-  const { convertAcrossTime, convertSpend } = require("./sheets");
+  const { acrossTimeWriter, spendWriter } = require("./sheets");
 
-  const wantSpend = process.env.BQ_SPEND !== "off";
-  const [funnel, spend] = await Promise.all([
-    fetchFunnel(token),
-    wantSpend ? fetchSpend(token).catch((e) => ({ error: e })) : Promise.resolve(null),
-  ]);
+  const funnel = await streamTable(token, funnelSql(), acrossTimeWriter, ACROSS_TIME, write);
+  const discard = (t) => { if (t) { try { fs.unlinkSync(t); } catch {} } };
+  try {
+    if (funnel.rows < 100) throw new Error(`funnel query returned ${funnel.rows} rows - not overwriting`);
+    guardShrink("funnel query", funnel.rows, ACROSS_TIME);
+  } catch (e) { discard(funnel.tmp); throw e; }
 
-  if (!funnel.header.includes("event_date") || !funnel.header.includes("simple_release_name")) {
-    throw new Error(`${FUNNEL_TABLE} is missing event_date/simple_release_name - ` +
-      `columns: ${funnel.header.slice(0, 6).join(", ")}…`);
-  }
-  const at = convertAcrossTime([funnel.header, ...funnel.rows]);
-  if (at.rows < 100) throw new Error(`funnel query returned ${at.rows} rows - not overwriting`);
-  guardShrink("funnel query", at.rows, ACROSS_TIME);
-
-  let spendCsv = null;
-  let spendNote;
-  if (!wantSpend) {
+  let spend = null, spendNote;
+  if (process.env.BQ_SPEND === "off") {
     spendNote = "spend skipped (BQ_SPEND=off)";
-  } else if (spend.error) {
-    // keep the note short - the full 403 is long and this goes in the header tooltip
-    spendNote = `spend unavailable, keeping the last file (${String(spend.error.message || spend.error)
-      .replace(/\s+/g, " ").slice(0, 120)})`;
   } else {
-    const sp = convertSpend([spend.header, ...spend.rows]);
-    guardShrink("spend query", sp.rows, SPEND_DAILY);
-    spendCsv = sp.csv;
-    spendNote = `spend ${sp.rows} rows`;
+    try {
+      spend = await streamTable(token, spendSql(), spendWriter, SPEND_DAILY, write);
+      guardShrink("spend query", spend.rows, SPEND_DAILY);
+      spendNote = `spend ${spend.rows} rows`;
+    } catch (e) {
+      if (spend) discard(spend.tmp);
+      spend = null;
+      // keep the note short - the full 403 is long and this goes in the header tooltip
+      spendNote = `spend unavailable, keeping the last file (${String(e.message || e)
+        .replace(/\s+/g, " ").slice(0, 120)})`;
+    }
   }
 
-  const bytes = funnel.bytes + ((spend && !spend.error && spend.bytes) || 0);
+  if (write) {
+    fs.renameSync(funnel.tmp, ACROSS_TIME);
+    if (spend) fs.renameSync(spend.tmp, SPEND_DAILY);
+  }
+
+  const bytes = funnel.bytes + (spend ? spend.bytes : 0);
   const gb = (bytes / 1e9).toFixed(2);
-  const cached = funnel.cached && (!spend || spend.error || spend.cached) ? ", cache hit" : "";
+  const cached = funnel.cached && (!spend || spend.cached) ? ", cache hit" : "";
+  const dropped = funnel.dropped ? `, ${funnel.dropped} undated rows dropped` : "";
   return {
-    acrossTime: at.csv, spendDaily: spendCsv,
-    summary: `funnel ${at.rows} rows, ${spendNote}, since ${SINCE} ` +
+    funnelRows: funnel.rows, spendRows: spend ? spend.rows : null,
+    summary: `funnel ${funnel.rows} rows${dropped}, ${spendNote}, since ${SINCE} ` +
       `(${gb} GB scanned${cached}, ${sa._env})`,
   };
 }
@@ -236,15 +283,10 @@ if (require.main === module) {
         "(and BQ_PROJECT/BQ_DATASET if they differ from the defaults).");
       process.exit(1);
     }
-    const out = await pull();
+    const write = process.argv.includes("--write");
+    const out = await pull({ write });
     console.log(out.summary);
-    if (process.argv.includes("--write")) {
-      const { writeAtomic } = require("./sheets");
-      writeAtomic(ACROSS_TIME, out.acrossTime);
-      writeAtomic(SPEND_DAILY, out.spendDaily);
-      console.log(`wrote ${ACROSS_TIME} and ${SPEND_DAILY}`);
-    } else {
-      console.log("dry run - pass --write to replace the CSVs");
-    }
+    console.log(write ? `wrote ${ACROSS_TIME}${out.spendRows !== null ? ` and ${SPEND_DAILY}` : ""}`
+      : "dry run - pass --write to replace the CSVs");
   })().catch((e) => { console.error(String(e.message || e)); process.exit(1); });
 }

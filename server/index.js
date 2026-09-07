@@ -220,24 +220,23 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   res.json({ snapshot: updated });
 }));
 
-// ---- live data refresh (Google Sheet -> sources -> ETL; server/sheets.js) ----
+// ---- live data refresh (BigQuery / Google Sheet -> sources -> ETL; server/sheets.js) ----
 const sheets = require("./sheets");
-// what the last refresh did, feed by feed - open in the browser to debug;
-// ?run=1 forces a fresh attempt first (gated behind the session like the app)
-app.get("/api/refresh/status", route(async (req, res) => {
-  if (req.query.run) {
-    try { return res.json(await sheets.refresh()); }
-    catch (e) { return res.status(502).json({ error: String((e && e.message) || e) }); }
-  }
-  res.json(sheets.status() || { note: "no refresh attempted since boot yet" });
-}));
-app.post("/api/refresh", route(async (_req, res) => {
-  try {
-    res.json(await sheets.refresh());
-  } catch (e) {
-    res.status(502).json({ error: String((e && e.message) || e) });
-  }
-}));
+// What the last refresh did, feed by feed - open in the browser to debug.
+// ?run=1 (or POST /api/refresh) STARTS a fresh attempt and returns at once
+// with running:true; poll without ?run=1 for the outcome. A full refresh is a
+// multi-year BigQuery pull plus the ETL and takes minutes - holding the request
+// open for it outran Render's proxy, which reports that as a 502.
+function startRefresh() {
+  sheets.refresh().catch((e) => console.error("refresh crashed:", e));   // outcome lands in status()
+  return { started: true, ...sheets.status() };
+}
+app.get("/api/refresh/status", (req, res) => {
+  if (req.query.run) return res.json(startRefresh());
+  const st = sheets.status();
+  res.json(st.at || st.running ? st : { ...st, note: "no refresh attempted since boot yet" });
+});
+app.post("/api/refresh", (_req, res) => res.json(startRefresh()));
 
 app.get("/api/decisions", (_req, res) => {
   if (!fs.existsSync(DECISIONS_PATH)) return res.json([]);
