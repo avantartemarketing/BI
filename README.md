@@ -59,7 +59,9 @@ The ETL builds a page for **every** release the funnel data mentions (`discover_
   catalogue release you pick stays pinned under **Viewing** while selected.
 - **Campaign codes** for unconfigured releases are guessed from the codes the email and
   content feeds use (`AntonyMic_LE_26`), by artist and year; a guess is only taken when it
-  is unambiguous, is labelled as a guess, and can be corrected in Target setting.
+  is unambiguous, is labelled as a guess, and can be corrected in Target setting. The code's
+  middle segment is not treated as a release type - every release in the LE export is an LE,
+  whatever the feed tagged it (the content feed tags Warhol's 2026 LE `AndyWarhol_TL_26`).
 
 **Setting targets** on such a release uses the same Target setting tab, starting from the
 derived defaults; edition size, price and both profits are required. Saving creates the

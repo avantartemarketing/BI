@@ -651,6 +651,8 @@ Model bugs found in the sheet (the rebuild should implement the *intent*):
 19. Two generations of entry-counting in paid trackers (eligible units vs total units) - CPE not
     comparable across generations; standardise on `Draw_Entries_Eligible_Units`.
 20. Draw entry exports: `Opportunity Cost` goes stale after entry edits - recompute, don't trust.
+21. Campaign-code middle segments are free text, not release types: the content feed tags
+    Andy Warhol Estate's 2026 Q3 LE as `AndyWarhol_TL_26`. Never infer LE/TL from a code.
 
 ---
 

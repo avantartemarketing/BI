@@ -569,13 +569,18 @@ def known_codes(emails: pd.DataFrame, content: pd.DataFrame, artist_posts: pd.Da
     return {c for c in out if _CODE_RE.match(c)}
 
 
-def guess_code(artist: str, title: str, year: int, codes: set[str], siblings: int = 1) -> tuple[str | None, str]:
+def guess_code(artist: str, title: str, year: int, codes: set[str], siblings: int = 1) -> str | None:
     """Best guess at the campaign code for a release nobody has configured, from
     the codes the email / content feeds already use. The code's first segment
     is a truncated artist name (AntonyMic, CindySher, Albers), the last is the
-    two-digit year. Returns (code or None, type): TL when the code says so,
-    else LE - this is the LE export. Ambiguous -> None rather than a wrong
-    match: a wrong code silently attributes another campaign's emails."""
+    two-digit year. Ambiguous -> None rather than a wrong match: a wrong code
+    silently attributes another campaign's emails.
+
+    The middle segment is NOT a release type. It is whatever the person who
+    tagged the feed typed (LE, TL, PE, Print, Timed, Limited, a work's name),
+    and it is wrong often enough to matter: the content feed tags Andy
+    Warhol's 2026 LE as AndyWarhol_TL_26. Every release in this export is an
+    LE by construction of the export; the type comes from there."""
     a, t, yy = _norm(artist), _norm(title), f"{year % 100:02d}"
     cands = []
     for c in codes:
@@ -587,21 +592,20 @@ def guess_code(artist: str, title: str, year: int, codes: set[str], siblings: in
             continue
         cands.append((c, mid))
     if not cands:
-        return None, "LE"
-    kind = lambda mid: "TL" if mid.upper() == "TL" else "LE"
+        return None
     # a code whose middle names the work wins (AiWeiwei_SelfPortrait_26 for
     # "Ai Weiwei · Self Portrait · 2026 Q2")
-    named = [(c, mid) for c, mid in cands if len(_norm(mid)) >= 4 and _norm(mid) in t]
+    named = [c for c, mid in cands if len(_norm(mid)) >= 4 and _norm(mid) in t]
     if len(named) == 1:
-        return named[0][0], kind(named[0][1])
+        return named[0]
     # one code, one release from this artist that year: they are the same thing.
     # With two releases in the year a lone code could belong to either.
     if len(cands) == 1 and siblings == 1:
-        return cands[0][0], kind(cands[0][1])
-    les = [(c, mid) for c, mid in cands if mid.upper() == "LE"]
+        return cands[0][0]
+    les = [c for c, mid in cands if mid.upper() == "LE"]
     if len(les) == 1 and t == "multiple":
-        return les[0][0], "LE"
-    return None, "LE"
+        return les[0]
+    return None
 
 
 def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[dict]:
@@ -676,7 +680,7 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
             announce = launch = None
         elif name in clocked["simple_release_name"].values:
             note = "campaign clock present but unreadable"
-        code, kind = guess_code(artist, title, year, codes, siblings[(_norm(artist), year if qm else None)])
+        code = guess_code(artist, title, year, codes, siblings[(_norm(artist), year if qm else None)])
         rid = slugify(str(name)) or "release"
         if rid in seen_ids:
             seen_ids[rid] += 1; rid = f"{rid}_{seen_ids[rid]}"
@@ -684,7 +688,7 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
             seen_ids[rid] = 1
         out.append({
             "id": rid, "release_name": str(name), "artist": artist, "title": title, "quarter": quarter,
-            "type": kind, "campaign_code": code,
+            "type": "LE", "campaign_code": code,   # the LE export: everything in it is an LE
             "announce_date": announce.isoformat() if announce else None,
             "launch_end": launch.isoformat() if launch else None,
             "dates_note": note,
