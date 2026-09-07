@@ -57,6 +57,7 @@ export default function Trajectory({ snap }) {
   const of = snap.of || 1;
   const day = Math.max(0, Math.min(snap.day ?? 0, of));
   const complete = !!snap.complete;
+  const targeted = snap.targeted !== false;   // no targets: actual line only, unit axis
 
   const s = useMemo(() => seriesFor(snap, sel), [snap, sel]);
 
@@ -113,7 +114,7 @@ export default function Trajectory({ snap }) {
 
   // Projection follows the historic channel shape (etl emits per-day `proj` values);
   // straight-line fallback only if no shaped path is present.
-  const showProjSeg = !complete && day < of;
+  const showProjSeg = targeted && !complete && day < of;
   let projPath = "";
   if (showProjSeg) {
     const segs = ["M" + x(todayIdx).toFixed(1) + "," + y(nowVal).toFixed(1)];
@@ -126,7 +127,11 @@ export default function Trajectory({ snap }) {
     projPath = segs.join(" ");
   }
 
-  const projPct = s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
+  const projPct = targeted && s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
+  // axis: % of target when there is one, secured units when there is not
+  const axisTop = targeted ? s.target : yTopV / 1.02;
+  const axisLabelTop = targeted ? "100%" : fmt(axisTop);
+  const axisLabelMid = targeted ? "50%" : axisTop >= 2 ? fmt(axisTop / 2) : "";
   const pctColor = projPct !== null && projPct >= 100 ? C.ink : C.red;
   const nowTip =
     fmt(s.now) + " units secured to date · " + fmt(s.exp) + " expected by day " + day;
@@ -159,7 +164,7 @@ export default function Trajectory({ snap }) {
               preserveAspectRatio="none"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", overflow: "visible" }}
             >
-              <line x1="0" y1={y(s.target / 2).toFixed(1)} x2={X1} y2={y(s.target / 2).toFixed(1)}
+              <line x1="0" y1={y(axisTop / 2).toFixed(1)} x2={X1} y2={y(axisTop / 2).toFixed(1)}
                 stroke={C.hairline} strokeWidth="1" vectorEffect="non-scaling-stroke" />
               <line x1="0" y1={Y0} x2={X1} y2={Y0}
                 stroke={C.border} strokeWidth="1" vectorEffect="non-scaling-stroke" />
@@ -179,8 +184,10 @@ export default function Trajectory({ snap }) {
                 <path d={actPath} fill="none" stroke={C.orange} strokeWidth="3"
                   strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               )}
-              <line x1="0" y1={y(s.target).toFixed(1)} x2={X1} y2={y(s.target).toFixed(1)}
-                stroke={C.targetLine} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+              {targeted && (
+                <line x1="0" y1={y(s.target).toFixed(1)} x2={X1} y2={y(s.target).toFixed(1)}
+                  stroke={C.targetLine} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+              )}
             </svg>
 
             {/* hover: guide line + marker + light popup */}
@@ -220,7 +227,7 @@ export default function Trajectory({ snap }) {
             />
             {/* projection end dot (white-cored); on complete releases projection = actual,
                 so the today dot already sits at the close and only the % label remains */}
-            {!complete && (
+            {targeted && !complete && (
               <div
                 title={projTip}
                 style={{
@@ -244,20 +251,22 @@ export default function Trajectory({ snap }) {
             )}
 
             {/* y axis */}
-            <div style={{ ...axisLabel, top: pctTop(y(s.target)) }}>100%</div>
-            <div style={{ ...axisLabel, top: pctTop(y(s.target / 2)) }}>50%</div>
+            <div style={{ ...axisLabel, top: pctTop(y(axisTop)) }}>{axisLabelTop}</div>
+            <div style={{ ...axisLabel, top: pctTop(y(axisTop / 2)) }}>{axisLabelMid}</div>
             <div style={{ ...axisLabel, top: "100%" }}>0</div>
 
             {/* target line label */}
-            <div
-              style={{
-                position: "absolute", left: 8, top: pctTop(y(s.target)), transform: "translateY(-145%)",
-                paddingRight: 6, background: "#fff", fontSize: 12, fontWeight: 500,
-                color: C.muted, whiteSpace: "nowrap",
-              }}
-            >
-              target {fmt(s.target)}
-            </div>
+            {targeted && (
+              <div
+                style={{
+                  position: "absolute", left: 8, top: pctTop(y(s.target)), transform: "translateY(-145%)",
+                  paddingRight: 6, background: "#fff", fontSize: 12, fontWeight: 500,
+                  color: C.muted, whiteSpace: "nowrap",
+                }}
+              >
+                target {fmt(s.target)}
+              </div>
+            )}
 
             {/* x axis */}
             <div style={{ ...xLabel, left: 0 }}>day 1</div>

@@ -98,16 +98,32 @@ export default function TargetSetting({ snap, onSaved }) {
     setMeta(null); setInp(null); setQual(null); setError(null);
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
-      setMeta(d);
-      setInp({ ...d.inputs });
-      setQual({ ...d.channel_quality_default, ...(d.inputs.channel_quality_overrides || {}) });
+      // a release nobody has set targets for comes back with inputs: null and
+      // the defaults the ETL could derive - the form starts from those
+      const start = d.inputs || d.defaults;
+      setMeta({ ...d, inputs: start, creating: !d.inputs });
+      setInp({ ...start });
+      setQual({ ...d.channel_quality_default, ...(start.channel_quality_overrides || {}) });
     }).catch((e) => setError(String(e)));
   }, [snap.id]);
 
+  const creating = !!(meta && meta.creating);
+  const missing = useMemo(() => {
+    if (!inp) return [];
+    const req = [["edition_size", "edition size"], ["unit_price", "unit price"], ["artist_profit", "artist profit"],
+      ["aa_group_profit", "AA Group profit"], ["private_room_open", "private room date"],
+      ["announce_date", "announce date"], ["launch_end", "close date"]];
+    return req.filter(([k]) => inp[k] === null || inp[k] === undefined || inp[k] === "").map(([, l]) => l);
+  }, [inp]);
+
   const derived = useMemo(() => {
     if (!meta || !inp || !qual) return null;
+    // the model divides by edition size and price - feed it placeholders while
+    // the economics are still blank so the rail can render at all
+    const safe = { ...inp, edition_size: Number(inp.edition_size) || 1, unit_price: Number(inp.unit_price) || 0,
+      artist_profit: Number(inp.artist_profit) || 0, aa_group_profit: Number(inp.aa_group_profit) || 0 };
     return computeTargets(
-      { ...inp, channel_quality_default: meta.channel_quality_default, channel_quality_overrides: qual },
+      { ...safe, channel_quality_default: meta.channel_quality_default, channel_quality_overrides: qual },
       meta.benchmarks
     );
   }, [meta, inp, qual]);
@@ -117,9 +133,14 @@ export default function TargetSetting({ snap, onSaved }) {
 
   const b = meta.benchmarks;
   const set = (k) => (e) => setInp({ ...inp, [k]: e.target.value });
-  const setNum = (k) => (e) => setInp({ ...inp, [k]: parseInt(String(e.target.value).replace(/[^0-9]/g, ""), 10) || 0 });
-  const days = Math.round((new Date(inp.launch_end) - new Date(inp.announce_date)) / 86400000);
-  const prDays = Math.round((new Date(inp.announce_date) - new Date(inp.private_room_open)) / 86400000);
+  const setNum = (k) => (e) => {
+    const raw = String(e.target.value).replace(/[^0-9]/g, "");
+    setInp({ ...inp, [k]: raw === "" ? null : parseInt(raw, 10) });
+  };
+  const dateDiff = (a, c) => (a && c ? Math.round((new Date(a) - new Date(c)) / 86400000) : null);
+  const days = dateDiff(inp.launch_end, inp.announce_date);
+  const prDays = dateDiff(inp.announce_date, inp.private_room_open);
+  const dv = meta.derived || {};
 
   const save = async () => {
     setSaving(true); setError(null);
@@ -135,6 +156,7 @@ export default function TargetSetting({ snap, onSaved }) {
       const d = await res.json();
       if (!res.ok) { setError(d.error || `save failed (${res.status})`); return; }
       if (d.warning) setError(d.warning);
+      if (d.created) setMeta({ ...meta, creating: false, inputs: { ...inp } });
       onSaved(d.snapshot);
       setSavedFlash(true); setTimeout(() => setSavedFlash(false), 2500);
     } catch (e) { setError(String(e)); } finally { setSaving(false); }
@@ -151,6 +173,17 @@ export default function TargetSetting({ snap, onSaved }) {
     <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
 
+        {creating && (
+          <div style={{ padding: "12px 16px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a", fontSize: 12.5, lineHeight: 1.5 }}>
+            <b>No targets yet.</b> The page currently shows actuals only.
+            {dv.announce_date
+              ? <> Dates below come from the funnel export's campaign clock and can be a day out - check them.</>
+              : <> No campaign dates were found in the funnel export - enter them.</>}
+            {dv.campaign_code ? <> The campaign code is a guess from the email feed.</> : null}
+            {" "}Fill in the economics and save: the page rebuilds with expected-today, projections, paid ROI and sell-through.
+          </div>
+        )}
+
         <Card dot="#b8862d" title="Release & timeline">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "16px 20px" }}>
@@ -165,6 +198,10 @@ export default function TargetSetting({ snap, onSaved }) {
               </datalist>
               <CampaignHint value={inp.campaign_name} campaigns={meta.meta_campaigns} />
             </Field>
+            <Field label="Campaign code" tip="The code the email, Instagram and artist-post feeds tag this campaign with (e.g. GlennLigon_LE_26) - it joins those panels to the release.">
+              <input className="control" value={inp.campaign_code || ""} onChange={set("campaign_code")} placeholder="Artist_LE_26" />
+              {creating && dv.campaign_code && <div style={{ fontSize: 11.5, marginTop: 4, color: C.muted }}>guessed from the email and content feeds - correct it if wrong</div>}
+            </Field>
             <Field label="Marketing lead">
               <input className="control" value={inp.marketing_lead || ""} onChange={set("marketing_lead")} />
             </Field>
@@ -175,18 +212,18 @@ export default function TargetSetting({ snap, onSaved }) {
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
             <Field label="Private room opens">
-              <input className="control" type="date" value={inp.private_room_open} onChange={set("private_room_open")} />
+              <input className="control" type="date" value={inp.private_room_open || ""} onChange={set("private_room_open")} />
             </Field>
             <Field label="Announce date">
-              <input className="control" type="date" value={inp.announce_date} onChange={set("announce_date")} />
+              <input className="control" type="date" value={inp.announce_date || ""} onChange={set("announce_date")} />
             </Field>
             <Field label="Draw closes">
-              <input className="control" type="date" value={inp.launch_end} onChange={set("launch_end")} />
+              <input className="control" type="date" value={inp.launch_end || ""} onChange={set("launch_end")} />
             </Field>
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-            <span className="chip" title="Announce → draw close. The campaign clock runs on this window.">Campaign {days} days</span>
-            <span className="chip" title="Private room runs from opening to announce - early-access units land here.">Private room {prDays} days pre-announce</span>
+            <span className="chip" title="Announce → draw close. The campaign clock runs on this window.">Campaign {days === null ? "–" : days} days</span>
+            <span className="chip" title="Private room runs from opening to announce - early-access units land here.">Private room {prDays === null ? "–" : prDays} days pre-announce</span>
           </div>
         </Card>
 
@@ -194,19 +231,19 @@ export default function TargetSetting({ snap, onSaved }) {
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
             <Field label="Edition size (units)">
-              <input className="control num" style={{ fontWeight: 600 }} value={inp.edition_size} onChange={setNum("edition_size")} />
+              <input className="control num" style={{ fontWeight: 600 }} value={inp.edition_size ?? ""} onChange={setNum("edition_size")} placeholder={creating ? "required" : ""} />
             </Field>
             <Field label="Unit price (£)">
-              <input className="control num" value={inp.unit_price} onChange={setNum("unit_price")} />
+              <input className="control num" value={inp.unit_price ?? ""} onChange={setNum("unit_price")} placeholder={creating ? "required" : ""} />
             </Field>
             <Field label="Launch value" tip="Edition size × unit price - derived.">
               <input className="control ro num" value={fmtMoney(derived.launch_value)} readOnly />
             </Field>
             <Field label="Artist profit (total £)">
-              <input className="control num" value={inp.artist_profit} onChange={setNum("artist_profit")} />
+              <input className="control num" value={inp.artist_profit ?? ""} onChange={setNum("artist_profit")} placeholder={creating ? "required" : ""} />
             </Field>
             <Field label="AA Group profit (total £)">
-              <input className="control num" value={inp.aa_group_profit} onChange={setNum("aa_group_profit")} />
+              <input className="control num" value={inp.aa_group_profit ?? ""} onChange={setNum("aa_group_profit")} placeholder={creating ? "required" : ""} />
             </Field>
             <Field label="Artist profit share" tip="Who pays for paid ads. 0% for commission / rev-share estates - AA then carries 100% of spend.">
               <input className="control num" value={Math.round((inp.artist_profit_share ?? 0) * 100) + "%"}
@@ -286,8 +323,10 @@ export default function TargetSetting({ snap, onSaved }) {
       <div style={{ width: 384, flex: "0 0 384px", position: "sticky", top: 28 }}>
         <Card dot="#8a7a52" title="Derived targets">
           <div className="spacer-8" />
-          <div className="lead" title="Secured-units sellout target - the hero target on the Overview tab.">{fmt(derived.edition_size)}</div>
-          <div className="lead-caption">sellout units</div>
+          <div className="lead" title="Secured-units sellout target - the hero target on the Overview tab.">
+            {creating && missing.length ? "–" : fmt(derived.edition_size)}
+          </div>
+          <div className="lead-caption">{creating && missing.length ? "sellout units - enter the economics" : "sellout units"}</div>
           <div className="spacer-16" />
           <div className="legend-rows" style={{ marginTop: 0 }}>
             <div className="legend-row"><span style={{ color: C.muted }}>Paid units</span><span className="val">{fmt(derived.paid_units)}</span></div>
@@ -304,12 +343,17 @@ export default function TargetSetting({ snap, onSaved }) {
             </div>
           </div>
           <div className="btn-row" style={{ marginTop: 16 }}>
-            <button className="btn primary" disabled={saving} onClick={save}
-              title="Saves the inputs and recomputes this release's targets, plan curves and projections.">
-              {saving ? "Saving…" : savedFlash ? "✓ Saved" : "Save targets"}
+            <button className="btn primary" disabled={saving || (creating && missing.length > 0)} onClick={save}
+              title={creating
+                ? (missing.length ? `Still needed: ${missing.join(", ")}` : "Saves the inputs and rebuilds this release with the full target model.")
+                : "Saves the inputs and recomputes this release's targets, plan curves and projections."}>
+              {saving ? (creating ? "Building…" : "Saving…") : savedFlash ? "✓ Saved" : creating ? "Set targets" : "Save targets"}
             </button>
             <button className="btn secondary" onClick={discard}>Discard</button>
           </div>
+          {creating && missing.length > 0 && !error && (
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 10 }}>Still needed: {missing.join(", ")}</div>
+          )}
           {error && <div style={{ fontSize: 12, color: C.red, marginTop: 10 }}>{error}</div>}
         </Card>
       </div>

@@ -26,8 +26,10 @@ export default function ChannelsVsTargets({ snap }) {
   const [when, setWhen] = useState("today");   // today | close
   const [scale, setScale] = useState("pct");   // pct | units
   const rows = snap?.channels || [];
-  const today = when === "today";
-  const pct = scale === "pct";
+  // no targets: nothing to compare against, so units only and no toggles
+  const targeted = !snap || snap.targeted !== false;
+  const today = targeted ? when === "today" : true;
+  const pct = targeted ? scale === "pct" : false;
 
   // Today compares actuals with the plan to date; at close compares the
   // projection with the full target (docs §5.4 / §9).
@@ -77,9 +79,9 @@ export default function ChannelsVsTargets({ snap }) {
   return (
     <Card
       dot={GROUP_DOTS.volume}
-      title="Channels vs targets"
+      title={targeted ? "Channels vs targets" : "Channels"}
     >
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, margin: "10px 0 12px", flex: "0 0 auto" }}>
+      {targeted && <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, margin: "10px 0 12px", flex: "0 0 auto" }}>
         {seg(
           [["today", "Today", "Secured so far vs what the plan expects by today"],
            ["close", "At close", "Projected at close vs the full target"]],
@@ -90,7 +92,8 @@ export default function ChannelsVsTargets({ snap }) {
            ["units", "Units", "Secured units, so channels are comparable in size"]],
           scale, setScale,
         )}
-      </div>
+      </div>}
+      {!targeted && <div style={{ height: 12, flex: "0 0 auto" }} />}
       {cols.length === 0 ? (
         <div className="empty-state">No channel data yet</div>
       ) : (
@@ -175,8 +178,8 @@ export default function ChannelsVsTargets({ snap }) {
           >
             <span style={legendItem}><span style={swatch(C.orange)} />To date</span>
             {!today && <span style={legendItem}><span style={swatch(C.orangeLight)} />Projected</span>}
-            <span style={legendItem}><span style={swatch(C.track)} />{refLabel}</span>
-            <span style={{ marginLeft: "auto" }}>{pct ? "reference = 100%" : "secured units"}</span>
+            {targeted && <span style={legendItem}><span style={swatch(C.track)} />{refLabel}</span>}
+            <span style={{ marginLeft: "auto" }}>{!targeted ? "secured units · no targets" : pct ? "reference = 100%" : "secured units"}</span>
           </div>
         </div>
       )}

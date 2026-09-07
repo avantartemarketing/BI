@@ -1011,44 +1011,44 @@
  ],
  "funnelByGroup": {
   "aa_email": {
-   "sessions_actual": 6011.3,
+   "sessions_actual": 6049.3,
    "sessions_expected": 5957.3,
-   "conv_actual": 0.028268510607788313,
+   "conv_actual": 0.028091085060439586,
    "conv_expected": 0.045696557177398074,
-   "contrib_traffic": 2.5,
-   "contrib_conversion": -104.8
+   "contrib_traffic": 4.2,
+   "contrib_conversion": -106.5
   },
   "aa_social": {
-   "sessions_actual": 590.1,
+   "sessions_actual": 621.0,
    "sessions_expected": 1417.8,
-   "conv_actual": 0.05767069491551461,
+   "conv_actual": 0.054794994360451627,
    "conv_expected": 0.010917869999257269,
-   "contrib_traffic": -9.0,
-   "contrib_conversion": 27.6
+   "contrib_traffic": -8.7,
+   "contrib_conversion": 27.2
   },
   "referral_artist": {
-   "sessions_actual": 2595.4,
+   "sessions_actual": 2646.6,
    "sessions_expected": 2357.1,
-   "conv_actual": 0.027510166753550284,
+   "conv_actual": 0.02697836216440136,
    "conv_expected": 0.01763711794029253,
-   "contrib_traffic": 4.2,
-   "contrib_conversion": 25.6
+   "contrib_traffic": 5.1,
+   "contrib_conversion": 24.7
   },
   "search_direct_other": {
-   "sessions_actual": 2443.0,
+   "sessions_actual": 2535.9,
    "sessions_expected": 3046.9,
-   "conv_actual": 0.04796938735169135,
+   "conv_actual": 0.046213208140708915,
    "conv_expected": 0.016974173425718723,
-   "contrib_traffic": -10.3,
-   "contrib_conversion": 75.7
+   "contrib_traffic": -8.7,
+   "contrib_conversion": 74.1
   },
   "paid": {
-   "sessions_actual": 36595.2,
+   "sessions_actual": 36645.3,
    "sessions_expected": 66071.3,
-   "conv_actual": 0.005537608053955497,
+   "conv_actual": 0.005530042615430114,
    "conv_expected": 0.0033146031256,
-   "contrib_traffic": -97.7,
-   "contrib_conversion": 81.4
+   "contrib_traffic": -97.5,
+   "contrib_conversion": 81.2
   }
  },
  "paid": {
@@ -1316,22 +1316,22 @@
    {
     "key": "organic_traffic",
     "label": "Organic traffic",
-    "value": -13.0
+    "value": -8.0
    },
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": 24.0
+    "value": 19.0
    },
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": -72.0
+    "value": -71.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": 56.0
+    "value": 55.0
    }
   ]
  },

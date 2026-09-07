@@ -155,7 +155,7 @@
   "paid_drop_off": 0.2,
   "cpe_growth_factor": 1.5,
   "target_roi_aa": 1.1,
-  "roi_floor": 1,
+  "roi_floor": 1.0,
   "spend_rules": {
    "decrease_below_cum_roi": 0.9,
    "increase_above_cum_roi": 1.3,
@@ -189,9 +189,9 @@
  "releases": {
   "glennligon_le_26": {
    "id": "glennligon_le_26",
-   "release_name": "Glenn Ligon · Multiple · 2026 Q3",
+   "release_name": "Glenn Ligon \u00b7 Multiple \u00b7 2026 Q3",
    "campaign_code": "GlennLigon_LE_26",
-   "campaign_name": "GlennLigon_LE_26 · Enter draw",
+   "campaign_name": "GlennLigon_LE_26 \u00b7 Enter draw",
    "marketing_lead": "Maria",
    "private_room_open": "2026-07-31",
    "announce_date": "2026-08-17",
@@ -211,9 +211,9 @@
   },
   "dali_le_26": {
    "id": "dali_le_26",
-   "release_name": "Salvador Dali Estate · Multiple · 2026 Q3",
+   "release_name": "Salvador Dali Estate \u00b7 Multiple \u00b7 2026 Q3",
    "campaign_code": "SalvadorDali_LE_26",
-   "campaign_name": "SalvadorDali_LE_26 · Enter draw",
+   "campaign_name": "SalvadorDali_LE_26 \u00b7 Enter draw",
    "marketing_lead": "Clare",
    "private_room_open": "2026-08-19",
    "announce_date": "2026-08-21",
@@ -234,9 +234,9 @@
   },
   "abdulnasser_le_26": {
    "id": "abdulnasser_le_26",
-   "release_name": "Abdulnasser Gharem · Hemisphere · 2026 Q3",
+   "release_name": "Abdulnasser Gharem \u00b7 Hemisphere \u00b7 2026 Q3",
    "campaign_code": "Abdulnasser_LE_26",
-   "campaign_name": "Abdulnasser_LE_26 · Enter draw",
+   "campaign_name": "Abdulnasser_LE_26 \u00b7 Enter draw",
    "marketing_lead": "Maria",
    "private_room_open": "2026-06-23",
    "announce_date": "2026-07-27",
@@ -255,9 +255,9 @@
   },
   "zengfanzhi_le_26": {
    "id": "zengfanzhi_le_26",
-   "release_name": "Zeng Fanzhi · Multiple · 2026 Q3",
+   "release_name": "Zeng Fanzhi \u00b7 Multiple \u00b7 2026 Q3",
    "campaign_code": "ZengFanzhi_LE_26",
-   "campaign_name": "ZengFanzhi_LE_26 · Enter draw",
+   "campaign_name": "ZengFanzhi_LE_26 \u00b7 Enter draw",
    "marketing_lead": "Maria",
    "private_room_open": "2026-06-29",
    "announce_date": "2026-07-29",
@@ -276,9 +276,9 @@
   },
   "mondrian_le_26": {
    "id": "mondrian_le_26",
-   "release_name": "Piet Mondrian Estate · Multiple · 2026 Q3",
+   "release_name": "Piet Mondrian Estate \u00b7 Multiple \u00b7 2026 Q3",
    "campaign_code": "PietMondrian_LE_26",
-   "campaign_name": "PietMondrian_LE_26 · Enter draw",
+   "campaign_name": "PietMondrian_LE_26 \u00b7 Enter draw",
    "marketing_lead": "Clare",
    "private_room_open": "2026-06-23",
    "announce_date": "2026-07-24",
@@ -312,7 +312,7 @@
   },
   "julianschnabel_le_26": {
    "id": "julianschnabel_le_26",
-   "release_name": "Julian Schnabel · Multiple · 2026 Q3",
+   "release_name": "Julian Schnabel \u00b7 Multiple \u00b7 2026 Q3",
    "campaign_code": "JulianSchnabel_LE_26",
    "campaign_name": null,
    "_campaign_note": "Campaign Name cell is empty on the source tab -> paid spend actuals structurally zero in the sheet; fix when the Meta campaign exists.",
@@ -334,9 +334,9 @@
   },
   "parra_le_26": {
    "id": "parra_le_26",
-   "release_name": "Parra · Multiple · 2026 Q3",
+   "release_name": "Parra \u00b7 Multiple \u00b7 2026 Q3",
    "campaign_code": "Parra_LE_26",
-   "campaign_name": "Parra_LE_26 · Enter draw",
+   "campaign_name": "Parra_LE_26 \u00b7 Enter draw",
    "marketing_lead": "Clare",
    "private_room_open": "2026-07-29",
    "announce_date": "2026-07-31",
@@ -357,9 +357,9 @@
   },
   "jamesjean_blossom_26": {
    "id": "jamesjean_blossom_26",
-   "release_name": "James Jean · Multiple · 2026 Q3",
+   "release_name": "James Jean \u00b7 Multiple \u00b7 2026 Q3",
    "campaign_code": "JamesJean_Blossom_26",
-   "campaign_name": "JamesJean_Blossom_26 · Enter draw",
+   "campaign_name": "JamesJean_Blossom_26 \u00b7 Enter draw",
    "marketing_lead": "Clare",
    "private_room_open": "2026-07-28",
    "announce_date": "2026-07-30",
@@ -390,44 +390,3841 @@
    ]
   }
  },
+ "discovered": {
+  "a_lei_magesian_2022_q3": {
+   "release_name": "A-Lei \u00b7 Magesian \u00b7 2022 Q3",
+   "artist": "A-Lei",
+   "title": "Magesian",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "aaron_johnson_suburban_dreams_2023_q2": {
+   "release_name": "Aaron Johnson \u00b7 Suburban Dreams \u00b7 2023 Q2",
+   "artist": "Aaron Johnson",
+   "title": "Suburban Dreams",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "adam_pendleton_multiple_2025_q1": {
+   "release_name": "Adam Pendleton \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Adam Pendleton",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "adriana_oliver_my_way_back_to_you_2022_q4": {
+   "release_name": "Adriana Oliver \u00b7 My way back to you \u00b7 2022 Q4",
+   "artist": "Adriana Oliver",
+   "title": "My way back to you",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "adriana_oliver_our_day_2022_q2": {
+   "release_name": "Adriana Oliver \u00b7 Our Day \u00b7 2022 Q2",
+   "artist": "Adriana Oliver",
+   "title": "Our Day",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ahmed_mater_multiple_2026_q3": {
+   "release_name": "Ahmed Mater \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Ahmed Mater",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "AhmedM_Salam_26",
+   "announce_date": "2026-07-01",
+   "launch_end": "2026-07-28",
+   "private_room_open": "2026-06-17",
+   "dates_note": null
+  },
+  "ai_weiwei_arm_multiple_2026_q2": {
+   "release_name": "Ai Weiwei \u00b7 Arm \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Ai Weiwei",
+   "title": "Arm \u00b7 Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": "2026-03-31",
+   "launch_end": "2026-04-22",
+   "private_room_open": "2026-03-17",
+   "dates_note": null
+  },
+  "ai_weiwei_f_u_c_k_yellow_2026_q3": {
+   "release_name": "Ai Weiwei \u00b7 F.U.C.K. (Yellow) \u00b7 2026 Q3",
+   "artist": "Ai Weiwei",
+   "title": "F.U.C.K. (Yellow)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2026-05-12..2026-08-27 (107 days) - not usable"
+  },
+  "ai_weiwei_glass_vase_2023_q3": {
+   "release_name": "Ai Weiwei \u00b7 Glass Vase \u00b7 2023 Q3",
+   "artist": "Ai Weiwei",
+   "title": "Glass Vase",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ai_weiwei_multiple_2023_q2": {
+   "release_name": "Ai Weiwei \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "Ai Weiwei",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ai_weiwei_multiple_2024_q4": {
+   "release_name": "Ai Weiwei \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "Ai Weiwei",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ai_weiwei_multiple_2025_q4": {
+   "release_name": "Ai Weiwei \u00b7 Multiple \u00b7 2025 Q4",
+   "artist": "Ai Weiwei",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "AiWeiwei_LE_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ai_weiwei_to_be_looked_at_2024_q4": {
+   "release_name": "Ai Weiwei \u00b7 To Be Looked At... \u00b7 2024 Q4",
+   "artist": "Ai Weiwei",
+   "title": "To Be Looked At...",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "alex_katz_ada_ada_2025_q4": {
+   "release_name": "Alex Katz \u00b7 Ada Ada \u00b7 2025 Q4",
+   "artist": "Alex Katz",
+   "title": "Ada Ada",
+   "type": "LE",
+   "campaign_code": "AlexKatz_H2_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "alfie_caine_multiple_2022_q3": {
+   "release_name": "Alfie Caine \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Alfie Caine",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "alpha_centauri_kid_warothy_2023_q4": {
+   "release_name": "Alpha Centauri Kid \u00b7 Warothy \u00b7 2023 Q4",
+   "artist": "Alpha Centauri Kid",
+   "title": "Warothy",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "amanda_baldwin_bell_bay_2023_q3": {
+   "release_name": "Amanda Baldwin \u00b7 Bell Bay \u00b7 2023 Q3",
+   "artist": "Amanda Baldwin",
+   "title": "Bell Bay",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "amani_lewis_two_queens_ode_to_romare_bearden_2021_q3": {
+   "release_name": "Amani Lewis \u00b7 TWO QUEENS: Ode to Romare Bearden \u00b7 2021 Q3",
+   "artist": "Amani Lewis",
+   "title": "TWO QUEENS: Ode to Romare Bearden",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "amir_h_fallah_multiple_2022_q2": {
+   "release_name": "Amir H. Fallah \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Amir H. Fallah",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "andy_warhol_estate_multiple_2026_q3": {
+   "release_name": "Andy Warhol Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Andy Warhol Estate",
+   "title": "Multiple",
+   "type": "TL",
+   "campaign_code": "AndyWarhol_TL_26",
+   "announce_date": "2026-09-02",
+   "launch_end": "2026-09-30",
+   "private_room_open": "2026-08-19",
+   "dates_note": null
+  },
+  "angel_otero_broken_record_2022_q2": {
+   "release_name": "Angel Otero \u00b7 Broken Record \u00b7 2022 Q2",
+   "artist": "Angel Otero",
+   "title": "Broken Record",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "anna_ridler_price_per_stem_2025_q1": {
+   "release_name": "Anna Ridler \u00b7 Price Per Stem \u00b7 2025 Q1",
+   "artist": "Anna Ridler",
+   "title": "Price Per Stem",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "anna_weyant_loose_screw_2022_q2": {
+   "release_name": "Anna Weyant \u00b7 Loose Screw \u00b7 2022 Q2",
+   "artist": "Anna Weyant",
+   "title": "Loose Screw",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "anni_and_josef_albers_multiple_2026_q2": {
+   "release_name": "Anni and Josef Albers \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Anni and Josef Albers",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "Albers_LE_26",
+   "announce_date": "2026-04-30",
+   "launch_end": "2026-05-28",
+   "private_room_open": "2026-04-16",
+   "dates_note": null
+  },
+  "antony_micallef_portrait_of_francis_bacon_2024_q3": {
+   "release_name": "Antony Micallef \u00b7 Portrait of Francis Bacon \u00b7 2024 Q3",
+   "artist": "Antony Micallef",
+   "title": "Portrait of Francis Bacon",
+   "type": "LE",
+   "campaign_code": "AntonyMic_Print_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "antony_micallef_self_portrait_with_blue_slash_2026_q2": {
+   "release_name": "Antony Micallef \u00b7 Self Portrait with Blue Slash \u00b7 2026 Q2",
+   "artist": "Antony Micallef",
+   "title": "Self Portrait with Blue Slash",
+   "type": "LE",
+   "campaign_code": "AntonyMic_LE_26",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "antony_micallef_self_portrait_with_yellow_lake_and_magenta_2025_q3": {
+   "release_name": "Antony Micallef \u00b7 Self Portrait with Yellow Lake and Magenta \u00b7 2025 Q3",
+   "artist": "Antony Micallef",
+   "title": "Self Portrait with Yellow Lake and Magenta",
+   "type": "LE",
+   "campaign_code": "AntonyMic_PE_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "antony_micallef_the_union_of_animals_2022_q4": {
+   "release_name": "Antony Micallef \u00b7 The Union of Animals \u00b7 2022 Q4",
+   "artist": "Antony Micallef",
+   "title": "The Union of Animals",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "arghavan_khosravi_multiple_2022_q1": {
+   "release_name": "Arghavan Khosravi \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Arghavan Khosravi",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "arghavan_khosravi_the_earring_2023_q4": {
+   "release_name": "Arghavan Khosravi \u00b7 The Earring \u00b7 2023 Q4",
+   "artist": "Arghavan Khosravi",
+   "title": "The Earring",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "artspace_amphora_project_multiple_2025_q1": {
+   "release_name": "Artspace Amphora Project \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Artspace Amphora Project",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "asuka_anastacia_ogawa_sleepy_2024_q2": {
+   "release_name": "Asuka Anastacia Ogawa \u00b7 Sleepy \u00b7 2024 Q2",
+   "artist": "Asuka Anastacia Ogawa",
+   "title": "Sleepy",
+   "type": "LE",
+   "campaign_code": "ASUKA_SLEEPY_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "aubrey_levinthal_bed_beach_2022_q1": {
+   "release_name": "Aubrey Levinthal \u00b7 Bed/Beach \u00b7 2022 Q1",
+   "artist": "Aubrey Levinthal",
+   "title": "Bed/Beach",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "aya_takano_anthem_detail_2023_q1": {
+   "release_name": "Aya Takano \u00b7 Anthem (Detail) \u00b7 2023 Q1",
+   "artist": "Aya Takano",
+   "title": "Anthem (Detail)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "backside_works_multiple_2026_q3": {
+   "release_name": "Backside works. \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Backside works.",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "Backside_LE_26",
+   "announce_date": "2026-07-02",
+   "launch_end": "2026-07-30",
+   "private_room_open": "2026-06-18",
+   "dates_note": null
+  },
+  "baldur_helgason_menippean_satire_2024_q1": {
+   "release_name": "Baldur Helgason \u00b7 Menippean Satire \u00b7 2024 Q1",
+   "artist": "Baldur Helgason",
+   "title": "Menippean Satire",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "baldur_helgason_picaresque_2022_q4": {
+   "release_name": "Baldur Helgason \u00b7 Picaresque \u00b7 2022 Q4",
+   "artist": "Baldur Helgason",
+   "title": "Picaresque",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "bell_nakai_multiple_2022_q3": {
+   "release_name": "Bell Nakai \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Bell Nakai",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "benrei_huang_minority_rules_2024_q1": {
+   "release_name": "Benrei Huang \u00b7 Minority Rules \u00b7 2024 Q1",
+   "artist": "Benrei Huang",
+   "title": "Minority Rules",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "bony_ramirez_toro_2023_q4": {
+   "release_name": "Bony Ramirez \u00b7 TORO! \u00b7 2023 Q4",
+   "artist": "Bony Ramirez",
+   "title": "TORO!",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "bridget_mullen_multiple_2023_q3": {
+   "release_name": "Bridget Mullen \u00b7 Multiple \u00b7 2023 Q3",
+   "artist": "Bridget Mullen",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "b_st_sunday_afternoon_2022_q4": {
+   "release_name": "B\u00e4st \u00b7 Sunday Afternoon \u00b7 2022 Q4",
+   "artist": "B\u00e4st",
+   "title": "Sunday Afternoon",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "cai_guo_qiang_snow_lotus_no_1_2024_q1": {
+   "release_name": "Cai Guo-Qiang \u00b7 Snow Lotus No. 1 \u00b7 2024 Q1",
+   "artist": "Cai Guo-Qiang",
+   "title": "Snow Lotus No. 1",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "caleb_hahne_quintana_ourselves_scattered_parts_of_earth_2023_q1": {
+   "release_name": "Caleb Hahne Quintana \u00b7 Ourselves Scattered Parts Of Earth \u00b7 2023 Q1",
+   "artist": "Caleb Hahne Quintana",
+   "title": "Ourselves Scattered Parts Of Earth",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "camilla_engstr_m_island_creators_2023_q4": {
+   "release_name": "Camilla Engstr\u00f6m \u00b7 Island Creators \u00b7 2023 Q4",
+   "artist": "Camilla Engstr\u00f6m",
+   "title": "Island Creators",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "camilla_engstr_m_yellow_moon_2022_q3": {
+   "release_name": "Camilla Engstr\u00f6m \u00b7 Yellow Moon \u00b7 2022 Q3",
+   "artist": "Camilla Engstr\u00f6m",
+   "title": "Yellow Moon",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "che_lovelace_emerald_and_sun_dancers_2022_q3": {
+   "release_name": "Che Lovelace \u00b7 Emerald and Sun Dancers \u00b7 2022 Q3",
+   "artist": "Che Lovelace",
+   "title": "Emerald and Sun Dancers",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "chen_wei_ting_poetic_fragments_2023_q2": {
+   "release_name": "Chen Wei Ting \u00b7 Poetic fragments \u00b7 2023 Q2",
+   "artist": "Chen Wei Ting",
+   "title": "Poetic fragments",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "chris_huen_sin_kan_joel_tess_and_haze_2023_q1": {
+   "release_name": "Chris Huen Sin Kan \u00b7 Joel, Tess and Haze \u00b7 2023 Q1",
+   "artist": "Chris Huen Sin Kan",
+   "title": "Joel, Tess and Haze",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_a_sweet_tiger_man_2021_q4": {
+   "release_name": "Christian Rex van Minnen \u00b7 A Sweet Tiger Man \u00b7 2021 Q4",
+   "artist": "Christian Rex van Minnen",
+   "title": "A Sweet Tiger Man",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_angry_feels_2021_q4": {
+   "release_name": "Christian Rex van Minnen \u00b7 Angry Feels \u00b7 2021 Q4",
+   "artist": "Christian Rex van Minnen",
+   "title": "Angry Feels",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_deep_web_golden_bunny_2021_q4": {
+   "release_name": "Christian Rex van Minnen \u00b7 Deep Web Golden Bunny \u00b7 2021 Q4",
+   "artist": "Christian Rex van Minnen",
+   "title": "Deep Web Golden Bunny",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_gm_bullish_2021_q4": {
+   "release_name": "Christian Rex van Minnen \u00b7 GM Bullish \u00b7 2021 Q4",
+   "artist": "Christian Rex van Minnen",
+   "title": "GM Bullish",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_gn_bearish_2021_q4": {
+   "release_name": "Christian Rex van Minnen \u00b7 GN Bearish \u00b7 2021 Q4",
+   "artist": "Christian Rex van Minnen",
+   "title": "GN Bearish",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_hello_fren_2021_q4": {
+   "release_name": "Christian Rex van Minnen \u00b7 Hello Fren \u00b7 2021 Q4",
+   "artist": "Christian Rex van Minnen",
+   "title": "Hello Fren",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_multiple_2023_q2": {
+   "release_name": "Christian Rex van Minnen \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "Christian Rex van Minnen",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_rare_hero_2021_q4": {
+   "release_name": "Christian Rex van Minnen \u00b7 Rare Hero \u00b7 2021 Q4",
+   "artist": "Christian Rex van Minnen",
+   "title": "Rare Hero",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_the_expert_2021_q4": {
+   "release_name": "Christian Rex van Minnen \u00b7 The Expert \u00b7 2021 Q4",
+   "artist": "Christian Rex van Minnen",
+   "title": "The Expert",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_very_thick_avatar_2021_q4": {
+   "release_name": "Christian Rex van Minnen \u00b7 Very Thick Avatar \u00b7 2021 Q4",
+   "artist": "Christian Rex van Minnen",
+   "title": "Very Thick Avatar",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "christian_rex_van_minnen_very_thin_avatar_2021_q4": {
+   "release_name": "Christian Rex van Minnen \u00b7 Very Thin Avatar \u00b7 2021 Q4",
+   "artist": "Christian Rex van Minnen",
+   "title": "Very Thin Avatar",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "cindy_sherman_untitled_2026_q2": {
+   "release_name": "Cindy Sherman \u00b7 Untitled \u00b7 2026 Q2",
+   "artist": "Cindy Sherman",
+   "title": "Untitled",
+   "type": "LE",
+   "campaign_code": "CindySher_LE_26",
+   "announce_date": "2026-05-14",
+   "launch_end": "2026-06-10",
+   "private_room_open": "2026-04-30",
+   "dates_note": null
+  },
+  "claire_tabouret_paysage_d_int_rieur_printemps_2024_q4": {
+   "release_name": "Claire Tabouret \u00b7 Paysage d\u2019Int\u00e9rieur (printemps) \u00b7 2024 Q4",
+   "artist": "Claire Tabouret",
+   "title": "Paysage d\u2019Int\u00e9rieur (printemps)",
+   "type": "LE",
+   "campaign_code": "ClaireTab_Tapestry_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "clayton_schiff_visitor_2022_q3": {
+   "release_name": "Clayton Schiff \u00b7 Visitor \u00b7 2022 Q3",
+   "artist": "Clayton Schiff",
+   "title": "Visitor",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "cleon_peterson_multiple_2022_q2": {
+   "release_name": "Cleon Peterson \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Cleon Peterson",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "cristina_de_miguel_tentacular_thinking_2024_q3": {
+   "release_name": "Cristina de Miguel \u00b7 Tentacular Thinking \u00b7 2024 Q3",
+   "artist": "Cristina de Miguel",
+   "title": "Tentacular Thinking",
+   "type": "LE",
+   "campaign_code": "CristinAd_Tentacula_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "cristina_de_miguel_two_figures_in_the_wind_2022_q2": {
+   "release_name": "Cristina de Miguel \u00b7 Two figures in the wind \u00b7 2022 Q2",
+   "artist": "Cristina de Miguel",
+   "title": "Two figures in the wind",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "cui_jie_shanghai_federation_of_industry_commerce_building_2023_q4": {
+   "release_name": "Cui Jie \u00b7 Shanghai Federation of Industry & Commerce Building \u00b7 2023 Q4",
+   "artist": "Cui Jie",
+   "title": "Shanghai Federation of Industry & Commerce Building",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "drift_proto_nature_i_2026_q1": {
+   "release_name": "DRIFT \u00b7 Proto Nature I \u00b7 2026 Q1",
+   "artist": "DRIFT",
+   "title": "Proto Nature I",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "drift_sine_2022_q3": {
+   "release_name": "DRIFT \u00b7 Sine \u00b7 2022 Q3",
+   "artist": "DRIFT",
+   "title": "Sine",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "dada_khanyisa_i_can_t_change_even_if_i_tried_2023_q1": {
+   "release_name": "Dada Khanyisa \u00b7 I can't change, even if I tried \u00b7 2023 Q1",
+   "artist": "Dada Khanyisa",
+   "title": "I can't change, even if I tried",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "daniel_crews_chubb_immortal_ii_turquoise_2023_q1": {
+   "release_name": "Daniel Crews-Chubb \u00b7 Immortal II (turquoise) \u00b7 2023 Q1",
+   "artist": "Daniel Crews-Chubb",
+   "title": "Immortal II (turquoise)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "danielle_mckinney_dream_catcher_2023_q1": {
+   "release_name": "Danielle Mckinney \u00b7 Dream Catcher \u00b7 2023 Q1",
+   "artist": "Danielle Mckinney",
+   "title": "Dream Catcher",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "danielle_mckinney_shelter_2024_q3": {
+   "release_name": "Danielle Mckinney \u00b7 Shelter \u00b7 2024 Q3",
+   "artist": "Danielle Mckinney",
+   "title": "Shelter",
+   "type": "LE",
+   "campaign_code": "DanielleM_Shelter_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "danielle_orchard_a_warm_garden_2023_q2": {
+   "release_name": "Danielle Orchard \u00b7 A Warm Garden \u00b7 2023 Q2",
+   "artist": "Danielle Orchard",
+   "title": "A Warm Garden",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "darren_romanelli_cactus_man_vessel_2022_q1": {
+   "release_name": "Darren Romanelli \u00b7 Cactus Man Vessel \u00b7 2022 Q1",
+   "artist": "Darren Romanelli",
+   "title": "Cactus Man Vessel",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "dawnia_darkstone_digital_chemicals_2024_q1": {
+   "release_name": "Dawnia Darkstone \u00b7 Digital Chemicals \u00b7 2024 Q1",
+   "artist": "Dawnia Darkstone",
+   "title": "Digital Chemicals",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "deborah_brown_march_snowstorm_2023_q2": {
+   "release_name": "Deborah Brown \u00b7 March Snowstorm \u00b7 2023 Q2",
+   "artist": "Deborah Brown",
+   "title": "March Snowstorm",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "deborah_segun_multiple_2023_q2": {
+   "release_name": "Deborah Segun \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "Deborah Segun",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "deekay_love_ripples_2024_q1": {
+   "release_name": "DeeKay \u00b7 Love Ripples \u00b7 2024 Q1",
+   "artist": "DeeKay",
+   "title": "Love Ripples",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "dennis_osadebe_in_search_for_light_2023_q4": {
+   "release_name": "Dennis Osadebe \u00b7 In Search For Light \u00b7 2023 Q4",
+   "artist": "Dennis Osadebe",
+   "title": "In Search For Light",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "dennis_osadebe_the_people_s_promise_2022_q4": {
+   "release_name": "Dennis Osadebe \u00b7 The People's Promise \u00b7 2022 Q4",
+   "artist": "Dennis Osadebe",
+   "title": "The People's Promise",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "derek_fordjour_multiple_2025_q1": {
+   "release_name": "Derek Fordjour \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Derek Fordjour",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "devan_shimoyama_le_mat_2023_q4": {
+   "release_name": "Devan Shimoyama \u00b7 Le Mat \u00b7 2023 Q4",
+   "artist": "Devan Shimoyama",
+   "title": "Le Mat",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "dominique_fung_handheld_fan_2025_q3": {
+   "release_name": "Dominique Fung \u00b7 Handheld Fan \u00b7 2025 Q3",
+   "artist": "Dominique Fung",
+   "title": "Handheld Fan",
+   "type": "LE",
+   "campaign_code": "Dominique_Limited_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "eddie_martinez_olive_garden_2026_q2": {
+   "release_name": "Eddie Martinez \u00b7 Olive Garden \u00b7 2026 Q2",
+   "artist": "Eddie Martinez",
+   "title": "Olive Garden",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": "2026-04-24",
+   "launch_end": "2026-05-22",
+   "private_room_open": "2026-04-10",
+   "dates_note": null
+  },
+  "eddie_martinez_scaffold_2024_q2": {
+   "release_name": "Eddie Martinez \u00b7 Scaffold \u00b7 2024 Q2",
+   "artist": "Eddie Martinez",
+   "title": "Scaffold",
+   "type": "LE",
+   "campaign_code": "EDDIE_SCAFFOLD_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ekene_emeka_maduka_tinko_tinko_in_pretty_aunty_give_me_cake_2021_q3": {
+   "release_name": "Ekene Emeka-Maduka \u00b7 Tinko, Tinko in pretty aunty-give-me-cake \u00b7 2021 Q3",
+   "artist": "Ekene Emeka-Maduka",
+   "title": "Tinko, Tinko in pretty aunty-give-me-cake",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "elmgreen_dragset_the_observer_2021_q4": {
+   "release_name": "Elmgreen & Dragset \u00b7 The Observer \u00b7 2021 Q4",
+   "artist": "Elmgreen & Dragset",
+   "title": "The Observer",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "emily_xie_guardian_lion_2024_q1": {
+   "release_name": "Emily Xie \u00b7 Guardian Lion \u00b7 2024 Q1",
+   "artist": "Emily Xie",
+   "title": "Guardian Lion",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "en_iwamura_multiple_2025_q3": {
+   "release_name": "En Iwamura \u00b7 Multiple \u00b7 2025 Q3",
+   "artist": "En Iwamura",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "Eniwamura_Neojomon_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "erik_parker_multiple_2022_q3": {
+   "release_name": "Erik Parker \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Erik Parker",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "esiri_erheriene_essi_multiple_2022_q1": {
+   "release_name": "Esiri Erheriene-Essi \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Esiri Erheriene-Essi",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "futura_multiple_2022_q4": {
+   "release_name": "FUTURA \u00b7 Multiple \u00b7 2022 Q4",
+   "artist": "FUTURA",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "face_oka_multiple_2022_q3": {
+   "release_name": "Face Oka \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Face Oka",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "felipe_pantone_subtractive_variability_dimensional_13_aa_2026_q2": {
+   "release_name": "Felipe Pantone \u00b7 Subtractive Variability Dimensional 13 AA \u00b7 2026 Q2",
+   "artist": "Felipe Pantone",
+   "title": "Subtractive Variability Dimensional 13 AA",
+   "type": "LE",
+   "campaign_code": "FelipePantone_LE_26",
+   "announce_date": "2026-05-22",
+   "launch_end": "2026-06-19",
+   "private_room_open": "2026-05-08",
+   "dates_note": null
+  },
+  "felix_treadwell_kindred_spirit_2022_q4": {
+   "release_name": "Felix Treadwell \u00b7 Kindred Spirit \u00b7 2022 Q4",
+   "artist": "Felix Treadwell",
+   "title": "Kindred Spirit",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "felix_treadwell_silent_commuter_2022_q1": {
+   "release_name": "Felix Treadwell \u00b7 Silent Commuter \u00b7 2022 Q1",
+   "artist": "Felix Treadwell",
+   "title": "Silent Commuter",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ferrari_sheppard_iris_2025_q2": {
+   "release_name": "Ferrari Sheppard \u00b7 Iris \u00b7 2025 Q2",
+   "artist": "Ferrari Sheppard",
+   "title": "Iris",
+   "type": "LE",
+   "campaign_code": "FerrariSh_Iris_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ferrari_sheppard_put_some_red_on_it_2026_q1": {
+   "release_name": "Ferrari Sheppard \u00b7 Put Some Red On It \u00b7 2026 Q1",
+   "artist": "Ferrari Sheppard",
+   "title": "Put Some Red On It",
+   "type": "LE",
+   "campaign_code": "FerrariSh_LE_26",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "friedrich_kunath_this_is_the_worst_time_of_my_life_2022_q4": {
+   "release_name": "Friedrich Kunath \u00b7 This Is The Worst Time Of My Life \u00b7 2022 Q4",
+   "artist": "Friedrich Kunath",
+   "title": "This Is The Worst Time Of My Life",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "fvckrender_feel_2022_q4": {
+   "release_name": "Fvckrender \u00b7 FEEL// \u00b7 2022 Q4",
+   "artist": "Fvckrender",
+   "title": "FEEL//",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "fvckrender_touched_2022_q4": {
+   "release_name": "Fvckrender \u00b7 TOUCHED// \u00b7 2022 Q4",
+   "artist": "Fvckrender",
+   "title": "TOUCHED//",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "george_condo_fashion_model_ap_2025_q1": {
+   "release_name": "George Condo \u00b7 Fashion Model AP \u00b7 2025 Q1",
+   "artist": "George Condo",
+   "title": "Fashion Model AP",
+   "type": "LE",
+   "campaign_code": "GeorgeCondo_Model_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "george_condo_fashion_model_2025_q1": {
+   "release_name": "George Condo \u00b7 Fashion Model \u00b7 2025 Q1",
+   "artist": "George Condo",
+   "title": "Fashion Model",
+   "type": "LE",
+   "campaign_code": "GeorgeCondo_Model_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "george_condo_multiple_2024_q1": {
+   "release_name": "George Condo \u00b7 Multiple \u00b7 2024 Q1",
+   "artist": "George Condo",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "george_rouy_keeping_it_for_myself_2022_q1": {
+   "release_name": "George Rouy \u00b7 Keeping it for Myself \u00b7 2022 Q1",
+   "artist": "George Rouy",
+   "title": "Keeping it for Myself",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "george_rouy_tearing_of_the_savage_breast_2022_q4": {
+   "release_name": "George Rouy \u00b7 Tearing of the Savage Breast \u00b7 2022 Q4",
+   "artist": "George Rouy",
+   "title": "Tearing of the Savage Breast",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "gina_beavers_painting_hearts_and_ab_exers_on_my_lips_2022_q2": {
+   "release_name": "Gina Beavers \u00b7 Painting hearts and Ab-Exers on my lips \u00b7 2022 Q2",
+   "artist": "Gina Beavers",
+   "title": "Painting hearts and Ab-Exers on my lips",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "giorgiko_unacquainted_friends_2023_q4": {
+   "release_name": "Giorgiko \u00b7 Unacquainted Friends \u00b7 2023 Q4",
+   "artist": "Giorgiko",
+   "title": "Unacquainted Friends",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "gisela_mcdaniel_are_you_watching_2022_q1": {
+   "release_name": "Gisela McDaniel \u00b7 Are you watching? \u00b7 2022 Q1",
+   "artist": "Gisela McDaniel",
+   "title": "Are you watching?",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "giuseppe_penone_multiple_2026_q3": {
+   "release_name": "Giuseppe Penone \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Giuseppe Penone",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "GiuseppePen_LE_26",
+   "announce_date": "2026-06-17",
+   "launch_end": "2026-07-16",
+   "private_room_open": "2026-06-03",
+   "dates_note": null
+  },
+  "grant_levy_lucero_de_la_rosa_dulcer_a_la_moderna_2023_q2": {
+   "release_name": "Grant Levy-Lucero \u00b7 de la Rosa, Dulcer\u00eda La Moderna \u00b7 2023 Q2",
+   "artist": "Grant Levy-Lucero",
+   "title": "de la Rosa, Dulcer\u00eda La Moderna",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "grant_riven_yun_en_route_2022_q4": {
+   "release_name": "Grant Riven Yun \u00b7 En Route \u00b7 2022 Q4",
+   "artist": "Grant Riven Yun",
+   "title": "En Route",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "grant_riven_yun_fall_2023_q2": {
+   "release_name": "Grant Riven Yun \u00b7 Fall \u00b7 2023 Q2",
+   "artist": "Grant Riven Yun",
+   "title": "Fall",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "grant_riven_yun_high_fly_over_the_valley_2026_q2": {
+   "release_name": "Grant Riven Yun \u00b7 High Fly Over the Valley \u00b7 2026 Q2",
+   "artist": "Grant Riven Yun",
+   "title": "High Fly Over the Valley",
+   "type": "LE",
+   "campaign_code": "GrantRiven_LE_26",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "grayson_perry_magical_thinking_large_2025_q2": {
+   "release_name": "Grayson Perry \u00b7 Magical Thinking (Large) \u00b7 2025 Q2",
+   "artist": "Grayson Perry",
+   "title": "Magical Thinking (Large)",
+   "type": "LE",
+   "campaign_code": "GraysonPe_Large_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "guimi_you_point_reyes_2022_q4": {
+   "release_name": "Guimi You \u00b7 Point Reyes \u00b7 2022 Q4",
+   "artist": "Guimi You",
+   "title": "Point Reyes",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hajime_sorayama_untitled_2025_q2": {
+   "release_name": "Hajime Sorayama \u00b7 Untitled \u00b7 2025 Q2",
+   "artist": "Hajime Sorayama",
+   "title": "Untitled",
+   "type": "LE",
+   "campaign_code": "HajimeSor_Untitled_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hank_willis_thomas_success_is_no_accident_2026_q2": {
+   "release_name": "Hank Willis Thomas \u00b7 \u201cSuccess is no accident.\u201d \u00b7 2026 Q2",
+   "artist": "Hank Willis Thomas",
+   "title": "\u201cSuccess is no accident.\u201d",
+   "type": "LE",
+   "campaign_code": "HankWillisT_LE_26",
+   "announce_date": "2026-06-08",
+   "launch_end": "2026-06-30",
+   "private_room_open": "2026-05-25",
+   "dates_note": null
+  },
+  "harland_miller_multiple_2025_q1": {
+   "release_name": "Harland Miller \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Harland Miller",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "harland_miller_multiple_2025_q3": {
+   "release_name": "Harland Miller \u00b7 Multiple \u00b7 2025 Q3",
+   "artist": "Harland Miller",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "harland_miller_york_so_good_they_named_it_once_2025_q2": {
+   "release_name": "Harland Miller \u00b7 York So Good They Named It Once \u00b7 2025 Q2",
+   "artist": "Harland Miller",
+   "title": "York So Good They Named It Once",
+   "type": "LE",
+   "campaign_code": "HarlandMi_York_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "haroshi_james_jean_multiple_2023_q3": {
+   "release_name": "Haroshi & James Jean \u00b7 Multiple \u00b7 2023 Q3",
+   "artist": "Haroshi & James Jean",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "haroshi_multiple_2022_q4": {
+   "release_name": "Haroshi \u00b7 Multiple \u00b7 2022 Q4",
+   "artist": "Haroshi",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hassan_hajjaj_yazid_rania_2021_q3": {
+   "release_name": "Hassan Hajjaj \u00b7 Yazid & Rania \u00b7 2021 Q3",
+   "artist": "Hassan Hajjaj",
+   "title": "Yazid & Rania",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hebru_brantley_free_advice_2022_q2": {
+   "release_name": "Hebru Brantley \u00b7 Free Advice \u00b7 2022 Q2",
+   "artist": "Hebru Brantley",
+   "title": "Free Advice",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hein_koh_reclining_carrot_2022_q3": {
+   "release_name": "Hein Koh \u00b7 Reclining Carrot \u00b7 2022 Q3",
+   "artist": "Hein Koh",
+   "title": "Reclining Carrot",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hideaki_kawashima_multiple_2022_q1": {
+   "release_name": "Hideaki Kawashima \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Hideaki Kawashima",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hideaki_kawashima_multiple_2023_q4": {
+   "release_name": "Hideaki Kawashima \u00b7 Multiple \u00b7 2023 Q4",
+   "artist": "Hideaki Kawashima",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hikari_shimoda_children_of_this_planet_38_2023_q2": {
+   "release_name": "Hikari Shimoda \u00b7 Children of this Planet #38 \u00b7 2023 Q2",
+   "artist": "Hikari Shimoda",
+   "title": "Children of this Planet #38",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hilary_pecis_multiple_2025_q1": {
+   "release_name": "Hilary Pecis \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Hilary Pecis",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hiroya_kurata_lemonhead_2023_q4": {
+   "release_name": "Hiroya Kurata \u00b7 Lemonhead \u00b7 2023 Q4",
+   "artist": "Hiroya Kurata",
+   "title": "Lemonhead",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hyangmok_baik_i_know_what_you_did_last_summer_2023_q1": {
+   "release_name": "Hyangmok Baik \u00b7 I Know What You Did Last Summer \u00b7 2023 Q1",
+   "artist": "Hyangmok Baik",
+   "title": "I Know What You Did Last Summer",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "imon_boy_multiple_2022_q2": {
+   "release_name": "Imon Boy \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Imon Boy",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "iskra_velitchkova_eyenessless_2024_q3": {
+   "release_name": "Iskra Velitchkova \u00b7 EYENESSLESS \u00b7 2024 Q3",
+   "artist": "Iskra Velitchkova",
+   "title": "EYENESSLESS",
+   "type": "LE",
+   "campaign_code": "IskraVeli_Eyeless_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jr_giants_high_jump_in_rio_2023_q3": {
+   "release_name": "JR \u00b7 GIANTS, High jump in Rio \u00b7 2023 Q3",
+   "artist": "JR",
+   "title": "GIANTS, High jump in Rio",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jack_kaido_icymi_2024_2024_q4": {
+   "release_name": "Jack Kaido \u00b7 ICYMI, 2024 \u00b7 2024 Q4",
+   "artist": "Jack Kaido",
+   "title": "ICYMI, 2024",
+   "type": "LE",
+   "campaign_code": "JackKaido_ICYMI_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jaime_mu_oz_self_portrait_2022_q3": {
+   "release_name": "Jaime Mu\u00f1oz \u00b7 Self Portrait \u00b7 2022 Q3",
+   "artist": "Jaime Mu\u00f1oz",
+   "title": "Self Portrait",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jake_fried_open_eyes_flower_2023_q3": {
+   "release_name": "Jake Fried \u00b7 Open Eyes (Flower) \u00b7 2023 Q3",
+   "artist": "Jake Fried",
+   "title": "Open Eyes (Flower)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jake_fried_open_eyes_signal_2024_q1": {
+   "release_name": "Jake Fried \u00b7 Open Eyes (Signal) \u00b7 2024 Q1",
+   "artist": "Jake Fried",
+   "title": "Open Eyes (Signal)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "james_jarvis_hang_in_there_2025_q3": {
+   "release_name": "James Jarvis \u00b7 Hang in there! \u00b7 2025 Q3",
+   "artist": "James Jarvis",
+   "title": "Hang in there!",
+   "type": "LE",
+   "campaign_code": "JamesJarv_HangInThe_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "james_jean_bath_saxum_2022_q4": {
+   "release_name": "James Jean \u00b7 Bath Saxum \u00b7 2022 Q4",
+   "artist": "James Jean",
+   "title": "Bath Saxum",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "james_jean_maze_print_2022_q4": {
+   "release_name": "James Jean \u00b7 Maze (Print) \u00b7 2022 Q4",
+   "artist": "James Jean",
+   "title": "Maze (Print)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "james_jean_woodcutter_bronze_2022_q2": {
+   "release_name": "James Jean \u00b7 Woodcutter (Bronze) \u00b7 2022 Q2",
+   "artist": "James Jean",
+   "title": "Woodcutter (Bronze)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jammie_holmes_fred_2025_q1": {
+   "release_name": "Jammie Holmes \u00b7 Fred \u00b7 2025 Q1",
+   "artist": "Jammie Holmes",
+   "title": "Fred",
+   "type": "LE",
+   "campaign_code": "JammieHol_Print_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jang_koal_umma_2022_q4": {
+   "release_name": "Jang Koal \u00b7 Umma \u00b7 2022 Q4",
+   "artist": "Jang Koal",
+   "title": "Umma",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jaume_plensa_utopia_2026_q3": {
+   "release_name": "Jaume Plensa \u00b7 UTOPIA \u00b7 2026 Q3",
+   "artist": "Jaume Plensa",
+   "title": "UTOPIA",
+   "type": "LE",
+   "campaign_code": "JaumePlen_LE_26",
+   "announce_date": "2026-07-07",
+   "launch_end": "2026-07-29",
+   "private_room_open": "2026-06-23",
+   "dates_note": null
+  },
+  "javier_calleja_multiple_2024_q2": {
+   "release_name": "Javier Calleja \u00b7 Multiple \u00b7 2024 Q2",
+   "artist": "Javier Calleja",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jean_michel_othoniel_lotus_of_hope_2021_q4": {
+   "release_name": "Jean-Michel Othoniel \u00b7 Lotus of Hope \u00b7 2021 Q4",
+   "artist": "Jean-Michel Othoniel",
+   "title": "Lotus of Hope",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jean_michel_othoniel_multiple_2026_q1": {
+   "release_name": "Jean-Michel Othoniel \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Jean-Michel Othoniel",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": "2026-02-02",
+   "launch_end": "2026-03-03",
+   "private_room_open": "2026-01-19",
+   "dates_note": null
+  },
+  "jeff_koons_multiple_2026_q1": {
+   "release_name": "Jeff Koons \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Jeff Koons",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": "2026-02-18",
+   "launch_end": "2026-03-17",
+   "private_room_open": "2026-02-04",
+   "dates_note": null
+  },
+  "jen_stark_dichroic_mandala_2022_q4": {
+   "release_name": "Jen Stark \u00b7 Dichroic Mandala \u00b7 2022 Q4",
+   "artist": "Jen Stark",
+   "title": "Dichroic Mandala",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jen_stark_in_between_space_2021_q3": {
+   "release_name": "Jen Stark \u00b7 In Between Space \u00b7 2021 Q3",
+   "artist": "Jen Stark",
+   "title": "In Between Space",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jen_stark_shape_shift_2022_q3": {
+   "release_name": "Jen Stark \u00b7 Shape Shift \u00b7 2022 Q3",
+   "artist": "Jen Stark",
+   "title": "Shape Shift",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jenna_gribbon_glaring_shade_2023_q2": {
+   "release_name": "Jenna Gribbon \u00b7 Glaring Shade \u00b7 2023 Q2",
+   "artist": "Jenna Gribbon",
+   "title": "Glaring Shade",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jenny_holzer_multiple_2025_q1": {
+   "release_name": "Jenny Holzer \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Jenny Holzer",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jessie_makinson_multiple_2022_q1": {
+   "release_name": "Jessie Makinson \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Jessie Makinson",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jia_aili_multiple_2022_q2": {
+   "release_name": "Jia Aili \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Jia Aili",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "joakim_ojanen_multiple_2022_q3": {
+   "release_name": "Joakim Ojanen \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Joakim Ojanen",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "joakim_ojanen_spending_the_day_on_a_stone_pink_2023_q1": {
+   "release_name": "Joakim Ojanen \u00b7 SPENDING THE DAY ON A STONE (Pink) \u00b7 2023 Q1",
+   "artist": "Joakim Ojanen",
+   "title": "SPENDING THE DAY ON A STONE (Pink)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "joakim_ojanen_the_dance_we_dance_when_we_are_together_2026_q1": {
+   "release_name": "Joakim Ojanen \u00b7 The dance we dance when we are together \u00b7 2026 Q1",
+   "artist": "Joakim Ojanen",
+   "title": "The dance we dance when we are together",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "johnson_tsang_alliance_2026_q2": {
+   "release_name": "Johnson Tsang \u00b7 Alliance \u00b7 2026 Q2",
+   "artist": "Johnson Tsang",
+   "title": "Alliance",
+   "type": "LE",
+   "campaign_code": "JohnsonTs_Alliance_26",
+   "announce_date": "2026-06-04",
+   "launch_end": "2026-06-11",
+   "private_room_open": "2026-05-21",
+   "dates_note": null
+  },
+  "johnson_tsang_multiple_2022_q1": {
+   "release_name": "Johnson Tsang \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Johnson Tsang",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "johnson_tsang_multiple_2023_q3": {
+   "release_name": "Johnson Tsang \u00b7 Multiple \u00b7 2023 Q3",
+   "artist": "Johnson Tsang",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "johnson_tsang_open_the_right_mind_2023_q4": {
+   "release_name": "Johnson Tsang \u00b7 Open the Right Mind \u00b7 2023 Q4",
+   "artist": "Johnson Tsang",
+   "title": "Open the Right Mind",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "johnson_tsang_remembrance_2025_q3": {
+   "release_name": "Johnson Tsang \u00b7 Remembrance \u00b7 2025 Q3",
+   "artist": "Johnson Tsang",
+   "title": "Remembrance",
+   "type": "LE",
+   "campaign_code": "JohnsonTs_Rememb_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "johnson_tsang_searching_for_spring_2022_q2": {
+   "release_name": "Johnson Tsang \u00b7 Searching for Spring \u00b7 2022 Q2",
+   "artist": "Johnson Tsang",
+   "title": "Searching for Spring",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "johnson_tsang_the_moment_2024_q4": {
+   "release_name": "Johnson Tsang \u00b7 The Moment \u00b7 2024 Q4",
+   "artist": "Johnson Tsang",
+   "title": "The Moment",
+   "type": "LE",
+   "campaign_code": "JohnsonTs_Moment_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "johnson_tsang_work_in_progress_2026_q1": {
+   "release_name": "Johnson Tsang \u00b7 Work in Progress \u00b7 2026 Q1",
+   "artist": "Johnson Tsang",
+   "title": "Work in Progress",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jonny_niesche_diamond_vibration_caught_by_the_fuzz_2023_q4": {
+   "release_name": "Jonny Niesche \u00b7 Diamond Vibration (Caught by the fuzz) \u00b7 2023 Q4",
+   "artist": "Jonny Niesche",
+   "title": "Diamond Vibration (Caught by the fuzz)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jonny_niesche_moon_moth_lust_in_warm_copper_2022_q4": {
+   "release_name": "Jonny Niesche \u00b7 moon moth lust in warm copper \u00b7 2022 Q4",
+   "artist": "Jonny Niesche",
+   "title": "moon moth lust in warm copper",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jordan_casteel_multiple_2025_q1": {
+   "release_name": "Jordan Casteel \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Jordan Casteel",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jordi_ribes_multiple_2022_q3": {
+   "release_name": "Jordi Ribes \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Jordi Ribes",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "josh_smith_multiple_2025_q1": {
+   "release_name": "Josh Smith \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Josh Smith",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jos_parl_multiple_2024_q4": {
+   "release_name": "Jos\u00e9 Parl\u00e1 \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "Jos\u00e9 Parl\u00e1",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "judy_chicago_reincarnation_triptych_2025_q4": {
+   "release_name": "Judy Chicago \u00b7 Reincarnation Triptych \u00b7 2025 Q4",
+   "artist": "Judy Chicago",
+   "title": "Reincarnation Triptych",
+   "type": "LE",
+   "campaign_code": "Judy_Triptych_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "julian_schnabel_the_swedish_house_01_2022_q2": {
+   "release_name": "Julian Schnabel \u00b7 The Swedish House 01 \u00b7 2022 Q2",
+   "artist": "Julian Schnabel",
+   "title": "The Swedish House 01",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "julian_schnabel_the_swedish_house_02_2022_q2": {
+   "release_name": "Julian Schnabel \u00b7 The Swedish House 02 \u00b7 2022 Q2",
+   "artist": "Julian Schnabel",
+   "title": "The Swedish House 02",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "julian_schnabel_the_swedish_house_03_2022_q2": {
+   "release_name": "Julian Schnabel \u00b7 The Swedish House 03 \u00b7 2022 Q2",
+   "artist": "Julian Schnabel",
+   "title": "The Swedish House 03",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "julian_schnabel_the_swedish_house_04_2022_q2": {
+   "release_name": "Julian Schnabel \u00b7 The Swedish House 04 \u00b7 2022 Q2",
+   "artist": "Julian Schnabel",
+   "title": "The Swedish House 04",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "julian_schnabel_the_swedish_house_05_2022_q2": {
+   "release_name": "Julian Schnabel \u00b7 The Swedish House 05 \u00b7 2022 Q2",
+   "artist": "Julian Schnabel",
+   "title": "The Swedish House 05",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "julian_schnabel_the_swedish_house_06_2022_q2": {
+   "release_name": "Julian Schnabel \u00b7 The Swedish House 06 \u00b7 2022 Q2",
+   "artist": "Julian Schnabel",
+   "title": "The Swedish House 06",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "julian_schnabel_the_swedish_house_07_2022_q2": {
+   "release_name": "Julian Schnabel \u00b7 The Swedish House 07 \u00b7 2022 Q2",
+   "artist": "Julian Schnabel",
+   "title": "The Swedish House 07",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "julian_schnabel_the_swedish_house_08_2022_q2": {
+   "release_name": "Julian Schnabel \u00b7 The Swedish House 08 \u00b7 2022 Q2",
+   "artist": "Julian Schnabel",
+   "title": "The Swedish House 08",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "julian_schnabel_the_swedish_house_09_2022_q2": {
+   "release_name": "Julian Schnabel \u00b7 The Swedish House 09 \u00b7 2022 Q2",
+   "artist": "Julian Schnabel",
+   "title": "The Swedish House 09",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "julian_schnabel_the_swedish_house_10_2022_q2": {
+   "release_name": "Julian Schnabel \u00b7 The Swedish House 10 \u00b7 2022 Q2",
+   "artist": "Julian Schnabel",
+   "title": "The Swedish House 10",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "kara_joslyn_good_thing_you_are_not_alone_2022_q4": {
+   "release_name": "Kara Joslyn \u00b7 GOOD THING YOU ARE NOT ALONE \u00b7 2022 Q4",
+   "artist": "Kara Joslyn",
+   "title": "GOOD THING YOU ARE NOT ALONE",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "katherina_olschbaur_humility_and_the_other_one_in_me_2023_q3": {
+   "release_name": "Katherina Olschbaur \u00b7 Humility and the Other One in Me \u00b7 2023 Q3",
+   "artist": "Katherina Olschbaur",
+   "title": "Humility and the Other One in Me",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "katherine_bradford_swing_over_pool_2025_q3": {
+   "release_name": "Katherine Bradford \u00b7 Swing Over Pool \u00b7 2025 Q3",
+   "artist": "Katherine Bradford",
+   "title": "Swing Over Pool",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "katie_hector_multiple_2023_q2": {
+   "release_name": "Katie Hector \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "Katie Hector",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ka_content_hand_finished_2024_q2": {
+   "release_name": "Ka\u00ef \u00b7 Content (Hand-finished) \u00b7 2024 Q2",
+   "artist": "Ka\u00ef",
+   "title": "Content (Hand-finished)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ka_content_2024_q2": {
+   "release_name": "Ka\u00ef \u00b7 Content \u00b7 2024 Q2",
+   "artist": "Ka\u00ef",
+   "title": "Content",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "keita_morimoto_cityscape_2023_q2": {
+   "release_name": "Keita Morimoto \u00b7 Cityscape \u00b7 2023 Q2",
+   "artist": "Keita Morimoto",
+   "title": "Cityscape",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "khari_turner_rest_and_wellness_2022_q1": {
+   "release_name": "Khari Turner \u00b7 Rest and Wellness \u00b7 2022 Q1",
+   "artist": "Khari Turner",
+   "title": "Rest and Wellness",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "koichi_sato_brush_sense_of_values_2022_q3": {
+   "release_name": "Koichi Sato \u00b7 Brush Sense of Values \u00b7 2022 Q3",
+   "artist": "Koichi Sato",
+   "title": "Brush Sense of Values",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "kotao_tomozawa_multiple_2023_q4": {
+   "release_name": "Kotao Tomozawa \u00b7 Multiple \u00b7 2023 Q4",
+   "artist": "Kotao Tomozawa",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "kotao_tomozawa_slime_xcix_2023_q3": {
+   "release_name": "Kotao Tomozawa \u00b7 slime XCIX \u00b7 2023 Q3",
+   "artist": "Kotao Tomozawa",
+   "title": "slime XCIX",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "kpe_innocent_multiple_2023_q2": {
+   "release_name": "Kpe Innocent \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "Kpe Innocent",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "kudzanai_violet_hwami_multiple_2022_q3": {
+   "release_name": "Kudzanai-Violet Hwami \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Kudzanai-Violet Hwami",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "kwesi_botchway_african_style_2023_q1": {
+   "release_name": "Kwesi Botchway \u00b7 African Style \u00b7 2023 Q1",
+   "artist": "Kwesi Botchway",
+   "title": "African Style",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "kwesi_botchway_lady_with_a_tampi_2022_q2": {
+   "release_name": "Kwesi Botchway \u00b7 Lady with a Tampi \u00b7 2022 Q2",
+   "artist": "Kwesi Botchway",
+   "title": "Lady with a Tampi",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ly_confused_luv_medium_2022_q4": {
+   "release_name": "LY \u00b7 Confused LUV (Medium) \u00b7 2022 Q4",
+   "artist": "LY",
+   "title": "Confused LUV (Medium)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ly_luv_blossoming_2025_q2": {
+   "release_name": "LY \u00b7 LUV Blossoming \u00b7 2025 Q2",
+   "artist": "LY",
+   "title": "LUV Blossoming",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ly_luv_new_beginnings_2026_q3": {
+   "release_name": "LY \u00b7 LUV New Beginnings \u00b7 2026 Q3",
+   "artist": "LY",
+   "title": "LUV New Beginnings",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": "2026-06-16",
+   "launch_end": "2026-07-07",
+   "private_room_open": "2026-06-02",
+   "dates_note": null
+  },
+  "ly_luv_somewhere_new_2023_q4": {
+   "release_name": "LY \u00b7 LUV Somewhere New \u00b7 2023 Q4",
+   "artist": "LY",
+   "title": "LUV Somewhere New",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ly_multiple_2022_q1": {
+   "release_name": "LY \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "LY",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ly_multiple_2023_q2": {
+   "release_name": "LY \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "LY",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ly_standing_with_luv_medium_2022_q4": {
+   "release_name": "LY \u00b7 Standing with LUV (Medium) \u00b7 2022 Q4",
+   "artist": "LY",
+   "title": "Standing with LUV (Medium)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ly_this_is_luv_small_2022_q3": {
+   "release_name": "LY \u00b7 This is LUV (Small) \u00b7 2022 Q3",
+   "artist": "LY",
+   "title": "This is LUV (Small)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ly_with_his_sidekick_small_2022_q3": {
+   "release_name": "LY \u00b7 With his Sidekick (Small) \u00b7 2022 Q3",
+   "artist": "LY",
+   "title": "With his Sidekick (Small)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "larry_bell_little_3dvd_2022_q4": {
+   "release_name": "Larry Bell \u00b7 Little 3DVD \u00b7 2022 Q4",
+   "artist": "Larry Bell",
+   "title": "Little 3DVD",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "laura_el_park_ave_2024_q1": {
+   "release_name": "Laura El \u00b7 Park Ave \u00b7 2024 Q1",
+   "artist": "Laura El",
+   "title": "Park Ave",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "lawrence_weiner_here_now_2022_q4": {
+   "release_name": "Lawrence Weiner \u00b7 HERE & NOW \u00b7 2022 Q4",
+   "artist": "Lawrence Weiner",
+   "title": "HERE & NOW",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "lee_ufan_dialogue_2026_q1": {
+   "release_name": "Lee Ufan \u00b7 Dialogue \u00b7 2026 Q1",
+   "artist": "Lee Ufan",
+   "title": "Dialogue",
+   "type": "LE",
+   "campaign_code": "LeeUfan_LE_26",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "lee_ufan_multiple_2025_q2": {
+   "release_name": "Lee Ufan \u00b7 Multiple \u00b7 2025 Q2",
+   "artist": "Lee Ufan",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "LeeUfan_From_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "liang_fu_anonyme_2023_q1": {
+   "release_name": "Liang Fu \u00b7 Anonyme \u00b7 2023 Q1",
+   "artist": "Liang Fu",
+   "title": "Anonyme",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "lin_yen_liang_multiple_2022_q3": {
+   "release_name": "Lin Yen-Liang \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Lin Yen-Liang",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "lina_iris_viktor_ekstasis_2021_q4": {
+   "release_name": "Lina Iris Viktor \u00b7 Ekstasis \u00b7 2021 Q4",
+   "artist": "Lina Iris Viktor",
+   "title": "Ekstasis",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "linda_dounia_faux_letters_2024_q2": {
+   "release_name": "Linda Dounia \u00b7 Faux Letters \u00b7 2024 Q2",
+   "artist": "Linda Dounia",
+   "title": "Faux Letters",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "luc_tuymans_bell_boy_2026_q1": {
+   "release_name": "Luc Tuymans \u00b7 Bell Boy \u00b7 2026 Q1",
+   "artist": "Luc Tuymans",
+   "title": "Bell Boy",
+   "type": "LE",
+   "campaign_code": "LucTuymans_LE_26",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "luis_ponce_and_the_absurd_was_born_2023_q4": {
+   "release_name": "Luis Ponce \u00b7 And the Absurd Was Born \u00b7 2023 Q4",
+   "artist": "Luis Ponce",
+   "title": "And the Absurd Was Born",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "magdalena_suarez_frimkess_homage_for_jasper_johns_2024_q3": {
+   "release_name": "Magdalena Suarez Frimkess \u00b7 Homage for Jasper Johns \u00b7 2024 Q3",
+   "artist": "Magdalena Suarez Frimkess",
+   "title": "Homage for Jasper Johns",
+   "type": "LE",
+   "campaign_code": "Magdalena_Mouse_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "maiko_kobayashi_moving_colours_2023_q1": {
+   "release_name": "Maiko Kobayashi \u00b7 Moving Colours \u00b7 2023 Q1",
+   "artist": "Maiko Kobayashi",
+   "title": "Moving Colours",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "makiko_kudo_nanohana_ramen_2022_q3": {
+   "release_name": "Makiko Kudo \u00b7 Nanohana Ramen \u00b7 2022 Q3",
+   "artist": "Makiko Kudo",
+   "title": "Nanohana Ramen",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "marcela_fl_rido_bloom_2023_q3": {
+   "release_name": "Marcela Fl\u00f3rido \u00b7 BLOOM \u00b7 2023 Q3",
+   "artist": "Marcela Fl\u00f3rido",
+   "title": "BLOOM",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "marcus_jansen_afro_painter_2023_q4": {
+   "release_name": "Marcus Jansen \u00b7 Afro Painter \u00b7 2023 Q4",
+   "artist": "Marcus Jansen",
+   "title": "Afro Painter",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "marina_perez_sim_o_untitled_2023_q2": {
+   "release_name": "Marina Perez Sim\u00e3o \u00b7 Untitled \u00b7 2023 Q2",
+   "artist": "Marina Perez Sim\u00e3o",
+   "title": "Untitled",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "mark_whalen_early_light_2023_q3": {
+   "release_name": "Mark Whalen \u00b7 Early Light \u00b7 2023 Q3",
+   "artist": "Mark Whalen",
+   "title": "Early Light",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "mark_whalen_lucky_charm_2022_q1": {
+   "release_name": "Mark Whalen \u00b7 Lucky Charm \u00b7 2022 Q1",
+   "artist": "Mark Whalen",
+   "title": "Lucky Charm",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "maurizio_cattelan_la_nona_ora_2026_q2": {
+   "release_name": "Maurizio Cattelan \u00b7 La Nona Ora \u00b7 2026 Q2",
+   "artist": "Maurizio Cattelan",
+   "title": "La Nona Ora",
+   "type": "LE",
+   "campaign_code": "Maurizio_NonaOra_26",
+   "announce_date": "2026-04-02",
+   "launch_end": "2026-04-23",
+   "private_room_open": "2026-03-19",
+   "dates_note": null
+  },
+  "maurizio_cattelan_therapy_2026_q2": {
+   "release_name": "Maurizio Cattelan \u00b7 THERAPY \u00b7 2026 Q2",
+   "artist": "Maurizio Cattelan",
+   "title": "THERAPY",
+   "type": "LE",
+   "campaign_code": "Maurizio_Therapy_26",
+   "announce_date": "2026-04-13",
+   "launch_end": "2026-05-05",
+   "private_room_open": "2026-03-30",
+   "dates_note": null
+  },
+  "maurizio_cattelan_we_are_the_revolution_2025_q4": {
+   "release_name": "Maurizio Cattelan \u00b7 We are the Revolution \u00b7 2025 Q4",
+   "artist": "Maurizio Cattelan",
+   "title": "We are the Revolution",
+   "type": "LE",
+   "campaign_code": "MaurizioC_Rev_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "maurizio_cattelan_window_2026_q1": {
+   "release_name": "Maurizio Cattelan \u00b7 Window \u00b7 2026 Q1",
+   "artist": "Maurizio Cattelan",
+   "title": "Window",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock present but incomplete"
+  },
+  "maxwell_mustardo_multiple_2023_q2": {
+   "release_name": "Maxwell Mustardo \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "Maxwell Mustardo",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "michael_kagan_concorde_2021_q4": {
+   "release_name": "Michael Kagan \u00b7 Concorde \u00b7 2021 Q4",
+   "artist": "Michael Kagan",
+   "title": "Concorde",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "michael_kagan_saturn_v_2022_q3": {
+   "release_name": "Michael Kagan \u00b7 Saturn V \u00b7 2022 Q3",
+   "artist": "Michael Kagan",
+   "title": "Saturn V",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "michael_kozlowski_mecha_2024_q2": {
+   "release_name": "Michael Kozlowski \u00b7 Mecha \u00b7 2024 Q2",
+   "artist": "Michael Kozlowski",
+   "title": "Mecha",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "michaela_yearwood_dan_multiple_2023_q4": {
+   "release_name": "Michaela Yearwood-Dan \u00b7 Multiple \u00b7 2023 Q4",
+   "artist": "Michaela Yearwood-Dan",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "minhee_kim_multiple_2023_q2": {
+   "release_name": "Minhee Kim \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "Minhee Kim",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "miwa_komatsu_innocent_days_and_wishes_2025_q2": {
+   "release_name": "Miwa Komatsu \u00b7 Innocent Days and Wishes \u00b7 2025 Q2",
+   "artist": "Miwa Komatsu",
+   "title": "Innocent Days and Wishes",
+   "type": "LE",
+   "campaign_code": "MiwaKomat_Innocent_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "miwa_komatsu_multiple_2023_q4": {
+   "release_name": "Miwa Komatsu \u00b7 Multiple \u00b7 2023 Q4",
+   "artist": "Miwa Komatsu",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "miwa_komatsu_three_guardians_gatekeeping_the_heat_and_cold_2026_q2": {
+   "release_name": "Miwa Komatsu \u00b7 Three Guardians: Gatekeeping the Heat and Cold \u00b7 2026 Q2",
+   "artist": "Miwa Komatsu",
+   "title": "Three Guardians: Gatekeeping the Heat and Cold",
+   "type": "LE",
+   "campaign_code": "MiwaKomat_LE_26",
+   "announce_date": "2026-05-27",
+   "launch_end": "2026-06-23",
+   "private_room_open": "2026-05-13",
+   "dates_note": null
+  },
+  "miwa_komatsu_white_and_black_guiding_yamainu_sama_2024_q4": {
+   "release_name": "Miwa Komatsu \u00b7 White and Black Guiding Yamainu-sama \u00b7 2024 Q4",
+   "artist": "Miwa Komatsu",
+   "title": "White and Black Guiding Yamainu-sama",
+   "type": "LE",
+   "campaign_code": "MiwaKomat_WhiBla_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "moe_nakamura_inside_us_2023_q4": {
+   "release_name": "Moe Nakamura \u00b7 Inside Us \u00b7 2023 Q4",
+   "artist": "Moe Nakamura",
+   "title": "Inside Us",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "molly_greene_bur_2022_q4": {
+   "release_name": "Molly Greene \u00b7 Bur \u00b7 2022 Q4",
+   "artist": "Molly Greene",
+   "title": "Bur",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "mr_starcity_multiple_2022_q2": {
+   "release_name": "Mr. StarCity \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Mr. StarCity",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "nksin_my_david_x_2023_q3": {
+   "release_name": "NKSIN \u00b7 MY DAVID X \u00b7 2023 Q3",
+   "artist": "NKSIN",
+   "title": "MY DAVID X",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "neo_image_matloga_majakathata_2021_q3": {
+   "release_name": "Neo Image Matloga \u00b7 Majakathata \u00b7 2021 Q3",
+   "artist": "Neo Image Matloga",
+   "title": "Majakathata",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "nicasio_fernandez_d_i_y_hand_finished_2022_q4": {
+   "release_name": "Nicasio Fernandez \u00b7 D.I.Y (Hand-finished) \u00b7 2022 Q4",
+   "artist": "Nicasio Fernandez",
+   "title": "D.I.Y (Hand-finished)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "nicasio_fernandez_d_i_y_2022_q4": {
+   "release_name": "Nicasio Fernandez \u00b7 D.I.Y \u00b7 2022 Q4",
+   "artist": "Nicasio Fernandez",
+   "title": "D.I.Y",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "nicolas_holiber_multiple_2022_q2": {
+   "release_name": "Nicolas Holiber \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Nicolas Holiber",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "nigel_howlett_multiple_2022_q1": {
+   "release_name": "Nigel Howlett \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Nigel Howlett",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "nikki_maloof_oranges_2022_q2": {
+   "release_name": "Nikki Maloof \u00b7 Oranges \u00b7 2022 Q2",
+   "artist": "Nikki Maloof",
+   "title": "Oranges",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "okokume_sumergidos_2023_q1": {
+   "release_name": "Okokume \u00b7 Sumergidos \u00b7 2023 Q1",
+   "artist": "Okokume",
+   "title": "Sumergidos",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "oscar_yi_hou_coolieisms_aka_born_in_the_usa_go_and_kill_the_yellow_man_2025_q2": {
+   "release_name": "Oscar yi Hou \u00b7 Coolieisms, aka: Born In The USA (Go And Kill The Yellow Man) \u00b7 2025 Q2",
+   "artist": "Oscar yi Hou",
+   "title": "Coolieisms, aka: Born In The USA (Go And Kill The Yellow Man)",
+   "type": "LE",
+   "campaign_code": "Oscaryi_Cool_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "other_world_dogs_of_war_2025_q2": {
+   "release_name": "Other World \u00b7 Dogs of War \u00b7 2025 Q2",
+   "artist": "Other World",
+   "title": "Dogs of War",
+   "type": "LE",
+   "campaign_code": "Otherworld_Dogs_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "pablo_tomek_multiple_2023_q2": {
+   "release_name": "Pablo Tomek \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "Pablo Tomek",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "parra_multiple_2024_q4": {
+   "release_name": "Parra \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "Parra",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "patrick_quarm_multiple_2022_q1": {
+   "release_name": "Patrick Quarm \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Patrick Quarm",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "paul_insect_christmas_tree_baubles_2022_q4": {
+   "release_name": "Paul Insect \u00b7 Christmas Tree Baubles \u00b7 2022 Q4",
+   "artist": "Paul Insect",
+   "title": "Christmas Tree Baubles",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "paul_insect_multiple_2021_q4": {
+   "release_name": "Paul Insect \u00b7 Multiple \u00b7 2021 Q4",
+   "artist": "Paul Insect",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "paul_insect_multiple_2023_q3": {
+   "release_name": "Paul Insect \u00b7 Multiple \u00b7 2023 Q3",
+   "artist": "Paul Insect",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "paul_insect_multiple_2024_q3": {
+   "release_name": "Paul Insect \u00b7 Multiple \u00b7 2024 Q3",
+   "artist": "Paul Insect",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "PaulInsec_JunkShop_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "paul_insect_prismatic_visions_2026_q2": {
+   "release_name": "Paul Insect \u00b7 Prismatic Visions \u00b7 2026 Q2",
+   "artist": "Paul Insect",
+   "title": "Prismatic Visions",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "paul_insect_sweetie_jar_2022_q2": {
+   "release_name": "Paul Insect \u00b7 Sweetie Jar \u00b7 2022 Q2",
+   "artist": "Paul Insect",
+   "title": "Sweetie Jar",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "paul_mccarthy_santa_with_butt_plug_bronze_11_4_inches_2022_q4": {
+   "release_name": "Paul McCarthy \u00b7 Santa with Butt Plug Bronze 11.4 inches \u00b7 2022 Q4",
+   "artist": "Paul McCarthy",
+   "title": "Santa with Butt Plug Bronze 11.4 inches",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "pejac_multiple_2024_q3": {
+   "release_name": "Pejac \u00b7 Multiple \u00b7 2024 Q3",
+   "artist": "Pejac",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "Pejac_1000Print_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "pejac_multiple_2026_q1": {
+   "release_name": "Pejac \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Pejac",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "Pejac_Repeat_26",
+   "announce_date": "2026-01-23",
+   "launch_end": "2026-02-03",
+   "private_room_open": "2026-01-09",
+   "dates_note": null
+  },
+  "peter_halley_galaxia_ii_2022_q2": {
+   "release_name": "Peter Halley \u00b7 Galaxia II \u00b7 2022 Q2",
+   "artist": "Peter Halley",
+   "title": "Galaxia II",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "peter_halley_rising_high_ii_2024_q2": {
+   "release_name": "Peter Halley \u00b7 Rising High II \u00b7 2024 Q2",
+   "artist": "Peter Halley",
+   "title": "Rising High II",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "prune_nourry_mater_earth_2023_q1": {
+   "release_name": "Prune Nourry \u00b7 Mater Earth \u00b7 2023 Q1",
+   "artist": "Prune Nourry",
+   "title": "Mater Earth",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "rafa_macarr_n_multiple_2022_q2": {
+   "release_name": "Rafa Macarr\u00f3n \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Rafa Macarr\u00f3n",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "richard_woods_multiple_2023_q4": {
+   "release_name": "Richard Woods \u00b7 Multiple \u00b7 2023 Q4",
+   "artist": "Richard Woods",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ripcache_security_2023_q3": {
+   "release_name": "Ripcache \u00b7 Security \u00b7 2023 Q3",
+   "artist": "Ripcache",
+   "title": "Security",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "robert_nava_death_carrier_bunny_2024_q1": {
+   "release_name": "Robert Nava \u00b7 Death Carrier Bunny \u00b7 2024 Q1",
+   "artist": "Robert Nava",
+   "title": "Death Carrier Bunny",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "roby_dwi_antono_bias_ii_2022_q4": {
+   "release_name": "Roby Dwi Antono \u00b7 BIAS II \u00b7 2022 Q4",
+   "artist": "Roby Dwi Antono",
+   "title": "BIAS II",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "roby_dwi_antono_bias_2022_q1": {
+   "release_name": "Roby Dwi Antono \u00b7 BIAS \u00b7 2022 Q1",
+   "artist": "Roby Dwi Antono",
+   "title": "BIAS",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "roby_dwi_antono_clementine_2023_q4": {
+   "release_name": "Roby Dwi Antono \u00b7 CLEMENTINE \u00b7 2023 Q4",
+   "artist": "Roby Dwi Antono",
+   "title": "CLEMENTINE",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "roby_dwi_antono_hayu_2023_q1": {
+   "release_name": "Roby Dwi Antono \u00b7 HAYU \u00b7 2023 Q1",
+   "artist": "Roby Dwi Antono",
+   "title": "HAYU",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "roby_dwi_antono_kira_2021_q3": {
+   "release_name": "Roby Dwi Antono \u00b7 KIRA \u00b7 2021 Q3",
+   "artist": "Roby Dwi Antono",
+   "title": "KIRA",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "roby_dwi_antono_multiple_2022_q2": {
+   "release_name": "Roby Dwi Antono \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Roby Dwi Antono",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "rooo_lou_earnest_2023_q2": {
+   "release_name": "Rooo Lou \u00b7 Earnest \u00b7 2023 Q2",
+   "artist": "Rooo Lou",
+   "title": "Earnest",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ryan_travis_christian_chatte_parfaite_2023_q2": {
+   "release_name": "Ryan Travis Christian \u00b7 CHATTE PARFAITE \u00b7 2023 Q2",
+   "artist": "Ryan Travis Christian",
+   "title": "CHATTE PARFAITE",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "ryo_laksamana_multiple_2022_q2": {
+   "release_name": "Ryo Laksamana \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Ryo Laksamana",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "seth_little_sower_2023_q4": {
+   "release_name": "SETH \u00b7 Little Sower \u00b7 2023 Q4",
+   "artist": "SETH",
+   "title": "Little Sower",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "sarah_morris_industry_spiderweb_2023_q2": {
+   "release_name": "Sarah Morris \u00b7 Industry (Spiderweb) \u00b7 2023 Q2",
+   "artist": "Sarah Morris",
+   "title": "Industry (Spiderweb)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "satoru_koizumi_studio_2021_2021_q2": {
+   "release_name": "Satoru Koizumi \u00b7 Studio 2021 \u00b7 2021 Q2",
+   "artist": "Satoru Koizumi",
+   "title": "Studio 2021",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "satoru_koizumi_white_rhino_2022_q4": {
+   "release_name": "Satoru Koizumi \u00b7 White Rhino \u00b7 2022 Q4",
+   "artist": "Satoru Koizumi",
+   "title": "White Rhino",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "sayre_gomez_america_s_tire_2025_q2": {
+   "release_name": "Sayre Gomez \u00b7 America's Tire \u00b7 2025 Q2",
+   "artist": "Sayre Gomez",
+   "title": "America's Tire",
+   "type": "LE",
+   "campaign_code": "SayreGome_America_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "scott_kahn_ingersoll_s_branch_2022_q4": {
+   "release_name": "Scott Kahn \u00b7 INGERSOLL'S BRANCH \u00b7 2022 Q4",
+   "artist": "Scott Kahn",
+   "title": "INGERSOLL'S BRANCH",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "scott_kahn_spring_moon_grant_street_hand_finished_2021_q3": {
+   "release_name": "Scott Kahn \u00b7 Spring Moon, Grant Street (Hand-finished) \u00b7 2021 Q3",
+   "artist": "Scott Kahn",
+   "title": "Spring Moon, Grant Street (Hand-finished)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "shaina_mccoy_hoops_2022_q2": {
+   "release_name": "Shaina McCoy \u00b7 Hoops \u00b7 2022 Q2",
+   "artist": "Shaina McCoy",
+   "title": "Hoops",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "shaina_mccoy_tiff_2023_q2": {
+   "release_name": "Shaina McCoy \u00b7 Tiff \u00b7 2023 Q2",
+   "artist": "Shaina McCoy",
+   "title": "Tiff",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "shigeki_matsuyama_multiple_2023_q2": {
+   "release_name": "Shigeki Matsuyama \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "Shigeki Matsuyama",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "slawn_ugly_bastard_2024_q3": {
+   "release_name": "Slawn \u00b7 Ugly Bastard \u00b7 2024 Q3",
+   "artist": "Slawn",
+   "title": "Ugly Bastard",
+   "type": "LE",
+   "campaign_code": "Slawn_UglyBast_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "so_youn_lee_ready_2023_q4": {
+   "release_name": "So Youn Lee \u00b7 Ready? \u00b7 2023 Q4",
+   "artist": "So Youn Lee",
+   "title": "Ready?",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "stickymonger_multiple_2022_q1": {
+   "release_name": "Stickymonger \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Stickymonger",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "stickymonger_multiple_2022_q2": {
+   "release_name": "Stickymonger \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Stickymonger",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "stickymonger_multiple_2022_q3": {
+   "release_name": "Stickymonger \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Stickymonger",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "sun_kyo_park_multiple_2022_q3": {
+   "release_name": "Sun-Kyo Park \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Sun-Kyo Park",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "super_future_kid_multiple_2022_q1": {
+   "release_name": "Super Future Kid \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Super Future Kid",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "susumu_kamijo_dance_for_me_in_the_dusk_2021_q4": {
+   "release_name": "Susumu Kamijo \u00b7 Dance For Me In The Dusk \u00b7 2021 Q4",
+   "artist": "Susumu Kamijo",
+   "title": "Dance For Me In The Dusk",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "szabolcs_boz_multiple_2023_q3": {
+   "release_name": "Szabolcs Boz\u00f3 \u00b7 Multiple \u00b7 2023 Q3",
+   "artist": "Szabolcs Boz\u00f3",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tide_multiple_2022_q1": {
+   "release_name": "TIDE \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "TIDE",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tide_multiple_2024_q4": {
+   "release_name": "TIDE \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "TIDE",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "Tide_Sit_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tahnee_lonsdale_dove_2023_q3": {
+   "release_name": "Tahnee Lonsdale \u00b7 Dove \u00b7 2023 Q3",
+   "artist": "Tahnee Lonsdale",
+   "title": "Dove",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "takahiro_komuro_ground_dragon_2022_q2": {
+   "release_name": "Takahiro Komuro \u00b7 Ground Dragon \u00b7 2022 Q2",
+   "artist": "Takahiro Komuro",
+   "title": "Ground Dragon",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "takahiro_komuro_sphinx_kira_2023_q4": {
+   "release_name": "Takahiro Komuro \u00b7 Sphinx - Kira \u00b7 2023 Q4",
+   "artist": "Takahiro Komuro",
+   "title": "Sphinx - Kira",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "takashi_murakami_multiple_2026_q2": {
+   "release_name": "Takashi Murakami \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Takashi Murakami",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "TakashiMu_LE_26",
+   "announce_date": "2026-04-29",
+   "launch_end": "2026-05-27",
+   "private_room_open": "2026-04-15",
+   "dates_note": null
+  },
+  "takeru_amano_venus_2023_q2": {
+   "release_name": "Takeru Amano \u00b7 Venus \u00b7 2023 Q2",
+   "artist": "Takeru Amano",
+   "title": "Venus",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "taku_obata_b_boy_jushi_2025_q1": {
+   "release_name": "Taku Obata \u00b7 B BOY JUSHI \u00b7 2025 Q1",
+   "artist": "Taku Obata",
+   "title": "B BOY JUSHI",
+   "type": "LE",
+   "campaign_code": "TakuObata_Resin_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "taku_obata_b_boy_seidou_2024_q4": {
+   "release_name": "Taku Obata \u00b7 B BOY SEIDOU \u00b7 2024 Q4",
+   "artist": "Taku Obata",
+   "title": "B BOY SEIDOU",
+   "type": "LE",
+   "campaign_code": "TakuObata_BBoy_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "taylor_lee_multiple_2023_q4": {
+   "release_name": "Taylor Lee \u00b7 Multiple \u00b7 2023 Q4",
+   "artist": "Taylor Lee",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tomokazu_matsuyama_broken_train_pick_me_2021_q3": {
+   "release_name": "Tomokazu Matsuyama \u00b7 Broken Train Pick Me \u00b7 2021 Q3",
+   "artist": "Tomokazu Matsuyama",
+   "title": "Broken Train Pick Me",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tomokazu_matsuyama_clocks_daylight_jump_2022_q1": {
+   "release_name": "Tomokazu Matsuyama \u00b7 Clocks Daylight Jump \u00b7 2022 Q1",
+   "artist": "Tomokazu Matsuyama",
+   "title": "Clocks Daylight Jump",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tomokazu_matsuyama_morning_sun_dance_2025_q3": {
+   "release_name": "Tomokazu Matsuyama \u00b7 Morning Sun Dance \u00b7 2025 Q3",
+   "artist": "Tomokazu Matsuyama",
+   "title": "Morning Sun Dance",
+   "type": "LE",
+   "campaign_code": "TomoKazum_Shaped_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tomokazu_matsuyama_multiple_2022_q2": {
+   "release_name": "Tomokazu Matsuyama \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Tomokazu Matsuyama",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tomokazu_matsuyama_perfect_all_alone_ironic_2023_q4": {
+   "release_name": "Tomokazu Matsuyama \u00b7 Perfect All Alone Ironic \u00b7 2023 Q4",
+   "artist": "Tomokazu Matsuyama",
+   "title": "Perfect All Alone Ironic",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tomokazu_matsuyama_the_seed_shiver_shine_bright_2022_q4": {
+   "release_name": "Tomokazu Matsuyama \u00b7 The Seed Shiver Shine & Bright \u00b7 2022 Q4",
+   "artist": "Tomokazu Matsuyama",
+   "title": "The Seed Shiver Shine & Bright",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tomoo_gokita_oscalypso_2022_q1": {
+   "release_name": "Tomoo Gokita \u00b7 Oscalypso \u00b7 2022 Q1",
+   "artist": "Tomoo Gokita",
+   "title": "Oscalypso",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tom_s_s_nchez_sonido_de_aguas_en_la_noche_2022_q1": {
+   "release_name": "Tom\u00e1s S\u00e1nchez \u00b7 Sonido de aguas en la noche \u00b7 2022 Q1",
+   "artist": "Tom\u00e1s S\u00e1nchez",
+   "title": "Sonido de aguas en la noche",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tschabalala_self_lady_in_yellow_on_spiral_seat_2_teal_background_2022_q4": {
+   "release_name": "Tschabalala Self \u00b7 Lady in Yellow on Spiral Seat #2 Teal Background \u00b7 2022 Q4",
+   "artist": "Tschabalala Self",
+   "title": "Lady in Yellow on Spiral Seat #2 Teal Background",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tschabalala_self_multiple_2026_q3": {
+   "release_name": "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Tschabalala Self",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tschabalala_self_seated_bronze_2022_q4": {
+   "release_name": "Tschabalala Self \u00b7 Seated Bronze \u00b7 2022 Q4",
+   "artist": "Tschabalala Self",
+   "title": "Seated Bronze",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "urs_fischer_multiple_2026_q2": {
+   "release_name": "Urs Fischer \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Urs Fischer",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "UrsFischer_LE_26",
+   "announce_date": "2026-06-03",
+   "launch_end": "2026-06-25",
+   "private_room_open": "2026-05-20",
+   "dates_note": null
+  },
+  "vhils_multiple_2024_q3": {
+   "release_name": "Vhils \u00b7 Multiple \u00b7 2024 Q3",
+   "artist": "Vhils",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "Vhils_Timed_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "wang_zhibo_15_nationalistic_optimism_by_the_sea_2024_q3": {
+   "release_name": "Wang Zhibo \u00b7 15\u2103, Nationalistic Optimism by the Sea \u00b7 2024 Q3",
+   "artist": "Wang Zhibo",
+   "title": "15\u2103, Nationalistic Optimism by the Sea",
+   "type": "LE",
+   "campaign_code": "WangZhibo_National_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "will_cotton_the_cowgirl_2025_q1": {
+   "release_name": "Will Cotton \u00b7 The Cowgirl \u00b7 2025 Q1",
+   "artist": "Will Cotton",
+   "title": "The Cowgirl",
+   "type": "LE",
+   "campaign_code": "WillCotto_Unicorn_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "william_blake_multiple_2025_q4": {
+   "release_name": "William Blake \u00b7 Multiple \u00b7 2025 Q4",
+   "artist": "William Blake",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "WilliamBl_LE_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "william_mapan_centrifuge_2024_q1": {
+   "release_name": "William Mapan \u00b7 Centrifuge \u00b7 2024 Q1",
+   "artist": "William Mapan",
+   "title": "Centrifuge",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "woo_kuk_won_multiple_2024_q4": {
+   "release_name": "Woo Kuk Won \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "Woo Kuk Won",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "Wookukwo_PairLE_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "woo_kuk_won_multiple_2025_q3": {
+   "release_name": "Woo Kuk Won \u00b7 Multiple \u00b7 2025 Q3",
+   "artist": "Woo Kuk Won",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "yoon_hyup_ambre_roulette_2026_q3": {
+   "release_name": "Yoon Hyup \u00b7 Ambre Roulette \u00b7 2026 Q3",
+   "artist": "Yoon Hyup",
+   "title": "Ambre Roulette",
+   "type": "LE",
+   "campaign_code": "YoonHyup_LE_26",
+   "announce_date": "2026-06-25",
+   "launch_end": "2026-07-23",
+   "private_room_open": "2026-06-11",
+   "dates_note": null
+  },
+  "yoon_hyup_city_fountain_2024_q3": {
+   "release_name": "Yoon Hyup \u00b7 City Fountain \u00b7 2024 Q3",
+   "artist": "Yoon Hyup",
+   "title": "City Fountain",
+   "type": "LE",
+   "campaign_code": "YoonHyup_Print_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "yoon_hyup_in_the_city_2023_q4": {
+   "release_name": "Yoon Hyup \u00b7 In The City \u00b7 2023 Q4",
+   "artist": "Yoon Hyup",
+   "title": "In The City",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "yoon_hyup_night_in_paris_golden_light_2022_q4": {
+   "release_name": "Yoon Hyup \u00b7 Night in Paris - Golden Light \u00b7 2022 Q4",
+   "artist": "Yoon Hyup",
+   "title": "Night in Paris - Golden Light",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "yoon_hyup_summer_in_san_sebastian_2025_q3": {
+   "release_name": "Yoon Hyup \u00b7 Summer in San Sebastian \u00b7 2025 Q3",
+   "artist": "Yoon Hyup",
+   "title": "Summer in San Sebastian",
+   "type": "LE",
+   "campaign_code": "YoonHyup_Summer_25",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "yu_nagaba_toy_car_2023_q3": {
+   "release_name": "Yu Nagaba \u00b7 Toy Car \u00b7 2023 Q3",
+   "artist": "Yu Nagaba",
+   "title": "Toy Car",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "yue_minjun_multiple_2023_q1": {
+   "release_name": "Yue Minjun \u00b7 Multiple \u00b7 2023 Q1",
+   "artist": "Yue Minjun",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "yuichi_hirako_green_master_bloom_2022_q3": {
+   "release_name": "Yuichi Hirako \u00b7 Green Master / Bloom \u00b7 2022 Q3",
+   "artist": "Yuichi Hirako",
+   "title": "Green Master / Bloom",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "yutaka_hashimoto_study_for_null_portrait_of_someone_166_2024_q1": {
+   "release_name": "Yutaka Hashimoto \u00b7 Study_for_Null_Portrait of someone#166 \u00b7 2024 Q1",
+   "artist": "Yutaka Hashimoto",
+   "title": "Study_for_Null_Portrait of someone#166",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "zeng_fanzhi_rainbow_mask_series_1997_no_8_2026_q3": {
+   "release_name": "Zeng Fanzhi \u00b7 Rainbow (Mask Series 1997 no.8) \u00b7 2026 Q3",
+   "artist": "Zeng Fanzhi",
+   "title": "Rainbow (Mask Series 1997 no.8)",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": "2026-06-26",
+   "launch_end": "2026-07-22",
+   "private_room_open": "2026-06-12",
+   "dates_note": null
+  },
+  "zhang_huan_amitabha_2021_q3": {
+   "release_name": "Zhang Huan \u00b7 Amitabha \u00b7 2021 Q3",
+   "artist": "Zhang Huan",
+   "title": "Amitabha",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "zhang_ruyi_forced_separation_2024_q3": {
+   "release_name": "Zhang Ruyi \u00b7 Forced Separation \u00b7 2024 Q3",
+   "artist": "Zhang Ruyi",
+   "title": "Forced Separation",
+   "type": "LE",
+   "campaign_code": "ZHANGRUYI_FORCEDSEP_24",
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "b_wing_multiple_2022_q3": {
+   "release_name": "b.wing \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "b.wing",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  }
+ },
  "meta_campaigns": [
   {
-   "name": "JaumePlen_LE_26 · Enter draw",
+   "name": "JaumePlen_LE_26 \u00b7 Enter draw",
    "spend": 53972.12,
    "last": "2026-08-27"
   },
   {
-   "name": "JamesJean_Blossom_26 · Enter draw",
+   "name": "JamesJean_Blossom_26 \u00b7 Enter draw",
    "spend": 25936.13,
    "last": "2026-08-27"
   },
   {
-   "name": "Abdulnasser_LE_26 · Enter draw",
+   "name": "Abdulnasser_LE_26 \u00b7 Enter draw",
    "spend": 7482.43,
    "last": "2026-08-27"
   },
   {
-   "name": "SalvadorDali_LE_26 · Enter draw",
+   "name": "SalvadorDali_LE_26 \u00b7 Enter draw",
    "spend": 5797.96,
    "last": "2026-08-27"
   },
   {
-   "name": "ZengFanzhi_LE_26 · Enter draw",
+   "name": "ZengFanzhi_LE_26 \u00b7 Enter draw",
    "spend": 5386.98,
    "last": "2026-08-27"
   },
   {
-   "name": "GlennLigon_LE_26 · Enter draw",
+   "name": "GlennLigon_LE_26 \u00b7 Enter draw",
    "spend": 4086.95,
    "last": "2026-08-27"
   },
   {
-   "name": "Parra_LE_26 · Enter draw",
+   "name": "Parra_LE_26 \u00b7 Enter draw",
    "spend": 3272.64,
    "last": "2026-08-27"
   },
   {
-   "name": "PietMondrian_LE_26 · Enter draw",
+   "name": "PietMondrian_LE_26 \u00b7 Enter draw",
    "spend": 5617.55,
    "last": "2026-08-26"
   },
@@ -437,87 +4234,87 @@
    "last": "2026-08-25"
   },
   {
-   "name": "AhmedM_Salam_26 · Enter draw",
+   "name": "AhmedM_Salam_26 \u00b7 Enter draw",
    "spend": 2928.59,
    "last": "2026-08-21"
   },
   {
-   "name": "YoonHyup_LE_26 · Enter draw",
+   "name": "YoonHyup_LE_26 \u00b7 Enter draw",
    "spend": 9142.11,
    "last": "2026-08-20"
   },
   {
-   "name": "ZengFanzhi_TL_26 · Enter draw",
+   "name": "ZengFanzhi_TL_26 \u00b7 Enter draw",
    "spend": 11252.96,
    "last": "2026-08-18"
   },
   {
-   "name": "Backside_LE_26 · Enter draw",
+   "name": "Backside_LE_26 \u00b7 Enter draw",
    "spend": 985.63,
    "last": "2026-08-08"
   },
   {
-   "name": "LY_LE_26 · Enter draw",
+   "name": "LY_LE_26 \u00b7 Enter draw",
    "spend": 693.41,
    "last": "2026-08-03"
   },
   {
-   "name": "GregoryCrewd_TL_26 · Purchases",
+   "name": "GregoryCrewd_TL_26 \u00b7 Purchases",
    "spend": 10359.5,
    "last": "2026-07-30"
   },
   {
-   "name": "GregoryCrewd_TL_26 · Sign-ups",
+   "name": "GregoryCrewd_TL_26 \u00b7 Sign-ups",
    "spend": 43661.05,
    "last": "2026-07-28"
   },
   {
-   "name": "HankWillisT_LE_26 · Enter draw",
+   "name": "HankWillisT_LE_26 \u00b7 Enter draw",
    "spend": 14280.84,
    "last": "2026-07-28"
   },
   {
-   "name": "FelipePantone_LE_26 · Enter draw",
+   "name": "FelipePantone_LE_26 \u00b7 Enter draw",
    "spend": 16749.76,
    "last": "2026-07-27"
   },
   {
-   "name": "GiuseppePen_LE_26 · Enter draw",
+   "name": "GiuseppePen_LE_26 \u00b7 Enter draw",
    "spend": 1414.04,
    "last": "2026-07-25"
   },
   {
-   "name": "UrsFischer_LE_26 · Enter draw",
+   "name": "UrsFischer_LE_26 \u00b7 Enter draw",
    "spend": 5293.06,
    "last": "2026-07-23"
   },
   {
-   "name": "JohnsonTs_Alliance_26 · Enter draw",
+   "name": "JohnsonTs_Alliance_26 \u00b7 Enter draw",
    "spend": 2850.42,
    "last": "2026-07-14"
   },
   {
-   "name": "CindySher_LE_26 · Enter draw",
+   "name": "CindySher_LE_26 \u00b7 Enter draw",
    "spend": 8872.1,
    "last": "2026-07-08"
   },
   {
-   "name": "AiWeiwei_Guardian2_26 · Purchases",
+   "name": "AiWeiwei_Guardian2_26 \u00b7 Purchases",
    "spend": 16747.71,
    "last": "2026-07-07"
   },
   {
-   "name": "AliceB_AIB_25 · Purchases",
+   "name": "AliceB_AIB_25 \u00b7 Purchases",
    "spend": 460.14,
    "last": "2026-06-28"
   },
   {
-   "name": "AiWeiwei_Guardian2_26 · Sign-ups",
+   "name": "AiWeiwei_Guardian2_26 \u00b7 Sign-ups",
    "spend": 38797.12,
    "last": "2026-06-27"
   },
   {
-   "name": "Albers_LE_26 · Enter draw",
+   "name": "Albers_LE_26 \u00b7 Enter draw",
    "spend": 53306.18,
    "last": "2026-06-25"
   },
@@ -527,317 +4324,317 @@
    "last": "2026-06-21"
   },
   {
-   "name": "AntonyMic_LE_26 · Enter draw",
+   "name": "AntonyMic_LE_26 \u00b7 Enter draw",
    "spend": 1867.45,
    "last": "2026-06-16"
   },
   {
-   "name": "JoelMesler_TL_26 · Sign-ups",
+   "name": "JoelMesler_TL_26 \u00b7 Sign-ups",
    "spend": 5275.12,
    "last": "2026-06-09"
   },
   {
-   "name": "EddieMart_LE_25 · Enter draw",
+   "name": "EddieMart_LE_25 \u00b7 Enter draw",
    "spend": 4034.54,
    "last": "2026-06-09"
   },
   {
-   "name": "GraysonPerry_TL_25 · Purchases",
+   "name": "GraysonPerry_TL_25 \u00b7 Purchases",
    "spend": 2193.51,
    "last": "2026-06-03"
   },
   {
-   "name": "Maurizio_Therapy_26 · Enter draw",
+   "name": "Maurizio_Therapy_26 \u00b7 Enter draw",
    "spend": 6230.61,
    "last": "2026-06-02"
   },
   {
-   "name": "ShirinNeshat_TL_26 · Purchases",
+   "name": "ShirinNeshat_TL_26 \u00b7 Purchases",
    "spend": 1313.27,
    "last": "2026-05-28"
   },
   {
-   "name": "GraysonPerry_TL_25 · Sign-ups",
+   "name": "GraysonPerry_TL_25 \u00b7 Sign-ups",
    "spend": 31010.9,
    "last": "2026-05-27"
   },
   {
-   "name": "ShirinNeshat_TL_26 · Sign-ups",
+   "name": "ShirinNeshat_TL_26 \u00b7 Sign-ups",
    "spend": 19876.36,
    "last": "2026-05-26"
   },
   {
-   "name": "Maurizio_NonaOra_26 · Enter draw",
+   "name": "Maurizio_NonaOra_26 \u00b7 Enter draw",
    "spend": 110046.19,
    "last": "2026-05-21"
   },
   {
-   "name": "AiWeiwei_FingerSE_25 · Enter draw",
+   "name": "AiWeiwei_FingerSE_25 \u00b7 Enter draw",
    "spend": 6576.35,
    "last": "2026-05-15"
   },
   {
-   "name": "Paulnsect_Repeat_25 · Enter draw",
+   "name": "Paulnsect_Repeat_25 \u00b7 Enter draw",
    "spend": 1050.77,
    "last": "2026-05-15"
   },
   {
-   "name": "LucianFreud_TL_26 · Purchases",
+   "name": "LucianFreud_TL_26 \u00b7 Purchases",
    "spend": 1066.49,
    "last": "2026-05-12"
   },
   {
-   "name": "LucianFreud_TL_26 · Sign-ups",
+   "name": "LucianFreud_TL_26 \u00b7 Sign-ups",
    "spend": 9707.3,
    "last": "2026-05-06"
   },
   {
-   "name": "GrantRiven_LE_26 · Enter draw",
+   "name": "GrantRiven_LE_26 \u00b7 Enter draw",
    "spend": 806.2,
    "last": "2026-04-25"
   },
   {
-   "name": "JeffKoons_LE_25 · Enter draw",
+   "name": "JeffKoons_LE_25 \u00b7 Enter draw",
    "spend": 71089.83,
    "last": "2026-04-14"
   },
   {
-   "name": "MickaleneT_TL_26 · Purchases",
+   "name": "MickaleneT_TL_26 \u00b7 Purchases",
    "spend": 5745.97,
    "last": "2026-04-14"
   },
   {
-   "name": "Collector_Report_26 · Form Submissions",
+   "name": "Collector_Report_26 \u00b7 Form Submissions",
    "spend": 1122.41,
    "last": "2026-04-14"
   },
   {
-   "name": "MickaleneT_TL_26 · Sign-ups",
+   "name": "MickaleneT_TL_26 \u00b7 Sign-ups",
    "spend": 41419.8,
    "last": "2026-04-13"
   },
   {
-   "name": "Drift_LE_25 · Enter draw",
+   "name": "Drift_LE_25 \u00b7 Enter draw",
    "spend": 1281.43,
    "last": "2026-04-03"
   },
   {
-   "name": "EmCooper_TL_25 · Purchases",
+   "name": "EmCooper_TL_25 \u00b7 Purchases",
    "spend": 381.07,
    "last": "2026-04-03"
   },
   {
-   "name": "LucTuymans_LE_26 · Enter draw",
+   "name": "LucTuymans_LE_26 \u00b7 Enter draw",
    "spend": 311.07,
    "last": "2026-04-01"
   },
   {
-   "name": "JeanMichel_LE_25 · Enter draw",
+   "name": "JeanMichel_LE_25 \u00b7 Enter draw",
    "spend": 5772.76,
    "last": "2026-03-24"
   },
   {
-   "name": "EmCooper_TL_25 · Sign-ups",
+   "name": "EmCooper_TL_25 \u00b7 Sign-ups",
    "spend": 5314.81,
    "last": "2026-03-20"
   },
   {
-   "name": "Katharina_TL_25 · Purchases",
+   "name": "Katharina_TL_25 \u00b7 Purchases",
    "spend": 1600.89,
    "last": "2026-03-19"
   },
   {
-   "name": "ManRay_TL_25 · Purchases",
+   "name": "ManRay_TL_25 \u00b7 Purchases",
    "spend": 1294.78,
    "last": "2026-03-18"
   },
   {
-   "name": "ManRay_TL_25 · Sign-ups",
+   "name": "ManRay_TL_25 \u00b7 Sign-ups",
    "spend": 23688.45,
    "last": "2026-03-16"
   },
   {
-   "name": "JoanaB_AIB_26 · Purchases",
+   "name": "JoanaB_AIB_26 \u00b7 Purchases",
    "spend": 630.64,
    "last": "2026-03-14"
   },
   {
-   "name": "Katharina_TL_25 · Sign-ups",
+   "name": "Katharina_TL_25 \u00b7 Sign-ups",
    "spend": 15875.99,
    "last": "2026-03-13"
   },
   {
-   "name": "MaurizioC_LE_26 · Enter draw",
+   "name": "MaurizioC_LE_26 \u00b7 Enter draw",
    "spend": 4820.38,
    "last": "2026-03-11"
   },
   {
-   "name": "MarinaAbr-1502 · Purchases",
+   "name": "MarinaAbr-1502 \u00b7 Purchases",
    "spend": 4071.14,
    "last": "2026-03-11"
   },
   {
-   "name": "NiceAunties_AIB_25 · Purchases",
+   "name": "NiceAunties_AIB_25 \u00b7 Purchases",
    "spend": 1457.55,
    "last": "2026-03-11"
   },
   {
-   "name": "MarinaAbr-1502 · Sign-ups",
+   "name": "MarinaAbr-1502 \u00b7 Sign-ups",
    "spend": 64915.42,
    "last": "2026-03-09"
   },
   {
-   "name": "DenitzaZ_AIB_26 · Purchases",
+   "name": "DenitzaZ_AIB_26 \u00b7 Purchases",
    "spend": 66.25,
    "last": "2026-03-04"
   },
   {
-   "name": "Pejac_Repeat_26 · Sign-ups",
+   "name": "Pejac_Repeat_26 \u00b7 Sign-ups",
    "spend": 8948.86,
    "last": "2026-03-01"
   },
   {
-   "name": "Vladsng_AIB_26 · Purchases",
+   "name": "Vladsng_AIB_26 \u00b7 Purchases",
    "spend": 228.85,
    "last": "2026-03-01"
   },
   {
-   "name": "Solienne_AIB_26 · Purchases",
+   "name": "Solienne_AIB_26 \u00b7 Purchases",
    "spend": 28.57,
    "last": "2026-02-26"
   },
   {
-   "name": "FerrariSh_LE_26 · Enter draw",
+   "name": "FerrariSh_LE_26 \u00b7 Enter draw",
    "spend": 8335.77,
    "last": "2026-02-25"
   },
   {
-   "name": "TomasSanchez_TL_26 · Purchases",
+   "name": "TomasSanchez_TL_26 \u00b7 Purchases",
    "spend": 1921.81,
    "last": "2026-02-25"
   },
   {
-   "name": "AiWeiwei_SelfPortrait_26 · Purchases",
+   "name": "AiWeiwei_SelfPortrait_26 \u00b7 Purchases",
    "spend": 320.62,
    "last": "2026-02-25"
   },
   {
-   "name": "AiWeiwei_SelfPortrait_26 · Sign-ups",
+   "name": "AiWeiwei_SelfPortrait_26 \u00b7 Sign-ups",
    "spend": 18035.97,
    "last": "2026-02-24"
   },
   {
-   "name": "LeeUfan_LE_26 · Enter draw",
+   "name": "LeeUfan_LE_26 \u00b7 Enter draw",
    "spend": 13479.81,
    "last": "2026-02-24"
   },
   {
-   "name": "TomasSanchez_TL_26 · Sign-ups",
+   "name": "TomasSanchez_TL_26 \u00b7 Sign-ups",
    "spend": 22191.73,
    "last": "2026-02-23"
   },
   {
-   "name": "JoakimOja_LE_25 · Enter draw",
+   "name": "JoakimOja_LE_25 \u00b7 Enter draw",
    "spend": 2842.23,
    "last": "2026-02-15"
   },
   {
-   "name": "KeitaMor_TL_25 · Purchases",
+   "name": "KeitaMor_TL_25 \u00b7 Purchases",
    "spend": 1894.08,
    "last": "2026-01-08"
   },
   {
-   "name": "KeitaMor_TL_25 · Sign-ups",
+   "name": "KeitaMor_TL_25 \u00b7 Sign-ups",
    "spend": 4809.93,
    "last": "2026-01-05"
   },
   {
-   "name": "Saype_AIB_25 · Purchases",
+   "name": "Saype_AIB_25 \u00b7 Purchases",
    "spend": 990.32,
    "last": "2026-01-05"
   },
   {
-   "name": "KenN_AIB_25 · Purchases",
+   "name": "KenN_AIB_25 \u00b7 Purchases",
    "spend": 175.18,
    "last": "2025-12-21"
   },
   {
-   "name": "WilliamBl_LE_25 · Enter draw",
+   "name": "WilliamBl_LE_25 \u00b7 Enter draw",
    "spend": 275.08,
    "last": "2025-12-18"
   },
   {
-   "name": "CindySher_TL_25 · Purchases",
+   "name": "CindySher_TL_25 \u00b7 Purchases",
    "spend": 5999.25,
    "last": "2025-12-16"
   },
   {
-   "name": "LSeyah_AIB_25 · Purchases",
+   "name": "LSeyah_AIB_25 \u00b7 Purchases",
    "spend": 226.56,
    "last": "2025-12-16"
   },
   {
-   "name": "MaurizioC_Rev_25 · Enter draw",
+   "name": "MaurizioC_Rev_25 \u00b7 Enter draw",
    "spend": 27238.68,
    "last": "2025-12-13"
   },
   {
-   "name": "WyneV_AIB_25 · Purchases",
+   "name": "WyneV_AIB_25 \u00b7 Purchases",
    "spend": 92.73,
    "last": "2025-12-12"
   },
   {
-   "name": "AiWeiwei_LE_25 · Enter draw",
+   "name": "AiWeiwei_LE_25 \u00b7 Enter draw",
    "spend": 6306.1,
    "last": "2025-12-11"
   },
   {
-   "name": "Judy_Triptych_25 · Enter draw",
+   "name": "Judy_Triptych_25 \u00b7 Enter draw",
    "spend": 4148.37,
    "last": "2025-12-11"
   },
   {
-   "name": "CindySher_TL_25· Sign-ups",
+   "name": "CindySher_TL_25\u00b7 Sign-ups",
    "spend": 15232.24,
    "last": "2025-12-09"
   },
   {
-   "name": "JamesJean_Sun_25 · Purchases",
+   "name": "JamesJean_Sun_25 \u00b7 Purchases",
    "spend": 893.21,
    "last": "2025-11-30"
   },
   {
-   "name": "JamesJean_Sun_25 · Sign-ups",
+   "name": "JamesJean_Sun_25 \u00b7 Sign-ups",
    "spend": 2834.56,
    "last": "2025-11-27"
   },
   {
-   "name": "HarmoniaR_Two_25 · Purchases",
+   "name": "HarmoniaR_Two_25 \u00b7 Purchases",
    "spend": 1943.77,
    "last": "2025-11-27"
   },
   {
-   "name": "AlexKatz_H2_25 · Enter draw",
+   "name": "AlexKatz_H2_25 \u00b7 Enter draw",
    "spend": 30007.6,
    "last": "2025-11-25"
   },
   {
-   "name": "HarmoniaR_Two_25 · Sign-ups",
+   "name": "HarmoniaR_Two_25 \u00b7 Sign-ups",
    "spend": 6101.5,
    "last": "2025-11-24"
   },
   {
-   "name": "SirJoanC_TL_25 · Sign-ups",
+   "name": "SirJoanC_TL_25 \u00b7 Sign-ups",
    "spend": 12341.67,
    "last": "2025-11-20"
   },
   {
-   "name": "SirJoanC_TL_25 · Purchases",
+   "name": "SirJoanC_TL_25 \u00b7 Purchases",
    "spend": 1071.09,
    "last": "2025-11-20"
   },
   {
-   "name": "MadeleineG_AIB_25 · Purchases",
+   "name": "MadeleineG_AIB_25 \u00b7 Purchases",
    "spend": 67.46,
    "last": "2025-11-18"
   },
@@ -847,12 +4644,12 @@
    "last": "2025-11-11"
   },
   {
-   "name": "AhmedMat_Magnet_25 · Enter draw",
+   "name": "AhmedMat_Magnet_25 \u00b7 Enter draw",
    "spend": 7637.95,
    "last": "2025-11-10"
   },
   {
-   "name": "RTanchum_AIB_25 · Purchases",
+   "name": "RTanchum_AIB_25 \u00b7 Purchases",
    "spend": 106.48,
    "last": "2025-11-08"
   },
@@ -862,52 +4659,52 @@
    "last": "2025-11-06"
   },
   {
-   "name": "MGross_AIB_25 · Purchases",
+   "name": "MGross_AIB_25 \u00b7 Purchases",
    "spend": 66.6,
    "last": "2025-11-02"
   },
   {
-   "name": "Art_Museums_Survey_25 · Form Submissions",
+   "name": "Art_Museums_Survey_25 \u00b7 Form Submissions",
    "spend": 830.56,
    "last": "2025-10-25"
   },
   {
-   "name": "CleonPeter_Timed_25 · Purchases",
+   "name": "CleonPeter_Timed_25 \u00b7 Purchases",
    "spend": 2345.07,
    "last": "2025-10-16"
   },
   {
-   "name": "CleonPeter_Timed_25 · Sign-ups",
+   "name": "CleonPeter_Timed_25 \u00b7 Sign-ups",
    "spend": 5343.54,
    "last": "2025-10-14"
   },
   {
-   "name": "JTsang_AIB_25 · Purchases",
+   "name": "JTsang_AIB_25 \u00b7 Purchases",
    "spend": 435.32,
    "last": "2025-10-10"
   },
   {
-   "name": "GlennBrow_Two_25 · Sign-ups",
+   "name": "GlennBrow_Two_25 \u00b7 Sign-ups",
    "spend": 1075.15,
    "last": "2025-10-06"
   },
   {
-   "name": "AiWeiwei_NVase_25 · Purchases",
+   "name": "AiWeiwei_NVase_25 \u00b7 Purchases",
    "spend": 4804.99,
    "last": "2025-10-02"
   },
   {
-   "name": "YSodeaoka_AIB_25 · Purchases",
+   "name": "YSodeaoka_AIB_25 \u00b7 Purchases",
    "spend": 356.58,
    "last": "2025-10-02"
   },
   {
-   "name": "AiWeiwei_NVase_25 · Sign-ups",
-   "spend": 25115,
+   "name": "AiWeiwei_NVase_25 \u00b7 Sign-ups",
+   "spend": 25115.0,
    "last": "2025-09-24"
   },
   {
-   "name": "Eniwamura_Neojomon_25 · Enter draw",
+   "name": "Eniwamura_Neojomon_25 \u00b7 Enter draw",
    "spend": 5896.91,
    "last": "2025-09-24"
   },
@@ -917,77 +4714,77 @@
    "last": "2025-09-09"
   },
   {
-   "name": "JohnsonTs_Rememb_25 · Enter draw",
+   "name": "JohnsonTs_Rememb_25 \u00b7 Enter draw",
    "spend": 2745.47,
    "last": "2025-09-07"
   },
   {
-   "name": "JustinO_AIB_25 · Purchases",
+   "name": "JustinO_AIB_25 \u00b7 Purchases",
    "spend": 1212.26,
    "last": "2025-08-31"
   },
   {
-   "name": "TObata_AIB_25 · Purchases",
+   "name": "TObata_AIB_25 \u00b7 Purchases",
    "spend": 102.52,
    "last": "2025-08-30"
   },
   {
-   "name": "PietParra_Dip_25 · Purchases",
+   "name": "PietParra_Dip_25 \u00b7 Purchases",
    "spend": 906.15,
    "last": "2025-08-28"
   },
   {
-   "name": "DavidC_AIB_25 · Purchases",
+   "name": "DavidC_AIB_25 \u00b7 Purchases",
    "spend": 1529.37,
    "last": "2025-08-26"
   },
   {
-   "name": "SHong_AIB_25 · Purchases",
+   "name": "SHong_AIB_25 \u00b7 Purchases",
    "spend": 724.55,
    "last": "2025-08-26"
   },
   {
-   "name": "PietParra_Dip_25 · Sign-ups",
+   "name": "PietParra_Dip_25 \u00b7 Sign-ups",
    "spend": 16687.9,
    "last": "2025-08-25"
   },
   {
-   "name": "JamesJarv_HangInThe_25 · Enter draw",
+   "name": "JamesJarv_HangInThe_25 \u00b7 Enter draw",
    "spend": 4056.58,
    "last": "2025-08-25"
   },
   {
-   "name": "CarrieMae_TL_25 · Purchases",
+   "name": "CarrieMae_TL_25 \u00b7 Purchases",
    "spend": 6385.64,
    "last": "2025-08-22"
   },
   {
-   "name": "CarrieMae_TL_25 · Sign-ups",
+   "name": "CarrieMae_TL_25 \u00b7 Sign-ups",
    "spend": 45349.9,
    "last": "2025-08-20"
   },
   {
-   "name": "LucianFre_TL_25 · Purchases",
+   "name": "LucianFre_TL_25 \u00b7 Purchases",
    "spend": 1006.83,
    "last": "2025-08-16"
   },
   {
-   "name": "LucianFre_TL_25 · Sign-ups",
+   "name": "LucianFre_TL_25 \u00b7 Sign-ups",
    "spend": 11963.02,
    "last": "2025-08-14"
   },
   {
-   "name": "GabrielleG_AIB_25 · Purchases",
+   "name": "GabrielleG_AIB_25 \u00b7 Purchases",
    "spend": 1764.82,
    "last": "2025-08-13"
   },
   {
-   "name": "FelipePan_TL_25 · Purchases",
+   "name": "FelipePan_TL_25 \u00b7 Purchases",
    "spend": 2330.12,
    "last": "2025-08-01"
   },
   {
-   "name": "LeeUfan_From_25 · Enter draw",
+   "name": "LeeUfan_From_25 \u00b7 Enter draw",
    "spend": 26643.03,
    "last": "2025-07-24"
   },
@@ -997,72 +4794,72 @@
    "last": "2025-07-24"
   },
   {
-   "name": "GraysonPe_Large_25 · Pre-order",
+   "name": "GraysonPe_Large_25 \u00b7 Pre-order",
    "spend": 596.35,
    "last": "2025-07-23"
   },
   {
-   "name": "AliceN_AIB_25 · Purchases",
+   "name": "AliceN_AIB_25 \u00b7 Purchases",
    "spend": 1.72,
    "last": "2025-07-16"
   },
   {
-   "name": "ThomasL_AIB_25 · Purchases",
+   "name": "ThomasL_AIB_25 \u00b7 Purchases",
    "spend": 1764.45,
    "last": "2025-07-08"
   },
   {
-   "name": "AIB_Waitlist_25 · Sign-ups",
+   "name": "AIB_Waitlist_25 \u00b7 Sign-ups",
    "spend": 1162.51,
    "last": "2025-07-08"
   },
   {
-   "name": "JenStark_TL_25 · Purchases",
+   "name": "JenStark_TL_25 \u00b7 Purchases",
    "spend": 521.76,
    "last": "2025-07-08"
   },
   {
-   "name": "JudyChica_TL_25 · Purchase",
+   "name": "JudyChica_TL_25 \u00b7 Purchase",
    "spend": 5151.37,
    "last": "2025-07-02"
   },
   {
-   "name": "MarkBradf_Broad_25 · Purchases",
+   "name": "MarkBradf_Broad_25 \u00b7 Purchases",
    "spend": 6996.03,
    "last": "2025-07-01"
   },
   {
-   "name": "JenStark_TL_25 · Sign-ups",
+   "name": "JenStark_TL_25 \u00b7 Sign-ups",
    "spend": 3170.37,
    "last": "2025-06-27"
   },
   {
-   "name": "JudyChica_TL_25 · Sign-ups",
+   "name": "JudyChica_TL_25 \u00b7 Sign-ups",
    "spend": 9578.59,
    "last": "2025-06-24"
   },
   {
-   "name": "MarkBradf_Broad_25 · Sign-ups",
+   "name": "MarkBradf_Broad_25 \u00b7 Sign-ups",
    "spend": 13534.18,
    "last": "2025-06-23"
   },
   {
-   "name": "Friedrich_Storm_25 · Purchases",
+   "name": "Friedrich_Storm_25 \u00b7 Purchases",
    "spend": 4853.02,
    "last": "2025-06-16"
   },
   {
-   "name": "Friedrich_Storm_25 · Sign-ups",
+   "name": "Friedrich_Storm_25 \u00b7 Sign-ups",
    "spend": 22694.37,
    "last": "2025-06-11"
   },
   {
-   "name": "ThomasL_AIB_25 · Sign-ups",
+   "name": "ThomasL_AIB_25 \u00b7 Sign-ups",
    "spend": 692.35,
    "last": "2025-06-08"
   },
   {
-   "name": "JonnyNies_2TL_25 · Purchases",
+   "name": "JonnyNies_2TL_25 \u00b7 Purchases",
    "spend": 891.18,
    "last": "2025-06-06"
   },
@@ -1072,97 +4869,97 @@
    "last": "2025-06-06"
   },
   {
-   "name": "AliceB_AIB_25 · Sign-ups",
+   "name": "AliceB_AIB_25 \u00b7 Sign-ups",
    "spend": 700.84,
    "last": "2025-06-02"
   },
   {
-   "name": "RobertLon_MenIn_25 · Purchases",
+   "name": "RobertLon_MenIn_25 \u00b7 Purchases",
    "spend": 14100.3,
    "last": "2025-05-30"
   },
   {
-   "name": "RobertLon_MenIn_25 · Sign-ups",
+   "name": "RobertLon_MenIn_25 \u00b7 Sign-ups",
    "spend": 15908.02,
    "last": "2025-05-28"
   },
   {
-   "name": "GabrielleG_AIB_25 · Sign ups",
+   "name": "GabrielleG_AIB_25 \u00b7 Sign ups",
    "spend": 333.15,
    "last": "2025-05-28"
   },
   {
-   "name": "JonnyNies_2TL_25 · Sign-ups",
+   "name": "JonnyNies_2TL_25 \u00b7 Sign-ups",
    "spend": 1682.45,
    "last": "2025-05-24"
   },
   {
-   "name": "SayreGome_America_25 · Draw",
+   "name": "SayreGome_America_25 \u00b7 Draw",
    "spend": 1993.3,
    "last": "2025-05-21"
   },
   {
-   "name": "Oscaryi_Cool_25 · Draw",
+   "name": "Oscaryi_Cool_25 \u00b7 Draw",
    "spend": 2998.91,
    "last": "2025-05-07"
   },
   {
-   "name": "HajimeSor_Untitled_25 · Draw",
+   "name": "HajimeSor_Untitled_25 \u00b7 Draw",
    "spend": 16366.47,
    "last": "2025-05-04"
   },
   {
-   "name": "TomasSanc_Pair_25 · Purchases",
+   "name": "TomasSanc_Pair_25 \u00b7 Purchases",
    "spend": 11034.92,
    "last": "2025-04-30"
   },
   {
-   "name": "TomasSanc_Pair_25 · Sign-ups",
+   "name": "TomasSanc_Pair_25 \u00b7 Sign-ups",
    "spend": 15052.35,
    "last": "2025-04-17"
   },
   {
-   "name": "Mickalene_MultiTL_25 · Purchases",
+   "name": "Mickalene_MultiTL_25 \u00b7 Purchases",
    "spend": 8783.66,
    "last": "2025-04-17"
   },
   {
-   "name": "Mickalene_MultiTL_25 · Sign-ups",
+   "name": "Mickalene_MultiTL_25 \u00b7 Sign-ups",
    "spend": 47268.1,
    "last": "2025-04-15"
   },
   {
-   "name": "ShirinNes_TL_25 · Purchases",
+   "name": "ShirinNes_TL_25 \u00b7 Purchases",
    "spend": 6198.86,
    "last": "2025-03-28"
   },
   {
-   "name": "JamesJean_Maze_25 · Purchases",
+   "name": "JamesJean_Maze_25 \u00b7 Purchases",
    "spend": 2429.63,
    "last": "2025-03-21"
   },
   {
-   "name": "JamesJean_Maze_25 · Sign-ups",
+   "name": "JamesJean_Maze_25 \u00b7 Sign-ups",
    "spend": 34837.89,
    "last": "2025-03-18"
   },
   {
-   "name": "ShirinNes_TL_25 · Sign-ups",
+   "name": "ShirinNes_TL_25 \u00b7 Sign-ups",
    "spend": 11118.79,
    "last": "2025-03-14"
   },
   {
-   "name": "WillCotto_Unicorn_25 ‧ Draw",
+   "name": "WillCotto_Unicorn_25 \u2027 Draw",
    "spend": 5596.88,
    "last": "2025-03-14"
   },
   {
-   "name": "BarryMcge_TL2_25 · Purchases",
+   "name": "BarryMcge_TL2_25 \u00b7 Purchases",
    "spend": 7998.36,
    "last": "2025-03-07"
   },
   {
-   "name": "BarryMcge_TL2_25 · Sign-ups",
+   "name": "BarryMcge_TL2_25 \u00b7 Sign-ups",
    "spend": 21895.88,
    "last": "2025-03-05"
   },
@@ -1172,162 +4969,162 @@
    "last": "2025-02-24"
   },
   {
-   "name": "DanielleM_Sand_25 · Purchases",
+   "name": "DanielleM_Sand_25 \u00b7 Purchases",
    "spend": 8742.25,
    "last": "2025-02-21"
   },
   {
-   "name": "DanielleM_Sand_25 · Sign-ups",
+   "name": "DanielleM_Sand_25 \u00b7 Sign-ups",
    "spend": 15067.13,
    "last": "2025-02-20"
   },
   {
-   "name": "Multiple_Amphorae_24 · Draw",
+   "name": "Multiple_Amphorae_24 \u00b7 Draw",
    "spend": 18660.83,
    "last": "2025-02-19"
   },
   {
-   "name": "GraysonPE_Magical_24 · Purchases - UK – Insiders",
+   "name": "GraysonPE_Magical_24 \u00b7 Purchases - UK \u2013 Insiders",
    "spend": 19261.99,
    "last": "2024-11-26"
   },
   {
-   "name": "GraysonPE_Magical_24 · Purchases",
+   "name": "GraysonPE_Magical_24 \u00b7 Purchases",
    "spend": 8754.53,
    "last": "2024-11-25"
   },
   {
-   "name": "GraysonPE_Magical_24 · Purchases - UK – Copy",
+   "name": "GraysonPE_Magical_24 \u00b7 Purchases - UK \u2013 Copy",
    "spend": 1450.38,
    "last": "2024-11-25"
   },
   {
-   "name": "GraysonPE_Magical_24 · Purchases - UK",
+   "name": "GraysonPE_Magical_24 \u00b7 Purchases - UK",
    "spend": 723.93,
    "last": "2024-11-21"
   },
   {
-   "name": "GraysonPE_Magical_24 · Sign-ups",
+   "name": "GraysonPE_Magical_24 \u00b7 Sign-ups",
    "spend": 4418.46,
    "last": "2024-11-18"
   },
   {
-   "name": "Beeple_Tree_24 · Purchases",
+   "name": "Beeple_Tree_24 \u00b7 Purchases",
    "spend": 534.87,
    "last": "2024-11-06"
   },
   {
-   "name": "Beeple_Tree_24 · Sign-ups",
+   "name": "Beeple_Tree_24 \u00b7 Sign-ups",
    "spend": 4011.96,
    "last": "2024-11-05"
   },
   {
-   "name": "JohnsonTs_Moment_24 · Draw",
+   "name": "JohnsonTs_Moment_24 \u00b7 Draw",
    "spend": 1840.29,
    "last": "2024-11-03"
   },
   {
-   "name": "TakuObata_BBoy_24 · Draw",
+   "name": "TakuObata_BBoy_24 \u00b7 Draw",
    "spend": 1929.94,
    "last": "2024-10-29"
   },
   {
-   "name": "Vhils_Timed_24 · Purchases",
+   "name": "Vhils_Timed_24 \u00b7 Purchases",
    "spend": 5481.28,
    "last": "2024-10-24"
   },
   {
-   "name": "Vhils_Timed_24 · Sign-ups",
+   "name": "Vhils_Timed_24 \u00b7 Sign-ups",
    "spend": 1733.35,
    "last": "2024-10-22"
   },
   {
-   "name": "Vhils_Timed_24 · Sign-ups – Onboard",
+   "name": "Vhils_Timed_24 \u00b7 Sign-ups \u2013 Onboard",
    "spend": 1672.58,
    "last": "2024-10-20"
   },
   {
-   "name": "AiWeiwei_Dragon_24 · Purchases",
+   "name": "AiWeiwei_Dragon_24 \u00b7 Purchases",
    "spend": 10756.89,
    "last": "2024-10-04"
   },
   {
-   "name": "AiWeiwei_Dragon_24 · Sign-ups",
+   "name": "AiWeiwei_Dragon_24 \u00b7 Sign-ups",
    "spend": 20026.52,
    "last": "2024-10-03"
   },
   {
-   "name": "CristinAd_Tentacula_24 · Pre-orders",
+   "name": "CristinAd_Tentacula_24 \u00b7 Pre-orders",
    "spend": 332.1,
    "last": "2024-09-30"
   },
   {
-   "name": "HankWilli_onlybond_24 · Purchases",
+   "name": "HankWilli_onlybond_24 \u00b7 Purchases",
    "spend": 4375.12,
    "last": "2024-09-06"
   },
   {
-   "name": "HankWilli_onlybond_24 · Sign ups",
+   "name": "HankWilli_onlybond_24 \u00b7 Sign ups",
    "spend": 6894.19,
    "last": "2024-09-04"
   },
   {
-   "name": "Magdalena_Mouse_24 · Purchases",
+   "name": "Magdalena_Mouse_24 \u00b7 Purchases",
    "spend": 513.35,
    "last": "2024-09-03"
   },
   {
-   "name": "GabrielMo_DoubleTL_24 · Sign-ups",
+   "name": "GabrielMo_DoubleTL_24 \u00b7 Sign-ups",
    "spend": 618.69,
    "last": "2024-07-31"
   },
   {
-   "name": "Mickalene_MayaInter_24 · Purchases",
+   "name": "Mickalene_MayaInter_24 \u00b7 Purchases",
    "spend": 3258.81,
    "last": "2024-07-24"
   },
   {
-   "name": "Mickalene_MayaInter_24 · Sign ups",
+   "name": "Mickalene_MayaInter_24 \u00b7 Sign ups",
    "spend": 8970.93,
    "last": "2024-07-22"
   },
   {
-   "name": "EddieMart_Scaffold_24 · Purchases",
+   "name": "EddieMart_Scaffold_24 \u00b7 Purchases",
    "spend": 2025.72,
    "last": "2024-07-15"
   },
   {
-   "name": "MIWAKOMAT_JUN24  · Purchases",
+   "name": "MIWAKOMAT_JUN24  \u00b7 Purchases",
    "spend": 1047.68,
    "last": "2024-07-10"
   },
   {
-   "name": "MIWAKOMAT_JUN24  · Sign-ups",
+   "name": "MIWAKOMAT_JUN24  \u00b7 Sign-ups",
    "spend": 4211.85,
    "last": "2024-07-09"
   },
   {
-   "name": "JRMILANAPR · Purchases",
+   "name": "JRMILANAPR \u00b7 Purchases",
    "spend": 2903.62,
    "last": "2024-05-29"
   },
   {
-   "name": "JRMILANAPR · Sign-ups",
+   "name": "JRMILANAPR \u00b7 Sign-ups",
    "spend": 4624.3,
    "last": "2024-05-26"
   },
   {
-   "name": "RUSCHAACTU · Purchases",
+   "name": "RUSCHAACTU \u00b7 Purchases",
    "spend": 10485.33,
    "last": "2024-05-11"
   },
   {
-   "name": "RUSCHAACTU · Purchases – Replacement",
+   "name": "RUSCHAACTU \u00b7 Purchases \u2013 Replacement",
    "spend": 427.39,
    "last": "2024-05-11"
   },
   {
-   "name": "RUSCHAACTU · Sign-ups",
+   "name": "RUSCHAACTU \u00b7 Sign-ups",
    "spend": 12233.94,
    "last": "2024-05-09"
   },
@@ -1337,37 +5134,37 @@
    "last": "2024-04-03"
   },
   {
-   "name": "BALDSATIRE · Draw Entries",
+   "name": "BALDSATIRE \u00b7 Draw Entries",
    "spend": 308.02,
    "last": "2024-03-20"
   },
   {
-   "name": "WEIWEIGUAR · Sign-ups",
+   "name": "WEIWEIGUAR \u00b7 Sign-ups",
    "spend": 7131.94,
    "last": "2024-03-15"
   },
   {
-   "name": "WEIWEIGUAR · Purchase",
+   "name": "WEIWEIGUAR \u00b7 Purchase",
    "spend": 4677.97,
    "last": "2024-03-15"
   },
   {
-   "name": "MATTSIERRA · Purchases",
+   "name": "MATTSIERRA \u00b7 Purchases",
    "spend": 181.5,
    "last": "2024-03-07"
   },
   {
-   "name": "MATTSIERRA · Sign-ups",
+   "name": "MATTSIERRA \u00b7 Sign-ups",
    "spend": 663.79,
    "last": "2024-03-05"
   },
   {
-   "name": "TOMASTLE24 · Purchases",
+   "name": "TOMASTLE24 \u00b7 Purchases",
    "spend": 1009.76,
    "last": "2024-02-16"
   },
   {
-   "name": "TOMASTLE24 · Sign-ups",
+   "name": "TOMASTLE24 \u00b7 Sign-ups",
    "spend": 2586.17,
    "last": "2024-02-14"
   },
@@ -1377,13 +5174,13 @@
    "last": "2024-02-07"
   },
   {
-   "name": "ANISHTLE23 · Purchases",
-   "spend": 0,
+   "name": "ANISHTLE23 \u00b7 Purchases",
+   "spend": 0.0,
    "last": "2024-01-15"
   },
   {
-   "name": "ANISHTLE23 · Sign-ups",
-   "spend": 0,
+   "name": "ANISHTLE23 \u00b7 Sign-ups",
+   "spend": 0.0,
    "last": "2024-01-08"
   }
  ]

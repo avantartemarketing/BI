@@ -36,6 +36,35 @@ npm start              # serves on :10000
 
 Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :5173, proxies /api).
 
+## Every release, not just the targeted ones
+
+The ETL builds a page for **every** release the funnel data mentions (`discover_releases` in
+`etl/build.py`), not only the ones with target inputs in `etl/release_inputs.json`:
+
+- **Targeted** releases (inputs on file) get the full build: targets, expected-today,
+  projections, paid ROI, sell-through. Their snapshots live in `data/app/releases/` and are
+  committed, so the app has pages at boot.
+- **Everything else** gets an actuals-only page (`build_actuals`): secured units, channel
+  mix, trajectory, sold units, email and social where a campaign code could be matched.
+  Snapshots go to `data/app/derived/` (not committed; rebuilt every refresh). The page
+  carries `targeted: false`, the header says **No targets**, and the target-driven cards
+  are replaced by one that explains what is missing and offers **Set up targets**.
+- **Dates** come from the campaign clock the export carries: announce from
+  `days_since_announcement`, campaign length from the pct column (both exact against the
+  hand-entered releases), close = announce + length. A release seen only before its
+  announce is reconstructed the other way and can be a day out. A release with no clock is
+  **catalogue** - a work still drawing traffic - and is shown over its last 90 days.
+- **In flight** = has dates and today is before the close. The sidebar lists those; every
+  other release is reachable from the search box (artist, title, quarter, id). A closed or
+  catalogue release you pick stays pinned under **Viewing** while selected.
+- **Campaign codes** for unconfigured releases are guessed from the codes the email and
+  content feeds use (`AntonyMic_LE_26`), by artist and year; a guess is only taken when it
+  is unambiguous, is labelled as a guess, and can be corrected in Target setting.
+
+**Setting targets** on such a release uses the same Target setting tab, starting from the
+derived defaults; edition size, price and both profits are required. Saving creates the
+inputs (`data/app/inputs.json`) and reruns the full ETL, which promotes the release.
+
 ## Refreshing data
 
 **Live (production):** on boot and every hour the server rewrites

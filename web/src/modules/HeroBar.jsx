@@ -11,6 +11,7 @@ const TICK = 100 / 1.2; // target tick at 83.333% of the track
 
 export default function HeroBar({ snap }) {
   const hero = snap?.hero || {};
+  if (snap && snap.targeted === false) return <HeroActuals snap={snap} />;
   const now = hero.now ?? 0;
   const exp = hero.expectedToday ?? 0;
   const proj = hero.projected ?? 0;
@@ -117,6 +118,41 @@ export default function HeroBar({ snap }) {
             {oversub > 0 ? "Oversubscribed" : over >= 0 ? "Over target" : "Under target"}
           </span>
           <span className="val">{oversub > 0 ? "+" + fmt(oversub) : fmtSigned(over)}</span>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/* No targets: the number still means the same thing, there is just nothing
+ * to measure it against. Sold and banked entries underneath, so the reader
+ * can see what secured is made of. */
+function HeroActuals({ snap }) {
+  const t = useTip();
+  const now = snap.hero?.now ?? 0;
+  const sold = snap.sellthrough?.sold ?? 0;
+  const banked = snap.sellthrough?.soldPredicted ?? 0;
+  const unitsTip = "Secured units = units sold (all routes incl. private room) + 0.8 × eligible entry units not yet converted.";
+  return (
+    <Card dot={GROUP_DOTS.volume} title="Secured units">
+      <div className="spacer-8" />
+      <div className="lead" {...t.props({ head: "Secured units", body: unitsTip }, 300)}>
+        {fmt(now)}
+        <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
+          {snap.catalogue ? "last 90 days" : "to date"}
+        </span>
+      </div>
+      <div className="lead-caption" style={{ color: C.muted }}>no target set - actuals only</div>
+      <div className="legend-rows" style={{ marginTop: 20 }}>
+        <div className="legend-row">
+          <span className="swatch" style={{ background: C.rust }} />
+          <span style={{ color: C.muted }}>Units sold</span>
+          <span className="val">{fmt(sold)}</span>
+        </div>
+        <div className="legend-row">
+          <span className="swatch" style={{ background: C.orange }} />
+          <span style={{ color: C.muted }}>From entries in hand (× 0.8)</span>
+          <span className="val">{fmt(banked)}</span>
         </div>
       </div>
     </Card>

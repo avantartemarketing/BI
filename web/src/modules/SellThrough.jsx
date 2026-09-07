@@ -30,6 +30,30 @@ export default function SellThrough({ snap }) {
     );
   }
 
+  if (st.edition === null || st.edition === undefined) {
+    return (
+      <Card dot={GROUP_DOTS.outcome} title="Sell-through">
+        <div className="spacer-8" />
+        <div className="lead">
+          {fmt(st.sold ?? 0)}
+          <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>units sold</span>
+        </div>
+        <div className="lead-caption" style={{ color: C.muted }}>edition size not set - no sell-through %</div>
+        <div className="legend-rows" style={{ marginTop: 20 }}>
+          <div className="legend-row">
+            <span className="swatch" style={{ background: C.rust }} />
+            <span style={{ color: C.muted }}>Sold</span>
+            <span className="val">{fmt(st.sold ?? 0)}</span>
+          </div>
+          <div className="legend-row">
+            <span className="swatch" style={{ background: C.orange }} />
+            <span style={{ color: C.muted }}>Predicted from entries in hand</span>
+            <span className="val">{fmt(st.soldPredicted ?? 0)}</span>
+          </div>
+        </div>
+      </Card>
+    );
+  }
   const edition = st.edition ?? 0;
   const pctFrac = st.pct ?? 0;
   const pct = Math.round(pctFrac * 100);

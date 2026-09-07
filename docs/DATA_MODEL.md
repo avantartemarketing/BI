@@ -654,6 +654,30 @@ Model bugs found in the sheet (the rebuild should implement the *intent*):
 
 ---
 
+## 11b. Release discovery (every release is navigable)
+
+The build enumerates every `simple_release_name` in the funnel data and derives a record
+per release (`discover_releases`): id (slug of the name), artist / title / quarter (the name
+is always `Artist · Title · YYYY Qn`), dates from the campaign clock (§1.5), a campaign code
+guessed from the email and content feeds, and traffic totals. Releases with target inputs on
+file take the full build (§5-§9); the rest take an actuals-only build (`build_actuals`) that
+emits the same snapshot shape with every target-derived field `null` and `targeted: false`.
+
+Date derivation, checked against the eight hand-entered releases: announce from rows with
+`days_since_announcement >= 0` (exact, 7/7), campaign length `L = dsa / pdsa` from the pct
+column (exact, 7/7), close = announce + L. The countdown-derived close (`event +
+days_until_launch`) runs a day early for some releases and is used only to anchor a release
+seen before its announce, where the reconstruction can be a day out. A window outside
+3..90 days is rejected (one upstream release reads 106 days; another has a close before its
+announce). A release with no clock at all is *catalogue*: still drawing traffic, no campaign
+window - 320 of the 353 names in the sheet-capped export, median 24 sessions over four
+months, versus a median of ~9,000 for the 33 that carry the clock.
+
+Known divergence: a snapshot last written by the server's JavaScript retarget
+(`server/retarget.js` + `shared/targetModel.mjs`) differs from the Python build by ~0.05
+units on per-day projections and serialises whole numbers as integers. Same model, two
+implementations; the Python build is the reference.
+
 ## 12. Open items (need product/user decisions)
 
 - **Country dimension** for "Entries by country": not present in any current feed; add

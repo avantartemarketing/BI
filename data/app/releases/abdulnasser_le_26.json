@@ -2195,12 +2195,12 @@
  ],
  "funnelByGroup": {
   "aa_email": {
-   "sessions_actual": 917.1,
+   "sessions_actual": 919.1,
    "sessions_expected": 438.2,
-   "conv_actual": 0.007273124661160569,
+   "conv_actual": 0.007257297605631663,
    "conv_expected": 0.04251531175551226,
    "contrib_traffic": 20.4,
-   "contrib_conversion": -32.3
+   "contrib_conversion": -32.4
   },
   "aa_social": {
    "sessions_actual": 262.2,
@@ -2219,17 +2219,17 @@
    "contrib_conversion": -0.2
   },
   "search_direct_other": {
-   "sessions_actual": 619.6,
+   "sessions_actual": 629.6,
    "sessions_expected": 224.1,
-   "conv_actual": 0.004309392001617028,
+   "conv_actual": 0.004240942991110639,
    "conv_expected": 0.016974173425718723,
-   "contrib_traffic": 6.7,
-   "contrib_conversion": -7.8
+   "contrib_traffic": 6.9,
+   "contrib_conversion": -8.0
   },
   "paid": {
-   "sessions_actual": 9626.3,
+   "sessions_actual": 9628.3,
    "sessions_expected": 4525.4,
-   "conv_actual": 0.0006928956701316291,
+   "conv_actual": 0.0006927517406918685,
    "conv_expected": 0.0033146031256,
    "contrib_traffic": 16.9,
    "contrib_conversion": -25.2

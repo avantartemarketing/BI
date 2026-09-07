@@ -28,7 +28,9 @@ from __future__ import annotations
 import csv
 import json
 import math
+import collections
 import pathlib
+import re
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
@@ -39,6 +41,12 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "sources"
 DATA = ROOT / "data"
 APP = DATA / "app"
+# actuals-only pages for every release the funnel data mentions but nobody has
+# set targets for. Regenerated on every refresh and not committed (the
+# targeted ones under APP/releases are - they are the boot-time fallback).
+DERIVED = APP / "derived"
+PR_LEAD_DAYS = 14        # default private-room lead before announce for a derived release
+CATALOGUE_DAYS = 90      # window shown for a release with no campaign clock
 
 BENCH = json.loads((ROOT / "etl" / "benchmarks.json").read_text())
 INPUTS = json.loads((ROOT / "etl" / "release_inputs.json").read_text())
@@ -51,10 +59,15 @@ if _live_inputs.exists():
     try:
         _saved = json.loads(_live_inputs.read_text()).get("releases", {})
         INPUTS["releases"] = [_saved.get(r["id"], r) for r in INPUTS["releases"]]
+        # releases set up from the dashboard (not in the repo defaults) - without
+        # this they would vanish on the next rebuild
+        _known = {r["id"] for r in INPUTS["releases"]}
+        INPUTS["releases"] += [v for k, v in _saved.items() if k not in _known]
     except (ValueError, KeyError) as e:
         print(f"warning: ignoring saved inputs overlay: {e}")
 
 ORGANIC_CHANNELS = list(INPUTS["channel_quality_default"].keys())
+INPUTS_CODES = [r["campaign_code"] for r in INPUTS["releases"] if r.get("campaign_code")]
 
 # Display grouping (docs §1.3). AA Other goes to search/direct/other (the sheet dropped it).
 DISPLAY_GROUPS = {
@@ -532,6 +545,289 @@ def daterange(a: date, b: date):
         d += timedelta(days=1)
 
 
+# ---------------------------------------------------------------- every release
+
+_QUARTER_RE = re.compile(r"^(\d{4}) Q([1-4])$")
+_CODE_RE = re.compile(r"^([A-Za-z0-9]+)_([A-Za-z0-9]+)_(\d{2})$")
+
+
+def slugify(name: str) -> str:
+    """Release name -> id the server will accept ([a-z0-9_])."""
+    return re.sub(r"_+", "_", re.sub(r"[^a-z0-9]+", "_", name.lower())).strip("_")
+
+
+def _norm(s: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(s).lower())
+
+
+def known_codes(emails: pd.DataFrame, content: pd.DataFrame, artist_posts: pd.DataFrame | None) -> set[str]:
+    """Campaign codes the other feeds use (AntonyMic_LE_26, CindySher_TL_25...)."""
+    out = set(INPUTS_CODES)
+    for col, frame in (("campaign", emails), ("campaign_code", content), ("campaign_code", artist_posts)):
+        if frame is not None and col in frame.columns:
+            out.update(str(v) for v in frame[col].dropna().unique())
+    return {c for c in out if _CODE_RE.match(c)}
+
+
+def guess_code(artist: str, title: str, year: int, codes: set[str], siblings: int = 1) -> tuple[str | None, str]:
+    """Best guess at the campaign code for a release nobody has configured, from
+    the codes the email / content feeds already use. The code's first segment
+    is a truncated artist name (AntonyMic, CindySher, Albers), the last is the
+    two-digit year. Returns (code or None, type): TL when the code says so,
+    else LE - this is the LE export. Ambiguous -> None rather than a wrong
+    match: a wrong code silently attributes another campaign's emails."""
+    a, t, yy = _norm(artist), _norm(title), f"{year % 100:02d}"
+    cands = []
+    for c in codes:
+        m = _CODE_RE.match(c)
+        stub, mid, y = m.group(1).lower(), m.group(2), m.group(3)
+        if y != yy or len(stub) < 4:
+            continue
+        if not (a.startswith(stub) or (len(stub) >= 5 and stub in a)):
+            continue
+        cands.append((c, mid))
+    if not cands:
+        return None, "LE"
+    kind = lambda mid: "TL" if mid.upper() == "TL" else "LE"
+    # a code whose middle names the work wins (AiWeiwei_SelfPortrait_26 for
+    # "Ai Weiwei · Self Portrait · 2026 Q2")
+    named = [(c, mid) for c, mid in cands if len(_norm(mid)) >= 4 and _norm(mid) in t]
+    if len(named) == 1:
+        return named[0][0], kind(named[0][1])
+    # one code, one release from this artist that year: they are the same thing.
+    # With two releases in the year a lone code could belong to either.
+    if len(cands) == 1 and siblings == 1:
+        return cands[0][0], kind(cands[0][1])
+    les = [(c, mid) for c, mid in cands if mid.upper() == "LE"]
+    if len(les) == 1 and t == "multiple":
+        return les[0][0], "LE"
+    return None, "LE"
+
+
+def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[dict]:
+    """One record per simple_release_name in the funnel data.
+
+    Dates come from the campaign clock the export carries (docs §1.5): announce
+    = event_date - days_since_announcement, close = event_date +
+    days_until_launch, taken from rows on the non-negative side of each so the
+    truncation toward zero cannot shift them by a day. A release without the
+    clock is catalogue: a work still drawing traffic, with no campaign window
+    to measure against. Clock dates that make no sense (close before
+    announce, or a window outside 3..90 days) are dropped with a note rather
+    than trusted - two upstream rows do that today."""
+    out = []
+    g = at.groupby("simple_release_name")
+    stats = g.agg(first=("event_date", "min"), last=("event_date", "max"),
+                  sessions=("Sessions_Total", "sum"), entries=("Draw_Entries_Eligible_Units", "sum"),
+                  units=("Total_Product_Units", "sum"))
+    clocked = at[at["days_since_announcement"].notna() & at["days_until_launch"].notna()].copy()
+    clocked["ts"] = pd.to_datetime(clocked["event_date"])
+    mode = lambda s: s.mode().iloc[0] if len(s) else None
+    # Each clock is exact on its non-negative side and truncated toward zero on
+    # the other, so anchor on rows from the exact side. A release seen only
+    # before its announce (early access) or only after its close has one side
+    # missing; the pct column is dsa / campaign length, which gives the length
+    # exactly and lets the missing date be reconstructed from the anchored one.
+    ann_rows = clocked[clocked["days_since_announcement"] >= 0]
+    ann_rows = ann_rows.assign(d=ann_rows["ts"] - pd.to_timedelta(ann_rows["days_since_announcement"], unit="D"))
+    la_rows = clocked[clocked["days_until_launch"] >= 0]
+    la_rows = la_rows.assign(d=la_rows["ts"] + pd.to_timedelta(la_rows["days_until_launch"], unit="D"))
+    ann = ann_rows.groupby("simple_release_name")["d"].agg(mode)
+    lau = la_rows.groupby("simple_release_name")["d"].agg(mode)
+    ratio = clocked[clocked["pct_days_since_announcement"].notna() & (clocked["pct_days_since_announcement"] != 0)]
+    ratio = ratio.assign(L=(ratio["days_since_announcement"] / ratio["pct_days_since_announcement"]).round())
+    length = ratio.groupby("simple_release_name")["L"].agg(mode)
+    # releases per artist-year, for the code guess
+    def artist_year(n):
+        ps = [p.strip() for p in str(n).split(" · ")]
+        qm = _QUARTER_RE.match(ps[-1]) if len(ps) >= 2 else None
+        return (_norm(ps[0]), int(qm.group(1)) if qm else None)
+    siblings = collections.Counter(artist_year(n) for n in stats.index)
+    seen_ids: dict[str, int] = {}
+    for name, st in stats.iterrows():
+        parts = [p.strip() for p in str(name).split(" · ")]
+        qm = _QUARTER_RE.match(parts[-1]) if len(parts) >= 2 else None
+        artist = parts[0]
+        title = " · ".join(parts[1:-1]) if qm and len(parts) >= 3 else (" · ".join(parts[1:]) or "")
+        quarter = parts[-1] if qm else None
+        year = int(qm.group(1)) if qm else int(st["first"].year)
+        announce = ann.get(name); launch = lau.get(name)
+        Lpd = length.get(name)
+        Lpd = int(Lpd) if Lpd is not None and not pd.isna(Lpd) and 1 <= Lpd <= 400 else None
+        # Checked against the eight hand-entered releases: announce from the
+        # non-negative dsa rows is exact in every case and so is the length
+        # from the pct column, while the countdown-derived close runs a day
+        # early for some. So the close is announce + length whenever announce
+        # is anchored; the countdown only anchors a release seen before its
+        # announce, where the reconstruction can be a day out.
+        if announce is not None and Lpd:
+            launch = pd.Timestamp(announce) + pd.Timedelta(days=Lpd)
+        elif announce is None and launch is not None and Lpd:
+            announce = pd.Timestamp(launch) - pd.Timedelta(days=Lpd)      # seen only pre-announce
+        note = None
+        if announce is not None and launch is not None:
+            announce, launch = pd.Timestamp(announce).date(), pd.Timestamp(launch).date()
+            L = (launch - announce).days
+            if not (3 <= L <= 90):
+                note = f"campaign clock gives {announce}..{launch} ({L} days) - not usable"
+                announce = launch = None
+        elif announce is not None or launch is not None:
+            note = "campaign clock present but incomplete"
+            announce = launch = None
+        elif name in clocked["simple_release_name"].values:
+            note = "campaign clock present but unreadable"
+        code, kind = guess_code(artist, title, year, codes, siblings[(_norm(artist), year if qm else None)])
+        rid = slugify(str(name)) or "release"
+        if rid in seen_ids:
+            seen_ids[rid] += 1; rid = f"{rid}_{seen_ids[rid]}"
+        else:
+            seen_ids[rid] = 1
+        out.append({
+            "id": rid, "release_name": str(name), "artist": artist, "title": title, "quarter": quarter,
+            "type": kind, "campaign_code": code,
+            "announce_date": announce.isoformat() if announce else None,
+            "launch_end": launch.isoformat() if launch else None,
+            "dates_note": note,
+            "first_seen": st["first"].isoformat(), "last_seen": st["last"].isoformat(),
+            "sessions": float(st["sessions"]), "entries": float(st["entries"]), "units": float(st["units"]),
+        })
+    return out
+
+
+def build_actuals(rec: dict, rat: pd.DataFrame, emails: pd.DataFrame, content: pd.DataFrame,
+                  as_of: date) -> dict:
+    """Actuals-only snapshot for a release nobody has set targets for. Same
+    shape as build_release's so the page code has one contract, with every
+    target-derived field None and targeted: False - the page shows what
+    happened without pretending to know what should have. Setting targets in
+    the dashboard promotes the release to build_release on the next rebuild."""
+    b = BENCH
+    e2o = b["eligible_entry_to_order"]
+    name = rec["release_name"]
+    dated = rec["announce_date"] is not None
+    if dated:
+        announce = date.fromisoformat(rec["announce_date"])
+        launch_end = date.fromisoformat(rec["launch_end"])
+        window_start = announce - timedelta(days=PR_LEAD_DAYS)
+        L = (launch_end - announce).days
+        complete = as_of >= launch_end
+        day_n = max(min((as_of - announce).days, L), 0)
+    else:
+        launch_end = as_of
+        window_start = as_of - timedelta(days=CATALOGUE_DAYS)
+        L = CATALOGUE_DAYS
+        complete = False
+        day_n = CATALOGUE_DAYS
+    rat = rat.copy()
+    rat["group"] = rat["channel"].map(GROUP_OF)
+    win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= min(as_of, launch_end + timedelta(days=2)))]
+    win = redistribute_untracked(win)
+    # Orders from draw winners land in the two days after close. win keeps
+    # them (that is what the grace is for) but the daily series ends at close,
+    # so the hero, the channels and sell-through disagreed by exactly those
+    # units - and "secured" could read below "sold". Fold them into the close
+    # day: at close then includes what the close triggered.
+    win = win.assign(event_date=win["event_date"].where(win["event_date"] <= launch_end, launch_end))
+    by_group_day = (win.groupby(["group", "event_date"])
+                    .agg(sessions=("Sessions_Total", "sum"),
+                         entries_no_conv=("Draw_Entries_Total_Units_No_Conv", "sum"),
+                         units=("Total_Product_Units", "sum"))
+                    .reset_index())
+    days = list(daterange(window_start, launch_end))
+    channels_out, hero_now = [], 0.0
+    for g, spec in DISPLAY_GROUPS.items():
+        sub = by_group_day[by_group_day["group"] == g].set_index("event_date")
+        daily, cum_u, cum_nc = [], 0.0, 0.0
+        for d in days:
+            row = sub.loc[d] if d in sub.index else None
+            cum_u += float(row["units"]) if row is not None else 0.0
+            cum_nc += float(row["entries_no_conv"]) if row is not None else 0.0
+            daily.append({"date": d.isoformat(),
+                          "actual": round(cum_u + e2o * cum_nc, 2) if d <= as_of else None,
+                          "plan": None, "proj": None})
+        now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
+        parts = []
+        for ch in spec["channels"]:
+            sub_ch = win[win["channel"] == ch]
+            if sub_ch.empty:
+                continue
+            v = (float(sub_ch["Total_Product_Units"].sum())
+                 + e2o * float(sub_ch["Draw_Entries_Total_Units_No_Conv"].sum()))
+            if v > 0.05:
+                parts.append({"name": ch, "value": round(v, 1)})
+        parts.sort(key=lambda x: -x["value"])
+        channels_out.append({"key": g, "name": spec["name"], "now": round(now, 1),
+                             "exp": None, "proj": None, "target": None, "parts": parts, "daily": daily})
+        hero_now += now
+
+    upto = win   # grace days already folded into the close day above
+    units_sold = float(upto["Total_Product_Units"].sum())
+    unconverted = float(upto["Draw_Entries_Total_Units_No_Conv"].sum())
+    code = rec.get("campaign_code")
+    em = emails.iloc[0:0]
+    if code:
+        em_all = emails[(emails["campaign"] == code)
+                        & (emails["sent_at"].dt.date >= window_start)
+                        & (emails["sent_at"].dt.date <= min(as_of, launch_end))]
+        em = em_all[em_all["email_type"].isin(["GEN", "CUS", "INS"])]
+        if em.empty and not em_all.empty:
+            em = em_all[~em_all["email_type"].isin(["TRNS", "AUT", "FREQ", "TEST"])]
+    delivered = float(em["delivered"].sum()) if len(em) else 0.0
+    email_out = {
+        "sends": int(len(em)), "delivered": int(delivered),
+        "opened": int(em["opened"].sum()) if len(em) else 0, "clicked": int(em["clicked"].sum()) if len(em) else 0,
+        "openRate": round(float(em["opened"].sum()) / delivered, 4) if delivered else None,
+        "clickRate": round(float(em["clicked"].sum()) / delivered, 4) if delivered else None,
+        "sequence": [
+            {"name": r["name"].split(" - ", 1)[-1], "date": r["sent_at"].date().isoformat(),
+             "delivered": int(r["delivered"]), "opened": int(r["opened"]), "clicked": int(r["clicked"])}
+            for _, r in em.sort_values("sent_at").iterrows()
+        ] if len(em) else [],
+        "deliveredTarget": None,
+    }
+    ct = content.iloc[0:0]
+    if code:
+        ct = content[(content["campaign_code"] == code)
+                     & (content["Date"].dt.date >= window_start)
+                     & (content["Date"].dt.date <= min(as_of, launch_end))]
+    posts = ct[ct["Content type"].isin(["post", "collaboration", "reply", "shared"])] if len(ct) else ct
+    social_out = {
+        "posts": int(len(posts)), "stories": int((ct["Content type"] == "story").sum()) if len(ct) else 0,
+        "impressions": int(pd.to_numeric(ct["Total impressions"], errors="coerce").fillna(0).sum()) if len(ct) else 0,
+        "engagements": int(pd.to_numeric(ct["Engagements"], errors="coerce").fillna(0).sum()) if len(ct) else 0,
+        "artistPosts": None, "artistPostsTarget": None,
+    }
+    return {
+        "id": rec["id"], "releaseName": name,
+        "artist": rec["artist"], "title": rec["title"], "quarter": rec["quarter"],
+        "type": rec["type"],
+        "campaignCode": code, "campaignName": None, "marketingLead": None, "privateRoomOpen": None,
+        "windowStart": rec["announce_date"] if dated else window_start.isoformat(),
+        "windowEnd": rec["launch_end"] if dated else None,
+        "campaignLengthDays": L if dated else None, "day": day_n, "of": L,
+        "asOf": as_of.isoformat(), "complete": complete,
+        "targeted": False, "catalogue": not dated,
+        "derived": {
+            "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
+            "dates_source": "campaign clock" if dated else None, "dates_note": rec["dates_note"],
+            "campaign_code": code, "first_seen": rec["first_seen"], "last_seen": rec["last_seen"],
+        },
+        "economics": None, "currency": "units",
+        "hero": {"now": round(hero_now, 0), "expectedToday": None, "delta": None, "projected": None,
+                 "target": None, "oversubscribedUnits": 0, "statusPct": None, "ok": None},
+        "targets": None, "groupTargets": None,
+        "channels": channels_out,
+        "funnelByGroup": None, "paid": None,
+        "email": email_out, "social": social_out,
+        "sellthrough": {"edition": None, "sold": round(units_sold, 0),
+                        "soldPredicted": round(unconverted * e2o, 1), "futureEntriesPredicted": None, "pct": None},
+        "draw": None, "geo": None, "waterfall": None,
+        "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
+                   "entries": round(float(upto["Draw_Entries_Eligible_Units"].sum()))},
+        "benchmarks": {"chargeDropOff": 1 - e2o, "cannibalisation": b["cannibalisation"], "targetBuffer": b["target_buffer"]},
+    }
+
+
 def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   emails: pd.DataFrame, content: pd.DataFrame, curves: dict,
                   as_of: date, artist_posts: pd.DataFrame | None = None,
@@ -554,6 +850,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # Fold Untracked into the tracked channels ONCE, here, so the group rollups
     # below and the release-level sums further down agree (docs §1.3).
     win = redistribute_untracked(win)
+    # Orders from draw winners land in the two days after close. win keeps
+    # them (that is what the grace is for) but the daily series ends at close,
+    # so the hero, the channels and sell-through disagreed by exactly those
+    # units - and "secured" could read below "sold". Fold them into the close
+    # day: at close then includes what the close triggered.
+    win = win.assign(event_date=win["event_date"].where(win["event_date"] <= launch_end, launch_end))
 
     # daily series per display group: actual cumulative entries + plan
     days = list(daterange(window_start, launch_end))
@@ -1023,30 +1325,84 @@ def main():
 
     APP.mkdir(parents=True, exist_ok=True)
     (APP / "releases").mkdir(exist_ok=True)
+    DERIVED.mkdir(exist_ok=True)
 
     curves = build_curves(at)
     (APP / "curves.json").write_text(json.dumps(curves, indent=1))
     print(f"curves: n={curves['n_releases']} clean releases")
 
-    index = []
-    for release in INPUTS["releases"]:
-        snap = build_release(release, at, spend, emails, content, curves, as_of,
-                             artist_posts, posts_bench, email_bench)
-        check_snapshot(snap)
-        (APP / "releases" / f"{release['id']}.json").write_text(json.dumps(snap, indent=1))
+    # Every release the funnel data mentions. The configured ones (target
+    # inputs on file) get the full build; the rest get an actuals-only page.
+    discovered = discover_releases(at, as_of, known_codes(emails, content, artist_posts))
+    by_name = {n: g for n, g in at.groupby("simple_release_name")}
+    configured = {r["release_name"]: r for r in INPUTS["releases"]}
+
+    index, written, n_full, n_actuals = [], set(), 0, 0
+    def add(snap, status):
         index.append({
             "id": snap["id"], "name": f"{snap['artist']} - {snap['title']}",
-            "releaseName": snap["releaseName"], "type": snap["type"],
+            "releaseName": snap["releaseName"], "artist": snap["artist"], "title": snap["title"],
+            "quarter": snap.get("quarter"), "type": snap["type"],
+            "status": status, "targeted": snap.get("targeted", True),
             "day": snap["day"], "of": snap["of"], "complete": snap["complete"],
+            "windowEnd": snap.get("windowEnd"),
             "statusPct": snap["hero"]["statusPct"], "ok": snap["hero"]["ok"],
+            "lastSeen": (snap.get("derived") or {}).get("last_seen"),
+            "sessions": (snap.get("totals") or {}).get("sessions"),
         })
-        print(f"{snap['id']}: day {snap['day']}/{snap['of']} "
-              f"now={snap['hero']['now']} exp={snap['hero']['expectedToday']} "
-              f"target={snap['hero']['target']} proj={snap['hero']['projected']}")
+
+    for rec in discovered:
+        cfg = configured.pop(rec["release_name"], None)
+        if cfg:
+            snap = build_release(cfg, at, spend, emails, content, curves, as_of,
+                                 artist_posts, posts_bench, email_bench)
+            check_snapshot(snap)
+            (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
+            add(snap, "closed" if snap["complete"] else "live")
+            n_full += 1
+            print(f"{snap['id']}: day {snap['day']}/{snap['of']} "
+                  f"now={snap['hero']['now']} exp={snap['hero']['expectedToday']} "
+                  f"target={snap['hero']['target']} proj={snap['hero']['projected']}")
+        else:
+            snap = build_actuals(rec, by_name[rec["release_name"]], emails, content, as_of)
+            check_snapshot(snap)
+            (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
+            written.add(f"{rec['id']}.json")
+            add(snap, "catalogue" if snap["catalogue"] else ("closed" if snap["complete"] else "live"))
+            n_actuals += 1
+    # configured releases the funnel data does not mention yet (announced, no
+    # traffic) still get built, as before
+    for cfg in configured.values():
+        snap = build_release(cfg, at, spend, emails, content, curves, as_of,
+                             artist_posts, posts_bench, email_bench)
+        check_snapshot(snap)
+        (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
+        add(snap, "closed" if snap["complete"] else "live")
+        n_full += 1
+    # a release that has left the data (or been promoted) must not linger
+    for stale in DERIVED.glob("*.json"):
+        if stale.name not in written:
+            stale.unlink()
+
+    rank = {"live": 0, "closed": 1, "catalogue": 2}
+    index.sort(key=lambda e: (
+        rank[e["status"]],
+        e["windowEnd"] or "" if e["status"] == "live" else "",
+        "" if e["status"] == "live" else (("~" + (e["windowEnd"] or "")) if e["status"] == "closed" else ""),
+        -(e["sessions"] or 0),
+    ))
+    # closed: most recent close first
+    live = [e for e in index if e["status"] == "live"]
+    closed = sorted([e for e in index if e["status"] == "closed"], key=lambda e: e["windowEnd"] or "", reverse=True)
+    catalogue = sorted([e for e in index if e["status"] == "catalogue"], key=lambda e: -(e["sessions"] or 0))
+    index = live + closed + catalogue
     (APP / "index.json").write_text(json.dumps(
         {"asOf": as_of.isoformat(), "releases": index}, indent=1))
+
     # inputs document for the Target setting tab (server + web read this);
-    # meta_campaigns feeds the Meta-campaign matcher (most recently active first)
+    # meta_campaigns feeds the Meta-campaign matcher (most recently active first);
+    # discovered carries the derived defaults a release starts from when someone
+    # sets targets for it in the dashboard
     camp = (spend.groupby("campaign_name")
                  .agg(spend=("spend", "sum"), last=("spend_date", "max"))
                  .reset_index()
@@ -1055,13 +1411,25 @@ def main():
         "benchmarks": BENCH,
         "channel_quality_default": INPUTS["channel_quality_default"],
         "releases": {r["id"]: r for r in INPUTS["releases"]},
+        "discovered": {
+            r["id"]: {
+                "release_name": r["release_name"], "artist": r["artist"], "title": r["title"],
+                "type": r["type"], "campaign_code": r["campaign_code"],
+                "announce_date": r["announce_date"], "launch_end": r["launch_end"],
+                "private_room_open": ((date.fromisoformat(r["announce_date"]) - timedelta(days=PR_LEAD_DAYS)).isoformat()
+                                      if r["announce_date"] else None),
+                "dates_note": r["dates_note"],
+            }
+            for r in discovered if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}
+        },
         "meta_campaigns": [
             {"name": r.campaign_name, "spend": round(float(r.spend), 2), "last": r.last.isoformat()}
             for r in camp.itertuples()
         ],
     }, indent=1))
     print(funnel_coverage(at, curves))
-    print(f"wrote {len(index)} releases -> {APP}")
+    print(f"wrote {n_full} targeted + {n_actuals} actuals-only releases "
+          f"({sum(1 for e in index if e['status'] == 'live')} live) -> {APP}")
 
 
 if __name__ == "__main__":

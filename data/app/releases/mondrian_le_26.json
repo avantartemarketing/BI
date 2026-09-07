@@ -29,7 +29,7 @@
   "delta": 0.0,
   "projected": 900.0,
   "target": 900.0,
-  "oversubscribedUnits": 102.0,
+  "oversubscribedUnits": 112.0,
   "statusPct": 0.0,
   "ok": true
  },
@@ -191,9 +191,9 @@
   {
    "key": "aa_email",
    "name": "AA Email",
-   "now": 435.1,
+   "now": 440.6,
    "exp": 426.2,
-   "proj": 435.1,
+   "proj": 440.6,
    "target": 426.2,
    "parts": [
     {
@@ -544,7 +544,7 @@
     },
     {
      "date": "2026-08-18",
-     "actual": 435.05,
+     "actual": 440.55,
      "plan": 426.23,
      "proj": null
     }
@@ -1269,9 +1269,9 @@
   {
    "key": "search_direct_other",
    "name": "Direct etc.",
-   "now": 242.3,
+   "now": 244.8,
    "exp": 87.0,
-   "proj": 242.3,
+   "proj": 244.8,
    "target": 87.0,
    "parts": [
     {
@@ -1634,7 +1634,7 @@
     },
     {
      "date": "2026-08-18",
-     "actual": 242.27,
+     "actual": 244.77,
      "plan": 87.04,
      "proj": null
     }
@@ -1643,9 +1643,9 @@
   {
    "key": "paid",
    "name": "Paid",
-   "now": 290.7,
+   "now": 292.7,
    "exp": 328.0,
-   "proj": 290.7,
+   "proj": 292.7,
    "target": 328.0,
    "parts": [
     {
@@ -1992,7 +1992,7 @@
     },
     {
      "date": "2026-08-18",
-     "actual": 290.73,
+     "actual": 292.73,
      "plan": 328.0,
      "proj": null
     }
@@ -2001,20 +2001,20 @@
  ],
  "funnelByGroup": {
   "aa_email": {
-   "sessions_actual": 11699.0,
+   "sessions_actual": 11741.4,
    "sessions_expected": 10025.4,
-   "conv_actual": 0.03718694032740596,
+   "conv_actual": 0.03752121749334417,
    "conv_expected": 0.04251531175551227,
-   "contrib_traffic": 71.2,
-   "contrib_conversion": -62.3
+   "contrib_traffic": 73.0,
+   "contrib_conversion": -58.6
   },
   "aa_social": {
-   "sessions_actual": 734.3,
+   "sessions_actual": 742.5,
    "sessions_expected": 2385.9,
-   "conv_actual": 0.04198354423637519,
+   "conv_actual": 0.041524103804242596,
    "conv_expected": 0.010917869999257267,
-   "contrib_traffic": -18.0,
-   "contrib_conversion": 22.8
+   "contrib_traffic": -17.9,
+   "contrib_conversion": 22.7
   },
   "referral_artist": {
    "sessions_actual": 54.1,
@@ -2025,20 +2025,20 @@
    "contrib_conversion": 2.5
   },
   "search_direct_other": {
-   "sessions_actual": 7048.5,
+   "sessions_actual": 7172.9,
    "sessions_expected": 5127.6,
-   "conv_actual": 0.03437198879953408,
+   "conv_actual": 0.03412427067624664,
    "conv_expected": 0.016974173425718723,
-   "contrib_traffic": 32.6,
-   "contrib_conversion": 122.6
+   "contrib_traffic": 34.7,
+   "contrib_conversion": 123.0
   },
   "paid": {
-   "sessions_actual": 18459.1,
+   "sessions_actual": 18468.2,
    "sessions_expected": 98956.0,
-   "conv_actual": 0.015749949431337347,
+   "conv_actual": 0.015850492234347566,
    "conv_expected": 0.0033146031256,
    "contrib_traffic": -266.8,
-   "contrib_conversion": 229.5
+   "contrib_conversion": 231.5
   }
  },
  "paid": {
@@ -2504,17 +2504,17 @@
  "geo": null,
  "waterfall": {
   "target": 900.0,
-  "projection": 1002.0,
+  "projection": 1012.0,
   "steps": [
    {
     "key": "organic_traffic",
     "label": "Organic traffic",
-    "value": 54.0
+    "value": 58.0
    },
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": 86.0
+    "value": 90.0
    },
    {
     "key": "paid_spend",
@@ -2524,7 +2524,7 @@
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": 259.0
+    "value": 261.0
    }
   ]
  },

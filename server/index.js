@@ -82,11 +82,24 @@ app.delete("/api/users/:email", (req, res) => {
 
 app.get("/api/index", (_req, res) => res.sendFile(path.join(DATA, "index.json")));
 app.get("/api/curves", (_req, res) => res.sendFile(path.join(DATA, "curves.json")));
+// Targeted releases live in releases/ (committed - the boot-time fallback);
+// actuals-only pages for everything else in derived/ (rebuilt every refresh,
+// not committed). A release the index lists but neither dir has is one the
+// first refresh after a deploy has not built yet - say so, not "unknown".
 app.get("/api/releases/:id", (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
-  const file = path.join(DATA, "releases", `${id}.json`);
-  if (!fs.existsSync(file)) return res.status(404).json({ error: "unknown release" });
-  res.sendFile(file);
+  for (const dir of ["releases", "derived"]) {
+    const file = path.join(DATA, dir, `${id}.json`);
+    if (fs.existsSync(file)) return res.sendFile(file);
+  }
+  let listed = false;
+  try {
+    listed = JSON.parse(fs.readFileSync(path.join(DATA, "index.json"), "utf8")).releases.some((r) => r.id === id);
+  } catch {}
+  if (listed) {
+    return res.status(404).json({ error: "This page has not been built yet - the first data refresh after a deploy takes a few minutes.", pending: true });
+  }
+  res.status(404).json({ error: "unknown release" });
 });
 
 // ---- target-setting inputs (docs §3; the Target setting tab) ----
@@ -116,13 +129,32 @@ function readInputsDoc() {
   return JSON.parse(fs.readFileSync(INPUTS_PATH, "utf8"));
 }
 
+/* A release nobody has set targets for starts from what the ETL could derive
+ * (dates from the campaign clock, a campaign code guessed from the email and
+ * content feeds) plus the model's usual defaults. Economics have no sensible
+ * default and stay null until someone types them. */
+function defaultsFor(id, disc) {
+  return {
+    id, release_name: disc.release_name, campaign_code: disc.campaign_code || "",
+    campaign_name: null, marketing_lead: null, budget_file: null,
+    private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
+    edition_size: null, unit_price: null, artist_profit: null, aa_group_profit: null,
+    artist_profit_share: 0.5, framing_available: true,
+    paid_channel_size: "Medium", reference_point: "Medium", paid_conv_quality: "Medium", cpp_pick: "Median",
+    channel_quality_overrides: {},
+  };
+}
+
 app.get("/api/inputs/:id", (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   const doc = readInputsDoc();
   const inputs = doc.releases[id];
-  if (!inputs) return res.status(404).json({ error: "unknown release" });
+  const disc = !inputs && doc.discovered ? doc.discovered[id] : null;
+  if (!inputs && !disc) return res.status(404).json({ error: "unknown release" });
   res.json({
-    inputs,
+    inputs: inputs || null,
+    defaults: disc ? defaultsFor(id, disc) : null,
+    derived: disc || null,
     channel_quality_default: doc.channel_quality_default,
     benchmarks: doc.benchmarks,
     meta_campaigns: doc.meta_campaigns || [],
@@ -132,12 +164,26 @@ app.get("/api/inputs/:id", (req, res) => {
 app.post("/api/inputs/:id", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   const doc = readInputsDoc();
-  const current = doc.releases[id];
-  if (!current) return res.status(404).json({ error: "unknown release" });
+  let current = doc.releases[id];
+  // first save for a release the ETL discovered: create it from the defaults
+  const creating = !current;
+  if (creating) {
+    const disc = doc.discovered ? doc.discovered[id] : null;
+    if (!disc) return res.status(404).json({ error: "unknown release" });
+    current = defaultsFor(id, disc);
+  }
   const body = (req.body && req.body.inputs) || {};
 
   const next = { ...current };
   const errors = [];
+  if (creating) {
+    for (const f of ["edition_size", "unit_price", "artist_profit", "aa_group_profit"]) {
+      if (body[f] === undefined || body[f] === null || body[f] === "") errors.push(`${f} is required to set targets`);
+    }
+    for (const f of ["announce_date", "launch_end", "private_room_open"]) {
+      if (!body[f] && !current[f]) errors.push(`${f} is required to set targets`);
+    }
+  }
   for (const f of ["edition_size", "unit_price", "artist_profit", "aa_group_profit"]) {
     if (body[f] !== undefined) {
       const v = Number(body[f]);
@@ -169,7 +215,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       else next[f] = body[f];
     }
   }
-  for (const f of ["marketing_lead", "budget_file", "campaign_name"]) {
+  for (const f of ["marketing_lead", "budget_file", "campaign_name", "campaign_code"]) {
     if (body[f] !== undefined) next[f] = body[f] === null ? null : String(body[f]).slice(0, 200);
   }
   if (body.channel_quality_overrides !== undefined) {
@@ -187,6 +233,26 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   if (errors.length) return res.status(400).json({ error: errors.join("; ") });
 
   const snapPath = path.join(DATA, "releases", `${id}.json`);
+  if (creating) {
+    // Nothing to retarget - the release only has an actuals-only page. Save
+    // the inputs and let the full ETL build it (build.py picks the saved
+    // inputs up and promotes the release).
+    doc.releases[id] = next;
+    fs.writeFileSync(INPUTS_PATH, JSON.stringify(doc, null, 1));
+    fs.appendFileSync(TARGETS_LOG, JSON.stringify({
+      ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard", created: true,
+    }) + "\n");
+    try {
+      await sheets.runEtl();
+    } catch (e) {
+      return res.status(502).json({
+        error: "Inputs saved, but the rebuild failed (" + String((e && e.message) || e).slice(0, 200) +
+          ") - the page will update on the next data refresh.",
+      });
+    }
+    if (!fs.existsSync(snapPath)) return res.status(502).json({ error: "Inputs saved, but the rebuild did not produce the page - check the refresh status." });
+    return res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")), created: true });
+  }
   if (!fs.existsSync(snapPath)) return res.status(404).json({ error: "no snapshot for release" });
   const snap = JSON.parse(fs.readFileSync(snapPath, "utf8"));
   const curves = JSON.parse(fs.readFileSync(path.join(DATA, "curves.json"), "utf8"));
