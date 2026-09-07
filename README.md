@@ -77,8 +77,23 @@ until one of the two is fixed - granting the BigQuery table is the better fix, s
 keeps spend on the same attribution basis as the funnel. `BQ_SPEND=off` skips the
 BigQuery spend query outright.
 
-Check the connection without writing anything: `node server/bigquery.js` prints the row
-counts and GB scanned; add `--write` to replace the CSVs.
+**Incremental.** The hourly refresh does not re-pull the window. It asks BigQuery for the
+last `BQ_OVERLAP_DAYS` (default 45) only, keeps the older local rows, and swaps the merged
+file in atomically (`sources/across_time.meta.json` records the window, columns and last
+date). The overlap is not a nicety: entry-to-order conversion keeps changing a day's row
+until the draw settles, so recent history is live. A **full** pull runs every
+`BQ_FULL_EVERY_DAYS` (default 7), on `?run=1&full=1`, when `BQ_SINCE` or the column set
+changes, or when there is no local file - and it reports how many days older than the
+overlap changed upstream since the last full pull, so "historic data doesn't change" is
+measured rather than assumed. An upstream backfill (announcement dates for the back
+catalogue, say) rewrites the clock columns years back; the weekly full pull is what picks
+it up, or force one. An incremental pull that comes back thin (fewer than half the rows
+the local file has for the overlap) is refused rather than written, since writing it
+would delete the last 45 days.
+
+Check the connection without writing anything: `node server/bigquery.js` prints the plan
+(full or incremental, and why), row counts and GB scanned; add `--write` to replace the
+CSVs, `--full` to force a full pull.
 
 **Memory on the 512 MB starter instance.** Results are streamed to disk a page at a time
 and the start script caps Node's heap at 192 MB, so the pull itself is flat (~150 MB)

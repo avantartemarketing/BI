@@ -12,10 +12,22 @@
  * new launches push older days off the end, which is what limits the curve
  * panel to a handful of complete campaigns. Reading the table removes the cap.
  *
+ * Incremental: a full pull is ~420k rows and takes minutes, for a few hundred
+ * new rows an hour. So the hourly refresh re-pulls only the last
+ * BQ_OVERLAP_DAYS (default 45) and keeps the older local rows. The overlap is
+ * not a nicety: entry-to-order conversion keeps changing a day's row until the
+ * draw settles, so recent history is live. A FULL pull runs every
+ * BQ_FULL_EVERY_DAYS (default 7), on ?run=1&full=1, when BQ_SINCE or the
+ * column set changes, or when there is no local file - and it counts how many
+ * days older than the overlap changed since last time, so the assumption that
+ * deep history is static is measured, not trusted. Upstream backfills (e.g.
+ * announcement dates for the back catalogue) rewrite the clock columns years
+ * back; the weekly full pull is what picks those up.
+ *
  * Memory: results are STREAMED to disk a page at a time. A pull back to 2023
- * is ~575k rows x 33 columns; held in memory as the API's row objects that is
- * ~900 MB, and the Render instance has 512. Holding it killed the process,
- * which Render reports as a 502. Nothing here keeps more than one page.
+ * held in memory as the API's row objects is ~900 MB, and the Render instance
+ * has 512. Holding it killed the process, which Render reports as a 502.
+ * Nothing here keeps more than one page.
  *
  * Setup (env vars only - never commit a key):
  *   BIGQUERY_SERVICE_ACCOUNT_JSON  the key file's contents, verbatim
@@ -29,11 +41,15 @@
  * outright). Set BIGQUERY=off to force the sheet path back on. */
 const fs = require("fs");
 const path = require("path");
+const readline = require("readline");
 const { serviceAccount, accessToken } = require("./googleAuth");
 
 const ROOT = path.resolve(__dirname, "..");
 const ACROSS_TIME = path.join(ROOT, "sources", "across_time.csv");
 const SPEND_DAILY = path.join(ROOT, "data", "spend_daily.csv");
+// what the local funnel file is: window, columns, last date, when it was last
+// pulled in full. Absent = never pulled from BigQuery (or it came from the sheet)
+const META = path.join(ROOT, "sources", "across_time.meta.json");
 
 const PROJECT = process.env.BQ_PROJECT || "avantarte-data-production";
 const DATASET = process.env.BQ_DATASET || "AA_company_tables";
@@ -41,6 +57,8 @@ const FUNNEL_TABLE = process.env.BQ_FUNNEL_TABLE || "le_funnel_report_split_touc
 const SPEND_TABLE = process.env.BQ_SPEND_TABLE || "meta_ads_insights_export";
 const SINCE = process.env.BQ_SINCE || "2025-01-01";
 const LOCATION = process.env.BQ_LOCATION || undefined; // e.g. "EU"; omit to let BQ infer
+const OVERLAP_DAYS = Math.max(1, Number(process.env.BQ_OVERLAP_DAYS) || 45);
+const FULL_EVERY_DAYS = Math.max(1, Number(process.env.BQ_FULL_EVERY_DAYS) || 7);
 // One page is the only thing held in memory. 5k rows of the 33-column funnel
 // table is ~6 MB of API JSON; with the heap capped at 192 MB in package.json's
 // start script (V8 otherwise lets garbage pile up to whatever the box allows)
@@ -65,6 +83,8 @@ function configured() {
   if (!DATE_RE.test(SINCE)) throw new Error(`BQ_SINCE "${SINCE}" must be YYYY-MM-DD`);
   return sa;
 }
+
+// ---------------------------------------------------------------- query
 
 /* Runs one query, streaming the result: onHeader(columnNames) once, then
  * onRows(rows) per page, where each row is an array of strings ("" for NULL -
@@ -153,8 +173,6 @@ async function query(token, sql, params = {}, { pageRows = PAGE_ROWS, onHeader, 
   return { header, rows: count, bytes, cached };
 }
 
-const since = { type: "DATE", value: SINCE };
-
 const funnelSql = () =>
   `SELECT * FROM \`${PROJECT}.${DATASET}.${FUNNEL_TABLE}\`\n` +
   "WHERE event_date >= @since\nORDER BY event_date";
@@ -162,40 +180,70 @@ const spendSql = () =>
   `SELECT * FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
   "WHERE spend_date >= @since\nORDER BY campaign_name, spend_date";
 
-/* Streams one table through a row converter into dest + ".tmp". Returns the
- * kept-row count and the tmp path; the caller validates and renames, so a
- * failed pull never touches the live file. With write=false nothing is
- * written and only the counts come back (the CLI's dry run). */
-async function streamTable(token, sql, makeWriter, dest, write) {
-  const tmp = dest + ".tmp";
-  let fd = null, writer = null, kept = 0;
-  try {
-    if (write) {
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fd = fs.openSync(tmp, "w");
-    }
-    const q = await query(token, sql, { since }, {
-      onHeader(header) {
-        writer = makeWriter(header);   // throws if the columns are not what build.py needs
-        if (fd !== null) fs.writeSync(fd, writer.header + "\n");
-      },
-      onRows(rows) {
-        const lines = [];
-        for (const r of rows) {
-          const line = writer.row(r);
-          if (line !== null) lines.push(line);
-        }
-        kept += lines.length;
-        if (fd !== null && lines.length) fs.writeSync(fd, lines.join("\n") + "\n");
-      },
-    });
-    if (fd !== null) { fs.closeSync(fd); fd = null; }
-    return { tmp: write ? tmp : null, rows: kept, dropped: writer ? writer.dropped : 0, bytes: q.bytes, cached: q.cached };
-  } catch (e) {
-    if (fd !== null) { try { fs.closeSync(fd); } catch {} }
-    try { fs.unlinkSync(tmp); } catch {}
-    throw e;
+// ---------------------------------------------------------------- local file
+
+const isoFromDMY = (s) => {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s || ""));
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+};
+function isoMinusDays(iso, days) {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+// FNV-1a; per-day sums of line hashes give an order-independent fingerprint
+function fnv(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h;
+}
+class DayFingerprints {
+  constructor() { this.days = new Map(); }
+  add(iso, line) {
+    const d = this.days.get(iso) || { n: 0, h: 0 };
+    d.n++; d.h = (d.h + fnv(line)) >>> 0;
+    this.days.set(iso, d);
   }
+  /* days present in `this` (the local file) before `cutoff` that differ in
+   * `other` (the fresh pull) - or are missing from it */
+  changedBefore(other, cutoff) {
+    const out = [];
+    for (const [iso, d] of this.days) {
+      if (iso >= cutoff) continue;
+      const o = other.days.get(iso);
+      if (!o || o.n !== d.n || o.h !== d.h) out.push(iso);
+    }
+    return out.sort();
+  }
+}
+
+function readMeta() {
+  try { return JSON.parse(fs.readFileSync(META, "utf8")); } catch { return null; }
+}
+function writeMeta(m) {
+  fs.writeFileSync(META + ".tmp", JSON.stringify(m, null, 1));
+  fs.renameSync(META + ".tmp", META);
+}
+
+/* Streams the local funnel CSV line by line: onLine(line, iso) per data row.
+ * Resolves to { header: string[], rows }. Lines are parsed with the same CSV
+ * rules the writer used, so a quoted comma in a release name is safe. */
+async function scanLocal(file, onLine) {
+  const { parseCsv } = require("./sheets");
+  const rl = readline.createInterface({ input: fs.createReadStream(file, "utf8"), crlfDelay: Infinity });
+  let header = null, di = -1, rows = 0;
+  for await (const line of rl) {
+    if (header === null) {
+      header = parseCsv(line)[0] || [];
+      di = header.indexOf("event_date");
+      continue;
+    }
+    if (!line) continue;
+    const cells = parseCsv(line)[0] || [];
+    rows++;
+    onLine(line, isoFromDMY(cells[di]));
+  }
+  return { header, rows };
 }
 
 function existingRows(file) {
@@ -216,8 +264,158 @@ function guardShrink(label, got, file) {
   }
 }
 
-/* Pulls the funnel table, and the spend table when the account can see it,
- * and (unless write=false) replaces the two CSVs atomically.
+// ---------------------------------------------------------------- streaming to disk
+
+class Tmp {
+  constructor(dest, write) {
+    this.path = dest + ".tmp";
+    this.fd = null;
+    this.buf = [];
+    if (write) {
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      this.fd = fs.openSync(this.path, "w");
+    }
+  }
+  line(s) { if (this.fd !== null) { this.buf.push(s); if (this.buf.length >= 2000) this.flush(); } }
+  flush() { if (this.fd !== null && this.buf.length) { fs.writeSync(this.fd, this.buf.join("\n") + "\n"); this.buf = []; } }
+  close() { this.flush(); if (this.fd !== null) { fs.closeSync(this.fd); this.fd = null; } }
+  discard() { try { this.close(); } catch {} try { fs.unlinkSync(this.path); } catch {} }
+  commit(dest) { this.close(); if (fs.existsSync(this.path)) fs.renameSync(this.path, dest); }
+}
+
+class HeaderChanged extends Error {}
+
+/* Streams one table through a row converter into `tmp`. onRow(line, iso) is
+ * called per kept row (for fingerprints and the max date). expectHeader, when
+ * given, is the local file's column list: a different set from BigQuery means
+ * the local rows cannot be merged with the new ones (HeaderChanged). */
+async function streamTable(token, sql, since, makeWriter, tmp, { onRow, expectHeader } = {}) {
+  const { normDate } = require("./sheets");
+  let writer = null, kept = 0;
+  const q = await query(token, sql, { since: { type: "DATE", value: since } }, {
+    onHeader(header) {
+      writer = makeWriter(header);   // throws if the columns are not what build.py needs
+      if (expectHeader && (header.length !== expectHeader.length || header.some((h, i) => h !== expectHeader[i]))) {
+        throw new HeaderChanged(`columns changed upstream (${header.length} vs ${expectHeader.length} locally)`);
+      }
+      tmp.line(writer.header);
+    },
+    onRows(rows) {
+      for (const r of rows) {
+        const line = writer.row(r);
+        if (line === null) continue;
+        kept++;
+        tmp.line(line);
+        if (onRow) {
+          const d = writer.dateIndex >= 0 ? normDate(r[writer.dateIndex]) : null;
+          onRow(line, d ? `${d[0]}-${String(d[1]).padStart(2, "0")}-${String(d[2]).padStart(2, "0")}` : null);
+        }
+      }
+    },
+  });
+  tmp.flush();
+  return { header: q.header, rows: kept, dropped: writer ? writer.dropped : 0, bytes: q.bytes, cached: q.cached };
+}
+
+// ---------------------------------------------------------------- pull
+
+/* Decides full vs incremental. Returns { mode, reason, meta }. */
+function plan(full) {
+  const meta = readMeta();
+  const usable = meta && meta.since === SINCE && meta.maxDate && Array.isArray(meta.header) && fs.existsSync(ACROSS_TIME);
+  if (full) return { mode: "full", reason: "requested", meta };
+  if (!meta) return { mode: "full", reason: "no record of a previous pull", meta: null };
+  if (!fs.existsSync(ACROSS_TIME)) return { mode: "full", reason: "local file missing", meta: null };
+  if (meta.since !== SINCE) return { mode: "full", reason: `BQ_SINCE changed (${meta.since} -> ${SINCE})`, meta: null };
+  if (!usable) return { mode: "full", reason: "previous pull record unreadable", meta: null };
+  const ageDays = (Date.now() - Date.parse(meta.fullAt || 0)) / 86400000;
+  if (!(ageDays < FULL_EVERY_DAYS)) return { mode: "full", reason: `last full pull ${Math.floor(ageDays)} days ago`, meta };
+  return { mode: "incremental", reason: null, meta };
+}
+
+async function pullFunnel(token, write, full) {
+  const { acrossTimeWriter } = require("./sheets");
+  let { mode, reason, meta } = plan(full);
+  const now = new Date().toISOString();
+
+  // ---- incremental: BigQuery rows from the overlap start, then the local
+  // rows older than that. Order in the file does not matter to pandas.
+  if (mode === "incremental") {
+    const fromRaw = isoMinusDays(meta.maxDate, OVERLAP_DAYS);
+    const from = fromRaw < SINCE ? SINCE : fromRaw;
+    const tmp = new Tmp(ACROSS_TIME, write);
+    try {
+      let maxDate = "";
+      const bq = await streamTable(token, funnelSql(), from, acrossTimeWriter, tmp, {
+        expectHeader: meta.header,
+        onRow(_line, iso) { if (iso && iso > maxDate) maxDate = iso; },
+      });
+      let keptLocal = 0, localOverlap = 0;
+      await scanLocal(ACROSS_TIME, (line, iso) => {
+        if (iso && iso < from) { keptLocal++; tmp.line(line); } else localOverlap++;
+      });
+      // an empty or thin overlap pull is upstream failing, not history ending -
+      // writing it would delete the last OVERLAP_DAYS of good data
+      if (bq.rows < Math.max(50, localOverlap * 0.5)) {
+        throw new Error(`incremental pull returned ${bq.rows} rows for the last ${OVERLAP_DAYS} days ` +
+          `where the local file has ${localOverlap} - not overwriting`);
+      }
+      const total = bq.rows + keptLocal;
+      const before = existingRows(ACROSS_TIME);
+      if (write) {
+        tmp.commit(ACROSS_TIME);
+        writeMeta({ ...meta, maxDate: maxDate || meta.maxDate, rows: total, pulledAt: now, mode });
+      } else tmp.discard();
+      const fullAge = Math.floor((Date.now() - Date.parse(meta.fullAt)) / 86400000);
+      return {
+        rows: total, bytes: bq.bytes, cached: bq.cached, dropped: bq.dropped, mode,
+        note: `funnel ${total} rows (${total - before >= 0 ? "+" : ""}${total - before} since last refresh; ` +
+          `${bq.rows} re-pulled over the last ${OVERLAP_DAYS} days, last full pull ${fullAge}d ago)`,
+      };
+    } catch (e) {
+      tmp.discard();
+      if (!(e instanceof HeaderChanged)) throw e;
+      mode = "full"; reason = e.message; meta = null;   // fall through to a full pull
+    }
+  }
+
+  // ---- full: everything from SINCE. If the local file came from BigQuery,
+  // fingerprint it first so the pull can say what changed outside the overlap.
+  const local = meta ? new DayFingerprints() : null;
+  if (local) await scanLocal(ACROSS_TIME, (line, iso) => { if (iso) local.add(iso, line); });
+  const fresh = new DayFingerprints();
+  let maxDate = "";
+  const tmp = new Tmp(ACROSS_TIME, write);
+  let bq;
+  try {
+    bq = await streamTable(token, funnelSql(), SINCE, acrossTimeWriter, tmp, {
+      onRow(line, iso) { if (iso) { fresh.add(iso, line); if (iso > maxDate) maxDate = iso; } },
+    });
+    if (bq.rows < 100) throw new Error(`funnel query returned ${bq.rows} rows - not overwriting`);
+    guardShrink("funnel query", bq.rows, ACROSS_TIME);
+  } catch (e) { tmp.discard(); throw e; }
+
+  let restated = "";
+  if (local && maxDate) {
+    const changed = local.changedBefore(fresh, isoMinusDays(maxDate, OVERLAP_DAYS));
+    restated = changed.length
+      ? `; ${changed.length} day${changed.length === 1 ? "" : "s"} older than the ${OVERLAP_DAYS}-day overlap ` +
+        `changed upstream (oldest ${changed[0]})`
+      : `; nothing older than the ${OVERLAP_DAYS}-day overlap changed`;
+  }
+  if (write) {
+    tmp.commit(ACROSS_TIME);
+    writeMeta({ since: SINCE, header: bq.header, maxDate, rows: bq.rows, fullAt: now, pulledAt: now, mode: "full" });
+  } else tmp.discard();
+  return {
+    rows: bq.rows, bytes: bq.bytes, cached: bq.cached, dropped: bq.dropped, mode: "full",
+    note: `funnel ${bq.rows} rows (full pull: ${reason}${restated})`,
+  };
+}
+
+/* Pulls the funnel table (incrementally where it can) and the spend table
+ * when the account can see it, and (unless write=false) replaces the CSVs
+ * atomically. Spend is small and always pulled in full.
  *
  * The funnel table is required - it is the dashboard. Spend is optional on
  * purpose: a service account can easily be granted one dataset and not the
@@ -225,30 +423,27 @@ function guardShrink(label, got, file) {
  * spend is denied the previous data/spend_daily.csv keeps serving and the
  * summary says so, rather than the whole refresh failing with a 403.
  *
- * Resolves to { funnelRows, spendRows (null when not written), summary }. */
-async function pull({ write = true } = {}) {
+ * Resolves to { funnelRows, spendRows (null when not written), mode, summary }. */
+async function pull({ write = true, full = false } = {}) {
   const sa = configured();
   if (!sa) return null;
   const token = await accessToken(sa, "bigquery");
-  const { acrossTimeWriter, spendWriter } = require("./sheets");
+  const { spendWriter } = require("./sheets");
 
-  const funnel = await streamTable(token, funnelSql(), acrossTimeWriter, ACROSS_TIME, write);
-  const discard = (t) => { if (t) { try { fs.unlinkSync(t); } catch {} } };
-  try {
-    if (funnel.rows < 100) throw new Error(`funnel query returned ${funnel.rows} rows - not overwriting`);
-    guardShrink("funnel query", funnel.rows, ACROSS_TIME);
-  } catch (e) { discard(funnel.tmp); throw e; }
+  const funnel = await pullFunnel(token, write, full);
 
   let spend = null, spendNote;
   if (process.env.BQ_SPEND === "off") {
     spendNote = "spend skipped (BQ_SPEND=off)";
   } else {
+    const tmp = new Tmp(SPEND_DAILY, write);
     try {
-      spend = await streamTable(token, spendSql(), spendWriter, SPEND_DAILY, write);
+      spend = await streamTable(token, spendSql(), SINCE, spendWriter, tmp);
       guardShrink("spend query", spend.rows, SPEND_DAILY);
+      if (write) tmp.commit(SPEND_DAILY); else tmp.discard();
       spendNote = `spend ${spend.rows} rows`;
     } catch (e) {
-      if (spend) discard(spend.tmp);
+      tmp.discard();
       spend = null;
       // keep the note short - the full 403 is long and this goes in the header tooltip
       spendNote = `spend unavailable, keeping the last file (${String(e.message || e)
@@ -256,26 +451,24 @@ async function pull({ write = true } = {}) {
     }
   }
 
-  if (write) {
-    fs.renameSync(funnel.tmp, ACROSS_TIME);
-    if (spend) fs.renameSync(spend.tmp, SPEND_DAILY);
-  }
-
   const bytes = funnel.bytes + (spend ? spend.bytes : 0);
   const gb = (bytes / 1e9).toFixed(2);
   const cached = funnel.cached && (!spend || spend.cached) ? ", cache hit" : "";
   const dropped = funnel.dropped ? `, ${funnel.dropped} undated rows dropped` : "";
   return {
-    funnelRows: funnel.rows, spendRows: spend ? spend.rows : null,
-    summary: `funnel ${funnel.rows} rows${dropped}, ${spendNote}, since ${SINCE} ` +
+    funnelRows: funnel.rows, spendRows: spend ? spend.rows : null, mode: funnel.mode,
+    summary: `${funnel.note}${dropped}, ${spendNote}, since ${SINCE} ` +
       `(${gb} GB scanned${cached}, ${sa._env})`,
   };
 }
 
-module.exports = { pull, configured, query, PROJECT, DATASET, SINCE, ACROSS_TIME, SPEND_DAILY };
+module.exports = {
+  pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
+  ACROSS_TIME, SPEND_DAILY, META,
+};
 
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;
-// add --write to actually replace the two CSVs. Handy from a Render shell.
+// --write replaces the CSVs, --full forces a full pull. Handy from a Render shell.
 if (require.main === module) {
   (async () => {
     if (!configured()) {
@@ -284,7 +477,10 @@ if (require.main === module) {
       process.exit(1);
     }
     const write = process.argv.includes("--write");
-    const out = await pull({ write });
+    const full = process.argv.includes("--full");
+    const p = plan(full);
+    console.log(`plan: ${p.mode}${p.reason ? ` (${p.reason})` : ""}`);
+    const out = await pull({ write, full });
     console.log(out.summary);
     console.log(write ? `wrote ${ACROSS_TIME}${out.spendRows !== null ? ` and ${SPEND_DAILY}` : ""}`
       : "dry run - pass --write to replace the CSVs");

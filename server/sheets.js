@@ -142,6 +142,7 @@ function acrossTimeWriter(headerRow) {
   }
   const w = {
     header: header.map(csvCell).join(","),
+    dateIndex: di,
     dropped: 0,
     row(cells) {
       if (!cells || !cells.length || cells.every((c) => c === "" || c === null || c === undefined)) return null;
@@ -172,6 +173,7 @@ function spendWriter(headerRow) {
   }
   const w = {
     header: "campaign_name,spend_date,impressions,reach,link_clicks,spend",
+    dateIndex: -1,
     dropped: 0,
     row(cells) {
       if (!cells || !cells[ci.name]) return null;
@@ -251,8 +253,8 @@ let lastRefresh = null; // last attempt's outcome, for /api/refresh/status
  * failing never blocks the others. The ETL reruns when any feed updated. The
  * result never throws: read `ok` (every attempted feed succeeded) and the
  * per-feed fields. */
-async function refresh() {
-  if (running) return running; // serialize concurrent calls
+async function refresh({ full = false } = {}) {
+  if (running) return running; // serialize concurrent calls (a full flag joins the one in flight)
   runningSince = new Date().toISOString();
   running = (async () => {
     const started = Date.now();
@@ -276,7 +278,7 @@ async function refresh() {
         // streams straight to disk and swaps the files in atomically; when the
         // account cannot see the spend table the previous spend_daily.csv is
         // left in place rather than blanked
-        const pulled = await bq.pull();
+        const pulled = await bq.pull({ full });
         out.bigquery = pulled.summary;
         bqDone = true;
         bqSpend = pulled.spendRows !== null;

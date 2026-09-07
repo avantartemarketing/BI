@@ -227,16 +227,18 @@ const sheets = require("./sheets");
 // with running:true; poll without ?run=1 for the outcome. A full refresh is a
 // multi-year BigQuery pull plus the ETL and takes minutes - holding the request
 // open for it outran Render's proxy, which reports that as a 502.
-function startRefresh() {
-  sheets.refresh().catch((e) => console.error("refresh crashed:", e));   // outcome lands in status()
-  return { started: true, ...sheets.status() };
+// &full=1 (or POST {full:true}) forces a full BigQuery pull instead of the
+// incremental one - e.g. after an upstream backfill, or to measure what moved.
+function startRefresh(full) {
+  sheets.refresh({ full }).catch((e) => console.error("refresh crashed:", e));   // outcome lands in status()
+  return { started: true, full: !!full, ...sheets.status() };
 }
 app.get("/api/refresh/status", (req, res) => {
-  if (req.query.run) return res.json(startRefresh());
+  if (req.query.run) return res.json(startRefresh(!!req.query.full));
   const st = sheets.status();
   res.json(st.at || st.running ? st : { ...st, note: "no refresh attempted since boot yet" });
 });
-app.post("/api/refresh", (_req, res) => res.json(startRefresh()));
+app.post("/api/refresh", (req, res) => res.json(startRefresh(!!(req.body && req.body.full))));
 
 app.get("/api/decisions", (_req, res) => {
   if (!fs.existsSync(DECISIONS_PATH)) return res.json([]);
