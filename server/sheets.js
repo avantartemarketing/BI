@@ -263,7 +263,7 @@ async function refresh() {
     // wins when configured. If it fails we still try the sheet - a shorter
     // history beats a frozen one - but ok stays false so the header says stale
     // rather than quietly serving the truncated fallback as if nothing broke.
-    let bqDone = false;
+    let bqDone = false, bqSpend = false;
     const bq = require("./bigquery");
     let bqOn = false;
     try { bqOn = !!bq.configured(); } catch (e) {
@@ -279,6 +279,7 @@ async function refresh() {
         const pulled = await bq.pull();
         out.bigquery = pulled.summary;
         bqDone = true;
+        bqSpend = pulled.spendRows !== null;
         updated = true;
       } catch (e) {
         out.bigquery = "bigquery failed: " + String((e && e.message) || e).slice(0, 300);
@@ -287,8 +288,26 @@ async function refresh() {
       }
     }
 
-    if (bqDone) {
+    if (bqDone && bqSpend) {
       out.sheet = "skipped - BigQuery is the source";
+    } else if (bqDone) {
+      // BigQuery covered the funnel but the account cannot see the spend
+      // table. Take spend from the sheet's tab so paid spend keeps refreshing,
+      // rather than freezing at whatever the last pull left behind.
+      try {
+        const sa = serviceAccount();
+        const token = sa ? await accessToken(sa) : null;
+        const sp = convertSpend(await fetchTab(SPEND_TAB, token));
+        writeAtomic(SPEND_DAILY, sp.csv);
+        out.sheet = `spend only: ${sp.rows} rows from the sheet (${token ? "service-account" : "public-link"}); ` +
+          "funnel from BigQuery";
+      } catch (e) {
+        // paid spend is stale from both sources - say so rather than reading fresh
+        out.sheet = "spend stale - BigQuery denies the spend table and the sheet fallback failed: " +
+          String((e && e.message) || e).slice(0, 200);
+        out.ok = false;
+        console.error("sheets: " + out.sheet);
+      }
     } else try {
       const sa = serviceAccount();
       const token = sa ? await accessToken(sa) : null;

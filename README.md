@@ -69,10 +69,13 @@ handful of complete campaigns rather than the hundreds we have run.
   that refuses to replace a long history with a much shorter one.
 
 The funnel table is required; **spend is optional**. A service account granted the funnel
-dataset but not `meta_ads_insights_export` still refreshes the funnel - the previous
-`data/spend_daily.csv` keeps serving and the refresh note says spend was unavailable and
-why, rather than the whole pull failing on a 403. `BQ_SPEND=off` skips the spend query
-outright.
+dataset but not `meta_ads_insights_export` still refreshes the funnel, and spend falls
+back to the sheet's `meta_ads_insights_Extract` tab so paid spend keeps moving (the
+refresh note reads `spend only: N rows from the sheet`). If that tab is unreachable too,
+the previous `data/spend_daily.csv` keeps serving and the header reads **Sources stale**
+until one of the two is fixed - granting the BigQuery table is the better fix, since it
+keeps spend on the same attribution basis as the funnel. `BQ_SPEND=off` skips the
+BigQuery spend query outright.
 
 Check the connection without writing anything: `node server/bigquery.js` prints the row
 counts and GB scanned; add `--write` to replace the CSVs.

@@ -994,6 +994,23 @@ def check_snapshot(snap: dict) -> None:
         raise AssertionError(f"{rid}: " + "; ".join(problems))
 
 
+def funnel_coverage(at: pd.DataFrame, curves: dict) -> str:
+    """One line for the refresh log: how much history the funnel export carries
+    and how much of it can feed the across-time curves. The panel needs a
+    release's announcement captured in the window (pdsa <= 0) and its launch
+    passed (pdsa >= 1); a release without announcement dates upstream never
+    qualifies however far back the export reaches."""
+    dated = at[at["pct_days_since_announcement"].notna()]
+    span = (dated.groupby("simple_release_name")["pct_days_since_announcement"]
+                 .agg(["min", "max"]))
+    complete = int(((span["min"] <= 0) & (span["max"] >= 1.0)).sum())
+    return (f"funnel {at['event_date'].min()}..{at['event_date'].max()}: "
+            f"{at['simple_release_name'].nunique()} releases seen, "
+            f"{len(span)} with announcement dates, "
+            f"{complete} complete announce-to-launch, "
+            f"{curves['n_releases']} in the curve panel")
+
+
 def main():
     at = load_across_time()
     as_of = at["event_date"].max() - timedelta(days=1)  # last full day (export cut mid-day)
@@ -1043,6 +1060,7 @@ def main():
             for r in camp.itertuples()
         ],
     }, indent=1))
+    print(funnel_coverage(at, curves))
     print(f"wrote {len(index)} releases -> {APP}")
 
 
