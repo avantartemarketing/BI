@@ -194,9 +194,15 @@ Email stats can also refresh live: set `HUBSPOT_TOKEN` to a HubSpot **Private Ap
 token (Settings → Integrations → Private Apps, Marketing Email read scope) and each
 refresh pulls every sent marketing email's delivered/open/click counts into
 `sources/all_sent_emails.csv` (`server/hubspot.js`). Emails join a release when the
-HubSpot campaign name matches the release's campaign code, or the code appears in the
-email name; the GEN/CUS/INS send-type filter still reads the name convention. Without
-the token the committed CSV snapshot is used. Instagram content
+HubSpot campaign name is the release's campaign code, when the code appears in the
+email or campaign name, or when an `Artist_Type_YY` token in either names the same
+artist and year as exactly one known code (so `AndyWarhol_LE_26` sends join the
+`AndyWarhol_TL_26` Meta code); known codes are every configured, saved and discovered
+release. The GEN/CUS/INS send-type filter still reads the name convention. The
+`emails` field of `/api/refresh/status` says, per targeted release, how many sends in
+the last 60 days joined it and lists the recent sends that joined nothing - the first
+place to look when a release's email rows are blank. Without the token the committed
+CSV snapshot (sends to 14 Aug 2026) is used. Instagram content
 (`data/content_posts.csv`) remains a manual export.
 
 Artist-account posts refresh from the team's **Notion log**: set `NOTION_TOKEN` to an

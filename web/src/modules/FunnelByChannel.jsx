@@ -113,15 +113,19 @@ function Rung({ r }) {
 
 /* Waterfall view: expected -> actual secured units today, stepped by the
  * SAME rows the funnel view shows, group by group. Each group's secured units
- * are a chain of the funnel's own factors (AA Email: delivered x click rate x
- * sessions per click x session->sale; Paid: spend x units per pound; the
- * rest: sessions x session->sale) and each step reprices one factor from its
- * reference to its actual with the earlier factors at actual and the later at
- * reference (the §4.5 one-at-a-time method), so the steps sum exactly to the
- * group's gap and the groups sum to the hero's. A row without a reference
- * (Posts, Open rate) is shown in place with no step - it is context, not a
- * component of the arithmetic. Rounding residual is parked on the largest
- * step; a real residual (the hero is capped at the edition) is left visible. */
+ * are a chain of the funnel's own factors (AA Email: delivered x open rate x
+ * clicks per open x sessions per click x session->sale; Paid: spend x units
+ * per pound; the rest: sessions x session->sale) and each step reprices one
+ * factor from its reference to its actual with the earlier factors at actual
+ * and the later at reference (the §4.5 one-at-a-time method), so the steps sum
+ * exactly to the group's gap and the groups sum to the hero's. The funnel view
+ * quotes click rate per delivered email (4.3%); the chain needs it per opened
+ * email so that open rate can carry its own step, and its reference is the
+ * same two medians divided (4.3% / 19.6%). A row without a reference (Posts,
+ * or Open rate when no opens are recorded) is shown in place with no step and
+ * its actual in grey - context, not a component of the arithmetic. Rounding
+ * residual is parked on the largest step; a real residual (the hero is capped
+ * at the edition) is left visible. */
 function chainSteps(factors) {
   // factors: [{label, a, e, note}] -> steps summing to prod(a) - prod(e)
   const out = [];
@@ -142,11 +146,12 @@ function groupWaterfall(g, snap) {
   const sessA = fbg.sessions_actual ?? 0, sessE = fbg.sessions_expected ?? 0;
   const convA = fbg.conv_actual ?? 0, convE = fbg.conv_expected ?? 0;
   const rows = [];   // [{label, step (number|null), note, tip rows}]
-  const info = (label, v, ref, unit, note) => rows.push({ label, value: null, note,
+  const P = (v) => fmtVal(v * 100, "%"), N = (v) => fmtVal(v, "count"), R = (v) => fmt(v, 2);
+  const info = (label, v, ref, unit, note) => rows.push({ label, value: null, note, display: fmtVal(v, unit),
     tipRows: [{ label: "Actual", value: fmtVal(v, unit) }, { label: "Reference", value: fmtVal(ref, unit) }] });
   const twoFactor = () => chainSteps([
-    { label: "Sessions", a: sessA, e: sessE, note: "sessions vs plan" },
-    { label: "Session → sale", a: convA, e: convE, note: "session → sale rate vs plan" },
+    { label: "Sessions", a: sessA, e: sessE, show: N, note: "sessions vs plan" },
+    { label: "Session → sale", a: convA, e: convE, show: P, note: "session → sale rate vs plan" },
   ]);
 
   let steps;
@@ -154,27 +159,46 @@ function groupWaterfall(g, snap) {
     const em = snap.email || {};
     const b = snap.benchmarks || {};
     const clickRef = (b.emailClickRateRef ?? 4.3) / 100, openRef = (b.emailOpenRateRef ?? 19.6) / 100;
+    const ctorRef = clickRef / openRef; // clicks per opened email at reference
     const delivA = em.delivered ?? 0, delivE = em.deliveredTarget ?? null;
-    const clickA = em.clickRate ?? null;
-    const clicksA = delivA * (clickA ?? 0), clicksE = finite(delivE) ? delivE * clickRef : null;
+    const opensA = em.opened ?? delivA * (em.openRate ?? 0);
+    const clicksA = em.clicked ?? delivA * (em.clickRate ?? 0);
+    const openA = delivA > 0 ? opensA / delivA : null;
+    const clickA = delivA > 0 ? clicksA / delivA : null;
+    const clicksE = finite(delivE) ? delivE * clickRef : null;
     const chainable = finite(delivE) && delivE > 0 && clicksA > 0 && clicksE > 0 && sessE > 0;
-    info("Open rate", (em.openRate ?? null) !== null ? em.openRate * 100 : null, openRef * 100, "%",
-      "context only - clicks, not opens, carry into sessions");
-    if (chainable) {
-      steps = chainSteps([
-        { label: "Delivered emails", a: delivA, e: delivE, note: "sends delivered vs the cohort-median delivery curve" },
-        { label: "Click rate", a: clickA, e: clickRef, note: `clicks per delivered email vs ${(clickRef * 100).toFixed(1)}%` },
-        { label: "Sessions", a: sessA / clicksA, e: sessE / clicksE, note: "sessions per click vs plan - traffic the clicks did not explain" },
-        { label: "Session → sale", a: convA, e: convE, note: "session → sale rate vs plan" },
-      ]);
-      // keep the funnel's row order: Delivered, Open rate, Click rate, Sessions, Session -> sale
-      rows.splice(0, 0, steps[0]); rows.push(steps[1], steps[2], steps[3]);
+    const delivered = { label: "Delivered emails", a: delivA, e: delivE, show: N,
+      note: "sends delivered vs the cohort-median delivery curve" };
+    const sessions = { label: "Sessions", a: sessA / clicksA, e: sessE / clicksE, show: R,
+      note: "sessions per click vs plan - traffic the clicks did not explain" };
+    const sale = { label: "Session → sale", a: convA, e: convE, show: P, note: "session → sale rate vs plan" };
+    if (chainable && opensA > 0) {
+      rows.push(...chainSteps([
+        delivered,
+        { label: "Open rate", a: openA, e: openRef, show: P, note: `opens per delivered email vs ${P(openRef)}` },
+        { label: "Click rate", a: clicksA / opensA, e: ctorRef, show: P,
+          note: `clicks per opened email vs ${P(ctorRef)} (the funnel's ${P(clickRef)} of delivered ÷ ${P(openRef)} opened)` },
+        sessions, sale,
+      ]));
       return { name: g.name, rows, now, exp };
     }
-    rows.unshift({ label: "Delivered emails", value: null, note: "no delivery benchmark yet",
-      tipRows: [{ label: "Actual", value: fmtVal(delivA, "count") }, { label: "Reference", value: "–" }] });
-    rows.push({ label: "Click rate", value: null, note: "context only",
-      tipRows: [{ label: "Actual", value: fmtVal(clickA !== null ? clickA * 100 : null, "%") }, { label: "Reference", value: fmtVal(clickRef * 100, "%") }] });
+    if (chainable) {
+      // clicks recorded but no opens: open rate is context and click rate carries per delivered email
+      steps = chainSteps([
+        delivered,
+        { label: "Click rate", a: clickA, e: clickRef, show: P, note: `clicks per delivered email vs ${P(clickRef)}` },
+        sessions, sale,
+      ]);
+      rows.push(steps[0]);
+      info("Open rate", null, openRef * 100, "%", "no opens recorded - context only; clicks carry into sessions");
+      rows.push(steps[1], steps[2], steps[3]);
+      return { name: g.name, rows, now, exp };
+    }
+    rows.push({ label: "Delivered emails", value: null, display: fmtVal(delivA, "count"),
+      note: delivA > 0 ? "no delivery benchmark yet" : "no sends have joined this release yet",
+      tipRows: [{ label: "Actual", value: fmtVal(delivA, "count") }, { label: "Reference", value: fmtVal(delivE, "count") }] });
+    info("Open rate", openA !== null ? openA * 100 : null, openRef * 100, "%", "context only");
+    info("Click rate", clickA !== null ? clickA * 100 : null, clickRef * 100, "%", "context only");
     rows.push(...twoFactor());
     return { name: g.name, rows, now, exp };
   }
@@ -185,8 +209,9 @@ function groupWaterfall(g, snap) {
     const spendE = of > 0 && paid.spendBudget ? (paid.spendBudget * day) / of : null;
     if (finite(spendE) && spendE > 0 && spendA > 0 && exp > 0) {
       steps = chainSteps([
-        { label: "Spend", a: spendA, e: spendE, note: "spend to date vs the plan's share of budget by today" },
-        { label: "Cost per entry", a: now / spendA, e: exp / spendE, note: "secured units per pound, actual vs plan - the cost-per-entry side of the ledger" },
+        { label: "Spend", a: spendA, e: spendE, show: (v) => fmtVal(v, "eur"), note: "spend to date vs the plan's share of budget by today" },
+        { label: "Cost per entry", a: now / spendA, e: exp / spendE, show: (v) => (v > 0 ? fmtVal(1 / v, "eur") + " per unit" : "–"),
+          note: "secured units per pound, actual vs plan - the cost-per-entry side of the ledger" },
       ]);
       rows.push(...steps);
       return { name: g.name, rows, now, exp };
@@ -206,9 +231,9 @@ function groupWaterfall(g, snap) {
     const postsE = of > 0 && social.artistPostsTarget ? (social.artistPostsTarget * day) / of : null;
     if (finite(postsA) && finite(postsE) && postsA > 0 && postsE > 0 && sessE > 0) {
       rows.push(...chainSteps([
-        { label: "Posts", a: postsA, e: postsE, note: "artist-account posts vs the tier benchmark, pro-rated" },
-        { label: "Sessions", a: sessA / postsA, e: sessE / postsE, note: "sessions per post vs plan" },
-        { label: "Session → sale", a: convA, e: convE, note: "session → sale rate vs plan" },
+        { label: "Posts", a: postsA, e: postsE, show: N, note: "artist-account posts vs the tier benchmark, pro-rated" },
+        { label: "Sessions", a: sessA / postsA, e: sessE / postsE, show: R, note: "sessions per post vs plan" },
+        { label: "Session → sale", a: convA, e: convE, show: P, note: "session → sale rate vs plan" },
       ]));
       return { name: g.name, rows, now, exp };
     }
@@ -278,6 +303,7 @@ function FunnelWaterfall({ snap, groups }) {
             <div {...tipApi.props({
               head: r.label, body: r.note,
               rows: [
+                ...(r.show ? [{ label: "Actual", value: r.show(r.a) }, { label: "Reference", value: r.show(r.e) }] : []),
                 { label: "vs expected", value: fmtSigned(r.value, 1) + " units", color: r.value >= 0 ? C.green : C.red },
                 { label: "Running total", value: fmt(r.to, 1) },
               ],
@@ -301,7 +327,7 @@ function FunnelWaterfall({ snap, groups }) {
               borderRadius: "50%", background: NEUTRAL_DOT, boxShadow: RING,
             }} />
           </div>
-          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: C.muted }}>–</div>
+          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: C.muted }}>{r.display ?? "–"}</div>
         </div>
       ))}
       {anchorRow("Actual today", nowTotal,
@@ -309,7 +335,7 @@ function FunnelWaterfall({ snap, groups }) {
       <div style={{ height: 24, flex: "0 0 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <QBadge content={{
           head: "Target to actual",
-          body: "The same rows as the funnel view. Each row reprices one funnel factor from its reference to its actual, one at a time; within a group the steps sum to that group's gap and the groups sum to the gap between expected and actual secured units today. Grey rows have no reference and carry no step.",
+          body: "The same rows as the funnel view. Each row reprices one funnel factor from its reference to its actual, one at a time; within a group the steps sum to that group's gap and the groups sum to the gap between expected and actual secured units today. Grey rows have no reference and carry no step; the grey figure is their actual.",
         }} />
         <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
           {capped ? "steps exceed the gap - sellout caps it" : `secured units, day ${day}`}
