@@ -49,6 +49,7 @@ export default function App() {
   const [me, setMe] = useState(null); // { email, admin }
   const [view, setView] = useState("release"); // "release" | "permissions" (app-level, not per-release)
   const [query, setQuery] = useState("");
+  const st = useRefreshStatus();
 
   useEffect(() => {
     fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {});
@@ -72,6 +73,11 @@ export default function App() {
   // a save that sets targets promotes the release: swap the page in and
   // refresh the index so the sidebar's dot and status follow
   const onSaved = (s) => { setSnap(s); loadIndex().catch(() => {}); };
+  // a refresh landed: pull the current page and the index again
+  const onRefreshed = () => {
+    loadIndex().catch(() => {});
+    if (releaseId) getJSON(`/api/releases/${releaseId}`).then(setSnap).catch(() => {});
+  };
 
   const groups = useMemo(() => {
     if (!index) return { live: [], all: [] };
@@ -134,7 +140,7 @@ export default function App() {
       </nav>
       <main className="content">
         {view === "permissions" && me?.admin ? <Permissions me={me} /> :
-          snap ? <ReleasePage snap={snap} onSaved={onSaved} /> :
+          snap ? <ReleasePage snap={snap} onSaved={onSaved} st={st} onRefreshed={onRefreshed} /> :
           snapError ? (
             <div style={{ color: "#6c6b68", maxWidth: 520, lineHeight: 1.5 }}>
               {snapError.pending
@@ -184,13 +190,10 @@ function ReleaseRow({ r, active, onClick, showStatus }) {
   );
 }
 
-/* The header used to assert "Sources fresh" as a literal, so a broken hourly
- * ingestion - expired token, un-shared sheet, an ETL exception - looked
- * identical to a healthy one while the page served frozen numbers. This reads
- * the status the server already records and says which it is. */
-function Freshness({ asOf }) {
-  const t = useTip();
-  const [st, setSt] = useState(undefined); // undefined = still asking
+/* The server's refresh status, polled every 5 minutes (every 15 s while a
+ * refresh is in flight). undefined = still asking, null = could not read it. */
+function useRefreshStatus() {
+  const [st, setSt] = useState(undefined);
   useEffect(() => {
     let live = true;
     const poll = () => fetch("/api/refresh/status")
@@ -207,6 +210,42 @@ function Freshness({ asOf }) {
       .then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setSt(d); }).catch(() => {}), 15 * 1000);
     return () => clearInterval(id);
   }, [st && st.running]);
+  return st;
+}
+
+/* A page built from data older than a day is the committed fallback (served
+ * after a deploy until the first refresh lands) or the product of a refresh
+ * that has been failing. Both looked like "the numbers are just low". Say
+ * which, and what the refresh is doing about it. */
+function StaleBanner({ asOf, st, onRefreshed }) {
+  const ageDays = asOf ? Math.floor((Date.now() - new Date(asOf + "T00:00:00Z").getTime()) / 86400000) - 1 : 0;
+  const prevAt = React.useRef(st && st.at);
+  useEffect(() => {
+    // a refresh just landed: reload the page's data
+    if (st && st.at && prevAt.current && st.at !== prevAt.current && !st.running) onRefreshed();
+    prevAt.current = st && st.at;
+  }, [st && st.at, st && st.running]);
+  if (ageDays < 2) return null;
+  const through = new Date(asOf + "T00:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  let what;
+  if (st === undefined) what = "Checking whether a refresh is running…";
+  else if (st && st.running) what = "A refresh is running now - this page reloads when it lands (a first refresh after a deploy takes a few minutes).";
+  else if (st && st.at && st.ok === false) what = `The last refresh failed: ${String(st.etl || st.bigquery || st.sheet || "").slice(0, 160)}`;
+  else if (st && st.at) what = "The last refresh succeeded but did not move this page - the source feed may not have newer rows for it.";
+  else what = "No refresh has completed since the app started - the first one after a deploy takes a few minutes.";
+  return (
+    <div style={{ margin: "14px 0 0", padding: "10px 14px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a", fontSize: 12.5, lineHeight: 1.5 }}>
+      <b>Built from data through {through}</b> ({ageDays} days old). {what}
+    </div>
+  );
+}
+
+/* The header used to assert "Sources fresh" as a literal, so a broken hourly
+ * ingestion - expired token, un-shared sheet, an ETL exception - looked
+ * identical to a healthy one while the page served frozen numbers. This reads
+ * the status the server already records and says which it is. */
+function Freshness({ asOf, st }) {
+  const t = useTip();
 
   const feeds = st && [["BigQuery", st.bigquery], ["Sheet", st.sheet], ["Email", st.emails],
     ["Notion", st.notion], ["ETL", st.etl]]
@@ -236,7 +275,7 @@ function Freshness({ asOf }) {
   );
 }
 
-function ReleasePage({ snap, onSaved }) {
+function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   const [tab, setTab] = useState("overview");
   useEffect(() => setTab("overview"), [snap.id]);
   const targeted = snap.targeted !== false;
@@ -254,8 +293,9 @@ function ReleasePage({ snap, onSaved }) {
           <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
             title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
         )}
-        <Freshness asOf={snap.asOf} />
+        <Freshness asOf={snap.asOf} st={st} />
       </header>
+      <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
