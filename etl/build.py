@@ -380,30 +380,56 @@ def pdsa_for(release: dict, d: date) -> float:
     return (d - a).days / L if L else 0.0
 
 
-def email_delivered_benchmark(emails: pd.DataFrame, as_of: date) -> dict | None:
-    """Delivered-emails target: median total among completed campaigns, plus the
-    pooled cumulative delivery-timing curve on the standard pdsa grid (email
-    volume is send-driven and spiky - a pro-rata line would misread early
-    campaigns). None until >= 2 completed campaigns have send data."""
+EMAIL_REF_MONTHS = 24   # rate references: draw launches that closed within this span
+
+
+def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: list[dict] = (),
+                              spend: pd.DataFrame | None = None) -> dict | None:
+    """Email references from the sends on file (HubSpot on the live site).
+
+    Delivered-emails target: median total among completed configured
+    campaigns, plus the pooled cumulative delivery-timing curve on the
+    standard pdsa grid (email volume is send-driven and spiky - a pro-rata
+    line would misread early campaigns). Totals scale with the release, so
+    this cohort stays the configured (targeted) releases.
+
+    Open-rate and click-rate references: the median of each completed draw
+    launch's pooled rate (opened, or clicked, over delivered across its
+    launch-window sends). Rates do not scale with the release, so this cohort
+    adds every discovered release whose Meta campaign is a draw and whose
+    dates are complete, closed within EMAIL_REF_MONTHS.
+
+    Each part is None until >= 2 launches qualify; the whole is None when
+    neither does."""
     if emails.empty:
         return None
-    shares, totals = [], []
-    for r in INPUTS["releases"]:
-        end = date.fromisoformat(r["launch_end"])
-        if end >= as_of:
-            continue
-        start = date.fromisoformat(r["private_room_open"])
-        ann = date.fromisoformat(r["announce_date"])
-        L = max((end - ann).days, 1)
-        sub = emails[(emails["campaign"] == r["campaign_code"])
+
+    def window_sends(code, start, end):
+        sub = emails[(emails["campaign"] == code)
                      & (emails["sent_at"].dt.date >= start)
                      & (emails["sent_at"].dt.date <= end)]
         core = sub[sub["email_type"].isin(["GEN", "CUS", "INS"])]
         if core.empty and not sub.empty:
             core = sub[~sub["email_type"].isin(["TRNS", "AUT", "FREQ", "TEST"])]
+        return core if float(core["delivered"].sum()) >= 100 else None
+
+    def rate_row(rid, end, core):
         total = float(core["delivered"].sum())
-        if total < 100:
+        return (rid, end, float(core["opened"].sum()) / total, float(core["clicked"].sum()) / total)
+
+    shares, totals, rates, seen = [], [], [], set()
+    recent = as_of - timedelta(days=EMAIL_REF_MONTHS * 30)
+    for r in INPUTS["releases"]:
+        seen.add(r["campaign_code"])
+        end = date.fromisoformat(r["launch_end"])
+        if end >= as_of:
             continue
+        ann = date.fromisoformat(r["announce_date"])
+        core = window_sends(r["campaign_code"], date.fromisoformat(r["private_room_open"]), end)
+        if core is None:
+            continue
+        total = float(core["delivered"].sum())
+        L = max((end - ann).days, 1)
         c = core.assign(pdsa=[(d.date() - ann).days / L for d in core["sent_at"]]).sort_values("pdsa")
         cum = c["delivered"].cumsum() / total
         row = []
@@ -412,15 +438,48 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date) -> dict | None:
             row.append(float(sel.iloc[-1]) if len(sel) else 0.0)
         shares.append(row)
         totals.append(total)
-    if len(totals) < 2:
-        return None
-    med = pd.DataFrame(shares).median().tolist()
-    for i in range(1, len(med)):
-        med[i] = max(med[i], med[i - 1])
-    top = med[-1] or 1.0
-    return {"total": float(pd.Series(totals).median()),
-            "curve": [round(min(v / top, 1.0), 4) for v in med]}
+        if end >= recent:
+            rates.append(rate_row(r["id"], end, core))
+    for r in discovered:
+        code = r.get("campaign_code")
+        if not code or code in seen or not r.get("announce_date") or not r.get("launch_end"):
+            continue
+        end = date.fromisoformat(r["launch_end"])
+        if end >= as_of or end < recent:
+            continue
+        camp = match_campaign(code, spend) if spend is not None else None
+        if not camp or not camp.lower().endswith("draw"):
+            continue
+        ann = date.fromisoformat(r["announce_date"])
+        core = window_sends(code, ann - timedelta(days=PR_LEAD_DAYS), end)
+        if core is not None:
+            rates.append(rate_row(r["id"], end, core))
 
+    out = {"total": None, "curve": None, "open_rate": None, "click_rate": None, "cohort": None}
+    if len(totals) >= 2:
+        med = pd.DataFrame(shares).median().tolist()
+        for i in range(1, len(med)):
+            med[i] = max(med[i], med[i - 1])
+        top = med[-1] or 1.0
+        out["total"] = float(pd.Series(totals).median())
+        out["curve"] = [round(min(v / top, 1.0), 4) for v in med]
+    if len(rates) >= 2:
+        rates.sort(key=lambda x: x[1], reverse=True)
+        out["open_rate"] = float(pd.Series([x[2] for x in rates]).median())
+        out["click_rate"] = float(pd.Series([x[3] for x in rates]).median())
+        out["cohort"] = {"n": len(rates), "releases": [x[0] for x in rates],
+                         "from": rates[-1][1].isoformat(), "to": rates[0][1].isoformat()}
+    return out if (out["total"] is not None or out["open_rate"] is not None) else None
+
+
+def email_refs(bench: dict | None) -> dict:
+    """The email rate references as the UI reads them (percent) plus the
+    cohort behind them; the UI falls back to fixed defaults on None."""
+    if not bench or bench.get("open_rate") is None:
+        return {"emailOpenRateRef": None, "emailClickRateRef": None, "emailRefCohort": None}
+    return {"emailOpenRateRef": round(bench["open_rate"] * 100, 1),
+            "emailClickRateRef": round(bench["click_rate"] * 100, 1),
+            "emailRefCohort": bench["cohort"]}
 
 def build_curves(at: pd.DataFrame) -> dict:
     df = at[~at["campaign_stage"].isin(CLEAN_EXCLUDE_STAGES)].copy()
@@ -726,7 +785,7 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
 
 
 def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.DataFrame,
-                  content: pd.DataFrame, as_of: date) -> dict:
+                  content: pd.DataFrame, as_of: date, email_bench: dict | None = None) -> dict:
     """Actuals-only snapshot for a release nobody has set targets for. Same
     shape as build_release's so the page code has one contract, with every
     target-derived field None and targeted: False - the page shows what
@@ -902,7 +961,8 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "draw": None, "geo": None, "waterfall": None,
         "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
                    "entries": round(float(upto["Draw_Entries_Eligible_Units"].sum()))},
-        "benchmarks": {"chargeDropOff": 1 - e2o, "cannibalisation": b["cannibalisation"], "targetBuffer": b["target_buffer"]},
+        "benchmarks": {"chargeDropOff": 1 - e2o, "cannibalisation": b["cannibalisation"], "targetBuffer": b["target_buffer"],
+                       **email_refs(email_bench)},
     }
 
 
@@ -1317,7 +1377,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     }
     # expected delivered by today: cohort median total x pooled delivery-timing curve
     email_out["deliveredTarget"] = None
-    if email_bench:
+    if email_bench and email_bench["total"] is not None:
         p = pdsa_for(release, min(as_of, launch_end))
         grid, cur = CURVE_GRID, email_bench["curve"]
         if p <= grid[0]:
@@ -1440,6 +1500,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "chargeDropOff": 1 - b["eligible_entry_to_order"],
             "cannibalisation": b["cannibalisation"],
             "targetBuffer": b["target_buffer"],
+            **email_refs(email_bench),
         },
     }
     return snap
@@ -1512,7 +1573,6 @@ def main():
     content = load_content()
     artist_posts = load_artist_posts()
     posts_bench = artist_posts_benchmarks(artist_posts, as_of)
-    email_bench = email_delivered_benchmark(emails, as_of)
 
     APP.mkdir(parents=True, exist_ok=True)
     (APP / "releases").mkdir(exist_ok=True)
@@ -1525,6 +1585,16 @@ def main():
     # Every release the funnel data mentions. The configured ones (target
     # inputs on file) get the full build; the rest get an actuals-only page.
     discovered = discover_releases(at, as_of, known_codes(emails, content, artist_posts))
+    email_bench = email_delivered_benchmark(emails, as_of, discovered, spend)
+    if email_bench and email_bench["open_rate"] is not None:
+        c = email_bench["cohort"]
+        print(f"email refs: open {email_bench['open_rate'] * 100:.1f}% click {email_bench['click_rate'] * 100:.1f}% "
+              f"(median of {c['n']} draw launches closed {c['from']}..{c['to']}); "
+              f"delivered median {email_bench['total']:.0f}" if email_bench["total"] is not None else
+              f"email refs: open {email_bench['open_rate'] * 100:.1f}% click {email_bench['click_rate'] * 100:.1f}% "
+              f"(median of {c['n']} draw launches closed {c['from']}..{c['to']}); no delivered median yet")
+    else:
+        print("email refs: none yet (fewer than 2 completed draw launches with sends on file) - UI defaults apply")
     by_name = {n: g for n, g in at.groupby("simple_release_name")}
     configured = {r["release_name"]: r for r in INPUTS["releases"]}
 
@@ -1556,7 +1626,7 @@ def main():
                   f"target={snap['hero']['target']} proj={snap['hero']['projected']}")
         else:
             rec["campaign_name"] = match_campaign(rec["campaign_code"], spend)
-            snap = build_actuals(rec, by_name[rec["release_name"]], spend, emails, content, as_of)
+            snap = build_actuals(rec, by_name[rec["release_name"]], spend, emails, content, as_of, email_bench)
             check_snapshot(snap)
             (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
             written.add(f"{rec['id']}.json")

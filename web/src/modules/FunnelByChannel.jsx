@@ -371,7 +371,10 @@ export default function FunnelByChannel({ snap }) {
   const spendPlan = of > 0 && paid.spendBudget ? (paid.spendBudget * day) / of : null;
   const cpp = snap?.targets?.paid?.cost_per_purchase;
   const cpeRef = cpp ? cpp * 0.8 : null;
-  const REF_NOTE = "Reference: historical LE launch-send median";
+  const cohort = snap?.benchmarks?.emailRefCohort;
+  const REF_NOTE = cohort
+    ? `Reference: median pooled rate across ${cohort.n} completed draw launches with sends on file (closed ${cohort.from} to ${cohort.to})`
+    : "Reference: fixed default until two completed draw launches have sends on file";
 
   const groups = [
     {

@@ -201,9 +201,14 @@ artist and year as exactly one known code (so `AndyWarhol_LE_26` sends join the
 release. The GEN/CUS/INS send-type filter still reads the name convention. The
 `emails` field of `/api/refresh/status` says, per targeted release, how many sends in
 the last 60 days joined it and lists the recent sends that joined nothing - the first
-place to look when a release's email rows are blank. Without the token the committed
-CSV snapshot (sends to 14 Aug 2026) is used. Instagram content
-(`data/content_posts.csv`) remains a manual export.
+place to look when a release's email rows are blank. The email references are
+recomputed from that file at every refresh: open and click rate as the median pooled
+rate across completed draw launches of the last 24 months (configured and discovered),
+the delivered target as the median delivered total across completed configured
+launches on the pooled delivery-timing curve. The dashboard's 19.6% and 4.3% defaults
+apply only until two launches qualify. Without the token the committed CSV snapshot
+(sends to 14 Aug 2026) is used. Instagram content (`data/content_posts.csv`) remains a
+manual export.
 
 Artist-account posts refresh from the team's **Notion log**: set `NOTION_TOKEN` to an
 internal-integration secret (notion.so → Settings → Integrations → develop your own)
