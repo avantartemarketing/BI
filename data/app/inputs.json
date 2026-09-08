@@ -170,7 +170,9 @@
   },
   "frame_conversion": 0.35,
   "frame_profit_per_unit": 94,
-  "budget_sense_check_max_pct_of_launch_value": 0.06
+  "budget_sense_check_max_pct_of_launch_value": 0.06,
+  "cpe_spend_elasticity": 0.38,
+  "cpe_spend_elasticity_note": "Within-campaign elasticity of cost per entry to daily spend, fitted on 13 campaigns / 170 campaign-days with a campaign fixed effect and a day-drift term: 0.384 +/- 0.062 (etl/analysis/cpe_elasticity.py, 2026-09-07). Doubling daily spend raises CPE ~31%, 10x ~2.4x. Set to 0 to price entries flat as before."
  },
  "channel_quality_default": {
   "AA Email Auto": "High",

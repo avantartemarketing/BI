@@ -211,11 +211,33 @@ budget          = entries needed × forecast CPE
 A launch pacing well ahead organically can therefore read a recommendation of
 £0/day: nothing extra is needed to secure sell-out, whatever the current ROI.
 
+**Price is not flat in spend.** Within a campaign, cost per entry rises with
+daily spend as `spend^0.38` - measured on our own campaigns (13 campaigns, 170
+campaign-days, campaign fixed effects, net of the day drift; ±0.06;
+`etl/analysis/cpe_elasticity.py`). Doubling the daily budget raises the cost
+per entry by about a third; a tenfold jump multiplies it by 2.4. So the
+entries a recommendation asks for are priced at the cost the *recommended*
+spend implies, anchored on today's price at today's spend:
+
+```
+cpe(s)      = cpe_today × (s / spend_today)^0.38
+sell-out s  : days_left × s / cpe(s) = units still to secure
+ROI-floor s : cpe(s) = (1 − cannibalisation) × AA profit/unit ÷ (floor × AA budget share)
+target      = min(sell-out s, ROI-floor s)
+```
+
+A release that could only sell out by spending fifty times today's budget is
+told so by the ROI floor, which binds long before the supply figure does.
+
 **Pacing rules:** target ROI (AA) **1.1**, floor **1.0**. Cumulative ROI below
-0.9 → decrease; 0.9–1.3 → maintain; above 1.3 → increase. Daily changes are
-capped at ±30% and changes under 10% are ignored. Forecast ROI below target for
-3 consecutive days forces a decrease. The recommended spend is
-`min(budget-to-sell-out spend, spend at the ROI floor)`.
+0.9 → decrease; 0.9–1.3 → hold (never raise); above 1.3 → increase. Daily
+changes are capped at ±30% and changes under 10% are ignored. Forecast ROI
+below target for 3 consecutive days forces a decrease. The recommendation is
+the target above, paced by these rules from today's spend; the card's
+"Capped by" names which one bound it, and its tooltip carries the
+unconstrained figures. With no spend yet there is no price to anchor on: the
+first day starts at the plan's daily rate. ROI shown against the
+recommendation is the ROI at that spend level's cost per entry.
 
 ## 8. Where the numbers come from
 

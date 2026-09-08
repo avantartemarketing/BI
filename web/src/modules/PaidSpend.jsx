@@ -23,17 +23,26 @@ export default function PaidSpend({ snap }) {
   const rec = budget.recommended ?? null;
   const d = cur !== null && rec !== null ? Math.round(rec) - Math.round(cur) : null;
   const floorF = fmt(budget.floor ?? 1, 1);
+  const noPrice = !noCampaign && rec === null;   // spend exists but no cost-per-entry history yet
 
   // ----- lozenge (recommended vs current), voice per §6.3 / §4.7 -----
-  const lozTip = noCampaign ? { head: "No paid campaign live yet" } : {
+  const lozTip = noCampaign ? { head: "No paid campaign live yet" } : noPrice ? {
+    head: "No recommendation yet", body: "Needs a few days of paid entries to price them.",
+  } : {
     head: "Daily budget",
+    body: "Entries are priced at the cost per entry the recommended spend implies (cost rises with spend), then paced by the workbook's rules: ±30% a day, hold while cumulative ROI sits between 0.9 and 1.3, cut below 0.9.",
     rows: [
       { label: "Current", value: money(cur) },
       { label: "Recommended", value: money(rec) },
+      { label: "Cost / unit now", value: budget.cpeNow ? "£" + fmt(budget.cpeNow) : "–" },
+      { label: "Cost / unit at recommended", value: budget.cpeAtRecommended ? "£" + fmt(budget.cpeAtRecommended) : "–" },
+      { label: "ROI at recommended", value: fmt(budget.finalDayRoi, 2) },
+      { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
+      { label: "Spend to sell out / day", value: budget.supplySpend !== null && budget.supplySpend !== undefined ? money(budget.supplySpend) : "–" },
+      { label: "Spend at ROI floor / day", value: budget.roiSpend !== null && budget.roiSpend !== undefined ? money(budget.roiSpend) : "–" },
       ...(typeof budget.selloutGap === "number"
         ? [{ label: "Sell-out gap (units)", value: fmt(budget.selloutGap) }]
         : []),
-      { label: "Final-day ROI", value: fmt(budget.finalDayRoi, 2) },
       { label: "ROI floor", value: floorF },
     ],
   };
@@ -46,10 +55,35 @@ export default function PaidSpend({ snap }) {
       <Lozenge dir="down" content={lozTip}>{"▼ " + MINUS + "£" + fmt(-d)}</Lozenge>
     );
 
-  // ----- "Capped by" row -----
-  const showCap = !complete && !noCampaign && (rec ?? 0) > 0;
-  const capLabel = budget.cap === "supply" ? "Supply - sell-out" : "ROI floor";
-  const capTip = budget.cap === "supply" ? {
+  // ----- "Capped by" row: what bound the recommendation -----
+  const showCap = !complete && !noCampaign && rec !== null && !!budget.cap;
+  const CAP_LABELS = {
+    supply: "Supply - sell-out", roi_floor: "ROI floor", pacing: "Pacing ±30% / day",
+    roi_band_hold: "ROI band - hold", roi_band_decrease: "ROI band - decrease",
+    forced_decrease: "3 days below target ROI", plan_rate: "Plan rate (first day)",
+    hold_small_change: "Change under 10% - hold",
+  };
+  const capLabel = CAP_LABELS[budget.cap] || budget.cap;
+  const bandTip = {
+    head: capLabel,
+    body: budget.cap === "pacing"
+      ? "The workbook's pacing rule: never move the daily budget by more than 30% in a day - a bigger jump resets Meta's learning and the price with it. The unconstrained figure is in the budget tooltip."
+      : budget.cap === "roi_band_hold"
+      ? "Cumulative ROI is between 0.9 and 1.3: the rules say hold, so spend is not raised even though more would sell more."
+      : budget.cap === "roi_band_decrease"
+      ? "Cumulative ROI is below 0.9: the rules say decrease, by up to 30% a day."
+      : budget.cap === "forced_decrease"
+      ? "Forecast ROI has been below target for three days running: the rules force a decrease."
+      : budget.cap === "plan_rate"
+      ? "No spend yet to anchor a price on, so the first day starts at the plan's daily rate."
+      : "The recommendation is within 10% of today's spend, which the rules treat as no change.",
+    rows: [
+      { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
+      { label: "Unconstrained", value: budget.supplySpend !== null && budget.roiSpend !== null && budget.supplySpend !== undefined && budget.roiSpend !== undefined ? money(Math.min(budget.supplySpend, budget.roiSpend)) + " / day" : "–" },
+      { label: "ROI at recommended", value: fmt(budget.finalDayRoi, 2) },
+    ],
+  };
+  const capTip = !["supply", "roi_floor"].includes(budget.cap) ? bandTip : budget.cap === "supply" ? {
     head: "Supply - sell-out",
     rows: [
       { label: "Spend cap", value: money(rec) + " / day" },
@@ -121,7 +155,7 @@ export default function PaidSpend({ snap }) {
           <div className="lead" title="Campaign closed" style={{ color: C.muted }}>-</div>
         ) : (
           <>
-            <div className="lead">{money(rec)}</div>
+            <div className="lead" style={rec === null ? { color: C.muted } : undefined}>{rec === null ? "–" : money(rec)}</div>
             {loz}
           </>
         )}
