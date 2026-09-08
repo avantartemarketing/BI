@@ -59,23 +59,23 @@
    "sessions": null
   },
   {
-   "id": "andy_warhol_estate_multiple_2026_q3",
+   "id": "warhol_le_26",
    "name": "Andy Warhol Estate - Multiple",
    "releaseName": "Andy Warhol Estate \u00b7 Multiple \u00b7 2026 Q3",
    "artist": "Andy Warhol Estate",
    "title": "Multiple",
-   "quarter": "2026 Q3",
+   "quarter": null,
    "type": "LE",
    "status": "live",
-   "targeted": false,
+   "targeted": true,
    "day": 0,
-   "of": 28,
+   "of": 27,
    "complete": false,
    "windowEnd": "2026-09-30",
-   "statusPct": null,
-   "ok": null,
-   "lastSeen": "2026-08-27",
-   "sessions": 372
+   "statusPct": 0.0,
+   "ok": true,
+   "lastSeen": null,
+   "sessions": null
   },
   {
    "id": "zengfanzhi_le_26",

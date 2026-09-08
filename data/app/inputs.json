@@ -388,6 +388,32 @@
      "edition": null
     }
    ]
+  },
+  "warhol_le_26": {
+   "id": "warhol_le_26",
+   "release_name": "Andy Warhol Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "campaign_code": "AndyWarhol_TL_26",
+   "campaign_name": "AndyWarhol_TL_26 \u00b7 Enter draw",
+   "marketing_lead": "Clare",
+   "budget_file": "ANDYWARHO-2383 STANDARD & XL Project Budget July 2026",
+   "private_room_open": "2026-09-01",
+   "announce_date": "2026-09-03",
+   "launch_end": "2026-09-30",
+   "edition_size": 2440,
+   "unit_price": 1000,
+   "artist_profit": 1235875.0,
+   "aa_group_profit": 1973248.0,
+   "artist_profit_share": 0.5,
+   "framing_available": true,
+   "paid_channel_size": "High",
+   "reference_point": "Low",
+   "paid_conv_quality": "Medium",
+   "cpp_pick": "Median",
+   "channel_quality_overrides": {
+    "AA Email Auto": "Low",
+    "Referral Artist": "Low",
+    "Referral Other": "Medium"
+   }
   }
  },
  "discovered": {
@@ -617,18 +643,6 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
-  },
-  "andy_warhol_estate_multiple_2026_q3": {
-   "release_name": "Andy Warhol Estate \u00b7 Multiple \u00b7 2026 Q3",
-   "artist": "Andy Warhol Estate",
-   "title": "Multiple",
-   "type": "LE",
-   "campaign_code": "AndyWarhol_TL_26",
-   "campaign_name": null,
-   "announce_date": "2026-09-02",
-   "launch_end": "2026-09-30",
-   "private_room_open": "2026-08-19",
    "dates_note": null
   },
   "angel_otero_broken_record_2022_q2": {
