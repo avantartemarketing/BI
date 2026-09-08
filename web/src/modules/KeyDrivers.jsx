@@ -83,6 +83,7 @@ function FunnelView({ snap }) {
   const fbg = snap?.funnelByGroup || {};
   const email = snap?.email || {};
   const social = snap?.social || {};
+  const targeted = snap?.targeted !== false;
 
   let sessA = 0, sessE = 0, entA = 0, entE = 0;
   for (const k of ORGANIC) {
@@ -127,7 +128,7 @@ function FunnelView({ snap }) {
           head: "Mid funnel · Sessions",
           rows: [
             { label: "Actual", value: fmt(sessA) },
-            { label: "Expected today", value: fmt(sessE) },
+            { label: "Expected today", value: targeted ? fmt(sessE) : "– (no targets)" },
             ...relRow(sessRel),
           ],
         }}
@@ -138,7 +139,7 @@ function FunnelView({ snap }) {
           head: "Low funnel · Session → entry",
           rows: [
             { label: "Actual", value: pctTxt(convA) },
-            { label: "Expected", value: pctTxt(convE) },
+            { label: "Expected", value: targeted ? pctTxt(convE) : "– (no targets)" },
             ...relRow(convRel),
           ],
         }}
@@ -203,7 +204,9 @@ export default function KeyDrivers({ snap }) {
           <FunnelView snap={snap} />
         ) : rows.length === 0 ? (
           <div className="empty-state">
-            {isPos ? "No steps adding units vs expected yet" : "No steps costing units vs expected"}
+            {snap?.targeted === false
+              ? "Needs targets - the steps are measured against the plan"
+              : isPos ? "No steps adding units vs expected yet" : "No steps costing units vs expected"}
           </div>
         ) : (
           rows.map((r, i) => (

@@ -274,15 +274,20 @@ function ReleasePage({ snap, onSaved }) {
         <Waterfall snap={snap} />
       </div>
       ) : (
-      // actuals only: the modules that read the funnel feed directly, plus
-      // what it would take to turn the rest on
+      // no targets: the same page, every card on its actual side; the cards
+      // that only exist relative to a plan say so in place
       <div className="grid">
         <HeroBar snap={snap} />
         <ChannelsVsTargets snap={snap} />
         <NoTargets snap={snap} onSetup={() => setTab("targets")} />
+        <FunnelByChannel snap={snap} />
         <Trajectory snap={snap} />
+        <KeyDrivers snap={snap} />
+        <PaidRoi snap={snap} />
+        <PaidSpend snap={snap} />
         <SellThrough snap={snap} />
         <Geo snap={snap} />
+        <Waterfall snap={snap} />
       </div>
       )}
     </>

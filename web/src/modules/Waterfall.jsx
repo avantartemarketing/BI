@@ -21,7 +21,9 @@ export default function Waterfall({ snap }) {
   if (!wf) {
     return (
       <Card dot={GROUP_DOTS.outcome} title="Projection vs target">
-        <div className="empty-state">No projection model yet</div>
+        <div className="empty-state">
+          {snap?.targeted === false ? "Needs targets - projection and target are both model outputs" : "No projection model yet"}
+        </div>
       </Card>
     );
   }

@@ -13,6 +13,7 @@ const moneyK = (v) => "£" + fmtK(v ?? 0);
 export default function PaidSpend({ snap }) {
   const tipApi = useTip();
   const paid = snap.paid || {};
+  if (snap.targeted === false) return <PaidSpendActuals snap={snap} />;
   const budget = paid.budget || {};
   const complete = !!snap.complete;
   const noCampaign = !snap.campaignName;
@@ -200,6 +201,36 @@ export default function PaidSpend({ snap }) {
         >
           {decision === "ignore" ? "Logged" : "Ignore"}
         </button>
+      </div>
+    </Card>
+  );
+}
+
+
+/* No targets: the recommendation, the budget and the entry target are all
+ * model outputs, so this shows what the campaign has actually done. */
+function PaidSpendActuals({ snap }) {
+  const paid = snap.paid || {};
+  const daily = paid.daily || [];
+  const entries = Math.round(daily.reduce((t, x) => t + (x.entries ?? 0), 0));
+  const spend = paid.spendToDate ?? 0;
+  const cur = paid.budget?.current ?? 0;
+  const row = { display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, padding: "7px 0", borderBottom: `1px solid ${C.hairline}` };
+  const noCampaign = !snap.campaignName;
+  return (
+    <Card dot={GROUP_DOTS.paid} title="Paid spend / day">
+      <div className="spacer-8" />
+      <div className="lead" title={noCampaign ? "No Meta campaign matched" : "Latest day's spend on the matched campaign"}>
+        {noCampaign ? "–" : money(cur)}
+      </div>
+      <div className="lead-caption" style={{ color: C.muted }}>
+        {noCampaign ? "no Meta campaign matched - set one in Target setting" : "current daily spend - recommendation needs targets"}
+      </div>
+      <div style={{ marginTop: 16 }}>
+        <div style={row}><span style={{ color: C.muted }}>Campaign</span><span style={{ fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }} title={snap.campaignName || ""}>{snap.campaignName || "–"}</span></div>
+        <div style={row}><span style={{ color: C.muted }}>Spend to date</span><span className="num">{money(spend)}</span></div>
+        <div style={row}><span style={{ color: C.muted }}>Paid entries to date</span><span className="num">{fmt(entries)}</span></div>
+        <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }}>£ per entry, whole campaign</span><span className="num">{paid.cumCpe ? "£" + fmt(paid.cumCpe, 2) : "–"}</span></div>
       </div>
     </Card>
   );

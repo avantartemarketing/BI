@@ -31,8 +31,10 @@ function buildRung([label, v, ref, unit, inv, note]) {
   const noVal = v === null || v === undefined || Number.isNaN(v);
   const noRef = ref === null || ref === undefined || Number.isNaN(ref) || ref === 0;
   if (noVal || noRef) {
+    // no reference: show the value itself where the delta would go, rather
+    // than a dash that reads as "no data"
     return {
-      label, neutral: true, delta: "–", rag: C.muted, dev: 50,
+      label, neutral: true, delta: noVal ? "–" : fmtVal(v, unit), rag: C.muted, dev: 50,
       tip: {
         head: label,
         rows: [
@@ -232,8 +234,11 @@ function FunnelWaterfall({ snap }) {
 }
 
 export default function FunnelByChannel({ snap }) {
-  const [view, setView] = React.useState("wf"); // 'wf' | 'funnel' - waterfall leads
-  React.useEffect(() => setView("wf"), [snap?.id]);
+  const targeted = snap?.targeted !== false;
+  // waterfall leads when there is a plan to step from; without targets only the
+  // funnel's actual side exists
+  const [view, setView] = React.useState(targeted ? "wf" : "funnel");
+  React.useEffect(() => setView(targeted ? "wf" : "funnel"), [snap?.id, targeted]);
   const fbg = snap?.funnelByGroup || {};
   const email = snap?.email || {};
   const social = snap?.social || {};
@@ -307,14 +312,16 @@ export default function FunnelByChannel({ snap }) {
       tall
       dot={GROUP_DOTS.funnel}
       title="Funnel by channel"
-      right={
+      right={targeted ? (
         <span className="seg">
           <button className={view === "funnel" ? "active" : ""} onClick={() => setView("funnel")}
             title="Each funnel metric as a deviation vs its reference">Funnel</button>
           <button className={view === "wf" ? "active" : ""} onClick={() => setView("wf")}
             title="Waterfall from expected to actual secured units today, stepped by the same funnel components">Waterfall</button>
         </span>
-      }
+      ) : (
+        <span style={{ fontSize: 11.5, color: C.muted }} title="Grey dots: no reference to judge against until targets are set. The number is the actual.">actuals · no targets</span>
+      )}
     >
       <div className="spacer-16" />
       {view === "wf" ? <FunnelWaterfall snap={snap} /> : (

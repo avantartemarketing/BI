@@ -136,7 +136,7 @@ function readInputsDoc() {
 function defaultsFor(id, disc) {
   return {
     id, release_name: disc.release_name, campaign_code: disc.campaign_code || "",
-    campaign_name: null, marketing_lead: null, budget_file: null,
+    campaign_name: disc.campaign_name || null, marketing_lead: null, budget_file: null,
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
     edition_size: null, unit_price: null, artist_profit: null, aa_group_profit: null,
     artist_profit_share: 0.5, framing_available: true,

@@ -608,6 +608,21 @@ def guess_code(artist: str, title: str, year: int, codes: set[str], siblings: in
     return None
 
 
+def match_campaign(code: str | None, spend: pd.DataFrame) -> str | None:
+    """The Meta campaign for a code. The spend feed names campaigns
+    "<code> · Enter draw" (the draw campaign), "<code> · Purchases",
+    "<code> · Sign-ups"; the configured releases all point at Enter draw. Take
+    that when it exists, otherwise the only campaign under the code, otherwise
+    nothing - never a guess between two."""
+    if not code or spend is None or spend.empty:
+        return None
+    names = [n for n in spend["campaign_name"].dropna().unique() if str(n).startswith(f"{code} · ")]
+    draw = f"{code} · Enter draw"
+    if draw in names:
+        return draw
+    return names[0] if len(names) == 1 else None
+
+
 def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[dict]:
     """One record per simple_release_name in the funnel data.
 
@@ -698,8 +713,8 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
     return out
 
 
-def build_actuals(rec: dict, rat: pd.DataFrame, emails: pd.DataFrame, content: pd.DataFrame,
-                  as_of: date) -> dict:
+def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.DataFrame,
+                  content: pd.DataFrame, as_of: date) -> dict:
     """Actuals-only snapshot for a release nobody has set targets for. Same
     shape as build_release's so the page code has one contract, with every
     target-derived field None and targeted: False - the page shows what
@@ -738,18 +753,26 @@ def build_actuals(rec: dict, rat: pd.DataFrame, emails: pd.DataFrame, content: p
                          units=("Total_Product_Units", "sum"))
                     .reset_index())
     days = list(daterange(window_start, launch_end))
-    channels_out, hero_now = [], 0.0
+    channels_out, hero_now, funnel_by_group = [], 0.0, {}
     for g, spec in DISPLAY_GROUPS.items():
         sub = by_group_day[by_group_day["group"] == g].set_index("event_date")
-        daily, cum_u, cum_nc = [], 0.0, 0.0
+        daily, cum_u, cum_nc, cum_s = [], 0.0, 0.0, 0.0
         for d in days:
             row = sub.loc[d] if d in sub.index else None
             cum_u += float(row["units"]) if row is not None else 0.0
             cum_nc += float(row["entries_no_conv"]) if row is not None else 0.0
+            if d <= as_of:
+                cum_s += float(row["sessions"]) if row is not None else 0.0
             daily.append({"date": d.isoformat(),
                           "actual": round(cum_u + e2o * cum_nc, 2) if d <= as_of else None,
                           "plan": None, "proj": None})
         now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
+        # the funnel's actual side; nothing to decompose against without a plan
+        funnel_by_group[g] = {
+            "sessions_actual": round(cum_s, 1), "sessions_expected": None,
+            "conv_actual": (now / cum_s) if cum_s else 0.0, "conv_expected": None,
+            "contrib_traffic": None, "contrib_conversion": None,
+        }
         parts = []
         for ch in spec["channels"]:
             sub_ch = win[win["channel"] == ch]
@@ -768,6 +791,45 @@ def build_actuals(rec: dict, rat: pd.DataFrame, emails: pd.DataFrame, content: p
     units_sold = float(upto["Total_Product_Units"].sum())
     unconverted = float(upto["Draw_Entries_Total_Units_No_Conv"].sum())
     code = rec.get("campaign_code")
+
+    # ---- paid actuals: spend, entries, cost per entry. ROI and the budget
+    # recommendation need the profit split, so they stay None.
+    camp = rec.get("campaign_name")
+    psp = spend[spend["campaign_name"] == camp] if camp else spend.iloc[0:0]
+    psp = psp[(psp["spend_date"] >= window_start) & (psp["spend_date"] <= min(as_of, launch_end))]
+    spend_day = psp.groupby("spend_date")["spend"].sum()
+    paid_entries_day = (win[win["channel"] == "Paid Social"]
+                        .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
+    drop = b["paid_drop_off"]
+    paid_daily, win3 = [], []
+    cum_spend = cum_pentries = 0.0
+    for d in days:
+        if d > min(as_of, launch_end):
+            break
+        s_, e_ = float(spend_day.get(d, 0.0)), float(paid_entries_day.get(d, 0.0))
+        cum_spend += s_; cum_pentries += e_
+        win3 = (win3 + [(s_, e_)])[-3:]
+        paid_daily.append({"date": d.isoformat(), "spend": round(s_, 2), "entries": e_, "roi": None})
+    s3, e3 = sum(x for x, _ in win3), sum(y for _, y in win3)
+    l3d_raw = s3 / e3 if e3 > 0 else None
+    l3d_cpe = l3d_raw / (1 - drop) if l3d_raw else None
+    cum_cpe = cum_spend / (cum_pentries * (1 - drop)) if cum_pentries else None
+    current_daily = float(spend_day.get(as_of, spend_day.iloc[-1] if len(spend_day) else 0.0))
+    paid_out = {
+        "daily": paid_daily,
+        "spendToDate": round(cum_spend, 2), "entriesToDate": cum_pentries,
+        "cumRoi": None, "l3dRoi": None,
+        "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
+        "cumCpe": round(cum_cpe, 2) if cum_cpe else None,
+        "roiDeclineModel": {"start": None, "dailyFactor": None}, "roiTarget": None,
+        "budget": {"current": round(current_daily, 2), "recommended": None, "cap": None,
+                   "finalDayRoi": None, "floor": None, "budgetToSellOut": None,
+                   "entriesNeeded": None, "selloutGap": None, "organicFuture": None,
+                   "daysLeft": max((launch_end - as_of).days, 0)},
+        "unitTarget": None, "entriesProjected": None, "unitProjected": None,
+        "spendBudget": None, "spendProjectedTotal": None,
+        "profitPerUnitAA": None, "profitPerUnitArtist": None, "aaBudgetShare": None,
+    }
     em = emails.iloc[0:0]
     if code:
         em_all = emails[(emails["campaign"] == code)
@@ -805,7 +867,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, emails: pd.DataFrame, content: p
         "id": rec["id"], "releaseName": name,
         "artist": rec["artist"], "title": rec["title"], "quarter": rec["quarter"],
         "type": rec["type"],
-        "campaignCode": code, "campaignName": None, "marketingLead": None, "privateRoomOpen": None,
+        "campaignCode": code, "campaignName": camp, "marketingLead": None, "privateRoomOpen": None,
         "windowStart": rec["announce_date"] if dated else window_start.isoformat(),
         "windowEnd": rec["launch_end"] if dated else None,
         "campaignLengthDays": L if dated else None, "day": day_n, "of": L,
@@ -821,7 +883,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, emails: pd.DataFrame, content: p
                  "target": None, "oversubscribedUnits": 0, "statusPct": None, "ok": None},
         "targets": None, "groupTargets": None,
         "channels": channels_out,
-        "funnelByGroup": None, "paid": None,
+        "funnelByGroup": funnel_by_group, "paid": paid_out,
         "email": email_out, "social": social_out,
         "sellthrough": {"edition": None, "sold": round(units_sold, 0),
                         "soldPredicted": round(unconverted * e2o, 1), "futureEntriesPredicted": None, "pct": None},
@@ -1368,7 +1430,8 @@ def main():
                   f"now={snap['hero']['now']} exp={snap['hero']['expectedToday']} "
                   f"target={snap['hero']['target']} proj={snap['hero']['projected']}")
         else:
-            snap = build_actuals(rec, by_name[rec["release_name"]], emails, content, as_of)
+            rec["campaign_name"] = match_campaign(rec["campaign_code"], spend)
+            snap = build_actuals(rec, by_name[rec["release_name"]], spend, emails, content, as_of)
             check_snapshot(snap)
             (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
             written.add(f"{rec['id']}.json")
@@ -1419,6 +1482,7 @@ def main():
             r["id"]: {
                 "release_name": r["release_name"], "artist": r["artist"], "title": r["title"],
                 "type": r["type"], "campaign_code": r["campaign_code"],
+                "campaign_name": r.get("campaign_name"),
                 "announce_date": r["announce_date"], "launch_end": r["launch_end"],
                 "private_room_open": ((date.fromisoformat(r["announce_date"]) - timedelta(days=PR_LEAD_DAYS)).isoformat()
                                       if r["announce_date"] else None),

@@ -32,13 +32,16 @@ export default function PaidRoi({ snap }) {
   const DAYS = Math.max(1, of - 1);
   const today = Math.max(1, Math.min(snap.day ?? 0, of));
 
+  const targeted = snap.targeted !== false;
   const hasSpend =
     (paid.spendToDate ?? 0) > 0 || daily.some((d) => (d.spend ?? 0) > 0);
 
   if (!hasSpend) {
     return (
       <Card wide dot={GROUP_DOTS.paid} title="Paid ROI">
-        <div className="empty-state">No paid spend yet.</div>
+        <div className="empty-state">
+          {snap.campaignName ? "No paid spend yet." : targeted ? "No paid spend yet." : "No Meta campaign matched to this release - set one in Target setting."}
+        </div>
       </Card>
     );
   }
@@ -114,8 +117,11 @@ export default function PaidRoi({ snap }) {
   });
 
   // ----- lead + header stats -----
-  const leadVal = complete ? paid.cumRoi : paid.l3dRoi;
-  const leadCaption = complete ? "ROI final" : "ROI last 3 days";
+  // ROI needs the profit split; without targets the lead is cost per entry
+  const leadVal = !targeted ? (complete ? paid.cumCpe : paid.l3dCpe) : complete ? paid.cumRoi : paid.l3dRoi;
+  const leadCaption = !targeted
+    ? (complete ? "£ per entry, whole campaign - ROI needs targets" : "£ per entry, last 3 days - ROI needs targets")
+    : complete ? "ROI final" : "ROI last 3 days";
   const moreTip = {
     head: "Paid ROI",
     rows: [
@@ -273,9 +279,9 @@ export default function PaidRoi({ snap }) {
               </>
             )}
 
-            {/* y axis (snapped to 0.25) */}
-            <div style={{ ...axisLabel, top: 0 }}>{hi.toFixed(2)}</div>
-            <div style={{ ...axisLabel, top: "100%" }}>{lo.toFixed(2)}</div>
+            {/* y axis (snapped to 0.25) - meaningless without an ROI series */}
+            {roiPts.length > 0 && <div style={{ ...axisLabel, top: 0 }}>{hi.toFixed(2)}</div>}
+            {roiPts.length > 0 && <div style={{ ...axisLabel, top: "100%" }}>{lo.toFixed(2)}</div>}
 
             {/* x axis */}
             <div style={{ ...xLabel, left: 0 }}>day 1</div>
