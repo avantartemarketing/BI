@@ -61,6 +61,7 @@ export default function PaidSpend({ snap }) {
     supply: "Supply - sell-out", roi_floor: "ROI floor", pacing: "Pacing ±30% / day",
     roi_band_hold: "ROI band - hold", roi_band_decrease: "ROI band - decrease",
     forced_decrease: "3 days below target ROI", plan_rate: "Plan rate (first day)",
+    zero_conversion: "Zero conversion yesterday", zero_conversion_pause: "3 days of zero conversion - pause",
     hold_small_change: "Change under 10% - hold",
   };
   const capLabel = (CAP_LABELS[budget.cap] || budget.cap) + (budget.paced ? " · paced" : "");
@@ -76,6 +77,10 @@ export default function PaidSpend({ snap }) {
       ? "Forecast ROI has been below target for three days running: the rules force a decrease."
       : budget.cap === "plan_rate"
       ? "No spend yet to anchor a price on, so the first day starts at the plan's daily rate."
+      : budget.cap === "zero_conversion"
+      ? "The LE spend rules: a day that spent and bought no entries cuts the budget by 30%."
+      : budget.cap === "zero_conversion_pause"
+      ? "The LE spend rules: three days of spend with no entries pause the campaign."
       : "The recommendation is within 10% of today's spend, which the rules treat as no change.",
     rows: [
       { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },

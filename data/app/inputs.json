@@ -172,7 +172,23 @@
     0.07,
     0.1
    ],
-   "cpe_daily_drift_note": "Pure time drift in cost per entry, per day, by third of the window. The workbook's 5/7/10% a day (kept in cpe_daily_drift_by_third_workbook) is the cost rise along its own spend path, which ramps 6-10% a day - at spend elasticity 0.38 that ramp alone raises CPE 3.5-5% a day, so applying the tiers on top of the elasticity counted the same effect twice and drove ROI at close under 1 on every campaign. Net of spend, within-campaign drift measures 0.36% a day +/- 1.12 (13 campaigns, 170 campaign-days, etl/analysis/cpe_elasticity.py); 0.5% a day used."
+   "cpe_daily_drift_note": "Pure time drift in cost per entry, per day, by third of the window. The workbook's 5/7/10% a day (kept in cpe_daily_drift_by_third_workbook) is the cost rise along its own spend path, which ramps 6-10% a day - at spend elasticity 0.38 that ramp alone raises CPE 3.5-5% a day, so applying the tiers on top of the elasticity counted the same effect twice and drove ROI at close under 1 on every campaign. Net of spend, within-campaign drift measures 0.36% a day +/- 1.12 (13 campaigns, 170 campaign-days, etl/analysis/cpe_elasticity.py); 0.5% a day used.",
+   "_source": "The cumulative-ROI bands (0.9 / 1.3), the 30% cap and the 10% dead band are the TL template's 'ROI / SPEND RULES - DO NOT CHANGE' block (LAUNCH PERFORMANCE OVERVIEW, TL_Template rows 416-428), applied to LE for want of a fuller LE block. The LE template's own SPEND RULES (rows 284-299) are: decrease/increase steps of 10%, max increase per day 2.0, target ROI AA 1.1, a 30% decrease on a zero-conversion day, a 100% decrease (pause) after 3 days of zero conversion, and 'Expected Increase in Spend (%)' 5/7/10 by third - a typed constant with no derivation, read by row 206 as the daily growth of the forecast cost per unit. Neither tab derives its drift from data; the TL tab labels its 2.16%/day '(assumed)'.",
+   "zero_conversion_decrease": 0.3,
+   "zero_conversion_days_to_pause": 3,
+   "le_template_rules": {
+    "step_decrease": -0.1,
+    "step_increase": 0.1,
+    "max_increase_per_day": 2.0,
+    "target_roi_aa": 1.1,
+    "zero_conversion_decrease": 0.3,
+    "zero_conversion_days_to_pause": 3,
+    "expected_increase_in_spend_by_third": [
+     0.05,
+     0.07,
+     0.1
+    ]
+   }
   },
   "frame_conversion": 0.35,
   "frame_profit_per_unit": 94,

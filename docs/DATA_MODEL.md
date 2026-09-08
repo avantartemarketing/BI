@@ -687,8 +687,18 @@ cpe_daily_drift_by_third` is now the pure time effect, 0.5% a day (measured 0.36
 `etl/analysis/cpe_elasticity.py`); the workbook values sit beside it as
 `cpe_daily_drift_by_third_workbook`. The workbook's own template, note, produces the same
 runaway "expected daily spend" the first version of this card did (Warhol_LE_26 row 229:
-£181k-256k a day) and tames it with a "max increase per day 2.0" rule rather than a price
-that responds to spend.
+£181k-256k a day; Dali_LE_26 row 231 suggests £3.7k-10.9k a day against £1.5k spent) and
+tames it with a "max increase per day 2.0" rule rather than a price that responds to spend.
+
+Provenance of `spend_rules`, corrected: the 0.9 / 1.3 bands, the 30% cap and the 10% dead
+band are the TL_Template's "ROI / SPEND RULES - DO NOT CHANGE" block (rows 416-428), not the
+LE template's. The LE template's SPEND RULES (rows 284-299) read: decrease -0.1, increase
+0.1, max increase per day 2.0, target ROI AA 1.1, at zero conversion decrease by 0.3, three
+days of zero conversion decrease by 1.0, and "Expected Increase in Spend (%)" 0.05 / 0.07 /
+0.10 by third (row 299), which row 206 "Expected daily increase" reads as the daily growth of
+"Cost per unit (forecast)" (row 207). No derivation for any of these appears in the workbook.
+The zero-conversion rules are now applied (`zero_conversion_decrease`,
+`zero_conversion_days_to_pause`); the LE block is recorded under `le_template_rules`.
 
 ## 11b. Release discovery (every release is navigable)
 

@@ -111,61 +111,150 @@ function Rung({ r }) {
   );
 }
 
-/* Waterfall view: expected -> actual secured units today, stepped by the same
- * funnel components at group level (Traffic and Conversion per display group,
- * the §4.5 one-at-a-time repricing - steps sum exactly to the gap; any rounding
- * residual is parked on the largest step). Same visual language as the
- * Projection-vs-target waterfall: ink anchor ticks, floating step bars, grey
- * connector drops. */
-function FunnelWaterfall({ snap }) {
+/* Waterfall view: expected -> actual secured units today, stepped by the
+ * SAME rows the funnel view shows, group by group. Each group's secured units
+ * are a chain of the funnel's own factors (AA Email: delivered x click rate x
+ * sessions per click x session->sale; Paid: spend x units per pound; the
+ * rest: sessions x session->sale) and each step reprices one factor from its
+ * reference to its actual with the earlier factors at actual and the later at
+ * reference (the §4.5 one-at-a-time method), so the steps sum exactly to the
+ * group's gap and the groups sum to the hero's. A row without a reference
+ * (Posts, Open rate) is shown in place with no step - it is context, not a
+ * component of the arithmetic. Rounding residual is parked on the largest
+ * step; a real residual (the hero is capped at the edition) is left visible. */
+function chainSteps(factors) {
+  // factors: [{label, a, e, note}] -> steps summing to prod(a) - prod(e)
+  const out = [];
+  for (let i = 0; i < factors.length; i++) {
+    let v = factors[i].a - factors[i].e;
+    for (let j = 0; j < i; j++) v *= factors[j].a;
+    for (let j = i + 1; j < factors.length; j++) v *= factors[j].e;
+    out.push({ ...factors[i], value: v });
+  }
+  return out;
+}
+const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
+
+function groupWaterfall(g, snap) {
+  const ch = (snap.channels || []).find((c) => c.key === g.key) || {};
+  const now = ch.now ?? 0, exp = ch.exp ?? 0;
+  const fbg = (snap.funnelByGroup || {})[g.key] || {};
+  const sessA = fbg.sessions_actual ?? 0, sessE = fbg.sessions_expected ?? 0;
+  const convA = fbg.conv_actual ?? 0, convE = fbg.conv_expected ?? 0;
+  const rows = [];   // [{label, step (number|null), note, tip rows}]
+  const info = (label, v, ref, unit, note) => rows.push({ label, value: null, note,
+    tipRows: [{ label: "Actual", value: fmtVal(v, unit) }, { label: "Reference", value: fmtVal(ref, unit) }] });
+  const twoFactor = () => chainSteps([
+    { label: "Sessions", a: sessA, e: sessE, note: "sessions vs plan" },
+    { label: "Session → sale", a: convA, e: convE, note: "session → sale rate vs plan" },
+  ]);
+
+  let steps;
+  if (g.key === "aa_email") {
+    const em = snap.email || {};
+    const b = snap.benchmarks || {};
+    const clickRef = (b.emailClickRateRef ?? 4.3) / 100, openRef = (b.emailOpenRateRef ?? 19.6) / 100;
+    const delivA = em.delivered ?? 0, delivE = em.deliveredTarget ?? null;
+    const clickA = em.clickRate ?? null;
+    const clicksA = delivA * (clickA ?? 0), clicksE = finite(delivE) ? delivE * clickRef : null;
+    const chainable = finite(delivE) && delivE > 0 && clicksA > 0 && clicksE > 0 && sessE > 0;
+    info("Open rate", (em.openRate ?? null) !== null ? em.openRate * 100 : null, openRef * 100, "%",
+      "context only - clicks, not opens, carry into sessions");
+    if (chainable) {
+      steps = chainSteps([
+        { label: "Delivered emails", a: delivA, e: delivE, note: "sends delivered vs the cohort-median delivery curve" },
+        { label: "Click rate", a: clickA, e: clickRef, note: `clicks per delivered email vs ${(clickRef * 100).toFixed(1)}%` },
+        { label: "Sessions", a: sessA / clicksA, e: sessE / clicksE, note: "sessions per click vs plan - traffic the clicks did not explain" },
+        { label: "Session → sale", a: convA, e: convE, note: "session → sale rate vs plan" },
+      ]);
+      // keep the funnel's row order: Delivered, Open rate, Click rate, Sessions, Session -> sale
+      rows.splice(0, 0, steps[0]); rows.push(steps[1], steps[2], steps[3]);
+      return { name: g.name, rows, now, exp };
+    }
+    rows.unshift({ label: "Delivered emails", value: null, note: "no delivery benchmark yet",
+      tipRows: [{ label: "Actual", value: fmtVal(delivA, "count") }, { label: "Reference", value: "–" }] });
+    rows.push({ label: "Click rate", value: null, note: "context only",
+      tipRows: [{ label: "Actual", value: fmtVal(clickA !== null ? clickA * 100 : null, "%") }, { label: "Reference", value: fmtVal(clickRef * 100, "%") }] });
+    rows.push(...twoFactor());
+    return { name: g.name, rows, now, exp };
+  }
+  if (g.key === "paid") {
+    const paid = snap.paid || {};
+    const day = snap.day ?? 0, of = snap.of ?? 0;
+    const spendA = paid.spendToDate ?? 0;
+    const spendE = of > 0 && paid.spendBudget ? (paid.spendBudget * day) / of : null;
+    if (finite(spendE) && spendE > 0 && spendA > 0 && exp > 0) {
+      steps = chainSteps([
+        { label: "Spend", a: spendA, e: spendE, note: "spend to date vs the plan's share of budget by today" },
+        { label: "Cost per entry", a: now / spendA, e: exp / spendE, note: "secured units per pound, actual vs plan - the cost-per-entry side of the ledger" },
+      ]);
+      rows.push(...steps);
+      return { name: g.name, rows, now, exp };
+    }
+    info("Spend", spendA, spendE, "eur", "no plan or no spend yet");
+    rows.push({ label: "Cost per entry", value: now - exp, note: snap.campaignName ? "residual: paid units vs plan" : "no campaign matched - the whole paid gap",
+      tipRows: [{ label: "Secured", value: fmtVal(now, "count") }, { label: "Expected", value: fmtVal(exp, "count") }] });
+    return { name: g.name, rows, now, exp };
+  }
+  const social = snap.social || {};
+  if (g.key === "aa_social") {
+    info("Posts", (social.posts ?? 0) + (social.stories ?? 0), null, "count", "no reference - context only");
+  }
+  if (g.key === "referral_artist") {
+    const of = snap.of ?? 0, day = snap.day ?? 0;
+    const postsA = social.artistPosts ?? null;
+    const postsE = of > 0 && social.artistPostsTarget ? (social.artistPostsTarget * day) / of : null;
+    if (finite(postsA) && finite(postsE) && postsA > 0 && postsE > 0 && sessE > 0) {
+      rows.push(...chainSteps([
+        { label: "Posts", a: postsA, e: postsE, note: "artist-account posts vs the tier benchmark, pro-rated" },
+        { label: "Sessions", a: sessA / postsA, e: sessE / postsE, note: "sessions per post vs plan" },
+        { label: "Session → sale", a: convA, e: convE, note: "session → sale rate vs plan" },
+      ]));
+      return { name: g.name, rows, now, exp };
+    }
+    info("Posts", postsA, postsE, "count", "no artist-post feed or benchmark yet");
+  }
+  rows.push(...twoFactor());
+  return { name: g.name, rows, now, exp };
+}
+
+function FunnelWaterfall({ snap, groups }) {
   const tipApi = useTip();
-  const fbg = snap?.funnelByGroup || {};
-  const exp = snap?.hero?.expectedToday ?? 0;
-  const now = snap?.hero?.now ?? 0;
+  const expTotal = snap?.hero?.expectedToday ?? 0;
+  const nowTotal = snap?.hero?.now ?? 0;
   const day = snap?.day ?? 0;
 
-  // Step names mirror the funnel view's own rungs rather than abstract
-  // traffic/conversion: the volume half of each group is what its funnel calls
-  // the traffic rung (spend, for paid, since that is what buys paid sessions)
-  // and the rate half is its conversion rung.
-  const STEP_NAMES = [
-    ["aa_email", "Email sessions", "Email → sale", "sessions vs plan", "session → sale rate vs plan"],
-    ["aa_social", "Meta sessions", "Meta → sale", "sessions vs plan", "session → sale rate vs plan"],
-    ["referral_artist", "Artist sessions", "Artist → sale", "sessions vs plan", "session → sale rate vs plan"],
-    ["search_direct_other", "Direct sessions", "Direct → sale", "sessions vs plan", "session → sale rate vs plan"],
-    ["paid", "Paid spend", "Paid efficiency", "paid sessions vs plan - what spend bought",
-      "paid session → sale rate vs plan - the cost-per-entry side of the ledger"],
-  ];
-  const steps = [];
-  for (const [k, tLabel, cLabel, tNote, cNote] of STEP_NAMES) {
-    const g = fbg[k];
-    if (!g) continue;
-    steps.push({ key: k + "-t", label: tLabel, note: tNote, value: g.contrib_traffic ?? 0 });
-    steps.push({ key: k + "-c", label: cLabel, note: cNote, value: g.contrib_conversion ?? 0 });
-  }
-  if (!steps.length) return <div className="empty-state">No funnel data yet</div>;
-  // Fold rounding back into the largest step, but ONLY rounding. On a sold-out
-  // release the hero gap is capped at the edition while the steps are not, so
-  // the difference is real and absorbing it silently overstated the top driver
-  // by up to 23% - on the card whose whole job is naming that driver.
-  const residual = (now - exp) - steps.reduce((a, s) => a + s.value, 0);
+  const sections = groups.map((g) => groupWaterfall(g, snap));
+  const stepRows = sections.flatMap((s) => s.rows.filter((r) => finite(r.value)));
+  if (!stepRows.length) return <div className="empty-state">No funnel data yet</div>;
+  // per-group rounding only: each group's steps sum to its own gap by
+  // construction; the difference to the hero is the edition cap, left visible
+  const residual = (nowTotal - expTotal) - stepRows.reduce((a, r) => a + r.value, 0);
   if (Math.abs(residual) <= 0.5) {
-    const biggest = steps.reduce((a, b) => (Math.abs(b.value) > Math.abs(a.value) ? b : a));
+    const biggest = stepRows.reduce((a, b) => (Math.abs(b.value) > Math.abs(a.value) ? b : a));
     biggest.value += residual;
   }
   const capped = Math.abs(residual) > 0.5;
 
-  let cum = exp;
-  const path = steps.map((s) => { const from = cum; cum += s.value; return { ...s, from, to: cum }; });
-  const levels = [exp, ...path.map((p) => p.to)];
+  // running level through every row (info rows carry the level across)
+  let cum = expTotal;
+  const flat = [];
+  for (const s of sections) {
+    flat.push({ header: s.name });
+    for (const r of s.rows) {
+      if (finite(r.value)) { const from = cum; cum += r.value; flat.push({ ...r, from, to: cum }); }
+      else flat.push({ ...r, level: cum });
+    }
+  }
+  const levels = [expTotal, ...flat.filter((r) => r.to !== undefined).map((r) => r.to)];
   const lo = Math.min(...levels), hi = Math.max(...levels);
   const pad = (hi - lo) * 0.1 || 1;
   const span = hi + pad - (lo - pad);
   const X = (v) => ((v - (lo - pad)) / span) * 100;
-  const nRows = steps.length + 2;
+  const GRID = "112px 1fr 56px";
 
   const anchorRow = (label, value, tip) => (
-    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "128px 1fr 52px", gap: 10, alignItems: "center", minHeight: 0 }}>
+    <div style={{ height: 28, flex: "0 0 28px", display: "grid", gridTemplateColumns: GRID, gap: 10, alignItems: "center" }}>
       <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
       <div style={{ position: "relative", height: 14 }}>
         <div {...tipApi.props(tip)} style={{ position: "absolute", left: `${X(value)}%`, top: -2, bottom: -2, width: 2, background: C.ink }} />
@@ -176,54 +265,51 @@ function FunnelWaterfall({ snap }) {
 
   return (
     <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
-      <div style={{ position: "absolute", left: 138, right: 62, top: 0, bottom: 0, pointerEvents: "none" }}>
-        {levels.map((v, i) => (
-          <div key={i} style={{
-            position: "absolute", left: `${X(v)}%`,
-            top: `${((i + 0.5) / nRows) * 100}%`, height: `${(1 / nRows) * 100}%`,
-            width: 1, background: C.planGrey,
-          }} />
-        ))}
-      </div>
-
-      {anchorRow("Expected today", exp,
-        { head: `Expected by day ${day}`, rows: [{ label: "Secured units", value: fmt(exp) }] })}
-      {path.map((p) => {
-        const up = p.value >= 0;
-        const tip = {
-          head: p.label,
-          body: p.note,
-          rows: [
-            { label: "vs expected", value: fmtSigned(p.value, 1) + " units", color: up ? C.green : C.red },
-            { label: "Running total", value: fmt(p.to, 1) },
-          ],
-        };
-        return (
-          <div key={p.key} style={{ flex: 1, display: "grid", gridTemplateColumns: "128px 1fr 52px", gap: 10, alignItems: "center", minHeight: 0 }}>
-            <div style={{ fontSize: 11.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {p.label}
-            </div>
-            <div style={{ position: "relative", height: 14 }}>
-              <div {...tipApi.props(tip)} style={{
-                position: "absolute", top: 0, bottom: 0,
-                left: `${X(Math.min(p.from, p.to))}%`,
-                width: `${Math.max(1.2, Math.abs(X(p.to) - X(p.from)))}%`,
-                background: up ? C.wfGreen : C.red, borderRadius: 3,
-              }} />
-            </div>
-            <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: up ? C.green : C.red }}>
-              {fmtSigned(p.value, 1)}
-            </div>
+      {anchorRow("Expected today", expTotal,
+        { head: `Expected by day ${day}`, rows: [{ label: "Secured units", value: fmt(expTotal) }] })}
+      {flat.map((r, i) => r.header ? (
+        <div key={"h" + i} style={{ height: 22, flex: "0 0 22px", display: "flex", alignItems: "center", marginTop: 2 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{r.header}</div>
+        </div>
+      ) : r.to !== undefined ? (
+        <div key={r.label + i} style={{ height: 24, flex: "0 0 24px", display: "grid", gridTemplateColumns: GRID, gap: 10, alignItems: "center" }}>
+          <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
+          <div style={{ position: "relative", height: 12 }}>
+            <div {...tipApi.props({
+              head: r.label, body: r.note,
+              rows: [
+                { label: "vs expected", value: fmtSigned(r.value, 1) + " units", color: r.value >= 0 ? C.green : C.red },
+                { label: "Running total", value: fmt(r.to, 1) },
+              ],
+            })} style={{
+              position: "absolute", top: 0, bottom: 0,
+              left: `${X(Math.min(r.from, r.to))}%`,
+              width: `${Math.max(1.2, Math.abs(X(r.to) - X(r.from)))}%`,
+              background: r.value >= 0 ? C.wfGreen : C.red, borderRadius: 3,
+            }} />
           </div>
-        );
-      })}
-      {anchorRow("Actual today", now,
-        { head: "Secured to date", rows: [{ label: "Secured units", value: fmt(now) }] })}
-
+          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: r.value >= 0 ? C.green : C.red }}>
+            {fmtSigned(r.value, 1)}
+          </div>
+        </div>
+      ) : (
+        <div key={r.label + i} style={{ height: 24, flex: "0 0 24px", display: "grid", gridTemplateColumns: GRID, gap: 10, alignItems: "center" }}>
+          <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
+          <div style={{ position: "relative", height: 12 }}>
+            <div {...tipApi.props({ head: r.label, body: r.note, rows: r.tipRows })} style={{
+              position: "absolute", left: `${X(r.level)}%`, top: 1, width: 10, height: 10, marginLeft: -5,
+              borderRadius: "50%", background: NEUTRAL_DOT, boxShadow: RING,
+            }} />
+          </div>
+          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: C.muted }}>–</div>
+        </div>
+      ))}
+      {anchorRow("Actual today", nowTotal,
+        { head: "Secured to date", rows: [{ label: "Secured units", value: fmt(nowTotal) }] })}
       <div style={{ height: 24, flex: "0 0 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <QBadge content={{
           head: "Target to actual",
-          body: "Each funnel component is repriced one-at-a-time vs plan; together the steps sum to the gap between expected and actual secured units today.",
+          body: "The same rows as the funnel view. Each row reprices one funnel factor from its reference to its actual, one at a time; within a group the steps sum to that group's gap and the groups sum to the gap between expected and actual secured units today. Grey rows have no reference and carry no step.",
         }} />
         <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
           {capped ? "steps exceed the gap - sellout caps it" : `secured units, day ${day}`}
@@ -263,18 +349,19 @@ export default function FunnelByChannel({ snap }) {
 
   const groups = [
     {
-      name: "AA Email",
+      key: "aa_email", name: "AA Email",
       rungs: [
         // reference = cohort median delivered total x pooled delivery-timing
         // curve at today's pdsa (computed in the ETL as email.deliveredTarget)
         ["Delivered emails", email.delivered ?? null, email.deliveredTarget ?? null, "count"],
-        ["Open rate", pct(email.openRate), 19.6, "%", false, REF_NOTE],
-        ["Click rate", pct(email.clickRate), 4.3, "%", false, REF_NOTE],
+        ["Open rate", pct(email.openRate), snap?.benchmarks?.emailOpenRateRef ?? 19.6, "%", false, REF_NOTE],
+        ["Click rate", pct(email.clickRate), snap?.benchmarks?.emailClickRateRef ?? 4.3, "%", false, REF_NOTE],
+        sess("aa_email"),
         conv("aa_email"),
       ],
     },
     {
-      name: "AA Meta",
+      key: "aa_social", name: "AA Meta",
       rungs: [
         ["Posts", (social.posts ?? 0) + (social.stories ?? 0), null, "count", false,
           `${fmt(social.posts ?? 0)} posts + ${fmt(social.stories ?? 0)} stories to date`],
@@ -283,7 +370,7 @@ export default function FunnelByChannel({ snap }) {
       ],
     },
     {
-      name: "Referral artist",
+      key: "referral_artist", name: "Referral artist",
       rungs: [
         // artist-account posts from the Notion log; reference = tier benchmark
         // (median posts among completed campaigns in the same Referral Artist
@@ -295,9 +382,9 @@ export default function FunnelByChannel({ snap }) {
         conv("referral_artist"),
       ],
     },
-    { name: "Search / direct / other", rungs: [sess("search_direct_other"), conv("search_direct_other")] },
+    { key: "search_direct_other", name: "Search / direct / other", rungs: [sess("search_direct_other"), conv("search_direct_other")] },
     {
-      name: "Paid",
+      key: "paid", name: "Paid",
       rungs: [
         ["Spend", paid.spendToDate ?? null, spendPlan, "eur", false,
           "Plan: campaign budget × share of days elapsed"],
@@ -324,7 +411,7 @@ export default function FunnelByChannel({ snap }) {
       )}
     >
       <div className="spacer-16" />
-      {view === "wf" ? <FunnelWaterfall snap={snap} /> : (
+      {view === "wf" ? <FunnelWaterfall snap={snap} groups={groups} /> : (
       <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", gap: 16 }}>
         {/* shared centre reference line behind all groups (112px label + 10 gap / 56px delta + 10 gap) */}
         <div style={{ position: "absolute", left: 138, right: 62, top: 0, bottom: 0, pointerEvents: "none" }}>

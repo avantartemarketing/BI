@@ -1217,6 +1217,7 @@
    "elasticity": 0.38,
    "band": "hold",
    "forcedDecrease": false,
+   "zeroConversionDays": 0,
    "cumRoi": null,
    "entriesNeeded": 1932.0,
    "selloutGap": 1610.0,

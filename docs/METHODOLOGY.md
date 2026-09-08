@@ -238,16 +238,28 @@ floor. The two cards therefore cannot disagree - a projection heading under 1
 and an "increase" recommendation could only coexist while they ran on
 different assumptions, which they did until this was unified.
 
-**About the drift rate.** The LE spend rules put cost per entry up 5% a day in
-the first third, 7% in the second, 10% in the third. Those figures are the
-cost rise along the workbook's *own* spend path, which ramps 6–10% a day
-towards sell-out; at elasticity 0.38 that ramp alone lifts the cost per entry
-3.5–5% a day. Modelling the spend effect and then drifting 5% a day on top
-counts the same thing twice, and drives ROI at close under 1 on every campaign
-(a release five days in at a cumulative ROI of 3.5 was told to cut). Net of
-spend, the within-campaign time drift measures 0.36% a day ± 1.12 on our own
-campaigns; the model uses 0.5% a day. The workbook's tiers are kept in the
-benchmarks for reference.
+**About the drift rate, and where the rules come from.** In the LE template
+the 5 / 7 / 10% figures are a typed constant in the SPEND RULES block, labelled
+"Expected Increase in Spend (%)" by third, which the daily forecast reads as
+the growth of cost per unit. There is no derivation behind them on either tab;
+the TL template labels its own 2.16% a day "(assumed)". Applied as a pure time
+drift on top of the spend elasticity they count the same effect twice (the
+workbook's own spend path ramps 6–10% a day, and at elasticity 0.38 that ramp
+alone lifts cost per entry 3.5–5% a day) and drive ROI at close under 1 on
+every campaign: a release five days in at a cumulative ROI of 3.5 was told to
+cut. Net of spend, the within-campaign time drift measures 0.36% a day ± 1.12
+on our own campaigns; the model uses 0.5% a day, with the workbook's figures
+kept beside it.
+
+The pacing rules themselves are the **TL template's** "ROI / SPEND RULES" block
+(cumulative ROI below 0.9 decrease, 0.9–1.3 maintain, above 1.3 increase;
+changes under 10% ignored, over 30% capped at 30%; ROI under target for three
+days), applied to LE for want of a fuller LE block. The LE template's own
+rules are thinner and different: ±10% steps, "max increase per day 2.0",
+target ROI 1.1, a 30% cut on a day that spent and bought nothing, and a pause
+after three such days. The two zero-conversion rules are applied as written;
+which of the two step-size regimes LE should run under is an open question for
+the paid team.
 
 **Pacing rules:** target ROI (AA) **1.1**, floor **1.0**. Cumulative ROI below
 0.9 → decrease; 0.9–1.3 → hold (never raise); above 1.3 → increase. Daily

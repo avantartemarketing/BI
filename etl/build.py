@@ -1096,6 +1096,16 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     recent = [x["roi"] for x in paid_daily[-rules["forced_decrease_after_days_below_target"]:]]
     forced = (len(recent) == rules["forced_decrease_after_days_below_target"]
               and all(r is not None and r < b["target_roi_aa"] for r in recent))
+    # the LE template's own zero-conversion rules: a day that spent and bought
+    # no entries cuts 30%; three in a row pause the campaign
+    zero_days = 0
+    for x in reversed(paid_daily):
+        if x["spend"] > 0 and x["entries"] <= 0:
+            zero_days += 1
+        else:
+            break
+    zero_pause = zero_days >= rules.get("zero_conversion_days_to_pause", 3)
+    zero_cut = zero_days >= 1 and not zero_pause
 
     recommended, cap, paced = None, None, False
     if supply_spend is not None and days_left:
@@ -1103,6 +1113,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         base = "supply" if supply_spend <= roi_spend else "roi_floor"
         if unconstrained <= 0:
             recommended, cap = 0.0, base            # nothing needed, or the floor says stop
+        elif zero_pause and s0 > 0:
+            recommended, cap = 0.0, "zero_conversion_pause"
+        elif zero_cut and s0 > 0:
+            recommended = min(unconstrained, s0 * (1 - rules.get("zero_conversion_decrease", 0.3)))
+            cap = "zero_conversion"
         elif s0 <= 0:
             recommended = min(unconstrained, plan_rate) if plan_rate else unconstrained
             cap = "plan_rate" if recommended < unconstrained else base   # first day: the plan's daily rate
@@ -1261,7 +1276,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "driftToClose": round(drift_end, 3),
             "paced": paced,
             "elasticity": eps,
-            "band": band, "forcedDecrease": forced, "cumRoi": round(cum_roi, 3) if cum_roi else None,
+            "band": band, "forcedDecrease": forced, "zeroConversionDays": zero_days,
+            "cumRoi": round(cum_roi, 3) if cum_roi else None,
             "entriesNeeded": round(entries_needed, 1),
             "selloutGap": round(sellout_gap, 1),
             "organicFuture": round(organic_future, 1),
