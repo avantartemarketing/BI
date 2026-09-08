@@ -54,10 +54,17 @@ INPUTS = json.loads((ROOT / "etl" / "release_inputs.json").read_text())
 # Target inputs saved from the dashboard's Target setting tab live in
 # data/app/inputs.json (the server rewrites it on save). When the live refresh
 # reruns this ETL in-process, those edits must win over the repo defaults.
+#
+# Only entries the server stamped with saved_at count as edits. This build
+# writes inputs.json too, and without the stamp its own previous output read
+# back as a "save" - so a repo default could never change once a release had
+# been built once (a paid-share overwrite added for Warhol was silently
+# ignored that way).
 _live_inputs = APP / "inputs.json"
 if _live_inputs.exists():
     try:
-        _saved = json.loads(_live_inputs.read_text()).get("releases", {})
+        _saved = {k: v for k, v in json.loads(_live_inputs.read_text()).get("releases", {}).items()
+                  if isinstance(v, dict) and v.get("saved_at")}
         INPUTS["releases"] = [_saved.get(r["id"], r) for r in INPUTS["releases"]]
         # releases set up from the dashboard (not in the repo defaults) - without
         # this they would vanish on the next rebuild
@@ -273,6 +280,10 @@ def compute_targets(release: dict) -> dict:
     paid_pct = b["paid_share_of_units"][
         {"Small": "Low", "Medium": "Medium", "Large": "High",
          "Low": "Low", "High": "High"}[release["paid_channel_size"]]]
+    # the workbook's "Paid (% Total)" overwrite: the team sets the paid share
+    # directly when the quartile pick is not the plan (Warhol: 66% paid)
+    if release.get("paid_share_override") is not None:
+        paid_pct = float(release["paid_share_override"])
     paid_units = round(size * paid_pct)
     organic_units = size - paid_units
     pr_pct = b["pv_other_share_of_units"][release["reference_point"]]

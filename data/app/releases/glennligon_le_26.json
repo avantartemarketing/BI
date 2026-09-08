@@ -1988,7 +1988,7 @@
   "spendProjectedTotal": 9391.15,
   "profitPerUnitAA": 1304.53,
   "profitPerUnitArtist": 1179.19,
-  "aaBudgetShare": 1
+  "aaBudgetShare": 1.0
  },
  "email": {
   "sends": 3,

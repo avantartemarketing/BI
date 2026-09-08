@@ -139,7 +139,7 @@ function defaultsFor(id, disc) {
     campaign_name: disc.campaign_name || null, marketing_lead: null, budget_file: null,
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
     edition_size: null, unit_price: null, artist_profit: null, aa_group_profit: null,
-    artist_profit_share: 0.5, framing_available: true,
+    artist_profit_share: 0.5, framing_available: true, paid_share_override: null,
     paid_channel_size: "Medium", reference_point: "Medium", paid_conv_quality: "Medium", cpp_pick: "Median",
     channel_quality_overrides: {},
   };
@@ -202,6 +202,15 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     if (!Number.isFinite(v) || v < 0 || v > 1) errors.push("artist_profit_share must be 0..1");
     else next.artist_profit_share = v;
   }
+  // the workbook's "Paid (% Total)" overwrite; null means use the channel-size pick
+  if (body.paid_share_override !== undefined) {
+    if (body.paid_share_override === null || body.paid_share_override === "") next.paid_share_override = null;
+    else {
+      const v = Number(body.paid_share_override);
+      if (!Number.isFinite(v) || v < 0 || v > 1) errors.push("paid_share_override must be 0..1 (a fraction of units) or empty");
+      else next.paid_share_override = v;
+    }
+  }
   if (body.framing_available !== undefined) next.framing_available = !!body.framing_available;
   for (const [f, allowed] of Object.entries(PICKS)) {
     if (body[f] !== undefined) {
@@ -233,6 +242,9 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   if (errors.length) return res.status(400).json({ error: errors.join("; ") });
 
   const snapPath = path.join(DATA, "releases", `${id}.json`);
+  // the ETL overlays only stamped entries over the repo defaults - its own
+  // output carries no stamp, so a default can still change under it
+  next.saved_at = new Date().toISOString();
   if (creating) {
     // Nothing to retarget - the release only has an actuals-only page. Save
     // the inputs and let the full ETL build it (build.py picks the saved

@@ -198,10 +198,10 @@
    "launch_end": "2026-09-17",
    "edition_size": 150,
    "unit_price": 3000,
-   "artist_profit": 176879,
-   "aa_group_profit": 190745,
+   "artist_profit": 176879.0,
+   "aa_group_profit": 190745.0,
    "artist_profit_share": 0.5,
-   "aa_budget_share": 1,
+   "aa_budget_share": 1.0,
    "framing_available": true,
    "paid_channel_size": "Medium",
    "reference_point": "Medium",
@@ -413,7 +413,8 @@
     "AA Email Auto": "Low",
     "Referral Artist": "Low",
     "Referral Other": "Medium"
-   }
+   },
+   "paid_share_override": 0.66
   }
  },
  "discovered": {

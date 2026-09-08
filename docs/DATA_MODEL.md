@@ -203,6 +203,9 @@ paid_units    = round(edition_size × paid_pct)
 organic_units = edition_size − paid_units
 ```
 `size_pick` ("Paid channel size" Small→Low / Medium / Large→High) is a per-release judgement call.
+A release can instead carry `paid_share_override` (a fraction of units) - the workbook's "Paid
+(% Total)" overwrite on row 137 of the LE tab - which replaces `paid_pct` outright. Warhol's tab
+sets 0.66 (1,610 of 2,440 units paid, budget £284,970); the High quartile alone would give 890.
 Live releases use Medium (Glenn Ligon, Schnabel) or High (Dali, Mondrian, Zeng Fanzhi, Parra,
 James Jean, Abdulnasser).
 

@@ -20,7 +20,10 @@ const SIZE_PICK = { Small: "Low", Medium: "Medium", Large: "High", Low: "Low", H
 
 export function computeTargets(inp, b) {
   const size = inp.edition_size || 0;
-  const paidPct = b.paid_share_of_units[SIZE_PICK[inp.paid_channel_size]];
+  // the workbook's "Paid (% Total)" overwrite wins over the channel-size quartile
+  const paidPct = inp.paid_share_override !== null && inp.paid_share_override !== undefined && inp.paid_share_override !== ""
+    ? Number(inp.paid_share_override)
+    : b.paid_share_of_units[SIZE_PICK[inp.paid_channel_size]];
   const paidUnits = Math.round(size * paidPct);
   const organicUnits = size - paidUnits;
   const prPct = b.pv_other_share_of_units[inp.reference_point];

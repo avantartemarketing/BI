@@ -241,7 +241,8 @@
     "AA Email Auto": "Low",
     "Referral Artist": "Low",
     "Referral Other": "Medium"
-   }
+   },
+   "paid_share_override": 0.66
   }
  ]
 }

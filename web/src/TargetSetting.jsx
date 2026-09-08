@@ -285,8 +285,24 @@ export default function TargetSetting({ snap, onSaved }) {
                 tip: fmtMoney(derived.paid.cost_per_purchase) + " / unit" },
             ].map((lv) => (
               <div key={lv.key}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{lv.label}</div>
-                <div style={{ marginTop: 10, display: "flex" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "baseline", gap: 10 }}>
+                  {lv.label}
+                  {lv.key === "paid_channel_size" && (
+                    <label style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 500, color: C.muted, display: "flex", alignItems: "center", gap: 6 }}
+                      title="The workbook's 'Paid (% Total)' overwrite: set the paid share of units directly instead of taking it from the channel-size quartile. Leave empty to use the slider.">
+                      overwrite
+                      <input className="control num" style={{ width: 64, padding: "3px 6px", fontSize: 12 }}
+                        value={inp.paid_share_override === null || inp.paid_share_override === undefined ? "" : Math.round(inp.paid_share_override * 100)}
+                        placeholder="–"
+                        onChange={(e) => {
+                          const raw = String(e.target.value).replace(/[^0-9]/g, "");
+                          setInp({ ...inp, paid_share_override: raw === "" ? null : clamp(parseInt(raw, 10), 0, 100) / 100 });
+                        }} />
+                      <span>% paid</span>
+                    </label>
+                  )}
+                </div>
+                <div style={{ marginTop: 10, display: "flex", opacity: lv.key === "paid_channel_size" && inp.paid_share_override !== null && inp.paid_share_override !== undefined ? 0.45 : 1 }}>
                   <Slider big options={lv.options}
                     value={lv.key === "paid_channel_size" ? ({ Low: "Small", High: "Large" }[inp[lv.key]] || inp[lv.key]) : inp[lv.key]}
                     onChange={(v) => setInp({ ...inp, [lv.key]: v })} tip={lv.tip} />

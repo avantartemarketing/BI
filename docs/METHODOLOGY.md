@@ -40,6 +40,7 @@ projections immediately - no data rebuild needed.
 | Paid budget share | Who funds the ads. Default: 50/50, or 100% AA on commission / rev-share deals; overridable per release (Glenn Ligon = 100% AA) |
 | Framing available | Adds 0.35 conversion × £94 profit per frame to AA profit/unit |
 | Paid channel size (Small / Medium / Large) | Which quartile of historical paid share to plan for |
+| Paid share overwrite (% of units, optional) | The workbook's "Paid (% Total)" overwrite: sets the paid share directly when the quartile is not the plan (Warhol: 66%); empty means use the pick |
 | Private room share (Low / Medium / High) | Quartile of the private-room + other share |
 | Paid conversion (Low / Medium / High) | Quartile of paid session → entry conversion |
 | Cost per purchase (Low / Median / High) | £128.75 / £177 / £291 per paid unit |
