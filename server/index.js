@@ -104,7 +104,12 @@ app.get("/api/releases/:id", (req, res) => {
 
 // ---- target-setting inputs (docs §3; the Target setting tab) ----
 const { retargetSnapshot } = require("./retarget");
+// inputs.json is the ETL's output (benchmarks, defaults, the discovered
+// releases). Saves from the Target setting tab go to their own file, so the
+// ETL never reads its own output back as an edit, and so the file can live on
+// a persistent disk (SAVED_INPUTS_PATH) and survive a deploy.
 const INPUTS_PATH = path.join(DATA, "inputs.json");
+const SAVED_INPUTS_PATH = process.env.SAVED_INPUTS_PATH || path.join(ROOT, "data", "inputs.saved.json");
 const TARGETS_LOG = process.env.TARGETS_LOG || path.join(ROOT, "data", "targets.log.jsonl");
 const modelPromise = import("../shared/targetModel.mjs");
 
@@ -125,8 +130,26 @@ const PICKS = {
 const QUALITIES = ["High", "Medium", "Low", "N/A"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+function readSaved() {
+  try { return JSON.parse(fs.readFileSync(SAVED_INPUTS_PATH, "utf8")); } catch { return { releases: {} }; }
+}
+function writeSaved(id, inputs) {
+  const saved = readSaved();
+  saved.releases = { ...(saved.releases || {}), [id]: inputs };
+  fs.mkdirSync(path.dirname(SAVED_INPUTS_PATH), { recursive: true });
+  const tmp = SAVED_INPUTS_PATH + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(saved, null, 1));
+  fs.renameSync(tmp, SAVED_INPUTS_PATH);
+}
+/* The ETL's inputs document with the dashboard's saves laid over it: a saved
+ * release wins over the repo default, and a release set up from the dashboard
+ * moves from discovered to releases. */
 function readInputsDoc() {
-  return JSON.parse(fs.readFileSync(INPUTS_PATH, "utf8"));
+  const doc = JSON.parse(fs.readFileSync(INPUTS_PATH, "utf8"));
+  const saved = readSaved().releases || {};
+  doc.releases = { ...doc.releases, ...saved };
+  if (doc.discovered) for (const id of Object.keys(saved)) delete doc.discovered[id];
+  return doc;
 }
 
 /* A release nobody has set targets for starts from what the ETL could derive
@@ -249,8 +272,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     // Nothing to retarget - the release only has an actuals-only page. Save
     // the inputs and let the full ETL build it (build.py picks the saved
     // inputs up and promotes the release).
-    doc.releases[id] = next;
-    fs.writeFileSync(INPUTS_PATH, JSON.stringify(doc, null, 1));
+    writeSaved(id, next);
     fs.appendFileSync(TARGETS_LOG, JSON.stringify({
       ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard", created: true,
     }) + "\n");
@@ -273,8 +295,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   const { computeTargets } = await modelPromise;
   const updated = retargetSnapshot(snap, mergedForModel, bench, curves, computeTargets);
 
-  doc.releases[id] = next;
-  fs.writeFileSync(INPUTS_PATH, JSON.stringify(doc, null, 1));
+  writeSaved(id, next);
   fs.writeFileSync(snapPath, JSON.stringify(updated, null, 1));
   fs.appendFileSync(TARGETS_LOG, JSON.stringify({
     ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard",

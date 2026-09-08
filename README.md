@@ -64,8 +64,35 @@ The ETL builds a page for **every** release the funnel data mentions (`discover_
   whatever the feed tagged it (the content feed tags Warhol's 2026 LE `AndyWarhol_TL_26`).
 
 **Setting targets** on such a release uses the same Target setting tab, starting from the
-derived defaults; edition size, price and both profits are required. Saving creates the
-inputs (`data/app/inputs.json`) and reruns the full ETL, which promotes the release.
+derived defaults; edition size, price and both profits are required. Saving writes the
+inputs to `data/inputs.saved.json` (never to the ETL's own `data/app/inputs.json`, which is
+output) and reruns the full ETL, which promotes the release.
+
+## Keeping state across deploys (Render)
+
+Render's disk resets on every deploy. Four things live on it and are lost without these:
+
+| What | Symptom when lost | Fix |
+|---|---|---|
+| Session secret | everyone is signed out after each deploy | set `SESSION_SECRET` (any long random string) under Environment |
+| `data/users.json` | users added in Permissions vanish, passwords reset to `LOGIN_PASSWORD` | `USERS_PATH` on a persistent disk |
+| `data/inputs.saved.json` | targets edited in the dashboard revert to the repo defaults | `SAVED_INPUTS_PATH` on the disk |
+| `data/targets.log.jsonl`, `data/decisions.log.jsonl` | the audit trails restart | `TARGETS_LOG`, `DECISIONS_PATH` on the disk |
+
+`SESSION_SECRET` is the one-line fix for re-logins and needs no disk. For the rest, add a
+persistent disk to the service (Render → the service → Disks; 1 GB is plenty), mount it
+at `/var/data`, and set
+
+```
+USERS_PATH=/var/data/users.json
+SAVED_INPUTS_PATH=/var/data/inputs.saved.json
+TARGETS_LOG=/var/data/targets.log.jsonl
+DECISIONS_PATH=/var/data/decisions.log.jsonl
+```
+
+`render.yaml` lists the same keys, but Render ignores that file for a service created in the
+dashboard, so they have to be set by hand. The ETL's own output (`data/app/`) is regenerated
+on every refresh and needs nothing.
 
 ## Refreshing data
 

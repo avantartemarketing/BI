@@ -11,3 +11,4 @@ data/targets.log.jsonl
 data/decisions.log.jsonl
 data/artist_posts.csv
 data/app/derived/
+data/inputs.saved.json

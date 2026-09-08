@@ -9,8 +9,20 @@ services:
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:
+      # Render ignores this file for a service created in the dashboard - set
+      # these by hand under Environment. Without SESSION_SECRET every deploy
+      # signs everyone out; without the disk paths below, users, passwords,
+      # target edits and the decision log reset on every deploy.
       - key: SESSION_SECRET
         generateValue: true
+      - key: USERS_PATH          # e.g. /var/data/users.json on a persistent disk mounted at /var/data
+        sync: false
+      - key: SAVED_INPUTS_PATH   # e.g. /var/data/inputs.saved.json
+        sync: false
+      - key: TARGETS_LOG         # e.g. /var/data/targets.log.jsonl
+        sync: false
+      - key: DECISIONS_PATH      # e.g. /var/data/decisions.log.jsonl
+        sync: false
       - key: BIGQUERY_SERVICE_ACCOUNT_JSON   # BigQuery reader key JSON - the preferred feed (Data Viewer on the dataset + Job User on the project)
         sync: false
       - key: BQ_SINCE   # how far back to pull; also sets the BigQuery bill (default 2025-01-01)

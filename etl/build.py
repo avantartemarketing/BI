@@ -29,6 +29,7 @@ import csv
 import json
 import math
 import collections
+import os
 import pathlib
 import re
 from collections import defaultdict
@@ -51,20 +52,20 @@ CATALOGUE_DAYS = 90      # window shown for a release with no campaign clock
 BENCH = json.loads((ROOT / "etl" / "benchmarks.json").read_text())
 INPUTS = json.loads((ROOT / "etl" / "release_inputs.json").read_text())
 
-# Target inputs saved from the dashboard's Target setting tab live in
-# data/app/inputs.json (the server rewrites it on save). When the live refresh
-# reruns this ETL in-process, those edits must win over the repo defaults.
+# Target inputs saved from the dashboard's Target setting tab live in their
+# own file (the server writes it; SAVED_INPUTS_PATH relocates it, e.g. onto a
+# persistent disk so saves survive a deploy). When the live refresh reruns
+# this ETL in-process, those edits win over the repo defaults.
 #
-# Only entries the server stamped with saved_at count as edits. This build
-# writes inputs.json too, and without the stamp its own previous output read
-# back as a "save" - so a repo default could never change once a release had
-# been built once (a paid-share overwrite added for Warhol was silently
-# ignored that way).
-_live_inputs = APP / "inputs.json"
-if _live_inputs.exists():
+# They live apart from data/app/inputs.json on purpose: that file is this
+# build's own output, and reading it back as an edit meant a repo default
+# could never change once a release had been built (a paid-share overwrite
+# added for Warhol was silently ignored that way).
+_saved_inputs = pathlib.Path(os.environ.get("SAVED_INPUTS_PATH") or (DATA / "inputs.saved.json"))
+if _saved_inputs.exists():
     try:
-        _saved = {k: v for k, v in json.loads(_live_inputs.read_text()).get("releases", {}).items()
-                  if isinstance(v, dict) and v.get("saved_at")}
+        _saved = {k: v for k, v in json.loads(_saved_inputs.read_text()).get("releases", {}).items()
+                  if isinstance(v, dict)}
         INPUTS["releases"] = [_saved.get(r["id"], r) for r in INPUTS["releases"]]
         # releases set up from the dashboard (not in the repo defaults) - without
         # this they would vanish on the next rebuild
