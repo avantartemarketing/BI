@@ -202,8 +202,9 @@ release. The GEN/CUS/INS send-type filter still reads the name convention. The
 `emails` field of `/api/refresh/status` says, per targeted release, how many sends in
 the last 60 days joined it and lists the recent sends that joined nothing - the first
 place to look when a release's email rows are blank. The email references are
-recomputed from that file at every refresh: open and click rate as the median pooled
-rate across completed draw launches of the last 24 months (configured and discovered),
+recomputed from that file at every refresh: open rate, click rate and clicks per open
+as the median pooled rate across completed draw launches of the last 24 months
+(configured and discovered),
 the delivered target as the median delivered total across completed configured
 launches on the pooled delivery-timing curve. The dashboard's 19.6% and 4.3% defaults
 apply only until two launches qualify. Without the token the committed CSV snapshot

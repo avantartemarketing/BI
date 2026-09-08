@@ -415,7 +415,8 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
 
     def rate_row(rid, end, core):
         total = float(core["delivered"].sum())
-        return (rid, end, float(core["opened"].sum()) / total, float(core["clicked"].sum()) / total)
+        opened, clicked = float(core["opened"].sum()), float(core["clicked"].sum())
+        return (rid, end, opened / total, clicked / total, clicked / opened if opened > 0 else None)
 
     shares, totals, rates, seen = [], [], [], set()
     recent = as_of - timedelta(days=EMAIL_REF_MONTHS * 30)
@@ -455,7 +456,7 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         if core is not None:
             rates.append(rate_row(r["id"], end, core))
 
-    out = {"total": None, "curve": None, "open_rate": None, "click_rate": None, "cohort": None}
+    out = {"total": None, "curve": None, "open_rate": None, "click_rate": None, "ctor_rate": None, "cohort": None}
     if len(totals) >= 2:
         med = pd.DataFrame(shares).median().tolist()
         for i in range(1, len(med)):
@@ -467,6 +468,8 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         rates.sort(key=lambda x: x[1], reverse=True)
         out["open_rate"] = float(pd.Series([x[2] for x in rates]).median())
         out["click_rate"] = float(pd.Series([x[3] for x in rates]).median())
+        ctors = [x[4] for x in rates if x[4] is not None]   # clicks per opened email
+        out["ctor_rate"] = float(pd.Series(ctors).median()) if len(ctors) >= 2 else None
         out["cohort"] = {"n": len(rates), "releases": [x[0] for x in rates],
                          "from": rates[-1][1].isoformat(), "to": rates[0][1].isoformat()}
     return out if (out["total"] is not None or out["open_rate"] is not None) else None
@@ -476,9 +479,11 @@ def email_refs(bench: dict | None) -> dict:
     """The email rate references as the UI reads them (percent) plus the
     cohort behind them; the UI falls back to fixed defaults on None."""
     if not bench or bench.get("open_rate") is None:
-        return {"emailOpenRateRef": None, "emailClickRateRef": None, "emailRefCohort": None}
+        return {"emailOpenRateRef": None, "emailClickRateRef": None, "emailClickToOpenRef": None,
+                "emailRefCohort": None}
     return {"emailOpenRateRef": round(bench["open_rate"] * 100, 1),
             "emailClickRateRef": round(bench["click_rate"] * 100, 1),
+            "emailClickToOpenRef": round(bench["ctor_rate"] * 100, 1) if bench.get("ctor_rate") is not None else None,
             "emailRefCohort": bench["cohort"]}
 
 def build_curves(at: pd.DataFrame) -> dict:
@@ -1588,11 +1593,11 @@ def main():
     email_bench = email_delivered_benchmark(emails, as_of, discovered, spend)
     if email_bench and email_bench["open_rate"] is not None:
         c = email_bench["cohort"]
-        print(f"email refs: open {email_bench['open_rate'] * 100:.1f}% click {email_bench['click_rate'] * 100:.1f}% "
-              f"(median of {c['n']} draw launches closed {c['from']}..{c['to']}); "
-              f"delivered median {email_bench['total']:.0f}" if email_bench["total"] is not None else
-              f"email refs: open {email_bench['open_rate'] * 100:.1f}% click {email_bench['click_rate'] * 100:.1f}% "
-              f"(median of {c['n']} draw launches closed {c['from']}..{c['to']}); no delivered median yet")
+        ctor = f"{email_bench['ctor_rate'] * 100:.1f}%" if email_bench["ctor_rate"] is not None else "n/a"
+        deliv = f"{email_bench['total']:.0f}" if email_bench["total"] is not None else "none yet"
+        print(f"email refs: open {email_bench['open_rate'] * 100:.1f}%, click {email_bench['click_rate'] * 100:.1f}% "
+              f"of delivered, {ctor} of opens (median of {c['n']} draw launches closed {c['from']}..{c['to']}); "
+              f"delivered median {deliv}")
     else:
         print("email refs: none yet (fewer than 2 completed draw launches with sends on file) - UI defaults apply")
     by_name = {n: g for n, g in at.groupby("simple_release_name")}

@@ -1,8 +1,11 @@
 /* Funnel by channel (spec §4.4, LE relabel per §6). Tall card (1 col × 2 rows).
  * Five display groups; rungs are built from real snapshot data instead of the
  * mock's static list:
- *   AA Email  - Delivered emails vs cohort-median delivery curve · Open rate vs 19.6% · Click rate vs
- *               4.3% (historical LE launch-send medians) · Session → entry
+ *   AA Email  - a stage-by-stage chain: Delivered emails vs cohort-median delivery
+ *               curve · Open rate · Click rate (clicks per opened email) · Sessions per
+ *               click · Session → entry. Rate references are the ETL's cohort medians
+ *               (fixed defaults until two launches qualify); sessions per click is
+ *               judged against the plan's expected sessions over expected clicks.
  *   AA Meta   - Posts + stories (no ref) · Sessions · Session → entry
  *   Referral artist - Posts (artist accounts; no feed yet, renders neutral) ·
  *               Sessions · Session → entry
@@ -23,6 +26,7 @@ function fmtVal(v, unit) {
   if (v === null || v === undefined || Number.isNaN(v)) return "–";
   if (unit === "%") return fmt(v, 1) + "%";
   if (unit === "eur") return fmtMoney(v, Math.abs(v) < 100 ? 2 : 0);
+  if (unit === "ratio") return fmt(v, 2);
   return fmt(v);
 }
 
@@ -36,7 +40,7 @@ function buildRung([label, v, ref, unit, inv, note]) {
     return {
       label, neutral: true, delta: noVal ? "–" : fmtVal(v, unit), rag: C.muted, dev: 50,
       tip: {
-        head: label,
+        head: label, body: note,
         rows: [
           { label: "Actual", value: fmtVal(v, unit) },
           { label: "Reference", value: "–" },
@@ -58,7 +62,7 @@ function buildRung([label, v, ref, unit, inv, note]) {
     delta: (dPos ? "+" : MINUS) + dAbs,
     rag: eff >= 0 ? C.green : eff > -10 ? C.amber : C.red,
     tip: {
-      head: label,
+      head: label, body: note,
       rows: [
         { label: "Actual", value: fmtVal(v, unit) },
         { label: "Target", value: fmtVal(ref, unit) },
@@ -114,18 +118,16 @@ function Rung({ r }) {
 /* Waterfall view: expected -> actual secured units today, stepped by the
  * SAME rows the funnel view shows, group by group. Each group's secured units
  * are a chain of the funnel's own factors (AA Email: delivered x open rate x
- * clicks per open x sessions per click x session->sale; Paid: spend x units
- * per pound; the rest: sessions x session->sale) and each step reprices one
- * factor from its reference to its actual with the earlier factors at actual
- * and the later at reference (the §4.5 one-at-a-time method), so the steps sum
- * exactly to the group's gap and the groups sum to the hero's. The funnel view
- * quotes click rate per delivered email (4.3%); the chain needs it per opened
- * email so that open rate can carry its own step, and its reference is the
- * same two medians divided (4.3% / 19.6%). A row without a reference (Posts,
- * or Open rate when no opens are recorded) is shown in place with no step and
- * its actual in grey - context, not a component of the arithmetic. Rounding
- * residual is parked on the largest step; a real residual (the hero is capped
- * at the edition) is left visible. */
+ * clicks per open x sessions per click x session->sale, the stages emailStages
+ * gives both views; Paid: spend x units per pound; the rest: sessions x
+ * session->sale) and each step reprices one factor from its reference to its
+ * actual with the earlier factors at actual and the later at reference (the
+ * §4.5 one-at-a-time method), so the steps sum exactly to the group's gap and
+ * the groups sum to the hero's. A row without a reference (Posts, or the email
+ * stages before a delivery benchmark exists) is shown in place with no step
+ * and its actual in grey - context, not a component of the arithmetic.
+ * Rounding residual is parked on the largest step; a real residual (the hero
+ * is capped at the edition) is left visible. */
 function chainSteps(factors) {
   // factors: [{label, a, e, note}] -> steps summing to prod(a) - prod(e)
   const out = [];
@@ -138,6 +140,33 @@ function chainSteps(factors) {
   return out;
 }
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
+
+/* The AA Email stages both views share: actual and reference for delivered,
+ * open rate, clicks per opened email and sessions per click. Rate references
+ * are the ETL's cohort medians (fixed defaults until two launches qualify);
+ * the sessions-per-click reference is the plan's expected AA Email sessions by
+ * today over its expected clicks (delivered target x reference open rate x
+ * reference clicks per open), so the chain's expected side multiplies out to
+ * the plan's expected sessions. Percentages are 0-100 here. */
+function emailStages(snap) {
+  const email = snap?.email || {};
+  const b = snap?.benchmarks || {};
+  const fbg = (snap?.funnelByGroup || {}).aa_email || {};
+  const openRef = b.emailOpenRateRef ?? 19.6;
+  const clickRef = b.emailClickRateRef ?? 4.3;
+  const ctorRef = b.emailClickToOpenRef ?? (clickRef / openRef) * 100;
+  const delivA = email.delivered ?? 0, delivE = email.deliveredTarget ?? null;
+  const opensA = email.opened ?? 0, clicksA = email.clicked ?? 0;
+  const sessA = fbg.sessions_actual ?? 0, sessE = fbg.sessions_expected ?? null;
+  const clicksE = finite(delivE) && delivE > 0 ? delivE * (openRef / 100) * (ctorRef / 100) : null;
+  return {
+    delivA, delivE, opensA, clicksA, sessA, sessE, clicksE, openRef, clickRef, ctorRef,
+    openA: delivA > 0 ? (opensA / delivA) * 100 : null,
+    ctorA: opensA > 0 ? (clicksA / opensA) * 100 : null,
+    spcA: clicksA > 0 ? sessA / clicksA : null,
+    spcE: finite(clicksE) && clicksE > 0 && finite(sessE) ? sessE / clicksE : null,
+  };
+}
 
 function groupWaterfall(g, snap) {
   const ch = (snap.channels || []).find((c) => c.key === g.key) || {};
@@ -156,50 +185,50 @@ function groupWaterfall(g, snap) {
 
   let steps;
   if (g.key === "aa_email") {
-    const em = snap.email || {};
-    const b = snap.benchmarks || {};
-    const clickRef = (b.emailClickRateRef ?? 4.3) / 100, openRef = (b.emailOpenRateRef ?? 19.6) / 100;
-    const ctorRef = clickRef / openRef; // clicks per opened email at reference
-    const delivA = em.delivered ?? 0, delivE = em.deliveredTarget ?? null;
-    const opensA = em.opened ?? delivA * (em.openRate ?? 0);
-    const clicksA = em.clicked ?? delivA * (em.clickRate ?? 0);
-    const openA = delivA > 0 ? opensA / delivA : null;
-    const clickA = delivA > 0 ? clicksA / delivA : null;
-    const clicksE = finite(delivE) ? delivE * clickRef : null;
-    const chainable = finite(delivE) && delivE > 0 && clicksA > 0 && clicksE > 0 && sessE > 0;
+    const em = emailStages(snap);
+    const { delivA, delivE, opensA, clicksA, clicksE } = em;
+    const openRef = em.openRef / 100, ctorRef = em.ctorRef / 100;
+    const chainable = finite(delivE) && delivE > 0 && clicksA > 0 && finite(clicksE) && clicksE > 0 && sessE > 0;
     const delivered = { label: "Delivered emails", a: delivA, e: delivE, show: N,
       note: "sends delivered vs the cohort-median delivery curve" };
-    const sessions = { label: "Sessions", a: sessA / clicksA, e: sessE / clicksE, show: R,
-      note: "sessions per click vs plan - traffic the clicks did not explain" };
+    const perClick = { label: "Sessions per click", a: sessA / clicksA, e: sessE / clicksE, show: R,
+      note: "AA Email sessions per email click vs the plan's expected sessions over expected clicks - traffic the clicks did not explain" };
     const sale = { label: "Session → sale", a: convA, e: convE, show: P, note: "session → sale rate vs plan" };
     if (chainable && opensA > 0) {
       rows.push(...chainSteps([
         delivered,
-        { label: "Open rate", a: openA, e: openRef, show: P, note: `opens per delivered email vs ${P(openRef)}` },
-        { label: "Click rate", a: clicksA / opensA, e: ctorRef, show: P,
-          note: `clicks per opened email vs ${P(ctorRef)} (the funnel's ${P(clickRef)} of delivered ÷ ${P(openRef)} opened)` },
-        sessions, sale,
+        { label: "Open rate", a: opensA / delivA, e: openRef, show: P, note: `opens per delivered email vs ${P(openRef)}` },
+        { label: "Click rate", a: clicksA / opensA, e: ctorRef, show: P, note: `clicks per opened email vs ${P(ctorRef)}` },
+        perClick, sale,
       ]));
       return { name: g.name, rows, now, exp };
     }
     if (chainable) {
-      // clicks recorded but no opens: open rate is context and click rate carries per delivered email
+      // clicks recorded but no opens: click rate per delivered email carries; open rate is context
+      const clickE = clicksE / delivE;
       steps = chainSteps([
         delivered,
-        { label: "Click rate", a: clickA, e: clickRef, show: P, note: `clicks per delivered email vs ${P(clickRef)}` },
-        sessions, sale,
+        { label: "Click rate", a: clicksA / delivA, e: clickE, show: P, note: `clicks per delivered email vs ${P(clickE)} - no opens recorded` },
+        perClick, sale,
       ]);
       rows.push(steps[0]);
-      info("Open rate", null, openRef * 100, "%", "no opens recorded - context only; clicks carry into sessions");
+      info("Open rate", null, em.openRef, "%", "no opens recorded - context only");
       rows.push(steps[1], steps[2], steps[3]);
       return { name: g.name, rows, now, exp };
     }
+    // no delivery benchmark or no clicks yet: the stages are context and
+    // sessions vs plan carries the traffic gap
     rows.push({ label: "Delivered emails", value: null, display: fmtVal(delivA, "count"),
       note: delivA > 0 ? "no delivery benchmark yet" : "no sends have joined this release yet",
       tipRows: [{ label: "Actual", value: fmtVal(delivA, "count") }, { label: "Reference", value: fmtVal(delivE, "count") }] });
-    info("Open rate", openA !== null ? openA * 100 : null, openRef * 100, "%", "context only");
-    info("Click rate", clickA !== null ? clickA * 100 : null, clickRef * 100, "%", "context only");
-    rows.push(...twoFactor());
+    info("Open rate", em.openA, em.openRef, "%", "context only");
+    info("Click rate", em.ctorA, em.ctorRef, "%", "clicks per opened email - context only");
+    info("Sessions per click", em.spcA, null, "ratio", "no expected clicks to judge against yet");
+    rows.push(...chainSteps([
+      { label: "Sessions", a: sessA, e: sessE, show: N,
+        note: "sessions vs plan - carries the whole traffic gap while the click chain has no reference" },
+      sale,
+    ]));
     return { name: g.name, rows, now, exp };
   }
   if (g.key === "paid") {
@@ -375,6 +404,8 @@ export default function FunnelByChannel({ snap }) {
   const REF_NOTE = cohort
     ? `Reference: median pooled rate across ${cohort.n} completed draw launches with sends on file (closed ${cohort.from} to ${cohort.to})`
     : "Reference: fixed default until two completed draw launches have sends on file";
+  const em = emailStages(snap);
+  const SPC_NOTE = "AA Email sessions per email click. Reference: the plan's expected AA Email sessions by today over its expected clicks (delivered target × reference open rate × reference clicks per open) - the traffic the clicks do not explain";
 
   const groups = [
     {
@@ -382,10 +413,11 @@ export default function FunnelByChannel({ snap }) {
       rungs: [
         // reference = cohort median delivered total x pooled delivery-timing
         // curve at today's pdsa (computed in the ETL as email.deliveredTarget)
-        ["Delivered emails", email.delivered ?? null, email.deliveredTarget ?? null, "count"],
-        ["Open rate", pct(email.openRate), snap?.benchmarks?.emailOpenRateRef ?? 19.6, "%", false, REF_NOTE],
-        ["Click rate", pct(email.clickRate), snap?.benchmarks?.emailClickRateRef ?? 4.3, "%", false, REF_NOTE],
-        sess("aa_email"),
+        ["Delivered emails", email.delivered ?? null, email.deliveredTarget ?? null, "count", false,
+          "Reference: median delivered total across completed configured launches, on the pooled delivery-timing curve at today's point in the window"],
+        ["Open rate", em.openA, em.openRef, "%", false, "Opens per delivered email. " + REF_NOTE],
+        ["Click rate", em.ctorA, em.ctorRef, "%", false, "Clicks per opened email (click-to-open). " + REF_NOTE],
+        ["Sessions per click", em.spcA, em.spcE, "ratio", false, SPC_NOTE],
         conv("aa_email"),
       ],
     },
