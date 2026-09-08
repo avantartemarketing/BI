@@ -163,16 +163,23 @@
    "ignore_change_below": 0.1,
    "forced_decrease_after_days_below_target": 3,
    "cpe_daily_drift_by_third": [
+    0.005,
+    0.005,
+    0.005
+   ],
+   "cpe_daily_drift_by_third_workbook": [
     0.05,
     0.07,
     0.1
-   ]
+   ],
+   "cpe_daily_drift_note": "Pure time drift in cost per entry, per day, by third of the window. The workbook's 5/7/10% a day (kept in cpe_daily_drift_by_third_workbook) is the cost rise along its own spend path, which ramps 6-10% a day - at spend elasticity 0.38 that ramp alone raises CPE 3.5-5% a day, so applying the tiers on top of the elasticity counted the same effect twice and drove ROI at close under 1 on every campaign. Net of spend, within-campaign drift measures 0.36% a day +/- 1.12 (13 campaigns, 170 campaign-days, etl/analysis/cpe_elasticity.py); 0.5% a day used."
   },
   "frame_conversion": 0.35,
   "frame_profit_per_unit": 94,
   "budget_sense_check_max_pct_of_launch_value": 0.06,
   "cpe_spend_elasticity": 0.38,
-  "cpe_spend_elasticity_note": "Within-campaign elasticity of cost per entry to daily spend, fitted on 13 campaigns / 170 campaign-days with a campaign fixed effect and a day-drift term: 0.384 +/- 0.062 (etl/analysis/cpe_elasticity.py, 2026-09-07). Doubling daily spend raises CPE ~31%, 10x ~2.4x. Set to 0 to price entries flat as before."
+  "cpe_spend_elasticity_note": "Within-campaign elasticity of cost per entry to daily spend, fitted on 13 campaigns / 170 campaign-days with a campaign fixed effect and a day-drift term: 0.384 +/- 0.062 (etl/analysis/cpe_elasticity.py, 2026-09-07). Doubling daily spend raises CPE ~31%, 10x ~2.4x. Set to 0 to price entries flat as before.",
+  "cpe_growth_factor_note": "Superseded: the forward cost per entry now follows spend_rules.cpe_daily_drift_by_third compounded day by day (the path the ROI chart draws), for the budget and the ROI floor alike. Kept for reference only."
  },
  "channel_quality_default": {
   "AA Email Auto": "High",

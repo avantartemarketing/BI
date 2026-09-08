@@ -229,6 +229,26 @@ target      = min(sell-out s, ROI-floor s)
 A release that could only sell out by spending fifty times today's budget is
 told so by the ROI floor, which binds long before the supply figure does.
 
+**One forward path.** Cost per entry from today drifts by the spend rules'
+daily rate, compounded day by day, and that single path serves both the Paid
+ROI chart's dashed projection (at today's spend) and the recommendation's
+floor (at the recommended spend). The floor is on **ROI at close**: the
+recommended spend is the level at which the line the chart draws ends on the
+floor. The two cards therefore cannot disagree - a projection heading under 1
+and an "increase" recommendation could only coexist while they ran on
+different assumptions, which they did until this was unified.
+
+**About the drift rate.** The LE spend rules put cost per entry up 5% a day in
+the first third, 7% in the second, 10% in the third. Those figures are the
+cost rise along the workbook's *own* spend path, which ramps 6–10% a day
+towards sell-out; at elasticity 0.38 that ramp alone lifts the cost per entry
+3.5–5% a day. Modelling the spend effect and then drifting 5% a day on top
+counts the same thing twice, and drives ROI at close under 1 on every campaign
+(a release five days in at a cumulative ROI of 3.5 was told to cut). Net of
+spend, the within-campaign time drift measures 0.36% a day ± 1.12 on our own
+campaigns; the model uses 0.5% a day. The workbook's tiers are kept in the
+benchmarks for reference.
+
 **Pacing rules:** target ROI (AA) **1.1**, floor **1.0**. Cumulative ROI below
 0.9 → decrease; 0.9–1.3 → hold (never raise); above 1.3 → increase. Daily
 changes are capped at ±30% and changes under 10% are ignored. Forecast ROI

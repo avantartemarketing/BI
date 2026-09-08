@@ -63,7 +63,7 @@ export default function PaidSpend({ snap }) {
     forced_decrease: "3 days below target ROI", plan_rate: "Plan rate (first day)",
     hold_small_change: "Change under 10% - hold",
   };
-  const capLabel = CAP_LABELS[budget.cap] || budget.cap;
+  const capLabel = (CAP_LABELS[budget.cap] || budget.cap) + (budget.paced ? " · paced" : "");
   const bandTip = {
     head: capLabel,
     body: budget.cap === "pacing"
@@ -80,10 +80,25 @@ export default function PaidSpend({ snap }) {
     rows: [
       { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
       { label: "Unconstrained", value: budget.supplySpend !== null && budget.roiSpend !== null && budget.supplySpend !== undefined && budget.roiSpend !== undefined ? money(Math.min(budget.supplySpend, budget.roiSpend)) + " / day" : "–" },
-      { label: "ROI at recommended", value: fmt(budget.finalDayRoi, 2) },
+      { label: "ROI at close, at recommended", value: fmt(budget.finalDayRoi, 2) },
     ],
   };
-  const capTip = !["supply", "roi_floor"].includes(budget.cap) ? bandTip : budget.cap === "supply" ? {
+  const floorTip = {
+    head: "ROI floor",
+    body: "The floor is on ROI at close, on the same drifting cost path the Paid ROI chart draws. At today's spend that path ends at " +
+      fmt(budget.finalDayRoi !== null && budget.cpeAtRecommended && budget.cpeAtClose ? null : null, 2).replace("–", "") +
+      "the chart's projected figure; the recommendation is the spend at which it ends on the floor" +
+      (budget.paced ? ", cut no faster than 30% a day" : "") + ".",
+    rows: [
+      { label: "Floor", value: floorF },
+      { label: "Cost / unit at close, today's spend", value: budget.cpeAtClose ? "£" + fmt(budget.cpeAtClose) : "–" },
+      { label: "Cost / unit at close, recommended", value: budget.cpeAtRecommended ? "£" + fmt(budget.cpeAtRecommended) : "–" },
+      { label: "ROI at close, recommended", value: fmt(budget.finalDayRoi, 2) },
+      { label: "Spend at the floor", value: money(rec) + " / day" },
+      ...(budget.paced ? [{ label: "Pacing", value: "cut limited to 30% / day" }] : []),
+    ],
+  };
+  const capTip = !["supply", "roi_floor"].includes(budget.cap) ? bandTip : budget.cap === "roi_floor" ? floorTip : budget.cap === "supply" ? {
     head: "Supply - sell-out",
     rows: [
       { label: "Spend cap", value: money(rec) + " / day" },

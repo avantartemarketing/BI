@@ -1206,8 +1206,9 @@
   "cumCpe": 45.4,
   "roiDeclineModel": {
    "start": 10.022,
-   "dailyFactor": 0.9091
+   "dailyFactor": 0.995
   },
+  "roiPath": [],
   "roiTarget": 1.1,
   "budget": {
    "current": 63.4,
@@ -1219,7 +1220,10 @@
    "supplySpend": null,
    "roiSpend": null,
    "cpeAtRecommended": null,
-   "cpeNow": 45.12,
+   "cpeNow": 30.08,
+   "cpeAtClose": 30.08,
+   "driftToClose": 1.0,
+   "paced": false,
    "elasticity": 0.38,
    "band": "increase",
    "forcedDecrease": false,

@@ -67,13 +67,17 @@ export default function PaidRoi({ snap }) {
   const anchor = lastRoiPt
     ? { d: lastRoiPt.d, v: lastRoiPt.roi }
     : model.start !== null && model.start !== undefined ? { d: today, v: model.start } : null;
-  const showModel = !complete && anchor !== null && factor !== null && anchor.d <= of;
-  const decline = showModel
-    ? Array.from({ length: of - anchor.d + 1 }, (_, i) => ({
-        d: anchor.d + i,
-        v: anchor.v * Math.pow(factor, i),
-      }))
-    : [];
+  // The dotted line is the ETL's forward path (paid.roiPath: today's spend,
+  // cost drifting by the spend rules' tiers) - the same path the budget
+  // recommendation's ROI floor is judged on, so the two cards cannot
+  // disagree. The geometric model is only a fallback for older snapshots.
+  const pathPts = (paid.roiPath || [])
+    .map((p) => ({ d: dayIndex(p.date, snap.windowStart, null), v: p.roi }))
+    .filter((p) => p.d !== null && p.d >= 1 && p.d <= of && p.v !== null && p.v !== undefined);
+  const showModel = !complete && anchor !== null && anchor.d <= of && (pathPts.length > 0 || factor !== null);
+  const decline = !showModel ? [] : pathPts.length
+    ? [{ d: anchor.d, v: anchor.v }, ...pathPts.filter((p) => p.d > anchor.d)]
+    : Array.from({ length: of - anchor.d + 1 }, (_, i) => ({ d: anchor.d + i, v: anchor.v * Math.pow(factor, i) }));
   const declineEnd = decline.length ? decline[decline.length - 1].v : null;
 
   // ----- ROI y-domain: series ∪ target ± 12%, snapped to 0.25, clamped at 0 -----

@@ -674,6 +674,22 @@ applied; they are now. The old formula also multiplied eligible entries (grossed
 drop-off) by the per-converting-unit price (also grossed up), overstating sell-out spend
 by ~20%.
 
+Reconciling the chart and the recommendation: the Paid ROI chart's dashed line and the
+budget recommendation's ROI floor now share one forward cost path (today's price × spend
+elasticity × daily drift, compounded). Two workbook figures described that future - the
+5/7/10% daily tiers (LE template row 206, "Expected daily increase") and a flat 1.5× forecast
+cost per entry - and the code used one for the chart and the other for the floor, so the
+projection could head under 1 while the floor passed. The daily tiers are the cost rise along
+the workbook's own spend path (row 229 ramps 6-10% a day; at elasticity 0.38 that is 3.5-5%
+a day of cost rise on its own), so with elasticity modelled they double count; applied
+consistently they told a campaign at cumulative ROI 3.5 to cut. `spend_rules.
+cpe_daily_drift_by_third` is now the pure time effect, 0.5% a day (measured 0.36 ± 1.12;
+`etl/analysis/cpe_elasticity.py`); the workbook values sit beside it as
+`cpe_daily_drift_by_third_workbook`. The workbook's own template, note, produces the same
+runaway "expected daily spend" the first version of this card did (Warhol_LE_26 row 229:
+£181k-256k a day) and tames it with a "max increase per day 2.0" rule rather than a price
+that responds to spend.
+
 ## 11b. Release discovery (every release is navigable)
 
 The build enumerates every `simple_release_name` in the funnel data and derives a record

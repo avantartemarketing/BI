@@ -1000,8 +1000,23 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     l3d_roi = ((1 - cann) * ppu_aa / (l3d_cpe * aa_budget_share)) if l3d_cpe \
         else (0.0 if s3 > 0 else None)
 
-    forecast_cpe = l3d_cpe * b["cpe_growth_factor"] if l3d_cpe else None
-    final_day_roi = ((1 - cann) * ppu_aa / (forecast_cpe * aa_budget_share)) if forecast_cpe else None
+    # ---- one forward cost path, shared by the ROI chart and the recommendation.
+    # Cost per entry drifts by the LE spend rules' daily tiers (5/7/10% a day
+    # by third of the window), compounded day by day from today. The workbook's
+    # flat "forecast CPE = L3D x 1.5" described the same future for the budget;
+    # using one for the chart and the other for the decision put them on
+    # different paths, and the floor could pass while the line went under 1.
+    tiers = b["spend_rules"]["cpe_daily_drift_by_third"]
+    drift_path = []                     # (day, cumulative drift factor) per future day
+    _cum = 1.0
+    for d in daterange(as_of + timedelta(days=1), launch_end):
+        _t3 = min(int(max(pdsa_for(release, d), 0) * 3), 2)
+        _cum *= (1 + tiers[_t3])
+        drift_path.append((d, _cum))
+    drift_end = drift_path[-1][1] if drift_path else 1.0
+    inv_drift_sum = sum(1 / f for _, f in drift_path)     # entries per £ over the window, relative to today
+    forecast_cpe = l3d_cpe                                # today's price (per converting unit), the anchor
+    cpe_end = l3d_cpe * drift_end if l3d_cpe else None    # at close, at today's spend
 
     units_sold = float(win["Total_Product_Units"].sum())
     entries_banked = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
@@ -1035,37 +1050,38 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # spend^eps (eps measured on our own campaigns, benchmarks
     # cpe_spend_elasticity; etl/analysis/cpe_elasticity.py), so the entries a
     # recommendation asks for are priced at the CPE that spend level implies,
-    # anchored on today's price at today's spend. Units: sellout_gap is units,
-    # forecast_cpe is £ per converting unit (raw CPE / (1 - drop-off)) - the
-    # old formula multiplied entries by the per-unit price and overstated the
-    # sell-out spend by ~20%.
+    # anchored on today's price at today's spend, and drifting along the same
+    # path the ROI chart draws. Units: sellout_gap is units, the price is £
+    # per converting unit (raw CPE / (1 - drop-off)).
     rules = b["spend_rules"]
     eps = float(b.get("cpe_spend_elasticity", 0.0) or 0.0)
     s0 = current_daily if current_daily > 0 else 0.0
     plan_rate = (targets["paid"]["budget"] / L) if L else 0.0
-    cpe_max = (1 - cann) * ppu_aa / (b["roi_floor"] * aa_budget_share)   # adjusted CPE at the ROI floor
+    cpe_max = (1 - cann) * ppu_aa / (b["roi_floor"] * aa_budget_share)   # price at the ROI floor
 
-    def cpe_at(spend):
-        """Adjusted cost per converting unit at a daily spend level."""
+    def cpe_at(spend, drift=1.0):
+        """Cost per converting unit at a daily spend level, after `drift`."""
         if not forecast_cpe:
             return None
         if eps <= 0 or s0 <= 0 or spend <= 0:
-            return forecast_cpe
-        return forecast_cpe * (spend / s0) ** eps
+            return forecast_cpe * drift
+        return forecast_cpe * (spend / s0) ** eps * drift
 
     supply_spend = roi_spend = None
-    if forecast_cpe and days_left:
+    if forecast_cpe and days_left and inv_drift_sum > 0:
         if sellout_gap <= 0:
             supply_spend = 0.0
         elif eps > 0 and s0 > 0:
-            # days_left * s / cpe_at(s) = gap  ->  s^(1-eps) = gap * cpe_fwd / (days_left * s0^eps)
-            supply_spend = (sellout_gap * forecast_cpe / (days_left * s0 ** eps)) ** (1 / (1 - eps))
+            # sum_t s / (cpe(s) * D_t) = gap  ->  s^(1-eps) = gap * cpe0 / (s0^eps * sum_t 1/D_t)
+            supply_spend = (sellout_gap * forecast_cpe / (s0 ** eps * inv_drift_sum)) ** (1 / (1 - eps))
         else:
-            supply_spend = sellout_gap * forecast_cpe / days_left
+            supply_spend = sellout_gap * forecast_cpe / inv_drift_sum
+        # the ROI floor is a floor on ROI AT CLOSE, on the drifted path - the
+        # same point the chart's dashed line ends on
         if eps > 0 and s0 > 0:
-            roi_spend = s0 * (cpe_max / forecast_cpe) ** (1 / eps)      # spend at which CPE reaches the floor
+            roi_spend = s0 * (cpe_max / cpe_end) ** (1 / eps)
         else:
-            roi_spend = math.inf if forecast_cpe <= cpe_max else 0.0    # flat price: floor met or not
+            roi_spend = math.inf if cpe_end <= cpe_max else 0.0
 
     # the workbook's pacing rules, transcribed into the benchmarks but never
     # applied until now: cumulative ROI below 0.9 -> decrease, above 1.3 ->
@@ -1081,39 +1097,34 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     forced = (len(recent) == rules["forced_decrease_after_days_below_target"]
               and all(r is not None and r < b["target_roi_aa"] for r in recent))
 
-    recommended, cap = None, None
+    recommended, cap, paced = None, None, False
     if supply_spend is not None and days_left:
         unconstrained = min(supply_spend, roi_spend)
-        cap = "supply" if supply_spend <= roi_spend else "roi_floor"
+        base = "supply" if supply_spend <= roi_spend else "roi_floor"
         if unconstrained <= 0:
-            recommended = 0.0                       # nothing needed (or the floor says stop): pause
+            recommended, cap = 0.0, base            # nothing needed, or the floor says stop
         elif s0 <= 0:
             recommended = min(unconstrained, plan_rate) if plan_rate else unconstrained
-            if recommended < unconstrained:
-                cap = "plan_rate"                   # first day: start at the plan's daily rate
+            cap = "plan_rate" if recommended < unconstrained else base   # first day: the plan's daily rate
         else:
             lo, hi = s0 * (1 - rules["max_daily_change"]), s0 * (1 + rules["max_daily_change"])
             if forced or band == "decrease":
-                recommended = min(unconstrained, lo)
-                cap = "forced_decrease" if forced else "roi_band_decrease"
-                if unconstrained < lo:
-                    recommended = max(unconstrained, lo); cap = "pacing"
+                ceiling, band_cap = lo, ("forced_decrease" if forced else "roi_band_decrease")
             elif band == "hold":
-                recommended = min(unconstrained, s0)
-                if unconstrained > s0:
-                    cap = "roi_band_hold"
-                elif unconstrained < lo:
-                    recommended = lo; cap = "pacing"
-            else:  # increase allowed, within the daily cap
-                recommended = min(max(unconstrained, lo), hi)
-                if unconstrained > hi:
-                    cap = "pacing"
-                elif unconstrained < lo:
-                    cap = "pacing"
+                ceiling, band_cap = s0, "roi_band_hold"
+            else:
+                ceiling, band_cap = hi, "pacing"
+            recommended = min(unconstrained, ceiling)
+            cap = base if recommended == unconstrained else band_cap
+            if recommended < lo:                    # a cut is still limited to 30% a day
+                recommended, paced = lo, True
             if abs(recommended - s0) < rules["ignore_change_below"] * s0:
                 recommended, cap = s0, "hold_small_change"
-    cpe_rec = cpe_at(recommended) if recommended else None
+    cpe_rec = cpe_at(recommended, drift_end) if recommended else None
     final_day_roi = ((1 - cann) * ppu_aa / (cpe_rec * aa_budget_share)) if cpe_rec else None
+    # the chart's line: ROI at today's spend along the drift path
+    roi_path = ([{"date": d.isoformat(), "roi": round(l3d_roi / f, 3)} for d, f in drift_path]
+                if l3d_roi is not None and not complete else [])
 
     drift = b["spend_rules"]["cpe_daily_drift_by_third"]
     third = min(int(max(pdsa_for(release, as_of), 0) * 3), 2)
@@ -1234,6 +1245,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "cumCpe": round(cum_adj_cpe, 2) if cum_adj_cpe else None,
         "roiDeclineModel": {"start": round(l3d_roi, 3) if l3d_roi is not None else None,
                             "dailyFactor": daily_factor},
+        "roiPath": roi_path,
         "roiTarget": b["target_roi_aa"],
         "budget": {
             "current": round(current_daily, 2),
@@ -1245,6 +1257,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "roiSpend": round(roi_spend, 2) if roi_spend not in (None, math.inf) else None,
             "cpeAtRecommended": round(cpe_rec, 2) if cpe_rec else None,
             "cpeNow": round(forecast_cpe, 2) if forecast_cpe else None,
+            "cpeAtClose": round(cpe_end, 2) if cpe_end else None,
+            "driftToClose": round(drift_end, 3),
+            "paced": paced,
             "elasticity": eps,
             "band": band, "forcedDecrease": forced, "cumRoi": round(cum_roi, 3) if cum_roi else None,
             "entriesNeeded": round(entries_needed, 1),
