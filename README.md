@@ -211,6 +211,14 @@ apply only until two launches qualify. Without the token the committed CSV snaps
 (sends to 14 Aug 2026) is used. Instagram content (`data/content_posts.csv`) remains a
 manual export.
 
+The same token also serves a one-off **email text export**: open
+`/api/emails/content/status?run=1` (add `&years=3` to widen the default two-year window),
+poll the same URL without `run=1` until `running` is false, then download
+`/api/emails/content.csv`: one row per sent email with its name, subject, preview text,
+campaign, send date, delivered / opened / clicked and the email's text with HTML stripped
+(`server/emailContent.js`). The status shows the first email's field names and how many
+rows came out empty, which is the check that the text extraction matched HubSpot's shape.
+
 Artist-account posts refresh from the team's **Notion log**: set `NOTION_TOKEN` to an
 internal-integration secret (notion.so → Settings → Integrations → develop your own)
 and share the artist-posts database page with that integration. Each refresh queries

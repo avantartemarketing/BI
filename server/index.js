@@ -339,6 +339,20 @@ app.get("/api/refresh/status", (req, res) => {
 });
 app.post("/api/refresh", (req, res) => res.json(startRefresh(!!(req.body && req.body.full))));
 
+// HubSpot email text export (server/emailContent.js): ?run=1 starts the job,
+// the same URL without it reports progress, and the CSV downloads once done.
+const emailContent = require("./emailContent");
+app.get("/api/emails/content/status", (req, res) => {
+  if (req.query.run) return res.json(emailContent.start({ years: Math.min(Math.max(Number(req.query.years) || 2, 0.1), 10) }));
+  res.json(emailContent.status());
+});
+app.get("/api/emails/content.csv", (_req, res) => {
+  const f = emailContent.file();
+  if (!f) return res.status(404).json({ error: "no export yet - open /api/emails/content/status?run=1 first, then poll it without run=1" });
+  res.setHeader("Content-Disposition", 'attachment; filename="hubspot-email-content.csv"');
+  res.type("text/csv").sendFile(f);
+});
+
 app.get("/api/decisions", (_req, res) => {
   if (!fs.existsSync(DECISIONS_PATH)) return res.json([]);
   const rows = fs.readFileSync(DECISIONS_PATH, "utf8").trim().split("\n").filter(Boolean).map(JSON.parse);
