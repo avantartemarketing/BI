@@ -15,7 +15,7 @@
    "of": 21,
    "complete": false,
    "windowEnd": "2026-09-11",
-   "statusPct": 0.0569,
+   "statusPct": 0.1765,
    "ok": true,
    "lastSeen": null,
    "sessions": null
@@ -34,7 +34,7 @@
    "of": 31,
    "complete": false,
    "windowEnd": "2026-09-17",
-   "statusPct": 0.1681,
+   "statusPct": 0.2942,
    "ok": true,
    "lastSeen": null,
    "sessions": null
@@ -72,7 +72,7 @@
    "of": 24,
    "complete": false,
    "windowEnd": "2026-09-25",
-   "statusPct": -0.7055,
+   "statusPct": -0.6708,
    "ok": false,
    "lastSeen": null,
    "sessions": null
@@ -110,7 +110,7 @@
    "of": 27,
    "complete": false,
    "windowEnd": "2026-09-30",
-   "statusPct": -0.5272,
+   "statusPct": -0.4848,
    "ok": false,
    "lastSeen": null,
    "sessions": null

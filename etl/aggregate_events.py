@@ -86,23 +86,42 @@ def flag(s: pd.Series) -> pd.Series:
     return s.map(lambda v: str(v).strip().lower() in ("true", "1", "1.0")).astype(bool)
 
 
+FLAGS = ["draw_entry_eligible", "winner", "pre_order", "draw_with_purchase",
+         "purchase_with_preorder_app", "purchase_with_presale", "pr_order", "purchase_with_draw_entry"]
+EVENT_COLS = [CH, "event_date", "event_name", "aa_account_id", "simple_release_name", "announcement_date",
+              "draw_entry_multiset_preference_max_quantity_once", "order_pieces"] + CLOCK + FLAGS
+LABELS = [CH, "simple_release_name", "campaign_stage", "event_name"]
+
+
 def load_events() -> pd.DataFrame:
-    ev = pd.read_csv(EVENTS, low_memory=False)
+    # The file has 48 columns and 200k rows; the aggregation reads the 21
+    # columns it uses and keeps only the draw-entry and purchase rows (signups
+    # are two thirds of the file and feed nothing here), in chunks so the peak
+    # is one chunk plus what is kept. The whole frame as strings peaked over
+    # 1 GB, which the 512 MB Render instance does not have.
+    chunks = []
+    for chunk in pd.read_csv(EVENTS, usecols=lambda c: c in EVENT_COLS, dtype={c: "category" for c in LABELS},
+                             chunksize=50_000, low_memory=False):
+        chunks.append(chunk[chunk["event_name"].isin(["draw entry intent", "purchase"])])
+    ev = pd.concat(chunks, ignore_index=True)
+    del chunks
+    for c in LABELS:
+        ev[c] = ev[c].astype(str).where(ev[c].notna(), None).astype("category")
     ev["event_date"] = pd.to_datetime(ev["event_date"])
-    for c in ["draw_entry_eligible", "winner", "pre_order", "draw_with_purchase",
-              "purchase_with_preorder_app", "purchase_with_presale", "pr_order", "purchase_with_draw_entry"]:
+    for c in FLAGS:
         ev[c] = flag(ev[c])
-    ev["units_once"] = ev["draw_entry_multiset_preference_max_quantity_once"].fillna(0)
-    ev["order_pieces"] = ev["order_pieces"].fillna(0)
+    ev["units_once"] = ev["draw_entry_multiset_preference_max_quantity_once"].fillna(0).astype("float32")
+    ev["order_pieces"] = ev["order_pieces"].fillna(0).astype("float32")
+    ev.drop(columns=["draw_entry_multiset_preference_max_quantity_once"], inplace=True)
     return ev
 
 
-def people(sub: pd.DataFrame, name: str) -> pd.Series:
-    return sub.groupby(KEY, dropna=False)["aa_account_id"].nunique().rename(name)
+def people(sub: pd.DataFrame, name: str) -> pd.DataFrame:
+    return sub.groupby(KEY, dropna=False, observed=True)["aa_account_id"].nunique().rename(name).reset_index()
 
 
-def units(sub: pd.DataFrame, col: str, name: str) -> pd.Series:
-    return sub.groupby(KEY, dropna=False)[col].sum().rename(name)
+def units(sub: pd.DataFrame, col: str, name: str) -> pd.DataFrame:
+    return sub.groupby(KEY, dropna=False, observed=True)[col].sum().rename(name).reset_index()
 
 
 def rebuild(browsing: pd.DataFrame, ev: pd.DataFrame) -> pd.DataFrame:
@@ -125,28 +144,69 @@ def rebuild(browsing: pd.DataFrame, ev: pd.DataFrame) -> pd.DataFrame:
     for route, ccol in CUSTOMER_COL.items():
         sub = pu[pu["route"] == route]
         parts += [units(sub, "order_pieces", f"Product_Units_{route}"), people(sub, ccol)]
-    conv = pd.concat(parts, axis=1).reset_index()
-    b = browsing.copy()
-    out = b.merge(conv, on=KEY, how="outer")
+    # One frame of partial rows - the browsing counts and each conversion
+    # aggregate carry their own metric column and zeros elsewhere - summed in a
+    # single grouped pass on categorical keys. No merge on string keys, no
+    # second copy: the rebuild peaked over 600 MB the merge way.
+    del de, pu
+    frames = [browsing] + parts
+    for f in frames:
+        for c in [CH, "simple_release_name", "campaign_stage"]:
+            f[c] = f[c].astype(str).where(f[c].notna(), None)
+    stack = pd.concat(frames, ignore_index=True, sort=False)
+    del frames, parts
+    for c in [CH, "simple_release_name", "campaign_stage"]:
+        stack[c] = stack[c].astype("category")
     for c in METRICS:
-        out[c] = out[c].fillna(0)
+        stack[c] = stack[c].fillna(0).astype("float32")
+    out = stack.groupby(KEY, dropna=False, observed=True, sort=False)[METRICS].sum().reset_index()
+    del stack
     ints = [c for c in METRICS if c not in ["Draw_Entries_Total_Units", "Draw_Entries_Eligible_Units",
                                              "Draw_Entries_Total_Units_No_Conv", "Total_Product_Units"]
             + [f"Product_Units_{r}" for r in CUSTOMER_COL]]
-    out[ints] = out[ints].round().astype(int)
-    return out[EXPORT_COLUMNS].sort_values(["event_date", CH, "simple_release_name"])
+    out[ints] = out[ints].round().astype("int32")
+    for c in [CH, "simple_release_name", "campaign_stage"]:
+        out[c] = out[c].astype(object)
+    return out[EXPORT_COLUMNS].sort_values(["event_date", CH, "simple_release_name"], kind="stable")
 
 
-def reconcile(rebuilt: pd.DataFrame, export: pd.DataFrame) -> dict:
-    lo = max(rebuilt["event_date"].min(), export["event_date"].min())
-    hi = min(rebuilt["event_date"].max(), export["event_date"].max()) - pd.Timedelta(days=1)   # the last day is still filling
-    g = [CH, "event_date", "simple_release_name"]
-    a = export[(export["event_date"] >= lo) & (export["event_date"] <= hi)].groupby(g)[METRICS].sum()
-    b = rebuilt[(rebuilt["event_date"] >= lo) & (rebuilt["event_date"] <= hi)].groupby(g)[METRICS].sum()
-    j = a.join(b, how="outer", lsuffix="_x", rsuffix="_r").fillna(0)
+GROUP3 = [CH, "event_date", "simple_release_name"]
+
+
+def grouped(frame: pd.DataFrame) -> pd.DataFrame:
+    """Metrics summed to channel x day x release (the fan-out folded), float32."""
+    f = frame[GROUP3 + METRICS].copy()
+    for c in [CH, "simple_release_name"]:
+        f[c] = f[c].astype(str).astype("category")
+    for c in METRICS:
+        f[c] = f[c].astype("float32")
+    return f.groupby(GROUP3, observed=True)[METRICS].sum()
+
+
+def load_export_grouped() -> pd.DataFrame:
+    """The export folded to channel x day x release, read in chunks so the whole
+    424k-row file is never in memory at once (it cost 200 MB on its own)."""
+    parts = []
+    for chunk in pd.read_csv(EXPORT, usecols=lambda c: c in GROUP3 + METRICS, chunksize=100_000, low_memory=False):
+        chunk["event_date"] = pd.to_datetime(chunk["event_date"], format="%d/%m/%Y")
+        parts.append(grouped(chunk).reset_index())
+    stack = pd.concat(parts, ignore_index=True)
+    del parts
+    for c in [CH, "simple_release_name"]:
+        stack[c] = stack[c].astype(str).astype("category")
+    return stack.groupby(GROUP3, observed=True)[METRICS].sum()
+
+
+def reconcile(b: pd.DataFrame, a: pd.DataFrame) -> dict:
+    """b: the rebuilt side, a: the export side, both from grouped()."""
+    lo = max(b.index.get_level_values("event_date").min(), a.index.get_level_values("event_date").min())
+    hi = min(b.index.get_level_values("event_date").max(), a.index.get_level_values("event_date").max()) - pd.Timedelta(days=1)   # the last day is still filling
+    a = a[(a.index.get_level_values("event_date") >= lo) & (a.index.get_level_values("event_date") <= hi)]
+    b = b[(b.index.get_level_values("event_date") >= lo) & (b.index.get_level_values("event_date") <= hi)]
+    idx = a.index.union(b.index)
     cols, beyond = {}, []
     for c in METRICS:
-        x, r = j[c + "_x"], j[c + "_r"]
+        x, r = a[c].reindex(idx, fill_value=0), b[c].reindex(idx, fill_value=0)
         tot = float(x.sum()); diff = float(r.sum() - tot)
         pct = diff / tot if tot else 0.0
         kind = KIND.get(c, "people")
@@ -155,7 +215,7 @@ def reconcile(rebuilt: pd.DataFrame, export: pd.DataFrame) -> dict:
                    "channel_days_differing": int((x != r).sum()), "max_abs_diff": float((x - r).abs().max())}
         if not ok:
             beyond.append(c)
-    return {"window": [lo.date().isoformat(), hi.date().isoformat()], "channel_days": int(len(j)),
+    return {"window": [lo.date().isoformat(), hi.date().isoformat()], "channel_days": int(len(idx)),
             "columns": cols, "beyond_tolerance": beyond, "verdict": "within known residuals" if not beyond else "differences beyond the known residuals"}
 
 
@@ -196,24 +256,39 @@ def people_file(ev: pd.DataFrame) -> pd.DataFrame:
     return out.sort_values("campaign_start", ascending=False)
 
 
+def rss(label: str) -> None:
+    """AGG_PROFILE=1 prints the peak resident set after each stage (MB)."""
+    if os.environ.get("AGG_PROFILE"):
+        import resource
+        print(f"  [memory] {label}: peak {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024:.0f} MB", file=sys.stderr)
+
+
 def main() -> int:
     missing = [p.name for p in (BROWSING, EVENTS) if not p.exists()]
     if missing:
         print(f"aggregate_events: nothing to do - missing {', '.join(missing)} (run node server/bigquery.js --write)")
         return 0
-    browsing = pd.read_csv(BROWSING, low_memory=False)
+    browsing = pd.read_csv(BROWSING, dtype={c: "category" for c in [CH, "simple_release_name", "campaign_stage"]}, low_memory=False)
     browsing["event_date"] = pd.to_datetime(browsing["event_date"], format="%d/%m/%Y")
+    rss("browsing loaded")
     ev = load_events()
+    rss("events loaded")
     rebuilt = rebuild(browsing, ev)
-    out = rebuilt.copy()
-    out["event_date"] = out["event_date"].dt.strftime("%d/%m/%Y")
-    tmp = REBUILT.with_suffix(".tmp"); out.to_csv(tmp, index=False); tmp.replace(REBUILT)
-    note = f"rebuilt {len(out)} channel-day rows -> {REBUILT.name}"
+    del browsing
+    rss("rebuilt")
+    tmp = REBUILT.with_suffix(".tmp"); rebuilt.to_csv(tmp, index=False, date_format="%d/%m/%Y"); tmp.replace(REBUILT)
+    note = f"rebuilt {len(rebuilt)} channel-day rows -> {REBUILT.name}"
+    rss("written")
+    b = grouped(rebuilt)
+    del rebuilt
+    rss("grouped")
 
     if EXPORT.exists():
-        export = pd.read_csv(EXPORT, low_memory=False)
-        export["event_date"] = pd.to_datetime(export["event_date"], format="%d/%m/%Y")
-        rec = reconcile(rebuilt, export)
+        a = load_export_grouped()
+        rss("export grouped")
+        rec = reconcile(b, a)
+        del a, b
+        rss("reconciled")
         RECON.parent.mkdir(parents=True, exist_ok=True)
         RECON.write_text(json.dumps(rec, indent=1))
         print(f"reconciliation {rec['window'][0]}..{rec['window'][1]} ({rec['channel_days']} channel-days): {rec['verdict']}")

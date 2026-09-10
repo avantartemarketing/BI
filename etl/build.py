@@ -112,9 +112,27 @@ FUNNEL_COLS = FUNNEL_LABELS + [
 
 # FUNNEL_SOURCE=events reads the export rebuilt from the event-level feeds by
 # etl/aggregate_events.py (same columns, same grain) instead of the export
-# itself. The switch is deliberate: flip it once the reconciliation the
-# aggregation prints shows only the known residuals (docs/DATA_MODEL.md #2.2).
-FUNNEL_FILE = SOURCES / ("across_time.rebuilt.csv" if os.environ.get("FUNNEL_SOURCE") == "events" else "across_time.csv")
+# itself; the default reads the export. The switch is deliberate: flip it once
+# the reconciliation the aggregation prints shows only the known residuals
+# (docs/DATA_MODEL.md #2.2). A rebuilt file that is missing, or older than the
+# export by more than a day (the aggregation has been failing), is not used:
+# the build falls back to the export and says so, rather than serving a
+# frozen copy while the export keeps moving.
+def funnel_file() -> pathlib.Path:
+    export = SOURCES / "across_time.csv"
+    if os.environ.get("FUNNEL_SOURCE") != "events":
+        return export
+    rebuilt = SOURCES / "across_time.rebuilt.csv"
+    if not rebuilt.exists():
+        print("funnel: FUNNEL_SOURCE=events but across_time.rebuilt.csv is missing - reading the export")
+        return export
+    if export.exists() and rebuilt.stat().st_mtime < export.stat().st_mtime - 86400:
+        print("funnel: across_time.rebuilt.csv is more than a day older than the export - reading the export")
+        return export
+    return rebuilt
+
+
+FUNNEL_FILE = funnel_file()
 
 
 def load_across_time() -> pd.DataFrame:
@@ -136,11 +154,17 @@ def load_across_time() -> pd.DataFrame:
              "pct_days_since_announcement", "pct_days_until_launch"]
     metric_cols = [c for c in df.select_dtypes(include="number").columns
                    if c not in clock and c not in keys]
-    # fan-out pairs (two campaign-date sub-records) -> SUM, keep first clock values (docs §6.1)
+    # fan-out pairs (two campaign-date sub-records) -> SUM the metrics and keep
+    # the clock of the busier sub-record (docs §6.1). "First" used to mean first
+    # in the file, which depends on the order the pull wrote the rows and so
+    # differed between the export and the rebuilt file; the busier record is
+    # the same choice whichever file the rows came from.
+    df = df.sort_values(["channel", "event_date", "simple_release_name", "Sessions_Total", "pct_days_since_announcement"],
+                        ascending=[True, True, True, False, True], kind="stable")
     agg = {c: "sum" for c in metric_cols}
     for c in ["campaign_stage"] + clock:
         agg[c] = "first"
-    df = (df.groupby(["channel", "event_date", "simple_release_name"], as_index=False, observed=True)
+    df = (df.groupby(["channel", "event_date", "simple_release_name"], as_index=False, observed=True, sort=False)
             .agg(agg))
     # back to plain labels: the rest of the build compares, maps and assigns
     # them freely, and categorical semantics (unobserved groups, new-value

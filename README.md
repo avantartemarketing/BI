@@ -178,7 +178,9 @@ docs/DATA_MODEL.md §2.2, reconciles the rebuild against the export column by co
 and overlap with the artist's previous releases. `FUNNEL_SOURCE=events` makes the build read
 the rebuilt file (`sources/across_time.rebuilt.csv`) instead of the export; the default is
 the export, and the switch is a deliberate one to make once the reconciliation reads
-"within known residuals" for a while.
+"within known residuals" for a while. A missing or stale rebuilt file makes the build fall
+back to the export and say so. The aggregation peaks at about 330 MB, in line with the build;
+`AGG_PROFILE=1` prints its memory after each stage.
 
 **Memory on the 512 MB starter instance.** Results are streamed to disk a page at a time
 and the start script caps Node's heap at 192 MB, so the pull itself is flat (~150 MB)

@@ -294,14 +294,24 @@ live refresh both chain it):
   announcement date where the events carry one, else the first entry or purchase.
 
 Known, harmless differences between the two files: the events carry two release names the
-export filters out upstream (a 2027 and a 2021 catalogue entry); `days_until_launch` runs one
-day higher in the export on 2% of release-days (the countdown discrepancy already noted in
+export filters out upstream (a 2027 and a 2021 catalogue entry), and `days_until_launch` runs
+one day higher in the export on 2% of release-days (the countdown discrepancy already noted in
 §11b - the build uses the announce-based columns, which agree on all but 26 of 180,805
-release-days); and a build on the rebuilt file gives slightly different pooled curves, because
-the export's fan-out pairs (§6.1) carry two clock values and `load_across_time` keeps whichever
-sub-record comes first in the file, an order the two files do not share. Making that choice
-deterministic (the sub-record with more sessions, say) is worth doing before the switch so the
-two builds can be compared exactly.
+release-days). The export's fan-out pairs (§6.1) carry two clock values, and `load_across_time`
+used to keep whichever sub-record came first in the file, an order the two files do not share;
+it now keeps the busier sub-record, the same choice from either file. With that, a build on the
+rebuilt file against a build on the export (2026-09-10): the same 24-release curve panel, session
+and entry curves within 0.001 and 0.009 at any grid point, unit curves within 0.04 (the
+booking-day residual around allocation), and release-level numbers differing only by a few
+sessions of catalogue trickle on 11 old releases.
+
+**Switching.** Set `FUNNEL_SOURCE=events` in the service's environment; the next refresh builds
+from the rebuilt file. The build falls back to the export, and says so, when the rebuilt file is
+missing or more than a day older than the export (the aggregation has been failing), so a switch
+can never freeze the dashboard on a stale copy. `FUNNEL_SOURCE=export` (or unset) switches back.
+The aggregation peaks at about 330 MB (the events read in chunks, signups dropped, the export
+folded chunk by chunk for the reconciliation), against the build's 200 MB, so it fits the 512 MB
+instance the same way the build does; `AGG_PROFILE=1` prints the peak after each stage.
 
 Two feeds now describe the same thing. Until the rebuilt file has replaced the export in
 production, the export remains the system of record and the reconciliation is the evidence for
