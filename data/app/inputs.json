@@ -3875,6 +3875,18 @@
    "private_room_open": null,
    "dates_note": null
   },
+  "roy_lichtenstein_estate_multiple_2027_q4": {
+   "release_name": "Roy Lichtenstein Estate \u00b7 Multiple \u00b7 2027 Q4",
+   "artist": "Roy Lichtenstein Estate",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": "2026-09-29",
+   "launch_end": "2026-10-27",
+   "private_room_open": "2026-09-15",
+   "dates_note": null
+  },
   "ryan_travis_christian_chatte_parfaite_2023_q2": {
    "release_name": "Ryan Travis Christian \u00b7 CHATTE PARFAITE \u00b7 2023 Q2",
    "artist": "Ryan Travis Christian",
@@ -4323,6 +4335,18 @@
    "release_name": "Tomoo Gokita \u00b7 Oscalypso \u00b7 2022 Q1",
    "artist": "Tomoo Gokita",
    "title": "Oscalypso",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "tom_s_s_nchez_multiple_2021_q1": {
+   "release_name": "Tom\u00e1s S\u00e1nchez \u00b7 Multiple \u00b7 2021 Q1",
+   "artist": "Tom\u00e1s S\u00e1nchez",
+   "title": "Multiple",
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,

@@ -175,11 +175,9 @@ the daily export from that and the conversion events with the definitions in
 docs/DATA_MODEL.md §2.2, reconciles the rebuild against the export column by column
 (`data/app/reconciliation.json`, and the verdict in the refresh status), and writes
 `data/app/release_people.csv`: per release, unique entrants and buyers, returning collectors
-and overlap with the artist's previous releases. `FUNNEL_SOURCE=events` makes the build read
-the rebuilt file (`sources/across_time.rebuilt.csv`) instead of the export; the default is
-the export, and the switch is a deliberate one to make once the reconciliation reads
-"within known residuals" for a while. A missing or stale rebuilt file makes the build fall
-back to the export and say so. The aggregation peaks at about 330 MB, in line with the build;
+and overlap with the artist's previous releases. The build reads the rebuilt file
+(`sources/across_time.rebuilt.csv`); `FUNNEL_SOURCE=export` makes it read the export
+instead. A missing or stale rebuilt file makes the build fall back to the export and say so. The aggregation peaks at about 330 MB, in line with the build;
 `AGG_PROFILE=1` prints its memory after each stage.
 
 **Memory on the 512 MB starter instance.** Results are streamed to disk a page at a time

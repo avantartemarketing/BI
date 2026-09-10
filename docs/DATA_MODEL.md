@@ -276,9 +276,8 @@ live refresh both chain it):
   `Preorder_App_Eligible_No_Conv` keeps winners in (eligible pre-order entrants with no purchase),
   because a pre-order winner converts by itself.
 - **Output** `sources/across_time.rebuilt.csv`: the export's 34 columns at the export's grain, dates
-  DD/MM/YYYY, so `build.py` reads either file unchanged. **`FUNNEL_SOURCE=events`** makes the build
-  read the rebuilt file; the default reads the export. The switch is deliberate and reversible; the
-  script never overwrites the export.
+  DD/MM/YYYY, so `build.py` reads either file unchanged. **The build reads the rebuilt file**;
+  `FUNNEL_SOURCE=export` makes it read the export instead. The script never overwrites the export.
 - **Reconciliation** `data/app/reconciliation.json` (printed on every run): rebuilt against export
   per column over the shared window, the last day excluded because it is still filling. Tolerances
   are the known residuals: 0.2% on sessions and page views (attribution noise between the two
@@ -305,17 +304,17 @@ and entry curves within 0.001 and 0.009 at any grid point, unit curves within 0.
 booking-day residual around allocation), and release-level numbers differing only by a few
 sessions of catalogue trickle on 11 old releases.
 
-**Switching.** Set `FUNNEL_SOURCE=events` in the service's environment; the next refresh builds
-from the rebuilt file. The build falls back to the export, and says so, when the rebuilt file is
-missing or more than a day older than the export (the aggregation has been failing), so a switch
-can never freeze the dashboard on a stale copy. `FUNNEL_SOURCE=export` (or unset) switches back.
+**Source of truth.** The rebuilt file is the build's default source (since 2026-09-10);
+`FUNNEL_SOURCE=export` in the service's environment switches back to the upstream export. The
+build falls back to the export, and says so, when the rebuilt file is missing or more than a day
+older than the export (the aggregation has been failing), so the dashboard can never freeze on a
+stale copy. The export pull stays on for the reconciliation.
 The aggregation peaks at about 330 MB (the events read in chunks, signups dropped, the export
 folded chunk by chunk for the reconciliation), against the build's 200 MB, so it fits the 512 MB
 instance the same way the build does; `AGG_PROFILE=1` prints the peak after each stage.
 
-Two feeds now describe the same thing. Until the rebuilt file has replaced the export in
-production, the export remains the system of record and the reconciliation is the evidence for
-the switch; after the switch the export pull can stay on for the check or be turned off.
+Two feeds now describe the same thing: the rebuilt file is what the dashboard reads, the export
+is the reference the reconciliation checks it against on every refresh.
 
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down

@@ -10,8 +10,8 @@ Inputs, both written by server/bigquery.js:
 
 Outputs:
   sources/across_time.rebuilt.csv  the export's 34 columns at the export's grain,
-                                   dates DD/MM/YYYY like the export; build.py reads
-                                   it instead of the export when FUNNEL_SOURCE=events
+                                   dates DD/MM/YYYY like the export; what build.py
+                                   reads (FUNNEL_SOURCE=export reads the export instead)
   data/app/release_people.csv      one row per release: unique entrants and buyers,
                                    returning collectors, overlap with the artist's
                                    previous releases - no identifier in it
@@ -22,9 +22,9 @@ The definitions are the ones decoded against the export in docs/DATA_MODEL.md
 quantity counted once; Draw_Entry_Eligible is the post-allocation remainder;
 a purchase's route is the first match of pre-order app, presale, private room,
 draw entry, else other; the pre-order not-converted count keeps winners in,
-because a pre-order winner converts by itself. The switch to the rebuilt file is deliberate, never
-automatic: this script writes next to the export and reports the differences;
-FUNNEL_SOURCE decides what the build reads.
+because a pre-order winner converts by itself. This script writes next to the
+export and reports the differences; the build reads the rebuilt file unless
+FUNNEL_SOURCE=export.
 
 Run from the repo root: python3 etl/aggregate_events.py  (the refresh runs it before build.py)
 """
@@ -303,8 +303,8 @@ def main() -> int:
     ppl = people_file(ev)
     PEOPLE.parent.mkdir(parents=True, exist_ok=True)
     tmp = PEOPLE.with_suffix(".tmp"); ppl.to_csv(tmp, index=False); tmp.replace(PEOPLE)
-    src = os.environ.get("FUNNEL_SOURCE", "export")
-    print(f"aggregate_events: {note}; people {len(ppl)} releases -> {PEOPLE.name}; build reads {'the rebuilt file' if src == 'events' else 'the export'} (FUNNEL_SOURCE={src})")
+    src = os.environ.get("FUNNEL_SOURCE", "events")
+    print(f"aggregate_events: {note}; people {len(ppl)} releases -> {PEOPLE.name}; build reads {'the export' if src == 'export' else 'the rebuilt file'} (FUNNEL_SOURCE={src})")
     return 0
 
 

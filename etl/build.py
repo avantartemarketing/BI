@@ -110,21 +110,20 @@ FUNNEL_COLS = FUNNEL_LABELS + [
 ]
 
 
-# FUNNEL_SOURCE=events reads the export rebuilt from the event-level feeds by
-# etl/aggregate_events.py (same columns, same grain) instead of the export
-# itself; the default reads the export. The switch is deliberate: flip it once
-# the reconciliation the aggregation prints shows only the known residuals
-# (docs/DATA_MODEL.md #2.2). A rebuilt file that is missing, or older than the
-# export by more than a day (the aggregation has been failing), is not used:
-# the build falls back to the export and says so, rather than serving a
-# frozen copy while the export keeps moving.
+# The build reads the export rebuilt from the event-level feeds by
+# etl/aggregate_events.py (same columns, same grain; docs/DATA_MODEL.md #2.3).
+# FUNNEL_SOURCE=export reads the upstream export itself instead. A rebuilt
+# file that is missing, or older than the export by more than a day (the
+# aggregation has been failing), is not used: the build falls back to the
+# export and says so, rather than serving a frozen copy while the export
+# keeps moving.
 def funnel_file() -> pathlib.Path:
     export = SOURCES / "across_time.csv"
-    if os.environ.get("FUNNEL_SOURCE") != "events":
+    if os.environ.get("FUNNEL_SOURCE") == "export":
         return export
     rebuilt = SOURCES / "across_time.rebuilt.csv"
     if not rebuilt.exists():
-        print("funnel: FUNNEL_SOURCE=events but across_time.rebuilt.csv is missing - reading the export")
+        print("funnel: across_time.rebuilt.csv is missing (run etl/aggregate_events.py) - reading the export")
         return export
     if export.exists() and rebuilt.stat().st_mtime < export.stat().st_mtime - 86400:
         print("funnel: across_time.rebuilt.csv is more than a day older than the export - reading the export")
@@ -1594,7 +1593,7 @@ def funnel_coverage(at: pd.DataFrame, curves: dict) -> str:
     span = (dated.groupby("simple_release_name")["pct_days_since_announcement"]
                  .agg(["min", "max"]))
     complete = int(((span["min"] <= 0) & (span["max"] >= 1.0)).sum())
-    return (f"funnel {at['event_date'].min()}..{at['event_date'].max()}: "
+    return (f"funnel ({FUNNEL_FILE.name}) {at['event_date'].min()}..{at['event_date'].max()}: "
             f"{at['simple_release_name'].nunique()} releases seen, "
             f"{len(span)} with announcement dates, "
             f"{complete} complete announce-to-launch, "
