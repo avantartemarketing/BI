@@ -29,6 +29,8 @@ services:
         sync: false
       - key: GOOGLE_SERVICE_ACCOUNT_JSON   # sheet reader key JSON (share the sheet with its client_email); the fallback feed, capped at 50k rows/tab
         sync: false
+      - key: PII_HASH_SALT   # long random string; keys the per-contact hash computed in BigQuery (never in the repo)
+        sync: false
       - key: HUBSPOT_TOKEN   # HubSpot Private App token (Marketing Email read scope) - live email delivered/open/click stats
         sync: false
       - key: NOTION_TOKEN   # Notion internal-integration secret (share the artist-posts database with it) - live artist posts

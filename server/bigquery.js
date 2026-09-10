@@ -84,6 +84,59 @@ function configured() {
   return sa;
 }
 
+// ---------------------------------------------------------------- personal data
+
+/* Customer email addresses live in some BigQuery tables (the LE Funnel Report).
+ * They must never leave BigQuery: not onto Render's disk, not into a Claude
+ * session's terminal, not into a snapshot. Two rules enforce that here:
+ *
+ *  1. Every result that passes through query() is checked. A column whose name
+ *     looks like an email field, or a cell whose value looks like an address,
+ *     aborts the query with PiiDetected before anything is written or handed
+ *     on. There is no override flag on purpose.
+ *  2. Per-person analysis (repeat buyers, sends per contact) uses a keyed hash
+ *     computed inside BigQuery - contactKeySql(column) - with PII_HASH_SALT held
+ *     in the environment and never in the repo. The key is stable for joins
+ *     and useless outside this system.
+ *
+ * The stronger control sits with the data team: an authorized view that
+ * exposes the hashed key instead of the address, so the service account can
+ * never read an email at all. Until that exists, these two rules are the
+ * fence. */
+const PII_COLUMN = /(^|_|\b)(e-?mail|email_?address|customer_?email|user_?email)(\b|_|$)/i;
+const PII_VALUE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+class PiiDetected extends Error {}
+
+function piiCheckHeader(header) {
+  const hit = header.find((h) => PII_COLUMN.test(String(h)));
+  if (hit) {
+    throw new PiiDetected(`column "${hit}" looks like an email address field - select an explicit column list ` +
+      "that leaves it out, or replace it with contactKeySql() in the query");
+  }
+}
+function piiCheckRows(rows) {
+  // a bounded look at each page: every string cell of the first rows, then the
+  // first cell of the rest - enough to catch a column of addresses, cheap enough
+  // to run on every page
+  for (let i = 0; i < rows.length; i++) {
+    const cells = i < 20 ? rows[i] : rows[i].slice(0, 1);
+    for (const c of cells) {
+      if (typeof c === "string" && c.length < 200 && c.includes("@") && PII_VALUE.test(c.trim())) {
+        throw new PiiDetected("a result cell looks like an email address - nothing was written; " +
+          "restrict the select list or hash the column in BigQuery with contactKeySql()");
+      }
+    }
+  }
+}
+
+/* SQL for a stable, keyed, one-way contact key. Pass the salt as the @salt
+ * query parameter (contactKeyParams()) so it never appears in the SQL text. */
+function contactKeySql(column) {
+  if (!process.env.PII_HASH_SALT) throw new Error("PII_HASH_SALT is not set - per-contact keys need it");
+  return `TO_HEX(SHA256(CONCAT(@salt, LOWER(TRIM(${column})))))`;
+}
+const contactKeyParams = () => ({ salt: { type: "STRING", value: process.env.PII_HASH_SALT } });
+
 // ---------------------------------------------------------------- query
 
 /* Runs one query, streaming the result: onHeader(columnNames) once, then
@@ -151,11 +204,13 @@ async function query(token, sql, params = {}, { pageRows = PAGE_ROWS, onHeader, 
 
   const header = (body.schema && body.schema.fields ? body.schema.fields : []).map((f) => f.name);
   const total = Number(body.totalRows || 0);
+  piiCheckHeader(header);
   if (onHeader) onHeader(header);
 
   let count = 0;
   const take = (b) => {
     const rows = (b.rows || []).map((r) => (r.f || []).map((c) => (c.v === null || c.v === undefined ? "" : c.v)));
+    piiCheckRows(rows);
     count += rows.length;
     if (onRows && rows.length) onRows(rows);
   };
@@ -465,6 +520,7 @@ async function pull({ write = true, full = false } = {}) {
 module.exports = {
   pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
   ACROSS_TIME, SPEND_DAILY, META,
+  PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
 };
 
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;
