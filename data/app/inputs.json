@@ -474,9 +474,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-12-10",
+   "launch_end": "2025-01-28",
+   "private_room_open": "2024-11-26",
    "dates_note": null
   },
   "adriana_oliver_my_way_back_to_you_2022_q4": {
@@ -558,9 +558,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-11-20",
+   "launch_end": "2024-12-10",
+   "private_room_open": "2024-11-06",
    "dates_note": null
   },
   "ai_weiwei_multiple_2025_q4": {
@@ -570,9 +570,9 @@
    "type": "LE",
    "campaign_code": "AiWeiwei_LE_25",
    "campaign_name": "AiWeiwei_LE_25 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-10-20",
+   "launch_end": "2025-11-17",
+   "private_room_open": "2025-10-06",
    "dates_note": null
   },
   "ai_weiwei_multiple_2026_q3": {
@@ -594,9 +594,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-10-07",
+   "launch_end": "2024-11-04",
+   "private_room_open": "2024-09-23",
    "dates_note": null
   },
   "alex_katz_ada_ada_2025_q4": {
@@ -606,9 +606,9 @@
    "type": "LE",
    "campaign_code": "AlexKatz_H2_25",
    "campaign_name": "AlexKatz_H2_25 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-10-01",
+   "launch_end": "2025-10-30",
+   "private_room_open": "2025-09-17",
    "dates_note": null
   },
   "alfie_caine_multiple_2022_q3": {
@@ -630,9 +630,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-11-03",
+   "launch_end": "2023-11-22",
+   "private_room_open": "2023-10-20",
    "dates_note": null
   },
   "amanda_baldwin_bell_bay_2023_q3": {
@@ -726,9 +726,9 @@
    "type": "LE",
    "campaign_code": "AntonyMic_Print_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-08-06",
+   "launch_end": "2024-08-27",
+   "private_room_open": "2024-07-23",
    "dates_note": null
   },
   "antony_micallef_self_portrait_with_blue_slash_2026_q2": {
@@ -738,9 +738,9 @@
    "type": "LE",
    "campaign_code": "AntonyMic_LE_26",
    "campaign_name": "AntonyMic_LE_26 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2026-05-01",
+   "launch_end": "2026-05-29",
+   "private_room_open": "2026-04-17",
    "dates_note": null
   },
   "antony_micallef_self_portrait_with_yellow_lake_and_magenta_2025_q3": {
@@ -750,9 +750,9 @@
    "type": "LE",
    "campaign_code": "AntonyMic_PE_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-07-02",
+   "launch_end": "2025-07-29",
+   "private_room_open": "2025-06-18",
    "dates_note": null
   },
   "antony_micallef_the_union_of_animals_2022_q4": {
@@ -786,9 +786,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-09-28",
+   "launch_end": "2023-10-23",
+   "private_room_open": "2023-09-14",
    "dates_note": null
   },
   "artspace_amphora_project_multiple_2025_q1": {
@@ -810,9 +810,9 @@
    "type": "LE",
    "campaign_code": "ASUKA_SLEEPY_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-05-07",
+   "launch_end": "2024-05-22",
+   "private_room_open": "2024-04-23",
    "dates_note": null
   },
   "aubrey_levinthal_bed_beach_2022_q1": {
@@ -858,9 +858,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-02-09",
+   "launch_end": "2024-02-21",
+   "private_room_open": "2024-01-26",
    "dates_note": null
   },
   "baldur_helgason_picaresque_2022_q4": {
@@ -966,9 +966,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-10-10",
+   "launch_end": "2023-11-07",
+   "private_room_open": "2023-09-26",
    "dates_note": null
   },
   "camilla_engstr_m_yellow_moon_2022_q3": {
@@ -1206,9 +1206,9 @@
    "type": "LE",
    "campaign_code": "CristinAd_Tentacula_24",
    "campaign_name": "CristinAd_Tentacula_24 \u00b7 Pre-orders",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-08-05",
+   "launch_end": "2024-09-04",
+   "private_room_open": "2024-07-22",
    "dates_note": null
   },
   "cristina_de_miguel_two_figures_in_the_wind_2022_q2": {
@@ -1242,9 +1242,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2026-02-20",
+   "launch_end": "2026-03-19",
+   "private_room_open": "2026-02-06",
    "dates_note": null
   },
   "drift_sine_2022_q3": {
@@ -1302,9 +1302,9 @@
    "type": "LE",
    "campaign_code": "DanielleM_Shelter_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-08-20",
+   "launch_end": "2024-09-11",
+   "private_room_open": "2024-08-06",
    "dates_note": null
   },
   "danielle_orchard_a_warm_garden_2023_q2": {
@@ -1374,9 +1374,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-02-08",
+   "launch_end": "2024-02-14",
+   "private_room_open": "2024-01-25",
    "dates_note": null
   },
   "dennis_osadebe_in_search_for_light_2023_q4": {
@@ -1386,9 +1386,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-11-13",
+   "launch_end": "2023-11-30",
+   "private_room_open": "2023-10-30",
    "dates_note": null
   },
   "dennis_osadebe_the_people_s_promise_2022_q4": {
@@ -1410,9 +1410,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-12-10",
+   "launch_end": "2025-01-28",
+   "private_room_open": "2024-11-26",
    "dates_note": null
   },
   "devan_shimoyama_le_mat_2023_q4": {
@@ -1434,9 +1434,9 @@
    "type": "LE",
    "campaign_code": "Dominique_Limited_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-06-24",
+   "launch_end": "2025-07-22",
+   "private_room_open": "2025-06-10",
    "dates_note": null
   },
   "eddie_martinez_olive_garden_2026_q2": {
@@ -1458,9 +1458,9 @@
    "type": "LE",
    "campaign_code": "EDDIE_SCAFFOLD_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-05-08",
+   "launch_end": "2024-06-18",
+   "private_room_open": "2024-04-24",
    "dates_note": null
   },
   "ekene_emeka_maduka_tinko_tinko_in_pretty_aunty_give_me_cake_2021_q3": {
@@ -1494,9 +1494,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-02-21",
+   "launch_end": "2024-03-07",
+   "private_room_open": "2024-02-07",
    "dates_note": null
   },
   "en_iwamura_multiple_2025_q3": {
@@ -1506,9 +1506,9 @@
    "type": "LE",
    "campaign_code": "Eniwamura_Neojomon_25",
    "campaign_name": "Eniwamura_Neojomon_25 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-08-01",
+   "launch_end": "2025-08-27",
+   "private_room_open": "2025-07-18",
    "dates_note": null
   },
   "erik_parker_multiple_2022_q3": {
@@ -1602,9 +1602,9 @@
    "type": "LE",
    "campaign_code": "FerrariSh_Iris_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-04-04",
+   "launch_end": "2025-05-01",
+   "private_room_open": "2025-03-21",
    "dates_note": null
   },
   "ferrari_sheppard_put_some_red_on_it_2026_q1": {
@@ -1614,9 +1614,9 @@
    "type": "LE",
    "campaign_code": "FerrariSh_LE_26",
    "campaign_name": "FerrariSh_LE_26 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2026-01-08",
+   "launch_end": "2026-01-29",
+   "private_room_open": "2025-12-25",
    "dates_note": null
   },
   "friedrich_kunath_this_is_the_worst_time_of_my_life_2022_q4": {
@@ -1674,9 +1674,9 @@
    "type": "LE",
    "campaign_code": "GeorgeCondo_Model_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-01-15",
+   "launch_end": "2025-02-18",
+   "private_room_open": "2025-01-01",
    "dates_note": null
   },
   "george_condo_multiple_2024_q1": {
@@ -1686,9 +1686,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-02-15",
+   "launch_end": "2024-03-20",
+   "private_room_open": "2024-02-01",
    "dates_note": null
   },
   "george_rouy_keeping_it_for_myself_2022_q1": {
@@ -1806,9 +1806,9 @@
    "type": "LE",
    "campaign_code": "GrantRiven_LE_26",
    "campaign_name": "GrantRiven_LE_26 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2026-03-13",
+   "launch_end": "2026-04-08",
+   "private_room_open": "2026-02-27",
    "dates_note": null
   },
   "grant_riven_yun_multiple_2023_q3": {
@@ -1854,9 +1854,9 @@
    "type": "LE",
    "campaign_code": "HajimeSor_Untitled_25",
    "campaign_name": "HajimeSor_Untitled_25 \u00b7 Draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-03-10",
+   "launch_end": "2025-04-07",
+   "private_room_open": "2025-02-24",
    "dates_note": null
   },
   "hank_willis_thomas_success_is_no_accident_2026_q2": {
@@ -1878,9 +1878,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-12-10",
+   "launch_end": "2025-01-28",
+   "private_room_open": "2024-11-26",
    "dates_note": null
   },
   "harland_miller_multiple_2025_q3": {
@@ -1890,9 +1890,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-08-28",
+   "launch_end": "2025-09-30",
+   "private_room_open": "2025-08-14",
    "dates_note": null
   },
   "harland_miller_york_so_good_they_named_it_once_2025_q2": {
@@ -1902,9 +1902,9 @@
    "type": "LE",
    "campaign_code": "HarlandMi_York_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-03-17",
+   "launch_end": "2025-04-14",
+   "private_room_open": "2025-03-03",
    "dates_note": null
   },
   "haroshi_james_jean_multiple_2023_q3": {
@@ -2022,9 +2022,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-12-10",
+   "launch_end": "2025-01-28",
+   "private_room_open": "2024-11-26",
    "dates_note": null
   },
   "hiroya_kurata_lemonhead_2023_q4": {
@@ -2094,9 +2094,9 @@
    "type": "LE",
    "campaign_code": "JackKaido_ICYMI_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-10-16",
+   "launch_end": "2024-10-31",
+   "private_room_open": "2024-10-02",
    "dates_note": null
   },
   "jaime_mu_oz_self_portrait_2022_q3": {
@@ -2130,9 +2130,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-01-08",
+   "launch_end": "2024-01-17",
+   "private_room_open": "2023-12-25",
    "dates_note": null
   },
   "james_jarvis_hang_in_there_2025_q3": {
@@ -2142,9 +2142,9 @@
    "type": "LE",
    "campaign_code": "JamesJarv_HangInThe_25",
    "campaign_name": "JamesJarv_HangInThe_25 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-07-02",
+   "launch_end": "2025-07-29",
+   "private_room_open": "2025-06-18",
    "dates_note": null
   },
   "james_jean_bath_saxum_2022_q4": {
@@ -2190,9 +2190,9 @@
    "type": "LE",
    "campaign_code": "JammieHol_Print_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-02-03",
+   "launch_end": "2025-03-04",
+   "private_room_open": "2025-01-20",
    "dates_note": null
   },
   "jang_koal_umma_2022_q4": {
@@ -2226,9 +2226,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-04-08",
+   "launch_end": "2024-04-30",
+   "private_room_open": "2024-03-25",
    "dates_note": null
   },
   "jean_michel_othoniel_lotus_of_hope_2021_q4": {
@@ -2322,9 +2322,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-12-10",
+   "launch_end": "2025-01-28",
+   "private_room_open": "2024-11-26",
    "dates_note": null
   },
   "jessie_makinson_multiple_2022_q1": {
@@ -2382,9 +2382,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-12-16",
+   "launch_end": "2026-01-22",
+   "private_room_open": "2025-12-02",
    "dates_note": null
   },
   "johnson_tsang_alliance_2026_q2": {
@@ -2430,9 +2430,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-09-25",
+   "launch_end": "2023-10-25",
+   "private_room_open": "2023-09-11",
    "dates_note": null
   },
   "johnson_tsang_remembrance_2025_q3": {
@@ -2442,9 +2442,9 @@
    "type": "LE",
    "campaign_code": "JohnsonTs_Rememb_25",
    "campaign_name": "JohnsonTs_Rememb_25 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-06-25",
+   "launch_end": "2025-08-14",
+   "private_room_open": "2025-06-11",
    "dates_note": null
   },
   "johnson_tsang_searching_for_spring_2022_q2": {
@@ -2466,9 +2466,9 @@
    "type": "LE",
    "campaign_code": "JohnsonTs_Moment_24",
    "campaign_name": "JohnsonTs_Moment_24 \u00b7 Draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-09-10",
+   "launch_end": "2024-10-09",
+   "private_room_open": "2024-08-27",
    "dates_note": null
   },
   "johnson_tsang_work_in_progress_2026_q1": {
@@ -2478,9 +2478,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-12-18",
+   "launch_end": "2026-01-23",
+   "private_room_open": "2025-12-04",
    "dates_note": null
   },
   "jonny_niesche_diamond_vibration_caught_by_the_fuzz_2023_q4": {
@@ -2490,9 +2490,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-10-23",
+   "launch_end": "2023-11-14",
+   "private_room_open": "2023-10-09",
    "dates_note": null
   },
   "jonny_niesche_moon_moth_lust_in_warm_copper_ap_2022_q4": {
@@ -2526,9 +2526,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-12-10",
+   "launch_end": "2025-01-28",
+   "private_room_open": "2024-11-26",
    "dates_note": null
   },
   "jordi_ribes_multiple_2022_q3": {
@@ -2562,9 +2562,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-11-11",
+   "launch_end": "2024-12-02",
+   "private_room_open": "2024-10-28",
    "dates_note": null
   },
   "judy_chicago_reincarnation_triptych_2025_q4": {
@@ -2574,9 +2574,9 @@
    "type": "LE",
    "campaign_code": "Judy_Triptych_25",
    "campaign_name": "Judy_Triptych_25 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-10-27",
+   "launch_end": "2025-11-25",
+   "private_room_open": "2025-10-13",
    "dates_note": null
   },
   "julian_schnabel_the_swedish_house_01_2022_q2": {
@@ -2730,9 +2730,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-07-16",
+   "launch_end": "2025-08-12",
+   "private_room_open": "2025-07-02",
    "dates_note": null
   },
   "katie_hector_multiple_2023_q2": {
@@ -2766,9 +2766,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-05-14",
+   "launch_end": "2024-05-29",
+   "private_room_open": "2024-04-30",
    "dates_note": null
   },
   "keita_morimoto_cityscape_2023_q2": {
@@ -2814,9 +2814,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-10-17",
+   "launch_end": "2023-11-08",
+   "private_room_open": "2023-10-03",
    "dates_note": null
   },
   "kotao_tomozawa_slime_xcix_2023_q3": {
@@ -2898,9 +2898,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-03-24",
+   "launch_end": "2025-05-14",
+   "private_room_open": "2025-03-10",
    "dates_note": null
   },
   "ly_luv_new_beginnings_2026_q3": {
@@ -2922,9 +2922,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-11-23",
+   "launch_end": "2023-12-12",
+   "private_room_open": "2023-11-09",
    "dates_note": null
   },
   "ly_multiple_2022_q1": {
@@ -3006,9 +3006,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-01-22",
+   "launch_end": "2024-02-13",
+   "private_room_open": "2024-01-08",
    "dates_note": null
   },
   "lawrence_weiner_here_now_2022_q4": {
@@ -3030,9 +3030,9 @@
    "type": "LE",
    "campaign_code": "LeeUfan_LE_26",
    "campaign_name": "LeeUfan_LE_26 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2026-01-08",
+   "launch_end": "2026-01-30",
+   "private_room_open": "2025-12-25",
    "dates_note": null
   },
   "lee_ufan_multiple_2025_q2": {
@@ -3042,9 +3042,9 @@
    "type": "LE",
    "campaign_code": "LeeUfan_From_25",
    "campaign_name": "LeeUfan_From_25 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-05-22",
+   "launch_end": "2025-06-26",
+   "private_room_open": "2025-05-08",
    "dates_note": null
   },
   "liang_fu_anonyme_2023_q1": {
@@ -3102,9 +3102,9 @@
    "type": "LE",
    "campaign_code": "LucTuymans_LE_26",
    "campaign_name": "LucTuymans_LE_26 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2026-03-03",
+   "launch_end": "2026-03-31",
+   "private_room_open": "2026-02-17",
    "dates_note": null
   },
   "luis_ponce_and_the_absurd_was_born_2023_q4": {
@@ -3114,9 +3114,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-10-24",
+   "launch_end": "2023-11-10",
+   "private_room_open": "2023-10-10",
    "dates_note": null
   },
   "magdalena_suarez_frimkess_homage_for_jasper_johns_2024_q3": {
@@ -3126,9 +3126,9 @@
    "type": "LE",
    "campaign_code": "Magdalena_Mouse_24",
    "campaign_name": "Magdalena_Mouse_24 \u00b7 Purchases",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-07-11",
+   "launch_end": "2024-08-06",
+   "private_room_open": "2024-06-27",
    "dates_note": null
   },
   "maiko_kobayashi_moving_colours_2023_q1": {
@@ -3246,9 +3246,9 @@
    "type": "LE",
    "campaign_code": "MaurizioC_Rev_25",
    "campaign_name": "MaurizioC_Rev_25 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-09-23",
+   "launch_end": "2025-10-27",
+   "private_room_open": "2025-09-09",
    "dates_note": null
   },
   "maurizio_cattelan_window_2026_q1": {
@@ -3258,10 +3258,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
-   "dates_note": "campaign clock present but incomplete"
+   "announce_date": "2026-01-26",
+   "launch_end": "2026-02-20",
+   "private_room_open": "2026-01-12",
+   "dates_note": null
   },
   "maxwell_mustardo_multiple_2023_q2": {
    "release_name": "Maxwell Mustardo \u00b7 Multiple \u00b7 2023 Q2",
@@ -3354,9 +3354,9 @@
    "type": "LE",
    "campaign_code": "MiwaKomat_Innocent_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-03-04",
+   "launch_end": "2025-04-02",
+   "private_room_open": "2025-02-18",
    "dates_note": null
   },
   "miwa_komatsu_multiple_2023_q4": {
@@ -3366,9 +3366,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-09-25",
+   "launch_end": "2023-10-16",
+   "private_room_open": "2023-09-11",
    "dates_note": null
   },
   "miwa_komatsu_three_guardians_gatekeeping_the_heat_and_cold_2026_q2": {
@@ -3390,9 +3390,9 @@
    "type": "LE",
    "campaign_code": "MiwaKomat_WhiBla_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-10-21",
+   "launch_end": "2024-11-20",
+   "private_room_open": "2024-10-07",
    "dates_note": null
   },
   "moe_nakamura_inside_us_2023_q4": {
@@ -3546,9 +3546,9 @@
    "type": "LE",
    "campaign_code": "Otherworld_Dogs_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-03-11",
+   "launch_end": "2025-04-15",
+   "private_room_open": "2025-02-25",
    "dates_note": null
   },
   "pablo_tomek_multiple_2023_q2": {
@@ -3570,9 +3570,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-10-03",
+   "launch_end": "2024-10-24",
+   "private_room_open": "2024-09-19",
    "dates_note": null
   },
   "patrick_quarm_multiple_2022_q1": {
@@ -3630,9 +3630,9 @@
    "type": "LE",
    "campaign_code": "PaulInsec_JunkShop_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-07-12",
+   "launch_end": "2024-07-30",
+   "private_room_open": "2024-06-28",
    "dates_note": null
   },
   "paul_insect_prismatic_visions_2026_q2": {
@@ -3642,9 +3642,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2026-04-09",
+   "launch_end": "2026-04-30",
+   "private_room_open": "2026-03-26",
    "dates_note": null
   },
   "paul_insect_sweetie_jar_2022_q2": {
@@ -3678,9 +3678,9 @@
    "type": "LE",
    "campaign_code": "Pejac_1000Print_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-07-05",
+   "launch_end": "2024-07-18",
+   "private_room_open": "2024-06-21",
    "dates_note": null
   },
   "pejac_multiple_2026_q1": {
@@ -3714,9 +3714,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-05-02",
+   "launch_end": "2024-05-17",
+   "private_room_open": "2024-04-18",
    "dates_note": null
   },
   "prune_nourry_mater_earth_2023_q1": {
@@ -3762,9 +3762,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-09-01",
+   "launch_end": "2023-09-20",
+   "private_room_open": "2023-08-18",
    "dates_note": null
   },
   "robert_longo_untitled_sandy_from_the_series_men_in_the_cities_2026_q3": {
@@ -3822,9 +3822,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-10-10",
+   "launch_end": "2023-10-31",
+   "private_room_open": "2023-09-26",
    "dates_note": null
   },
   "roby_dwi_antono_hayu_2023_q1": {
@@ -4038,9 +4038,9 @@
    "type": "LE",
    "campaign_code": "Slawn_UglyBast_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-07-23",
+   "launch_end": "2024-08-08",
+   "private_room_open": "2024-07-09",
    "dates_note": null
   },
   "so_youn_lee_ready_2023_q4": {
@@ -4158,9 +4158,9 @@
    "type": "LE",
    "campaign_code": "Tide_Sit_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-08-29",
+   "launch_end": "2024-09-24",
+   "private_room_open": "2024-08-15",
    "dates_note": null
   },
   "tahnee_lonsdale_dove_2023_q3": {
@@ -4230,9 +4230,9 @@
    "type": "LE",
    "campaign_code": "TakuObata_Resin_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-01-08",
+   "launch_end": "2025-02-21",
+   "private_room_open": "2024-12-25",
    "dates_note": null
   },
   "taku_obata_b_boy_seidou_2024_q4": {
@@ -4242,9 +4242,9 @@
    "type": "LE",
    "campaign_code": "TakuObata_BBoy_24",
    "campaign_name": "TakuObata_BBoy_24 \u00b7 Draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-09-12",
+   "launch_end": "2024-10-01",
+   "private_room_open": "2024-08-29",
    "dates_note": null
   },
   "taylor_lee_multiple_2023_q4": {
@@ -4290,9 +4290,9 @@
    "type": "LE",
    "campaign_code": "TomoKazum_Shaped_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-09-09",
+   "launch_end": "2025-09-29",
+   "private_room_open": "2025-08-26",
    "dates_note": null
   },
   "tomokazu_matsuyama_multiple_2022_q2": {
@@ -4314,9 +4314,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-11-13",
+   "launch_end": "2023-12-05",
+   "private_room_open": "2023-10-30",
    "dates_note": null
   },
   "tomokazu_matsuyama_the_seed_shiver_shine_bright_2022_q4": {
@@ -4386,9 +4386,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2026-07-10",
+   "launch_end": "2026-09-01",
+   "private_room_open": "2026-06-26",
    "dates_note": null
   },
   "tschabalala_self_seated_bronze_2022_q4": {
@@ -4446,9 +4446,9 @@
    "type": "LE",
    "campaign_code": "WillCotto_Unicorn_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-01-20",
+   "launch_end": "2025-02-14",
+   "private_room_open": "2025-01-06",
    "dates_note": null
   },
   "william_blake_multiple_2025_q4": {
@@ -4458,9 +4458,9 @@
    "type": "LE",
    "campaign_code": "WilliamBl_LE_25",
    "campaign_name": "WilliamBl_LE_25 \u00b7 Enter draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-11-17",
+   "launch_end": "2025-12-08",
+   "private_room_open": "2025-11-03",
    "dates_note": null
   },
   "william_mapan_centrifuge_2024_q1": {
@@ -4470,9 +4470,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-01-12",
+   "launch_end": "2024-01-24",
+   "private_room_open": "2023-12-29",
    "dates_note": null
   },
   "woo_kuk_won_multiple_2024_q4": {
@@ -4482,9 +4482,9 @@
    "type": "LE",
    "campaign_code": "Wookukwo_PairLE_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-10-24",
+   "launch_end": "2024-11-19",
+   "private_room_open": "2024-10-10",
    "dates_note": null
   },
   "woo_kuk_won_multiple_2025_q3": {
@@ -4494,9 +4494,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-08-19",
+   "launch_end": "2025-09-30",
+   "private_room_open": "2025-08-05",
    "dates_note": null
   },
   "yoon_hyup_ambre_roulette_2026_q3": {
@@ -4530,9 +4530,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2023-11-08",
+   "launch_end": "2023-11-20",
+   "private_room_open": "2023-10-25",
    "dates_note": null
   },
   "yoon_hyup_night_in_paris_golden_light_ap_2022_q4": {
@@ -4566,9 +4566,9 @@
    "type": "LE",
    "campaign_code": "YoonHyup_Summer_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-06-09",
+   "launch_end": "2025-07-08",
+   "private_room_open": "2025-05-26",
    "dates_note": null
   },
   "yu_nagaba_toy_car_2023_q3": {

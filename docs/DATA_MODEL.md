@@ -131,6 +131,24 @@ Stage boundary rules (verified empirically):
 4. First ~24h after the launch timestamp (dul = 0 post-launch) → `Last chance`.
 5. Later → `Outside campaign window` (dul ≤ −1).
 
+**The clock is filled in where upstream carries none** (`etl/aggregate_events.py`, §2.3; the
+upstream feed has dates for 2026 launches only). Upstream dates always take priority, field by
+field. Otherwise, for a release with at least 10 entrants: the announcement is the first big
+traffic spike (a day with at least a quarter of the release's busiest day, at least 30 sessions,
+and at least three times the previous week's median) when it comes 6 to 30 days before the draw
+opens - an announcement with the draw opening later, and the traffic in between is real campaign
+traffic - else the day the draw opens (the first of two consecutive days with entrants, or a day
+with three); within a week of each other the two are the same announcement and the draw opening
+pins the day. The close is the day the draw units are allocated, else the last entry day of a
+campaign over for at least a week; a window outside 3..90 days is not used. Checked against the
+upstream-dated releases on every run (the `clock rules` line in the log): announce exact on 24 of
+27 and within two days on all 27, close exact on 24 (the three misses are draws whose entries ran
+past the recorded close). The spike alone would land on the early-access send a day or two early
+on most campaigns; for a private-room-led launch it is the private room opening, which the
+upstream convention labels early access. Inferred rows use rules 2-5 above cleanly, with days
+more than 45 before the announce as `Outside campaign window`; `clock_source` on the rebuilt file
+and `data/app/release_windows.csv` say where every release's dates came from.
+
 ---
 
 ## 2. Source feeds
@@ -312,6 +330,10 @@ stale copy. The export pull stays on for the reconciliation.
 The aggregation peaks at about 330 MB (the events read in chunks, signups dropped, the export
 folded chunk by chunk for the reconciliation), against the build's 200 MB, so it fits the 512 MB
 instance the same way the build does; `AGG_PROFILE=1` prints the peak after each stage.
+
+- **Campaign clock filled in** (§1.5): 33 releases carry upstream dates, 86 get inferred ones
+  (one mixed: Cattelan Window's upstream close precedes its announce and is inferred instead),
+  244 catalogue names none. The curve panel grows from 24 campaigns to **96**.
 
 Two feeds now describe the same thing: the rebuilt file is what the dashboard reads, the export
 is the reference the reconciliation checks it against on every refresh.
@@ -576,6 +598,27 @@ paid units today from 7.0 to 60.3, the difference between "on plan" and "far beh
 stakes on a coin flip, so the pooled curve stands. Two channel groups (AA Meta, Referral
 Artist) cannot be tested at all - only 5 of 15 releases carry >= 10 units in them. Re-run
 the probe at ~25-30 clean releases.
+
+**Re-read on the 96-campaign panel (2026-09-10, inferred clock, §1.5).** With every completed
+draw campaign since 2023 on the clock, the shapes do differ by kind of release (the baskets of
+`docs/RELEASE_CLUSTERS.md`), and mostly on sessions and units, not entries. Cumulative share at
+the announce day / 30% / 50% / 90% of the campaign, all-channel medians:
+
+| Panel | n | Sessions | Entries | Units |
+|---|---|---|---|---|
+| Pooled | 95 | .15 / .53 / .70 / .89 | .12 / .51 / .65 / .86 | .16 / .39 / .51 / .68 |
+| Paid-led | 41 | .14 / .40 / .56 / .89 | .14 / .49 / .65 / .87 | .18 / .44 / .53 / .72 |
+| Organic | 52 | .23 / .63 / .75 / .89 | .09 / .51 / .65 / .86 | .13 / .35 / .46 / .57 |
+| Email-led private room | 31 | .41 / .71 / .77 / .91 | .23 / .57 / .68 / .86 | .28 / .51 / .59 / .72 |
+| Artist-audience draws | 20 | .03 / .48 / .69 / .85 | .03 / .45 / .63 / .86 | .01 / .15 / .25 / .37 |
+
+Largest gap from the pooled curve anywhere in the campaign: sessions 0.19 (paid-led) and 0.30
+(email-led), units 0.31 (artist-audience: 60% of its units book at the close), entries only
+0.03-0.14. So the entries curve the hero and trajectory run on can stay pooled; the sessions
+and units curves should be cohorted, at least paid-led against organic. What is still open is how
+a release gets its basket in the dashboard - the paid channel size pick on the Target setting tab
+separates paid-led from organic, the private-room share pick separates the two organic kinds -
+which is a product decision before the curves can be cohorted in the build.
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the

@@ -8,6 +8,14 @@ Inputs, both written by server/bigquery.js:
   sources/le_events.csv     signup, draw entry intent and purchase events with a
                             pseudonymous account id and no address
 
+The campaign clock (docs #1.5) is filled in for releases the upstream feed
+carries no dates for. Upstream dates always take priority. Otherwise the
+announcement is the day the draw opens (the first run of entry days), unless
+a big traffic spike came more than three days earlier, in which case the
+spike; the close is the day the draw units are allocated, else the last
+entry day of a settled campaign. Checked against the upstream dates on the
+clocked releases at every run (the line in the log).
+
 Outputs:
   sources/across_time.rebuilt.csv  the export's 34 columns at the export's grain,
                                    dates DD/MM/YYYY like the export; what build.py
@@ -16,6 +24,7 @@ Outputs:
                                    returning collectors, overlap with the artist's
                                    previous releases - no identifier in it
   data/app/reconciliation.json     rebuilt against export, column by column
+  data/app/release_windows.csv     every release's campaign window and where it came from
 
 The definitions are the ones decoded against the export in docs/DATA_MODEL.md
 #2.2: people are distinct account ids; an entrant's units are their maximum
@@ -66,6 +75,13 @@ ROUTES = [("purchase_with_preorder_app", "Preorder_App"), ("purchase_with_presal
           ("pr_order", "Private_Room"), ("purchase_with_draw_entry", "Draw")]
 CUSTOMER_COL = {"Draw": "Customer_Draw", "Preorder_App": "Customer_Preorder_App", "Private_Room": "Customer_Private_Room",
                 "Presale_Offered": "Customers_Presale_Offered", "Other": "Customer_Other"}
+WINDOWS = ROOT / "data" / "app" / "release_windows.csv"
+EA_LEAD_DAYS = 45        # rows earlier than this before an inferred announce are outside the campaign window
+MIN_INFER_ENTRANTS = 10  # a release needs this many entrants to get an inferred clock
+SETTLED_DAYS = 7         # a close inferred from the last entry needs the campaign over for this long
+SPIKE_FRAC, SPIKE_FLOOR, SPIKE_JUMP = 0.25, 30, 3.0   # the traffic-spike rule, see infer_windows
+SPIKE_LEAD, SPIKE_MAX_LEAD = 6, 30                     # a spike counts when it is 6..30 days before the draw opens
+
 # what the reconciliation accepts as the known residuals (docs #2.2): sessions
 # and page views carry attribution noise between the two table builds (0.1% of
 # page views, spread thinly over the history), counts of people the rows
@@ -219,6 +235,165 @@ def reconcile(b: pd.DataFrame, a: pd.DataFrame) -> dict:
             "columns": cols, "beyond_tolerance": beyond, "verdict": "within known residuals" if not beyond else "differences beyond the known residuals"}
 
 
+def mode_or_none(s: pd.Series):
+    s = s.dropna()
+    return s.mode().iloc[0] if len(s) else None
+
+
+def upstream_windows(out: pd.DataFrame) -> pd.DataFrame:
+    """Announce and close from the clock columns the feed carries, the way
+    discover_releases reads them: announce from the non-negative dsa rows, the
+    length from the pct column (exact), close = announce + length."""
+    c = out[out["days_since_announcement"].notna()]
+    ann = (c[c["days_since_announcement"] >= 0]
+           .assign(d=lambda x: x["event_date"] - pd.to_timedelta(x["days_since_announcement"], unit="D"))
+           .groupby("simple_release_name", observed=True)["d"].agg(mode_or_none))
+    r = c[c["pct_days_since_announcement"].notna() & (c["pct_days_since_announcement"] != 0)]
+    L = ((r["days_since_announcement"] / r["pct_days_since_announcement"]).round()
+         .groupby(r["simple_release_name"], observed=True).agg(mode_or_none))
+    w = pd.DataFrame({"announce": ann, "L": L})
+    w["close"] = w["announce"] + pd.to_timedelta(w["L"], unit="D")
+    w["clocked"] = True
+    return w
+
+
+def first_spike(d: pd.DataFrame):
+    """The first big spike in traffic: sessions at least SPIKE_FRAC of the
+    release's busiest day, at least SPIKE_FLOOR, and at least SPIKE_JUMP times
+    the median of the previous week."""
+    peak = d["sessions"].max()
+    base = d["sessions"].rolling(7, min_periods=1).median().shift(1).fillna(0)
+    ok = (d["sessions"] >= SPIKE_FRAC * peak) & (d["sessions"] >= SPIKE_FLOOR) & (d["sessions"] >= SPIKE_JUMP * base)
+    return d.loc[ok, "event_date"].min() if ok.any() else pd.NaT
+
+
+def entries_start(d: pd.DataFrame):
+    """The day the draw opens: the first of two consecutive days with entrants,
+    or a day with three - a stray single entrant days earlier is not it."""
+    e = d[d["entrants"] > 0]
+    dates, counts = e["event_date"].tolist(), e["entrants"].tolist()
+    for i, (dt, c) in enumerate(zip(dates, counts)):
+        if c >= 3 or (i + 1 < len(dates) and (dates[i + 1] - dt).days == 1):
+            return dt
+    return pd.NaT
+
+
+def infer_windows(out: pd.DataFrame, as_of: pd.Timestamp) -> pd.DataFrame:
+    """One row per release: announce, close, and where each came from.
+
+    Upstream dates take priority. Otherwise the announcement is the first big
+    traffic spike when it comes SPIKE_LEAD..SPIKE_MAX_LEAD days before the
+    draw opens (an announcement with the draw opening later - the traffic
+    between the two is real campaign traffic), else the day the draw opens:
+    within a week of each other they are the same announcement, and on the
+    clocked releases the draw opening pins the day exactly where the spike
+    alone lands on the early-access send a day or two early. A spike further
+    back than a month belongs to an earlier life of the page. Note that for a
+    private-room-led launch the first spike is the private room opening,
+    which the upstream convention labels early access rather than announce. The close
+    is the day the draw units are allocated, else the last entry day of a
+    campaign that has been over for SETTLED_DAYS. A release without enough
+    entrants, or with a window outside 3..90 days, keeps no clock."""
+    day = (out.groupby(["simple_release_name", "event_date"], observed=True)
+              .agg(sessions=("Sessions_Total", "sum"), entrants_draw=("Draw_Entries", "sum"),
+                   entrants_pre=("Preorder_App", "sum"), draw_units=("Product_Units_Draw", "sum"))
+              .reset_index())
+    day["entrants"] = day["entrants_draw"] + day["entrants_pre"]
+    up = upstream_windows(out)
+    rows = []
+    for name, d in day.groupby("simple_release_name", observed=True, sort=False):
+        d = d.sort_values("event_date").reset_index(drop=True)
+        row = {"release_name": name, "sessions": float(d["sessions"].sum()), "entrants": float(d["entrants"].sum()),
+               "announce": None, "close": None, "source": "none", "announce_rule": None, "close_rule": None}
+        # upstream, field by field: an announce is kept whatever the close; a
+        # close before its announce or a window over 90 days (one upstream
+        # record does that) is treated as absent and inferred instead
+        a = c = None; arule = crule = None
+        if name in up.index and pd.notna(up.loc[name, "announce"]):
+            a, arule = up.loc[name, "announce"], "upstream"
+            uc = up.loc[name, "close"]
+            if pd.notna(uc) and 3 <= (uc - a).days <= 90:
+                c, crule = uc, "upstream"
+        if a is None and row["entrants"] < MIN_INFER_ENTRANTS:
+            rows.append(row); continue
+        # the close first (it does not depend on the announce): the allocation
+        # day, else the last entry day of a settled campaign
+        if c is None:
+            if d["draw_units"].max() >= 1:
+                c, crule = d.loc[d["draw_units"].idxmax(), "event_date"], "allocation day"
+            else:
+                last = d.loc[d["entrants"] > 0, "event_date"].max()
+                if pd.isna(last) or (as_of - last).days < SETTLED_DAYS:
+                    row.update(announce=a, announce_rule=arule, source="upstream" if a is not None else "none")
+                    rows.append(row); continue          # still in flight: no close yet
+                c, crule = last, "last entry day"
+        if a is None:
+            pre = d[d["event_date"] <= c]
+            a, arule = entries_start(pre), "draw opens"
+            # the first big spike, looked for in the month before the draw opens
+            # (a spike further back belongs to an earlier life of the page)
+            sp = first_spike(pre[pre["event_date"] >= (a - pd.Timedelta(days=SPIKE_MAX_LEAD))] if pd.notna(a) else pre)
+            if pd.notna(sp) and (pd.isna(a) or (a - sp).days > SPIKE_LEAD):
+                a, arule = sp, "traffic spike"
+            if pd.isna(a):
+                rows.append(row); continue
+        L = (c - a).days
+        if not (3 <= L <= 90):
+            row.update(announce=a, announce_rule=arule, source="upstream" if arule == "upstream" else "none")
+            rows.append(row); continue
+        src = "upstream" if (arule == "upstream" and crule == "upstream") else ("mixed" if arule == "upstream" else "inferred")
+        row.update(announce=a, close=c, source=src, announce_rule=arule, close_rule=crule)
+        rows.append(row)
+    w = pd.DataFrame(rows)
+    w["campaign_days"] = (pd.to_datetime(w["close"]) - pd.to_datetime(w["announce"])).dt.days
+    return w
+
+
+def fill_clock(out: pd.DataFrame, windows: pd.DataFrame) -> pd.DataFrame:
+    """Rows of releases with an inferred window get the five clock columns,
+    labelled with the documented stage rules (docs #1.5); everything else keeps
+    what the feed carried. clock_source says which."""
+    out["clock_source"] = np.where(out["days_since_announcement"].notna(), "upstream", "")
+    inf = windows[windows["source"].isin(["inferred", "mixed"])].set_index("release_name")
+    m = out["simple_release_name"].isin(inf.index)
+    if not m.any():
+        return out
+    a = out.loc[m, "simple_release_name"].map(inf["announce"]); c = out.loc[m, "simple_release_name"].map(inf["close"])
+    dsa = (out.loc[m, "event_date"] - pd.to_datetime(a)).dt.days
+    dul = (pd.to_datetime(c) - out.loc[m, "event_date"]).dt.days
+    L = (dsa + dul).astype(float)
+    pdsa, pdul = dsa / L, dul / L
+    stage = pd.Series("Sustain 3", index=dsa.index)
+    stage[pdsa < 2 / 3] = "Sustain 2"; stage[pdsa < 1 / 3] = "Sustain 1"
+    stage[dsa == 0] = "Announcement"; stage[dsa < 0] = "Early access"; stage[dsa < -EA_LEAD_DAYS] = "Outside campaign window"
+    stage[dul == 0] = "Last chance"; stage[dul < 0] = "Outside campaign window"
+    out.loc[m, "campaign_stage"] = stage
+    out.loc[m, "days_since_announcement"] = dsa.astype(float); out.loc[m, "days_until_launch"] = dul.astype(float)
+    out.loc[m, "pct_days_since_announcement"] = pdsa; out.loc[m, "pct_days_until_launch"] = pdul
+    out.loc[m, "clock_source"] = "inferred"
+    return out
+
+
+def check_rules(windows: pd.DataFrame, out: pd.DataFrame, as_of: pd.Timestamp) -> str:
+    """Run the inference on the clocked releases as if they had no clock and
+    compare with the upstream dates: the one line that says the rules still
+    hold as the panel grows."""
+    up = windows[(windows["source"] == "upstream") & windows["close"].notna()]
+    if up.empty:
+        return "no upstream dates to check the rules against"
+    blind = out[out["simple_release_name"].isin(up["release_name"])].copy()
+    for c in CLOCK:
+        blind[c] = np.nan
+    blind["campaign_stage"] = "Missing campaign dates"
+    inf = infer_windows(blind, as_of).set_index("release_name")
+    j = up.set_index("release_name").join(inf[["announce", "close"]], rsuffix="_inf", how="inner")
+    j = j[j["announce_inf"].notna()]
+    da = (pd.to_datetime(j["announce_inf"]) - pd.to_datetime(j["announce"])).dt.days.abs()
+    dc = (pd.to_datetime(j["close_inf"]) - pd.to_datetime(j["close"])).dt.days.abs()
+    return (f"clock rules against {len(j)} upstream-dated releases: announce exact {int((da == 0).sum())}, within 2 days "
+            f"{int((da <= 2).sum())}; close exact {int((dc == 0).sum())}, within 2 days {int((dc <= 2).sum())}")
+
+
 def people_file(ev: pd.DataFrame) -> pd.DataFrame:
     de = ev[ev["event_name"] == "draw entry intent"]
     pu = ev[ev["event_name"] == "purchase"]
@@ -276,8 +451,16 @@ def main() -> int:
     rebuilt = rebuild(browsing, ev)
     del browsing
     rss("rebuilt")
+    as_of = rebuilt["event_date"].max()
+    windows = infer_windows(rebuilt, as_of)
+    rebuilt = fill_clock(rebuilt, windows)
+    n_up, n_inf = int((windows["source"] == "upstream").sum()), int(windows["source"].isin(["inferred", "mixed"]).sum())
+    print(check_rules(windows, rebuilt, as_of))
+    WINDOWS.parent.mkdir(parents=True, exist_ok=True)
+    tmp = WINDOWS.with_suffix(".tmp"); windows.to_csv(tmp, index=False); tmp.replace(WINDOWS)
+    rss("clock filled")
     tmp = REBUILT.with_suffix(".tmp"); rebuilt.to_csv(tmp, index=False, date_format="%d/%m/%Y"); tmp.replace(REBUILT)
-    note = f"rebuilt {len(rebuilt)} channel-day rows -> {REBUILT.name}"
+    note = f"rebuilt {len(rebuilt)} channel-day rows -> {REBUILT.name} (campaign clock: {n_up} releases upstream, {n_inf} inferred)"
     rss("written")
     b = grouped(rebuilt)
     del rebuilt
