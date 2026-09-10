@@ -527,18 +527,6 @@
    "private_room_open": "2026-03-17",
    "dates_note": null
   },
-  "ai_weiwei_f_u_c_k_yellow_2026_q3": {
-   "release_name": "Ai Weiwei \u00b7 F.U.C.K. (Yellow) \u00b7 2026 Q3",
-   "artist": "Ai Weiwei",
-   "title": "F.U.C.K. (Yellow)",
-   "type": "LE",
-   "campaign_code": null,
-   "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
-   "dates_note": "campaign clock gives 2026-05-12..2026-08-27 (107 days) - not usable"
-  },
   "ai_weiwei_glass_vase_2023_q3": {
    "release_name": "Ai Weiwei \u00b7 Glass Vase \u00b7 2023 Q3",
    "artist": "Ai Weiwei",
@@ -585,6 +573,18 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
+   "dates_note": null
+  },
+  "ai_weiwei_multiple_2026_q3": {
+   "release_name": "Ai Weiwei \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Ai Weiwei",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": "2026-08-27",
+   "launch_end": "2026-09-24",
+   "private_room_open": "2026-08-13",
    "dates_note": null
   },
   "ai_weiwei_to_be_looked_at_2024_q4": {
@@ -1811,6 +1811,18 @@
    "private_room_open": null,
    "dates_note": null
   },
+  "grant_riven_yun_multiple_2023_q3": {
+   "release_name": "Grant Riven Yun \u00b7 Multiple \u00b7 2023 Q3",
+   "artist": "Grant Riven Yun",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
   "grayson_perry_magical_thinking_large_2025_q2": {
    "release_name": "Grayson Perry \u00b7 Magical Thinking (Large) \u00b7 2025 Q2",
    "artist": "Grayson Perry",
@@ -1923,6 +1935,18 @@
    "release_name": "Hassan Hajjaj \u00b7 Yazid & Rania \u00b7 2021 Q3",
    "artist": "Hassan Hajjaj",
    "title": "Yazid & Rania",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "hebru_brantley_free_advice_large_2022_q1": {
+   "release_name": "Hebru Brantley \u00b7 Free Advice (Large) \u00b7 2022 Q1",
+   "artist": "Hebru Brantley",
+   "title": "Free Advice (Large)",
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
@@ -2463,6 +2487,18 @@
    "release_name": "Jonny Niesche \u00b7 Diamond Vibration (Caught by the fuzz) \u00b7 2023 Q4",
    "artist": "Jonny Niesche",
    "title": "Diamond Vibration (Caught by the fuzz)",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "jonny_niesche_moon_moth_lust_in_warm_copper_ap_2022_q4": {
+   "release_name": "Jonny Niesche \u00b7 moon moth lust in warm copper AP \u00b7 2022 Q4",
+   "artist": "Jonny Niesche",
+   "title": "moon moth lust in warm copper AP",
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
@@ -3287,6 +3323,18 @@
    "private_room_open": null,
    "dates_note": null
   },
+  "micha_l_borremans_the_monkey_2027_q1": {
+   "release_name": "Micha\u00ebl Borremans \u00b7 The Monkey \u00b7 2027 Q1",
+   "artist": "Micha\u00ebl Borremans",
+   "title": "The Monkey",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock present but incomplete"
+  },
   "minhee_kim_multiple_2023_q2": {
    "release_name": "Minhee Kim \u00b7 Multiple \u00b7 2023 Q2",
    "artist": "Minhee Kim",
@@ -3717,6 +3765,18 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
+   "dates_note": null
+  },
+  "robert_longo_untitled_sandy_from_the_series_men_in_the_cities_2026_q3": {
+   "release_name": "Robert Longo \u00b7 Untitled (Sandy, from the series \u201cMen in the Cities\u201d) \u00b7 2026 Q3",
+   "artist": "Robert Longo",
+   "title": "Untitled (Sandy, from the series \u201cMen in the Cities\u201d)",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": "2026-09-07",
+   "launch_end": "2026-09-29",
+   "private_room_open": "2026-08-24",
    "dates_note": null
   },
   "robert_nava_death_carrier_bunny_2024_q1": {
@@ -4451,6 +4511,18 @@
    "private_room_open": null,
    "dates_note": null
   },
+  "yoon_hyup_night_in_paris_golden_light_ap_2022_q4": {
+   "release_name": "Yoon Hyup \u00b7 Night in Paris - Golden Light AP \u00b7 2022 Q4",
+   "artist": "Yoon Hyup",
+   "title": "Night in Paris - Golden Light AP",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
   "yoon_hyup_night_in_paris_golden_light_2022_q4": {
    "release_name": "Yoon Hyup \u00b7 Night in Paris - Golden Light \u00b7 2022 Q4",
    "artist": "Yoon Hyup",
@@ -4491,6 +4563,18 @@
    "release_name": "Yue Minjun \u00b7 Multiple \u00b7 2023 Q1",
    "artist": "Yue Minjun",
    "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": null
+  },
+  "yuichi_hirako_green_master_bloom_ap_2022_q3": {
+   "release_name": "Yuichi Hirako \u00b7 Green Master / Bloom AP \u00b7 2022 Q3",
+   "artist": "Yuichi Hirako",
+   "title": "Green Master / Bloom AP",
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
@@ -4574,49 +4658,64 @@
  },
  "meta_campaigns": [
   {
-   "name": "JaumePlen_LE_26 \u00b7 Enter draw",
-   "spend": 53972.12,
-   "last": "2026-08-27"
+   "name": "SalvadorDali_LE_26 \u00b7 Enter draw",
+   "spend": 75735.29,
+   "last": "2026-09-10"
   },
   {
    "name": "JamesJean_Blossom_26 \u00b7 Enter draw",
    "spend": 25936.13,
-   "last": "2026-08-27"
+   "last": "2026-09-10"
+  },
+  {
+   "name": "AndyWarhol_TL_26 \u00b7 Enter draw",
+   "spend": 15192.03,
+   "last": "2026-09-10"
   },
   {
    "name": "Abdulnasser_LE_26 \u00b7 Enter draw",
    "spend": 7482.43,
-   "last": "2026-08-27"
-  },
-  {
-   "name": "SalvadorDali_LE_26 \u00b7 Enter draw",
-   "spend": 5797.96,
-   "last": "2026-08-27"
+   "last": "2026-09-10"
   },
   {
    "name": "ZengFanzhi_LE_26 \u00b7 Enter draw",
    "spend": 5386.98,
-   "last": "2026-08-27"
+   "last": "2026-09-10"
   },
   {
    "name": "GlennLigon_LE_26 \u00b7 Enter draw",
    "spend": 4086.95,
-   "last": "2026-08-27"
+   "last": "2026-09-10"
   },
   {
    "name": "Parra_LE_26 \u00b7 Enter draw",
    "spend": 3272.64,
-   "last": "2026-08-27"
+   "last": "2026-09-10"
   },
   {
-   "name": "PietMondrian_LE_26 \u00b7 Enter draw",
-   "spend": 5617.55,
-   "last": "2026-08-26"
+   "name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
+   "spend": 2463.15,
+   "last": "2026-09-10"
+  },
+  {
+   "name": "RobertLongo_LE_26 \u00b7 Enter draw",
+   "spend": 262.5,
+   "last": "2026-09-10"
   },
   {
    "name": "Inventory_Test_26",
    "spend": 1433.5,
-   "last": "2026-08-25"
+   "last": "2026-09-05"
+  },
+  {
+   "name": "JaumePlen_LE_26 \u00b7 Enter draw",
+   "spend": 53972.12,
+   "last": "2026-09-02"
+  },
+  {
+   "name": "PietMondrian_LE_26 \u00b7 Enter draw",
+   "spend": 5617.55,
+   "last": "2026-08-31"
   },
   {
    "name": "AhmedM_Salam_26 \u00b7 Enter draw",
@@ -5560,13 +5659,48 @@
   },
   {
    "name": "ANISHTLE23 \u00b7 Purchases",
-   "spend": 0.0,
+   "spend": 4602.8,
    "last": "2024-01-15"
   },
   {
    "name": "ANISHTLE23 \u00b7 Sign-ups",
-   "spend": 0.0,
+   "spend": 734.06,
    "last": "2024-01-08"
+  },
+  {
+   "name": "CREWDTWILI \u00b7 Purchase",
+   "spend": 153.74,
+   "last": "2023-12-14"
+  },
+  {
+   "name": "JJEANDES23 \u00b7 Purchase",
+   "spend": 1756.79,
+   "last": "2023-11-16"
+  },
+  {
+   "name": "Facebook_Inventory_SET1_122022",
+   "spend": 0.0,
+   "last": "2023-01-16"
+  },
+  {
+   "name": "Facebook_Inventory_SET2_122022",
+   "spend": 0.0,
+   "last": "2023-01-16"
+  },
+  {
+   "name": "Facebook_Signup_Homepage_Evergreen",
+   "spend": 0.0,
+   "last": "2023-01-12"
+  },
+  {
+   "name": "Facebook_Inventory_Greene_11/23/2022",
+   "spend": 0.0,
+   "last": "2023-01-07"
+  },
+  {
+   "name": "Facebook_BuyNow_Insect_11/18/2022",
+   "spend": 0.0,
+   "last": "2023-01-06"
   }
  ]
 }
