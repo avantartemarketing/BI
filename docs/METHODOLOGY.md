@@ -57,6 +57,15 @@ panel**: Low = 25th percentile, Medium = median, High = 75th percentile. Picking
 The benchmark tables are frozen as a versioned file (`etl/benchmarks.json`, dated)
 and only change deliberately, so targets never drift silently.
 
+**A new artist, or a collaboration unlike any we have run, has no previous campaign
+to pick quartiles against.** For that case the history has been sorted into baskets
+of comparable releases - paid-led headline launches, paid-supported small editions,
+email-led collector launches with a private room, artist-audience draws - each with
+its own Low / Medium / High for every channel share, conversion and campaign stage.
+Pick the basket the launch is designed to be and read the picks from it:
+`docs/RELEASE_CLUSTERS.md` (the analysis, with example releases) and
+`data/release_cluster_baskets.json` (the numbers).
+
 ## 4. The target model, step by step
 
 ### Step 1 - split the edition into paid vs organic

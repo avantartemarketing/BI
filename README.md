@@ -16,9 +16,14 @@ etl/                    Python pipeline
   extract_spend.py        Meta spend by campaign × day  (from the workbook snapshot)
   extract_content.py      Emplifi posts by campaign     (from the content export)
   build.py                computes targets, trajectory curves, and per-release snapshots
+  release_features.py     one row per release from the daily funnel (data/app/release_features.csv)
+  analysis/               one-off studies behind documented decisions (cpe_elasticity.py,
+                          tier_curve_probe.py, release_clusters.py - the baskets of comparables)
 data/
   spend_daily.csv         extracted spend facts
   content_posts.csv       extracted content facts
+  release_clusters.csv    every release's campaign window, features and basket (docs/RELEASE_CLUSTERS.md)
+  release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
 server/index.js         Express service: serves the SPA + /api/* + the spend decision log
 web/                    React (Vite) SPA - the dashboard per the design handoff

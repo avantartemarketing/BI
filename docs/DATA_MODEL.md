@@ -331,6 +331,18 @@ Recomputation policy for the rebuild: recompute quartiles nightly from BigQuery 
 exclude in-flight releases), using **median for every "Medium"**. Log benchmark drift vs the
 frozen values above.
 
+**Baskets of comparables** (`etl/analysis/release_clusters.py`, findings in
+`docs/RELEASE_CLUSTERS.md`): the 108 completed draw campaigns in the 2023-2026 BigQuery pull
+fall into two robust kinds (paid-led vs organic) and four defensible ones (paid-led headline
+launches, paid-supported small editions, email-led collector launches with a private room,
+artist-audience draws); the 47 buy-now launches that predate the draw mechanic are a fifth,
+legacy basket. Per-basket quartiles of every channel share, conversion and campaign-stage
+share are written to `data/release_cluster_baskets.json`, assignments to
+`data/release_clusters.csv`. Campaign windows for releases without the upstream clock (every
+launch before 2026) are inferred from the funnel - announce from the first run of draw-entry
+days, close from the draw-allocation day - and validated against the clocked releases
+(announce within 2 days on 31 of 32, close exact on 24 of 27).
+
 ---
 
 ## 5. Targets across time (the new capability)
