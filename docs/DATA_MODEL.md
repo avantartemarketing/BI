@@ -219,6 +219,53 @@ audience overlap between releases, draw eligibility and removal reasons, pre-ord
 person, cancellations, and hour-level pacing on the campaign clock. Locales are site locales
 (three values), not countries - the "Entries by country" open item (§12) is still open.
 
+### 2.2 The daily export's columns, decoded against the events
+
+The daily export (`le_funnel_report_split_touch_export`) is an aggregation of `LE_Funnel_Report`.
+Every metric column was reproduced from the events and compared per channel × day × release over
+2023-09-01 to 2026-09-10 (323k channel-days). Grain and conventions: channel is
+`AA_session_custom_channel_group_split_touch`; *people* means distinct `aa_account_id`; *units*
+means `draw_entry_multiset_preference_max_quantity_once` summed, i.e. each entrant's maximum
+quantity counted once however many products they entered; an entrant who won one product and
+lost another appears on both sides of the winner split.
+
+| Export column | Definition (per channel × day × release) | Match |
+|---|---|---|
+| `Sessions_Total` | count of `session_start` events | exact |
+| `Page_Views_Total` | count of `page_view` events | exact |
+| `Draw_Entries` | people with a draw entry intent | −0.4% |
+| `Collectors_Eligible_Entries` | people with an eligible intent (`draw_entry_eligible`) | −0.3% |
+| `Draw_Entry_Eligible` | people with an eligible intent that did **not** win - post-allocation, see below | −0.4% |
+| `Draw_Entries_Eligible_Units` | units wanted by eligible entrants (winners included) | exact |
+| `Draw_Entries_Total_Units` | units wanted by all entrants | exact |
+| `Draw_Entry_Eligible_No_Conv` | eligible non-winners with no purchase (`draw_with_purchase` = 0) | −0.3% |
+| `Draw_Entries_Total_Units_No_Conv` | units of those | exact |
+| `Draw_Winner` | people with a winning intent | exact |
+| `Preorder_App`, `Preorder_App_Eligable`, `Preorder_Winner` | the same three counts on intents with `pre_order` | within 0.3% |
+| `Total_Product_Units` | `order_pieces` summed over `purchase` events | +0.04% |
+| `Unique_Customers` | people with a purchase | −0.2% |
+| `Product_Units_<route>`, `Customer_<route>` | pieces and people by route; route of a purchase is the first match of `purchase_with_preorder_app` → Preorder App, `purchase_with_presale` → Presale Offered, `pr_order` → Private Room, `purchase_with_draw_entry` → Draw, else Other | within 1.3% per route; 1-3% of channel-days differ, so the precedence is close, not proven |
+
+The sub-percent residuals on the people counts are rows without an account id and the export's
+own fan-out (§6.1). `order_type` on the purchase rows (Draw / Private / Pre Order / Regular /
+Insiders) is a different classification from the export's five routes and does not reproduce them.
+
+**`Draw_Entry_Eligible` is not "eligible entries".** It shrinks as the draw is allocated: for a
+closed draw it is the eligible entrants left without an allocation (Mondrian 2026 Q3: 280,
+against 682 eligible entrants and 841 eligible units). Use `Collectors_Eligible_Entries` for
+people and `Draw_Entries_Eligible_Units` for units - the latter is the dashboard's entries
+currency, includes winners, and is stable after allocation. Benchmark table B (§4, "session →
+unique eligible entry") was transcribed from the workbook's lifetime rollup, whose eligible-entry
+columns (M/N) may be this post-allocation count; if so those conversion benchmarks are understated
+for every closed draw. To be checked in the sheet.
+
+What this means for the source of truth: with these definitions the export can be rebuilt from
+the events inside BigQuery (aggregation SQL, the same 34-column daily shape, no identifier in the
+output) and extended with person-level columns the export cannot carry - unique entrants and
+buyers per release, new versus returning collectors, audience overlap - which would also remove
+the need for the row-level `sources/le_events.csv` altogether. Until such a rebuild has been
+reconciled against the export across the history, the export stays the system of record.
+
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down
 empirically on the Mondrian and James Jean Blossom draws):
@@ -727,6 +774,10 @@ Model bugs found in the sheet (the rebuild should implement the *intent*):
 22. `LE_Funnel_Report.processing_error` is free text that quotes the entrant's email address in
     2,074 draw-entry rows; treat every free-text column of that table as potentially carrying
     personal data and take flags, not text (§2.1).
+23. The export's `Draw_Entry_Eligible` counts eligible entrants *left without an allocation*, not
+    eligible entrants, and shrinks as winners are allocated; `Collectors_Eligible_Entries` is the
+    people count and `Draw_Entries_Eligible_Units` the units (§2.2). Check which column the
+    workbook's eligible-entry benchmarks read.
 
 ---
 
