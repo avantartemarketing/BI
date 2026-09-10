@@ -13,3 +13,4 @@ data/artist_posts.csv
 data/app/derived/
 data/inputs.saved.json
 data/email_content.csv
+data/app/release_features.csv

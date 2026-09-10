@@ -346,6 +346,26 @@ app.get("/api/emails/content/status", (req, res) => {
   if (req.query.run) return res.json(emailContent.start({ years: Math.min(Math.max(Number(req.query.years) || 2, 0.1), 10) }));
   res.json(emailContent.status());
 });
+// Release-level features across the whole funnel history (etl/release_features.py),
+// rebuilt on demand when the funnel file is newer than the last build.
+const FEATURES = path.join(DATA, "release_features.csv");
+let featuresBuild = null;
+app.get("/api/funnel/releases.csv", async (_req, res) => {
+  const src = path.join(ROOT, "sources", "across_time.csv");
+  const stale = !fs.existsSync(FEATURES) || (fs.existsSync(src) && fs.statSync(src).mtimeMs > fs.statSync(FEATURES).mtimeMs);
+  if (stale) {
+    featuresBuild = featuresBuild || new Promise((resolve, reject) => {
+      const venvPy = path.join(ROOT, ".venv", "bin", "python3");
+      require("child_process").execFile(fs.existsSync(venvPy) ? venvPy : "python3", [path.join(ROOT, "etl", "release_features.py")],
+        { cwd: ROOT, timeout: 150 * 1000, maxBuffer: 4 * 1024 * 1024 },
+        (err, _stdout, stderr) => (err ? reject(new Error((stderr || err.message).slice(-600))) : resolve()));
+    }).finally(() => { featuresBuild = null; });
+    try { await featuresBuild; } catch (e) { return res.status(500).json({ error: "release features failed: " + e.message }); }
+  }
+  res.setHeader("Content-Disposition", 'attachment; filename="release-features.csv"');
+  res.type("text/csv").sendFile(FEATURES);
+});
+
 app.get("/api/emails/content.csv", (_req, res) => {
   const f = emailContent.file();
   if (!f) return res.status(404).json({ error: "no export yet - open /api/emails/content/status?run=1 first, then poll it without run=1" });
