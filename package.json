@@ -7,7 +7,7 @@
     "dev": "vite --config web/vite.config.js",
     "build": "vite build --config web/vite.config.js",
     "start": "node --max-old-space-size=192 server/index.js",
-    "etl": "python3 etl/extract_spend.py && python3 etl/extract_content.py && python3 etl/build.py"
+    "etl": "python3 etl/extract_spend.py && python3 etl/extract_content.py && python3 etl/aggregate_events.py && python3 etl/build.py"
   },
   "dependencies": {
     "express": "^4.21.2",

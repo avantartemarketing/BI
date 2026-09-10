@@ -301,6 +301,70 @@ function eventsWriter(headerRow) {
   return w;
 }
 
+// ---------------------------------------------------------------- browsing feed (counts only)
+
+/* Sessions and page views per channel x day x release, counted inside
+ * BigQuery. These are the two export columns that have no definition in them
+ * (a session is a session_start event, a page view a page_view event - proven
+ * to the event, docs/DATA_MODEL.md #2.2), and the only ones whose rows would
+ * be too many to bring here: 7.4M since 2023 for two numbers per channel-day.
+ * No identifier is read, so nothing personal is involved. The result has the
+ * daily export's grain and lets etl/aggregate_events.py rebuild the export. */
+const LE_BROWSING = path.join(ROOT, "sources", "le_browsing.csv");
+const BROWSING_META = path.join(ROOT, "sources", "le_browsing.meta.json");
+const BROWSING_KEYS = ["AA_session_custom_channel_group_split_touch", "event_date", "simple_release_name",
+                       "campaign_stage", "days_since_announcement", "days_until_launch",
+                       "pct_days_since_announcement", "pct_days_until_launch"];
+const BROWSING_HEADER = BROWSING_KEYS.concat(["Sessions_Total", "Page_Views_Total"]);
+
+function browsingSql() {
+  const keys = BROWSING_KEYS.map((c) => `\`${c}\``).join(", ");
+  const sql = `SELECT ${keys},\n  COUNTIF(event_name = 'session_start') AS Sessions_Total,\n` +
+    `  COUNTIF(event_name = 'page_view') AS Page_Views_Total\n` +
+    `FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+    `WHERE event_name IN ('page_view', 'session_start') AND event_date >= @since\n` +
+    `GROUP BY ${BROWSING_KEYS.map((_, i) => i + 1).join(", ")}\nORDER BY event_date`;
+  for (const f of FORBIDDEN_COLUMNS) {
+    if (sql.toLowerCase().includes(f)) throw new Error(`browsing query must not mention ${f}`);
+  }
+  return sql;
+}
+
+const fmtDMY = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso); return m ? `${m[3]}/${m[2]}/${m[1]}` : iso; };
+
+/* Same shape of guard as the events writer: declared header, address scan,
+ * and the date written DD/MM/YYYY like the export so the ETL's parser and the
+ * incremental merge (scanLocal) treat the two files alike. */
+function browsingWriter(headerRow) {
+  const header = headerRow.map((h) => String(h ?? "").trim());
+  if (header.length !== BROWSING_HEADER.length || header.some((h, i) => h !== BROWSING_HEADER[i])) {
+    throw new Error("browsing feed returned columns that differ from the declared list " +
+      `(${header.length} vs ${BROWSING_HEADER.length}) - not writing`);
+  }
+  const di = header.indexOf("event_date");
+  const w = {
+    header: header.map(csvCell).join(","),
+    dateIndex: di,
+    dropped: 0,
+    row(cells) {
+      if (!cells || !cells.length) return null;
+      const out = new Array(header.length);
+      for (let i = 0; i < header.length; i++) {
+        const v = cells[i] === null || cells[i] === undefined ? "" : String(cells[i]);
+        if (v.length > 5 && ADDRESS_RE.test(v)) {
+          throw new Error(`browsing pull aborted: column ${header[i]} carries an address-shaped value ` +
+            `(row dated ${cells[di]}) - nothing written, previous file kept`);
+        }
+        out[i] = csvCell(i === di ? fmtDMY(v) : v);
+      }
+      return out.join(",");
+    },
+  };
+  return w;
+}
+
+const BROWSING_FEED = { label: "browsing", file: LE_BROWSING, meta: BROWSING_META, sql: browsingSql, makeWriter: browsingWriter };
+
 // ---------------------------------------------------------------- local file
 
 const isoFromDMY = (s) => {
@@ -338,12 +402,12 @@ class DayFingerprints {
   }
 }
 
-function readMeta() {
-  try { return JSON.parse(fs.readFileSync(META, "utf8")); } catch { return null; }
+function readMeta(file = META) {
+  try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return null; }
 }
-function writeMeta(m) {
-  fs.writeFileSync(META + ".tmp", JSON.stringify(m, null, 1));
-  fs.renameSync(META + ".tmp", META);
+function writeMeta(m, file = META) {
+  fs.writeFileSync(file + ".tmp", JSON.stringify(m, null, 1));
+  fs.renameSync(file + ".tmp", file);
 }
 
 /* Streams the local funnel CSV line by line: onLine(line, iso) per data row.
@@ -440,13 +504,21 @@ async function streamTable(token, sql, since, makeWriter, tmp, { onRow, expectHe
 
 // ---------------------------------------------------------------- pull
 
-/* Decides full vs incremental. Returns { mode, reason, meta }. */
-function plan(full) {
-  const meta = readMeta();
-  const usable = meta && meta.since === SINCE && meta.maxDate && Array.isArray(meta.header) && fs.existsSync(ACROSS_TIME);
+/* A feed pulled incrementally: { label, file, meta, sql, makeWriter }. The funnel
+ * export and the browsing counts are the two instances; both are keyed by
+ * event_date, written DD/MM/YYYY, and merged on the same overlap rules. */
+const FUNNEL_FEED = {
+  label: "funnel", file: ACROSS_TIME, meta: META, sql: funnelSql,
+  makeWriter: (h) => require("./sheets").acrossTimeWriter(h),
+};
+
+/* Decides full vs incremental for a feed. Returns { mode, reason, meta }. */
+function plan(full, feed = FUNNEL_FEED) {
+  const meta = readMeta(feed.meta);
+  const usable = meta && meta.since === SINCE && meta.maxDate && Array.isArray(meta.header) && fs.existsSync(feed.file);
   if (full) return { mode: "full", reason: "requested", meta };
   if (!meta) return { mode: "full", reason: "no record of a previous pull", meta: null };
-  if (!fs.existsSync(ACROSS_TIME)) return { mode: "full", reason: "local file missing", meta: null };
+  if (!fs.existsSync(feed.file)) return { mode: "full", reason: "local file missing", meta: null };
   if (meta.since !== SINCE) return { mode: "full", reason: `BQ_SINCE changed (${meta.since} -> ${SINCE})`, meta: null };
   if (!usable) return { mode: "full", reason: "previous pull record unreadable", meta: null };
   const ageDays = (Date.now() - Date.parse(meta.fullAt || 0)) / 86400000;
@@ -454,9 +526,8 @@ function plan(full) {
   return { mode: "incremental", reason: null, meta };
 }
 
-async function pullFunnel(token, write, full) {
-  const { acrossTimeWriter } = require("./sheets");
-  let { mode, reason, meta } = plan(full);
+async function pullIncremental(token, write, full, feed) {
+  let { mode, reason, meta } = plan(full, feed);
   const now = new Date().toISOString();
 
   // ---- incremental: BigQuery rows from the overlap start, then the local
@@ -464,33 +535,33 @@ async function pullFunnel(token, write, full) {
   if (mode === "incremental") {
     const fromRaw = isoMinusDays(meta.maxDate, OVERLAP_DAYS);
     const from = fromRaw < SINCE ? SINCE : fromRaw;
-    const tmp = new Tmp(ACROSS_TIME, write);
+    const tmp = new Tmp(feed.file, write);
     try {
       let maxDate = "";
-      const bq = await streamTable(token, funnelSql(), from, acrossTimeWriter, tmp, {
+      const bq = await streamTable(token, feed.sql(), from, feed.makeWriter, tmp, {
         expectHeader: meta.header,
         onRow(_line, iso) { if (iso && iso > maxDate) maxDate = iso; },
       });
       let keptLocal = 0, localOverlap = 0;
-      await scanLocal(ACROSS_TIME, (line, iso) => {
+      await scanLocal(feed.file, (line, iso) => {
         if (iso && iso < from) { keptLocal++; tmp.line(line); } else localOverlap++;
       });
       // an empty or thin overlap pull is upstream failing, not history ending -
       // writing it would delete the last OVERLAP_DAYS of good data
       if (bq.rows < Math.max(50, localOverlap * 0.5)) {
-        throw new Error(`incremental pull returned ${bq.rows} rows for the last ${OVERLAP_DAYS} days ` +
+        throw new Error(`incremental ${feed.label} pull returned ${bq.rows} rows for the last ${OVERLAP_DAYS} days ` +
           `where the local file has ${localOverlap} - not overwriting`);
       }
       const total = bq.rows + keptLocal;
-      const before = existingRows(ACROSS_TIME);
+      const before = existingRows(feed.file);
       if (write) {
-        tmp.commit(ACROSS_TIME);
-        writeMeta({ ...meta, maxDate: maxDate || meta.maxDate, rows: total, pulledAt: now, mode });
+        tmp.commit(feed.file);
+        writeMeta({ ...meta, maxDate: maxDate || meta.maxDate, rows: total, pulledAt: now, mode }, feed.meta);
       } else tmp.discard();
       const fullAge = Math.floor((Date.now() - Date.parse(meta.fullAt)) / 86400000);
       return {
         rows: total, bytes: bq.bytes, cached: bq.cached, dropped: bq.dropped, mode,
-        note: `funnel ${total} rows (${total - before >= 0 ? "+" : ""}${total - before} since last refresh; ` +
+        note: `${feed.label} ${total} rows (${total - before >= 0 ? "+" : ""}${total - before} since last refresh; ` +
           `${bq.rows} re-pulled over the last ${OVERLAP_DAYS} days, last full pull ${fullAge}d ago)`,
       };
     } catch (e) {
@@ -503,17 +574,17 @@ async function pullFunnel(token, write, full) {
   // ---- full: everything from SINCE. If the local file came from BigQuery,
   // fingerprint it first so the pull can say what changed outside the overlap.
   const local = meta ? new DayFingerprints() : null;
-  if (local) await scanLocal(ACROSS_TIME, (line, iso) => { if (iso) local.add(iso, line); });
+  if (local) await scanLocal(feed.file, (line, iso) => { if (iso) local.add(iso, line); });
   const fresh = new DayFingerprints();
   let maxDate = "";
-  const tmp = new Tmp(ACROSS_TIME, write);
+  const tmp = new Tmp(feed.file, write);
   let bq;
   try {
-    bq = await streamTable(token, funnelSql(), SINCE, acrossTimeWriter, tmp, {
+    bq = await streamTable(token, feed.sql(), SINCE, feed.makeWriter, tmp, {
       onRow(line, iso) { if (iso) { fresh.add(iso, line); if (iso > maxDate) maxDate = iso; } },
     });
-    if (bq.rows < 100) throw new Error(`funnel query returned ${bq.rows} rows - not overwriting`);
-    guardShrink("funnel query", bq.rows, ACROSS_TIME);
+    if (bq.rows < 100) throw new Error(`${feed.label} query returned ${bq.rows} rows - not overwriting`);
+    guardShrink(`${feed.label} query`, bq.rows, feed.file);
   } catch (e) { tmp.discard(); throw e; }
 
   let restated = "";
@@ -525,14 +596,16 @@ async function pullFunnel(token, write, full) {
       : `; nothing older than the ${OVERLAP_DAYS}-day overlap changed`;
   }
   if (write) {
-    tmp.commit(ACROSS_TIME);
-    writeMeta({ since: SINCE, header: bq.header, maxDate, rows: bq.rows, fullAt: now, pulledAt: now, mode: "full" });
+    tmp.commit(feed.file);
+    writeMeta({ since: SINCE, header: bq.header, maxDate, rows: bq.rows, fullAt: now, pulledAt: now, mode: "full" }, feed.meta);
   } else tmp.discard();
   return {
     rows: bq.rows, bytes: bq.bytes, cached: bq.cached, dropped: bq.dropped, mode: "full",
-    note: `funnel ${bq.rows} rows (full pull: ${reason}${restated})`,
+    note: `${feed.label} ${bq.rows} rows (full pull: ${reason}${restated})`,
   };
 }
+
+const pullFunnel = (token, write, full) => pullIncremental(token, write, full, FUNNEL_FEED);
 
 /* Pulls the funnel table (incrementally where it can) and the spend table
  * when the account can see it, and (unless write=false) replaces the CSVs
@@ -545,18 +618,19 @@ async function pullFunnel(token, write, full) {
  * summary says so, rather than the whole refresh failing with a 403.
  *
  * Resolves to { funnelRows, spendRows (null when not written), mode, summary }. */
-async function pull({ write = true, full = false, events = true } = {}) {
+async function pull({ write = true, full = false, events = true, only = null } = {}) {
   const sa = configured();
   if (!sa) return null;
   const token = await accessToken(sa, "bigquery");
   const { spendWriter } = require("./sheets");
-  const only = events === "only";   // the CLI's --events: the event feed alone
+  if (events === "only") only = "events";   // the CLI's --events / --browsing: one feed alone
+  const skip = (name) => only !== null && only !== name;
 
-  const funnel = only ? null : await pullFunnel(token, write, full);
+  const funnel = skip("funnel") ? null : await pullFunnel(token, write, full);
 
   let spend = null, spendNote;
-  if (only) {
-    spendNote = "spend not pulled (--events)";
+  if (skip("spend")) {
+    spendNote = `spend not pulled (--${only})`;
   } else if (process.env.BQ_SPEND === "off") {
     spendNote = "spend skipped (BQ_SPEND=off)";
   } else {
@@ -578,7 +652,9 @@ async function pull({ write = true, full = false, events = true } = {}) {
   // the event-level feed: optional like spend, and a failure of its guards is
   // reported, never worked around - the previous (clean) file keeps serving
   let ev = null, eventsNote;
-  if (events === false || process.env.BQ_EVENTS === "off") {
+  if (skip("events")) {
+    eventsNote = `events not pulled (--${only})`;
+  } else if (events === false || process.env.BQ_EVENTS === "off") {
     eventsNote = "events skipped (BQ_EVENTS=off)";
   } else {
     const tmp = new Tmp(LE_EVENTS, write);
@@ -595,15 +671,31 @@ async function pull({ write = true, full = false, events = true } = {}) {
     }
   }
 
-  const bytes = (funnel ? funnel.bytes : 0) + (spend ? spend.bytes : 0) + (ev ? ev.bytes : 0);
+  // the browsing counts: incremental like the funnel, optional like spend
+  let br = null, browsingNote;
+  if (skip("browsing")) {
+    browsingNote = `browsing not pulled (--${only})`;
+  } else if (process.env.BQ_BROWSING === "off" || process.env.BQ_EVENTS === "off") {
+    browsingNote = "browsing skipped (BQ_BROWSING=off)";
+  } else {
+    try {
+      br = await pullIncremental(token, write, full, BROWSING_FEED);
+      browsingNote = br.note;
+    } catch (e) {
+      browsingNote = `browsing unavailable, keeping the last file (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`;
+    }
+  }
+
+  const parts = [funnel, spend, ev, br].filter(Boolean);
+  const bytes = parts.reduce((n, x) => n + x.bytes, 0);
   const gb = (bytes / 1e9).toFixed(2);
-  const cached = (!funnel || funnel.cached) && (!spend || spend.cached) && (!ev || ev.cached) ? ", cache hit" : "";
+  const cached = parts.every((x) => x.cached) ? ", cache hit" : "";
   const dropped = funnel && funnel.dropped ? `, ${funnel.dropped} undated rows dropped` : "";
   const funnelNote = funnel ? `${funnel.note}${dropped}, ` : "";
   return {
     funnelRows: funnel ? funnel.rows : null, spendRows: spend ? spend.rows : null,
-    eventsRows: ev ? ev.rows : null, mode: funnel ? funnel.mode : "events",
-    summary: `${funnelNote}${spendNote}, ${eventsNote}, since ${SINCE} ` +
+    eventsRows: ev ? ev.rows : null, browsingRows: br ? br.rows : null, mode: funnel ? funnel.mode : (only || "events"),
+    summary: `${funnelNote}${spendNote}, ${eventsNote}, ${browsingNote}, since ${SINCE} ` +
       `(${gb} GB scanned${cached}, ${sa._env})`,
   };
 }
@@ -612,11 +704,12 @@ module.exports = {
   pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
   ACROSS_TIME, SPEND_DAILY, META,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
+  LE_BROWSING, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
 };
 
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;
-// --write replaces the CSVs, --full forces a full funnel pull, --events pulls
-// the event-level feed alone. Handy from a Render shell.
+// --write replaces the CSVs, --full forces a full pull, --events or --browsing
+// pulls that one feed alone. Handy from a Render shell.
 if (require.main === module) {
   (async () => {
     if (!configured()) {
@@ -626,15 +719,16 @@ if (require.main === module) {
     }
     const write = process.argv.includes("--write");
     const full = process.argv.includes("--full");
-    const eventsOnly = process.argv.includes("--events");
-    if (!eventsOnly) {
-      const p = plan(full);
-      console.log(`plan: ${p.mode}${p.reason ? ` (${p.reason})` : ""}`);
+    const only = process.argv.includes("--events") ? "events" : process.argv.includes("--browsing") ? "browsing" : null;
+    if (only !== "events") {
+      const feed = only === "browsing" ? BROWSING_FEED : FUNNEL_FEED;
+      const p = plan(full, feed);
+      console.log(`plan (${feed.label}): ${p.mode}${p.reason ? ` (${p.reason})` : ""}`);
     }
-    const out = await pull({ write, full, events: eventsOnly ? "only" : true });
+    const out = await pull({ write, full, only });
     console.log(out.summary);
     const wrote = [out.funnelRows !== null && ACROSS_TIME, out.spendRows !== null && SPEND_DAILY,
-                   out.eventsRows !== null && LE_EVENTS].filter(Boolean);
+                   out.eventsRows !== null && LE_EVENTS, out.browsingRows !== null && LE_BROWSING].filter(Boolean);
     console.log(write ? `wrote ${wrote.join(", ")}` : "dry run - pass --write to replace the CSVs");
   })().catch((e) => { console.error(String(e.message || e)); process.exit(1); });
 }

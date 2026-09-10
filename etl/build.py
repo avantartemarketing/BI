@@ -110,8 +110,15 @@ FUNNEL_COLS = FUNNEL_LABELS + [
 ]
 
 
+# FUNNEL_SOURCE=events reads the export rebuilt from the event-level feeds by
+# etl/aggregate_events.py (same columns, same grain) instead of the export
+# itself. The switch is deliberate: flip it once the reconciliation the
+# aggregation prints shows only the known residuals (docs/DATA_MODEL.md #2.2).
+FUNNEL_FILE = SOURCES / ("across_time.rebuilt.csv" if os.environ.get("FUNNEL_SOURCE") == "events" else "across_time.csv")
+
+
 def load_across_time() -> pd.DataFrame:
-    df = pd.read_csv(SOURCES / "across_time.csv", usecols=lambda c: c in FUNNEL_COLS,
+    df = pd.read_csv(FUNNEL_FILE, usecols=lambda c: c in FUNNEL_COLS,
                      dtype={c: "category" for c in FUNNEL_LABELS})
     missing = [c for c in FUNNEL_COLS if c not in df.columns]
     if missing:

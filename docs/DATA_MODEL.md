@@ -259,12 +259,53 @@ unique eligible entry") was transcribed from the workbook's lifetime rollup, who
 columns (M/N) may be this post-allocation count; if so those conversion benchmarks are understated
 for every closed draw. To be checked in the sheet.
 
-What this means for the source of truth: with these definitions the export can be rebuilt from
-the events inside BigQuery (aggregation SQL, the same 34-column daily shape, no identifier in the
-output) and extended with person-level columns the export cannot carry - unique entrants and
-buyers per release, new versus returning collectors, audience overlap - which would also remove
-the need for the row-level `sources/le_events.csv` altogether. Until such a rebuild has been
-reconciled against the export across the history, the export stays the system of record.
+### 2.3 The export rebuilt here, and the switch
+
+`etl/aggregate_events.py` rebuilds the export from the two event-level feeds and reconciles the
+result against the export on every refresh (it runs before `build.py`; `npm run etl` and the
+live refresh both chain it):
+
+- **Browsing counts** (`sources/le_browsing.csv`, `node server/bigquery.js --browsing`): sessions
+  and page views per channel × day × release, counted inside BigQuery with the same incremental
+  merge as the export. The only definitions in them are "a session is a `session_start` event, a
+  page view a `page_view` event" (§2.2), no identifier is read, and they are the only rows too
+  many to bring here (7.4M since 2023 for two numbers per channel-day).
+- **Everything with a definition in it** - every entry, eligibility, winner, unit and route column -
+  is computed in Python from `sources/le_events.csv` with the §2.2 definitions, where it can be
+  read, versioned and tested. One refinement found by the reconciliation:
+  `Preorder_App_Eligible_No_Conv` keeps winners in (eligible pre-order entrants with no purchase),
+  because a pre-order winner converts by itself.
+- **Output** `sources/across_time.rebuilt.csv`: the export's 34 columns at the export's grain, dates
+  DD/MM/YYYY, so `build.py` reads either file unchanged. **`FUNNEL_SOURCE=events`** makes the build
+  read the rebuilt file; the default reads the export. The switch is deliberate and reversible; the
+  script never overwrites the export.
+- **Reconciliation** `data/app/reconciliation.json` (printed on every run): rebuilt against export
+  per column over the shared window, the last day excluded because it is still filling. Tolerances
+  are the known residuals: 0.2% on sessions and page views (attribution noise between the two
+  table builds - 0.09% of page views, spread thinly over the whole history, and the two tables are
+  not always built from the same attribution run), 0.6% on counts of people (rows without an
+  account id), 0.2% on units, 2% on the routes (the private room lands about 1% low, which no
+  precedence order removes). Result on 2026-09-10 over 393,868 channel-days: within tolerance on
+  all 26 metric columns; 20 of them within 0.05%.
+- **`data/app/release_people.csv`**: per release, unique entrants, eligible entrants, winners and
+  buyers; entrants and buyers who had bought (or entered a draw) before the campaign started;
+  first-time buyers; and how many entrants and buyers had entered or bought one of the same
+  artist's previous releases. Counts only, no identifier. A campaign's start is the upstream
+  announcement date where the events carry one, else the first entry or purchase.
+
+Known, harmless differences between the two files: the events carry two release names the
+export filters out upstream (a 2027 and a 2021 catalogue entry); `days_until_launch` runs one
+day higher in the export on 2% of release-days (the countdown discrepancy already noted in
+§11b - the build uses the announce-based columns, which agree on all but 26 of 180,805
+release-days); and a build on the rebuilt file gives slightly different pooled curves, because
+the export's fan-out pairs (§6.1) carry two clock values and `load_across_time` keeps whichever
+sub-record comes first in the file, an order the two files do not share. Making that choice
+deterministic (the sub-record with more sessions, say) is worth doing before the switch so the
+two builds can be compared exactly.
+
+Two feeds now describe the same thing. Until the rebuilt file has replaced the export in
+production, the export remains the system of record and the reconciliation is the evidence for
+the switch; after the switch the export pull can stay on for the check or be turned off.
 
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down

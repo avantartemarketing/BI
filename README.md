@@ -168,6 +168,18 @@ window, `BQ_EVENTS=off` skips it. The file holds pseudonymous account ids, which
 personal data: it stays under `sources/`, is served by no endpoint, and nothing derived from
 it leaves the server with an identifier column.
 
+**The export, rebuilt here.** The pull also counts sessions and page views per channel-day
+inside BigQuery (`sources/le_browsing.csv`, `--browsing` pulls it alone, `BQ_BROWSING=off`
+skips it), and `etl/aggregate_events.py` - run before `build.py` on every refresh - rebuilds
+the daily export from that and the conversion events with the definitions in
+docs/DATA_MODEL.md §2.2, reconciles the rebuild against the export column by column
+(`data/app/reconciliation.json`, and the verdict in the refresh status), and writes
+`data/app/release_people.csv`: per release, unique entrants and buyers, returning collectors
+and overlap with the artist's previous releases. `FUNNEL_SOURCE=events` makes the build read
+the rebuilt file (`sources/across_time.rebuilt.csv`) instead of the export; the default is
+the export, and the switch is a deliberate one to make once the reconciliation reads
+"within known residuals" for a while.
+
 **Memory on the 512 MB starter instance.** Results are streamed to disk a page at a time
 and the start script caps Node's heap at 192 MB, so the pull itself is flat (~150 MB)
 however deep `BQ_SINCE` goes. The ETL is what scales: pandas peaks at roughly 90 MB plus

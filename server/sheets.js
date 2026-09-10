@@ -224,17 +224,34 @@ function writeAtomic(file, text) {
   fs.renameSync(tmp, file);
 }
 
-function runEtlOnce() {
+function runPy(script, timeoutMs) {
   const venvPy = path.join(ROOT, ".venv", "bin", "python3");
   const py = fs.existsSync(venvPy) ? venvPy : "python3";
   return new Promise((resolve, reject) => {
-    execFile(py, [path.join(ROOT, "etl", "build.py")],
-      { cwd: ROOT, timeout: 5 * 60 * 1000, maxBuffer: 16 * 1024 * 1024 },
+    execFile(py, [path.join(ROOT, "etl", script)],
+      { cwd: ROOT, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024 },
       (err, stdout, stderr) => {
-        if (err) reject(new Error(`etl failed: ${(stderr || err.message).slice(-800)}`));
-        else resolve(stdout.trim().split("\n").slice(-3).join(" | "));
+        if (err) reject(new Error(`${script} failed: ${(stderr || err.message).slice(-800)}`));
+        else resolve(stdout.trim());
       });
   });
+}
+
+/* The event-level feeds are aggregated first (the export rebuilt, the people
+ * file, the reconciliation), then the build. The aggregation failing is
+ * reported, not fatal: the build still runs on whatever funnel file
+ * FUNNEL_SOURCE points at, exactly as a failed pull leaves the previous file. */
+async function runEtlOnce() {
+  let agg = "";
+  try {
+    const out = await runPy("aggregate_events.py", 5 * 60 * 1000);
+    agg = out.split("\n").slice(-1)[0];
+  } catch (e) {
+    agg = String(e.message || e).replace(/\s+/g, " ").slice(0, 300);
+    console.error("sheets: " + agg);
+  }
+  const build = await runPy("build.py", 5 * 60 * 1000);
+  return [agg, ...build.split("\n").slice(-3)].filter(Boolean).join(" | ");
 }
 
 // only one build.py at a time (a save-triggered rerun can race the scheduler)

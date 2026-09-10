@@ -1,6 +1,7 @@
 sources/*
 !sources/all_sent_emails.csv
-# sources/le_events.csv holds pseudonymous account ids (personal data) - never committed
+# sources/le_events.csv holds pseudonymous account ids (personal data) - never committed;
+# le_browsing.csv and across_time.rebuilt.csv are the counts and the rebuilt export
 __pycache__/
 node_modules/
 dist/
