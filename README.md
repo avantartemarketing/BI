@@ -156,7 +156,17 @@ would delete the last 45 days.
 
 Check the connection without writing anything: `node server/bigquery.js` prints the plan
 (full or incremental, and why), row counts and GB scanned; add `--write` to replace the
-CSVs, `--full` to force a full pull.
+CSVs, `--full` to force a full pull, `--events` to pull the event-level feed alone.
+
+**Event-level feed.** The same pull also takes the conversion events (signup, draw entry
+intent, purchase) of `LE_Funnel_Report` into `sources/le_events.csv`. That table carries
+customer email addresses; the pull is written so the address never leaves BigQuery - an
+explicit column list, a header check, and an address scan on every cell that aborts the
+pull rather than write (docs/DATA_MODEL.md §2.1). `BQ_EVENTS_TABLE` points it at the data
+team's email-free view once one exists, `BQ_EVENTS_SINCE` (default 2019-01-01) sets the
+window, `BQ_EVENTS=off` skips it. The file holds pseudonymous account ids, which are still
+personal data: it stays under `sources/`, is served by no endpoint, and nothing derived from
+it leaves the server with an identifier column.
 
 **Memory on the 512 MB starter instance.** Results are streamed to disk a page at a time
 and the start script caps Node's heap at 192 MB, so the pull itself is flat (~150 MB)

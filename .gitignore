@@ -1,5 +1,6 @@
 sources/*
 !sources/all_sent_emails.csv
+# sources/le_events.csv holds pseudonymous account ids (personal data) - never committed
 __pycache__/
 node_modules/
 dist/

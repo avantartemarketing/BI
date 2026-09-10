@@ -5,7 +5,10 @@
  *   le_funnel_report_split_touch_export -> sources/across_time.csv
  *   meta_ads_insights_export            -> data/spend_daily.csv
  * Same two files, same row converters as the sheet path (sheets.js), so
- * build.py is unchanged and the two feeds are interchangeable.
+ * build.py is unchanged and the two feeds are interchangeable. A third,
+ * BigQuery-only feed takes the conversion events of the event-level table:
+ *   LE_Funnel_Report                    -> sources/le_events.csv
+ * under the personal-data rule set out at the events section below.
  *
  * Why bother: the sheet tabs are query exports capped at 50,000 rows, cut mid
  * date. That cap does not error - it silently shortens the history window as
@@ -47,6 +50,9 @@ const { serviceAccount, accessToken } = require("./googleAuth");
 const ROOT = path.resolve(__dirname, "..");
 const ACROSS_TIME = path.join(ROOT, "sources", "across_time.csv");
 const SPEND_DAILY = path.join(ROOT, "data", "spend_daily.csv");
+// the event-level feed: pseudonymous person ids only, never the address (see
+// the events section). Lives under sources/ (gitignored), served by no endpoint.
+const LE_EVENTS = path.join(ROOT, "sources", "le_events.csv");
 // what the local funnel file is: window, columns, last date, when it was last
 // pulled in full. Absent = never pulled from BigQuery (or it came from the sheet)
 const META = path.join(ROOT, "sources", "across_time.meta.json");
@@ -55,6 +61,9 @@ const PROJECT = process.env.BQ_PROJECT || "avantarte-data-production";
 const DATASET = process.env.BQ_DATASET || "AA_company_tables";
 const FUNNEL_TABLE = process.env.BQ_FUNNEL_TABLE || "le_funnel_report_split_touch_export";
 const SPEND_TABLE = process.env.BQ_SPEND_TABLE || "meta_ads_insights_export";
+// point this at the data team's email-free view when it exists: same columns, same guards
+const EVENTS_TABLE = process.env.BQ_EVENTS_TABLE || "LE_Funnel_Report";
+const EVENTS_SINCE = process.env.BQ_EVENTS_SINCE || "2019-01-01";   // all time: a returning collector's history is the point
 const SINCE = process.env.BQ_SINCE || "2025-01-01";
 const LOCATION = process.env.BQ_LOCATION || undefined; // e.g. "EU"; omit to let BQ infer
 const OVERLAP_DAYS = Math.max(1, Number(process.env.BQ_OVERLAP_DAYS) || 45);
@@ -77,10 +86,12 @@ function configured() {
   const sa = serviceAccount("BIGQUERY_SERVICE_ACCOUNT_JSON", "GOOGLE_SERVICE_ACCOUNT_JSON");
   if (!sa) return null;
   if (!PROJECT_RE.test(PROJECT)) throw new Error(`BQ_PROJECT "${PROJECT}" is not a valid project id`);
-  for (const [name, v] of [["BQ_DATASET", DATASET], ["BQ_FUNNEL_TABLE", FUNNEL_TABLE], ["BQ_SPEND_TABLE", SPEND_TABLE]]) {
+  for (const [name, v] of [["BQ_DATASET", DATASET], ["BQ_FUNNEL_TABLE", FUNNEL_TABLE], ["BQ_SPEND_TABLE", SPEND_TABLE],
+                           ["BQ_EVENTS_TABLE", EVENTS_TABLE]]) {
     if (!IDENT.test(v)) throw new Error(`${name} "${v}" must be letters, digits and underscores`);
   }
   if (!DATE_RE.test(SINCE)) throw new Error(`BQ_SINCE "${SINCE}" must be YYYY-MM-DD`);
+  if (!DATE_RE.test(EVENTS_SINCE)) throw new Error(`BQ_EVENTS_SINCE "${EVENTS_SINCE}" must be YYYY-MM-DD`);
   return sa;
 }
 
@@ -179,6 +190,116 @@ const funnelSql = () =>
 const spendSql = () =>
   `SELECT * FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
   "WHERE spend_date >= @since\nORDER BY campaign_name, spend_date";
+
+// ---------------------------------------------------------------- events feed (personal-data rule)
+
+/* LE_Funnel_Report is event level - page views, session starts, signups, draw
+ * entries, purchases, one row per event since 2019 - and carries the customer's
+ * email address on signed-in rows (1.9M of 8.1M rows, 109k distinct addresses
+ * when this was written). The dashboard never needs the address: aa_account_id
+ * identifies the person on 99.9% of the rows that carry one. So the rule is
+ * that the address never leaves BigQuery, and this code makes it hard to get
+ * wrong rather than easy to get right:
+ *   - the query names every column it takes. SELECT * is refused, and so is any
+ *     query text that mentions the email column at all - which also makes the
+ *     data team's email-free view a drop-in (BQ_EVENTS_TABLE);
+ *   - the header BigQuery returns must equal the declared list exactly;
+ *   - every cell of every page is scanned for an address-shaped value before
+ *     it is written. One hit aborts the pull, discards the partial file and
+ *     names the column, never the value. processing_error was found to quote
+ *     addresses inside error text, so it is reduced to a boolean in SQL.
+ * Only the conversion events are taken - signup, draw entry intent, purchase,
+ * about 200k rows all time. Page views and session starts are the daily
+ * funnel export's job, and at person level they would be 8M rows of browsing
+ * history for no number the dashboard shows. Identifiers kept: the account id
+ * (the person key), draw and draw-entry ids, the Meta campaign id. Dropped on
+ * purpose: user_email, user_pseudo_id, ga_session_id, customer_id, Shopify
+ * order id and name, subscription id, page URLs and titles, utm strings.
+ * The account id is still personal data under GDPR: the file stays under
+ * sources/ (gitignored), is served by no endpoint, and is rebuilt from
+ * BigQuery on every pull, so an erasure upstream propagates. */
+const EVENT_ROW_FILTER = "event_name IN ('signup', 'draw entry intent', 'purchase')";
+const EVENT_COLUMNS = [
+  "event_timestamp", "event_date", "event_name", "aa_account_id",
+  "simple_release_name", "release_name", "launch_type", "launch_date", "announcement_date",
+  "campaign_stage", "days_since_announcement", "days_until_launch",
+  "pct_days_since_announcement", "pct_days_until_launch",
+  "aa_subscription_type", "pre_post_launch_signup", "converted_signup", "converted_signup_draw",
+  "pre_post_launch_purchase", "order_type", "pr_order", "cancelled_order", "order_products", "order_pieces",
+  "purchase_with_signup", "purchase_with_draw_entry", "purchase_with_preorder_app", "purchase_with_presale",
+  "draw_id", "draw_entry_id", "draw_entry_eligible",
+  "draw_entry_multiset_preference_max_quantity", "draw_entry_multiset_preference_max_quantity_once",
+  "exclusion_reason", "removal_reason", "winner", "pre_order", "draw_with_signup", "draw_with_purchase",
+  "session_default_channel_group", "AA_session_custom_channel_group", "campaign_id",
+  "session_default_channel_group_split_touch", "AA_session_custom_channel_group_split_touch",
+  "page_view_page_locale", "purchase_page_locale", "draw_entry_page_locale",
+];
+// derived in SQL so the source text never leaves BigQuery
+const EVENT_DERIVED = { has_processing_error: "processing_error IS NOT NULL AND processing_error != ''" };
+const EVENT_HEADER = EVENT_COLUMNS.concat(Object.keys(EVENT_DERIVED));
+const FORBIDDEN_COLUMNS = ["user_email"];
+const EVENT_TIMESTAMP_COLUMNS = new Set(["event_timestamp", "launch_date"]);
+// address-shaped: local part, @, domain with a dot. Loose on purpose - a false
+// positive costs a pull, a false negative costs an address.
+const ADDRESS_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
+
+for (const c of EVENT_HEADER) {
+  if (!IDENT.test(c)) throw new Error(`events column "${c}" is not a plain identifier`);
+  if (FORBIDDEN_COLUMNS.includes(c)) throw new Error(`events column list must not include ${c}`);
+}
+
+function eventsSql() {
+  const cols = EVENT_COLUMNS.map((c) => `\`${c}\``)
+    .concat(Object.entries(EVENT_DERIVED).map(([k, expr]) => `(${expr}) AS \`${k}\``));
+  const sql = `SELECT ${cols.join(", ")}\nFROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+    `WHERE ${EVENT_ROW_FILTER} AND event_date >= @since\nORDER BY event_date, event_timestamp`;
+  for (const f of FORBIDDEN_COLUMNS) {
+    if (sql.toLowerCase().includes(f)) throw new Error(`events query must not mention ${f}`);
+  }
+  if (/select\s+\*|\.\*/i.test(sql)) throw new Error("events query must name every column it takes");
+  return sql;
+}
+
+// TIMESTAMP arrives as epoch seconds ("1.789047878E9"); anything else passes through as is
+const toIso = (v) => { const n = Number(v); return v !== "" && Number.isFinite(n) ? new Date(n * 1000).toISOString() : v; };
+
+const csvCell = (v) => {
+  const s = v === null || v === undefined ? "" : String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+/* Row converter for the events feed. The header must be the declared list;
+ * each cell is checked for an address-shaped value; timestamps (epoch seconds
+ * from the API) become ISO. Throws rather than writes on anything unexpected. */
+function eventsWriter(headerRow) {
+  const header = headerRow.map((h) => String(h ?? "").trim());
+  if (header.length !== EVENT_HEADER.length || header.some((h, i) => h !== EVENT_HEADER[i])) {
+    throw new Error("events feed returned columns that differ from the declared list " +
+      `(${header.length} vs ${EVENT_HEADER.length}) - not writing`);
+  }
+  const di = header.indexOf("event_date");
+  const isTs = header.map((h) => EVENT_TIMESTAMP_COLUMNS.has(h));
+  const w = {
+    header: header.map(csvCell).join(","),
+    dateIndex: di,
+    dropped: 0,
+    row(cells) {
+      if (!cells || !cells.length) return null;
+      const out = new Array(header.length);
+      for (let i = 0; i < header.length; i++) {
+        const v = cells[i] === null || cells[i] === undefined ? "" : String(cells[i]);
+        if (v.length > 5 && ADDRESS_RE.test(v)) {
+          // the message names the column and the day, never the value
+          throw new Error(`events pull aborted: column ${header[i]} carries an address-shaped value ` +
+            `(row dated ${cells[di]}) - nothing written, previous file kept`);
+        }
+        out[i] = isTs[i] ? csvCell(toIso(v)) : csvCell(v);
+      }
+      return out.join(",");
+    },
+  };
+  return w;
+}
 
 // ---------------------------------------------------------------- local file
 
@@ -424,16 +545,19 @@ async function pullFunnel(token, write, full) {
  * summary says so, rather than the whole refresh failing with a 403.
  *
  * Resolves to { funnelRows, spendRows (null when not written), mode, summary }. */
-async function pull({ write = true, full = false } = {}) {
+async function pull({ write = true, full = false, events = true } = {}) {
   const sa = configured();
   if (!sa) return null;
   const token = await accessToken(sa, "bigquery");
   const { spendWriter } = require("./sheets");
+  const only = events === "only";   // the CLI's --events: the event feed alone
 
-  const funnel = await pullFunnel(token, write, full);
+  const funnel = only ? null : await pullFunnel(token, write, full);
 
   let spend = null, spendNote;
-  if (process.env.BQ_SPEND === "off") {
+  if (only) {
+    spendNote = "spend not pulled (--events)";
+  } else if (process.env.BQ_SPEND === "off") {
     spendNote = "spend skipped (BQ_SPEND=off)";
   } else {
     const tmp = new Tmp(SPEND_DAILY, write);
@@ -451,13 +575,35 @@ async function pull({ write = true, full = false } = {}) {
     }
   }
 
-  const bytes = funnel.bytes + (spend ? spend.bytes : 0);
+  // the event-level feed: optional like spend, and a failure of its guards is
+  // reported, never worked around - the previous (clean) file keeps serving
+  let ev = null, eventsNote;
+  if (events === false || process.env.BQ_EVENTS === "off") {
+    eventsNote = "events skipped (BQ_EVENTS=off)";
+  } else {
+    const tmp = new Tmp(LE_EVENTS, write);
+    try {
+      ev = await streamTable(token, eventsSql(), EVENTS_SINCE, eventsWriter, tmp);
+      if (ev.rows < 100) throw new Error(`events query returned ${ev.rows} rows - not overwriting`);
+      guardShrink("events query", ev.rows, LE_EVENTS);
+      if (write) tmp.commit(LE_EVENTS); else tmp.discard();
+      eventsNote = `events ${ev.rows} rows (conversion events since ${EVENTS_SINCE}, ${EVENT_HEADER.length} columns, no address column)`;
+    } catch (e) {
+      tmp.discard();
+      ev = null;
+      eventsNote = `events unavailable, keeping the last file (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`;
+    }
+  }
+
+  const bytes = (funnel ? funnel.bytes : 0) + (spend ? spend.bytes : 0) + (ev ? ev.bytes : 0);
   const gb = (bytes / 1e9).toFixed(2);
-  const cached = funnel.cached && (!spend || spend.cached) ? ", cache hit" : "";
-  const dropped = funnel.dropped ? `, ${funnel.dropped} undated rows dropped` : "";
+  const cached = (!funnel || funnel.cached) && (!spend || spend.cached) && (!ev || ev.cached) ? ", cache hit" : "";
+  const dropped = funnel && funnel.dropped ? `, ${funnel.dropped} undated rows dropped` : "";
+  const funnelNote = funnel ? `${funnel.note}${dropped}, ` : "";
   return {
-    funnelRows: funnel.rows, spendRows: spend ? spend.rows : null, mode: funnel.mode,
-    summary: `${funnel.note}${dropped}, ${spendNote}, since ${SINCE} ` +
+    funnelRows: funnel ? funnel.rows : null, spendRows: spend ? spend.rows : null,
+    eventsRows: ev ? ev.rows : null, mode: funnel ? funnel.mode : "events",
+    summary: `${funnelNote}${spendNote}, ${eventsNote}, since ${SINCE} ` +
       `(${gb} GB scanned${cached}, ${sa._env})`,
   };
 }
@@ -465,10 +611,12 @@ async function pull({ write = true, full = false } = {}) {
 module.exports = {
   pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
   ACROSS_TIME, SPEND_DAILY, META,
+  LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
 };
 
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;
-// --write replaces the CSVs, --full forces a full pull. Handy from a Render shell.
+// --write replaces the CSVs, --full forces a full funnel pull, --events pulls
+// the event-level feed alone. Handy from a Render shell.
 if (require.main === module) {
   (async () => {
     if (!configured()) {
@@ -478,11 +626,15 @@ if (require.main === module) {
     }
     const write = process.argv.includes("--write");
     const full = process.argv.includes("--full");
-    const p = plan(full);
-    console.log(`plan: ${p.mode}${p.reason ? ` (${p.reason})` : ""}`);
-    const out = await pull({ write, full });
+    const eventsOnly = process.argv.includes("--events");
+    if (!eventsOnly) {
+      const p = plan(full);
+      console.log(`plan: ${p.mode}${p.reason ? ` (${p.reason})` : ""}`);
+    }
+    const out = await pull({ write, full, events: eventsOnly ? "only" : true });
     console.log(out.summary);
-    console.log(write ? `wrote ${ACROSS_TIME}${out.spendRows !== null ? ` and ${SPEND_DAILY}` : ""}`
-      : "dry run - pass --write to replace the CSVs");
+    const wrote = [out.funnelRows !== null && ACROSS_TIME, out.spendRows !== null && SPEND_DAILY,
+                   out.eventsRows !== null && LE_EVENTS].filter(Boolean);
+    console.log(write ? `wrote ${wrote.join(", ")}` : "dry run - pass --write to replace the CSVs");
   })().catch((e) => { console.error(String(e.message || e)); process.exit(1); });
 }

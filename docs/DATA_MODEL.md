@@ -163,6 +163,62 @@ stale**, so a truncated copy is never served as if it were whole. The funnel tab
 spend is optional, since a service account is easily granted one dataset and not the other -
 losing paid spend does not also cost us the funnel.
 
+### 2.1 Event-level feed (`LE_Funnel_Report`) and the personal-data rule
+
+`AA_company_tables.LE_Funnel_Report` is the event-level source behind the daily export: one
+row per event (page view, session start, signup, draw entry intent, purchase) since April 2019,
+8.1M rows, 368 releases, with the campaign clock, split-touch attribution, draw-entry outcome
+(eligibility, exclusion and removal reasons, winner, pre-order, max-quantity preferences), order
+detail (type, pieces, cancellation, private-room flag) and page locales. It also carries
+**`user_email`** on signed-in rows: 1.9M rows, 109k distinct addresses, 95k of them staff, with
+no column-level policy tag - the dashboard's service account can read it (checked 2026-09-10).
+
+**The rule: the address never leaves BigQuery.** The dashboard does not need it - `aa_account_id`
+identifies the person on 99.9% of the rows that carry an address (2,428 rows have an address and
+no other identifier, all anonymous form fills). `server/bigquery.js` enforces the rule rather than
+relying on care:
+
+- the events query names every column it takes (`EVENT_COLUMNS`); `SELECT *` is refused, and so
+  is any query text that mentions the email column, so the data team's email-free view is a
+  drop-in via `BQ_EVENTS_TABLE`;
+- the header BigQuery returns must equal the declared list exactly;
+- every cell of every page is scanned for an address-shaped value before it is written; one hit
+  aborts the pull, discards the partial file, keeps the previous one and names the column, never
+  the value. `processing_error` (free text, up to 7.7k characters) was found to quote addresses
+  inside 2,074 error messages and is reduced to `has_processing_error` in SQL.
+
+What is pulled (`sources/le_events.csv`, `node server/bigquery.js --write --events`): the
+**conversion events only** - signup, draw entry intent, purchase, ~200k rows all time
+(`BQ_EVENTS_SINCE`, default 2019-01-01, because a returning collector's history is the point).
+Page views and session starts are the daily export's job; at person level they would be 8M rows
+of browsing history for no number the dashboard shows. Identifiers kept: `aa_account_id` (the
+person key), `draw_id`, `draw_entry_id`, `campaign_id`. Dropped on purpose: `user_email`,
+`user_pseudo_id`, `ga_session_id`, `customer_id`, Shopify order id and name, `subscription_id`,
+page URLs and titles, the utm strings (`utm_source` carries an address on 3 rows). Timestamps
+are written as ISO.
+
+The account id is still personal data (pseudonymised, GDPR art. 4(5)): the file stays under
+`sources/` (gitignored), is served by no endpoint, is rebuilt from BigQuery on every pull so an
+erasure upstream propagates within a refresh, and anything that leaves the server - `data/`,
+the API, this repository - is aggregated with no identifier column. `BQ_EVENTS=off` skips the
+feed; a failure of its guards is reported in the refresh status and never worked around.
+
+Asks of the data team, in order of value: (1) an authorized view over the table without
+`user_email` (with `is_staff` derived inside it - 262 of 33,881 draw intents and 63 of 26,525
+purchases are staff), the dashboard's service account granted the view and revoked from the
+base table, or a policy tag on the column with no fine-grained-reader grant; (2) rotate the
+service-account key once access is narrowed, and keep the account to the dashboard alone;
+(3) BigQuery data-access audit logs on the dataset; (4) partition the table by `event_date` and
+cluster by `simple_release_name` - it is unpartitioned, so every query scans whole columns
+(0.7-1.1 GB per aggregate).
+
+Things the feed makes measurable that the daily export cannot: unique entrants and customers per
+release (the export's per-channel counts double-count a person across channels and days), new
+versus returning collectors per release and per basket (`docs/RELEASE_CLUSTERS.md`), the artist
+audience overlap between releases, draw eligibility and removal reasons, pre-order share by
+person, cancellations, and hour-level pacing on the campaign clock. Locales are site locales
+(three values), not countries - the "Entries by country" open item (§12) is still open.
+
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down
 empirically on the Mondrian and James Jean Blossom draws):
@@ -668,6 +724,9 @@ Model bugs found in the sheet (the rebuild should implement the *intent*):
 20. Draw entry exports: `Opportunity Cost` goes stale after entry edits - recompute, don't trust.
 21. Campaign-code middle segments are free text, not release types: the content feed tags
     Andy Warhol Estate's 2026 Q3 LE as `AndyWarhol_TL_26`. Never infer LE/TL from a code.
+22. `LE_Funnel_Report.processing_error` is free text that quotes the entrant's email address in
+    2,074 draw-entry rows; treat every free-text column of that table as potentially carrying
+    personal data and take flags, not text (§2.1).
 
 ---
 
