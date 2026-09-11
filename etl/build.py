@@ -1098,6 +1098,10 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     paid_out = {
         "daily": paid_daily,
         "spendToDate": round(cum_spend, 2), "entriesToDate": cum_pentries,
+        # paid entries are draw entries; only (1 - drop_off) of them convert to
+        # an order. The card's bars are drawn in units, so the units figure is
+        # published rather than left to the page to derive.
+        "unitsToDate": round(cum_pentries * (1 - drop), 1),
         "cumRoi": None, "l3dRoi": None,
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
         "cumCpe": round(cum_cpe, 2) if cum_cpe else None,
@@ -1550,7 +1554,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # is read at, which keeps the rung's ring at exactly x K. The rate
             # is the basket's own conversion, held (§1).
             funnel_by_group[g]["sessions_benchmark"] = round(bm_sessions.get(g, 0.0) * sess_w, 1)
-            funnel_by_group[g]["conv_benchmark"] = profile["conv"].get(g, 0.0)
+            # conv_actual and conv_expected on this card are SECURED UNITS per
+            # session; the panel's conv_sess_entry is eligible ENTRIES per
+            # session, a different and larger quantity. Reading one against the
+            # other turned "on plan" into a red rung, so the benchmark is taken
+            # in the card's own currency: the basket's median units over its
+            # median sessions, for this group.
+            bm_s = bm_sessions.get(g, 0.0)
+            funnel_by_group[g]["conv_benchmark"] = (bm_units.get(g, 0.0) / bm_s) if bm_s else 0.0
         # what a grouped column is made of, secured units to date, biggest first
         parts = []
         for ch in spec["channels"]:
@@ -1581,6 +1592,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "daily": paid_daily,
         "spendToDate": round(cum_spend, 2),
         "entriesToDate": cum_pentries,
+        # secured units to date, the same currency as unitTarget, unitProjected
+        # and benchmarkUnits - paid entries are one drop-off short of an order
+        "unitsToDate": round(cum_pentries * (1 - drop), 1),
         "cumRoi": round(cum_roi, 3) if cum_roi else None,
         "l3dRoi": round(l3d_roi, 3) if l3d_roi is not None else None,
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
@@ -1832,6 +1846,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         snap["hero"]["benchmark"] = round(hero_bm, 0)
         snap["hero"]["benchmarkToday"] = round(hero_bm_today, 0)
         snap["hero"]["stretch"] = round(hero_target - hero_bm, 0)
+        # secured vs what a comparable launch had by today. The sidebar's middle
+        # state is exactly this sign, and the index carries it so the sidebar
+        # does not have to guess the boundary from statusPct - 1/K moves with
+        # the release, from +15% to -54% across the launches on file.
+        snap["hero"]["benchmarkPct"] = (
+            round((min(hero_now, edition) - hero_bm_today) / hero_bm_today, 4)
+            if hero_bm_today else None)
     return snap
 
 
@@ -1882,8 +1903,13 @@ def check_snapshot(snap: dict) -> None:
         roll_bm = sum(c.get("bm") or 0 for c in ch)
         if abs(roll_bm - bm["units"]) > 1.0:
             problems.append(f"channel benchmarks sum to {roll_bm:.1f} but benchmark.units is {bm['units']}")
+        # hero.benchmark is rounded to units before this multiply, so the
+        # comparison carries up to half a unit times K of rounding on its own -
+        # a fixed tolerance of one unit fails an honest snapshot as soon as the
+        # uplift passes 2, and check_snapshot aborts the whole run, not just
+        # this release.
         lifted = (hero.get("benchmark") or 0) * bm["k"]
-        if abs(lifted - (hero.get("target") or 0)) > 1.0:
+        if abs(lifted - (hero.get("target") or 0)) > 0.5 * bm["k"] + 1.0:
             problems.append(f"hero.benchmark x k is {lifted:.1f} but hero.target is {hero.get('target')}")
         wf_today = (snap.get("waterfall") or {}).get("today") or {}
         steps = sum(s["value"] for s in wf_today.get("steps") or [])
@@ -1964,6 +1990,10 @@ def main():
             "day": snap["day"], "of": snap["of"], "complete": snap["complete"],
             "windowEnd": snap.get("windowEnd"),
             "statusPct": snap["hero"]["statusPct"], "ok": snap["hero"]["ok"],
+            # actual vs the benchmark for today, so the sidebar can tell
+            # "behind target but ahead of typical" from "behind typical"
+            # without guessing at a threshold (docs/BENCHMARK_SPEC.md §7)
+            "benchmarkPct": snap["hero"].get("benchmarkPct"),
             "lastSeen": (snap.get("derived") or {}).get("last_seen"),
             "sessions": (snap.get("totals") or {}).get("sessions"),
         })

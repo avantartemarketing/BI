@@ -35,7 +35,8 @@
   "ok": true,
   "benchmark": 148.0,
   "benchmarkToday": 113.0,
-  "stretch": 2.0
+  "stretch": 2.0,
+  "benchmarkPct": 0.3236
  },
  "targets": {
   "edition_size": 150,
@@ -368,23 +369,23 @@
     {
      "date": "2026-08-22",
      "actual": 60.51,
+     "plan": 44.72,
+     "proj": null,
+     "bm": 44.28
+    },
+    {
+     "date": "2026-08-23",
+     "actual": 60.51,
      "plan": 44.84,
      "proj": null,
      "bm": 44.39
     },
     {
-     "date": "2026-08-23",
-     "actual": 60.51,
-     "plan": 45.28,
-     "proj": null,
-     "bm": 44.82
-    },
-    {
      "date": "2026-08-24",
      "actual": 62.82,
-     "plan": 46.47,
+     "plan": 46.22,
      "proj": null,
-     "bm": 46.0
+     "bm": 45.76
     },
     {
      "date": "2026-08-25",
@@ -2020,7 +2021,7 @@
    "contrib_traffic": 32.8,
    "contrib_conversion": 3.0,
    "sessions_benchmark": 3111.3,
-   "conv_benchmark": 0.0137894391809268
+   "conv_benchmark": 0.02088155280037832
   },
   "aa_social": {
    "sessions_actual": 458.0,
@@ -2030,7 +2031,7 @@
    "contrib_traffic": -0.1,
    "contrib_conversion": -2.4,
    "sessions_benchmark": 462.3,
-   "conv_benchmark": 0.0142348754448398
+   "conv_benchmark": 0.016251499108535336
   },
   "referral_artist": {
    "sessions_actual": 207.0,
@@ -2040,17 +2041,17 @@
    "contrib_traffic": -2.3,
    "contrib_conversion": -0.3,
    "sessions_benchmark": 508.6,
-   "conv_benchmark": 0.015625
+   "conv_benchmark": 0.013240364604990533
   },
   "search_direct_other": {
-   "sessions_actual": 1031.0,
-   "sessions_expected": 1267.1,
-   "conv_actual": 0.04640155189136761,
-   "conv_expected": 0.03418610107361957,
+   "sessions_actual": 1032.0,
+   "sessions_expected": 1267.9,
+   "conv_actual": 0.046356589147286825,
+   "conv_expected": 0.03416533529341481,
    "contrib_traffic": -8.1,
    "contrib_conversion": 12.6,
-   "sessions_benchmark": 1254.4,
-   "conv_benchmark": 0.03726816307738995
+   "sessions_benchmark": 1255.2,
+   "conv_benchmark": 0.03815116399281985
   },
   "paid": {
    "sessions_actual": 3062.0,
@@ -2060,7 +2061,7 @@
    "contrib_traffic": 1.6,
    "contrib_conversion": 6.7,
    "sessions_benchmark": 2163.8,
-   "conv_benchmark": 0.0044935717746985
+   "conv_benchmark": 0.0018230719265479214
   }
  },
  "paid": {
@@ -2320,6 +2321,7 @@
   ],
   "spendToDate": 4086.95,
   "entriesToDate": 11.5,
+  "unitsToDate": 9.2,
   "cumRoi": 2.349,
   "l3dRoi": null,
   "l3dCpe": null,

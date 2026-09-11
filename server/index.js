@@ -284,10 +284,6 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   }
   if (errors.length) return res.status(400).json({ error: errors.join("; ") });
 
-  const benchmarkEdit =
-    JSON.stringify(next.benchmark_basket || null) !== JSON.stringify(current.benchmark_basket || null) ||
-    (next.stretch_mode || null) !== (current.stretch_mode || null);
-
   const snapPath = path.join(DATA, "releases", `${id}.json`);
   // the ETL overlays only stamped entries over the repo defaults - its own
   // output carries no stamp, so a default can still change under it
@@ -312,6 +308,19 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     return res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")), created: true });
   }
   if (!fs.existsSync(snapPath)) return res.status(404).json({ error: "no snapshot for release" });
+
+  const snap = JSON.parse(fs.readFileSync(snapPath, "utf8"));
+
+  /* Benchmark mode is sticky, so a release already on a basket sends EVERY
+   * save through the ETL - not just the ones that touch the basket or the
+   * stretch mode. retargetSnapshot only knows the lever model: it would move
+   * hero.target while leaving benchmark.units and benchmark.k untouched, and
+   * the page would then show a target and a benchmark that no longer agree
+   * (a unit_price edit alone was enough to leave a stored k out by a third). */
+  const benchmarkEdit =
+    JSON.stringify(next.benchmark_basket || null) !== JSON.stringify(current.benchmark_basket || null) ||
+    (next.stretch_mode || null) !== (current.stretch_mode || null) ||
+    !!(snap.benchmark && snap.benchmark.units > 0);
 
   /* A new basket or stretch mode cannot be retargeted in JS: the benchmark is
    * the basket's medians and its pace curves are built from the basket's own
@@ -338,7 +347,6 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     return res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")) });
   }
 
-  const snap = JSON.parse(fs.readFileSync(snapPath, "utf8"));
   const curves = JSON.parse(fs.readFileSync(path.join(DATA, "curves.json"), "utf8"));
   const bench = doc.benchmarks;
   const mergedForModel = { ...next, channel_quality_default: doc.channel_quality_default };

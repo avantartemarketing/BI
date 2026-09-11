@@ -35,7 +35,8 @@
   "ok": false,
   "benchmark": 46.0,
   "benchmarkToday": 46.0,
-  "stretch": 54.0
+  "stretch": 54.0,
+  "benchmarkPct": 0.3261
  },
  "targets": {
   "edition_size": 100,
@@ -867,23 +868,23 @@
     {
      "date": "2026-08-01",
      "actual": 0.0,
-     "plan": 0.94,
+     "plan": 0.93,
      "proj": null,
      "bm": 0.43
     },
     {
      "date": "2026-08-02",
      "actual": 0.0,
-     "plan": 1.58,
+     "plan": 1.52,
      "proj": null,
-     "bm": 0.73
+     "bm": 0.7
     },
     {
      "date": "2026-08-03",
      "actual": 0.0,
-     "plan": 2.3,
+     "plan": 2.27,
      "proj": null,
-     "bm": 1.06
+     "bm": 1.05
     },
     {
      "date": "2026-08-04",
@@ -909,44 +910,44 @@
     {
      "date": "2026-08-07",
      "actual": 0.0,
-     "plan": 2.84,
+     "plan": 2.85,
      "proj": null,
      "bm": 1.31
     },
     {
      "date": "2026-08-08",
      "actual": 0.0,
-     "plan": 2.91,
+     "plan": 2.92,
      "proj": null,
      "bm": 1.34
     },
     {
      "date": "2026-08-09",
      "actual": 0.0,
-     "plan": 3.09,
+     "plan": 3.1,
      "proj": null,
-     "bm": 1.42
+     "bm": 1.43
     },
     {
      "date": "2026-08-10",
      "actual": 0.0,
-     "plan": 3.12,
+     "plan": 3.13,
      "proj": null,
      "bm": 1.44
     },
     {
      "date": "2026-08-11",
      "actual": 0.0,
-     "plan": 3.16,
+     "plan": 3.18,
      "proj": null,
      "bm": 1.46
     },
     {
      "date": "2026-08-12",
      "actual": 0.0,
-     "plan": 3.27,
+     "plan": 3.28,
      "proj": null,
-     "bm": 1.5
+     "bm": 1.51
     },
     {
      "date": "2026-08-13",
@@ -2360,7 +2361,7 @@
    "contrib_traffic": -29.0,
    "contrib_conversion": 4.4,
    "sessions_benchmark": 2686.5,
-   "conv_benchmark": 0.0071867208952308
+   "conv_benchmark": 0.00918349066401723
   },
   "aa_social": {
    "sessions_actual": 316.0,
@@ -2370,7 +2371,7 @@
    "contrib_traffic": -4.5,
    "contrib_conversion": -2.6,
    "sessions_benchmark": 393.8,
-   "conv_benchmark": 0.0099403578528827
+   "conv_benchmark": 0.008369126151947933
   },
   "referral_artist": {
    "sessions_actual": 28.0,
@@ -2380,7 +2381,7 @@
    "contrib_traffic": -5.9,
    "contrib_conversion": -0.3,
    "sessions_benchmark": 268.1,
-   "conv_benchmark": 0.0060551719319491
+   "conv_benchmark": 0.010584058858152947
   },
   "search_direct_other": {
    "sessions_actual": 736.0,
@@ -2390,7 +2391,7 @@
    "contrib_traffic": -10.2,
    "contrib_conversion": 1.6,
    "sessions_benchmark": 552.0,
-   "conv_benchmark": 0.017912557346240948
+   "conv_benchmark": 0.021954743019654097
   },
   "paid": {
    "sessions_actual": 6932.0,
@@ -2400,7 +2401,7 @@
    "contrib_traffic": -1.0,
    "contrib_conversion": 8.5,
    "sessions_benchmark": 3718.0,
-   "conv_benchmark": 0.0009756097560975
+   "conv_benchmark": 0.0008269618016049469
   }
  },
  "paid": {
@@ -2762,6 +2763,7 @@
   ],
   "spendToDate": 5386.98,
   "entriesToDate": 16.5,
+  "unitsToDate": 13.2,
   "cumRoi": 4.753,
   "l3dRoi": null,
   "l3dCpe": null,

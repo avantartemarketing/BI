@@ -1,10 +1,10 @@
 release_name,artist,campaign_start,entrants,eligible_entrants,winners,buyers,units,entrants_bought_before,entrants_entered_before,buyers_bought_before,buyers_first_time,artist_previous_releases,entrants_from_artist_previous,buyers_from_artist_previous,share_entrants_returning,share_buyers_returning,share_entrants_from_artist_previous
 Zhang Huan · Amitabha · 2021 Q3,Zhang Huan,2026-09-10,0,0,0,1,1.0,0,0,0,1,0,0,0,,0.0,
-"Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3",Robert Longo,2026-09-07,16,15,7,38,38.0,4,7,30,8,0,0,0,0.25,0.7895,0.0
-Andy Warhol Estate · Multiple · 2026 Q3,Andy Warhol Estate,2026-09-02,170,159,100,200,280.0,33,48,121,79,0,0,0,0.1941,0.605,0.0
-Julian Schnabel · Multiple · 2026 Q3,Julian Schnabel,2026-08-31,48,47,31,58,67.0,9,12,31,27,5,0,0,0.1875,0.5345,0.0
+"Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3",Robert Longo,2026-09-07,16,15,12,40,41.0,4,7,32,8,0,0,0,0.25,0.8,0.0
+Andy Warhol Estate · Multiple · 2026 Q3,Andy Warhol Estate,2026-09-02,172,161,117,217,311.0,33,48,122,95,0,0,0,0.1919,0.5622,0.0
+Julian Schnabel · Multiple · 2026 Q3,Julian Schnabel,2026-08-31,49,48,34,58,69.0,9,12,31,27,5,0,0,0.1837,0.5345,0.0
 Ai Weiwei · Multiple · 2026 Q3,Ai Weiwei,2026-08-28,13,9,5,12,12.0,7,8,10,2,6,2,2,0.5385,0.8333,0.1538
-Salvador Dali Estate · Multiple · 2026 Q3,Salvador Dali Estate,2026-08-21,1196,1040,857,620,1052.0,87,117,97,523,0,0,0,0.0727,0.1565,0.0
+Salvador Dali Estate · Multiple · 2026 Q3,Salvador Dali Estate,2026-08-21,1196,1038,875,631,1091.0,87,117,99,532,0,0,0,0.0727,0.1569,0.0
 Glenn Ligon · Multiple · 2026 Q3,Glenn Ligon,2026-08-17,110,98,61,94,130.0,44,40,54,40,0,0,0,0.4,0.5745,0.0
 Parra · Multiple · 2026 Q3,Parra,2026-07-31,301,253,206,264,297.0,31,55,86,178,1,15,37,0.103,0.3258,0.0498
 James Jean · Multiple · 2026 Q3,James Jean,2026-07-30,546,491,481,510,587.0,54,60,89,421,4,6,9,0.0989,0.1745,0.011
@@ -14,7 +14,7 @@ Piet Mondrian Estate · Multiple · 2026 Q3,Piet Mondrian Estate,2026-07-24,763,
 Tschabalala Self · Multiple · 2026 Q3,Tschabalala Self,2026-07-09,70,59,8,97,101.0,22,25,63,34,1,0,1,0.3143,0.6495,0.0
 Jaume Plensa · UTOPIA · 2026 Q3,Jaume Plensa,2026-07-07,251,226,226,218,218.0,23,25,30,188,0,0,0,0.0916,0.1376,0.0
 Backside works. · Multiple · 2026 Q3,Backside works.,2026-07-02,132,108,41,74,97.0,29,33,42,32,0,0,0,0.2197,0.5676,0.0
-Ahmed Mater · Multiple · 2026 Q3,Ahmed Mater,2026-07-01,31,20,20,27,33.0,7,10,8,19,0,0,0,0.2258,0.2963,0.0
+Ahmed Mater · Multiple · 2026 Q3,Ahmed Mater,2026-07-01,31,20,20,27,32.0,7,10,8,19,0,0,0,0.2258,0.2963,0.0
 Zeng Fanzhi · Rainbow (Mask Series 1997 no.8) · 2026 Q3,Zeng Fanzhi,2026-06-26,177,160,160,182,187.0,53,63,74,108,0,0,0,0.2994,0.4066,0.0
 Yoon Hyup · Ambre Roulette · 2026 Q3,Yoon Hyup,2026-06-25,187,160,160,196,197.0,30,50,61,135,5,22,36,0.1604,0.3112,0.1176
 Giuseppe Penone · Multiple · 2026 Q3,Giuseppe Penone,2026-06-17,18,15,15,20,23.0,4,5,9,11,0,0,0,0.2222,0.45,0.0
@@ -24,8 +24,8 @@ Johnson Tsang · Alliance · 2026 Q2,Johnson Tsang,2026-06-04,191,165,152,198,19
 Urs Fischer · Multiple · 2026 Q2,Urs Fischer,2026-06-03,84,72,72,90,112.0,29,37,46,44,0,0,0,0.3452,0.5111,0.0
 Miwa Komatsu · Three Guardians: Gatekeeping the Heat and Cold · 2026 Q2,Miwa Komatsu,2026-05-27,59,51,24,48,48.0,16,27,33,15,3,14,23,0.2712,0.6875,0.2373
 Felipe Pantone · Subtractive Variability Dimensional 13 AA · 2026 Q2,Felipe Pantone,2026-05-22,177,155,154,153,153.0,32,39,44,109,0,0,0,0.1808,0.2876,0.0
-Cindy Sherman · Untitled · 2026 Q2,Cindy Sherman,2026-05-14,449,397,345,489,497.0,66,87,169,320,0,0,0,0.147,0.3456,0.0
-Takashi Murakami · Multiple · 2026 Q2,Takashi Murakami,2026-04-29,1686,1500,319,685,828.0,459,479,333,352,0,0,0,0.2722,0.4861,0.0
+Cindy Sherman · Untitled · 2026 Q2,Cindy Sherman,2026-05-14,449,397,345,489,497.0,66,87,170,319,0,0,0,0.147,0.3476,0.0
+Takashi Murakami · Multiple · 2026 Q2,Takashi Murakami,2026-04-29,1686,1500,319,686,821.0,459,479,334,352,0,0,0,0.2722,0.4869,0.0
 Antony Micallef · Self Portrait with Blue Slash · 2026 Q2,Antony Micallef,2026-04-28,57,41,40,65,65.0,16,20,29,36,3,12,20,0.2807,0.4462,0.2105
 Anni and Josef Albers · Multiple · 2026 Q2,Anni and Josef Albers,2026-04-27,1244,1143,788,831,979.0,81,98,92,739,0,0,0,0.0651,0.1107,0.0
 Eddie Martinez · Olive Garden · 2026 Q2,Eddie Martinez,2026-04-24,82,77,77,101,102.0,28,31,51,50,1,14,24,0.3415,0.505,0.1707
@@ -40,19 +40,19 @@ Jeff Koons · Multiple · 2026 Q1,Jeff Koons,2026-02-18,452,341,340,469,510.0,90
 Jean-Michel Othoniel · Multiple · 2026 Q1,Jean-Michel Othoniel,2026-02-02,145,101,93,116,121.0,20,24,35,81,1,0,2,0.1379,0.3017,0.0
 Maurizio Cattelan · Window · 2026 Q1,Maurizio Cattelan,2026-01-26,431,313,113,283,304.0,104,133,177,106,1,40,98,0.2413,0.6254,0.0928
 Pejac · Multiple · 2026 Q1,Pejac,2026-01-23,148,140,105,115,116.0,55,85,50,65,1,79,67,0.3716,0.4348,0.5338
-Lee Ufan · Dialogue · 2026 Q1,Lee Ufan,2026-01-08,283,216,31,126,157.0,47,64,93,33,1,32,57,0.1661,0.7381,0.1131
+Lee Ufan · Dialogue · 2026 Q1,Lee Ufan,2026-01-08,283,216,31,126,157.0,47,64,93,33,1,32,58,0.1661,0.7381,0.1131
 Ferrari Sheppard · Put Some Red On It · 2026 Q1,Ferrari Sheppard,2026-01-08,100,77,73,100,101.0,14,27,33,67,1,17,20,0.14,0.33,0.17
 Johnson Tsang · Work in Progress · 2026 Q1,Johnson Tsang,2025-12-18,261,216,103,150,150.0,71,79,76,74,6,50,50,0.272,0.5067,0.1916
 Joakim Ojanen · The dance we dance when we are together · 2026 Q1,Joakim Ojanen,2025-12-16,50,43,43,50,50.0,13,15,16,34,2,2,4,0.26,0.32,0.04
-William Blake · Multiple · 2025 Q4,William Blake,2025-11-17,9,4,4,8,8.0,1,2,1,7,0,0,0,0.1111,0.125,0.0
+William Blake · Multiple · 2025 Q4,William Blake,2025-11-17,9,4,4,8,9.0,1,2,1,7,0,0,0,0.1111,0.125,0.0
 Judy Chicago · Reincarnation Triptych · 2025 Q4,Judy Chicago,2025-10-27,60,54,36,45,49.0,12,12,15,30,0,0,0,0.2,0.3333,0.0
 Ai Weiwei · Multiple · 2025 Q4,Ai Weiwei,2025-10-22,220,186,101,146,150.0,36,58,57,89,4,15,19,0.1636,0.3904,0.0682
 Alex Katz · Ada Ada · 2025 Q4,Alex Katz,2025-10-01,245,195,160,195,200.0,35,44,72,123,0,0,0,0.1429,0.3692,0.0
 Maurizio Cattelan · We are the Revolution · 2025 Q4,Maurizio Cattelan,2025-09-23,1816,1545,877,976,997.0,140,142,141,835,0,0,0,0.0771,0.1445,0.0
 Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,Tomokazu Matsuyama,2025-09-09,31,19,19,41,60.0,17,15,23,18,6,8,14,0.5484,0.561,0.2581
 Paul McCarthy · Santa with Butt Plug Bronze 11.4 inches · 2022 Q4,Paul McCarthy,2025-09-05,0,0,0,2,2.0,0,0,0,2,0,0,0,,0.0,
-Woo Kuk Won · Multiple · 2025 Q3,Woo Kuk Won,2025-09-02,162,143,47,115,160.0,52,75,76,39,1,45,35,0.321,0.6609,0.2778
-Harland Miller · Multiple · 2025 Q3,Harland Miller,2025-08-29,165,141,43,92,104.0,54,62,54,38,2,20,11,0.3273,0.587,0.1212
+Woo Kuk Won · Multiple · 2025 Q3,Woo Kuk Won,2025-09-02,162,143,47,115,162.0,52,75,76,39,1,45,35,0.321,0.6609,0.2778
+Harland Miller · Multiple · 2025 Q3,Harland Miller,2025-08-29,165,141,43,92,101.0,54,62,54,38,2,20,11,0.3273,0.587,0.1212
 En Iwamura · Multiple · 2025 Q3,En Iwamura,2025-08-01,51,26,26,33,33.0,15,12,14,19,0,0,0,0.2941,0.4242,0.0
 Katherine Bradford · Swing Over Pool · 2025 Q3,Katherine Bradford,2025-07-16,114,95,94,156,173.0,37,34,51,105,0,0,0,0.3246,0.3269,0.0
 Johnson Tsang · Remembrance · 2025 Q3,Johnson Tsang,2025-07-14,146,105,104,149,152.0,38,40,74,75,5,37,59,0.2603,0.4966,0.2534
@@ -63,7 +63,7 @@ Yoon Hyup · Summer in San Sebastian · 2025 Q3,Yoon Hyup,2025-06-09,251,201,99,
 Lee Ufan · Multiple · 2025 Q2,Lee Ufan,2025-05-22,638,482,22,287,328.0,60,68,120,167,0,0,0,0.094,0.4181,0.0
 Michael Kozlowski · Mecha · 2024 Q2,Michael Kozlowski,2025-04-17,0,0,0,44,45.0,0,0,44,0,0,0,0,,1.0,
 Emily Xie · Guardian Lion · 2024 Q1,Emily Xie,2025-04-17,59,51,18,31,31.0,29,59,31,0,0,0,0,0.4915,1.0,0.0
-George Condo · Multiple · 2024 Q1,George Condo,2025-04-17,695,620,37,269,391.0,306,695,268,1,2,110,51,0.4403,0.9963,0.1583
+George Condo · Multiple · 2024 Q1,George Condo,2025-04-17,695,620,37,269,381.0,306,695,267,2,2,110,51,0.4403,0.9926,0.1583
 Dawnia Darkstone · Digital Chemicals · 2024 Q1,Dawnia Darkstone,2025-04-17,7,5,5,12,12.0,6,7,12,0,0,0,0,0.8571,1.0,0.0
 Robert Nava · Death Carrier Bunny · 2024 Q1,Robert Nava,2025-04-17,0,0,0,36,37.0,0,0,36,0,0,0,0,,1.0,
 Paul Insect · Multiple · 2024 Q3,Paul Insect,2025-04-17,91,69,63,90,93.0,67,91,90,0,4,9,18,0.7363,1.0,0.0989
@@ -115,7 +115,7 @@ Harland Miller · Multiple · 2025 Q1,Harland Miller,2024-12-05,28,17,17,20,20.0
 Ai Weiwei · Multiple · 2024 Q4,Ai Weiwei,2024-11-20,215,163,120,189,203.0,29,38,70,119,3,18,26,0.1349,0.3704,0.0837
 Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Claire Tabouret,2024-11-19,0,0,0,45,50.0,0,0,23,22,0,0,0,,0.5111,
 José Parlá · Multiple · 2024 Q4,José Parlá,2024-11-11,79,64,29,102,102.0,24,30,77,25,0,0,0,0.3038,0.7549,0.0
-Woo Kuk Won · Multiple · 2024 Q4,Woo Kuk Won,2024-10-21,268,234,21,66,89.0,68,47,25,41,0,0,0,0.2537,0.3788,0.0
+Woo Kuk Won · Multiple · 2024 Q4,Woo Kuk Won,2024-10-21,268,234,21,66,89.0,69,47,25,41,0,0,0,0.2575,0.3788,0.0
 Miwa Komatsu · White and Black Guiding Yamainu-sama · 2024 Q4,Miwa Komatsu,2024-10-21,62,58,2,15,15.0,10,14,10,5,1,9,5,0.1613,0.6667,0.1452
 "Jack Kaido · ICYMI, 2024 · 2024 Q4",Jack Kaido,2024-10-16,14,9,9,20,20.0,7,10,10,10,0,0,0,0.5,0.5,0.0
 Ai Weiwei · To Be Looked At... · 2024 Q4,Ai Weiwei,2024-10-15,179,135,46,198,202.0,40,34,154,44,2,6,16,0.2235,0.7778,0.0335
@@ -132,9 +132,9 @@ Kaï · Content (Hand-finished) · 2024 Q2,Kaï,2024-05-02,0,0,0,35,74.0,0,0,12,
 Kpe Innocent · Multiple · 2023 Q2,Kpe Innocent,2024-04-02,0,0,0,1,1.0,0,0,1,0,0,0,0,,1.0,
 Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,Tomokazu Matsuyama,2023-11-13,23,22,22,57,81.0,9,9,27,30,5,3,16,0.3913,0.4737,0.1304
 Hideaki Kawashima · Multiple · 2023 Q4,Hideaki Kawashima,2023-11-06,0,0,0,10,19.0,0,0,9,1,1,0,3,,0.9,
-Yoon Hyup · In The City · 2023 Q4,Yoon Hyup,2023-11-06,272,223,122,202,204.0,52,12,49,153,2,37,28,0.1912,0.2426,0.136
+Yoon Hyup · In The City · 2023 Q4,Yoon Hyup,2023-11-06,272,223,122,202,204.0,52,12,50,152,2,37,29,0.1912,0.2475,0.136
 Bony Ramirez · TORO! · 2023 Q4,Bony Ramirez,2023-11-03,0,0,0,25,25.0,0,0,6,19,0,0,0,,0.24,
-Alpha Centauri Kid · Warothy · 2023 Q4,Alpha Centauri Kid,2023-11-03,618,604,6,25,31.0,44,113,14,11,0,0,0,0.0712,0.56,0.0
+Alpha Centauri Kid · Warothy · 2023 Q4,Alpha Centauri Kid,2023-11-03,618,604,6,25,31.0,44,114,14,11,0,0,0,0.0712,0.56,0.0
 Dennis Osadebe · In Search For Light · 2023 Q4,Dennis Osadebe,2023-11-03,58,51,23,49,50.0,19,2,23,26,1,6,7,0.3276,0.4694,0.1034
 Devan Shimoyama · Le Mat · 2023 Q4,Devan Shimoyama,2023-11-02,0,0,0,16,16.0,0,0,2,14,0,0,0,,0.125,
 Taylor Lee · Multiple · 2023 Q4,Taylor Lee,2023-10-27,0,0,0,7,10.0,0,0,2,5,0,0,0,,0.2857,
@@ -154,7 +154,7 @@ Johnson Tsang · Open the Right Mind · 2023 Q4,Johnson Tsang,2023-09-25,163,131
 So Youn Lee · Ready? · 2023 Q4,So Youn Lee,2023-09-19,0,0,0,51,51.0,0,0,10,41,0,0,0,,0.1961,
 Bridget Mullen · Multiple · 2023 Q3,Bridget Mullen,2023-09-14,0,0,0,3,3.0,0,0,3,0,0,0,0,,1.0,
 Mark Whalen · Early Light · 2023 Q3,Mark Whalen,2023-09-14,0,0,0,7,7.0,0,0,4,3,1,0,1,,0.5714,
-"JR · GIANTS, High jump in Rio · 2023 Q3",JR,2023-09-06,0,0,0,21,32.0,0,0,15,6,0,0,0,,0.7143,
+"JR · GIANTS, High jump in Rio · 2023 Q3",JR,2023-09-06,0,0,0,21,32.0,0,0,16,5,0,0,0,,0.7619,
 Ripcache · Security · 2023 Q3,Ripcache,2023-09-01,353,341,7,32,32.0,32,0,12,20,0,0,0,0.0907,0.375,0.0
 Marcela Flórido · BLOOM · 2023 Q3,Marcela Flórido,2023-09-01,0,0,0,10,10.0,0,0,1,9,0,0,0,,0.1,
 Hiroya Kurata · Lemonhead · 2023 Q4,Hiroya Kurata,2023-08-30,0,0,0,8,17.0,0,0,3,5,0,0,0,,0.375,
@@ -162,7 +162,7 @@ Marcus Jansen · Afro Painter · 2023 Q4,Marcus Jansen,2023-08-30,0,0,0,40,43.0,
 NKSIN · MY DAVID X · 2023 Q3,NKSIN,2023-08-23,0,0,0,25,27.0,0,0,19,6,0,0,0,,0.76,
 Amanda Baldwin · Bell Bay · 2023 Q3,Amanda Baldwin,2023-08-12,0,0,0,15,16.0,0,0,2,13,0,0,0,,0.1333,
 Katherina Olschbaur · Humility and the Other One in Me · 2023 Q3,Katherina Olschbaur,2023-08-10,0,0,0,8,8.0,0,0,2,6,0,0,0,,0.25,
-Paul Insect · Multiple · 2023 Q3,Paul Insect,2023-08-10,0,0,0,73,73.0,0,0,33,40,3,0,10,,0.4521,
+Paul Insect · Multiple · 2023 Q3,Paul Insect,2023-08-10,0,0,0,72,73.0,0,0,33,39,3,0,10,,0.4583,
 Tahnee Lonsdale · Dove · 2023 Q3,Tahnee Lonsdale,2023-08-04,0,0,0,30,30.0,0,0,7,23,0,0,0,,0.2333,
 Kotao Tomozawa · slime XCIX · 2023 Q3,Kotao Tomozawa,2023-07-28,0,0,0,40,40.0,0,0,19,21,0,0,0,,0.475,
 Yu Nagaba · Toy Car · 2023 Q3,Yu Nagaba,2023-07-21,0,0,0,3,3.0,0,0,1,2,0,0,0,,0.3333,
@@ -213,7 +213,7 @@ Liang Fu · Anonyme · 2023 Q1,Liang Fu,2022-12-21,0,0,0,20,20.0,0,0,7,13,0,0,0,
 Roby Dwi Antono · HAYU · 2023 Q1,Roby Dwi Antono,2022-12-16,0,0,0,50,51.0,0,0,37,13,4,0,27,,0.74,
 Lawrence Weiner · HERE & NOW · 2022 Q4,Lawrence Weiner,2022-12-02,0,0,0,21,36.0,0,0,2,19,0,0,0,,0.0952,
 FUTURA · Multiple · 2022 Q4,FUTURA,2022-11-28,0,0,0,18,21.0,0,0,5,13,0,0,0,,0.2778,
-George Rouy · Tearing of the Savage Breast · 2022 Q4,George Rouy,2022-11-23,0,0,0,47,50.0,0,0,20,27,1,0,7,,0.4255,
+George Rouy · Tearing of the Savage Breast · 2022 Q4,George Rouy,2022-11-23,0,0,0,48,50.0,0,0,21,27,1,0,7,,0.4375,
 James Jean · Bath Saxum · 2022 Q4,James Jean,2022-11-21,0,0,0,20,22.0,0,0,11,9,3,0,10,,0.55,
 Satoru Koizumi · White Rhino · 2022 Q4,Satoru Koizumi,2022-11-14,0,0,0,11,20.0,0,0,5,6,1,0,0,,0.4545,
 Jang Koal · Umma · 2022 Q4,Jang Koal,2022-11-11,0,0,0,14,14.0,0,0,10,4,0,0,0,,0.7143,
@@ -301,9 +301,9 @@ Rafa Macarrón · Multiple · 2022 Q2,Rafa Macarrón,2022-05-04,0,0,0,27,45.0,0,
 Imon Boy · Multiple · 2022 Q2,Imon Boy,2022-04-28,0,0,0,19,21.0,0,0,8,11,0,0,0,,0.4211,
 Ryo Laksamana · Multiple · 2022 Q2,Ryo Laksamana,2022-04-28,0,0,0,51,53.0,0,0,26,25,0,0,0,,0.5098,
 Peter Halley · Galaxia II · 2022 Q2,Peter Halley,2022-04-28,0,0,0,26,45.0,0,0,4,22,0,0,0,,0.1538,
-Stickymonger · Multiple · 2022 Q2,Stickymonger,2022-04-25,0,0,0,97,107.0,0,0,48,49,1,0,20,,0.4948,
+Stickymonger · Multiple · 2022 Q2,Stickymonger,2022-04-25,0,0,0,97,107.0,0,0,47,50,1,0,20,,0.4845,
 Mr. StarCity · Multiple · 2022 Q2,Mr. StarCity,2022-04-25,0,0,0,36,47.0,0,0,17,19,0,0,0,,0.4722,
-Nikki Maloof · Oranges · 2022 Q2,Nikki Maloof,2022-04-21,0,0,0,20,22.0,0,0,11,9,0,0,0,,0.55,
+Nikki Maloof · Oranges · 2022 Q2,Nikki Maloof,2022-04-21,0,0,0,20,22.0,0,0,12,8,0,0,0,,0.6,
 Cristina de Miguel · Two figures in the wind · 2022 Q2,Cristina de Miguel,2022-04-20,0,0,0,25,27.0,0,0,12,13,0,0,0,,0.48,
 Adriana Oliver · Our Day · 2022 Q2,Adriana Oliver,2022-04-11,0,0,0,101,101.0,0,0,38,63,0,0,0,,0.3762,
 Hebru Brantley · Free Advice (Large) · 2022 Q1,Hebru Brantley,2022-03-29,0,0,0,5,6.0,0,0,3,2,1,0,2,,0.6,
@@ -341,7 +341,7 @@ Christian Rex van Minnen · Angry Feels · 2021 Q4,Christian Rex van Minnen,2021
 Christian Rex van Minnen · GM Bullish · 2021 Q4,Christian Rex van Minnen,2021-12-08,0,0,0,1,1.0,0,0,0,1,0,0,0,,0.0,
 Elmgreen & Dragset · The Observer · 2021 Q4,Elmgreen & Dragset,2021-12-01,0,0,0,44,51.0,0,0,10,34,0,0,0,,0.2273,
 Jean-Michel Othoniel · Lotus of Hope · 2021 Q4,Jean-Michel Othoniel,2021-11-19,0,0,0,25,27.0,0,0,6,19,0,0,0,,0.24,
-Paul Insect · Multiple · 2021 Q4,Paul Insect,2021-11-12,0,0,0,121,125.0,0,0,13,108,0,0,0,,0.1074,
+Paul Insect · Multiple · 2021 Q4,Paul Insect,2021-11-12,0,0,0,120,124.0,0,0,13,107,0,0,0,,0.1083,
 Susumu Kamijo · Dance For Me In The Dusk · 2021 Q4,Susumu Kamijo,2021-11-03,0,0,0,74,78.0,0,0,17,57,0,0,0,,0.2297,
 Michael Kagan · Concorde · 2021 Q4,Michael Kagan,2021-10-25,0,0,0,94,96.0,0,0,13,81,0,0,0,,0.1383,
 Lina Iris Viktor · Ekstasis · 2021 Q4,Lina Iris Viktor,2021-10-12,0,0,0,9,10.0,0,0,3,6,0,0,0,,0.3333,

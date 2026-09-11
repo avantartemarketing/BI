@@ -151,7 +151,11 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const bmWord = close ? "Benchmark" : "Benchmark today";
   const bmBody = "The median of the matched basket - what launches like this one typically reach.";
 
-  const unitsNow = Math.round((paid.daily || []).reduce((t, x) => t + (x.entries ?? 0), 0));
+  // paid.daily carries draw ENTRIES; the target, the projection and the benchmark
+  // are all in secured units, so the bar reads paid.unitsToDate - the same entries
+  // one drop-off later. Summing the daily entries here put the bar over its own
+  // target on every release with a drop-off.
+  const unitsNow = Math.round(paid.unitsToDate ?? 0);
   const unitsProj = complete ? unitsNow : (paid.unitProjected ?? unitsNow);
   const unitsFill = close ? unitsProj : unitsNow;
   const unitsTarget = (paid.unitTarget ?? 0) * dayFrac;

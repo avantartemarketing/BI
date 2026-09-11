@@ -363,15 +363,34 @@ export default function TargetSetting({ snap, onSaved }) {
 
   const channels = Object.keys(meta.channel_quality_default);
 
-  /* The rail's three columns (§8.3). Every volume on this rail carries the same
-   * even uplift, so its benchmark is simply the target divided by K and the
-   * stretch is what is left - which keeps benchmark + stretch = target on every
-   * row, including the budget percentage, where both budget and launch value
-   * would otherwise have to be unwound separately. */
-  const railRow = (label, value, format, tip) => {
-    const bmv = k && k > 0 ? value / k : null;
-    return { label, tip, target: value, bm: bmv, stretch: bmv === null ? null : value - bmv, format };
+  /* The rail's three columns (§8.3). Wherever the basket has the figure itself,
+   * that is what the Benchmark column shows - so the rail and the per-channel
+   * table above it quote the same medians rather than two roundings of them.
+   *
+   * Target ÷ K is only the fallback, and only on the even uplift, for the two
+   * rows the basket has no equivalent for: the draw / private-room split is a
+   * target-model construct, not a channel. On the levers even that is
+   * meaningless - those targets come out of the quartile model, so the quotient
+   * is not the basket's median and printing it would invent a figure - and the
+   * row shows a dash instead.
+   *
+   * The percentage row is why the division cannot simply be applied everywhere:
+   * the uplift is in both the budget and the launch value, so it cancels, and
+   * dividing once more would print a benchmark share 1/K of the real one. */
+  const railRow = (label, value, format, tip, basketBm) => {
+    const bmv = basketBm !== null && basketBm !== undefined ? basketBm
+      : stretchMode === "even" && k && k > 0 ? value / k
+      : null;
+    let stretch = bmv === null ? null : value - bmv;
+    // a stretch that rounds away to nothing in the row's own format is zero, not
+    // a negative sliver of one - the percentage row carries K top and bottom, so
+    // all that is left there is the rounding in the medians the rail quotes
+    if (stretch !== null && format(Math.abs(stretch)) === format(0)) stretch = 0;
+    return { label, tip, target: value, bm: bmv, stretch, format };
   };
+  // the basket's own medians, in the currencies the rail prints
+  const bmPaidUnits = bm ? (bm.unitsByGroup || {}).paid ?? null : null;
+  const bmLaunchValue = bm && bm.units > 0 ? bm.units * (Number(inp.unit_price) || 0) : 0;
   /* On the even uplift the rail has to read the basket, not the levers. The
    * lever model is still computed above (it drives the By channel arm and the
    * economics), but its sessions target is backed out of quartile conversions
@@ -398,18 +417,22 @@ export default function TargetSetting({ snap, onSaved }) {
     }
     : derived;
   const railRows = [
-    railRow("Paid units", D.paid_units, (v) => fmt(v, 0)),
-    railRow("Draw / pre-order units", D.draw_units, (v) => fmt(v, 0)),
-    railRow("Private room units", D.pr_units, (v) => fmt(v, 0)),
+    railRow("Paid units", D.paid_units, (v) => fmt(v, 0), undefined, bmPaidUnits),
+    railRow("Draw / pre-order units", D.draw_units, (v) => fmt(v, 0), undefined, null),
+    railRow("Private room units", D.pr_units, (v) => fmt(v, 0), undefined, null),
     railRow("Eligible entries", D.entries_target, (v) => fmt(v, 0),
-      "Draw + paid units ÷ 0.8 eligible-entry → order rate."),
+      "Draw + paid units ÷ 0.8 eligible-entry → order rate.",
+      bm ? bm.entries : null),
     railRow("Sessions", D.total_sessions, (v) => fmt(v, 0),
       stretchMode === "even"
         ? "The basket's median sessions, lifted by the same K as every other volume."
-        : "Backed out per channel: entries ÷ session→entry conversion, plus private-room sessions at the email-only conversion."),
-    railRow("Paid budget", D.paid.budget, (v) => fmtMoney(v, 0)),
+        : "Backed out per channel: entries ÷ session→entry conversion, plus private-room sessions at the email-only conversion. The benchmark beside it is the basket's own median, which the levers are under no obligation to be a multiple of.",
+      bm ? bm.sessions : null),
+    railRow("Paid budget", D.paid.budget, (v) => fmtMoney(v, 0), undefined,
+      bm ? bm.paidBudget : null),
     railRow("% of launch value", D.paid.budget_pct_of_launch_value ?? 0, (v) => fmtPct(v, 1),
-      "Sense check: paid budget should stay under 6% of launch value."),
+      "Sense check: paid budget should stay under 6% of launch value.",
+      bm && bmLaunchValue > 0 ? bm.paidBudget / bmLaunchValue : null),
   ];
   const railCell = { fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums" };
 

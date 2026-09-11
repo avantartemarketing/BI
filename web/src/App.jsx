@@ -180,13 +180,13 @@ function SessionFooter({ email }) {
 
 /* BENCHMARK_SPEC 7: the row dot is green at or ahead of target, amber behind target
  * but at or ahead of benchmark, red behind benchmark, hollow when nobody has set
- * targets. The index rows carry statusPct - actual against target - and no benchmark
- * figure, so the amber band is read off the shortfall instead: a release within 10%
- * of its target is still running about where the matched basket typically does,
- * anything further behind is behind the basket too. That is a stand-in for the real
- * comparison and index.json should grow a benchmarkPct so the middle state can be
- * exact rather than inferred. */
-const BEHIND_BENCHMARK = -0.10;
+ * targets. benchmarkPct is secured against the benchmark's own pace for today, so
+ * the middle band is that sign and nothing else. Releases still on the lever model
+ * carry no benchmarkPct: there the shortfall against target is all there is, and a
+ * release within 10% of it is called amber rather than red. 1/K moves from +15% to
+ * -54% across the launches on file, which is why the fixed boundary is only ever
+ * the fallback. */
+const BEHIND_TARGET_TOLERANCE = -0.10;
 const STATE = {
   green: { color: C.green, word: "at or ahead of target" },
   amber: { color: C.amber, word: "behind target, at or ahead of benchmark" },
@@ -198,7 +198,9 @@ function rowState(r) {
   const pct = r.statusPct;
   if (pct === null || pct === undefined) return r.ok ? "green" : "red";
   if (pct >= 0) return "green";
-  return pct >= BEHIND_BENCHMARK ? "amber" : "red";
+  const bm = r.benchmarkPct;
+  if (bm === null || bm === undefined) return pct >= BEHIND_TARGET_TOLERANCE ? "amber" : "red";
+  return bm >= 0 ? "amber" : "red";
 }
 
 /* The dot carries three meanings now, so the sidebar has to say which is which -
@@ -235,6 +237,8 @@ function ReleaseRow({ r, active, onClick, showStatus }) {
   const rows = [];
   if (status !== "catalogue") rows.push({ label: "Day", value: `${r.day} of ${r.of}` });
   if (pct !== null) rows.push({ label: "vs target", value: `${pct >= 0 ? "+" : ""}${pct}%`, color: STATE[state].color });
+  const bmPct = targeted && r.benchmarkPct !== null && r.benchmarkPct !== undefined ? Math.round(r.benchmarkPct * 100) : null;
+  if (bmPct !== null) rows.push({ label: "vs benchmark", value: `${bmPct >= 0 ? "+" : ""}${bmPct}%` });
   if (state) rows.push({ label: "Pace", value: STATE[state].word, color: STATE[state].color });
   rows.push({ label: "Status", value: STATUS_LABEL[status] || status });
   if (r.quarter) rows.push({ label: "Quarter", value: r.quarter });

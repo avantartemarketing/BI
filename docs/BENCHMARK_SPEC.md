@@ -155,7 +155,8 @@ All new fields are **additive**. Existing consumers keep working.
     "...existing...": null,
     "benchmark": 214.0,          // at close
     "benchmarkToday": 132.0,     // benchmark pace by today
-    "stretch": 86.0
+    "stretch": 86.0,
+    "benchmarkPct": 0.1212       // secured vs benchmarkToday; null in lever mode
   },
   "channels": [ { "...existing...": null,
     "bm": 83.5,        // benchmark at close, this group
@@ -165,7 +166,8 @@ All new fields are **additive**. Existing consumers keep working.
   "funnelByGroup": { "aa_email": { "...existing...": null,
     "sessions_benchmark": 4579.0, "conv_benchmark": 0.0155 } },
   "sellthrough": { "...existing...": null, "benchmarkUnits": 214.0 },
-  "paid": { "...existing...": null, "benchmarkUnits": 55.0, "benchmarkBudget": 9735.0 },
+  "paid": { "...existing...": null, "benchmarkUnits": 55.0, "benchmarkBudget": 9735.0,
+            "unitsToDate": 44.0 },   // entriesToDate x (1 - drop-off); always present
   "waterfall": {
     "benchmark": 214.0, "stretch": 86.0, "target": 300.0, "projection": 336.0,
     "steps": [ ... unchanged ... ],
@@ -182,6 +184,20 @@ largest step, exactly as the close steps do.
 `hero.benchmarkToday` and `channels[].bmExp` use the basket curve at today's pdsa, so
 `benchmarkToday × K == expectedToday` to within rounding.
 
+`funnelByGroup[g].conv_benchmark` is the basket's median **units** over its median sessions
+for that group, not its entries per session: it is read against `conv_actual`, which is
+secured units per session, and the two have to be the same quantity.
+
+`paid.unitsToDate` is the paid campaign's own entries one drop-off later, so the Paid spend
+card's "to date", "projected", target and benchmark are all secured units. It is written in
+both the targeted and the actuals-only build. `paid.entriesToDate` keeps its old meaning.
+
+`hero.benchmarkPct` and the matching `benchmarkPct` on each `index.json` row are
+`(min(secured, edition) − benchmarkToday) / benchmarkToday`. The sidebar's three-state dot
+reads the **sign** of it; there is no threshold to pick, and 1/K runs from +15% to −54%
+across the launches on file, so a fixed one is wrong on most of them. Lever-mode releases
+carry `null` and fall back to a −10% band on `statusPct`.
+
 ## 6. API
 
 - `GET  /api/baskets?release=<id>` → `{ suggested: "cluster_0", baskets: [ {id, kind, name,
@@ -197,10 +213,13 @@ largest step, exactly as the close steps do.
   resolve; `members` must be known release names, at least 3, and must not contain this
   release. An invalid basket is a 400, not a silent fallback.
 
-Because the benchmark model needs the panel and the basket curves, a save that changes
-`benchmark_basket` or `stretch_mode` **re-runs the Python ETL for that release** rather than
-using the JS retarget path (`retargetSnapshot` stays for lever-mode edits). The save
-response is unchanged in shape.
+Because the benchmark model needs the panel and the basket curves, **every** save on a
+release whose snapshot carries a `benchmark` block re-runs the Python ETL, as does any save
+that changes `benchmark_basket` or `stretch_mode`. Benchmark mode is sticky: the JS
+`retargetSnapshot` only knows the lever model, so on a benchmark release it would move
+`hero.target` and leave `benchmark.units` and `benchmark.k` behind, and the page would then
+quote a target and a benchmark that no longer agree. `retargetSnapshot` stays as the fast
+path for lever-mode edits only. The save response is unchanged in shape.
 
 ## 7. Drawing grammar (web)
 
@@ -233,6 +252,17 @@ The quartile levers are replaced (kept behind an `Evenly | By channel` switch) b
 2. **Stretch** card — benchmark (read-only), sellout (the edition size input), the stretch
    that falls out, and the `Evenly | By channel` switch.
 3. **Derived targets** rail — three columns: Benchmark, Target, Stretch.
+
+The rail's Benchmark column takes the basket's own median wherever the basket has one
+(`unitsByGroup.paid`, `entries`, `sessions`, `paidBudget`, and `paidBudget ÷ basket launch
+value` for the percentage row), so the rail and the per-channel table above it quote the
+same figures. `target ÷ K` is the fallback, and only under `Evenly`, for the two rows the
+basket has no equivalent for — the draw / private-room split is a target-model construct,
+not a channel. Under `By channel` those rows show a dash: the levers' targets come out of
+the quartile model, so the quotient is not the basket's median and printing it would invent
+a figure. The percentage row is why the division cannot be applied everywhere — K is in both
+the budget and the launch value and cancels, so dividing again would print a benchmark share
+1/K of the real one.
 
 The **basket picker** is a modal with two tabs: `Ready-made` (radio cards with n, median
 units and the middle half, median sessions, paid share, campaign days, examples, and a
