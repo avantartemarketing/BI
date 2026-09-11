@@ -274,6 +274,18 @@ pipeline's accumulators are already silently truncating history (docs §11).
 
 ## Signing in
 
+The app can sit behind **Sign in with Google**, restricted to the company Workspace
+domain. Create a "Web application" OAuth client in Google Cloud Console (consent screen
+type **Internal** so only avantarte.com accounts can sign in), give it the redirect URI
+`https://<your host>/auth/google/callback`, and set `GOOGLE_OAUTH_CLIENT_ID` and
+`GOOGLE_OAUTH_CLIENT_SECRET` on Render. The login page then shows "Continue with Google";
+the server verifies the ID token itself (signature, issuer, audience, expiry, nonce,
+verified email, domain) and issues the same session cookie as a password login. An account
+in the domain that is not yet on the Permissions tab is added as a user on first sign-in;
+set `GOOGLE_LOGIN_ALLOWLIST_ONLY=1` to refuse those instead. Once everyone has moved,
+`LOGIN_GOOGLE_ONLY=1` hides the password form. `PUBLIC_URL` pins the redirect base when
+the host header cannot be trusted.
+
 The app is behind a **password login for allow-listed emails**: enter your
 email and the shared password on `/login` and you get a 90-day session that
 renews itself on activity - regular users stay signed in indefinitely.

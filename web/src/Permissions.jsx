@@ -63,7 +63,7 @@ export default function Permissions({ me }) {
                 every release, the Overview and Target setting tabs - but no access to accounts.
               </p>
               <p style={{ marginBottom: 10 }}>
-                You set each person's password here and share it with them directly. Passwords are
+                Anyone who signs in with their Google account is added here as a user automatically. For password accounts, you set each person's password here and share it with them directly. Passwords are
                 stored hashed and are never shown again, so a forgotten one is reset, not looked up.
               </p>
               <p>

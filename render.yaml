@@ -31,6 +31,10 @@ services:
         sync: false
       - key: PII_HASH_SALT   # long random string; keys the per-contact hash computed in BigQuery (never in the repo)
         sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID      # Sign in with Google: "Web application" OAuth client, redirect URI <site>/auth/google/callback
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
       - key: HUBSPOT_TOKEN   # HubSpot Private App token (Marketing Email read scope) - live email delivered/open/click stats
         sync: false
       - key: NOTION_TOKEN   # Notion internal-integration secret (share the artist-posts database with it) - live artist posts
