@@ -1,9 +1,15 @@
 /* Shared primitives for dashboard modules.
- * Chart conventions (design handoff, final):
+ * Chart conventions (design handoff, final; reference marks per BENCHMARK_SPEC 1 and 7):
  *  actual = solid #eb6834 · projection = dotted #f7c4ad · plan = grey dashed #c8c5bc
- *  target = ink 2px tick (or #b8b3a6 line) · expected tick on bars = white 2px + ink ring
- *  overshoot = 135° hatch · bar tracks run to 120% of reference, target tick at 83.3%.
- */
+ *  target = ink 2px mark · benchmark = cobalt 2px mark · overshoot = 135° hatch
+ *  bar tracks run to 120% of the reference, so the target mark sits at 83.3%.
+ * Target and benchmark are drawn identically - same 2px, same 3px bleed past the bar
+ * they cross, never a halo - so colour and label are the only thing telling them
+ * apart. The old white "expected" tick said the same thing in a third visual
+ * language and is retired.
+ * The drawing grammar lives here rather than in each module so every card says it
+ * the same way; these signatures are fixed by BENCHMARK_SPEC 9 because the modules
+ * are written against them in parallel. */
 import React, { createContext, useContext, useMemo, useRef, useState } from "react";
 
 /* ---- the popup system (agreed on the Dashboard Popups canvas) ----
@@ -70,6 +76,7 @@ export const C = {
   planGrey: "#c8c5bc", targetLine: "#b8b3a6", border: "#e5e4df",
   green: "#0f7052", amber: "#8a5f00", red: "#b8461d", wfGreen: "#2f7d3f",
   periwinkle: "#a5b6e3", todayLine: "#eeece5", white: "#fffefb",
+  cobalt: "#2b5fd9",
 };
 
 export const GROUP_DOTS = {
@@ -133,25 +140,52 @@ export function QBadge({ tip, content }) {
   return <span className="qbadge" title={tip}>?</span>;
 }
 
-/* Horizontal bar on a vs-target track. The target tick sits at 83.3% (a
+/* The 135° overshoot hatch, shared so the hero legend swatch and the bar itself
+ * are cut from the same cloth. */
+export const HATCH = `repeating-linear-gradient(135deg, ${C.orange} 0 1.5px, ${C.orangeLight} 1.5px 5px)`;
+
+/* One reference mark: the target (ink) or the benchmark (cobalt), 2px, bleeding
+ * 3px past the bar it crosses so the colour still reads on white either side of
+ * a fill. No box-shadow and no halo, ever - a halo would make one reference look
+ * heavier than the other, and the two are meant to be the same mark in two
+ * colours (BENCHMARK_SPEC 1). `vertical` is the mark on a horizontal bar; the
+ * horizontal form lies across a column, so the bleed swaps to left/right. */
+export function RefTick({ pct, kind, vertical = true, tip }) {
+  const t = useTip();
+  const color = kind === "benchmark" ? C.cobalt : C.ink;
+  const box = vertical
+    ? { left: `calc(${pct}% - 1px)`, top: -3, bottom: -3, width: 2 }
+    : { bottom: `calc(${pct}% - 1px)`, left: -3, right: -3, height: 2 };
+  return <div {...t.props(tip)} style={{ position: "absolute", background: color, ...box }} />;
+}
+
+/* Horizontal bar on a vs-target track. The target mark sits at 83.3% (a
  * 120%-of-target track) unless a value would overflow - then the scale widens
- * so the largest bar fits with a little headroom and the tick slides left.
- * Layers: projected fill (light) -> to-date fill (orange) ->
- * expected tick (white + ink ring) -> target tick (ink). */
+ * so the largest bar fits with a little headroom and the marks slide left.
+ * Layers, bottom to top: track -> projected fill (light) -> to-date fill
+ * (orange) -> over-target hatch -> benchmark mark (cobalt) -> target mark (ink).
+ * The target is drawn last because it is the thing being judged against, so it
+ * must survive landing on top of the benchmark.
+ * `exp` is the retired white tick's old prop: callers mid-migration still pass
+ * it, and it meant the same reference the ink mark now carries, so it stands in
+ * for `target` when `target` is absent. Prefer `target`. */
 export function TrackBar({
-  now, exp, proj, target, height = 20,
-  tips = {}, radius = 4,
+  now, proj, target, bm, hatchFrom, height = 20, radius = 4, tips = {}, exp,
 }) {
   const t = useTip();
   const tp = (x) => t.props(typeof x === "string" ? { head: x } : x);
   const TICK = 100 / 1.2; // 83.333
-  const maxData = Math.max(now ?? 0, proj ?? 0, exp ?? 0);
-  const maxV = Math.max(target > 0 ? target * 1.2 : 0, maxData * 1.04);
+  const ref = target ?? exp;
+  const maxData = Math.max(now ?? 0, proj ?? 0, bm ?? 0);
+  const maxV = Math.max(ref > 0 ? ref * 1.2 : 0, maxData * 1.04);
   const scale = maxV > 0 ? 100 / maxV : 0;
   const pct = (v) => Math.max(0, Math.min((v ?? 0) * scale, 100));
   const projW = pct(proj);
   const nowW = pct(now);
-  const tickPct = target > 0 ? pct(target) : TICK;
+  const fillW = Math.max(projW, nowW);
+  const tickPct = ref > 0 ? pct(ref) : TICK;
+  const hatchAt = hatchFrom === undefined || hatchFrom === null ? null : pct(hatchFrom);
+  const showHatch = hatchAt !== null && fillW > hatchAt;
   return (
     <div style={{ position: "relative", height, background: C.track, borderRadius: radius }}>
       <div {...tp(tips.proj)} style={{
@@ -162,16 +196,120 @@ export function TrackBar({
         position: "absolute", inset: 0, width: `${nowW}%`,
         background: C.orange, borderRadius: radius,
       }} />
-      {exp !== undefined && exp !== null && (
-        <div {...tp(tips.exp)} style={{
-          position: "absolute", top: 0, bottom: 0, left: `calc(${pct(exp)}% - 1px)`, width: 2,
-          background: C.white, boxShadow: "0 0 0 1px rgba(20,20,19,.45)",
+      {showHatch && (
+        <div {...tp(tips.overshoot)} style={{
+          position: "absolute", top: 0, bottom: 0,
+          left: `${hatchAt}%`, width: `${fillW - hatchAt}%`,
+          background: HATCH,
+          borderTopRightRadius: radius, borderBottomRightRadius: radius,
         }} />
       )}
-      <div {...tp(tips.target)} style={{
-        position: "absolute", top: 0, bottom: 0, left: `calc(${tickPct}% - 1px)`, width: 2,
-        background: C.ink,
+      {bm !== undefined && bm !== null && (
+        <RefTick pct={pct(bm)} kind="benchmark" tip={tips.bm} />
+      )}
+      <RefTick pct={tickPct} kind="target" tip={tips.target} />
+    </div>
+  );
+}
+
+/* Deviation rung geometry, shared by Funnel by channel and Organic funnel
+ * (BENCHMARK_SPEC 7 and 9). The benchmark is the rung centre (b = 1), so the
+ * scale is a log one: a ratio and its reciprocal have to sit the same distance
+ * either side of the centre, which a linear percentage scale cannot do. ×4
+ * either way fills the rung, and anything past that is clamped and flagged
+ * `beyond` so the caller can mark it rather than silently pile up at the end.
+ *   aOverB : actual / benchmark   (null -> neutral rung, so we return null)
+ *   kind   : "vol"  target = benchmark × k (volumes carry the even uplift)
+ *            "rate" target = benchmark     (rates are held at the benchmark)
+ * `rel` is the % vs TARGET, not vs benchmark: the target is what the business
+ * committed to, so it is what the card prints and RAG-colours. */
+export function rungGeom(aOverB, kind, k) {
+  if (aOverB === null || aOverB === undefined || Number.isNaN(aOverB)) return null;
+  const targetRatio = kind === "vol" ? (k > 0 ? k : 1) : 1;
+  const pos = (ratio) => (ratio > 0
+    ? Math.max(4, Math.min(96, 50 + (Math.log2(ratio) / 2) * 46))
+    : 4);
+  const far = (ratio) => ratio > 4 || (ratio > 0 && 1 / ratio > 4) || ratio <= 0;
+  return {
+    rel: (aOverB / targetRatio - 1) * 100,
+    dev: pos(aOverB),
+    ring: pos(targetRatio),
+    beyond: far(aOverB) || far(targetRatio),
+  };
+}
+
+/* The rung itself: hairline rail, cobalt benchmark line down the centre, a pale
+ * bar spanning target ring to actual dot so the gap has length, the dot, and the
+ * hollow ink target ring drawn LAST so it stays legible when the dot lands on
+ * it. `guide` extends the centre line past the rail to tie stacked rungs
+ * together, as the organic funnel does. Neutral means no reference to judge
+ * against, so only a grey dot on the centre. */
+export function RungTrack({ dev, ring, up, neutral, guide }) {
+  const lo = Math.min(dev, ring);
+  return (
+    <div style={{ position: "relative", height: 12 }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 5, height: 2, background: C.hairline }} />
+      <div style={{
+        position: "absolute", left: "50%", marginLeft: -0.75, width: 1.5,
+        top: guide ? -14 : 0, bottom: guide ? -14 : 0, background: C.cobalt,
       }} />
+      {!neutral && (
+        <div style={{
+          position: "absolute", top: 5, height: 4, left: `${lo}%`,
+          width: `${Math.abs(dev - ring)}%`,
+          background: up ? "#f7c4ad" : "#eeb9a3", borderRadius: 2,
+        }} />
+      )}
+      <div style={{
+        position: "absolute", left: `${neutral ? 50 : dev}%`, top: 1,
+        width: 10, height: 10, marginLeft: -5, borderRadius: "50%",
+        background: neutral ? "#c8c5bc" : up ? C.orange : C.red,
+        boxShadow: "0 0 0 1px rgba(20,20,19,.45)",
+      }} />
+      {!neutral && (
+        <div style={{
+          position: "absolute", left: `${ring}%`, top: 0,
+          width: 12, height: 12, marginLeft: -6, borderRadius: "50%",
+          border: `1.5px solid ${C.ink}`, background: "transparent", boxSizing: "border-box",
+        }} />
+      )}
+    </div>
+  );
+}
+
+/* The legend marks, in one place so every card names the references the same
+ * way (BENCHMARK_SPEC 2: "expected" and "benchmark pace" are retired). The
+ * horizon only changes the words, never the marks. Any trailing note - the
+ * stretch figure, a count - is the caller's own and arrives as children,
+ * because only the card knows the number. */
+export function RefKey({ horizon, showStretch, children }) {
+  const close = horizon === "close";
+  const item = { display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: C.muted, whiteSpace: "nowrap" };
+  const line = (bg) => ({ width: 12, height: 2, background: bg, flex: "0 0 12px" });
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+      <span style={item}>
+        <span style={{ width: 10, height: 10, borderRadius: 2, background: C.orange, flex: "0 0 10px" }} />
+        {close ? "Projected" : "To date"}
+      </span>
+      <span style={item}>
+        <span style={line(C.ink)} />
+        {close ? "Target" : "Target today"}
+      </span>
+      <span style={item}>
+        <span style={line(C.cobalt)} />
+        {close ? "Benchmark" : "Benchmark today"}
+      </span>
+      {showStretch && (
+        <span style={item}>
+          <span style={{
+            width: 10, height: 10, borderRadius: 2, flex: "0 0 10px",
+            background: "repeating-linear-gradient(135deg, #c8c5bc 0 1.5px, #ece9e1 1.5px 5px)",
+          }} />
+          Stretch
+        </span>
+      )}
+      {children}
     </div>
   );
 }

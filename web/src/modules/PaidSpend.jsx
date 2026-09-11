@@ -1,20 +1,34 @@
-/* Paid spend / day (spec §4.7, LE "Capped by" case §6.3).
+/* Paid spend / day (spec §4.7, LE "Capped by" case §6.3; references and horizon
+ * per BENCHMARK_SPEC 2 and 7).
  * Lead = recommended daily budget with an arrow lozenge vs current; "Capped by" row
  * names the binding limit (supply sell-out vs ROI floor); two 120%-track bars put
- * paid entries and spend on the same visual scale; footer buttons write to the
+ * paid units and spend on the same visual scale; footer buttons write to the
  * append-only decision log. Complete releases: projection = actual, recommendation "-",
- * buttons disabled. Pre-launch releases (no campaign yet) disable the buttons too. */
+ * buttons disabled. Pre-launch releases (no campaign yet) disable the buttons too.
+ *
+ * Both bars now carry the cobalt benchmark alongside the ink target, so "behind
+ * target" and "behind what a launch like this usually spends to get here" are two
+ * different readings rather than one. The Stretch row under "Capped by" names the
+ * uplift once in words, because it is the same even multiple on every channel and
+ * every day (BENCHMARK_SPEC 1) and so has no business being redrawn per bar.
+ *
+ * Today reads spend and units to date against the campaign's pro-rata share of the
+ * close figures - paid pacing is a daily budget decision, so the day count is the
+ * honest denominator here. At close it is the projections against the full target
+ * and the full benchmark budget. When snap.benchmark is absent the cobalt ticks and
+ * the Stretch row are simply not drawn. */
 import React, { useState } from "react";
-import { Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, MINUS, postDecision, useTip } from "../ui.jsx";
+import { Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip } from "../ui.jsx";
 
 const money = (v) => "£" + fmt(Math.round(v ?? 0));
 const moneyK = (v) => "£" + fmtK(v ?? 0);
 
-export default function PaidSpend({ snap }) {
+export default function PaidSpend({ snap, horizon = "today" }) {
   const tipApi = useTip();
   const paid = snap.paid || {};
   if (snap.targeted === false) return <PaidSpendActuals snap={snap} />;
   const budget = paid.budget || {};
+  const close = horizon === "close";
   const complete = !!snap.complete;
   const noCampaign = !snap.campaignName;
   const [decision, setDecision] = useState(null); // 'implement' | 'ignore'
@@ -123,29 +137,64 @@ export default function PaidSpend({ snap }) {
   };
 
   // ----- bars (120% track, target tick at 83.3%) -----
-  const entriesNow = Math.round((paid.daily || []).reduce((t, x) => t + (x.entries ?? 0), 0));
-  const entriesProj = complete ? entriesNow : (paid.unitProjected ?? entriesNow);
-  const entriesTarget = paid.unitTarget ?? 0;
-  const entriesPct = entriesTarget > 0 ? Math.round((entriesProj / entriesTarget) * 100) : null;
-  const entriesTip = {
-    head: "Paid entries",
+  // Today's references are the pro-rata share of the close figures: the paid plan
+  // is a flat daily budget, so days elapsed is the share of it that should be spent.
+  const dayFrac = close ? 1
+    : snap.day > 0 && snap.of > 0 ? Math.min(1, snap.day / snap.of)
+    : 1;
+  const hasBm = !!snap.benchmark;
+  const bmUnitsAll = hasBm && paid.benchmarkUnits !== null && paid.benchmarkUnits !== undefined
+    ? paid.benchmarkUnits : null;
+  const bmSpendAll = hasBm && paid.benchmarkBudget !== null && paid.benchmarkBudget !== undefined
+    ? paid.benchmarkBudget : null;
+  const targetWord = close ? "Target" : "Target today";
+  const bmWord = close ? "Benchmark" : "Benchmark today";
+  const bmBody = "The median of the matched basket - what launches like this one typically reach.";
+
+  const unitsNow = Math.round((paid.daily || []).reduce((t, x) => t + (x.entries ?? 0), 0));
+  const unitsProj = complete ? unitsNow : (paid.unitProjected ?? unitsNow);
+  const unitsFill = close ? unitsProj : unitsNow;
+  const unitsTarget = (paid.unitTarget ?? 0) * dayFrac;
+  const unitsBm = bmUnitsAll === null ? null : bmUnitsAll * dayFrac;
+  const unitsPct = unitsTarget > 0 ? Math.round((unitsFill / unitsTarget) * 100) : null;
+  const unitsTip = {
+    head: "Paid units",
     rows: [
-      { label: "To date", value: fmt(entriesNow) },
-      ...(complete ? [] : [{ label: "Projected", value: fmt(entriesProj) }]),
-      { label: "Target", value: fmt(entriesTarget) },
+      { label: "To date", value: fmt(unitsNow) },
+      ...(complete || !close ? [] : [{ label: "Projected", value: fmt(unitsProj) }]),
+      { label: targetWord, value: fmt(unitsTarget) },
+      ...(unitsBm === null ? [] : [{ label: bmWord, value: fmt(unitsBm) }]),
     ],
   };
 
   const spendNow = paid.spendToDate ?? 0;
   const spendProj = complete ? spendNow : (paid.spendProjectedTotal ?? spendNow);
-  const spendTarget = paid.spendBudget ?? 0;
+  const spendFill = close ? spendProj : spendNow;
+  const spendTarget = (paid.spendBudget ?? 0) * dayFrac;
+  const spendBm = bmSpendAll === null ? null : bmSpendAll * dayFrac;
   const spendTip = {
     head: "Spend",
     rows: [
       { label: "To date", value: moneyK(spendNow) },
-      ...(complete ? [] : [{ label: "Projected", value: moneyK(spendProj) }]),
-      { label: "Budget", value: moneyK(spendTarget) },
+      ...(complete || !close ? [] : [{ label: "Projected", value: moneyK(spendProj) }]),
+      { label: close ? "Budget" : "Budget today", value: moneyK(spendTarget) },
+      ...(spendBm === null ? [] : [{ label: bmWord, value: moneyK(spendBm) }]),
     ],
+  };
+
+  // ----- the stretch, said once in words rather than redrawn on every bar -----
+  const k = snap.benchmark?.k ?? null;
+  const stretchUnits = bmUnitsAll === null ? null : unitsTarget - bmUnitsAll * dayFrac;
+  const showStretch = k > 0 && stretchUnits !== null;
+  const stretchTip = {
+    head: "Stretch",
+    rows: [
+      { label: bmWord, value: fmt(unitsBm ?? 0) },
+      { label: targetWord, value: fmt(unitsTarget) },
+      { label: "Stretch", value: fmtSigned(Math.round(stretchUnits ?? 0)) + " units" },
+      { label: "Uplift", value: "×" + fmt(k ?? 0, 2) },
+    ],
+    body: "The even uplift the business put on the basket's median. It is the same multiple in every channel and on every day, so the paid share of it is simply the benchmark's paid units at that multiple.",
   };
 
   // ----- decision buttons -----
@@ -187,52 +236,73 @@ export default function PaidSpend({ snap }) {
           <Lozenge color="blue" content={capTip}>{capLabel}</Lozenge>
         </div>
       )}
+      {showStretch && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto",
+          marginTop: showCap ? 8 : 0,
+        }}>
+          <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Stretch</span>
+          <Lozenge dir="neutral" content={stretchTip}>
+            {"×" + fmt(k, 2) + " on the benchmark · " + fmtSigned(Math.round(stretchUnits)) +
+              " units " + (close ? "at close" : "by today")}
+          </Lozenge>
+        </div>
+      )}
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 20 }}>
         <div style={rowGrid}>
-          <span style={rowLabel}>Paid entries</span>
+          <span style={rowLabel}>Paid units</span>
           <TrackBar
-            now={entriesNow}
-            proj={entriesProj}
-            target={entriesTarget}
+            now={unitsNow}
+            proj={close ? unitsProj : null}
+            target={unitsTarget}
+            bm={unitsBm}
             height={20}
             radius={5}
             tips={{
-              now: entriesTip,
-              proj: entriesTip,
-              target: { head: "Target", rows: [{ label: "Paid entries", value: fmt(entriesTarget) }] },
-              overshoot: { head: "Over target", rows: [{ label: "Entries", value: "+" + fmt(Math.max(0, entriesProj - entriesTarget)) }] },
+              now: unitsTip,
+              proj: unitsTip,
+              target: { head: targetWord, rows: [{ label: "Paid units", value: fmt(unitsTarget) }] },
+              bm: unitsBm === null ? null : { head: bmWord, rows: [{ label: "Paid units", value: fmt(unitsBm) }], body: bmBody },
+              overshoot: { head: "Over target", rows: [{ label: "Units", value: "+" + fmt(Math.max(0, unitsFill - unitsTarget)) }] },
             }}
           />
           <span
-            {...tipApi.props(entriesTip)}
-            style={{ ...rightLabel, color: entriesPct !== null && entriesProj >= entriesTarget ? C.ink : C.red }}
+            {...tipApi.props(unitsTip)}
+            style={{ ...rightLabel, color: unitsPct !== null && unitsFill >= unitsTarget ? C.ink : C.red }}
           >
-            {entriesPct !== null ? entriesPct + "%" : "–"}
+            {unitsPct !== null ? unitsPct + "%" : "–"}
           </span>
         </div>
         <div style={rowGrid}>
           <span style={rowLabel}>Spend</span>
           <TrackBar
             now={spendNow}
-            proj={spendProj}
+            proj={close ? spendProj : null}
             target={spendTarget}
+            bm={spendBm}
             height={20}
             radius={5}
             tips={{
               now: spendTip,
               proj: spendTip,
-              target: { head: "Budget", rows: [{ label: "Spend", value: moneyK(spendTarget) }] },
-              overshoot: { head: "Over budget", rows: [{ label: "Spend", value: "+" + moneyK(Math.max(0, spendProj - spendTarget)) }] },
+              target: { head: close ? "Budget" : "Budget today", rows: [{ label: "Spend", value: moneyK(spendTarget) }] },
+              bm: spendBm === null ? null : { head: bmWord, rows: [{ label: "Spend", value: moneyK(spendBm) }], body: bmBody },
+              overshoot: { head: "Over budget", rows: [{ label: "Spend", value: "+" + moneyK(Math.max(0, spendFill - spendTarget)) }] },
             }}
           />
-          <span {...tipApi.props(spendTip)} style={rightLabel}>{moneyK(spendProj)}</span>
+          <span {...tipApi.props(spendTip)} style={rightLabel}>{moneyK(spendFill)}</span>
         </div>
         <div style={{ height: 14, display: "flex", gap: 14, alignItems: "center" }}>
           <div style={legendItem}><span style={sw(C.orange)} />To date</div>
-          <div style={legendItem}><span style={sw(C.orangeLight)} />Projected</div>
+          {close && <div style={legendItem}><span style={sw(C.orangeLight)} />Projected</div>}
           <div style={legendItem}>
-            <span style={{ width: 2, height: 10, background: C.ink, flex: "0 0 2px" }} />Target
+            <span style={{ width: 2, height: 10, background: C.ink, flex: "0 0 2px" }} />{targetWord}
           </div>
+          {unitsBm !== null && (
+            <div style={legendItem}>
+              <span style={{ width: 2, height: 10, background: C.cobalt, flex: "0 0 2px" }} />{bmWord}
+            </div>
+          )}
         </div>
       </div>
       <div style={{ height: 12, flex: "0 0 12px" }} />

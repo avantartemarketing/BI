@@ -570,9 +570,9 @@
    "type": "LE",
    "campaign_code": "AiWeiwei_LE_25",
    "campaign_name": "AiWeiwei_LE_25 \u00b7 Enter draw",
-   "announce_date": "2025-10-20",
+   "announce_date": "2025-10-22",
    "launch_end": "2025-11-17",
-   "private_room_open": "2025-10-06",
+   "private_room_open": "2025-10-08",
    "dates_note": null
   },
   "ai_weiwei_multiple_2026_q3": {
@@ -582,9 +582,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2026-08-27",
+   "announce_date": "2026-08-28",
    "launch_end": "2026-09-24",
-   "private_room_open": "2026-08-13",
+   "private_room_open": "2026-08-14",
    "dates_note": null
   },
   "ai_weiwei_to_be_looked_at_2024_q4": {
@@ -594,9 +594,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-10-07",
+   "announce_date": "2024-10-15",
    "launch_end": "2024-11-04",
-   "private_room_open": "2024-09-23",
+   "private_room_open": "2024-10-01",
    "dates_note": null
   },
   "alex_katz_ada_ada_2025_q4": {
@@ -693,7 +693,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock present but incomplete"
   },
   "anna_weyant_loose_screw_2022_q2": {
    "release_name": "Anna Weyant \u00b7 Loose Screw \u00b7 2022 Q2",
@@ -798,9 +798,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-12-10",
+   "launch_end": "2025-01-28",
+   "private_room_open": "2024-11-26",
    "dates_note": null
   },
   "asuka_anastacia_ogawa_sleepy_2024_q2": {
@@ -810,10 +810,10 @@
    "type": "LE",
    "campaign_code": "ASUKA_SLEEPY_24",
    "campaign_name": null,
-   "announce_date": "2024-05-07",
-   "launch_end": "2024-05-22",
-   "private_room_open": "2024-04-23",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-05-21 (-331 days) - not usable"
   },
   "aubrey_levinthal_bed_beach_2022_q1": {
    "release_name": "Aubrey Levinthal \u00b7 Bed/Beach \u00b7 2022 Q1",
@@ -858,10 +858,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-02-09",
-   "launch_end": "2024-02-21",
-   "private_room_open": "2024-01-26",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-02-20 (-422 days) - not usable"
   },
   "baldur_helgason_picaresque_2022_q4": {
    "release_name": "Baldur Helgason \u00b7 Picaresque \u00b7 2022 Q4",
@@ -897,7 +897,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2024-02-19 (-423 days) - not usable"
   },
   "bony_ramirez_toro_2023_q4": {
    "release_name": "Bony Ramirez \u00b7 TORO! \u00b7 2023 Q4",
@@ -935,6 +935,18 @@
    "private_room_open": null,
    "dates_note": null
   },
+  "cai_guo_qiang_quantum_entanglement_print_1_2026_q4": {
+   "release_name": "Cai Guo-Qiang \u00b7 Quantum entanglement print 1 \u00b7 2026 Q4",
+   "artist": "Cai Guo-Qiang",
+   "title": "Quantum entanglement print 1",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": "2026-09-24",
+   "launch_end": "2026-10-26",
+   "private_room_open": "2026-09-10",
+   "dates_note": null
+  },
   "cai_guo_qiang_snow_lotus_no_1_2024_q1": {
    "release_name": "Cai Guo-Qiang \u00b7 Snow Lotus No. 1 \u00b7 2024 Q1",
    "artist": "Cai Guo-Qiang",
@@ -945,7 +957,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2024-02-21 (-421 days) - not usable"
   },
   "caleb_hahne_quintana_ourselves_scattered_parts_of_earth_2023_q1": {
    "release_name": "Caleb Hahne Quintana \u00b7 Ourselves Scattered Parts Of Earth \u00b7 2023 Q1",
@@ -1170,9 +1182,9 @@
    "type": "LE",
    "campaign_code": "ClaireTab_Tapestry_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-11-19",
+   "launch_end": "2024-12-11",
+   "private_room_open": "2024-11-05",
    "dates_note": null
   },
   "clayton_schiff_visitor_2022_q3": {
@@ -1302,9 +1314,9 @@
    "type": "LE",
    "campaign_code": "DanielleM_Shelter_24",
    "campaign_name": null,
-   "announce_date": "2024-08-20",
+   "announce_date": "2024-08-21",
    "launch_end": "2024-09-11",
-   "private_room_open": "2024-08-06",
+   "private_room_open": "2024-08-07",
    "dates_note": null
   },
   "danielle_orchard_a_warm_garden_2023_q2": {
@@ -1341,7 +1353,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2024-01-22 (-451 days) - not usable"
   },
   "deborah_brown_march_snowstorm_2023_q2": {
    "release_name": "Deborah Brown \u00b7 March Snowstorm \u00b7 2023 Q2",
@@ -1374,10 +1386,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-02-08",
-   "launch_end": "2024-02-14",
-   "private_room_open": "2024-01-25",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-02-13 (-429 days) - not usable"
   },
   "dennis_osadebe_in_search_for_light_2023_q4": {
    "release_name": "Dennis Osadebe \u00b7 In Search For Light \u00b7 2023 Q4",
@@ -1458,10 +1470,10 @@
    "type": "LE",
    "campaign_code": "EDDIE_SCAFFOLD_24",
    "campaign_name": null,
-   "announce_date": "2024-05-08",
-   "launch_end": "2024-06-18",
-   "private_room_open": "2024-04-24",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-06-17 (-304 days) - not usable"
   },
   "ekene_emeka_maduka_tinko_tinko_in_pretty_aunty_give_me_cake_2021_q3": {
    "release_name": "Ekene Emeka-Maduka \u00b7 Tinko, Tinko in pretty aunty-give-me-cake \u00b7 2021 Q3",
@@ -1494,10 +1506,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-02-21",
-   "launch_end": "2024-03-07",
-   "private_room_open": "2024-02-07",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-03-06 (-407 days) - not usable"
   },
   "en_iwamura_multiple_2025_q3": {
    "release_name": "En Iwamura \u00b7 Multiple \u00b7 2025 Q3",
@@ -1662,9 +1674,9 @@
    "type": "LE",
    "campaign_code": "GeorgeCondo_Model_25",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-01-15",
+   "launch_end": "2025-02-18",
+   "private_room_open": "2025-01-01",
    "dates_note": null
   },
   "george_condo_fashion_model_2025_q1": {
@@ -1686,10 +1698,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-02-15",
-   "launch_end": "2024-03-20",
-   "private_room_open": "2024-02-01",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-03-19 (-394 days) - not usable"
   },
   "george_rouy_keeping_it_for_myself_2022_q1": {
    "release_name": "George Rouy \u00b7 Keeping it for Myself \u00b7 2022 Q1",
@@ -1737,7 +1749,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2023-12-13 (-491 days) - not usable"
   },
   "gisela_mcdaniel_are_you_watching_2022_q1": {
    "release_name": "Gisela McDaniel \u00b7 Are you watching? \u00b7 2022 Q1",
@@ -1830,9 +1842,9 @@
    "type": "LE",
    "campaign_code": "GraysonPe_Large_25",
    "campaign_name": "GraysonPe_Large_25 \u00b7 Pre-order",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-03-13",
+   "launch_end": "2025-04-16",
+   "private_room_open": "2025-02-27",
    "dates_note": null
   },
   "guimi_you_point_reyes_2022_q4": {
@@ -1890,9 +1902,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2025-08-28",
+   "announce_date": "2025-08-29",
    "launch_end": "2025-09-30",
-   "private_room_open": "2025-08-14",
+   "private_room_open": "2025-08-15",
    "dates_note": null
   },
   "harland_miller_york_so_good_they_named_it_once_2025_q2": {
@@ -2070,9 +2082,9 @@
    "type": "LE",
    "campaign_code": "IskraVeli_Eyeless_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-08-28",
+   "launch_end": "2024-09-10",
+   "private_room_open": "2024-08-14",
    "dates_note": null
   },
   "jr_giants_high_jump_in_rio_2023_q3": {
@@ -2130,10 +2142,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-01-08",
-   "launch_end": "2024-01-17",
-   "private_room_open": "2023-12-25",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-01-16 (-457 days) - not usable"
   },
   "james_jarvis_hang_in_there_2025_q3": {
    "release_name": "James Jarvis \u00b7 Hang in there! \u00b7 2025 Q3",
@@ -2190,9 +2202,9 @@
    "type": "LE",
    "campaign_code": "JammieHol_Print_25",
    "campaign_name": null,
-   "announce_date": "2025-02-03",
+   "announce_date": "2025-02-04",
    "launch_end": "2025-03-04",
-   "private_room_open": "2025-01-20",
+   "private_room_open": "2025-01-21",
    "dates_note": null
   },
   "jang_koal_umma_2022_q4": {
@@ -2226,10 +2238,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-04-08",
-   "launch_end": "2024-04-30",
-   "private_room_open": "2024-03-25",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-04-30 (-352 days) - not usable"
   },
   "jean_michel_othoniel_lotus_of_hope_2021_q4": {
    "release_name": "Jean-Michel Othoniel \u00b7 Lotus of Hope \u00b7 2021 Q4",
@@ -2442,9 +2454,9 @@
    "type": "LE",
    "campaign_code": "JohnsonTs_Rememb_25",
    "campaign_name": "JohnsonTs_Rememb_25 \u00b7 Enter draw",
-   "announce_date": "2025-06-25",
+   "announce_date": "2025-07-14",
    "launch_end": "2025-08-14",
-   "private_room_open": "2025-06-11",
+   "private_room_open": "2025-06-30",
    "dates_note": null
   },
   "johnson_tsang_searching_for_spring_2022_q2": {
@@ -2466,9 +2478,9 @@
    "type": "LE",
    "campaign_code": "JohnsonTs_Moment_24",
    "campaign_name": "JohnsonTs_Moment_24 \u00b7 Draw",
-   "announce_date": "2024-09-10",
+   "announce_date": "2024-09-11",
    "launch_end": "2024-10-09",
-   "private_room_open": "2024-08-27",
+   "private_room_open": "2024-08-28",
    "dates_note": null
   },
   "johnson_tsang_work_in_progress_2026_q1": {
@@ -2550,9 +2562,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-12-10",
+   "launch_end": "2025-01-28",
+   "private_room_open": "2024-11-26",
    "dates_note": null
   },
   "jos_parl_multiple_2024_q4": {
@@ -2766,10 +2778,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-05-14",
-   "launch_end": "2024-05-29",
-   "private_room_open": "2024-04-30",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-05-28 (-324 days) - not usable"
   },
   "keita_morimoto_cityscape_2023_q2": {
    "release_name": "Keita Morimoto \u00b7 Cityscape \u00b7 2023 Q2",
@@ -2898,9 +2910,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2025-03-24",
+   "announce_date": "2025-04-11",
    "launch_end": "2025-05-14",
-   "private_room_open": "2025-03-10",
+   "private_room_open": "2025-03-28",
    "dates_note": null
   },
   "ly_luv_new_beginnings_2026_q3": {
@@ -2922,10 +2934,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2023-11-23",
-   "launch_end": "2023-12-12",
-   "private_room_open": "2023-11-09",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2023-12-11 (-493 days) - not usable"
   },
   "ly_multiple_2022_q1": {
    "release_name": "LY \u00b7 Multiple \u00b7 2022 Q1",
@@ -3006,10 +3018,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-01-22",
-   "launch_end": "2024-02-13",
-   "private_room_open": "2024-01-08",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-02-12 (-430 days) - not usable"
   },
   "lawrence_weiner_here_now_2022_q4": {
    "release_name": "Lawrence Weiner \u00b7 HERE & NOW \u00b7 2022 Q4",
@@ -3093,7 +3105,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2024-05-13 (-339 days) - not usable"
   },
   "luc_tuymans_bell_boy_2026_q1": {
    "release_name": "Luc Tuymans \u00b7 Bell Boy \u00b7 2026 Q1",
@@ -3126,10 +3138,10 @@
    "type": "LE",
    "campaign_code": "Magdalena_Mouse_24",
    "campaign_name": "Magdalena_Mouse_24 \u00b7 Purchases",
-   "announce_date": "2024-07-11",
-   "launch_end": "2024-08-06",
-   "private_room_open": "2024-06-27",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-08-05 (-255 days) - not usable"
   },
   "maiko_kobayashi_moving_colours_2023_q1": {
    "release_name": "Maiko Kobayashi \u00b7 Moving Colours \u00b7 2023 Q1",
@@ -3247,7 +3259,7 @@
    "campaign_code": "MaurizioC_Rev_25",
    "campaign_name": "MaurizioC_Rev_25 \u00b7 Enter draw",
    "announce_date": "2025-09-23",
-   "launch_end": "2025-10-27",
+   "launch_end": "2025-10-24",
    "private_room_open": "2025-09-09",
    "dates_note": null
   },
@@ -3309,7 +3321,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2024-04-09 (-373 days) - not usable"
   },
   "michaela_yearwood_dan_multiple_2023_q4": {
    "release_name": "Michaela Yearwood-Dan \u00b7 Multiple \u00b7 2023 Q4",
@@ -3354,9 +3366,9 @@
    "type": "LE",
    "campaign_code": "MiwaKomat_Innocent_25",
    "campaign_name": null,
-   "announce_date": "2025-03-04",
+   "announce_date": "2025-03-05",
    "launch_end": "2025-04-02",
-   "private_room_open": "2025-02-18",
+   "private_room_open": "2025-02-19",
    "dates_note": null
   },
   "miwa_komatsu_multiple_2023_q4": {
@@ -3534,9 +3546,9 @@
    "type": "LE",
    "campaign_code": "Oscaryi_Cool_25",
    "campaign_name": "Oscaryi_Cool_25 \u00b7 Draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-03-25",
+   "launch_end": "2025-04-22",
+   "private_room_open": "2025-03-11",
    "dates_note": null
   },
   "other_world_dogs_of_war_2025_q2": {
@@ -3630,10 +3642,10 @@
    "type": "LE",
    "campaign_code": "PaulInsec_JunkShop_24",
    "campaign_name": null,
-   "announce_date": "2024-07-12",
-   "launch_end": "2024-07-30",
-   "private_room_open": "2024-06-28",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-07-29 (-262 days) - not usable"
   },
   "paul_insect_prismatic_visions_2026_q2": {
    "release_name": "Paul Insect \u00b7 Prismatic Visions \u00b7 2026 Q2",
@@ -3678,10 +3690,10 @@
    "type": "LE",
    "campaign_code": "Pejac_1000Print_24",
    "campaign_name": null,
-   "announce_date": "2024-07-05",
-   "launch_end": "2024-07-18",
-   "private_room_open": "2024-06-21",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-07-14 (-277 days) - not usable"
   },
   "pejac_multiple_2026_q1": {
    "release_name": "Pejac \u00b7 Multiple \u00b7 2026 Q1",
@@ -3714,10 +3726,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-05-02",
-   "launch_end": "2024-05-17",
-   "private_room_open": "2024-04-18",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-05-20 (-332 days) - not usable"
   },
   "prune_nourry_mater_earth_2023_q1": {
    "release_name": "Prune Nourry \u00b7 Mater Earth \u00b7 2023 Q1",
@@ -3789,7 +3801,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2024-01-31 (-442 days) - not usable"
   },
   "roby_dwi_antono_bias_ii_2022_q4": {
    "release_name": "Roby Dwi Antono \u00b7 BIAS II \u00b7 2022 Q4",
@@ -3966,9 +3978,9 @@
    "type": "LE",
    "campaign_code": "SayreGome_America_25",
    "campaign_name": "SayreGome_America_25 \u00b7 Draw",
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2025-04-03",
+   "launch_end": "2025-04-29",
+   "private_room_open": "2025-03-20",
    "dates_note": null
   },
   "scott_kahn_ingersoll_s_branch_2022_q4": {
@@ -4038,10 +4050,10 @@
    "type": "LE",
    "campaign_code": "Slawn_UglyBast_24",
    "campaign_name": null,
-   "announce_date": "2024-07-23",
-   "launch_end": "2024-08-08",
-   "private_room_open": "2024-07-09",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-08-07 (-253 days) - not usable"
   },
   "so_youn_lee_ready_2023_q4": {
    "release_name": "So Youn Lee \u00b7 Ready? \u00b7 2023 Q4",
@@ -4159,7 +4171,7 @@
    "campaign_code": "Tide_Sit_24",
    "campaign_name": null,
    "announce_date": "2024-08-29",
-   "launch_end": "2024-09-24",
+   "launch_end": "2024-11-04",
    "private_room_open": "2024-08-15",
    "dates_note": null
   },
@@ -4197,7 +4209,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2023-12-12 (-492 days) - not usable"
   },
   "takashi_murakami_multiple_2026_q2": {
    "release_name": "Takashi Murakami \u00b7 Multiple \u00b7 2026 Q2",
@@ -4230,9 +4242,9 @@
    "type": "LE",
    "campaign_code": "TakuObata_Resin_25",
    "campaign_name": null,
-   "announce_date": "2025-01-08",
+   "announce_date": "2025-01-20",
    "launch_end": "2025-02-21",
-   "private_room_open": "2024-12-25",
+   "private_room_open": "2025-01-06",
    "dates_note": null
   },
   "taku_obata_b_boy_seidou_2024_q4": {
@@ -4291,7 +4303,7 @@
    "campaign_code": "TomoKazum_Shaped_25",
    "campaign_name": null,
    "announce_date": "2025-09-09",
-   "launch_end": "2025-09-29",
+   "launch_end": "2025-09-22",
    "private_room_open": "2025-08-26",
    "dates_note": null
   },
@@ -4422,9 +4434,9 @@
    "type": "LE",
    "campaign_code": "Vhils_Timed_24",
    "campaign_name": null,
-   "announce_date": null,
-   "launch_end": null,
-   "private_room_open": null,
+   "announce_date": "2024-09-16",
+   "launch_end": "2024-09-24",
+   "private_room_open": "2024-09-02",
    "dates_note": null
   },
   "wang_zhibo_15_nationalistic_optimism_by_the_sea_2024_q3": {
@@ -4437,7 +4449,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2024-08-12 (-248 days) - not usable"
   },
   "will_cotton_the_cowgirl_2025_q1": {
    "release_name": "Will Cotton \u00b7 The Cowgirl \u00b7 2025 Q1",
@@ -4459,7 +4471,7 @@
    "campaign_code": "WilliamBl_LE_25",
    "campaign_name": "WilliamBl_LE_25 \u00b7 Enter draw",
    "announce_date": "2025-11-17",
-   "launch_end": "2025-12-08",
+   "launch_end": "2025-12-02",
    "private_room_open": "2025-11-03",
    "dates_note": null
   },
@@ -4470,10 +4482,10 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2024-01-12",
-   "launch_end": "2024-01-24",
-   "private_room_open": "2023-12-29",
-   "dates_note": null
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock gives 2025-04-17..2024-01-23 (-450 days) - not usable"
   },
   "woo_kuk_won_multiple_2024_q4": {
    "release_name": "Woo Kuk Won \u00b7 Multiple \u00b7 2024 Q4",
@@ -4494,9 +4506,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2025-08-19",
+   "announce_date": "2025-09-02",
    "launch_end": "2025-09-30",
-   "private_room_open": "2025-08-05",
+   "private_room_open": "2025-08-19",
    "dates_note": null
   },
   "yoon_hyup_ambre_roulette_2026_q3": {
@@ -4521,7 +4533,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2024-09-17 (-212 days) - not usable"
   },
   "yoon_hyup_in_the_city_2023_q4": {
    "release_name": "Yoon Hyup \u00b7 In The City \u00b7 2023 Q4",
@@ -4629,7 +4641,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2024-01-29 (-444 days) - not usable"
   },
   "zeng_fanzhi_rainbow_mask_series_1997_no_8_2026_q3": {
    "release_name": "Zeng Fanzhi \u00b7 Rainbow (Mask Series 1997 no.8) \u00b7 2026 Q3",
@@ -4665,7 +4677,7 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
-   "dates_note": null
+   "dates_note": "campaign clock gives 2025-04-17..2024-07-15 (-276 days) - not usable"
   },
   "b_wing_multiple_2022_q3": {
    "release_name": "b.wing \u00b7 Multiple \u00b7 2022 Q3",
@@ -4683,48 +4695,48 @@
  "meta_campaigns": [
   {
    "name": "SalvadorDali_LE_26 \u00b7 Enter draw",
-   "spend": 75735.29,
-   "last": "2026-09-10"
+   "spend": 76153.53,
+   "last": "2026-09-11"
   },
   {
    "name": "JamesJean_Blossom_26 \u00b7 Enter draw",
    "spend": 25936.13,
-   "last": "2026-09-10"
+   "last": "2026-09-11"
   },
   {
    "name": "AndyWarhol_TL_26 \u00b7 Enter draw",
-   "spend": 15192.03,
-   "last": "2026-09-10"
+   "spend": 19355.2,
+   "last": "2026-09-11"
   },
   {
    "name": "Abdulnasser_LE_26 \u00b7 Enter draw",
    "spend": 7482.43,
-   "last": "2026-09-10"
+   "last": "2026-09-11"
   },
   {
    "name": "ZengFanzhi_LE_26 \u00b7 Enter draw",
    "spend": 5386.98,
-   "last": "2026-09-10"
+   "last": "2026-09-11"
   },
   {
    "name": "GlennLigon_LE_26 \u00b7 Enter draw",
    "spend": 4086.95,
-   "last": "2026-09-10"
+   "last": "2026-09-11"
   },
   {
    "name": "Parra_LE_26 \u00b7 Enter draw",
    "spend": 3272.64,
-   "last": "2026-09-10"
+   "last": "2026-09-11"
   },
   {
    "name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
-   "spend": 2463.15,
-   "last": "2026-09-10"
+   "spend": 2892.65,
+   "last": "2026-09-11"
   },
   {
    "name": "RobertLongo_LE_26 \u00b7 Enter draw",
-   "spend": 262.5,
-   "last": "2026-09-10"
+   "spend": 587.38,
+   "last": "2026-09-11"
   },
   {
    "name": "Inventory_Test_26",

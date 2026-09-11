@@ -18,6 +18,8 @@
   --blue-deep: #28518f;
   --blue-tint: #eaf0fa;
   --blue-tint-border: #c3d5ee;
+  /* the benchmark reference colour (BENCHMARK_SPEC 1, 7) */
+  --cobalt: #2b5fd9;
 
   --green: #0f7052;
   --amber: #8a5f00;

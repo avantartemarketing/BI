@@ -9,6 +9,14 @@ Implements docs/DATA_MODEL.md exactly:
   §8 email/social funnel rungs
   §9 module map (hero, trajectory, channels, funnel contributions, waterfall)
 
+and docs/BENCHMARK_SPEC.md §4-§5 for a release benchmarked against a basket of
+comparable launches: the target is then the basket's medians lifted by one even
+uplift K rather than a stack of quartile picks, and the snapshot carries the
+benchmark alongside the target so every card can draw both. That path only
+opens when the release's inputs name a benchmark_basket; without one the
+quartile levers run exactly as they always have and no benchmark is written
+(docs/BENCHMARK_SPEC.md §4, "targeting_mode").
+
 Inputs:
   sources/across_time.csv           daily funnel export (channel x day x release + campaign clock)
   data/spend_daily.csv              Meta spend by campaign x day (etl/extract_spend.py)
@@ -17,6 +25,7 @@ Inputs:
   sources/draw_*.csv                draw entry exports (PII is stripped here; never committed)
   etl/release_inputs.json           hand-entered launch inputs per release
   etl/benchmarks.json               frozen benchmark values (docs §4)
+  data/release_clusters.csv         the draw panel the baskets are cut from (etl/baskets.py)
 
 Outputs:
   data/app/index.json               sidebar index (all releases + status)
@@ -37,6 +46,14 @@ from datetime import date, datetime, timedelta
 
 import numpy as np
 import pandas as pd
+
+# The basket half of the benchmark (BENCHMARK_SPEC §3): which past launches a
+# release is measured against and what their medians are. It is imported rather
+# than reimplemented because the picker API answers from the same module, and a
+# second copy of the medians here would be a benchmark that moves when nobody
+# changed anything. build.py is only ever run as a script (server/sheets.js
+# execs it), so etl/ is on the path.
+import baskets
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "sources"
@@ -305,7 +322,122 @@ def quality_for(release: dict, channel: str) -> str:
         channel, INPUTS["channel_quality_default"][channel])
 
 
-def compute_targets(release: dict) -> dict:
+def _group_channel_split(group: str) -> dict[str, float]:
+    """Each raw channel's share of its own display group, from the order_split
+    medians (BENCHMARK_SPEC §4).
+
+    The basket knows what a display group sells, not what the channels inside
+    it sell - the panel is grouped, because that is the grain the funnel export
+    is trustworthy at. The order_split medians are the only per-channel prior on
+    file, and renormalising them inside the group leaves the group's own total
+    exactly where the profile put it however the shares move.
+    """
+    chans = [c for c in DISPLAY_GROUPS[group]["channels"] if c in ORGANIC_CHANNELS]
+    weights = {c: float(BENCH["order_split"].get(c, {}).get("Medium", 0.0)) for c in chans}
+    total = sum(weights.values())
+    if total <= 0:
+        return {c: 1.0 / len(chans) for c in chans} if chans else {}
+    return {c: w / total for c, w in weights.items()}
+
+
+def benchmark_targets(release: dict, profile: dict) -> dict:
+    """Targets from a basket's medians (BENCHMARK_SPEC §4).
+
+    One even uplift K = edition / median units carries every volume - sessions,
+    entries, units, spend - in every channel and on every day. Conversion rates
+    are held at the benchmark: a target that quietly assumes the site converts
+    better than it ever has is a target nobody can act on, so the uplift is
+    asked of traffic and spend only.
+
+    The return carries exactly the lever model's top-level keys. Everything
+    downstream - group_targets, the channel loop, the paid model, the web's
+    target rail - reads this dict by name, and the benchmark is a different way
+    of arriving at the same quantities, not a different set of them.
+    """
+    b = BENCH
+    size = float(release["edition_size"])
+    k = size / profile["units"]
+    e2o = b["eligible_entry_to_order"]
+    units = {g: profile["units_by_group"][g] * k for g in baskets.GROUPS}
+    sessions = {g: profile["sessions_by_group"][g] * k for g in baskets.GROUPS}
+
+    paid_units = units["paid"]
+    organic_units = size - paid_units
+    pr_units = units["aa_email"] * profile["private_room_share"]
+    draw_units = organic_units - pr_units
+
+    per_channel = {}
+    for g in DISPLAY_GROUPS:
+        if g == "paid":
+            continue
+        # private-room units ride with AA Email by the workbook's convention
+        # (group_targets adds them back), so only the draw half of the email
+        # group is what its channels split between them
+        g_units = units[g] - (pr_units if g == "aa_email" else 0.0)
+        conv = profile["conv"][g]
+        for c, share in _group_channel_split(g).items():
+            purchases = g_units * share
+            per_channel[c] = {
+                # "benchmark" rather than a quartile: no lever was picked here
+                "quality": "benchmark",
+                # kept as the share of all draw units, the meaning the lever
+                # model gives this key, so the target table reads the same
+                "order_split": (purchases / draw_units) if draw_units else share,
+                "purchases": purchases,
+                "eligible_entries": purchases / e2o,
+                "sessions": sessions[g] * share,
+                "session_to_entry": conv,
+            }
+
+    cpp = b["cost_per_purchase"][release["cpp_pick"]]
+    budget = profile["units_by_group"]["paid"] * cpp * k
+    launch_value = size * release["unit_price"]
+    organic_sessions_draw = sum(pc["sessions"] for pc in per_channel.values())
+
+    out = {
+        "edition_size": release["edition_size"],
+        "paid_pct": (paid_units / size) if size else 0.0, "paid_units": paid_units,
+        "organic_units": organic_units,
+        "pr_other_pct": (pr_units / organic_units) if organic_units else 0.0,
+        "pr_units": pr_units, "draw_units": draw_units,
+        "per_channel": per_channel,
+        "pr_sessions": pr_units / b["email_session_to_purchase"],
+        "paid": {
+            "units": paid_units, "eligible_entries": paid_units / e2o,
+            "sessions": sessions["paid"], "session_to_entry": profile["conv"]["paid"],
+            "cost_per_purchase": cpp, "budget": budget,
+            "budget_pct_of_launch_value": budget / launch_value if launch_value else None,
+            "sense_check_breached": (budget / launch_value) > b["budget_sense_check_max_pct_of_launch_value"] if launch_value else False,
+        },
+        "launch_value": launch_value,
+        "organic_sessions_draw": organic_sessions_draw,
+        # the basket's own session total at the uplift. Private-room sessions
+        # are not added on top as the lever model does: the email median is
+        # measured on launches that ran a private room, so those sessions are
+        # already inside it and counting them twice would inflate the only
+        # number on the page that claims to be all the traffic.
+        "total_sessions": organic_sessions_draw + sessions["paid"],
+        # entries carry the same uplift as the units they convert from (§4):
+        # every secured unit is an entry that converted at e2o, private-room
+        # units included, so the whole edition divided by that rate
+        "entries_target": sum(pc["eligible_entries"] for pc in per_channel.values()) + paid_units / e2o,
+        "buffer": b["target_buffer"],
+    }
+    # the partition the whole page rests on: what the five groups are asked to
+    # sell is the edition, no more and no less (§4)
+    rolled = sum(g["units"] for g in group_targets(out).values())
+    assert abs(rolled - size) <= 0.5, (
+        f"benchmark group targets sum to {rolled:.2f}, edition size is {size:.0f}")
+    return out
+
+
+def compute_targets(release: dict, profile: dict | None = None) -> dict:
+    # Benchmark mode (BENCHMARK_SPEC §4) when the release has a basket profile.
+    # A basket whose median units are zero says nothing about what to aim for -
+    # there is no K to compute - so it falls through to the levers rather than
+    # failing the build.
+    if profile and profile.get("units"):
+        return benchmark_targets(release, profile)
     b = BENCH
     size = release["edition_size"]
     paid_pct = b["paid_share_of_units"][
@@ -367,6 +499,9 @@ def compute_targets(release: dict) -> dict:
         "launch_value": launch_value,
         "organic_sessions_draw": sum(pc["sessions"] for pc in per_channel.values()),
         "total_sessions": sum(pc["sessions"] for pc in per_channel.values()) + pr_sessions + paid_sessions,
+        # the eligible-entry target the rail prints; the JS model has always
+        # returned it, so a snapshot without it leaves that row reading zero
+        "entries_target": sum(pc["eligible_entries"] for pc in per_channel.values()) + paid_entries,
         "buffer": b["target_buffer"],
     }
 
@@ -516,10 +651,18 @@ def email_refs(bench: dict | None) -> dict:
             "emailClickToOpenRef": round(bench["ctor_rate"] * 100, 1) if bench.get("ctor_rate") is not None else None,
             "emailRefCohort": bench["cohort"]}
 
-def build_curves(at: pd.DataFrame) -> dict:
+def build_curves(at: pd.DataFrame, members: list[str] | None = None) -> dict:
+    # `members` narrows the panel to one basket's launches (BENCHMARK_SPEC
+    # §4.1), so a release is paced like the launches it is benchmarked against
+    # rather than like the whole history. The export edge test below asks
+    # whether a release's first day is the day the export itself starts - a
+    # fact about the export, not about the basket - so that date is read before
+    # the filter narrows the frame.
+    first_export_date = at["event_date"].min()
+    if members is not None:
+        at = at[at["simple_release_name"].isin([str(m) for m in members])]
     df = at[~at["campaign_stage"].isin(CLEAN_EXCLUDE_STAGES)].copy()
     df = df[df["pct_days_since_announcement"].notna()]
-    first_export_date = at["event_date"].min()
 
     # per release x day totals (all channels) and per display group
     df["group"] = df["channel"].map(GROUP_OF)
@@ -600,6 +743,37 @@ def curve_value(curves: dict, group: str | None, metric: str, pdsa: float) -> fl
             w = (pdsa - grid[i - 1]) / (grid[i] - grid[i - 1])
             return series[i - 1] + w * (series[i] - series[i - 1])
     return 1.0
+
+
+# One curve panel per basket for the life of the run. Rebuilding it costs a
+# full pass over the funnel frame, and most releases sit in the same handful of
+# clusters, so the same panel would otherwise be rebuilt a dozen times. The
+# members are part of the key as well as the id because a bespoke basket
+# carries the same id whatever is in it (BENCHMARK_SPEC §6).
+_BASKET_CURVES: dict[tuple, dict] = {}
+
+
+def basket_curves(at: pd.DataFrame, basket: dict, pooled: dict) -> dict:
+    """The pace curves for one basket (BENCHMARK_SPEC §4.1), cached per run.
+
+    A series the basket cannot answer - fewer than four of its members ran far
+    enough to shape that metric - comes back None and falls back to the pooled
+    curve here. curve_value cannot do it: from inside it, a missing group curve
+    and a missing panel look the same.
+    """
+    key = (basket["id"], tuple(basket["members"]))
+    curves = _BASKET_CURVES.get(key)
+    if curves is None:
+        curves = build_curves(at, basket["members"])
+        for m, series in curves["all"].items():
+            if series is None:
+                curves["all"][m] = pooled["all"][m]
+        for g, by_metric in curves["groups"].items():
+            for m, series in by_metric.items():
+                if series is None:
+                    by_metric[m] = pooled["groups"].get(g, {}).get(m)
+        _BASKET_CURVES[key] = curves
+    return curves
 
 
 # ---------------------------------------------------------------- draws (docs §2)
@@ -1005,7 +1179,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   emails: pd.DataFrame, content: pd.DataFrame, curves: dict,
                   as_of: date, artist_posts: pd.DataFrame | None = None,
                   posts_bench: dict | None = None,
-                  email_bench: dict | None = None) -> dict:
+                  email_bench: dict | None = None,
+                  panel: pd.DataFrame | None = None) -> dict:
     b = BENCH
     name = release["release_name"]
     announce = date.fromisoformat(release["announce_date"])
@@ -1013,8 +1188,41 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     pr_open = date.fromisoformat(release["private_room_open"])
     L = (launch_end - announce).days
 
-    targets = compute_targets(release)
+    # ---- benchmark or levers (BENCHMARK_SPEC §3-§5). Benchmarking is the
+    # default: a release with no saved basket is compared against the basket
+    # its own shape puts it in (baskets.suggest_basket), so a launch is
+    # measured against comparable launches from the day it is discovered and
+    # nobody has to pick anything first. The quartile levers survive as the
+    # explicit opt-out - stretch_mode "levers" - for the release whose target
+    # is not an even uplift on what similar launches do.
+    basket = profile = None
+    if release.get("stretch_mode") != "levers" and panel is not None and len(panel):
+        basket = baskets.resolve_basket(release.get("benchmark_basket"), panel, release, as_of)
+        if basket["profile"]["units"] <= 0:
+            print(f"{release['id']}: basket {basket['id']} has no median units - staying on the levers")
+            basket = None
+        elif basket.get("scaleMismatch") and not release.get("benchmark_basket"):
+            # No launch on file is within a factor of four of this edition, so
+            # the only basket on offer is not a comparable: an uplift off it
+            # would read as a stretch of several hundred per cent when what it
+            # actually says is that nothing this size has ever run. The levers
+            # are the honest answer until someone picks a basket deliberately.
+            print(f"{release['id']}: edition {release['edition_size']:.0f} has no comparable "
+                  f"(nearest basket {basket['id']} medians {basket['profile']['units']:.0f}) "
+                  f"- staying on the levers")
+            basket = None
+        else:
+            profile = basket["profile"]
+    bench = profile is not None
+    targets = compute_targets(release, profile)
     gtargets = group_targets(targets)
+    # K, and the basket's own pace. Both plans are drawn off the same curve so
+    # target and benchmark stay in exactly the K ratio on every day (§4.1) -
+    # which is what makes an even uplift legible on the trajectory.
+    k = (float(release["edition_size"]) / profile["units"]) if bench else 1.0
+    bm_units = profile["units_by_group"] if bench else {}
+    bm_sessions = profile["sessions_by_group"] if bench else {}
+    rcurves = basket_curves(at, basket, curves) if bench else curves
 
     rat = at[at["simple_release_name"] == name].copy()
     rat["group"] = rat["channel"].map(GROUP_OF)
@@ -1132,7 +1340,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             now_g = (float(sub_g["units"].sum())
                      + b["eligible_entry_to_order"] * float(sub_g["entries_no_conv"].sum()))
             tgt_g = gtargets[og]["units"]
-            w_g = curve_value(curves, og, "units", pdsa_now)
+            w_g = curve_value(rcurves, og, "units", pdsa_now)
             r_perf = min(max((now_g / (tgt_g * w_g)) if tgt_g * w_g > 0 else 1.0, 0.25), 2.5)
             organic_future += tgt_g * (1 - w_g) * (1 + w_g * (r_perf - 1))
     sellout_gap = max(release["edition_size"] - secured_now - organic_future, 0.0)
@@ -1250,7 +1458,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     future_cum = 0.0
     cpe_fwd = l3d_raw_cpe
     if not complete:
-        prev_curve = curve_value(curves, "paid", "entries", pdsa_for(release, as_of))
+        prev_curve = curve_value(rcurves, "paid", "entries", pdsa_for(release, as_of))
         for d in daterange(as_of + timedelta(days=1), launch_end):
             if cpe_fwd and planned_spend:
                 t3 = min(int(max(pdsa_for(release, d), 0) * 3), 2)
@@ -1258,13 +1466,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 future_cum += planned_spend / cpe_fwd
             else:
                 # no spend history yet: fall back to the paid target trajectory
-                cv = curve_value(curves, "paid", "entries", pdsa_for(release, d))
+                cv = curve_value(rcurves, "paid", "entries", pdsa_for(release, d))
                 future_cum += gtargets["paid"]["entries"] * max(cv - prev_curve, 0.0)
                 prev_curve = cv
             paid_future[d] = future_cum
 
     channels_out = []
     hero_now = hero_exp = hero_target = hero_proj = 0.0
+    hero_bm = hero_bm_today = 0.0        # benchmark at close, benchmark by today
     funnel_by_group = {}
     e2o = b["eligible_entry_to_order"]
     for g, spec in DISPLAY_GROUPS.items():
@@ -1274,6 +1483,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         #   converted. Group unit targets sum to the edition size (sellout).
         tgt = gtargets[g]["units"]
         sess_tgt = gtargets[g]["sessions"]
+        bm_tgt = bm_units.get(g, 0.0)      # this group's benchmark at close
         daily = []
         cum_u = cum_nc = cum_s = 0.0
         for d in days:
@@ -1282,14 +1492,24 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             cum_nc += float(row["entries_no_conv"]) if row is not None else 0.0
             cum_s += float(row["sessions"]) if row is not None else 0.0
             p = pdsa_for(release, d)
-            plan = tgt * curve_value(curves, g, "units", p)
-            daily.append({"date": d.isoformat(),
-                          "actual": round(cum_u + e2o * cum_nc, 2) if d <= as_of else None,
-                          "plan": round(plan, 2), "proj": None})
+            cv = curve_value(rcurves, g, "units", p)
+            # in benchmark mode the plan IS the benchmark lifted by K, taken
+            # off the one curve, so the two lines the trajectory draws are in
+            # the K ratio on every day rather than only in total (§4.1)
+            bm_day = bm_tgt * cv
+            plan = bm_day * k if bench else tgt * cv
+            row_out = {"date": d.isoformat(),
+                       "actual": round(cum_u + e2o * cum_nc, 2) if d <= as_of else None,
+                       "plan": round(plan, 2), "proj": None}
+            if bench:
+                row_out["bm"] = round(bm_day, 2)
+            daily.append(row_out)
         pdsa_today = pdsa_for(release, min(as_of, launch_end))
-        w = curve_value(curves, g, "units", pdsa_today)   # share of campaign observed, per historic shape
-        exp = tgt * w
-        sess_exp = sess_tgt * curve_value(curves, g, "sessions", pdsa_today)
+        w = curve_value(rcurves, g, "units", pdsa_today)   # share of campaign observed, per historic shape
+        bm_exp = bm_tgt * w                                # benchmark pace by today
+        exp = bm_exp * k if bench else tgt * w
+        sess_w = curve_value(rcurves, g, "sessions", pdsa_today)
+        sess_exp = sess_tgt * sess_w
         now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
         # Forward projection (docs §5.4): the remaining volume follows this channel's
         # HISTORIC shape curve; its level scales with demonstrated performance
@@ -1310,7 +1530,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             proj = now + tgt * (1 - w) * r_shrunk
             for d in daterange(as_of + timedelta(days=1), launch_end):
                 i = (d - window_start).days
-                cv = curve_value(curves, g, "units", pdsa_for(release, d))
+                cv = curve_value(rcurves, g, "units", pdsa_for(release, d))
                 frac = (cv - w) / (1 - w) if w < 1 else 1.0
                 if 0 <= i < len(daily):
                     daily[i]["proj"] = round(now + (proj - now) * max(min(frac, 1.0), 0.0), 2)
@@ -1324,6 +1544,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "conv_actual": conv_act, "conv_expected": conv_exp,
             "contrib_traffic": round(traffic, 1), "contrib_conversion": round(conversion, 1),
         }
+        if bench:
+            # The funnel cards are always Today (§2), so the benchmark they sit
+            # against is the benchmark pace by today - the same point the target
+            # is read at, which keeps the rung's ring at exactly x K. The rate
+            # is the basket's own conversion, held (§1).
+            funnel_by_group[g]["sessions_benchmark"] = round(bm_sessions.get(g, 0.0) * sess_w, 1)
+            funnel_by_group[g]["conv_benchmark"] = profile["conv"].get(g, 0.0)
         # what a grouped column is made of, secured units to date, biggest first
         parts = []
         for ch in spec["channels"]:
@@ -1335,14 +1562,19 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             if v > 0.05:
                 parts.append({"name": ch, "value": round(v, 1)})
         parts.sort(key=lambda x: -x["value"])
-        channels_out.append({
+        channel = {
             "key": g, "name": spec["name"],
             "now": round(now, 1), "exp": round(exp, 1),
             "proj": round(proj, 1), "target": round(tgt, 1),
             "parts": parts,
             "daily": daily,
-        })
+        }
+        if bench:
+            channel["bm"] = round(bm_tgt, 1)
+            channel["bmExp"] = round(bm_exp, 1)
+        channels_out.append(channel)
         hero_now += now; hero_exp += exp; hero_target += tgt; hero_proj += proj
+        hero_bm += bm_tgt; hero_bm_today += bm_exp
 
     # ---- paid block output (docs §7; inputs computed above, before the channel loop)
     paid_out = {
@@ -1387,6 +1619,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "profitPerUnitArtist": round(ppu_artist, 2),
         "aaBudgetShare": aa_budget_share,
     }
+    if bench:
+        # what the basket typically buys, and what it typically costs to buy -
+        # both unscaled, so the card can say what the uplift is asking for on
+        # top (§5). The target's own budget stays targets["paid"]["budget"].
+        paid_out["benchmarkUnits"] = round(bm_units["paid"], 1)
+        paid_out["benchmarkBudget"] = round(bm_units["paid"] * targets["paid"]["cost_per_purchase"], 2)
 
     # ---- email funnel (docs §8): launch-window customer sends for this campaign
     em_all = emails[(emails["campaign"] == release["campaign_code"])
@@ -1464,12 +1702,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     }
     sellthrough["pct"] = round(min((sellthrough["sold"] + sellthrough["soldPredicted"]
                                     + sellthrough["futureEntriesPredicted"]) / release["edition_size"], 1.0), 4)
+    if bench:
+        sellthrough["benchmarkUnits"] = round(hero_bm, 1)
 
     # ---- waterfall (docs §9): contributors to projection - target, in secured units
     organic_groups = [g for g in DISPLAY_GROUPS if g != "paid"]
     wf_traffic = sum(funnel_by_group[g]["contrib_traffic"] for g in organic_groups)
     wf_conv = sum(funnel_by_group[g]["contrib_conversion"] for g in organic_groups)
-    spend_planned_to_date = targets["paid"]["budget"] * curve_value(curves, "paid", "units", pdsa_today)
+    spend_planned_to_date = targets["paid"]["budget"] * curve_value(rcurves, "paid", "units", pdsa_today)
     wf_paid_spend = ((cum_spend - spend_planned_to_date) / targets["paid"]["cost_per_purchase"]
                      ) if targets["paid"]["cost_per_purchase"] else 0.0
     paid_gap = funnel_by_group["paid"]["contrib_traffic"] + funnel_by_group["paid"]["contrib_conversion"]
@@ -1491,6 +1731,36 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     if waterfall["steps"]:
         biggest = max(waterfall["steps"], key=lambda s: abs(s["value"]))
         biggest["value"] += resid
+    if bench:
+        # The same four contributors, measured to date and left unscaled: this
+        # is the Today horizon (§2), where the question is why the launch is
+        # where it is, not where it will end. The gaps are already actual minus
+        # target today by construction (traffic + conversion per group is
+        # exactly that group's now minus its expected), so they need no blend
+        # factor - only the same rounding reconciliation the close steps get.
+        today_steps = [
+            {"key": "organic_traffic", "label": "Organic traffic", "value": round(wf_traffic, 0)},
+            {"key": "organic_conversion", "label": "Organic conversion", "value": round(wf_conv, 0)},
+            {"key": "paid_spend", "label": "Paid spend", "value": round(wf_paid_spend, 0)},
+            {"key": "paid_efficiency", "label": "Paid efficiency", "value": round(wf_paid_eff, 0)},
+        ]
+        # the gap the bars have to span is the one the card prints, so the
+        # residual is measured against the rounded pair rather than the raw
+        # difference - rounding each end separately can move it by a unit
+        actual_today, target_today = round(hero_now, 0), round(hero_exp, 0)
+        resid_today = (actual_today - target_today) - sum(s["value"] for s in today_steps)
+        max(today_steps, key=lambda s: abs(s["value"]))["value"] += resid_today
+        waterfall["benchmark"] = round(hero_bm, 0)
+        waterfall["stretch"] = round(hero_target - hero_bm, 0)
+        waterfall["today"] = {
+            "benchmark": round(hero_bm_today, 0),
+            "stretch": round(hero_exp - hero_bm_today, 0),
+            "target": target_today,
+            "actual": actual_today,
+            "steps": today_steps,
+        }
+        assert abs(sum(s["value"] for s in today_steps) - (actual_today - target_today)) < 0.5, (
+            f"{release['id']}: today waterfall steps do not reconcile to actual - target")
 
     draw = load_draw(release)
 
@@ -1508,6 +1778,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "windowStart": release["announce_date"], "windowEnd": release["launch_end"],
         "campaignLengthDays": L, "day": day_n, "of": L,
         "asOf": as_of.isoformat(), "complete": complete,
+        "targetingMode": "benchmark" if bench else "levers",
         "economics": {
             "unitPrice": release["unit_price"], "launchValue": targets["launch_value"],
             "artistProfitPerUnit": round(ppu_artist, 2), "aaProfitPerUnit": round(ppu_aa, 2),
@@ -1538,6 +1809,29 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             **email_refs(email_bench),
         },
     }
+    if bench:
+        # The reference the whole page is drawn against (§5). Every value here
+        # is the basket's own median, unscaled - K is published next to them so
+        # a card can say what the uplift is asking for rather than having to
+        # work it out from two rounded numbers.
+        snap["benchmark"] = {
+            "basket": {"id": basket["id"], "kind": basket["kind"], "name": basket["name"],
+                       "n": basket["n"], "thin": basket["thin"],
+                       "suggestedId": basket["suggestedId"]},
+            "units": round(profile["units"], 1),
+            "unitsP25": round(profile["units_p25"], 1), "unitsP75": round(profile["units_p75"], 1),
+            "sessions": round(profile["sessions"], 1), "entries": round(profile["entries"], 1),
+            "campaignDays": round(profile["campaign_days"], 1),
+            "k": round(k, 4),
+            "stretchUnits": round(edition - profile["units"], 1), "stretchPct": round(k - 1, 4),
+            "unitsByGroup": {g: round(v, 1) for g, v in bm_units.items()},
+            "sessionsByGroup": {g: round(v, 1) for g, v in bm_sessions.items()},
+            "convByGroup": {g: round(v, 6) for g, v in profile["conv"].items()},
+            "paidBudget": round(bm_units["paid"] * targets["paid"]["cost_per_purchase"], 2),
+        }
+        snap["hero"]["benchmark"] = round(hero_bm, 0)
+        snap["hero"]["benchmarkToday"] = round(hero_bm_today, 0)
+        snap["hero"]["stretch"] = round(hero_target - hero_bm, 0)
     return snap
 
 
@@ -1579,6 +1873,23 @@ def check_snapshot(snap: dict) -> None:
                 problems.append(f"hero.now is capped at the edition but channels only sum to {roll:.1f}")
         elif abs(roll - now) > 1.0:
             problems.append(f"channel actuals sum to {roll:.1f} but hero.now is {now}")
+    # benchmark mode (BENCHMARK_SPEC §5): the benchmark is a partition of its
+    # own headline, the target is that headline lifted by exactly K, and the
+    # Today waterfall closes. All three are relationships the cards draw as
+    # lines that must meet, so a breach is a visibly wrong page.
+    bm = snap.get("benchmark")
+    if bm:
+        roll_bm = sum(c.get("bm") or 0 for c in ch)
+        if abs(roll_bm - bm["units"]) > 1.0:
+            problems.append(f"channel benchmarks sum to {roll_bm:.1f} but benchmark.units is {bm['units']}")
+        lifted = (hero.get("benchmark") or 0) * bm["k"]
+        if abs(lifted - (hero.get("target") or 0)) > 1.0:
+            problems.append(f"hero.benchmark x k is {lifted:.1f} but hero.target is {hero.get('target')}")
+        wf_today = (snap.get("waterfall") or {}).get("today") or {}
+        steps = sum(s["value"] for s in wf_today.get("steps") or [])
+        gap = (wf_today.get("actual") or 0) - (wf_today.get("target") or 0)
+        if abs(steps - gap) > 0.5:
+            problems.append(f"today waterfall steps sum to {steps:.1f}, actual - target is {gap:.1f}")
     if problems:
         raise AssertionError(f"{rid}: " + "; ".join(problems))
 
@@ -1608,6 +1919,16 @@ def main():
     content = load_content()
     artist_posts = load_artist_posts()
     posts_bench = artist_posts_benchmarks(artist_posts, as_of)
+    # The draw panel, loaded once and passed down: every basket a release could
+    # be benchmarked against is cut from it (BENCHMARK_SPEC §3). A panel that
+    # is not there - a checkout without the clustering output - is not a reason
+    # to fail the build; those releases simply stay on the levers.
+    try:
+        panel = baskets.load_panel()
+        print(f"baskets: {len(panel)} draw launches in the panel")
+    except (OSError, ValueError, KeyError) as e:
+        panel = None
+        print(f"baskets: no draw panel ({e}) - every release stays on the lever model")
 
     APP.mkdir(parents=True, exist_ok=True)
     (APP / "releases").mkdir(exist_ok=True)
@@ -1651,14 +1972,17 @@ def main():
         cfg = configured.pop(rec["release_name"], None)
         if cfg:
             snap = build_release(cfg, at, spend, emails, content, curves, as_of,
-                                 artist_posts, posts_bench, email_bench)
+                                 artist_posts, posts_bench, email_bench, panel)
             check_snapshot(snap)
             (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
             add(snap, "closed" if snap["complete"] else "live")
             n_full += 1
+            bmk = snap.get("benchmark")
             print(f"{snap['id']}: day {snap['day']}/{snap['of']} "
                   f"now={snap['hero']['now']} exp={snap['hero']['expectedToday']} "
-                  f"target={snap['hero']['target']} proj={snap['hero']['projected']}")
+                  f"target={snap['hero']['target']} proj={snap['hero']['projected']}"
+                  + (f" benchmark={bmk['units']} (x{bmk['k']}, {bmk['basket']['id']} n={bmk['basket']['n']})"
+                     if bmk else ""))
         else:
             rec["campaign_name"] = match_campaign(rec["campaign_code"], spend)
             snap = build_actuals(rec, by_name[rec["release_name"]], spend, emails, content, as_of, email_bench)
@@ -1671,7 +1995,7 @@ def main():
     # traffic) still get built, as before
     for cfg in configured.values():
         snap = build_release(cfg, at, spend, emails, content, curves, as_of,
-                             artist_posts, posts_bench, email_bench)
+                             artist_posts, posts_bench, email_bench, panel)
         check_snapshot(snap)
         (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
         add(snap, "closed" if snap["complete"] else "live")

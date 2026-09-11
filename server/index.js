@@ -104,6 +104,9 @@ app.get("/api/releases/:id", (req, res) => {
 
 // ---- target-setting inputs (docs §3; the Target setting tab) ----
 const { retargetSnapshot } = require("./retarget");
+// the benchmark basket behind a release's targets (docs/BENCHMARK_SPEC.md §6);
+// every median it serves comes from etl/baskets.py, never from JS
+const baskets = require("./baskets");
 // inputs.json is the ETL's output (benchmarks, defaults, the discovered
 // releases). Saves from the Target setting tab go to their own file, so the
 // ETL never reads its own output back as an edit, and so the file can live on
@@ -128,6 +131,9 @@ const PICKS = {
   cpp_pick: ["Low", "Median", "High"],
 };
 const QUALITIES = ["High", "Medium", "Low", "N/A"];
+// how the stretch (target - benchmark) is spread: one even uplift on every
+// channel, or the old quartile levers (BENCHMARK_SPEC §1, §8)
+const STRETCH_MODES = ["even", "levers"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function readSaved() {
@@ -259,10 +265,28 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     }
     next.channel_quality_overrides = ov;
   }
+  /* The benchmark basket and the stretch mode (BENCHMARK_SPEC §6). An
+   * unresolvable basket is reported here and the save is refused: falling back
+   * to the suggestion would leave someone looking at a benchmark line they did
+   * not choose and cannot tell apart from the one they did. null clears the
+   * basket and puts the release back on the lever model. */
+  if (body.benchmark_basket !== undefined) {
+    const check = await baskets.validateBasketSpec(body.benchmark_basket, id);
+    if (!check.ok) errors.push(check.error);
+    else next.benchmark_basket = check.normalised;
+  }
+  if (body.stretch_mode !== undefined) {
+    if (!STRETCH_MODES.includes(body.stretch_mode)) errors.push(`stretch_mode must be one of ${STRETCH_MODES.join("/")}`);
+    else next.stretch_mode = body.stretch_mode;
+  }
   if (new Date(next.launch_end) <= new Date(next.announce_date)) {
     errors.push("launch_end must be after announce_date");
   }
   if (errors.length) return res.status(400).json({ error: errors.join("; ") });
+
+  const benchmarkEdit =
+    JSON.stringify(next.benchmark_basket || null) !== JSON.stringify(current.benchmark_basket || null) ||
+    (next.stretch_mode || null) !== (current.stretch_mode || null);
 
   const snapPath = path.join(DATA, "releases", `${id}.json`);
   // the ETL overlays only stamped entries over the repo defaults - its own
@@ -288,6 +312,32 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     return res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")), created: true });
   }
   if (!fs.existsSync(snapPath)) return res.status(404).json({ error: "no snapshot for release" });
+
+  /* A new basket or stretch mode cannot be retargeted in JS: the benchmark is
+   * the basket's medians and its pace curves are built from the basket's own
+   * members (BENCHMARK_SPEC §4, §4.1), neither of which is in the snapshot.
+   * So this save takes the ETL branch - build.py reads the inputs just written
+   * - and retargetSnapshot keeps the lever-mode edits. On a failed rebuild the
+   * inputs still stand; the JS retarget is deliberately not used as a fallback
+   * because it would answer with lever targets under a benchmark heading. */
+  if (benchmarkEdit) {
+    writeSaved(id, next);
+    fs.appendFileSync(TARGETS_LOG, JSON.stringify({
+      ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard",
+    }) + "\n");
+    try {
+      await sheets.runEtl();
+    } catch (e) {
+      return res.status(502).json({
+        error: "Inputs saved, but the benchmark rebuild failed (" + String((e && e.message) || e).slice(0, 200) +
+          ") - the page will update on the next data refresh.",
+      });
+    }
+    baskets.invalidate();   // a full ETL run is the one thing that moves the panel
+    if (!fs.existsSync(snapPath)) return res.status(502).json({ error: "Inputs saved, but the rebuild did not produce the page - check the refresh status." });
+    return res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")) });
+  }
+
   const snap = JSON.parse(fs.readFileSync(snapPath, "utf8"));
   const curves = JSON.parse(fs.readFileSync(path.join(DATA, "curves.json"), "utf8"));
   const bench = doc.benchmarks;
@@ -317,6 +367,27 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     }
   }
   res.json({ snapshot: updated });
+}));
+
+/* ---- benchmark baskets (BENCHMARK_SPEC §6; the basket picker) ----
+ * Read-only for anyone with a session, like the inputs routes above: the
+ * baskets are the panel's own history, and the only write here saves a basket
+ * for everyone, which is the same posture as saving a release's targets. */
+app.get("/api/baskets", route(async (req, res) => {
+  res.json(await baskets.readyBaskets(req.query.release));
+}));
+
+app.get("/api/baskets/candidates", route(async (_req, res) => {
+  res.json(await baskets.candidates());
+}));
+
+app.post("/api/baskets", route(async (req, res) => {
+  const body = req.body || {};
+  const name = String(body.name || "").trim();
+  if (!name) return res.status(400).json({ error: "a saved basket needs a name" });
+  const check = await baskets.validateBasketSpec({ kind: "bespoke", members: body.members });
+  if (!check.ok) return res.status(400).json({ error: check.error });
+  res.json(await baskets.saveBasket({ name, members: check.normalised.members }));
 }));
 
 // ---- live data refresh (BigQuery / Google Sheet -> sources -> ETL; server/sheets.js) ----

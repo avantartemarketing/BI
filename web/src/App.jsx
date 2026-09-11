@@ -1,5 +1,18 @@
+/* The dashboard shell - sidebar, release page chrome, and the one place the page's
+ * comparison horizon lives.
+ *
+ * BENCHMARK_SPEC 2 puts a single "Today | At close" control in the page header and
+ * hands it to every container, so no card carries its own horizon toggle and the
+ * whole page reads against one reference at a time. The state is held here, starts
+ * at "today" and resets whenever the release changes, because a horizon chosen while
+ * reading one launch says nothing about the next one.
+ *
+ * The sidebar dot is the other thing this file owns. BENCHMARK_SPEC 7 makes it
+ * three-state so that "behind target but still doing what the matched basket
+ * typically does" stops looking identical to "behind the basket as well" - the first
+ * is a target worth holding, the second is a launch in trouble. */
 import React, { useEffect, useMemo, useState } from "react";
-import { fmtSigned, fmtPct, TipProvider, useTip } from "./ui.jsx";
+import { C, fmtSigned, fmtPct, TipProvider, useTip } from "./ui.jsx";
 import HeroBar from "./modules/HeroBar.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
 import FunnelByChannel from "./modules/FunnelByChannel.jsx";
@@ -99,6 +112,7 @@ export default function App() {
         <div className="section-label">In flight</div>
         {groups.live.length === 0 && <div className="hint">Nothing in flight</div>}
         {groups.live.map((r) => <ReleaseRow key={r.id} r={r} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
+        {groups.live.length > 0 && <StatusLegend />}
         {pinned && (
           <>
             <div className="section-label">Viewing</div>
@@ -164,14 +178,64 @@ function SessionFooter({ email }) {
   );
 }
 
+/* BENCHMARK_SPEC 7: the row dot is green at or ahead of target, amber behind target
+ * but at or ahead of benchmark, red behind benchmark, hollow when nobody has set
+ * targets. The index rows carry statusPct - actual against target - and no benchmark
+ * figure, so the amber band is read off the shortfall instead: a release within 10%
+ * of its target is still running about where the matched basket typically does,
+ * anything further behind is behind the basket too. That is a stand-in for the real
+ * comparison and index.json should grow a benchmarkPct so the middle state can be
+ * exact rather than inferred. */
+const BEHIND_BENCHMARK = -0.10;
+const STATE = {
+  green: { color: C.green, word: "at or ahead of target" },
+  amber: { color: C.amber, word: "behind target, at or ahead of benchmark" },
+  red: { color: C.red, word: "behind benchmark" },
+};
+
+function rowState(r) {
+  if (r.targeted === false) return null; // hollow: nothing to be ahead or behind of
+  const pct = r.statusPct;
+  if (pct === null || pct === undefined) return r.ok ? "green" : "red";
+  if (pct >= 0) return "green";
+  return pct >= BEHIND_BENCHMARK ? "amber" : "red";
+}
+
+/* The dot carries three meanings now, so the sidebar has to say which is which -
+ * an amber dot that nobody can read is worse than the two-state one it replaced. */
+function StatusLegend() {
+  const rows = [
+    ["green", STATE.green.word],
+    ["amber", STATE.amber.word],
+    ["red", STATE.red.word],
+    [null, "no targets set"],
+  ];
+  return (
+    <div className="hint" style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 6, lineHeight: 1.35 }}>
+      {rows.map(([state, word]) => (
+        <span key={word} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <span style={{
+            width: 7, height: 7, borderRadius: "50%", flex: "0 0 7px", boxSizing: "border-box",
+            background: state ? STATE[state].color : "transparent",
+            border: state ? "none" : "1.5px solid #b8b5ad",
+          }} />
+          <span>{word}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function ReleaseRow({ r, active, onClick, showStatus }) {
   const t = useTip();
   const targeted = r.targeted !== false;
+  const state = rowState(r);
   const status = r.status || (r.complete ? "closed" : "live");
   const pct = targeted && r.statusPct !== null && r.statusPct !== undefined ? Math.round(r.statusPct * 100) : null;
   const rows = [];
   if (status !== "catalogue") rows.push({ label: "Day", value: `${r.day} of ${r.of}` });
-  if (pct !== null) rows.push({ label: "vs expected", value: `${pct >= 0 ? "+" : ""}${pct}%`, color: pct >= 0 ? "#0f7052" : "#b8461d" });
+  if (pct !== null) rows.push({ label: "vs target", value: `${pct >= 0 ? "+" : ""}${pct}%`, color: STATE[state].color });
+  if (state) rows.push({ label: "Pace", value: STATE[state].word, color: STATE[state].color });
   rows.push({ label: "Status", value: STATUS_LABEL[status] || status });
   if (r.quarter) rows.push({ label: "Quarter", value: r.quarter });
   if (!targeted) rows.push({ label: "Targets", value: "not set - actuals only" });
@@ -179,8 +243,8 @@ function ReleaseRow({ r, active, onClick, showStatus }) {
   const content = { head: r.releaseName || r.name, rows };
   return (
     <button className={`release-row${active ? " active" : ""}`} onClick={onClick} {...t.props(content)}>
-      {targeted
-        ? <span className="dot" style={{ background: r.ok ? "#0f7052" : "#b8461d" }} />
+      {state
+        ? <span className="dot" style={{ background: STATE[state].color }} />
         : <span className="dot hollow" />}
       <span className="nm">{r.name}</span>
       {showStatus
@@ -275,11 +339,37 @@ function Freshness({ asOf, st }) {
   );
 }
 
+/* One control, every container (BENCHMARK_SPEC 2). Today reads actuals against the
+ * target and benchmark for today; At close reads the projection against the target
+ * and benchmark for the whole campaign. Cards with a single horizon - the funnels,
+ * paid ROI, geo - ignore it and are not given it. */
+function HorizonToggle({ horizon, onChange }) {
+  return (
+    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ fontSize: 12, color: "#6c6b68" }}>Compare</span>
+      <div className="seg" role="group" aria-label="Comparison horizon">
+        <button
+          className={horizon === "today" ? "active" : ""}
+          onClick={() => onChange("today")}
+          title="Actuals so far against the target and benchmark for today">Today</button>
+        <button
+          className={horizon === "close" ? "active" : ""}
+          onClick={() => onChange("close")}
+          title="Projection at close against the target and benchmark for the campaign">At close</button>
+      </div>
+    </div>
+  );
+}
+
 function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   const [tab, setTab] = useState("overview");
-  useEffect(() => setTab("overview"), [snap.id]);
+  const [horizon, setHorizon] = useState("today");
+  // a new release is a new reading: start it on the tab and the horizon everyone shares
+  useEffect(() => { setTab("overview"); setHorizon("today"); }, [snap.id]);
   const targeted = snap.targeted !== false;
   const catalogue = !!snap.catalogue;
+  // nothing to compare against without targets, and a catalogue page has no campaign
+  const showHorizon = targeted && !catalogue;
   return (
     <>
       <header className="page-header" style={{ marginBottom: 0 }}>
@@ -293,6 +383,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
             title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
         )}
+        {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
         <Freshness asOf={snap.asOf} st={st} />
       </header>
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
@@ -302,32 +393,32 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       </nav>
       {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : targeted ? (
       <div className="grid">
-        <HeroBar snap={snap} />
-        <ChannelsVsTargets snap={snap} />
+        <HeroBar snap={snap} horizon={horizon} />
+        <ChannelsVsTargets snap={snap} horizon={horizon} />
         <FunnelByChannel snap={snap} />
-        <Trajectory snap={snap} />
+        <Trajectory snap={snap} horizon={horizon} />
         <KeyDrivers snap={snap} />
         <PaidRoi snap={snap} />
-        <PaidSpend snap={snap} />
-        <SellThrough snap={snap} />
+        <PaidSpend snap={snap} horizon={horizon} />
+        <SellThrough snap={snap} horizon={horizon} />
         <Geo snap={snap} />
-        <Waterfall snap={snap} />
+        <Waterfall snap={snap} horizon={horizon} />
       </div>
       ) : (
       // no targets: the same page, every card on its actual side; the cards
       // that only exist relative to a plan say so in place
       <div className="grid">
-        <HeroBar snap={snap} />
-        <ChannelsVsTargets snap={snap} />
+        <HeroBar snap={snap} horizon={horizon} />
+        <ChannelsVsTargets snap={snap} horizon={horizon} />
         <NoTargets snap={snap} onSetup={() => setTab("targets")} />
         <FunnelByChannel snap={snap} />
-        <Trajectory snap={snap} />
+        <Trajectory snap={snap} horizon={horizon} />
         <KeyDrivers snap={snap} />
         <PaidRoi snap={snap} />
-        <PaidSpend snap={snap} />
-        <SellThrough snap={snap} />
+        <PaidSpend snap={snap} horizon={horizon} />
+        <SellThrough snap={snap} horizon={horizon} />
         <Geo snap={snap} />
-        <Waterfall snap={snap} />
+        <Waterfall snap={snap} horizon={horizon} />
       </div>
       )}
     </>

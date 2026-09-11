@@ -366,10 +366,18 @@ products among those they entered, draw weighted by `Score`. Equivalent to capac
 
 ---
 
-## 3. The LE target model (set at launch planning)
+## 3. The LE target model - quartile levers (the "By channel" fallback)
 
 This reproduces the LE_Template TARGET SETTING block exactly. All benchmarks are quartiles of
 the historical release panel (§4).
+
+**This is no longer the default.** A release with a benchmark basket takes the basket model of
+§4a (`targeting_mode = "benchmark"`, the `Evenly` side of the Target setting switch), where the
+edition is split by what comparable launches actually did rather than by a quartile pick per
+channel. The quartile levers below are the other side of that switch - `By channel`,
+`targeting_mode = "levers"` - and run **unchanged** for any release without a basket, which is
+every release until one is chosen and every release whose panel row is missing. Steps 1-6 are
+therefore still live code, not history; §4a describes what replaces them and what it keeps.
 
 ### Step 1 - split edition into paid vs organic
 ```
@@ -520,6 +528,120 @@ days, close from the draw-allocation day - and validated against the clocked rel
 
 ---
 
+## 4a. Baskets, the benchmark and the even uplift (the default target model)
+
+The implementation contract is `docs/BENCHMARK_SPEC.md`; where this section and that file
+disagree, **the spec wins**. What follows is the model in the terms of this document.
+
+The quartile model of §3 answers "what share of units should email carry if we pick the good
+quartile?" - a question about the panel, not about this launch. The benchmark model answers the
+question the launch meeting actually asks: **what do launches like this one reach, and how much
+more are we asking for?** Everything below falls out of that one sentence.
+
+### 4a.1 The three references
+
+| | what it is | drawn as |
+|---|---|---|
+| **Benchmark** | what launches in the matched basket typically reach: the **median** of that basket, per metric and per channel | solid cobalt `#2b5fd9` line, 2px |
+| **Target** | benchmark × K, the business target | solid ink `#141413` line, 2px |
+| **Stretch** | target − benchmark = benchmark × (K − 1) | a number; a grey hatched bar on the waterfall only |
+
+```
+K = edition_size / benchmark_units_total
+```
+
+K is **one even uplift**, applied to every volume (sessions, entries, units, spend), in every
+channel, at every funnel stage and on every day of the campaign. **Conversion rates are held at
+the benchmark**: the plan is "the same launch, bigger", never "the same launch converting
+better". Both reference lines are drawn identically - same width, same length - so that colour
+and label are the only difference between them (spec §1, §7).
+
+### 4a.2 The basket layer (`etl/baskets.py`)
+
+The panel is `data/release_clusters.csv` filtered to `panel == "draw"` (108 completed draw
+campaigns, §4 "Baskets of comparables"); cluster names come from
+`data/release_cluster_baskets.json`. Six ready-made baskets: `cluster_0` Paid-led headline
+launches, `cluster_1` Paid-supported small editions, `cluster_2` Email-led collector launches,
+`cluster_3` Artist-audience draws, `all_12m` (every draw launch whose `window_end` is within 365
+days of `as_of`), and `same_artist` (the same artist's earlier launches, disabled under 3
+members). A **bespoke** basket is a hand-ticked set of panel releases; one saved from the picker
+is written to `data/app/baskets.json` and thereafter offered alongside the ready-made ones.
+
+Two rules carry the weight, and both are in the module because three callers - the ETL, the
+picker API and the re-run a saved basket triggers - have to agree to the last unit:
+
+- **A release is never a member of its own benchmark.** Its own `release_name` is dropped from
+  every basket before the medians are taken. Left in, a launch grades itself, and on a small
+  cluster it drags the median towards its own result.
+- **Per-channel benchmark = median share × median total**, never the median of the per-channel
+  column. A basket's per-channel medians do not sum to its median total (each channel peaks on a
+  different launch), so taking them directly leaves the five channel benchmarks summing to
+  something other than the headline printed above them. Shares are renormalised to sum to 1.
+
+Sizes: under **3** members a basket cannot be used at all and the caller falls back to the
+suggested one; under **10** it is used but carries `basket.thin = True`, which the picker shows
+as a warning. A median over an empty or all-NaN column is `0.0`, never NaN.
+
+The profile is the medians themselves: `n` and `members`; `units` (median
+`tot_total_product_units`) with `units_p25` / `units_p75`; `sessions` (median
+`tot_sessions_total`); `entries` (median `tot_draw_entries_eligible_units`); `campaign_days`;
+`private_room_share`; `share_units` and `share_sessions` per display group; `conv` (median
+`conv_sess_entry_<group>`, 0 where there is no history); and the two products
+`units_by_group` = `share_units[g] × units` and `sessions_by_group` = `share_sessions[g] ×
+sessions`. Groups are the five display groups of §1.3.
+
+`suggest_basket` picks the basket a release starts on: its own `cluster` if the panel has it,
+else `nearest_cluster`, else the cluster whose median units are closest to the edition size **in
+log space** (the panel runs from tens of units to thousands, so a linear gap would put
+everything in the big basket), tie-broken on paid-session share against the release's paid plan.
+The suggestion is a starting point and is always overridable - `suggestedId` rides on the
+snapshot next to the chosen `id` so the card can say which one was picked for you.
+
+### 4a.3 Target maths (`etl/build.py`)
+
+With a basket in hand, `targeting_mode` is `"benchmark"` and the launch total is divided by what
+the basket did, not by a quartile pick:
+
+```
+K            = edition_size / profile["units"]
+units[g]     = profile["units_by_group"][g]    × K        # sums to edition_size exactly
+sessions[g]  = profile["sessions_by_group"][g] × K
+entries[g]   = units[g] / 0.8                             # the eligible-entry → order rate, §3 step 4
+paid_budget  = profile["units_by_group"]["paid"] × cost_per_purchase("Median") × K
+```
+
+`compute_targets` returns the **same top-level keys** in either mode, so nothing downstream
+branches on the model: `edition_size`, `paid_pct`, `paid_units`, `organic_units`, `pr_other_pct`,
+`pr_units`, `draw_units`, `per_channel`, `pr_sessions`, `paid{…}`, `launch_value`,
+`organic_sessions_draw`, `total_sessions`, `entries_target`, `buffer`. The private room keeps the
+§6.3½ convention - `pr_units = units["aa_email"] × profile["private_room_share"]`, draw units are
+the rest of organic - and `group_targets` still sums to the edition size exactly.
+
+The 12-channel `per_channel` table (§3 step 3) is **synthesised** rather than abandoned: each
+group's target is split across its raw channels with the `order_split` medians of
+`etl/benchmarks.json`, renormalised inside the group. It carries the keys it always did
+(`quality`, `order_split`, `purchases`, `eligible_entries`, `sessions`, `session_to_entry`), with
+`quality = "benchmark"` marking where the level came from. So the channel-level cards, the funnel
+diagnostics and the untracked-redistribution comparisons of §6.2 all keep working untouched.
+
+### 4a.4 The K ratio holds on every day
+
+The daily plan is the benchmark's own shape, scaled once:
+
+```
+benchmark_plan[g][d] = profile["units_by_group"][g] × curve(basket, g, "units", pdsa(d))
+target_plan[g][d]    = benchmark_plan[g][d] × K
+```
+
+Target and benchmark therefore stand in exactly the ratio K at **every** point of the campaign,
+not only at close - which is what makes the even uplift legible on the trajectory: the gap
+between the two lines is the stretch, widening with the curve, never crossing and never
+converging. The same identity is what the snapshot asserts: `hero.benchmarkToday × K ==
+hero.expectedToday` and `channels[].bmExp × K == channels[].exp`, to within rounding. If those
+ever disagree, the curve was evaluated twice with different members, not the maths.
+
+---
+
 ## 5. Targets across time (the new capability)
 
 The sheet distributes nothing over days (its only daily notion is a run-rate: remaining units ÷
@@ -619,6 +741,19 @@ and units curves should be cohorted, at least paid-led against organic. What is 
 a release gets its basket in the dashboard - the paid channel size pick on the Target setting tab
 separates paid-led from organic, the private-room share pick separates the two organic kinds -
 which is a product decision before the curves can be cohorted in the build.
+
+**The panel is now per basket, with the pooled curve behind it.** The open question closed the
+way §5.3's re-read pointed: a release's curves come from **its own basket's members**, not from
+the whole panel, and the basket is a product decision made in the picker (§4a.2) rather than
+inferred from the paid-size lever. `build_curves(at, members=None)` takes the member filter;
+with no filter it builds the pooled panel curve exactly as before, so every release without a
+basket is unaffected. Fallback is per metric and per group, not per release: where **fewer than
+4** members qualify for a series `build_curves` already returns `None` for it and `curve_value`
+drops to the pooled curve for that series alone - a thin basket can be cohorted on units and
+pooled on entries at the same time. Curves are cached per basket id for the run, since the
+picker, the snapshot and the re-run all ask for the same ones. Entries curves differ least
+between baskets (0.03-0.14 from pooled, above), so in practice it is the sessions and units
+shapes that move.
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
@@ -821,6 +956,37 @@ snap_release_day(release_name, date, targets…, expected_today…, projections�
 The UI reads one `snap_release_day` document per release per day (matches the design's "one
 store per release, fetched per release+day"; projections are stored, not client-derived).
 
+## 10a. Snapshot fields for the benchmark model
+
+Every field here is **additive** (spec §5). A consumer that does not know them renders exactly as
+it did before, and a snapshot written in lever mode simply omits `snap.benchmark` - which is the
+guard every cobalt mark on the page is written against.
+
+| Field | What it holds |
+|---|---|
+| `targetingMode` | `"benchmark"` or `"levers"` - which model §4a/§3 wrote this snapshot |
+| `benchmark.basket` | `{id, kind, name, n, thin, suggestedId}`; `kind` is `ready`, `bespoke` or `saved` |
+| `benchmark.units`, `unitsP25`, `unitsP75` | the basket's median units and its middle half |
+| `benchmark.sessions`, `entries`, `campaignDays` | the other headline medians of the profile |
+| `benchmark.k` | the even uplift K |
+| `benchmark.stretchUnits`, `stretchPct` | `target − benchmark` in units, and `K − 1` |
+| `benchmark.unitsByGroup`, `sessionsByGroup`, `convByGroup` | the per-group medians (conversion is held, so `convByGroup` is both benchmark and target) |
+| `benchmark.paidBudget` | benchmark paid units × median cost per purchase × K |
+| `hero.benchmark`, `benchmarkToday`, `stretch` | benchmark at close, benchmark pace to today, the stretch |
+| `channels[].bm`, `bmExp` | per group: benchmark at close, benchmark by today |
+| `channels[].daily[].bm` | the benchmark plan for that day, beside `actual` / `plan` / `proj` |
+| `funnelByGroup[g].sessions_benchmark`, `conv_benchmark` | the rung references: a volume and a rate |
+| `sellthrough.benchmarkUnits` | the benchmark on the sell-through prediction |
+| `paid.benchmarkUnits`, `benchmarkBudget` | the paid module's two benchmark marks |
+| `waterfall.benchmark`, `stretch`, `target`, `projection` | the at-close waterfall's left-hand columns; `steps` are unchanged |
+| `waterfall.today` | `{benchmark, stretch, target, actual, steps}` - the same four contributors measured **to date** |
+
+`waterfall.today.steps` are not the close steps scaled down: they are the contributions as
+measured so far, and they must sum exactly to `actual − target`, with the rounding residual
+parked on the largest step, exactly as the close steps do (§9, "Projection vs target").
+`hero.benchmarkToday` and `channels[].bmExp` are read off the basket curve at today's pdsa
+(§5.3), which is what keeps the K identity of §4a.4 true today as well as at close.
+
 ---
 
 ## 11. Data-quality register (found during reverse-engineering; fix upstream)
@@ -938,6 +1104,36 @@ Known divergence: a snapshot last written by the server's JavaScript retarget
 (`server/retarget.js` + `shared/targetModel.mjs`) differs from the Python build by ~0.05
 units on per-day projections and serialises whole numbers as integers. Same model, two
 implementations; the Python build is the reference.
+
+## 11c. Benchmark model: decisions taken, and why
+
+The four that were live arguments, recorded so they are not relitigated from the drawing alone.
+
+24. **The benchmark is a single median, never a band.** The basket's p25-p75 exists and is
+    shown - in the picker, and as `unitsP25` / `unitsP75` on the snapshot - but it is a
+    description of the basket, not a reference line. §5.2's guardrail band was the right shape
+    for "is this release pacing normally?"; it is the wrong shape for "did we hit the number",
+    because a band gives a launch two answers and lets the reader pick. One cobalt line, one ink
+    line, one gap between them that is the stretch.
+25. **The stretch is one even uplift, with conversion rates held.** K multiplies every volume in
+    every channel on every day; no channel is asked to convert better than the basket did. The
+    alternative - spreading the uplift by channel, or buying part of it with a conversion
+    assumption - is exactly the quartile-lever model, which is still available behind the
+    `By channel` switch for anyone who wants to make that argument release by release. Keeping
+    rates at the benchmark is also what lets the funnel rungs (§4a.1, spec §7) put the target
+    ring at ×K on a volume rung and **on the centre line** on a rate rung: the two readings are
+    the same statement.
+26. **A release is never in its own basket.** Self-inclusion is how a benchmark quietly becomes
+    a mirror: on a 4-member cluster a launch would set about a quarter of the number it is
+    graded against, and a bad launch would lower its own bar as it went. Enforced in
+    `etl/baskets.py` for every basket kind, ready-made, bespoke and saved, and validated on the
+    API (a `members` list containing this release is a 400, not a silent drop).
+27. **Paid ROI carries no reference lines and no horizon.** ROI is a ratio against a floor of
+    1.1 (§7), not a volume that scales with K, so a benchmark line there would invite the
+    reading "ROI should be K times the basket's", which is false. The card is unchanged: its
+    only reference is the ROI floor it always had.
+
+---
 
 ## 12. Open items (need product/user decisions)
 

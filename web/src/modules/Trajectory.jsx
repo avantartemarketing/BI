@@ -1,11 +1,23 @@
-/* Unit trajectory (spec §4.2, adapted: unified secured-units currency, docs §6.4).
+/* Unit trajectory (spec §4.2, adapted: unified secured-units currency, docs §6.4;
+ * reference grammar per BENCHMARK_SPEC 1, 2 and 7).
  * Cumulative secured units (sales + 0.8 × unconverted entries) vs plan per group; the forward projection follows the
  * channel's historic shape curve (paid: projected spend ÷ projected efficiency) -
  * per-day values computed in the ETL (docs §5.4).
  * Real-data bridge: daily[] arrays start at private-room open, so the series is
- * sliced to the campaign window (windowStart .. windowEnd = of+1 points, index = day). */
+ * sliced to the campaign window (windowStart .. windowEnd = of+1 points, index = day).
+ *
+ * The two horizons want two different pictures of the same three curves, and drawing
+ * both at once turns the chart into a thicket, so only one set of reference marks is
+ * ever on the canvas. Today the question is "where should we be by now", which is a
+ * reading taken at a single x: the target and the benchmark become short ticks sitting
+ * on the today line, and the curves ahead of today fade because they are not part of
+ * that reading yet. At close the question is "where does this land", which is a pair of
+ * levels: both references stretch across the chart and the gap between them is the
+ * stretch the business has taken on. The benchmark series is the basket's own pace
+ * (daily[].bm), summed across groups for "all" exactly as the plan is, so the two
+ * curves are always built the same way. */
 import React, { useMemo, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, fmtSigned } from "../ui.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
 
@@ -24,7 +36,8 @@ function seriesFor(snap, sel) {
     if (c) {
       return {
         now: c.now ?? 0, exp: c.exp ?? 0, proj: c.proj ?? c.now ?? 0,
-        target: c.target ?? 0, pts: slicePts(c.daily, snap.windowStart, of),
+        target: c.target ?? 0, bm: c.bm ?? null, bmExp: c.bmExp ?? null,
+        pts: slicePts(c.daily, snap.windowStart, of),
       };
     }
   }
@@ -34,7 +47,7 @@ function seriesFor(snap, sel) {
   const n = sliced.reduce((m, s) => Math.max(m, s.length), 0);
   const pts = [];
   for (let i = 0; i < n; i++) {
-    let a = null, p = null, pr = null, dt = null;
+    let a = null, p = null, pr = null, b = null, dt = null;
     for (const s of sliced) {
       const d = s[i];
       if (!d) continue;
@@ -43,14 +56,33 @@ function seriesFor(snap, sel) {
       if (d.plan !== null && d.plan !== undefined) p = (p ?? 0) + d.plan;
       // shaped forward path: only meaningful once every group projects (future days)
       if (d.proj !== null && d.proj !== undefined) pr = (pr ?? 0) + d.proj;
+      if (d.bm !== null && d.bm !== undefined) b = (b ?? 0) + d.bm;
     }
-    pts.push({ date: dt, actual: a, plan: p, proj: pr });
+    pts.push({ date: dt, actual: a, plan: p, proj: pr, bm: b });
   }
   const sum = (f) => channels.reduce((t, c) => t + (c[f] ?? 0), 0);
-  return { now: sum("now"), exp: sum("exp"), proj: sum("proj"), target: sum("target"), pts };
+  const has = (f) => channels.some((c) => c[f] !== null && c[f] !== undefined);
+  return {
+    now: sum("now"), exp: sum("exp"), proj: sum("proj"), target: sum("target"),
+    bm: has("bm") ? sum("bm") : null, bmExp: has("bmExp") ? sum("bmExp") : null,
+    pts,
+  };
 }
 
-export default function Trajectory({ snap }) {
+/* One polyline over an index range, nulls skipped. Kept as a function so the plan and
+ * benchmark curves can be cut at today and drawn twice without two spellings of the
+ * same maths. */
+function pathOf(pts, get, from, to, x, y) {
+  const out = [];
+  for (let i = Math.max(0, from); i <= to && i < pts.length; i++) {
+    const v = get(pts[i]);
+    if (v === null || v === undefined) continue;
+    out.push((out.length ? "L" : "M") + x(i).toFixed(1) + "," + y(v).toFixed(1));
+  }
+  return out.length > 1 ? out.join(" ") : "";
+}
+
+export default function Trajectory({ snap, horizon = "today" }) {
   const [sel, setSel] = useState("all");
   const [hover, setHover] = useState(null);   // {i, frac}
   const channels = snap.channels || [];
@@ -84,7 +116,9 @@ export default function Trajectory({ snap }) {
   }
 
   const N = Math.max(1, s.pts.length - 1);
-  const yTopV = Math.max(s.target, s.proj, s.now, 1) * 1.02;
+  const hasBm = !!snap.benchmark && s.bm !== null && s.bm > 0;
+  const close = horizon === "close";
+  const yTopV = Math.max(s.target, s.proj, s.now, hasBm ? s.bm : 0, 1) * 1.02;
   const x = (i) => (i / N) * X1;
   const y = (v) => Y0 - (Math.max(0, v) / yTopV) * (Y0 - YTOP);
   const pctTop = (yy) => ((yy / Y0) * 100).toFixed(2) + "%";
@@ -93,12 +127,14 @@ export default function Trajectory({ snap }) {
   const todayFrac = todayIdx / N;
   const nowVal = s.pts[todayIdx]?.actual ?? s.now;
 
-  // paths
-  const planPath = s.pts
-    .map((p, i) => (p.plan === null || p.plan === undefined ? null : { i, v: p.plan }))
-    .filter(Boolean)
-    .map((p, k) => (k ? "L" : "M") + x(p.i).toFixed(1) + "," + y(p.v).toFixed(1))
-    .join(" ");
+  // paths. Today cuts the plan and benchmark curves at today so the half that has not
+  // happened yet can drop back; at close both run the full width.
+  const planFull = pathOf(s.pts, (p) => p.plan, 0, N, x, y);
+  const planPast = pathOf(s.pts, (p) => p.plan, 0, todayIdx, x, y);
+  const planFuture = pathOf(s.pts, (p) => p.plan, todayIdx, N, x, y);
+  const bmFull = hasBm ? pathOf(s.pts, (p) => p.bm, 0, N, x, y) : "";
+  const bmPast = hasBm ? pathOf(s.pts, (p) => p.bm, 0, todayIdx, x, y) : "";
+  const bmFuture = hasBm ? pathOf(s.pts, (p) => p.bm, todayIdx, N, x, y) : "";
 
   let lastA = -1;
   s.pts.forEach((p, i) => {
@@ -127,6 +163,19 @@ export default function Trajectory({ snap }) {
     projPath = segs.join(" ");
   }
 
+  // the two readings taken on the today line
+  const targetToday = s.pts[todayIdx]?.plan ?? s.exp;
+  const bmTodayPt = s.pts[todayIdx]?.bm;
+  const bmToday = hasBm ? (bmTodayPt !== null && bmTodayPt !== undefined ? bmTodayPt : s.bmExp) : null;
+  const showToday = targeted && !close;
+  const showClose = targeted && close;
+  const stretch = hasBm ? s.target - s.bm : null;
+  // a bracket needs room between the two levels or it reads as a smudge
+  const bracketDy = hasBm ? y(s.bm) - y(s.target) : 0;
+  const showBracket = showClose && hasBm && bracketDy > 18;
+  // near the close the today line has no room on its right, so the readings flip side
+  const flipToday = todayFrac > 0.78;
+
   const projPct = targeted && s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
   // axis: % of target when there is one, secured units when there is not
   const axisTop = targeted ? s.target : yTopV / 1.02;
@@ -134,16 +183,33 @@ export default function Trajectory({ snap }) {
   const axisLabelMid = targeted ? "50%" : axisTop >= 2 ? fmt(axisTop / 2) : "";
   const pctColor = projPct !== null && projPct >= 100 ? C.ink : C.red;
   const nowTip =
-    fmt(s.now) + " units secured to date · " + fmt(s.exp) + " expected by day " + day;
+    fmt(s.now) + " units secured to date · " + fmt(targetToday) + " target by day " + day +
+    (bmToday !== null && bmToday !== undefined ? " · " + fmt(bmToday) + " benchmark" : "");
   const projTip = complete
     ? fmt(s.now) + " units at close" + (projPct !== null ? " · " + projPct + "% of target" : "")
     : "Projected " + fmt(s.proj) + " at close" + (projPct !== null ? " · " + projPct + "% of target" : "") +
       (sel === "all" && projPct !== null && projPct > 100
         ? " · demand beyond the sellout cannot convert" : "");
   const showTodayLabel = !complete && todayFrac >= 0.08 && todayFrac <= 0.92;
+  // "today" sits on the line and "day N" is pinned to the right edge, so on a
+  // release in its last days the two overprint. The close label is the one to
+  // drop: the axis already ends there, and today is the reading that matters.
+  const showEndLabel = !(showTodayLabel && todayFrac > 0.82);
 
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const xLabel = { position: "absolute", top: "100%", paddingTop: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
+  // a reading on the today line: a 12x2 mark in the reference colour, label alongside
+  const readTick = (v, color) => ({
+    position: "absolute", left: `${(todayFrac * 100).toFixed(2)}%`, top: pctTop(y(v)),
+    width: 12, height: 2, margin: "-1px 0 0 -6px", background: color,
+  });
+  const readLabel = (v, color, weight = 500) => ({
+    position: "absolute", left: `${(todayFrac * 100).toFixed(2)}%`, top: pctTop(y(v)),
+    transform: flipToday ? "translate(-100%,-50%)" : "translateY(-50%)",
+    [flipToday ? "paddingRight" : "paddingLeft"]: 10,
+    fontSize: 12, fontWeight: weight, color, whiteSpace: "nowrap",
+    fontVariantNumeric: "tabular-nums",
+  });
 
   return (
     <Card dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
@@ -172,9 +238,36 @@ export default function Trajectory({ snap }) {
                 <line x1={x(todayIdx).toFixed(1)} y1="0" x2={x(todayIdx).toFixed(1)} y2={Y0}
                   stroke={C.todayLine} strokeWidth="1" vectorEffect="non-scaling-stroke" />
               )}
-              {planPath && (
-                <path d={planPath} fill="none" stroke={C.planGrey} strokeWidth="2"
-                  strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+              {showToday ? (
+                <>
+                  {planPast && (
+                    <path d={planPast} fill="none" stroke={C.planGrey} strokeWidth="2"
+                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+                  )}
+                  {planFuture && (
+                    <path d={planFuture} fill="none" stroke={C.planGrey} strokeWidth="2" opacity="0.35"
+                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+                  )}
+                  {bmPast && (
+                    <path d={bmPast} fill="none" stroke={C.cobalt} strokeWidth="1.5" opacity="0.45"
+                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+                  )}
+                  {bmFuture && (
+                    <path d={bmFuture} fill="none" stroke={C.cobalt} strokeWidth="1.5" opacity="0.35"
+                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+                  )}
+                </>
+              ) : (
+                <>
+                  {planFull && (
+                    <path d={planFull} fill="none" stroke={C.planGrey} strokeWidth="2"
+                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+                  )}
+                  {bmFull && (
+                    <path d={bmFull} fill="none" stroke={C.cobalt} strokeWidth="1.5" opacity="0.45"
+                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+                  )}
+                </>
               )}
               {projPath && (
                 <path d={projPath} fill="none" stroke={C.orangeLight} strokeWidth="2.4"
@@ -184,9 +277,15 @@ export default function Trajectory({ snap }) {
                 <path d={actPath} fill="none" stroke={C.orange} strokeWidth="3"
                   strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               )}
-              {targeted && (
+              {/* at close both references are levels, drawn as the same 2px mark in two
+                  colours; the benchmark goes down first so the target survives a tie */}
+              {showClose && hasBm && (
+                <line x1="0" y1={y(s.bm).toFixed(1)} x2={X1} y2={y(s.bm).toFixed(1)}
+                  stroke={C.cobalt} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+              )}
+              {showClose && (
                 <line x1="0" y1={y(s.target).toFixed(1)} x2={X1} y2={y(s.target).toFixed(1)}
-                  stroke={C.targetLine} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                  stroke={C.ink} strokeWidth="2" vectorEffect="non-scaling-stroke" />
               )}
             </svg>
 
@@ -210,7 +309,10 @@ export default function Trajectory({ snap }) {
                       <div className="t-row"><span>Projected</span><span className="v">{fmt(hp.proj)}</span></div>
                     )}
                     {hp.plan !== null && hp.plan !== undefined && (
-                      <div className="t-row"><span>Plan</span><span className="v">{fmt(hp.plan)}</span></div>
+                      <div className="t-row"><span>Target</span><span className="v">{fmt(hp.plan)}</span></div>
+                    )}
+                    {hasBm && hp.bm !== null && hp.bm !== undefined && (
+                      <div className="t-row"><span>Benchmark</span><span className="v">{fmt(hp.bm)}</span></div>
                     )}
                   </div>
                 </>
@@ -225,6 +327,25 @@ export default function Trajectory({ snap }) {
                 width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: "50%", background: C.orange,
               }}
             />
+
+            {/* Today: the three numbers are one reading taken at one x, so they are
+                stacked on the today line rather than spread across the chart. */}
+            {showToday && (
+              <>
+                {hasBm && bmToday !== null && bmToday !== undefined && (
+                  <>
+                    <div style={readTick(bmToday, C.cobalt)} />
+                    <div style={readLabel(bmToday, C.cobalt)}>benchmark {fmt(bmToday)}</div>
+                  </>
+                )}
+                <div style={readTick(targetToday, C.ink)} />
+                <div style={readLabel(targetToday, C.ink)}>target {fmt(targetToday)}</div>
+                <div style={readLabel(nowVal, C.ink, 600)}>
+                  {fmt(nowVal)} {fmtSigned(nowVal - targetToday)}
+                </div>
+              </>
+            )}
+
             {/* projection end dot (white-cored); on complete releases projection = actual,
                 so the today dot already sits at the close and only the % label remains */}
             {targeted && !complete && (
@@ -255,16 +376,50 @@ export default function Trajectory({ snap }) {
             <div style={{ ...axisLabel, top: pctTop(y(axisTop / 2)) }}>{axisLabelMid}</div>
             <div style={{ ...axisLabel, top: "100%" }}>0</div>
 
-            {/* target line label */}
-            {targeted && (
+            {/* At close: the two levels are named where they sit, and the bracket between
+                them is the stretch the business has taken on above the basket. */}
+            {showClose && (
               <div
                 style={{
                   position: "absolute", left: 8, top: pctTop(y(s.target)), transform: "translateY(-145%)",
                   paddingRight: 6, background: "#fff", fontSize: 12, fontWeight: 500,
-                  color: C.muted, whiteSpace: "nowrap",
+                  color: C.ink, whiteSpace: "nowrap",
                 }}
               >
                 target {fmt(s.target)}
+              </div>
+            )}
+            {showClose && hasBm && (
+              <div
+                style={{
+                  position: "absolute", left: 8, top: pctTop(y(s.bm)), transform: "translateY(45%)",
+                  paddingRight: 6, background: "#fff", fontSize: 12, fontWeight: 500,
+                  color: C.cobalt, whiteSpace: "nowrap",
+                }}
+              >
+                benchmark {fmt(s.bm)}
+              </div>
+            )}
+            {showBracket && (
+              <div
+                style={{
+                  position: "absolute", left: 10, top: pctTop(y(s.target)),
+                  height: `${((bracketDy / Y0) * 100).toFixed(2)}%`, width: 5,
+                  borderLeft: `1px solid ${C.planGrey}`,
+                  borderTop: `1px solid ${C.planGrey}`,
+                  borderBottom: `1px solid ${C.planGrey}`,
+                  boxSizing: "border-box",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute", left: "100%", top: "50%", transform: "translateY(-50%)",
+                    paddingLeft: 5, fontSize: 11, color: C.muted, whiteSpace: "nowrap",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  stretch {fmtSigned(stretch)}
+                </div>
               </div>
             )}
 
@@ -275,7 +430,9 @@ export default function Trajectory({ snap }) {
                 today
               </div>
             )}
-            <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }}>day {of}</div>
+            {showEndLabel && (
+              <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }}>day {of}</div>
+            )}
           </div>
         </div>
       </div>

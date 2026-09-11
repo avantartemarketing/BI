@@ -10,12 +10,15 @@ issues found in the current tooling.
 ```
 docs/DATA_MODEL.md      the specification: target model, benchmarks, across-time curves,
                         paid model, draw-entry semantics, metric map, data-quality register
+docs/BENCHMARK_SPEC.md  the benchmark / target / stretch contract: basket medians, the even
+                        uplift K, the snapshot additions, the drawing grammar
 etl/                    Python pipeline
   release_inputs.json     hand-entered launch inputs per release (the human decisions)
   benchmarks.json         frozen benchmark values (v1; recompute policy in docs §4)
   extract_spend.py        Meta spend by campaign × day  (from the workbook snapshot)
   extract_content.py      Emplifi posts by campaign     (from the content export)
   build.py                computes targets, trajectory curves, and per-release snapshots
+  baskets.py              baskets of comparable launches and the medians the benchmark reads
   release_features.py     one row per release from the daily funnel (data/app/release_features.csv)
   analysis/               one-off studies behind documented decisions (cpe_elasticity.py,
                           tier_curve_probe.py, release_clusters.py - the baskets of comparables)
@@ -299,14 +302,32 @@ server logs.
 ## Target setting
 
 Each release has a **Target setting** tab: launch inputs, economics, and the
-model levers (notched sliders over the benchmark quartiles, per docs §3/§4).
+target model. Targets are set from a **basket of comparable launches** (docs
+§4a, contract in `docs/BENCHMARK_SPEC.md`): the basket's median is the
+**benchmark** - what launches like this one reach - the edition size is the
+**target**, and the gap between them is the **stretch**. The target is the
+benchmark times one even uplift `K = edition_size / benchmark units`, applied
+to every volume in every channel on every day, with conversion rates held at
+the benchmark. The basket is picked in a modal (ready-made clusters, or a
+bespoke tick-list of past launches that can be saved); a release is never in
+its own basket.
+
+The older quartile levers (notched sliders over the benchmark quartiles, docs
+§3/§4) are still there as the `By channel` side of the stretch switch, and are
+what a release without a basket uses - the model in force is on the snapshot as
+`targetingMode`.
+
 The derived-targets rail recomputes live in the browser via
 `shared/targetModel.mjs`; **Save** persists the inputs (`POST /api/inputs/:id`)
 and the server retargets the release snapshot in place (`server/retarget.js`) -
 plans, expected-today, projections and the rail all update without a full ETL
-run. Full daily-domain refreshes still come from `npm run etl`. Saved inputs
-live in `data/app/inputs.json` (ephemeral on Render's free disk - copy changes
-back into `etl/release_inputs.json` to make them permanent).
+run. A save that changes the basket or the stretch mode instead **re-runs the
+Python ETL for that release**, because the benchmark model needs the panel and
+the per-basket curves; the response is the same either way. Full daily-domain
+refreshes still come from `npm run etl`. Saved inputs live in
+`data/app/inputs.json` (ephemeral on Render's free disk - copy changes back
+into `etl/release_inputs.json` to make them permanent); custom baskets live
+beside them in `data/app/baskets.json`.
 
 ## Deploying on Render
 
@@ -318,6 +339,12 @@ set `DECISIONS_PATH` if the log must survive deploys.
 ## What the dashboard shows
 
 One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
-trajectory vs the pooled across-time plan curve, funnel diagnostics with contribution
+trajectory vs the across-time plan curve, funnel diagnostics with contribution
 decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), predicted
 sell-through, projection-vs-target waterfall. Formulas for every module: docs §9.
+
+Every card that carries a target also carries the benchmark beside it - an ink mark for the
+target, a cobalt one for the benchmark - and a single `Today | At close` toggle in the page
+header drives all of them. Plan curves are built from the release's own basket where it has
+enough members and fall back to the pooled panel curve per metric (docs §5.3). Paid ROI is the
+exception: no reference lines and no horizon.
