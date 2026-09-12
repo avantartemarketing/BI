@@ -1093,91 +1093,91 @@
      "date": "2026-09-16",
      "actual": null,
      "plan": 831.89,
-     "proj": 109.49
+     "proj": 109.5
     },
     {
      "date": "2026-09-17",
      "actual": null,
      "plan": 899.81,
-     "proj": 121.08
+     "proj": 121.09
     },
     {
      "date": "2026-09-18",
      "actual": null,
      "plan": 969.02,
-     "proj": 132.61
+     "proj": 132.62
     },
     {
      "date": "2026-09-19",
      "actual": null,
      "plan": 1031.04,
-     "proj": 144.08
+     "proj": 144.09
     },
     {
      "date": "2026-09-20",
      "actual": null,
      "plan": 1079.98,
-     "proj": 155.49
+     "proj": 155.5
     },
     {
      "date": "2026-09-21",
      "actual": null,
      "plan": 1135.16,
-     "proj": 166.85
+     "proj": 166.86
     },
     {
      "date": "2026-09-22",
      "actual": null,
      "plan": 1203.74,
-     "proj": 178.15
+     "proj": 178.16
     },
     {
      "date": "2026-09-23",
      "actual": null,
      "plan": 1288.54,
-     "proj": 189.39
+     "proj": 189.41
     },
     {
      "date": "2026-09-24",
      "actual": null,
      "plan": 1331.11,
-     "proj": 200.58
+     "proj": 200.6
     },
     {
      "date": "2026-09-25",
      "actual": null,
      "plan": 1361.9,
-     "proj": 211.71
+     "proj": 211.73
     },
     {
      "date": "2026-09-26",
      "actual": null,
      "plan": 1395.29,
-     "proj": 222.79
+     "proj": 222.81
     },
     {
      "date": "2026-09-27",
      "actual": null,
      "plan": 1412.7,
-     "proj": 233.81
+     "proj": 233.83
     },
     {
      "date": "2026-09-28",
      "actual": null,
      "plan": 1451.4,
-     "proj": 244.78
+     "proj": 244.8
     },
     {
      "date": "2026-09-29",
      "actual": null,
      "plan": 1515.55,
-     "proj": 255.69
+     "proj": 255.72
     },
     {
      "date": "2026-09-30",
      "actual": null,
      "plan": 1610.0,
-     "proj": 266.55
+     "proj": 266.58
     }
    ]
   }
@@ -1282,20 +1282,20 @@
    },
    {
     "date": "2026-09-10",
-    "spend": 4352.62,
+    "spend": 4353.37,
     "entries": 19.0,
-    "roi": 3.712
+    "roi": 3.711
    }
   ],
-  "spendToDate": 16558.85,
+  "spendToDate": 16559.6,
   "entriesToDate": 55.06666666666666,
   "unitsToDate": 44.1,
   "cumRoi": 3.582,
-  "l3dRoi": 3.712,
-  "l3dCpe": 362.79,
-  "cumCpe": 375.88,
+  "l3dRoi": 3.711,
+  "l3dCpe": 362.82,
+  "cumCpe": 375.9,
   "roiDeclineModel": {
-   "start": 3.712,
+   "start": 3.711,
    "dailyFactor": 0.995
   },
   "roiPath": [
@@ -1309,7 +1309,7 @@
    },
    {
     "date": "2026-09-13",
-    "roi": 3.657
+    "roi": 3.656
    },
    {
     "date": "2026-09-14",
@@ -1329,7 +1329,7 @@
    },
    {
     "date": "2026-09-18",
-    "roi": 3.567
+    "roi": 3.566
    },
    {
     "date": "2026-09-19",
@@ -1341,7 +1341,7 @@
    },
    {
     "date": "2026-09-21",
-    "roi": 3.514
+    "roi": 3.513
    },
    {
     "date": "2026-09-22",
@@ -1349,7 +1349,7 @@
    },
    {
     "date": "2026-09-23",
-    "roi": 3.479
+    "roi": 3.478
    },
    {
     "date": "2026-09-24",
@@ -1382,17 +1382,17 @@
   ],
   "roiTarget": 1.1,
   "budget": {
-   "current": 4352.62,
-   "recommended": 5658.41,
+   "current": 4353.37,
+   "recommended": 5659.38,
    "cap": "pacing",
-   "finalDayRoi": 3.041,
+   "finalDayRoi": 3.04,
    "floor": 1.0,
-   "budgetToSellOut": 2349781.38,
-   "supplySpend": 117489.07,
-   "roiSpend": 105590.16,
-   "cpeAtRecommended": 442.87,
-   "cpeNow": 362.79,
-   "cpeAtClose": 400.85,
+   "budgetToSellOut": 2349790.51,
+   "supplySpend": 117489.53,
+   "roiSpend": 105589.49,
+   "cpeAtRecommended": 442.9,
+   "cpeNow": 362.82,
+   "cpeAtClose": 400.87,
    "driftToClose": 1.105,
    "paced": false,
    "elasticity": 0.38,
@@ -1406,10 +1406,10 @@
    "daysLeft": 20
   },
   "unitTarget": 1610,
-  "entriesProjected": 339.8,
+  "entriesProjected": 339.9,
   "unitProjected": 271.9,
   "spendBudget": 284970,
-  "spendProjectedTotal": 103611.25,
+  "spendProjectedTotal": 103627.0,
   "profitPerUnitAA": 841.61,
   "profitPerUnitArtist": 506.51,
   "aaBudgetShare": 0.5
