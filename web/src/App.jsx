@@ -320,11 +320,23 @@ function Freshness({ asOf, st }) {
     .filter(([, v]) => v !== undefined && v !== null);
   const stale = st && st.ok === false;
   const running = st && st.running;
+  /* A feed with no token does not fail, so `ok` stays true and the header read
+   * "Sources fresh" while a whole feed was dormant and its panels sat empty.
+   * That is not a failure and should not turn the header red, but it is not
+   * "fresh" either: name the dormant feeds in the header so nobody has to
+   * hover to find out the email panels have no source at all. */
+  const dormant = (feeds || [])
+    .filter(([, v]) => / off \(/.test(String(v)))
+    .map(([k]) => k.toLowerCase());
   const label = st === undefined ? "Checking sources…"
     : running && !st.at ? "Refreshing sources…"
     : st === null || !st.at ? "Source status unknown"
-    : stale ? "Sources stale" : "Sources fresh";
-  const color = st === undefined ? "#6c6b68" : stale ? "#b8461d" : st && st.at ? "#6c6b68" : "#8a5f00";
+    : stale ? "Sources stale"
+    : dormant.length ? `Sources fresh · ${dormant.join(" and ")} off`
+    : "Sources fresh";
+  const color = st === undefined ? "#6c6b68" : stale ? "#b8461d"
+    : dormant.length ? "#8a5f00"
+    : st && st.at ? "#6c6b68" : "#8a5f00";
   const tip = {
     head: running ? `${label} (refresh in progress)` : label,
     body: running
@@ -333,7 +345,9 @@ function Freshness({ asOf, st }) {
       : st && st.at
       ? `Last refresh attempt ${new Date(st.at).toLocaleString()}`
       : "The dashboard has not been able to read the refresh status.",
-    rows: feeds ? feeds.map(([k, v]) => ({ label: k, value: String(v).slice(0, 70) })) : [],
+    // the feed lines are the diagnosis - a HubSpot summary names the releases its
+    // sends joined, which starts well past character 70 - so they are not cut
+    rows: feeds ? feeds.map(([k, v]) => ({ label: k, value: String(v) })) : [],
   };
   return (
     <span className="freshness" style={{ color }} {...t.props(tip)}>

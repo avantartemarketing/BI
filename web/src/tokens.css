@@ -244,3 +244,8 @@ select.native {
 .sys-tip .t-row { display: flex; gap: 28px; color: var(--muted); line-height: 22px; }
 .sys-tip .t-row .v { margin-left: auto; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 .sys-tip .t-body { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 6px; white-space: normal; width: 240px; }
+/* A refresh status line names every release its feed joined and every recent
+   send that joined none - the diagnosis lives at the end of it, so the value
+   wraps inside a capped tooltip rather than being cut short. */
+.sys-tip { max-width: min(620px, calc(100vw - 32px)); }
+.sys-tip .t-row .v { white-space: normal; overflow-wrap: anywhere; text-align: right; }

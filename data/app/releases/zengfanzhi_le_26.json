@@ -868,23 +868,23 @@
     {
      "date": "2026-08-01",
      "actual": 0.0,
-     "plan": 0.93,
+     "plan": 0.95,
      "proj": null,
-     "bm": 0.43
+     "bm": 0.44
     },
     {
      "date": "2026-08-02",
      "actual": 0.0,
-     "plan": 1.55,
+     "plan": 1.65,
      "proj": null,
-     "bm": 0.71
+     "bm": 0.76
     },
     {
      "date": "2026-08-03",
      "actual": 0.0,
-     "plan": 2.0,
+     "plan": 2.05,
      "proj": null,
-     "bm": 0.92
+     "bm": 0.94
     },
     {
      "date": "2026-08-04",
@@ -910,72 +910,72 @@
     {
      "date": "2026-08-07",
      "actual": 0.0,
-     "plan": 2.53,
+     "plan": 2.39,
      "proj": null,
-     "bm": 1.16
+     "bm": 1.1
     },
     {
      "date": "2026-08-08",
      "actual": 0.0,
-     "plan": 2.85,
+     "plan": 2.56,
      "proj": null,
-     "bm": 1.31
+     "bm": 1.18
     },
     {
      "date": "2026-08-09",
      "actual": 0.0,
-     "plan": 3.02,
+     "plan": 2.84,
      "proj": null,
-     "bm": 1.39
+     "bm": 1.31
     },
     {
      "date": "2026-08-10",
      "actual": 0.0,
-     "plan": 3.06,
+     "plan": 2.89,
      "proj": null,
-     "bm": 1.41
+     "bm": 1.33
     },
     {
      "date": "2026-08-11",
      "actual": 0.0,
-     "plan": 3.1,
+     "plan": 2.92,
      "proj": null,
-     "bm": 1.43
+     "bm": 1.34
     },
     {
      "date": "2026-08-12",
      "actual": 0.0,
-     "plan": 3.21,
+     "plan": 2.97,
      "proj": null,
-     "bm": 1.48
+     "bm": 1.37
     },
     {
      "date": "2026-08-13",
      "actual": 0.0,
-     "plan": 3.29,
+     "plan": 3.14,
      "proj": null,
-     "bm": 1.51
+     "bm": 1.44
     },
     {
      "date": "2026-08-14",
      "actual": 0.0,
-     "plan": 3.35,
+     "plan": 3.22,
      "proj": null,
-     "bm": 1.54
+     "bm": 1.48
     },
     {
      "date": "2026-08-15",
      "actual": 0.0,
-     "plan": 3.44,
+     "plan": 3.31,
      "proj": null,
-     "bm": 1.58
+     "bm": 1.52
     },
     {
      "date": "2026-08-16",
      "actual": 0.0,
-     "plan": 3.65,
+     "plan": 3.63,
      "proj": null,
-     "bm": 1.68
+     "bm": 1.67
     },
     {
      "date": "2026-08-17",
@@ -2832,6 +2832,7 @@
     "clicked": 407
    }
   ],
+  "feedThrough": "2026-08-14",
   "deliveredTarget": 148428.0
  },
  "social": {

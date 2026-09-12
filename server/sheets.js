@@ -224,11 +224,11 @@ function writeAtomic(file, text) {
   fs.renameSync(tmp, file);
 }
 
-function runPy(script, timeoutMs) {
+function runPy(script, timeoutMs, args = []) {
   const venvPy = path.join(ROOT, ".venv", "bin", "python3");
   const py = fs.existsSync(venvPy) ? venvPy : "python3";
   return new Promise((resolve, reject) => {
-    execFile(py, [path.join(ROOT, "etl", script)],
+    execFile(py, [path.join(ROOT, "etl", script), ...args],
       { cwd: ROOT, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024 },
       (err, stdout, stderr) => {
         if (err) reject(new Error(`${script} failed: ${(stderr || err.message).slice(-800)}`));
@@ -241,7 +241,17 @@ function runPy(script, timeoutMs) {
  * file, the reconciliation), then the build. The aggregation failing is
  * reported, not fatal: the build still runs on whatever funnel file
  * FUNNEL_SOURCE points at, exactly as a failed pull leaves the previous file. */
-async function runEtlOnce() {
+/* `release` rebuilds one release instead of the catalogue. A save changes one
+ * release's inputs and nothing else, so rebuilding all 363 pages to answer it
+ * costs about eighteen seconds of which that release is a fraction. The
+ * event-level aggregation is skipped with it: it rebuilds the funnel export
+ * from the raw feeds, which a save cannot touch either. Roughly seven times
+ * faster, and byte-identical for the release in question. */
+async function runEtlOnce(release) {
+  if (release) {
+    const build = await runPy("build.py", 5 * 60 * 1000, ["--release", release]);
+    return build.split("\n").slice(-2).filter(Boolean).join(" | ");
+  }
   let agg = "";
   try {
     const out = await runPy("aggregate_events.py", 5 * 60 * 1000);
@@ -256,8 +266,8 @@ async function runEtlOnce() {
 
 // only one build.py at a time (a save-triggered rerun can race the scheduler)
 let etlLock = Promise.resolve();
-function runEtl() {
-  const p = etlLock.then(runEtlOnce);
+function runEtl(release) {
+  const p = etlLock.then(() => runEtlOnce(release));
   etlLock = p.catch(() => {});
   return p;
 }

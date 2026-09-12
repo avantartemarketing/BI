@@ -221,6 +221,14 @@ that changes `benchmark_basket` or `stretch_mode`. Benchmark mode is sticky: the
 quote a target and a benchmark that no longer agree. `retargetSnapshot` stays as the fast
 path for lever-mode edits only. The save response is unchanged in shape.
 
+That ETL run rebuilds **one release**, not the catalogue: `build.py --release <id>` reuses the
+curve panel already on disk, builds the one snapshot and patches its row into `index.json`.
+A save cannot move any other page, and the whole-catalogue build spends its time on 354
+actuals-only pages, the shared curve panel and seven other baskets' pace curves. The save
+endpoint went from about 30 seconds to under 3, with byte-identical output for the release in
+question. Creating a release still takes the full build, because promotion moves it out of the
+derived set and only the full build clears the actuals-only page it leaves behind.
+
 ## 7. Drawing grammar (web)
 
 Tokens: `--ref-target: #122b5c` and `--ref-bm: #2f62c4` in `tokens.css`, `C.refTarget` and
@@ -254,6 +262,7 @@ card rather than as one mark per channel.
 | **Channels vs targets** | one fill per column, ink line at target today, cobalt line at benchmark today, foot = % vs target | same with projected fill and close references |
 | **Funnel by channel** / **Organic funnel** | always Today. **cobalt centre line = benchmark**, hollow **ink ring = target**, orange/red dot = actual, on a log scale where ×4 either way fills the rung (`›` marks beyond). Pale bar spans ring→dot. The % and its RAG colour stay **vs target**. Volume rungs put the ring at ×K; rate rungs put it on the centre line (rates held at benchmark). | — |
 | **Projection vs target** (waterfall) | Benchmark today → Stretch (grey hatch) → Target today → 4 contributors → Actual today | Benchmark → Stretch → Target → 4 contributors → Projection |
+| **Funnel by channel**, waterfall view | the same three anchor rows above the per-stage contributors, off the same snapshot figures | — |
 | **Paid spend / day** | both track bars carry ink target + cobalt benchmark ticks; a `Stretch` row under `Capped by` states the uplift | same with projected fill |
 | **Predicted sell-through** | secured vs target today and benchmark today | prediction vs sellout, cobalt tick at the benchmark |
 | **Paid ROI** | unchanged — no reference lines | — |
@@ -261,8 +270,17 @@ card rather than as one mark per channel.
 Sidebar status becomes three-state: green at or ahead of target, amber behind target but
 ahead of benchmark, red behind benchmark, hollow when no targets are set.
 
-Everything degrades: when `snap.benchmark` is absent the cobalt marks are simply not drawn
-and every card renders exactly as it does today.
+Everything degrades: when `snap.benchmark` is absent the benchmark marks are simply not drawn
+and every card renders exactly as it does today. Both waterfalls say so in their footer -
+`levers, no comparable basket` - because a row that is simply missing explains nothing, and a
+reader comparing two cards with different numbers of anchors deserves the reason.
+
+The email card distinguishes its two silences the same way. `email.feedThrough` is the last
+send anywhere in the file, so a campaign that began after it cannot have sends to find: that
+is an ingestion fault and the card says which date the feed stops at. A current feed with no
+send naming this release is a naming fault instead, and the card names the campaign code the
+sends have to carry. Reporting both as "no sends have joined this release yet" reads as "we
+sent nothing", which is a third thing entirely.
 
 ## 8. Target setting
 

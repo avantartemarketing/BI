@@ -291,7 +291,10 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   if (creating) {
     // Nothing to retarget - the release only has an actuals-only page. Save
     // the inputs and let the full ETL build it (build.py picks the saved
-    // inputs up and promotes the release).
+    // inputs up and promotes the release). This one stays on the whole-
+    // catalogue build on purpose: promotion moves the release out of the
+    // derived set, and only the full build clears the actuals-only page it
+    // leaves behind.
     writeSaved(id, next);
     fs.appendFileSync(TARGETS_LOG, JSON.stringify({
       ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard", created: true,
@@ -335,7 +338,9 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard",
     }) + "\n");
     try {
-      await sheets.runEtl();
+      // one release, not the catalogue: a save cannot move any other page, and
+      // the whole-catalogue build costs about seven times as much (server/sheets.js)
+      await sheets.runEtl(id);
     } catch (e) {
       return res.status(502).json({
         error: "Inputs saved, but the benchmark rebuild failed (" + String((e && e.message) || e).slice(0, 200) +

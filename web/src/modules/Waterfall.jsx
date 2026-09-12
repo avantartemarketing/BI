@@ -22,12 +22,12 @@
  * close. When snap.benchmark is absent the two new rows are simply not drawn
  * and the card reads exactly as it did before. */
 import React from "react";
-import { Card, GROUP_DOTS, RefTick, C, QBadge, fmt, fmtSigned, useTip } from "../ui.jsx";
+import { Card, GROUP_DOTS, RefTick, C, QBadge, fmt, fmtSigned, useTip, STRETCH_HATCH } from "../ui.jsx";
 
 /* The stretch is the one bar on the card that is not an outcome, so it is cut
  * from the plan's cloth - grey hatch on the track, with a hairline border so it
  * still has an edge where it sits on white. */
-const STRETCH_HATCH = `repeating-linear-gradient(135deg, ${C.planGrey} 0 1.5px, ${C.track} 1.5px 5px)`;
+
 
 const STEP_TIPS = {
   organic_traffic: "Organic sessions vs plan",
@@ -255,6 +255,9 @@ export default function Waterfall({ snap, horizon = "today" }) {
           {isToday
             ? "secured units" + (snap?.day ? ", day " + snap.day : "")
             : "units at close"}
+          {/* an absent benchmark row explains nothing on its own - name the
+              model that set the target instead (BENCHMARK_SPEC 4) */}
+          {!hasBm && " · levers, no comparable basket"}
         </span>
       </div>
     </Card>

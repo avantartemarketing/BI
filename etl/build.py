@@ -41,6 +41,7 @@ import collections
 import os
 import pathlib
 import re
+import sys
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
@@ -219,6 +220,22 @@ def load_emails() -> pd.DataFrame:
         return "OTHER"
     df["email_type"] = df["name"].map(email_type)
     return df
+
+
+def email_feed_through(emails: pd.DataFrame):
+    """The last send in the email file, whatever release it belongs to.
+
+    A campaign that began after this date has no sends to find, and the card
+    has to say so: "no sends have joined this release" reads as "we sent
+    nothing", which is a marketing problem, while a feed that stops before the
+    campaign starts is an ingestion problem. The two look identical on the page
+    without this, which is how a HubSpot pull that quietly stopped writing went
+    unnoticed for a month.
+    """
+    if emails is None or emails.empty:
+        return None
+    last = emails["sent_at"].max()
+    return None if pd.isna(last) else last.date().isoformat()
 
 
 def load_content() -> pd.DataFrame:
@@ -1114,6 +1131,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "spendBudget": None, "spendProjectedTotal": None,
         "profitPerUnitAA": None, "profitPerUnitArtist": None, "aaBudgetShare": None,
     }
+    feed_through = email_feed_through(emails)
     em = emails.iloc[0:0]
     if code:
         em_all = emails[(emails["campaign"] == code)
@@ -1134,6 +1152,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
             for _, r in em.sort_values("sent_at").iterrows()
         ] if len(em) else [],
         "deliveredTarget": None,
+        "feedThrough": feed_through,
     }
     ct = content.iloc[0:0]
     if code:
@@ -1641,6 +1660,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         paid_out["benchmarkBudget"] = round(bm_units["paid"] * targets["paid"]["cost_per_purchase"], 2)
 
     # ---- email funnel (docs §8): launch-window customer sends for this campaign
+    feed_through = email_feed_through(emails)
     em_all = emails[(emails["campaign"] == release["campaign_code"])
                     & (emails["sent_at"].dt.date >= window_start)
                     & (emails["sent_at"].dt.date <= min(as_of, launch_end))]
@@ -1661,6 +1681,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
              "delivered": int(r["delivered"]), "opened": int(r["opened"]), "clicked": int(r["clicked"])}
             for _, r in em.sort_values("sent_at").iterrows()
         ],
+        "feedThrough": feed_through,
     }
     # expected delivered by today: cohort median total x pooled delivery-timing curve
     email_out["deliveredTarget"] = None
@@ -1937,7 +1958,71 @@ def funnel_coverage(at: pd.DataFrame, curves: dict) -> str:
             f"{curves['n_releases']} in the curve panel")
 
 
-def main():
+def index_row(snap: dict, status: str) -> dict:
+    """One sidebar row. Shared so the whole build and a single-release rebuild
+    cannot drift into describing the same release two different ways."""
+    return {
+        "id": snap["id"], "name": f"{snap['artist']} - {snap['title']}",
+        "releaseName": snap["releaseName"], "artist": snap["artist"], "title": snap["title"],
+        "quarter": snap.get("quarter"), "type": snap["type"],
+        "status": status, "targeted": snap.get("targeted", True),
+        "day": snap["day"], "of": snap["of"], "complete": snap["complete"],
+        "windowEnd": snap.get("windowEnd"),
+        "statusPct": snap["hero"]["statusPct"], "ok": snap["hero"]["ok"],
+        # actual vs the benchmark for today, so the sidebar can tell
+        # "behind target but ahead of typical" from "behind typical"
+        # without guessing at a threshold (docs/BENCHMARK_SPEC.md §7)
+        "benchmarkPct": snap["hero"].get("benchmarkPct"),
+        "lastSeen": (snap.get("derived") or {}).get("last_seen"),
+        "sessions": (snap.get("totals") or {}).get("sessions"),
+    }
+
+
+def sort_index(index: list[dict]) -> list[dict]:
+    """Live first by window end, then closed most-recent-first, then catalogue
+    by traffic. The sidebar's order, in one place for both build paths."""
+    live = [e for e in index if e["status"] == "live"]
+    live.sort(key=lambda e: (e["windowEnd"] or "", -(e["sessions"] or 0)))
+    closed = sorted([e for e in index if e["status"] == "closed"],
+                    key=lambda e: e["windowEnd"] or "", reverse=True)
+    catalogue = sorted([e for e in index if e["status"] == "catalogue"],
+                       key=lambda e: -(e["sessions"] or 0))
+    return live + closed + catalogue
+
+
+def patch_index(snap: dict, as_of: date) -> None:
+    """Replace one release's row in the index written by the last full build.
+
+    A save cannot add or remove releases, so every other row still stands; only
+    this one's figures and its position can have moved. With no index on disk
+    there is nothing to patch and the caller needs a full build, which is said
+    rather than silently skipped."""
+    path = APP / "index.json"
+    if not path.exists():
+        print("index: none on disk - run a full build to create it")
+        return
+    doc = json.loads(path.read_text())
+    status = "closed" if snap["complete"] else "live"
+    row = index_row(snap, status)
+    rows = [r for r in doc.get("releases", []) if r.get("id") != snap["id"]]
+    rows.append(row)
+    doc["releases"] = sort_index(rows)
+    doc["asOf"] = as_of.isoformat()
+    path.write_text(json.dumps(doc, indent=1))
+
+
+def main(only: str | None = None):
+    """Build every release, or just one.
+
+    `only` is a release id. A dashboard save touches exactly one release, and
+    rebuilding all 363 to answer it costs about eighteen seconds of which the
+    saved release is a fraction: 354 actuals-only pages nobody asked for, the
+    shared curve panel, and the pace curves of seven baskets belonging to other
+    releases. The single-release path reuses the curve panel already on disk,
+    builds the one snapshot, and patches its row into the index in place. The
+    whole-catalogue artefacts - inputs.json, the reconciliation, the people and
+    window exports - are left alone, because a save cannot change them.
+    """
     at = load_across_time()
     as_of = at["event_date"].max() - timedelta(days=1)  # last full day (export cut mid-day)
     spend = load_spend()
@@ -1960,9 +2045,16 @@ def main():
     (APP / "releases").mkdir(exist_ok=True)
     DERIVED.mkdir(exist_ok=True)
 
-    curves = build_curves(at)
-    (APP / "curves.json").write_text(json.dumps(curves, indent=1))
-    print(f"curves: n={curves['n_releases']} clean releases")
+    # the shared curve panel is a function of the funnel export, not of any
+    # release's inputs, so a single-release build reuses the one on disk
+    curves_path = APP / "curves.json"
+    if only and curves_path.exists():
+        curves = json.loads(curves_path.read_text())
+        print(f"curves: reused n={curves['n_releases']} from {curves_path.name}")
+    else:
+        curves = build_curves(at)
+        curves_path.write_text(json.dumps(curves, indent=1))
+        print(f"curves: n={curves['n_releases']} clean releases")
 
     # Every release the funnel data mentions. The configured ones (target
     # inputs on file) get the full build; the rest get an actuals-only page.
@@ -1980,23 +2072,27 @@ def main():
     by_name = {n: g for n, g in at.groupby("simple_release_name")}
     configured = {r["release_name"]: r for r in INPUTS["releases"]}
 
+    if only:
+        cfg = next((r for r in INPUTS["releases"] if r["id"] == only), None)
+        if cfg is None:
+            raise SystemExit(f"build: no configured release with id {only!r}")
+        snap = build_release(cfg, at, spend, emails, content, curves, as_of,
+                             artist_posts, posts_bench, email_bench, panel)
+        check_snapshot(snap)
+        (APP / "releases" / f"{only}.json").write_text(json.dumps(snap, indent=1))
+        bmk = snap.get("benchmark")
+        print(f"{snap['id']}: day {snap['day']}/{snap['of']} "
+              f"now={snap['hero']['now']} exp={snap['hero']['expectedToday']} "
+              f"target={snap['hero']['target']} proj={snap['hero']['projected']}"
+              + (f" benchmark={bmk['units']} (x{bmk['k']}, {bmk['basket']['id']} n={bmk['basket']['n']})"
+                 if bmk else ""))
+        patch_index(snap, as_of)
+        print(f"wrote 1 release ({only}) -> {APP}")
+        return
+
     index, written, n_full, n_actuals = [], set(), 0, 0
     def add(snap, status):
-        index.append({
-            "id": snap["id"], "name": f"{snap['artist']} - {snap['title']}",
-            "releaseName": snap["releaseName"], "artist": snap["artist"], "title": snap["title"],
-            "quarter": snap.get("quarter"), "type": snap["type"],
-            "status": status, "targeted": snap.get("targeted", True),
-            "day": snap["day"], "of": snap["of"], "complete": snap["complete"],
-            "windowEnd": snap.get("windowEnd"),
-            "statusPct": snap["hero"]["statusPct"], "ok": snap["hero"]["ok"],
-            # actual vs the benchmark for today, so the sidebar can tell
-            # "behind target but ahead of typical" from "behind typical"
-            # without guessing at a threshold (docs/BENCHMARK_SPEC.md §7)
-            "benchmarkPct": snap["hero"].get("benchmarkPct"),
-            "lastSeen": (snap.get("derived") or {}).get("last_seen"),
-            "sessions": (snap.get("totals") or {}).get("sessions"),
-        })
+        index.append(index_row(snap, status))
 
     for rec in discovered:
         cfg = configured.pop(rec["release_name"], None)
@@ -2035,18 +2131,7 @@ def main():
         if stale.name not in written:
             stale.unlink()
 
-    rank = {"live": 0, "closed": 1, "catalogue": 2}
-    index.sort(key=lambda e: (
-        rank[e["status"]],
-        e["windowEnd"] or "" if e["status"] == "live" else "",
-        "" if e["status"] == "live" else (("~" + (e["windowEnd"] or "")) if e["status"] == "closed" else ""),
-        -(e["sessions"] or 0),
-    ))
-    # closed: most recent close first
-    live = [e for e in index if e["status"] == "live"]
-    closed = sorted([e for e in index if e["status"] == "closed"], key=lambda e: e["windowEnd"] or "", reverse=True)
-    catalogue = sorted([e for e in index if e["status"] == "catalogue"], key=lambda e: -(e["sessions"] or 0))
-    index = live + closed + catalogue
+    index = sort_index(index)
     (APP / "index.json").write_text(json.dumps(
         {"asOf": as_of.isoformat(), "releases": index}, indent=1))
 
@@ -2085,4 +2170,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # --release <id> rebuilds one release and patches its index row; everything
+    # else a save cannot change is left as the last full build wrote it
+    args = sys.argv[1:]
+    one = None
+    if "--release" in args:
+        i = args.index("--release")
+        if i + 1 >= len(args):
+            raise SystemExit("build: --release needs a release id")
+        one = args[i + 1]
+    main(one)

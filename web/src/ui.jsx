@@ -148,6 +148,11 @@ export function QBadge({ tip, content }) {
  * are cut from the same cloth. */
 export const HATCH = `repeating-linear-gradient(135deg, ${C.orange} 0 1.5px, ${C.orangeLight} 1.5px 5px)`;
 
+/* The stretch fill: a grey hatch, so it reads as an ask rather than as anything
+ * anyone has secured. Shared because both waterfalls draw the same bar between
+ * the benchmark and the target, and the two must not drift apart. */
+export const STRETCH_HATCH = `repeating-linear-gradient(135deg, ${C.planGrey} 0 1.5px, ${C.track} 1.5px 5px)`;
+
 /* The live width of an element. Label collision is a pixel question, never a
  * fraction one - two labels 20% apart are comfortable on a wide card and on top
  * of each other on a narrow one - so a card that places labels by value measures

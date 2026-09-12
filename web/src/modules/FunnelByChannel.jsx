@@ -31,7 +31,7 @@
  * Null value or missing/zero reference → neutral: centred grey dot, delta '–'. */
 import React from "react";
 import {
-  Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned, fmtMoney, MINUS, useTip,
+  Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned, fmtMoney, MINUS, useTip, STRETCH_HATCH,
   rungGeom, RungTrack,
 } from "../ui.jsx";
 
@@ -270,8 +270,16 @@ function emailStages(snap) {
   const opensA = email.opened ?? 0, clicksA = email.clicked ?? 0;
   const sessA = fbg.sessions_actual ?? 0, sessE = fbg.sessions_expected ?? null;
   const clicksE = finite(delivE) && delivE > 0 ? delivE * (openRef / 100) * (ctorRef / 100) : null;
+  /* Zero sends has two very different causes and the card used to report both
+   * the same way. Marketing sent nothing, or the email feed stops before this
+   * campaign even starts - an ingestion fault that says nothing about the
+   * campaign. feedThrough is the last send anywhere in the file, so the second
+   * case is the one that can be proved. */
+  const feedThrough = email.feedThrough ?? null;
+  const feedEndsFirst = !!(feedThrough && snap?.windowStart && feedThrough < snap.windowStart);
   return {
     delivA, delivE, opensA, clicksA, sessA, sessE, clicksE, openRef, clickRef, ctorRef,
+    feedThrough, feedEndsFirst,
     openA: delivA > 0 ? (opensA / delivA) * 100 : null,
     ctorA: opensA > 0 ? (clicksA / opensA) * 100 : null,
     spcA: clicksA > 0 ? sessA / clicksA : null,
@@ -329,9 +337,23 @@ function groupWaterfall(g, snap) {
     }
     // no delivery benchmark or no clicks yet: the stages are context and
     // sessions vs plan carries the traffic gap
+    /* Two different faults, and the card used to report both as silence. The
+     * feed can stop before the campaign starts, which is an ingestion problem;
+     * or it can be current and no send names this release, which is a naming
+     * one - HubSpot joins on the campaign code appearing in the email or
+     * campaign name, so the code is what the reader needs to go and check. */
+    const noSends = em.feedEndsFirst
+      ? `the email feed stops at ${em.feedThrough}, before this campaign began - no sends can join it`
+      : snap.campaignCode
+        ? `no send names ${snap.campaignCode} - the email feed reaches ${em.feedThrough || "no date"}`
+        : "no sends have joined this release yet";
     rows.push({ label: "Delivered emails", value: null, display: fmtVal(delivA, "count"),
-      note: delivA > 0 ? "no delivery benchmark yet" : "no sends have joined this release yet",
-      tipRows: [{ label: "Actual", value: fmtVal(delivA, "count") }, { label: "Reference", value: fmtVal(delivE, "count") }] });
+      note: delivA > 0 ? "no delivery benchmark yet" : noSends,
+      tipRows: [
+        { label: "Actual", value: fmtVal(delivA, "count") },
+        { label: "Reference", value: fmtVal(delivE, "count") },
+        ...(em.feedThrough ? [{ label: "Feed ends", value: em.feedThrough }] : []),
+      ] });
     info("Open rate", em.openA, em.openRef, "%", "context only");
     info("Click rate", em.ctorA, em.ctorRef, "%", "clicks per opened email - context only");
     info("Sessions per click", em.spcA, null, "ratio", "no expected clicks to judge against yet");
@@ -411,32 +433,82 @@ function FunnelWaterfall({ snap, groups }) {
       else flat.push({ ...r, level: cum });
     }
   }
-  const levels = [expTotal, ...flat.filter((r) => r.to !== undefined).map((r) => r.to)];
+  /* This waterfall opened on "Target today" while the outcome waterfall opened
+   * on Benchmark -> Stretch -> Target, so the same page answered "where did the
+   * target come from" in one card and not in the other. It is the same question
+   * and the same grammar, so the two anchor rows are drawn here too, off the
+   * same snapshot figures (BENCHMARK_SPEC 7). Absent a benchmark they are
+   * simply not drawn, as everywhere else. */
+  const bmTotal = snap?.hero?.benchmarkToday ?? null;
+  const hasBm = !!snap?.benchmark && bmTotal !== null && bmTotal !== undefined;
+  const stretchTotal = hasBm ? expTotal - bmTotal : null;
+
+  const levels = [expTotal, ...flat.filter((r) => r.to !== undefined).map((r) => r.to),
+    ...(hasBm ? [bmTotal] : [])];
   const lo = Math.min(...levels), hi = Math.max(...levels);
   const pad = (hi - lo) * 0.1 || 1;
   const span = hi + pad - (lo - pad);
   const X = (v) => ((v - (lo - pad)) / span) * 100;
 
-  const anchorRow = (label, value, tip) => (
-    <div style={{ height: 28, flex: "0 0 28px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+  const anchorRow = (label, value, tip, color = C.refTarget) => (
+    <div style={{ height: 26, flex: "0 0 26px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
       <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
       <div style={{ position: "relative", height: 14 }}>
-        <div {...tipApi.props(tip)} style={{ position: "absolute", left: `${X(value)}%`, top: -2, bottom: -2, width: 2, background: C.refTarget }} />
+        <div {...tipApi.props(tip)} style={{ position: "absolute", left: `${X(value)}%`, top: -2, bottom: -2, width: 2, background: color }} />
       </div>
       <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>{fmt(value)}</div>
     </div>
   );
 
   return (
-    <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
+    /* Two anchor rows were added above Target today, which on a five-group
+       funnel is enough to push Actual today past the bottom of the card. The
+       rows were trimmed to absorb most of it; the scroll is the guarantee that
+       the closing anchor is never simply cut off on a release with more groups
+       or more stages than this one. */
+    <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", overflowY: "auto" }}>
+      {hasBm && anchorRow("Benchmark today", bmTotal, {
+        head: "Benchmark today",
+        rows: [{ label: "Secured units", value: fmt(bmTotal) }],
+        body: "The median of the matched basket - what launches like this one typically reach by now.",
+      }, C.refBm)}
+      {hasBm && (
+        <div style={{ height: 24, flex: "0 0 24px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+          <div style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>Stretch</div>
+          <div style={{ position: "relative", height: 14 }}>
+            <div
+              {...tipApi.props({
+                head: "Stretch",
+                rows: [
+                  { label: "Benchmark today", value: fmt(bmTotal) },
+                  { label: "Target today", value: fmt(expTotal) },
+                  { label: "Stretch", value: fmtSigned(stretchTotal) },
+                  ...(snap?.benchmark?.k ? [{ label: "Uplift", value: "×" + fmt(snap.benchmark.k, 2) }] : []),
+                ],
+                body: "What the business is asking for over and above the basket - the same even uplift in every channel and on every day.",
+              })}
+              style={{
+                position: "absolute", top: 0, bottom: 0,
+                left: `${X(Math.min(bmTotal, expTotal))}%`,
+                width: `${Math.max(1.2, Math.abs(X(expTotal) - X(bmTotal)))}%`,
+                background: STRETCH_HATCH, border: `1px solid ${C.planGrey}`,
+                boxSizing: "border-box", borderRadius: 3,
+              }}
+            />
+          </div>
+          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: C.muted }}>
+            {fmtSigned(stretchTotal)}
+          </div>
+        </div>
+      )}
       {anchorRow("Target today", expTotal,
         { head: `Target by day ${day}`, rows: [{ label: "Secured units", value: fmt(expTotal) }] })}
       {flat.map((r, i) => r.header ? (
-        <div key={"h" + i} style={{ height: 22, flex: "0 0 22px", display: "flex", alignItems: "center", marginTop: 2 }}>
+        <div key={"h" + i} style={{ height: 20, flex: "0 0 20px", display: "flex", alignItems: "center" }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{r.header}</div>
         </div>
       ) : r.to !== undefined ? (
-        <div key={r.label + i} style={{ height: 24, flex: "0 0 24px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+        <div key={r.label + i} style={{ height: 22, flex: "0 0 22px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
           <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
           <div style={{ position: "relative", height: 12 }}>
             <div {...tipApi.props({
@@ -458,7 +530,7 @@ function FunnelWaterfall({ snap, groups }) {
           </div>
         </div>
       ) : (
-        <div key={r.label + i} style={{ height: 24, flex: "0 0 24px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+        <div key={r.label + i} style={{ height: 22, flex: "0 0 22px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
           <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
           <div style={{ position: "relative", height: 12 }}>
             <div {...tipApi.props({ head: r.label, body: r.note, rows: r.tipRows })} style={{
@@ -478,6 +550,11 @@ function FunnelWaterfall({ snap, groups }) {
         }} />
         <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
           {capped ? "steps exceed the gap - sellout caps it" : `secured units, day ${day}`}
+          {/* No benchmark means no stretch bar, and an absent row explains
+              nothing. Say which model set the target instead of leaving a
+              reader to wonder why this card has two anchors and the outcome
+              waterfall has four. */}
+          {!hasBm && " · levers, no comparable basket"}
         </span>
       </div>
     </div>
