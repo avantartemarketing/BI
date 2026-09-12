@@ -20,7 +20,7 @@
  * Horizontal legend at the bottom, no rule. When snap.benchmark is absent the
  * cobalt tick is simply not drawn. */
 import React from "react";
-import { Card, GROUP_DOTS, RefTick, C, fmt, ragColor, useTip } from "../ui.jsx";
+import { Card, GROUP_DOTS, RefTick, C, fmt, ragColor, useTip, useWidth, labelPx, axisLabelLeft } from "../ui.jsx";
 
 const SEGS = [
   { key: "sold", color: C.rust, label: "Sold",
@@ -118,6 +118,20 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const maxEntries = products.reduce((m, p) => Math.max(m, p.entries ?? 0), 0);
 
   const axisLabel = { position: "absolute", top: 3, fontSize: 12, whiteSpace: "nowrap" };
+
+  /* Same axis row as the hero: the benchmark label is anchored to its tick and
+     "sellout" is pinned to the right, so on a release near its edition the two
+     collided. Measure the row and slide the benchmark clear. */
+  const [axisRef, axisW] = useWidth();
+  const bmText = bm === null ? "" :
+    `benchmark ${fmt(bm)}${close && bmPct !== null ? " · " + bmPct + "%" : ""}`;
+  const selloutText = `sellout ${fmt(edition)}`;
+  const bmLeft = bmText
+    ? axisLabelLeft({
+      pct: posOf(bm), rowW: axisW, textW: labelPx(bmText),
+      hiW: close ? 0 : labelPx(selloutText),
+    })
+    : null;
   const lineSwatch = (bg) => ({ width: 12, height: 2, background: bg, borderRadius: 0, flex: "0 0 12px" });
 
   return (
@@ -146,7 +160,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
                   {...tipApi.props(targetTip)}
                   style={{
                     position: "absolute", left: `${posOf(targetToday)}%`, bottom: 0,
-                    transform: "translateX(-50%)", fontSize: 12, color: C.ink, whiteSpace: "nowrap",
+                    transform: "translateX(-50%)", fontSize: 12, color: C.refTarget, whiteSpace: "nowrap",
                   }}
                 >
                   target {fmt(targetToday)}
@@ -178,17 +192,19 @@ export default function SellThrough({ snap, horizon = "today" }) {
             </div>
 
             {(bm !== null || !close) && (
-              <div style={{ position: "relative", height: 18, marginTop: 6 }}>
+              <div ref={axisRef} style={{ position: "relative", height: 18, marginTop: 6 }}>
                 {bm !== null && (
                   <div
                     {...tipApi.props(bmTip)}
-                    style={{ ...axisLabel, left: `${posOf(bm)}%`, transform: "translateX(-50%)", color: C.cobalt }}
+                    style={bmLeft === null
+                      ? { ...axisLabel, left: `${posOf(bm)}%`, transform: "translateX(-50%)", color: C.refBm }
+                      : { ...axisLabel, left: bmLeft, color: C.refBm }}
                   >
-                    benchmark {fmt(bm)}{close && bmPct !== null ? " · " + bmPct + "%" : ""}
+                    {bmText}
                   </div>
                 )}
                 {!close && (
-                  <div style={{ ...axisLabel, right: 0, color: C.muted }}>sellout {fmt(edition)}</div>
+                  <div style={{ ...axisLabel, right: 0, color: C.muted }}>{selloutText}</div>
                 )}
               </div>
             )}
@@ -247,13 +263,13 @@ export default function SellThrough({ snap, horizon = "today" }) {
           ))}
           {!close && targetToday > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={lineSwatch(C.ink)} />
+              <span style={lineSwatch(C.refTarget)} />
               <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Target</span>
             </div>
           )}
           {bm !== null && (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={lineSwatch(C.cobalt)} />
+              <span style={lineSwatch(C.refBm)} />
               <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Benchmark</span>
             </div>
           )}

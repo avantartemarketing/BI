@@ -300,11 +300,11 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           <div style={legendItem}><span style={sw(C.orange)} />To date</div>
           {close && <div style={legendItem}><span style={sw(C.orangeLight)} />Projected</div>}
           <div style={legendItem}>
-            <span style={{ width: 2, height: 10, background: C.ink, flex: "0 0 2px" }} />{targetWord}
+            <span style={{ width: 2, height: 10, background: C.refTarget, flex: "0 0 2px" }} />{targetWord}
           </div>
           {unitsBm !== null && (
             <div style={legendItem}>
-              <span style={{ width: 2, height: 10, background: C.cobalt, flex: "0 0 2px" }} />{bmWord}
+              <span style={{ width: 2, height: 10, background: C.refBm, flex: "0 0 2px" }} />{bmWord}
             </div>
           )}
         </div>

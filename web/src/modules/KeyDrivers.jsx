@@ -64,7 +64,7 @@ function PlainRung({ dev, ring, up, neutral }) {
       {!neutral && (
         <div style={{
           position: "absolute", left: `${ring}%`, top: 0, width: 12, height: 12,
-          marginLeft: -6, borderRadius: "50%", border: `1.5px solid ${C.ink}`,
+          marginLeft: -6, borderRadius: "50%", border: `1.5px solid ${C.refTarget}`,
           background: "transparent", boxSizing: "border-box",
         }} />
       )}
@@ -129,13 +129,13 @@ function RungKey({ bench }) {
       <span style={item}>
         <span style={{
           width: 12, height: 12, borderRadius: "50%", flex: "0 0 12px",
-          border: `1.5px solid ${C.ink}`, boxSizing: "border-box",
+          border: `1.5px solid ${C.refTarget}`, boxSizing: "border-box",
         }} />
         Target
       </span>
       {bench && (
         <span style={item}>
-          <span style={{ width: 12, height: 2, background: C.cobalt, flex: "0 0 12px" }} />
+          <span style={{ width: 12, height: 2, background: C.refBm, flex: "0 0 12px" }} />
           Benchmark
         </span>
       )}
@@ -210,7 +210,7 @@ function FunnelView({ snap }) {
     value: (r.relPct >= 0 ? "+" : MINUS) + Math.abs(r.relPct).toFixed(1) + "%",
     color: r.rag,
   }]);
-  const bmRow = (r, show) => (r.useBm ? [{ label: "Benchmark today", value: show(r.benchmark), color: C.cobalt }] : []);
+  const bmRow = (r, show) => (r.useBm ? [{ label: "Benchmark today", value: show(r.benchmark), color: C.refBm }] : []);
 
   return (
     <>

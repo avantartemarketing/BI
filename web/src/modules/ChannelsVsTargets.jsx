@@ -7,7 +7,9 @@
  * typically reaches. The old pale target block is gone with it: a block can only say
  * "over" or "under" by which colour shows at the top, and it cannot hold two references
  * at once. A line can, and it reads the same whether the fill is above it or below it,
- * which is why the fill is inset and the lines run the full column width.
+ * which is why the fill is inset. Each reference line measures its own bar plus the
+ * standard 3px bleed, not the whole column: column-wide segments left almost no gap
+ * between neighbours and the row read as one broken line rather than five marks.
  *
  * One toggle only. BENCHMARK_SPEC 2 moves Today | At close to the page header, so the
  * horizon arrives as a prop and the card keeps just:
@@ -20,7 +22,7 @@
 import React, { useState } from "react";
 import { Card, GROUP_DOTS, RefTick, C, fmt, fmtSigned, useTip } from "../ui.jsx";
 
-const BAR_INSET = "8%";   // fill inset so both reference lines clear it either side
+const BAR_INSET = "8%";   // gap between one column's bar and the next's
 
 export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   const t = useTip();
@@ -134,10 +136,10 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                     }}
                   />
                   {c.bmH !== null && (
-                    <RefTick pct={c.bmH} kind="benchmark" vertical={false} tip={bmTip} />
+                    <RefTick pct={c.bmH} kind="benchmark" vertical={false} tip={bmTip} inset={BAR_INSET} />
                   )}
                   {targeted && c.ref > 0 && (
-                    <RefTick pct={c.refH} kind="target" vertical={false} tip={refTip} />
+                    <RefTick pct={c.refH} kind="target" vertical={false} tip={refTip} inset={BAR_INSET} />
                   )}
                 </div>
               );
@@ -184,8 +186,8 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
             }}
           >
             <span style={legendItem}><span style={swatch(fillColor)} />{fillLabel}</span>
-            {targeted && <span style={legendItem}><span style={lineSwatch(C.ink)} />{refLabel}</span>}
-            {hasBm && <span style={legendItem}><span style={lineSwatch(C.cobalt)} />{bmLabel}</span>}
+            {targeted && <span style={legendItem}><span style={lineSwatch(C.refTarget)} />{refLabel}</span>}
+            {hasBm && <span style={legendItem}><span style={lineSwatch(C.refBm)} />{bmLabel}</span>}
             <span style={{ marginLeft: "auto" }}>
               {hasBm && stretchPct !== null && stretchPct !== undefined
                 ? "stretch " + fmtSigned(stretchPct * 100) + "%"

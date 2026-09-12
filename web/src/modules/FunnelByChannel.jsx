@@ -116,7 +116,7 @@ function buildRung(spec, bench, k) {
         : ""),
       rows: [
         { label: "Actual", value: fmtVal(v, unit) },
-        ...(useBm ? [{ label: "Benchmark today", value: fmtVal(ref, unit), color: C.cobalt }] : []),
+        ...(useBm ? [{ label: "Benchmark today", value: fmtVal(ref, unit), color: C.refBm }] : []),
         { label: "Target", value: fmtVal(target, unit) },
         { label: "vs target",
           value: (relPct >= 0 ? "+" : MINUS) + Math.abs(relPct).toFixed(1) + "%",
@@ -148,7 +148,7 @@ function PlainRung({ dev, ring, up, neutral }) {
       {!neutral && (
         <div style={{
           position: "absolute", left: `${ring}%`, top: 0, width: 12, height: 12,
-          marginLeft: -6, borderRadius: "50%", border: `1.5px solid ${C.ink}`,
+          marginLeft: -6, borderRadius: "50%", border: `1.5px solid ${C.refTarget}`,
           background: "transparent", boxSizing: "border-box",
         }} />
       )}
@@ -212,13 +212,13 @@ function RungKey({ bench }) {
       <span style={item}>
         <span style={{
           width: 12, height: 12, borderRadius: "50%", flex: "0 0 12px",
-          border: `1.5px solid ${C.ink}`, boxSizing: "border-box",
+          border: `1.5px solid ${C.refTarget}`, boxSizing: "border-box",
         }} />
         Target
       </span>
       {bench && (
         <span style={item}>
-          <span style={{ width: 12, height: 2, background: C.cobalt, flex: "0 0 12px" }} />
+          <span style={{ width: 12, height: 2, background: C.refBm, flex: "0 0 12px" }} />
           Benchmark
         </span>
       )}
@@ -421,7 +421,7 @@ function FunnelWaterfall({ snap, groups }) {
     <div style={{ height: 28, flex: "0 0 28px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
       <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
       <div style={{ position: "relative", height: 14 }}>
-        <div {...tipApi.props(tip)} style={{ position: "absolute", left: `${X(value)}%`, top: -2, bottom: -2, width: 2, background: C.ink }} />
+        <div {...tipApi.props(tip)} style={{ position: "absolute", left: `${X(value)}%`, top: -2, bottom: -2, width: 2, background: C.refTarget }} />
       </div>
       <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>{fmt(value)}</div>
     </div>
@@ -626,7 +626,7 @@ export default function FunnelByChannel({ snap, horizon }) {
             <div style={{
               position: "absolute", left: "50%", top: 0, bottom: 0,
               width: bench ? 1.5 : 1, marginLeft: bench ? -0.75 : -0.5,
-              background: bench ? C.cobalt : GUIDE,
+              background: bench ? C.refBm : GUIDE,
             }} />
           </div>
           {groups.map((g) => (

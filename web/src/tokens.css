@@ -18,8 +18,16 @@
   --blue-deep: #28518f;
   --blue-tint: #eaf0fa;
   --blue-tint-border: #c3d5ee;
-  /* the benchmark reference colour (BENCHMARK_SPEC 1, 7) */
-  --cobalt: #2b5fd9;
+  /* The two reference marks (BENCHMARK_SPEC 1, 7). They are two shades of ONE
+   * hue, not two hues: a near-black target beside a saturated blue benchmark
+   * read as two unrelated systems next to the orange fills, and the pair fought
+   * the fill for attention. Same hue and saturation, ~27 points of lightness
+   * apart, so the darker one is plainly the one being judged against. Both stay
+   * legible where they cross an orange fill, which is why the lighter of the two
+   * is still a mid blue rather than a pastel. */
+  --ref-target: #122b5c;
+  --ref-bm: #2f62c4;
+  --cobalt: #2f62c4;   /* retained: older rules referring to the benchmark mark */
 
   --green: #0f7052;
   --amber: #8a5f00;

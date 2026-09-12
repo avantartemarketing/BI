@@ -10,7 +10,7 @@
  * The drawing grammar lives here rather than in each module so every card says it
  * the same way; these signatures are fixed by BENCHMARK_SPEC 9 because the modules
  * are written against them in parallel. */
-import React, { createContext, useContext, useMemo, useRef, useState } from "react";
+import React, { createContext, useContext, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 /* ---- the popup system (agreed on the Dashboard Popups canvas) ----
  * One chrome, three tiers: chart readouts (inline, .chart-tip), element details
@@ -76,7 +76,11 @@ export const C = {
   planGrey: "#c8c5bc", targetLine: "#b8b3a6", border: "#e5e4df",
   green: "#0f7052", amber: "#8a5f00", red: "#b8461d", wfGreen: "#2f7d3f",
   periwinkle: "#a5b6e3", todayLine: "#eeece5", white: "#fffefb",
-  cobalt: "#2b5fd9",
+  // the two reference marks - two shades of one hue, never two hues; see
+  // tokens.css for why. refTarget is for MARKS only: values and body text stay
+  // on `ink`, or the page turns navy.
+  refTarget: "#122b5c", refBm: "#2f62c4",
+  cobalt: "#2f62c4",   // alias kept so any stray caller still gets the benchmark
 };
 
 export const GROUP_DOTS = {
@@ -144,18 +148,68 @@ export function QBadge({ tip, content }) {
  * are cut from the same cloth. */
 export const HATCH = `repeating-linear-gradient(135deg, ${C.orange} 0 1.5px, ${C.orangeLight} 1.5px 5px)`;
 
-/* One reference mark: the target (ink) or the benchmark (cobalt), 2px, bleeding
- * 3px past the bar it crosses so the colour still reads on white either side of
- * a fill. No box-shadow and no halo, ever - a halo would make one reference look
- * heavier than the other, and the two are meant to be the same mark in two
- * colours (BENCHMARK_SPEC 1). `vertical` is the mark on a horizontal bar; the
- * horizontal form lies across a column, so the bleed swaps to left/right. */
-export function RefTick({ pct, kind, vertical = true, tip }) {
+/* The live width of an element. Label collision is a pixel question, never a
+ * fraction one - two labels 20% apart are comfortable on a wide card and on top
+ * of each other on a narrow one - so a card that places labels by value measures
+ * the row it is placing them in. */
+export function useWidth() {
+  const ref = useRef(null);
+  const [w, setW] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const measure = () => setW(el.clientWidth);
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w];
+}
+
+/* Roughly how wide a 12px axis label renders. Tabular numerals and a system
+ * sans sit close enough to this for collision work, and erring high only ever
+ * buys a little more clearance. */
+export const labelPx = (text) => String(text).length * 6.7;
+
+/* Place a value-anchored label on an axis row that also carries fixed labels at
+ * its ends. Centred on its own tick wherever it fits; slid just clear of an end
+ * label when it would otherwise print across one. A slid label still sits under
+ * its tick's half of the row, so the pairing survives - which a label printed
+ * through another number does not. Returns a px `left` for a row-relative box.
+ *   pct    where the tick is, 0-100
+ *   rowW   the row's measured width (0 before the first measurement)
+ *   textW  this label's width
+ *   loW/hiW  how much room the left and right end labels take */
+export function axisLabelLeft({ pct, rowW, textW, loW = 0, hiW = 0, gap = 10 }) {
+  if (!rowW) return null;   // unmeasured: caller falls back to a plain percentage
+  const half = textW / 2;
+  const lo = loW ? loW + gap : 0;
+  const hi = rowW - (hiW ? hiW + gap : 0);
+  let left = (pct / 100) * rowW - half;
+  if (left + textW > hi) left = hi - textW;
+  if (left < lo) left = lo;
+  return Math.max(0, Math.min(left, Math.max(0, rowW - textW)));
+}
+
+/* One reference mark: the target (the deep shade) or the benchmark (the light
+ * one), 2px, bleeding 3px past the bar it crosses so the colour still reads on
+ * white either side of a fill. No box-shadow and no halo, ever - a halo would
+ * make one reference look heavier than the other, and the two are meant to be
+ * the same mark in two shades (BENCHMARK_SPEC 1). `vertical` is the mark on a
+ * horizontal bar; the horizontal form lies across a column, so the bleed swaps
+ * to left/right. `inset` is how far the bar itself is inset from this box: the
+ * mark measures the BAR plus the bleed, never the whole column. A mark drawn
+ * column-wide leaves only the column gap between one segment and the next, and
+ * a row of them reads as one broken line across the card rather than as five
+ * separate per-column marks. */
+export function RefTick({ pct, kind, vertical = true, tip, inset = "0px" }) {
   const t = useTip();
-  const color = kind === "benchmark" ? C.cobalt : C.ink;
+  const color = kind === "benchmark" ? C.refBm : C.refTarget;
   const box = vertical
     ? { left: `calc(${pct}% - 1px)`, top: -3, bottom: -3, width: 2 }
-    : { bottom: `calc(${pct}% - 1px)`, left: -3, right: -3, height: 2 };
+    : { bottom: `calc(${pct}% - 1px)`, left: `calc(${inset} - 3px)`, right: `calc(${inset} - 3px)`, height: 2 };
   return <div {...t.props(tip)} style={{ position: "absolute", background: color, ...box }} />;
 }
 
@@ -251,7 +305,7 @@ export function RungTrack({ dev, ring, up, neutral, guide }) {
       <div style={{ position: "absolute", left: 0, right: 0, top: 5, height: 2, background: C.hairline }} />
       <div style={{
         position: "absolute", left: "50%", marginLeft: -0.75, width: 1.5,
-        top: guide ? -14 : 0, bottom: guide ? -14 : 0, background: C.cobalt,
+        top: guide ? -14 : 0, bottom: guide ? -14 : 0, background: C.refBm,
       }} />
       {!neutral && (
         <div style={{
@@ -270,7 +324,7 @@ export function RungTrack({ dev, ring, up, neutral, guide }) {
         <div style={{
           position: "absolute", left: `${ring}%`, top: 0,
           width: 12, height: 12, marginLeft: -6, borderRadius: "50%",
-          border: `1.5px solid ${C.ink}`, background: "transparent", boxSizing: "border-box",
+          border: `1.5px solid ${C.refTarget}`, background: "transparent", boxSizing: "border-box",
         }} />
       )}
     </div>
@@ -293,11 +347,11 @@ export function RefKey({ horizon, showStretch, children }) {
         {close ? "Projected" : "To date"}
       </span>
       <span style={item}>
-        <span style={line(C.ink)} />
+        <span style={line(C.refTarget)} />
         {close ? "Target" : "Target today"}
       </span>
       <span style={item}>
-        <span style={line(C.cobalt)} />
+        <span style={line(C.refBm)} />
         {close ? "Benchmark" : "Benchmark today"}
       </span>
       {showStretch && (

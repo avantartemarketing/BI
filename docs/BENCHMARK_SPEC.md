@@ -223,12 +223,34 @@ path for lever-mode edits only. The save response is unchanged in shape.
 
 ## 7. Drawing grammar (web)
 
-Token: `--cobalt: #2b5fd9` in `tokens.css`, `C.cobalt` in `ui.jsx`.
+Tokens: `--ref-target: #122b5c` and `--ref-bm: #2f62c4` in `tokens.css`, `C.refTarget` and
+`C.refBm` in `ui.jsx`. The two marks are **two shades of one hue**, never two hues: a
+near-black target beside a saturated blue benchmark read as two unrelated systems sitting on
+the orange fills, and the pair fought the fill for attention. Same hue and saturation, about
+27 points of lightness apart, so the darker one is plainly the one being judged against.
+Neither is lightened past the point where it still reads on an orange fill, which both of
+them cross. `C.ink` stays the colour of values and body text; a reference mark never uses it.
+
+Labels that are placed by value never print through one another. Two rules, both measured in
+pixels off the real element rather than assumed from a fraction, because the same fraction
+buys different room on a one-column card and a two-column one:
+
+- **Readings stacked on one line** (the trajectory's today column) spread with `spreadLabels`:
+  sorted, pushed to a minimum gap, squeezed back inside the plot. The ticks and dots stay on
+  their true values - only the text moves, which is what keeps a moved label honest.
+- **A value-anchored label on an axis row with fixed end labels** (the hero and sell-through
+  benchmark, against `0` and `sellout`) is placed by `axisLabelLeft`: centred on its tick
+  where it fits, slid just clear of the end label where it does not.
+
+`RefTick`'s horizontal form takes an `inset`: the mark measures the **bar** it crosses plus
+the standard 3px bleed, never the whole column. Column-wide segments leave only the column
+gap between one and the next, and a row of them reads as a single broken line across the
+card rather than as one mark per channel.
 
 | container | Today | At close |
 |---|---|---|
 | **Units vs sellout** (hero) | fill = to date; ink tick = target today; cobalt tick = benchmark today; legend rows To date / Target today / Stretch today | fill = projected; ink tick = target; cobalt tick = benchmark; orange hatch = demand over the sellout |
-| **Unit trajectory** | target and benchmark read off the today line as two short ticks with coloured labels; future faded | target (ink) and benchmark (cobalt) horizontal lines, stretch bracket between them, projection dashed |
+| **Unit trajectory** | two columns wide. Target and benchmark read off the today line as two short ticks with coloured labels, spread apart when their values are close; future faded | target (ink) and benchmark (cobalt) horizontal lines, stretch bracket between them, projection dashed |
 | **Channels vs targets** | one fill per column, ink line at target today, cobalt line at benchmark today, foot = % vs target | same with projected fill and close references |
 | **Funnel by channel** / **Organic funnel** | always Today. **cobalt centre line = benchmark**, hollow **ink ring = target**, orange/red dot = actual, on a log scale where ×4 either way fills the rung (`›` marks beyond). Pale bar spans ring→dot. The % and its RAG colour stay **vs target**. Volume rungs put the ring at ×K; rate rungs put it on the centre line (rates held at benchmark). | — |
 | **Projection vs target** (waterfall) | Benchmark today → Stretch (grey hatch) → Target today → 4 contributors → Actual today | Benchmark → Stretch → Target → 4 contributors → Projection |

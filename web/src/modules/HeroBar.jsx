@@ -16,7 +16,7 @@
  * one legend row that disappears when snap.benchmark is absent, and with it every cobalt
  * mark, leaving the card exactly as it read before. */
 import React from "react";
-import { Card, TrackBar, HATCH, GROUP_DOTS, C, fmt, fmtSigned, useTip } from "../ui.jsx";
+import { Card, TrackBar, HATCH, GROUP_DOTS, C, fmt, fmtSigned, useTip, useWidth, labelPx, axisLabelLeft } from "../ui.jsx";
 
 // The stretch is a planning decision, not performance, so its legend swatch
 // takes the same grey hatch the waterfall gives the stretch bar. The
@@ -83,6 +83,20 @@ export default function HeroBar({ snap, horizon = "today" }) {
 
   const axisLabel = { position: "absolute", top: 4, fontSize: 12, whiteSpace: "nowrap" };
 
+  /* The bottom axis carries three labels: 0 at the left, sellout at the right,
+     and the benchmark wherever its tick falls. On a release running close to
+     its edition the benchmark tick sits near the right end and its label used
+     to print straight through "sellout". Measure the row and slide it clear. */
+  const [axisRef, axisW] = useWidth();
+  const bmText = bm !== null && bm > 0 ? `benchmark ${fmt(bm)}` : "";
+  const selloutText = `sellout ${fmt(sellout)}`;
+  const bmLeft = bmText
+    ? axisLabelLeft({
+      pct: pos(bm), rowW: axisW, textW: labelPx(bmText),
+      loW: labelPx("0"), hiW: labelPx(selloutText),
+    })
+    : null;
+
   return (
     <Card
       dot={GROUP_DOTS.volume}
@@ -108,7 +122,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
       </div>
 
       <div style={{ marginTop: 24 }}>
-        {/* the ink number rides above its tick, the cobalt one below, so the two
+        {/* the deep number rides above its tick, the light one below, so the two
             references never share a line and never need a leader */}
         <div style={{ position: "relative", height: 20, marginBottom: 8 }}>
           {target > 0 && (
@@ -116,7 +130,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
               style={{
                 position: "absolute", left: `${pos(target)}%`, bottom: 0,
                 transform: "translateX(-50%)", maxWidth: "100%",
-                fontSize: 12, color: C.ink, whiteSpace: "nowrap",
+                fontSize: 12, color: C.refTarget, whiteSpace: "nowrap",
               }}
             >
               target {fmt(target)}
@@ -143,18 +157,20 @@ export default function HeroBar({ snap, horizon = "today" }) {
           }}
         />
 
-        <div style={{ position: "relative", height: 20, marginTop: 8 }}>
+        <div ref={axisRef} style={{ position: "relative", height: 20, marginTop: 8 }}>
           <div style={{ ...axisLabel, left: 0, color: C.muted }}>0</div>
           {bm !== null && bm > 0 && (
             <div
               {...t.props(bmTip)}
-              style={{ ...axisLabel, left: `${pos(bm)}%`, transform: "translateX(-50%)", color: C.cobalt }}
+              style={bmLeft === null
+                ? { ...axisLabel, left: `${pos(bm)}%`, transform: "translateX(-50%)", color: C.refBm }
+                : { ...axisLabel, left: bmLeft, color: C.refBm }}
             >
-              benchmark {fmt(bm)}
+              {bmText}
             </div>
           )}
           <div style={{ ...axisLabel, right: 0, color: C.muted }}>
-            sellout {fmt(sellout)}
+            {selloutText}
           </div>
         </div>
       </div>
@@ -173,7 +189,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
           </div>
         ) : (
           <div className="legend-row">
-            <span className="swatch" style={{ background: C.ink, width: 12, height: 2, borderRadius: 0, flex: "0 0 12px" }} />
+            <span className="swatch" style={{ background: C.refTarget, width: 12, height: 2, borderRadius: 0, flex: "0 0 12px" }} />
             <span style={{ color: C.muted }}>Target today</span>
             <span className="val">{fmt(expToday)}</span>
           </div>

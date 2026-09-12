@@ -13,7 +13,7 @@
  "campaignLengthDays": 29,
  "day": 29,
  "of": 29,
- "asOf": "2026-09-10",
+ "asOf": "2026-09-11",
  "complete": true,
  "targetingMode": "benchmark",
  "economics": {
@@ -943,86 +943,86 @@
     {
      "date": "2026-07-31",
      "actual": 1.33,
-     "plan": 0.43,
+     "plan": 0.44,
      "proj": null,
      "bm": 0.35
     },
     {
      "date": "2026-08-01",
      "actual": 1.33,
-     "plan": 0.64,
+     "plan": 0.58,
      "proj": null,
-     "bm": 0.52
+     "bm": 0.46
     },
     {
      "date": "2026-08-02",
      "actual": 1.33,
-     "plan": 0.83,
+     "plan": 0.67,
      "proj": null,
-     "bm": 0.66
+     "bm": 0.54
     },
     {
      "date": "2026-08-03",
      "actual": 2.67,
-     "plan": 0.83,
+     "plan": 0.67,
      "proj": null,
-     "bm": 0.66
+     "bm": 0.54
     },
     {
      "date": "2026-08-04",
      "actual": 2.67,
-     "plan": 0.84,
+     "plan": 0.69,
      "proj": null,
-     "bm": 0.67
+     "bm": 0.55
     },
     {
      "date": "2026-08-05",
      "actual": 2.67,
-     "plan": 0.85,
+     "plan": 0.73,
      "proj": null,
-     "bm": 0.68
+     "bm": 0.58
     },
     {
      "date": "2026-08-06",
      "actual": 2.67,
-     "plan": 0.87,
+     "plan": 0.83,
      "proj": null,
-     "bm": 0.69
+     "bm": 0.67
     },
     {
      "date": "2026-08-07",
      "actual": 2.67,
-     "plan": 0.91,
+     "plan": 0.89,
      "proj": null,
-     "bm": 0.73
+     "bm": 0.71
     },
     {
      "date": "2026-08-08",
      "actual": 2.67,
-     "plan": 0.94,
+     "plan": 0.92,
      "proj": null,
-     "bm": 0.76
+     "bm": 0.74
     },
     {
      "date": "2026-08-09",
      "actual": 2.67,
-     "plan": 0.94,
+     "plan": 0.92,
      "proj": null,
-     "bm": 0.76
+     "bm": 0.74
     },
     {
      "date": "2026-08-10",
      "actual": 2.67,
-     "plan": 0.97,
+     "plan": 0.95,
      "proj": null,
-     "bm": 0.78
+     "bm": 0.76
     },
     {
      "date": "2026-08-11",
      "actual": 2.67,
-     "plan": 0.99,
+     "plan": 0.98,
      "proj": null,
-     "bm": 0.79
+     "bm": 0.78
     },
     {
      "date": "2026-08-12",
@@ -1034,86 +1034,86 @@
     {
      "date": "2026-08-13",
      "actual": 2.67,
-     "plan": 1.03,
+     "plan": 1.02,
      "proj": null,
-     "bm": 0.83
+     "bm": 0.81
     },
     {
      "date": "2026-08-14",
      "actual": 2.67,
-     "plan": 1.09,
+     "plan": 1.06,
      "proj": null,
-     "bm": 0.87
+     "bm": 0.85
     },
     {
      "date": "2026-08-15",
      "actual": 2.67,
-     "plan": 1.16,
+     "plan": 1.12,
      "proj": null,
-     "bm": 0.92
+     "bm": 0.89
     },
     {
      "date": "2026-08-16",
      "actual": 2.67,
-     "plan": 1.16,
+     "plan": 1.15,
      "proj": null,
      "bm": 0.92
     },
     {
      "date": "2026-08-17",
      "actual": 2.67,
+     "plan": 1.19,
+     "proj": null,
+     "bm": 0.95
+    },
+    {
+     "date": "2026-08-18",
+     "actual": 2.67,
      "plan": 1.22,
      "proj": null,
      "bm": 0.97
     },
     {
-     "date": "2026-08-18",
-     "actual": 2.67,
-     "plan": 1.29,
-     "proj": null,
-     "bm": 1.03
-    },
-    {
      "date": "2026-08-19",
      "actual": 2.67,
-     "plan": 1.32,
+     "plan": 1.22,
      "proj": null,
-     "bm": 1.06
+     "bm": 0.97
     },
     {
      "date": "2026-08-20",
      "actual": 2.67,
-     "plan": 1.33,
+     "plan": 1.22,
      "proj": null,
-     "bm": 1.06
+     "bm": 0.97
     },
     {
      "date": "2026-08-21",
      "actual": 2.67,
-     "plan": 1.34,
+     "plan": 1.23,
      "proj": null,
-     "bm": 1.07
+     "bm": 0.98
     },
     {
      "date": "2026-08-22",
      "actual": 2.67,
-     "plan": 1.37,
+     "plan": 1.26,
      "proj": null,
-     "bm": 1.1
+     "bm": 1.01
     },
     {
      "date": "2026-08-23",
      "actual": 2.67,
-     "plan": 1.41,
+     "plan": 1.26,
      "proj": null,
-     "bm": 1.13
+     "bm": 1.01
     },
     {
      "date": "2026-08-24",
      "actual": 2.67,
-     "plan": 1.66,
+     "plan": 1.54,
      "proj": null,
-     "bm": 1.33
+     "bm": 1.23
     },
     {
      "date": "2026-08-25",

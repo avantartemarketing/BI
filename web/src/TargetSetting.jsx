@@ -664,7 +664,7 @@ export default function TargetSetting({ snap, onSaved }) {
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 72px 72px", gap: 4, alignItems: "center" }}>
             <span />
-            <span style={{ ...railCell, fontSize: 11.5, color: C.cobalt, fontWeight: 600 }} title="The basket's median - what launches like this one typically reach.">Benchmark</span>
+            <span style={{ ...railCell, fontSize: 11.5, color: C.refBm, fontWeight: 600 }} title="The basket's median - what launches like this one typically reach.">Benchmark</span>
             <span style={{ ...railCell, fontSize: 11.5, fontWeight: 600 }}>Target</span>
             <span style={{ ...railCell, fontSize: 11.5, color: C.muted, fontWeight: 600 }} title="Target − benchmark: the uplift being asked for.">Stretch</span>
             {railRows.map((r) => (

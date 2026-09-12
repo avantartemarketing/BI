@@ -16,10 +16,37 @@
  * stretch the business has taken on. The benchmark series is the basket's own pace
  * (daily[].bm), summed across groups for "all" exactly as the plan is, so the two
  * curves are always built the same way. */
-import React, { useMemo, useState } from "react";
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Card, GROUP_DOTS, C, fmt, fmtSigned } from "../ui.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
+const LABEL_GAP_PX = 15;   // smallest vertical gap two 12px labels can sit at
+const LABEL_TODAY_PX = 38; // rendered width of "today" at 12px
+const LABEL_DAY_PX = 46;   // rendered width of "day 21" at 12px
+
+/* Lay a set of readings out down one line without letting any two labels touch.
+ * Each item keeps its true position `y` (the tick and the dot stay on the real
+ * value, which is what makes the moved label honest) and gains `ly`, where its
+ * text goes: sorted top to bottom, pushed apart to `gap`, then squeezed back
+ * inside [lo, hi] from whichever end overflowed. Three readings on a 1,200-unit
+ * axis can be 56 units apart, which is four pixels, so without this the target
+ * and the actual simply print over each other. */
+function spreadLabels(items, gap, lo, hi) {
+  const out = items.slice().sort((a, b) => a.y - b.y).map((d) => ({ ...d, ly: d.y }));
+  for (let i = 1; i < out.length; i++) {
+    if (out[i].ly - out[i - 1].ly < gap) out[i].ly = out[i - 1].ly + gap;
+  }
+  const last = out.length - 1;
+  if (last >= 0 && out[last].ly > hi) {
+    out[last].ly = hi;
+    for (let i = last - 1; i >= 0; i--) out[i].ly = Math.min(out[i].ly, out[i + 1].ly - gap);
+  }
+  if (out.length && out[0].ly < lo) {
+    out[0].ly = lo;
+    for (let i = 1; i < out.length; i++) out[i].ly = Math.max(out[i].ly, out[i - 1].ly + gap);
+  }
+  return out;
+}
 
 function slicePts(daily, windowStart, of) {
   if (!daily || !daily.length) return [];
@@ -85,6 +112,21 @@ function pathOf(pts, get, from, to, x, y) {
 export default function Trajectory({ snap, horizon = "today" }) {
   const [sel, setSel] = useState("all");
   const [hover, setHover] = useState(null);   // {i, frac}
+  // the plot's real height, so label spacing can be set in pixels rather than
+  // in a percentage guessed from a card size that is free to change
+  const plotRef = useRef(null);
+  const [plotH, setPlotH] = useState(0);
+  const [plotW, setPlotW] = useState(0);
+  useLayoutEffect(() => {
+    const el = plotRef.current;
+    if (!el) return undefined;
+    const measure = () => { setPlotH(el.clientHeight); setPlotW(el.clientWidth); };
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const channels = snap.channels || [];
   const of = snap.of || 1;
   const day = Math.max(0, Math.min(snap.day ?? 0, of));
@@ -109,7 +151,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
 
   if (!s.pts.length) {
     return (
-      <Card dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
+      <Card wide dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
         <div className="empty-state">No daily series yet.</div>
       </Card>
     );
@@ -191,10 +233,18 @@ export default function Trajectory({ snap, horizon = "today" }) {
       (sel === "all" && projPct !== null && projPct > 100
         ? " · demand beyond the sellout cannot convert" : "");
   const showTodayLabel = !complete && todayFrac >= 0.08 && todayFrac <= 0.92;
-  // "today" sits on the line and "day N" is pinned to the right edge, so on a
-  // release in its last days the two overprint. The close label is the one to
-  // drop: the axis already ends there, and today is the reading that matters.
-  const showEndLabel = !(showTodayLabel && todayFrac > 0.82);
+  /* "today" is centred on its line and "day N" is pinned to the right edge, so
+   * on a release in its last days the two overprint. How close is too close is
+   * a pixel question, not a fraction one - the card is two columns wide now and
+   * the same fraction buys twice the room - so it is measured: half of "today"
+   * plus "day N" plus a gap, against the pixels actually left. The close label
+   * is the one to drop, since the axis already ends there and today is the
+   * reading that matters. The fraction is the fallback before the first
+   * measurement lands. */
+  const endLabelRoom = plotW > 0
+    ? (1 - todayFrac) * plotW - (LABEL_TODAY_PX / 2 + LABEL_DAY_PX + 10)
+    : (todayFrac > 0.82 ? -1 : 1);
+  const showEndLabel = !(showTodayLabel && endLabelRoom < 0);
 
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const xLabel = { position: "absolute", top: "100%", paddingTop: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
@@ -203,20 +253,38 @@ export default function Trajectory({ snap, horizon = "today" }) {
     position: "absolute", left: `${(todayFrac * 100).toFixed(2)}%`, top: pctTop(y(v)),
     width: 12, height: 2, margin: "-1px 0 0 -6px", background: color,
   });
-  const readLabel = (v, color, weight = 500) => ({
-    position: "absolute", left: `${(todayFrac * 100).toFixed(2)}%`, top: pctTop(y(v)),
+  // the label sits at `yy` (already spread), not necessarily on its own value
+  const readLabel = (yy, color, weight = 500) => ({
+    position: "absolute", left: `${(todayFrac * 100).toFixed(2)}%`, top: pctTop(yy),
     transform: flipToday ? "translate(-100%,-50%)" : "translateY(-50%)",
     [flipToday ? "paddingRight" : "paddingLeft"]: 10,
     fontSize: 12, fontWeight: weight, color, whiteSpace: "nowrap",
     fontVariantNumeric: "tabular-nums",
   });
 
+  /* The three today readings share one x, so two close values print on top of
+   * each other. Spread the LABELS only; every tick and the today dot stay on
+   * the true value. The gap is set in real pixels off the measured plot, so it
+   * holds whatever width the card is given. */
+  const gapY = plotH > 0 ? (LABEL_GAP_PX / plotH) * Y0 : Y0 * 0.1;
+  const readings = spreadLabels([
+    ...(showToday && hasBm && bmToday !== null && bmToday !== undefined
+      ? [{ key: "bm", y: y(bmToday), color: C.refBm, weight: 500,
+           text: `benchmark ${fmt(bmToday)}` }] : []),
+    ...(showToday
+      ? [{ key: "target", y: y(targetToday), color: C.refTarget, weight: 500,
+           text: `target ${fmt(targetToday)}` },
+         { key: "now", y: y(nowVal), color: C.refTarget, weight: 600,
+           text: `${fmt(nowVal)} ${fmtSigned(nowVal - targetToday)}` }] : []),
+  ], gapY, YTOP, Y0 - 2);
+
   return (
-    <Card dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
+    <Card wide dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
       <div className="spacer-16" />
       <div className="body">
         <div style={{ position: "relative", flex: 1 }}>
           <div
+            ref={plotRef}
             style={{ position: "absolute", left: 40, right: 48, top: 0, bottom: 24 }}
             onMouseMove={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
@@ -249,11 +317,11 @@ export default function Trajectory({ snap, horizon = "today" }) {
                       strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
                   )}
                   {bmPast && (
-                    <path d={bmPast} fill="none" stroke={C.cobalt} strokeWidth="1.5" opacity="0.45"
+                    <path d={bmPast} fill="none" stroke={C.refBm} strokeWidth="1.5" opacity="0.45"
                       strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
                   )}
                   {bmFuture && (
-                    <path d={bmFuture} fill="none" stroke={C.cobalt} strokeWidth="1.5" opacity="0.35"
+                    <path d={bmFuture} fill="none" stroke={C.refBm} strokeWidth="1.5" opacity="0.35"
                       strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
                   )}
                 </>
@@ -264,7 +332,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
                       strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
                   )}
                   {bmFull && (
-                    <path d={bmFull} fill="none" stroke={C.cobalt} strokeWidth="1.5" opacity="0.45"
+                    <path d={bmFull} fill="none" stroke={C.refBm} strokeWidth="1.5" opacity="0.45"
                       strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
                   )}
                 </>
@@ -281,11 +349,11 @@ export default function Trajectory({ snap, horizon = "today" }) {
                   colours; the benchmark goes down first so the target survives a tie */}
               {showClose && hasBm && (
                 <line x1="0" y1={y(s.bm).toFixed(1)} x2={X1} y2={y(s.bm).toFixed(1)}
-                  stroke={C.cobalt} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                  stroke={C.refBm} strokeWidth="2" vectorEffect="non-scaling-stroke" />
               )}
               {showClose && (
                 <line x1="0" y1={y(s.target).toFixed(1)} x2={X1} y2={y(s.target).toFixed(1)}
-                  stroke={C.ink} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+                  stroke={C.refTarget} strokeWidth="2" vectorEffect="non-scaling-stroke" />
               )}
             </svg>
 
@@ -333,16 +401,12 @@ export default function Trajectory({ snap, horizon = "today" }) {
             {showToday && (
               <>
                 {hasBm && bmToday !== null && bmToday !== undefined && (
-                  <>
-                    <div style={readTick(bmToday, C.cobalt)} />
-                    <div style={readLabel(bmToday, C.cobalt)}>benchmark {fmt(bmToday)}</div>
-                  </>
+                  <div style={readTick(bmToday, C.refBm)} />
                 )}
-                <div style={readTick(targetToday, C.ink)} />
-                <div style={readLabel(targetToday, C.ink)}>target {fmt(targetToday)}</div>
-                <div style={readLabel(nowVal, C.ink, 600)}>
-                  {fmt(nowVal)} {fmtSigned(nowVal - targetToday)}
-                </div>
+                <div style={readTick(targetToday, C.refTarget)} />
+                {readings.map((r) => (
+                  <div key={r.key} style={readLabel(r.ly, r.color, r.weight)}>{r.text}</div>
+                ))}
               </>
             )}
 
@@ -383,7 +447,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
                 style={{
                   position: "absolute", left: 8, top: pctTop(y(s.target)), transform: "translateY(-145%)",
                   paddingRight: 6, background: "#fff", fontSize: 12, fontWeight: 500,
-                  color: C.ink, whiteSpace: "nowrap",
+                  color: C.refTarget, whiteSpace: "nowrap",
                 }}
               >
                 target {fmt(s.target)}
@@ -394,7 +458,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
                 style={{
                   position: "absolute", left: 8, top: pctTop(y(s.bm)), transform: "translateY(45%)",
                   paddingRight: 6, background: "#fff", fontSize: 12, fontWeight: 500,
-                  color: C.cobalt, whiteSpace: "nowrap",
+                  color: C.refBm, whiteSpace: "nowrap",
                 }}
               >
                 benchmark {fmt(s.bm)}
