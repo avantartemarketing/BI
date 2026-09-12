@@ -195,10 +195,18 @@ evidence the curve is real rather than an artefact of a small sample. The draw c
 settles the older launches without appealing to the naming convention: before the cap existed,
 single-draw releases run 1.000 units per buyer and releases with two or more run 1.061.
 
-What is still out of reach is the 157 releases from before the draw feed starts. A third
-proxy, how many distinct products an order contained, does not close it: against the counts we
-do know it is exact only three times in five and correlates at 0.26, because it measures what
-a buyer took rather than what was on offer.
+**No release type is excluded, and none should be.** How many pieces a buyer takes has nothing
+to do with whether the release was an LE or a TL, and both are in the fit. What decides
+membership is the **mechanic**, and only because both product-count signals live in draw-entry
+events. Of the 357 releases, 155 ran a draw, 171 were public, 22 enquiry and 9 pre-order.
+
+A public launch cannot be counted at all. One candidate is worth naming so nobody spends an
+afternoon on it twice: `order_products` is **identical to `order_pieces` in all 26,948 purchase
+rows** on file. It counts pieces, not distinct products. The tidy monotonic relationship
+between its per-release maximum and units per buyer is therefore circular - both sides measure
+how many pieces people bought - and against the draw counts we do know it is exact only three
+times in five. The 157 releases from before the draw feed starts are out of reach for the same
+reason.
 
 `product_count` is the combined figure; `products` and `products_known` keep the cap's own
 answer beside it, and `draws` the draw count.

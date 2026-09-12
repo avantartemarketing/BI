@@ -258,6 +258,19 @@ def product_count_of(df: pd.DataFrame) -> pd.Series:
     cap alone, and the fitted slope barely moves - 0.178 against 0.182 - which
     is the strongest evidence the curve is real and not an artefact of a small
     sample.
+
+    No release type is excluded and none should be: how many pieces a buyer
+    takes has nothing to do with whether the release was an LE or a TL, and
+    both are in here. What decides membership is the MECHANIC, and only because
+    both product-count signals live in draw-entry events. Of the 357 releases,
+    155 ran a draw, 171 were public, 22 enquiry and 9 pre-order.
+
+    A public launch cannot be counted at all, and one candidate is worth naming
+    so nobody spends the afternoon on it twice: `order_products` is identical
+    to `order_pieces` in all 26,948 purchase rows on file. It counts pieces, not
+    distinct products, so the tidy monotonic relationship between its per-release
+    maximum and units per buyer is circular - both sides are measuring how many
+    pieces people bought.
     """
     known = df.get("products_known")
     recorded = pd.to_numeric(df.get("products"), errors="coerce")
