@@ -3,21 +3,21 @@
   "2023-01-01",
   "2026-09-11"
  ],
- "channel_days": 394331,
+ "channel_days": 394254,
  "columns": {
   "Page_Views_Total": {
-   "export": 5158248.0,
-   "rebuilt": 5153885.0,
-   "pct": -0.0008458298243899867,
+   "export": 5158109.0,
+   "rebuilt": 5153746.0,
+   "pct": -0.0008458526176938099,
    "kind": "counts",
    "within_tolerance": true,
    "channel_days_differing": 40428,
    "max_abs_diff": 106.0
   },
   "Sessions_Total": {
-   "export": 2238635.0,
-   "rebuilt": 2238680.0,
-   "pct": 2.0101535087229496e-05,
+   "export": 2238652.0,
+   "rebuilt": 2238697.0,
+   "pct": 2.0101382439074942e-05,
    "kind": "counts",
    "within_tolerance": true,
    "channel_days_differing": 15802,
@@ -25,12 +25,12 @@
   },
   "Draw_Entries": {
    "export": 28366.0,
-   "rebuilt": 28482.0,
-   "pct": 0.004089402806176408,
+   "rebuilt": 28483.0,
+   "pct": 0.004124656278643446,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 2048,
-   "max_abs_diff": 306.0
+   "channel_days_differing": 2041,
+   "max_abs_diff": 307.0
   },
   "Preorder_App": {
    "export": 10659.0,
@@ -38,7 +38,7 @@
    "pct": 0.03217937892860494,
    "kind": "people",
    "within_tolerance": false,
-   "channel_days_differing": 894,
+   "channel_days_differing": 890,
    "max_abs_diff": 59.0
   },
   "Collectors_Eligible_Entries": {
@@ -47,8 +47,8 @@
    "pct": 0.003429006858013716,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 1741,
-   "max_abs_diff": 292.0
+   "channel_days_differing": 1734,
+   "max_abs_diff": 293.0
   },
   "Draw_Entry_Eligible": {
    "export": 12362.0,
@@ -57,7 +57,7 @@
    "kind": "people",
    "within_tolerance": true,
    "channel_days_differing": 877,
-   "max_abs_diff": 278.0
+   "max_abs_diff": 279.0
   },
   "Draw_Winner": {
    "export": 12170.0,
@@ -65,7 +65,7 @@
    "pct": 0.00419063270336894,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 1132,
+   "channel_days_differing": 1123,
    "max_abs_diff": 40.0
   },
   "Preorder_App_Eligable": {
@@ -74,7 +74,7 @@
    "pct": 0.03093947606142728,
    "kind": "people",
    "within_tolerance": false,
-   "channel_days_differing": 758,
+   "channel_days_differing": 756,
    "max_abs_diff": 54.0
   },
   "Preorder_Winner": {
@@ -83,40 +83,40 @@
    "pct": 0.004568367989918084,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 550,
+   "channel_days_differing": 546,
    "max_abs_diff": 6.0
   },
   "Unique_Customers": {
-   "export": 21108.0,
-   "rebuilt": 21166.0,
-   "pct": 0.002747773356073527,
+   "export": 21109.0,
+   "rebuilt": 21167.0,
+   "pct": 0.0027476431853711686,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 1068,
+   "channel_days_differing": 1033,
    "max_abs_diff": 58.0
   },
   "Customer_Draw": {
    "export": 4564.0,
-   "rebuilt": 4573.0,
-   "pct": 0.001971954425942156,
+   "rebuilt": 4569.0,
+   "pct": 0.0010955302366345311,
    "kind": "route",
    "within_tolerance": true,
    "channel_days_differing": 283,
    "max_abs_diff": 26.0
   },
   "Customer_Preorder_App": {
-   "export": 5769.0,
-   "rebuilt": 5793.0,
-   "pct": 0.004160166406656267,
+   "export": 5768.0,
+   "rebuilt": 5789.0,
+   "pct": 0.0036407766990291263,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 277,
+   "channel_days_differing": 274,
    "max_abs_diff": 58.0
   },
   "Customer_Private_Room": {
-   "export": 4288.0,
-   "rebuilt": 4260.0,
-   "pct": -0.0065298507462686565,
+   "export": 4289.0,
+   "rebuilt": 4261.0,
+   "pct": -0.006528328281650735,
    "kind": "route",
    "within_tolerance": true,
    "channel_days_differing": 141,
@@ -124,20 +124,20 @@
   },
   "Customers_Presale_Offered": {
    "export": 232.0,
-   "rebuilt": 237.0,
-   "pct": 0.021551724137931036,
+   "rebuilt": 233.0,
+   "pct": 0.004310344827586207,
    "kind": "route",
-   "within_tolerance": false,
+   "within_tolerance": true,
    "channel_days_differing": 19,
    "max_abs_diff": 1.0
   },
   "Customer_Other": {
-   "export": 6303.0,
-   "rebuilt": 6303.0,
-   "pct": 0.0,
+   "export": 6304.0,
+   "rebuilt": 6315.0,
+   "pct": 0.0017449238578680203,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 481,
+   "channel_days_differing": 435,
    "max_abs_diff": 11.0
   },
   "Draw_Entry_Eligible_No_Conv": {
@@ -146,8 +146,8 @@
    "pct": 0.008980866848887154,
    "kind": "people",
    "within_tolerance": false,
-   "channel_days_differing": 774,
-   "max_abs_diff": 199.0
+   "channel_days_differing": 777,
+   "max_abs_diff": 200.0
   },
   "Preorder_App_Eligible_No_Conv": {
    "export": 2727.0,
@@ -155,61 +155,61 @@
    "pct": 0.06563989732306565,
    "kind": "people",
    "within_tolerance": false,
-   "channel_days_differing": 301,
+   "channel_days_differing": 303,
    "max_abs_diff": 37.0
   },
   "Total_Product_Units": {
-   "export": 23303.0,
-   "rebuilt": 23092.0,
-   "pct": -0.009054628159464447,
+   "export": 23314.0,
+   "rebuilt": 23091.0,
+   "pct": -0.009565068199365189,
    "kind": "units",
    "within_tolerance": false,
-   "channel_days_differing": 1155,
+   "channel_days_differing": 1124,
    "max_abs_diff": 58.0
   },
   "Product_Units_Draw": {
    "export": 4780.0,
-   "rebuilt": 4776.0,
-   "pct": -0.0008368200836820083,
+   "rebuilt": 4771.0,
+   "pct": -0.0018828451882845188,
    "kind": "route",
    "within_tolerance": true,
    "channel_days_differing": 283,
    "max_abs_diff": 52.0
   },
   "Product_Units_Preorder_App": {
-   "export": 6234.0,
-   "rebuilt": 6230.0,
-   "pct": -0.0006416426050689766,
+   "export": 6233.0,
+   "rebuilt": 6228.0,
+   "pct": -0.0008021819348628269,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 274,
+   "channel_days_differing": 271,
    "max_abs_diff": 58.0
   },
   "Product_Units_Private_Room": {
-   "export": 4676.0,
-   "rebuilt": 4611.0,
-   "pct": -0.013900769888793841,
+   "export": 4677.0,
+   "rebuilt": 4614.0,
+   "pct": -0.013470173187940988,
    "kind": "route",
    "within_tolerance": true,
    "channel_days_differing": 144,
-   "max_abs_diff": 10.0
+   "max_abs_diff": 8.0
   },
   "Product_Units_Presale_Offered": {
    "export": 268.0,
-   "rebuilt": 266.0,
-   "pct": -0.007462686567164179,
-   "kind": "route",
-   "within_tolerance": true,
-   "channel_days_differing": 19,
-   "max_abs_diff": 2.0
-  },
-  "Product_Units_Other": {
-   "export": 7405.0,
-   "rebuilt": 7209.0,
-   "pct": -0.026468602295746116,
+   "rebuilt": 260.0,
+   "pct": -0.029850746268656716,
    "kind": "route",
    "within_tolerance": false,
-   "channel_days_differing": 566,
+   "channel_days_differing": 19,
+   "max_abs_diff": 4.0
+  },
+  "Product_Units_Other": {
+   "export": 7416.0,
+   "rebuilt": 7218.0,
+   "pct": -0.02669902912621359,
+   "kind": "route",
+   "within_tolerance": false,
+   "channel_days_differing": 524,
    "max_abs_diff": 11.0
   },
   "Draw_Entries_Total_Units": {
@@ -218,35 +218,35 @@
    "pct": 0.0,
    "kind": "units",
    "within_tolerance": true,
-   "channel_days_differing": 1824,
-   "max_abs_diff": 252.0
+   "channel_days_differing": 1816,
+   "max_abs_diff": 253.0
   },
   "Draw_Entries_Total_Units_No_Conv": {
-   "export": 9397.0,
-   "rebuilt": 9397.0,
+   "export": 9398.0,
+   "rebuilt": 9398.0,
    "pct": 0.0,
    "kind": "units",
    "within_tolerance": true,
-   "channel_days_differing": 647,
+   "channel_days_differing": 648,
    "max_abs_diff": 167.0
   },
   "Draw_Entries_Eligible_Units": {
-   "export": 22121.0,
-   "rebuilt": 22121.0,
+   "export": 22122.0,
+   "rebuilt": 22122.0,
    "pct": 0.0,
    "kind": "units",
    "within_tolerance": true,
-   "channel_days_differing": 1528,
+   "channel_days_differing": 1520,
    "max_abs_diff": 244.0
   }
  },
  "beyond_tolerance": [
   "Preorder_App",
   "Preorder_App_Eligable",
-  "Customers_Presale_Offered",
   "Draw_Entry_Eligible_No_Conv",
   "Preorder_App_Eligible_No_Conv",
   "Total_Product_Units",
+  "Product_Units_Presale_Offered",
   "Product_Units_Other"
  ],
  "verdict": "differences beyond the known residuals"

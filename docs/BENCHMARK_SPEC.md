@@ -156,6 +156,55 @@ target_plan[g][d]    = benchmark_plan[g][d] * K
 So target and benchmark stay in exactly the K ratio on every day — which is what makes the
 even uplift legible on the trajectory.
 
+### 4.2 Units per buyer
+
+Targets are in units; campaigns reach people. On a multi-product release the median buyer
+takes more than one piece, so a 900-unit target is not 900 people, and a model with no buyer
+step implicitly assumes it is - overstating the audience a campaign must reach by the whole
+multi-buy rate.
+
+**The rate.** `units_per_buyer`, sourced in order from: what someone typed for the release;
+the fitted curve at its product count (the curated `products` list, else `product_count`,
+else the count the draw recorded); the basket's own median; then 1. The typed value comes
+first because the curve is fitted on a handful of multi-product launches and the lead running
+the release knows things it does not.
+
+**The curve.** `1 + 0.184 x ln(products)`, least squares through the origin on the log of the
+product count, so one product is exactly one piece per buyer by definition rather than by fit.
+One monotonic curve, not a median per count: there are ten launches on file at two products,
+three at three, three at four and one at five, so a per-count median moves under any one of
+them and says nothing at all about six. The curve rises by construction and extrapolates past
+the counts on file.
+
+**The era caveat.** The draw only records how many products it offered from **2025-08-28**.
+Of the 62 launches that closed earlier, 16 are named "Multiple" and not one registers more
+than a single product. `products_known` marks the difference and the fit uses only the
+launches after it: averaging across the two eras puts the early multi-product launches in the
+single-product bucket and flattens exactly the lift being measured.
+
+**Where the uplift goes.** Entirely on buyers. The rate is held at the benchmark like every
+other rate, so `benchmark.buyers x K == targets.buyers` exactly. Asking the stretch of
+multi-buying would assume the release persuades people to take more pieces each, which no
+lever on the page controls.
+
+**Both sides of the rate come from the event feed** - purchased pieces over the people who
+purchased them. Dividing the funnel export's units by the event feed's buyers mixes two counts
+of the same thing, because the export's units include unconverted entries at the eligible
+rate and those have no buyer yet.
+
+**In the funnel.** `Session -> sale` is two things at once: how many sessions became a buyer,
+and how many pieces each took. Those are a traffic-and-offer problem and a merchandising
+problem, so the waterfall splits the step into `Session -> buyer` per channel and one
+release-level `Units per buyer`. The decomposition is the same one-factor-at-a-time repricing
+as before - `units = sessions x buyers-per-session x units-per-buyer` - so the steps still sum
+to the gap; the two new steps sum to the old single one to the last unit. The multi-buy rate
+is measured for the release, not per channel: the only buyer count that is neither
+double-counted across channel-days nor missing where the channel feed does not reach is the
+release's own distinct one. Where plan and actual rates are equal the second step is zero and
+the card reads exactly as it did.
+
+**Visible** as a Buyers row on the Derived targets rail, with its own benchmark and stretch.
+
 ## 5. Snapshot additions
 
 All new fields are **additive**. Existing consumers keep working.

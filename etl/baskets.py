@@ -135,11 +135,13 @@ def _join_people(df: pd.DataFrame) -> pd.DataFrame:
     NaN: a median skips them, which is the right answer for a launch the event
     feed does not reach back to.
     """
-    for col in ("buyers", "products", "products_known", "units_per_buyer"):
+    for col in ("buyers", "products", "products_known", "units_per_buyer", "purchased_units"):
         if col in df.columns:
             df = df.drop(columns=[col])
     try:
-        ppl = pd.read_csv(PEOPLE_PATH, usecols=["release_name", "buyers", "products", "products_known"])
+        ppl = pd.read_csv(PEOPLE_PATH,
+                          usecols=["release_name", "buyers", "units", "products", "products_known"])
+        ppl = ppl.rename(columns={"units": "purchased_units"})
     except (OSError, ValueError):
         df["buyers"] = float("nan")
         df["products"] = float("nan")
@@ -150,7 +152,12 @@ def _join_people(df: pd.DataFrame) -> pd.DataFrame:
     ppl["products_known"] = ppl["products_known"].astype(str).str.lower().isin(("true", "1"))
     df = df.merge(ppl, on="release_name", how="left")
     buyers = pd.to_numeric(df["buyers"], errors="coerce")
-    units = pd.to_numeric(df["tot_total_product_units"], errors="coerce")
+    # both sides of the rate come from the event feed: purchased pieces over the
+    # people who purchased them. Dividing the funnel export's units by the event
+    # feed's buyers would mix two counts of the same thing - the export's units
+    # include unconverted entries at the eligible rate, which have no buyer yet -
+    # and the rate is read against itself all over the page.
+    units = pd.to_numeric(df["purchased_units"], errors="coerce")
     df["buyers"] = buyers
     df["units_per_buyer"] = (units / buyers.where(buyers > 0))
     df["products"] = pd.to_numeric(df["products"], errors="coerce")

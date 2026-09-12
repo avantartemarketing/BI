@@ -222,6 +222,26 @@ def load_emails() -> pd.DataFrame:
     return df
 
 
+def load_people() -> pd.DataFrame:
+    """Distinct entrants and buyers per release (etl/aggregate_events.py).
+
+    Counted once for the whole release from the event feed, so it is the only
+    honest buyer count there is: the daily export counts a customer once per
+    channel-day, which double-counts anyone who bought across two of them and,
+    on the releases the channel feed does not fully reach, undercounts badly.
+    """
+    p = APP / "release_people.csv"
+    if not p.exists():
+        return pd.DataFrame({"release_name": pd.Series(dtype=str),
+                             "buyers": pd.Series(dtype=float), "units": pd.Series(dtype=float)})
+    df = pd.read_csv(p, usecols=lambda c: c in ("release_name", "buyers", "units",
+                                                "products", "products_known"))
+    df["release_name"] = df["release_name"].astype(str)
+    if "products_known" in df.columns:
+        df["products_known"] = df["products_known"].astype(str).str.lower().isin(("true", "1"))
+    return df
+
+
 def email_feed_through(emails: pd.DataFrame):
     """The last send in the email file, whatever release it belongs to.
 
@@ -1281,7 +1301,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   as_of: date, artist_posts: pd.DataFrame | None = None,
                   posts_bench: dict | None = None,
                   email_bench: dict | None = None,
-                  panel: pd.DataFrame | None = None) -> dict:
+                  panel: pd.DataFrame | None = None,
+                  people: pd.DataFrame | None = None) -> dict:
     b = BENCH
     # one fit per build, from the panel the baskets are cut from (§4.2)
     upb_slope = units_per_buyer_curve(panel)
@@ -1319,7 +1340,30 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                       f"panel - benchmarked against {basket['id']} (n={basket['n']}, "
                       f"medians {basket['profile']['units']:.0f})")
     bench = profile is not None
+    # The draw records how many products it offered, so a release with no
+    # curated product list still gets its count rather than falling through to
+    # the basket median. Only where the count is trustworthy: before 2025-08-28
+    # the field reads 1 for every launch whatever it offered (§4.2).
+    if not release.get("product_count") and not isinstance(release.get("products"), list):
+        _pr = people[people["release_name"] == name] if people is not None and len(people) else None
+        if _pr is not None and len(_pr) and bool(_pr.iloc[0].get("products_known")):
+            _n = float(_pr.iloc[0].get("products") or 0)
+            if _n >= 1:
+                release = {**release, "product_count": _n}
     targets = compute_targets(release, profile, upb_slope)
+    # what the plan assumes each buyer takes, and what they have actually taken
+    # so far. The actual is the release's own distinct buyer count, which is the
+    # only one that is not double-counted across channels and days; with no row
+    # for the release the two are equal and the units-per-buyer step is zero,
+    # which is the old two-factor behaviour exactly.
+    upb_plan = targets.get("units_per_buyer") or 1.0
+    _prow = people[people["release_name"] == name] if people is not None and len(people) else None
+    upb_actual = upb_plan
+    if _prow is not None and len(_prow):
+        _b = float(_prow.iloc[0].get("buyers") or 0.0)
+        _u = float(_prow.iloc[0].get("units") or 0.0)
+        if _b > 0 and _u > 0:
+            upb_actual = _u / _b
     gtargets = group_targets(targets)
     # K, and the basket's own pace. Both plans are drawn off the same curve so
     # target and benchmark stay in exactly the K ratio on every day (§4.1) -
@@ -1639,15 +1683,31 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 frac = (cv - w) / (1 - w) if w < 1 else 1.0
                 if 0 <= i < len(daily):
                     daily[i]["proj"] = round(now + (proj - now) * max(min(frac, 1.0), 0.0), 2)
-        # two-factor decomposition: traffic + conversion = gap (docs §9)
+        # Three-factor decomposition: units = sessions x buyers-per-session x
+        # units-per-buyer, repriced one factor at a time, so the three steps
+        # still sum exactly to the gap (docs §9, BENCHMARK_SPEC §4.2). The old
+        # single conversion step conflated "more people bought" with "people
+        # bought more", which on a multi-product release are different problems
+        # with different fixes, so it is split in two. Their sum is the old
+        # step, to the last unit, which is what keeps every roll-up below
+        # unchanged.
         conv_exp = (exp / sess_exp) if sess_exp else 0.0
         conv_act = (now / cum_s) if cum_s else 0.0
         traffic = (cum_s - sess_exp) * conv_exp
         conversion = (conv_act - conv_exp) * cum_s
+        # the multi-buy rate is measured for the release, not per channel: the
+        # only trustworthy buyer count is the release's own distinct one
+        ratio = (upb_plan / upb_actual) if upb_actual else 1.0
+        buyer_conv = cum_s * (conv_act * ratio - conv_exp)
+        per_buyer = now * (1.0 - ratio)
         funnel_by_group[g] = {
             "sessions_actual": round(cum_s, 1), "sessions_expected": round(sess_exp, 1),
             "conv_actual": conv_act, "conv_expected": conv_exp,
             "contrib_traffic": round(traffic, 1), "contrib_conversion": round(conversion, 1),
+            # buyers per session, the half of conversion a campaign can act on
+            "bps_actual": (conv_act / upb_actual) if upb_actual else 0.0,
+            "bps_expected": (conv_exp / upb_plan) if upb_plan else 0.0,
+            "contrib_buyers": round(buyer_conv, 1), "contrib_per_buyer": round(per_buyer, 1),
         }
         if bench:
             # The funnel cards are always Today (§2), so the benchmark they sit
@@ -1913,6 +1973,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "channels": channels_out,
         "funnelByGroup": funnel_by_group,
         "paid": paid_out,
+        # what the plan assumes each buyer takes and what they have taken so
+        # far, so the funnel can split its conversion step in two (§4.2)
+        "unitsPerBuyer": {"plan": round(upb_plan, 4), "actual": round(upb_actual, 4)},
         "email": email_out,
         "social": social_out,
         "sellthrough": sellthrough,
@@ -2115,6 +2178,7 @@ def main(only: str | None = None):
     as_of = at["event_date"].max() - timedelta(days=1)  # last full day (export cut mid-day)
     spend = load_spend()
     emails = load_emails()
+    people = load_people()
     content = load_content()
     artist_posts = load_artist_posts()
     posts_bench = artist_posts_benchmarks(artist_posts, as_of)
@@ -2165,7 +2229,7 @@ def main(only: str | None = None):
         if cfg is None:
             raise SystemExit(f"build: no configured release with id {only!r}")
         snap = build_release(cfg, at, spend, emails, content, curves, as_of,
-                             artist_posts, posts_bench, email_bench, panel)
+                             artist_posts, posts_bench, email_bench, panel, people)
         check_snapshot(snap)
         (APP / "releases" / f"{only}.json").write_text(json.dumps(snap, indent=1))
         bmk = snap.get("benchmark")
@@ -2186,7 +2250,7 @@ def main(only: str | None = None):
         cfg = configured.pop(rec["release_name"], None)
         if cfg:
             snap = build_release(cfg, at, spend, emails, content, curves, as_of,
-                                 artist_posts, posts_bench, email_bench, panel)
+                                 artist_posts, posts_bench, email_bench, panel, people)
             check_snapshot(snap)
             (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
             add(snap, "closed" if snap["complete"] else "live")
@@ -2209,7 +2273,7 @@ def main(only: str | None = None):
     # traffic) still get built, as before
     for cfg in configured.values():
         snap = build_release(cfg, at, spend, emails, content, curves, as_of,
-                             artist_posts, posts_bench, email_bench, panel)
+                             artist_posts, posts_bench, email_bench, panel, people)
         check_snapshot(snap)
         (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
         add(snap, "closed" if snap["complete"] else "live")

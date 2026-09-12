@@ -295,11 +295,32 @@ function groupWaterfall(g, snap) {
   const convA = fbg.conv_actual ?? 0, convE = fbg.conv_expected ?? 0;
   const rows = [];   // [{label, step (number|null), note, tip rows}]
   const P = (v) => fmtVal(v * 100, "%"), N = (v) => fmtVal(v, "count"), R = (v) => fmt(v, 2);
+  /* Session → sale is two things at once: how many sessions became a buyer, and
+     how many pieces each buyer took. On a multi-product release those are
+     different problems with different fixes - one is a traffic and offer
+     problem, the other is a merchandising one - so the step is split. The
+     multi-buy rate is measured for the release rather than per channel, because
+     the only buyer count that is neither double-counted across channel-days nor
+     missing on the releases the channel feed does not reach is the release's own
+     distinct one (BENCHMARK_SPEC 4.2). Where the two rates are equal the second
+     step is zero and this reads exactly as the single step did. */
+  const upb = snap.unitsPerBuyer || {};
+  const upbA = upb.actual > 0 ? upb.actual : 1;
+  const upbE = upb.plan > 0 ? upb.plan : 1;
+  const splitBuy = Math.abs(upbA - upbE) > 0.001;
+  const saleSteps = splitBuy
+    ? [{ label: "Session → buyer", a: convA / upbA, e: convE / upbE, show: P,
+         note: "sessions that became a buyer, vs plan - the pieces each buyer took are a release-level row of their own" },
+       // the rate is one release-level fact, so its step is collected out of
+       // the groups and printed once below them rather than five times
+       { label: "Units per buyer", a: upbA, e: upbE, show: R, perBuyer: true,
+         note: "pieces per buyer across the release, vs what the target assumed for this many products" }]
+    : [{ label: "Session → sale", a: convA, e: convE, show: P, note: "session → sale rate vs plan" }];
   const info = (label, v, ref, unit, note) => rows.push({ label, value: null, note, display: fmtVal(v, unit),
     tipRows: [{ label: "Actual", value: fmtVal(v, unit) }, { label: "Reference", value: fmtVal(ref, unit) }] });
   const twoFactor = () => chainSteps([
     { label: "Sessions", a: sessA, e: sessE, show: N, note: "sessions vs plan" },
-    { label: "Session → sale", a: convA, e: convE, show: P, note: "session → sale rate vs plan" },
+    ...saleSteps,
   ]);
 
   let steps;
@@ -312,13 +333,13 @@ function groupWaterfall(g, snap) {
       note: "sends delivered vs the cohort-median delivery curve" };
     const perClick = { label: "Sessions per click", a: sessA / clicksA, e: sessE / clicksE, show: R,
       note: "AA Email sessions per email click vs the plan's expected sessions over expected clicks - traffic the clicks did not explain" };
-    const sale = { label: "Session → sale", a: convA, e: convE, show: P, note: "session → sale rate vs plan" };
+
     if (chainable && opensA > 0) {
       rows.push(...chainSteps([
         delivered,
         { label: "Open rate", a: opensA / delivA, e: openRef, show: P, note: `opens per delivered email vs ${P(openRef)}` },
         { label: "Click rate", a: clicksA / opensA, e: ctorRef, show: P, note: `clicks per opened email vs ${P(ctorRef)}` },
-        perClick, sale,
+        perClick, ...saleSteps,
       ]));
       return { name: g.name, rows, now, exp };
     }
@@ -328,7 +349,7 @@ function groupWaterfall(g, snap) {
       steps = chainSteps([
         delivered,
         { label: "Click rate", a: clicksA / delivA, e: clickE, show: P, note: `clicks per delivered email vs ${P(clickE)} - no opens recorded` },
-        perClick, sale,
+        perClick, ...saleSteps,
       ]);
       rows.push(steps[0]);
       info("Open rate", null, em.openRef, "%", "no opens recorded - context only");
@@ -360,7 +381,7 @@ function groupWaterfall(g, snap) {
     rows.push(...chainSteps([
       { label: "Sessions", a: sessA, e: sessE, show: N,
         note: "sessions vs plan - carries the whole traffic gap while the click chain has no reference" },
-      sale,
+      ...saleSteps,
     ]));
     return { name: g.name, rows, now, exp };
   }
@@ -395,7 +416,7 @@ function groupWaterfall(g, snap) {
       rows.push(...chainSteps([
         { label: "Posts", a: postsA, e: postsE, show: N, note: "artist-account posts vs the tier benchmark, pro-rated" },
         { label: "Sessions", a: sessA / postsA, e: sessE / postsE, show: R, note: "sessions per post vs plan" },
-        { label: "Session → sale", a: convA, e: convE, show: P, note: "session → sale rate vs plan" },
+        ...saleSteps,
       ]));
       return { name: g.name, rows, now, exp };
     }
@@ -426,12 +447,23 @@ function FunnelWaterfall({ snap, groups }) {
   // running level through every row (info rows carry the level across)
   let cum = expTotal;
   const flat = [];
+  // the units-per-buyer steps are one release-level effect split across the
+  // groups only because each group has its own units; they are summed and shown
+  // once, after the groups, so the card gains one row rather than five
+  const perBuyerTotal = sections.reduce(
+    (t, s) => t + s.rows.filter((r) => r.perBuyer && finite(r.value)).reduce((a, r) => a + r.value, 0), 0);
+  const perBuyerRow = sections.flatMap((s) => s.rows).find((r) => r.perBuyer) || null;
   for (const s of sections) {
     flat.push({ header: s.name });
     for (const r of s.rows) {
+      if (r.perBuyer) continue;
       if (finite(r.value)) { const from = cum; cum += r.value; flat.push({ ...r, from, to: cum }); }
       else flat.push({ ...r, level: cum });
     }
+  }
+  if (perBuyerRow && Math.abs(perBuyerTotal) > 0.05) {
+    const from = cum; cum += perBuyerTotal;
+    flat.push({ ...perBuyerRow, value: perBuyerTotal, from, to: cum });
   }
   /* This waterfall opened on "Target today" while the outcome waterfall opened
    * on Benchmark -> Stretch -> Target, so the same page answered "where did the
@@ -504,11 +536,11 @@ function FunnelWaterfall({ snap, groups }) {
       {anchorRow("Target today", expTotal,
         { head: `Target by day ${day}`, rows: [{ label: "Secured units", value: fmt(expTotal) }] })}
       {flat.map((r, i) => r.header ? (
-        <div key={"h" + i} style={{ height: 20, flex: "0 0 20px", display: "flex", alignItems: "center" }}>
+        <div key={"h" + i} style={{ height: 19, flex: "0 0 19px", display: "flex", alignItems: "center" }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{r.header}</div>
         </div>
       ) : r.to !== undefined ? (
-        <div key={r.label + i} style={{ height: 22, flex: "0 0 22px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+        <div key={r.label + i} style={{ height: 21, flex: "0 0 21px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
           <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
           <div style={{ position: "relative", height: 12 }}>
             <div {...tipApi.props({
@@ -530,7 +562,7 @@ function FunnelWaterfall({ snap, groups }) {
           </div>
         </div>
       ) : (
-        <div key={r.label + i} style={{ height: 22, flex: "0 0 22px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+        <div key={r.label + i} style={{ height: 21, flex: "0 0 21px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
           <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
           <div style={{ position: "relative", height: 12 }}>
             <div {...tipApi.props({ head: r.label, body: r.note, rows: r.tipRows })} style={{
