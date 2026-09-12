@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import json
 import math
+import numpy as np
 import pathlib
 import re
 from datetime import date
@@ -328,10 +329,24 @@ def _ready(bid: str, name: str, desc: str, members: list[str], panel: pd.DataFra
 def similar_members(panel: pd.DataFrame, release: dict | None) -> tuple[list[str], float | None]:
     """Launches of comparable size, preferring comparable shape too.
 
-    Returns the member names and the band factor that found them, or an empty
-    list when the edition has no comparable on file at all - which is a real
-    answer for a 2,400-unit launch when the biggest draw ever run was 987, and
-    a far better one than a benchmark eleven times below the target.
+    Every release gets a basket. The search runs from strictest to loosest and
+    stops at the first rung that answers:
+
+      1. the shape cluster intersected with a size band, widening the band;
+      2. the size band alone, widening;
+      3. the size band alone at a count that is thin but medianable;
+      4. failing all of that, simply the launches nearest this edition in size.
+
+    Rung 4 is what an unprecedented edition gets. A 2,440-unit launch when the
+    biggest draw ever run was 987 has no true comparable, and the honest
+    benchmark is the largest launches on file with a multiplier of about three
+    printed next to them: "three times the biggest thing we have ever done" is
+    a plan someone can argue with. An empty panel is the only case with no
+    basket, and then there is nothing to median over at all.
+
+    The second return value is the band factor that found the members, or None
+    when rung 4 answered - the caller uses it to describe the basket, and
+    "nearest by size" is a different sentence from "within a factor of 3".
     """
     own = _own_name(release)
     pool = panel[panel["release_name"] != own] if own else panel
@@ -344,6 +359,9 @@ def similar_members(panel: pd.DataFrame, release: dict | None) -> tuple[list[str
     if cid is None:
         cid = _cluster_id((release or {}).get("nearest_cluster"))
     clusters = _cluster_series(pool)
+    # the shape constraint is dropped before the scale one: every headline
+    # figure on the page is a volume, so scale is the harder constraint and the
+    # last to give up
     for shape_first in (True, False):
         if shape_first and cid is None:
             continue
@@ -352,7 +370,19 @@ def similar_members(panel: pd.DataFrame, release: dict | None) -> tuple[list[str
             sel = pool[band & (clusters == cid)] if shape_first else pool[band]
             if len(sel) >= SIMILAR_MIN:
                 return sel["release_name"].tolist(), f
-    return [], None
+    # Rung 3: no band reaches eight, so take the widest one if it is medianable
+    # at all. The widest, not the first that clears the minimum - once the band
+    # cannot be tight enough to be a real comparable there is nothing to be won
+    # by keeping it narrow, and a median over three launches moves under any
+    # one of them.
+    f = SIMILAR_FACTORS[-1]
+    widest = pool[(units >= size / f) & (units <= size * f)]
+    if len(widest) >= MIN_MEMBERS:
+        return widest["release_name"].tolist(), f
+    # nearest by size, in log space so a half and a double are the same distance
+    near = pool.assign(_d=(np.log(units.clip(lower=1)) - math.log(max(size, 1))).abs())
+    near = near.nsmallest(min(THIN_MEMBERS, len(near)), "_d")
+    return near["release_name"].tolist(), None
 
 
 def ready_baskets(panel: pd.DataFrame, as_of: date, release: dict | None = None) -> list[dict]:
@@ -369,12 +399,17 @@ def ready_baskets(panel: pd.DataFrame, as_of: date, release: dict | None = None)
     out = []
 
     members, factor = similar_members(panel, release)
+    size = _num((release or {}).get("edition_size"))
     if factor is not None:
-        size = _num((release or {}).get("edition_size"))
         desc = (f"Launches within a factor of {factor:g} on units of this edition's "
                 f"{size:,.0f}, of the same shape where there are enough of them.")
+    elif members:
+        desc = (f"No launch on file is close to this edition's {size:,.0f} units, so this is "
+                f"simply the {len(members)} nearest to it by size - the benchmark is what the "
+                f"biggest launches on record reached, and the uplift says how far past them "
+                f"this edition is being asked to go.")
     else:
-        desc = "No launch on file is close to this edition's size."
+        desc = "No launch on file to compare this edition against."
     out.append(_ready("similar_size", SIMILAR_NAME, desc, members, panel))
 
     for c in range(4):

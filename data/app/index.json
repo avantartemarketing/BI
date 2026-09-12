@@ -95,9 +95,9 @@
    "of": 27,
    "complete": false,
    "windowEnd": "2026-09-30",
-   "statusPct": -0.5382,
+   "statusPct": -0.5354,
    "ok": false,
-   "benchmarkPct": null,
+   "benchmarkPct": 0.3106,
    "lastSeen": null,
    "sessions": null
   },

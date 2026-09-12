@@ -54,6 +54,29 @@ Built from `data/release_clusters.csv` (rows with `panel == "draw"`, 108 of them
 A release is **never a member of its own benchmark** — always drop its own
 `release_name` from any basket.
 
+`similar_size` is the suggested basket and the one nearly every release lands on. The clusters
+are **shapes, not sizes** (cluster 0 runs from 15 units to 987 with a median of 214), so
+benchmarking a large edition against its cluster compares it to launches an order of magnitude
+smaller and calls the difference a stretch. `similar_members` therefore searches from strictest
+to loosest and stops at the first rung that answers:
+
+1. the shape cluster intersected with a size band, widening the band through 2×, 2.5×, 3×, 4×,
+   needing 8 members;
+2. the size band alone, widening the same way, needing 8;
+3. the **widest** band alone (4×), needing only the 3-member minimum — the widest, not the
+   first that clears 3, because once the band cannot be tight enough to be a real comparable
+   there is nothing won by keeping it narrow and a median over three launches moves under any
+   one of them;
+4. failing all of that, simply the launches nearest this edition in size, in log space.
+
+**Every release gets a benchmark.** An edition larger than anything on record is benchmarked
+against the largest launches there have been, and the multiplier states how far past them it is
+being asked to go: Andy Warhol at 2,440 units, against a panel whose biggest launch ever is 987,
+lands on the six biggest launches on file (both Cattelan editions among them), a benchmark of
+865 and an uplift of ×2.82. "Nearly three times the biggest thing we have ever done" is a plan
+someone can argue with; a blank panel is not. Such a basket is flagged `thin` (under 10 members)
+and carries `scaleMismatch`, so a card can say the basket is nowhere near this edition's size.
+
 ### 3.2 Profile (the medians)
 
 ```

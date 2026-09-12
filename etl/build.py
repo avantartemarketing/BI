@@ -1224,18 +1224,20 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         if basket["profile"]["units"] <= 0:
             print(f"{release['id']}: basket {basket['id']} has no median units - staying on the levers")
             basket = None
-        elif basket.get("scaleMismatch") and not release.get("benchmark_basket"):
-            # No launch on file is within a factor of four of this edition, so
-            # the only basket on offer is not a comparable: an uplift off it
-            # would read as a stretch of several hundred per cent when what it
-            # actually says is that nothing this size has ever run. The levers
-            # are the honest answer until someone picks a basket deliberately.
-            print(f"{release['id']}: edition {release['edition_size']:.0f} has no comparable "
-                  f"(nearest basket {basket['id']} medians {basket['profile']['units']:.0f}) "
-                  f"- staying on the levers")
-            basket = None
         else:
+            # Every release gets a benchmark, including one bigger than
+            # anything on record. The basket search falls back to the launches
+            # nearest this edition in size rather than giving up, so an
+            # unprecedented edition is benchmarked against the biggest launches
+            # there have been and the uplift states how far past them it is
+            # being asked to go. That is a number someone can argue with; an
+            # empty panel is not. scaleMismatch is still published so the card
+            # can say the basket is nowhere near this edition's size.
             profile = basket["profile"]
+            if basket.get("scaleMismatch"):
+                print(f"{release['id']}: edition {release['edition_size']:.0f} is far outside the "
+                      f"panel - benchmarked against {basket['id']} (n={basket['n']}, "
+                      f"medians {basket['profile']['units']:.0f})")
     bench = profile is not None
     targets = compute_targets(release, profile)
     gtargets = group_targets(targets)
