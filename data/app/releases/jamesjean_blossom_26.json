@@ -156,15 +156,15 @@
    "sense_check_breached": true
   },
   "launch_value": 420000.0,
-  "units_per_buyer": 1.1259813527000249,
+  "units_per_buyer": 1.1231960061064756,
   "units_per_buyer_source": "products",
-  "buyers": 532.8685049368196,
+  "buyers": 534.1899336696197,
   "buyers_by_group": {
-   "aa_email": 203.50930029142629,
-   "aa_social": 17.420781077845326,
-   "referral_artist": 0.9278595616743741,
-   "search_direct_other": 179.51744819157358,
-   "paid": 131.49311581430004
+   "aa_email": 204.01397083266804,
+   "aa_social": 17.463981830846887,
+   "referral_artist": 0.9301605051030821,
+   "search_direct_other": 179.96262277382334,
+   "paid": 131.8191977271784
   },
   "organic_sessions_draw": 12890.563989401797,
   "total_sessions": 31430.902527075814,
@@ -1164,9 +1164,9 @@
    "contrib_traffic": -77.1,
    "contrib_conversion": 21.5,
    "bps_actual": 0.024834187366592375,
-   "bps_expected": 0.022245715008089296,
-   "contrib_buyers": 17.7,
-   "contrib_per_buyer": 3.8,
+   "bps_expected": 0.02230088082614953,
+   "contrib_buyers": 17.3,
+   "contrib_per_buyer": 4.2,
    "sessions_benchmark": 10558.6,
    "conv_benchmark": 0.025048260276587634
   },
@@ -1178,9 +1178,9 @@
    "contrib_traffic": -0.4,
    "contrib_conversion": 13.5,
    "bps_actual": 0.04532575825501496,
-   "bps_expected": 0.027213801047831894,
-   "contrib_buyers": 12.8,
-   "contrib_per_buyer": 0.7,
+   "bps_expected": 0.02728128692530475,
+   "contrib_buyers": 12.7,
+   "contrib_per_buyer": 0.8,
    "sessions_benchmark": 738.8,
    "conv_benchmark": 0.030642232515947113
   },
@@ -1192,9 +1192,9 @@
    "contrib_traffic": 78.2,
    "contrib_conversion": -9.3,
    "bps_actual": 0.022833192276175605,
-   "bps_expected": 0.02645575231312941,
-   "contrib_buyers": -10.8,
-   "contrib_per_buyer": 1.5,
+   "bps_expected": 0.02652135835088643,
+   "contrib_buyers": -11.0,
+   "contrib_per_buyer": 1.7,
    "sessions_benchmark": 40.5,
    "conv_benchmark": 0.029788683776234264
   },
@@ -1206,9 +1206,9 @@
    "contrib_traffic": -33.7,
    "contrib_conversion": -48.0,
    "bps_actual": 0.04095206979667086,
-   "bps_expected": 0.058530036166667104,
-   "contrib_buyers": -50.6,
-   "contrib_per_buyer": 2.6,
+   "bps_expected": 0.05867518130248562,
+   "contrib_buyers": -50.9,
+   "contrib_per_buyer": 2.9,
    "sessions_benchmark": 3539.9,
    "conv_benchmark": 0.0659037292965252
   },
@@ -1220,9 +1220,9 @@
    "contrib_traffic": 144.1,
    "contrib_conversion": -94.5,
    "bps_actual": 0.004692863623695863,
-   "bps_expected": 0.007092271564896491,
-   "contrib_buyers": -98.8,
-   "contrib_per_buyer": 4.3,
+   "bps_expected": 0.007109859264938525,
+   "contrib_buyers": -99.3,
+   "contrib_per_buyer": 4.8,
    "sessions_benchmark": 21398.6,
    "conv_benchmark": 0.007985765530358074
   }
@@ -1423,7 +1423,7 @@
   "benchmarkBudget": 30246.56
  },
  "unitsPerBuyer": {
-  "plan": 1.126,
+  "plan": 1.1232,
   "actual": 1.151
  },
  "email": {
@@ -1632,7 +1632,7 @@
    "paid": 0.00603
   },
   "paidBudget": 30246.56,
-  "unitsPerBuyer": 1.126,
-  "buyers": 615.0
+  "unitsPerBuyer": 1.1232,
+  "buyers": 616.5
  }
 }

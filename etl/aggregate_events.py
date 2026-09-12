@@ -106,8 +106,8 @@ FLAGS = ["draw_entry_eligible", "winner", "pre_order", "draw_with_purchase",
          "purchase_with_preorder_app", "purchase_with_presale", "pr_order", "purchase_with_draw_entry"]
 EVENT_COLS = [CH, "event_date", "event_name", "aa_account_id", "simple_release_name", "announcement_date",
               "draw_entry_multiset_preference_max_quantity_once", "order_pieces",
-              # the multiset cap itself, for the per-release product count
-              "draw_entry_multiset_preference_max_quantity"] + CLOCK + FLAGS
+              # the multiset cap and the draw id, the two product-count signals
+              "draw_entry_multiset_preference_max_quantity", "draw_id"] + CLOCK + FLAGS
 LABELS = [CH, "simple_release_name", "campaign_stage", "event_name"]
 
 
@@ -443,6 +443,13 @@ def people_file(ev: pd.DataFrame) -> pd.DataFrame:
             # across the two eras (docs/BENCHMARK_SPEC.md §4.2).
             "products": int(_products(sub_e)),
             "products_known": bool(s0 >= PRODUCTS_FROM),
+            # a release runs one draw per product, so distinct draw ids count
+            # them too - and unlike the multiset cap this reaches back to
+            # September 2023. It over-counts above two (re-runs and waves: one
+            # release ran 24 draws for 3 products), so only 1 and 2 are taken
+            # as counts; above that it still says reliably that the release was
+            # multi-product (§4.2).
+            "draws": int(sub_e["draw_id"].nunique()) if "draw_id" in sub_e.columns else 0,
             "entrants_bought_before": len(entr & prior_buyers), "entrants_entered_before": len(entr & prior_entrants),
             "buyers_bought_before": len(buyers & prior_buyers), "buyers_first_time": len(buyers - prior_buyers),
             "artist_previous_releases": len(prev),

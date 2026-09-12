@@ -140,7 +140,8 @@ def _join_people(df: pd.DataFrame) -> pd.DataFrame:
             df = df.drop(columns=[col])
     try:
         ppl = pd.read_csv(PEOPLE_PATH,
-                          usecols=["release_name", "buyers", "units", "products", "products_known"])
+                          usecols=lambda c: c in ("release_name", "buyers", "units",
+                                                  "products", "products_known", "draws"))
         ppl = ppl.rename(columns={"units": "purchased_units"})
     except (OSError, ValueError):
         df["buyers"] = float("nan")
