@@ -105,7 +105,9 @@ def flag(s: pd.Series) -> pd.Series:
 FLAGS = ["draw_entry_eligible", "winner", "pre_order", "draw_with_purchase",
          "purchase_with_preorder_app", "purchase_with_presale", "pr_order", "purchase_with_draw_entry"]
 EVENT_COLS = [CH, "event_date", "event_name", "aa_account_id", "simple_release_name", "announcement_date",
-              "draw_entry_multiset_preference_max_quantity_once", "order_pieces"] + CLOCK + FLAGS
+              "draw_entry_multiset_preference_max_quantity_once", "order_pieces",
+              # the multiset cap itself, for the per-release product count
+              "draw_entry_multiset_preference_max_quantity"] + CLOCK + FLAGS
 LABELS = [CH, "simple_release_name", "campaign_stage", "event_name"]
 
 
@@ -394,6 +396,22 @@ def check_rules(windows: pd.DataFrame, out: pd.DataFrame, as_of: pd.Timestamp) -
             f"{int((da <= 2).sum())}; close exact {int((dc == 0).sum())}, within 2 days {int((dc <= 2).sum())}")
 
 
+# The first draw entry that recorded a multiset preference above one. Before
+# this the field is present but always 1, so a product count taken from it is
+# only meaningful for launches that ran after it: of 62 launches closing
+# earlier, 16 are named "Multiple" and every one of them reads as a single
+# product.
+PRODUCTS_FROM = pd.Timestamp("2025-08-28")
+
+
+def _products(sub_e: pd.DataFrame) -> int:
+    col = "draw_entry_multiset_preference_max_quantity"
+    if col not in sub_e.columns or sub_e.empty:
+        return 1
+    v = pd.to_numeric(sub_e[col], errors="coerce").max()
+    return int(v) if pd.notna(v) and v >= 1 else 1
+
+
 def people_file(ev: pd.DataFrame) -> pd.DataFrame:
     de = ev[ev["event_name"] == "draw entry intent"]
     pu = ev[ev["event_name"] == "purchase"]
@@ -418,6 +436,13 @@ def people_file(ev: pd.DataFrame) -> pd.DataFrame:
             "entrants": len(entr), "eligible_entrants": int(sub_e.loc[sub_e["draw_entry_eligible"], "aa_account_id"].nunique()),
             "winners": int(sub_e.loc[sub_e["winner"], "aa_account_id"].nunique()),
             "buyers": len(buyers), "units": float(pu.loc[pu["simple_release_name"] == r, "order_pieces"].sum()),
+            # How many products the draw offered, read off the multiset preference
+            # cap. It is only recorded from 2025-08-28: every launch that closed
+            # before that reads as 1 whatever it actually offered, so the column
+            # carries `products_known` beside it and a model must not average
+            # across the two eras (docs/BENCHMARK_SPEC.md §4.2).
+            "products": int(_products(sub_e)),
+            "products_known": bool(s0 >= PRODUCTS_FROM),
             "entrants_bought_before": len(entr & prior_buyers), "entrants_entered_before": len(entr & prior_entrants),
             "buyers_bought_before": len(buyers & prior_buyers), "buyers_first_time": len(buyers - prior_buyers),
             "artist_previous_releases": len(prev),

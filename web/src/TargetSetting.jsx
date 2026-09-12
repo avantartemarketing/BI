@@ -403,6 +403,7 @@ export default function TargetSetting({ snap, onSaved }) {
   const st = snap.targets || {};
   const D = stretchMode === "even" && bm && st.total_sessions
     ? {
+      buyers: (st.buyers || 0) * benchScale,
       paid_units: (st.paid_units || 0) * benchScale,
       draw_units: (st.draw_units || 0) * benchScale,
       pr_units: (st.pr_units || 0) * benchScale,
@@ -416,10 +417,25 @@ export default function TargetSetting({ snap, onSaved }) {
       },
     }
     : derived;
+
+  /* People, not pieces. On a multi-product release the median buyer takes more
+     than one, so a 900-unit target is not 900 people and reading it as though
+     it were overstates the audience the campaign has to reach by the whole
+     multi-buy rate. The rate is held at the benchmark, so the uplift falls
+     entirely on finding more buyers (BENCHMARK_SPEC 4.2). On the levers there
+     is no scaled target to read, so the row is the edition at the same rate. */
+  const upb = (snap.targets || {}).units_per_buyer || null;
+  const buyersTarget = stretchMode === "even" && bm && D.buyers
+    ? D.buyers
+    : upb ? (Number(inp.edition_size) || 0) / upb : null;
   const railRows = [
     railRow("Paid units", D.paid_units, (v) => fmt(v, 0), undefined, bmPaidUnits),
     railRow("Draw / pre-order units", D.draw_units, (v) => fmt(v, 0), undefined, null),
     railRow("Private room units", D.pr_units, (v) => fmt(v, 0), undefined, null),
+    railRow("Buyers", buyersTarget ?? 0, (v) => fmt(v, 0),
+      upb ? `People, not pieces: the target divided by ${fmt(upb, 3)} units per buyer.`
+          : "People, not pieces.",
+      bm && bm.buyers ? bm.buyers : null),
     railRow("Eligible entries", D.entries_target, (v) => fmt(v, 0),
       "Draw + paid units ÷ 0.8 eligible-entry → order rate.",
       bm ? bm.entries : null),

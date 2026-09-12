@@ -357,7 +357,69 @@ def _group_channel_split(group: str) -> dict[str, float]:
     return {c: w / total for c, w in weights.items()}
 
 
-def benchmark_targets(release: dict, profile: dict) -> dict:
+# ---- units per buyer (BENCHMARK_SPEC §4.2) ---------------------------------
+
+# The draw records how many products it offered only from this date. Before it,
+# every launch reads as a single product whatever it actually was: of the 62
+# launches that closed earlier, 16 are named "Multiple" and not one of them
+# registers more than one. So the rate curve is fitted on the launches after it
+# and the earlier ones are left out rather than averaged in, which would drag
+# the single-product rate up and flatten the lift the curve is trying to measure.
+PRODUCTS_KNOWN_FROM = "2025-08-28"
+UNITS_PER_BUYER_FALLBACK = 0.1838   # the fitted slope, for a panel too thin to fit
+
+
+def units_per_buyer_curve(panel) -> float:
+    """The slope of units per buyer against the log of the product count.
+
+    A release with six products should expect more per buyer than one with
+    five, and the per-count medians cannot promise that: there are ten launches
+    on file at two products, three at three, three at four and one at five, so
+    a median per count wobbles under any one of them and says nothing at all
+    about six. One monotonic curve through all of them - 1 + a x ln(products) -
+    is smooth, rises by construction, and extrapolates past the counts on file.
+    Least squares through the origin on (ln products, rate - 1), so a single
+    product is exactly one unit per buyer by definition rather than by fit.
+    """
+    if panel is None or not len(panel) or "products_known" not in panel.columns:
+        return UNITS_PER_BUYER_FALLBACK
+    rows = panel[(panel["products_known"] == True)
+                 & panel["products"].notna() & (panel["products"] >= 1)
+                 & panel["units_per_buyer"].notna() & (panel["units_per_buyer"] > 0)]
+    if len(rows) < 8:
+        return UNITS_PER_BUYER_FALLBACK
+    x = np.log(rows["products"].to_numpy(dtype=float))
+    y = rows["units_per_buyer"].to_numpy(dtype=float) - 1.0
+    denom = float((x * x).sum())
+    if denom <= 0:
+        return UNITS_PER_BUYER_FALLBACK
+    return float((x * y).sum() / denom)
+
+
+def units_per_buyer_for(release: dict, profile: dict | None, slope: float) -> tuple[float, str]:
+    """The rate this release plans on, and where it came from.
+
+    In order: what someone typed for this release, then the curve at its own
+    product count, then the basket's own median, then one. The typed value is
+    first because the curve is fitted on a handful of multi-product launches
+    and the lead running the release knows things it does not.
+    """
+    typed = release.get("units_per_buyer")
+    if typed not in (None, "") and float(typed) > 0:
+        return float(typed), "typed"
+    # the release's own product list, which the lead already curates for the
+    # sell-through card, is a better count than anything derived from the feed
+    n = release.get("product_count")
+    if n in (None, "") and isinstance(release.get("products"), list):
+        n = len(release["products"])
+    if n not in (None, "") and float(n) >= 1:
+        return max(1.0, 1.0 + slope * math.log(float(n))), "products"
+    if profile and profile.get("units_per_buyer", 0) > 0:
+        return float(profile["units_per_buyer"]), "basket"
+    return 1.0, "default"
+
+
+def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER_BUYER_FALLBACK) -> dict:
     """Targets from a basket's medians (BENCHMARK_SPEC §4).
 
     One even uplift K = edition / median units carries every volume - sessions,
@@ -382,6 +444,15 @@ def benchmark_targets(release: dict, profile: dict) -> dict:
     organic_units = size - paid_units
     pr_units = units["aa_email"] * profile["private_room_share"]
     draw_units = organic_units - pr_units
+
+    # How many people the edition needs, not how many pieces. On a multi-product
+    # release the median buyer takes more than one, so a 1,200-unit target is
+    # not 1,200 people: assuming it is overstates the audience the campaign has
+    # to reach by the whole multi-buy rate. The rate is held at the benchmark
+    # like every other rate, so the uplift is asked entirely of finding more
+    # buyers, never of persuading each to take more (§4.2).
+    upb, upb_source = units_per_buyer_for(release, profile, upb_slope)
+    buyers = {g: units[g] / upb for g in baskets.GROUPS}
 
     per_channel = {}
     for g in DISPLAY_GROUPS:
@@ -427,6 +498,8 @@ def benchmark_targets(release: dict, profile: dict) -> dict:
             "sense_check_breached": (budget / launch_value) > b["budget_sense_check_max_pct_of_launch_value"] if launch_value else False,
         },
         "launch_value": launch_value,
+        "units_per_buyer": upb, "units_per_buyer_source": upb_source,
+        "buyers": size / upb, "buyers_by_group": buyers,
         "organic_sessions_draw": organic_sessions_draw,
         # the basket's own session total at the uplift. Private-room sessions
         # are not added on top as the lever model does: the email median is
@@ -448,15 +521,16 @@ def benchmark_targets(release: dict, profile: dict) -> dict:
     return out
 
 
-def compute_targets(release: dict, profile: dict | None = None) -> dict:
+def compute_targets(release: dict, profile: dict | None = None, upb_slope: float = UNITS_PER_BUYER_FALLBACK) -> dict:
     # Benchmark mode (BENCHMARK_SPEC §4) when the release has a basket profile.
     # A basket whose median units are zero says nothing about what to aim for -
     # there is no K to compute - so it falls through to the levers rather than
     # failing the build.
     if profile and profile.get("units"):
-        return benchmark_targets(release, profile)
+        return benchmark_targets(release, profile, upb_slope)
     b = BENCH
     size = release["edition_size"]
+    _lever_upb, _lever_upb_src = units_per_buyer_for(release, None, upb_slope)
     paid_pct = b["paid_share_of_units"][
         {"Small": "Low", "Medium": "Medium", "Large": "High",
          "Low": "Low", "High": "High"}[release["paid_channel_size"]]]
@@ -514,6 +588,10 @@ def compute_targets(release: dict, profile: dict | None = None) -> dict:
             "sense_check_breached": (budget / launch_value) > b["budget_sense_check_max_pct_of_launch_value"] if launch_value else False,
         },
         "launch_value": launch_value,
+        # the lever arm has no basket to read a rate off, so it takes the curve
+        # at the release's own product count, or one piece per buyer (§4.2)
+        "units_per_buyer": _lever_upb, "units_per_buyer_source": _lever_upb_src,
+        "buyers": float(release["edition_size"]) / _lever_upb,
         "organic_sessions_draw": sum(pc["sessions"] for pc in per_channel.values()),
         "total_sessions": sum(pc["sessions"] for pc in per_channel.values()) + pr_sessions + paid_sessions,
         # the eligible-entry target the rail prints; the JS model has always
@@ -1205,6 +1283,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   email_bench: dict | None = None,
                   panel: pd.DataFrame | None = None) -> dict:
     b = BENCH
+    # one fit per build, from the panel the baskets are cut from (§4.2)
+    upb_slope = units_per_buyer_curve(panel)
     name = release["release_name"]
     announce = date.fromisoformat(release["announce_date"])
     launch_end = date.fromisoformat(release["launch_end"])
@@ -1239,7 +1319,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                       f"panel - benchmarked against {basket['id']} (n={basket['n']}, "
                       f"medians {basket['profile']['units']:.0f})")
     bench = profile is not None
-    targets = compute_targets(release, profile)
+    targets = compute_targets(release, profile, upb_slope)
     gtargets = group_targets(targets)
     # K, and the basket's own pace. Both plans are drawn off the same curve so
     # target and benchmark stay in exactly the K ratio on every day (§4.1) -
@@ -1847,6 +1927,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         },
     }
     if bench:
+        upb = targets.get("units_per_buyer") or 1.0
         # The reference the whole page is drawn against (§5). Every value here
         # is the basket's own median, unscaled - K is published next to them so
         # a card can say what the uplift is asking for rather than having to
@@ -1865,6 +1946,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "sessionsByGroup": {g: round(v, 1) for g, v in bm_sessions.items()},
             "convByGroup": {g: round(v, 6) for g, v in profile["conv"].items()},
             "paidBudget": round(bm_units["paid"] * targets["paid"]["cost_per_purchase"], 2),
+            # the people behind the basket's units, at the rate the target
+            # holds. The rate is held at the benchmark, so the whole uplift
+            # falls on the buyer count and benchmark x K is the target (§4.2)
+            "unitsPerBuyer": round(upb, 4),
+            "buyers": round(profile["units"] / upb, 1) if upb else None,
         }
         snap["hero"]["benchmark"] = round(hero_bm, 0)
         snap["hero"]["benchmarkToday"] = round(hero_bm_today, 0)

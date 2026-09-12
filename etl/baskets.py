@@ -50,6 +50,12 @@ DATA = ROOT / "data"
 PANEL_PATH = DATA / "release_clusters.csv"
 BASKETS_PATH = DATA / "release_cluster_baskets.json"
 SAVED_PATH = DATA / "app" / "baskets.json"
+# Distinct buyers and the draw's product count, written per release by
+# etl/aggregate_events.py. The panel counts units, not people, and units per
+# buyer is the difference between them: on a multi-product release the median
+# buyer takes more than one piece, so a target in units needs fewer people than
+# it has units (BENCHMARK_SPEC §4.2).
+PEOPLE_PATH = DATA / "app" / "release_people.csv"
 
 # The five display groups (docs/DATA_MODEL.md §1.3). Order matters: it is the
 # order the profile dicts and the per-channel table are written in.
@@ -121,6 +127,37 @@ _names_cache: dict[int, str] | None = None
 
 # ---------------------------------------------------------------- the panel
 
+def _join_people(df: pd.DataFrame) -> pd.DataFrame:
+    """Add distinct buyers, the product count and units per buyer.
+
+    The people file is written from the event feed, so it counts a buyer once
+    for the whole release rather than once per channel-day. Missing rows leave
+    NaN: a median skips them, which is the right answer for a launch the event
+    feed does not reach back to.
+    """
+    for col in ("buyers", "products", "products_known", "units_per_buyer"):
+        if col in df.columns:
+            df = df.drop(columns=[col])
+    try:
+        ppl = pd.read_csv(PEOPLE_PATH, usecols=["release_name", "buyers", "products", "products_known"])
+    except (OSError, ValueError):
+        df["buyers"] = float("nan")
+        df["products"] = float("nan")
+        df["products_known"] = False
+        df["units_per_buyer"] = float("nan")
+        return df
+    ppl["release_name"] = ppl["release_name"].astype(str)
+    ppl["products_known"] = ppl["products_known"].astype(str).str.lower().isin(("true", "1"))
+    df = df.merge(ppl, on="release_name", how="left")
+    buyers = pd.to_numeric(df["buyers"], errors="coerce")
+    units = pd.to_numeric(df["tot_total_product_units"], errors="coerce")
+    df["buyers"] = buyers
+    df["units_per_buyer"] = (units / buyers.where(buyers > 0))
+    df["products"] = pd.to_numeric(df["products"], errors="coerce")
+    df["products_known"] = df["products_known"].fillna(False).astype(bool)
+    return df
+
+
 def load_panel() -> pd.DataFrame:
     """The draw panel: the 108 launches that ran the draw mechanic.
 
@@ -140,6 +177,7 @@ def load_panel() -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], errors="coerce")
     df["release_name"] = df["release_name"].astype(str)
+    df = _join_people(df)
     df["artist"] = df["artist"].astype(str)
     _panel_cache = df.reset_index(drop=True)
     return _panel_cache
@@ -219,6 +257,11 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
         "share_units": share_units,
         "share_sessions": share_sessions,
         "conv": {g: _median(rows, f"conv_sess_entry_{g}", positive=True) for g in GROUPS},
+        # what the basket's own buyers took each, and how many products its
+        # launches offered - both only over the members that have the figures
+        "units_per_buyer": _median(rows, "units_per_buyer", positive=True),
+        "products": _median(rows[rows.get("products_known", False) == True], "products", positive=True)
+        if "products_known" in rows.columns else 0.0,
         "units_by_group": {g: _num(share_units[g] * units) for g in GROUPS},
         "sessions_by_group": {g: _num(share_sessions[g] * sessions) for g in GROUPS},
     }
