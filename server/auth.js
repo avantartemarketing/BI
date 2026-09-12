@@ -1,8 +1,16 @@
-/* Magic-link authentication, restricted to one email domain (default avantarte.com).
+/* Authentication, restricted to one email domain (default avantarte.com).
  *
- * Flow: POST /auth/request {email} -> domain check -> single-use signed token
- * (15 min) emailed as a link -> GET /auth/verify?token=... sets a signed
- * HttpOnly session cookie (30 days) -> everything else is gated.
+ * Three ways in, all ending in the same signed HttpOnly session cookie:
+ *   - Sign in with Google (server/googleLogin.js): GET /auth/google sends the
+ *     browser to Google with a signed state + nonce held in a short-lived
+ *     cookie; GET /auth/google/callback verifies state, exchanges the code,
+ *     verifies the ID token and its domain, and signs the person in. An
+ *     account in the domain that is not yet on the Permissions tab is added
+ *     as a user (GOOGLE_LOGIN_ALLOWLIST_ONLY=1 refuses it instead).
+ *     LOGIN_GOOGLE_ONLY=1 hides the password form once everyone has moved.
+ *   - Password (Permissions tab accounts): POST /auth/login {email, password}.
+ *   - Magic link (dormant): POST /auth/request {email} -> single-use signed
+ *     token (15 min) emailed as a link -> GET /auth/verify?token=...
  *
  * Email delivery uses Resend (RESEND_API_KEY + MAIL_FROM on a verified domain).
  * Without a key the link is printed to the server log only (fish it out of the
@@ -48,6 +56,8 @@ const users = require("./users");
 const RESEND_KEY = process.env.RESEND_API_KEY || "";
 const MAIL_FROM = process.env.MAIL_FROM || `Launch BI <login@${DOMAIN}>`;
 const COOKIE = "lbi_session";
+const GSTATE = "lbi_gstate";   // Google sign-in state, 10 minutes, scoped to /auth/google
+const google = require("./googleLogin");
 const LINK_TTL_MS = 15 * 60 * 1000;
 const SESSION_TTL_MS = 90 * 24 * 3600 * 1000;
 
@@ -155,16 +165,23 @@ const LOGIN_HTML = `<!doctype html>
            background: #141413; color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
   button:hover { background: #2e2d2b; }
   .msg { margin-top: 14px; font-size: 12.5px; display: none; color: #b8461d; }
+  .gbtn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 38px;
+          margin-top: 16px; border: 1px solid #e5e4df; border-radius: 8px; background: #fff; color: #141413;
+          font-family: inherit; font-size: 12.5px; font-weight: 600; text-decoration: none; }
+  .gbtn:hover { background: #faf9f5; }
+  .or { display: flex; align-items: center; gap: 10px; margin-top: 14px; color: #6c6b68; font-size: 12px; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: #e5e4df; }
 </style></head><body>
 <div class="card">
   <h1>Launch Performance</h1>
   <p>Sign in with your __DOMAIN__ account.</p>
-  <form id="f">
-    <input id="email" type="email" placeholder="you@__DOMAIN__" autocomplete="email" required autofocus>
+  __GOOGLE__
+  <form id="f" __FORM__>
+    <input id="email" type="email" placeholder="you@__DOMAIN__" autocomplete="email" required>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
-    <button type="submit">Sign in</button>
+    <button type="submit">Sign in with password</button>
   </form>
-  <div id="err" class="msg"></div>
+  <div id="err" class="msg" __ERR__></div>
 </div>
 <script>
   document.getElementById('f').addEventListener('submit', async (e) => {
@@ -182,11 +199,69 @@ const LOGIN_HTML = `<!doctype html>
   });
 </script></body></html>`.replaceAll("__DOMAIN__", DOMAIN);
 
+const G_LOGO = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">' +
+  '<path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/>' +
+  '<path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 7-10.3 7-17.7z"/>' +
+  '<path fill="#FBBC05" d="M10.5 28.6A14.5 14.5 0 0 1 9.7 24c0-1.6.3-3.1.8-4.6l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6.1z"/>' +
+  '<path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.6-4.1-13.5-9.9l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function loginHtml(error) {
+  const g = google.configured();
+  const googleOnly = g && process.env.LOGIN_GOOGLE_ONLY === "1";
+  return LOGIN_HTML
+    .replace("__GOOGLE__", g
+      ? `<a class="gbtn" href="/auth/google">${G_LOGO}Continue with Google</a>` + (googleOnly ? "" : '<div class="or">or</div>')
+      : "")
+    .replace("__FORM__", googleOnly ? 'style="display:none"' : "")
+    .replace("__ERR__", error ? `style="display:block">${esc(error)}` : ">")
+    .replace('<div id="err" class="msg" >', '<div id="err" class="msg">');
+}
+
 function install(app) {
   app.set("trust proxy", 1);
 
   app.get("/healthz", (_req, res) => res.json({ ok: true }));
-  app.get("/login", (_req, res) => res.type("html").send(LOGIN_HTML));
+  app.get("/login", (req, res) => res.type("html").send(loginHtml(req.query.error ? String(req.query.error).slice(0, 200) : "")));
+
+  // ---- Sign in with Google
+  const stateCookie = (req, value, maxAge) =>
+    `${GSTATE}=${encodeURIComponent(value)}; Path=/auth/google; HttpOnly; SameSite=Lax; Max-Age=${maxAge}` +
+    (req.secure ? "; Secure" : "");
+  app.get("/auth/google", (req, res) => {
+    if (!google.configured()) return res.redirect("/login?error=" + encodeURIComponent("Google sign-in is not set up on this server."));
+    const nonce = crypto.randomBytes(16).toString("base64url");
+    const state = sign({ kind: "gstate", nonce, exp: Date.now() + 10 * 60 * 1000 });
+    res.setHeader("Set-Cookie", stateCookie(req, state, 600));
+    res.redirect(google.startUrl(req, state, nonce, DOMAIN));
+  });
+  app.get("/auth/google/callback", async (req, res) => {
+    const fail = (msg) => {
+      res.setHeader("Set-Cookie", stateCookie(req, "", 0));
+      res.redirect("/login?error=" + encodeURIComponent(msg));
+    };
+    try {
+      const state = String(req.query.state || "");
+      const payload = verify(state);
+      if (!payload || payload.kind !== "gstate" || state !== (parseCookies(req)[GSTATE] || "")) {
+        return fail("That sign-in attempt expired - try again.");
+      }
+      if (req.query.error) return fail("Google did not complete the sign-in (" + String(req.query.error).slice(0, 60) + ").");
+      const claims = await google.signIn(req, String(req.query.code || ""), payload.nonce, DOMAIN);
+      const email = claims.email;
+      if (!users.exists(email)) {
+        if (process.env.GOOGLE_LOGIN_ALLOWLIST_ONLY === "1") {
+          return fail("Your Google account is not on the access list - ask an admin to add you.");
+        }
+        users.upsert(email, { admin: false }, "google");
+      }
+      res.setHeader("Set-Cookie", [sessionCookie(req, email), stateCookie(req, "", 0)]);
+      res.redirect("/");
+    } catch (e) {
+      console.error("auth: google sign-in failed -", e.message);
+      return fail(/domain/.test(e.message) ? `Use your @${DOMAIN} Google account.` : "Google sign-in failed - try again.");
+    }
+  });
 
   app.post("/auth/login", (req, res) => {
     const email = String((req.body && req.body.email) || "").trim().toLowerCase();

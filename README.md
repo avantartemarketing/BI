@@ -272,6 +272,33 @@ npm run etl
 ```
 
 The committed `data/app/*` snapshots were built from exports current to **2026-08-27**.
+### Personal data in BigQuery
+
+The LE Funnel Report table in BigQuery carries customer email addresses. The rule is
+that an address never leaves BigQuery: not onto Render's disk, not into a Claude
+session's terminal or transcript, not into a snapshot, a download or the repo. Three
+things hold that line:
+
+- **A tripwire in the query path.** Every result that passes through `query()` in
+  `server/bigquery.js` is checked: a column named like an email field, or a cell that
+  looks like an address, aborts the query with `PiiDetected` before anything is written
+  or handed on. There is no override. Queries against that table must name their
+  columns; `SELECT *` will trip it.
+- **Per-contact analysis uses a keyed hash, computed in BigQuery.** `contactKeySql(col)`
+  gives `TO_HEX(SHA256(CONCAT(@salt, LOWER(TRIM(col)))))`, with the salt passed as a
+  query parameter from `PII_HASH_SALT`. The key is stable, so repeat buyers and sends per
+  contact can be counted, and it cannot be turned back into an address without the salt,
+  which lives only in the environment. An unsalted hash would not do: anyone holding a
+  list of addresses could hash them and match.
+- **Aggregate in BigQuery, not here.** Anything the dashboard shows is a count per
+  release, date and channel. Group in the query so only aggregate rows travel.
+
+The control that makes the rest unnecessary is on the data team's side: an
+**authorized view** over the table that exposes the hashed key in place of the address,
+with the raw table not granted to the service account at all. Ask for that; until it
+exists, the three rules above are the fence. In a Claude session, never print sample
+rows from that table - the terminal output is part of the retained conversation.
+
 Draw-entry CSVs contain customer emails - they stay in `sources/` and only aggregated,
 anonymised numbers reach `data/`.
 
@@ -280,6 +307,18 @@ Longer term this should be pointed at BigQuery
 pipeline's accumulators are already silently truncating history (docs §11).
 
 ## Signing in
+
+The app can sit behind **Sign in with Google**, restricted to the company Workspace
+domain. Create a "Web application" OAuth client in Google Cloud Console (consent screen
+type **Internal** so only avantarte.com accounts can sign in), give it the redirect URI
+`https://<your host>/auth/google/callback`, and set `GOOGLE_OAUTH_CLIENT_ID` and
+`GOOGLE_OAUTH_CLIENT_SECRET` on Render. The login page then shows "Continue with Google";
+the server verifies the ID token itself (signature, issuer, audience, expiry, nonce,
+verified email, domain) and issues the same session cookie as a password login. An account
+in the domain that is not yet on the Permissions tab is added as a user on first sign-in;
+set `GOOGLE_LOGIN_ALLOWLIST_ONLY=1` to refuse those instead. Once everyone has moved,
+`LOGIN_GOOGLE_ONLY=1` hides the password form. `PUBLIC_URL` pins the redirect base when
+the host header cannot be trusted.
 
 The app is behind a **password login for allow-listed emails**: enter your
 email and the shared password on `/login` and you get a 90-day session that
