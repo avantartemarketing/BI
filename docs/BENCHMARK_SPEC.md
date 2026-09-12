@@ -169,18 +169,28 @@ else the count the draw recorded); the basket's own median; then 1. The typed va
 first because the curve is fitted on a handful of multi-product launches and the lead running
 the release knows things it does not.
 
-**The curve.** `1 + 0.184 x ln(products)`, least squares through the origin on the log of the
+**The curve.** `1 + 0.182 x ln(products)`, least squares through the origin on the log of the
 product count, so one product is exactly one piece per buyer by definition rather than by fit.
-One monotonic curve, not a median per count: there are ten launches on file at two products,
-three at three, three at four and one at five, so a per-count median moves under any one of
-them and says nothing at all about six. The curve rises by construction and extrapolates past
-the counts on file.
+One monotonic curve, not a median per count: twelve launches at two products, six at three,
+three at four and one each at five and six means a per-count median moves under any one of
+them and says nothing at all about eight. The curve rises by construction and extrapolates
+past the counts on file.
 
-**The era caveat.** The draw only records how many products it offered from **2025-08-28**.
-Of the 62 launches that closed earlier, 16 are named "Multiple" and not one registers more
-than a single product. `products_known` marks the difference and the fit uses only the
-launches after it: averaging across the two eras puts the early multi-product launches in the
-single-product bucket and flattens exactly the lift being measured.
+**The fit base is every release whose count is recorded**, not just the draw panel: how many
+pieces a buyer takes when a release offers several is not a property of the draw mechanic, so
+restricting it to draw launches threw away a fifth of the evidence for nothing. Releases with
+fewer than ten buyers are left out, a rate over fewer than that being noise rather than a rate.
+
+**The era caveat, and why the base is still only 54 of 357 releases.** The draw records how
+many products it offered only from **2025-08-28**, and 54 releases have started since. The
+count cannot be recovered for the rest: the obvious proxy, how many distinct products an order
+contained, is exact only three times in five against the counts we do know and correlates at
+0.26, because it measures what a buyer took rather than what was on offer. The older launches
+are not simply single-product - the ones the naming convention calls a Multiple run 1.08 units
+per buyer against 1.02 for the rest, so they were multi-product and the field was not there -
+which is why they corroborate the direction but cannot sharpen the slope, and why averaging
+across the two eras would put them in the single-product bucket and flatten exactly the lift
+being measured. `products_known` marks the difference.
 
 **Where the uplift goes.** Entirely on buyers. The rate is held at the benchmark like every
 other rate, so `benchmark.buyers x K == targets.buyers` exactly. Asking the stretch of

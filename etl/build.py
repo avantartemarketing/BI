@@ -389,27 +389,43 @@ PRODUCTS_KNOWN_FROM = "2025-08-28"
 UNITS_PER_BUYER_FALLBACK = 0.1838   # the fitted slope, for a panel too thin to fit
 
 
-def units_per_buyer_curve(panel) -> float:
+UPB_MIN_BUYERS = 10   # a rate over fewer buyers than this is noise, not a rate
+
+
+def units_per_buyer_curve(people) -> float:
     """The slope of units per buyer against the log of the product count.
 
-    A release with six products should expect more per buyer than one with
-    five, and the per-count medians cannot promise that: there are ten launches
-    on file at two products, three at three, three at four and one at five, so
-    a median per count wobbles under any one of them and says nothing at all
-    about six. One monotonic curve through all of them - 1 + a x ln(products) -
-    is smooth, rises by construction, and extrapolates past the counts on file.
-    Least squares through the origin on (ln products, rate - 1), so a single
-    product is exactly one unit per buyer by definition rather than by fit.
+    Fitted over EVERY release whose product count is recorded, not just the
+    draw panel: how many pieces a buyer takes when a release offers several is
+    not a property of the draw mechanic, so restricting it to draw launches
+    only threw away a fifth of the evidence for nothing.
+
+    The base is as wide as it can be and it is still not wide. The draw only
+    records how many products it offered from 2025-08-28, which is 54 of the
+    357 releases in the feed. The count cannot be recovered for the rest: the
+    obvious proxy, how many distinct products an order contained, is exact only
+    three times in five against the counts we do know and correlates at 0.26,
+    because it measures what a buyer took rather than what was on offer. The
+    older launches still corroborate the direction - the ones the naming
+    convention calls a Multiple run 1.08 units per buyer against 1.02 for the
+    rest - but they cannot sharpen the slope without a count.
+
+    One monotonic curve rather than a median per count: twelve launches at two
+    products, six at three, three at four and one each at five and six means a
+    per-count median moves under any one of them and says nothing about eight.
+    1 + a x ln(products), least squares through the origin, so a single product
+    is exactly one piece per buyer by definition rather than by fit.
     """
-    if panel is None or not len(panel) or "products_known" not in panel.columns:
+    if people is None or not len(people) or "products_known" not in people.columns:
         return UNITS_PER_BUYER_FALLBACK
-    rows = panel[(panel["products_known"] == True)
-                 & panel["products"].notna() & (panel["products"] >= 1)
-                 & panel["units_per_buyer"].notna() & (panel["units_per_buyer"] > 0)]
-    if len(rows) < 8:
+    df = people[(people["products_known"] == True)
+                & people["products"].notna() & (people["products"] >= 1)
+                & people["buyers"].notna() & (people["buyers"] >= UPB_MIN_BUYERS)
+                & people["units"].notna() & (people["units"] > 0)]
+    if len(df) < 8:
         return UNITS_PER_BUYER_FALLBACK
-    x = np.log(rows["products"].to_numpy(dtype=float))
-    y = rows["units_per_buyer"].to_numpy(dtype=float) - 1.0
+    x = np.log(df["products"].to_numpy(dtype=float))
+    y = (df["units"].to_numpy(dtype=float) / df["buyers"].to_numpy(dtype=float)) - 1.0
     denom = float((x * x).sum())
     if denom <= 0:
         return UNITS_PER_BUYER_FALLBACK
@@ -1304,8 +1320,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   panel: pd.DataFrame | None = None,
                   people: pd.DataFrame | None = None) -> dict:
     b = BENCH
-    # one fit per build, from the panel the baskets are cut from (§4.2)
-    upb_slope = units_per_buyer_curve(panel)
+    # one fit per build, over every release whose product count is recorded (§4.2)
+    upb_slope = units_per_buyer_curve(people)
     name = release["release_name"]
     announce = date.fromisoformat(release["announce_date"])
     launch_end = date.fromisoformat(release["launch_end"])
