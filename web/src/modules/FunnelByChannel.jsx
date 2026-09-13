@@ -610,6 +610,12 @@ export default function FunnelByChannel({ snap, horizon }) {
   const bench = !!snap?.benchmark;
   const k = snap?.benchmark?.k ?? 1;
   const bmConv = snap?.benchmark?.convByGroup || {};
+  // the same two rates the waterfall view divides by, so the two tabs of this
+  // card cannot describe one quantity differently
+  const _upb = snap?.unitsPerBuyer || {};
+  const upbActual = _upb.actual > 0 ? _upb.actual : 1;
+  const upbPlan = _upb.plan > 0 ? _upb.plan : 1;
+  const splitBuyRung = Math.abs(upbActual - upbPlan) > 0.001;
 
   const pct = (x) => (x === null || x === undefined ? null : x * 100);
   /* Sessions read the per-group benchmark the ETL pro-rated to today, not
@@ -624,13 +630,22 @@ export default function FunnelByChannel({ snap, horizon }) {
       bm: g.sessions_benchmark ?? null,
     };
   };
+  /* The waterfall view splits this into buyers and pieces per buyer, so the
+     rung view has to call it the same thing rather than leaving one tab of the
+     card describing the quantity two ways. The rung stays a single rate - a
+     release-level multi-buy rate would be the same rung five times over, which
+     is why the waterfall prints it once below the groups instead - but it is
+     the buyer rate, which is the half a campaign can act on. Where plan and
+     actual rates agree there is nothing to divide out and it reads as it did. */
   const conv = (key) => {
     const g = fbg[key] || {};
+    const rate = (v, by) => (v === null || v === undefined ? null : pct(v / (by || 1)));
     return {
-      label: "Session → sale", kind: "rate", unit: "%",
-      v: pct(g.conv_actual),
-      plan: pct(g.conv_expected),
-      bm: pct(g.conv_benchmark ?? bmConv[key] ?? null),
+      label: splitBuyRung ? "Session → buyer" : "Session → sale",
+      kind: "rate", unit: "%",
+      v: rate(g.conv_actual, upbActual),
+      plan: rate(g.conv_expected, upbPlan),
+      bm: rate(g.conv_benchmark ?? bmConv[key] ?? null, upbPlan),
     };
   };
 
