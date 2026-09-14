@@ -1,23 +1,25 @@
 /* Unit trajectory (spec §4.2, adapted: unified secured-units currency, docs §6.4;
- * reference grammar per BENCHMARK_SPEC 1, 2 and 7).
+ * reference grammar per BENCHMARK_SPEC 7).
  * Cumulative secured units (sales + 0.8 × unconverted entries) vs plan per group; the forward projection follows the
  * channel's historic shape curve (paid: projected spend ÷ projected efficiency) -
  * per-day values computed in the ETL (docs §5.4).
  * Real-data bridge: daily[] arrays start at private-room open, so the series is
  * sliced to the campaign window (windowStart .. windowEnd = of+1 points, index = day).
  *
- * The two horizons want two different pictures of the same three curves, and drawing
- * both at once turns the chart into a thicket, so only one set of reference marks is
- * ever on the canvas. Today the question is "where should we be by now", which is a
- * reading taken at a single x: the target and the benchmark become short ticks sitting
- * on the today line, and the curves ahead of today fade because they are not part of
- * that reading yet. At close the question is "where does this land", which is a pair of
- * levels: both references stretch across the chart and the gap between them is the
- * stretch the business has taken on. The benchmark series is the basket's own pace
- * (daily[].bm), summed across groups for "all" exactly as the plan is, so the two
- * curves are always built the same way. */
+ * One reference curve, not two, because the page toggle has already said which one
+ * the reader is asking about: the plan's own pace, or the basket's (daily[].bm,
+ * summed across groups for "all" exactly as the plan is, so the two are always
+ * built the same way). It is drawn as a tinted area rather than a line - the same
+ * grammar as every bar on the page, the reference behind and the actual in front -
+ * which also takes a curve off a chart that had three of them.
+ *
+ * The two horizons still want two pictures. Today the question is "where should we
+ * be by now", a reading taken at a single x: the reference becomes a short tick on
+ * the today line and the area ahead of today fades, because it has not happened
+ * yet. At close the question is "where does this land", a level: the area runs the
+ * full width and its right-hand end is named. */
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtSigned } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, fmtSigned, useRefMode, refWord, otherWord } from "../ui.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
 const LABEL_GAP_PX = 15;   // smallest vertical gap two 12px labels can sit at
@@ -109,7 +111,25 @@ function pathOf(pts, get, from, to, x, y) {
   return out.length > 1 ? out.join(" ") : "";
 }
 
+/* The same polyline closed back along the baseline, so the reference can be a
+ * filled area. Drawn from the first point rather than from x=0 because a series
+ * that starts a day in should not be given a day it did not have. */
+function areaOf(pts, get, from, to, x, y) {
+  const line = [];
+  let x0 = null, x1 = null;
+  for (let i = Math.max(0, from); i <= to && i < pts.length; i++) {
+    const v = get(pts[i]);
+    if (v === null || v === undefined) continue;
+    if (x0 === null) x0 = x(i);
+    x1 = x(i);
+    line.push((line.length ? "L" : "M") + x(i).toFixed(1) + "," + y(v).toFixed(1));
+  }
+  if (line.length < 2) return "";
+  return line.join(" ") + ` L${x1.toFixed(1)},${Y0} L${x0.toFixed(1)},${Y0} Z`;
+}
+
 export default function Trajectory({ snap, horizon = "today" }) {
+  const mode = useRefMode();
   const [sel, setSel] = useState("all");
   const [hover, setHover] = useState(null);   // {i, frac}
   // the plot's real height, so label spacing can be set in pixels rather than
@@ -160,6 +180,13 @@ export default function Trajectory({ snap, horizon = "today" }) {
   const N = Math.max(1, s.pts.length - 1);
   const hasBm = !!snap.benchmark && s.bm !== null && s.bm > 0;
   const close = horizon === "close";
+  const bmMode = mode === "benchmark" && hasBm;
+  // the one reference this chart draws, series and close level alike
+  const refAt = (p) => (bmMode ? p.bm : p.plan);
+  const refClose = bmMode ? s.bm : s.target;
+  const otherClose = bmMode ? s.target : hasBm ? s.bm : null;
+  const refLabel = refWord(bmMode ? "benchmark" : "target", close ? "close" : "today");
+  const otherLabel = otherWord(bmMode ? "benchmark" : "target", close ? "close" : "today");
   const yTopV = Math.max(s.target, s.proj, s.now, hasBm ? s.bm : 0, 1) * 1.02;
   const x = (i) => (i / N) * X1;
   const y = (v) => Y0 - (Math.max(0, v) / yTopV) * (Y0 - YTOP);
@@ -169,14 +196,14 @@ export default function Trajectory({ snap, horizon = "today" }) {
   const todayFrac = todayIdx / N;
   const nowVal = s.pts[todayIdx]?.actual ?? s.now;
 
-  // paths. Today cuts the plan and benchmark curves at today so the half that has not
-  // happened yet can drop back; at close both run the full width.
-  const planFull = pathOf(s.pts, (p) => p.plan, 0, N, x, y);
-  const planPast = pathOf(s.pts, (p) => p.plan, 0, todayIdx, x, y);
-  const planFuture = pathOf(s.pts, (p) => p.plan, todayIdx, N, x, y);
-  const bmFull = hasBm ? pathOf(s.pts, (p) => p.bm, 0, N, x, y) : "";
-  const bmPast = hasBm ? pathOf(s.pts, (p) => p.bm, 0, todayIdx, x, y) : "";
-  const bmFuture = hasBm ? pathOf(s.pts, (p) => p.bm, todayIdx, N, x, y) : "";
+  // paths. Today cuts the reference at today so the half that has not happened
+  // yet can drop back; at close it runs the full width.
+  const refFull = pathOf(s.pts, refAt, 0, N, x, y);
+  const refPast = pathOf(s.pts, refAt, 0, todayIdx, x, y);
+  const refFuture = pathOf(s.pts, refAt, todayIdx, N, x, y);
+  const areaFull = areaOf(s.pts, refAt, 0, N, x, y);
+  const areaPast = areaOf(s.pts, refAt, 0, todayIdx, x, y);
+  const areaFuture = areaOf(s.pts, refAt, todayIdx, N, x, y);
 
   let lastA = -1;
   s.pts.forEach((p, i) => {
@@ -205,31 +232,34 @@ export default function Trajectory({ snap, horizon = "today" }) {
     projPath = segs.join(" ");
   }
 
-  // the two readings taken on the today line
-  const targetToday = s.pts[todayIdx]?.plan ?? s.exp;
+  // the readings taken on the today line
+  const planToday = s.pts[todayIdx]?.plan ?? s.exp;
   const bmTodayPt = s.pts[todayIdx]?.bm;
   const bmToday = hasBm ? (bmTodayPt !== null && bmTodayPt !== undefined ? bmTodayPt : s.bmExp) : null;
+  const refToday = bmMode ? bmToday : planToday;
+  const otherToday = bmMode ? planToday : bmToday;
   const showToday = targeted && !close;
   const showClose = targeted && close;
-  const stretch = hasBm ? s.target - s.bm : null;
-  // a bracket needs room between the two levels or it reads as a smudge
-  const bracketDy = hasBm ? y(s.bm) - y(s.target) : 0;
-  const showBracket = showClose && hasBm && bracketDy > 18;
   // near the close the today line has no room on its right, so the readings flip side
   const flipToday = todayFrac > 0.78;
 
-  const projPct = targeted && s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
-  // axis: % of target when there is one, secured units when there is not
-  const axisTop = targeted ? s.target : yTopV / 1.02;
+  const projPct = targeted && refClose > 0 ? Math.round((s.proj / refClose) * 100) : null;
+  // axis: % of the chosen reference when there is one, secured units when there is not
+  const axisTop = targeted ? refClose : yTopV / 1.02;
   const axisLabelTop = targeted ? "100%" : fmt(axisTop);
   const axisLabelMid = targeted ? "50%" : axisTop >= 2 ? fmt(axisTop / 2) : "";
   const pctColor = projPct !== null && projPct >= 100 ? C.ink : C.red;
   const nowTip =
-    fmt(s.now) + " units secured to date · " + fmt(targetToday) + " target by day " + day +
+    fmt(s.now) + " units secured to date · " + fmt(planToday) + " target by day " + day +
     (bmToday !== null && bmToday !== undefined ? " · " + fmt(bmToday) + " benchmark" : "");
+  const refLower = refLabel.toLowerCase();
+  // the today line and the close level are already labelled as such, so the
+  // reading beside them is just the word - "benchmark today 805" on the today
+  // line is the same thing said twice, and it is the longest label on the chart
+  const refShort = bmMode ? "benchmark" : "target";
   const projTip = complete
-    ? fmt(s.now) + " units at close" + (projPct !== null ? " · " + projPct + "% of target" : "")
-    : "Projected " + fmt(s.proj) + " at close" + (projPct !== null ? " · " + projPct + "% of target" : "") +
+    ? fmt(s.now) + " units at close" + (projPct !== null ? " · " + projPct + "% of " + refLower : "")
+    : "Projected " + fmt(s.proj) + " at close" + (projPct !== null ? " · " + projPct + "% of " + refLower : "") +
       (sel === "all" && projPct !== null && projPct > 100
         ? " · demand beyond the sellout cannot convert" : "");
   const showTodayLabel = !complete && todayFrac >= 0.08 && todayFrac <= 0.92;
@@ -248,7 +278,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
 
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const xLabel = { position: "absolute", top: "100%", paddingTop: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
-  // a reading on the today line: a 12x2 mark in the reference colour, label alongside
+  // a reading on the today line: a 12x2 mark, label alongside
   const readTick = (v, color) => ({
     position: "absolute", left: `${(todayFrac * 100).toFixed(2)}%`, top: pctTop(y(v)),
     width: 12, height: 2, margin: "-1px 0 0 -6px", background: color,
@@ -262,21 +292,20 @@ export default function Trajectory({ snap, horizon = "today" }) {
     fontVariantNumeric: "tabular-nums",
   });
 
-  /* The three today readings share one x, so two close values print on top of
-   * each other. Spread the LABELS only; every tick and the today dot stay on
-   * the true value. The gap is set in real pixels off the measured plot, so it
-   * holds whatever width the card is given. */
+  /* Both today readings share one x, so two close values print on top of each
+   * other. Spread the LABELS only; the tick and the today dot stay on the true
+   * value. The gap is set in real pixels off the measured plot, so it holds
+   * whatever width the card is given. Dropping to one reference took a third
+   * label off this line, which is most of what was crowding it. */
   const gapY = plotH > 0 ? (LABEL_GAP_PX / plotH) * Y0 : Y0 * 0.1;
-  const readings = spreadLabels([
-    ...(showToday && hasBm && bmToday !== null && bmToday !== undefined
-      ? [{ key: "bm", y: y(bmToday), color: C.refBm, weight: 500,
-           text: `benchmark ${fmt(bmToday)}` }] : []),
-    ...(showToday
-      ? [{ key: "target", y: y(targetToday), color: C.refTarget, weight: 500,
-           text: `target ${fmt(targetToday)}` },
-         { key: "now", y: y(nowVal), color: C.refTarget, weight: 600,
-           text: `${fmt(nowVal)} ${fmtSigned(nowVal - targetToday)}` }] : []),
-  ], gapY, YTOP, Y0 - 2);
+  const readings = spreadLabels(
+    showToday && refToday !== null && refToday !== undefined
+      ? [{ key: "ref", y: y(refToday), color: C.muted, weight: 500,
+           text: `${refShort} ${fmt(refToday)}` },
+         { key: "now", y: y(nowVal), color: C.ink, weight: 600,
+           text: `${fmt(nowVal)} ${fmtSigned(nowVal - refToday)}` }]
+      : [],
+    gapY, YTOP, Y0 - 2);
 
   return (
     <Card wide dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
@@ -306,34 +335,29 @@ export default function Trajectory({ snap, horizon = "today" }) {
                 <line x1={x(todayIdx).toFixed(1)} y1="0" x2={x(todayIdx).toFixed(1)} y2={Y0}
                   stroke={C.todayLine} strokeWidth="1" vectorEffect="non-scaling-stroke" />
               )}
+              {/* the reference as a tinted area with its own top edge - the same
+                  grammar as every bar on the page, reference behind, actual in
+                  front. Ahead of today it drops back, because it has not
+                  happened yet. */}
               {showToday ? (
                 <>
-                  {planPast && (
-                    <path d={planPast} fill="none" stroke={C.planGrey} strokeWidth="2"
-                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+                  {areaFuture && <path d={areaFuture} fill={C.refFill} opacity="0.4" stroke="none" />}
+                  {areaPast && <path d={areaPast} fill={C.refFill} stroke="none" />}
+                  {refFuture && (
+                    <path d={refFuture} fill="none" stroke={C.refMark} strokeWidth="1.5" opacity="0.4"
+                      vectorEffect="non-scaling-stroke" />
                   )}
-                  {planFuture && (
-                    <path d={planFuture} fill="none" stroke={C.planGrey} strokeWidth="2" opacity="0.35"
-                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
-                  )}
-                  {bmPast && (
-                    <path d={bmPast} fill="none" stroke={C.refBm} strokeWidth="1.5" opacity="0.45"
-                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
-                  )}
-                  {bmFuture && (
-                    <path d={bmFuture} fill="none" stroke={C.refBm} strokeWidth="1.5" opacity="0.35"
-                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+                  {refPast && (
+                    <path d={refPast} fill="none" stroke={C.refMark} strokeWidth="1.5"
+                      vectorEffect="non-scaling-stroke" />
                   )}
                 </>
               ) : (
                 <>
-                  {planFull && (
-                    <path d={planFull} fill="none" stroke={C.planGrey} strokeWidth="2"
-                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
-                  )}
-                  {bmFull && (
-                    <path d={bmFull} fill="none" stroke={C.refBm} strokeWidth="1.5" opacity="0.45"
-                      strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
+                  {areaFull && <path d={areaFull} fill={C.refFill} stroke="none" />}
+                  {refFull && (
+                    <path d={refFull} fill="none" stroke={C.refMark} strokeWidth="1.5"
+                      vectorEffect="non-scaling-stroke" />
                   )}
                 </>
               )}
@@ -345,15 +369,11 @@ export default function Trajectory({ snap, horizon = "today" }) {
                 <path d={actPath} fill="none" stroke={C.orange} strokeWidth="3"
                   strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               )}
-              {/* at close both references are levels, drawn as the same 2px mark in two
-                  colours; the benchmark goes down first so the target survives a tie */}
-              {showClose && hasBm && (
-                <line x1="0" y1={y(s.bm).toFixed(1)} x2={X1} y2={y(s.bm).toFixed(1)}
-                  stroke={C.refBm} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-              )}
-              {showClose && (
-                <line x1="0" y1={y(s.target).toFixed(1)} x2={X1} y2={y(s.target).toFixed(1)}
-                  stroke={C.refTarget} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+              {/* at close the reference is a level, so it is named as one right
+                  across the chart rather than left to the area's right-hand end */}
+              {showClose && refClose > 0 && (
+                <line x1="0" y1={y(refClose).toFixed(1)} x2={X1} y2={y(refClose).toFixed(1)}
+                  stroke={C.refMark} strokeWidth="2" vectorEffect="non-scaling-stroke" />
               )}
             </svg>
 
@@ -376,11 +396,11 @@ export default function Trajectory({ snap, horizon = "today" }) {
                     {hp.proj !== null && hp.proj !== undefined && hover.i > day && (
                       <div className="t-row"><span>Projected</span><span className="v">{fmt(hp.proj)}</span></div>
                     )}
-                    {hp.plan !== null && hp.plan !== undefined && (
-                      <div className="t-row"><span>Target</span><span className="v">{fmt(hp.plan)}</span></div>
+                    {refAt(hp) !== null && refAt(hp) !== undefined && (
+                      <div className="t-row"><span>{refLabel}</span><span className="v">{fmt(refAt(hp))}</span></div>
                     )}
-                    {hasBm && hp.bm !== null && hp.bm !== undefined && (
-                      <div className="t-row"><span>Benchmark</span><span className="v">{fmt(hp.bm)}</span></div>
+                    {hasBm && (bmMode ? hp.plan : hp.bm) !== null && (bmMode ? hp.plan : hp.bm) !== undefined && (
+                      <div className="t-row"><span>{otherLabel}</span><span className="v">{fmt(bmMode ? hp.plan : hp.bm)}</span></div>
                     )}
                   </div>
                 </>
@@ -400,10 +420,9 @@ export default function Trajectory({ snap, horizon = "today" }) {
                 stacked on the today line rather than spread across the chart. */}
             {showToday && (
               <>
-                {hasBm && bmToday !== null && bmToday !== undefined && (
-                  <div style={readTick(bmToday, C.refBm)} />
+                {refToday !== null && refToday !== undefined && (
+                  <div style={readTick(refToday, C.refMark)} />
                 )}
-                <div style={readTick(targetToday, C.refTarget)} />
                 {readings.map((r) => (
                   <div key={r.key} style={readLabel(r.ly, r.color, r.weight)}>{r.text}</div>
                 ))}
@@ -440,50 +459,23 @@ export default function Trajectory({ snap, horizon = "today" }) {
             <div style={{ ...axisLabel, top: pctTop(y(axisTop / 2)) }}>{axisLabelMid}</div>
             <div style={{ ...axisLabel, top: "100%" }}>0</div>
 
-            {/* At close: the two levels are named where they sit, and the bracket between
-                them is the stretch the business has taken on above the basket. */}
-            {showClose && (
+            {/* At close the reference is one level, named where it sits, with the
+                other one alongside it as a plain figure rather than a second
+                line to read the release against. */}
+            {showClose && refClose > 0 && (
               <div
                 style={{
-                  position: "absolute", left: 8, top: pctTop(y(s.target)), transform: "translateY(-145%)",
+                  position: "absolute", left: 8, top: pctTop(y(refClose)), transform: "translateY(-145%)",
                   paddingRight: 6, background: "#fff", fontSize: 12, fontWeight: 500,
-                  color: C.refTarget, whiteSpace: "nowrap",
+                  color: C.ink, whiteSpace: "nowrap",
                 }}
               >
-                target {fmt(s.target)}
-              </div>
-            )}
-            {showClose && hasBm && (
-              <div
-                style={{
-                  position: "absolute", left: 8, top: pctTop(y(s.bm)), transform: "translateY(45%)",
-                  paddingRight: 6, background: "#fff", fontSize: 12, fontWeight: 500,
-                  color: C.refBm, whiteSpace: "nowrap",
-                }}
-              >
-                benchmark {fmt(s.bm)}
-              </div>
-            )}
-            {showBracket && (
-              <div
-                style={{
-                  position: "absolute", left: 10, top: pctTop(y(s.target)),
-                  height: `${((bracketDy / Y0) * 100).toFixed(2)}%`, width: 5,
-                  borderLeft: `1px solid ${C.planGrey}`,
-                  borderTop: `1px solid ${C.planGrey}`,
-                  borderBottom: `1px solid ${C.planGrey}`,
-                  boxSizing: "border-box",
-                }}
-              >
-                <div
-                  style={{
-                    position: "absolute", left: "100%", top: "50%", transform: "translateY(-50%)",
-                    paddingLeft: 5, fontSize: 11, color: C.muted, whiteSpace: "nowrap",
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  stretch {fmtSigned(stretch)}
-                </div>
+                {refShort} {fmt(refClose)}
+                {otherClose !== null && otherClose !== undefined && (
+                  <span style={{ fontWeight: 400, color: C.muted }}>
+                    {"  ·  " + (bmMode ? "target" : "benchmark") + " " + fmt(otherClose)}
+                  </span>
+                )}
               </div>
             )}
 

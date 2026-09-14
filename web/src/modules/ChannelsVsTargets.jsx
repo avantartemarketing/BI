@@ -1,31 +1,34 @@
-/* Channels vs targets (spec §4.3, LE relabel per §6; reference grammar per
- * BENCHMARK_SPEC 1, 2 and 7) - column form.
+/* Channels vs targets (spec §4.3, LE relabel per §6) - column form.
  *
- * All five display groups (paid included) as columns rising from a baseline. Each column
- * carries one fill - what this horizon is being judged on - crossed by the two reference
- * marks: the ink line at the target and the cobalt line at what the matched basket
- * typically reaches. The old pale target block is gone with it: a block can only say
- * "over" or "under" by which colour shows at the top, and it cannot hold two references
- * at once. A line can, and it reads the same whether the fill is above it or below it,
- * which is why the fill is inset. Each reference line measures its own bar plus the
- * standard 3px bleed, not the whole column: column-wide segments left almost no gap
- * between neighbours and the row read as one broken line rather than five marks.
+ * All five display groups (paid included) as columns rising from a baseline, each
+ * one two layers: the reference this page is being read against as a wide tint
+ * behind, the actual as a narrower orange column in front. Which of the two
+ * references that is comes from the page toggle, and the foot of every column
+ * follows it - the percentage and its green or red are against the same thing the
+ * tint draws. Reading one against the other is then a matter of which column ends
+ * higher, with no line to decode and no case to make for a benchmark that happens
+ * to sit above its target: that column is simply taller.
  *
- * One toggle only. BENCHMARK_SPEC 2 moves Today | At close to the page header, so the
- * horizon arrives as a prop and the card keeps just:
- *   % | Units  - % puts every channel against its own target on one 100% scale, so the
- *                ink lines align into a shared reference across the card; Units keeps
- *                real magnitudes, so each column is that channel's own size.
- * Foot per column: the fill as a % of this horizon's target, green at or above and red
- * below. The per-column stretch is not printed - it is the same even uplift in every
- * column (spec §1), so it belongs in the legend once, not five times. */
+ * Two toggles, neither of them here. The page header carries Today | At close and
+ * Benchmark | Target, so the card keeps just:
+ *   % | Units  - % puts every channel against its own reference on one 100% scale,
+ *                so the tints align into a shared level across the card; Units
+ *                keeps real magnitudes, so each column is that channel's own size.
+ * The stretch is not drawn at all. It is the same even uplift in every column
+ * (spec §1), so it belongs at the foot of the card as one quiet line naming the
+ * multiple, not as a band on five bars. */
 import React, { useState } from "react";
-import { Card, GROUP_DOTS, RefTick, C, fmt, fmtSigned, useTip } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, useTip, useRefMode, refWord, otherWord, pickRef } from "../ui.jsx";
 
-const BAR_INSET = "8%";   // gap between one column's bar and the next's
+/* The two columns are one inside the other: the reference nearly fills the slot,
+ * the actual sits well inside it, so the tint reads on both sides of the orange
+ * at every card width rather than only on a wide one. */
+const REF_INSET = "6%";
+const BAR_INSET = "27%";
 
 export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   const t = useTip();
+  const mode = useRefMode();
   const [scale, setScale] = useState("pct");   // pct | units
   const rows = snap?.channels || [];
   // no targets: nothing to compare against, so units only and no toggle
@@ -34,28 +37,29 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   const pct = targeted ? scale === "pct" : false;
   const hasBm = targeted && !!snap?.benchmark;
 
-  // Today compares actuals with the target to date; at close compares the projection
-  // with the full target (docs §5.4 / §9). The benchmark for the same horizon rides
-  // along, absent when the release has no basket.
+  // Today compares actuals with the reference to date; at close compares the
+  // projection with the full one (docs §5.4 / §9). Both references are carried
+  // per column so the toggle can pick one and the other can still be named.
   const base = rows.map((c) => {
-    const ref = (today ? c.exp : c.target) ?? 0;
+    const target = (today ? c.exp : c.target) ?? 0;
     const bar = (today ? c.now : c.proj) ?? 0;
     const bmRaw = today ? c.bmExp : c.bm;
     const bm = hasBm && bmRaw !== null && bmRaw !== undefined ? bmRaw : null;
+    const ref = pickRef(mode, { bm, target });
     return {
-      key: c.key, name: c.name, parts: c.parts || [], ref, bar, bm,
+      key: c.key, name: c.name, parts: c.parts || [], ref, bar, target, bm,
+      other: mode === "benchmark" ? target : bm,
       pctOfRef: ref > 0 ? Math.round((bar / ref) * 100) : null,
     };
   });
 
-  // one scale across the card: % normalises each channel to its own target, units keeps
-  // them comparable in secured units. Both references are in the scale, so a line can
-  // never end up outside the plot.
+  // one scale across the card: % normalises each channel to its own reference,
+  // units keeps them comparable in secured units. The reference is in the scale,
+  // so a column can never end up outside the plot.
   const val = (v, ref) => (pct ? (ref > 0 ? (v / ref) * 100 : 0) : v);
   const max = Math.max(
     ...base.map((r) => val(r.bar, r.ref)),
     ...base.map((r) => (pct ? 100 : r.ref)),
-    ...base.map((r) => (r.bm === null ? 0 : val(r.bm, r.ref))),
     1,
   ) * 1.02;
   const h = (v) => Math.max(0, Math.min((v / max) * 100, 100));
@@ -64,15 +68,14 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
     ...r,
     barH: h(val(r.bar, r.ref)),
     refH: h(pct ? 100 : r.ref),
-    bmH: r.bm === null ? null : h(val(r.bm, r.ref)),
   }));
 
   const fillColor = today ? C.orange : C.orangeLight;
   const fillLabel = today ? "To date" : "Projected";
-  const refLabel = today ? "Target today" : "Target";
-  const bmLabel = today ? "Benchmark today" : "Benchmark";
+  const refLabel = refWord(mode, horizon);
+  const otherLabel = otherWord(mode, horizon);
   const unit = (v) => fmt(v, v < 10 && v > 0 ? 1 : 0);
-  const stretchPct = snap?.benchmark?.stretchPct;
+  const k = snap?.benchmark?.k ?? null;
 
   const seg = (opts, value, set) => (
     <span className="seg compact">
@@ -85,7 +88,6 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   );
 
   const swatch = (bg) => ({ width: 9, height: 9, borderRadius: 2, background: bg, flex: "0 0 9px" });
-  const lineSwatch = (bg) => ({ width: 12, height: 2, background: bg, flex: "0 0 12px" });
   const legendItem = { display: "flex", alignItems: "center", gap: 5 };
 
   return (
@@ -107,40 +109,42 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
         <div className="body" style={{ gap: 6 }}>
           <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "stretch", gap: 8 }}>
             {cols.map((c) => {
-              const barTip = today
-                ? { head: "Secured to date", rows: [
-                    { label: "Units", value: unit(c.bar) },
-                    ...(c.ref > 0 ? [{ label: refLabel, value: unit(c.ref) }] : []),
-                  ] }
-                : { head: "Projected at close", rows: [
-                    { label: "Units", value: unit(c.bar) },
-                    ...(c.ref > 0 ? [{ label: "Target", value: unit(c.ref) }] : []),
-                  ] };
-              const refTip = { head: refLabel, rows: [{ label: "Units", value: unit(c.ref) }] };
-              const bmTip = {
-                head: bmLabel,
+              const barTip = {
+                head: today ? "Secured to date" : "Projected at close",
                 rows: [
-                  { label: "Units", value: unit(c.bm ?? 0) },
-                  ...(c.ref > 0 && c.bm !== null
-                    ? [{ label: "Stretch", value: fmtSigned(c.ref - c.bm) }] : []),
+                  { label: "Units", value: unit(c.bar) },
+                  ...(c.ref > 0 ? [{ label: refLabel, value: unit(c.ref) }] : []),
                 ],
-                body: "The median of the matched basket for this channel.",
+              };
+              const refTip = {
+                head: refLabel,
+                rows: [
+                  { label: "Units", value: unit(c.ref) },
+                  ...(c.other !== null && c.other !== undefined
+                    ? [{ label: otherLabel, value: unit(c.other) }] : []),
+                ],
+                body: mode === "benchmark"
+                  ? "The median of the matched basket for this channel."
+                  : undefined,
               };
               return (
                 <div key={c.key} style={{ flex: 1, minWidth: 0, position: "relative" }}>
+                  {targeted && c.ref > 0 && (
+                    <div
+                      {...t.props(refTip)}
+                      style={{
+                        position: "absolute", left: REF_INSET, right: REF_INSET, bottom: 0,
+                        height: `${c.refH}%`, background: C.refFill, borderRadius: "4px 4px 0 0",
+                      }}
+                    />
+                  )}
                   <div
                     {...t.props(barTip)}
                     style={{
                       position: "absolute", left: BAR_INSET, right: BAR_INSET, bottom: 0,
-                      height: `${c.barH}%`, background: fillColor, borderRadius: 3,
+                      height: `${c.barH}%`, background: fillColor, borderRadius: "3px 3px 0 0",
                     }}
                   />
-                  {c.bmH !== null && (
-                    <RefTick pct={c.bmH} kind="benchmark" vertical={false} tip={bmTip} inset={BAR_INSET} />
-                  )}
-                  {targeted && c.ref > 0 && (
-                    <RefTick pct={c.refH} kind="target" vertical={false} tip={refTip} inset={BAR_INSET} />
-                  )}
                 </div>
               );
             })}
@@ -186,12 +190,17 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
             }}
           >
             <span style={legendItem}><span style={swatch(fillColor)} />{fillLabel}</span>
-            {targeted && <span style={legendItem}><span style={lineSwatch(C.refTarget)} />{refLabel}</span>}
-            {hasBm && <span style={legendItem}><span style={lineSwatch(C.refBm)} />{bmLabel}</span>}
-            <span style={{ marginLeft: "auto" }}>
-              {hasBm && stretchPct !== null && stretchPct !== undefined
-                ? "stretch " + fmtSigned(stretchPct * 100) + "%"
-                : !targeted ? "secured units · no targets" : pct ? "target = 100%" : "secured units"}
+            {targeted && <span style={legendItem}><span style={swatch(C.refFill)} />{refLabel}</span>}
+            <span
+              style={{ marginLeft: "auto" }}
+              title={hasBm && k > 0
+                ? "The even uplift the business put on the basket's median - the same multiple in every channel and on every day"
+                : undefined}
+            >
+              {/* the stretch said once, in words, rather than drawn on five bars */}
+              {hasBm && k > 0 ? "target is ×" + fmt(k, 2) + " the benchmark"
+                : !targeted ? "secured units · no targets"
+                : pct ? refLabel.toLowerCase() + " = 100%" : "secured units"}
             </span>
           </div>
         </div>

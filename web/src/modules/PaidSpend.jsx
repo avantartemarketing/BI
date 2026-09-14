@@ -1,30 +1,33 @@
-/* Paid spend / day (spec §4.7, LE "Capped by" case §6.3; references and horizon
- * per BENCHMARK_SPEC 2 and 7).
+/* Paid spend / day (spec §4.7, LE "Capped by" case §6.3).
  * Lead = recommended daily budget with an arrow lozenge vs current; "Capped by" row
- * names the binding limit (supply sell-out vs ROI floor); two 120%-track bars put
- * paid units and spend on the same visual scale; footer buttons write to the
- * append-only decision log. Complete releases: projection = actual, recommendation "-",
+ * names the binding limit (supply sell-out vs ROI floor); two bars put paid units
+ * and spend on the same visual scale; footer buttons write to the append-only
+ * decision log. Complete releases: projection = actual, recommendation "-",
  * buttons disabled. Pre-launch releases (no campaign yet) disable the buttons too.
  *
- * Both bars now carry the cobalt benchmark alongside the ink target, so "behind
- * target" and "behind what a launch like this usually spends to get here" are two
- * different readings rather than one. The Stretch row under "Capped by" names the
- * uplift once in words, because it is the same even multiple on every channel and
- * every day (BENCHMARK_SPEC 1) and so has no business being redrawn per bar.
+ * Each bar is the chosen reference as a tint behind and the actual in front, on a
+ * track running to 120% of that reference so there is room to see a bar that
+ * beats it. The percentage beside the units bar reads against the same reference
+ * the tint draws.
  *
  * Today reads spend and units to date against the campaign's pro-rata share of the
  * close figures - paid pacing is a daily budget decision, so the day count is the
- * honest denominator here. At close it is the projections against the full target
- * and the full benchmark budget. When snap.benchmark is absent the cobalt ticks and
- * the Stretch row are simply not drawn. */
+ * honest denominator here. At close it is the projections against the full
+ * figures. The Stretch row under "Capped by" names the uplift once in words,
+ * because it is the same even multiple on every channel and every day (spec §1)
+ * and so has no business being redrawn per bar. */
 import React, { useState } from "react";
-import { Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip } from "../ui.jsx";
+import {
+  Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision,
+  useTip, useRefMode, refWord, otherWord, pickRef,
+} from "../ui.jsx";
 
 const money = (v) => "£" + fmt(Math.round(v ?? 0));
 const moneyK = (v) => "£" + fmtK(v ?? 0);
 
 export default function PaidSpend({ snap, horizon = "today" }) {
   const tipApi = useTip();
+  const mode = useRefMode();
   const paid = snap.paid || {};
   if (snap.targeted === false) return <PaidSpendActuals snap={snap} />;
   const budget = paid.budget || {};
@@ -149,6 +152,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     ? paid.benchmarkBudget : null;
   const targetWord = close ? "Target" : "Target today";
   const bmWord = close ? "Benchmark" : "Benchmark today";
+  const refLabel = refWord(mode, horizon);
+  const otherLabel = otherWord(mode, horizon);
   const bmBody = "The median of the matched basket - what launches like this one typically reach.";
 
   // paid.daily carries draw ENTRIES; the target, the projection and the benchmark
@@ -160,7 +165,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const unitsFill = close ? unitsProj : unitsNow;
   const unitsTarget = (paid.unitTarget ?? 0) * dayFrac;
   const unitsBm = bmUnitsAll === null ? null : bmUnitsAll * dayFrac;
-  const unitsPct = unitsTarget > 0 ? Math.round((unitsFill / unitsTarget) * 100) : null;
+  const unitsRef = pickRef(mode, { bm: unitsBm, target: unitsTarget });
+  const unitsPct = unitsRef > 0 ? Math.round((unitsFill / unitsRef) * 100) : null;
   const unitsTip = {
     head: "Paid units",
     rows: [
@@ -176,6 +182,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const spendFill = close ? spendProj : spendNow;
   const spendTarget = (paid.spendBudget ?? 0) * dayFrac;
   const spendBm = bmSpendAll === null ? null : bmSpendAll * dayFrac;
+  const spendRef = pickRef(mode, { bm: spendBm, target: spendTarget });
   const spendTip = {
     head: "Spend",
     rows: [
@@ -258,21 +265,25 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           <TrackBar
             now={unitsNow}
             proj={close ? unitsProj : null}
-            target={unitsTarget}
-            bm={unitsBm}
+            refValue={unitsRef}
             height={20}
             radius={5}
             tips={{
               now: unitsTip,
               proj: unitsTip,
-              target: { head: targetWord, rows: [{ label: "Paid units", value: fmt(unitsTarget) }] },
-              bm: unitsBm === null ? null : { head: bmWord, rows: [{ label: "Paid units", value: fmt(unitsBm) }], body: bmBody },
-              overshoot: { head: "Over target", rows: [{ label: "Units", value: "+" + fmt(Math.max(0, unitsFill - unitsTarget)) }] },
+              ref: {
+                head: refLabel,
+                rows: [
+                  { label: "Paid units", value: fmt(unitsRef) },
+                  ...(unitsBm === null ? [] : [{ label: otherLabel, value: fmt(mode === "benchmark" ? unitsTarget : unitsBm) }]),
+                ],
+                body: mode === "benchmark" ? bmBody : undefined,
+              },
             }}
           />
           <span
             {...tipApi.props(unitsTip)}
-            style={{ ...rightLabel, color: unitsPct !== null && unitsFill >= unitsTarget ? C.ink : C.red }}
+            style={{ ...rightLabel, color: unitsPct !== null && unitsFill >= unitsRef ? C.green : C.red }}
           >
             {unitsPct !== null ? unitsPct + "%" : "–"}
           </span>
@@ -282,16 +293,20 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           <TrackBar
             now={spendNow}
             proj={close ? spendProj : null}
-            target={spendTarget}
-            bm={spendBm}
+            refValue={spendRef}
             height={20}
             radius={5}
             tips={{
               now: spendTip,
               proj: spendTip,
-              target: { head: close ? "Budget" : "Budget today", rows: [{ label: "Spend", value: moneyK(spendTarget) }] },
-              bm: spendBm === null ? null : { head: bmWord, rows: [{ label: "Spend", value: moneyK(spendBm) }], body: bmBody },
-              overshoot: { head: "Over budget", rows: [{ label: "Spend", value: "+" + moneyK(Math.max(0, spendFill - spendTarget)) }] },
+              ref: {
+                head: mode === "benchmark" ? bmWord : (close ? "Budget" : "Budget today"),
+                rows: [
+                  { label: "Spend", value: moneyK(spendRef) },
+                  ...(spendBm === null ? [] : [{ label: otherLabel, value: moneyK(mode === "benchmark" ? spendTarget : spendBm) }]),
+                ],
+                body: mode === "benchmark" ? bmBody : undefined,
+              },
             }}
           />
           <span {...tipApi.props(spendTip)} style={rightLabel}>{moneyK(spendFill)}</span>
@@ -299,14 +314,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
         <div style={{ height: 14, display: "flex", gap: 14, alignItems: "center" }}>
           <div style={legendItem}><span style={sw(C.orange)} />To date</div>
           {close && <div style={legendItem}><span style={sw(C.orangeLight)} />Projected</div>}
-          <div style={legendItem}>
-            <span style={{ width: 2, height: 10, background: C.refTarget, flex: "0 0 2px" }} />{targetWord}
-          </div>
-          {unitsBm !== null && (
-            <div style={legendItem}>
-              <span style={{ width: 2, height: 10, background: C.refBm, flex: "0 0 2px" }} />{bmWord}
-            </div>
-          )}
+          <div style={legendItem}><span style={sw(C.refFill)} />{refLabel}</div>
         </div>
       </div>
       <div style={{ height: 12, flex: "0 0 12px" }} />

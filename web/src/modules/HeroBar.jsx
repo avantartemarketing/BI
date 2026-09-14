@@ -1,35 +1,30 @@
-/* Units vs sellout - hero module (spec §4.1, unified secured-units currency, docs §6.4;
- * reference grammar per BENCHMARK_SPEC 1, 2 and 7):
+/* Units vs sellout - hero module (spec §4.1, unified secured-units currency, docs §6.4):
  * secured units = units sold (all routes incl. private room) + 0.8 × eligible entry
  * units not yet converted, capped at the edition size.
  *
- * One bar, one horizon at a time, because the page toggle already says which question
- * the reader is asking. Today reads the fill to date against the target for today (ink)
- * and the benchmark for today (cobalt); At close reads the projection against the
- * sellout and the benchmark for the campaign, with the hatch carrying demand that
- * cannot convert. The two reference marks are the same 2px mark in two colours, so the
- * only thing separating them is the label - which is why the numbers sit next to the
- * ticks rather than in the legend.
+ * One bar, one horizon, one reference, because the two page toggles have already
+ * said which question the reader is asking. The bar is two layers: the chosen
+ * reference as a tint running out from zero, the actual as a narrower orange bar
+ * in front of it, on a track whose right edge is the sellout. The headline delta,
+ * the label above the bar and the legend all name the same reference the tint
+ * draws; the other one stays readable as a plain figure in the rows underneath,
+ * where it is a number to know rather than a second thing to judge against.
  *
- * The stretch row is the whole point of the benchmark model: it names what the business
- * is asking for over and above what the matched basket typically delivers. It is the
- * one legend row that disappears when snap.benchmark is absent, and with it every cobalt
- * mark, leaving the card exactly as it read before. */
+ * At close the actual becomes the projection and the hatch carries the demand
+ * past the sellout that cannot convert. */
 import React from "react";
-import { Card, TrackBar, HATCH, GROUP_DOTS, C, fmt, fmtSigned, useTip, useWidth, labelPx, axisLabelLeft } from "../ui.jsx";
+import {
+  Card, TrackBar, HATCH, GROUP_DOTS, C, fmt, fmtSigned, useTip, useWidth,
+  labelPx, axisLabelLeft, useRefMode, refWord, otherWord, pickRef,
+} from "../ui.jsx";
 
-// The stretch is a planning decision, not performance, so its legend swatch
-// takes the same grey hatch the waterfall gives the stretch bar. The
-// benchmark's own colour here would read as a third reference on the bar.
-const STRETCH_HATCH = `repeating-linear-gradient(135deg, ${C.targetLine} 0 1px, transparent 1px 4px)`;
-
-/* TrackBar keeps its own scale (120% of the ink reference, widened when a value
- * overflows). The floating tick labels have to land on the same scale, so the maths is
- * repeated here rather than guessed at - a label that drifts off its tick is worse than
- * no label at all. */
-function trackScale({ now, proj, target, bm }) {
-  const maxData = Math.max(now ?? 0, proj ?? 0, bm ?? 0);
-  const maxV = Math.max(target > 0 ? target * 1.2 : 0, maxData * 1.04);
+/* TrackBar's scale, repeated here so the floating labels land on the same one.
+ * A label that drifts off the thing it names is worse than no label at all. */
+function trackScale({ now, proj, ref, full }) {
+  const maxData = Math.max(now ?? 0, proj ?? 0);
+  const maxV = full > 0
+    ? Math.max(full, ref ?? 0, maxData) * 1.02
+    : Math.max(ref > 0 ? ref * 1.2 : 0, maxData * 1.04);
   const scale = maxV > 0 ? 100 / maxV : 0;
   return (v) => Math.max(0, Math.min((v ?? 0) * scale, 100));
 }
@@ -38,6 +33,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const hero = snap?.hero || {};
   if (snap && snap.targeted === false) return <HeroActuals snap={snap} />;
   const t = useTip();
+  const mode = useRefMode();
 
   const close = horizon === "close";
   const now = hero.now ?? 0;
@@ -46,20 +42,30 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const expToday = hero.expectedToday ?? 0;
   const day = snap?.day;
 
-  // cobalt only exists when the release has a basket behind it
+  // a release with no matched basket has no benchmark to switch to
   const hasBm = !!snap?.benchmark;
   const bmClose = hasBm ? hero.benchmark ?? null : null;
   const bmToday = hasBm ? hero.benchmarkToday ?? null : null;
   const bm = close ? bmClose : bmToday;
 
-  // the ink reference for this horizon: the target for today, the sellout at close
+  // the target for this horizon: the target for today, the sellout at close
   const target = close ? sellout : expToday;
+  const ref = pickRef(mode, { bm, target });
+  const other = mode === "benchmark" ? target : bm;
   const fill = close ? proj : now;
-  const delta = close ? proj - sellout : hero.delta ?? now - expToday;
-  const stretch = bm === null ? null : target - bm;
+  const delta = fill - ref;
+
+  const refLabel = refWord(mode, horizon);
+  const otherLabel = otherWord(mode, horizon);
+  // at close the target IS the sellout, so naming it twice would be a lie about
+  // there being two numbers
+  const targetWord = close ? "Sellout" : `Target by day ${day}`;
+  const refHead = mode === "benchmark"
+    ? (close ? "Benchmark at close" : "Benchmark today")
+    : targetWord;
 
   const pos = trackScale({
-    now: close ? null : now, proj: close ? proj : null, target, bm,
+    now: close ? null : now, proj: close ? proj : null, ref, full: sellout,
   });
   const over = proj - sellout;
   const oversub = hero.oversubscribedUnits ?? 0;
@@ -68,34 +74,27 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const unitsTip =
     "Secured units = units sold (all routes incl. private room) + 0.8 × eligible " +
     "entry units not yet converted, capped at the edition size.";
-  const bmTip = {
-    head: close ? "Benchmark at close" : "Benchmark today",
+  const refTip = {
+    head: refHead,
     rows: [
-      { label: "Units", value: fmt(bm ?? 0) },
-      ...(stretch !== null ? [{ label: "Stretch", value: fmtSigned(stretch) }] : []),
+      { label: "Units", value: fmt(ref) },
+      ...(other !== null && other !== undefined
+        ? [{ label: otherLabel, value: fmt(other) }] : []),
     ],
-    body: "The median of the matched basket - what launches like this one typically reach.",
-  };
-  const targetTip = {
-    head: close ? "Sellout" : `Target by day ${day}`,
-    rows: [{ label: "Units", value: fmt(target) }],
+    body: mode === "benchmark"
+      ? "The median of the matched basket - what launches like this one typically reach."
+      : undefined,
   };
 
   const axisLabel = { position: "absolute", top: 4, fontSize: 12, whiteSpace: "nowrap" };
 
-  /* The bottom axis carries three labels: 0 at the left, sellout at the right,
-     and the benchmark wherever its tick falls. On a release running close to
-     its edition the benchmark tick sits near the right end and its label used
-     to print straight through "sellout". Measure the row and slide it clear. */
-  const [axisRef, axisW] = useWidth();
-  const bmText = bm !== null && bm > 0 ? `benchmark ${fmt(bm)}` : "";
-  const selloutText = `sellout ${fmt(sellout)}`;
-  const bmLeft = bmText
-    ? axisLabelLeft({
-      pct: pos(bm), rowW: axisW, textW: labelPx(bmText),
-      loW: labelPx("0"), hiW: labelPx(selloutText),
-    })
-    : null;
+  /* The bar's own label rides above the reference it names. Centred on it
+     wherever it fits, tucked against whichever end it would otherwise run off -
+     a release near its edition puts the reference at the far right, and a label
+     centred there is half outside the card. */
+  const [labRef, labW] = useWidth();
+  const refText = `${refLabel.toLowerCase()} ${fmt(ref)}`;
+  const refLeft = axisLabelLeft({ pct: pos(ref), rowW: labW, textW: labelPx(refText) });
 
   return (
     <Card
@@ -113,27 +112,24 @@ export default function HeroBar({ snap, horizon = "today" }) {
       <div className="spacer-8" />
       <div className="lead" {...t.props({ head: close ? "Projected demand" : "Secured units", body: unitsTip }, 300)}>
         {fmt(fill)}
-        <span className="delta" style={{ color: delta >= 0 ? C.ink : C.red }}>
+        <span className="delta" style={{ color: delta >= 0 ? C.green : C.red }}>
           {fmtSigned(delta)}
         </span>
         <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
-          {close ? "vs sellout at close" : "vs target today"}
+          vs {refLabel.toLowerCase()}
         </span>
       </div>
 
       <div style={{ marginTop: 24 }}>
-        {/* the deep number rides above its tick, the light one below, so the two
-            references never share a line and never need a leader */}
-        <div style={{ position: "relative", height: 20, marginBottom: 8 }}>
-          {target > 0 && (
+        <div ref={labRef} style={{ position: "relative", height: 20, marginBottom: 8 }}>
+          {ref > 0 && (
             <div
-              style={{
-                position: "absolute", left: `${pos(target)}%`, bottom: 0,
-                transform: "translateX(-50%)", maxWidth: "100%",
-                fontSize: 12, color: C.refTarget, whiteSpace: "nowrap",
-              }}
+              {...t.props(refTip)}
+              style={refLeft === null
+                ? { position: "absolute", left: `${pos(ref)}%`, bottom: 0, transform: "translateX(-50%)", fontSize: 12, color: C.ink, whiteSpace: "nowrap" }
+                : { position: "absolute", left: refLeft, bottom: 0, fontSize: 12, color: C.ink, whiteSpace: "nowrap" }}
             >
-              target {fmt(target)}
+              {refText}
             </div>
           )}
         </div>
@@ -141,10 +137,11 @@ export default function HeroBar({ snap, horizon = "today" }) {
         <TrackBar
           now={close ? null : now}
           proj={close ? proj : null}
-          target={target}
-          bm={bm}
+          refValue={ref}
+          full={sellout}
           hatchFrom={close ? sellout : null}
           height={24}
+          radius={5}
           tips={{
             proj: { head: "Projected at close", rows: [
               { label: "Units", value: fmt(proj) },
@@ -152,25 +149,14 @@ export default function HeroBar({ snap, horizon = "today" }) {
             ] },
             now: { head: "Secured to date", rows: [{ label: "Units", value: fmt(now) }] },
             overshoot: { head: "Oversubscribed", rows: [{ label: "Units", value: "+" + fmt(Math.abs(over)) }] },
-            target: targetTip,
-            bm: bm === null ? null : bmTip,
+            ref: refTip,
           }}
         />
 
-        <div ref={axisRef} style={{ position: "relative", height: 20, marginTop: 8 }}>
+        <div style={{ position: "relative", height: 20, marginTop: 8 }}>
           <div style={{ ...axisLabel, left: 0, color: C.muted }}>0</div>
-          {bm !== null && bm > 0 && (
-            <div
-              {...t.props(bmTip)}
-              style={bmLeft === null
-                ? { ...axisLabel, left: `${pos(bm)}%`, transform: "translateX(-50%)", color: C.refBm }
-                : { ...axisLabel, left: bmLeft, color: C.refBm }}
-            >
-              {bmText}
-            </div>
-          )}
           <div style={{ ...axisLabel, right: 0, color: C.muted }}>
-            {selloutText}
+            {`sellout ${fmt(sellout)}`}
           </div>
         </div>
       </div>
@@ -181,28 +167,28 @@ export default function HeroBar({ snap, horizon = "today" }) {
           <span style={{ color: C.muted }}>{close ? "Projected demand at close" : "To date"}</span>
           <span className="val">{fmt(fill)}</span>
         </div>
-        {close ? (
+        <div className="legend-row">
+          <span className="swatch" style={{ background: C.refFill }} />
+          <span style={{ color: C.muted }}>{refLabel}</span>
+          <span className="val">{fmt(ref)}</span>
+        </div>
+        {/* Third row, and only a third: demand past the sellout when there is
+            any, because that is the more urgent fact and the hatch drawing it
+            needs naming; otherwise the reference not chosen, as a figure to
+            know rather than a second thing to judge against. */}
+        {close && (oversub > 0 || over > 0) ? (
           <div className="legend-row">
             <span className="swatch" style={{ background: HATCH }} />
             <span style={{ color: C.muted }}>Over sellout</span>
             <span className="val">{oversub > 0 ? "+" + fmt(oversub) : fmtSigned(over)}</span>
           </div>
-        ) : (
-          <div className="legend-row">
-            <span className="swatch" style={{ background: C.refTarget, width: 12, height: 2, borderRadius: 0, flex: "0 0 12px" }} />
-            <span style={{ color: C.muted }}>Target today</span>
-            <span className="val">{fmt(expToday)}</span>
+        ) : other !== null && other !== undefined ? (
+          <div className="legend-row" style={{ color: C.muted }}>
+            <span className="swatch" style={{ background: "transparent" }} />
+            <span>{otherLabel}</span>
+            <span className="val" style={{ fontWeight: 400 }}>{fmt(other)}</span>
           </div>
-        )}
-        {stretch !== null && (
-          <div className="legend-row">
-            <span className="swatch" style={{ background: STRETCH_HATCH, border: `1px solid ${C.targetLine}` }} />
-            <span style={{ color: C.muted }}>
-              {close ? "Stretch (target - benchmark)" : "Stretch today (target - benchmark)"}
-            </span>
-            <span className="val">{fmtSigned(stretch)}</span>
-          </div>
-        )}
+        ) : null}
       </div>
     </Card>
   );

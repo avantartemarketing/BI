@@ -1,18 +1,22 @@
 /* The dashboard shell - sidebar, release page chrome, and the one place the page's
- * comparison horizon lives.
+ * two comparison controls live.
  *
- * BENCHMARK_SPEC 2 puts a single "Today | At close" control in the page header and
- * hands it to every container, so no card carries its own horizon toggle and the
- * whole page reads against one reference at a time. The state is held here, starts
- * at "today" and resets whenever the release changes, because a horizon chosen while
- * reading one launch says nothing about the next one.
+ * "Compare Today | At close" says WHEN to read the release; "Against Benchmark |
+ * Target" says WHAT to read it against. Both are held here and handed to every
+ * container, so no card carries its own toggle and the whole page answers one
+ * question at a time. Both reset whenever the release changes, because a reading
+ * chosen while looking at one launch says nothing about the next one.
+ *
+ * The reference is a context rather than a prop: unlike the horizon it reaches
+ * every card, the funnels and the drivers included, and threading it through two
+ * grids of ten would leave the cards free to drift apart.
  *
  * The sidebar dot is the other thing this file owns. BENCHMARK_SPEC 7 makes it
  * three-state so that "behind target but still doing what the matched basket
  * typically does" stops looking identical to "behind the basket as well" - the first
  * is a target worth holding, the second is a launch in trouble. */
 import React, { useEffect, useMemo, useState } from "react";
-import { C, fmtSigned, fmtPct, TipProvider, useTip } from "./ui.jsx";
+import { C, fmtSigned, fmtPct, TipProvider, RefProvider, useTip } from "./ui.jsx";
 import HeroBar from "./modules/HeroBar.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
 import FunnelByChannel from "./modules/FunnelByChannel.jsx";
@@ -357,24 +361,43 @@ function Freshness({ asOf, st }) {
   );
 }
 
-/* One control, every container (BENCHMARK_SPEC 2). Today reads actuals against the
- * target and benchmark for today; At close reads the projection against the target
- * and benchmark for the whole campaign. Cards with a single horizon - the funnels,
- * paid ROI, geo - ignore it and are not given it. */
-function HorizonToggle({ horizon, onChange }) {
+/* The two page controls, side by side in the header. Cards with a single horizon
+ * - the funnels, paid ROI, geo - ignore the first and are not given it; every
+ * card follows the second. */
+function PageControls({ horizon, onHorizon, reference, onReference, showHorizon, showReference }) {
+  const label = { fontSize: 12, color: "#6c6b68" };
   return (
-    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: 12, color: "#6c6b68" }}>Compare</span>
-      <div className="seg" role="group" aria-label="Comparison horizon">
-        <button
-          className={horizon === "today" ? "active" : ""}
-          onClick={() => onChange("today")}
-          title="Actuals so far against the target and benchmark for today">Today</button>
-        <button
-          className={horizon === "close" ? "active" : ""}
-          onClick={() => onChange("close")}
-          title="Projection at close against the target and benchmark for the campaign">At close</button>
-      </div>
+    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 18 }}>
+      {showHorizon && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={label}>Compare</span>
+          <div className="seg" role="group" aria-label="Comparison horizon">
+            <button
+              className={horizon === "today" ? "active" : ""}
+              onClick={() => onHorizon("today")}
+              title="Actuals so far against the reference for today">Today</button>
+            <button
+              className={horizon === "close" ? "active" : ""}
+              onClick={() => onHorizon("close")}
+              title="Projection at close against the reference for the whole campaign">At close</button>
+          </div>
+        </div>
+      )}
+      {showReference && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={label}>Against</span>
+          <div className="seg" role="group" aria-label="Reference">
+            <button
+              className={reference === "benchmark" ? "active" : ""}
+              onClick={() => onReference("benchmark")}
+              title="What the matched basket of comparable launches typically reaches">Benchmark</button>
+            <button
+              className={reference === "target" ? "active" : ""}
+              onClick={() => onReference("target")}
+              title="What the business committed to - the benchmark with the stretch on top">Target</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -382,12 +405,17 @@ function HorizonToggle({ horizon, onChange }) {
 function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   const [tab, setTab] = useState("overview");
   const [horizon, setHorizon] = useState("today");
-  // a new release is a new reading: start it on the tab and the horizon everyone shares
-  useEffect(() => { setTab("overview"); setHorizon("today"); }, [snap.id]);
+  const [reference, setReference] = useState("target");
+  // a new release is a new reading: start it on the tab, horizon and reference everyone shares
+  useEffect(() => { setTab("overview"); setHorizon("today"); setReference("target"); }, [snap.id]);
   const targeted = snap.targeted !== false;
   const catalogue = !!snap.catalogue;
   // nothing to compare against without targets, and a catalogue page has no campaign
   const showHorizon = targeted && !catalogue;
+  // a lever-mode release has no matched basket, so there is nothing to switch to
+  const hasBm = !!snap.benchmark;
+  const showReference = targeted && hasBm;
+  const refMode = hasBm ? reference : "target";
   return (
     <>
       <header className="page-header" style={{ marginBottom: 0 }}>
@@ -401,7 +429,13 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
             title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
         )}
-        {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
+        {(showHorizon || showReference) && (
+          <PageControls
+            horizon={horizon} onHorizon={setHorizon}
+            reference={refMode} onReference={setReference}
+            showHorizon={showHorizon} showReference={showReference}
+          />
+        )}
         <Freshness asOf={snap.asOf} st={st} />
       </header>
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
@@ -409,7 +443,9 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
       </nav>
-      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : targeted ? (
+      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : (
+      <RefProvider mode={refMode}>
+      {targeted ? (
       <div className="grid">
         <HeroBar snap={snap} horizon={horizon} />
         <ChannelsVsTargets snap={snap} horizon={horizon} />
@@ -438,6 +474,8 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         <Geo snap={snap} />
         <Waterfall snap={snap} horizon={horizon} />
       </div>
+      )}
+      </RefProvider>
       )}
     </>
   );

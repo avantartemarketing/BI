@@ -1,49 +1,40 @@
-/* Projection vs target (spec §4.10; benchmark, stretch and horizon per
- * BENCHMARK_SPEC 2, 5 and 7) - horizontal waterfall.
+/* Projection vs target (spec §4.10) - horizontal waterfall.
  *
- * The card reads top to bottom as one argument: the matched basket typically
- * reaches the benchmark, the business asked for the stretch on top of it, that
- * makes the target, and the four contributors explain the distance from the
- * target to where the release actually lands. Before the benchmark existed the
- * target was an unexplained starting level; the two new rows say where it came
- * from, which is the whole point of the benchmark model (BENCHMARK_SPEC 1).
+ * The card reads top to bottom as one argument: here is the reference the page
+ * is being read against, and here are the contributors that explain the distance
+ * from it to where the release actually lands.
  *
- * The stretch bar is grey and hatched and its number is muted, never green or
- * red: it is a planning decision, not performance. Only the four contributors
- * and the header delta are judged.
+ * Read against the target, that is Target -> four contributors -> outcome, which
+ * is the card as it always was. Read against the benchmark, one row is inserted
+ * above them: the stretch the business put on the basket's median to arrive at
+ * the target. It is a planning decision rather than performance, so it is flat
+ * plan grey and its number is muted, never green or red - but it is a real step
+ * between the two levels, so it is drawn as one and the arithmetic still closes.
  *
- * Target, Benchmark, Projection and Actual are level anchor ticks (never
- * floor-anchored columns); the contributor bars step between running levels
- * with grey 1px connector drops, and the two drops at the top carry the reader
- * from the benchmark tick along the stretch bar to the target tick.
- * x-scale = [min, max of every level drawn] ± 10% pad.
+ * The reference and the outcome are level anchor ticks (never floor-anchored
+ * columns); the contributor bars step between running levels with grey 1px
+ * connector drops. x-scale = [min, max of every level drawn] ± 10% pad.
  * Projection and the to-date figures are stored model outputs - never
  * re-derived here; on a complete release the projection equals the actual
- * close. When snap.benchmark is absent the two new rows are simply not drawn
- * and the card reads exactly as it did before. */
+ * close. */
 import React from "react";
-import { Card, GROUP_DOTS, RefTick, C, QBadge, fmt, fmtSigned, useTip, STRETCH_HATCH } from "../ui.jsx";
-
-/* The stretch is the one bar on the card that is not an outcome, so it is cut
- * from the plan's cloth - grey hatch on the track, with a hairline border so it
- * still has an edge where it sits on white. */
-
-
-const STEP_TIPS = {
-  organic_traffic: "Organic sessions vs plan",
-  organic_conversion: "Session → sale vs benchmark",
-  paid_spend: "Spend vs plan",
-  paid_efficiency: "Entries per pound vs target",
-};
+import {
+  Card, GROUP_DOTS, Tick, C, QBadge, fmt, fmtSigned, useTip, STRETCH_FILL,
+  useRefMode, refWord, otherWord,
+} from "../ui.jsx";
 
 export default function Waterfall({ snap, horizon = "today" }) {
   const tipApi = useTip();
+  const mode = useRefMode();
   const wf = snap?.waterfall;
   // an older snapshot carries no waterfall.today, so Today falls back to the
   // close shape rather than emptying the card out from under the page toggle
   const td = horizon === "today" && wf && wf.today ? wf.today : null;
   const isToday = !!td;
-  const title = isToday ? "Actual vs target" : "Projection vs target";
+  // the title names the comparison, so it follows the page toggle with the rest
+  // of the card - it cannot say "vs target" while the top row is the benchmark
+  const against = mode === "benchmark" && snap?.benchmark ? "benchmark" : "target";
+  const title = (isToday ? "Actual vs " : "Projection vs ") + against;
 
   if (!wf) {
     return (
@@ -61,31 +52,45 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const complete = !!snap?.complete;
   const steps = view.steps || [];
 
-  // the cobalt rows only exist when the release has a basket behind it
   const bmRaw = view.benchmark;
   const hasBm = !!snap?.benchmark && bmRaw !== null && bmRaw !== undefined;
   const benchmark = hasBm ? bmRaw : null;
   const stretch = hasBm ? view.stretch ?? target - benchmark : null;
   const k = snap?.benchmark?.k ?? null;
+  const bmMode = mode === "benchmark" && hasBm;
 
-  // running levels: target -> after each contributor (last = the outcome)
-  let cum = target;
-  const path = steps.map((s) => {
+  const refLabel = refWord(bmMode ? "benchmark" : "target", horizon === "close" ? "close" : "today");
+  const otherLabel = otherWord(bmMode ? "benchmark" : "target", horizon === "close" ? "close" : "today");
+  const other = bmMode ? target : benchmark;
+
+  /* Running levels from the anchor down. In benchmark mode the stretch is the
+   * first step, which is what keeps the arithmetic closing: benchmark plus the
+   * stretch is the target, and the contributors carry on from there. */
+  const base = bmMode ? benchmark : target;
+  const path = [];
+  let cum = base;
+  if (bmMode) {
+    path.push({
+      key: "__stretch", label: "Stretch to target", value: stretch, plan: true,
+      from: base, to: base + stretch,
+    });
+    cum = base + stretch;
+  }
+  for (const s of steps) {
     const from = cum;
     cum += s.value ?? 0;
-    return { ...s, from, to: cum };
-  });
-  const levels = [target, ...path.map((p) => p.to)];
-  const marks = [outcome, ...levels, ...(hasBm ? [benchmark] : [])];
+    path.push({ ...s, from, to: cum });
+  }
+  const levels = [base, ...path.map((p) => p.to)];
+  const marks = [outcome, ...levels];
   const lo = Math.min(...marks);
   const hi = Math.max(...marks);
-  const pad = (hi - lo) * 0.1;
+  const pad = (hi - lo) * 0.1 || 1;
   const span = hi + pad - (lo - pad);
   const X = (v) => (span > 0 ? ((v - (lo - pad)) / span) * 100 : 50);
 
-  const head = hasBm ? 2 : 0;                 // Benchmark + Stretch rows above Target
-  const nRows = head + steps.length + 2;      // + Target + the outcome row
-  const net = outcome - target;
+  const nRows = path.length + 2;              // the anchor + the steps + the outcome
+  const net = outcome - base;
   const netC = net >= 0 ? C.green : C.red;
   const closeWord = complete ? "Final" : "Projected";
   const outcomeLabel = isToday ? "Actual today" : "Projection";
@@ -93,28 +98,24 @@ export default function Waterfall({ snap, horizon = "today" }) {
     head: isToday ? "Secured to date" : closeWord + " at close",
     rows: [
       { label: outcomeLabel, value: fmt(outcome) },
-      { label: isToday ? "Target today" : "Target", value: fmt(target) },
+      { label: refLabel, value: fmt(base) },
       { label: "Gap", value: fmtSigned(net), color: netC },
     ],
   };
 
-  // every drop hangs from the centre of the row it names to the centre of the
-  // next one, so the row count has to be threaded through rather than assumed
-  const drops = [
-    ...(hasBm ? [{ v: benchmark, row: 0 }, { v: target, row: 1 }] : []),
-    ...levels.map((v, i) => ({ v, row: i + head })),
-  ];
+  // every drop hangs from the centre of the row it names to the centre of the next
+  const drops = levels.map((v, i) => ({ v, row: i }));
 
   const rowGrid = {
     flex: 1, display: "grid", gridTemplateColumns: "116px 1fr 48px",
     gap: 12, alignItems: "center", minHeight: 0,
   };
 
-  const anchorRow = (label, value, x, kind, tip) => (
+  const anchorRow = (label, value, color, tip) => (
     <div style={rowGrid}>
       <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
       <div style={{ position: "relative", height: 14 }}>
-        <RefTick pct={X(x)} kind={kind} tip={tip} />
+        <Tick pct={X(value)} color={color} tip={tip} />
       </div>
       <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
         {fmt(value)}
@@ -122,10 +123,15 @@ export default function Waterfall({ snap, horizon = "today" }) {
     </div>
   );
 
-  const bmTip = {
-    head: isToday ? "Benchmark today" : "Benchmark at close",
-    rows: [{ label: "Units", value: fmt(benchmark ?? 0) }],
-    body: "The median of the matched basket - what launches like this one typically reach.",
+  const refTip = {
+    head: refLabel,
+    rows: [
+      { label: "Units", value: fmt(base) },
+      ...(other !== null && other !== undefined ? [{ label: otherLabel, value: fmt(other) }] : []),
+    ],
+    body: bmMode
+      ? "The median of the matched basket - what launches like this one typically reach."
+      : undefined,
   };
   const stretchTip = {
     head: "Stretch",
@@ -136,10 +142,6 @@ export default function Waterfall({ snap, horizon = "today" }) {
       ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
     ],
     body: "What the business is asking for over and above the basket - the same even uplift in every channel and on every day.",
-  };
-  const targetTip = {
-    head: isToday ? "Target today" : "Target",
-    rows: [{ label: "Units", value: fmt(target) }],
   };
   const outcomeTip = isToday
     ? { head: "Secured to date", rows: [{ label: "Units", value: fmt(outcome) }] }
@@ -175,44 +177,24 @@ export default function Waterfall({ snap, horizon = "today" }) {
           ))}
         </div>
 
-        {hasBm && anchorRow(isToday ? "Benchmark today" : "Benchmark", benchmark, benchmark, "benchmark", bmTip)}
-
-        {hasBm && (
-          <div style={rowGrid}>
-            <div style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>Stretch</div>
-            <div style={{ position: "relative", height: 14 }}>
-              <div
-                {...tipApi.props(stretchTip)}
-                style={{
-                  position: "absolute", top: 0, bottom: 0,
-                  left: `${X(Math.min(benchmark, target))}%`,
-                  width: `${Math.max(1.2, Math.abs(X(target) - X(benchmark)))}%`,
-                  background: STRETCH_HATCH, border: `1px solid ${C.planGrey}`,
-                  boxSizing: "border-box", borderRadius: 3,
-                }}
-              />
-            </div>
-            <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: C.muted }}>
-              {fmtSigned(stretch)}
-            </div>
-          </div>
-        )}
-
-        {anchorRow(isToday ? "Target today" : "Target", target, target, "target", targetTip)}
+        {anchorRow(refLabel, base, C.refMark, refTip)}
 
         {path.map((p) => {
           const v = p.value ?? 0;
           const up = v >= 0;
-          const tip = {
+          const tip = p.plan ? stretchTip : {
             head: p.label,
             rows: [
-              { label: "Contribution", value: fmtSigned(v) + " units", color: up ? "#0f7052" : C.red },
+              { label: "Contribution", value: fmtSigned(v) + " units", color: up ? C.green : C.red },
               { label: "Running total", value: fmt(p.to) },
             ],
           };
           return (
             <div key={p.key} style={rowGrid}>
-              <div style={{ fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{
+                fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                color: p.plan ? C.muted : undefined,
+              }}>
                 {p.label}
               </div>
               <div style={{ position: "relative", height: 14 }}>
@@ -222,13 +204,17 @@ export default function Waterfall({ snap, horizon = "today" }) {
                     position: "absolute", top: 0, bottom: 0,
                     left: `${X(Math.min(p.from, p.to))}%`,
                     width: `${Math.max(1.2, Math.abs(X(p.to) - X(p.from)))}%`,
-                    background: up ? C.wfGreen : C.red, borderRadius: 3,
+                    background: p.plan ? STRETCH_FILL : up ? C.wfGreen : C.red,
+                    borderRadius: 3,
                   }}
                 />
               </div>
               <div
                 className="num"
-                style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: up ? C.green : C.red }}
+                style={{
+                  fontSize: 12.5, fontWeight: 600, textAlign: "right",
+                  color: p.plan ? C.muted : up ? C.green : C.red,
+                }}
               >
                 {fmtSigned(v)}
               </div>
@@ -236,7 +222,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
           );
         })}
 
-        {anchorRow(outcomeLabel, outcome, outcome, "target", outcomeTip)}
+        {anchorRow(outcomeLabel, outcome, C.orange, outcomeTip)}
       </div>
       <div style={{ height: 12, flexShrink: 0 }} />
       <div
@@ -248,16 +234,19 @@ export default function Waterfall({ snap, horizon = "today" }) {
         <QBadge content={{
           head: title,
           body: isToday
-            ? "Contributors sum exactly to the gap between the target for today and what is secured to date. The stretch above is what the target asks for over the benchmark, not something the release has or has not done."
-            : "Contributors sum exactly to the gap between target and projected demand at close. Demand here is unconstrained - the hero caps at the sellout.",
+            ? "Contributors sum exactly to the gap between the reference for today and what is secured to date. Read against the benchmark, the stretch row above them is what the target asks for over the basket, not something the release has or has not done."
+            : "Contributors sum exactly to the gap between the reference and projected demand at close. Demand here is unconstrained - the hero caps at the sellout.",
         }} />
         <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
+          {/* the reference not chosen, as a figure to know; and where there is no
+              basket at all, the model that set the target instead */}
+          {other !== null && other !== undefined
+            ? otherLabel.toLowerCase() + " " + fmt(other)
+            : "levers, no comparable basket"}
+          {" · "}
           {isToday
             ? "secured units" + (snap?.day ? ", day " + snap.day : "")
             : "units at close"}
-          {/* an absent benchmark row explains nothing on its own - name the
-              model that set the target instead (BENCHMARK_SPEC 4) */}
-          {!hasBm && " · levers, no comparable basket"}
         </span>
       </div>
     </Card>

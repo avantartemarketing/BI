@@ -1,6 +1,6 @@
-/* Funnel by channel (spec §4.4, LE relabel per §6; rung grammar per
- * BENCHMARK_SPEC 7). Tall card (1 col × 2 rows). Always the Today horizon, so
- * the page-level toggle is accepted and ignored (BENCHMARK_SPEC 2).
+/* Funnel by channel (spec §4.4, LE relabel per §6). Tall card (1 col × 2 rows).
+ * Always the Today horizon, so the page horizon toggle is accepted and ignored;
+ * the page REFERENCE toggle is followed like everywhere else.
  * Five display groups; rungs are built from real snapshot data instead of the
  * mock's static list:
  *   AA Email  - a stage-by-stage chain: Delivered emails vs cohort-median delivery
@@ -15,24 +15,22 @@
  *   Paid      - Spend vs pro-rata budget (un-inverted per artboard) · Cost per
  *               entry vs cost-per-purchase target × 0.8 (inverted)
  *
- * The rung now reads benchmark-first: the cobalt centre line is the benchmark,
- * the hollow ink ring is the target and the dot is the actual, on a log scale
- * where ×4 either way fills the rung. Volume rungs (delivered emails, posts,
- * sessions, spend) carry the even uplift, so their ring sits at ×K; rate rungs
- * (open, click, sessions per click, session → sale, cost per entry) are held at
- * the benchmark, so their ring sits on the centre line. The printed figure and
- * its RAG stay vs TARGET, unchanged in meaning - the card still answers "are we
- * on plan" and the ring only says how far the plan itself sits above the basket.
- * Without a basket (lever-mode releases) there is no benchmark to draw: the
- * plan stands in as the rung centre, the ring lands on it, and the centre line
- * goes back to neutral grey.
+ * One reference, so one centre line: whichever of the two the page is read
+ * against runs down the middle of every rung, the dot is the actual, and the
+ * printed figure and its RAG are against that same centre, on a log scale where
+ * ×4 either way fills the rung. Volume rungs (delivered emails, posts, sessions,
+ * spend) carry the even uplift, so their target centre is the benchmark × K;
+ * rate rungs (open, click, sessions per click, session → sale, cost per entry)
+ * are held at the benchmark, so for them the two centres are the same figure and
+ * the toggle changes nothing. Without a basket the plan stands in for both and
+ * the centre line goes to the neutral plan grey.
  * Inverted metrics (cost per entry) are placed by their judged direction, so
  * the ratio is inverted before it is positioned - cheap right, dear left.
  * Null value or missing/zero reference → neutral: centred grey dot, delta '–'. */
 import React from "react";
 import {
-  Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned, fmtMoney, MINUS, useTip, STRETCH_HATCH,
-  rungGeom, RungTrack,
+  Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned, fmtMoney, MINUS, useTip, STRETCH_FILL,
+  rungGeom, RungTrack, RungKey, useRefMode, refWord, otherWord,
 } from "../ui.jsx";
 
 const RING = "0 0 0 1px rgba(20,20,19,.45)";
@@ -63,97 +61,66 @@ function fmtVal(v, unit) {
 
 /* { label, v, bm, plan, unit, kind, inv, note } -> render model.
  * `bm` is the benchmark for today, `plan` the reference the lever model set.
- * With a basket the benchmark is the rung centre and the target is bm × K on a
- * volume or bm itself on a rate; without one the plan stands in as both, which
- * is what puts the ring on the centre line for lever-mode releases. */
-function buildRung(spec, bench, k) {
+ * The rung centre is whichever reference the page is read against: the benchmark
+ * itself, or the target, which is bm × K on a volume and bm itself on a rate.
+ * Without a basket the plan stands in for both, so the rung is the same either
+ * way and the toggle is honest about having nothing to switch to. */
+function buildRung(spec, bench, k, mode) {
   const { label, v, unit, inv, note, kind } = spec;
-  const useBm = bench && usable(spec.bm);
-  const ref = useBm ? spec.bm : spec.plan;
+  const bmv = bench && usable(spec.bm) ? spec.bm : null;
+  const refLabel = refWord(mode, "today");
+  const otherLabel = otherWord(mode, "today");
+  const target = bmv !== null ? bmv * (kind === "vol" && k > 0 ? k : 1) : spec.plan;
+  const ref = mode === "benchmark" && bmv !== null ? bmv : target;
+  const other = bmv === null ? null : mode === "benchmark" ? target : bmv;
   const noVal = v === null || v === undefined || Number.isNaN(v);
   if (noVal || !usable(ref)) {
     // no reference: show the value itself where the delta would go, rather
     // than a dash that reads as "no data"
     return {
       label, neutral: true, delta: noVal ? "–" : fmtVal(v, unit), rag: C.muted,
-      dev: 50, ring: 50, beyond: false,
+      dev: 50, beyond: false,
       tip: {
         head: label, body: note,
         rows: [
           { label: "Actual", value: fmtVal(v, unit) },
-          { label: "Reference", value: "–" },
+          { label: refLabel, value: "–" },
         ],
       },
     };
   }
-  // Only a volume judged against a real benchmark carries the uplift; a rate is
-  // held at the benchmark and the no-basket fallback has nothing to lift.
-  const gKind = useBm && kind === "vol" ? "vol" : "rate";
-  const target = ref * (gKind === "vol" && k > 0 ? k : 1);
-  const relPct = (v / target - 1) * 100;
+  const relPct = (v / ref - 1) * 100;
   const eff = inv ? -relPct : relPct;
   const rag = eff >= 0 ? C.green : eff > -10 ? C.amber : C.red;
   // Inverted (cost) metrics plot by their JUDGED direction: bad always goes
-  // left, good always right - an over-benchmark cost per entry sits left, not
-  // right. Every inverted rung is a rate, so flipping the ratio never fights a
-  // ×K ring.
-  const geom = rungGeom(inv ? ref / v : v / ref, gKind, k) || {};
+  // left, good always right - an over-reference cost per entry sits left, not
+  // right.
+  const geom = rungGeom(inv ? ref / v : v / ref) || {};
   return {
     label,
     neutral: false,
     up: eff >= 0,
     dev: geom.dev ?? 50,
-    ring: geom.ring ?? 50,
     beyond: !!geom.beyond,
     delta: (relPct >= 0 ? "+" : MINUS) + Math.abs(Math.round(relPct)) + "%",
     rag,
     tip: {
       head: label,
-      body: (note ? note + " " : "") + (useBm
-        ? gKind === "vol"
+      body: (note ? note + " " : "") + (bmv !== null
+        ? kind === "vol"
           ? `Target is the benchmark × K (${fmt(k, 2)}), the even uplift to the edition size.`
-          : "Rates are held at the benchmark, so the target and the benchmark are one line."
+          : "Rates are held at the benchmark, so the target and the benchmark are the same figure."
         : ""),
       rows: [
         { label: "Actual", value: fmtVal(v, unit) },
-        ...(useBm ? [{ label: "Benchmark today", value: fmtVal(ref, unit), color: C.refBm }] : []),
-        { label: "Target", value: fmtVal(target, unit) },
-        { label: "vs target",
+        { label: refLabel, value: fmtVal(ref, unit) },
+        ...(other === null ? [] : [{ label: otherLabel, value: fmtVal(other, unit) }]),
+        { label: "vs " + refLabel.toLowerCase(),
           value: (relPct >= 0 ? "+" : MINUS) + Math.abs(relPct).toFixed(1) + "%",
           color: rag },
       ],
     },
   };
-}
-
-/* RungTrack without the cobalt: with no basket there is no benchmark to draw
- * (BENCHMARK_SPEC 7), and the shared grey centre behind the whole stack carries
- * the eye instead. Same rail, bar, dot and ring, so the two modes read alike. */
-function PlainRung({ dev, ring, up, neutral }) {
-  return (
-    <div style={{ position: "relative", height: 12 }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 5, height: 2, background: C.hairline }} />
-      {!neutral && (
-        <div style={{
-          position: "absolute", top: 5, height: 4, left: `${Math.min(dev, ring)}%`,
-          width: `${Math.abs(dev - ring)}%`,
-          background: up ? "#f7c4ad" : "#eeb9a3", borderRadius: 2,
-        }} />
-      )}
-      <div style={{
-        position: "absolute", left: `${neutral ? 50 : dev}%`, top: 1, width: 10, height: 10,
-        marginLeft: -5, borderRadius: "50%",
-        background: neutral ? NEUTRAL_DOT : up ? C.orange : C.red, boxShadow: RING,
-      }} />
-      {!neutral && (
-        <div style={{
-          position: "absolute", left: `${ring}%`, top: 0, width: 12, height: 12,
-          marginLeft: -6, borderRadius: "50%", border: `1.5px solid ${C.refTarget}`,
-          background: "transparent", boxSizing: "border-box",
-        }} />
-      )}
-    </div>
-  );
 }
 
 function Rung({ r, bench }) {
@@ -170,9 +137,7 @@ function Rung({ r, bench }) {
         {r.label}
       </div>
       <div style={{ position: "relative" }}>
-        {bench
-          ? <RungTrack dev={r.dev} ring={r.ring} up={r.up} neutral={r.neutral} />
-          : <PlainRung dev={r.dev} ring={r.ring} up={r.up} neutral={r.neutral} />}
+        <RungTrack dev={r.dev} up={r.up} neutral={r.neutral} bench={bench} />
         {r.beyond && (
           /* the dot ran off the scale - say so at the end it ran off, rather
              than letting it pile up silently against the clamp */
@@ -187,42 +152,6 @@ function Rung({ r, bench }) {
       <div className="num" style={{ fontSize: 13.5, fontWeight: 600, textAlign: "right", color: r.rag }}>
         {r.delta}
       </div>
-    </div>
-  );
-}
-
-/* The rung grammar in four marks, so nobody has to guess what the ring is.
- * It has to hold one line inside a 400px card (350px of content): in Inter at
- * 11.5px the three items and the note measure ~300px, which leaves room. The
- * cobalt mark is dropped with no basket, exactly as the rung drops it. */
-function RungKey({ bench }) {
-  const item = {
-    display: "flex", alignItems: "center", gap: 6,
-    fontSize: 11.5, color: C.muted, whiteSpace: "nowrap",
-  };
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 18px", marginTop: 8 }}>
-      <span style={item}>
-        <span style={{
-          width: 10, height: 10, borderRadius: "50%", flex: "0 0 10px",
-          background: C.orange, boxShadow: RING,
-        }} />
-        Actual
-      </span>
-      <span style={item}>
-        <span style={{
-          width: 12, height: 12, borderRadius: "50%", flex: "0 0 12px",
-          border: `1.5px solid ${C.refTarget}`, boxSizing: "border-box",
-        }} />
-        Target
-      </span>
-      {bench && (
-        <span style={item}>
-          <span style={{ width: 12, height: 2, background: C.refBm, flex: "0 0 12px" }} />
-          Benchmark
-        </span>
-      )}
-      <span style={{ ...item, marginLeft: "auto" }}>×4 fills the rung</span>
     </div>
   );
 }
@@ -428,6 +357,7 @@ function groupWaterfall(g, snap) {
 
 function FunnelWaterfall({ snap, groups }) {
   const tipApi = useTip();
+  const mode = useRefMode();
   const expTotal = snap?.hero?.expectedToday ?? 0;
   const nowTotal = snap?.hero?.now ?? 0;
   const day = snap?.day ?? 0;
@@ -465,24 +395,27 @@ function FunnelWaterfall({ snap, groups }) {
     const from = cum; cum += perBuyerTotal;
     flat.push({ ...perBuyerRow, value: perBuyerTotal, from, to: cum });
   }
-  /* This waterfall opened on "Target today" while the outcome waterfall opened
-   * on Benchmark -> Stretch -> Target, so the same page answered "where did the
-   * target come from" in one card and not in the other. It is the same question
-   * and the same grammar, so the two anchor rows are drawn here too, off the
-   * same snapshot figures (BENCHMARK_SPEC 7). Absent a benchmark they are
-   * simply not drawn, as everywhere else. */
+  /* The same grammar as the outcome waterfall, off the same snapshot figures.
+   * Read against the target this opens on Target today; read against the
+   * benchmark, one row is inserted above the groups for the stretch that takes
+   * the basket's median up to that target, so the arithmetic still closes from
+   * whichever level the page is reading from. */
   const bmTotal = snap?.hero?.benchmarkToday ?? null;
   const hasBm = !!snap?.benchmark && bmTotal !== null && bmTotal !== undefined;
+  const bmMode = mode === "benchmark" && hasBm;
   const stretchTotal = hasBm ? expTotal - bmTotal : null;
+  const refLabel = refWord(bmMode ? "benchmark" : "target", "today");
+  const otherLabel = otherWord(bmMode ? "benchmark" : "target", "today");
+  const other = bmMode ? expTotal : bmTotal;
 
   const levels = [expTotal, ...flat.filter((r) => r.to !== undefined).map((r) => r.to),
-    ...(hasBm ? [bmTotal] : [])];
+    ...(bmMode ? [bmTotal] : [])];
   const lo = Math.min(...levels), hi = Math.max(...levels);
   const pad = (hi - lo) * 0.1 || 1;
   const span = hi + pad - (lo - pad);
   const X = (v) => ((v - (lo - pad)) / span) * 100;
 
-  const anchorRow = (label, value, tip, color = C.refTarget) => (
+  const anchorRow = (label, value, tip, color = C.refMark) => (
     <div style={{ height: 26, flex: "0 0 26px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
       <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
       <div style={{ position: "relative", height: 14 }}>
@@ -499,14 +432,23 @@ function FunnelWaterfall({ snap, groups }) {
        the closing anchor is never simply cut off on a release with more groups
        or more stages than this one. */
     <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      {hasBm && anchorRow("Benchmark today", bmTotal, {
+      {bmMode ? anchorRow("Benchmark today", bmTotal, {
         head: "Benchmark today",
-        rows: [{ label: "Secured units", value: fmt(bmTotal) }],
+        rows: [
+          { label: "Secured units", value: fmt(bmTotal) },
+          { label: otherLabel, value: fmt(expTotal) },
+        ],
         body: "The median of the matched basket - what launches like this one typically reach by now.",
-      }, C.refBm)}
-      {hasBm && (
+      }) : anchorRow("Target today", expTotal, {
+        head: `Target by day ${day}`,
+        rows: [
+          { label: "Secured units", value: fmt(expTotal) },
+          ...(hasBm ? [{ label: otherLabel, value: fmt(bmTotal) }] : []),
+        ],
+      })}
+      {bmMode && (
         <div style={{ height: 24, flex: "0 0 24px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
-          <div style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>Stretch</div>
+          <div style={{ fontSize: 12.5, color: C.muted, whiteSpace: "nowrap" }}>Stretch to target</div>
           <div style={{ position: "relative", height: 14 }}>
             <div
               {...tipApi.props({
@@ -523,8 +465,7 @@ function FunnelWaterfall({ snap, groups }) {
                 position: "absolute", top: 0, bottom: 0,
                 left: `${X(Math.min(bmTotal, expTotal))}%`,
                 width: `${Math.max(1.2, Math.abs(X(expTotal) - X(bmTotal)))}%`,
-                background: STRETCH_HATCH, border: `1px solid ${C.planGrey}`,
-                boxSizing: "border-box", borderRadius: 3,
+                background: STRETCH_FILL, borderRadius: 3,
               }}
             />
           </div>
@@ -533,8 +474,6 @@ function FunnelWaterfall({ snap, groups }) {
           </div>
         </div>
       )}
-      {anchorRow("Target today", expTotal,
-        { head: `Target by day ${day}`, rows: [{ label: "Secured units", value: fmt(expTotal) }] })}
       {flat.map((r, i) => r.header ? (
         <div key={"h" + i} style={{ height: 19, flex: "0 0 19px", display: "flex", alignItems: "center" }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{r.header}</div>
@@ -574,19 +513,24 @@ function FunnelWaterfall({ snap, groups }) {
         </div>
       ))}
       {anchorRow("Actual today", nowTotal,
-        { head: "Secured to date", rows: [{ label: "Secured units", value: fmt(nowTotal) }] })}
+        { head: "Secured to date", rows: [{ label: "Secured units", value: fmt(nowTotal) }] }, C.orange)}
       <div style={{ height: 24, flex: "0 0 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <QBadge content={{
           head: "Target to actual",
           body: "The same rows as the funnel view. Each row reprices one funnel factor from its reference to its actual, one at a time; within a group the steps sum to that group's gap and the groups sum to the gap between expected and actual secured units today. Grey rows have no reference and carry no step; the grey figure is their actual.",
         }} />
-        <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
+        <span style={{
+          fontSize: 12, color: C.muted, whiteSpace: "nowrap",
+          minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 10,
+        }}>
           {capped ? "steps exceed the gap - sellout caps it" : `secured units, day ${day}`}
-          {/* No benchmark means no stretch bar, and an absent row explains
-              nothing. Say which model set the target instead of leaving a
-              reader to wonder why this card has two anchors and the outcome
-              waterfall has four. */}
-          {!hasBm && " · levers, no comparable basket"}
+          {/* the reference not chosen, as a figure to know; and where there is
+              no basket at all, the model that set the target instead. Both are
+              in the anchor row's popup too, so losing the tail of this line on
+              a narrow card costs nothing. */}
+          {hasBm
+            ? " · " + (bmMode ? "target" : "benchmark") + " " + fmt(other)
+            : " · levers, no comparable basket"}
         </span>
       </div>
     </div>
@@ -594,8 +538,10 @@ function FunnelWaterfall({ snap, groups }) {
 }
 
 /* `horizon` is accepted and ignored: this card is always the Today horizon
- * (BENCHMARK_SPEC 2), so the page toggle must not reach it. */
+ * (BENCHMARK_SPEC 2), so the page HORIZON toggle must not reach it. The
+ * reference toggle does reach it, through the context, like every other card. */
 export default function FunnelByChannel({ snap, horizon }) {
+  const mode = useRefMode();
   const targeted = snap?.targeted !== false;
   // waterfall leads when there is a plan to step from; without targets only the
   // funnel's actual side exists
@@ -730,7 +676,7 @@ export default function FunnelByChannel({ snap, horizon }) {
       right={targeted ? (
         <span className="seg">
           <button className={view === "funnel" ? "active" : ""} onClick={() => setView("funnel")}
-            title="Each funnel metric as a deviation: benchmark centre, target ring, actual dot">Funnel</button>
+            title="Each funnel metric as a deviation: the chosen reference down the centre, the actual as a dot">Funnel</button>
           <button className={view === "wf" ? "active" : ""} onClick={() => setView("wf")}
             title="Waterfall from expected to actual secured units today, stepped by the same funnel components">Waterfall</button>
         </span>
@@ -744,13 +690,14 @@ export default function FunnelByChannel({ snap, horizon }) {
         <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", gap: GROUP_GAP }}>
           {/* One centre line behind every group, so the rungs read as one scale.
               It has to sit on the middle of the TRACK column, not the middle of
-              the row: inset by the label and the delta plus their gaps. Cobalt
-              when there is a benchmark to name, neutral grey when there is not. */}
+              the row: inset by the label and the delta plus their gaps. The
+              reference tint when there is a basket to name, neutral grey when
+              there is not. */}
           <div style={{ position: "absolute", left: TRACK_L, right: TRACK_R, top: 0, bottom: 0, pointerEvents: "none" }}>
             <div style={{
               position: "absolute", left: "50%", top: 0, bottom: 0,
               width: bench ? 1.5 : 1, marginLeft: bench ? -0.75 : -0.5,
-              background: bench ? C.refBm : GUIDE,
+              background: bench ? C.refMark : GUIDE,
             }} />
           </div>
           {groups.map((g) => (
@@ -759,13 +706,13 @@ export default function FunnelByChannel({ snap, horizon }) {
                 <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap" }}>{g.name}</div>
               </div>
               {g.rungs.map((raw) => {
-                const r = buildRung(raw, bench, k);
+                const r = buildRung(raw, bench, k, mode);
                 return <Rung key={r.label} r={r} bench={bench} />;
               })}
             </div>
           ))}
         </div>
-        <RungKey bench={bench} />
+        <RungKey word={refWord(mode, "today")} bench={bench} />
       </div>
       )}
     </Card>

@@ -1,26 +1,24 @@
-/* Sell-through (spec §4.8, LE 3-segment recut §6.4; horizon and reference
- * grammar per BENCHMARK_SPEC 2 and 7).
+/* Sell-through (spec §4.8, LE 3-segment recut §6.4).
  *
  * Two readings of the same edition, chosen by the page horizon, because the two
  * questions want different bars. Today asks "how much of the edition is
- * secured, and is that where it should be by now": one bar of sold plus the
- * entries already in hand, crossed by the target for today (ink) and what the
- * matched basket typically has by now (cobalt). At close asks "will it sell
- * out": the three-segment prediction bar, with the basket's median marked in
- * cobalt so an ambitious prediction can be read against what launches like this
- * one actually reach.
+ * secured, and is that where it should be by now": sold plus the entries
+ * already in hand. At close asks "will it sell out": the three-segment
+ * prediction bar. Either way the chosen reference sits behind the segments as a
+ * tint running out from zero, so the reading is simply whether the segments end
+ * past it.
  *
- * The bar scale is the edition in both horizons, so every mark on it is also a
- * share of the edition and the ticks need no axis of their own. The reference
- * ticks sit outside the clipped track, because they bleed 3px past the bar they
- * cross and a rounded, overflow-hidden track would cut that bleed off.
+ * The bar scale is the edition in both horizons, so every position on it is also
+ * a share of the edition and the reference needs no axis of its own.
  *
  * If the draw feed is present, a "Demand by product" mini-table (per-product
  * eligible entries; the feed carries no per-product edition sizes yet).
- * Horizontal legend at the bottom, no rule. When snap.benchmark is absent the
- * cobalt tick is simply not drawn. */
+ * Horizontal legend at the bottom, no rule. */
 import React from "react";
-import { Card, GROUP_DOTS, RefTick, C, fmt, ragColor, useTip, useWidth, labelPx, axisLabelLeft } from "../ui.jsx";
+import {
+  Card, GROUP_DOTS, C, fmt, ragColor, useTip, useWidth, labelPx, axisLabelLeft,
+  useRefMode, refWord, otherWord,
+} from "../ui.jsx";
 
 const SEGS = [
   { key: "sold", color: C.rust, label: "Sold",
@@ -42,6 +40,7 @@ const TODAY_SEGS = [
 
 export default function SellThrough({ snap, horizon = "today" }) {
   const tipApi = useTip();
+  const mode = useRefMode();
   const st = snap?.sellthrough;
   const draw = snap?.draw;
   const close = horizon === "close";
@@ -90,28 +89,32 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const w = (v) => (edition > 0 ? Math.max(0, (v / edition) * 100) : 0);
   const posOf = (v) => Math.max(0, Math.min(100, w(v)));
 
-  // the references, both absent unless the release has a basket behind it
+  // the reference: whichever the page is being read against, absent only where
+  // the release has no basket and the benchmark was asked for
   const hasBm = !!snap?.benchmark;
   const bmClose = hasBm ? st.benchmarkUnits ?? null : null;
   const bmToday = hasBm ? hero.benchmarkToday ?? null : null;
   const bm = close ? bmClose : bmToday;
-  const targetToday = hero.expectedToday ?? 0;
-  const bmPct = bm !== null && edition > 0 ? Math.round((bm / edition) * 100) : null;
+  // at close the target IS the edition, which the track already draws, so the
+  // only reference worth a tint there is the benchmark
+  const target = close ? null : hero.expectedToday ?? 0;
+  const ref = mode === "benchmark" ? bm : target;
+  const other = mode === "benchmark" ? target : bm;
+  const refLabel = refWord(mode, horizon);
+  const otherLabel = otherWord(mode, horizon);
+  const shareOf = (v) => (edition > 0 ? Math.round((v / edition) * 100) : null);
 
-  const bmTip = {
-    head: close ? "Benchmark at close" : "Benchmark today",
+  const refTip = ref === null ? null : {
+    head: mode === "benchmark" ? (close ? "Benchmark at close" : "Benchmark today") : "Target today",
     rows: [
-      { label: "Units", value: fmt(bm ?? 0) },
-      ...(bmPct !== null ? [{ label: "Of edition", value: bmPct + "%" }] : []),
+      { label: "Units", value: fmt(ref) },
+      ...(shareOf(ref) !== null ? [{ label: "Of edition", value: shareOf(ref) + "%" }] : []),
+      ...(other !== null && other !== undefined
+        ? [{ label: otherLabel, value: fmt(other) }] : []),
     ],
-    body: "The median of the matched basket - what launches like this one typically reach.",
-  };
-  const targetTip = {
-    head: "Target today",
-    rows: [
-      { label: "Units", value: fmt(targetToday) },
-      ...(edition > 0 ? [{ label: "Of edition", value: Math.round((targetToday / edition) * 100) + "%" }] : []),
-    ],
+    body: mode === "benchmark"
+      ? "The median of the matched basket - what launches like this one typically reach."
+      : undefined,
   };
 
   const products = draw?.per_product || [];
@@ -119,20 +122,16 @@ export default function SellThrough({ snap, horizon = "today" }) {
 
   const axisLabel = { position: "absolute", top: 3, fontSize: 12, whiteSpace: "nowrap" };
 
-  /* Same axis row as the hero: the benchmark label is anchored to its tick and
-     "sellout" is pinned to the right, so on a release near its edition the two
-     collided. Measure the row and slide the benchmark clear. */
-  const [axisRef, axisW] = useWidth();
-  const bmText = bm === null ? "" :
-    `benchmark ${fmt(bm)}${close && bmPct !== null ? " · " + bmPct + "%" : ""}`;
+  /* The reference label rides above the tint it names, and "sellout" is pinned
+     to the right of the axis under it, so on a release near its edition the two
+     would collide. Measure the row and slide the reference label clear. */
+  const [labRef, labW] = useWidth();
+  const refText = ref === null ? "" :
+    `${refLabel.toLowerCase()} ${fmt(ref)}${shareOf(ref) !== null ? " · " + shareOf(ref) + "%" : ""}`;
   const selloutText = `sellout ${fmt(edition)}`;
-  const bmLeft = bmText
-    ? axisLabelLeft({
-      pct: posOf(bm), rowW: axisW, textW: labelPx(bmText),
-      hiW: close ? 0 : labelPx(selloutText),
-    })
+  const refLeft = refText
+    ? axisLabelLeft({ pct: posOf(ref), rowW: labW, textW: labelPx(refText) })
     : null;
-  const lineSwatch = (bg) => ({ width: 12, height: 2, background: bg, borderRadius: 0, flex: "0 0 12px" });
 
   return (
     <Card dot={GROUP_DOTS.outcome} title={title}>
@@ -154,60 +153,50 @@ export default function SellThrough({ snap, horizon = "today" }) {
           {/* release-level bar: the edition is the full width, so the ticks are
               also shares of the edition and need no scale of their own */}
           <div style={{ flexShrink: 0 }}>
-            {!close && targetToday > 0 && (
-              <div style={{ position: "relative", height: 18, marginBottom: 6 }}>
+            <div ref={labRef} style={{ position: "relative", height: 18, marginBottom: 6 }}>
+              {ref !== null && ref > 0 && (
                 <div
-                  {...tipApi.props(targetTip)}
-                  style={{
-                    position: "absolute", left: `${posOf(targetToday)}%`, bottom: 0,
-                    transform: "translateX(-50%)", fontSize: 12, color: C.refTarget, whiteSpace: "nowrap",
-                  }}
+                  {...tipApi.props(refTip)}
+                  style={refLeft === null
+                    ? { position: "absolute", left: `${posOf(ref)}%`, bottom: 0, transform: "translateX(-50%)", fontSize: 12, color: C.ink, whiteSpace: "nowrap" }
+                    : { position: "absolute", left: refLeft, bottom: 0, fontSize: 12, color: C.ink, whiteSpace: "nowrap" }}
                 >
-                  target {fmt(targetToday)}
+                  {refText}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            <div style={{ position: "relative" }}>
+            {/* the reference as a tint out from zero, the segments inset inside
+                it, so the tint still shows above and below them */}
+            <div style={{ position: "relative", height: 20, background: C.track, borderRadius: 5 }}>
+              {ref !== null && ref > 0 && (
+                <div
+                  {...tipApi.props(refTip)}
+                  style={{
+                    position: "absolute", inset: 0, width: `${posOf(ref)}%`,
+                    background: C.refFill, borderRadius: 5,
+                  }}
+                />
+              )}
               <div
                 style={{
-                  height: 20, background: C.track,
-                  borderRadius: 5, overflow: "hidden", display: "flex",
+                  position: "absolute", top: 4, bottom: 4, left: 0, right: 0,
+                  borderRadius: 3, overflow: "hidden", display: "flex",
                 }}
               >
                 {segs.map((s) => (
                   <div
                     key={s.key}
                     {...tipApi.props(s.tip(st[s.key] ?? 0))}
-                    style={{ width: `${w(st[s.key] ?? 0)}%`, background: s.color }}
+                    style={{ width: `${w(st[s.key] ?? 0)}%`, background: s.color, flex: "0 0 auto" }}
                   />
                 ))}
               </div>
-              {bm !== null && (
-                <RefTick pct={posOf(bm)} kind="benchmark" tip={bmTip} />
-              )}
-              {!close && targetToday > 0 && (
-                <RefTick pct={posOf(targetToday)} kind="target" tip={targetTip} />
-              )}
             </div>
 
-            {(bm !== null || !close) && (
-              <div ref={axisRef} style={{ position: "relative", height: 18, marginTop: 6 }}>
-                {bm !== null && (
-                  <div
-                    {...tipApi.props(bmTip)}
-                    style={bmLeft === null
-                      ? { ...axisLabel, left: `${posOf(bm)}%`, transform: "translateX(-50%)", color: C.refBm }
-                      : { ...axisLabel, left: bmLeft, color: C.refBm }}
-                  >
-                    {bmText}
-                  </div>
-                )}
-                {!close && (
-                  <div style={{ ...axisLabel, right: 0, color: C.muted }}>{selloutText}</div>
-                )}
-              </div>
-            )}
+            <div style={{ position: "relative", height: 18, marginTop: 6 }}>
+              <div style={{ ...axisLabel, right: 0, color: C.muted }}>{selloutText}</div>
+            </div>
           </div>
 
           {/* demand by product - only when the draw feed is present */}
@@ -261,16 +250,10 @@ export default function SellThrough({ snap, horizon = "today" }) {
               <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>{s.label}</span>
             </div>
           ))}
-          {!close && targetToday > 0 && (
+          {ref !== null && ref > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={lineSwatch(C.refTarget)} />
-              <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Target</span>
-            </div>
-          )}
-          {bm !== null && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={lineSwatch(C.refBm)} />
-              <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Benchmark</span>
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: C.refFill, flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>{refLabel}</span>
             </div>
           )}
         </div>

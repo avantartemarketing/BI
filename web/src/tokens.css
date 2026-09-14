@@ -11,23 +11,25 @@
   --dotted: #ddd9cf;
 
   --orange: #eb6834;
-  --orange-light: #f7c4ad;
+  --orange-light: #f2a07f;
   --rust: #8f3415;
   --periwinkle: #a5b6e3;
   --blue: #4f6fc0;
   --blue-deep: #28518f;
   --blue-tint: #eaf0fa;
   --blue-tint-border: #c3d5ee;
-  /* The two reference marks (BENCHMARK_SPEC 1, 7). They are two shades of ONE
-   * hue, not two hues: a near-black target beside a saturated blue benchmark
-   * read as two unrelated systems next to the orange fills, and the pair fought
-   * the fill for attention. Same hue and saturation, ~27 points of lightness
-   * apart, so the darker one is plainly the one being judged against. Both stay
-   * legible where they cross an orange fill, which is why the lighter of the two
-   * is still a mid blue rather than a pastel. */
-  --ref-target: #122b5c;
-  --ref-bm: #2f62c4;
-  --cobalt: #2f62c4;   /* retained: older rules referring to the benchmark mark */
+  /* The reference, in one hue. The page reads against one reference at a time -
+   * the benchmark or the target, chosen in the header - and it is drawn as a
+   * tint of the actual's own orange sitting BEHIND the actual, never as a mark
+   * beside it. Two reference colours meant two systems on every card and a
+   * reader decoding which was which; one tint means the reading is simply which
+   * bar ends further along. --ref-fill sits behind a bar, --ref-track carries a
+   * bar's remaining room out to the sellout, and --ref-mark is the same
+   * reference where a bar cannot be drawn - a rung centre, a chart edge, a
+   * waterfall anchor. */
+  --ref-fill: #f8ddd0;
+  --ref-track: #faf7f4;
+  --ref-mark: #e8a98b;
 
   --green: #0f7052;
   --amber: #8a5f00;

@@ -1,28 +1,30 @@
-/* Organic funnel / funnel key drivers (spec §4.5, LE relabel per §6; rung
- * grammar per BENCHMARK_SPEC 7). Three-state seg: Funnel (default) | Adding |
- * Costing. Always the Today horizon, so the page toggle is accepted and
- * ignored (BENCHMARK_SPEC 2).
+/* Organic funnel / funnel key drivers (spec §4.5, LE relabel per §6). Three-state
+ * seg: Funnel (default) | Adding | Costing. Always the Today horizon, so the page
+ * horizon toggle is accepted and ignored; the page REFERENCE toggle is followed
+ * like everywhere else.
  *
  * Funnel - the organic funnel at a grouped level (the four non-paid display
  * groups combined) as deviation rungs, per the agreed design:
  *   Top of funnel  - emails delivered + posts/stories; no reference yet, so the
  *                    rung is neutral and the counts live in the hover popup
  *   Mid funnel     - sessions, a volume: the target carries the even uplift, so
- *                    its ring sits at ×K off the benchmark centre
+ *                    reading against the target puts the centre at benchmark × K
  *   Low funnel     - session → entry conversion, a rate held at the benchmark
  *                    (entry-weighted: Σ sessions×conv / Σ sessions on each
  *                    side, benchmark sessions weighting the benchmark side)
- * The rung reads benchmark-first - cobalt centre line = benchmark, hollow ink
- * ring = target, dot = actual, on a log scale where ×4 either way fills it -
- * but the printed figure and its RAG stay vs TARGET, unchanged in meaning, so
- * the card still answers "are we on plan". With no basket the plan stands in as
- * the rung centre, the ring lands on it and the centre line goes back to
- * neutral grey.
+ * One reference, so one centre line: whichever of the two the page is read
+ * against, with the dot at the actual on a log scale where ×4 either way fills
+ * the rung, and the printed figure and its RAG against that same centre. The
+ * old hollow target ring was the second reference, and it goes with it. With no
+ * basket the plan is the centre and the line goes to the neutral plan grey.
  *
  * Adding | Costing - per-group step contributions from funnelByGroup, top 4 by
  * |value| of the chosen sign. Methodology notes live in tooltips only. */
 import React from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtSigned, MINUS, useTip, rungGeom, RungTrack } from "../ui.jsx";
+import {
+  Card, GROUP_DOTS, C, fmt, fmtSigned, MINUS, useTip, rungGeom, RungTrack, RungKey,
+  useRefMode, refWord, otherWord,
+} from "../ui.jsx";
 
 const GROUPS = [
   { key: "aa_email", name: "AA Email", short: "Email" },
@@ -35,42 +37,9 @@ const ORGANIC = ["aa_email", "aa_social", "referral_artist", "search_direct_othe
 
 const NOTE =
   "Each step's contribution is repriced one-at-a-time vs plan; together the steps sum to the gap vs expected today.";
-const RING = "0 0 0 1px rgba(20,20,19,.45)";
-const GUIDE = "#ddd9cf";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const usable = (v) => finite(v) && v !== 0;
-
-/* RungTrack without the cobalt: with no basket there is no benchmark to name
- * (BENCHMARK_SPEC 7), so the centre goes back to the neutral grey guide that
- * ties the three tiers together. Same rail, bar, dot and ring otherwise. */
-function PlainRung({ dev, ring, up, neutral }) {
-  return (
-    <div style={{ position: "relative", height: 12 }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 5, height: 2, background: C.hairline }} />
-      <div style={{ position: "absolute", left: "50%", top: -14, bottom: -14, width: 1, marginLeft: -0.5, background: GUIDE }} />
-      {!neutral && (
-        <div style={{
-          position: "absolute", top: 5, height: 4, left: `${Math.min(dev, ring)}%`,
-          width: `${Math.abs(dev - ring)}%`,
-          background: up ? "#f7c4ad" : "#eeb9a3", borderRadius: 2,
-        }} />
-      )}
-      <div style={{
-        position: "absolute", left: `${neutral ? 50 : dev}%`, top: 1, width: 10, height: 10,
-        marginLeft: -5, borderRadius: "50%",
-        background: neutral ? "#c8c5bc" : up ? C.orange : C.red, boxShadow: RING,
-      }} />
-      {!neutral && (
-        <div style={{
-          position: "absolute", left: `${ring}%`, top: 0, width: 12, height: 12,
-          marginLeft: -6, borderRadius: "50%", border: `1.5px solid ${C.refTarget}`,
-          background: "transparent", boxSizing: "border-box",
-        }} />
-      )}
-    </div>
-  );
-}
 
 function FunnelRung({ tier, metric, r, bench, tip }) {
   const tipApi = useTip();
@@ -87,9 +56,7 @@ function FunnelRung({ tier, metric, r, bench, tip }) {
         <div style={{ fontSize: 11.5, color: C.muted, whiteSpace: "nowrap" }}>{metric}</div>
       </div>
       <div style={{ position: "relative" }}>
-        {bench
-          ? <RungTrack dev={r.dev} ring={r.ring} up={r.up} neutral={r.neutral} guide />
-          : <PlainRung dev={r.dev} ring={r.ring} up={r.up} neutral={r.neutral} />}
+        <RungTrack dev={r.dev} up={r.up} neutral={r.neutral} guide bench={bench} />
         {r.beyond && (
           /* the dot ran off the scale - say so at the end it ran off, rather
              than letting it pile up silently against the clamp */
@@ -108,68 +75,35 @@ function FunnelRung({ tier, metric, r, bench, tip }) {
   );
 }
 
-/* The rung grammar in four marks, so nobody has to guess what the ring is.
- * It has to hold one line inside a 400px card (350px of content): in Inter at
- * 11.5px the three items and the note measure ~300px, which leaves room. The
- * cobalt mark is dropped with no basket, exactly as the rung drops it. */
-function RungKey({ bench }) {
-  const item = {
-    display: "flex", alignItems: "center", gap: 6,
-    fontSize: 11.5, color: C.muted, whiteSpace: "nowrap",
-  };
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 18px", marginTop: 6 }}>
-      <span style={item}>
-        <span style={{
-          width: 10, height: 10, borderRadius: "50%", flex: "0 0 10px",
-          background: C.orange, boxShadow: RING,
-        }} />
-        Actual
-      </span>
-      <span style={item}>
-        <span style={{
-          width: 12, height: 12, borderRadius: "50%", flex: "0 0 12px",
-          border: `1.5px solid ${C.refTarget}`, boxSizing: "border-box",
-        }} />
-        Target
-      </span>
-      {bench && (
-        <span style={item}>
-          <span style={{ width: 12, height: 2, background: C.refBm, flex: "0 0 12px" }} />
-          Benchmark
-        </span>
-      )}
-      <span style={{ ...item, marginLeft: "auto" }}>×4 fills the rung</span>
-    </div>
-  );
-}
-
-/* { v, bm, plan, kind } -> render model. The benchmark is the rung centre when
- * a basket exists; the target is bm × K on a volume and bm itself on a rate.
- * Without a basket the plan is both, which puts the ring on the centre line. */
-function buildRung({ v, bm, plan, kind }, bench, k) {
-  const useBm = bench && usable(bm);
-  const ref = useBm ? bm : plan;
+/* { v, bm, plan, kind } -> render model. The rung centre is whichever reference
+ * the page is read against: the benchmark itself, or the target, which is the
+ * benchmark × K on a volume and the benchmark itself on a rate. Without a basket
+ * the plan stands in for both, which is the same rung either way. */
+function buildRung({ v, bm, plan, kind }, bench, k, mode) {
+  const bmv = bench && usable(bm) ? bm : null;
+  const target = bmv !== null ? bmv * (kind === "vol" && k > 0 ? k : 1) : plan;
+  const ref = mode === "benchmark" && bmv !== null ? bmv : target;
   if (!finite(v) || !usable(ref)) {
-    return { neutral: true, dev: 50, ring: 50, beyond: false, rag: C.muted, delta: "–", target: null, relPct: null };
+    return { neutral: true, dev: 50, beyond: false, rag: C.muted, delta: "–", ref: null, other: null, relPct: null };
   }
-  const gKind = useBm && kind === "vol" ? "vol" : "rate";
-  const target = ref * (gKind === "vol" && k > 0 ? k : 1);
-  const relPct = (v / target - 1) * 100;
-  const geom = rungGeom(v / ref, gKind, k) || {};
+  const relPct = (v / ref - 1) * 100;
+  const geom = rungGeom(v / ref) || {};
   return {
     neutral: false,
     up: relPct >= 0,
     dev: geom.dev ?? 50,
-    ring: geom.ring ?? 50,
     beyond: !!geom.beyond,
     rag: relPct >= 0 ? C.green : relPct > -10 ? C.amber : C.red,
     delta: (relPct >= 0 ? "+" : MINUS) + Math.abs(Math.round(relPct)) + "%",
-    target, relPct, useBm, benchmark: ref,
+    ref, relPct,
+    other: bmv === null ? null : mode === "benchmark" ? target : bmv,
   };
 }
 
 function FunnelView({ snap }) {
+  const mode = useRefMode();
+  const refLabel = refWord(mode, "today");
+  const otherLabel = otherWord(mode, "today");
   const fbg = snap?.funnelByGroup || {};
   const email = snap?.email || {};
   const social = snap?.social || {};
@@ -200,29 +134,33 @@ function FunnelView({ snap }) {
   const convE = sessE > 0 ? entE / sessE : null;
   const convB = sessB > 0 ? entB / sessB : null;
 
-  const midR = buildRung({ v: sessA, bm: sessB || null, plan: sessE, kind: "vol" }, bench, k);
-  const lowR = buildRung({ v: convA, bm: convB, plan: convE, kind: "rate" }, bench, k);
+  const midR = buildRung({ v: sessA, bm: sessB || null, plan: sessE, kind: "vol" }, bench, k, mode);
+  const lowR = buildRung({ v: convA, bm: convB, plan: convE, kind: "rate" }, bench, k, mode);
 
   const posts = (social.posts ?? 0) + (social.stories ?? 0);
   const pctTxt = (x) => (x === null || x === undefined ? "–" : fmt(x * 100, 1) + "%");
   const relRow = (r) => (r.relPct === null ? [] : [{
-    label: "vs target",
+    label: "vs " + refLabel.toLowerCase(),
     value: (r.relPct >= 0 ? "+" : MINUS) + Math.abs(r.relPct).toFixed(1) + "%",
     color: r.rag,
   }]);
-  const bmRow = (r, show) => (r.useBm ? [{ label: "Benchmark today", value: show(r.benchmark), color: C.refBm }] : []);
+  // the reference this page is read against, then the other one as a plain figure
+  const refRows = (r, show) => [
+    ...(r.ref === null ? [] : [{ label: refLabel, value: show(r.ref) }]),
+    ...(r.other === null || r.other === undefined ? [] : [{ label: otherLabel, value: show(r.other) }]),
+  ];
 
   return (
     <>
       <FunnelRung
         tier="Top of funnel" metric="Emails + posts" bench={bench}
-        r={{ neutral: true, dev: 50, ring: 50, beyond: false, rag: C.muted, delta: "–" }}
+        r={{ neutral: true, dev: 50, beyond: false, rag: C.muted, delta: "–" }}
         tip={{
           head: "Top of funnel",
           rows: [
             { label: "Emails delivered", value: fmt(email.delivered ?? null) },
             { label: "Posts + stories", value: fmt(posts) },
-            { label: "Target", value: "–" },
+            { label: refLabel, value: "–" },
           ],
         }}
       />
@@ -230,13 +168,12 @@ function FunnelView({ snap }) {
         tier="Mid funnel" metric="Sessions" r={midR} bench={bench}
         tip={{
           head: "Mid funnel · Sessions",
-          body: midR.useBm
+          body: bench
             ? `Sessions carry the even uplift, so the target is the benchmark × K (${fmt(k, 2)}).`
             : undefined,
           rows: [
             { label: "Actual", value: fmt(sessA) },
-            ...bmRow(midR, (x) => fmt(x)),
-            { label: "Target today", value: targeted ? fmt(midR.target ?? sessE) : "– (no targets)" },
+            ...(targeted ? refRows(midR, (x) => fmt(x)) : [{ label: refLabel, value: "– (no targets)" }]),
             ...relRow(midR),
           ],
         }}
@@ -245,24 +182,24 @@ function FunnelView({ snap }) {
         tier="Low funnel" metric="Session → entry" r={lowR} bench={bench}
         tip={{
           head: "Low funnel · Session → entry",
-          body: lowR.useBm
-            ? "Conversion is held at the benchmark, so the target and the benchmark are one line."
+          body: bench
+            ? "Conversion is held at the benchmark, so the target and the benchmark are the same figure."
             : undefined,
           rows: [
             { label: "Actual", value: pctTxt(convA) },
-            ...bmRow(lowR, pctTxt),
-            { label: "Target today", value: targeted ? pctTxt(lowR.target ?? convE) : "– (no targets)" },
+            ...(targeted ? refRows(lowR, pctTxt) : [{ label: refLabel, value: "– (no targets)" }]),
             ...relRow(lowR),
           ],
         }}
       />
-      <RungKey bench={bench} />
+      <RungKey word={refLabel} bench={bench} />
     </>
   );
 }
 
 /* `horizon` is accepted and ignored: this card is always the Today horizon
- * (BENCHMARK_SPEC 2), so the page toggle must not reach it. */
+ * (BENCHMARK_SPEC 2), so the page HORIZON toggle must not reach it. The
+ * reference toggle does reach it, through the context, like every other card. */
 export default function KeyDrivers({ snap, horizon }) {
   const tipApi = useTip();
   const [view, setView] = React.useState("funnel"); // 'funnel' | 'pos' | 'neg'
@@ -291,7 +228,7 @@ export default function KeyDrivers({ snap, horizon }) {
         <span className="seg">
           <button
             className={view === "funnel" ? "active" : ""}
-            title="Organic funnel at a grouped level: benchmark centre, target ring, actual dot"
+            title="Organic funnel at a grouped level: the chosen reference down the centre, the actual as a dot"
             onClick={() => setView("funnel")}
           >
             Funnel

@@ -8,32 +8,53 @@ drawing grammar. Where it disagrees with an older doc, this file wins.
 
 | | what it is | drawn as |
 |---|---|---|
-| **Benchmark** | what launches in the matched basket typically reach: the **median** of that basket, per metric and per channel. One value, never a band. | solid **cobalt** `#2b5fd9` line, 2px |
-| **Target** | benchmark × K, the business target | solid **ink** `#141413` line, 2px |
-| **Stretch** | target − benchmark = benchmark × (K − 1) | a number; a grey hatched bar only on the waterfall |
+| **Benchmark** | what launches in the matched basket typically reach: the **median** of that basket, per metric and per channel. One value, never a band. | a tint of the actual's own orange, `#f8ddd0`, **behind** the actual - when the page is read against it |
+| **Target** | benchmark × K, the business target | the same tint, in the same place - when the page is read against it |
+| **Stretch** | target − benchmark = benchmark × (K − 1) | not drawn as a band anywhere: one line of words at the foot of the channels card, and one grey step row on the waterfalls when the page is read against the benchmark |
 
 `K = edition_size / benchmark_units_total` — one **even uplift** applied to every volume
 (sessions, entries, units, spend), in every channel, at every funnel stage and on every day
 of the campaign. **Conversion rates are held at the benchmark.**
 
-Both reference lines are drawn **identically**: same 2px width, same length, extending 3px
-beyond a bar they cross so the colour reads on white either side of a fill. **No white
-halos.** Colour and label are the only difference.
+**One reference at a time.** The page header carries `Against Benchmark | Target` (§2) and
+the whole page follows it: the tint behind every bar, the percentage under every column and
+its red or green, the headline delta, and the label on the bar. The reference *not* chosen
+stays readable as a plain figure in the card's footer rows - a number to know, never a second
+thing to judge against.
 
-## 2. Horizon: one page-level toggle
+This replaces the two-mark grammar the first build shipped (a near-black target line beside a
+cobalt benchmark line, both crossing the fill). Two references on one bar meant every reading
+was a three-way comparison the reader had to decode, and it forced a separate visual language
+for the cases where the benchmark sat above its target. With one reference there is no such
+case: the bar is simply longer.
 
-A single `Today | At close` control in the page header drives every container. No container
-carries its own horizon toggle (the Channels card keeps `% | Units` only).
+## 2. Two page-level toggles
 
-- **Today** — actuals vs the target for today (ink) and the benchmark for today (cobalt).
-- **At close** — projection vs the target (ink) and the benchmark (cobalt).
+The page header carries both, and nothing else on the page carries either. `Compare` says
+**when** to read the release; `Against` says **what** to read it against.
 
-Naming, both horizons: the marks are **"target"** and **"benchmark"**. The words "expected"
-and "benchmark pace" are retired. Where a label needs to disambiguate it reads
+```
+Compare  [ Today | At close ]        Against  [ Benchmark | Target ]
+```
+
+- **Today** - actuals vs the chosen reference for today.
+- **At close** - projection vs the chosen reference for the whole campaign.
+
+Naming, both horizons: the references are **"target"** and **"benchmark"**. The words
+"expected" and "benchmark pace" are retired. Where a label needs to disambiguate it reads
 `target today` / `benchmark today`.
 
-Containers with a single horizon ignore the toggle: **Funnel by channel** and **Organic
-funnel** are always Today; **Paid ROI** has no horizon and **no reference lines at all**.
+The horizon arrives as a prop; the reference is a **React context** (`RefProvider` /
+`useRefMode` in `ui.jsx`), because unlike the horizon it reaches every card - the funnels and
+the drivers included - and threading it through two grids of ten would leave the cards free
+to drift apart. Both reset to `today` / `target` whenever the release changes.
+
+Containers with a single horizon ignore the horizon toggle and follow the reference toggle
+like everything else: **Funnel by channel** and **Organic funnel** are always Today;
+**Paid ROI** has no horizon and **no reference at all**.
+
+`Against` is not shown on a release with no matched basket - there is nothing to switch to -
+and those pages read against the target, as they always did.
 
 ## 3. Basket → benchmark
 
@@ -332,13 +353,28 @@ derived set and only the full build clears the actuals-only page it leaves behin
 
 ## 7. Drawing grammar (web)
 
-Tokens: `--ref-target: #122b5c` and `--ref-bm: #2f62c4` in `tokens.css`, `C.refTarget` and
-`C.refBm` in `ui.jsx`. The two marks are **two shades of one hue**, never two hues: a
-near-black target beside a saturated blue benchmark read as two unrelated systems sitting on
-the orange fills, and the pair fought the fill for attention. Same hue and saturation, about
-27 points of lightness apart, so the darker one is plainly the one being judged against.
-Neither is lightened past the point where it still reads on an orange fill, which both of
-them cross. `C.ink` stays the colour of values and body text; a reference mark never uses it.
+Tokens, in `tokens.css` and `C` in `ui.jsx`:
+
+| token | value | where |
+|---|---|---|
+| `--ref-fill` / `C.refFill` | `#f8ddd0` | the reference itself, behind a bar |
+| `--ref-track` / `C.refTrack` | `#faf7f4` | a bar's remaining room out to the sellout |
+| `--ref-mark` / `C.refMark` | `#e8a98b` | the same reference where a bar cannot be drawn: a rung centre, a trajectory edge, a waterfall anchor |
+| `--orange-light` / `C.orangeLight` | `#f2a07f` | the projection |
+
+All four are one hue - the actual's own orange at four strengths. Two reference colours meant
+two systems on every card; one tint means the reading is simply which bar ends further along.
+`C.ink` stays the colour of values and body text; a reference never uses it.
+
+`orangeLight` was the much paler `#f7c4ad` while the reference was a blue mark. With the
+reference now a tint of the same orange sitting directly behind it, two pale oranges one in
+front of the other told the reader nothing, so the projection was deepened until it reads as
+orange against `refFill` without ever passing for the solid.
+
+**Two layers, always in this order.** The reference fills the whole height of its track; the
+actual sits inside it, inset top and bottom (about a fifth of the bar's height), so the tint
+shows on both sides of the orange and the two never read as one bar. In the column form the
+inset is horizontal: the reference is inset 6% of the column, the actual 27%.
 
 Labels that are placed by value never print through one another. Two rules, both measured in
 pixels off the real element rather than assumed from a fraction, because the same fraction
@@ -351,30 +387,40 @@ buys different room on a one-column card and a two-column one:
   benchmark, against `0` and `sellout`) is placed by `axisLabelLeft`: centred on its tick
   where it fits, slid just clear of the end label where it does not.
 
-`RefTick`'s horizontal form takes an `inset`: the mark measures the **bar** it crosses plus
-the standard 3px bleed, never the whole column. Column-wide segments leave only the column
-gap between one and the next, and a row of them reads as a single broken line across the
-card rather than as one mark per channel.
+`Tick`'s horizontal form takes an `inset`: the mark measures the **bar** it crosses plus the
+standard 3px bleed, never the whole column. Column-wide segments leave only the column gap
+between one and the next, and a row of them reads as a single broken line across the card
+rather than as one mark per channel.
+
+Below, *reference* means whichever of the two the page toggle is on.
 
 | container | Today | At close |
 |---|---|---|
-| **Units vs sellout** (hero) | fill = to date; ink tick = target today; cobalt tick = benchmark today; legend rows To date / Target today / Stretch today | fill = projected; ink tick = target; cobalt tick = benchmark; orange hatch = demand over the sellout |
-| **Unit trajectory** | two columns wide. Target and benchmark read off the today line as two short ticks with coloured labels, spread apart when their values are close; future faded | target (ink) and benchmark (cobalt) horizontal lines, stretch bracket between them, projection dashed |
-| **Channels vs targets** | one fill per column, ink line at target today, cobalt line at benchmark today, foot = % vs target | same with projected fill and close references |
-| **Funnel by channel** / **Organic funnel** | always Today. **cobalt centre line = benchmark**, hollow **ink ring = target**, orange/red dot = actual, on a log scale where ×4 either way fills the rung (`›` marks beyond). Pale bar spans ring→dot. The % and its RAG colour stay **vs target**. Volume rungs put the ring at ×K; rate rungs put it on the centre line (rates held at benchmark). | — |
-| **Projection vs target** (waterfall) | Benchmark today → Stretch (grey hatch) → Target today → 4 contributors → Actual today | Benchmark → Stretch → Target → 4 contributors → Projection |
-| **Funnel by channel**, waterfall view | the same three anchor rows above the per-stage contributors, off the same snapshot figures | — |
-| **Paid spend / day** | both track bars carry ink target + cobalt benchmark ticks; a `Stretch` row under `Capped by` states the uplift | same with projected fill |
-| **Predicted sell-through** | secured vs target today and benchmark today | prediction vs sellout, cobalt tick at the benchmark |
-| **Paid ROI** | unchanged — no reference lines | — |
+| **Units vs sellout** (hero) | tint = reference today, fill = to date, track = out to the sellout; label above the bar names the reference; legend rows To date / *reference* / the other reference as a plain figure | fill = projected; orange hatch = demand over the sellout, which replaces the third legend row when there is any |
+| **Unit trajectory** | two columns wide. One reference **series**, drawn as a tinted area with its own 1.5px top edge; the reading on the today line is the reference tick plus the actual, two labels rather than three; ahead of today the area drops back | the area runs the full width, with a 2px line at the reference's close level and both figures named beside it |
+| **Channels vs targets** | reference tint per column, actual inside it, foot = % vs *reference* with its own green/red | same with the projected fill |
+| **Funnel by channel** / **Organic funnel** | always Today. **The reference runs down the centre of every rung**, orange/red dot = actual, on a log scale where ×4 either way fills the rung (`›` marks beyond). Pale bar spans centre→dot. The % and its RAG colour are **vs that same centre**. Volume rungs read against benchmark × K under Target; rate rungs are held at the benchmark, so for them the two toggle positions are the same figure. | - |
+| **Actual / Projection vs target-or-benchmark** (waterfall) | against Target: Target today → 4 contributors → Actual today. Against Benchmark: Benchmark today → `Stretch to target` (flat plan grey, muted number, never RAG) → 4 contributors → Actual today. The card's title follows the toggle. | the same, ending at Projection |
+| **Funnel by channel**, waterfall view | the same anchor rows above the per-stage contributors, off the same snapshot figures | - |
+| **Paid spend / day** | both track bars carry the reference tint; the units row's % reads against it; a `Stretch` row under `Capped by` states the uplift in words | same with the projected fill |
+| **Predicted sell-through** | the reference as a tint out from zero, the segments inset inside it | at close the target *is* the edition, which the track already draws, so only the benchmark gets a tint there |
+| **Paid ROI** | unchanged - no reference | - |
+
+The stretch is never drawn as a band. It is the same even uplift in every channel and on
+every day (§1), so it is said once in words at the foot of the channels card
+(`target is ×1.49 the benchmark`) and once as a lozenge on Paid spend, and it appears as a
+step row only on the two waterfalls, only when the page is read against the benchmark, and
+only because the arithmetic there has to close from the level being read from.
 
 Sidebar status becomes three-state: green at or ahead of target, amber behind target but
 ahead of benchmark, red behind benchmark, hollow when no targets are set.
 
-Everything degrades: when `snap.benchmark` is absent the benchmark marks are simply not drawn
-and every card renders exactly as it does today. Both waterfalls say so in their footer -
-`levers, no comparable basket` - because a row that is simply missing explains nothing, and a
-reader comparing two cards with different numbers of anchors deserves the reason.
+Everything degrades: when `snap.benchmark` is absent the `Against` control is not shown, the
+page reads against the target, the rung centres fall back to the neutral plan grey and every
+card renders exactly as it did before the benchmark model existed. Both waterfalls say so in
+their footer - `levers, no comparable basket` - because a row that is simply missing explains
+nothing, and a reader comparing two cards with different numbers of anchors deserves the
+reason.
 
 The email card distinguishes its two silences the same way. `email.feedThrough` is the last
 send anywhere in the file, so a campaign that began after it cannot have sends to find: that
@@ -417,28 +463,39 @@ Wave-1 additions every module builds on. Signatures are fixed here so the module
 helpers can be written in parallel.
 
 ```js
-export const C = { ..., cobalt: "#2b5fd9" };
+export const C = { ..., refFill: "#f8ddd0", refTrack: "#faf7f4", refMark: "#e8a98b" };
 
-// One reference tick/line, 2px, extending 3px past the bar it crosses. No halo.
-// `kind`: "target" (ink) | "benchmark" (cobalt).
-export function RefTick({ pct, kind, vertical = true, tip })
+// The page reference, as a context. App.jsx provides; every card reads.
+export function RefProvider({ mode, children })      // "benchmark" | "target"
+export function useRefMode()                          // -> "benchmark" | "target"
+export function refWord(mode, horizon)                // "Benchmark today" | "Target" | ...
+export function otherWord(mode, horizon)              // the one NOT chosen
+export function pickRef(mode, { bm, target })         // bm falls back to target
 
-// Horizontal track bar. `target` draws the ink tick, `bm` the cobalt tick (both
-// optional). `hatchFrom` starts the orange over-sellout hatch at that value.
-export function TrackBar({ now, proj, target, bm, hatchFrom, height, radius, tips })
+// One 2px mark, extending 3px past the bar it crosses. No halo. Used only where a
+// bar cannot be drawn - the waterfall anchors, which are levels rather than
+// quantities rising from zero. The colour is the caller's.
+export function Tick({ pct, color, vertical = true, tip, inset })
+
+// Horizontal track bar: reference tint behind, actual inset in front.
+// `full` fixes the right edge (the hero's sellout) instead of the default
+// 120%-of-reference track. `hatchFrom` starts the orange over-sellout hatch.
+// `refValue`, not `ref`: React reserves `ref` and would never hand it over.
+export function TrackBar({ now, proj, refValue, full, hatchFrom, height, radius, tips })
 
 // Deviation rung shared by Funnel by channel and Organic funnel.
-//   aOverB : actual / benchmark   (null -> neutral rung)
-//   kind   : "vol" (target = benchmark x k) | "rate" (target = benchmark)
-//   k      : the even uplift
-// Returns { rel, dev, ring, beyond } where rel is % vs target, dev/ring are 4..96
-// positions on a log scale (x4 either way fills the rung).
-export function rungGeom(aOverB, kind, k)
-export function RungTrack({ dev, ring, up, neutral, guide })   // cobalt centre line + ink ring + dot
+//   aOverRef : actual / the chosen reference   (null -> neutral rung)
+// Returns { rel, dev, beyond }: rel is % vs that reference, dev is a 4..96
+// position on a log scale (x4 either way fills the rung). No ring - with one
+// reference the centre IS the thing being judged against.
+export function rungGeom(aOverRef)
+export function RungTrack({ dev, up, neutral, guide, bench })   // reference centre line + dot
+export function RungKey({ word, bench })                        // names whichever centre is drawn
 
-// The legend marks, so every card says it the same way.
-export function RefKey({ horizon, showStretch })
+// The stretch step on the two waterfalls: flat plan grey, never hatched.
+export const STRETCH_FILL
 ```
 
-Every module receives `horizon` (`"today" | "close"`) as a prop from `App.jsx`, defaulting
-to `"today"`. `snap.benchmark` may be absent — guard every cobalt mark on it.
+Every module receives `horizon` (`"today" | "close"`) as a prop from `App.jsx`, defaulting to
+`"today"`, and reads the reference from the context. `snap.benchmark` may be absent - guard
+on it, and `pickRef` falls back to the target when it is.
