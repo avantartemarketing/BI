@@ -409,10 +409,17 @@ function FunnelWaterfall({ snap, groups }) {
   const span = hi + pad - (lo - pad);
   const X = (v) => ((v - (lo - pad)) / span) * 100;
 
+  /* Every row states a base height and grows in proportion to it, so a short
+   * funnel spreads to the foot of the card instead of stopping two thirds of the
+   * way down, and a long one keeps its base heights and scrolls. The bars grow
+   * with their rows between 12px and 18px thick; the footer keeps its size. */
+  const ROW = (base) => ({ flex: `${base} 0 ${base}px`, minHeight: base });
+  const BAR_INSET = "clamp(calc(50% - 9px), 22%, calc(50% - 6px))";
+
   const anchorRow = (label, value, tip, color = C.refLine, extra = null) => (
-    <div style={{ height: 26, flex: "0 0 26px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+    <div style={{ ...ROW(28), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
       <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
-      <div style={{ position: "relative", height: 14 }}>
+      <div style={{ position: "relative", height: 16 }}>
         {extra}
         <div {...tipApi.props(tip)} style={{ position: "absolute", left: `${X(value)}%`, top: -2, bottom: -2, width: 2, background: color }} />
       </div>
@@ -448,13 +455,13 @@ function FunnelWaterfall({ snap, groups }) {
         }} />
       ) : null)}
       {flat.map((r, i) => r.header ? (
-        <div key={"h" + i} style={{ height: 19, flex: "0 0 19px", display: "flex", alignItems: "center" }}>
+        <div key={"h" + i} style={{ ...ROW(27), display: "flex", alignItems: "flex-end", paddingBottom: 4 }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{r.header}</div>
         </div>
       ) : r.to !== undefined ? (
-        <div key={r.label + i} style={{ height: 21, flex: "0 0 21px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+        <div key={r.label + i} style={{ ...ROW(22), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
           <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
-          <div style={{ position: "relative", height: 12 }}>
+          <div style={{ position: "relative", alignSelf: "stretch" }}>
             <div {...tipApi.props({
               head: r.label, body: r.note,
               rows: [
@@ -463,7 +470,7 @@ function FunnelWaterfall({ snap, groups }) {
                 { label: "Running total", value: fmt(r.to, 1) },
               ],
             })} style={{
-              position: "absolute", top: 0, bottom: 0,
+              position: "absolute", top: BAR_INSET, bottom: BAR_INSET,
               left: `${X(Math.min(r.from, r.to))}%`,
               width: `${Math.max(1.2, Math.abs(X(r.to) - X(r.from)))}%`,
               background: r.value >= 0 ? C.wfGreen : C.red, borderRadius: 3,
@@ -474,11 +481,11 @@ function FunnelWaterfall({ snap, groups }) {
           </div>
         </div>
       ) : (
-        <div key={r.label + i} style={{ height: 21, flex: "0 0 21px", display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+        <div key={r.label + i} style={{ ...ROW(22), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
           <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
-          <div style={{ position: "relative", height: 12 }}>
+          <div style={{ position: "relative", alignSelf: "stretch" }}>
             <div {...tipApi.props({ head: r.label, body: r.note, rows: r.tipRows })} style={{
-              position: "absolute", left: `${X(r.level)}%`, top: 1, width: 10, height: 10, marginLeft: -5,
+              position: "absolute", left: `${X(r.level)}%`, top: "50%", marginTop: -5, width: 10, height: 10, marginLeft: -5,
               borderRadius: "50%", background: NEUTRAL_DOT, boxShadow: RING,
             }} />
           </div>
