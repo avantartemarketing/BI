@@ -8,7 +8,10 @@
  * null (the line skips it). Points are mapped to campaign day via
  * date − windowStart and clipped to day 1..of;
  * the y-domain (series ∪ target ± 12%, snapped to 0.25) is clamped at 0 since a
- * negative ROI axis is meaningless; complete releases draw actuals only. */
+ * negative ROI axis is meaningless; complete releases draw actuals only.
+ * Paid is live while there has been spend in the last three days, the window
+ * the headline reads; switched off, the projection would be a path for spend
+ * nobody is making, so the line ends where the spend did and says so. */
 import React, { useState } from "react";
 import { Card, QBadge, GROUP_DOTS, C, fmt } from "../ui.jsx";
 
@@ -59,6 +62,8 @@ export default function PaidRoi({ snap }) {
 
   const roiPts = pts.filter((p) => p.roi !== null);
   const lastRoiPt = roiPts.length ? roiPts[roiPts.length - 1] : null;
+  const lastSpendDay = pts.reduce((m, p) => (p.spend > 0 ? Math.max(m, p.d) : m), 0);
+  const paidLive = lastSpendDay >= today - 2;
 
   // modelled decline to close, anchored on the last actual point (L3D level at
   // today only when there are no daily ROI points to anchor to)
@@ -74,7 +79,8 @@ export default function PaidRoi({ snap }) {
   const pathPts = (paid.roiPath || [])
     .map((p) => ({ d: dayIndex(p.date, snap.windowStart, null), v: p.roi }))
     .filter((p) => p.d !== null && p.d >= 1 && p.d <= of && p.v !== null && p.v !== undefined);
-  const showModel = !complete && anchor !== null && anchor.d <= of && (pathPts.length > 0 || factor !== null);
+  const showModel = !complete && paidLive && anchor !== null && anchor.d <= of && (pathPts.length > 0 || factor !== null);
+  const paidOff = !complete && !paidLive && anchor !== null && lastSpendDay > 0;
   const decline = !showModel ? [] : pathPts.length
     ? [{ d: anchor.d, v: anchor.v }, ...pathPts.filter((p) => p.d > anchor.d)]
     : Array.from({ length: of - anchor.d + 1 }, (_, i) => ({ d: anchor.d + i, v: anchor.v * Math.pow(factor, i) }));
@@ -249,6 +255,21 @@ export default function PaidRoi({ snap }) {
                 }}
               />
             )}
+            {/* paid switched off: the line ends where the spend did, and says so
+                instead of projecting spend nobody is making */}
+            {paidOff && (() => {
+              const flip = (anchor.d - 1) / DAYS > 0.6;
+              return (
+                <div style={{
+                  position: "absolute", left: leftPct(anchor.d), top: topPct(anchor.v),
+                  transform: flip ? "translate(-100%, -50%)" : "translateY(-50%)",
+                  [flip ? "paddingRight" : "paddingLeft"]: 12,
+                  fontSize: 12, color: C.muted, whiteSpace: "nowrap",
+                }}>
+                  paid off · last spend day {lastSpendDay}
+                </div>
+              );
+            })()}
             {/* complete: end dot on the last actual ROI point */}
             {complete && lastRoiPt && (
               <div
