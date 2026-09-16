@@ -23,32 +23,63 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Card, GROUP_DOTS, C, fmt, fmtSigned, refWords } from "../ui.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
-const LABEL_GAP_PX = 15;   // smallest vertical gap two 12px labels can sit at
 const LABEL_TODAY_PX = 38; // rendered width of "today" at 12px
 const LABEL_DAY_PX = 46;   // rendered width of "day 21" at 12px
+const LABEL_DAY1_PX = 36;  // rendered width of "day 1" at 12px
 
-/* Lay a set of readings out down one line without letting any two labels touch.
- * Each item keeps its true position `y` (the tick and the dot stay on the real
- * value, which is what makes the moved label honest) and gains `ly`, where its
- * text goes: sorted top to bottom, pushed apart to `gap`, then squeezed back
- * inside [lo, hi] from whichever end overflowed. Three readings on a 1,200-unit
- * axis can be 56 units apart, which is four pixels, so without this the target
- * and the actual simply print over each other. */
-function spreadLabels(items, gap, lo, hi) {
-  const out = items.slice().sort((a, b) => a.y - b.y).map((d) => ({ ...d, ly: d.y }));
-  for (let i = 1; i < out.length; i++) {
-    if (out[i].ly - out[i - 1].ly < gap) out[i].ly = out[i - 1].ly + gap;
-  }
-  const last = out.length - 1;
-  if (last >= 0 && out[last].ly > hi) {
-    out[last].ly = hi;
-    for (let i = last - 1; i >= 0; i--) out[i].ly = Math.min(out[i].ly, out[i + 1].ly - gap);
-  }
-  if (out.length && out[0].ly < lo) {
-    out[0].ly = lo;
-    for (let i = 1; i < out.length; i++) out[i].ly = Math.max(out[i].ly, out[i - 1].ly + gap);
-  }
-  return out;
+/* ---- placing the readings ----------------------------------------------------
+ * The readings on the today line are set where nothing else is drawn. Each has
+ * places it would rather be - beside the line, just above or just below its
+ * own mark, the roomier side first - and takes the first that no curve, no dot,
+ * no other label and no edge of the plot runs through. All of it is in real
+ * pixels off the measured plot, with the text measured in the page's own font,
+ * so it holds whatever width the card is given. Only when every place is taken
+ * does a reading go to its first choice on a card-white patch, so it stays
+ * legible whatever the chart does. */
+function segHitsBox(x0, y0, x1, y1, b) {
+  // Liang-Barsky: does the segment cross the box, edges included
+  let t0 = 0, t1 = 1;
+  const dx = x1 - x0, dy = y1 - y0;
+  const clip = (p, q) => {
+    if (p === 0) return q >= 0;
+    const r = q / p;
+    if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; }
+    else { if (r < t0) return false; if (r < t1) t1 = r; }
+    return true;
+  };
+  return clip(-dx, x0 - b.x0) && clip(dx, b.x1 - x0) && clip(-dy, y0 - b.y0) && clip(dy, b.y1 - y0);
+}
+const boxesTouch = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+function readingPlacer({ curves, blocks, bounds }) {
+  const taken = blocks.slice();
+  // what a box would run into: each crossing segment and each touched box
+  // counts one, and leaving the plot is worse than any of them
+  const clashes = (b) => {
+    const p = { x0: b.x0 - 2, y0: b.y0 - 2, x1: b.x1 + 2, y1: b.y1 + 2 };
+    if (p.x0 < bounds.x0 || p.x1 > bounds.x1 || p.y0 < bounds.y0 || p.y1 > bounds.y1) return 1000;
+    let n = taken.filter((t) => boxesTouch(p, t)).length;
+    for (const c of curves) for (let i = 1; i < c.length; i++) if (segHitsBox(c[i - 1].x, c[i - 1].y, c[i].x, c[i].y, p)) n += 1;
+    return n;
+  };
+  return {
+    find: (candidates) => candidates.find((b) => clashes(b) === 0) || null,
+    // when nothing is clear, the place that runs into the least
+    least: (candidates) => candidates.reduce((best, b) => (clashes(b) < clashes(best) ? b : best)),
+    commit: (box) => { taken.push(box); return box; },
+  };
+}
+let ctx2d = null, fontFamily = null;
+function pageFont() {
+  if (fontFamily) return fontFamily;
+  try { fontFamily = getComputedStyle(document.body).fontFamily || "sans-serif"; } catch { fontFamily = "sans-serif"; }
+  return fontFamily;
+}
+function textWidth(text, font) {
+  try {
+    if (!ctx2d) ctx2d = document.createElement("canvas").getContext("2d");
+    ctx2d.font = font;
+    return ctx2d.measureText(text).width;
+  } catch { return text.length * 6.8; }   // no canvas (a test runner): a fair guess at 12px
 }
 
 function slicePts(daily, windowStart, of) {
@@ -261,8 +292,6 @@ export default function Trajectory({ snap, horizon = "today" }) {
   const bmToday = hasBm ? (bmTodayPt !== null && bmTodayPt !== undefined ? bmTodayPt : s.bmExp) : null;
   const showToday = targeted && !close;
   const showClose = targeted && close;
-  // near the close the today line has no room on its right, so the readings flip side
-  const flipToday = todayFrac > 0.78;
 
   const projPct = targeted && s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
   // axis: % of target when there is one, secured units when there is not
@@ -278,18 +307,21 @@ export default function Trajectory({ snap, horizon = "today" }) {
     : "Projected " + fmt(s.proj) + " at close" + (projPct !== null ? " · " + projPct + "% of target" : "") +
       (sel === "all" && projPct !== null && projPct > 100
         ? " · demand beyond the sellout cannot convert" : "");
-  const showTodayLabel = !complete && todayFrac >= 0.08 && todayFrac <= 0.92;
-  /* "today" is centred on its line and "day N" is pinned to the right edge, so
-   * on a release in its last days the two overprint. How close is too close is
-   * a pixel question, not a fraction one - the card is two columns wide now and
-   * the same fraction buys twice the room - so it is measured: half of "today"
-   * plus "day N" plus a gap, against the pixels actually left. The close label
-   * is the one to drop, since the axis already ends there and today is the
-   * reading that matters. The fraction is the fallback before the first
+  /* "today" always shows on a live release: it is the reading that matters, and
+   * the line it names is otherwise just a line. "day 1" and "day N" sit at the
+   * ends, so in the first or last days one of them would overprint it; how
+   * close is too close is a pixel question, not a fraction one, so it is
+   * measured against the plot, and the end label is the one to give way, since
+   * the axis already ends there. The fraction is the fallback before the first
    * measurement lands. */
+  const showTodayLabel = !complete;
+  const day1Room = plotW > 0
+    ? todayFrac * plotW - (LABEL_TODAY_PX / 2 + LABEL_DAY1_PX + 8)
+    : (todayFrac < 0.08 ? -1 : 1);
   const endLabelRoom = plotW > 0
     ? (1 - todayFrac) * plotW - (LABEL_TODAY_PX / 2 + LABEL_DAY_PX + 10)
     : (todayFrac > 0.82 ? -1 : 1);
+  const showDay1Label = !(showTodayLabel && day1Room < 0);
   const showEndLabel = !(showTodayLabel && endLabelRoom < 0);
 
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
@@ -301,36 +333,93 @@ export default function Trajectory({ snap, horizon = "today" }) {
     width: 12, margin: "-1px 0 0 -6px",
     ...(dotted ? { height: 0, borderTop: `2px dotted ${color}` } : { height: 2, background: color }),
   });
-  // the label sits at `yy` (already spread), not necessarily on its own value
-  const readLabel = (yy, color, weight = 500) => ({
-    position: "absolute", left: `${(todayFrac * 100).toFixed(2)}%`, top: pctTop(yy),
-    transform: flipToday ? "translate(-100%,-50%)" : "translateY(-50%)",
-    [flipToday ? "paddingRight" : "paddingLeft"]: 10,
-    fontSize: 12, fontWeight: weight, color, whiteSpace: "nowrap",
-    fontVariantNumeric: "tabular-nums",
-  });
-  /* The readings sit beside the today line, which is exactly where every curve
-   * on the chart is passing, so the text knocks the curves out: a card-white
-   * box a few pixels bigger than the glyphs, like the close-level label. The
-   * negative margin keeps the text where it was and lets only the box grow. */
-  const knockout = { background: "#fff", padding: "1px 4px", margin: "0 -4px", borderRadius: 2 };
 
-  /* The three today readings share one x, so two close values print on top of
-   * each other. Spread the LABELS only; every tick and the today dot stay on
-   * the true value. The gap is set in real pixels off the measured plot, so it
-   * holds whatever width the card is given. The today line already says
-   * "today", so the readings are just the word and the figure. */
-  const gapY = plotH > 0 ? (LABEL_GAP_PX / plotH) * Y0 : Y0 * 0.1;
-  const readings = spreadLabels([
-    ...(showToday && hasBm && has(bmToday)
-      ? [{ key: "bm", y: y(bmToday), color: C.muted, weight: 500,
-           text: `benchmark ${fmt(bmToday)}` }] : []),
-    ...(showToday
-      ? [{ key: "target", y: y(planToday), color: C.muted, weight: 500,
-           text: `target ${fmt(planToday)}` },
-         { key: "now", y: y(nowVal), color: C.ink, weight: 600,
-           text: `${fmt(nowVal)} ${fmtSigned(nowVal - planToday)}` }] : []),
-  ], gapY, YTOP, Y0 - 2);
+  /* The readings on the today line, set clear of everything drawn (the placer
+   * at the top of the file). The target and the benchmark go as one pair when
+   * they are within a few pixels of each other, higher value first, so two
+   * figures that are almost the same read as the two references rather than
+   * as a clash; a pair that fits nowhere splits into two. The actual is placed
+   * first so it gets the best spot, unless placing the references first leaves
+   * fewer readings on a patch, which is what matters in the first days when
+   * everything crowds the left edge. The today line already says "today", so
+   * the readings are the word and the figure. Nothing is placed until the plot
+   * has been measured. */
+  let readings = [];
+  if (showToday && plotW > 0 && plotH > 0) {
+    const px = (i) => (i / N) * plotW;
+    const py = (v) => (y(v) / Y0) * plotH;
+    const polylines = (get, from, to) => {
+      const out = []; let run = [];
+      for (let i = from; i <= to; i++) {
+        const v = has(s.pts[i]) ? get(s.pts[i]) : null;
+        if (has(v)) run.push({ x: px(i), y: py(v) }); else if (run.length) { out.push(run); run = []; }
+      }
+      if (run.length) out.push(run);
+      return out;
+    };
+    const curves = [...polylines((p) => p.actual, 0, lastA), ...polylines(planAt, 0, N), ...(hasBm ? polylines(bmAt, 0, N) : [])];
+    if (showProjSeg) {
+      const pr = [{ x: px(todayIdx), y: py(nowVal) }];
+      s.pts.forEach((p, i) => { if (i > todayIdx && has(p.proj)) pr.push({ x: px(i), y: py(p.proj) }); });
+      if (pr.length === 1) pr.push({ x: plotW, y: py(s.proj) });
+      curves.push(pr);
+    }
+    const ax = px(todayIdx), ayNow = py(nowVal), ayEnd = py(complete ? nowVal : s.proj);
+    const font = (weight) => `${weight} 12px ${pageFont()}`;
+    const blocks = [
+      { x0: ax - 5, y0: ayNow - 5, x1: ax + 5, y1: ayNow + 5 },   // the today dot
+      ...(targeted && !complete ? [{ x0: plotW - 5, y0: ayEnd - 5, x1: plotW + 5, y1: ayEnd + 5 }] : []),   // the projection's dot
+      ...(projPct !== null ? [{ x0: plotW + 10, y0: ayEnd - 8, x1: plotW + 10 + textWidth(`${projPct}%`, font(600)), y1: ayEnd + 8 }] : []),
+    ];
+    const H = 14, GAP = 10, LIFT = 5;
+    const sides = (1 - todayFrac) * plotW > 120 ? ["right", "left"] : ["left", "right"];
+    // the places a box of w x h would rather be, nearest first: beside the line,
+    // clear above the higher mark or clear below the lower one, the roomier side
+    // first; then the same a row further out and a row beyond that; then the
+    // same three rows a step along the line, out of the crowd at the today mark
+    const spots = (w, h, ayAbove, ayBelow = ayAbove) => [0, 48].flatMap((along) => [0, 1, 2].flatMap((k) =>
+      sides.flatMap((side) => ["above", "below"].map((vert) => {
+        const x0 = side === "right" ? ax + GAP + along : ax - GAP - along - w;
+        const off = LIFT + k * (H + 2);
+        const y0 = vert === "above" ? ayAbove - off - h : ayBelow + off;
+        // how far from its mark a reading has strayed, for choosing between arrangements
+        return { x0, y0, x1: x0 + w, y1: y0 + h, side, cost: k + (along ? 2 : 0) };
+      }))));
+    // a placed box, written out one line per item, ranged against the today line
+    const lines = (box, items) => items.map((it, k) => ({
+      ...it, y0: box.y0 + k * (H + 2), x0: box.side === "right" ? box.x0 : box.x1 - it.w, knock: box.knock,
+    }));
+    const item = (key, text, color, weight) => ({ key, text, color, weight, w: textWidth(text, font(weight)) });
+    const nowItem = item("now", `${fmt(nowVal)} ${fmtSigned(nowVal - planToday)}`, C.ink, 600);
+    const tItem = item("target", `target ${fmt(planToday)}`, C.ink, 500);
+    const bItem = hasBm && has(bmToday) ? item("bm", `benchmark ${fmt(bmToday)}`, C.muted, 500) : null;
+    const ayT = py(planToday), ayB = bItem ? py(bmToday) : null;
+    const arrange = (referencesFirst) => {
+      const { find, least, commit } = readingPlacer({ curves, blocks, bounds: { x0: 0, y0: 0, x1: plotW + 44, y1: plotH } });
+      const out = [];
+      let knocks = 0, cost = 0;
+      const settle = (candidates, items) => {
+        const b = find(candidates);
+        if (b) cost += b.cost; else knocks += 1;
+        out.push(...lines(commit(b ? { ...b, knock: false } : { ...least(candidates), knock: true }), items));
+      };
+      const actual = () => settle(spots(nowItem.w, H, ayNow), [nowItem]);
+      const references = () => {
+        if (bItem && Math.abs(ayB - ayT) < 20) {
+          const pair = planToday >= bmToday ? [tItem, bItem] : [bItem, tItem];
+          const b = find(spots(Math.max(tItem.w, bItem.w), 2 * H + 2, Math.min(ayT, ayB), Math.max(ayT, ayB)));
+          if (b) { cost += b.cost; out.push(...lines(commit({ ...b, knock: false }), pair)); return; }
+        }
+        settle(spots(tItem.w, H, ayT), [tItem]);
+        if (bItem) settle(spots(bItem.w, H, ayB), [bItem]);
+      };
+      if (referencesFirst) { references(); actual(); } else { actual(); references(); }
+      return { out, knocks, cost };
+    };
+    // the arrangement with fewer readings on a patch, then with readings nearer their marks
+    const a = arrange(false), b = arrange(true);
+    readings = (b.knocks < a.knocks || (b.knocks === a.knocks && b.cost < a.cost)) ? b.out : a.out;
+  }
 
   return (
     <Card wide dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
@@ -448,7 +537,11 @@ export default function Trajectory({ snap, horizon = "today" }) {
                 {hasBm && has(bmToday) && <div style={readTick(bmToday, C.refLine, true)} />}
                 <div style={readTick(planToday, C.refLine)} />
                 {readings.map((r) => (
-                  <div key={r.key} style={readLabel(r.ly, r.color, r.weight)}><span style={knockout}>{r.text}</span></div>
+                  <div key={r.key} style={{
+                    position: "absolute", left: r.x0, top: r.y0, height: 14, lineHeight: "14px",
+                    fontSize: 12, fontWeight: r.weight, color: r.color, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
+                    ...(r.knock ? { background: "#fff", padding: "0 3px", margin: "0 -3px", borderRadius: 2 } : {}),
+                  }}>{r.text}</div>
                 ))}
               </>
             )}
@@ -505,7 +598,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
             )}
 
             {/* x axis */}
-            <div style={{ ...xLabel, left: 0 }}>day 1</div>
+            {showDay1Label && <div style={{ ...xLabel, left: 0 }}>day 1</div>}
             {showTodayLabel && (
               <div style={{ ...xLabel, left: `${(todayFrac * 100).toFixed(2)}%`, transform: "translateX(-50%)", color: C.ink }}>
                 today
