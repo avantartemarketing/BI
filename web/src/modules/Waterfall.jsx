@@ -1,15 +1,16 @@
 /* Projection vs target (spec §4.10) - horizontal waterfall.
  *
- * The card reads top to bottom as one argument: here is the target, and here
- * are the contributors that explain the distance from it to where the release
- * actually lands. The benchmark sits on the target's row as a dotted tick - the
- * waterfall's form of the dotted outline every bar carries (BENCHMARK_SPEC 7) -
- * so the reader sees how far the business asked for above the basket without a
- * row of its own for it; the stretch itself is a planning decision, not
- * performance, and is named in the target's popup rather than drawn as a step.
+ * The card reads top to bottom as one argument: here is what launches like
+ * this one reach, here is what the business asked for on top of that, so here
+ * is the target, and here are the contributors that explain the distance from
+ * it to where the release actually lands. The benchmark opens the list as a
+ * dotted tick, its mark everywhere (BENCHMARK_SPEC 7); the stretch is the
+ * first step, a bar in the stretch tint from the benchmark to the target, so
+ * the distance the business asked for is drawn like every other distance on
+ * the card. Without a basket the list opens at the target.
  *
- * Target and outcome are level anchor ticks (never floor-anchored columns); the
- * contributor bars step between running levels with grey 1px connector drops.
+ * Benchmark, target and outcome are level anchor ticks (never floor-anchored
+ * columns); the bars step between running levels with grey 1px connector drops.
  * x-scale = [min, max of every level drawn] ± 10% pad. Projection and the
  * to-date figures are stored model outputs - never re-derived here; on a
  * complete release the projection equals the actual close. */
@@ -55,16 +56,17 @@ export default function Waterfall({ snap, horizon = "today" }) {
     cum += s.value ?? 0;
     return { ...s, from, to: cum };
   });
-  const levels = [target, ...path.map((p) => p.to)];
-  // the benchmark is in the scale so its tick can never fall off the row
-  const marks = [outcome, ...levels, ...(hasBm ? [benchmark] : [])];
+  // every level a drop hangs from, one per row but the last: the benchmark to
+  // the stretch bar, the stretch bar to the target, the target to the first step
+  const levels = [...(hasBm ? [benchmark, target] : []), target, ...path.map((p) => p.to)];
+  const marks = [outcome, ...levels];
   const lo = Math.min(...marks);
   const hi = Math.max(...marks);
   const pad = (hi - lo) * 0.1 || 1;
   const span = hi + pad - (lo - pad);
   const X = (v) => (span > 0 ? ((v - (lo - pad)) / span) * 100 : 50);
 
-  const nRows = path.length + 2;              // the target + the steps + the outcome
+  const nRows = levels.length + 1;            // every level and the outcome
   const net = outcome - target;
   const netC = net >= 0 ? C.green : C.red;
   const closeWord = complete ? "Final" : "Projected";
@@ -86,19 +88,16 @@ export default function Waterfall({ snap, horizon = "today" }) {
     gap: 12, alignItems: "center", minHeight: 0,
   };
 
-  const targetTip = {
-    head: words.target,
+  const targetTip = { head: words.target, rows: [{ label: "Units", value: fmt(target) }] };
+  const stretchTip = {
+    head: "Stretch",
     rows: [
-      { label: "Units", value: fmt(target) },
-      ...(hasBm ? [
-        { label: words.bm, value: fmt(benchmark) },
-        { label: "Stretch", value: fmtSigned(stretch) },
-        ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
-      ] : []),
+      { label: words.bm, value: fmt(benchmark ?? 0) },
+      { label: words.target, value: fmt(target) },
+      { label: "Stretch", value: fmtSigned(stretch ?? 0) },
+      ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
     ],
-    body: hasBm
-      ? "The stretch is what the business asked for over and above the basket - the same even uplift in every channel and on every day."
-      : undefined,
+    body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day.",
   };
   const bmTip = {
     head: words.bm,
@@ -139,12 +138,42 @@ export default function Waterfall({ snap, horizon = "today" }) {
           ))}
         </div>
 
-        {/* the target's row carries both references: its own solid tick and the
-            benchmark's dotted one */}
+        {/* the opening: the benchmark's dotted tick, the stretch as a bar in the
+            stretch tint (a planning decision, so its figure is in ink, not the
+            step colours), then the target's own tick */}
+        {hasBm && (
+          <div style={rowGrid}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{words.bm}</div>
+            <div style={{ position: "relative", height: 14 }}>
+              <Tick pct={X(benchmark)} color={C.refLine} dotted tip={bmTip} />
+            </div>
+            <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
+              {fmt(benchmark)}
+            </div>
+          </div>
+        )}
+        {hasBm && (
+          <div style={rowGrid}>
+            <div style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>Stretch</div>
+            <div style={{ position: "relative", height: 14 }}>
+              <div
+                {...tipApi.props(stretchTip)}
+                style={{
+                  position: "absolute", top: 0, bottom: 0,
+                  left: `${X(Math.min(benchmark, target))}%`,
+                  width: `${Math.max(1.2, Math.abs(X(target) - X(benchmark)))}%`,
+                  background: C.refStretch, borderRadius: 3,
+                }}
+              />
+            </div>
+            <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
+              {fmtSigned(stretch)}
+            </div>
+          </div>
+        )}
         <div style={rowGrid}>
           <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{words.target}</div>
           <div style={{ position: "relative", height: 14 }}>
-            {hasBm && <Tick pct={X(benchmark)} color={C.refLine} dotted tip={bmTip} />}
             <Tick pct={X(target)} color={C.refLine} tip={targetTip} />
           </div>
           <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
@@ -208,17 +237,15 @@ export default function Waterfall({ snap, horizon = "today" }) {
         <QBadge content={{
           head: title,
           body: isToday
-            ? "Contributors sum exactly to the gap between the target for today and what is secured to date. The dotted tick on the target's row is the benchmark: what the matched basket typically has by now."
-            : "Contributors sum exactly to the gap between target and projected demand at close. Demand here is unconstrained - the hero caps at the sellout. The dotted tick on the target's row is the benchmark.",
+            ? "The list opens at the benchmark, what the matched basket typically has by now, and the stretch is what the business asked for on top of it, which makes the target. From there the contributors sum exactly to the gap between the target for today and what is secured to date."
+            : "The list opens at the benchmark and the stretch is what the business asked for on top of it, which makes the target. From there the contributors sum exactly to the gap between target and projected demand at close. Demand here is unconstrained - the hero caps at the sellout.",
         }} />
         <span style={{
           fontSize: 12, color: C.muted, whiteSpace: "nowrap",
           minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 10,
         }}>
-          {/* the benchmark as a figure to know; and where there is no basket at
-              all, the model that set the target instead */}
-          {hasBm ? words.bm.toLowerCase() + " " + fmt(benchmark) : "levers, no comparable basket"}
-          {" · "}
+          {/* where there is no basket at all, the model that set the target instead */}
+          {hasBm ? "" : "levers, no comparable basket · "}
           {isToday
             ? "secured units" + (snap?.day ? ", day " + snap.day : "")
             : "units at close"}

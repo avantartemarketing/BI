@@ -396,10 +396,10 @@ function FunnelWaterfall({ snap, groups }) {
     flat.push({ ...perBuyerRow, value: perBuyerTotal, from, to: cum });
   }
   /* The same grammar as the outcome waterfall, off the same snapshot figures:
-   * the target's row carries the benchmark as a dotted tick beside the target's
-   * own, so the reader sees how far the business asked for above the basket
-   * without a row of its own for it. Absent a benchmark there is no tick, as
-   * everywhere else. */
+   * the list opens at the benchmark, steps by the stretch to the target, and
+   * only then begins the channels, so the distance the business asked for
+   * above the basket is a bar like every other distance on the card. Absent a
+   * benchmark the list opens at the target, as everywhere else. */
   const bmTotal = snap?.hero?.benchmarkToday ?? null;
   const hasBm = !!snap?.benchmark && bmTotal !== null && bmTotal !== undefined;
   const stretchTotal = hasBm ? expTotal - bmTotal : null;
@@ -419,14 +419,42 @@ function FunnelWaterfall({ snap, groups }) {
   const ROW = (base) => ({ flex: `${base} 0 ${base}px`, minHeight: base });
   const BAR_INSET = "clamp(calc(50% - 9px), 22%, calc(50% - 6px))";
 
-  const anchorRow = (label, value, tip, color = C.refLine, extra = null) => (
-    <div style={{ ...ROW(28), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+  // a level: its mark is a tick, dotted for the benchmark as its mark is everywhere
+  const anchorRow = (label, value, tip, color = C.refLine, dotted = false) => (
+    <div style={{ ...ROW(26), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
       <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
-      <div style={{ position: "relative", height: 16 }}>
-        {extra}
-        <div {...tipApi.props(tip)} style={{ position: "absolute", left: `${X(value)}%`, top: -2, bottom: -2, width: 2, background: color }} />
+      <div style={{ position: "relative", height: 14 }}>
+        <Tick pct={X(value)} color={color} dotted={dotted} tip={tip} />
       </div>
       <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>{fmt(value)}</div>
+    </div>
+  );
+  /* The stretch as a step: the bar from the benchmark to the target in the
+   * stretch tint, the same band the bars and the trajectory draw between the
+   * two references. A planning decision rather than performance, so its figure
+   * is in ink, not the step colours. */
+  const stretchTip = hasBm ? {
+    head: "Stretch",
+    rows: [
+      { label: words.bm, value: fmt(bmTotal) },
+      { label: words.target, value: fmt(expTotal) },
+      { label: "Stretch", value: fmtSigned(stretchTotal) },
+      ...(snap?.benchmark?.k ? [{ label: "Uplift", value: "×" + fmt(snap.benchmark.k, 2) }] : []),
+    ],
+    body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day.",
+  } : null;
+  const stretchRow = () => (
+    <div style={{ ...ROW(20), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+      <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Stretch</div>
+      <div style={{ position: "relative", alignSelf: "stretch" }}>
+        <div {...tipApi.props(stretchTip)} style={{
+          position: "absolute", top: BAR_INSET, bottom: BAR_INSET,
+          left: `${X(Math.min(bmTotal, expTotal))}%`,
+          width: `${Math.max(1.2, Math.abs(X(expTotal) - X(bmTotal)))}%`,
+          background: C.refStretch, borderRadius: 3,
+        }} />
+      </div>
+      <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>{fmtSigned(stretchTotal)}</div>
     </div>
   );
 
@@ -437,32 +465,22 @@ function FunnelWaterfall({ snap, groups }) {
        the closing anchor is never simply cut off on a release with more groups
        or more stages than this one. */
     <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      {anchorRow("Target today", expTotal, {
+      {hasBm && anchorRow(words.bm, bmTotal, {
+        head: "Benchmark today",
+        rows: [{ label: "Secured units", value: fmt(bmTotal) }],
+        body: "The median of the matched basket - what launches like this one typically reach by now.",
+      }, C.refLine, true)}
+      {hasBm && stretchRow()}
+      {anchorRow(words.target, expTotal, {
         head: `Target by day ${day}`,
-        rows: [
-          { label: "Secured units", value: fmt(expTotal) },
-          ...(hasBm ? [
-            { label: words.bm, value: fmt(bmTotal) },
-            { label: "Stretch", value: fmtSigned(stretchTotal) },
-            ...(snap?.benchmark?.k ? [{ label: "Uplift", value: "×" + fmt(snap.benchmark.k, 2) }] : []),
-          ] : []),
-        ],
-        body: hasBm
-          ? "The stretch is what the business asked for over and above the basket - the same even uplift in every channel and on every day."
-          : undefined,
-      }, C.refLine, hasBm ? (
-        <Tick pct={X(bmTotal)} color={C.refLine} dotted tip={{
-          head: "Benchmark today",
-          rows: [{ label: "Secured units", value: fmt(bmTotal) }],
-          body: "The median of the matched basket - what launches like this one typically reach by now.",
-        }} />
-      ) : null)}
+        rows: [{ label: "Secured units", value: fmt(expTotal) }],
+      })}
       {flat.map((r, i) => r.header ? (
-        <div key={"h" + i} style={{ ...ROW(27), display: "flex", alignItems: "flex-end", paddingBottom: 4 }}>
+        <div key={"h" + i} style={{ ...ROW(25), display: "flex", alignItems: "flex-end", paddingBottom: 4 }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{r.header}</div>
         </div>
       ) : r.to !== undefined ? (
-        <div key={r.label + i} style={{ ...ROW(22), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+        <div key={r.label + i} style={{ ...ROW(20), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
           <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
           <div style={{ position: "relative", alignSelf: "stretch" }}>
             <div {...tipApi.props({
@@ -484,7 +502,7 @@ function FunnelWaterfall({ snap, groups }) {
           </div>
         </div>
       ) : (
-        <div key={r.label + i} style={{ ...ROW(22), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
+        <div key={r.label + i} style={{ ...ROW(20), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
           <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
           <div style={{ position: "relative", alignSelf: "stretch" }}>
             <div {...tipApi.props({ head: r.label, body: r.note, rows: r.tipRows })} style={{
