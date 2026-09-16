@@ -10,7 +10,7 @@ drawing grammar. Where it disagrees with an older doc, this file wins.
 |---|---|---|
 | **Benchmark** | what launches in the matched basket typically reach: the **median** of that basket, per metric and per channel. One value, never a band. | a **dotted outline** of the column it would make, `#ea8f66`, drawn over the target's fill - tracing the fill's edges where it sits inside the target, standing in the air above it where it does not |
 | **Target** | benchmark × K, the business target | the **fill**: `#f8ccba` from zero to whichever of target and benchmark is lower, `#f8ddd0` from the benchmark up to the target when the target is the higher |
-| **Stretch** | target − benchmark = benchmark × (K − 1) | the lighter band of the fill, and one line of words at the foot of the channels card; never a band or a step of its own |
+| **Stretch** | target − benchmark = benchmark × (K − 1) | the lighter band of the fill, one line of words at the foot of the channels card, and the opening step of the two waterfalls (§9); never a band of its own |
 
 `K = edition_size / benchmark_units_total` — one **even uplift** applied to every volume
 (sessions, entries, units, spend), in every channel, at every funnel stage and on every day
@@ -389,7 +389,7 @@ rather than as one mark per channel.
 | container | Today | At close |
 |---|---|---|
 | **Units vs sellout** (hero) | fill = target today in two tints, outline = benchmark today, orange = to date, track = out to the sellout; two label rows above the bar, the benchmark on the upper and the target on the lower, so the two never print through each other; legend rows To date / Target today / Benchmark today | fill = projected; orange hatch = demand over the sellout, which takes the third legend row when there is any (the label above the bar still names the benchmark) |
-| **Unit trajectory** | two columns wide. The target's pace as a two-tone area with a solid 1.5px edge, the benchmark's pace as a dotted 1.5px line over it, the actual in front; three readings on the today line (benchmark, target, actual), labels spread apart when their values are close; ahead of today it all drops back | both run the full width, plus a solid 2px level at the target and a dotted one at the benchmark, named together at the left |
+| **Unit trajectory** | two columns wide. The target's pace as a solid 1.5px line, the benchmark's pace as a dotted 1.5px line, the actual in front, no area under any of them; three readings on the today line (benchmark, target, actual), each set where no curve, dot or other label runs; ahead of today the references drop back | both run the full width, plus a solid 2px level at the target and a dotted one at the benchmark, named together at the left |
 | **Channels vs targets** | fill and outline per column, actual inside them, foot = % vs target with its own green/red; in the % view every target is 100% and, the uplift being one multiple, every outline sits at the same height too | same with the projected fill |
 | **Funnel by channel** / **Organic funnel** | always Today. **The target runs down the centre of every rung**, the benchmark is a **dotted tick** wherever the basket's figure lands on the same log scale, orange/red dot = actual; ×4 either way fills the rung (`›` marks beyond). Pale bar spans centre→dot. The % and its RAG colour are vs target. Volume rungs carry the uplift, so the tick sits 1/K off the centre; rate rungs are held at the benchmark, so the tick sits on the centre line. | - |
 | **Actual / Projection vs target** (waterfall) | Benchmark today (dotted tick) → Stretch (a bar in the stretch tint from the benchmark to the target: what the business asked for over the basket, its popup naming the uplift) → Target today → 4 contributors → Actual today; without a basket the list opens at the target | the same, ending at Projection |
@@ -398,10 +398,12 @@ rather than as one mark per channel.
 | **Predicted sell-through** | fill and outline out from zero, the segments inset inside them; two label rows above the bar as on the hero | at close the target *is* the edition, which the track already draws, so only the benchmark is labelled there |
 | **Paid ROI** | unchanged - no reference | - |
 
-The stretch is never a band or a step of its own. It is the lighter tint of the fill, and it
-is the same even uplift in every channel and on every day (§1), so it is said once in words at
-the foot of the channels card (`target is ×1.49 the benchmark`), once as a lozenge on Paid
-spend, and in the target's popup on every card that has one.
+The stretch is never a band of its own. It is the lighter tint of the fill, and it is the
+same even uplift in every channel and on every day (§1), so it is said once in words at the
+foot of the channels card (`target is ×1.49 the benchmark`), once as a lozenge on Paid spend,
+and in the target's popup on every card that has one. The one place it is a step is where the
+two waterfalls open: benchmark, then the stretch as a bar in the stretch tint, then the target,
+so that the distance the business asked for is drawn like every other distance on those cards.
 
 Sidebar status becomes three-state: green at or ahead of target, amber behind target but
 ahead of benchmark, red behind benchmark, hollow when no targets are set.

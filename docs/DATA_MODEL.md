@@ -544,7 +544,7 @@ more are we asking for?** Everything below falls out of that one sentence.
 |---|---|---|
 | **Benchmark** | what launches in the matched basket typically reach: the **median** of that basket, per metric and per channel | a dotted outline of the column it would make, `#ea8f66`, drawn over the target's fill |
 | **Target** | benchmark × K, the business target | the fill: `#f8ccba` from zero to whichever of the two is lower, `#f8ddd0` from the benchmark up to the target when the target is the higher |
-| **Stretch** | target − benchmark = benchmark × (K − 1) | the lighter band of the fill, and a number; never a band or a step of its own |
+| **Stretch** | target − benchmark = benchmark × (K − 1) | the lighter band of the fill, a number, and the opening step of the two waterfalls; never a band of its own |
 
 Both references are on every bar at once. The fill says what the business asked for and where
 the basket agrees with it; the outline says what the basket typically reaches. Percentages,

@@ -6,13 +6,13 @@
  * Real-data bridge: daily[] arrays start at private-room open, so the series is
  * sliced to the campaign window (windowStart .. windowEnd = of+1 points, index = day).
  *
- * Both references, as the bars draw them (BENCHMARK_SPEC 7). The target's pace
- * is a tinted area under its curve - darker up to whichever of target and
- * benchmark is lower, lighter between the benchmark and the target above it -
- * with a solid top edge; the benchmark's pace (daily[].bm, summed across groups
- * for "all" exactly as the plan is, so the two are always built the same way) is
- * a dotted line over it; the actual is the orange line in front. The second
- * reference is one more line, not a second system.
+ * Both references, in the marks the bars give them (BENCHMARK_SPEC 7) but as
+ * lines, since a pace is a line: the target's pace is a solid line, the
+ * benchmark's pace (daily[].bm, summed across groups for "all" exactly as the
+ * plan is, so the two are always built the same way) is a dotted one, and the
+ * actual is the orange line in front. No area under any of them: a fill said
+ * nothing the lines did not, and hid the actual where it ran below the target.
+ * The second reference is one more line, not a second system.
  *
  * The two horizons want two pictures. Today the question is "where should we
  * be by now", a reading taken at a single x: both references become short ticks
@@ -146,36 +146,6 @@ function pathOf(pts, get, from, to, x, y) {
 /* The same polyline closed back along the baseline, so the reference can be a
  * filled area. Drawn from the first point rather than from x=0 because a series
  * that starts a day in should not be given a day it did not have. */
-function areaOf(pts, get, from, to, x, y) {
-  const line = [];
-  let x0 = null, x1 = null;
-  for (let i = Math.max(0, from); i <= to && i < pts.length; i++) {
-    const v = get(pts[i]);
-    if (v === null || v === undefined) continue;
-    if (x0 === null) x0 = x(i);
-    x1 = x(i);
-    line.push((line.length ? "L" : "M") + x(i).toFixed(1) + "," + y(v).toFixed(1));
-  }
-  if (line.length < 2) return "";
-  return line.join(" ") + ` L${x1.toFixed(1)},${Y0} L${x0.toFixed(1)},${Y0} Z`;
-}
-
-/* The region between two curves over an index range: forward along the upper,
- * back along the lower, closed. Where the "upper" dips below the lower the band
- * is simply zero-height there, which is what a stretch that does not exist
- * should draw. */
-function bandOf(pts, hiGet, loGet, from, to, x, y) {
-  const fwd = [], back = [];
-  for (let i = Math.max(0, from); i <= to && i < pts.length; i++) {
-    const hi = hiGet(pts[i]), lo = loGet(pts[i]);
-    if (hi === null || hi === undefined || lo === null || lo === undefined) continue;
-    fwd.push(x(i).toFixed(1) + "," + y(hi).toFixed(1));
-    back.push(x(i).toFixed(1) + "," + y(lo).toFixed(1));
-  }
-  if (fwd.length < 2) return "";
-  return "M" + fwd.join(" L") + " L" + back.reverse().join(" L") + " Z";
-}
-
 export default function Trajectory({ snap, horizon = "today" }) {
   const [sel, setSel] = useState("all");
   const [hover, setHover] = useState(null);   // {i, frac}
@@ -228,12 +198,10 @@ export default function Trajectory({ snap, horizon = "today" }) {
   const hasBm = !!snap.benchmark && s.bm !== null && s.bm > 0;
   const close = horizon === "close";
   const words = refWords(close ? "close" : "today");
-  // the target's pace, the benchmark's, and the lower of the two at each point -
-  // the base of the fill; the stretch band sits between it and the target
+  // the target's pace and the benchmark's, each a line
   const has = (v) => v !== null && v !== undefined;
   const planAt = (p) => p.plan;
   const bmAt = (p) => (hasBm ? p.bm : null);
-  const loAt = (p) => (hasBm && has(p.bm) && has(p.plan) ? Math.min(p.plan, p.bm) : p.plan);
   const yTopV = Math.max(s.target, s.proj, s.now, hasBm ? s.bm : 0, 1) * 1.02;
   const x = (i) => (i / N) * X1;
   const y = (v) => Y0 - (Math.max(0, v) / yTopV) * (Y0 - YTOP);
@@ -248,15 +216,10 @@ export default function Trajectory({ snap, horizon = "today" }) {
   const seg = (fn, from, to) => fn(s.pts, from, to, x, y);
   const targetLine = (pts, from, to, x, y) => pathOf(pts, planAt, from, to, x, y);
   const bmLine = (pts, from, to, x, y) => (hasBm ? pathOf(pts, bmAt, from, to, x, y) : "");
-  const baseArea = (pts, from, to, x, y) => areaOf(pts, loAt, from, to, x, y);
-  const stretchBand = (pts, from, to, x, y) => (hasBm ? bandOf(pts, planAt, loAt, from, to, x, y) : "");
   const halves = { past: [0, todayIdx], future: [todayIdx, N], full: [0, N] };
   const draw = {};
   for (const [name, [a, b]] of Object.entries(halves)) {
-    draw[name] = {
-      base: seg(baseArea, a, b), stretch: seg(stretchBand, a, b),
-      target: seg(targetLine, a, b), bm: seg(bmLine, a, b),
-    };
+    draw[name] = { target: seg(targetLine, a, b), bm: seg(bmLine, a, b) };
   }
 
   let lastA = -1;
@@ -449,17 +412,14 @@ export default function Trajectory({ snap, horizon = "today" }) {
                 <line x1={x(todayIdx).toFixed(1)} y1="0" x2={x(todayIdx).toFixed(1)} y2={Y0}
                   stroke={C.todayLine} strokeWidth="1" vectorEffect="non-scaling-stroke" />
               )}
-              {/* the target's pace as a two-tone area with a solid edge, the
-                  benchmark's as a dotted line over it - the bars' grammar, with
-                  the actual in front. Ahead of today it all drops back, because
-                  it has not happened yet. */}
+              {/* the target's pace as a solid line, the benchmark's as a dotted
+                  one - the bars' marks, with the actual in front. Ahead of
+                  today both drop back, because it has not happened yet. */}
               {(showToday ? ["future", "past"] : ["full"]).map((half) => {
                 const d = draw[half];
                 const dim = half === "future" ? 0.4 : 1;
                 return (
                   <g key={half} opacity={dim}>
-                    {d.base && <path d={d.base} fill={C.refBase} stroke="none" />}
-                    {d.stretch && <path d={d.stretch} fill={C.refStretch} stroke="none" />}
                     {d.target && (
                       <path d={d.target} fill="none" stroke={C.refLine} strokeWidth="1.5"
                         vectorEffect="non-scaling-stroke" />
