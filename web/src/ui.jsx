@@ -250,6 +250,103 @@ export function Tick({ pct, color, vertical = true, tip, inset = "0px", dotted =
  * share a silhouette. It takes no hover of its own - it would otherwise sit on
  * top of every fill beneath it and steal theirs - so the figure it names goes in
  * the fills' popups. */
+/* ---- the horizontal waterfall (BENCHMARK_SPEC 9) ----------------------------
+ * Levels are ticks (never floor-anchored columns) and steps are bars between
+ * running levels, with a grey 1px drop from each row's level to the next row.
+ * Both the outcome card and the channels card's waterfall view draw with it.
+ * rows: { kind: "level", key, label, value, tip, dotted, color } for a level -
+ * dotted is the benchmark's mark - and { kind: "step", key, label, value, from,
+ * to, tip, fill } for a step; a step with its own fill (the stretch) is a
+ * planning quantity, so its figure is in ink rather than the step colours. */
+export function LevelWaterfall({ rows, X, labelW = 116, valueW = 48, gap = 12 }) {
+  const tipApi = useTip();
+  const n = rows.length;
+  const levelOf = (r) => (r.kind === "step" ? r.to : r.value);
+  const grid = {
+    flex: 1, display: "grid", gridTemplateColumns: `${labelW}px 1fr ${valueW}px`,
+    gap, alignItems: "center", minHeight: 0,
+  };
+  return (
+    <div className="body" style={{ position: "relative" }}>
+      <div style={{ position: "absolute", left: labelW + gap, right: valueW + gap, top: 0, bottom: 0, pointerEvents: "none" }}>
+        {rows.slice(0, -1).map((r, i) => (
+          <div key={r.key} style={{
+            position: "absolute", left: `${X(levelOf(r))}%`,
+            top: `${((i + 0.5) / n) * 100}%`, height: `${(1 / n) * 100}%`,
+            width: 1, background: C.planGrey,
+          }} />
+        ))}
+      </div>
+      {rows.map((r) => {
+        const level = r.kind === "level";
+        const up = (r.value ?? 0) >= 0;
+        return (
+          <div key={r.key} style={grid}>
+            <div style={{ fontSize: 12.5, fontWeight: level ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {r.label}
+            </div>
+            <div style={{ position: "relative", height: 14 }}>
+              {level ? (
+                <Tick pct={X(r.value)} color={r.color || C.refLine} dotted={!!r.dotted} tip={r.tip} />
+              ) : (
+                <div {...tipApi.props(r.tip)} style={{
+                  position: "absolute", top: 0, bottom: 0,
+                  left: `${X(Math.min(r.from, r.to))}%`,
+                  width: `${Math.max(1.2, Math.abs(X(r.to) - X(r.from)))}%`,
+                  background: r.fill || (up ? C.wfGreen : C.red), borderRadius: 3,
+                }} />
+              )}
+            </div>
+            <div className="num" style={{
+              fontSize: 12.5, fontWeight: 600, textAlign: "right",
+              color: level || r.fill ? C.ink : (up ? C.green : C.red),
+            }}>
+              {level ? fmt(r.value) : fmtSigned(r.value)}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* The rows every waterfall opens with: the benchmark's dotted tick, the stretch
+ * as a bar in the stretch tint, then the target's tick; or the target alone
+ * where the release has no basket. */
+export function waterfallOpening({ hasBm, bm, target, words, k, targetHead, unitWord = "Units" }) {
+  const targetRow = {
+    kind: "level", key: "target", label: words.target, value: target,
+    tip: { head: targetHead || words.target, rows: [{ label: unitWord, value: fmt(target) }] },
+  };
+  if (!hasBm) return [targetRow];
+  const stretch = target - bm;
+  return [
+    { kind: "level", key: "bm", label: words.bm, value: bm, dotted: true,
+      tip: { head: words.bm, rows: [{ label: unitWord, value: fmt(bm) }],
+             body: "The median of the matched basket - what launches like this one typically reach." } },
+    { kind: "step", key: "stretch", label: "Stretch", value: stretch, from: bm, to: target, fill: C.refStretch,
+      tip: {
+        head: "Stretch",
+        rows: [
+          { label: words.bm, value: fmt(bm) },
+          { label: words.target, value: fmt(target) },
+          { label: "Stretch", value: fmtSigned(stretch) },
+          ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
+        ],
+        body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day.",
+      } },
+    targetRow,
+  ];
+}
+
+/* One x scale for a waterfall: every mark drawn, with a tenth of the range each side. */
+export function waterfallScale(marks) {
+  const lo = Math.min(...marks), hi = Math.max(...marks);
+  const pad = (hi - lo) * 0.1 || 1;
+  const span = hi + pad - (lo - pad);
+  return (v) => (span > 0 ? ((v - (lo - pad)) / span) * 100 : 50);
+}
+
 export function BmOutline({ pct, column = false, inset = "0px", radius = 4 }) {
   const edge = `2px dotted ${C.refLine}`;
   const box = column

@@ -9,16 +9,20 @@
  * the distance the business asked for is drawn like every other distance on
  * the card. Without a basket the list opens at the target.
  *
- * Benchmark, target and outcome are level anchor ticks (never floor-anchored
- * columns); the bars step between running levels with grey 1px connector drops.
- * x-scale = [min, max of every level drawn] ± 10% pad. Projection and the
- * to-date figures are stored model outputs - never re-derived here; on a
- * complete release the projection equals the actual close. */
-import React from "react";
-import { Card, GROUP_DOTS, Tick, C, QBadge, fmt, fmtSigned, useTip, refWords } from "../ui.jsx";
+ * Drawn with the page's one horizontal waterfall (LevelWaterfall in ui.jsx):
+ * benchmark, target and outcome are level ticks, the bars step between running
+ * levels with grey drops, x-scale = [min, max of every mark] ± 10% pad.
+ * Projection and the to-date figures are stored model outputs - never
+ * re-derived here; on a complete release the projection equals the actual
+ * close. */
+import React, { useState } from "react";
+import { Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned, useTip, refWords, LevelWaterfall, waterfallOpening, waterfallScale } from "../ui.jsx";
 
 export default function Waterfall({ snap, horizon = "today" }) {
   const tipApi = useTip();
+  // drivers: the four stored contributors; channels: each channel's units
+  // against its own target, off the channels the page's other cards draw
+  const [by, setBy] = useState("drivers");
   const wf = snap?.waterfall;
   // an older snapshot carries no waterfall.today, so Today falls back to the
   // close shape rather than emptying the card out from under the page toggle
@@ -46,7 +50,6 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const bmRaw = view.benchmark;
   const hasBm = !!snap?.benchmark && bmRaw !== null && bmRaw !== undefined;
   const benchmark = hasBm ? bmRaw : null;
-  const stretch = hasBm ? view.stretch ?? target - benchmark : null;
   const k = snap?.benchmark?.k ?? null;
 
   // running levels: target -> after each contributor (last = the outcome)
@@ -56,17 +59,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
     cum += s.value ?? 0;
     return { ...s, from, to: cum };
   });
-  // every level a drop hangs from, one per row but the last: the benchmark to
-  // the stretch bar, the stretch bar to the target, the target to the first step
-  const levels = [...(hasBm ? [benchmark, target] : []), target, ...path.map((p) => p.to)];
-  const marks = [outcome, ...levels];
-  const lo = Math.min(...marks);
-  const hi = Math.max(...marks);
-  const pad = (hi - lo) * 0.1 || 1;
-  const span = hi + pad - (lo - pad);
-  const X = (v) => (span > 0 ? ((v - (lo - pad)) / span) * 100 : 50);
 
-  const nRows = levels.length + 1;            // every level and the outcome
   const net = outcome - target;
   const netC = net >= 0 ? C.green : C.red;
   const closeWord = complete ? "Final" : "Projected";
@@ -79,154 +72,85 @@ export default function Waterfall({ snap, horizon = "today" }) {
       { label: "Gap", value: fmtSigned(net), color: netC },
     ],
   };
-
-  // every drop hangs from the centre of the row it names to the centre of the next
-  const drops = levels.map((v, i) => ({ v, row: i }));
-
-  const rowGrid = {
-    flex: 1, display: "grid", gridTemplateColumns: "116px 1fr 48px",
-    gap: 12, alignItems: "center", minHeight: 0,
-  };
-
-  const targetTip = { head: words.target, rows: [{ label: "Units", value: fmt(target) }] };
-  const stretchTip = {
-    head: "Stretch",
-    rows: [
-      { label: words.bm, value: fmt(benchmark ?? 0) },
-      { label: words.target, value: fmt(target) },
-      { label: "Stretch", value: fmtSigned(stretch ?? 0) },
-      ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
-    ],
-    body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day.",
-  };
-  const bmTip = {
-    head: words.bm,
-    rows: [{ label: "Units", value: fmt(benchmark ?? 0) }],
-    body: "The median of the matched basket - what launches like this one typically reach.",
-  };
-  const outcomeTip = isToday
-    ? { head: "Secured to date", rows: [{ label: "Units", value: fmt(outcome) }] }
-    : { head: closeWord + " demand at close", rows: [{ label: "Units", value: fmt(outcome) }] };
+  /* By channel: each channel steps from its target to its actual (today) or
+   * from its target to its projection (at close), in the order the page lists
+   * them. The channels add up to the hero's figure before the sellout cap, so
+   * on a sold-out release the last drop is the cap, and the outcome's popup
+   * says so rather than the card hiding it. */
+  const channels = (snap?.channels || []).map((c) => ({
+    key: c.key, label: c.name,
+    value: (isToday ? (c.now ?? 0) - (c.exp ?? 0) : (c.proj ?? 0) - (c.target ?? 0)),
+    a: isToday ? c.now ?? 0 : c.proj ?? 0, e: isToday ? c.exp ?? 0 : c.target ?? 0,
+  }));
+  let run = target;
+  const chanPath = channels.map((c) => { const from = run; run += c.value; return { ...c, from, to: run }; });
+  const residual = outcome - run;
+  const capped = by === "channels" && Math.abs(residual) > 0.5;
+  const stepRows = by === "channels"
+    ? chanPath.map((c) => ({
+        kind: "step", key: c.key, label: c.label, value: c.value, from: c.from, to: c.to,
+        tip: {
+          head: c.label,
+          rows: [
+            { label: isToday ? "Secured to date" : "Projected", value: fmt(c.a) },
+            { label: words.target, value: fmt(c.e) },
+            { label: "Gap", value: fmtSigned(c.value), color: c.value >= 0 ? C.green : C.red },
+            { label: "Running total", value: fmt(c.to) },
+          ],
+        },
+      }))
+    : path.map((p) => {
+        const v = p.value ?? 0;
+        return {
+          kind: "step", key: p.key, label: p.label, value: v, from: p.from, to: p.to,
+          tip: {
+            head: p.label,
+            rows: [
+              { label: "Contribution", value: fmtSigned(v) + " units", color: v >= 0 ? C.green : C.red },
+              { label: "Running total", value: fmt(p.to) },
+            ],
+          },
+        };
+      });
+  const rows = [
+    ...waterfallOpening({ hasBm, bm: benchmark, target, words, k }),
+    ...stepRows,
+    { kind: "level", key: "outcome", label: outcomeLabel, value: outcome, color: C.orange,
+      tip: {
+        head: isToday ? "Secured to date" : closeWord + " demand at close",
+        rows: [{ label: "Units", value: fmt(outcome) }],
+        body: capped ? `The channels add up to ${fmt(run)} - the sellout caps the ${isToday ? "actual" : "projection"}.` : undefined,
+      } },
+  ];
+  const X = waterfallScale([outcome, target, ...path.map((p) => p.to), ...(by === "channels" ? chanPath.map((c) => c.to) : []), ...(hasBm ? [benchmark] : [])]);
+  const seg = (
+    <span className="seg compact" role="group" aria-label="Waterfall by">
+      {[["drivers", "Drivers", "The four stored contributors: organic traffic and conversion, paid spend and efficiency"],
+        ["channels", "Channels", "Each channel's units against its own target"]].map(([v, label, tip]) => (
+        <button key={v} className={by === v ? "active" : ""} onClick={() => setBy(v)} title={tip}>{label}</button>
+      ))}
+    </span>
+  );
 
   return (
     <Card
       dot={GROUP_DOTS.outcome}
       title={title}
       right={
-        <span
-          className="num"
-          {...tipApi.props(netTip)}
-          style={{ fontSize: 13.5, fontWeight: 600, color: netC, whiteSpace: "nowrap" }}
-        >
-          {fmtSigned(net)}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+          {seg}
+          <span
+            className="num"
+            {...tipApi.props(netTip)}
+            style={{ fontSize: 13.5, fontWeight: 600, color: netC, whiteSpace: "nowrap" }}
+          >
+            {fmtSigned(net)}
+          </span>
         </span>
       }
     >
       <div className="spacer-16" />
-      <div className="body" style={{ position: "relative" }}>
-        {/* grey connector drops between running levels (row centre to row centre) */}
-        <div style={{ position: "absolute", left: 128, right: 60, top: 0, bottom: 0, pointerEvents: "none" }}>
-          {drops.map((d, i) => (
-            <div
-              key={i}
-              style={{
-                position: "absolute", left: `${X(d.v)}%`,
-                top: `${((d.row + 0.5) / nRows) * 100}%`, height: `${(1 / nRows) * 100}%`,
-                width: 1, background: C.planGrey,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* the opening: the benchmark's dotted tick, the stretch as a bar in the
-            stretch tint (a planning decision, so its figure is in ink, not the
-            step colours), then the target's own tick */}
-        {hasBm && (
-          <div style={rowGrid}>
-            <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{words.bm}</div>
-            <div style={{ position: "relative", height: 14 }}>
-              <Tick pct={X(benchmark)} color={C.refLine} dotted tip={bmTip} />
-            </div>
-            <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
-              {fmt(benchmark)}
-            </div>
-          </div>
-        )}
-        {hasBm && (
-          <div style={rowGrid}>
-            <div style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>Stretch</div>
-            <div style={{ position: "relative", height: 14 }}>
-              <div
-                {...tipApi.props(stretchTip)}
-                style={{
-                  position: "absolute", top: 0, bottom: 0,
-                  left: `${X(Math.min(benchmark, target))}%`,
-                  width: `${Math.max(1.2, Math.abs(X(target) - X(benchmark)))}%`,
-                  background: C.refStretch, borderRadius: 3,
-                }}
-              />
-            </div>
-            <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
-              {fmtSigned(stretch)}
-            </div>
-          </div>
-        )}
-        <div style={rowGrid}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{words.target}</div>
-          <div style={{ position: "relative", height: 14 }}>
-            <Tick pct={X(target)} color={C.refLine} tip={targetTip} />
-          </div>
-          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
-            {fmt(target)}
-          </div>
-        </div>
-
-        {path.map((p) => {
-          const v = p.value ?? 0;
-          const up = v >= 0;
-          const tip = {
-            head: p.label,
-            rows: [
-              { label: "Contribution", value: fmtSigned(v) + " units", color: up ? C.green : C.red },
-              { label: "Running total", value: fmt(p.to) },
-            ],
-          };
-          return (
-            <div key={p.key} style={rowGrid}>
-              <div style={{ fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {p.label}
-              </div>
-              <div style={{ position: "relative", height: 14 }}>
-                <div
-                  {...tipApi.props(tip)}
-                  style={{
-                    position: "absolute", top: 0, bottom: 0,
-                    left: `${X(Math.min(p.from, p.to))}%`,
-                    width: `${Math.max(1.2, Math.abs(X(p.to) - X(p.from)))}%`,
-                    background: up ? C.wfGreen : C.red, borderRadius: 3,
-                  }}
-                />
-              </div>
-              <div
-                className="num"
-                style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: up ? C.green : C.red }}
-              >
-                {fmtSigned(v)}
-              </div>
-            </div>
-          );
-        })}
-
-        <div style={rowGrid}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{outcomeLabel}</div>
-          <div style={{ position: "relative", height: 14 }}>
-            <Tick pct={X(outcome)} color={C.orange} tip={outcomeTip} />
-          </div>
-          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
-            {fmt(outcome)}
-          </div>
-        </div>
-      </div>
+      <LevelWaterfall rows={rows} X={X} />
       <div style={{ height: 12, flexShrink: 0 }} />
       <div
         style={{
@@ -236,7 +160,9 @@ export default function Waterfall({ snap, horizon = "today" }) {
       >
         <QBadge content={{
           head: title,
-          body: isToday
+          body: by === "channels"
+            ? "The list opens at the benchmark and the stretch is what the business asked for on top of it, which makes the target. From there each channel steps by its own units against its own target, in the page's order; they add up to the release before the sellout cap, so on a sold-out release the last drop is the cap."
+            : isToday
             ? "The list opens at the benchmark, what the matched basket typically has by now, and the stretch is what the business asked for on top of it, which makes the target. From there the contributors sum exactly to the gap between the target for today and what is secured to date."
             : "The list opens at the benchmark and the stretch is what the business asked for on top of it, which makes the target. From there the contributors sum exactly to the gap between target and projected demand at close. Demand here is unconstrained - the hero caps at the sellout.",
         }} />
