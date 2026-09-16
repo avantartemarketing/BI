@@ -382,10 +382,10 @@ trajectory vs the across-time plan curve, funnel diagnostics with contribution
 decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), predicted
 sell-through, projection-vs-target waterfall. Formulas for every module: docs §9.
 
-Two toggles in the page header drive every card: `Compare Today | At close` says when to read
-the release, `Against Benchmark | Target` says what to read it against. The chosen reference is
-drawn as a tint of the actual's own orange sitting behind it, and the whole page follows the
-toggle together - the bars, the percentages, their red or green, and the headline deltas. The
-reference not chosen stays readable as a plain figure in each card's footer rows. Plan curves
-are built from the release's own basket where it has enough members and fall back to the pooled
-panel curve per metric (docs §5.3). Paid ROI is the exception: no reference and no horizon.
+Every card carries both references at once: the target as a fill in two tints of the actual's
+own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up
+to the target), the benchmark as a dotted outline over it, and the actual in front. A single
+`Compare Today | At close` toggle in the page header drives all of them, and the percentages and
+headline deltas read against the target. Plan curves are built from the release's own basket
+where it has enough members and fall back to the pooled panel curve per metric (docs §5.3).
+Paid ROI is the exception: no reference and no horizon.

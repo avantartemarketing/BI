@@ -542,14 +542,13 @@ more are we asking for?** Everything below falls out of that one sentence.
 
 | | what it is | drawn as |
 |---|---|---|
-| **Benchmark** | what launches in the matched basket typically reach: the **median** of that basket, per metric and per channel | a tint of the actual's own orange, `#f8ddd0`, **behind** the actual - when the page is read against it |
-| **Target** | benchmark × K, the business target | the same tint, in the same place - when the page is read against it |
-| **Stretch** | target − benchmark = benchmark × (K − 1) | a number, and one grey step row on the waterfalls when the page is read against the benchmark; never a band |
+| **Benchmark** | what launches in the matched basket typically reach: the **median** of that basket, per metric and per channel | a dotted outline of the column it would make, `#ea8f66`, drawn over the target's fill |
+| **Target** | benchmark × K, the business target | the fill: `#f8ccba` from zero to whichever of the two is lower, `#f8ddd0` from the benchmark up to the target when the target is the higher |
+| **Stretch** | target − benchmark = benchmark × (K − 1) | the lighter band of the fill, and a number; never a band or a step of its own |
 
-The page reads against **one** reference at a time, chosen by `Against Benchmark | Target` in
-the header, and everything follows it together - the tint, the percentages, their red or
-green, the headline deltas and the labels. The reference not chosen stays readable as a plain
-figure in each card's footer rows. Drawing grammar: spec §7.
+Both references are on every bar at once. The fill says what the business asked for and where
+the basket agrees with it; the outline says what the basket typically reaches. Percentages,
+RAG colours and the headline deltas read against the target. Drawing grammar: spec §7.
 
 ```
 K = edition_size / benchmark_units_total
@@ -965,7 +964,7 @@ store per release, fetched per release+day"; projections are stored, not client-
 
 Every field here is **additive** (spec §5). A consumer that does not know them renders exactly as
 it did before, and a snapshot written in lever mode simply omits `snap.benchmark` - which is the
-guard the `Against` control and every benchmark reading on the page are written against.
+guard every benchmark mark on the page is written against.
 
 | Field | What it holds |
 |---|---|
@@ -1118,16 +1117,17 @@ The four that were live arguments, recorded so they are not relitigated from the
     shown - in the picker, and as `unitsP25` / `unitsP75` on the snapshot - but it is a
     description of the basket, not a reference line. §5.2's guardrail band was the right shape
     for "is this release pacing normally?"; it is the wrong shape for "did we hit the number",
-    because a band gives a launch two answers and lets the reader pick. One reference behind the
-    actual, and a toggle that says which one it is.
+    because a band gives a launch two answers and lets the reader pick. One fill for the target,
+    one dotted outline for the benchmark, and the actual in front of both.
 25. **The stretch is one even uplift, with conversion rates held.** K multiplies every volume in
     every channel on every day; no channel is asked to convert better than the basket did. The
     alternative - spreading the uplift by channel, or buying part of it with a conversion
     assumption - is exactly the quartile-lever model, which is still available behind the
     `By channel` switch for anyone who wants to make that argument release by release. Keeping
-    rates at the benchmark is also why the funnel rungs (§4a.1, spec §7) move under the page
-    toggle on a volume rung - target is benchmark × K - and do not move at all on a rate rung:
-    there the two references are the same figure, and the two readings are the same statement.
+    rates at the benchmark is also what puts the funnel rungs' benchmark tick (§4a.1, spec §7)
+    1/K off the centre on a volume rung - target is benchmark × K - and on the centre line on a
+    rate rung: there the two references are the same figure, and the two readings are the same
+    statement.
 26. **A release is never in its own basket.** Self-inclusion is how a benchmark quietly becomes
     a mirror: on a 4-member cluster a launch would set about a quarter of the number it is
     graded against, and a bad launch would lower its own bar as it went. Enforced in

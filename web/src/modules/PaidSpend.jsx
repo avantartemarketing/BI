@@ -5,10 +5,11 @@
  * decision log. Complete releases: projection = actual, recommendation "-",
  * buttons disabled. Pre-launch releases (no campaign yet) disable the buttons too.
  *
- * Each bar is the chosen reference as a tint behind and the actual in front, on a
- * track running to 120% of that reference so there is room to see a bar that
- * beats it. The percentage beside the units bar reads against the same reference
- * the tint draws.
+ * Each bar carries both references and the actual (BENCHMARK_SPEC 7): the target
+ * as the fill, the benchmark as the dotted outline over it, the actual in front,
+ * on a track running to 120% of the higher reference so there is room to see a
+ * bar that beats them. The percentage beside the units bar reads against the
+ * target.
  *
  * Today reads spend and units to date against the campaign's pro-rata share of the
  * close figures - paid pacing is a daily budget decision, so the day count is the
@@ -18,8 +19,7 @@
  * and so has no business being redrawn per bar. */
 import React, { useState } from "react";
 import {
-  Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision,
-  useTip, useRefMode, refWord, otherWord, pickRef,
+  Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip,
 } from "../ui.jsx";
 
 const money = (v) => "£" + fmt(Math.round(v ?? 0));
@@ -27,7 +27,6 @@ const moneyK = (v) => "£" + fmtK(v ?? 0);
 
 export default function PaidSpend({ snap, horizon = "today" }) {
   const tipApi = useTip();
-  const mode = useRefMode();
   const paid = snap.paid || {};
   if (snap.targeted === false) return <PaidSpendActuals snap={snap} />;
   const budget = paid.budget || {};
@@ -152,8 +151,6 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     ? paid.benchmarkBudget : null;
   const targetWord = close ? "Target" : "Target today";
   const bmWord = close ? "Benchmark" : "Benchmark today";
-  const refLabel = refWord(mode, horizon);
-  const otherLabel = otherWord(mode, horizon);
   const bmBody = "The median of the matched basket - what launches like this one typically reach.";
 
   // paid.daily carries draw ENTRIES; the target, the projection and the benchmark
@@ -165,8 +162,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const unitsFill = close ? unitsProj : unitsNow;
   const unitsTarget = (paid.unitTarget ?? 0) * dayFrac;
   const unitsBm = bmUnitsAll === null ? null : bmUnitsAll * dayFrac;
-  const unitsRef = pickRef(mode, { bm: unitsBm, target: unitsTarget });
-  const unitsPct = unitsRef > 0 ? Math.round((unitsFill / unitsRef) * 100) : null;
+  const unitsPct = unitsTarget > 0 ? Math.round((unitsFill / unitsTarget) * 100) : null;
   const unitsTip = {
     head: "Paid units",
     rows: [
@@ -182,7 +178,6 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const spendFill = close ? spendProj : spendNow;
   const spendTarget = (paid.spendBudget ?? 0) * dayFrac;
   const spendBm = bmSpendAll === null ? null : bmSpendAll * dayFrac;
-  const spendRef = pickRef(mode, { bm: spendBm, target: spendTarget });
   const spendTip = {
     head: "Spend",
     rows: [
@@ -265,25 +260,23 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           <TrackBar
             now={unitsNow}
             proj={close ? unitsProj : null}
-            refValue={unitsRef}
+            target={unitsTarget}
+            bm={unitsBm}
             height={20}
             radius={5}
             tips={{
               now: unitsTip,
               proj: unitsTip,
-              ref: {
-                head: refLabel,
-                rows: [
-                  { label: "Paid units", value: fmt(unitsRef) },
-                  ...(unitsBm === null ? [] : [{ label: otherLabel, value: fmt(mode === "benchmark" ? unitsTarget : unitsBm) }]),
-                ],
-                body: mode === "benchmark" ? bmBody : undefined,
-              },
+              target: { head: targetWord, rows: [
+                { label: "Paid units", value: fmt(unitsTarget) },
+                ...(unitsBm === null ? [] : [{ label: bmWord, value: fmt(unitsBm) }]),
+              ] },
+              stretch: stretchTip,
             }}
           />
           <span
             {...tipApi.props(unitsTip)}
-            style={{ ...rightLabel, color: unitsPct !== null && unitsFill >= unitsRef ? C.green : C.red }}
+            style={{ ...rightLabel, color: unitsPct !== null && unitsFill >= unitsTarget ? C.green : C.red }}
           >
             {unitsPct !== null ? unitsPct + "%" : "–"}
           </span>
@@ -293,20 +286,17 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           <TrackBar
             now={spendNow}
             proj={close ? spendProj : null}
-            refValue={spendRef}
+            target={spendTarget}
+            bm={spendBm}
             height={20}
             radius={5}
             tips={{
               now: spendTip,
               proj: spendTip,
-              ref: {
-                head: mode === "benchmark" ? bmWord : (close ? "Budget" : "Budget today"),
-                rows: [
-                  { label: "Spend", value: moneyK(spendRef) },
-                  ...(spendBm === null ? [] : [{ label: otherLabel, value: moneyK(mode === "benchmark" ? spendTarget : spendBm) }]),
-                ],
-                body: mode === "benchmark" ? bmBody : undefined,
-              },
+              target: { head: close ? "Budget" : "Budget today", rows: [
+                { label: "Spend", value: moneyK(spendTarget) },
+                ...(spendBm === null ? [] : [{ label: bmWord, value: moneyK(spendBm) }]),
+              ], body: spendBm === null ? undefined : bmBody },
             }}
           />
           <span {...tipApi.props(spendTip)} style={rightLabel}>{moneyK(spendFill)}</span>
@@ -314,7 +304,15 @@ export default function PaidSpend({ snap, horizon = "today" }) {
         <div style={{ height: 14, display: "flex", gap: 14, alignItems: "center" }}>
           <div style={legendItem}><span style={sw(C.orange)} />To date</div>
           {close && <div style={legendItem}><span style={sw(C.orangeLight)} />Projected</div>}
-          <div style={legendItem}><span style={sw(C.refFill)} />{refLabel}</div>
+          <div style={legendItem}><span style={sw(C.refBase)} />Target</div>
+          {unitsBm !== null && (
+            <div style={legendItem}>
+              <svg width="10" height="8" viewBox="0 0 10 8" style={{ flex: "0 0 10px" }} aria-hidden="true">
+                <path d="M1 8 V1.5 H9 V8" fill="none" stroke={C.refLine} strokeWidth="1.5" strokeDasharray="1.6 1.6" />
+              </svg>
+              Benchmark
+            </div>
+          )}
         </div>
       </div>
       <div style={{ height: 12, flex: "0 0 12px" }} />

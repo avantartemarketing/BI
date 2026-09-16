@@ -1,15 +1,21 @@
 /* Shared primitives for dashboard modules.
- * Chart conventions (design handoff, final):
+ * Chart conventions (design handoff, final - the "G" board of Target and
+ * Benchmark Together):
  *  actual = solid #eb6834 · projection = #f2a07f · overshoot = 135° hatch
- *  reference = a tint of the actual's own orange, drawn BEHIND the actual
- *  bar tracks run to 120% of the reference, so the reference bar ends at 83.3%.
- * One reference at a time. The page header carries "Against Benchmark | Target"
- * and every card reads against whichever is chosen - the bar, the percentage
- * under it, its red or green, and the headline delta all switch together. The
- * reference that is not chosen stays readable as a plain figure in the card's
- * footer rows, never as a second mark on the bar. Drawing both at once is what
- * the two-tone bands, the reference lines and the stretch shading were for, and
- * they are all retired with it.
+ *  target = the fill, in two tints of the actual's own orange: the darker from
+ *           zero to whichever of target and benchmark is lower, the lighter from
+ *           the benchmark up to the target when the target is the higher
+ *  benchmark = a dotted outline of the column it would make, drawn over the
+ *           fill in a step darker tone - tracing the fill's edges where it sits
+ *           inside the target, standing in the air above it where it does not
+ *  bar tracks run to 120% of the higher reference, so neither ever clips.
+ * Both references are on every bar, always. The fill says what the business
+ * asked for and where the basket agrees with it; the outline says what the
+ * basket typically reaches. Nothing about the drawing changes between a target
+ * above its benchmark and one below - only where the outline sits - so the
+ * legend has the same shape on every card. Percentages, RAG colours and the
+ * headline deltas read against the target: it is what the business committed
+ * to, and the benchmark is there to say how ambitious that commitment was.
  * The drawing grammar lives here rather than in each module so every card says it
  * the same way; these signatures are fixed because the modules are written
  * against them in parallel. */
@@ -76,57 +82,33 @@ export function useTip() {
 export const C = {
   // orangeLight is the projection: the same orange at less than full strength,
   // because a projection is the actual's own quantity not yet earned. It was a
-  // paler #f7c4ad while the reference was a blue mark; now the reference is a
-  // tint of this same orange sitting directly behind it, and two pale oranges
+  // paler #f7c4ad while the reference was a blue mark; now the references are
+  // tints of this same orange sitting directly behind it, and two pale oranges
   // one in front of the other told the reader nothing. Deep enough to read as
-  // orange against refFill, light enough never to be mistaken for the solid.
+  // orange against the reference tints, light enough never to pass for the solid.
   orange: "#eb6834", orangeLight: "#f2a07f", rust: "#8f3415",
   track: "#ece9e1", ink: "#141413", muted: "#6c6b68", hairline: "#f2f0ea",
   planGrey: "#c8c5bc", targetLine: "#b8b3a6", border: "#e5e4df",
   green: "#0f7052", amber: "#8a5f00", red: "#b8461d", wfGreen: "#2f7d3f",
   periwinkle: "#a5b6e3", todayLine: "#eeece5", white: "#fffefb",
-  // The reference, in one hue: a tint of the actual's own orange, so the two are
-  // plainly the same measurement at two weights rather than two systems sharing
-  // a card. refFill sits behind a bar, refTrack carries a bar's remaining room
-  // out to the sellout, and refMark is the same reference where a bar cannot be
-  // drawn - a rung centre, a trajectory edge, a waterfall anchor.
-  refFill: "#f8ddd0", refTrack: "#faf7f4", refMark: "#e8a98b",
+  // The two references, in one hue - tints of the actual's own orange, so they
+  // read as the same measurement at other weights rather than as systems of
+  // their own. refBase is the ground both agree on: the fill from zero to
+  // whichever is lower. refStretch is the target's extra above the benchmark.
+  // refLine is the benchmark's own mark, the dotted outline, a step darker than
+  // either tint so it reads on both. refTrack carries a bar's remaining room
+  // out to the sellout.
+  refBase: "#f8ccba", refStretch: "#f8ddd0", refLine: "#ea8f66", refTrack: "#faf7f4",
 };
 
-/* The one reference the whole page is read against. It is page state rather
- * than a prop because every card follows it - the funnels and the drivers
- * included - and threading it through ten call sites twice over would leave the
- * cards free to drift apart. Default "target": the page is a plan report first,
- * and the benchmark is the thing the plan was built from. */
-const RefCtx = createContext("target");
-
-export function RefProvider({ mode, children }) {
-  return <RefCtx.Provider value={mode === "benchmark" ? "benchmark" : "target"}>{children}</RefCtx.Provider>;
-}
-
-export function useRefMode() {
-  return useContext(RefCtx);
-}
-
-/* What the chosen reference is called, so no two cards name it differently.
- * The horizon only changes the words, never the mark. */
-export function refWord(mode, horizon) {
+/* What the two references are called on a card, so no two cards name them
+ * differently. The horizon only changes the words, never the marks. */
+export function refWords(horizon) {
   const today = horizon !== "close";
-  return mode === "benchmark"
-    ? (today ? "Benchmark today" : "Benchmark")
-    : (today ? "Target today" : "Target");
-}
-
-export function otherWord(mode, horizon) {
-  return refWord(mode === "benchmark" ? "target" : "benchmark", horizon);
-}
-
-/* Pick this card's reference value. `bm` falls back to `target` because a
- * release with no matched basket has nothing to switch to, and a blank bar
- * would say less than the target it already had. */
-export function pickRef(mode, { bm, target }) {
-  if (mode !== "benchmark") return target;
-  return bm === null || bm === undefined ? target : bm;
+  return {
+    target: today ? "Target today" : "Target",
+    bm: today ? "Benchmark today" : "Benchmark",
+  };
 }
 
 export const GROUP_DOTS = {
@@ -194,12 +176,6 @@ export function QBadge({ tip, content }) {
  * are cut from the same cloth. */
 export const HATCH = `repeating-linear-gradient(135deg, ${C.orange} 0 1.5px, ${C.orangeLight} 1.5px 5px)`;
 
-/* The stretch step: flat plan grey, never hatched and never RAG-coloured. Both
- * waterfalls draw the same step from the benchmark up to the target when the
- * page is read against the benchmark, and it is a planning decision rather than
- * anything the release has or has not done. */
-export const STRETCH_FILL = C.planGrey;
-
 /* The live width of an element. Label collision is a pixel question, never a
  * fraction one - two labels 20% apart are comfortable on a wide card and on top
  * of each other on a narrow one - so a card that places labels by value measures
@@ -253,39 +229,67 @@ export function axisLabelLeft({ pct, rowW, textW, loW = 0, hiW = 0, gap = 10 }) 
  * horizontal bar; the horizontal form lies across a column, so the bleed swaps
  * to left/right. `inset` is how far the bar itself is inset from this box: the
  * mark measures the BAR plus the bleed, never the whole column. */
-export function Tick({ pct, color, vertical = true, tip, inset = "0px" }) {
+export function Tick({ pct, color, vertical = true, tip, inset = "0px", dotted = false }) {
   const t = useTip();
+  // a dotted tick is the benchmark's mark; a solid one is a level of the target's
   const box = vertical
-    ? { left: `calc(${pct}% - 1px)`, top: -3, bottom: -3, width: 2 }
-    : { bottom: `calc(${pct}% - 1px)`, left: `calc(${inset} - 3px)`, right: `calc(${inset} - 3px)`, height: 2 };
-  return <div {...t.props(tip)} style={{ position: "absolute", background: color, ...box }} />;
+    ? (dotted
+      ? { left: `calc(${pct}% - 1px)`, top: -3, bottom: -3, width: 0, borderLeft: `2px dotted ${color}` }
+      : { left: `calc(${pct}% - 1px)`, top: -3, bottom: -3, width: 2, background: color })
+    : (dotted
+      ? { bottom: `calc(${pct}% - 1px)`, left: `calc(${inset} - 3px)`, right: `calc(${inset} - 3px)`, height: 0, borderTop: `2px dotted ${color}` }
+      : { bottom: `calc(${pct}% - 1px)`, left: `calc(${inset} - 3px)`, right: `calc(${inset} - 3px)`, height: 2, background: color });
+  return <div {...t.props(tip)} style={{ position: "absolute", ...box }} />;
 }
 
-/* Horizontal bar, two layers: the reference as a wide tint behind, the actual as
- * a narrower orange bar in front. Reading one against the other is then a matter
- * of which one ends further right, with no third colour and no mark to decode.
+/* The benchmark's mark: a dotted outline of the column (or bar) it would make,
+ * drawn over the target's fill in refLine. Where the benchmark sits inside the
+ * target the dots trace the fill's edges up to the lid; where it sits above they
+ * stand in the air. `pct` is the benchmark on the container's scale and `inset`
+ * the fill's own inset from the container's sides, so the outline and the fill
+ * share a silhouette. It takes no hover of its own - it would otherwise sit on
+ * top of every fill beneath it and steal theirs - so the figure it names goes in
+ * the fills' popups. */
+export function BmOutline({ pct, column = false, inset = "0px", radius = 4 }) {
+  const edge = `2px dotted ${C.refLine}`;
+  const box = column
+    ? { left: inset, right: inset, bottom: 0, height: `${pct}%`,
+        borderTop: edge, borderLeft: edge, borderRight: edge, borderRadius: `${radius}px ${radius}px 0 0` }
+    : { left: 0, top: -1, bottom: -1, width: `${pct}%`,
+        borderTop: edge, borderBottom: edge, borderRight: edge, borderRadius: `0 ${radius}px ${radius}px 0` };
+  return <div style={{ position: "absolute", boxSizing: "border-box", pointerEvents: "none", ...box }} />;
+}
+
+/* Horizontal bar with both references and the actual. The fill is the target,
+ * darker from zero to whichever of target and benchmark is lower and lighter
+ * from the benchmark up to the target when the target is the higher; the
+ * benchmark is the dotted outline over it; the actual is the narrower orange
+ * bar in front. A release with no basket has no `bm`, and then the fill is one
+ * tint to the target and there is no outline.
  *
- * Scale. By default the track runs to 120% of the reference, so the reference
- * ends at 83.3% and there is room to see an actual that beats it; a value past
- * that widens the scale rather than clipping. `full` overrides that with a fixed
- * right edge - the hero's sellout, which is the natural end of its bar - and
- * paints the room up to it in the paler refTrack, so anything drawn beyond the
- * sellout sits on the darker track and says so on sight.
+ * Scale. By default the track runs to 120% of the higher reference, so neither
+ * can clip and there is room to see an actual that beats them; a value past that
+ * widens the scale. `full` overrides that with a fixed right edge - the hero's
+ * sellout, which is the natural end of its bar - and paints the room up to it in
+ * the paler refTrack, so anything drawn beyond the sellout sits on the darker
+ * track and says so on sight.
  *
- * Layers, bottom to top: track -> reference tint -> projected fill -> to-date
- * fill -> over-target hatch. The actual is inset top and bottom so the tint
- * still shows on both sides of it and the two never read as one bar. */
+ * Layers, bottom to top: track -> base tint -> stretch tint -> benchmark
+ * outline -> projected fill -> to-date fill -> over-target hatch. The actual is
+ * inset top and bottom so the tints still show on both sides of it. */
 export function TrackBar({
-  now, proj, refValue, full, hatchFrom, height = 20, radius = 4, tips = {},
+  now, proj, target, bm, full, hatchFrom, height = 20, radius = 4, tips = {},
 }) {
   const t = useTip();
   const tp = (x) => t.props(typeof x === "string" ? { head: x } : x);
-  // `refValue`, not `ref`: React reserves `ref` and would never hand it over
-  const r = refValue ?? 0;
+  const tgt = target ?? 0;
+  const hasBm = bm !== null && bm !== undefined;
+  const lo = hasBm ? Math.min(tgt, bm) : tgt;
+  const refMax = hasBm ? Math.max(tgt, bm) : tgt;
   const maxData = Math.max(now ?? 0, proj ?? 0);
   const maxV = full > 0
-    ? Math.max(full, r, maxData) * 1.02
-    : Math.max(r > 0 ? r * 1.2 : 0, maxData * 1.04);
+    ? Math.max(full, refMax, maxData) * 1.02
+    : Math.max(refMax > 0 ? refMax * 1.2 : 0, maxData * 1.04);
   const scale = maxV > 0 ? 100 / maxV : 0;
   const pct = (v) => Math.max(0, Math.min((v ?? 0) * scale, 100));
   const projW = pct(proj);
@@ -293,6 +297,7 @@ export function TrackBar({
   const fillW = Math.max(projW, nowW);
   const inset = Math.max(3, Math.round(height * 0.2));
   const innerR = Math.max(2, radius - 2);
+  const stretch = hasBm && tgt > bm;
   const hatchAt = hatchFrom === undefined || hatchFrom === null ? null : pct(hatchFrom);
   const showHatch = hatchAt !== null && fillW > hatchAt;
   return (
@@ -306,12 +311,20 @@ export function TrackBar({
           background: C.refTrack, borderRadius: radius,
         }} />
       )}
-      {r > 0 && (
-        <div {...tp(tips.ref)} style={{
-          position: "absolute", inset: 0, width: `${pct(r)}%`,
-          background: C.refFill, borderRadius: radius,
+      {lo > 0 && (
+        <div {...tp(tips.base ?? tips.target)} style={{
+          position: "absolute", inset: 0, width: `${pct(lo)}%`,
+          background: C.refBase,
+          borderRadius: stretch ? `${radius}px 0 0 ${radius}px` : radius,
         }} />
       )}
+      {stretch && (
+        <div {...tp(tips.stretch ?? tips.target)} style={{
+          position: "absolute", top: 0, bottom: 0, left: `${pct(bm)}%`, width: `${pct(tgt) - pct(bm)}%`,
+          background: C.refStretch, borderRadius: `0 ${radius}px ${radius}px 0`,
+        }} />
+      )}
+      {hasBm && bm > 0 && <BmOutline pct={pct(bm)} radius={radius} />}
       <div {...tp(tips.proj)} style={{
         position: "absolute", top: inset, bottom: inset, left: 0, width: `${projW}%`,
         background: C.orangeLight, borderRadius: innerR,
@@ -332,49 +345,56 @@ export function TrackBar({
   );
 }
 
-/* Deviation rung geometry. The reference is the rung centre (ratio = 1), so the
+/* Deviation rung geometry. The target is the rung centre (ratio = 1), so the
  * scale is a log one: a ratio and its reciprocal have to sit the same distance
  * either side of the centre, which a linear percentage scale cannot do. ×4
  * either way fills the rung, and anything past that is clamped and flagged
  * `beyond` so the caller can mark it rather than silently pile up at the end.
- *   aOverRef : actual / the chosen reference   (null -> neutral rung)
- * With one reference there is nothing else on the rung to place, so the target
- * ring is gone: the centre IS whichever reference the page is being read
- * against, and `rel` is the % against that same thing. */
-export function rungGeom(aOverRef) {
-  if (aOverRef === null || aOverRef === undefined || Number.isNaN(aOverRef)) return null;
-  const pos = (ratio) => (ratio > 0
-    ? Math.max(4, Math.min(96, 50 + (Math.log2(ratio) / 2) * 46))
-    : 4);
+ *   aOverTarget : actual / target   (null -> neutral rung)
+ * `rungPos` is the same scale on its own, for placing the benchmark's tick. */
+export function rungPos(ratio) {
+  return ratio > 0 ? Math.max(4, Math.min(96, 50 + (Math.log2(ratio) / 2) * 46)) : 4;
+}
+
+export function rungGeom(aOverTarget) {
+  if (aOverTarget === null || aOverTarget === undefined || Number.isNaN(aOverTarget)) return null;
   const far = (ratio) => ratio > 4 || (ratio > 0 && 1 / ratio > 4) || ratio <= 0;
   return {
-    rel: (aOverRef - 1) * 100,
-    dev: pos(aOverRef),
-    beyond: far(aOverRef),
+    rel: (aOverTarget - 1) * 100,
+    dev: rungPos(aOverTarget),
+    beyond: far(aOverTarget),
   };
 }
 
-/* The rung itself: hairline rail, the reference down the centre, a pale bar
- * spanning centre to actual so the gap has length, and the dot. `guide` extends
- * the centre line past the rail to tie stacked rungs together, as the organic
+/* The rung itself: hairline rail, the target down the centre, a pale bar
+ * spanning centre to actual so the gap has length, the dot, and the benchmark
+ * as a dotted tick wherever the basket's own figure lands on the same scale -
+ * the rung's form of the dotted outline every bar carries. `guide` extends the
+ * centre line past the rail to tie stacked rungs together, as the organic
  * funnel does. Neutral means no reference to judge against, so only a grey dot
- * on the centre. `bench` is false on a release with no matched basket, where the
- * centre falls back to the neutral guide grey - there is a reference, but it is
- * the lever plan rather than anything a comparable launch reached. */
-export function RungTrack({ dev, up, neutral, guide, bench = true }) {
+ * on the centre. `bench` is false on a release with no matched basket: the
+ * centre is then the lever plan and goes to the neutral guide grey, and there
+ * is no tick to draw. */
+export function RungTrack({ dev, bmPos, up, neutral, guide, bench = true }) {
   return (
     <div style={{ position: "relative", height: 12 }}>
       <div style={{ position: "absolute", left: 0, right: 0, top: 5, height: 2, background: C.hairline }} />
       <div style={{
         position: "absolute", left: "50%", marginLeft: -0.75, width: 1.5,
         top: guide ? -14 : 0, bottom: guide ? -14 : 0,
-        background: bench ? C.refMark : C.planGrey,
+        background: bench ? C.refLine : C.planGrey,
       }} />
       {!neutral && (
         <div style={{
           position: "absolute", top: 5, height: 4,
           left: `${Math.min(dev, 50)}%`, width: `${Math.abs(dev - 50)}%`,
-          background: C.refFill, borderRadius: 2,
+          background: C.refStretch, borderRadius: 2,
+        }} />
+      )}
+      {bench && bmPos !== null && bmPos !== undefined && (
+        <div style={{
+          position: "absolute", left: `${bmPos}%`, marginLeft: -1, width: 0, top: -2, bottom: -2,
+          borderLeft: `2px dotted ${C.refLine}`,
         }} />
       )}
       <div style={{
@@ -387,10 +407,9 @@ export function RungTrack({ dev, up, neutral, guide, bench = true }) {
   );
 }
 
-/* The rung grammar in two marks, so nobody has to guess what the centre is.
- * Which reference the centre names is the page toggle's business, so the caller
- * passes the word rather than the key deciding it. */
-export function RungKey({ word, bench = true }) {
+/* The rung grammar in three marks, so nobody has to guess what the centre or
+ * the tick is. The tick is dropped with no basket, exactly as the rung drops it. */
+export function RungKey({ bench = true }) {
   const item = {
     display: "flex", alignItems: "center", gap: 6,
     fontSize: 11.5, color: C.muted, whiteSpace: "nowrap",
@@ -405,9 +424,15 @@ export function RungKey({ word, bench = true }) {
         Actual
       </span>
       <span style={item}>
-        <span style={{ width: 2, height: 11, background: bench ? C.refMark : C.planGrey, flex: "0 0 2px" }} />
-        {word}
+        <span style={{ width: 2, height: 11, background: bench ? C.refLine : C.planGrey, flex: "0 0 2px" }} />
+        Target
       </span>
+      {bench && (
+        <span style={item}>
+          <span style={{ width: 0, height: 11, borderLeft: `2px dotted ${C.refLine}`, flex: "0 0 2px" }} />
+          Benchmark
+        </span>
+      )}
       <span style={{ ...item, marginLeft: "auto" }}>×4 fills the rung</span>
     </div>
   );

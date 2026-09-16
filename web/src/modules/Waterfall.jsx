@@ -1,40 +1,29 @@
 /* Projection vs target (spec §4.10) - horizontal waterfall.
  *
- * The card reads top to bottom as one argument: here is the reference the page
- * is being read against, and here are the contributors that explain the distance
- * from it to where the release actually lands.
+ * The card reads top to bottom as one argument: here is the target, and here
+ * are the contributors that explain the distance from it to where the release
+ * actually lands. The benchmark sits on the target's row as a dotted tick - the
+ * waterfall's form of the dotted outline every bar carries (BENCHMARK_SPEC 7) -
+ * so the reader sees how far the business asked for above the basket without a
+ * row of its own for it; the stretch itself is a planning decision, not
+ * performance, and is named in the target's popup rather than drawn as a step.
  *
- * Read against the target, that is Target -> four contributors -> outcome, which
- * is the card as it always was. Read against the benchmark, one row is inserted
- * above them: the stretch the business put on the basket's median to arrive at
- * the target. It is a planning decision rather than performance, so it is flat
- * plan grey and its number is muted, never green or red - but it is a real step
- * between the two levels, so it is drawn as one and the arithmetic still closes.
- *
- * The reference and the outcome are level anchor ticks (never floor-anchored
- * columns); the contributor bars step between running levels with grey 1px
- * connector drops. x-scale = [min, max of every level drawn] ± 10% pad.
- * Projection and the to-date figures are stored model outputs - never
- * re-derived here; on a complete release the projection equals the actual
- * close. */
+ * Target and outcome are level anchor ticks (never floor-anchored columns); the
+ * contributor bars step between running levels with grey 1px connector drops.
+ * x-scale = [min, max of every level drawn] ± 10% pad. Projection and the
+ * to-date figures are stored model outputs - never re-derived here; on a
+ * complete release the projection equals the actual close. */
 import React from "react";
-import {
-  Card, GROUP_DOTS, Tick, C, QBadge, fmt, fmtSigned, useTip, STRETCH_FILL,
-  useRefMode, refWord, otherWord,
-} from "../ui.jsx";
+import { Card, GROUP_DOTS, Tick, C, QBadge, fmt, fmtSigned, useTip, refWords } from "../ui.jsx";
 
 export default function Waterfall({ snap, horizon = "today" }) {
   const tipApi = useTip();
-  const mode = useRefMode();
   const wf = snap?.waterfall;
   // an older snapshot carries no waterfall.today, so Today falls back to the
   // close shape rather than emptying the card out from under the page toggle
   const td = horizon === "today" && wf && wf.today ? wf.today : null;
   const isToday = !!td;
-  // the title names the comparison, so it follows the page toggle with the rest
-  // of the card - it cannot say "vs target" while the top row is the benchmark
-  const against = mode === "benchmark" && snap?.benchmark ? "benchmark" : "target";
-  const title = (isToday ? "Actual vs " : "Projection vs ") + against;
+  const title = isToday ? "Actual vs target" : "Projection vs target";
 
   if (!wf) {
     return (
@@ -51,46 +40,32 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const outcome = (isToday ? view.actual : view.projection) ?? 0;
   const complete = !!snap?.complete;
   const steps = view.steps || [];
+  const words = refWords(isToday ? "today" : "close");
 
   const bmRaw = view.benchmark;
   const hasBm = !!snap?.benchmark && bmRaw !== null && bmRaw !== undefined;
   const benchmark = hasBm ? bmRaw : null;
   const stretch = hasBm ? view.stretch ?? target - benchmark : null;
   const k = snap?.benchmark?.k ?? null;
-  const bmMode = mode === "benchmark" && hasBm;
 
-  const refLabel = refWord(bmMode ? "benchmark" : "target", horizon === "close" ? "close" : "today");
-  const otherLabel = otherWord(bmMode ? "benchmark" : "target", horizon === "close" ? "close" : "today");
-  const other = bmMode ? target : benchmark;
-
-  /* Running levels from the anchor down. In benchmark mode the stretch is the
-   * first step, which is what keeps the arithmetic closing: benchmark plus the
-   * stretch is the target, and the contributors carry on from there. */
-  const base = bmMode ? benchmark : target;
-  const path = [];
-  let cum = base;
-  if (bmMode) {
-    path.push({
-      key: "__stretch", label: "Stretch to target", value: stretch, plan: true,
-      from: base, to: base + stretch,
-    });
-    cum = base + stretch;
-  }
-  for (const s of steps) {
+  // running levels: target -> after each contributor (last = the outcome)
+  let cum = target;
+  const path = steps.map((s) => {
     const from = cum;
     cum += s.value ?? 0;
-    path.push({ ...s, from, to: cum });
-  }
-  const levels = [base, ...path.map((p) => p.to)];
-  const marks = [outcome, ...levels];
+    return { ...s, from, to: cum };
+  });
+  const levels = [target, ...path.map((p) => p.to)];
+  // the benchmark is in the scale so its tick can never fall off the row
+  const marks = [outcome, ...levels, ...(hasBm ? [benchmark] : [])];
   const lo = Math.min(...marks);
   const hi = Math.max(...marks);
   const pad = (hi - lo) * 0.1 || 1;
   const span = hi + pad - (lo - pad);
   const X = (v) => (span > 0 ? ((v - (lo - pad)) / span) * 100 : 50);
 
-  const nRows = path.length + 2;              // the anchor + the steps + the outcome
-  const net = outcome - base;
+  const nRows = path.length + 2;              // the target + the steps + the outcome
+  const net = outcome - target;
   const netC = net >= 0 ? C.green : C.red;
   const closeWord = complete ? "Final" : "Projected";
   const outcomeLabel = isToday ? "Actual today" : "Projection";
@@ -98,7 +73,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
     head: isToday ? "Secured to date" : closeWord + " at close",
     rows: [
       { label: outcomeLabel, value: fmt(outcome) },
-      { label: refLabel, value: fmt(base) },
+      { label: words.target, value: fmt(target) },
       { label: "Gap", value: fmtSigned(net), color: netC },
     ],
   };
@@ -111,37 +86,24 @@ export default function Waterfall({ snap, horizon = "today" }) {
     gap: 12, alignItems: "center", minHeight: 0,
   };
 
-  const anchorRow = (label, value, color, tip) => (
-    <div style={rowGrid}>
-      <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
-      <div style={{ position: "relative", height: 14 }}>
-        <Tick pct={X(value)} color={color} tip={tip} />
-      </div>
-      <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
-        {fmt(value)}
-      </div>
-    </div>
-  );
-
-  const refTip = {
-    head: refLabel,
+  const targetTip = {
+    head: words.target,
     rows: [
-      { label: "Units", value: fmt(base) },
-      ...(other !== null && other !== undefined ? [{ label: otherLabel, value: fmt(other) }] : []),
+      { label: "Units", value: fmt(target) },
+      ...(hasBm ? [
+        { label: words.bm, value: fmt(benchmark) },
+        { label: "Stretch", value: fmtSigned(stretch) },
+        ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
+      ] : []),
     ],
-    body: bmMode
-      ? "The median of the matched basket - what launches like this one typically reach."
+    body: hasBm
+      ? "The stretch is what the business asked for over and above the basket - the same even uplift in every channel and on every day."
       : undefined,
   };
-  const stretchTip = {
-    head: "Stretch",
-    rows: [
-      { label: "Benchmark", value: fmt(benchmark ?? 0) },
-      { label: "Target", value: fmt(target) },
-      { label: "Stretch", value: fmtSigned(stretch ?? 0) },
-      ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
-    ],
-    body: "What the business is asking for over and above the basket - the same even uplift in every channel and on every day.",
+  const bmTip = {
+    head: words.bm,
+    rows: [{ label: "Units", value: fmt(benchmark ?? 0) }],
+    body: "The median of the matched basket - what launches like this one typically reach.",
   };
   const outcomeTip = isToday
     ? { head: "Secured to date", rows: [{ label: "Units", value: fmt(outcome) }] }
@@ -177,12 +139,23 @@ export default function Waterfall({ snap, horizon = "today" }) {
           ))}
         </div>
 
-        {anchorRow(refLabel, base, C.refMark, refTip)}
+        {/* the target's row carries both references: its own solid tick and the
+            benchmark's dotted one */}
+        <div style={rowGrid}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{words.target}</div>
+          <div style={{ position: "relative", height: 14 }}>
+            {hasBm && <Tick pct={X(benchmark)} color={C.refLine} dotted tip={bmTip} />}
+            <Tick pct={X(target)} color={C.refLine} tip={targetTip} />
+          </div>
+          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
+            {fmt(target)}
+          </div>
+        </div>
 
         {path.map((p) => {
           const v = p.value ?? 0;
           const up = v >= 0;
-          const tip = p.plan ? stretchTip : {
+          const tip = {
             head: p.label,
             rows: [
               { label: "Contribution", value: fmtSigned(v) + " units", color: up ? C.green : C.red },
@@ -191,10 +164,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
           };
           return (
             <div key={p.key} style={rowGrid}>
-              <div style={{
-                fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                color: p.plan ? C.muted : undefined,
-              }}>
+              <div style={{ fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {p.label}
               </div>
               <div style={{ position: "relative", height: 14 }}>
@@ -204,17 +174,13 @@ export default function Waterfall({ snap, horizon = "today" }) {
                     position: "absolute", top: 0, bottom: 0,
                     left: `${X(Math.min(p.from, p.to))}%`,
                     width: `${Math.max(1.2, Math.abs(X(p.to) - X(p.from)))}%`,
-                    background: p.plan ? STRETCH_FILL : up ? C.wfGreen : C.red,
-                    borderRadius: 3,
+                    background: up ? C.wfGreen : C.red, borderRadius: 3,
                   }}
                 />
               </div>
               <div
                 className="num"
-                style={{
-                  fontSize: 12.5, fontWeight: 600, textAlign: "right",
-                  color: p.plan ? C.muted : up ? C.green : C.red,
-                }}
+                style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: up ? C.green : C.red }}
               >
                 {fmtSigned(v)}
               </div>
@@ -222,7 +188,15 @@ export default function Waterfall({ snap, horizon = "today" }) {
           );
         })}
 
-        {anchorRow(outcomeLabel, outcome, C.orange, outcomeTip)}
+        <div style={rowGrid}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{outcomeLabel}</div>
+          <div style={{ position: "relative", height: 14 }}>
+            <Tick pct={X(outcome)} color={C.orange} tip={outcomeTip} />
+          </div>
+          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>
+            {fmt(outcome)}
+          </div>
+        </div>
       </div>
       <div style={{ height: 12, flexShrink: 0 }} />
       <div
@@ -234,15 +208,16 @@ export default function Waterfall({ snap, horizon = "today" }) {
         <QBadge content={{
           head: title,
           body: isToday
-            ? "Contributors sum exactly to the gap between the reference for today and what is secured to date. Read against the benchmark, the stretch row above them is what the target asks for over the basket, not something the release has or has not done."
-            : "Contributors sum exactly to the gap between the reference and projected demand at close. Demand here is unconstrained - the hero caps at the sellout.",
+            ? "Contributors sum exactly to the gap between the target for today and what is secured to date. The dotted tick on the target's row is the benchmark: what the matched basket typically has by now."
+            : "Contributors sum exactly to the gap between target and projected demand at close. Demand here is unconstrained - the hero caps at the sellout. The dotted tick on the target's row is the benchmark.",
         }} />
-        <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
-          {/* the reference not chosen, as a figure to know; and where there is no
-              basket at all, the model that set the target instead */}
-          {other !== null && other !== undefined
-            ? otherLabel.toLowerCase() + " " + fmt(other)
-            : "levers, no comparable basket"}
+        <span style={{
+          fontSize: 12, color: C.muted, whiteSpace: "nowrap",
+          minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 10,
+        }}>
+          {/* the benchmark as a figure to know; and where there is no basket at
+              all, the model that set the target instead */}
+          {hasBm ? words.bm.toLowerCase() + " " + fmt(benchmark) : "levers, no comparable basket"}
           {" · "}
           {isToday
             ? "secured units" + (snap?.day ? ", day " + snap.day : "")

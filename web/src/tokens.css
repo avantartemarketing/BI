@@ -18,18 +18,19 @@
   --blue-deep: #28518f;
   --blue-tint: #eaf0fa;
   --blue-tint-border: #c3d5ee;
-  /* The reference, in one hue. The page reads against one reference at a time -
-   * the benchmark or the target, chosen in the header - and it is drawn as a
-   * tint of the actual's own orange sitting BEHIND the actual, never as a mark
-   * beside it. Two reference colours meant two systems on every card and a
-   * reader decoding which was which; one tint means the reading is simply which
-   * bar ends further along. --ref-fill sits behind a bar, --ref-track carries a
-   * bar's remaining room out to the sellout, and --ref-mark is the same
-   * reference where a bar cannot be drawn - a rung centre, a chart edge, a
-   * waterfall anchor. */
-  --ref-fill: #f8ddd0;
+  /* The two references, in one hue - tints of the actual's own orange, so
+   * they read as the same measurement at other weights rather than as systems
+   * of their own. Both are on every bar at once (docs/BENCHMARK_SPEC 7).
+   * --ref-base is the target's fill from zero to whichever of target and
+   * benchmark is lower, the ground both agree on; --ref-stretch is the fill
+   * from the benchmark up to the target, when the target is the higher;
+   * --ref-line is the benchmark's dotted outline, a step darker than either
+   * tint so it reads on both; --ref-track carries a bar's remaining room out
+   * to the sellout. */
+  --ref-base: #f8ccba;
+  --ref-stretch: #f8ddd0;
+  --ref-line: #ea8f66;
   --ref-track: #faf7f4;
-  --ref-mark: #e8a98b;
 
   --green: #0f7052;
   --amber: #8a5f00;

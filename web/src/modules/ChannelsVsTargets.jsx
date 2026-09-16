@@ -1,34 +1,42 @@
 /* Channels vs targets (spec §4.3, LE relabel per §6) - column form.
  *
  * All five display groups (paid included) as columns rising from a baseline, each
- * one two layers: the reference this page is being read against as a wide tint
- * behind, the actual as a narrower orange column in front. Which of the two
- * references that is comes from the page toggle, and the foot of every column
- * follows it - the percentage and its green or red are against the same thing the
- * tint draws. Reading one against the other is then a matter of which column ends
- * higher, with no line to decode and no case to make for a benchmark that happens
- * to sit above its target: that column is simply taller.
+ * one carrying both references and the actual (BENCHMARK_SPEC 7): the target as
+ * the fill, darker from the baseline to whichever of target and benchmark is
+ * lower and lighter from the benchmark up to the target when the target is the
+ * higher; the benchmark as a dotted outline of the column it would make, over
+ * the fill; the actual as the narrower orange column in front. Nothing about the
+ * drawing changes between a release whose targets sit above the basket and one
+ * whose targets sit below it - only where the outline lands - so the legend has
+ * the same shape either way and a benchmark above its target needs no special
+ * case.
  *
- * Two toggles, neither of them here. The page header carries Today | At close and
- * Benchmark | Target, so the card keeps just:
- *   % | Units  - % puts every channel against its own reference on one 100% scale,
- *                so the tints align into a shared level across the card; Units
+ * One toggle only. The page header carries Today | At close, so the horizon
+ * arrives as a prop and the card keeps just:
+ *   % | Units  - % puts every channel against its own target on one 100% scale,
+ *                so the fills align into a shared level across the card and,
+ *                the uplift being one even multiple, so do the outlines; Units
  *                keeps real magnitudes, so each column is that channel's own size.
- * The stretch is not drawn at all. It is the same even uplift in every column
- * (spec §1), so it belongs at the foot of the card as one quiet line naming the
- * multiple, not as a band on five bars. */
+ * Foot per column: the actual as a % of this horizon's target, green at or above
+ * and red below. The stretch multiple is said once, at the foot of the card,
+ * rather than drawn on five bars. */
 import React, { useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, useTip, useRefMode, refWord, otherWord, pickRef } from "../ui.jsx";
+import { Card, GROUP_DOTS, BmOutline, C, fmt, useTip, refWords } from "../ui.jsx";
 
-/* The two columns are one inside the other: the reference nearly fills the slot,
- * the actual sits well inside it, so the tint reads on both sides of the orange
- * at every card width rather than only on a wide one. */
+/* The fill nearly fills the slot and the actual sits well inside it, so the
+ * tints and the outline read on both sides of the orange at every card width. */
 const REF_INSET = "6%";
 const BAR_INSET = "27%";
 
+/* The legend's outline swatch: the same dotted silhouette the columns carry. */
+const OUTLINE_SWATCH = (
+  <svg width="12" height="9" viewBox="0 0 12 9" style={{ flex: "0 0 12px" }} aria-hidden="true">
+    <path d="M1 9 V1.5 H11 V9" fill="none" stroke={C.refLine} strokeWidth="1.5" strokeDasharray="1.6 1.6" />
+  </svg>
+);
+
 export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   const t = useTip();
-  const mode = useRefMode();
   const [scale, setScale] = useState("pct");   // pct | units
   const rows = snap?.channels || [];
   // no targets: nothing to compare against, so units only and no toggle
@@ -36,46 +44,50 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   const today = horizon !== "close";
   const pct = targeted ? scale === "pct" : false;
   const hasBm = targeted && !!snap?.benchmark;
+  const words = refWords(horizon);
 
-  // Today compares actuals with the reference to date; at close compares the
-  // projection with the full one (docs §5.4 / §9). Both references are carried
-  // per column so the toggle can pick one and the other can still be named.
+  // Today compares actuals with the target to date; at close compares the projection
+  // with the full target (docs §5.4 / §9). The benchmark for the same horizon rides
+  // along, absent when the release has no basket.
   const base = rows.map((c) => {
     const target = (today ? c.exp : c.target) ?? 0;
     const bar = (today ? c.now : c.proj) ?? 0;
     const bmRaw = today ? c.bmExp : c.bm;
     const bm = hasBm && bmRaw !== null && bmRaw !== undefined ? bmRaw : null;
-    const ref = pickRef(mode, { bm, target });
     return {
-      key: c.key, name: c.name, parts: c.parts || [], ref, bar, target, bm,
-      other: mode === "benchmark" ? target : bm,
-      pctOfRef: ref > 0 ? Math.round((bar / ref) * 100) : null,
+      key: c.key, name: c.name, parts: c.parts || [], bar, target, bm,
+      pctOfTarget: target > 0 ? Math.round((bar / target) * 100) : null,
     };
   });
 
-  // one scale across the card: % normalises each channel to its own reference,
-  // units keeps them comparable in secured units. The reference is in the scale,
-  // so a column can never end up outside the plot.
-  const val = (v, ref) => (pct ? (ref > 0 ? (v / ref) * 100 : 0) : v);
+  // one scale across the card: % normalises each channel to its own target, units
+  // keeps them comparable in secured units. Both references are in the scale, so
+  // neither the fill nor the outline can end up outside the plot.
+  const val = (v, target) => (pct ? (target > 0 ? (v / target) * 100 : 0) : v);
   const max = Math.max(
-    ...base.map((r) => val(r.bar, r.ref)),
-    ...base.map((r) => (pct ? 100 : r.ref)),
+    ...base.map((r) => val(r.bar, r.target)),
+    ...base.map((r) => (pct ? 100 : r.target)),
+    ...base.map((r) => (r.bm === null ? 0 : val(r.bm, r.target))),
     1,
   ) * 1.02;
   const h = (v) => Math.max(0, Math.min((v / max) * 100, 100));
 
   const cols = base.map((r) => ({
     ...r,
-    barH: h(val(r.bar, r.ref)),
-    refH: h(pct ? 100 : r.ref),
+    barH: h(val(r.bar, r.target)),
+    targetH: h(pct ? 100 : r.target),
+    bmH: r.bm === null ? null : h(val(r.bm, r.target)),
   }));
 
   const fillColor = today ? C.orange : C.orangeLight;
   const fillLabel = today ? "To date" : "Projected";
-  const refLabel = refWord(mode, horizon);
-  const otherLabel = otherWord(mode, horizon);
   const unit = (v) => fmt(v, v < 10 && v > 0 ? 1 : 0);
   const k = snap?.benchmark?.k ?? null;
+  // the uplift is one multiple, so the stretch band is on every column or none
+  const anyStretch = cols.some((c) => c.bm !== null && c.target > c.bm);
+  const stretchNote = k > 0
+    ? `The target is ×${fmt(k, 2)} the benchmark - the same even uplift in every channel and on every day.`
+    : undefined;
 
   const seg = (opts, value, set) => (
     <span className="seg compact">
@@ -88,7 +100,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   );
 
   const swatch = (bg) => ({ width: 9, height: 9, borderRadius: 2, background: bg, flex: "0 0 9px" });
-  const legendItem = { display: "flex", alignItems: "center", gap: 5 };
+  const legendItem = { display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" };
 
   return (
     <Card
@@ -109,35 +121,47 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
         <div className="body" style={{ gap: 6 }}>
           <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "stretch", gap: 8 }}>
             {cols.map((c) => {
+              const withBm = c.bm !== null;
+              const lo = withBm ? Math.min(c.targetH, c.bmH) : c.targetH;
+              const stretch = withBm && c.targetH > c.bmH;
+              const refRows = [
+                { label: words.target, value: unit(c.target) },
+                ...(withBm ? [{ label: words.bm, value: unit(c.bm) }] : []),
+              ];
               const barTip = {
                 head: today ? "Secured to date" : "Projected at close",
-                rows: [
-                  { label: "Units", value: unit(c.bar) },
-                  ...(c.ref > 0 ? [{ label: refLabel, value: unit(c.ref) }] : []),
-                ],
+                rows: [{ label: "Units", value: unit(c.bar) }, ...refRows],
               };
               const refTip = {
-                head: refLabel,
-                rows: [
-                  { label: "Units", value: unit(c.ref) },
-                  ...(c.other !== null && c.other !== undefined
-                    ? [{ label: otherLabel, value: unit(c.other) }] : []),
-                ],
-                body: mode === "benchmark"
-                  ? "The median of the matched basket for this channel."
+                head: c.name,
+                rows: refRows,
+                body: withBm
+                  ? "The fill is the target; the dotted outline is the median of the matched basket for this channel."
                   : undefined,
               };
               return (
                 <div key={c.key} style={{ flex: 1, minWidth: 0, position: "relative" }}>
-                  {targeted && c.ref > 0 && (
+                  {targeted && lo > 0 && (
                     <div
                       {...t.props(refTip)}
                       style={{
                         position: "absolute", left: REF_INSET, right: REF_INSET, bottom: 0,
-                        height: `${c.refH}%`, background: C.refFill, borderRadius: "4px 4px 0 0",
+                        height: `${lo}%`, background: C.refBase,
+                        // square under a band, rounded when it is the top of the fill
+                        borderRadius: stretch ? 0 : "4px 4px 0 0",
                       }}
                     />
                   )}
+                  {targeted && stretch && (
+                    <div
+                      {...t.props(refTip)}
+                      style={{
+                        position: "absolute", left: REF_INSET, right: REF_INSET, bottom: `${c.bmH}%`,
+                        height: `${c.targetH - c.bmH}%`, background: C.refStretch, borderRadius: "4px 4px 0 0",
+                      }}
+                    />
+                  )}
+                  {targeted && withBm && c.bmH > 0 && <BmOutline pct={c.bmH} column inset={REF_INSET} />}
                   <div
                     {...t.props(barTip)}
                     style={{
@@ -153,7 +177,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
             {cols.map((c) => {
               // a channel with a token target can read in the thousands of per cent,
               // which says nothing except "off the scale" - so it is clamped and marked
-              const capped = c.pctOfRef !== null && c.pctOfRef > 999;
+              const capped = c.pctOfTarget !== null && c.pctOfTarget > 999;
               return (
                 <div key={c.key} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
                   <div
@@ -173,34 +197,35 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                     className="num"
                     style={{
                       fontSize: 11, fontWeight: 600,
-                      color: c.pctOfRef === null ? C.muted : c.pctOfRef >= 100 ? C.green : C.red,
+                      color: c.pctOfTarget === null ? C.muted : c.pctOfTarget >= 100 ? C.green : C.red,
                     }}
                   >
-                    {c.pctOfRef === null ? "–" : (capped ? "›999%" : c.pctOfRef + "%")}
+                    {c.pctOfTarget === null ? "–" : (capped ? "›999%" : c.pctOfTarget + "%")}
                   </div>
                 </div>
               );
             })}
           </div>
+          {/* the legend wraps rather than clips: with both references named it is
+              four items, and the note at the end is the first thing to drop a line */}
           <div
             style={{
-              display: "flex", alignItems: "center", gap: 14, flex: "0 0 auto",
+              display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px 14px", flex: "0 0 auto",
               marginTop: 4, paddingTop: 10, borderTop: `1px solid ${C.hairline}`,
               fontSize: 10.5, color: C.muted,
             }}
           >
             <span style={legendItem}><span style={swatch(fillColor)} />{fillLabel}</span>
-            {targeted && <span style={legendItem}><span style={swatch(C.refFill)} />{refLabel}</span>}
-            <span
-              style={{ marginLeft: "auto" }}
-              title={hasBm && k > 0
-                ? "The even uplift the business put on the basket's median - the same multiple in every channel and on every day"
-                : undefined}
-            >
+            {targeted && <span style={legendItem}><span style={swatch(C.refBase)} />Target</span>}
+            {anyStretch && (
+              <span style={legendItem} title={stretchNote}><span style={swatch(C.refStretch)} />Stretch</span>
+            )}
+            {hasBm && <span style={legendItem} title="The median of the matched basket, per channel">{OUTLINE_SWATCH}Benchmark</span>}
+            <span style={{ marginLeft: "auto", whiteSpace: "nowrap" }} title={stretchNote}>
               {/* the stretch said once, in words, rather than drawn on five bars */}
               {hasBm && k > 0 ? "target is ×" + fmt(k, 2) + " the benchmark"
                 : !targeted ? "secured units · no targets"
-                : pct ? refLabel.toLowerCase() + " = 100%" : "secured units"}
+                : pct ? "target = 100%" : "secured units"}
             </span>
           </div>
         </div>
