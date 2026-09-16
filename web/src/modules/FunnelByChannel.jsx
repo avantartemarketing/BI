@@ -29,7 +29,7 @@
  * Null value or missing/zero reference → neutral: centred grey dot, delta '–'. */
 import React from "react";
 import {
-  Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned, fmtMoney, MINUS, useTip,
+  Card, GROUP_DOTS, C, fmt, fmtSigned, fmtMoney, MINUS, useTip,
   rungGeom, rungPos, RungTrack, RungKey, Tick, refWords,
 } from "../ui.jsx";
 
@@ -376,7 +376,9 @@ function FunnelWaterfall({ snap, groups }) {
   const flat = [];
   // the units-per-buyer steps are one release-level effect split across the
   // groups only because each group has its own units; they are summed and shown
-  // once, after the groups, so the card gains one row rather than five
+  // once, after the groups and under a header of their own, so the card gains
+  // one row rather than five and the row reads as the whole campaign's, not as
+  // the last group's
   const perBuyerTotal = sections.reduce(
     (t, s) => t + s.rows.filter((r) => r.perBuyer && finite(r.value)).reduce((a, r) => a + r.value, 0), 0);
   const perBuyerRow = sections.flatMap((s) => s.rows).find((r) => r.perBuyer) || null;
@@ -390,6 +392,7 @@ function FunnelWaterfall({ snap, groups }) {
   }
   if (perBuyerRow && Math.abs(perBuyerTotal) > 0.05) {
     const from = cum; cum += perBuyerTotal;
+    flat.push({ header: "All channels" });
     flat.push({ ...perBuyerRow, value: perBuyerTotal, from, to: cum });
   }
   /* The same grammar as the outcome waterfall, off the same snapshot figures:
@@ -412,7 +415,7 @@ function FunnelWaterfall({ snap, groups }) {
   /* Every row states a base height and grows in proportion to it, so a short
    * funnel spreads to the foot of the card instead of stopping two thirds of the
    * way down, and a long one keeps its base heights and scrolls. The bars grow
-   * with their rows between 12px and 18px thick; the footer keeps its size. */
+   * with their rows between 12px and 18px thick. */
   const ROW = (base) => ({ flex: `${base} 0 ${base}px`, minHeight: base });
   const BAR_INSET = "clamp(calc(50% - 9px), 22%, calc(50% - 6px))";
 
@@ -492,25 +495,11 @@ function FunnelWaterfall({ snap, groups }) {
           <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: C.muted }}>{r.display ?? "–"}</div>
         </div>
       ))}
-      {anchorRow("Actual today", nowTotal,
-        { head: "Secured to date", rows: [{ label: "Secured units", value: fmt(nowTotal) }] }, C.orange)}
-      <div style={{ height: 24, flex: "0 0 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <QBadge content={{
-          head: "Target to actual",
-          body: "The same rows as the funnel view. Each row reprices one funnel factor from its reference to its actual, one at a time; within a group the steps sum to that group's gap and the groups sum to the gap between expected and actual secured units today. Grey rows have no reference and carry no step; the grey figure is their actual.",
-        }} />
-        <span style={{
-          fontSize: 12, color: C.muted, whiteSpace: "nowrap",
-          minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 10,
-        }}>
-          {capped ? "steps exceed the gap - sellout caps it" : `secured units, day ${day}`}
-          {/* the benchmark as a figure to know; and where there is no basket at
-              all, the model that set the target instead. Both are in the anchor
-              row's popup too, so losing the tail of this line on a narrow card
-              costs nothing. */}
-          {hasBm ? " · benchmark " + fmt(bmTotal) : " · levers, no comparable basket"}
-        </span>
-      </div>
+      {anchorRow("Actual today", nowTotal, {
+        head: "Secured to date",
+        rows: [{ label: "Secured units", value: fmt(nowTotal) }],
+        body: capped ? "The steps add up to more than the gap - the sellout caps the actual." : undefined,
+      }, C.orange)}
     </div>
   );
 }
