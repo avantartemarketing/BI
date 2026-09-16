@@ -309,6 +309,11 @@ export default function Trajectory({ snap, horizon = "today" }) {
     fontSize: 12, fontWeight: weight, color, whiteSpace: "nowrap",
     fontVariantNumeric: "tabular-nums",
   });
+  /* The readings sit beside the today line, which is exactly where every curve
+   * on the chart is passing, so the text knocks the curves out: a card-white
+   * box a few pixels bigger than the glyphs, like the close-level label. The
+   * negative margin keeps the text where it was and lets only the box grow. */
+  const knockout = { background: "#fff", padding: "1px 4px", margin: "0 -4px", borderRadius: 2 };
 
   /* The three today readings share one x, so two close values print on top of
    * each other. Spread the LABELS only; every tick and the today dot stay on
@@ -443,7 +448,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
                 {hasBm && has(bmToday) && <div style={readTick(bmToday, C.refLine, true)} />}
                 <div style={readTick(planToday, C.refLine)} />
                 {readings.map((r) => (
-                  <div key={r.key} style={readLabel(r.ly, r.color, r.weight)}>{r.text}</div>
+                  <div key={r.key} style={readLabel(r.ly, r.color, r.weight)}><span style={knockout}>{r.text}</span></div>
                 ))}
               </>
             )}
