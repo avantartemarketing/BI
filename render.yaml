@@ -23,6 +23,8 @@ services:
         sync: false
       - key: DECISIONS_PATH      # e.g. /var/data/decisions.log.jsonl
         sync: false
+      - key: LAYOUT_PATH         # e.g. /var/data/layout.json
+        sync: false
       - key: BIGQUERY_SERVICE_ACCOUNT_JSON   # BigQuery reader key JSON - the preferred feed (Data Viewer on the dataset + Job User on the project)
         sync: false
       - key: BQ_SINCE   # how far back to pull; also sets the BigQuery bill (default 2025-01-01)

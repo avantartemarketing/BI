@@ -472,6 +472,52 @@ app.post("/api/decisions", (req, res) => {
   res.json(entry);
 });
 
+// ---- the page layout: one arrangement of the release page's cards and section
+// headers for everyone (web/src/Layout.jsx; README "Arranging the page"). The
+// client owns the list of cards; here the shape is checked and the document
+// kept. No document means the default. ----
+const LAYOUT_PATH = process.env.LAYOUT_PATH || path.join(ROOT, "data", "layout.json");
+function readLayout() {
+  try { return JSON.parse(fs.readFileSync(LAYOUT_PATH, "utf8")); } catch { return { items: null, updatedAt: null, updatedBy: null }; }
+}
+function layoutProblem(items) {
+  if (!Array.isArray(items) || items.length > 60) return "items is a list of at most 60 entries";
+  const keys = new Set();
+  for (const it of items) {
+    if (!it || typeof it !== "object") return "every entry is an object";
+    if (it.type === "card") {
+      if (typeof it.key !== "string" || !/^[a-z_]{1,32}$/.test(it.key)) return "a card entry names its card";
+      if (keys.has(it.key)) return `the card ${it.key} appears twice`;
+      keys.add(it.key);
+    } else if (it.type === "header") {
+      if (typeof it.text !== "string" || it.text.length > 80) return "a header carries up to 80 characters of text";
+    } else return "an entry is a card or a header";
+  }
+  return null;
+}
+app.get("/api/layout", (_req, res) => res.json(readLayout()));
+app.post("/api/layout", route(async (req, res) => {
+  const items = req.body ? req.body.items : undefined;
+  if (items === undefined) return res.status(400).json({ error: "items required: a list, or null for the default" });
+  if (items === null) {
+    fs.rmSync(LAYOUT_PATH, { force: true });
+    return res.json({ items: null, updatedAt: null, updatedBy: null });
+  }
+  const problem = layoutProblem(items);
+  if (problem) return res.status(400).json({ error: problem });
+  const s = auth.sessionFrom(req);
+  const doc = {
+    items: items.map((it) => (it.type === "card" ? { type: "card", key: it.key } : { type: "header", text: it.text.trim() })),
+    updatedAt: new Date().toISOString(),
+    updatedBy: (s && s.email) || null,
+  };
+  fs.mkdirSync(path.dirname(LAYOUT_PATH), { recursive: true });
+  const tmp = LAYOUT_PATH + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(doc, null, 1));
+  fs.renameSync(tmp, LAYOUT_PATH);
+  res.json(doc);
+}));
+
 app.use(express.static(DIST));
 app.get(/.*/, (_req, res) => res.sendFile(path.join(DIST, "index.html")));
 

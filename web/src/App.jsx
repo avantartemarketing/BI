@@ -27,6 +27,7 @@ import Waterfall from "./modules/Waterfall.jsx";
 import NoTargets from "./modules/NoTargets.jsx";
 import TargetSetting from "./TargetSetting.jsx";
 import Permissions from "./Permissions.jsx";
+import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -389,6 +390,40 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   const catalogue = !!snap.catalogue;
   // nothing to compare against without targets, and a catalogue page has no campaign
   const showHorizon = targeted && !catalogue;
+
+  /* The page's arrangement is shared and editable (Layout.jsx), so the cards
+   * are rendered by key in whatever order the layout says. A card a release has
+   * nothing for is left out of its page. Without targets every card is on its
+   * actual side, and the cards that only exist relative to a plan say so in
+   * place. */
+  const layout = useLayout();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const startEdit = () => { setDraft(layout.items); setSaveError(null); setEditing(true); };
+  const stopEdit = () => { setEditing(false); setDraft(null); setSaveError(null); };
+  const saveLayout = async () => {
+    setSaving(true); setSaveError(null);
+    try { await layout.save(draft); stopEdit(); } catch (e) { setSaveError(e.message); } finally { setSaving(false); }
+  };
+  useEffect(() => { if (tab !== "overview") stopEdit(); }, [tab]);
+  const renderCard = (key) => {
+    switch (key) {
+      case "hero": return <HeroBar snap={snap} horizon={horizon} />;
+      case "channels": return <ChannelsVsTargets snap={snap} horizon={horizon} />;
+      case "no_targets": return targeted ? null : <NoTargets snap={snap} onSetup={() => setTab("targets")} />;
+      case "funnel": return <FunnelByChannel snap={snap} />;
+      case "trajectory": return <Trajectory snap={snap} horizon={horizon} />;
+      case "drivers": return <KeyDrivers snap={snap} />;
+      case "paid_roi": return <PaidRoi snap={snap} />;
+      case "paid_spend": return <PaidSpend snap={snap} horizon={horizon} />;
+      case "sell_through": return <SellThrough snap={snap} horizon={horizon} />;
+      case "geo": return <Geo snap={snap} />;
+      case "waterfall": return <Waterfall snap={snap} horizon={horizon} />;
+      default: return null;
+    }
+  };
   return (
     <>
       <header className="page-header" style={{ marginBottom: 0 }}>
@@ -409,36 +444,18 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
+        {tab === "overview" && !editing && (
+          <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
+        )}
       </nav>
-      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : targeted ? (
-      <div className="grid">
-        <HeroBar snap={snap} horizon={horizon} />
-        <ChannelsVsTargets snap={snap} horizon={horizon} />
-        <FunnelByChannel snap={snap} />
-        <Trajectory snap={snap} horizon={horizon} />
-        <KeyDrivers snap={snap} />
-        <PaidRoi snap={snap} />
-        <PaidSpend snap={snap} horizon={horizon} />
-        <SellThrough snap={snap} horizon={horizon} />
-        <Geo snap={snap} />
-        <Waterfall snap={snap} horizon={horizon} />
-      </div>
-      ) : (
-      // no targets: the same page, every card on its actual side; the cards
-      // that only exist relative to a plan say so in place
-      <div className="grid">
-        <HeroBar snap={snap} horizon={horizon} />
-        <ChannelsVsTargets snap={snap} horizon={horizon} />
-        <NoTargets snap={snap} onSetup={() => setTab("targets")} />
-        <FunnelByChannel snap={snap} />
-        <Trajectory snap={snap} horizon={horizon} />
-        <KeyDrivers snap={snap} />
-        <PaidRoi snap={snap} />
-        <PaidSpend snap={snap} horizon={horizon} />
-        <SellThrough snap={snap} horizon={horizon} />
-        <Geo snap={snap} />
-        <Waterfall snap={snap} horizon={horizon} />
-      </div>
+      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : (
+        <>
+          {editing && (
+            <LayoutBar items={draft} onChange={setDraft} saving={saving} error={saveError}
+              updatedAt={layout.updatedAt} updatedBy={layout.updatedBy} onCancel={stopEdit} onSave={saveLayout} />
+          )}
+          <PageLayout items={editing ? draft : layout.items} editing={editing} onChange={setDraft} render={renderCard} />
+        </>
       )}
     </>
   );

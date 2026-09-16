@@ -78,7 +78,7 @@ output) and reruns the full ETL, which promotes the release.
 
 ## Keeping state across deploys (Render)
 
-Render's disk resets on every deploy. Four things live on it and are lost without these:
+Render's disk resets on every deploy. Five things live on it and are lost without these:
 
 | What | Symptom when lost | Fix |
 |---|---|---|
@@ -86,6 +86,7 @@ Render's disk resets on every deploy. Four things live on it and are lost withou
 | `data/users.json` | users added in Permissions vanish, passwords reset to `LOGIN_PASSWORD` | `USERS_PATH` on a persistent disk |
 | `data/inputs.saved.json` | targets edited in the dashboard revert to the repo defaults | `SAVED_INPUTS_PATH` on the disk |
 | `data/targets.log.jsonl`, `data/decisions.log.jsonl` | the audit trails restart | `TARGETS_LOG`, `DECISIONS_PATH` on the disk |
+| `data/layout.json` | the page goes back to its default arrangement (card order, section headers) | `LAYOUT_PATH` on the disk |
 
 `SESSION_SECRET` is the one-line fix for re-logins and needs no disk. For the rest, add a
 persistent disk to the service (Render → the service → Disks; 1 GB is plenty), mount it
@@ -96,6 +97,7 @@ USERS_PATH=/var/data/users.json
 SAVED_INPUTS_PATH=/var/data/inputs.saved.json
 TARGETS_LOG=/var/data/targets.log.jsonl
 DECISIONS_PATH=/var/data/decisions.log.jsonl
+LAYOUT_PATH=/var/data/layout.json
 ```
 
 `render.yaml` lists the same keys, but Render ignores that file for a service created in the
@@ -389,3 +391,14 @@ to the target), the benchmark as a dotted outline over it, and the actual in fro
 headline deltas read against the target. Plan curves are built from the release's own basket
 where it has enough members and fall back to the pooled panel curve per metric (docs §5.3).
 Paid ROI is the exception: no reference and no horizon.
+
+### Arranging the page
+
+**Edit layout**, at the right of the Overview / Target setting tabs, turns the page into a
+drag-and-drop board: drag a card to move it, **Add header** puts a section title at the top
+of the page to drag into place (a header ends one grid and starts the next, so each section
+packs on its own), and **Save for everyone** keeps the arrangement for the whole team in
+`data/layout.json` (`LAYOUT_PATH` on Render, see above). **Back to the default** restores the
+built-in order. The list of cards lives in `web/src/Layout.jsx`: a card added to the code
+later joins the end of everyone's page, and a card a release has nothing for (No targets set
+on a targeted release) is left out of that release's page and shows as a ghost while editing.
