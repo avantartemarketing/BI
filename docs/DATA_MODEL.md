@@ -831,7 +831,8 @@ Sell-through is three things added up, per product:
 
 ```
 sold          units paid for
-drafts        draft orders not yet paid   (no feed yet; carried as null and drawn when present)
+drafts        draft orders not yet paid: they take room out of the edition like a sale
+              (no feed yet; carried as null and drawn, striped rust, once a feed carries them)
 in hand       eligible draw entries still in the draw, ALLOCATED across the products by the
               maximum-quantity rule below, × the entry → order rate (0.8 unless the release
               sets its own)
@@ -859,8 +860,13 @@ release; empty means no cap. Purchase rows that carry a draw id are summed per d
 (`purchaseUnits`) and take precedence as the product's sold units where the feed tags them;
 otherwise sold per product is the draw's winners who bought. Sales the draw feed cannot name a
 product for - private room, pre-orders, re-offers - are the release's funnel units sold less
-the attributed sum, carried at release level as `unattributedSold` and never guessed onto a
-product. (The data ask that closes this gap is a product on the purchase event.)
+the attributed sum (`unattributedSold`). **Until the sales feed carries the product** they are
+split across the products by edition size (by eligible entrants until every edition is typed),
+carried per product as `soldAssumed`, drawn inside the sold segment and named as an estimate in
+its popup; the snapshot lists what is still missing in `sellthrough.incomplete` (`sales by
+product`, `draft orders`; `products` when the feed has no draws at all) and the card wears an
+**Incomplete data** stamp over the rows while the list is not empty. The stamp leaves by itself
+once purchases are tagged with a product (`soldSource = "purchases"`) and drafts arrive.
 
 `etl/aggregate_events.py` (`products_file`) writes `data/app/release_products.json`: per
 release, the draws with their counts (`entrants`, `eligible`, `winners`, `sold`, `open`,
@@ -1072,6 +1078,7 @@ guard every benchmark mark on the page is written against.
 | `sellthrough.conversion`, `inHandUnits` | the entry → order rate the prediction runs at, and the entries in hand before it (§6.3) |
 | `sellthrough.products[]` | per product: `key`, `name`, `draws`, `edition`, `sold`, `drafts`, `entrants`, `inHand.{open, won}`, `allocated`, `pinned`, `fixed`, `flexible`, `predicted`, `shown`, `room`, `oversubscribed`, `futurePredicted`, `pct`, `pctClose`, `expectedToday`, `benchmarkToday`, `benchmarkClose` (§6.3) |
 | `sellthrough.attributedSold`, `unattributedSold`, `soldSource` | sold units the draw feed named a product for, the rest, and whether products' sales came from tagged purchases or from winners who bought |
+| `sellthrough.drafts`, `incomplete` | draft orders across the release (null until a feed carries them), and what the card is still waiting on: the list behind its Incomplete data stamp (§6.3) |
 | `sellthrough.allocation`, `measure`, `editionSum`, `editionMismatch`, `allocationStarted` | the rule's bookkeeping, whether fill is over editions or in units, the typed editions' sum against the release's, and whether winners have been drawn |
 | `sellthrough.draws`, `patterns` | the draw feed as reduced by `products_file`, so a save re-runs the rule on the server without the feed |
 | `paid.benchmarkUnits`, `benchmarkBudget` | the paid module's two benchmark marks |

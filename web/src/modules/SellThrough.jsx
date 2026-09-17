@@ -2,11 +2,19 @@
  *
  * The question is "how much of each edition is spoken for", so the card is
  * one row per product. Each row is that product's edition, and on it the
- * units already paid for (rust), the entries in hand counted on the product
- * at the entry → order rate (orange), and at close the units still to come
- * (the projection's light orange). Demand in hand beyond the product's room
- * is the hatch past its sellout, drawn in both horizons because it is the
- * fact the allocator most needs.
+ * units already paid for (rust), draft orders not yet paid (rust, striped),
+ * the entries in hand counted on the product at the entry → order rate
+ * (orange), and at close the units still to come (the projection's light
+ * orange). Demand in hand beyond the product's room is the hatch past its
+ * sellout, drawn in both horizons because it is the fact the allocator most
+ * needs.
+ *
+ * Until the feeds carry sales by product and draft orders, the snapshot says
+ * what is missing (`sellthrough.incomplete`) and the card wears an
+ * "Incomplete data" stamp over the rows; sales the draw cannot name a product
+ * for are then split by edition size and sit inside the sold segment, named
+ * as an estimate in its popup. The stamp leaves by itself when the list is
+ * empty.
  *
  * The entries in hand are not simply everyone who entered the product. An
  * entrant who entered four products but wants two is one conversion on two
@@ -29,9 +37,8 @@ import React, { useState } from "react";
 import { Card, GROUP_DOTS, HATCH, C, fmt, ragColor, useTip } from "../ui.jsx";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
-/* Sold units the feed could not name a product for, split by edition size:
- * rust, but striped, so it never passes for an attributed sale. */
-const ASSUMED = `repeating-linear-gradient(135deg, ${C.rust} 0 2px, #d7a998 2px 5px)`;
+/* Draft orders: sold in all but payment, so rust, but striped. */
+const DRAFTS = `repeating-linear-gradient(135deg, ${C.rust} 0 2px, #d7a998 2px 5px)`;
 const swatch = (bg) => ({ width: 9, height: 9, borderRadius: 2, background: bg, flex: "0 0 9px" });
 const legendItem = { display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" };
 
@@ -46,15 +53,14 @@ function ProductBar({ row, close, maxV, tips, height = 16, radius = 4 }) {
   const edition = row.edition;
   const inset = Math.max(3, Math.round(height * 0.2));
   const innerR = Math.max(2, radius - 2);
-  const sold = row.sold ?? 0;
-  const assumed = row.soldAssumed ?? 0;
+  // the sold segment carries the estimated split too, named in its popup
+  const sold = (row.sold ?? 0) + (row.soldAssumed ?? 0);
   const inHand = row.shown ?? 0;
   const future = close ? row.futurePredicted ?? 0 : 0;
   const over = row.oversubscribed ?? 0;
   const segs = [
     { key: "sold", v: sold, color: C.rust, tip: tips.sold },
-    ...(assumed > 0 ? [{ key: "assumed", v: assumed, color: ASSUMED, tip: tips.assumed }] : []),
-    ...(finite(row.drafts) && row.drafts > 0 ? [{ key: "drafts", v: row.drafts, color: "#c0522a", tip: tips.drafts }] : []),
+    ...(finite(row.drafts) && row.drafts > 0 ? [{ key: "drafts", v: row.drafts, color: DRAFTS, tip: tips.drafts }] : []),
     { key: "inhand", v: inHand, color: C.orange, tip: tips.inHand },
     ...(future > 0 ? [{ key: "future", v: future, color: C.orangeLight, tip: tips.future }] : []),
   ];
@@ -105,9 +111,13 @@ export default function SellThrough({ snap, horizon = "today" }) {
   // the rate the prediction ran at; an older snapshot carries only the panel's drop-off
   const rate = finite(st.conversion) ? st.conversion : 1 - (snap?.benchmarks?.chargeDropOff ?? 0.2);
   const sold = st.sold ?? 0;
+  const draftsAll = finite(st.drafts) ? st.drafts : null;
   const inHandAll = st.soldPredicted ?? 0;
   const futureAll = close ? st.futureEntriesPredicted ?? 0 : 0;
   const fromFeed = Array.isArray(st.products) && st.products.length > 0;
+  // what the feeds do not carry yet; an older snapshot without the field is
+  // read the same way the ETL writes it
+  const incomplete = Array.isArray(st.incomplete) ? st.incomplete : (fromFeed ? [] : ["products"]);
 
   /* The rows. From the draw feed when it is there; otherwise the release as
      one row, so the card reads the same way on a release the feed has no
@@ -123,19 +133,26 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const allEditions = rows.every((r) => finite(r.edition) && r.edition > 0);
   const byEdition = allEditions && scale === "pct";
   // one scale for the Units view: the biggest edition, or the biggest demand
-  const soldOf = (r) => (r.sold ?? 0) + (r.soldAssumed ?? 0);
+  const soldOf = (r) => (r.sold ?? 0) + (r.soldAssumed ?? 0) + (finite(r.drafts) ? r.drafts : 0);
   const demandOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0) + (r.oversubscribed ?? 0);
   const unitsMax = Math.max(...rows.map((r) => Math.max(r.edition ?? 0, demandOf(r))), 1) * 1.02;
   const maxFor = (r) => (byEdition ? Math.max(r.edition, demandOf(r)) * 1.02 : unitsMax);
 
   // the headline: what is spoken for today, or the prediction at close
-  const headPct = edition ? (close ? st.pct ?? 0 : Math.min((sold + inHandAll) / edition, 1)) : null;
-  const headUnits = sold + inHandAll + futureAll;
+  const headPct = edition ? (close ? st.pct ?? 0 : Math.min((sold + (draftsAll ?? 0) + inHandAll) / edition, 1)) : null;
+  const headUnits = sold + (draftsAll ?? 0) + inHandAll + futureAll;
+  const stampTip = incomplete.length ? {
+    head: "Incomplete data",
+    rows: incomplete.map((m) => ({ label: "Not in the feed yet", value: m })),
+    body: incomplete.includes("products")
+      ? "The event feed has no draws for this release yet, so the release is one row. The per-product rows appear after the next data refresh."
+      : "Sales the draw cannot name a product for are split by edition size inside the sold segment until the sales feed carries the product; draft orders are not drawn until a feed carries them.",
+  } : null;
 
   const rateText = `${Math.round(rate * 100)}%`;
   const methodTip = {
     head: "How the card counts",
-    body: `Sold is units paid for. From entries is every eligible entry still in the draw, counted at ${rateText} entry → order. ` +
+    body: `Sold is units paid for, drafts are orders not yet paid. From entries is every eligible entry still in the draw, counted at ${rateText} entry → order. ` +
       "An entrant who entered more products than they want is counted on their maximum quantity of products only, placed where there is most room - the rule the allocator applies at close." +
       (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };
@@ -214,11 +231,18 @@ export default function SellThrough({ snap, horizon = "today" }) {
             {leftRow("sold", <span style={swatch(C.rust)} />, "Sold", fmt(sold), {
               head: "Sold", rows: [
                 { label: "Units", value: fmt(sold) },
-                ...(fromFeed ? [
-                  { label: "By product", value: fmt(st.attributedSold ?? 0) },
-                  { label: "Not by product", value: fmt(st.unattributedSold ?? 0) },
+                ...(fromFeed && (st.unattributedSold ?? 0) > 0 ? [
+                  { label: "Known by product", value: fmt(st.attributedSold ?? 0) },
+                  { label: "Split by edition size", value: fmt(st.unattributedSold ?? 0) },
                 ] : []),
               ],
+              body: fromFeed && (st.unattributedSold ?? 0) > 0
+                ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
+                : undefined,
+            })}
+            {draftsAll !== null && leftRow("drafts", <span style={{ ...swatch(DRAFTS), background: DRAFTS }} />, "Drafts", fmt(draftsAll), {
+              head: "Drafts", rows: [{ label: "Units", value: fmt(draftsAll) }],
+              body: "Draft orders not yet paid for. They take room like a sale.",
             })}
             {leftRow("inhand", <span style={swatch(C.orange)} />, "From entries", fmt(inHandAll), inHandTip)}
             {close && leftRow("future", <span style={swatch(C.orangeLight)} />, "Still to come", fmt(futureAll), {
@@ -228,19 +252,33 @@ export default function SellThrough({ snap, horizon = "today" }) {
           </div>
         </div>
 
-        {/* the products */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        {/* the products, and the stamp over them while a feed is missing */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", position: "relative" }}>
+          {stampTip && (
+            <div {...t.props(stampTip)} style={{
+              position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%) rotate(-7deg)",
+              padding: "5px 12px", border: `2px solid ${C.amber}`, borderRadius: 6, color: C.amber,
+              background: "rgba(255,254,251,0.78)", fontSize: 12, fontWeight: 700, letterSpacing: "0.12em",
+              textTransform: "uppercase", whiteSpace: "nowrap", zIndex: 2, cursor: "help",
+            }}>
+              Incomplete data
+            </div>
+          )}
           <div style={{ flex: 1, minHeight: 0, overflowY: many ? "auto" : "visible", display: "flex", flexDirection: "column", justifyContent: many ? "flex-start" : "center", gap: many ? 2 : 0 }}>
             {rows.map((r) => {
               const pctRow = close ? r.pctClose : r.pct;
               const roomLeft = r.room === null || r.room === undefined ? null : Math.max(r.room - (r.shown ?? 0), 0);
               const tips = {
-                sold: { head: r.name, rows: [{ label: "Sold", value: fmt(r.sold ?? 0) }], body: fromFeed ? "Units paid for by winners of this product's draw." : undefined },
-                assumed: { head: r.name, rows: [
-                  { label: "Sold outside the draw", value: fmt(r.soldAssumed ?? 0) },
-                  { label: "Across the release", value: fmt(st.unattributedSold ?? 0) },
-                ], body: `Private-room and pre-order sales the feed cannot name a product for, split by ${allEditions ? "edition size" : "entrants"}: this product's share.` },
-                drafts: { head: r.name, rows: [{ label: "Drafts", value: fmt(r.drafts ?? 0) }] },
+                sold: { head: r.name, rows: [
+                  { label: "Sold", value: fmt((r.sold ?? 0) + (r.soldAssumed ?? 0)) },
+                  ...((r.soldAssumed ?? 0) > 0 ? [
+                    { label: "Known by product", value: fmt(r.sold ?? 0) },
+                    { label: `Split by ${allEditions ? "edition size" : "entrants"}`, value: fmt(r.soldAssumed ?? 0) },
+                  ] : []),
+                ], body: (r.soldAssumed ?? 0) > 0
+                  ? "Private-room and pre-order sales the feed cannot name a product for, split across the products: this product's share, an estimate until the sales feed carries the product."
+                  : undefined },
+                drafts: { head: r.name, rows: [{ label: "Drafts", value: fmt(r.drafts ?? 0) }], body: "Draft orders not yet paid for. They take room like a sale." },
                 inHand: { head: r.name, rows: [
                   ...(r.inHand ? [{ label: "Entrants in hand", value: fmt((r.inHand.open ?? 0) + (r.inHand.won ?? 0)) }] : []),
                   ...(finite(r.allocated) ? [{ label: "Counted here", value: fmt(r.allocated) }] : []),
@@ -287,8 +325,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
       {/* legend, no rule */}
       <div style={{ flex: "0 0 auto", paddingTop: 10, display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px 14px", fontSize: 11, color: C.muted }}>
         <span style={legendItem}><span style={swatch(C.rust)} />Sold</span>
-        {rows.some((r) => (r.soldAssumed ?? 0) > 0) && <span style={legendItem}><span style={{ ...swatch(ASSUMED), background: ASSUMED }} />Sold, split by {allEditions ? "edition" : "entrants"}</span>}
-        {rows.some((r) => finite(r.drafts) && r.drafts > 0) && <span style={legendItem}><span style={swatch("#c0522a")} />Drafts</span>}
+        {rows.some((r) => finite(r.drafts) && r.drafts > 0) && <span style={legendItem}><span style={{ ...swatch(DRAFTS), background: DRAFTS }} />Drafts</span>}
         <span style={legendItem}><span style={swatch(C.orange)} />From entries</span>
         {close && <span style={legendItem}><span style={swatch(C.orangeLight)} />Still to come</span>}
         {rows.some((r) => (r.oversubscribed ?? 0) > 0) && (

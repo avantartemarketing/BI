@@ -16,9 +16,10 @@
  * combination of open entries, unpaid wins, paid wins and maximum quantity -
  * so nothing here ever sees a person.
  *
- *   products  [{ key, name, edition, draws: [drawId], sold }]
+ *   products  [{ key, name, edition, draws: [drawId], sold, drafts }]
  *             edition null when nobody has typed it; sold = units already paid
- *             for and attributed to the product (winners who bought)
+ *             for and attributed to the product; drafts = draft orders not yet
+ *             paid (null until a feed carries them), which take room like a sale
  *   patterns  [{ open: [drawId], won: [drawId], sold: [drawId], bought, max, n }]
  *             open = eligible entries still in the draw (not won, not bought);
  *             won = won and not yet paid; sold = won and paid; bought = pieces
@@ -66,7 +67,8 @@ function productSets(products) {
 export function allocateEntries({ products, patterns, rate = 0.8 }) {
   const P = products.length;
   const r = finite(rate) ? Number(rate) : 0.8;
-  const sold = products.map((p) => Number(p.sold) || 0);
+  // sold and drafts both take room out of the edition
+  const sold = products.map((p) => (Number(p.sold) || 0) + (finite(p.drafts) ? Number(p.drafts) : 0));
   const editions = products.map((p) => (finite(p.edition) && Number(p.edition) > 0 ? Number(p.edition) : null));
   // fill is a share of the edition when every product has one; a product
   // count otherwise, so a release with editions typed for half its products
@@ -213,7 +215,8 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
   const future = Math.max(Number(futureUnits) || 0, 0);
   const roomAfter = alloc.products.map((a, i) => (a.room === null ? null : Math.max(a.room - a.shown, 0)));
   const roomSum = allEditions ? roomAfter.reduce((t, v) => t + v, 0) : null;
-  const demand = alloc.products.map((a, i) => (Number(products[i].sold) || 0) + assumed[i] + a.shown);
+  const draftsOf = (p) => (finite(p.drafts) ? Number(p.drafts) : 0);
+  const demand = alloc.products.map((a, i) => (Number(products[i].sold) || 0) + assumed[i] + draftsOf(products[i]) + a.shown);
   const demandSum = demand.reduce((t, v) => t + v, 0);
   const futureShare = alloc.products.map((a, i) => {
     if (allEditions) return roomSum > 0 ? future * (roomAfter[i] / roomSum) : 0;
@@ -228,12 +231,12 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
     const a = alloc.products[i];
     const sold = Number(p.sold) || 0;
     const e = editions[i];
-    const today = sold + assumed[i] + a.shown;
+    const today = sold + assumed[i] + draftsOf(p) + a.shown;
     const close = today + futureShare[i];
     return {
       key: p.key, name: p.name, draws: p.draws || [], edition: e,
       entrants: p.entrants ?? null, inHand: a.inHand,
-      sold, soldAssumed: r1(assumed[i]), drafts: p.drafts ?? null,
+      sold, soldAssumed: r1(assumed[i]), drafts: finite(p.drafts) ? Number(p.drafts) : null,
       allocated: a.allocated, pinned: a.pinned, fixed: a.fixed, flexible: a.flexible,
       predicted: r1(a.predicted), shown: r1(a.shown), room: a.room, oversubscribed: r1(a.oversubscribed),
       futurePredicted: r1(futureShare[i]),
@@ -247,15 +250,16 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
   const shownSum = rows.reduce((t, x) => t + x.shown, 0);
   const futureSum = rows.reduce((t, x) => t + x.futurePredicted, 0);
   const ed = finite(edition) && Number(edition) > 0 ? Number(edition) : null;
-  const inventoryLeft = ed === null ? null : Math.max(ed - soldAll, 0);
+  const draftsAll = products.some((p) => finite(p.drafts)) ? products.reduce((t, p) => t + draftsOf(p), 0) : null;
+  const inventoryLeft = ed === null ? null : Math.max(ed - soldAll - (draftsAll || 0), 0);
   const predictedAll = inventoryLeft === null ? shownSum : Math.min(shownSum, inventoryLeft);
   const futureAll = inventoryLeft === null ? futureSum : Math.min(futureSum, Math.max(inventoryLeft - predictedAll, 0));
   return {
     conversion: alloc.rate, measure: alloc.measure,
     products: rows,
-    attributedSold: attributed, unattributedSold: unattributed,
+    attributedSold: attributed, unattributedSold: unattributed, drafts: draftsAll,
     soldPredicted: r1(predictedAll), futureEntriesPredicted: r1(futureAll),
-    pct: ed === null ? null : r4(Math.min((soldAll + predictedAll + futureAll) / ed, 1)),
+    pct: ed === null ? null : r4(Math.min((soldAll + (draftsAll || 0) + predictedAll + futureAll) / ed, 1)),
     editionSum, editionMismatch: editionSum !== null && ed !== null && Math.round(editionSum) !== Math.round(ed),
     allocation: {
       entrants: alloc.entrants, flexibleEntrants: alloc.flexibleEntrants, surplusEntries: alloc.surplusEntries,

@@ -1074,6 +1074,7 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
         st["benchmarkUnits"] = round(bm_close, 1)
     feed = load_products_feed().get(name)
     if not feed or not feed.get("draws"):
+        st["incomplete"] = ["products"]
         return st
     products, source = products_from_draws(feed["draws"], release.get("products"), edition)
     pp = sell_through_products(products, feed.get("patterns") or [], rate=rate, edition=edition,
@@ -1083,6 +1084,12 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
                                   "editionSum", "editionMismatch")})
     st["soldSource"] = source
     st["allocationStarted"] = bool(feed.get("allocated"))
+    # what the card is still waiting on, so it can say so: sales by product
+    # (until the purchase feed carries the product, the sales the draw cannot
+    # name are split by edition size) and draft orders (no feed yet). The
+    # card stamps itself "Incomplete data" while this list is not empty.
+    st["incomplete"] = ([] if source == "purchases" else ["sales by product"]) + \
+        (["draft orders"] if any(p.get("drafts") is None for p in products) else [])
     # the draws and patterns ride along so a save can re-run the rule on the
     # server without the event feed (server/retarget.js)
     st["draws"] = feed["draws"]

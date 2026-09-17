@@ -33,9 +33,13 @@ headline is those rows added up:
 
 ```
 sell-through(product) = units paid
-                      + draft orders (when a feed exists)
+                      + draft orders not yet paid
                       + entries in hand counted on the product × 0.8
 ```
+
+Until the feeds carry sales by product and draft orders, the card wears an
+**Incomplete data** stamp: the sales the draw cannot name a product for are
+split across the products by edition size, and drafts are not drawn.
 
 **Entries in hand are allocated, not simply counted.** A release runs one draw
 per product, and a collector can enter several draws while wanting fewer pieces

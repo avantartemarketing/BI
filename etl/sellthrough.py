@@ -51,7 +51,8 @@ def _product_sets(products: list[dict]):
 def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0.8) -> dict:
     n_products = len(products)
     r = float(rate) if _finite(rate) else 0.8
-    sold = [float(p.get("sold") or 0) for p in products]
+    # sold and drafts both take room out of the edition
+    sold = [float(p.get("sold") or 0) + (float(p["drafts"]) if _finite(p.get("drafts")) else 0.0) for p in products]
     editions = [float(p["edition"]) if _finite(p.get("edition")) and float(p["edition"]) > 0 else None
                 for p in products]
     by_fill = n_products > 0 and all(e is not None for e in editions)
@@ -199,7 +200,10 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
     future = max(float(future_units or 0), 0.0)
     room_after = [None if a["room"] is None else max(a["room"] - a["shown"], 0.0) for a in alloc["products"]]
     room_sum = sum(room_after) if all_editions else None
-    demand = [float(products[i].get("sold") or 0) + assumed[i] + a["shown"] for i, a in enumerate(alloc["products"])]
+    def drafts_of(p):
+        return float(p["drafts"]) if _finite(p.get("drafts")) else 0.0
+    demand = [float(products[i].get("sold") or 0) + assumed[i] + drafts_of(products[i]) + a["shown"]
+              for i, a in enumerate(alloc["products"])]
     demand_sum = sum(demand)
     future_share = []
     for i, a in enumerate(alloc["products"]):
@@ -219,12 +223,12 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
         a = alloc["products"][i]
         s = float(p.get("sold") or 0)
         e = editions[i]
-        today = s + assumed[i] + a["shown"]
+        today = s + assumed[i] + drafts_of(p) + a["shown"]
         close = today + future_share[i]
         rows.append({
             "key": p.get("key"), "name": p.get("name"), "draws": p.get("draws") or [], "edition": e,
             "entrants": p.get("entrants"), "inHand": a["inHand"],
-            "sold": s, "soldAssumed": _r1(assumed[i]), "drafts": p.get("drafts"),
+            "sold": s, "soldAssumed": _r1(assumed[i]), "drafts": float(p["drafts"]) if _finite(p.get("drafts")) else None,
             "allocated": a["allocated"], "pinned": a["pinned"], "fixed": a["fixed"], "flexible": a["flexible"],
             "predicted": _r1(a["predicted"]), "shown": _r1(a["shown"]), "room": a["room"],
             "oversubscribed": _r1(a["oversubscribed"]),
@@ -238,15 +242,16 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
     shown_sum = sum(x["shown"] for x in rows)
     future_sum = sum(x["futurePredicted"] for x in rows)
     ed = float(edition) if _finite(edition) and float(edition) > 0 else None
-    inventory_left = None if ed is None else max(ed - sold_all, 0.0)
+    drafts_all = sum(drafts_of(p) for p in products) if any(_finite(p.get("drafts")) for p in products) else None
+    inventory_left = None if ed is None else max(ed - sold_all - (drafts_all or 0.0), 0.0)
     predicted_all = shown_sum if inventory_left is None else min(shown_sum, inventory_left)
     future_all = future_sum if inventory_left is None else min(future_sum, max(inventory_left - predicted_all, 0.0))
     return {
         "conversion": alloc["rate"], "measure": alloc["measure"],
         "products": rows,
-        "attributedSold": attributed, "unattributedSold": unattributed,
+        "attributedSold": attributed, "unattributedSold": unattributed, "drafts": drafts_all,
         "soldPredicted": _r1(predicted_all), "futureEntriesPredicted": _r1(future_all),
-        "pct": None if ed is None else _r4(min((sold_all + predicted_all + future_all) / ed, 1.0)),
+        "pct": None if ed is None else _r4(min((sold_all + (drafts_all or 0.0) + predicted_all + future_all) / ed, 1.0)),
         "editionSum": edition_sum,
         "editionMismatch": edition_sum is not None and ed is not None and round(edition_sum) != round(ed),
         "allocation": {
