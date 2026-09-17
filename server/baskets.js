@@ -45,7 +45,8 @@ const PY_TIMEOUT_MS = 60 * 1000;
 
 /* The request/reply contract with the ETL. Three ops, one process each:
  *   {op:"baskets", release}    -> {suggested, baskets, saved}
- *   {op:"candidates"}          -> {rows}          the draw panel, newest first
+ *   {op:"candidates"}          -> {rows}          the draw panel, newest first, with each launch's
+ *                                                   units, sessions, paid share, unit price (GBP) and edition size
  *   {op:"profile", members}    -> {profile, unknown}
  * as_of is today because that is what the build uses - all_12m is "the last
  * twelve months" as of the run, and the picker has to show the same basket the
@@ -84,6 +85,10 @@ if req.get("op") == "candidates":
             "sessions": B._num(r.get("tot_sessions_total")),
             "paid_share": B._num(r.get("sess_share_paid")),
             "private_room_share": B._num(r.get("private_room_share")),
+            # the edition's unit price in sterling and its size, from Airtable
+            # via the panel (etl/pricing.py); 0 where Airtable has no match
+            "price": B._num(r.get("unit_price_gbp")),
+            "edition_size": B._num(r.get("edition_size")),
             "cluster": cid,
             "cluster_name": names.get(cid, "") if cid is not None else "",
         })
