@@ -1,6 +1,6 @@
 /* Funnel by channel (spec §4.4, LE relabel per §6). Tall card (1 col × 2 rows),
- * and a 2 × 2 version (FunnelByChannelWide, at the foot of this file) that lays
- * the waterfall and the funnel side by side on one set of rows.
+ * and a 2 × 2 version (FunnelByChannelWide, at the foot of this file) that
+ * gives the waterfall view two columns by two rows of room.
  * Always the Today horizon, so the page toggle is accepted and ignored.
  * Five display groups; rungs are built from real snapshot data instead of the
  * mock's static list:
@@ -46,13 +46,6 @@ const GUIDE = "#ddd9cf";
 const LABEL_W = 112, DELTA_W = 56, COL_GAP = 10;
 const GRID = `${LABEL_W}px 1fr ${DELTA_W}px`;
 const TRACK_L = LABEL_W + COL_GAP, TRACK_R = DELTA_W + COL_GAP;
-/* The 2 × 2 card's row: the label and the waterfall's two columns as above,
- * then a spacer and the rung with its own delta, so one row carries both
- * readings of one stage. The rung's cells are placed by column number, so a
- * row with nothing to draw on one side still lines up with the rest. */
-const BLOCK_GAP = 14;
-const GRID_WIDE = `${LABEL_W}px 1fr ${DELTA_W}px ${BLOCK_GAP}px 1fr ${DELTA_W}px`;
-const RUNG_COL = 5, RUNG_DELTA_COL = 6;
 /* The stack has to hold five groups, fifteen rungs and the key inside a tall
  * card, so the rows are 26px and the groups are 10px apart. */
 const RUNG_H = 26, GROUP_GAP = 10;
@@ -389,20 +382,17 @@ function groupWaterfall(g, snap, vsBm = false) {
   return { name: g.name, rows, now, exp };
 }
 
-/* Every row states a base height and grows or shrinks in proportion to it, so
- * the stack always fills its card exactly and never scrolls: a short funnel
- * spreads to the foot of the card instead of stopping two thirds of the way
- * down, and the longest walk the page can build - every AA Email stage, the
- * split buyer row, the anchors: 27 rows, 588px at base - gives up the two
- * pixels the card's border takes rather than growing a scrollbar. The bars
- * grow with their rows between 12px and 18px thick. */
-const ROW = (base) => ({ flex: `${base} 1 ${base}px`, minHeight: 0 });
-const BAR_INSET = "clamp(calc(50% - 9px), 22%, calc(50% - 6px))";
+/* Every row of the walk states a base height and grows or shrinks in
+ * proportion to it, so the stack always fills its card exactly and never
+ * scrolls: a short walk spreads to the foot of the card instead of stopping
+ * two thirds of the way down, and a long one gives up a little height per row
+ * rather than growing a scrollbar. The longest walk the page can build (every
+ * AA Email stage, the split buyer row, the levels) is 22 rows, inside the tall
+ * card's room at base. The bars grow with their rows, 12px to 18px thick. */
+const BAR_INSET = "clamp(calc(50% - 9px), 20%, calc(50% - 6px))";
 const FIT = { flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", overflow: "hidden" };
-const row = (base, cols = GRID) => ({ ...ROW(base), display: "grid", gridTemplateColumns: cols, gap: COL_GAP, alignItems: "center" });
 const ANCHOR_LABEL = { fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" };
 const ANCHOR_NUM = { fontSize: 12.5, fontWeight: 600, textAlign: "right" };
-const HEAD_LABEL = { fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" };
 const ROW_LABEL = { fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 const ROW_NUM = { fontSize: 12.5, fontWeight: 600, textAlign: "right" };
 
@@ -514,90 +504,8 @@ const stepTip = (r, hasBm) => ({
 });
 const infoTip = (r) => ({ head: r.label, body: r.note, rows: r.tipRows });
 
-/* The waterfall's cells, drawn the same way in both cards: a level is a tick,
- * dotted for the benchmark as its mark is everywhere; a step is a bar between
- * running levels; a row without a reference is a grey dot at the running
- * level - context, not a component of the arithmetic. */
-function LevelCell({ pct, color, dotted, tip }) {
-  return (
-    <div style={{ position: "relative", height: 14 }}>
-      <Tick pct={pct} color={color} dotted={dotted} tip={tip} />
-    </div>
-  );
-}
-function StepCell({ from, to, X, color, tip, tipApi }) {
-  return (
-    <div style={{ position: "relative", alignSelf: "stretch" }}>
-      <div {...tipApi.props(tip)} style={{
-        position: "absolute", top: BAR_INSET, bottom: BAR_INSET,
-        left: `${X(Math.min(from, to))}%`,
-        width: `${Math.max(1.2, Math.abs(X(to) - X(from)))}%`,
-        background: color, borderRadius: 3,
-      }} />
-    </div>
-  );
-}
-function DotCell({ level, X, tip, tipApi }) {
-  return (
-    <div style={{ position: "relative", alignSelf: "stretch" }}>
-      <div {...tipApi.props(tip)} style={{
-        position: "absolute", left: `${X(level)}%`, top: "50%", marginTop: -5, width: 10, height: 10, marginLeft: -5,
-        borderRadius: "50%", background: NEUTRAL_DOT, boxShadow: RING,
-      }} />
-    </div>
-  );
-}
-
-/* The tall card's waterfall view: the walk, one row per stage. */
-function FunnelWaterfall({ wf }) {
-  const tipApi = useTip();
-  const { flat, X, hasBm, words } = wf;
-  // a level: its mark is a tick, dotted for the benchmark as its mark is everywhere
-  const anchor = (label, value, tip, color = C.refLine, dotted = false) => (
-    <div style={row(26)}>
-      <div style={ANCHOR_LABEL}>{label}</div>
-      <LevelCell pct={X(value)} color={color} dotted={dotted} tip={tip} />
-      <div className="num" style={ANCHOR_NUM}>{fmt(value)}</div>
-    </div>
-  );
-  return (
-    <div style={FIT}>
-      {anchor(words.target, wf.expTotal, targetTip(wf))}
-      {hasBm && (
-        <div style={row(20)}>
-          <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Stretch</div>
-          <StepCell from={wf.expTotal} to={wf.bmTotal} X={X} color={C.refStretch} tip={wf.stretchTip} tipApi={tipApi} />
-          <div className="num" style={ROW_NUM}>{fmtSigned(wf.bmTotal - wf.expTotal)}</div>
-        </div>
-      )}
-      {hasBm && anchor(words.bm, wf.bmTotal, bmTip(wf), C.refLine, true)}
-      {flat.map((r, i) => r.header ? (
-        <div key={"h" + i} style={{ ...ROW(25), display: "flex", alignItems: "flex-end", paddingBottom: 4 }}>
-          <div style={HEAD_LABEL}>{r.header}</div>
-        </div>
-      ) : r.to !== undefined ? (
-        <div key={r.label + i} style={row(20)}>
-          <div style={ROW_LABEL}>{r.label}</div>
-          <StepCell from={r.from} to={r.to} X={X} color={r.value >= 0 ? C.wfGreen : C.red} tip={stepTip(r, hasBm)} tipApi={tipApi} />
-          <div className="num" style={{ ...ROW_NUM, color: r.value >= 0 ? C.green : C.red }}>{fmtSigned(r.value, 1)}</div>
-        </div>
-      ) : (
-        <div key={r.label + i} style={row(20)}>
-          <div style={ROW_LABEL}>{r.label}</div>
-          <DotCell level={r.level} X={X} tip={infoTip(r)} tipApi={tipApi} />
-          <div className="num" style={{ ...ROW_NUM, color: C.muted }}>{r.display ?? "–"}</div>
-        </div>
-      ))}
-      {anchor("Actual today", wf.nowTotal, actualTip(wf), C.orange)}
-    </div>
-  );
-}
-
 /* The rungs, as data: five groups of { label, v, bm, plan, unit, kind, inv,
- * note } for buildRung, off the same snapshot the waterfall walks. The AA
- * Email sessions rung is marked `wideOnly`: the tall card's chain multiplies
- * out to sessions already and has no room for the row, while the 2 × 2 card
- * has a sessions step on that row and draws the rung beside it. */
+ * note } for buildRung, off the same snapshot the waterfall walks. */
 function rungModel(snap) {
   const targeted = snap?.targeted !== false;
   const fbg = snap?.funnelByGroup || {};
@@ -684,7 +592,6 @@ function rungModel(snap) {
           note: "Clicks per opened email (click-to-open). " + REF_NOTE + "." },
         { label: "Sessions per click", kind: "rate", unit: "ratio", v: em.spcA, plan: em.spcE, bm: em.spcE,
           note: SPC_NOTE + "." },
-        { ...sess("aa_email"), wideOnly: true },
         conv("aa_email"),
       ],
     },
@@ -725,14 +632,7 @@ function rungModel(snap) {
       ],
     },
   ];
-  /* The multi-buy rate is one release-level fact, so the waterfall prints it
-     once under the groups; the 2 × 2 card gives that row a rung of its own,
-     held at what the target assumed as the rate rungs are. */
-  const perBuyer = {
-    label: "Units per buyer", kind: "rate", unit: "ratio", v: upbActual, plan: upbPlan, bm: upbPlan,
-    note: "Pieces per buyer across the release, vs what the target assumed for this many products.",
-  };
-  return { targeted, groups, bench, k, perBuyer };
+  return { targeted, groups, bench, k };
 }
 
 /* The tall card's funnel view: the groups stacked, one centre line behind them. */
@@ -758,7 +658,7 @@ function RungStack({ m }) {
             <div style={{ height: 24, flex: "0 0 24px", display: "flex", alignItems: "center" }}>
               <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap" }}>{g.name}</div>
             </div>
-            {g.rungs.filter((raw) => !raw.wideOnly).map((raw) => {
+            {g.rungs.map((raw) => {
               const r = buildRung(raw, bench, k);
               return <Rung key={r.label} r={r} bench={bench} />;
             })}
@@ -802,7 +702,7 @@ export default function FunnelByChannel({ snap, horizon, only }) {
     >
       <div className="spacer-16" />
       {view === "wf"
-        ? (wf ? <FunnelWaterfall wf={wf} /> : <div className="empty-state">No funnel data yet</div>)
+        ? (wf ? <Walk wf={wf} layout={WALK_TALL} /> : <div className="empty-state">No funnel data yet</div>)
         : <RungStack m={m} />}
     </Card>
   );
@@ -818,259 +718,205 @@ export default function FunnelByChannel({ snap, horizon, only }) {
  * no row with a reference yet - the card is the tall card's funnel view at
  * this size. */
 
-/* ---- MOCKUPS (temporary): two other shapes for the 2 x 2 card ---------- */
-/* The walk as one list of rows with base heights and the running level in and
- * out of every row, so the drops between bars can be drawn. */
-function walkRows(wf) {
+/* ---- the waterfall view, in both cards -----------------------------------
+ * The walk from the target - or, with a basket, from the benchmark with the
+ * stretch set aside - down every channel's rows to the actual. The channel
+ * names stand to the left of their rows rather than on rows of their own, so
+ * the stack is five rows shorter and every row taller, and grey 1px drops
+ * carry the running level from each row to the next, so the walk reads as one
+ * line, as the outcome waterfall draws it (BENCHMARK_SPEC 9). The tall card
+ * has no figure column: a row's figures are in its popup, on the bar or on
+ * the name, and the levels print theirs beside their label. The 2 × 2 card
+ * keeps the column and runs the bars across the card on a unit axis. Pointing
+ * at a name lights its bar and pointing at a bar lights its name; a channel's
+ * name lights every row it has. */
+const WALK_TALL = { group: 82, label: 100, delta: 0, gap: 8, axis: false, nameSize: 12 };
+const WALK_WIDE = { group: 118, label: 112, delta: 56, gap: 10, axis: true, nameSize: 12.5 };
+const HOT_RING = "0 0 0 2px rgba(20,20,19,.35)";
+const HOT_DOT = "#a9a59a";
+
+/* The walk as blocks: the opening levels, one block per channel, the closing
+ * level. Every row carries the running level in and out, which is where its
+ * drops are drawn from and to. */
+function walkBlocks(wf) {
   const { flat, expTotal, bmTotal, nowTotal, hasBm, words } = wf;
-  const rows = [];
-  rows.push({ kind: "level", base: 26, label: words.target, value: expTotal, level: expTotal, tip: targetTip(wf), color: C.refLine });
+  const open = [{ id: "target", kind: "level", base: 26, label: words.target, value: expTotal, tip: targetTip(wf), color: C.refLine }];
   if (hasBm) {
-    rows.push({ kind: "stretch", base: 20, from: expTotal, to: bmTotal, level: bmTotal });
-    rows.push({ kind: "level", base: 26, label: words.bm, value: bmTotal, level: bmTotal, tip: bmTip(wf), color: C.refLine, dotted: true });
+    open.push({ id: "stretch", kind: "stretch", base: 20, label: "Stretch", from: expTotal, to: bmTotal, tip: wf.stretchTip });
+    open.push({ id: "bm", kind: "level", base: 26, label: words.bm, value: bmTotal, tip: bmTip(wf), color: C.refLine, dotted: true });
   }
-  let lvl = hasBm ? bmTotal : expTotal;
+  const groups = [];
   for (const r of flat) {
-    if (r.header) rows.push({ kind: "header", base: 25, text: r.header, level: lvl });
-    else if (r.to !== undefined) { rows.push({ kind: "step", base: 20, r, level: r.to }); lvl = r.to; }
-    else rows.push({ kind: "info", base: 20, r, level: r.level });
+    if (r.header) { groups.push({ name: r.header, rows: [] }); continue; }
+    const g = groups[groups.length - 1];
+    g.rows.push({ id: `${g.name}:${g.rows.length}`, group: g.name, kind: r.to !== undefined ? "step" : "info", base: 24, r });
   }
-  rows.push({ kind: "level", base: 26, label: "Actual today", value: nowTotal, level: nowTotal, tip: actualTip(wf), color: C.orange });
-  rows.forEach((row, i) => { row.entry = i === 0 ? null : rows[i - 1].level; row.exit = i === rows.length - 1 ? null : row.level; });
-  return rows;
+  const close = [{ id: "actual", kind: "level", base: 26, label: "Actual today", value: nowTotal, tip: actualTip(wf), color: C.orange }];
+  const all = [...open, ...groups.flatMap((g) => g.rows), ...close];
+  let lvl = null;
+  for (const row of all) {
+    row.entry = lvl;
+    lvl = row.kind === "level" ? row.value : row.kind === "stretch" ? row.to : row.kind === "step" ? row.r.to : row.r.level;
+    row.exit = lvl;
+  }
+  all[all.length - 1].exit = null;
+  return { open, groups, close };
 }
-/* the grey 1px drops from a row's level to the next, as the outcome waterfall draws them */
+
+/* the grey drops: from the level a row enters at down to its own mark, and
+ * from the level it leaves at down to the next row */
 function Drops({ entry, exit, X }) {
-  const line = (left, top, bottom, key) => (
-    <div key={key} style={{ position: "absolute", left: `${left}%`, top, bottom, width: 1, marginLeft: -0.5, background: C.planGrey }} />
+  const line = (level, top, bottom) => (
+    <div style={{ position: "absolute", left: `${X(level)}%`, top, bottom, width: 1, marginLeft: -0.5, background: C.planGrey }} />
   );
-  return <>{entry !== null && entry !== undefined && line(X(entry), 0, "50%", "in")}{exit !== null && exit !== undefined && line(X(exit), "50%", 0, "out")}</>;
-}
-const THICK = "clamp(calc(50% - 12px), 26%, calc(50% - 7px))";
-function WalkRow({ row, X, hasBm, tipApi, thick, drops = true }) {
-  const inset = thick ? THICK : BAR_INSET;
-  const cell = (children) => (
-    <div style={{ position: "relative", alignSelf: "stretch" }}>
-      {drops && <Drops entry={row.entry} exit={row.exit} X={X} />}
-      {children}
-    </div>
-  );
-  if (row.kind === "header") {
-    return (
-      <div style={row_(row.base)}>
-        <div style={{ ...HEAD_LABEL, alignSelf: "end", paddingBottom: 4 }}>{row.text}</div>
-        {cell(null)}
-        <div />
-      </div>
-    );
-  }
-  if (row.kind === "level") {
-    return (
-      <div style={row_(row.base)}>
-        <div style={ANCHOR_LABEL}>{row.label}</div>
-        {cell(<div style={{ position: "absolute", left: 0, right: 0, top: "50%", marginTop: -7, height: 14 }}>
-          <Tick pct={X(row.value)} color={row.color} dotted={!!row.dotted} tip={row.tip} />
-        </div>)}
-        <div className="num" style={ANCHOR_NUM}>{fmt(row.value)}</div>
-      </div>
-    );
-  }
-  if (row.kind === "stretch") {
-    return (
-      <div style={row_(row.base)}>
-        <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Stretch</div>
-        {cell(<div {...tipApi.props(null)} style={{
-          position: "absolute", top: inset, bottom: inset,
-          left: `${X(Math.min(row.from, row.to))}%`, width: `${Math.max(1.2, Math.abs(X(row.to) - X(row.from)))}%`,
-          background: C.refStretch, borderRadius: 3,
-        }} />)}
-        <div className="num" style={ROW_NUM}>{fmtSigned(row.to - row.from)}</div>
-      </div>
-    );
-  }
-  const r = row.r;
-  if (row.kind === "step") {
-    return (
-      <div style={row_(row.base)}>
-        <div style={ROW_LABEL}>{r.label}</div>
-        {cell(<div {...tipApi.props(stepTip(r, hasBm))} style={{
-          position: "absolute", top: inset, bottom: inset,
-          left: `${X(Math.min(r.from, r.to))}%`, width: `${Math.max(1.2, Math.abs(X(r.to) - X(r.from)))}%`,
-          background: r.value >= 0 ? C.wfGreen : C.red, borderRadius: 3,
-        }} />)}
-        <div className="num" style={{ ...ROW_NUM, color: r.value >= 0 ? C.green : C.red }}>{fmtSigned(r.value, 1)}</div>
-      </div>
-    );
-  }
   return (
-    <div style={row_(row.base)}>
-      <div style={ROW_LABEL}>{r.label}</div>
-      {cell(<div {...tipApi.props(infoTip(r))} style={{
-        position: "absolute", left: `${X(r.level)}%`, top: "50%", marginTop: -5, width: 10, height: 10, marginLeft: -5,
-        borderRadius: "50%", background: NEUTRAL_DOT, boxShadow: RING,
-      }} />)}
-      <div className="num" style={{ ...ROW_NUM, color: C.muted }}>{r.display ?? "–"}</div>
-    </div>
-  );
-}
-const row_ = (base) => ({ ...ROW(base), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" });
-
-/* A: the walk in two columns, split at the group boundary that best balances
- * the two halves; the right column opens with the level carried over. */
-function WalkColumns({ wf }) {
-  const tipApi = useTip();
-  const rows = walkRows(wf);
-  const total = rows.reduce((a, r) => a + r.base, 0);
-  let best = null, acc = 0;
-  rows.forEach((row, i) => {
-    if (row.kind === "header" && i > 0) { const diff = Math.abs(total - 2 * acc); if (!best || diff < best.diff) best = { i, diff }; }
-    acc += row.base;
-  });
-  const cols = best ? [rows.slice(0, best.i), rows.slice(best.i)] : [rows];
-  const carried = cols.length > 1 ? cols[0][cols[0].length - 1].level : null;
-  return (
-    <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 32 }}>
-      {cols.map((col, ci) => (
-        <div key={ci} style={{ ...FIT, flex: 1 }}>
-          {ci > 0 && (
-            <WalkRow X={wf.X} hasBm={wf.hasBm} tipApi={tipApi} thick row={{
-              kind: "level", base: 26, label: "Running total", value: carried, color: C.planGrey, entry: null, exit: carried,
-              tip: { head: "Running total", rows: [{ label: "Carried from the left", value: fmt(carried, 1) }] },
-            }} />
-          )}
-          {col.map((row, i) => <WalkRow key={i} row={ci > 0 && i === 0 ? { ...row, entry: carried } : row} X={wf.X} hasBm={wf.hasBm} tipApi={tipApi} thick />)}
-        </div>
-      ))}
-    </div>
+    <>
+      {entry !== null && entry !== undefined && line(entry, 0, "50%")}
+      {exit !== null && exit !== undefined && line(exit, "50%", 0)}
+    </>
   );
 }
 
-/* B: the walk across the whole width, on a unit axis. */
+/* the unit axis: a round step that gives the walk's range at most seven marks */
 function niceTicks([lo, hi]) {
-  const span = hi - lo;
-  const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000];
-  const step = steps.find((st) => span / st <= 7) || steps[steps.length - 1];
+  const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000];
+  const step = steps.find((st) => (hi - lo) / st <= 7) || steps[steps.length - 1];
   const out = [];
   for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) out.push(v);
   return out;
 }
-function WalkLong({ wf }) {
+
+function Walk({ wf, layout: L }) {
   const tipApi = useTip();
-  const rows = walkRows(wf);
-  const ticks = niceTicks(wf.domain);
-  return (
-    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <div style={FIT}>
-        <div style={{ position: "absolute", left: TRACK_L, right: TRACK_R, top: 0, bottom: 0, pointerEvents: "none" }}>
-          {ticks.map((t) => <div key={t} style={{ position: "absolute", left: `${wf.X(t)}%`, top: 0, bottom: 0, width: 1, background: C.track }} />)}
+  const [hot, setHot] = React.useState(null);   // { row } or { group }: what the pointer is on
+  const { open, groups, close } = walkBlocks(wf);
+  const { X, hasBm } = wf;
+  const cols = `${L.group}px ${L.label}px 1fr${L.delta ? ` ${L.delta}px` : ""}`;
+  const trackL = L.group + L.label + 2 * COL_GAP, trackR = L.delta ? L.delta + COL_GAP : 0;
+  const lit = (row) => !!hot && ((hot.row !== undefined && hot.row === row.id) || (hot.group !== undefined && hot.group === row.group));
+  // the popup and the highlight from one pair of handlers
+  const point = (at, tip) => {
+    const t = tipApi.props(tip);
+    return {
+      onMouseEnter: (e) => { setHot(at); if (t.onMouseEnter) t.onMouseEnter(e); },
+      onMouseLeave: (e) => { setHot(null); if (t.onMouseLeave) t.onMouseLeave(e); },
+    };
+  };
+  const grid = (base, gap = 0) => ({
+    flex: `${base + gap} 1 ${base + gap}px`, minHeight: 0, paddingTop: gap,
+    display: "grid", gridTemplateColumns: cols, columnGap: COL_GAP, alignItems: "center",
+  });
+  const bar = (row, from, to, color, tip) => (
+    <div {...point({ row: row.id }, tip)} style={{
+      position: "absolute", top: BAR_INSET, bottom: BAR_INSET,
+      left: `${X(Math.min(from, to))}%`, width: `${Math.max(1.2, Math.abs(X(to) - X(from)))}%`,
+      background: color, borderRadius: 3, boxShadow: lit(row) ? HOT_RING : "none",
+    }} />
+  );
+
+  // a level or the stretch on a row of its own: the label spans the name and
+  // the label columns, and carries the figure where there is no column for it
+  const levelRow = (row, gap = 0) => {
+    const stretch = row.kind === "stretch";
+    const v = stretch ? fmtSigned(row.to - row.from) : fmt(row.value);
+    return (
+      <div key={row.id} style={grid(row.base, gap)}>
+        <div {...point({ row: row.id }, row.tip)} style={{
+          gridColumn: "1 / 3", overflow: "hidden", textOverflow: "ellipsis",
+          ...(stretch ? { fontSize: 12, color: C.muted, whiteSpace: "nowrap" } : ANCHOR_LABEL),
+        }}>
+          {row.label}
+          {!L.delta && <span className="num" style={{ fontWeight: 600, color: C.ink, marginLeft: 6 }}>{v}</span>}
         </div>
-        {rows.map((row, i) => <WalkRow key={i} row={row} X={wf.X} hasBm={wf.hasBm} tipApi={tipApi} />)}
+        <div style={{ position: "relative", alignSelf: "stretch" }}>
+          <Drops entry={row.entry} exit={row.exit} X={X} />
+          {stretch ? bar(row, row.from, row.to, C.refStretch, row.tip) : (
+            <div style={{ position: "absolute", left: 0, right: 0, top: "50%", marginTop: -7, height: 14 }}>
+              <Tick pct={X(row.value)} color={row.color} dotted={!!row.dotted} tip={row.tip} />
+            </div>
+          )}
+        </div>
+        {L.delta ? <div className="num" style={stretch ? ROW_NUM : ANCHOR_NUM}>{v}</div> : null}
       </div>
-      <div style={{ flex: "0 0 18px", position: "relative", marginLeft: TRACK_L, marginRight: TRACK_R, fontSize: 11, color: C.muted }}>
-        {ticks.map((t) => (
-          <span key={t} className="num" style={{ position: "absolute", left: `${wf.X(t)}%`, top: 4, transform: "translateX(-50%)" }}>{fmt(t)}</span>
-        ))}
+    );
+  };
+
+  // one channel: its name at the top left of its rows, which share the block's
+  // height in proportion to their base heights
+  const channelBlock = (g) => {
+    const sum = g.rows.reduce((a, r) => a + r.base, 0);
+    return (
+      <div key={g.name} style={{ ...grid(sum, L.gap), gridTemplateRows: g.rows.map((r) => `minmax(0, ${r.base}fr)`).join(" ") }}>
+        <div {...point({ group: g.name }, null)} style={{
+          gridColumn: 1, gridRow: "1 / -1", alignSelf: "start", paddingTop: 4,
+          fontSize: L.nameSize, fontWeight: 600, lineHeight: 1.25,
+        }}>
+          {g.name}
+        </div>
+        {g.rows.map((row, i) => {
+          const r = row.r, step = row.kind === "step", on = lit(row);
+          const tip = step ? stepTip(r, hasBm) : infoTip(r);
+          const at = { gridRow: i + 1 };
+          return (
+            <React.Fragment key={row.id}>
+              <div {...point({ row: row.id }, tip)} style={{ ...at, gridColumn: 2, ...ROW_LABEL, color: on ? C.ink : C.muted }}>{r.label}</div>
+              <div style={{ ...at, gridColumn: 3, position: "relative", alignSelf: "stretch" }}>
+                <Drops entry={row.entry} exit={row.exit} X={X} />
+                {step ? bar(row, r.from, r.to, r.value >= 0 ? C.wfGreen : C.red, tip) : (
+                  <div {...point({ row: row.id }, tip)} style={{
+                    position: "absolute", left: `${X(r.level)}%`, top: "50%", marginTop: -5, width: 10, height: 10, marginLeft: -5,
+                    borderRadius: "50%", background: on ? HOT_DOT : NEUTRAL_DOT, boxShadow: RING,
+                  }} />
+                )}
+              </div>
+              {L.delta ? (
+                <div className="num" style={{ ...at, gridColumn: 4, ...ROW_NUM, color: step ? (r.value >= 0 ? C.green : C.red) : C.muted }}>
+                  {step ? fmtSigned(r.value, 1) : (r.display ?? "–")}
+                </div>
+              ) : null}
+            </React.Fragment>
+          );
+        })}
       </div>
-    </div>
+    );
+  };
+
+  const ticks = L.axis ? niceTicks(wf.domain) : [];
+  return (
+    <>
+      <div style={FIT}>
+        {L.axis && (
+          <div style={{ position: "absolute", left: trackL, right: trackR, top: 0, bottom: 0, pointerEvents: "none" }}>
+            {ticks.map((t) => <div key={t} style={{ position: "absolute", left: `${X(t)}%`, top: 0, bottom: 0, width: 1, background: C.track }} />)}
+          </div>
+        )}
+        {open.map((row) => levelRow(row))}
+        {groups.map(channelBlock)}
+        {close.map((row) => levelRow(row, L.gap))}
+      </div>
+      {L.axis && (
+        <div style={{ flex: "0 0 18px", position: "relative", marginLeft: trackL, marginRight: trackR, fontSize: 11, color: C.muted }}>
+          {ticks.map((t) => (
+            <span key={t} className="num" style={{ position: "absolute", left: `${X(t)}%`, top: 4, transform: "translateX(-50%)" }}>{fmt(t)}</span>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
-/* ---- end of MOCKUPS ---------------------------------------------------- */
 
+/* The 2 × 2 card: the waterfall view with two columns by two rows of room.
+ * Without a walk to draw - no targets, or no row with a reference yet - it is
+ * the tall card's funnel view at this size. */
 export function FunnelByChannelWide({ snap }) {
-  const tipApi = useTip();
   const m = rungModel(snap);
   const wf = m.targeted ? buildWaterfall(snap, m.groups) : null;
   if (!wf) return <FunnelByChannel snap={snap} only="funnel" />;
-  const { flat, X, hasBm, words } = wf;
-  const mode = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("wf") : null;
-  if (mode === "cols" || mode === "long") {
-    return (
-      <Card dot={GROUP_DOTS.funnel} title="Funnel by channel"
-        right={<span style={{ fontSize: 11.5, color: C.muted }}>waterfall · secured units, day {wf.day}</span>}>
-        <div className="spacer-16" />
-        {mode === "cols" ? <WalkColumns wf={wf} /> : <WalkLong wf={wf} />}
-      </Card>
-    );
-  }
-  const { bench, k } = m;
-
-  const rungFor = (r) => {
-    const spec = r.perBuyer ? m.perBuyer
-      : ((m.groups.find((g) => g.key === r.group) || {}).rungs || []).find((s) => s.label === r.label);
-    return spec ? buildRung(spec, bench, k) : null;
-  };
-  const line = (
-    <div style={{
-      position: "absolute", left: "50%", top: 0, bottom: 0, pointerEvents: "none",
-      width: bench ? 1.5 : 1, marginLeft: bench ? -0.75 : -0.5, background: bench ? C.refLine : GUIDE,
-    }} />
-  );
-  // the rung's two cells: its marks on the centre line, and its delta vs target
-  const rungCells = (r) => (
-    <>
-      <div {...(r ? tipApi.props(r.tip) : {})}
-        style={{ gridColumn: RUNG_COL, alignSelf: "stretch", position: "relative", display: "flex", alignItems: "center" }}>
-        {line}
-        {r && <div style={{ flex: 1 }}><RungMarks r={r} bench={bench} /></div>}
-      </div>
-      <div {...(r ? tipApi.props(r.tip) : {})} className="num"
-        style={{ gridColumn: RUNG_DELTA_COL, ...ROW_NUM, color: r ? r.rag : C.muted }}>
-        {r ? r.delta : ""}
-      </div>
-    </>
-  );
-  const anchor = (label, value, tip, color = C.refLine, dotted = false) => (
-    <div style={row(26, GRID_WIDE)}>
-      <div style={ANCHOR_LABEL}>{label}</div>
-      <LevelCell pct={X(value)} color={color} dotted={dotted} tip={tip} />
-      <div className="num" style={ANCHOR_NUM}>{fmt(value)}</div>
-    </div>
-  );
-
   return (
-    <Card dot={GROUP_DOTS.funnel} title="Funnel by channel">
-      <div className="spacer-8" />
-      {/* what each half is: the two views the tall card toggles between */}
-      <div style={{
-        flex: "0 0 22px", display: "grid", gridTemplateColumns: GRID_WIDE, gap: COL_GAP, alignItems: "start",
-        fontSize: 11.5, color: C.muted, whiteSpace: "nowrap",
-      }}>
-        <div style={{ gridColumn: "2 / 4", overflow: "hidden", textOverflow: "ellipsis" }}>Waterfall · units, target → actual</div>
-        <div style={{ gridColumn: `${RUNG_COL} / ${RUNG_DELTA_COL + 1}`, overflow: "hidden", textOverflow: "ellipsis" }}>Funnel · each stage vs its target</div>
-      </div>
-      <div style={FIT}>
-        {anchor(words.target, wf.expTotal, targetTip(wf))}
-        {hasBm && (
-          <div style={row(20, GRID_WIDE)}>
-            <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Stretch</div>
-            <StepCell from={wf.expTotal} to={wf.bmTotal} X={X} color={C.refStretch} tip={wf.stretchTip} tipApi={tipApi} />
-            <div className="num" style={ROW_NUM}>{fmtSigned(wf.bmTotal - wf.expTotal)}</div>
-          </div>
-        )}
-        {hasBm && anchor(words.bm, wf.bmTotal, bmTip(wf), C.refLine, true)}
-        {flat.map((r, i) => r.header ? (
-          <div key={"h" + i} style={row(25, GRID_WIDE)}>
-            <div style={{ ...HEAD_LABEL, gridColumn: "1 / 4", alignSelf: "end", paddingBottom: 4 }}>{r.header}</div>
-            <div style={{ gridColumn: RUNG_COL, alignSelf: "stretch", position: "relative" }}>{line}</div>
-          </div>
-        ) : r.to !== undefined ? (
-          <div key={r.label + i} style={row(20, GRID_WIDE)}>
-            <div style={ROW_LABEL}>{r.label}</div>
-            <StepCell from={r.from} to={r.to} X={X} color={r.value >= 0 ? C.wfGreen : C.red} tip={stepTip(r, hasBm)} tipApi={tipApi} />
-            <div className="num" style={{ ...ROW_NUM, color: r.value >= 0 ? C.green : C.red }}>{fmtSigned(r.value, 1)}</div>
-            {rungCells(rungFor(r))}
-          </div>
-        ) : (
-          <div key={r.label + i} style={row(20, GRID_WIDE)}>
-            <div style={ROW_LABEL}>{r.label}</div>
-            <DotCell level={r.level} X={X} tip={infoTip(r)} tipApi={tipApi} />
-            <div className="num" style={{ ...ROW_NUM, color: C.muted }}>{r.display ?? "–"}</div>
-            {rungCells(rungFor(r))}
-          </div>
-        ))}
-        {anchor("Actual today", wf.nowTotal, actualTip(wf), C.orange)}
-      </div>
-      <RungKey bench={bench} />
+    <Card dot={GROUP_DOTS.funnel} title="Funnel by channel"
+      right={<span style={{ fontSize: 11.5, color: C.muted }}>waterfall · secured units, day {wf.day}</span>}>
+      <div className="spacer-16" />
+      <Walk wf={wf} layout={WALK_WIDE} />
     </Card>
   );
 }

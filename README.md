@@ -401,8 +401,8 @@ drag-and-drop board: drag a card to move it, **Add header** puts a section title
 of the page to drag into place (a header ends one grid and starts the next, so each section
 packs on its own), the **×** on a card takes it off the page, and **Add a card** puts one back
 at the top. That list also holds the cards that are not on the page by default: **Funnel by
-channel, 2 × 2** is the funnel card at two columns by two rows, with the waterfall and the
-funnel side by side on one set of rows (each stage's step in units next to its rung). **Save
+channel, 2 × 2** is the funnel card's waterfall at two columns by two rows, the bars running
+across the card on a unit axis with the figures in a column of their own. **Save
 for everyone** keeps the arrangement for the whole team in `data/layout.json` (`LAYOUT_PATH`
 on Render, see above); the saved layout records the cards taken off, so they stay off. **Back
 to the default** restores the built-in order. The list of cards lives in `web/src/Layout.jsx`:

@@ -19,8 +19,8 @@ export const CARDS = [
   { key: "channels", title: "Channels vs targets" },
   { key: "no_targets", title: "No targets set", note: "shown only on a release without targets" },
   { key: "funnel", title: "Funnel by channel", size: "tall" },
-  // not on the page by default: the same card at 2 × 2, both views at once
-  { key: "funnel_wide", title: "Funnel by channel, 2 × 2", size: "big", optional: true, note: "the waterfall and the funnel side by side" },
+  // not on the page by default: the waterfall view with 2 × 2 of room
+  { key: "funnel_wide", title: "Funnel by channel, 2 × 2", size: "big", optional: true, note: "the waterfall across two columns by two rows, on a unit axis" },
   { key: "trajectory", title: "Unit trajectory", size: "wide" },
   { key: "drivers", title: "Funnel key drivers" },
   { key: "paid_roi", title: "Paid ROI", size: "wide" },
