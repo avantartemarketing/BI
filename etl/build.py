@@ -21,7 +21,7 @@ Inputs:
   sources/across_time.csv           daily funnel export (channel x day x release + campaign clock)
   data/spend_daily.csv              Meta spend by campaign x day (etl/extract_spend.py)
   data/content_posts.csv            Emplifi posts by campaign (etl/extract_content.py)
-  sources/all_sent_emails.csv       Klaviyo sends
+  sources/all_sent_emails.csv       email sends - written by the HubSpot pull (server/hubspot.js); the checked-in file is its last pull
   sources/draw_*.csv                draw entry exports (PII is stripped here; never committed)
   etl/release_inputs.json           hand-entered launch inputs per release
   etl/benchmarks.json               frozen benchmark values (docs §4)
@@ -198,7 +198,7 @@ def load_spend() -> pd.DataFrame:
 
 
 def load_emails() -> pd.DataFrame:
-    # Klaviyo aggregates are not in the live sheet; run without them if absent
+    # the HubSpot pull writes this file on every refresh; run without it if absent
     if not (SOURCES / "all_sent_emails.csv").exists():
         print("warning: sources/all_sent_emails.csv missing - email panels will be empty")
         return pd.DataFrame({

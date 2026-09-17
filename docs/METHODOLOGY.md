@@ -285,8 +285,10 @@ recommendation is the ROI at that spend level's cost per entry.
 - **Daily funnel** (sessions, entries, units by channel × day) and **Meta spend**
   are pulled live from the *LE Paid Calculator* Google Sheet on boot and every
   hour; the dashboard header shows the latest complete day.
-- **Email** stats pull live from HubSpot when connected (otherwise an uploaded
-  snapshot); **Instagram content** (Emplifi) is an uploaded snapshot.
+- **Email** stats pull live from HubSpot on every refresh (`HUBSPOT_TOKEN`); the
+  checked-in CSV is the last pull and serves only until the first refresh. The header
+  says "emails through" a date whenever the feed falls more than a week behind the
+  build. **Instagram content** (Emplifi) is an uploaded snapshot.
 - **Artist posts** pull live from the team's Notion log when connected. Their
   benchmark follows the same cohort approach as every other channel: expected
   posts = the median artist-post count among completed campaigns in the same

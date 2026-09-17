@@ -329,8 +329,14 @@ function StaleBanner({ asOf, st, onRefreshed }) {
  * ingestion - expired token, un-shared sheet, an ETL exception - looked
  * identical to a healthy one while the page served frozen numbers. This reads
  * the status the server already records and says which it is. */
-function Freshness({ asOf, st }) {
+function Freshness({ asOf, st, emailThrough }) {
   const t = useTip();
+  // the email feed's last send: when it falls a week or more behind the build,
+  // every email rung on the page is reading an empty feed, and the header is
+  // where that has to show - the pull itself "succeeds" either way
+  const day = (s) => new Date(s + "T00:00:00Z").getTime();
+  const emailLag = asOf && emailThrough ? Math.round((day(asOf) - day(emailThrough)) / 864e5) : null;
+  const emailBehind = emailLag !== null && emailLag > 7;
 
   const feeds = st && [["BigQuery", st.bigquery], ["Sheet", st.sheet], ["Email", st.emails],
     ["Notion", st.notion], ["ETL", st.etl]]
@@ -352,7 +358,7 @@ function Freshness({ asOf, st }) {
     : dormant.length ? `Sources fresh · ${dormant.join(" and ")} off`
     : "Sources fresh";
   const color = st === undefined ? "#6c6b68" : stale ? "#b8461d"
-    : dormant.length ? "#8a5f00"
+    : dormant.length || emailBehind ? "#8a5f00"
     : st && st.at ? "#6c6b68" : "#8a5f00";
   const tip = {
     head: running ? `${label} (refresh in progress)` : label,
@@ -364,12 +370,15 @@ function Freshness({ asOf, st }) {
       : "The dashboard has not been able to read the refresh status.",
     // the feed lines are the diagnosis - a HubSpot summary names the releases its
     // sends joined, which starts well past character 70 - so they are not cut
-    rows: feeds ? feeds.map(([k, v]) => ({ label: k, value: String(v) })) : [],
+    rows: [
+      ...(emailThrough ? [{ label: "Emails through", value: emailThrough, color: emailBehind ? "#8a5f00" : undefined }] : []),
+      ...(feeds ? feeds.map(([k, v]) => ({ label: k, value: String(v) })) : []),
+    ],
   };
   return (
     <span className="freshness" style={{ color }} {...t.props(tip)}>
       {stale && <span aria-hidden="true">⚠ </span>}
-      {label} · data through {asOf}
+      {label}{emailBehind && ` · emails through ${emailThrough}`} · data through {asOf}
     </span>
   );
 }
@@ -454,7 +463,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
             title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
         )}
         {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
-        <Freshness asOf={snap.asOf} st={st} />
+        <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough} />
       </header>
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
       <nav className="tabs" style={{ marginTop: 20 }}>

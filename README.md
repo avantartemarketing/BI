@@ -233,7 +233,11 @@ snapshots keep serving.
 Email stats can also refresh live: set `HUBSPOT_TOKEN` to a HubSpot **Private App**
 token (Settings → Integrations → Private Apps, Marketing Email read scope) and each
 refresh pulls every sent marketing email's delivered/open/click counts into
-`sources/all_sent_emails.csv` (`server/hubspot.js`). Emails join a release when the
+`sources/all_sent_emails.csv` (`server/hubspot.js`). The listing comes back oldest first, so
+the pull asks only for emails created in the last two years (well inside its page cap), keeps
+older sends from the file it already has, and opens its status line with `sends through
+<date>`; a pull that still hits the cap says `CAPPED`. The header shows `emails through
+<date>` in amber whenever that date is more than a week behind the build. Emails join a release when the
 HubSpot campaign name is the release's campaign code, when the code appears in the
 email or campaign name, or when an `Artist_Type_YY` token in either names the same
 artist and year as exactly one known code (so `AndyWarhol_LE_26` sends join the

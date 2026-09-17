@@ -8,7 +8,7 @@ calculated. It is the result of reverse-engineering the current tooling:
 - **`Across time.csv`** - the new daily funnel export with campaign-clock columns (the across-time
   target enabler)
 - **Draw entry exports** (`draw_…entries_N.csv`) - per-entrant demand data
-- **All Sent Emails** (Klaviyo export) and **All editions content** (Emplifi export) - channel
+- **All Sent Emails** (the HubSpot feed, `server/hubspot.js`; the checked-in CSV is its last pull) and **All editions content** (Emplifi export) - channel
   activity data feeding the funnel diagnostics
 
 LE (Limited Edition, sold by draw / pre-order) is specified fully; TL (Timed Launch, sold by
@@ -66,7 +66,7 @@ is overridden to 100% AA ("he's not sharing paid budget"). Model input
 `campaign_code` (e.g. `GlennLigon_LE_26`) joins the release to:
 - **Meta ads**: `campaign_name = '{code} · Enter draw'` in `meta_ads_insights` (campaign_id has
   lost float precision in the export - join on name only).
-- **Email**: Klaviyo `Campaign` column equals the code exactly (join `Campaign == campaign_code`,
+- **Email**: the feed's `Campaign` column equals the code exactly (join `Campaign == campaign_code`,
   i.e. prefix-match the sheet's `{code} · Enter draw`). Never parse email names - 19% don't
   contain the code.
 - **Instagram/X content**: Emplifi `Labels` (semicolon-separated, order varies) contains the code;
@@ -163,7 +163,7 @@ All funnel data originates in BigQuery `avantarte-data-production.AA_company_tab
 | `order_type_by_release_export` | release × order_date | total_orders, originated_from_drafts, pending_draft, units | draft-order (private room) tracking |
 | `meta_ads_insights_export` | campaign × spend_date | impressions, reach, link_clicks, **spend** | paid spend actuals |
 | Meta lifetime ("Meta Data for Paid") | campaign | + 7d-click conversions (Purchases, Enter Draw…) | Meta-side attribution |
-| Klaviyo email export | email send | Delivered, Opened, Clicked, Unsubscribed | email funnel rungs |
+| HubSpot email feed (`server/hubspot.js`) | email send | Delivered, Opened, Clicked, Unsubscribed | email funnel rungs |
 | Emplifi content export | post/story | impressions, reach, engagements, saves, story metrics | social funnel rungs |
 | Draw entries export | entrant × draw | tier, score, products, MaxQuantity, winner/claim flags | demand, allocation, sell-through prediction |
 
@@ -883,7 +883,7 @@ left); ROI floor = 1.0/1.1 last-day forecast rule.
 
 ## 8. Email & social (funnel diagnostics layer)
 
-### Email (Klaviyo)
+### Email (HubSpot)
 Send-level: `Email Name`, send datetime, `Campaign` (join key), Delivered, Opened, Clicked,
 Unsubscribed. Name convention `DDMMYY_TYPE_Campaign - Description (variant)`;
 types: `GEN` full-list broadcast, `CUS` segmented send (incl. `Early Access (LE) 1/2/3` tiers),
