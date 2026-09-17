@@ -116,6 +116,9 @@ _BASE_NUMERIC = [
     "tot_total_product_units", "tot_sessions_total", "tot_draw_entries_eligible_units",
     "tot_draw_entries_total_units", "campaign_days", "private_room_share", "oversubscription",
     "cluster", "cluster_k2", "nearest_cluster", "dist_to_centroid", "year",
+    # edition pricing, joined from Airtable by etl/pricing.py (docs/DATA_MODEL.md)
+    "unit_price", "unit_price_gbp", "edition_size", "launch_value", "launch_value_gbp",
+    "n_products", "price_min", "price_max", "price_match_score", "price_match_days",
 ]
 _GROUP_NUMERIC = ["unit_share_", "sess_share_", "ent_share_", "conv_sess_entry_",
                   "conv_sess_unit_", "sessions_", "entries_", "units_"]
