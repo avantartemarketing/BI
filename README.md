@@ -62,9 +62,13 @@ The ETL builds a page for **every** release the funnel data mentions (`discover_
   hand-entered releases), close = announce + length. A release seen only before its
   announce is reconstructed the other way and can be a day out. A release with no clock is
   **catalogue** - a work still drawing traffic - and is shown over its last 90 days.
-- **In flight** = has dates and today is before the close. The sidebar lists those; every
-  other release is reachable from the search box (artist, title, quarter, id). A closed or
-  catalogue release you pick stays pinned under **Viewing** while selected.
+- **In flight** = has dates and today is before the close. The sidebar lists those, fewest
+  days to launch first (a release whose window has not opened yet sits last, with its
+  opening date). Each row is the artist over the launch date with the days left on the
+  right; the row's tooltip carries the title, the day of the window and the pace the dot
+  means, so there is no key under the list. Every other release is reachable from the
+  search box (artist, title, quarter, id), on the same row with the date it closed. A
+  closed or catalogue release you pick stays pinned under **Viewing** while selected.
 - **Campaign codes** for unconfigured releases are guessed from the codes the email and
   content feeds use (`AntonyMic_LE_26`), by artist and year; a guess is only taken when it
   is unambiguous, is labelled as a guess, and can be corrected in Target setting. The code's
@@ -386,7 +390,9 @@ set `DECISIONS_PATH` if the log must survive deploys.
 One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
 trajectory vs the across-time plan curve, funnel diagnostics with contribution
 decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), predicted
-sell-through, projection-vs-target waterfall. Formulas for every module: docs §9.
+sell-through, projection-vs-target waterfall. Formulas for every module: docs §9. A thin
+strip under the page header is the campaign clock: announcement to launch, orange to
+today with the day of the window, the days to launch on the right.
 
 Every card carries both references at once: the target as a fill in two tints of the actual's
 own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up

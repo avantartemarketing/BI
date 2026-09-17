@@ -557,3 +557,11 @@ export async function postDecision(payload) {
     return false;
   }
 }
+
+/* "17 Sep" or "Mon 17 Sep". Dates in the snapshots are ISO days read as UTC
+ * midnight, so the browser's zone never moves them across a day boundary; the
+ * names are spelt here because en-GB locales write "Sept". */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+export const fmtDay = (d, weekday = false) =>
+  `${weekday ? WEEKDAYS[d.getUTCDay()] + " " : ""}${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;

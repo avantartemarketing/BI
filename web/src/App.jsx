@@ -13,8 +13,9 @@
  * typically does" stops looking identical to "behind the basket as well" - the first
  * is a target worth holding, the second is a launch in trouble. */
 import React, { useEffect, useMemo, useState } from "react";
-import { C, fmtSigned, fmtPct, TipProvider, useTip } from "./ui.jsx";
+import { C, fmtSigned, fmtPct, fmtDay, TipProvider, useTip } from "./ui.jsx";
 import HeroBar from "./modules/HeroBar.jsx";
+import LaunchStrip from "./modules/LaunchStrip.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
 import FunnelByChannel from "./modules/FunnelByChannel.jsx";
 import Trajectory from "./modules/Trajectory.jsx";
@@ -97,7 +98,15 @@ export default function App() {
   const groups = useMemo(() => {
     if (!index) return { live: [], all: [] };
     const all = index.releases.map((r) => ({ ...r, status: r.status || (r.complete ? "closed" : "live") }));
-    return { live: all.filter((r) => r.status === "live"), all };
+    // in flight reads top to bottom by days to launch; a release whose window
+    // has not opened yet sits under the ones that have, soonest first
+    const order = (r) => {
+      const c = releaseClock(r, index.asOf);
+      if (!c) return Infinity;
+      return c.opensIn > 0 ? 1e6 + c.opensIn : c.daysLeft;
+    };
+    const live = all.filter((r) => r.status === "live").sort((a, b) => order(a) - order(b));
+    return { live, all };
   }, [index]);
   const results = useMemo(() => searchReleases(groups.all, query), [groups, query]);
   const current = groups.all.find((r) => r.id === releaseId);
@@ -111,14 +120,13 @@ export default function App() {
     <div className="app">
       <nav className="sidebar">
         <h1>Launch Performance</h1>
-        <div className="section-label">In flight</div>
+        <div className="section-label split">In flight{groups.live.length > 0 && <small>days left</small>}</div>
         {groups.live.length === 0 && <div className="hint">Nothing in flight</div>}
-        {groups.live.map((r) => <ReleaseRow key={r.id} r={r} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
-        {groups.live.length > 0 && <StatusLegend />}
+        {groups.live.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
         {pinned && (
           <>
             <div className="section-label">Viewing</div>
-            <ReleaseRow r={pinned} active onClick={() => pick(pinned.id)} showStatus />
+            <ReleaseRow r={pinned} asOf={index?.asOf} active onClick={() => pick(pinned.id)} />
           </>
         )}
         <div className="section-label">All releases</div>
@@ -131,7 +139,7 @@ export default function App() {
           aria-label="Search releases"
         />
         {query.trim() && results.length === 0 && <div className="hint">No release matches</div>}
-        {results.slice(0, 30).map((r) => <ReleaseRow key={r.id} r={r} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} showStatus />)}
+        {results.slice(0, 30).map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
         {results.length > 30 && <div className="hint">{results.length - 30} more - keep typing</div>}
         {me?.admin && (
           <>
@@ -205,36 +213,34 @@ function rowState(r) {
   return bm >= 0 ? "amber" : "red";
 }
 
-/* The dot carries three meanings now, so the sidebar has to say which is which -
- * an amber dot that nobody can read is worse than the two-state one it replaced. */
-function StatusLegend() {
-  const rows = [
-    ["green", STATE.green.word],
-    ["amber", STATE.amber.word],
-    ["red", STATE.red.word],
-    [null, "no targets set"],
-  ];
-  return (
-    <div className="hint" style={{ display: "flex", flexDirection: "column", gap: 3, paddingTop: 6, lineHeight: 1.35 }}>
-      {rows.map(([state, word]) => (
-        <span key={word} style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <span style={{
-            width: 7, height: 7, borderRadius: "50%", flex: "0 0 7px", boxSizing: "border-box",
-            background: state ? STATE[state].color : "transparent",
-            border: state ? "none" : "1.5px solid #b8b5ad",
-          }} />
-          <span>{word}</span>
-        </span>
-      ))}
-    </div>
-  );
+/* The sidebar's clock for a dated release, from the index alone: the launch is
+ * the window's end, the announce date sits `of` days before it, and the build
+ * date says how far each is. A release whose announce is still ahead has not
+ * opened and lists after the ones in flight. */
+function releaseClock(r, asOf) {
+  if (!r.windowEnd || !(r.of > 0)) return null;
+  const launch = new Date(r.windowEnd + "T00:00:00Z");
+  const announce = new Date(launch.getTime() - r.of * 86400000);
+  const today = asOf ? new Date(asOf + "T00:00:00Z") : null;
+  const days = (a, b) => Math.round((a - b) / 86400000);
+  return {
+    launch, announce,
+    daysLeft: today ? days(launch, today) : r.of - (r.day || 0),
+    opensIn: today ? days(announce, today) : 0,
+  };
 }
 
-function ReleaseRow({ r, active, onClick, showStatus }) {
+/* One release in the sidebar: the status dot, the artist over the launch date,
+ * and the days left to it on the right. Every row is the same two lines - the
+ * title, which wraps or crops at any width, lives in the tooltip with the
+ * day-of-window and the pace, and the dot's meaning is the tooltip's Pace row
+ * rather than a key under the list. */
+function ReleaseRow({ r, asOf, active, onClick }) {
   const t = useTip();
   const targeted = r.targeted !== false;
   const state = rowState(r);
   const status = r.status || (r.complete ? "closed" : "live");
+  const clock = status === "catalogue" ? null : releaseClock(r, asOf);
   const pct = targeted && r.statusPct !== null && r.statusPct !== undefined ? Math.round(r.statusPct * 100) : null;
   const rows = [];
   if (status !== "catalogue") rows.push({ label: "Day", value: `${r.day} of ${r.of}` });
@@ -247,15 +253,24 @@ function ReleaseRow({ r, active, onClick, showStatus }) {
   if (!targeted) rows.push({ label: "Targets", value: "not set - actuals only" });
   if (status === "catalogue" && r.lastSeen) rows.push({ label: "Last traffic", value: r.lastSeen });
   const content = { head: r.releaseName || r.name, rows };
+
+  // the second line and the figure on the right
+  let when, count = null;
+  if (!clock) when = status === "closed" ? "Closed" : "Catalogue";
+  else if (clock.opensIn > 0) when = `Opens ${fmtDay(clock.announce)}`;
+  else if (status === "closed") when = `Closed ${fmtDay(clock.launch)}`;
+  else { when = fmtDay(clock.launch); count = Math.max(clock.daysLeft, 0); }
   return (
     <button className={`release-row${active ? " active" : ""}`} onClick={onClick} {...t.props(content)}>
       {state
         ? <span className="dot" style={{ background: STATE[state].color }} />
         : <span className="dot hollow" />}
-      <span className="nm">{r.name}</span>
-      {showStatus
-        ? <span className="st">{r.quarter || STATUS_LABEL[status]}</span>
-        : <span className="typ">{r.type}</span>}
+      <span className="who">
+        <span className="nm">{r.artist || r.name}</span>
+        <span className="when">{when}</span>
+      </span>
+      {count !== null && <span className="left">{count}<small>d</small></span>}
+      {clock && clock.opensIn > 0 && <span className="left none">·</span>}
     </button>
   );
 }
@@ -429,9 +444,9 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       <header className="page-header" style={{ marginBottom: 0 }}>
         <span className="name">{snap.artist} - {snap.title}</span>
         <span className={`badge ${String(snap.type || "LE").toLowerCase()}`}>{snap.type || "LE"}</span>
-        {catalogue
-          ? <span className="chip" title="No campaign dates in the funnel export - showing the last 90 days of traffic">Catalogue · last 90 days</span>
-          : <span className="chip">Day {snap.day} of {snap.of}</span>}
+        {catalogue && (
+          <span className="chip" title="No campaign dates in the funnel export - showing the last 90 days of traffic">Catalogue · last 90 days</span>
+        )}
         {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
         {!targeted && (
           <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
@@ -440,6 +455,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
         <Freshness asOf={snap.asOf} st={st} />
       </header>
+      <LaunchStrip snap={snap} />
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>

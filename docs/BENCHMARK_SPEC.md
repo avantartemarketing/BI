@@ -408,7 +408,8 @@ asked for is drawn like every other distance on those cards - the part of the ga
 is ambition, set aside before the part that is performance.
 
 Sidebar status becomes three-state: green at or ahead of target, amber behind target but
-ahead of benchmark, red behind benchmark, hollow when no targets are set.
+ahead of benchmark, red behind benchmark, hollow when no targets are set. There is no key
+under the list: the row's tooltip names the state on its Pace row.
 
 Everything degrades: when `snap.benchmark` is absent there is no outline, no tick and no
 lighter band - the fill is one tint to the target - the rung centres fall back to the neutral
