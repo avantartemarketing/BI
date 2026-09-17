@@ -135,17 +135,17 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const rateText = `${Math.round(rate * 100)}%`;
   const methodTip = {
     head: "How the card counts",
-    body: `Sold is units paid for. From entries in hand is every eligible entry still in the draw, counted at ${rateText} entry → order. ` +
+    body: `Sold is units paid for. From entries is every eligible entry still in the draw, counted at ${rateText} entry → order. ` +
       "An entrant who entered more products than they want is counted on their maximum quantity of products only, placed where there is most room - the rule the allocator applies at close." +
       (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };
   /* No copy under the rows. The allocation's account lives in the popup of
-     the "From entries in hand" row, the split sales in the striped segment's,
+     the "From entries" row, the split sales in the striped segment's,
      and the editions in Target setting, where they can be fixed. */
   const alloc = st.allocation || null;
   const moved = fromFeed ? st.products.filter((p) => (p.flexible ?? 0) > 0) : [];
   const inHandTip = {
-    head: "From entries in hand",
+    head: "From entries",
     rows: [
       ...(alloc ? [{ label: "Entrants in hand", value: fmt(alloc.entrants) }] : []),
       ...(alloc && alloc.flexibleEntrants > 0 ? [
@@ -209,7 +209,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
               {edition ? `of ${fmt(edition)} units` : "units"}
             </span>
           </div>
-          <div className="lead-caption">{close ? "predicted at close" : "spoken for today"}{edition === null ? " · no edition size set" : ""}</div>
+          <div className="lead-caption">{close ? "predicted at close" : "as of today"}{edition === null ? " · no edition size set" : ""}</div>
           <div style={{ marginTop: 10 }}>
             {leftRow("sold", <span style={swatch(C.rust)} />, "Sold", fmt(sold), {
               head: "Sold", rows: [
@@ -220,7 +220,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
                 ] : []),
               ],
             })}
-            {leftRow("inhand", <span style={swatch(C.orange)} />, "From entries in hand", fmt(inHandAll), inHandTip)}
+            {leftRow("inhand", <span style={swatch(C.orange)} />, "From entries", fmt(inHandAll), inHandTip)}
             {close && leftRow("future", <span style={swatch(C.orangeLight)} />, "Still to come", fmt(futureAll), {
               head: "Still to come", rows: [{ label: "Units", value: fmt(futureAll) }],
               body: "The projection's further units, spread over the products with room left.",
@@ -289,7 +289,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
         <span style={legendItem}><span style={swatch(C.rust)} />Sold</span>
         {rows.some((r) => (r.soldAssumed ?? 0) > 0) && <span style={legendItem}><span style={{ ...swatch(ASSUMED), background: ASSUMED }} />Sold, split by {allEditions ? "edition" : "entrants"}</span>}
         {rows.some((r) => finite(r.drafts) && r.drafts > 0) && <span style={legendItem}><span style={swatch("#c0522a")} />Drafts</span>}
-        <span style={legendItem}><span style={swatch(C.orange)} />From entries in hand</span>
+        <span style={legendItem}><span style={swatch(C.orange)} />From entries</span>
         {close && <span style={legendItem}><span style={swatch(C.orangeLight)} />Still to come</span>}
         {rows.some((r) => (r.oversubscribed ?? 0) > 0) && (
           <span style={legendItem}><span style={{ ...swatch(HATCH), background: HATCH }} />Beyond the edition</span>
