@@ -241,7 +241,11 @@ snapshots keep serving.
 Email stats can also refresh live: set `HUBSPOT_TOKEN` to a HubSpot **Private App**
 token (Settings → Integrations → Private Apps, Marketing Email read scope) and each
 refresh pulls every sent marketing email's delivered/open/click counts into
-`sources/all_sent_emails.csv` (`server/hubspot.js`). Emails join a release when the
+`sources/all_sent_emails.csv` (`server/hubspot.js`). The listing comes back oldest first, so
+the pull asks only for emails created in the last two years (well inside its page cap), keeps
+older sends from the file it already has, and opens its status line with `sends through
+<date>`; a pull that still hits the cap says `CAPPED`. The header shows `emails through
+<date>` in amber whenever that date is more than a week behind the build. Emails join a release when the
 HubSpot campaign name is the release's campaign code, when the code appears in the
 email or campaign name, or when an `Artist_Type_YY` token in either names the same
 artist and year as exactly one known code (so `AndyWarhol_LE_26` sends join the
@@ -390,9 +394,10 @@ set `DECISIONS_PATH` if the log must survive deploys.
 One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
 trajectory vs the across-time plan curve, funnel diagnostics with contribution
 decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), sell-through
-by product, projection-vs-target waterfall. Formulas for every module: docs §9. A thin
-strip under the page header is the campaign clock: announcement to launch, orange to
-today with the day of the window, the days to launch on the right.
+by product, projection-vs-target waterfall. Formulas for every module: docs §9. The
+Overview opens with the campaign clock, a thin strip from announcement to launch, orange to
+today with the day of the window and the days to launch on the right; it is a card like the
+others and moves with them.
 
 **Sell-through by product** (docs §6.3) is one row per product: units paid (rust), draft
 orders not yet paid (rust, striped), the draw entries in hand counted on the product at the
@@ -425,5 +430,7 @@ of the page to drag into place (a header ends one grid and starts the next, so e
 packs on its own), and **Save for everyone** keeps the arrangement for the whole team in
 `data/layout.json` (`LAYOUT_PATH` on Render, see above). **Back to the default** restores the
 built-in order. The list of cards lives in `web/src/Layout.jsx`: a card added to the code
-later joins the end of everyone's page, and a card a release has nothing for (No targets set
-on a targeted release) is left out of that release's page and shows as a ghost while editing.
+later joins the end of everyone's page (the campaign clock, which belongs at the top, joins
+there), a strip such as the clock is a full-width row of its own between the grids, and a
+card a release has nothing for (No targets set on a targeted release, the clock on a
+catalogue release) is left out of that release's page and shows as a ghost while editing.
