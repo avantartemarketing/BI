@@ -402,7 +402,8 @@ of the page to drag into place (a header ends one grid and starts the next, so e
 packs on its own), the **×** on a card takes it off the page, and **Add a card** puts one back
 at the top. That list also holds the cards that are not on the page by default: **Funnel by
 channel, 2 × 2** is the funnel card's waterfall at two columns by two rows, the bars running
-across the card on a unit axis with the figures in a column of their own. **Save
+across the card on a unit axis with the figures in a column of their own; take **Funnel by
+channel, 1 × 2** off and add the 2 × 2 to swap one for the other. **Save
 for everyone** keeps the arrangement for the whole team in `data/layout.json` (`LAYOUT_PATH`
 on Render, see above); the saved layout records the cards taken off, so they stay off. **Back
 to the default** restores the built-in order. The list of cards lives in `web/src/Layout.jsx`:

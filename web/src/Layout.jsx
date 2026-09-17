@@ -18,7 +18,8 @@ export const CARDS = [
   { key: "hero", title: "Units vs sellout" },
   { key: "channels", title: "Channels vs targets" },
   { key: "no_targets", title: "No targets set", note: "shown only on a release without targets" },
-  { key: "funnel", title: "Funnel by channel", size: "tall" },
+  // the funnel card comes in two sizes, listed as a pair so the editor reads as a choice
+  { key: "funnel", title: "Funnel by channel, 1 × 2", size: "tall", note: "the funnel and the waterfall, one at a time" },
   // not on the page by default: the waterfall view with 2 × 2 of room
   { key: "funnel_wide", title: "Funnel by channel, 2 × 2", size: "big", optional: true, note: "the waterfall across two columns by two rows, on a unit axis" },
   { key: "trajectory", title: "Unit trajectory", size: "wide" },
