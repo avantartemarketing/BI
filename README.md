@@ -175,6 +175,15 @@ Check the connection without writing anything: `node server/bigquery.js` prints 
 (full or incremental, and why), row counts and GB scanned; add `--write` to replace the
 CSVs, `--full` to force a full pull, `--events` to pull the event-level feed alone.
 
+**What the account can see.** `node server/bigquery.js --schema` lists every dataset, table
+and view the service account can list, with column names and types, from the metadata
+endpoints - no query runs and no row is read - and names the tables that carry both a product
+column and an order or draw column, which is the question behind sales and drafts by product
+(docs §6.3). Signed in, `/api/bigquery/schema?format=text` serves the same listing from the
+live service (`?refresh=1` lists again; the JSON form without `format`), so a newly granted
+table can be checked without a shell. Address-shaped column names are flagged in the listing
+and are never selected by anything here.
+
 **Event-level feed.** The same pull also takes the conversion events (signup, draw entry
 intent, purchase) of `LE_Funnel_Report` into `sources/le_events.csv`. That table carries
 customer email addresses; the pull is written so the address never leaves BigQuery - an

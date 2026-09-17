@@ -148,6 +148,110 @@ function contactKeySql(column) {
 }
 const contactKeyParams = () => ({ salt: { type: "STRING", value: process.env.PII_HASH_SALT } });
 
+// ---------------------------------------------------------------- what the account can see (names only)
+
+/* Every dataset, table and view the service account can list in the project,
+ * with column names and types, from the REST metadata endpoints: no query
+ * runs, no row is read, nothing is billed. Column names are matched against
+ * the address pattern and FLAGGED, never selected, and a view's SQL is left
+ * out (free text). The first place to look when the account is granted a
+ * new table: `node server/bigquery.js --schema` prints it, GET
+ * /api/bigquery/schema serves it. The product, order, draft and draw flags
+ * are there to answer "does anything here carry the product of a sale". */
+const PRODUCT_COLUMN = /product|sku|variant|artwork|edition|item_|_item|line_item|title/i;
+const ORDER_COLUMN = /order|invoice|checkout|fulfil|refund|cancel|payment|paid/i;
+const DRAFT_COLUMN = /draft/i;
+const DRAW_COLUMN = /draw|entry|entrant|winner|allocat/i;
+const MAX_TABLES = 600;
+
+async function schema(token) {
+  const base = `https://bigquery.googleapis.com/bigquery/v2/projects/${PROJECT}`;
+  const get = async (url) => {
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`BigQuery ${res.status}: ${(json.error && json.error.message) || "?"}`);
+    return json;
+  };
+  const list = async (url, key) => {
+    const out = [];
+    let pageToken = null;
+    do {
+      const page = await get(url + (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""));
+      out.push(...(page[key] || []));
+      pageToken = page.nextPageToken || null;
+    } while (pageToken);
+    return out;
+  };
+  const datasets = await list(`${base}/datasets?all=true&maxResults=200`, "datasets");
+  const out = { project: PROJECT, at: new Date().toISOString(), datasets: [], tables: 0, truncated: false };
+  for (const d of datasets) {
+    const id = d.datasetReference.datasetId;
+    const ds = { id, tables: [] };
+    out.datasets.push(ds);
+    let tables;
+    try { tables = await list(`${base}/datasets/${encodeURIComponent(id)}/tables?maxResults=500`, "tables"); }
+    catch (e) { ds.error = String(e.message || e).replace(/\s+/g, " ").slice(0, 160); continue; }
+    for (const t of tables) {
+      if (out.tables >= MAX_TABLES) { out.truncated = true; break; }
+      out.tables += 1;
+      const tid = t.tableReference.tableId;
+      let meta;
+      try { meta = await get(`${base}/datasets/${encodeURIComponent(id)}/tables/${encodeURIComponent(tid)}`); }
+      catch (e) { ds.tables.push({ id: tid, type: t.type, error: String(e.message || e).replace(/\s+/g, " ").slice(0, 160) }); continue; }
+      const columns = ((meta.schema && meta.schema.fields) || []).map((f) => ({ name: f.name, type: f.type + (f.mode === "REPEATED" ? "[]" : "") }));
+      const names = columns.map((c) => c.name);
+      ds.tables.push({
+        id: tid, type: meta.type || t.type,
+        rows: meta.numRows !== undefined ? Number(meta.numRows) : null,
+        modified: meta.lastModifiedTime ? new Date(Number(meta.lastModifiedTime)).toISOString().slice(0, 10) : null,
+        columns,
+        address: names.filter((n) => PII_COLUMN.test(n)),
+        product: names.filter((n) => PRODUCT_COLUMN.test(n)),
+        order: names.filter((n) => ORDER_COLUMN.test(n)),
+        draft: names.filter((n) => DRAFT_COLUMN.test(n)),
+        draw: names.filter((n) => DRAW_COLUMN.test(n)),
+      });
+    }
+  }
+  return out;
+}
+
+async function listSchema() {
+  const sa = configured();
+  if (!sa) return null;
+  const token = await accessToken(sa, "bigquery");
+  return schema(token);
+}
+
+/* The listing as text, for the terminal and for pasting into a chat: one
+ * line per table with its column names, then the tables worth a look. */
+function schemaText(doc) {
+  const lines = [`${doc.project} - what the service account can see (${doc.at.slice(0, 16)}, ${doc.tables} tables${doc.truncated ? ", truncated" : ""})`];
+  const fmtRows = (n) => (n === null || n === undefined ? "" : n >= 1e6 ? `${(n / 1e6).toFixed(1)}M rows` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}k rows` : `${n} rows`);
+  for (const ds of doc.datasets) {
+    lines.push("", `${ds.id}${ds.error ? `  (${ds.error})` : ""}`);
+    for (const t of ds.tables) {
+      if (t.error) { lines.push(`  ${t.id}  (${t.error})`); continue; }
+      const tags = [t.type, fmtRows(t.rows), t.modified].filter(Boolean).join(", ");
+      lines.push(`  ${t.id}  [${tags}]`);
+      lines.push(`    ${t.columns.map((c) => c.name).join(", ")}`);
+      const flags = [];
+      if (t.address.length) flags.push(`address column, never select: ${t.address.join(", ")}`);
+      if (t.product.length) flags.push(`product: ${t.product.join(", ")}`);
+      if (t.draft.length) flags.push(`draft: ${t.draft.join(", ")}`);
+      if (flags.length) lines.push(`    ! ${flags.join(" | ")}`);
+    }
+  }
+  const worth = [];
+  for (const ds of doc.datasets) for (const t of ds.tables) {
+    if (t.error) continue;
+    if (t.product.length && (t.order.length || t.draw.length)) worth.push(`${ds.id}.${t.id} (product + ${t.order.length ? "order" : "draw"} columns)`);
+    else if (t.draft.length) worth.push(`${ds.id}.${t.id} (draft columns)`);
+  }
+  lines.push("", worth.length ? `Worth a look for sales and drafts by product:\n  ${worth.join("\n  ")}` : "No table carries both a product column and an order or draw column.");
+  return lines.join("\n") + "\n";
+}
+
 // ---------------------------------------------------------------- query
 
 /* Runs one query, streaming the result: onHeader(columnNames) once, then
@@ -761,17 +865,23 @@ module.exports = {
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
   LE_BROWSING, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
   PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
+  schema, listSchema, schemaText,
 };
 
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;
 // --write replaces the CSVs, --full forces a full pull, --events or --browsing
-// pulls that one feed alone. Handy from a Render shell.
+// pulls that one feed alone, --schema lists what the account can see (names
+// only, no rows). Handy from a Render shell.
 if (require.main === module) {
   (async () => {
     if (!configured()) {
       console.error("BigQuery is not configured - set BIGQUERY_SERVICE_ACCOUNT_JSON " +
         "(and BQ_PROJECT/BQ_DATASET if they differ from the defaults).");
       process.exit(1);
+    }
+    if (process.argv.includes("--schema")) {
+      process.stdout.write(schemaText(await listSchema()));
+      return;
     }
     const write = process.argv.includes("--write");
     const full = process.argv.includes("--full");

@@ -484,6 +484,28 @@ app.get("/api/refresh/status", (req, res) => {
 });
 app.post("/api/refresh", (req, res) => res.json(startRefresh(!!(req.body && req.body.full))));
 
+// What the BigQuery service account can see: every dataset, table and view
+// with its column names (never a row), from the metadata endpoints. Cached a
+// day in data/app/bigquery_schema.json; ?refresh=1 lists again; ?format=text
+// gives the readable form for pasting. The first place to look when the
+// account is granted a new table.
+const SCHEMA_PATH = path.join(DATA, "bigquery_schema.json");
+app.get("/api/bigquery/schema", route(async (req, res) => {
+  const bq = require("./bigquery");
+  if (!bq.configured()) return res.status(503).json({ error: "BigQuery is not configured on this server (BIGQUERY_SERVICE_ACCOUNT_JSON)." });
+  let doc = null;
+  const fresh = fs.existsSync(SCHEMA_PATH) && Date.now() - fs.statSync(SCHEMA_PATH).mtimeMs < 24 * 3600 * 1000;
+  if (!req.query.refresh && fresh) {
+    try { doc = JSON.parse(fs.readFileSync(SCHEMA_PATH, "utf8")); } catch { doc = null; }
+  }
+  if (!doc) {
+    doc = await bq.listSchema();
+    fs.writeFileSync(SCHEMA_PATH, JSON.stringify(doc, null, 1));
+  }
+  if (req.query.format === "text") return res.type("text/plain").send(bq.schemaText(doc));
+  res.json(doc);
+}));
+
 // HubSpot email text export (server/emailContent.js): ?run=1 starts the job,
 // the same URL without it reports progress, and the CSV downloads once done.
 const emailContent = require("./emailContent");
