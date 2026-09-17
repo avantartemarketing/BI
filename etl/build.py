@@ -1123,14 +1123,13 @@ def load_orders_feed() -> dict:
                     "unitsPaid": paid, "drafts": drafts,
                     "draftCustomers": num(getattr(r, "draft_customers", "")) if str(getattr(r, "draft_customers", "")).strip() else None,
                     "entryDrafts": num(getattr(r, "units_entry_drafts", 0)),
-                    "winnerDrafts": num(getattr(r, "units_winner_drafts", 0)),
+                    "entrantDrafts": num(getattr(r, "units_entrant_drafts", 0)),
                     "refunded": num(r.units_refunded),
                     "fromDrafts": num(r.units_from_drafts), "privateRoom": num(r.units_private_room),
                     "listPrice": price if price > 0 else None, "edition": editions(r.release, r.product_title),
                     "lastOrder": r.last_order or None, "lastDraft": r.last_draft or None,
                 }
-                dc = rel["products"][r.product_title]["draftCustomers"]
-                rel["drafts"] += dc if dc is not None else drafts
+                rel["drafts"] += drafts
                 rel["unitsPaid"] += paid
                 for d in (r.last_order, r.last_draft):
                     if d and (rel["asOf"] is None or d > rel["asOf"]):

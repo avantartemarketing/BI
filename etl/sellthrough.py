@@ -267,12 +267,10 @@ _DEFAULT_NAME = re.compile(r"^Draw \d+$")
 
 
 def _draft_count(r: dict) -> float:
-    """A product's drafts as the card counts them: the collectors with an
-    invoice out who have not paid for anything on the release (an advisor
-    offers several colours to one collector, who takes one), falling back to
-    the draft lines where the feed has no collector count."""
-    dc = r.get("draftCustomers")
-    return float(dc) if _finite(dc) else float(r.get("drafts") or 0)
+    """A product's drafts as the card counts them: the draft lines a person
+    raised that are not the payment step of a live entry - the way the sales
+    team counts its own drafts."""
+    return float(r.get("drafts") or 0)
 
 
 def _cap_drafts(drafts: float, edition, sold: float) -> float:

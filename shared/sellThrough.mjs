@@ -320,10 +320,10 @@ export function productsFromDraws(draws, configured, editionSize) {
  * products and the sold source: "orders" once every product has its sales
  * from the feed. */
 const DEFAULT_NAME = /^Draw \d+$/;
-// a product's drafts as the card counts them: the collectors with an invoice
-// out who have not paid for anything on the release, else the draft lines;
-// never more than the room left on the product
-const draftCount = (r) => (finite(r.draftCustomers) ? Number(r.draftCustomers) : (Number(r.drafts) || 0));
+// a product's drafts as the card counts them: the draft lines a person raised
+// that are not the payment step of a live entry, the way the sales team counts
+// its own drafts; never more than the room left on the product
+const draftCount = (r) => Number(r.drafts) || 0;
 const capDrafts = (drafts, edition, sold) =>
   (finite(edition) && Number(edition) > 0 ? Math.max(Math.min(drafts, Number(edition) - sold), 0) : drafts);
 export function attachOrders(products, orders, drawProducts, source) {
