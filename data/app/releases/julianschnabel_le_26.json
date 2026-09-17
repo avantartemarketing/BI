@@ -2345,7 +2345,12 @@
    "contrib_buyers": -5.4,
    "contrib_per_buyer": -1.4,
    "sessions_benchmark": 6151.7,
-   "conv_benchmark": 0.02350473856297793
+   "conv_benchmark": 0.02350473856297793,
+   "conv_benchmark_today": 0.018486276529076345,
+   "contrib_traffic_bm": -58.8,
+   "contrib_conversion_bm": -6.8,
+   "contrib_buyers_bm": -5.4,
+   "contrib_per_buyer_bm": -1.4
   },
   "aa_social": {
    "sessions_actual": 354.0,
@@ -2359,7 +2364,12 @@
    "contrib_buyers": 2.1,
    "contrib_per_buyer": -0.2,
    "sessions_benchmark": 497.0,
-   "conv_benchmark": 0.027119382908971878
+   "conv_benchmark": 0.027119382908971878,
+   "conv_benchmark_today": 0.01462958669033688,
+   "contrib_traffic_bm": -2.1,
+   "contrib_conversion_bm": 1.9,
+   "contrib_buyers_bm": 2.1,
+   "contrib_per_buyer_bm": -0.2
   },
   "referral_artist": {
    "sessions_actual": 2.0,
@@ -2373,7 +2383,12 @@
    "contrib_buyers": -0.1,
    "contrib_per_buyer": -0.0,
    "sessions_benchmark": 30.1,
-   "conv_benchmark": 0.03678000366683614
+   "conv_benchmark": 0.03678000366683614,
+   "conv_benchmark_today": 0.028087205886583602,
+   "contrib_traffic_bm": -0.8,
+   "contrib_conversion_bm": -0.1,
+   "contrib_buyers_bm": -0.1,
+   "contrib_per_buyer_bm": -0.0
   },
   "search_direct_other": {
    "sessions_actual": 529.0,
@@ -2387,7 +2402,12 @@
    "contrib_buyers": -6.9,
    "contrib_per_buyer": -0.4,
    "sessions_benchmark": 1614.4,
-   "conv_benchmark": 0.05717180941249559
+   "conv_benchmark": 0.05717180941249559,
+   "conv_benchmark_today": 0.04080181163225155,
+   "contrib_traffic_bm": -44.3,
+   "contrib_conversion_bm": -7.3,
+   "contrib_buyers_bm": -6.9,
+   "contrib_per_buyer_bm": -0.4
   },
   "paid": {
    "sessions_actual": 2793.0,
@@ -2401,7 +2421,12 @@
    "contrib_buyers": -6.3,
    "contrib_per_buyer": -0.5,
    "sessions_benchmark": 5849.7,
-   "conv_benchmark": 0.005939975474353492
+   "conv_benchmark": 0.005939975474353492,
+   "conv_benchmark_today": 0.008408927686277752,
+   "contrib_traffic_bm": -25.7,
+   "contrib_conversion_bm": -6.7,
+   "contrib_buyers_bm": -6.3,
+   "contrib_per_buyer_bm": -0.5
   }
  },
  "paid": {
@@ -2791,7 +2816,8 @@
   "clickRate": null,
   "sequence": [],
   "feedThrough": "2026-08-14",
-  "deliveredTarget": 142058.3
+  "deliveredTarget": 142058.3,
+  "deliveredBenchmark": 132967.2
  },
  "social": {
   "posts": 0,
@@ -2864,8 +2890,52 @@
      "label": "Paid efficiency",
      "value": -4.0
     }
+   ],
+   "stepsBm": [
+    {
+     "key": "organic_traffic",
+     "label": "Organic traffic",
+     "value": -107.0
+    },
+    {
+     "key": "organic_conversion",
+     "label": "Organic conversion",
+     "value": -12.0
+    },
+    {
+     "key": "paid_spend",
+     "label": "Paid spend",
+     "value": -28.0
+    },
+    {
+     "key": "paid_efficiency",
+     "label": "Paid efficiency",
+     "value": -4.0
+    }
    ]
-  }
+  },
+  "stepsBm": [
+   {
+    "key": "organic_traffic",
+    "label": "Organic traffic",
+    "value": -160.0
+   },
+   {
+    "key": "organic_conversion",
+    "label": "Organic conversion",
+    "value": -19.0
+   },
+   {
+    "key": "paid_spend",
+    "label": "Paid spend",
+    "value": -42.0
+   },
+   {
+    "key": "paid_efficiency",
+    "label": "Paid efficiency",
+    "value": -7.0
+   }
+  ]
  },
  "benchmarks": {
   "chargeDropOff": 0.19999999999999996,

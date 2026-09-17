@@ -243,8 +243,10 @@ sessions per click (AA Email sessions over tracked clicks) as the median pooled 
 across completed draw launches of the last 24 months (configured and discovered). The
 delivered target is the sends the release's own AA Email sessions plan implies by today
 at those rates, so a release sending to a small list is judged against a volume that fits
-it; the median delivered total across completed configured launches on the pooled
-delivery-timing curve is the fallback until two launches give a sessions-per-click median.
+it, and the benchmark's sends are the same at the basket's pace (the waterfall's walk from
+the benchmark reads those); the median delivered total across completed configured launches
+on the pooled delivery-timing curve is the fallback until two launches give a
+sessions-per-click median.
 The dashboard's 19.6% and 4.3% defaults apply only until two launches qualify. Without the
 token the committed CSV snapshot (sends to 14 Aug 2026) is used. Instagram content
 (`data/content_posts.csv`) remains a manual export.

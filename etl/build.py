@@ -1799,6 +1799,22 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # median sessions, for this group.
             bm_s = bm_sessions.get(g, 0.0)
             funnel_by_group[g]["conv_benchmark"] = (bm_units.get(g, 0.0) / bm_s) if bm_s else 0.0
+            # The same three factors against the basket instead of the target:
+            # the walk the waterfalls take once the stretch has been set aside
+            # (BENCHMARK_SPEC 9). The basket's sessions by today and the units
+            # per session its pace implies, repriced one factor at a time, so
+            # the steps sum to now - bm_exp exactly as the target's sum to
+            # now - exp. The multi-buy rate is a rate, so it is the same on
+            # both sides.
+            sess_bm = bm_sessions.get(g, 0.0) * sess_w
+            conv_bmx = (bm_exp / sess_bm) if sess_bm else 0.0
+            funnel_by_group[g].update({
+                "conv_benchmark_today": conv_bmx,
+                "contrib_traffic_bm": round((cum_s - sess_bm) * conv_bmx, 1),
+                "contrib_conversion_bm": round((conv_act - conv_bmx) * cum_s, 1),
+                "contrib_buyers_bm": round(cum_s * (conv_act * ratio - conv_bmx), 1),
+                "contrib_per_buyer_bm": round(per_buyer, 1),
+            })
         # what a grouped column is made of, secured units to date, biggest first
         parts = []
         for ch in spec["channels"]:
@@ -1931,6 +1947,16 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                     w = cur[i - 1] + f * (cur[i] - cur[i - 1])
                     break
         email_out["deliveredTarget"] = round(email_bench["total"] * w, 1)
+    # The same sends at the basket's pace: the benchmark's AA Email sessions by
+    # today over the same rates - the delivered rung's tick, and the reference
+    # the waterfall's walk from the benchmark reads. The cohort's median send on
+    # the curve carries no uplift, so where it is the target it is this too.
+    email_out["deliveredBenchmark"] = None
+    sess_bm_plan = (funnel_by_group.get("aa_email") or {}).get("sessions_benchmark")
+    if rate_chain and sess_bm_plan:
+        email_out["deliveredBenchmark"] = round(sess_bm_plan / rate_chain, 1)
+    elif email_out["deliveredTarget"] is not None and not rate_chain:
+        email_out["deliveredBenchmark"] = email_out["deliveredTarget"]
 
     # ---- social content
     ct = content[(content["campaign_code"] == release["campaign_code"])
@@ -2027,6 +2053,35 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         }
         assert abs(sum(s["value"] for s in today_steps) - (actual_today - target_today)) < 0.5, (
             f"{release['id']}: today waterfall steps do not reconcile to actual - target")
+        # The same four contributors against the basket: the waterfalls open at
+        # the target, set the stretch aside, and walk from the benchmark, so
+        # their steps read against the basket and sum to the outcome less the
+        # benchmark (today) or the projection less the benchmark (at close),
+        # closed the same way the target steps are.
+        wf_traffic_bm = sum(funnel_by_group[g]["contrib_traffic_bm"] for g in organic_groups)
+        wf_conv_bm = sum(funnel_by_group[g]["contrib_conversion_bm"] for g in organic_groups)
+        bm_budget = bm_units["paid"] * targets["paid"]["cost_per_purchase"]
+        spend_bm_to_date = bm_budget * curve_value(rcurves, "paid", "units", pdsa_today)
+        wf_paid_spend_bm = ((cum_spend - spend_bm_to_date) / targets["paid"]["cost_per_purchase"]
+                            ) if targets["paid"]["cost_per_purchase"] else 0.0
+        paid_gap_bm = funnel_by_group["paid"]["contrib_traffic_bm"] + funnel_by_group["paid"]["contrib_conversion_bm"]
+        wf_paid_eff_bm = paid_gap_bm - wf_paid_spend_bm
+        raw_bm = [wf_traffic_bm, wf_conv_bm, wf_paid_spend_bm, wf_paid_eff_bm]
+        labels = [("organic_traffic", "Organic traffic"), ("organic_conversion", "Organic conversion"),
+                  ("paid_spend", "Paid spend"), ("paid_efficiency", "Paid efficiency")]
+        def steps_bm(scale):
+            return [{"key": k, "label": l, "value": round(v * scale, 0)} for (k, l), v in zip(labels, raw_bm)]
+        tot_bm = sum(raw_bm)
+        close_bm = steps_bm(((hero_proj - hero_bm) / tot_bm) if tot_bm else 0.0)
+        resid_bm = round(hero_proj, 0) - round(hero_bm, 0) - sum(s["value"] for s in close_bm)
+        max(close_bm, key=lambda s: abs(s["value"]))["value"] += resid_bm
+        waterfall["stepsBm"] = close_bm
+        today_bm = steps_bm(1.0)
+        bm_today = round(hero_bm_today, 0)
+        max(today_bm, key=lambda s: abs(s["value"]))["value"] += (actual_today - bm_today) - sum(s["value"] for s in today_bm)
+        waterfall["today"]["stepsBm"] = today_bm
+        assert abs(sum(s["value"] for s in today_bm) - (actual_today - bm_today)) < 0.5, (
+            f"{release['id']}: today waterfall steps do not reconcile to actual - benchmark")
 
     draw = load_draw(release)
 

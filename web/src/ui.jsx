@@ -310,9 +310,12 @@ export function LevelWaterfall({ rows, X, labelW = 116, valueW = 48, gap = 12 })
   );
 }
 
-/* The rows every waterfall opens with: the benchmark's dotted tick, the stretch
- * as a bar in the stretch tint, then the target's tick; or the target alone
- * where the release has no basket. */
+/* The rows every waterfall opens with: the target's tick, the stretch as a bar
+ * in the stretch tint from the target to the benchmark, then the benchmark's
+ * dotted tick, so that the steps below can read against the basket and still
+ * close on the outcome: the stretch is the part of the gap to target that is
+ * ambition, the steps are the part that is performance. Without a basket the
+ * target opens alone and the steps read against it. */
 export function waterfallOpening({ hasBm, bm, target, words, k, targetHead, unitWord = "Units" }) {
   const targetRow = {
     kind: "level", key: "target", label: words.target, value: target,
@@ -321,21 +324,21 @@ export function waterfallOpening({ hasBm, bm, target, words, k, targetHead, unit
   if (!hasBm) return [targetRow];
   const stretch = target - bm;
   return [
-    { kind: "level", key: "bm", label: words.bm, value: bm, dotted: true,
-      tip: { head: words.bm, rows: [{ label: unitWord, value: fmt(bm) }],
-             body: "The median of the matched basket - what launches like this one typically reach." } },
-    { kind: "step", key: "stretch", label: "Stretch", value: stretch, from: bm, to: target, fill: C.refStretch,
+    targetRow,
+    { kind: "step", key: "stretch", label: "Stretch", value: bm - target, from: target, to: bm, fill: C.refStretch,
       tip: {
         head: "Stretch",
         rows: [
-          { label: words.bm, value: fmt(bm) },
           { label: words.target, value: fmt(target) },
+          { label: words.bm, value: fmt(bm) },
           { label: "Stretch", value: fmtSigned(stretch) },
           ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
         ],
-        body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day.",
+        body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.",
       } },
-    targetRow,
+    { kind: "level", key: "bm", label: words.bm, value: bm, dotted: true,
+      tip: { head: words.bm, rows: [{ label: unitWord, value: fmt(bm) }],
+             body: "The median of the matched basket - what launches like this one typically reach. The steps walk from here." } },
   ];
 }
 

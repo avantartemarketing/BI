@@ -980,14 +980,18 @@ guard every benchmark mark on the page is written against.
 | `channels[].bm`, `bmExp` | per group: benchmark at close, benchmark by today |
 | `channels[].daily[].bm` | the benchmark plan for that day, beside `actual` / `plan` / `proj` |
 | `funnelByGroup[g].sessions_benchmark`, `conv_benchmark` | the rung references: a volume and a rate |
+| `funnelByGroup[g].conv_benchmark_today`, `contrib_traffic_bm`, `contrib_conversion_bm`, `contrib_buyers_bm`, `contrib_per_buyer_bm` | the same three-factor decomposition against the basket's pace by today, summing to the group's actual − its benchmark today; the waterfalls' walk from the benchmark |
+| `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median |
 | `sellthrough.benchmarkUnits` | the benchmark on the sell-through prediction |
 | `paid.benchmarkUnits`, `benchmarkBudget` | the paid module's two benchmark marks |
-| `waterfall.benchmark`, `stretch`, `target`, `projection` | the at-close waterfall's left-hand columns; `steps` are unchanged |
-| `waterfall.today` | `{benchmark, stretch, target, actual, steps}` - the same four contributors measured **to date** |
+| `waterfall.benchmark`, `stretch`, `target`, `projection` | the at-close waterfall's left-hand columns; `steps` are unchanged and `stepsBm` are the same four contributors against the basket, summing to `projection − benchmark` |
+| `waterfall.today` | `{benchmark, stretch, target, actual, steps, stepsBm}` - the same four contributors measured **to date**, against the target and against the basket |
 
 `waterfall.today.steps` are not the close steps scaled down: they are the contributions as
 measured so far, and they must sum exactly to `actual − target`, with the rounding residual
-parked on the largest step, exactly as the close steps do (§9, "Projection vs target").
+parked on the largest step, exactly as the close steps do (§9, "Projection vs target");
+`stepsBm` the same against `benchmark`, which is the walk the cards draw once the stretch has
+been set aside.
 `hero.benchmarkToday` and `channels[].bmExp` are read off the basket curve at today's pdsa
 (§5.3), which is what keeps the K identity of §4a.4 true today as well as at close.
 

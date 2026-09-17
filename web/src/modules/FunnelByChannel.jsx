@@ -201,6 +201,9 @@ function emailStages(snap) {
   const opensA = email.opened ?? 0, clicksA = email.clicked ?? 0;
   const sessA = fbg.sessions_actual ?? 0, sessE = fbg.sessions_expected ?? null;
   const clicksE = finite(delivE) && delivE > 0 ? delivE * (openRef / 100) * (ctorRef / 100) : null;
+  // the same at the basket's pace: the waterfall walks from the benchmark
+  const delivB = email.deliveredBenchmark ?? delivE;
+  const clicksB = finite(delivB) && delivB > 0 ? delivB * (openRef / 100) * (ctorRef / 100) : null;
   /* Zero sends has two very different causes and the card used to report both
    * the same way. Marketing sent nothing, or the email feed stops before this
    * campaign even starts - an ingestion fault that says nothing about the
@@ -209,7 +212,7 @@ function emailStages(snap) {
   const feedThrough = email.feedThrough ?? null;
   const feedEndsFirst = !!(feedThrough && snap?.windowStart && feedThrough < snap.windowStart);
   return {
-    delivA, delivE, opensA, clicksA, sessA, sessE, clicksE, openRef, clickRef, ctorRef, spcRef,
+    delivA, delivE, delivB, opensA, clicksA, sessA, sessE, clicksE, clicksB, openRef, clickRef, ctorRef, spcRef,
     feedThrough, feedEndsFirst,
     openA: delivA > 0 ? (opensA / delivA) * 100 : null,
     ctorA: opensA > 0 ? (clicksA / opensA) * 100 : null,
@@ -219,12 +222,18 @@ function emailStages(snap) {
   };
 }
 
-function groupWaterfall(g, snap) {
+/* `vsBm`: every reference read off the basket - the benchmark's pace by today -
+ * rather than the target, for the waterfall's walk from the benchmark, so the
+ * rows sum to the group's actual less its benchmark. Off, they read against
+ * the plan and sum to actual less target, as they do without a basket. */
+function groupWaterfall(g, snap, vsBm = false) {
   const ch = (snap.channels || []).find((c) => c.key === g.key) || {};
-  const now = ch.now ?? 0, exp = ch.exp ?? 0;
+  const now = ch.now ?? 0, exp = (vsBm ? ch.bmExp : ch.exp) ?? 0;
   const fbg = (snap.funnelByGroup || {})[g.key] || {};
-  const sessA = fbg.sessions_actual ?? 0, sessE = fbg.sessions_expected ?? 0;
-  const convA = fbg.conv_actual ?? 0, convE = fbg.conv_expected ?? 0;
+  const sessA = fbg.sessions_actual ?? 0, sessE = (vsBm ? fbg.sessions_benchmark : fbg.sessions_expected) ?? 0;
+  const convA = fbg.conv_actual ?? 0;
+  const convE = vsBm ? (fbg.conv_benchmark_today ?? (sessE > 0 ? exp / sessE : 0)) : (fbg.conv_expected ?? 0);
+  const REF = vsBm ? "benchmark" : "plan";
   const rows = [];   // [{label, step (number|null), note, tip rows}]
   const P = (v) => fmtVal(v * 100, "%"), N = (v) => fmtVal(v, "count"), R = (v) => fmt(v, 2);
   /* Session → sale is two things at once: how many sessions became a buyer, and
@@ -242,28 +251,29 @@ function groupWaterfall(g, snap) {
   const splitBuy = Math.abs(upbA - upbE) > 0.001;
   const saleSteps = splitBuy
     ? [{ label: "Session → buyer", a: convA / upbA, e: convE / upbE, show: P,
-         note: "sessions that became a buyer, vs plan - the pieces each buyer took are a release-level row of their own" },
+         note: `sessions that became a buyer, vs ${REF} - the pieces each buyer took are a release-level row of their own` },
        // the rate is one release-level fact, so its step is collected out of
        // the groups and printed once below them rather than five times
        { label: "Units per buyer", a: upbA, e: upbE, show: R, perBuyer: true,
          note: "pieces per buyer across the release, vs what the target assumed for this many products" }]
-    : [{ label: "Session → sale", a: convA, e: convE, show: P, note: "session → sale rate vs plan" }];
+    : [{ label: "Session → sale", a: convA, e: convE, show: P, note: `session → sale rate vs ${REF}` }];
   const info = (label, v, ref, unit, note) => rows.push({ label, value: null, note, display: fmtVal(v, unit),
     tipRows: [{ label: "Actual", value: fmtVal(v, unit) }, { label: "Reference", value: fmtVal(ref, unit) }] });
   const twoFactor = () => chainSteps([
-    { label: "Sessions", a: sessA, e: sessE, show: N, note: "sessions vs plan" },
+    { label: "Sessions", a: sessA, e: sessE, show: N, note: `sessions vs ${REF}` },
     ...saleSteps,
   ]);
 
   let steps;
   if (g.key === "aa_email") {
     const em = emailStages(snap);
-    const { delivA, delivE, opensA, clicksA, clicksE } = em;
+    const { delivA, opensA, clicksA } = em;
+    const delivE = vsBm ? em.delivB : em.delivE, clicksE = vsBm ? em.clicksB : em.clicksE;
     const openRef = em.openRef / 100, ctorRef = em.ctorRef / 100;
     const chainable = finite(delivE) && delivE > 0 && clicksA > 0 && finite(clicksE) && clicksE > 0 && sessE > 0;
     const delivered = { label: "Delivered emails", a: delivA, e: delivE, show: N,
       note: em.spcRef
-        ? "sends delivered vs the sends the AA Email sessions plan implies at the cohort's rates"
+        ? `sends delivered vs the sends the ${vsBm ? "basket's" : "plan's"} AA Email sessions imply at the cohort's rates`
         : "sends delivered vs the cohort-median delivery curve" };
     const perClick = { label: "Sessions per click", a: sessA / clicksA, e: em.spcE, show: R,
       note: em.spcRef
@@ -316,7 +326,7 @@ function groupWaterfall(g, snap) {
     info("Sessions per click", em.spcA, null, "ratio", "no expected clicks to judge against yet");
     rows.push(...chainSteps([
       { label: "Sessions", a: sessA, e: sessE, show: N,
-        note: "sessions vs plan - carries the whole traffic gap while the click chain has no reference" },
+        note: `sessions vs ${REF} - carries the whole traffic gap while the click chain has no reference` },
       ...saleSteps,
     ]));
     return { name: g.name, rows, now, exp };
@@ -325,18 +335,19 @@ function groupWaterfall(g, snap) {
     const paid = snap.paid || {};
     const day = snap.day ?? 0, of = snap.of ?? 0;
     const spendA = paid.spendToDate ?? 0;
-    const spendE = of > 0 && paid.spendBudget ? (paid.spendBudget * day) / of : null;
+    const budget = vsBm ? paid.benchmarkBudget : paid.spendBudget;
+    const spendE = of > 0 && budget ? (budget * day) / of : null;
     if (finite(spendE) && spendE > 0 && spendA > 0 && exp > 0) {
       steps = chainSteps([
-        { label: "Spend", a: spendA, e: spendE, show: (v) => fmtVal(v, "eur"), note: "spend to date vs the plan's share of budget by today" },
+        { label: "Spend", a: spendA, e: spendE, show: (v) => fmtVal(v, "eur"), note: `spend to date vs the ${REF}'s share of budget by today` },
         { label: "Cost per entry", a: now / spendA, e: exp / spendE, show: (v) => (v > 0 ? fmtVal(1 / v, "eur") + " per unit" : "–"),
-          note: "secured units per pound, actual vs plan - the cost-per-entry side of the ledger" },
+          note: `secured units per pound, actual vs ${REF} - the cost-per-entry side of the ledger` },
       ]);
       rows.push(...steps);
       return { name: g.name, rows, now, exp };
     }
     info("Spend", spendA, spendE, "eur", "no plan or no spend yet");
-    rows.push({ label: "Cost per entry", value: now - exp, note: snap.campaignName ? "residual: paid units vs plan" : "no campaign matched - the whole paid gap",
+    rows.push({ label: "Cost per entry", value: now - exp, note: snap.campaignName ? `residual: paid units vs ${REF}` : "no campaign matched - the whole paid gap",
       tipRows: [{ label: "Secured", value: fmtVal(now, "count") }, { label: "Expected", value: fmtVal(exp, "count") }] });
     return { name: g.name, rows, now, exp };
   }
@@ -351,7 +362,7 @@ function groupWaterfall(g, snap) {
     if (finite(postsA) && finite(postsE) && postsA > 0 && postsE > 0 && sessE > 0) {
       rows.push(...chainSteps([
         { label: "Posts", a: postsA, e: postsE, show: N, note: "artist-account posts vs the tier benchmark, pro-rated" },
-        { label: "Sessions", a: sessA / postsA, e: sessE / postsE, show: R, note: "sessions per post vs plan" },
+        { label: "Sessions", a: sessA / postsA, e: sessE / postsE, show: R, note: `sessions per post vs ${REF}` },
         ...saleSteps,
       ]));
       return { name: g.name, rows, now, exp };
@@ -368,12 +379,24 @@ function FunnelWaterfall({ snap, groups }) {
   const nowTotal = snap?.hero?.now ?? 0;
   const day = snap?.day ?? 0;
 
-  const sections = groups.map((g) => groupWaterfall(g, snap));
+  /* The same grammar as the outcome waterfall, off the same snapshot figures:
+   * the list opens at the target, sets the stretch aside as a bar from the
+   * target to the benchmark, and walks from the benchmark with every row read
+   * against the basket, so the rows sum to actual less benchmark and, with the
+   * stretch, to actual less target. Absent a benchmark the list opens at the
+   * target and the rows read against the plan, as everywhere else. */
+  const bmTotal = snap?.hero?.benchmarkToday ?? null;
+  const hasBm = !!snap?.benchmark && bmTotal !== null && bmTotal !== undefined;
+  const stretchTotal = hasBm ? expTotal - bmTotal : null;
+  const words = refWords("today");
+  const startTotal = hasBm ? bmTotal : expTotal;
+
+  const sections = groups.map((g) => groupWaterfall(g, snap, hasBm));
   const stepRows = sections.flatMap((s) => s.rows.filter((r) => finite(r.value)));
   if (!stepRows.length) return <div className="empty-state">No funnel data yet</div>;
   // per-group rounding only: each group's steps sum to its own gap by
   // construction; the difference to the hero is the edition cap, left visible
-  const residual = (nowTotal - expTotal) - stepRows.reduce((a, r) => a + r.value, 0);
+  const residual = (nowTotal - startTotal) - stepRows.reduce((a, r) => a + r.value, 0);
   if (Math.abs(residual) <= 0.5) {
     const biggest = stepRows.reduce((a, b) => (Math.abs(b.value) > Math.abs(a.value) ? b : a));
     biggest.value += residual;
@@ -381,7 +404,7 @@ function FunnelWaterfall({ snap, groups }) {
   const capped = Math.abs(residual) > 0.5;
 
   // running level through every row (info rows carry the level across)
-  let cum = expTotal;
+  let cum = startTotal;
   const flat = [];
   // the units-per-buyer steps are one release-level effect split across the
   // groups only because each group has its own units; they are summed and shown
@@ -404,16 +427,6 @@ function FunnelWaterfall({ snap, groups }) {
     flat.push({ header: "All channels" });
     flat.push({ ...perBuyerRow, value: perBuyerTotal, from, to: cum });
   }
-  /* The same grammar as the outcome waterfall, off the same snapshot figures:
-   * the list opens at the benchmark, steps by the stretch to the target, and
-   * only then begins the channels, so the distance the business asked for
-   * above the basket is a bar like every other distance on the card. Absent a
-   * benchmark the list opens at the target, as everywhere else. */
-  const bmTotal = snap?.hero?.benchmarkToday ?? null;
-  const hasBm = !!snap?.benchmark && bmTotal !== null && bmTotal !== undefined;
-  const stretchTotal = hasBm ? expTotal - bmTotal : null;
-  const words = refWords("today");
-
   const levels = [expTotal, ...flat.filter((r) => r.to !== undefined).map((r) => r.to),
     ...(hasBm ? [bmTotal] : [])];
   const lo = Math.min(...levels), hi = Math.max(...levels);
@@ -438,19 +451,21 @@ function FunnelWaterfall({ snap, groups }) {
       <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>{fmt(value)}</div>
     </div>
   );
-  /* The stretch as a step: the bar from the benchmark to the target in the
-   * stretch tint, the same band the bars and the trajectory draw between the
-   * two references. A planning decision rather than performance, so its figure
-   * is in ink, not the step colours. */
+  /* The stretch as a step: the bar from the target down (or up) to the
+   * benchmark in the stretch tint, the same band the bars and the trajectory
+   * draw between the two references. A planning decision rather than
+   * performance, so its figure is in ink, not the step colours; the rows
+   * below read against the basket, so this is the part of the gap to target
+   * that is ambition. */
   const stretchTip = hasBm ? {
     head: "Stretch",
     rows: [
-      { label: words.bm, value: fmt(bmTotal) },
       { label: words.target, value: fmt(expTotal) },
+      { label: words.bm, value: fmt(bmTotal) },
       { label: "Stretch", value: fmtSigned(stretchTotal) },
       ...(snap?.benchmark?.k ? [{ label: "Uplift", value: "×" + fmt(snap.benchmark.k, 2) }] : []),
     ],
-    body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day.",
+    body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.",
   } : null;
   const stretchRow = () => (
     <div style={{ ...ROW(20), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
@@ -463,7 +478,7 @@ function FunnelWaterfall({ snap, groups }) {
           background: C.refStretch, borderRadius: 3,
         }} />
       </div>
-      <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>{fmtSigned(stretchTotal)}</div>
+      <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>{fmtSigned(bmTotal - expTotal)}</div>
     </div>
   );
 
@@ -474,16 +489,16 @@ function FunnelWaterfall({ snap, groups }) {
        the closing anchor is never simply cut off on a release with more groups
        or more stages than this one. */
     <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      {hasBm && anchorRow(words.bm, bmTotal, {
-        head: "Benchmark today",
-        rows: [{ label: "Secured units", value: fmt(bmTotal) }],
-        body: "The median of the matched basket - what launches like this one typically reach by now.",
-      }, C.refLine, true)}
-      {hasBm && stretchRow()}
       {anchorRow(words.target, expTotal, {
         head: `Target by day ${day}`,
         rows: [{ label: "Secured units", value: fmt(expTotal) }],
       })}
+      {hasBm && stretchRow()}
+      {hasBm && anchorRow(words.bm, bmTotal, {
+        head: "Benchmark today",
+        rows: [{ label: "Secured units", value: fmt(bmTotal) }],
+        body: "The median of the matched basket - what launches like this one typically reach by now. The rows walk from here.",
+      }, C.refLine, true)}
       {flat.map((r, i) => r.header ? (
         <div key={"h" + i} style={{ ...ROW(25), display: "flex", alignItems: "flex-end", paddingBottom: 4 }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{r.header}</div>
@@ -496,7 +511,7 @@ function FunnelWaterfall({ snap, groups }) {
               head: r.label, body: r.note,
               rows: [
                 ...(r.show ? [{ label: "Actual", value: r.show(r.a) }, { label: "Reference", value: r.show(r.e) }] : []),
-                { label: "vs expected", value: fmtSigned(r.value, 1) + " units", color: r.value >= 0 ? C.green : C.red },
+                { label: hasBm ? "vs benchmark" : "vs expected", value: fmtSigned(r.value, 1) + " units", color: r.value >= 0 ? C.green : C.red },
                 { label: "Running total", value: fmt(r.to, 1) },
               ],
             })} style={{
@@ -613,7 +628,7 @@ export default function FunnelByChannel({ snap, horizon }) {
         // curve at today's pdsa (computed in the ETL as email.deliveredTarget);
         // the target lifts it by K like any other volume
         { label: "Delivered emails", kind: "vol", unit: "count",
-          v: email.delivered ?? null, plan: email.deliveredTarget ?? null, bm: email.deliveredTarget ?? null,
+          v: email.delivered ?? null, plan: email.deliveredTarget ?? null, bm: email.deliveredBenchmark ?? email.deliveredTarget ?? null,
           note: em.spcRef
             ? "Reference: the sends the plan's expected AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click - a volume that fits this release's list."
             : "Benchmark: median delivered total across completed configured launches, on the pooled delivery-timing curve at today's point in the window." },

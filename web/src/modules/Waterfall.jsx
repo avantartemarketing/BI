@@ -1,13 +1,14 @@
 /* Projection vs target (spec §4.10) - horizontal waterfall.
  *
- * The card reads top to bottom as one argument: here is what launches like
- * this one reach, here is what the business asked for on top of that, so here
- * is the target, and here are the contributors that explain the distance from
- * it to where the release actually lands. The benchmark opens the list as a
- * dotted tick, its mark everywhere (BENCHMARK_SPEC 7); the stretch is the
- * first step, a bar in the stretch tint from the benchmark to the target, so
- * the distance the business asked for is drawn like every other distance on
- * the card. Without a basket the list opens at the target.
+ * The card reads top to bottom as one argument: here is the target, here is
+ * how much of it was ambition beyond what launches like this one reach, and
+ * from the basket's level here is how each contributor did against the basket
+ * on the way to where the release actually lands. The target opens the list,
+ * the stretch is the first step (a bar in the stretch tint down, or up, to the
+ * benchmark's dotted tick, its mark everywhere - BENCHMARK_SPEC 7), and every
+ * step after it reads against the benchmark, so the steps sum to the outcome
+ * less the benchmark and, with the stretch, to the gap the header prints.
+ * Without a basket the list opens at the target and the steps read against it.
  *
  * Drawn with the page's one horizontal waterfall (LevelWaterfall in ui.jsx):
  * benchmark, target and outcome are level ticks, the bars step between running
@@ -48,13 +49,16 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const words = refWords(isToday ? "today" : "close");
 
   const bmRaw = view.benchmark;
-  const hasBm = !!snap?.benchmark && bmRaw !== null && bmRaw !== undefined;
+  // the walk from the benchmark needs the contributors measured against it; an
+  // older snapshot without them walks from the target as it used to
+  const hasBm = !!snap?.benchmark && bmRaw !== null && bmRaw !== undefined && Array.isArray(view.stepsBm);
   const benchmark = hasBm ? bmRaw : null;
   const k = snap?.benchmark?.k ?? null;
+  const start = hasBm ? benchmark : target;
 
-  // running levels: target -> after each contributor (last = the outcome)
-  let cum = target;
-  const path = steps.map((s) => {
+  // running levels: the start -> after each contributor (last = the outcome)
+  let cum = start;
+  const path = (hasBm ? view.stepsBm : steps).map((s) => {
     const from = cum;
     cum += s.value ?? 0;
     return { ...s, from, to: cum };
@@ -77,12 +81,12 @@ export default function Waterfall({ snap, horizon = "today" }) {
    * them. The channels add up to the hero's figure before the sellout cap, so
    * on a sold-out release the last drop is the cap, and the outcome's popup
    * says so rather than the card hiding it. */
-  const channels = (snap?.channels || []).map((c) => ({
-    key: c.key, label: c.name,
-    value: (isToday ? (c.now ?? 0) - (c.exp ?? 0) : (c.proj ?? 0) - (c.target ?? 0)),
-    a: isToday ? c.now ?? 0 : c.proj ?? 0, e: isToday ? c.exp ?? 0 : c.target ?? 0,
-  }));
-  let run = target;
+  const channels = (snap?.channels || []).map((c) => {
+    const a = isToday ? c.now ?? 0 : c.proj ?? 0;
+    const e = hasBm ? (isToday ? c.bmExp ?? 0 : c.bm ?? 0) : (isToday ? c.exp ?? 0 : c.target ?? 0);
+    return { key: c.key, label: c.name, value: a - e, a, e };
+  });
+  let run = start;
   const chanPath = channels.map((c) => { const from = run; run += c.value; return { ...c, from, to: run }; });
   const residual = outcome - run;
   const capped = by === "channels" && Math.abs(residual) > 0.5;
@@ -93,7 +97,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
           head: c.label,
           rows: [
             { label: isToday ? "Secured to date" : "Projected", value: fmt(c.a) },
-            { label: words.target, value: fmt(c.e) },
+            { label: hasBm ? words.bm : words.target, value: fmt(c.e) },
             { label: "Gap", value: fmtSigned(c.value), color: c.value >= 0 ? C.green : C.red },
             { label: "Running total", value: fmt(c.to) },
           ],
@@ -161,10 +165,10 @@ export default function Waterfall({ snap, horizon = "today" }) {
         <QBadge content={{
           head: title,
           body: by === "channels"
-            ? "The list opens at the benchmark and the stretch is what the business asked for on top of it, which makes the target. From there each channel steps by its own units against its own target, in the page's order; they add up to the release before the sellout cap, so on a sold-out release the last drop is the cap."
+            ? "The list opens at the target; the stretch is the part of the gap that is ambition beyond the basket, and from the benchmark each channel steps by its own units against its own benchmark, in the page's order. They add up to the release before the sellout cap, so on a sold-out release the last drop is the cap. Without a basket the channels read against their targets."
             : isToday
-            ? "The list opens at the benchmark, what the matched basket typically has by now, and the stretch is what the business asked for on top of it, which makes the target. From there the contributors sum exactly to the gap between the target for today and what is secured to date."
-            : "The list opens at the benchmark and the stretch is what the business asked for on top of it, which makes the target. From there the contributors sum exactly to the gap between target and projected demand at close. Demand here is unconstrained - the hero caps at the sellout.",
+            ? "The list opens at the target; the stretch is the part of the gap that is ambition beyond the basket, what launches like this one typically have by now. From the benchmark the contributors read against the basket and sum exactly to the gap between it and what is secured to date, so with the stretch they sum to the gap the header prints. Without a basket they read against the target."
+            : "The list opens at the target; the stretch is the part of the gap that is ambition beyond the basket. From the benchmark the contributors read against the basket and sum exactly to the gap between it and projected demand at close. Demand here is unconstrained - the hero caps at the sellout.",
         }} />
         <span style={{
           fontSize: 12, color: C.muted, whiteSpace: "nowrap",
