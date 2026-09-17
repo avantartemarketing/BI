@@ -717,25 +717,41 @@ EMAIL_REF_MONTHS = 24   # rate references: draw launches that closed within this
 
 
 def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: list[dict] = (),
-                              spend: pd.DataFrame | None = None) -> dict | None:
+                              spend: pd.DataFrame | None = None,
+                              at: pd.DataFrame | None = None) -> dict | None:
     """Email references from the sends on file (HubSpot on the live site).
 
-    Delivered-emails target: median total among completed configured
-    campaigns, plus the pooled cumulative delivery-timing curve on the
-    standard pdsa grid (email volume is send-driven and spiky - a pro-rata
-    line would misread early campaigns). Totals scale with the release, so
-    this cohort stays the configured (targeted) releases.
+    Delivered-emails median total among completed configured campaigns, plus
+    the pooled cumulative delivery-timing curve on the standard pdsa grid
+    (email volume is send-driven and spiky - a pro-rata line would misread
+    early campaigns). Totals scale with the release, so this cohort stays the
+    configured (targeted) releases. It is the fallback delivered target: the
+    build's first choice is the sends the release's own sessions plan implies
+    at the cohort's rates (see build_release).
 
-    Open-rate and click-rate references: the median of each completed draw
-    launch's pooled rate (opened, or clicked, over delivered across its
-    launch-window sends). Rates do not scale with the release, so this cohort
-    adds every discovered release whose Meta campaign is a draw and whose
-    dates are complete, closed within EMAIL_REF_MONTHS.
+    Open-rate, click-rate and sessions-per-click references: the median of
+    each completed draw launch's pooled rate (opened, or clicked, over
+    delivered across its launch-window sends; AA Email sessions over those
+    clicks). Rates do not scale with the release, so this cohort adds every
+    discovered release whose Meta campaign is a draw and whose dates are
+    complete, closed within EMAIL_REF_MONTHS. Sessions per click is the one
+    that used to be derived, as the plan's sessions over a click volume built
+    from the cohort's median send, which made it a residual rather than a
+    reference and let it carry whatever a small-list release lost on sends.
 
     Each part is None until >= 2 launches qualify; the whole is None when
     neither does."""
     if emails.empty:
         return None
+
+    def email_sessions(name, start, end):
+        # the release's AA Email sessions over the same window as its sends
+        if at is None:
+            return None
+        sub = at[(at["simple_release_name"] == name)
+                 & (at["event_date"] >= start) & (at["event_date"] <= end)]
+        sub = sub[sub["channel"].map(GROUP_OF) == "aa_email"]
+        return float(sub["Sessions_Total"].sum())
 
     def window_sends(code, start, end):
         sub = emails[(emails["campaign"] == code)
@@ -746,10 +762,11 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
             core = sub[~sub["email_type"].isin(["TRNS", "AUT", "FREQ", "TEST"])]
         return core if float(core["delivered"].sum()) >= 100 else None
 
-    def rate_row(rid, end, core):
+    def rate_row(rid, end, core, sessions=None):
         total = float(core["delivered"].sum())
         opened, clicked = float(core["opened"].sum()), float(core["clicked"].sum())
-        return (rid, end, opened / total, clicked / total, clicked / opened if opened > 0 else None)
+        spc = sessions / clicked if sessions and clicked > 0 else None
+        return (rid, end, opened / total, clicked / total, clicked / opened if opened > 0 else None, spc)
 
     shares, totals, rates, seen = [], [], [], set()
     recent = as_of - timedelta(days=EMAIL_REF_MONTHS * 30)
@@ -773,7 +790,8 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         shares.append(row)
         totals.append(total)
         if end >= recent:
-            rates.append(rate_row(r["id"], end, core))
+            rates.append(rate_row(r["id"], end, core,
+                                  email_sessions(r["release_name"], date.fromisoformat(r["private_room_open"]), end)))
     for r in discovered:
         code = r.get("campaign_code")
         if not code or code in seen or not r.get("announce_date") or not r.get("launch_end"):
@@ -787,9 +805,11 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         ann = date.fromisoformat(r["announce_date"])
         core = window_sends(code, ann - timedelta(days=PR_LEAD_DAYS), end)
         if core is not None:
-            rates.append(rate_row(r["id"], end, core))
+            rates.append(rate_row(r["id"], end, core,
+                                  email_sessions(r["release_name"], ann - timedelta(days=PR_LEAD_DAYS), end)))
 
-    out = {"total": None, "curve": None, "open_rate": None, "click_rate": None, "ctor_rate": None, "cohort": None}
+    out = {"total": None, "curve": None, "open_rate": None, "click_rate": None, "ctor_rate": None,
+           "spc_rate": None, "cohort": None}
     if len(totals) >= 2:
         med = pd.DataFrame(shares).median().tolist()
         for i in range(1, len(med)):
@@ -803,6 +823,8 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         out["click_rate"] = float(pd.Series([x[3] for x in rates]).median())
         ctors = [x[4] for x in rates if x[4] is not None]   # clicks per opened email
         out["ctor_rate"] = float(pd.Series(ctors).median()) if len(ctors) >= 2 else None
+        spcs = [x[5] for x in rates if x[5] is not None]    # AA Email sessions per click
+        out["spc_rate"] = float(pd.Series(spcs).median()) if len(spcs) >= 2 else None
         out["cohort"] = {"n": len(rates), "releases": [x[0] for x in rates],
                          "from": rates[-1][1].isoformat(), "to": rates[0][1].isoformat()}
     return out if (out["total"] is not None or out["open_rate"] is not None) else None
@@ -813,10 +835,11 @@ def email_refs(bench: dict | None) -> dict:
     cohort behind them; the UI falls back to fixed defaults on None."""
     if not bench or bench.get("open_rate") is None:
         return {"emailOpenRateRef": None, "emailClickRateRef": None, "emailClickToOpenRef": None,
-                "emailRefCohort": None}
+                "emailSessionsPerClickRef": None, "emailRefCohort": None}
     return {"emailOpenRateRef": round(bench["open_rate"] * 100, 1),
             "emailClickRateRef": round(bench["click_rate"] * 100, 1),
             "emailClickToOpenRef": round(bench["ctor_rate"] * 100, 1) if bench.get("ctor_rate") is not None else None,
+            "emailSessionsPerClickRef": round(bench["spc_rate"], 3) if bench.get("spc_rate") is not None else None,
             "emailRefCohort": bench["cohort"]}
 
 def build_curves(at: pd.DataFrame, members: list[str] | None = None) -> dict:
@@ -1878,9 +1901,22 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         ],
         "feedThrough": feed_through,
     }
-    # expected delivered by today: cohort median total x pooled delivery-timing curve
+    # Expected delivered by today: the sends the AA Email sessions plan implies
+    # at the cohort's rates - expected sessions over open rate x clicks per open
+    # x sessions per click - so the chain's expected side multiplies out to the
+    # plan's sessions, and a release sending to a small list is judged against a
+    # volume that fits it rather than the cohort's median send (which used to
+    # be the target, and left sessions per click carrying whatever the sends
+    # lost). Until two launches give a sessions-per-click median, the median
+    # delivered total on the pooled delivery-timing curve stands in.
     email_out["deliveredTarget"] = None
-    if email_bench and email_bench["total"] is not None:
+    sess_plan = (funnel_by_group.get("aa_email") or {}).get("sessions_expected")
+    rate_chain = (email_bench["open_rate"] * email_bench["ctor_rate"] * email_bench["spc_rate"]
+                  if email_bench and all(email_bench.get(k) for k in ("open_rate", "ctor_rate", "spc_rate"))
+                  else None)
+    if rate_chain and sess_plan:
+        email_out["deliveredTarget"] = round(sess_plan / rate_chain, 1)
+    elif email_bench and email_bench["total"] is not None:
         p = pdsa_for(release, min(as_of, launch_end))
         grid, cur = CURVE_GRID, email_bench["curve"]
         if p <= grid[0]:
@@ -2264,14 +2300,15 @@ def main(only: str | None = None):
     # Every release the funnel data mentions. The configured ones (target
     # inputs on file) get the full build; the rest get an actuals-only page.
     discovered = discover_releases(at, as_of, known_codes(emails, content, artist_posts))
-    email_bench = email_delivered_benchmark(emails, as_of, discovered, spend)
+    email_bench = email_delivered_benchmark(emails, as_of, discovered, spend, at)
     if email_bench and email_bench["open_rate"] is not None:
         c = email_bench["cohort"]
         ctor = f"{email_bench['ctor_rate'] * 100:.1f}%" if email_bench["ctor_rate"] is not None else "n/a"
+        spc = f"{email_bench['spc_rate']:.2f}" if email_bench["spc_rate"] is not None else "n/a"
         deliv = f"{email_bench['total']:.0f}" if email_bench["total"] is not None else "none yet"
         print(f"email refs: open {email_bench['open_rate'] * 100:.1f}%, click {email_bench['click_rate'] * 100:.1f}% "
-              f"of delivered, {ctor} of opens (median of {c['n']} draw launches closed {c['from']}..{c['to']}); "
-              f"delivered median {deliv}")
+              f"of delivered, {ctor} of opens, {spc} sessions per click (median of {c['n']} draw launches "
+              f"closed {c['from']}..{c['to']}); delivered median {deliv} (the fallback target)")
     else:
         print("email refs: none yet (fewer than 2 completed draw launches with sends on file) - UI defaults apply")
     by_name = {n: g for n, g in at.groupby("simple_release_name")}

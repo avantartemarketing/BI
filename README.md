@@ -238,14 +238,16 @@ release. The GEN/CUS/INS send-type filter still reads the name convention. The
 `emails` field of `/api/refresh/status` says, per targeted release, how many sends in
 the last 60 days joined it and lists the recent sends that joined nothing - the first
 place to look when a release's email rows are blank. The email references are
-recomputed from that file at every refresh: open rate, click rate and clicks per open
-as the median pooled rate across completed draw launches of the last 24 months
-(configured and discovered),
-the delivered target as the median delivered total across completed configured
-launches on the pooled delivery-timing curve. The dashboard's 19.6% and 4.3% defaults
-apply only until two launches qualify. Without the token the committed CSV snapshot
-(sends to 14 Aug 2026) is used. Instagram content (`data/content_posts.csv`) remains a
-manual export.
+recomputed from that file at every refresh: open rate, click rate, clicks per open and
+sessions per click (AA Email sessions over tracked clicks) as the median pooled rate
+across completed draw launches of the last 24 months (configured and discovered). The
+delivered target is the sends the release's own AA Email sessions plan implies by today
+at those rates, so a release sending to a small list is judged against a volume that fits
+it; the median delivered total across completed configured launches on the pooled
+delivery-timing curve is the fallback until two launches give a sessions-per-click median.
+The dashboard's 19.6% and 4.3% defaults apply only until two launches qualify. Without the
+token the committed CSV snapshot (sends to 14 Aug 2026) is used. Instagram content
+(`data/content_posts.csv`) remains a manual export.
 
 The same token also serves a one-off **email text export**: open
 `/api/emails/content/status?run=1` (add `&years=3` to widen the default two-year window),

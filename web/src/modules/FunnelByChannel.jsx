@@ -180,12 +180,15 @@ function chainSteps(factors) {
 }
 
 /* The AA Email stages both views share: actual and reference for delivered,
- * open rate, clicks per opened email and sessions per click. Rate references
- * are the ETL's cohort medians (fixed defaults until two launches qualify);
- * the sessions-per-click reference is the plan's expected AA Email sessions by
- * today over its expected clicks (delivered target x reference open rate x
- * reference clicks per open), so the chain's expected side multiplies out to
- * the plan's expected sessions. Percentages are 0-100 here. */
+ * open rate, clicks per opened email and sessions per click. The rate
+ * references, sessions per click included, are the ETL's cohort medians
+ * (fixed defaults for the first two until two launches qualify); the delivered
+ * target is the sends the plan's expected AA Email sessions imply at those
+ * rates, so the chain's expected side multiplies out to the plan's expected
+ * sessions. Where the ETL has no sessions-per-click median yet, the delivered
+ * target is the cohort's median send and sessions per click falls back to the
+ * plan's sessions over that send's expected clicks, which closes the chain
+ * the same way. Percentages are 0-100 here. */
 function emailStages(snap) {
   const email = snap?.email || {};
   const b = snap?.benchmarks || {};
@@ -193,6 +196,7 @@ function emailStages(snap) {
   const openRef = b.emailOpenRateRef ?? 19.6;
   const clickRef = b.emailClickRateRef ?? 4.3;
   const ctorRef = b.emailClickToOpenRef ?? (clickRef / openRef) * 100;
+  const spcRef = b.emailSessionsPerClickRef ?? null;
   const delivA = email.delivered ?? 0, delivE = email.deliveredTarget ?? null;
   const opensA = email.opened ?? 0, clicksA = email.clicked ?? 0;
   const sessA = fbg.sessions_actual ?? 0, sessE = fbg.sessions_expected ?? null;
@@ -205,12 +209,13 @@ function emailStages(snap) {
   const feedThrough = email.feedThrough ?? null;
   const feedEndsFirst = !!(feedThrough && snap?.windowStart && feedThrough < snap.windowStart);
   return {
-    delivA, delivE, opensA, clicksA, sessA, sessE, clicksE, openRef, clickRef, ctorRef,
+    delivA, delivE, opensA, clicksA, sessA, sessE, clicksE, openRef, clickRef, ctorRef, spcRef,
     feedThrough, feedEndsFirst,
     openA: delivA > 0 ? (opensA / delivA) * 100 : null,
     ctorA: opensA > 0 ? (clicksA / opensA) * 100 : null,
     spcA: clicksA > 0 ? sessA / clicksA : null,
-    spcE: finite(clicksE) && clicksE > 0 && finite(sessE) ? sessE / clicksE : null,
+    spcE: finite(spcRef) && spcRef > 0 ? spcRef
+      : finite(clicksE) && clicksE > 0 && finite(sessE) ? sessE / clicksE : null,
   };
 }
 
@@ -257,9 +262,13 @@ function groupWaterfall(g, snap) {
     const openRef = em.openRef / 100, ctorRef = em.ctorRef / 100;
     const chainable = finite(delivE) && delivE > 0 && clicksA > 0 && finite(clicksE) && clicksE > 0 && sessE > 0;
     const delivered = { label: "Delivered emails", a: delivA, e: delivE, show: N,
-      note: "sends delivered vs the cohort-median delivery curve" };
-    const perClick = { label: "Sessions per click", a: sessA / clicksA, e: sessE / clicksE, show: R,
-      note: "AA Email sessions per email click vs the plan's expected sessions over expected clicks - traffic the clicks did not explain" };
+      note: em.spcRef
+        ? "sends delivered vs the sends the AA Email sessions plan implies at the cohort's rates"
+        : "sends delivered vs the cohort-median delivery curve" };
+    const perClick = { label: "Sessions per click", a: sessA / clicksA, e: em.spcE, show: R,
+      note: em.spcRef
+        ? "AA Email sessions per email click vs the cohort median - traffic the clicks did not explain"
+        : "AA Email sessions per email click vs the plan's expected sessions over expected clicks - traffic the clicks did not explain" };
 
     if (chainable && opensA > 0) {
       rows.push(...chainSteps([
@@ -589,7 +598,9 @@ export default function FunnelByChannel({ snap, horizon }) {
     ? `Reference: median pooled rate across ${cohort.n} completed draw launches with sends on file (closed ${cohort.from} to ${cohort.to})`
     : "Reference: fixed default until two completed draw launches have sends on file";
   const em = emailStages(snap);
-  const SPC_NOTE = "AA Email sessions per email click. Reference: the plan's expected AA Email sessions by today over its expected clicks (delivered target × reference open rate × reference clicks per open) - the traffic the clicks do not explain";
+  const SPC_NOTE = em.spcRef
+    ? `AA Email sessions per email click. Reference: the median sessions per click across ${cohort ? cohort.n + " " : ""}completed draw launches with sends on file - the traffic the clicks do not explain`
+    : "AA Email sessions per email click. Reference: the plan's expected AA Email sessions by today over its expected clicks (delivered target × reference open rate × reference clicks per open) - the traffic the clicks do not explain";
 
   /* The email stage rates have no basket behind them: their reference is
    * already the cohort median, which is exactly what a benchmark is, so the
@@ -603,7 +614,9 @@ export default function FunnelByChannel({ snap, horizon }) {
         // the target lifts it by K like any other volume
         { label: "Delivered emails", kind: "vol", unit: "count",
           v: email.delivered ?? null, plan: email.deliveredTarget ?? null, bm: email.deliveredTarget ?? null,
-          note: "Benchmark: median delivered total across completed configured launches, on the pooled delivery-timing curve at today's point in the window." },
+          note: em.spcRef
+            ? "Reference: the sends the plan's expected AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click - a volume that fits this release's list."
+            : "Benchmark: median delivered total across completed configured launches, on the pooled delivery-timing curve at today's point in the window." },
         { label: "Open rate", kind: "rate", unit: "%", v: em.openA, plan: em.openRef, bm: em.openRef,
           note: "Opens per delivered email. " + REF_NOTE + "." },
         { label: "Click rate", kind: "rate", unit: "%", v: em.ctorA, plan: em.ctorRef, bm: em.ctorRef,
