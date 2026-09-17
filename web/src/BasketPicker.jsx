@@ -28,7 +28,7 @@
  * everyone can pick and is deliberately separate from choosing one.
  */
 import React, { useEffect, useMemo, useState } from "react";
-import { C, fmt, fmtK, fmtPct } from "./ui.jsx";
+import { C, fmt, fmtK, fmtMoney, fmtPct } from "./ui.jsx";
 
 // both mirror etl/baskets.py, which is the only place they are enforced: below
 // MIN a basket cannot be used at all, below THIN it is usable but thin (§3.2)
@@ -59,12 +59,19 @@ const median = (rows, key) => quantile(col(rows, key), 0.5);
  * (§3.2) and the candidate rows do not carry the shares, so the browser would
  * have to guess at the one number the spec is most explicit about. */
 function liveProfile(rows) {
+  // a launch Airtable could not price carries 0, and is left out of the price
+  // range the way the ETL leaves it out (§3.2)
+  const priced = rows.filter((r) => Number(r.price) > 0);
   return {
     n: rows.length,
     members: rows.map((r) => r.release_name),
     units: median(rows, "units"),
     units_p25: quantile(col(rows, "units"), 0.25),
     units_p75: quantile(col(rows, "units"), 0.75),
+    price: median(priced, "price"),
+    price_p25: quantile(col(priced, "price"), 0.25),
+    price_p75: quantile(col(priced, "price"), 0.75),
+    n_priced: priced.length,
     sessions: median(rows, "sessions"),
     campaign_days: median(rows, "campaign_days"),
     paid_share: median(rows, "paid_share"),
@@ -75,8 +82,16 @@ function liveProfile(rows) {
 // shares; a hand-picked one carries it directly. Both answer "paid <pct>%".
 const paidShareOf = (p) => (p && p.share_sessions ? p.share_sessions.paid : p && p.paid_share) ?? null;
 
+/* The basket's unit prices in sterling, median and middle half, next to the
+ * units range it sits beside - the price band is part of what "comparable"
+ * means for the default basket (§3.1), so every basket says where it sits. */
+const priceRange = (p) => (p && p.price > 0
+  ? `price ${fmtMoney(p.price)} (${fmtMoney(p.price_p25)}-${fmtMoney(p.price_p75)})`
+  : "price –");
+
 function statsLine(p, n) {
   return `${fmt(n)} launches · units ${fmt(p.units)} (${fmt(p.units_p25)}-${fmt(p.units_p75)})`
+    + ` · ${priceRange(p)}`
     + ` · sessions ${fmtK(p.sessions)} · paid ${fmtPct(paidShareOf(p), 0)} · ${fmt(p.campaign_days)} days`;
 }
 
@@ -166,6 +181,10 @@ function BespokeRail({ profile, ticked, saveName, setSaveName, onSave, saving, o
       <div className="legend-rows" style={{ marginTop: 0 }}>
         {row("Units (median)", fmt(profile.units), "The benchmark this basket would set for units at close.")}
         {row("Middle half", `${fmt(profile.units_p25)}-${fmt(profile.units_p75)}`, "The 25th to 75th percentile of the basket's units - how spread out it is.")}
+        {row("Unit price (median)", profile.price > 0 ? fmtMoney(profile.price) : "–",
+          "Median unit price of the ticked launches in sterling, from Airtable. Launches Airtable could not price are left out.")}
+        {row("Price middle half", profile.price > 0 ? `${fmtMoney(profile.price_p25)}-${fmtMoney(profile.price_p75)}` : "–",
+          "The 25th to 75th percentile of the basket's unit prices.")}
         {row("Sessions (median)", fmtK(profile.sessions))}
         {row("Paid share", fmtPct(profile.paid_share, 0), "Median share of sessions coming from paid.")}
         {row("Campaign days", fmt(profile.campaign_days))}
@@ -406,6 +425,7 @@ export default function BasketPicker({ releaseId, releaseName, current, onPick, 
                       <TH>Closed</TH>
                       <TH align="right">Days</TH>
                       <TH align="right">Units</TH>
+                      <TH align="right">Price</TH>
                       <TH align="right">Sessions</TH>
                       <TH align="right">Paid</TH>
                       <TH>Basket</TH>
@@ -427,6 +447,7 @@ export default function BasketPicker({ releaseId, releaseName, current, onPick, 
                           <TD muted>{r.window_end || "–"}</TD>
                           <TD align="right">{fmt(r.campaign_days)}</TD>
                           <TD align="right">{fmt(r.units)}</TD>
+                          <TD align="right" muted={!(r.price > 0)}>{r.price > 0 ? fmtMoney(r.price) : "–"}</TD>
                           <TD align="right">{fmtK(r.sessions)}</TD>
                           <TD align="right">{fmtPct(r.paid_share, 0)}</TD>
                           <TD muted>{r.cluster_name || "–"}</TD>
@@ -434,7 +455,7 @@ export default function BasketPicker({ releaseId, releaseName, current, onPick, 
                       );
                     })}
                     {rows && !shown.length && (
-                      <tr><TD muted colSpan={8}>No launches match that filter.</TD></tr>
+                      <tr><TD muted colSpan={9}>No launches match that filter.</TD></tr>
                     )}
                   </tbody>
                 </table>

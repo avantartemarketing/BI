@@ -111,9 +111,13 @@ function FunnelView({ snap }) {
   const bmConv = snap?.benchmark?.convByGroup || {};
 
   /* Sessions take the per-group benchmark the ETL pro-rated to today rather
-   * than benchmark.sessionsByGroup, which is the at-close figure. The
-   * benchmark conversion is entry-weighted by benchmark sessions, so the low
-   * funnel compares like with like on both sides. */
+   * than benchmark.sessionsByGroup, which is the at-close figure, and the
+   * conversion is the basket's by today as well (conv_benchmark_today, the
+   * figure the waterfalls walk against; the at-close conv_benchmark is the
+   * fallback for an older snapshot), because a basket's sessions come earlier
+   * than its units and its conversion by today sits well under its conversion
+   * at close. The benchmark conversion is entry-weighted by benchmark
+   * sessions, so the low funnel compares like with like on both sides. */
   let sessA = 0, sessE = 0, sessB = 0, entA = 0, entE = 0, entB = 0;
   for (const key of ORGANIC) {
     const g = fbg[key];
@@ -125,7 +129,7 @@ function FunnelView({ snap }) {
     const sb = g.sessions_benchmark ?? null;
     if (finite(sb)) {
       sessB += sb;
-      entB += sb * (g.conv_benchmark ?? bmConv[key] ?? 0);
+      entB += sb * (g.conv_benchmark_today ?? g.conv_benchmark ?? bmConv[key] ?? 0);
     }
   }
   const convA = sessA > 0 ? entA / sessA : null;

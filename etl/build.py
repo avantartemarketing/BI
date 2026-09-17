@@ -2233,6 +2233,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                        "suggestedId": basket["suggestedId"]},
             "units": round(profile["units"], 1),
             "unitsP25": round(profile["units_p25"], 1), "unitsP75": round(profile["units_p75"], 1),
+            # the basket's unit prices in sterling (median and middle half), from
+            # Airtable via the panel - 0 when no member is priced (§3.2)
+            "price": round(profile.get("price", 0.0), 1),
+            "priceP25": round(profile.get("price_p25", 0.0), 1), "priceP75": round(profile.get("price_p75", 0.0), 1),
+            "nPriced": int(profile.get("n_priced", 0)),
             "sessions": round(profile["sessions"], 1), "entries": round(profile["entries"], 1),
             "campaignDays": round(profile["campaign_days"], 1),
             "k": round(k, 4),

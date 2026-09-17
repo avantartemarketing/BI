@@ -670,6 +670,11 @@ export default function TargetSetting({ snap, onSaved }) {
                 <span className="chip" title="Median units, with the 25th to 75th percentile of the basket beside it.">
                   units {fmt(bmUnits)} ({fmt(prof ? prof.units_p25 : bm.unitsP25)}-{fmt(prof ? prof.units_p75 : bm.unitsP75)})
                 </span>
+                {(prof ? prof.price : bm && bm.price) > 0 && (
+                  <span className="chip" title="Median unit price of the basket in sterling (from Airtable), with its 25th to 75th percentile. The default basket matches on price as well as size (BENCHMARK_SPEC 3.1).">
+                    price {fmtMoney(prof ? prof.price : bm.price)} ({fmtMoney(prof ? prof.price_p25 : bm.priceP25)}-{fmtMoney(prof ? prof.price_p75 : bm.priceP75)})
+                  </span>
+                )}
                 <span className="chip">sessions {fmt(prof ? prof.sessions : bm.sessions)}</span>
                 <span className="chip" title="Median share of sessions from paid.">paid {fmtPct(paidShare, 0)}</span>
                 <span className="chip">{fmt(prof ? prof.campaign_days : bm.campaignDays)} campaign days</span>

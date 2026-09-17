@@ -22,13 +22,20 @@ etl/                    Python pipeline
   extract_content.py      Emplifi posts by campaign     (from the content export)
   build.py                computes targets, trajectory curves, and per-release snapshots
   baskets.py              baskets of comparable launches and the medians the benchmark reads
+  pull_airtable.py        edition pricing from Airtable's Pipeline table -> data/release_pricing.csv
+  pricing.py              the join from that file to the release panel (python3 etl/pricing.py
+                          prints the matching report and the unmatched releases)
   release_features.py     one row per release from the daily funnel (data/app/release_features.csv)
   analysis/               one-off studies behind documented decisions (cpe_elasticity.py,
-                          tier_curve_probe.py, release_clusters.py - the baskets of comparables)
+                          tier_curve_probe.py, release_clusters.py - the baskets of comparables,
+                          price_probe.py - whether price belongs in the basket; it does)
 data/
   spend_daily.csv         extracted spend facts
   content_posts.csv       extracted content facts
-  release_clusters.csv    every release's campaign window, features and basket (docs/RELEASE_CLUSTERS.md)
+  release_clusters.csv    every release's campaign window, features, basket and edition pricing
+                          (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
+  release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
+                          dates, medium - no personal data (etl/pull_airtable.py)
   release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
   app/release_products.json  per release, the draws (one per product) and the entry patterns
@@ -51,6 +58,15 @@ npm start              # serves on :10000
 ```
 
 Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :5173, proxies /api).
+
+Edition pricing (needs `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE` in the environment):
+
+```bash
+python3 etl/pull_airtable.py --list-fields              # field names and types only
+python3 etl/pull_airtable.py                            # -> data/release_pricing.csv
+python3 etl/analysis/release_clusters.py --pricing-only # re-attach prices to the panel on file
+python3 etl/pricing.py                                  # the matching report: what matched how, and what did not
+```
 
 ## Every release, not just the targeted ones
 
@@ -405,8 +421,8 @@ trajectory vs the across-time plan curve, funnel diagnostics with contribution
 decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), sell-through
 by product, projection-vs-target waterfall. Formulas for every module: docs §9. The
 Overview opens with the campaign clock, a thin strip from announcement to launch, orange to
-today with the day of the window and the days to launch on the right; it is a card like the
-others and moves with them.
+today and the days to launch on the right (the day of the window is in the strip's popup);
+it is a card like the others and moves with them.
 
 **Sell-through by product** (docs §6.3) is one row per product: units paid (rust), draft
 orders not yet paid (rust, striped), the draw entries in hand counted on the product at the
@@ -436,10 +452,16 @@ Paid ROI is the exception: no reference and no horizon.
 **Edit layout**, at the right of the Overview / Target setting tabs, turns the page into a
 drag-and-drop board: drag a card to move it, **Add header** puts a section title at the top
 of the page to drag into place (a header ends one grid and starts the next, so each section
-packs on its own), and **Save for everyone** keeps the arrangement for the whole team in
-`data/layout.json` (`LAYOUT_PATH` on Render, see above). **Back to the default** restores the
-built-in order. The list of cards lives in `web/src/Layout.jsx`: a card added to the code
-later joins the end of everyone's page (the campaign clock, which belongs at the top, joins
-there), a strip such as the clock is a full-width row of its own between the grids, and a
-card a release has nothing for (No targets set on a targeted release, the clock on a
-catalogue release) is left out of that release's page and shows as a ghost while editing.
+packs on its own), the **×** on a card takes it off the page, and **Add a card** puts one back
+at the top. That list also holds the cards that are not on the page by default: **Funnel by
+channel, 2 × 2** is the funnel card's waterfall at two columns by two rows, the bars running
+across the card on a unit axis with the figures in a column of their own; take **Funnel by
+channel, 1 × 2** off and add the 2 × 2 to swap one for the other. **Save
+for everyone** keeps the arrangement for the whole team in `data/layout.json` (`LAYOUT_PATH`
+on Render, see above); the saved layout records the cards taken off, so they stay off. **Back
+to the default** restores the built-in order. The list of cards lives in `web/src/Layout.jsx`:
+a card added to the code later joins the end of everyone's page (the campaign clock, which
+belongs at the top, joins there), a strip such as the clock is a full-width row of its own
+between the grids, and a card a release has nothing for (No targets set on a targeted release,
+the clock on a catalogue release) is left out of that release's page and shows as a ghost while
+editing.

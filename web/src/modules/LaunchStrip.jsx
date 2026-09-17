@@ -1,8 +1,9 @@
 /* The campaign clock: a thin strip showing where the release sits between
- * announcement and launch. Orange fills to today, a knob marks the day, a tick
- * marks the launch, and the days to go are the strip's only bold words. It is
- * a card of the Overview (Layout.jsx, size "strip": a full-width row of its
- * own), first by default and movable like the rest, and it replaces the
+ * announcement and launch. Orange fills to today, a knob marks the day (the
+ * day of the window is in the strip's popup, not printed over the knob), a
+ * tick marks the launch, and the days to go are the strip's only bold words.
+ * It is a card of the Overview (Layout.jsx, size "strip": a full-width row of
+ * its own), first by default and movable like the rest, and it replaces the
  * "Day N of M" chip the header carried, which gave the position but not the
  * distance or the dates. A catalogue release has no window and gets no strip. */
 import React from "react";
@@ -42,12 +43,7 @@ export default function LaunchStrip({ snap }) {
       <span>{opened ? "Announced" : "Announces"} {fmtDay(announce, true)}</span>
       <span className="track">
         <span className="fill" style={{ width: `${p}%` }} />
-        {opened && !launched && (
-          <>
-            <span className={`today${p < 50 ? " lead" : ""}`} style={{ left: `${p}%` }}>today · day {snap.day} of {snap.of}</span>
-            <span className="knob" style={{ left: `${p}%` }} />
-          </>
-        )}
+        {opened && !launched && <span className="knob" style={{ left: `${p}%` }} />}
         <span className="launch" />
       </span>
       <span>{right}</span>
