@@ -370,17 +370,20 @@ comes out. Winners of several draws buy across them, so the top product takes th
 (`share` says how clear it was: 0.6 to 0.9 on the September 2026 releases). A draw with no
 winner who has bought yet has no row, and its product keeps the event feed's figures (§6.3).
 
-**Two kinds of draft order.** A draw entry and a pre-order request each create a Shopify draft
-order at entry time as a pre-authorisation (the draw entries export's `Shopify Draft Order ID`,
-assigned at entry, not a win signal): since 2025 those are 9,678 of the 10,200 draft-source
-product lines, on a `-DRAW` or `-PREORDER` SKU, and a winner's converts to an order
+**Two kinds of draft order.** A draw entry creates a Shopify draft order at entry time as a
+pre-authorisation (the draw entries export's `Shopify Draft Order ID`, assigned at entry, not
+a win signal): since 2025 those are 9,678 of the 10,200 draft-source product lines, on the
+`-DRAW` SKU, one facilitator value across all of them, and a winner's converts to an order
 (`order_originated_from_drafts = 1`). They are the entries in hand the sell-through already
 counts, so they are kept apart as `units_entry_drafts` and never drawn as drafts. The drafts
 the card draws, `units_draft_pending`, are the ones an advisor raises by hand on every other
-route (private room `-PRIVATE`, `-POSTRELEASE`, `-APSALE`, artist and auction allocations, a
-blank SKU) and the orders whose payment is still pending: a commitment awaiting payment, which
-takes room out of the edition like a sale. Where the routes are read from the SKU's last
-segment, a SKU written without one counts as an advisor's draft.
+route and the orders whose payment is still pending: a commitment awaiting payment, which
+takes room out of the edition like a sale. During a draw campaign that is the `-PREORDER`
+route: a few lines per release (Warhol 14, Ligon 3 in September 2026), raised by two or
+three named facilitators over a handful of days, converting into `-PREORDER` paid orders the
+same way; after a campaign it is `-POSTRELEASE`, `-APSALE`, `-PRIVATE` and the like, or a
+SKU with no route segment. The funnel's `Preorder_App` counts are another thing again (the
+pre-order requests, allocated like a draw) and do not create these drafts.
 
 Only product lines count (`shopify_product_type = 'Product'`): frames are lines of their own
 (`Frame`) and are left out of units. Two Shopify products with one title (a private-room
