@@ -68,6 +68,8 @@ const SPEND_TABLE = process.env.BQ_SPEND_TABLE || "meta_ads_insights_export";
 // point this at the data team's email-free view when it exists: same columns, same guards
 const EVENTS_TABLE = process.env.BQ_EVENTS_TABLE || "LE_Funnel_Report";
 const ORDERS_TABLE = process.env.BQ_ORDERS_TABLE || "Order_Line_Concept";
+// links a draw entrant's account to their Shopify customer id (two id columns, nothing else is selected)
+const COLLECTORS_TABLE = process.env.BQ_COLLECTORS_TABLE || "Collector_Concept";
 const EVENTS_SINCE = process.env.BQ_EVENTS_SINCE || "2019-01-01";   // all time: a returning collector's history is the point
 const SINCE = process.env.BQ_SINCE || "2025-01-01";
 const LOCATION = process.env.BQ_LOCATION || undefined; // e.g. "EU"; omit to let BQ infer
@@ -92,7 +94,7 @@ function configured() {
   if (!sa) return null;
   if (!PROJECT_RE.test(PROJECT)) throw new Error(`BQ_PROJECT "${PROJECT}" is not a valid project id`);
   for (const [name, v] of [["BQ_DATASET", DATASET], ["BQ_FUNNEL_TABLE", FUNNEL_TABLE], ["BQ_SPEND_TABLE", SPEND_TABLE],
-                           ["BQ_EVENTS_TABLE", EVENTS_TABLE], ["BQ_ORDERS_TABLE", ORDERS_TABLE]]) {
+                           ["BQ_EVENTS_TABLE", EVENTS_TABLE], ["BQ_ORDERS_TABLE", ORDERS_TABLE], ["BQ_COLLECTORS_TABLE", COLLECTORS_TABLE]]) {
     if (!IDENT.test(v)) throw new Error(`${name} "${v}" must be letters, digits and underscores`);
   }
   if (!DATE_RE.test(SINCE)) throw new Error(`BQ_SINCE "${SINCE}" must be YYYY-MM-DD`);
@@ -370,7 +372,9 @@ const spendSql = () =>
  *                          still pending), the collectors those are out to
  *                          who have not paid for anything on the release (an
  *                          advisor offers several colours to one collector;
- *                          the card counts the collector), the draw's own
+ *                          the card counts the collector), the drafts sent
+ *                          to winners who have not paid (already on the card
+ *                          as unpaid wins), the draw's own
  *                          pre-authorisation drafts (one per live entry: the
  *                          DRAW SKU, or any draft the app's own facilitator
  *                          account wrote - counted apart, because the card
@@ -382,7 +386,7 @@ const spendSql = () =>
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
-  "units_draft_pending", "draft_customers", "units_entry_drafts", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
+  "units_draft_pending", "draft_customers", "units_winner_drafts", "units_entry_drafts", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
 const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
 
 const ordersSql = () =>
@@ -404,12 +408,26 @@ const ordersSql = () =>
   "app_facilitators AS (\n" +
   "  SELECT facilitator FROM lines WHERE order_source_type = 'Draft' AND facilitator != ''\n" +
   "  GROUP BY facilitator HAVING COUNT(*) >= 100 AND COUNTIF(draw_sku) >= 0.9 * COUNT(*)),\n" +
+  // a winner who has not bought is already on the card as a pinned unpaid
+  // win, and the draft an advisor sends them to pay is the same unit: joined
+  // here through the collector table's two id columns, counted apart
+  "unpaid_winners AS (\n" +
+  "  SELECT e.simple_release_name AS release, c.shopify_customer_id AS customer_id\n" +
+  "  FROM (SELECT simple_release_name, aa_account_id, draw_id, MAX(IF(draw_with_purchase = 1, 1, 0)) AS bought\n" +
+  `        FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+  "        WHERE event_name = 'draw entry intent' AND winner AND aa_account_id IS NOT NULL AND event_date >= @since\n" +
+  "        GROUP BY 1, 2, 3) e\n" +
+  `  JOIN \`${PROJECT}.${DATASET}.${COLLECTORS_TABLE}\` c ON c.aa_account_id = e.aa_account_id AND c.shopify_customer_id IS NOT NULL\n` +
+  "  WHERE e.bought = 0\n" +
+  "  GROUP BY 1, 2),\n" +
   "typed AS (\n" +
   "  SELECT l.*,\n" +
   "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND (l.draw_sku OR a.facilitator IS NOT NULL) AS entry_draft,\n" +
-  "    l.cancelled_order = 0 AND ((l.order_source_type = 'Draft' AND NOT (l.draw_sku OR a.facilitator IS NOT NULL))\n" +
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (l.draw_sku OR a.facilitator IS NOT NULL) AND w.customer_id IS NOT NULL AS winner_draft,\n" +
+  "    l.cancelled_order = 0 AND ((l.order_source_type = 'Draft' AND NOT (l.draw_sku OR a.facilitator IS NOT NULL) AND w.customer_id IS NULL)\n" +
   "      OR (l.order_source_type = 'Order' AND l.order_financial_status = 'pending')) AS awaiting\n" +
-  "  FROM lines l LEFT JOIN app_facilitators a ON a.facilitator = l.facilitator),\n" +
+  "  FROM lines l LEFT JOIN app_facilitators a ON a.facilitator = l.facilitator\n" +
+  "  LEFT JOIN unpaid_winners w ON w.release = l.release AND w.customer_id = l.customer_id),\n" +
   "paid_customers AS (SELECT DISTINCT release, customer_id FROM typed WHERE paid AND customer_id IS NOT NULL)\n" +
   "SELECT l.release, ANY_VALUE(l.release_name) AS campaign_code, l.product_title,\n" +
   "  STRING_AGG(DISTINCT CAST(l.shopify_product_id AS STRING), '|') AS product_ids,\n" +
@@ -418,6 +436,7 @@ const ordersSql = () =>
   "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.order_financial_status = 'refunded', l.quantity, 0)) AS units_refunded,\n" +
   "  SUM(IF(l.awaiting, l.quantity, 0)) AS units_draft_pending,\n" +
   "  COUNT(DISTINCT IF(l.awaiting AND p.customer_id IS NULL, COALESCE(CAST(l.customer_id AS STRING), CONCAT('line', CAST(l.order_lineitem_id AS STRING))), NULL)) AS draft_customers,\n" +
+  "  SUM(IF(l.winner_draft, l.quantity, 0)) AS units_winner_drafts,\n" +
   "  SUM(IF(l.entry_draft, l.quantity, 0)) AS units_entry_drafts,\n" +
   "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.order_originated_from_drafts = 1, l.quantity, 0)) AS units_from_drafts,\n" +
   "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.is_private_room = 1, l.quantity, 0)) AS units_private_room,\n" +

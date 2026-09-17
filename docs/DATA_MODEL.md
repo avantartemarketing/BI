@@ -359,7 +359,7 @@ them; `BQ_ORDERS_TABLE` renames the table; both take `BQ_SINCE`):
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not refunded, not pending), `units_refunded`, `units_draft_pending` (draft orders an advisor raised that have no order yet, plus orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release: what the card counts), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
+| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not refunded, not pending), `units_refunded`, `units_draft_pending` (draft orders an advisor raised that have no order yet, plus orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release: what the card counts), `units_winner_drafts` (drafts sent to winners who have not paid, counted apart), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
@@ -387,6 +387,14 @@ base SKU after it), plus orders whose payment is still pending. Checked against 
 team's own count on the live Ai Weiwei release: 2 advisor drafts, one each from two named
 facilitators, where the SKU alone would have said 26. The funnel's `Preorder_App` counts are
 another thing again (the pre-order requests, allocated like a draw).
+
+**A winner's draft is the unpaid win, not a second unit.** When a draw closes the advisor sends
+each winner a draft order to pay, and until it is paid the events feed carries the entry as
+won and not bought, which the sell-through already pins to its product as an unpaid win. So a
+person's draft whose customer holds an unpaid winning entry on the release is counted apart as
+`units_winner_drafts` and never as a draft. The link runs inside BigQuery: winners with no
+purchase on their entry, through `Collector_Concept`'s account id and Shopify customer id
+(the only two columns read from it), to the draft lines in their name.
 
 **Drafts are counted per collector, and never past the room.** On launches closed before
 June 2026, 2,372 advisor draft lines became orders, 226 were cancelled and 66 are still open,
