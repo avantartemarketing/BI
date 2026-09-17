@@ -979,8 +979,8 @@ guard every benchmark mark on the page is written against.
 | `hero.benchmark`, `benchmarkToday`, `stretch` | benchmark at close, benchmark pace to today, the stretch |
 | `channels[].bm`, `bmExp` | per group: benchmark at close, benchmark by today |
 | `channels[].daily[].bm` | the benchmark plan for that day, beside `actual` / `plan` / `proj` |
-| `funnelByGroup[g].sessions_benchmark`, `conv_benchmark` | the rung references: a volume and a rate |
-| `funnelByGroup[g].conv_benchmark_today`, `contrib_traffic_bm`, `contrib_conversion_bm`, `contrib_buyers_bm`, `contrib_per_buyer_bm` | the same three-factor decomposition against the basket's pace by today, summing to the group's actual − its benchmark today; the waterfalls' walk from the benchmark |
+| `funnelByGroup[g].sessions_benchmark`, `conv_benchmark` | the basket's sessions by today (the sessions rung's reference) and its conversion at close (the conversion rung's fallback on a snapshot without `conv_benchmark_today`) |
+| `funnelByGroup[g].conv_benchmark_today`, `contrib_traffic_bm`, `contrib_conversion_bm`, `contrib_buyers_bm`, `contrib_per_buyer_bm` | the same three-factor decomposition against the basket's pace by today, summing to the group's actual − its benchmark today; the waterfalls' walk from the benchmark, and the conversion rungs' reference (Funnel by channel, Organic funnel), so a rung and the step beside it read the same figure |
 | `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median |
 | `sellthrough.benchmarkUnits` | the benchmark on the sell-through prediction |
 | `paid.benchmarkUnits`, `benchmarkBudget` | the paid module's two benchmark marks |

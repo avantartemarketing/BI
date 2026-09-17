@@ -525,8 +525,13 @@ function rungModel(snap) {
 
   const pct = (x) => (x === null || x === undefined ? null : x * 100);
   /* Sessions read the per-group benchmark the ETL pro-rated to today, not
-   * benchmark.sessionsByGroup, which is the at-close figure. Conversion is a
-   * rate held at the benchmark, so either source gives the same number. */
+   * benchmark.sessionsByGroup, which is the at-close figure. Conversion reads
+   * the basket's conversion by today as well (conv_benchmark_today, the figure
+   * the waterfall view walks against): a basket's sessions come earlier than
+   * its units, so its conversion by today sits well under its conversion at
+   * close, and a rung read against the at-close figure was behind on every
+   * release for most of the campaign while the walk beside it said otherwise.
+   * The at-close conv_benchmark is the fallback for an older snapshot. */
   const sess = (key) => {
     const g = fbg[key] || {};
     return {
@@ -551,7 +556,7 @@ function rungModel(snap) {
       kind: "rate", unit: "%",
       v: rate(g.conv_actual, upbActual),
       plan: rate(g.conv_expected, upbPlan),
-      bm: rate(g.conv_benchmark ?? bmConv[key] ?? null, upbPlan),
+      bm: rate(g.conv_benchmark_today ?? g.conv_benchmark ?? bmConv[key] ?? null, upbPlan),
     };
   };
 
