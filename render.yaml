@@ -11,7 +11,7 @@ services:
     envVars:
       # Render ignores this file for a service created in the dashboard - set
       # these by hand under Environment. Without SESSION_SECRET every deploy
-      # signs everyone out; without the disk paths below, users, passwords,
+      # signs everyone out; without the disk paths below, roles,
       # target edits and the decision log reset on every deploy.
       - key: SESSION_SECRET
         generateValue: true
@@ -41,7 +41,7 @@ services:
         sync: false
       - key: NOTION_TOKEN   # Notion internal-integration secret (share the artist-posts database with it) - live artist posts
         sync: false
-      - key: RESEND_API_KEY   # only for the dormant magic-link flow
+      - key: RESEND_API_KEY   # only for the magic-link fallback, which exists only without a Google client
         sync: false
       - key: MAIL_FROM        # only for the dormant magic-link flow
         sync: false

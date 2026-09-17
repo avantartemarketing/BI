@@ -87,7 +87,7 @@ Render's disk resets on every deploy. Five things live on it and are lost withou
 | What | Symptom when lost | Fix |
 |---|---|---|
 | Session secret | everyone is signed out after each deploy | set `SESSION_SECRET` (any long random string) under Environment |
-| `data/users.json` | users added in Permissions vanish, passwords reset to `LOGIN_PASSWORD` | `USERS_PATH` on a persistent disk |
+| `data/users.json` | roles set in Permissions reset; people are re-added as users on their next Google sign-in | `USERS_PATH` on a persistent disk |
 | `data/inputs.saved.json` | targets edited in the dashboard revert to the repo defaults | `SAVED_INPUTS_PATH` on the disk |
 | `data/targets.log.jsonl`, `data/decisions.log.jsonl` | the audit trails restart | `TARGETS_LOG`, `DECISIONS_PATH` on the disk |
 | `data/layout.json` | the page goes back to its default arrangement (card order, section headers) | `LAYOUT_PATH` on the disk |
@@ -318,35 +318,27 @@ pipeline's accumulators are already silently truncating history (docs §11).
 
 ## Signing in
 
-The app can sit behind **Sign in with Google**, restricted to the company Workspace
-domain. Create a "Web application" OAuth client in Google Cloud Console (consent screen
-type **Internal** so only avantarte.com accounts can sign in), give it the redirect URI
+The app is behind **Sign in with Google**, restricted to the company Workspace domain.
+Create a "Web application" OAuth client in Google Cloud Console (consent screen type
+**Internal** so only avantarte.com accounts can sign in), give it the redirect URI
 `https://<your host>/auth/google/callback`, and set `GOOGLE_OAUTH_CLIENT_ID` and
-`GOOGLE_OAUTH_CLIENT_SECRET` on Render. The login page then shows "Continue with Google";
-the server verifies the ID token itself (signature, issuer, audience, expiry, nonce,
-verified email, domain) and issues the same session cookie as a password login. An account
-in the domain that is not yet on the Permissions tab is added as a user on first sign-in;
-set `GOOGLE_LOGIN_ALLOWLIST_ONLY=1` to refuse those instead. Once everyone has moved,
-`LOGIN_GOOGLE_ONLY=1` hides the password form. `PUBLIC_URL` pins the redirect base when
-the host header cannot be trusted.
+`GOOGLE_OAUTH_CLIENT_SECRET` on Render. The login page shows "Continue with Google"; the
+server verifies the ID token itself (signature, issuer, audience, expiry, nonce, verified
+email, domain) and issues a 90-day session cookie that renews itself on activity. An
+account in the domain that is not yet on the Permissions tab is added as a user on first
+sign-in; set `GOOGLE_LOGIN_ALLOWLIST_ONLY=1` to refuse those instead. `PUBLIC_URL` pins
+the redirect base when the host header cannot be trusted. `/healthz` says whether the
+Google client is configured and, if not, which variable name is unset.
 
-The app is behind a **password login for allow-listed emails**: enter your
-email and the shared password on `/login` and you get a 90-day session that
-renews itself on activity - regular users stay signed in indefinitely.
-Defaults (no env vars needed) allow `tom.lloyd@avantarte.com` and
-`fatima@avantarte.com`. Override on Render without code changes:
+The Permissions tab (admins only) is the access list plus a role per person. The first
+listed email in `LOGIN_USERS` (default `tom.lloyd@avantarte.com`) seeds the admin when the
+user store is missing, so the tab can never be orphaned; `SESSION_SECRET` is REQUIRED for
+sign-ins to survive deploys (check it exists under the service's Environment tab).
 
-- `SESSION_SECRET` - REQUIRED for sign-ins to survive deploys: check it exists
-  under the service's Environment tab (the blueprint generates one; add any long
-  random string if missing). Without it a generated secret is persisted to disk,
-  which covers restarts but not fresh deploys.
-- `LOGIN_USERS` - comma-separated allowed emails (replaces the default list)
-- `LOGIN_PASSWORD` - replaces the default password (hashed at boot, never logged)
-
-The earlier magic-link flow (`/auth/request` + `/auth/verify`) is still wired
-up but dormant - it needs `RESEND_API_KEY` and `MAIL_FROM` on a verified
-Resend domain to send emails; without a key it only prints links to the
-server logs.
+Without a Google client configured - local development, or a broken deployment - the
+login page falls back to the old password form (`LOGIN_PASSWORD`, default accounts from
+`LOGIN_USERS`) and the dormant magic-link flow (`RESEND_API_KEY`, `MAIL_FROM`). The
+moment the two Google variables are set, those routes answer 404.
 
 ## Target setting
 
