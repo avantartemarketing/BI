@@ -892,10 +892,13 @@ product, `allocated` = `pinned` + `fixed` + `flexible` (the demand counted there
 the rest; and for the release `allocation.{entrants, flexibleEntrants, surplusEntries,
 uncapped, unpaidWinners, flexibleUnits}`.
 
-**References per product.** A product is expected to sell through at the release's pace:
-`expectedToday_p = edition_p × hero.expectedToday / edition`, the benchmark likewise
-(`benchmarkToday_p`, `benchmarkClose_p`), so every row carries the same fill and outline as
-the rest of the page (BENCHMARK_SPEC §7). At close the target is the edition itself.
+**No references on this card.** The snapshot still carries the release's pace applied to each
+product's edition (`expectedToday_p = edition_p × hero.expectedToday / edition`, likewise
+`benchmarkToday_p` and `benchmarkClose_p`), but the card draws neither the target fill nor the
+benchmark outline, by decision: both are on the hero and the channels, and on this card they
+crowded the one reading it is for, each product against its own edition. The card carries no
+prose either; the allocation's account is in the in-hand row's popup, the split of unattributed
+sales in the striped segment's, and the editions are checked on the Target setting tab.
 
 **Products and editions** are typed on the Target setting tab (`products:
 [{key: draw_id, name, edition}]`; `productsFromDraws`): one row per draw the feed found, a
@@ -1008,7 +1011,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Key drivers | top movers | rank funnel steps by |contribution|, Adding vs Costing |
 | Paid ROI | series | §7 daily ROI (AA); decline model start = today's ROI |
 | Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), `cap` recorded; Implement → append-only decision log |
-| Sell-through by product | rows | §6.3: per product sold / entries in hand allocated by the maximum-quantity rule × the entry → order rate / (at close) units still to come, against the product's edition, with the release's pace as target and benchmark |
+| Sell-through by product | rows | §6.3: per product sold / entries in hand allocated by the maximum-quantity rule × the entry → order rate / (at close) units still to come, against the product's edition; no target or benchmark drawn |
 | Entries by country | top 5 | geo split of entries (requires country dim in the daily feed - **currently missing; needs adding to the BigQuery export**) |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
 

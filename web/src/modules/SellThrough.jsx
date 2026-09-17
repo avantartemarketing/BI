@@ -12,26 +12,22 @@
  * entrant who entered four products but wants two is one conversion on two
  * of them, and is counted on whichever of their products have the most room
  * - the same rule the allocator applies at close (shared/sellThrough.mjs).
- * The card names how many entrants that moved and where they went.
+ * The card carries no copy about it: the account of who moved where is in
+ * the popup of the in-hand row, the split of sales the feed cannot name a
+ * product for in the striped segment's, and the editions are checked where
+ * they are typed, on the Target setting tab.
  *
- * Both references on every row (BENCHMARK_SPEC 7): the target as the fill in
- * two tints, the benchmark as the dotted outline, each product at the
- * release's own pace applied to its edition - a product is expected to sell
- * through as the release is. At close the target is the edition, which the
- * track already draws, so only the outline remains.
+ * No target and no benchmark on this card, by decision: both are on the hero
+ * and the channels, and here they only crowded the reading. Each row is the
+ * product against its own edition and nothing else.
  *
  * One toggle: % puts every product on its own edition, so the rows read as
  * sell-through; Units keeps one scale, so the rows read as size. Without
  * product editions the card runs on units and says what is missing. Without
  * the draw feed at all it is one row, the release, as before. */
 import React, { useState } from "react";
-import { Card, GROUP_DOTS, BmOutline, HATCH, C, fmt, ragColor, useTip, refWords } from "../ui.jsx";
+import { Card, GROUP_DOTS, HATCH, C, fmt, ragColor, useTip } from "../ui.jsx";
 
-const OUTLINE_SWATCH = (
-  <svg width="12" height="9" viewBox="0 0 12 9" style={{ flex: "0 0 12px" }} aria-hidden="true">
-    <path d="M1 9 V1.5 H11 V9" fill="none" stroke={C.refLine} strokeWidth="1.5" strokeDasharray="1.6 1.6" />
-  </svg>
-);
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 /* Sold units the feed could not name a product for, split by edition size:
  * rust, but striped, so it never passes for an attributed sale. */
@@ -40,20 +36,14 @@ const swatch = (bg) => ({ width: 9, height: 9, borderRadius: 2, background: bg, 
 const legendItem = { display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" };
 
 /* One product's bar. Layers, bottom to top: track → the paler room out to the
- * sellout → the target's fill in two tints → the benchmark's outline → the
- * three segments inset → the hatch for demand past the sellout. `maxV` is the
- * bar's scale in units; in the % view it is the product's own edition (plus
- * any overshoot), in the Units view the same for every row. */
+ * sellout → the segments inset → the hatch for demand past the sellout.
+ * `maxV` is the bar's scale in units; in the % view it is the product's own
+ * edition (plus any overshoot), in the Units view the same for every row. */
 function ProductBar({ row, close, maxV, tips, height = 16, radius = 4 }) {
   const t = useTip();
   const tp = (x) => t.props(x);
   const pct = (v) => (maxV > 0 ? Math.max(0, Math.min(((v ?? 0) / maxV) * 100, 100)) : 0);
   const edition = row.edition;
-  const target = close ? edition : row.expectedToday;
-  const bm = close ? row.benchmarkClose : row.benchmarkToday;
-  const hasBm = finite(bm) && bm > 0;
-  const lo = finite(target) ? (hasBm ? Math.min(target, bm) : target) : (hasBm ? bm : null);
-  const stretch = finite(target) && hasBm && target > bm;
   const inset = Math.max(3, Math.round(height * 0.2));
   const innerR = Math.max(2, radius - 2);
   const sold = row.sold ?? 0;
@@ -74,19 +64,6 @@ function ProductBar({ row, close, maxV, tips, height = 16, radius = 4 }) {
       {finite(edition) && edition > 0 && (
         <div style={{ position: "absolute", inset: 0, width: `${pct(edition)}%`, background: C.refTrack, borderRadius: radius }} />
       )}
-      {lo !== null && lo > 0 && (
-        <div {...tp(hasBm && finite(target) && bm < target ? tips.bm : tips.target)} style={{
-          position: "absolute", inset: 0, width: `${pct(lo)}%`, background: C.refBase,
-          borderRadius: stretch ? `${radius}px 0 0 ${radius}px` : radius,
-        }} />
-      )}
-      {stretch && (
-        <div {...tp(tips.target)} style={{
-          position: "absolute", top: 0, bottom: 0, left: `${pct(bm)}%`, width: `${pct(target) - pct(bm)}%`,
-          background: C.refStretch, borderRadius: `0 ${radius}px ${radius}px 0`,
-        }} />
-      )}
-      {hasBm && <BmOutline pct={pct(bm)} radius={radius} />}
       {segs.map((s) => {
         const left = at; at += s.v;
         if (!(s.v > 0)) return null;
@@ -114,7 +91,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const [scale, setScale] = useState("pct");   // pct | units
   const st = snap?.sellthrough;
   const close = horizon === "close";
-  const words = refWords(horizon);
   const targeted = !snap || snap.targeted !== false;
 
   if (!st) {
@@ -128,8 +104,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const edition = finite(st.edition) ? st.edition : null;
   // the rate the prediction ran at; an older snapshot carries only the panel's drop-off
   const rate = finite(st.conversion) ? st.conversion : 1 - (snap?.benchmarks?.chargeDropOff ?? 0.2);
-  const hasBm = targeted && !!snap?.benchmark;
-  const hero = snap?.hero || {};
   const sold = st.sold ?? 0;
   const inHandAll = st.soldPredicted ?? 0;
   const futureAll = close ? st.futureEntriesPredicted ?? 0 : 0;
@@ -145,26 +119,18 @@ export default function SellThrough({ snap, horizon = "today" }) {
     allocated: null, inHand: null, entrants: null, flexible: 0,
     pct: edition ? Math.min((sold + inHandAll) / edition, 1) : null,
     pctClose: st.pct ?? null,
-    expectedToday: targeted ? hero.expectedToday ?? null : null,
-    benchmarkToday: hasBm ? hero.benchmarkToday ?? null : null,
-    benchmarkClose: hasBm ? st.benchmarkUnits ?? null : null,
   }];
   const allEditions = rows.every((r) => finite(r.edition) && r.edition > 0);
   const byEdition = allEditions && scale === "pct";
   // one scale for the Units view: the biggest edition, or the biggest demand
   const soldOf = (r) => (r.sold ?? 0) + (r.soldAssumed ?? 0);
   const demandOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0) + (r.oversubscribed ?? 0);
-  const refOf = (r) => Math.max(close ? 0 : r.expectedToday ?? 0, (close ? r.benchmarkClose : r.benchmarkToday) ?? 0);
-  const unitsMax = Math.max(...rows.map((r) => Math.max(r.edition ?? 0, demandOf(r), refOf(r))), 1) * 1.02;
-  const maxFor = (r) => (byEdition ? Math.max(r.edition, demandOf(r), refOf(r)) * 1.02 : unitsMax);
+  const unitsMax = Math.max(...rows.map((r) => Math.max(r.edition ?? 0, demandOf(r))), 1) * 1.02;
+  const maxFor = (r) => (byEdition ? Math.max(r.edition, demandOf(r)) * 1.02 : unitsMax);
 
   // the headline: what is spoken for today, or the prediction at close
   const headPct = edition ? (close ? st.pct ?? 0 : Math.min((sold + inHandAll) / edition, 1)) : null;
   const headUnits = sold + inHandAll + futureAll;
-  const targetAll = close ? edition : (targeted ? hero.expectedToday ?? null : null);
-  const bmAll = hasBm ? (close ? st.benchmarkUnits ?? null : hero.benchmarkToday ?? null) : null;
-  const shareOf = (v) => (edition ? Math.round((v / edition) * 100) + "%" : null);
-  const withShare = (v) => fmt(v) + (shareOf(v) !== null ? " · " + shareOf(v) : "");
 
   const rateText = `${Math.round(rate * 100)}%`;
   const methodTip = {
@@ -173,42 +139,27 @@ export default function SellThrough({ snap, horizon = "today" }) {
       "An entrant who entered more products than they want is counted on their maximum quantity of products only, placed where there is most room - the rule the allocator applies at close." +
       (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };
-  /* The notes under the rows: one line each, the actionable ones first. The
-     allocation line names where the flexible entrants went; its popup has
-     the whole account. */
+  /* No copy under the rows. The allocation's account lives in the popup of
+     the "From entries in hand" row, the split sales in the striped segment's,
+     and the editions in Target setting, where they can be fixed. */
   const alloc = st.allocation || null;
   const moved = fromFeed ? st.products.filter((p) => (p.flexible ?? 0) > 0) : [];
-  const notes = [];
-  if (fromFeed && !allEditions && rows.length > 1) notes.push({ text: "Set each product's edition in Target setting to read sell-through per product.", tone: "warn" });
-  if (fromFeed && st.editionMismatch) notes.push({ text: `Editions add up to ${fmt(st.editionSum)}; the release is ${fmt(edition)}.`, tone: "warn" });
-  if (alloc && alloc.flexibleEntrants > 0) {
-    notes.push({
-      text: `${fmt(alloc.flexibleEntrants)} entrant${alloc.flexibleEntrants === 1 ? "" : "s"} want fewer than they entered for, counted where there is room` +
-        (moved.length ? ": " + moved.map((p) => `+${fmt(p.flexible)} ${p.name}`).join(", ") : "") + ".",
-      tip: {
-        head: "The maximum-quantity rule",
-        rows: [
-          { label: "Entrants in hand", value: fmt(alloc.entrants) },
-          { label: "With more entries than wanted", value: fmt(alloc.flexibleEntrants) },
-          { label: "Entries not counted", value: fmt(alloc.surplusEntries) },
-          ...(alloc.uncapped > 0 ? [{ label: "No maximum recorded", value: fmt(alloc.uncapped) }] : []),
-          ...(alloc.unpaidWinners > 0 ? [{ label: "Won, not yet paid", value: fmt(alloc.unpaidWinners) }] : []),
-          ...moved.map((p) => ({ label: "Placed on " + p.name, value: "+" + fmt(p.flexible) })),
-        ],
-        body: "An entrant who entered more products than their maximum quantity is counted on that many products only, on whichever of the products they entered have the most room, one unit at a time - the rule the allocator applies at close.",
-      },
-    });
-  }
-  if (fromFeed && (st.unattributedSold ?? 0) > 0) {
-    notes.push({
-      text: `${fmt(st.unattributedSold)} sold outside the draw, split by ${allEditions ? "edition size" : "entrants"} (striped) - the feed cannot name the product.`,
-      tip: { head: "Sold, not by product", rows: [
-        { label: "By product (draw winners)", value: fmt(st.attributedSold ?? 0) },
-        { label: "Not by product", value: fmt(st.unattributedSold) },
-      ], body: "The funnel counts every sale, but the draw feed only names the product of a sale that came through a draw win. Private-room and pre-order sales are split across the products by edition size, drawn striped, until the purchase feed carries a product." },
-    });
-  }
-  if (!fromFeed) notes.push({ text: "Per-product rows need the draw feed - they appear after the next data refresh.", tone: "muted" });
+  const inHandTip = {
+    head: "From entries in hand",
+    rows: [
+      ...(alloc ? [{ label: "Entrants in hand", value: fmt(alloc.entrants) }] : []),
+      ...(alloc && alloc.flexibleEntrants > 0 ? [
+        { label: "Want fewer than entered for", value: fmt(alloc.flexibleEntrants) },
+        { label: "Entries not counted", value: fmt(alloc.surplusEntries) },
+        ...moved.map((p) => ({ label: "Placed on " + p.name, value: "+" + fmt(p.flexible) })),
+      ] : []),
+      ...(alloc && alloc.unpaidWinners > 0 ? [{ label: "Won, not yet paid", value: fmt(alloc.unpaidWinners) }] : []),
+      { label: `Units at ${rateText}`, value: fmt(inHandAll) },
+    ],
+    body: alloc && alloc.flexibleEntrants > 0
+      ? "An entrant who entered more products than their maximum quantity is counted on that many products only, on whichever of the products they entered have the most room - the rule the allocator applies at close."
+      : undefined,
+  };
 
   const seg = (opts, value, set) => (
     <span className="seg compact">
@@ -269,22 +220,10 @@ export default function SellThrough({ snap, horizon = "today" }) {
                 ] : []),
               ],
             })}
-            {leftRow("inhand", <span style={swatch(C.orange)} />, "From entries in hand", fmt(inHandAll), {
-              head: "From entries in hand", rows: [
-                ...(alloc ? [{ label: "Entrants in hand", value: fmt(alloc.entrants) }] : []),
-                { label: `Units at ${rateText}`, value: fmt(inHandAll) },
-              ],
-            })}
+            {leftRow("inhand", <span style={swatch(C.orange)} />, "From entries in hand", fmt(inHandAll), inHandTip)}
             {close && leftRow("future", <span style={swatch(C.orangeLight)} />, "Still to come", fmt(futureAll), {
               head: "Still to come", rows: [{ label: "Units", value: fmt(futureAll) }],
               body: "The projection's further units, spread over the products with room left.",
-            })}
-            {targeted && finite(targetAll) && targetAll > 0 && leftRow("target", <span style={swatch(C.refBase)} />, close ? "Sellout" : words.target, withShare(targetAll), {
-              head: close ? "Sellout" : words.target, rows: [{ label: "Units", value: withShare(targetAll) }],
-            })}
-            {finite(bmAll) && bmAll > 0 && leftRow("bm", OUTLINE_SWATCH, words.bm, withShare(bmAll), {
-              head: words.bm, rows: [{ label: "Units", value: withShare(bmAll) }],
-              body: "The median of the matched basket - what launches like this one typically reach.",
             })}
           </div>
         </div>
@@ -297,8 +236,10 @@ export default function SellThrough({ snap, horizon = "today" }) {
               const roomLeft = r.room === null || r.room === undefined ? null : Math.max(r.room - (r.shown ?? 0), 0);
               const tips = {
                 sold: { head: r.name, rows: [{ label: "Sold", value: fmt(r.sold ?? 0) }], body: fromFeed ? "Units paid for by winners of this product's draw." : undefined },
-                assumed: { head: r.name, rows: [{ label: "Sold outside the draw", value: fmt(r.soldAssumed ?? 0) }],
-                  body: `This product's share, by ${allEditions ? "edition size" : "entrants"}, of the sales the feed cannot name a product for.` },
+                assumed: { head: r.name, rows: [
+                  { label: "Sold outside the draw", value: fmt(r.soldAssumed ?? 0) },
+                  { label: "Across the release", value: fmt(st.unattributedSold ?? 0) },
+                ], body: `Private-room and pre-order sales the feed cannot name a product for, split by ${allEditions ? "edition size" : "entrants"}: this product's share.` },
                 drafts: { head: r.name, rows: [{ label: "Drafts", value: fmt(r.drafts ?? 0) }] },
                 inHand: { head: r.name, rows: [
                   ...(r.inHand ? [{ label: "Entrants in hand", value: fmt((r.inHand.open ?? 0) + (r.inHand.won ?? 0)) }] : []),
@@ -310,11 +251,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
                 future: { head: r.name, rows: [{ label: "Still to come", value: fmt(r.futurePredicted ?? 0) }] },
                 over: { head: r.name, rows: [{ label: "Demand beyond the edition", value: "+" + fmt(r.oversubscribed ?? 0) }],
                   body: "Entries in hand at the rate that this product has no room for." },
-                target: { head: close ? "Sellout" : words.target, rows: [
-                  { label: "Units", value: fmt(close ? r.edition : r.expectedToday) },
-                ], body: close ? undefined : "The release's pace by today, applied to this product's edition." },
-                bm: { head: words.bm, rows: [{ label: "Units", value: fmt(close ? r.benchmarkClose : r.benchmarkToday) }],
-                  body: "The matched basket's median pace, applied to this product's edition." },
               };
               const nameTip = { head: r.name, rows: [
                 ...(finite(r.edition) ? [{ label: "Edition", value: fmt(r.edition) }] : [{ label: "Edition", value: "not set" }]),
@@ -345,18 +281,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
               );
             })}
           </div>
-          {notes.length > 0 && (
-            <div style={{ flex: "0 0 auto", marginTop: 4, fontSize: 11.5, lineHeight: "16px", color: C.muted }}>
-              {notes.slice(0, 3).map((n, i) => (
-                <div key={i} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  <span {...(n.tip ? t.props(n.tip) : {})} className={n.tip ? "hint-dotted" : undefined}
-                    style={{ color: n.tone === "warn" ? C.amber : C.muted }} title={n.tip ? undefined : n.text}>
-                    {n.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
@@ -367,8 +291,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
         {rows.some((r) => finite(r.drafts) && r.drafts > 0) && <span style={legendItem}><span style={swatch("#c0522a")} />Drafts</span>}
         <span style={legendItem}><span style={swatch(C.orange)} />From entries in hand</span>
         {close && <span style={legendItem}><span style={swatch(C.orangeLight)} />Still to come</span>}
-        {targeted && (!close || !allEditions) && <span style={legendItem}><span style={swatch(C.refBase)} />{words.target}</span>}
-        {hasBm && <span style={legendItem}>{OUTLINE_SWATCH}{words.bm}</span>}
         {rows.some((r) => (r.oversubscribed ?? 0) > 0) && (
           <span style={legendItem}><span style={{ ...swatch(HATCH), background: HATCH }} />Beyond the edition</span>
         )}

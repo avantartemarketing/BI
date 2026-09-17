@@ -397,7 +397,8 @@ today with the day of the window, the days to launch on the right.
 **Sell-through by product** (docs §6.3) is one row per product: units paid (rust), the draw
 entries in hand counted on the product at the entry → order rate (orange), at close the units
 still to come, against the product's edition, with demand the product has no room for hatched
-past its sellout. The entries in hand are allocated the way the allocator would place them: an
+past its sellout. It is the one card with no target or benchmark on it and no prose: the
+detail is in the popups. The entries in hand are allocated the way the allocator would place them: an
 entrant who entered more products than their maximum quantity is counted on that many
 products only, on whichever have the most room. Products come from the event feed's draws
 (one draw per product) and are named and sized on the Target setting tab, where the entry →
@@ -406,7 +407,7 @@ shows the release as one row and says so; sales the draw cannot name a product f
 room, pre-orders) are carried at release level. Draft orders are not in any feed yet and are
 drawn only once they are.
 
-Every card carries both references at once: the target as a fill in two tints of the actual's
+Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
 own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up
 to the target), the benchmark as a dotted outline over it, and the actual in front. A single
 `Compare Today | At close` toggle in the page header drives all of them, and the percentages and
