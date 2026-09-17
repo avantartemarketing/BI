@@ -221,7 +221,12 @@ function loginHtml(error) {
 function install(app) {
   app.set("trust proxy", 1);
 
-  app.get("/healthz", (_req, res) => res.json({ ok: true }));
+  // names only, never values: says which sign-in methods this deploy can offer
+  app.get("/healthz", (_req, res) => res.json({
+    ok: true,
+    googleLogin: google.configured(),
+    googleLoginMissing: ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET"].filter((k) => !process.env[k]),
+  }));
   app.get("/login", (req, res) => res.type("html").send(loginHtml(req.query.error ? String(req.query.error).slice(0, 200) : "")));
 
   // ---- Sign in with Google
