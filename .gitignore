@@ -18,3 +18,4 @@ data/inputs.saved.json
 data/email_content.csv
 data/app/release_features.csv
 \ndata/app/bigquery_schema.json\n
+data/slack.json

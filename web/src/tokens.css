@@ -252,6 +252,8 @@ select.native {
 .control:focus { outline: 2px solid var(--orange-light); outline-offset: -1px; }
 .control.ro { background: var(--bg); color: var(--muted); }
 .btn:disabled { opacity: 0.6; cursor: default; }
+/* a button that fits a card header (the sell-through card's Post to Slack) */
+.mod-head .btn.small { padding: 2px 9px; font-size: 11.5px; font-weight: 500; border-radius: 6px; }
 
 /* ---------- chart hover popup ---------- */
 .chart-tip {

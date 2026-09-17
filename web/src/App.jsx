@@ -74,8 +74,11 @@ export default function App() {
   const loadIndex = () => getJSON("/api/index").then((ix) => { setIndex(ix); return ix; });
   useEffect(() => {
     loadIndex().then((ix) => {
+      // ?release=<id> (the link in a Slack update) opens that release; else the first live one
+      const asked = new URLSearchParams(window.location.search).get("release");
       const live = ix.releases.filter((r) => r.status === "live" || (!r.status && !r.complete));
-      setReleaseId((live[0] || ix.releases[0])?.id ?? null);
+      const first = ix.releases.find((r) => r.id === asked) || live[0] || ix.releases[0];
+      setReleaseId(first?.id ?? null);
     }).catch((e) => setError(String(e)));
   }, []);
 
@@ -113,7 +116,11 @@ export default function App() {
   const pinned = current && current.status !== "live" && view === "release" ? current : null;
 
   if (error) return <div style={{ padding: 40 }}>Failed to load: {error}</div>;
-  const pick = (id) => { setReleaseId(id); setView("release"); };
+  const pick = (id) => {
+    setReleaseId(id); setView("release");
+    // keep the address in step so the page can be shared or reloaded on this release
+    try { window.history.replaceState(null, "", `?release=${encodeURIComponent(id)}`); } catch { /* not important */ }
+  };
 
   return (
     <TipProvider>

@@ -91,12 +91,23 @@ app.get("/api/curves", (_req, res) => res.sendFile(path.join(DATA, "curves.json"
 // actuals-only pages for everything else in derived/ (rebuilt every refresh,
 // not committed). A release the index lists but neither dir has is one the
 // first refresh after a deploy has not built yet - say so, not "unknown".
-app.get("/api/releases/:id", (req, res) => {
-  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+const slack = require("./slack");
+/* The release's snapshot as the ETL wrote it, or null. */
+function readSnapshot(id) {
   for (const dir of ["releases", "derived"]) {
     const file = path.join(DATA, dir, `${id}.json`);
-    if (fs.existsSync(file)) return res.sendFile(file);
+    if (fs.existsSync(file)) {
+      try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return null; }
+    }
   }
+  return null;
+}
+app.get("/api/releases/:id", (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  const snap = readSnapshot(id);
+  // the Slack channel set for the release rides on the snapshot, so the
+  // sell-through card knows whether its button has somewhere to post
+  if (snap) return res.json({ ...snap, slack: slack.stateFor(id) });
   let listed = false;
   try {
     listed = JSON.parse(fs.readFileSync(path.join(DATA, "index.json"), "utf8")).releases.some((r) => r.id === id);
@@ -606,6 +617,35 @@ app.post("/api/layout", route(async (req, res) => {
   fs.writeFileSync(tmp, JSON.stringify(doc, null, 1));
   fs.renameSync(tmp, LAYOUT_PATH);
   res.json(doc);
+}));
+
+// ---- sell-through updates to Slack (server/slack.js) ----
+const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || "").replace(/\/+$/, "");
+app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  if (!req.body || req.body.channel === undefined) return res.status(400).json({ error: "channel required (empty clears it)" });
+  const s = auth.sessionFrom(req);
+  try {
+    res.json({ slack: slack.setChannel(id, req.body.channel, s && s.email) });
+  } catch (e) {
+    res.status(400).json({ error: String(e.message || e) });
+  }
+}));
+app.post("/api/releases/:id/slack", route(async (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  const snap = readSnapshot(id);
+  if (!snap) return res.status(404).json({ error: "unknown release" });
+  const st = slack.stateFor(id);
+  if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
+  const text = slack.composeSellThrough(snap, { link: PUBLIC_URL ? `${PUBLIC_URL}/?release=${id}` : null });
+  if (req.body && req.body.dryRun) return res.json({ channel: st.channel, text });
+  try {
+    const out = await slack.postMessage(st.channel, text);
+    const s = auth.sessionFrom(req);
+    res.json({ ok: true, channel: st.channel, ts: out.ts, slack: slack.recordPost(id, s && s.email) });
+  } catch (e) {
+    res.status(502).json({ error: String(e.message || e) });
+  }
 }));
 
 app.use(express.static(DIST));

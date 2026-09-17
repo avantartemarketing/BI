@@ -321,9 +321,29 @@ export default function TargetSetting({ snap, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [error, setError] = useState(null);
+  // the Slack channel the sell-through card posts to: its own small document
+  // on the server (server/slack.js), saved on its own so a release without
+  // targets can have one too
+  const [slackDraft, setSlackDraft] = useState((snap.slack && snap.slack.channel) || "");
+  const [slackSaving, setSlackSaving] = useState(false);
+  const [slackError, setSlackError] = useState(null);
+  const slackCurrent = (snap.slack && snap.slack.channel) || "";
+  const saveSlack = async () => {
+    setSlackSaving(true); setSlackError(null);
+    try {
+      const res = await fetch(`/api/releases/${snap.id}/slack-channel`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: slackDraft }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setSlackError(d.error || `save failed (${res.status})`); return; }
+      setSlackDraft((d.slack && d.slack.channel) || "");
+      onSaved({ ...snap, slack: d.slack });
+    } catch (e) { setSlackError(String(e)); } finally { setSlackSaving(false); }
+  };
 
   useEffect(() => {
     setMeta(null); setInp(null); setQual(null); setError(null); setPick(null); setPicking(false);
+    setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null);
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
       // a release nobody has set targets for comes back with inputs: null and
@@ -573,6 +593,18 @@ export default function TargetSetting({ snap, onSaved }) {
             </Field>
             <Field label="Marketing lead">
               <input className="control" value={inp.marketing_lead || ""} onChange={set("marketing_lead")} />
+            </Field>
+            <Field label="Slack channel" tip="Where the Post to Slack button on the sell-through card sends this release's update. The channel name without the #; for a private channel, invite the Launch Performance bot to it first. Saved on its own, separately from the targets.">
+              <div style={{ display: "flex", gap: 8 }}>
+                <input className="control" value={slackDraft} onChange={(e) => setSlackDraft(e.target.value)} placeholder="launch-updates" />
+                <button className="btn secondary" disabled={slackSaving || slackDraft.trim().replace(/^#/, "") === slackCurrent} onClick={saveSlack} style={{ flex: "0 0 auto" }}>
+                  {slackSaving ? "Saving…" : "Save"}
+                </button>
+              </div>
+              {slackError && <div style={{ fontSize: 11.5, marginTop: 4, color: C.red }}>{slackError}</div>}
+              {!slackError && snap.slack && snap.slack.lastPostAt && (
+                <div style={{ fontSize: 11.5, marginTop: 4, color: C.muted }}>last posted {new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
+              )}
             </Field>
             <Field label="Budget file">
               <input className="control" value={inp.budget_file || ""} onChange={set("budget_file")} />

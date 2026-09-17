@@ -118,6 +118,7 @@ Render's disk resets on every deploy. Five things live on it and are lost withou
 | `data/inputs.saved.json` | targets edited in the dashboard revert to the repo defaults | `SAVED_INPUTS_PATH` on the disk |
 | `data/targets.log.jsonl`, `data/decisions.log.jsonl` | the audit trails restart | `TARGETS_LOG`, `DECISIONS_PATH` on the disk |
 | `data/layout.json` | the page goes back to its default arrangement (card order, section headers) | `LAYOUT_PATH` on the disk |
+| `data/slack.json` | the Slack channel set per release is forgotten; the Post to Slack button goes grey | `SLACK_STATE_PATH` on the disk |
 
 `SESSION_SECRET` is the one-line fix for re-logins and needs no disk. For the rest, add a
 persistent disk to the service (Render → the service → Disks; 1 GB is plenty), mount it
@@ -129,6 +130,7 @@ SAVED_INPUTS_PATH=/var/data/inputs.saved.json
 TARGETS_LOG=/var/data/targets.log.jsonl
 DECISIONS_PATH=/var/data/decisions.log.jsonl
 LAYOUT_PATH=/var/data/layout.json
+SLACK_STATE_PATH=/var/data/slack.json
 ```
 
 `render.yaml` lists the same keys, but Render ignores that file for a service created in the
@@ -420,6 +422,45 @@ refreshes still come from `npm run etl`. Saved inputs live in
 into `etl/release_inputs.json` to make them permanent); custom baskets live
 beside them in `data/app/baskets.json`.
 
+## Posting sell-through to Slack
+
+The sell-through card has a **Post to Slack** button. It sends the release's current
+figures, in the sales team's own layout, to the channel set for that release:
+
+```
+*Julian Schnabel · Multiple · 2026 Q3* - sales update, 17 Sep (day 11 of 24)
+Paid = 94 units (16% of 600)
+• I: 46/200 ...
+Draw = 30 unique entrants (2 with a win to pay)
+• I: 24 open + 1 to pay ...
+Drafts = 5
+• I: 2 · II: 1 · III: 2
+Estimated sell-through (entries at 80% entry → order, placed by maximum quantity)
+• I: ~62 units → 31% ...
+Total ~126 units → 21% of 600
+```
+
+The message is composed on the server from the same snapshot the card is drawn from
+(`server/slack.js`), so what lands in Slack is what the page says at that moment.
+
+Setup, once:
+
+1. Create a Slack app (api.slack.com/apps → Create New App → From scratch) in the
+   workspace, add the bot scopes `chat:write` and `chat:write.public` under OAuth &
+   Permissions, install it to the workspace, and copy the **Bot User OAuth Token**
+   (`xoxb-…`) into `SLACK_BOT_TOKEN` on Render. The token lives only in the environment.
+2. For a private channel, invite the app to it (`/invite @<app name>`); public channels
+   need nothing.
+3. On the release's **Target setting** tab, type the channel name (without the `#`) in
+   **Slack channel** and press its own **Save**. It is stored in `data/slack.json`
+   (`SLACK_STATE_PATH` on the disk), separately from the targets, so a release without
+   targets can have a channel too.
+
+`PUBLIC_URL` (or Render's own `RENDER_EXTERNAL_URL`) puts an "Open in Launch Performance"
+link at the end of each message that opens the release itself (`?release=<id>`; the address
+bar follows the sidebar for the same reason). Slack's refusals come back on the button in
+words (wrong channel name, bot not invited, token revoked, missing scope).
+
 ## Deploying on Render
 
 The repo ships `render.yaml` - create a Blueprint service from the repo and Render will
@@ -452,7 +493,8 @@ products only, on whichever have the most room. Products come from the event fee
 (one draw per product) and are named and sized on the Target setting tab, where the entry →
 order rate can also be set per release; a product nobody has named takes its Shopify title
 and, where the title matches an Airtable record, its edition. Until the feed has run once after
-a deploy the card shows the release as one row and says so.
+a deploy the card shows the release as one row and says so. **Post to Slack** in the card's
+header sends these figures to the release's channel (see "Posting sell-through to Slack").
 
 Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
 own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up
