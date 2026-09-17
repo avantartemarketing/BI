@@ -165,7 +165,7 @@ All funnel data originates in BigQuery `avantarte-data-production.AA_company_tab
 | Meta lifetime ("Meta Data for Paid") | campaign | + 7d-click conversions (Purchases, Enter Draw…) | Meta-side attribution |
 | Klaviyo email export | email send | Delivered, Opened, Clicked, Unsubscribed | email funnel rungs |
 | Emplifi content export | post/story | impressions, reach, engagements, saves, story metrics | social funnel rungs |
-| Draw entries export | entrant × draw | tier, score, products, MaxQuantity, winner/claim flags | demand, allocation, sell-through prediction |
+| Draw entries export | entrant × draw | tier, score, products, MaxQuantity, winner/claim flags | (legacy) demand by product; the per-product sell-through now reads the event feed's draws (§6.3) |
 
 **The dashboard reads the BigQuery tables directly when a key is configured**
 (`server/bigquery.js`, `BIGQUERY_SERVICE_ACCOUNT_JSON`): `le_funnel_report_split_touch_export`
@@ -221,7 +221,10 @@ erasure upstream propagates within a refresh, and anything that leaves the serve
 the API, this repository - is aggregated with no identifier column. `BQ_EVENTS=off` skips the
 feed; a failure of its guards is reported in the refresh status and never worked around.
 
-Asks of the data team, in order of value: (1) an authorized view over the table without
+Asks of the data team, in order of value: (0) a product on the purchase event (or a product
+dimension joining orders to draws), so private-room and pre-order sales can be attributed to a
+product on the sell-through card - today only a sale through a draw win names its product
+(§6.3); (1) an authorized view over the table without
 `user_email` (with `is_staff` derived inside it - 262 of 33,881 draw intents and 63 of 26,525
 purchases are staff), the dashboard's service account granted the view and revoked from the
 base table, or a policy tag on the column with no fine-grained-reader grant; (2) rotate the
@@ -822,11 +825,91 @@ units left to sell are shown as an oversubscription signal, not as bar overshoot
 Funnel diagnostics and the paid module stay denominated in entries/spend - the things
 marketing moves directly.
 
-### 6.3 Sell-through prediction (per product - LE)
-From draw data + orders:
-`sold` (units sold to date) + `sold_predicted` (eligible entries in hand × 0.8, allocated per
-product by the demand model) + `future_entries_predicted` (remaining plan curve × conversion).
-Segments must sum to ≤ edition; total sell-through % = Σ over products / Σ editions.
+### 6.3 Sell-through prediction, per product (LE)
+
+Sell-through is three things added up, per product:
+
+```
+sold          units paid for
+drafts        draft orders not yet paid   (no feed yet; carried as null and drawn when present)
+in hand       eligible draw entries still in the draw, ALLOCATED across the products by the
+              maximum-quantity rule below, × the entry → order rate (0.8 unless the release
+              sets its own)
+```
+
+plus, at close, the projection's further units spread over the products with room left.
+Everything is capped against the product's room (edition − sold) only where it is drawn; the
+uncapped demand is kept so an oversubscribed product stays visible as such.
+
+**Where the per-product data comes from.** A release runs **one draw per product**, so the
+event feed's `draw_id` is the product dimension (§2.2: exact against the multiset cap on 38 of
+38 releases with one or two draws; a re-run or a second wave adds a draw for the same product,
+which the Target setting tab merges by giving both draws the same name). Per draw entry
+(entrant × draw) the flags fold with `any` as the export folds them:
+
+| state | definition | counts as |
+|---|---|---|
+| open | eligible, not won, not bought | in hand, placed by the rule |
+| won | won, not yet bought | in hand, pinned to its product (the allocation is made) |
+| sold | won and bought | a sale of that product |
+| bought without a win | `draw_with_purchase` on a losing entry (a re-offer, a private-room buyer's entry) | out of the in-hand pool, as the export's `No_Conv` treats it, but **not** claimed as a sale of that product |
+
+`draw_entry_multiset_preference_max_quantity` is the entrant's maximum quantity across the
+release; empty means no cap. Purchase rows that carry a draw id are summed per draw as well
+(`purchaseUnits`) and take precedence as the product's sold units where the feed tags them;
+otherwise sold per product is the draw's winners who bought. Sales the draw feed cannot name a
+product for - private room, pre-orders, re-offers - are the release's funnel units sold less
+the attributed sum, carried at release level as `unattributedSold` and never guessed onto a
+product. (The data ask that closes this gap is a product on the purchase event.)
+
+`etl/aggregate_events.py` (`products_file`) writes `data/app/release_products.json`: per
+release, the draws with their counts (`entrants`, `eligible`, `winners`, `sold`, `open`,
+`wonUnpaid`, `purchaseUnits`, first and last entry day) and the **entry patterns** - the
+multiset of (open draws, unpaid wins, paid wins, pieces bought, max quantity) with how many
+entrants share each. Patterns are enough to run the allocation anywhere and name nobody.
+
+**The maximum-quantity rule** (`etl/sellthrough.py`, mirrored in `shared/sellThrough.mjs`,
+held to the unit by `tests/test_sellthrough.py`). An entrant who entered four products with a
+maximum quantity of two is one conversion on two products, not four, and the allocator awards
+the least-demanded of them at close. The prediction counts the same way before close:
+
+```
+appetite = max quantity − pieces already bought        (no cap: everything entered)
+unpaid wins are pinned to their product first; the appetite left goes to the open entries
+appetite ≥ open entries  → counted once on each (nothing to choose)
+appetite < open entries  → FLEXIBLE: placed one unit at a time on the product with the
+                           lowest fill, taken from the flexible entrant with the fewest
+                           other options left
+fill(p) = (sold_p + rate × counted_p) / edition_p       (plain units until every product
+                                                          has an edition)
+```
+
+So a product short of demand is topped up before one already spoken for, and an entrant with
+one alternative is placed before one with five. Ties break on product order, then pattern
+order, so the same input gives the same answer on either side. The snapshot records, per
+product, `allocated` = `pinned` + `fixed` + `flexible` (the demand counted there, in people),
+`predicted` = allocated × rate, `shown` = predicted capped at the room, `oversubscribed` =
+the rest; and for the release `allocation.{entrants, flexibleEntrants, surplusEntries,
+uncapped, unpaidWinners, flexibleUnits}`.
+
+**References per product.** A product is expected to sell through at the release's pace:
+`expectedToday_p = edition_p × hero.expectedToday / edition`, the benchmark likewise
+(`benchmarkToday_p`, `benchmarkClose_p`), so every row carries the same fill and outline as
+the rest of the page (BENCHMARK_SPEC §7). At close the target is the edition itself.
+
+**Products and editions** are typed on the Target setting tab (`products:
+[{key: draw_id, name, edition}]`; `productsFromDraws`): one row per draw the feed found, a
+name (draws sharing a name merge), an edition. A single product with no edition takes the
+release's; with several products the card runs on units and says so until every product has
+one, and it flags editions that do not add up to the release's. `entry_conversion_rate`
+(optional, per release) is the rate the prediction converts entries in hand at; the
+secured-units currency the rest of the page runs on keeps the panel's 0.8.
+
+**Headline.** With the draw feed present the release's `soldPredicted`, `futureEntriesPredicted`
+and `pct` are the per-product figures summed (each capped at the release's inventory left), so
+the card's rows and its headline are one sum; without it they are the release-level figures
+as before (`inHandUnits × rate`, capped). The hero's secured units stay on the funnel export
+and can differ from the card by the entries the rule does not count.
 
 ---
 
@@ -925,7 +1008,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Key drivers | top movers | rank funnel steps by |contribution|, Adding vs Costing |
 | Paid ROI | series | §7 daily ROI (AA); decline model start = today's ROI |
 | Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), `cap` recorded; Implement → append-only decision log |
-| Sell-through | segments | §6.3 (LE: sold / sold-predicted / future-entries-predicted) |
+| Sell-through by product | rows | §6.3: per product sold / entries in hand allocated by the maximum-quantity rule × the entry → order rate / (at close) units still to come, against the product's edition, with the release's pace as target and benchmark |
 | Entries by country | top 5 | geo split of entries (requires country dim in the daily feed - **currently missing; needs adding to the BigQuery export**) |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
 
@@ -983,6 +1066,11 @@ guard every benchmark mark on the page is written against.
 | `funnelByGroup[g].conv_benchmark_today`, `contrib_traffic_bm`, `contrib_conversion_bm`, `contrib_buyers_bm`, `contrib_per_buyer_bm` | the same three-factor decomposition against the basket's pace by today, summing to the group's actual − its benchmark today; the waterfalls' walk from the benchmark |
 | `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median |
 | `sellthrough.benchmarkUnits` | the benchmark on the sell-through prediction |
+| `sellthrough.conversion`, `inHandUnits` | the entry → order rate the prediction runs at, and the entries in hand before it (§6.3) |
+| `sellthrough.products[]` | per product: `key`, `name`, `draws`, `edition`, `sold`, `drafts`, `entrants`, `inHand.{open, won}`, `allocated`, `pinned`, `fixed`, `flexible`, `predicted`, `shown`, `room`, `oversubscribed`, `futurePredicted`, `pct`, `pctClose`, `expectedToday`, `benchmarkToday`, `benchmarkClose` (§6.3) |
+| `sellthrough.attributedSold`, `unattributedSold`, `soldSource` | sold units the draw feed named a product for, the rest, and whether products' sales came from tagged purchases or from winners who bought |
+| `sellthrough.allocation`, `measure`, `editionSum`, `editionMismatch`, `allocationStarted` | the rule's bookkeeping, whether fill is over editions or in units, the typed editions' sum against the release's, and whether winners have been drawn |
+| `sellthrough.draws`, `patterns` | the draw feed as reduced by `products_file`, so a save re-runs the rule on the server without the feed |
 | `paid.benchmarkUnits`, `benchmarkBudget` | the paid module's two benchmark marks |
 | `waterfall.benchmark`, `stretch`, `target`, `projection` | the at-close waterfall's left-hand columns; `steps` are unchanged and `stepsBm` are the same four contributors against the basket, summing to `projection − benchmark` |
 | `waterfall.today` | `{benchmark, stretch, target, actual, steps, stepsBm}` - the same four contributors measured **to date**, against the target and against the basket |

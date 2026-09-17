@@ -15,6 +15,9 @@ docs/BENCHMARK_SPEC.md  the benchmark / target / stretch contract: basket median
 etl/                    Python pipeline
   release_inputs.json     hand-entered launch inputs per release (the human decisions)
   benchmarks.json         frozen benchmark values (v1; recompute policy in docs §4)
+  sellthrough.py          the per-product sell-through rule (entries in hand allocated by
+                          maximum quantity; docs §6.3) - the reference; shared/sellThrough.mjs
+                          is the same rule for the server and the web app
   extract_spend.py        Meta spend by campaign × day  (from the workbook snapshot)
   extract_content.py      Emplifi posts by campaign     (from the content export)
   build.py                computes targets, trajectory curves, and per-release snapshots
@@ -28,6 +31,11 @@ data/
   release_clusters.csv    every release's campaign window, features and basket (docs/RELEASE_CLUSTERS.md)
   release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
+  app/release_products.json  per release, the draws (one per product) and the entry patterns
+                          the per-product sell-through runs on - counts only, no identifier
+tests/                  the sell-through rule on fixtures, in both languages, and its parity
+                        (python3 tests/test_sellthrough.py runs both sides), the events
+                        aggregation on a synthetic feed, the build block, the save path
 server/index.js         Express service: serves the SPA + /api/* + the spend decision log
 web/                    React (Vite) SPA - the dashboard per the design handoff
 render.yaml             Render deployment (single web service)
@@ -381,10 +389,22 @@ set `DECISIONS_PATH` if the log must survive deploys.
 
 One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
 trajectory vs the across-time plan curve, funnel diagnostics with contribution
-decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), predicted
-sell-through, projection-vs-target waterfall. Formulas for every module: docs §9. A thin
+decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), sell-through
+by product, projection-vs-target waterfall. Formulas for every module: docs §9. A thin
 strip under the page header is the campaign clock: announcement to launch, orange to
 today with the day of the window, the days to launch on the right.
+
+**Sell-through by product** (docs §6.3) is one row per product: units paid (rust), the draw
+entries in hand counted on the product at the entry → order rate (orange), at close the units
+still to come, against the product's edition, with demand the product has no room for hatched
+past its sellout. The entries in hand are allocated the way the allocator would place them: an
+entrant who entered more products than their maximum quantity is counted on that many
+products only, on whichever have the most room. Products come from the event feed's draws
+(one draw per product) and are named and sized on the Target setting tab, where the entry →
+order rate can also be set per release. Until the feed has run once after a deploy the card
+shows the release as one row and says so; sales the draw cannot name a product for (private
+room, pre-orders) are carried at release level. Draft orders are not in any feed yet and are
+drawn only once they are.
 
 Every card carries both references at once: the target as a fill in two tints of the actual's
 own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up

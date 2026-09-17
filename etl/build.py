@@ -55,6 +55,11 @@ import pandas as pd
 # changed anything. build.py is only ever run as a script (server/sheets.js
 # execs it), so etl/ is on the path.
 import baskets
+# The per-product sell-through rule (docs §6.3): the entries in hand allocated
+# across the products the way the allocator would place them. The same rule
+# lives in shared/sellThrough.mjs for the server and the web app, and
+# tests/test_sellthrough.py holds the two to the unit.
+from sellthrough import products_from_draws, sell_through_products
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "sources"
@@ -1007,6 +1012,90 @@ def load_draw(release: dict) -> dict | None:
     }
 
 
+# ---------------------------------------------------------------- sell-through per product (docs §6.3)
+
+_PRODUCTS_FEED: dict | None = None
+
+
+def load_products_feed() -> dict:
+    """Per release, the draws and entry patterns etl/aggregate_events.py wrote
+    (data/app/release_products.json; counts only). Missing on a checkout that
+    has never run the events aggregation, in which case every release keeps
+    the release-level sell-through and the card says so."""
+    global _PRODUCTS_FEED
+    if _PRODUCTS_FEED is None:
+        path = APP / "release_products.json"
+        try:
+            _PRODUCTS_FEED = json.loads(path.read_text()) if path.exists() else {}
+        except ValueError as e:
+            print(f"warning: ignoring {path.name}: {e}")
+            _PRODUCTS_FEED = {}
+    return _PRODUCTS_FEED
+
+
+def entry_rate(release: dict) -> float:
+    """The entry -> order rate the sell-through prediction converts entries in
+    hand at: the release's own (Target setting) when one is typed, else the
+    panel's 0.8. Only the sell-through model reads it; the secured-units
+    currency the rest of the page runs on keeps the panel constant."""
+    v = release.get("entry_conversion_rate")
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return BENCH["eligible_entry_to_order"]
+    return v if 0 < v <= 1 else BENCH["eligible_entry_to_order"]
+
+
+def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: float, inventory_left,
+                      future_entries: float = 0.0, expected_today=None, bm_today=None, bm_close=None) -> dict:
+    """The snapshot's `sellthrough`: the release-level prediction as before,
+    and - where the event feed has the release's draws - the per-product
+    block: products from the draws and what was typed for them, the entries
+    in hand allocated by the max-quantity rule, sold units the feed can
+    attribute, and the shares. With products the headline figures
+    (soldPredicted, futureEntriesPredicted, pct) are the per-product
+    calculation summed, so the card's rows and its headline are one sum."""
+    rate = entry_rate(release)
+    edition = release.get("edition_size")
+    sold_predicted = unconverted * rate
+    # inHandUnits is the entries in hand before the rate, so a save can re-run
+    # the prediction at another rate without the funnel (server/retarget.js)
+    st: dict = {"edition": edition, "sold": round(units_sold, 0), "conversion": rate,
+                "inHandUnits": round(unconverted, 1)}
+    if edition:
+        st["soldPredicted"] = round(min(sold_predicted, inventory_left), 1)
+        st["futureEntriesPredicted"] = round(min(future_entries, max(inventory_left - sold_predicted, 0)), 1)
+        st["pct"] = round(min((st["sold"] + st["soldPredicted"] + st["futureEntriesPredicted"]) / edition, 1.0), 4)
+    else:
+        st["soldPredicted"] = round(sold_predicted, 1)
+        st["futureEntriesPredicted"] = None
+        st["pct"] = None
+    if bm_close is not None:
+        st["benchmarkUnits"] = round(bm_close, 1)
+    feed = load_products_feed().get(name)
+    if not feed or not feed.get("draws"):
+        return st
+    products, source = products_from_draws(feed["draws"], release.get("products"), edition)
+    pp = sell_through_products(products, feed.get("patterns") or [], rate=rate, edition=edition,
+                               sold_total=units_sold, future_units=future_entries, expected_today=expected_today,
+                               benchmark_today=bm_today, benchmark_close=bm_close)
+    st.update({k: pp[k] for k in ("products", "attributedSold", "unattributedSold", "allocation", "measure",
+                                  "editionSum", "editionMismatch")})
+    st["soldSource"] = source
+    st["allocationStarted"] = bool(feed.get("allocated"))
+    # the draws and patterns ride along so a save can re-run the rule on the
+    # server without the event feed (server/retarget.js)
+    st["draws"] = feed["draws"]
+    st["patterns"] = feed.get("patterns") or []
+    if edition:
+        st["soldPredicted"] = pp["soldPredicted"]
+        st["futureEntriesPredicted"] = pp["futureEntriesPredicted"]
+        st["pct"] = pp["pct"]
+    else:
+        st["soldPredicted"] = pp["soldPredicted"]
+    return st
+
+
 # ---------------------------------------------------------------- per-release snapshot
 
 def daterange(a: date, b: date):
@@ -1362,8 +1451,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "channels": channels_out,
         "funnelByGroup": funnel_by_group, "paid": paid_out,
         "email": email_out, "social": social_out,
-        "sellthrough": {"edition": None, "sold": round(units_sold, 0),
-                        "soldPredicted": round(unconverted * e2o, 1), "futureEntriesPredicted": None, "pct": None},
+        "sellthrough": sellthrough_block({"edition_size": None}, rec["release_name"], units_sold, unconverted, None),
         "draw": None, "geo": None, "waterfall": None,
         "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
                    "entries": round(float(upto["Draw_Entries_Eligible_Units"].sum()))},
@@ -1980,22 +2068,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     pb = posts_bench or {}
     social_out["artistPostsTarget"] = None if tier == "N/A" else pb.get(tier, pb.get("_all"))
 
-    # ---- sell-through (release level; per-product editions not in feeds yet)
+    # ---- sell-through: the release-level prediction, and per product where
+    # the event feed has the draws (docs §6.3, sellthrough_block)
     unconverted = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
-    sold_predicted = unconverted * b["eligible_entry_to_order"]
     pdsa_today = pdsa_for(release, min(as_of, launch_end))
     # units still to come = the shaped secured-units projection beyond today (docs §5.4/§6.4)
     future_entries = 0.0 if complete else max(hero_proj - hero_now, 0.0)
-    sellthrough = {
-        "edition": release["edition_size"],
-        "sold": round(units_sold, 0),
-        "soldPredicted": round(min(sold_predicted, inventory_left), 1),
-        "futureEntriesPredicted": round(min(future_entries, max(inventory_left - sold_predicted, 0)), 1),
-    }
-    sellthrough["pct"] = round(min((sellthrough["sold"] + sellthrough["soldPredicted"]
-                                    + sellthrough["futureEntriesPredicted"]) / release["edition_size"], 1.0), 4)
-    if bench:
-        sellthrough["benchmarkUnits"] = round(hero_bm, 1)
+    sellthrough = sellthrough_block(release, name, units_sold, unconverted, inventory_left, future_entries,
+                                    expected_today=hero_exp, bm_today=hero_bm_today if bench else None,
+                                    bm_close=hero_bm if bench else None)
 
     # ---- waterfall (docs §9): contributors to projection - target, in secured units
     organic_groups = [g for g in DISPLAY_GROUPS if g != "paid"]

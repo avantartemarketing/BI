@@ -19,7 +19,7 @@ export const CARDS = [
   { key: "drivers", title: "Funnel key drivers" },
   { key: "paid_roi", title: "Paid ROI", size: "wide" },
   { key: "paid_spend", title: "Paid spend / day" },
-  { key: "sell_through", title: "Sell-through" },
+  { key: "sell_through", title: "Sell-through by product", size: "wide" },
   { key: "geo", title: "Entries by country" },
   { key: "waterfall", title: "Actual vs target" },
 ];

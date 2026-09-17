@@ -25,6 +25,9 @@ Outputs:
                                    previous releases - no identifier in it
   data/app/reconciliation.json     rebuilt against export, column by column
   data/app/release_windows.csv     every release's campaign window and where it came from
+  data/app/release_products.json   per release, the draws (one per product) with entrant,
+                                   winner and sale counts, and the entry PATTERNS the
+                                   per-product sell-through is allocated from - counts only
 
 The definitions are the ones decoded against the export in docs/DATA_MODEL.md
 #2.2: people are distinct account ids; an entrant's units are their maximum
@@ -54,6 +57,7 @@ EVENTS = SOURCES / "le_events.csv"
 EXPORT = SOURCES / "across_time.csv"
 REBUILT = SOURCES / "across_time.rebuilt.csv"
 PEOPLE = ROOT / "data" / "app" / "release_people.csv"
+PRODUCTS = ROOT / "data" / "app" / "release_products.json"
 RECON = ROOT / "data" / "app" / "reconciliation.json"
 SINCE = os.environ.get("BQ_SINCE", "2023-01-01")
 
@@ -118,7 +122,7 @@ def load_events() -> pd.DataFrame:
     # is one chunk plus what is kept. The whole frame as strings peaked over
     # 1 GB, which the 512 MB Render instance does not have.
     chunks = []
-    for chunk in pd.read_csv(EVENTS, usecols=lambda c: c in EVENT_COLS, dtype={c: "category" for c in LABELS},
+    for chunk in pd.read_csv(EVENTS, usecols=lambda c: c in EVENT_COLS, dtype={**{c: "category" for c in LABELS}, "draw_id": str},
                              chunksize=50_000, low_memory=False):
         chunks.append(chunk[chunk["event_name"].isin(["draw entry intent", "purchase"])])
     ev = pd.concat(chunks, ignore_index=True)
@@ -463,6 +467,85 @@ def people_file(ev: pd.DataFrame) -> pd.DataFrame:
     return out.sort_values("campaign_start", ascending=False)
 
 
+def products_file(ev: pd.DataFrame) -> dict:
+    """Per release: the draws (one per product) and the entry patterns behind
+    the per-product sell-through (docs/DATA_MODEL.md #6.3). Counts only.
+
+    A draw entry intent is one row per entrant per draw. Per (entrant, draw)
+    the flags are folded with `any`, as the export folds them; per entrant the
+    maximum quantity is the largest recorded, and an empty one is no cap.
+    An entry is OPEN while eligible, not won and not bought; WON when won and
+    not yet bought; SOLD when won and bought (the draw feed's own sale of that
+    product). An entry bought without a win (a re-offer, or a private-room
+    buyer's entry) leaves the in-hand pool, as the export's No_Conv does, but
+    is not claimed as a sale of that product: the release's sold units come
+    from the funnel, and what no product can be named for is carried at
+    release level. Purchase rows that carry a draw id are summed per draw too
+    (`purchaseUnits`), for the day the feed tags purchases with products.
+
+    The patterns are the multiset of (open draws, unpaid wins, paid wins,
+    pieces bought, max quantity) with how many entrants share each: enough
+    to run the allocation anywhere, and nothing that names anyone.
+    """
+    cols = ["simple_release_name", "aa_account_id", "draw_id", "event_date", "draw_entry_eligible", "winner",
+            "draw_with_purchase", "draw_entry_multiset_preference_max_quantity"]
+    de = ev[(ev["event_name"] == "draw entry intent") & ev["draw_id"].notna() & ev["aa_account_id"].notna()]
+    de = de[[c for c in cols if c in de.columns]].copy()
+    de["draw_id"] = de["draw_id"].astype(str).str.strip()
+    de = de[(de["draw_id"] != "") & (de["draw_id"].str.lower() != "nan")]
+    if "draw_entry_multiset_preference_max_quantity" not in de.columns:
+        de["draw_entry_multiset_preference_max_quantity"] = np.nan
+    de["mq"] = pd.to_numeric(de["draw_entry_multiset_preference_max_quantity"], errors="coerce")
+    de["simple_release_name"] = de["simple_release_name"].astype(str)
+    per_entry = (de.groupby(["simple_release_name", "aa_account_id", "draw_id"], observed=True)
+                   .agg(eligible=("draw_entry_eligible", "any"), winner=("winner", "any"),
+                        bought=("draw_with_purchase", "any"), first=("event_date", "min"), last=("event_date", "max"))
+                   .reset_index())
+    per_entrant_mq = de.groupby(["simple_release_name", "aa_account_id"], observed=True)["mq"].max()
+    pu = ev[(ev["event_name"] == "purchase") & ev["draw_id"].notna()]
+    tagged = pd.DataFrame(columns=["simple_release_name", "draw_id", "units"])
+    if len(pu):
+        pu = pu[["simple_release_name", "draw_id", "order_pieces"]].copy()
+        pu["draw_id"] = pu["draw_id"].astype(str).str.strip()
+        pu = pu[(pu["draw_id"] != "") & (pu["draw_id"].str.lower() != "nan")]
+        pu["simple_release_name"] = pu["simple_release_name"].astype(str)
+        tagged = pu.groupby(["simple_release_name", "draw_id"], observed=True)["order_pieces"].sum().rename("units").reset_index()
+    out = {}
+    for rel, sub in per_entry.groupby("simple_release_name", observed=True):
+        E, W, B = sub["eligible"], sub["winner"], sub["bought"]
+        sub = sub.assign(open=E & ~W & ~B, won_unpaid=W & ~B, sold=W & B)
+        draws = []
+        t = tagged[tagged["simple_release_name"] == rel].set_index("draw_id")["units"] if len(tagged) else pd.Series(dtype=float)
+        for did, d in sub.groupby("draw_id", observed=True):
+            draws.append({
+                "id": str(did), "first": d["first"].min().date().isoformat(), "last": d["last"].max().date().isoformat(),
+                "entrants": int(len(d)), "eligible": int(d["eligible"].sum()), "winners": int(d["winner"].sum()),
+                "sold": int(d["sold"].sum()), "open": int(d["open"].sum()), "wonUnpaid": int(d["won_unpaid"].sum()),
+                "purchaseUnits": float(t.get(str(did), 0.0)) if len(t) else 0.0,
+            })
+        draws.sort(key=lambda d: (d["first"], d["id"]))
+        patterns: dict[tuple, int] = {}
+        for acct, e in sub.groupby("aa_account_id", observed=True):
+            open_ = tuple(sorted(e.loc[e["open"], "draw_id"]))
+            won = tuple(sorted(e.loc[e["won_unpaid"], "draw_id"]))
+            sold = tuple(sorted(e.loc[e["sold"], "draw_id"]))
+            if not (open_ or won or sold):
+                continue
+            bought = int(e["bought"].sum())
+            mq = per_entrant_mq.get((rel, acct), np.nan)
+            key = (open_, won, sold, bought, None if pd.isna(mq) else int(mq))
+            patterns[key] = patterns.get(key, 0) + 1
+        out[rel] = {
+            "draws": draws,
+            "entrants": int(sub["aa_account_id"].nunique()),
+            "eligible": int(sub.loc[sub["eligible"], "aa_account_id"].nunique()),
+            "allocated": bool(sub["winner"].any()),
+            "patterns": [{"open": list(k[0]), "won": list(k[1]), "sold": list(k[2]), "bought": k[3], "max": k[4], "n": n}
+                         for k, n in sorted(patterns.items(), key=lambda kv: (-kv[1], str(kv[0])))],
+        }
+    return out
+
+
 def rss(label: str) -> None:
     """AGG_PROFILE=1 prints the peak resident set after each stage (MB)."""
     if os.environ.get("AGG_PROFILE"):
@@ -518,6 +601,9 @@ def main() -> int:
     ppl = people_file(ev)
     PEOPLE.parent.mkdir(parents=True, exist_ok=True)
     tmp = PEOPLE.with_suffix(".tmp"); ppl.to_csv(tmp, index=False); tmp.replace(PEOPLE)
+    prods = products_file(ev)
+    tmp = PRODUCTS.with_suffix(".tmp"); tmp.write_text(json.dumps(prods, separators=(",", ":"))); tmp.replace(PRODUCTS)
+    note += f"; products {len(prods)} releases -> {PRODUCTS.name}"
     src = os.environ.get("FUNNEL_SOURCE", "events")
     print(f"aggregate_events: {note}; people {len(ppl)} releases -> {PEOPLE.name}; build reads {'the export' if src == 'export' else 'the rebuilt file'} (FUNNEL_SOURCE={src})")
     return 0
