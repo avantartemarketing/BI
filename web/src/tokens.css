@@ -138,8 +138,6 @@ html, body {
   position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px;
   border-radius: 50%; background: var(--orange); box-shadow: 0 0 0 2px var(--card);
 }
-.launch-strip .today { position: absolute; top: -20px; font-size: 11px; transform: translateX(-100%); padding-right: 2px; }
-.launch-strip .today.lead { transform: none; padding: 0 0 0 2px; }
 .launch-strip .launch { position: absolute; right: -1px; top: -3px; width: 2px; height: 12px; border-radius: 1px; background: var(--ink); }
 
 .grid {

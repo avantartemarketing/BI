@@ -384,7 +384,7 @@ trajectory vs the across-time plan curve, funnel diagnostics with contribution
 decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), predicted
 sell-through, projection-vs-target waterfall. Formulas for every module: docs §9. A thin
 strip under the page header is the campaign clock: announcement to launch, orange to
-today with the day of the window, the days to launch on the right.
+today, the days to launch on the right; the day of the window is in the strip's popup.
 
 Every card carries both references at once: the target as a fill in two tints of the actual's
 own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up
