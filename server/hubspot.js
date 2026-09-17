@@ -27,10 +27,18 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const OUT = path.join(ROOT, "sources", "all_sent_emails.csv");
+const OUT = process.env.HUBSPOT_CSV || path.join(ROOT, "sources", "all_sent_emails.csv");
 const SAVED = process.env.SAVED_INPUTS_PATH || path.join(ROOT, "data", "inputs.saved.json");
-const API = "https://api.hubapi.com/marketing/v3/emails";
-const MAX_PAGES = 60; // 100 emails per page
+const API = process.env.HUBSPOT_API || "https://api.hubapi.com/marketing/v3/emails";
+/* The listing comes back oldest first, so a page cap cuts off the newest sends,
+ * not the oldest: a 6,000-email cap once froze the feed at 14 Aug 2026 while
+ * the header said the sources were fresh. The pull therefore asks only for
+ * emails created inside a horizon, which keeps it far below the cap, and keeps
+ * every older send from the file it already has. A pull that still hits the
+ * cap says so in the status line. HUBSPOT_API and HUBSPOT_CSV exist so a test
+ * can point the module at a local server and a scratch file. */
+const HORIZON_DAYS = 730;
+const MAX_PAGES = 150; // 100 emails per page
 const MATCH_DAYS = 60;  // status: sends per targeted release over this window
 const RECENT_DAYS = 21; // status: unmatched sends listed over this window
 const RECENT_NAMES = 5;
@@ -110,24 +118,66 @@ function summarise(recs, targeted, now = Date.now()) {
     (loose.length > RECENT_NAMES ? ", …" : "");
 }
 
-async function fetchEmailsCsv() {
+/* The CSV on disk, keyed by email name and send day so a pull replaces the
+ * rows it fetched again and keeps the rest. Quoted cells carry commas and
+ * quotes; the writer below quotes the same way. */
+function parseCsvLine(line) {
+  const out = [];
+  let cur = "", quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quoted) {
+      if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else quoted = false; }
+      else cur += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ",") { out.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+const rowKey = (name, sent) => `${name}#${String(sent).slice(0, 10)}`;
+function readExisting() {
+  let text;
+  try { text = fs.readFileSync(OUT, "utf8"); } catch { return new Map(); }
+  const rows = new Map();
+  for (const line of text.split(/\r?\n/).slice(1)) {
+    if (!line.trim()) continue;
+    const f = parseCsvLine(line);
+    if (f.length < 7) continue;
+    rows.set(rowKey(f[0], f[1]), { sent: f[1], line: f.slice(0, 7).map(cell).join(",") });
+  }
+  return rows;
+}
+
+async function fetchEmailsCsv(now = Date.now()) {
   const token = process.env.HUBSPOT_TOKEN;
   if (!token) return null;
   const { targeted, all } = knownCampaignCodes();
   const index = campaignIndex(all);
   const known = new Set(all);
-  const rows = [];
+  const since = new Date(now - HORIZON_DAYS * 864e5);
+  const pulled = new Map();
   const recs = [];
-  let after = null;
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const url = API + "?limit=100&includeStats=true" + (after ? `&after=${encodeURIComponent(after)}` : "");
+  let filtered = true, after = null, pages = 0, capped = false;
+  for (;;) {
+    if (pages >= MAX_PAGES) { capped = !!after; break; }
+    const url = API + "?limit=100&includeStats=true" +
+      (filtered ? `&createdAfter=${encodeURIComponent(since.toISOString())}` : "") +
+      (after ? `&after=${encodeURIComponent(after)}` : "");
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 400 && filtered && pages === 0) {
+      // an API that refuses the date filter: pull everything, and say if it was cut
+      filtered = false;
+      continue;
+    }
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       const hint = res.status === 401 || res.status === 403
         ? " - check the Private App token and its Marketing Email read scope" : "";
       throw new Error(`HubSpot API ${res.status}${hint} ${text.slice(0, 200)}`);
     }
+    pages++;
     const body = await res.json();
     for (const r of body.results || []) {
       const c = (r.stats && r.stats.counters) || {};
@@ -137,20 +187,33 @@ async function fetchEmailsCsv() {
       if (!d || (sent === 0 && delivered === 0)) continue; // drafts / never sent
       const { code, via } = matchCampaign(r.name || "", r.campaignName || "", index);
       recs.push({ name: r.name || "", ms: d.getTime(), code, via, known: known.has(code) });
-      rows.push([
-        cell(r.name), sendDate(d), cell(code),
-        delivered, c.open ?? c.opened ?? 0, c.click ?? c.clicked ?? 0, c.unsubscribed ?? 0,
-      ].join(","));
+      const at = sendDate(d);
+      pulled.set(rowKey(r.name || "", at), {
+        sent: at,
+        line: [cell(r.name), at, cell(code), delivered, c.open ?? c.opened ?? 0, c.click ?? c.clicked ?? 0, c.unsubscribed ?? 0].join(","),
+      });
     }
     after = body.paging && body.paging.next && body.paging.next.after;
     if (!after) break;
   }
-  if (rows.length === 0) throw new Error("HubSpot returned no sent emails - not overwriting the CSV");
+  if (pulled.size === 0) throw new Error("HubSpot returned no sent emails - not overwriting the CSV");
+  const rows = [];
+  let kept = 0;
+  for (const [k, row] of readExisting()) if (!pulled.has(k)) { rows.push(row); kept++; }
+  for (const row of pulled.values()) rows.push(row);
+  rows.sort((a, b) => (a.sent < b.sent ? -1 : a.sent > b.sent ? 1 : 0));
+  const through = rows[rows.length - 1].sent.slice(0, 10);
   const header = "Email Name,Send Date (Your time zone),Campaign,Delivered,Opened,Clicked,Unsubscribed";
-  return { csv: header + "\n" + rows.join("\n") + "\n", rows: rows.length, summary: summarise(recs, targeted) };
+  return {
+    csv: header + "\n" + rows.map((r) => r.line).join("\n") + "\n",
+    rows: rows.length, pulled: pulled.size, kept, through, pages, capped, filtered,
+    since: since.toISOString().slice(0, 10), summary: summarise(recs, targeted, now),
+  };
 }
 
-/* Fetch and write the CSV; returns a status string for the refresh summary. */
+/* Fetch and write the CSV; returns a status string for the refresh summary.
+ * "sends through" is the line's first fact: the header turns amber when that
+ * date falls more than a week behind the build. */
 async function refreshEmails() {
   if (!process.env.HUBSPOT_TOKEN) return "hubspot off (no HUBSPOT_TOKEN)";
   const out = await fetchEmailsCsv();
@@ -158,7 +221,9 @@ async function refreshEmails() {
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(tmp, out.csv);
   fs.renameSync(tmp, OUT);
-  return `hubspot ${out.rows} emails; ${out.summary}`;
+  const how = out.filtered ? `created since ${out.since}` : "unfiltered - the API refused the date filter";
+  const cap = out.capped ? `; CAPPED at ${MAX_PAGES} pages, the newest sends are missing` : "";
+  return `hubspot ${out.rows} emails, sends through ${out.through} (${out.pulled} pulled, ${how}, ${out.kept} kept from the file${cap}); ${out.summary}`;
 }
 
-module.exports = { refreshEmails, fetchEmailsCsv, matchCampaign, campaignIndex, knownCampaignCodes, summarise };
+module.exports = { refreshEmails, fetchEmailsCsv, matchCampaign, campaignIndex, knownCampaignCodes, summarise, parseCsvLine };

@@ -120,6 +120,25 @@ const INPUTS_PATH = path.join(DATA, "inputs.json");
 const SAVED_INPUTS_PATH = process.env.SAVED_INPUTS_PATH || path.join(ROOT, "data", "inputs.saved.json");
 const TARGETS_LOG = process.env.TARGETS_LOG || path.join(ROOT, "data", "targets.log.jsonl");
 const modelPromise = import("../shared/targetModel.mjs");
+// the per-product sell-through rule, re-run on a save that changes product
+// editions or the entry -> order rate (docs/DATA_MODEL.md §6.3)
+const sellThroughPromise = import("../shared/sellThrough.mjs");
+// the draws the event feed found per release (etl/aggregate_events.py), so the
+// Target setting tab can list them for naming and sizing; counts only
+const PRODUCTS_FEED = path.join(DATA, "release_products.json");
+let productsFeedCache = { mtime: null, doc: {} };
+function productsFeed() {
+  try {
+    const mtime = fs.statSync(PRODUCTS_FEED).mtimeMs;
+    if (productsFeedCache.mtime !== mtime) productsFeedCache = { mtime, doc: JSON.parse(fs.readFileSync(PRODUCTS_FEED, "utf8")) };
+  } catch { productsFeedCache = { mtime: null, doc: {} }; }
+  return productsFeedCache.doc;
+}
+function drawsFor(releaseName) {
+  const rec = releaseName ? productsFeed()[releaseName] : null;
+  if (!rec) return null;
+  return { draws: rec.draws || [], entrants: rec.entrants ?? null, eligible: rec.eligible ?? null, allocated: !!rec.allocated };
+}
 
 // Express 4 does not catch a rejection from an async handler, and Node exits on
 // an unhandled one - which would take the SPA down with it, since the same
@@ -192,6 +211,8 @@ app.get("/api/inputs/:id", (req, res) => {
     channel_quality_default: doc.channel_quality_default,
     benchmarks: doc.benchmarks,
     meta_campaigns: doc.meta_campaigns || [],
+    // the draws (one per product) the event feed found for this release
+    draws: drawsFor((inputs || disc || {}).release_name),
   });
 });
 
@@ -284,6 +305,40 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     if (!STRETCH_MODES.includes(body.stretch_mode)) errors.push(`stretch_mode must be one of ${STRETCH_MODES.join("/")}`);
     else next.stretch_mode = body.stretch_mode;
   }
+  /* The products (docs §6.3): one entry per draw the feed found - its id as
+   * the key, the name typed for it and its edition size. Two draws with the
+   * same name are one product. Editions are optional; the card runs on units
+   * until every product has one. */
+  if (body.products !== undefined) {
+    if (body.products === null) next.products = null;
+    else if (!Array.isArray(body.products) || body.products.length > 40) errors.push("products is a list of up to 40 entries");
+    else {
+      const list = [];
+      for (const p of body.products) {
+        if (!p || typeof p !== "object") { errors.push("every product is an object"); break; }
+        const key = p.key === undefined || p.key === null || p.key === "" ? null : String(p.key).slice(0, 80);
+        const name = p.name === undefined || p.name === null ? "" : String(p.name).slice(0, 120).trim();
+        let edition = null;
+        if (p.edition !== undefined && p.edition !== null && p.edition !== "") {
+          const v = Number(p.edition);
+          if (!Number.isFinite(v) || v < 0) errors.push(`the edition of ${name || key || "a product"} must be a non-negative number`);
+          else edition = Math.round(v);
+        }
+        list.push({ key, name, edition });
+      }
+      next.products = list;
+    }
+  }
+  // the entry -> order rate the sell-through prediction converts entries in
+  // hand at; empty means the panel's 0.8
+  if (body.entry_conversion_rate !== undefined) {
+    if (body.entry_conversion_rate === null || body.entry_conversion_rate === "") next.entry_conversion_rate = null;
+    else {
+      const v = Number(body.entry_conversion_rate);
+      if (!Number.isFinite(v) || v <= 0 || v > 1) errors.push("entry_conversion_rate must be a fraction between 0 and 1, or empty");
+      else next.entry_conversion_rate = Math.round(v * 1000) / 1000;
+    }
+  }
   if (new Date(next.launch_end) <= new Date(next.announce_date)) {
     errors.push("launch_end must be after announce_date");
   }
@@ -361,7 +416,8 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   const bench = doc.benchmarks;
   const mergedForModel = { ...next, channel_quality_default: doc.channel_quality_default };
   const { computeTargets } = await modelPromise;
-  const updated = retargetSnapshot(snap, mergedForModel, bench, curves, computeTargets);
+  const sellThrough = await sellThroughPromise;
+  const updated = retargetSnapshot(snap, mergedForModel, bench, curves, computeTargets, sellThrough);
 
   writeSaved(id, next);
   fs.writeFileSync(snapPath, JSON.stringify(updated, null, 1));

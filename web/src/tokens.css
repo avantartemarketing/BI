@@ -124,9 +124,9 @@ html, body {
 }
 .freshness { margin-left: auto; font-size: 12px; color: var(--muted); }
 
-/* ---------- launch strip (the campaign clock under the header) ---------- */
+/* ---------- launch strip (the campaign clock card) ---------- */
 .launch-strip {
-  margin-top: 16px; height: 52px; padding: 0 20px;
+  height: 52px; padding: 0 20px;
   background: var(--card); border: 1px solid var(--border); border-radius: 12px;
   display: flex; align-items: center; gap: 16px;
   font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums;
@@ -292,18 +292,26 @@ select.native {
 .slot.tall { grid-row: span 2; }
 .slot.wide { grid-column: span 2; }
 .slot.big { grid-column: span 2; grid-row: span 2; }
+/* a strip is a row of its own between the grids, as wide as the page */
+.slot.strip > .launch-strip { flex: 1 1 auto; min-width: 0; }
+.slot.strip > .card.ghost { height: 52px; padding: 0 20px; flex-direction: row; align-items: center; gap: 16px; }
+.slot.strip > .card.ghost .empty-state { padding: 0; margin: 0; min-height: 0; flex: 0 0 auto; }
 .card.ghost { border-style: dashed; background: transparent; }
 .card.ghost .title { color: var(--muted); }
 /* editing: the cards go quiet and become handles */
 .slot.edit { cursor: grab; }
-.slot.edit > .card { pointer-events: none; user-select: none; }
-.slot.edit:hover > .card { border-color: #8f8b82; }
+.slot.edit > .card, .slot.edit > .launch-strip { pointer-events: none; user-select: none; }
+.slot.edit:hover > .card, .slot.edit:hover > .launch-strip { border-color: #8f8b82; }
 .slot.dragging { opacity: 0.4; }
 .slot.drop-before::before, .slot.drop-after::after {
   content: ""; position: absolute; top: 6px; bottom: 6px; width: 3px; border-radius: 2px; background: var(--ink);
 }
 .slot.drop-before::before { left: -13.5px; }
 .slot.drop-after::after { right: -13.5px; }
+/* a strip takes its drops above and below, so its marker is a rule, not a bar */
+.slot.strip.drop-before::before, .slot.strip.drop-after::after { left: 0; right: 0; width: auto; height: 3px; }
+.slot.strip.drop-before::before { top: -13.5px; bottom: auto; }
+.slot.strip.drop-after::after { bottom: -13.5px; top: auto; }
 .slot.drop-empty {
   border: 1px dashed var(--border); color: var(--muted); font-size: 12.5px;
   display: flex; align-items: center; justify-content: center;

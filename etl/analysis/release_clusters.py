@@ -31,6 +31,11 @@ What it does
   5. Writes the baskets: per cluster, quartiles of every channel share and
      conversion and every campaign-stage share, the numbers the target model
      would draw from.
+  6. Attaches edition pricing to every release from data/release_pricing.csv
+     (the Airtable pull, etl/pull_airtable.py): unit_price, currency,
+     unit_price_gbp, edition_size, launch_value and how the row was matched.
+     The join itself lives in etl/pricing.py; etl/baskets.py reads the
+     columns off the panel.
 
 Releases that ran before the draw mechanic (everything up to 2023 Q3, a few
 into 2024) sold buy-now: no entries, so no oversubscription or entry
@@ -38,12 +43,16 @@ conversion. They are profiled as their own legacy basket and placed against
 the draw clusters on the features they share, not clustered with them.
 
 Outputs
-  data/release_clusters.csv        one row per release: window, features, cluster
+  data/release_clusters.csv        one row per release: window, features, cluster, pricing
   data/release_cluster_baskets.json per-cluster quartiles by channel and stage
   stdout                           the analysis, recorded in docs/RELEASE_CLUSTERS.md
 
 Run from the repo root after a BigQuery pull:
   node server/bigquery.js --write --full && python3 etl/analysis/release_clusters.py
+
+After an Airtable pull alone, re-attach the pricing to the panel on file
+without touching the windows, features or clusters (no funnel export needed):
+  python3 etl/pull_airtable.py && python3 etl/analysis/release_clusters.py --pricing-only
 """
 from __future__ import annotations
 
@@ -59,6 +68,7 @@ import pandas as pd
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "etl"))
 from build import DISPLAY_GROUPS, GROUP_OF, discover_releases  # noqa: E402
+from pricing import attach_pricing  # noqa: E402
 
 SRC = ROOT / "sources" / "across_time.csv"
 OUT_CSV = ROOT / "data" / "release_clusters.csv"
@@ -569,7 +579,31 @@ def basket(sub: pd.DataFrame, Xs: np.ndarray | None = None, centre: np.ndarray |
     return out
 
 
+def print_pricing_coverage(out: pd.DataFrame) -> None:
+    """One line per panel on how many releases the Airtable pricing reached.
+    The release-by-release matching report is `python3 etl/pricing.py`."""
+    print("\n== edition pricing from Airtable (etl/pricing.py) ==")
+    for kind, sub in out.groupby(out["panel"].fillna("not in a panel"), sort=False):
+        print(f"  {kind}: {len(sub)} releases, {(sub['price_match'] != 'none').sum()} matched, "
+              f"{sub['unit_price'].notna().sum()} priced, {sub['edition_size'].notna().sum()} sized")
+    print("  matched by:", out["price_match"].value_counts().to_dict())
+
+
+def pricing_only() -> None:
+    """Re-attach the pricing to the panel on file. The windows, features and
+    clusters are left exactly as they are, so the only columns that change are
+    the pricing ones - a fresh Airtable pull must not need a BigQuery pull."""
+    panel = pd.read_csv(OUT_CSV, low_memory=False)
+    out = attach_pricing(panel)
+    print_pricing_coverage(out)
+    out.to_csv(OUT_CSV, index=False)
+    print(f"wrote {OUT_CSV} ({len(out)} rows), pricing columns refreshed")
+
+
 def main() -> None:
+    if "--pricing-only" in sys.argv[1:]:
+        pricing_only()
+        return
     pd.set_option("display.width", 250); pd.set_option("display.max_columns", 80); pd.set_option("display.max_rows", 500)
     warnings.filterwarnings("ignore")
     df = load_daily()
@@ -688,7 +722,9 @@ def main() -> None:
     out = pd.concat([out, legacy.assign(cluster_name=None, cluster_k2_name=None),
                      panel[panel["panel"].isna()]], ignore_index=True)
     keep = [c for c in out.columns if not c.startswith("org_share_")]
-    out[keep].sort_values(["panel", "cluster", "announce"]).to_csv(OUT_CSV, index=False)
+    out = attach_pricing(out[keep])
+    print_pricing_coverage(out)
+    out.sort_values(["panel", "cluster", "announce"]).to_csv(OUT_CSV, index=False)
     baskets = {"as_of": as_of.isoformat(), "export_from": df["event_date"].min().date().isoformat(),
                "panel": {"draw": int(len(draw)), "legacy": int(len(legacy)), "clock": int((draw.dates_source == "clock").sum())},
                "features": FEATURE_BLOCKS, "k_chosen": 4, "k_robust": 2,

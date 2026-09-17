@@ -15,19 +15,34 @@ docs/BENCHMARK_SPEC.md  the benchmark / target / stretch contract: basket median
 etl/                    Python pipeline
   release_inputs.json     hand-entered launch inputs per release (the human decisions)
   benchmarks.json         frozen benchmark values (v1; recompute policy in docs §4)
+  sellthrough.py          the per-product sell-through rule (entries in hand allocated by
+                          maximum quantity; docs §6.3) - the reference; shared/sellThrough.mjs
+                          is the same rule for the server and the web app
   extract_spend.py        Meta spend by campaign × day  (from the workbook snapshot)
   extract_content.py      Emplifi posts by campaign     (from the content export)
   build.py                computes targets, trajectory curves, and per-release snapshots
   baskets.py              baskets of comparable launches and the medians the benchmark reads
+  pull_airtable.py        edition pricing from Airtable's Pipeline table -> data/release_pricing.csv
+  pricing.py              the join from that file to the release panel (python3 etl/pricing.py
+                          prints the matching report and the unmatched releases)
   release_features.py     one row per release from the daily funnel (data/app/release_features.csv)
   analysis/               one-off studies behind documented decisions (cpe_elasticity.py,
-                          tier_curve_probe.py, release_clusters.py - the baskets of comparables)
+                          tier_curve_probe.py, release_clusters.py - the baskets of comparables,
+                          price_probe.py - whether price belongs in the basket; it does)
 data/
   spend_daily.csv         extracted spend facts
   content_posts.csv       extracted content facts
-  release_clusters.csv    every release's campaign window, features and basket (docs/RELEASE_CLUSTERS.md)
+  release_clusters.csv    every release's campaign window, features, basket and edition pricing
+                          (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
+  release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
+                          dates, medium - no personal data (etl/pull_airtable.py)
   release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
+  app/release_products.json  per release, the draws (one per product) and the entry patterns
+                          the per-product sell-through runs on - counts only, no identifier
+tests/                  the sell-through rule on fixtures, in both languages, and its parity
+                        (python3 tests/test_sellthrough.py runs both sides), the events
+                        aggregation on a synthetic feed, the build block, the save path
 server/index.js         Express service: serves the SPA + /api/* + the spend decision log
 web/                    React (Vite) SPA - the dashboard per the design handoff
 render.yaml             Render deployment (single web service)
@@ -43,6 +58,15 @@ npm start              # serves on :10000
 ```
 
 Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :5173, proxies /api).
+
+Edition pricing (needs `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE` in the environment):
+
+```bash
+python3 etl/pull_airtable.py --list-fields              # field names and types only
+python3 etl/pull_airtable.py                            # -> data/release_pricing.csv
+python3 etl/analysis/release_clusters.py --pricing-only # re-attach prices to the panel on file
+python3 etl/pricing.py                                  # the matching report: what matched how, and what did not
+```
 
 ## Every release, not just the targeted ones
 
@@ -233,7 +257,11 @@ snapshots keep serving.
 Email stats can also refresh live: set `HUBSPOT_TOKEN` to a HubSpot **Private App**
 token (Settings → Integrations → Private Apps, Marketing Email read scope) and each
 refresh pulls every sent marketing email's delivered/open/click counts into
-`sources/all_sent_emails.csv` (`server/hubspot.js`). Emails join a release when the
+`sources/all_sent_emails.csv` (`server/hubspot.js`). The listing comes back oldest first, so
+the pull asks only for emails created in the last two years (well inside its page cap), keeps
+older sends from the file it already has, and opens its status line with `sends through
+<date>`; a pull that still hits the cap says `CAPPED`. The header shows `emails through
+<date>` in amber whenever that date is more than a week behind the build. Emails join a release when the
 HubSpot campaign name is the release's campaign code, when the code appears in the
 email or campaign name, or when an `Artist_Type_YY` token in either names the same
 artist and year as exactly one known code (so `AndyWarhol_LE_26` sends join the
@@ -381,12 +409,28 @@ set `DECISIONS_PATH` if the log must survive deploys.
 
 One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
 trajectory vs the across-time plan curve, funnel diagnostics with contribution
-decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), predicted
-sell-through, projection-vs-target waterfall. Formulas for every module: docs §9. A thin
-strip under the page header is the campaign clock: announcement to launch, orange to
-today, the days to launch on the right; the day of the window is in the strip's popup.
+decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), sell-through
+by product, projection-vs-target waterfall. Formulas for every module: docs §9. The
+Overview opens with the campaign clock, a thin strip from announcement to launch, orange to
+today and the days to launch on the right (the day of the window is in the strip's popup);
+it is a card like the others and moves with them.
 
-Every card carries both references at once: the target as a fill in two tints of the actual's
+**Sell-through by product** (docs §6.3) is one row per product: units paid (rust), draft
+orders not yet paid (rust, striped), the draw entries in hand counted on the product at the
+entry → order rate (orange), at close the units still to come, against the product's edition,
+with demand the product has no room for hatched past its sellout. It is the one card with no
+target or benchmark on it and no prose: the detail is in the popups. While the feeds carry
+neither sales by product nor draft orders the card wears an **Incomplete data** stamp, and the
+sales the draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an
+entrant who entered more products than their maximum quantity is counted on that many
+products only, on whichever have the most room. Products come from the event feed's draws
+(one draw per product) and are named and sized on the Target setting tab, where the entry →
+order rate can also be set per release. Until the feed has run once after a deploy the card
+shows the release as one row and says so; sales the draw cannot name a product for (private
+room, pre-orders) are split by edition size under the stamp. Draft orders are not in any feed
+yet and are drawn only once they are.
+
+Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
 own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up
 to the target), the benchmark as a dotted outline over it, and the actual in front. A single
 `Compare Today | At close` toggle in the page header drives all of them, and the percentages and
@@ -407,6 +451,8 @@ channel, 1 × 2** off and add the 2 × 2 to swap one for the other. **Save
 for everyone** keeps the arrangement for the whole team in `data/layout.json` (`LAYOUT_PATH`
 on Render, see above); the saved layout records the cards taken off, so they stay off. **Back
 to the default** restores the built-in order. The list of cards lives in `web/src/Layout.jsx`:
-a card added to the code later joins the end of everyone's page, and a card a release has
-nothing for (No targets set on a targeted release) is left out of that release's page and
-shows as a ghost while editing.
+a card added to the code later joins the end of everyone's page (the campaign clock, which
+belongs at the top, joins there), a strip such as the clock is a full-width row of its own
+between the grids, and a card a release has nothing for (No targets set on a targeted release,
+the clock on a catalogue release) is left out of that release's page and shows as a ghost while
+editing.

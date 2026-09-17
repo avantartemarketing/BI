@@ -32,7 +32,7 @@ const r0 = (v) => Math.round(v);
 const r1 = (v) => Math.round(v * 10) / 10;
 const r2 = (v) => Math.round(v * 100) / 100;
 
-function retargetSnapshot(snap, inputs, bench, curves, computeTargets) {
+function retargetSnapshot(snap, inputs, bench, curves, computeTargets, sellThrough = null) {
   const t = computeTargets(inputs, bench);
   const announce = new Date(inputs.announce_date + "T00:00:00Z");
   const end = new Date(inputs.launch_end + "T00:00:00Z");
@@ -114,19 +114,47 @@ function retargetSnapshot(snap, inputs, bench, curves, computeTargets) {
     artistProfitShare: inputs.artist_profit_share,
   };
 
-  const sold = snap.sellthrough.sold ?? 0;
-  const soldPredicted = snap.sellthrough.soldPredicted ?? 0;
+  /* Sell-through (docs §6.3). The entries in hand are an actual and carry
+   * over; the rate, the edition and the product editions are inputs, so the
+   * prediction is re-run. With the draw feed on the snapshot (its draws and
+   * patterns) the per-product rule runs again on the new product list and
+   * rate, and the headline is that sum, exactly as the ETL writes it. */
+  const st = snap.sellthrough || {};
+  const sold = st.sold ?? 0;
+  const rateIn = Number(inputs.entry_conversion_rate);
+  const rate = Number.isFinite(rateIn) && rateIn > 0 && rateIn <= 1 ? rateIn : (bench.eligible_entry_to_order || 0.8);
+  const oldRate = st.conversion || bench.eligible_entry_to_order || 0.8;
+  // entries in hand in units: stored by the ETL; on an older snapshot backed
+  // out of the prediction at the rate it was made at
+  const inHandUnits = Number.isFinite(st.inHandUnits) ? st.inHandUnits : (oldRate > 0 ? (st.soldPredicted ?? 0) / oldRate : 0);
+  const soldPredicted = inHandUnits * rate;
   const inventoryLeft = Math.max(edition - sold, 0);
   const future = complete ? 0 : Math.max(cappedProj - cappedNow, 0);
-  snap.sellthrough = {
+  const next = {
+    ...st,
     edition,
     sold,
+    conversion: rate,
     soldPredicted: r1(Math.min(soldPredicted, inventoryLeft)),
     futureEntriesPredicted: r1(Math.min(future, Math.max(inventoryLeft - soldPredicted, 0))),
   };
-  snap.sellthrough.pct = Math.round(Math.min(
-    (snap.sellthrough.sold + snap.sellthrough.soldPredicted + snap.sellthrough.futureEntriesPredicted)
-    / (edition || 1), 1) * 10000) / 10000;
+  delete next.benchmarkUnits;   // lever mode has no basket
+  next.pct = Math.round(Math.min((next.sold + next.soldPredicted + next.futureEntriesPredicted) / (edition || 1), 1) * 10000) / 10000;
+  if (sellThrough && Array.isArray(st.draws) && st.draws.length && Array.isArray(st.patterns)) {
+    const { products, soldSource } = sellThrough.productsFromDraws(st.draws, inputs.products, edition);
+    const pp = sellThrough.sellThroughProducts({
+      products, patterns: st.patterns, rate, edition, soldTotal: sold, futureUnits: future,
+      expectedToday: heroExp, benchmarkToday: null, benchmarkClose: null,
+    });
+    for (const k of ["products", "attributedSold", "unattributedSold", "allocation", "measure", "editionSum", "editionMismatch"]) next[k] = pp[k];
+    next.soldSource = soldSource;
+    next.soldPredicted = pp.soldPredicted;
+    next.futureEntriesPredicted = pp.futureEntriesPredicted;
+    next.pct = pp.pct;
+  } else {
+    for (const k of ["products", "attributedSold", "unattributedSold", "allocation", "measure", "editionSum", "editionMismatch", "soldSource"]) delete next[k];
+  }
+  snap.sellthrough = next;
 
   // waterfall: rescale contributors to the new gap so they still sum exactly
   const newTarget = r0(heroTarget);

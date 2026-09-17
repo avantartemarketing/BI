@@ -8,7 +8,7 @@ calculated. It is the result of reverse-engineering the current tooling:
 - **`Across time.csv`** - the new daily funnel export with campaign-clock columns (the across-time
   target enabler)
 - **Draw entry exports** (`draw_…entries_N.csv`) - per-entrant demand data
-- **All Sent Emails** (Klaviyo export) and **All editions content** (Emplifi export) - channel
+- **All Sent Emails** (the HubSpot feed, `server/hubspot.js`; the checked-in CSV is its last pull) and **All editions content** (Emplifi export) - channel
   activity data feeding the funnel diagnostics
 
 LE (Limited Edition, sold by draw / pre-order) is specified fully; TL (Timed Launch, sold by
@@ -66,7 +66,7 @@ is overridden to 100% AA ("he's not sharing paid budget"). Model input
 `campaign_code` (e.g. `GlennLigon_LE_26`) joins the release to:
 - **Meta ads**: `campaign_name = '{code} · Enter draw'` in `meta_ads_insights` (campaign_id has
   lost float precision in the export - join on name only).
-- **Email**: Klaviyo `Campaign` column equals the code exactly (join `Campaign == campaign_code`,
+- **Email**: the feed's `Campaign` column equals the code exactly (join `Campaign == campaign_code`,
   i.e. prefix-match the sheet's `{code} · Enter draw`). Never parse email names - 19% don't
   contain the code.
 - **Instagram/X content**: Emplifi `Labels` (semicolon-separated, order varies) contains the code;
@@ -163,9 +163,9 @@ All funnel data originates in BigQuery `avantarte-data-production.AA_company_tab
 | `order_type_by_release_export` | release × order_date | total_orders, originated_from_drafts, pending_draft, units | draft-order (private room) tracking |
 | `meta_ads_insights_export` | campaign × spend_date | impressions, reach, link_clicks, **spend** | paid spend actuals |
 | Meta lifetime ("Meta Data for Paid") | campaign | + 7d-click conversions (Purchases, Enter Draw…) | Meta-side attribution |
-| Klaviyo email export | email send | Delivered, Opened, Clicked, Unsubscribed | email funnel rungs |
+| HubSpot email feed (`server/hubspot.js`) | email send | Delivered, Opened, Clicked, Unsubscribed | email funnel rungs |
 | Emplifi content export | post/story | impressions, reach, engagements, saves, story metrics | social funnel rungs |
-| Draw entries export | entrant × draw | tier, score, products, MaxQuantity, winner/claim flags | demand, allocation, sell-through prediction |
+| Draw entries export | entrant × draw | tier, score, products, MaxQuantity, winner/claim flags | (legacy) demand by product; the per-product sell-through now reads the event feed's draws (§6.3) |
 
 **The dashboard reads the BigQuery tables directly when a key is configured**
 (`server/bigquery.js`, `BIGQUERY_SERVICE_ACCOUNT_JSON`): `le_funnel_report_split_touch_export`
@@ -221,7 +221,10 @@ erasure upstream propagates within a refresh, and anything that leaves the serve
 the API, this repository - is aggregated with no identifier column. `BQ_EVENTS=off` skips the
 feed; a failure of its guards is reported in the refresh status and never worked around.
 
-Asks of the data team, in order of value: (1) an authorized view over the table without
+Asks of the data team, in order of value: (0) a product on the purchase event (or a product
+dimension joining orders to draws), so private-room and pre-order sales can be attributed to a
+product on the sell-through card - today only a sale through a draw win names its product
+(§6.3); (1) an authorized view over the table without
 `user_email` (with `is_staff` derived inside it - 262 of 33,881 draw intents and 63 of 26,525
 purchases are staff), the dashboard's service account granted the view and revoked from the
 base table, or a policy tag on the column with no fine-grained-reader grant; (2) rotate the
@@ -524,7 +527,9 @@ share are written to `data/release_cluster_baskets.json`, assignments to
 `data/release_clusters.csv`. Campaign windows for releases without the upstream clock (every
 launch before 2026) are inferred from the funnel - announce from the first run of draw-entry
 days, close from the draw-allocation day - and validated against the clocked releases
-(announce within 2 days on 31 of 32, close exact on 24 of 27).
+(announce within 2 days on 31 of 32, close exact on 24 of 27). Every row also carries the
+edition's unit price, currency, edition size and launch value from Airtable (§4a.2½), so the
+basket layer can match on price as well as size.
 
 ---
 
@@ -587,12 +592,21 @@ suggested one; under **10** it is used but carries `basket.thin = True`, which t
 as a warning. A median over an empty or all-NaN column is `0.0`, never NaN.
 
 The profile is the medians themselves: `n` and `members`; `units` (median
-`tot_total_product_units`) with `units_p25` / `units_p75`; `sessions` (median
+`tot_total_product_units`) with `units_p25` / `units_p75`; `price` (median `unit_price_gbp`
+over the `n_priced` members Airtable priced) with `price_p25` / `price_p75`, and `edition_size`
+(median units on offer); `sessions` (median
 `tot_sessions_total`); `entries` (median `tot_draw_entries_eligible_units`); `campaign_days`;
 `private_room_share`; `share_units` and `share_sessions` per display group; `conv` (median
 `conv_sess_entry_<group>`, 0 where there is no history); and the two products
 `units_by_group` = `share_units[g] × units` and `sessions_by_group` = `share_sessions[g] ×
 sessions`. Groups are the five display groups of §1.3.
+
+The suggested basket, `similar_size` ("Similar size and shape"), is cut on three bands in log
+space - **size, price and shape** - widening the size and price bands through 2×, 2.5×, 3×, 4×
+and giving up price, then shape, then the band's tightness before it gives up on scale; the
+ladder, and the test that put price in it (price predicts session-to-entry conversion beyond
+size on five of eight benchmarked metrics, and the band cuts the leave-one-out benchmark error
+on seven of eight), are in `docs/BENCHMARK_SPEC.md` §3.1 and §3.1.1.
 
 `suggest_basket` picks the basket a release starts on: its own `cluster` if the panel has it,
 else `nearest_cluster`, else the cluster whose median units are closest to the edition size **in
@@ -600,6 +614,59 @@ log space** (the panel runs from tens of units to thousands, so a linear gap wou
 everything in the big basket), tie-broken on paid-session share against the release's paid plan.
 The suggestion is a starting point and is always overridable - `suggestedId` rides on the
 snapshot next to the chosen `id` so the card can say which one was picked for you.
+
+### 4a.2½ Edition pricing (`etl/pull_airtable.py`, `etl/pricing.py`)
+
+The funnel export carries no price and no edition size, and the targets workbook prices only
+the releases with targets set. Airtable's Pipeline table holds every edition's retail price,
+units, launch type, launch date and medium, one record per product (a colourway, a hand-finished
+variant, a bundle). `etl/pull_airtable.py` pulls exactly the fields needed - identity, price,
+size, type, dates, medium, artist tier and genre bucket - and nothing about people: it refuses
+to run if a wanted field turns out to hold a collaborator, email or phone, blanks any cell that
+looks like one, strips links out of rich text, and keeps only records with an artist, a title
+and a launch date that has passed or comes within 120 days. The result is committed as
+`data/release_pricing.csv` (one row per product record, 44 columns, all prices in EUR because
+that is the field's currency in Airtable). Credentials are `AIRTABLE_TOKEN` (read-only),
+`AIRTABLE_BASE_ID` and `AIRTABLE_TABLE`, environment only.
+
+`etl/pricing.py` joins the records to the release list. A **launch** is one artist's records
+under one release code on one launch date (a group show puts eight artists under one code;
+each artist's release is its own row in the panel). Bundles ("Set of 4", a diptych of listed
+prints, any record without an edition size) carry the sum of their parts and are left out, so
+a launch's `unit_price` is the **value-weighted mean over its sized products** (the price of
+the average unit in the edition), `edition_size` the sum of their units, `launch_value` the
+sum of price × units. The match runs strictest first and is never silent: exact artist + title
+(with the launch date inside the campaign window or the named quarter); the artist with the
+launch date inside `[announce − 45d, close + 30d]` (Airtable's launch date is the close of a
+draw and the launch day of a buy-now release); the artist in the named quarter for a release
+without a window; and a close spelling of the artist's name ("Woo Kuk Won" for "Kukwon Woo",
+"Anni Albers" under "Anni and Josef Albers", estate against foundation) with the similarity
+printed and nothing under 0.85 used. Two codes on one date are merged as one launch; two codes
+in the window on different dates go to the nearer one and the report names the loser. Every
+panel row records `price_match` (exact / artist+window / artist+quarter / fuzzy+window / none),
+`price_match_score`, `price_match_days` and `price_note`; `python3 etl/pricing.py` prints the
+whole matching report, with the unmatched releases and their dates to fix in Airtable.
+
+Coverage at the 2026-09-17 pull: 1,103 product records, 660 launches, 358 of the panel's 360
+releases matched (225 exact, 58 artist+window, 72 artist+quarter, 3 fuzzy), all 108 draw
+launches and 46 of 47 legacy launches priced, 359 of the dashboard's 361 releases. Unmatched:
+Michael Kozlowski · Mecha · 2024 Q2 and Michaël Borremans · The Monkey · 2027 Q1 (the artist is
+not in the pull). Units sold inside the window sit at a median 0.90 of Airtable's edition size;
+twelve launches sold more than 5% over it, mostly where Airtable holds one of several products.
+
+Currency: Airtable prices in euros; `unit_price_gbp` and `launch_value_gbp` convert at the
+fixed table `RATES_TO_GBP = {GBP: 1, EUR: 0.85, USD: 0.78}` (rounded 2024-2026 averages, fixed
+so the panel does not move with the market; in log space a fixed rate is a constant shift and
+changes no band and no correlation). The original price and currency are kept beside the
+converted one. **Note for the target form:** its "Unit price (£)" field holds, for eight of the
+nine targeted releases, the same number Airtable holds in euros, so either the workbook is
+entering euro list prices under a sterling label or the two list prices coincide; the basket
+layer reads the form's price in the currency the record says (sterling unless `currency` is set)
+and a factor-2 band absorbs the difference, but the label and the entry should agree.
+
+Refresh: `python3 etl/pull_airtable.py && python3 etl/analysis/release_clusters.py
+--pricing-only` re-attaches the pricing to the panel on file without a BigQuery pull; a full
+`release_clusters.py` run attaches it as it writes the panel.
 
 ### 4a.3 Target maths (`etl/build.py`)
 
@@ -822,11 +889,100 @@ units left to sell are shown as an oversubscription signal, not as bar overshoot
 Funnel diagnostics and the paid module stay denominated in entries/spend - the things
 marketing moves directly.
 
-### 6.3 Sell-through prediction (per product - LE)
-From draw data + orders:
-`sold` (units sold to date) + `sold_predicted` (eligible entries in hand × 0.8, allocated per
-product by the demand model) + `future_entries_predicted` (remaining plan curve × conversion).
-Segments must sum to ≤ edition; total sell-through % = Σ over products / Σ editions.
+### 6.3 Sell-through prediction, per product (LE)
+
+Sell-through is three things added up, per product:
+
+```
+sold          units paid for
+drafts        draft orders not yet paid: they take room out of the edition like a sale
+              (no feed yet; carried as null and drawn, striped rust, once a feed carries them)
+in hand       eligible draw entries still in the draw, ALLOCATED across the products by the
+              maximum-quantity rule below, × the entry → order rate (0.8 unless the release
+              sets its own)
+```
+
+plus, at close, the projection's further units spread over the products with room left.
+Everything is capped against the product's room (edition − sold) only where it is drawn; the
+uncapped demand is kept so an oversubscribed product stays visible as such.
+
+**Where the per-product data comes from.** A release runs **one draw per product**, so the
+event feed's `draw_id` is the product dimension (§2.2: exact against the multiset cap on 38 of
+38 releases with one or two draws; a re-run or a second wave adds a draw for the same product,
+which the Target setting tab merges by giving both draws the same name). Per draw entry
+(entrant × draw) the flags fold with `any` as the export folds them:
+
+| state | definition | counts as |
+|---|---|---|
+| open | eligible, not won, not bought | in hand, placed by the rule |
+| won | won, not yet bought | in hand, pinned to its product (the allocation is made) |
+| sold | won and bought | a sale of that product |
+| bought without a win | `draw_with_purchase` on a losing entry (a re-offer, a private-room buyer's entry) | out of the in-hand pool, as the export's `No_Conv` treats it, but **not** claimed as a sale of that product |
+
+`draw_entry_multiset_preference_max_quantity` is the entrant's maximum quantity across the
+release; empty means no cap. Purchase rows that carry a draw id are summed per draw as well
+(`purchaseUnits`) and take precedence as the product's sold units where the feed tags them;
+otherwise sold per product is the draw's winners who bought. Sales the draw feed cannot name a
+product for - private room, pre-orders, re-offers - are the release's funnel units sold less
+the attributed sum (`unattributedSold`). **Until the sales feed carries the product** they are
+split across the products by edition size (by eligible entrants until every edition is typed),
+carried per product as `soldAssumed`, drawn inside the sold segment and named as an estimate in
+its popup; the snapshot lists what is still missing in `sellthrough.incomplete` (`sales by
+product`, `draft orders`; `products` when the feed has no draws at all) and the card wears an
+**Incomplete data** stamp over the rows while the list is not empty. The stamp leaves by itself
+once purchases are tagged with a product (`soldSource = "purchases"`) and drafts arrive.
+
+`etl/aggregate_events.py` (`products_file`) writes `data/app/release_products.json`: per
+release, the draws with their counts (`entrants`, `eligible`, `winners`, `sold`, `open`,
+`wonUnpaid`, `purchaseUnits`, first and last entry day) and the **entry patterns** - the
+multiset of (open draws, unpaid wins, paid wins, pieces bought, max quantity) with how many
+entrants share each. Patterns are enough to run the allocation anywhere and name nobody.
+
+**The maximum-quantity rule** (`etl/sellthrough.py`, mirrored in `shared/sellThrough.mjs`,
+held to the unit by `tests/test_sellthrough.py`). An entrant who entered four products with a
+maximum quantity of two is one conversion on two products, not four, and the allocator awards
+the least-demanded of them at close. The prediction counts the same way before close:
+
+```
+appetite = max quantity − pieces already bought        (no cap: everything entered)
+unpaid wins are pinned to their product first; the appetite left goes to the open entries
+appetite ≥ open entries  → counted once on each (nothing to choose)
+appetite < open entries  → FLEXIBLE: placed one unit at a time on the product with the
+                           lowest fill, taken from the flexible entrant with the fewest
+                           other options left
+fill(p) = (sold_p + rate × counted_p) / edition_p       (plain units until every product
+                                                          has an edition)
+```
+
+So a product short of demand is topped up before one already spoken for, and an entrant with
+one alternative is placed before one with five. Ties break on product order, then pattern
+order, so the same input gives the same answer on either side. The snapshot records, per
+product, `allocated` = `pinned` + `fixed` + `flexible` (the demand counted there, in people),
+`predicted` = allocated × rate, `shown` = predicted capped at the room, `oversubscribed` =
+the rest; and for the release `allocation.{entrants, flexibleEntrants, surplusEntries,
+uncapped, unpaidWinners, flexibleUnits}`.
+
+**No references on this card.** The snapshot still carries the release's pace applied to each
+product's edition (`expectedToday_p = edition_p × hero.expectedToday / edition`, likewise
+`benchmarkToday_p` and `benchmarkClose_p`), but the card draws neither the target fill nor the
+benchmark outline, by decision: both are on the hero and the channels, and on this card they
+crowded the one reading it is for, each product against its own edition. The card carries no
+prose either; the allocation's account is in the in-hand row's popup, the split of unattributed
+sales in the striped segment's, and the editions are checked on the Target setting tab.
+
+**Products and editions** are typed on the Target setting tab (`products:
+[{key: draw_id, name, edition}]`; `productsFromDraws`): one row per draw the feed found, a
+name (draws sharing a name merge), an edition. A single product with no edition takes the
+release's; with several products the card runs on units and says so until every product has
+one, and it flags editions that do not add up to the release's. `entry_conversion_rate`
+(optional, per release) is the rate the prediction converts entries in hand at; the
+secured-units currency the rest of the page runs on keeps the panel's 0.8.
+
+**Headline.** With the draw feed present the release's `soldPredicted`, `futureEntriesPredicted`
+and `pct` are the per-product figures summed (each capped at the release's inventory left), so
+the card's rows and its headline are one sum; without it they are the release-level figures
+as before (`inHandUnits × rate`, capped). The hero's secured units stay on the funnel export
+and can differ from the card by the entries the rule does not count.
 
 ---
 
@@ -883,7 +1039,7 @@ left); ROI floor = 1.0/1.1 last-day forecast rule.
 
 ## 8. Email & social (funnel diagnostics layer)
 
-### Email (Klaviyo)
+### Email (HubSpot)
 Send-level: `Email Name`, send datetime, `Campaign` (join key), Delivered, Opened, Clicked,
 Unsubscribed. Name convention `DDMMYY_TYPE_Campaign - Description (variant)`;
 types: `GEN` full-list broadcast, `CUS` segmented send (incl. `Early Access (LE) 1/2/3` tiers),
@@ -925,7 +1081,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Key drivers | top movers | rank funnel steps by |contribution|, Adding vs Costing |
 | Paid ROI | series | §7 daily ROI (AA); decline model start = today's ROI |
 | Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), `cap` recorded; Implement → append-only decision log |
-| Sell-through | segments | §6.3 (LE: sold / sold-predicted / future-entries-predicted) |
+| Sell-through by product | rows | §6.3: per product sold / entries in hand allocated by the maximum-quantity rule × the entry → order rate / (at close) units still to come, against the product's edition; no target or benchmark drawn |
 | Entries by country | top 5 | geo split of entries (requires country dim in the daily feed - **currently missing; needs adding to the BigQuery export**) |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
 
@@ -983,6 +1139,12 @@ guard every benchmark mark on the page is written against.
 | `funnelByGroup[g].conv_benchmark_today`, `contrib_traffic_bm`, `contrib_conversion_bm`, `contrib_buyers_bm`, `contrib_per_buyer_bm` | the same three-factor decomposition against the basket's pace by today, summing to the group's actual − its benchmark today; the waterfalls' walk from the benchmark, and the conversion rungs' reference (Funnel by channel, Organic funnel), so a rung and the step beside it read the same figure |
 | `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median |
 | `sellthrough.benchmarkUnits` | the benchmark on the sell-through prediction |
+| `sellthrough.conversion`, `inHandUnits` | the entry → order rate the prediction runs at, and the entries in hand before it (§6.3) |
+| `sellthrough.products[]` | per product: `key`, `name`, `draws`, `edition`, `sold`, `drafts`, `entrants`, `inHand.{open, won}`, `allocated`, `pinned`, `fixed`, `flexible`, `predicted`, `shown`, `room`, `oversubscribed`, `futurePredicted`, `pct`, `pctClose`, `expectedToday`, `benchmarkToday`, `benchmarkClose` (§6.3) |
+| `sellthrough.attributedSold`, `unattributedSold`, `soldSource` | sold units the draw feed named a product for, the rest, and whether products' sales came from tagged purchases or from winners who bought |
+| `sellthrough.drafts`, `incomplete` | draft orders across the release (null until a feed carries them), and what the card is still waiting on: the list behind its Incomplete data stamp (§6.3) |
+| `sellthrough.allocation`, `measure`, `editionSum`, `editionMismatch`, `allocationStarted` | the rule's bookkeeping, whether fill is over editions or in units, the typed editions' sum against the release's, and whether winners have been drawn |
+| `sellthrough.draws`, `patterns` | the draw feed as reduced by `products_file`, so a save re-runs the rule on the server without the feed |
 | `paid.benchmarkUnits`, `benchmarkBudget` | the paid module's two benchmark marks |
 | `waterfall.benchmark`, `stretch`, `target`, `projection` | the at-close waterfall's left-hand columns; `steps` are unchanged and `stepsBm` are the same four contributors against the basket, summing to `projection − benchmark` |
 | `waterfall.today` | `{benchmark, stretch, target, actual, steps, stepsBm}` - the same four contributors measured **to date**, against the target and against the basket |

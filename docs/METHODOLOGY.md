@@ -26,6 +26,38 @@ target equals the edition size (sellout); demand beyond it shows as
 **oversubscribed**, not as bar overshoot. Funnel and paid modules stay denominated
 in sessions, entries and spend - the things marketing moves directly.
 
+### Sell-through, per product
+
+The sell-through card counts each product of a release separately, and the
+headline is those rows added up:
+
+```
+sell-through(product) = units paid
+                      + draft orders not yet paid
+                      + entries in hand counted on the product × 0.8
+```
+
+Until the feeds carry sales by product and draft orders, the card wears an
+**Incomplete data** stamp: the sales the draw cannot name a product for are
+split across the products by edition size, and drafts are not drawn.
+
+**Entries in hand are allocated, not simply counted.** A release runs one draw
+per product, and a collector can enter several draws while wanting fewer pieces
+than they entered for: someone who enters four products with a maximum quantity
+of two is one conversion on two of them, not four. The allocator resolves that
+at close by awarding the least-demanded of their products, so the prediction
+counts the same way before close - each such entrant is counted on their
+maximum quantity of products, on whichever of the products they entered have
+the most room left, one unit at a time. Entrants who have already won are
+counted on what they won. The card says how many entrants that moved and where
+they went.
+
+The 0.8 is the entry → order rate (80% of eligible entries historically become
+orders) and can be set per release on the Target setting tab, alongside each
+product's name and edition size. Sales the draw cannot name a product for
+(private room, pre-orders) are shown at release level rather than guessed onto
+a product.
+
 ## 2. The inputs (Target setting tab)
 
 Each release carries a small set of human decisions, editable on its **Target
@@ -46,6 +78,8 @@ projections immediately - no data rebuild needed.
 | Cost per purchase (Low / Median / High) | £128.75 / £177 / £291 per paid unit |
 | Channel quality grid (N/A / Low / Medium / High) | Per-channel quartile picks; N/A removes a channel |
 | Meta campaign | Which ad campaign the paid actuals are read from |
+| Products | One row per draw the event feed found: the product's name and its edition size (draws given the same name are one product) |
+| Entry → order rate | What share of entries in hand become orders on the sell-through card; empty means the panel's 80% |
 
 ## 3. Benchmarks: everything is a quartile
 
@@ -285,8 +319,10 @@ recommendation is the ROI at that spend level's cost per entry.
 - **Daily funnel** (sessions, entries, units by channel × day) and **Meta spend**
   are pulled live from the *LE Paid Calculator* Google Sheet on boot and every
   hour; the dashboard header shows the latest complete day.
-- **Email** stats pull live from HubSpot when connected (otherwise an uploaded
-  snapshot); **Instagram content** (Emplifi) is an uploaded snapshot.
+- **Email** stats pull live from HubSpot on every refresh (`HUBSPOT_TOKEN`); the
+  checked-in CSV is the last pull and serves only until the first refresh. The header
+  says "emails through" a date whenever the feed falls more than a week behind the
+  build. **Instagram content** (Emplifi) is an uploaded snapshot.
 - **Artist posts** pull live from the team's Notion log when connected. Their
   benchmark follows the same cohort approach as every other channel: expected
   posts = the median artist-post count among completed campaigns in the same

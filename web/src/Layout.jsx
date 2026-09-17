@@ -2,9 +2,8 @@
  * headers between them. One arrangement for everyone, kept on the server
  * (GET and POST /api/layout; README "Arranging the page"). This file owns the
  * list of cards, so a saved layout naming a card the code no longer has drops
- * it, and a card the code gained since the save joins at the end - unless the
- * layout says it was taken off the page, which is what its `removed` list
- * records.
+ * it, and a card the code gained since the save joins the page - unless the
+ * layout says it was taken off, which is what its `removed` list records.
  *
  * Editing is drag and drop: every card is a handle, a header is dragged by its
  * grip, and a header ends one grid and starts the next, so each section packs
@@ -14,19 +13,24 @@
 import React, { useEffect, useState } from "react";
 import { C } from "./ui.jsx";
 
+/* size: "tall", "wide" and "big" (2 × 2) are grid spans; "strip" is a
+ * full-width row of its own outside the grids, for a card that is a rule
+ * across the page rather than a box in it. place: "top" says where the card
+ * joins a saved layout that predates it. optional: not on the page by default,
+ * only ever added from the editor. */
 export const CARDS = [
+  { key: "clock", title: "Campaign clock", size: "strip", place: "top", note: "shown only on a release with campaign dates" },
   { key: "hero", title: "Units vs sellout" },
   { key: "channels", title: "Channels vs targets" },
   { key: "no_targets", title: "No targets set", note: "shown only on a release without targets" },
   // the funnel card comes in two sizes, listed as a pair so the editor reads as a choice
   { key: "funnel", title: "Funnel by channel, 1 × 2", size: "tall", note: "the funnel and the waterfall, one at a time" },
-  // not on the page by default: the waterfall view with 2 × 2 of room
   { key: "funnel_wide", title: "Funnel by channel, 2 × 2", size: "big", optional: true, note: "the waterfall across two columns by two rows, on a unit axis" },
   { key: "trajectory", title: "Unit trajectory", size: "wide" },
   { key: "drivers", title: "Funnel key drivers" },
   { key: "paid_roi", title: "Paid ROI", size: "wide" },
   { key: "paid_spend", title: "Paid spend / day" },
-  { key: "sell_through", title: "Sell-through" },
+  { key: "sell_through", title: "Sell-through by product", size: "wide" },
   { key: "geo", title: "Entries by country" },
   { key: "waterfall", title: "Actual vs target" },
 ];
@@ -42,9 +46,10 @@ const onPage = (items) => new Set(items.filter((it) => it.type === "card").map((
 export const missingCards = (items) => { const on = onPage(items); return CARDS.filter((c) => !on.has(c.key)); };
 
 /* A stored layout against the cards the code has: unknown cards go, repeats go,
- * and a card the layout never heard of joins at the end - unless the layout
- * took it off the page, or it is not on the page by default. Headers pass
- * through and get an id for React's benefit; the server keeps only their text. */
+ * and a card the layout never heard of joins - at the top where the card says
+ * so (the campaign clock), at the end otherwise - unless the layout took it off
+ * the page, or it is not on the page by default. Headers pass through and get
+ * an id for React's benefit; the server keeps only their text. */
 export function reconcile(items, removed) {
   const out = [], seen = new Set();
   for (const it of Array.isArray(items) ? items : []) {
@@ -53,8 +58,9 @@ export function reconcile(items, removed) {
     else if (it.type === "header") out.push({ type: "header", text: String(it.text ?? "").slice(0, 80), id: it.id || newId() });
   }
   const off = new Set(Array.isArray(removed) ? removed : []);
-  for (const c of CARDS) if (!seen.has(c.key) && !c.optional && !off.has(c.key)) out.push({ type: "card", key: c.key });
-  return out;
+  const missing = CARDS.filter((c) => !seen.has(c.key) && !c.optional && !off.has(c.key)).map((c) => ({ type: "card", key: c.key }));
+  const top = missing.filter((it) => BY_KEY[it.key].place === "top");
+  return [...top, ...out, ...missing.filter((it) => !top.includes(it))];
 }
 
 export function useLayout() {
@@ -148,62 +154,81 @@ export function PageLayout({ items, render, editing = false, onChange }) {
     (over && over.idx === idx ? (over.before ? " drop-before" : " drop-after") : "") + (drag === idx ? " dragging" : "");
   const setText = (idx, text) => onChange(items.map((it, i) => (i === idx ? { ...it, text } : it)));
   const remove = (idx) => onChange(items.filter((_, i) => i !== idx));
+  // the × that takes a card off the page: the card under it takes no pointer
+  // events while editing, so the button sits beside it in the slot
+  const takeOff = (card, idx) => (
+    <button className="x" draggable={false} title={`Take ${card.title} off the page`}
+      onClick={(e) => { e.stopPropagation(); remove(idx); }}>&#215;</button>
+  );
+  const ghost = (card) => (
+    <div className="card ghost">
+      <div className="mod-head"><span className="gdot" style={{ background: "#c8c5bc" }} /><span className="title">{card.title}</span></div>
+      <div className="empty-state">{card.note || "nothing to show on this release"}</div>
+    </div>
+  );
 
-  // sections: each header opens one; the cards before any header make the first
-  const sections = [];
+  // blocks, in order: a header, a strip card (a full-width row of its own), or
+  // a grid of the cards between them. A header or a strip closes the grid
+  // before it, so each run of cards packs on its own.
+  const blocks = [];
+  let grid = null;
+  const openGrid = (opener) => { grid = { kind: "grid", key: opener ? `g-${opener.id || opener.key}` : "g-top", opener, cards: [] }; blocks.push(grid); };
   items.forEach((it, idx) => {
-    if (it.type === "header" || !sections.length) sections.push({ header: it.type === "header" ? { ...it, idx } : null, cards: [] });
-    if (it.type === "card") sections[sections.length - 1].cards.push({ ...it, idx });
+    if (it.type === "header") { blocks.push({ kind: "header", ...it, idx }); openGrid({ ...it, idx }); }
+    else if (BY_KEY[it.key].size === "strip") { blocks.push({ kind: "strip", ...it, idx }); grid = null; }
+    else { if (!grid) openGrid(blocks.length ? { key: blocks[blocks.length - 1].key } : null); grid.cards.push({ ...it, idx }); }
   });
 
   return (
     <div className="layout">
-      {sections.map((s) => {
-        const cards = s.cards.map((c) => ({ ...c, node: render(c.key) })).filter((c) => editing || c.node);
-        const h = s.header;
+      {blocks.map((b) => {
+        if (b.kind === "header") {
+          return editing ? (
+            <div key={b.id} className={`section-row${dropClass(b.idx)}`} onDragOver={dragOver(b.idx, "y")} onDrop={drop}>
+              <span className="grip" draggable onDragStart={dragStart(b.idx)} onDragEnd={dragEnd} title="Drag to move the header">&#8942;&#8942;</span>
+              <input className="section-input" value={b.text} placeholder="Section name" autoFocus={b.text === ""}
+                onChange={(e) => setText(b.idx, e.target.value)} />
+              <button className="x" onClick={() => remove(b.idx)} title="Remove the header">&#215;</button>
+            </div>
+          ) : (b.text.trim() ? <h2 key={b.id} className="section-head">{b.text}</h2> : null);
+        }
+        if (b.kind === "strip") {
+          const card = BY_KEY[b.key];
+          const node = render(b.key);
+          if (!node && !editing) return null;
+          return (
+            <div key={b.key} className={`slot strip${editing ? " edit" : ""}${dropClass(b.idx)}`}
+              draggable={editing} onDragStart={editing ? dragStart(b.idx) : undefined} onDragEnd={dragEnd}
+              onDragOver={dragOver(b.idx, "y")} onDrop={drop}>
+              {node || ghost(card)}
+              {editing && takeOff(card, b.idx)}
+            </div>
+          );
+        }
+        const cards = b.cards.map((c) => ({ ...c, node: render(c.key) })).filter((c) => editing || c.node);
+        const h = b.opener && b.opener.type === "header" ? b.opener : null;
+        if (cards.length === 0 && !editing) return null;
         return (
-          <React.Fragment key={h ? h.id : "top"}>
-            {h && (editing ? (
-              <div className={`section-row${dropClass(h.idx)}`} onDragOver={dragOver(h.idx, "y")} onDrop={drop}>
-                <span className="grip" draggable onDragStart={dragStart(h.idx)} onDragEnd={dragEnd} title="Drag to move the header">&#8942;&#8942;</span>
-                <input className="section-input" value={h.text} placeholder="Section name" autoFocus={h.text === ""}
-                  onChange={(e) => setText(h.idx, e.target.value)} />
-                <button className="x" onClick={() => remove(h.idx)} title="Remove the header">&#215;</button>
-              </div>
-            ) : (h.text.trim() ? <h2 className="section-head">{h.text}</h2> : null))}
-            {(cards.length > 0 || editing) && (
-              <div className="grid">
-                {cards.map((c) => {
-                  const card = BY_KEY[c.key];
-                  return (
-                    <div key={c.key} className={`slot${card.size ? " " + card.size : ""}${editing ? " edit" : ""}${dropClass(c.idx)}`}
-                      draggable={editing} onDragStart={editing ? dragStart(c.idx) : undefined} onDragEnd={dragEnd}
-                      onDragOver={dragOver(c.idx, "x")} onDrop={drop}>
-                      {c.node || (
-                        <div className="card ghost">
-                          <div className="mod-head"><span className="gdot" style={{ background: "#c8c5bc" }} /><span className="title">{card.title}</span></div>
-                          <div className="empty-state">{card.note || "nothing to show on this release"}</div>
-                        </div>
-                      )}
-                      {editing && (
-                        /* the card under it takes no pointer events while editing, so
-                           the button sits beside it in the slot rather than inside it */
-                        <button className="x" draggable={false} title={`Take ${card.title} off the page`}
-                          onClick={(e) => { e.stopPropagation(); remove(c.idx); }}>&#215;</button>
-                      )}
-                    </div>
-                  );
-                })}
-                {editing && h && cards.length === 0 && (
-                  <div className={`slot drop-empty${over && over.idx === h.idx && !over.before ? " drop-after" : ""}`}
-                    onDragOver={(e) => { if (drag === null || drag === h.idx) return; e.preventDefault(); setOver({ idx: h.idx, before: false }); }}
-                    onDrop={drop}>
-                    Drop a card here
-                  </div>
-                )}
+          <div key={b.key} className="grid">
+            {cards.map((c) => {
+              const card = BY_KEY[c.key];
+              return (
+                <div key={c.key} className={`slot${card.size ? " " + card.size : ""}${editing ? " edit" : ""}${dropClass(c.idx)}`}
+                  draggable={editing} onDragStart={editing ? dragStart(c.idx) : undefined} onDragEnd={dragEnd}
+                  onDragOver={dragOver(c.idx, "x")} onDrop={drop}>
+                  {c.node || ghost(card)}
+                  {editing && takeOff(card, c.idx)}
+                </div>
+              );
+            })}
+            {editing && h && cards.length === 0 && (
+              <div className={`slot drop-empty${over && over.idx === h.idx && !over.before ? " drop-after" : ""}`}
+                onDragOver={(e) => { if (drag === null || drag === h.idx) return; e.preventDefault(); setOver({ idx: h.idx, before: false }); }}
+                onDrop={drop}>
+                Drop a card here
               </div>
             )}
-          </React.Fragment>
+          </div>
         );
       })}
     </div>
