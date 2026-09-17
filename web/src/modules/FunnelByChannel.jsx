@@ -404,19 +404,19 @@ function buildWaterfall(snap, groups) {
   const nowTotal = snap?.hero?.now ?? 0;
   const day = snap?.day ?? 0;
 
-  /* The same grammar as the outcome waterfall, off the same snapshot figures:
-   * the list opens at the target, sets the stretch aside as a bar from the
-   * target to the benchmark, and walks from the benchmark with every row read
-   * against the basket, so the rows sum to actual less benchmark and, with the
-   * stretch, to actual less target. Absent a benchmark the list opens at the
-   * target and the rows read against the plan, as everywhere else. */
+  /* Off the same snapshot figures as the outcome waterfall: the list opens at
+   * the benchmark, shows the stretch beneath it as the band up to the target
+   * with the target's tick at its end, and walks from the benchmark with every
+   * row read against the basket, so the rows sum to actual less benchmark and,
+   * with the stretch, to actual less target. Absent a benchmark the list opens
+   * at the target and the rows read against the plan, as everywhere else. */
   const bmTotal = snap?.hero?.benchmarkToday ?? null;
   const hasBm = !!snap?.benchmark && bmTotal !== null && bmTotal !== undefined;
   const stretchTotal = hasBm ? expTotal - bmTotal : null;
   const words = refWords("today");
   const startTotal = hasBm ? bmTotal : expTotal;
 
-  const sections = groups.map((g) => ({ key: g.key, ...groupWaterfall(g, snap, hasBm) }));
+  const sections = groups.map((g) => ({ key: g.key, short: g.short, ...groupWaterfall(g, snap, hasBm) }));
   const stepRows = sections.flatMap((s) => s.rows.filter((r) => finite(r.value)));
   if (!stepRows.length) return null;
   // per-group rounding only: each group's steps sum to its own gap by
@@ -444,8 +444,8 @@ function buildWaterfall(snap, groups) {
     flat.push({ header: s.name });
     for (const r of s.rows) {
       if (r.perBuyer) continue;
-      if (finite(r.value)) { const from = cum; cum += r.value; flat.push({ ...r, group: s.key, from, to: cum }); }
-      else flat.push({ ...r, group: s.key, level: cum });
+      if (finite(r.value)) { const from = cum; cum += r.value; flat.push({ ...r, group: s.key, short: s.short, from, to: cum }); }
+      else flat.push({ ...r, group: s.key, short: s.short, level: cum });
     }
   }
   if (perBuyerRow && Math.abs(perBuyerTotal) > 0.05) {
@@ -460,12 +460,11 @@ function buildWaterfall(snap, groups) {
   const span = hi + pad - (lo - pad);
   const X = (v) => ((v - (lo - pad)) / span) * 100;
 
-  /* The stretch as a step: the bar from the target down (or up) to the
-   * benchmark in the stretch tint, the same band the bars and the trajectory
-   * draw between the two references. A planning decision rather than
-   * performance, so its figure is in ink, not the step colours; the rows
-   * below read against the basket, so this is the part of the gap to target
-   * that is ambition. */
+  /* The stretch: the band from the benchmark up (or down) to the target in the
+   * stretch tint, the same band the bars and the trajectory draw between the
+   * two references. A planning decision rather than performance, so its
+   * figure is in ink, not the step colours; the rows below read against the
+   * basket, so this is the part of the gap to target that is ambition. */
   const stretchTip = hasBm ? {
     head: "Stretch",
     rows: [
@@ -576,7 +575,7 @@ function rungModel(snap) {
    * benchmark and the target are the same line and the ring sits on centre. */
   const groups = [
     {
-      key: "aa_email", name: "AA Email",
+      key: "aa_email", name: "AA Email", short: "Email",
       rungs: [
         // benchmark = cohort median delivered total x pooled delivery-timing
         // curve at today's pdsa (computed in the ETL as email.deliveredTarget);
@@ -596,7 +595,7 @@ function rungModel(snap) {
       ],
     },
     {
-      key: "aa_social", name: "AA Meta",
+      key: "aa_social", name: "AA Meta", short: "Meta",
       rungs: [
         { label: "Posts", kind: "vol", unit: "count",
           v: (social.posts ?? 0) + (social.stories ?? 0), plan: null, bm: null,
@@ -606,7 +605,7 @@ function rungModel(snap) {
       ],
     },
     {
-      key: "referral_artist", name: "Referral artist",
+      key: "referral_artist", name: "Referral artist", short: "Artist",
       rungs: [
         // artist-account posts from the Notion log; benchmark = tier benchmark
         // (median posts among completed campaigns in the same Referral Artist
@@ -618,11 +617,11 @@ function rungModel(snap) {
       ],
     },
     {
-      key: "search_direct_other", name: "Search / direct / other",
+      key: "search_direct_other", name: "Search / direct / other", short: "Direct etc.",
       rungs: [sess("search_direct_other"), conv("search_direct_other")],
     },
     {
-      key: "paid", name: "Paid",
+      key: "paid", name: "Paid", short: "Paid",
       rungs: [
         { label: "Spend", kind: "vol", unit: "eur", v: paid.spendToDate ?? null, plan: spendPlan, bm: spendBm,
           note: "Budget × share of days elapsed. The benchmark budget is the basket's paid spend on the same clock." },
@@ -719,46 +718,53 @@ export default function FunnelByChannel({ snap, horizon, only }) {
  * this size. */
 
 /* ---- the waterfall view, in both cards -----------------------------------
- * The walk from the target - or, with a basket, from the benchmark with the
- * stretch set aside - down every channel's rows to the actual. The channel
- * names stand to the left of their rows rather than on rows of their own, so
- * the stack is five rows shorter and every row taller, and grey 1px drops
- * carry the running level from each row to the next, so the walk reads as one
- * line, as the outcome waterfall draws it (BENCHMARK_SPEC 9). The tall card
- * has no figure column: a row's figures are in its popup, on the bar or on
- * the name, and the levels print theirs beside their label. The 2 × 2 card
- * keeps the column and runs the bars across the card on a unit axis. Pointing
- * at a name lights its bar and pointing at a bar lights its name; a channel's
- * name lights every row it has. */
-const WALK_TALL = { group: 82, label: 100, delta: 0, gap: 8, axis: false, nameSize: 12 };
+ * The walk opens at the benchmark, with the stretch beneath it as the band up
+ * to the target and the target's tick at its end, and steps down every
+ * channel's rows to the actual. Grey 1px drops carry the running level from
+ * each row to the next, so the walk reads as one line, as the outcome
+ * waterfall draws it (BENCHMARK_SPEC 9). The channels are blocks of rows
+ * rather than rows of their own: the 2 × 2 card names them in a column to
+ * the left and keeps a figure column, running the bars across the card on a
+ * unit axis; the tall card has neither column, so its row labels carry the
+ * channel where the label alone would not say it (Email sessions, Paid spend
+ * - the email chain's own stages and the release-level buyer row stand as they
+ * are), a row's figures are in its popup, on the bar or on its name, and the
+ * levels print theirs beside their label. Pointing at a name lights its bar
+ * and pointing at a bar lights its name; a channel's name lights every row it
+ * has. */
+const WALK_TALL = { group: 0, label: 172, delta: 0, gap: 8, axis: false };
 const WALK_WIDE = { group: 118, label: 112, delta: 56, gap: 10, axis: true, nameSize: 12.5 };
 const HOT_RING = "0 0 0 2px rgba(20,20,19,.35)";
 const HOT_DOT = "#a9a59a";
+/* labels that say which channel they are, or belong to no channel */
+const SELF_NAMED = new Set(["Delivered emails", "Open rate", "Click rate", "Sessions per click", "Units per buyer"]);
+const withChannel = (r) => (SELF_NAMED.has(r.label) || !r.short ? r.label : `${r.short} ${r.label[0].toLowerCase()}${r.label.slice(1)}`);
 
 /* The walk as blocks: the opening levels, one block per channel, the closing
  * level. Every row carries the running level in and out, which is where its
  * drops are drawn from and to. */
 function walkBlocks(wf) {
   const { flat, expTotal, bmTotal, nowTotal, hasBm, words } = wf;
-  const open = [{ id: "target", kind: "level", base: 26, label: words.target, value: expTotal, tip: targetTip(wf), color: C.refLine }];
-  if (hasBm) {
-    open.push({ id: "stretch", kind: "stretch", base: 20, label: "Stretch", from: expTotal, to: bmTotal, tip: wf.stretchTip });
-    open.push({ id: "bm", kind: "level", base: 26, label: words.bm, value: bmTotal, tip: bmTip(wf), color: C.refLine, dotted: true });
-  }
+  const open = hasBm ? [
+    { id: "bm", kind: "level", base: 26, label: words.bm, value: bmTotal, level: bmTotal, tip: bmTip(wf), color: C.refLine, dotted: true },
+    // the stretch: the band from the benchmark to the target, the target's tick
+    // at its end; the walk goes on from the benchmark
+    { id: "stretch", kind: "stretch", base: 24, label: "Stretch to target", from: bmTotal, to: expTotal, value: expTotal, level: bmTotal,
+      tip: wf.stretchTip, targetTip: targetTip(wf) },
+  ] : [
+    { id: "target", kind: "level", base: 26, label: words.target, value: expTotal, level: expTotal, tip: targetTip(wf), color: C.refLine },
+  ];
   const groups = [];
   for (const r of flat) {
     if (r.header) { groups.push({ name: r.header, rows: [] }); continue; }
     const g = groups[groups.length - 1];
-    g.rows.push({ id: `${g.name}:${g.rows.length}`, group: g.name, kind: r.to !== undefined ? "step" : "info", base: 24, r });
+    const step = r.to !== undefined;
+    g.rows.push({ id: `${g.name}:${g.rows.length}`, group: g.name, kind: step ? "step" : "info", base: 24, r, level: step ? r.to : r.level, full: withChannel(r) });
   }
-  const close = [{ id: "actual", kind: "level", base: 26, label: "Actual today", value: nowTotal, tip: actualTip(wf), color: C.orange }];
+  const close = [{ id: "actual", kind: "level", base: 26, label: "Actual today", value: nowTotal, level: nowTotal, tip: actualTip(wf), color: C.orange }];
   const all = [...open, ...groups.flatMap((g) => g.rows), ...close];
   let lvl = null;
-  for (const row of all) {
-    row.entry = lvl;
-    lvl = row.kind === "level" ? row.value : row.kind === "stretch" ? row.to : row.kind === "step" ? row.r.to : row.r.level;
-    row.exit = lvl;
-  }
+  for (const row of all) { row.entry = lvl; lvl = row.level; row.exit = lvl; }
   all[all.length - 1].exit = null;
   return { open, groups, close };
 }
@@ -791,8 +797,10 @@ function Walk({ wf, layout: L }) {
   const [hot, setHot] = React.useState(null);   // { row } or { group }: what the pointer is on
   const { open, groups, close } = walkBlocks(wf);
   const { X, hasBm } = wf;
-  const cols = `${L.group}px ${L.label}px 1fr${L.delta ? ` ${L.delta}px` : ""}`;
-  const trackL = L.group + L.label + 2 * COL_GAP, trackR = L.delta ? L.delta + COL_GAP : 0;
+  // the columns: the channel name (2 × 2 only), the label, the track, the figure (2 × 2 only)
+  const cols = `${L.group ? `${L.group}px ` : ""}${L.label}px 1fr${L.delta ? ` ${L.delta}px` : ""}`;
+  const col = (n) => n + (L.group ? 1 : 0);   // n: 1 label, 2 track, 3 figure
+  const trackL = (L.group ? L.group + COL_GAP : 0) + L.label + COL_GAP, trackR = L.delta ? L.delta + COL_GAP : 0;
   const lit = (row) => !!hot && ((hot.row !== undefined && hot.row === row.id) || (hot.group !== undefined && hot.group === row.group));
   // the popup and the highlight from one pair of handlers
   const point = (at, tip) => {
@@ -813,16 +821,21 @@ function Walk({ wf, layout: L }) {
       background: color, borderRadius: 3, boxShadow: lit(row) ? HOT_RING : "none",
     }} />
   );
+  const tick = (value, color, dotted, tip) => (
+    <div style={{ position: "absolute", left: 0, right: 0, top: "50%", marginTop: -7, height: 14 }}>
+      <Tick pct={X(value)} color={color} dotted={dotted} tip={tip} />
+    </div>
+  );
 
-  // a level or the stretch on a row of its own: the label spans the name and
+  // a level, or the stretch, on a row of its own: the label spans the name and
   // the label columns, and carries the figure where there is no column for it
   const levelRow = (row, gap = 0) => {
     const stretch = row.kind === "stretch";
-    const v = stretch ? fmtSigned(row.to - row.from) : fmt(row.value);
+    const v = fmt(row.value);
     return (
       <div key={row.id} style={grid(row.base, gap)}>
         <div {...point({ row: row.id }, row.tip)} style={{
-          gridColumn: "1 / 3", overflow: "hidden", textOverflow: "ellipsis",
+          gridColumn: L.group ? "1 / 3" : "1", overflow: "hidden", textOverflow: "ellipsis",
           ...(stretch ? { fontSize: 12, color: C.muted, whiteSpace: "nowrap" } : ANCHOR_LABEL),
         }}>
           {row.label}
@@ -830,37 +843,43 @@ function Walk({ wf, layout: L }) {
         </div>
         <div style={{ position: "relative", alignSelf: "stretch" }}>
           <Drops entry={row.entry} exit={row.exit} X={X} />
-          {stretch ? bar(row, row.from, row.to, C.refStretch, row.tip) : (
-            <div style={{ position: "absolute", left: 0, right: 0, top: "50%", marginTop: -7, height: 14 }}>
-              <Tick pct={X(row.value)} color={row.color} dotted={!!row.dotted} tip={row.tip} />
-            </div>
-          )}
+          {stretch ? (
+            <>
+              {bar(row, row.from, row.to, C.refStretch, row.tip)}
+              {tick(row.to, C.refLine, false, row.targetTip)}
+            </>
+          ) : tick(row.value, row.color, !!row.dotted, row.tip)}
         </div>
-        {L.delta ? <div className="num" style={stretch ? ROW_NUM : ANCHOR_NUM}>{v}</div> : null}
+        {L.delta ? <div className="num" style={ANCHOR_NUM}>{v}</div> : null}
       </div>
     );
   };
 
-  // one channel: its name at the top left of its rows, which share the block's
-  // height in proportion to their base heights
+  // one channel: its rows share the block's height in proportion to their base
+  // heights, its name at the top left where the layout has a column for it
   const channelBlock = (g) => {
     const sum = g.rows.reduce((a, r) => a + r.base, 0);
     return (
       <div key={g.name} style={{ ...grid(sum, L.gap), gridTemplateRows: g.rows.map((r) => `minmax(0, ${r.base}fr)`).join(" ") }}>
-        <div {...point({ group: g.name }, null)} style={{
-          gridColumn: 1, gridRow: "1 / -1", alignSelf: "start", paddingTop: 4,
-          fontSize: L.nameSize, fontWeight: 600, lineHeight: 1.25,
-        }}>
-          {g.name}
-        </div>
+        {L.group ? (
+          <div {...point({ group: g.name }, null)} style={{
+            gridColumn: 1, gridRow: "1 / -1", alignSelf: "start", paddingTop: 4,
+            fontSize: L.nameSize, fontWeight: 600, lineHeight: 1.25,
+          }}>
+            {g.name}
+          </div>
+        ) : null}
         {g.rows.map((row, i) => {
           const r = row.r, step = row.kind === "step", on = lit(row);
-          const tip = step ? stepTip(r, hasBm) : infoTip(r);
+          // the popup names the row in full, whichever card it is on
+          const tip = { ...(step ? stepTip(r, hasBm) : infoTip(r)), head: row.full };
           const at = { gridRow: i + 1 };
           return (
             <React.Fragment key={row.id}>
-              <div {...point({ row: row.id }, tip)} style={{ ...at, gridColumn: 2, ...ROW_LABEL, color: on ? C.ink : C.muted }}>{r.label}</div>
-              <div style={{ ...at, gridColumn: 3, position: "relative", alignSelf: "stretch" }}>
+              <div {...point({ row: row.id }, tip)} style={{ ...at, gridColumn: col(1), ...ROW_LABEL, color: on ? C.ink : C.muted }}>
+                {L.group ? r.label : row.full}
+              </div>
+              <div style={{ ...at, gridColumn: col(2), position: "relative", alignSelf: "stretch" }}>
                 <Drops entry={row.entry} exit={row.exit} X={X} />
                 {step ? bar(row, r.from, r.to, r.value >= 0 ? C.wfGreen : C.red, tip) : (
                   <div {...point({ row: row.id }, tip)} style={{
@@ -870,7 +889,7 @@ function Walk({ wf, layout: L }) {
                 )}
               </div>
               {L.delta ? (
-                <div className="num" style={{ ...at, gridColumn: 4, ...ROW_NUM, color: step ? (r.value >= 0 ? C.green : C.red) : C.muted }}>
+                <div className="num" style={{ ...at, gridColumn: col(3), ...ROW_NUM, color: step ? (r.value >= 0 ? C.green : C.red) : C.muted }}>
                   {step ? fmtSigned(r.value, 1) : (r.display ?? "–")}
                 </div>
               ) : null}
