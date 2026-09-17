@@ -10,7 +10,12 @@
 import React, { useEffect, useState } from "react";
 import { C } from "./ui.jsx";
 
+/* size: "tall" and "wide" are grid spans; "strip" is a full-width row of its
+ * own outside the grids, for a card that is a rule across the page rather than
+ * a box in it. place: "top" says where the card joins a saved layout that
+ * predates it. */
 export const CARDS = [
+  { key: "clock", title: "Campaign clock", size: "strip", place: "top", note: "shown only on a release with campaign dates" },
   { key: "hero", title: "Units vs sellout" },
   { key: "channels", title: "Channels vs targets" },
   { key: "no_targets", title: "No targets set", note: "shown only on a release without targets" },
@@ -40,8 +45,9 @@ export function reconcile(items) {
     if (it.type === "card" && BY_KEY[it.key] && !seen.has(it.key)) { seen.add(it.key); out.push({ type: "card", key: it.key }); }
     else if (it.type === "header") out.push({ type: "header", text: String(it.text ?? "").slice(0, 80), id: it.id || newId() });
   }
-  for (const c of CARDS) if (!seen.has(c.key)) out.push({ type: "card", key: c.key });
-  return out;
+  const missing = CARDS.filter((c) => !seen.has(c.key)).map((c) => ({ type: "card", key: c.key }));
+  const top = missing.filter((it) => BY_KEY[it.key].place === "top");
+  return [...top, ...out, ...missing.filter((it) => !top.includes(it))];
 }
 
 export function useLayout() {
@@ -123,55 +129,76 @@ export function PageLayout({ items, render, editing = false, onChange }) {
   const setText = (idx, text) => onChange(items.map((it, i) => (i === idx ? { ...it, text } : it)));
   const remove = (idx) => onChange(items.filter((_, i) => i !== idx));
 
-  // sections: each header opens one; the cards before any header make the first
-  const sections = [];
+  // blocks, in order: a header, a strip card (a full-width row of its own), or
+  // a grid of the cards between them. A header or a strip closes the grid
+  // before it, so each run of cards packs on its own.
+  const blocks = [];
+  let grid = null;
+  const openGrid = (opener) => { grid = { kind: "grid", key: opener ? `g-${opener.id || opener.key}` : "g-top", opener, cards: [] }; blocks.push(grid); };
   items.forEach((it, idx) => {
-    if (it.type === "header" || !sections.length) sections.push({ header: it.type === "header" ? { ...it, idx } : null, cards: [] });
-    if (it.type === "card") sections[sections.length - 1].cards.push({ ...it, idx });
+    if (it.type === "header") { blocks.push({ kind: "header", ...it, idx }); openGrid({ ...it, idx }); }
+    else if (BY_KEY[it.key].size === "strip") { blocks.push({ kind: "strip", ...it, idx }); grid = null; }
+    else { if (!grid) openGrid(blocks.length ? { key: blocks[blocks.length - 1].key } : null); grid.cards.push({ ...it, idx }); }
   });
 
   return (
     <div className="layout">
-      {sections.map((s) => {
-        const cards = s.cards.map((c) => ({ ...c, node: render(c.key) })).filter((c) => editing || c.node);
-        const h = s.header;
+      {blocks.map((b) => {
+        if (b.kind === "header") {
+          return editing ? (
+            <div key={b.id} className={`section-row${dropClass(b.idx)}`} onDragOver={dragOver(b.idx, "y")} onDrop={drop}>
+              <span className="grip" draggable onDragStart={dragStart(b.idx)} onDragEnd={dragEnd} title="Drag to move the header">&#8942;&#8942;</span>
+              <input className="section-input" value={b.text} placeholder="Section name" autoFocus={b.text === ""}
+                onChange={(e) => setText(b.idx, e.target.value)} />
+              <button className="x" onClick={() => remove(b.idx)} title="Remove the header">&#215;</button>
+            </div>
+          ) : (b.text.trim() ? <h2 key={b.id} className="section-head">{b.text}</h2> : null);
+        }
+        if (b.kind === "strip") {
+          const card = BY_KEY[b.key];
+          const node = render(b.key);
+          if (!node && !editing) return null;
+          return (
+            <div key={b.key} className={`slot strip${editing ? " edit" : ""}${dropClass(b.idx)}`}
+              draggable={editing} onDragStart={editing ? dragStart(b.idx) : undefined} onDragEnd={dragEnd}
+              onDragOver={dragOver(b.idx, "y")} onDrop={drop}>
+              {node || (
+                <div className="card ghost">
+                  <div className="mod-head"><span className="gdot" style={{ background: "#c8c5bc" }} /><span className="title">{card.title}</span></div>
+                  <div className="empty-state">{card.note || "nothing to show on this release"}</div>
+                </div>
+              )}
+            </div>
+          );
+        }
+        const cards = b.cards.map((c) => ({ ...c, node: render(c.key) })).filter((c) => editing || c.node);
+        const h = b.opener && b.opener.type === "header" ? b.opener : null;
+        if (cards.length === 0 && !editing) return null;
         return (
-          <React.Fragment key={h ? h.id : "top"}>
-            {h && (editing ? (
-              <div className={`section-row${dropClass(h.idx)}`} onDragOver={dragOver(h.idx, "y")} onDrop={drop}>
-                <span className="grip" draggable onDragStart={dragStart(h.idx)} onDragEnd={dragEnd} title="Drag to move the header">&#8942;&#8942;</span>
-                <input className="section-input" value={h.text} placeholder="Section name" autoFocus={h.text === ""}
-                  onChange={(e) => setText(h.idx, e.target.value)} />
-                <button className="x" onClick={() => remove(h.idx)} title="Remove the header">&#215;</button>
-              </div>
-            ) : (h.text.trim() ? <h2 className="section-head">{h.text}</h2> : null))}
-            {(cards.length > 0 || editing) && (
-              <div className="grid">
-                {cards.map((c) => {
-                  const card = BY_KEY[c.key];
-                  return (
-                    <div key={c.key} className={`slot${card.size ? " " + card.size : ""}${editing ? " edit" : ""}${dropClass(c.idx)}`}
-                      draggable={editing} onDragStart={editing ? dragStart(c.idx) : undefined} onDragEnd={dragEnd}
-                      onDragOver={dragOver(c.idx, "x")} onDrop={drop}>
-                      {c.node || (
-                        <div className="card ghost">
-                          <div className="mod-head"><span className="gdot" style={{ background: "#c8c5bc" }} /><span className="title">{card.title}</span></div>
-                          <div className="empty-state">{card.note || "nothing to show on this release"}</div>
-                        </div>
-                      )}
+          <div key={b.key} className="grid">
+            {cards.map((c) => {
+              const card = BY_KEY[c.key];
+              return (
+                <div key={c.key} className={`slot${card.size ? " " + card.size : ""}${editing ? " edit" : ""}${dropClass(c.idx)}`}
+                  draggable={editing} onDragStart={editing ? dragStart(c.idx) : undefined} onDragEnd={dragEnd}
+                  onDragOver={dragOver(c.idx, "x")} onDrop={drop}>
+                  {c.node || (
+                    <div className="card ghost">
+                      <div className="mod-head"><span className="gdot" style={{ background: "#c8c5bc" }} /><span className="title">{card.title}</span></div>
+                      <div className="empty-state">{card.note || "nothing to show on this release"}</div>
                     </div>
-                  );
-                })}
-                {editing && h && cards.length === 0 && (
-                  <div className={`slot drop-empty${over && over.idx === h.idx && !over.before ? " drop-after" : ""}`}
-                    onDragOver={(e) => { if (drag === null || drag === h.idx) return; e.preventDefault(); setOver({ idx: h.idx, before: false }); }}
-                    onDrop={drop}>
-                    Drop a card here
-                  </div>
-                )}
+                  )}
+                </div>
+              );
+            })}
+            {editing && h && cards.length === 0 && (
+              <div className={`slot drop-empty${over && over.idx === h.idx && !over.before ? " drop-after" : ""}`}
+                onDragOver={(e) => { if (drag === null || drag === h.idx) return; e.preventDefault(); setOver({ idx: h.idx, before: false }); }}
+                onDrop={drop}>
+                Drop a card here
               </div>
             )}
-          </React.Fragment>
+          </div>
         );
       })}
     </div>

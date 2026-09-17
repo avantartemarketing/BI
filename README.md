@@ -382,9 +382,10 @@ set `DECISIONS_PATH` if the log must survive deploys.
 One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
 trajectory vs the across-time plan curve, funnel diagnostics with contribution
 decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), predicted
-sell-through, projection-vs-target waterfall. Formulas for every module: docs §9. A thin
-strip under the page header is the campaign clock: announcement to launch, orange to
-today with the day of the window, the days to launch on the right.
+sell-through, projection-vs-target waterfall. Formulas for every module: docs §9. The
+Overview opens with the campaign clock, a thin strip from announcement to launch, orange to
+today with the day of the window and the days to launch on the right; it is a card like the
+others and moves with them.
 
 Every card carries both references at once: the target as a fill in two tints of the actual's
 own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up
@@ -402,5 +403,7 @@ of the page to drag into place (a header ends one grid and starts the next, so e
 packs on its own), and **Save for everyone** keeps the arrangement for the whole team in
 `data/layout.json` (`LAYOUT_PATH` on Render, see above). **Back to the default** restores the
 built-in order. The list of cards lives in `web/src/Layout.jsx`: a card added to the code
-later joins the end of everyone's page, and a card a release has nothing for (No targets set
-on a targeted release) is left out of that release's page and shows as a ghost while editing.
+later joins the end of everyone's page (the campaign clock, which belongs at the top, joins
+there), a strip such as the clock is a full-width row of its own between the grids, and a
+card a release has nothing for (No targets set on a targeted release, the clock on a
+catalogue release) is left out of that release's page and shows as a ghost while editing.

@@ -425,6 +425,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   useEffect(() => { if (tab !== "overview") stopEdit(); }, [tab]);
   const renderCard = (key) => {
     switch (key) {
+      case "clock": return <LaunchStrip snap={snap} />;
       case "hero": return <HeroBar snap={snap} horizon={horizon} />;
       case "channels": return <ChannelsVsTargets snap={snap} horizon={horizon} />;
       case "no_targets": return targeted ? null : <NoTargets snap={snap} onSetup={() => setTab("targets")} />;
@@ -455,7 +456,6 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
         <Freshness asOf={snap.asOf} st={st} />
       </header>
-      <LaunchStrip snap={snap} />
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
