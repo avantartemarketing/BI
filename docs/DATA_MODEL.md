@@ -359,7 +359,7 @@ them; `BQ_ORDERS_TABLE` renames the table; both take `BQ_SINCE`):
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not refunded, not pending), `units_refunded`, `units_draft_pending` (draft orders an advisor raised that have no order yet, plus orders still pending payment), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
+| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not refunded, not pending), `units_refunded`, `units_draft_pending` (draft orders an advisor raised that have no order yet, plus orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release: what the card counts), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
@@ -384,6 +384,15 @@ three named facilitators over a handful of days, converting into `-PREORDER` pai
 same way; after a campaign it is `-POSTRELEASE`, `-APSALE`, `-PRIVATE` and the like, or a
 SKU with no route segment. The funnel's `Preorder_App` counts are another thing again (the
 pre-order requests, allocated like a draw) and do not create these drafts.
+
+**Drafts are counted per collector, and never past the room.** On launches closed before
+June 2026, 2,372 advisor draft lines became orders, 226 were cancelled and 66 are still open,
+at about one draft per collector: an advisor raises a draft when a collector has said yes. The
+exception is the private-room offer, where one collector is sent a draft for each of several
+colours and takes one (Ai Weiwei, September 2026: 25 draft lines to 10 collectors on 6 unsold
+units). So the card counts `draft_customers`, the collectors with a draft out who have not paid
+for anything on the release, and `attach_orders` caps a product's drafts at its room left
+(edition less units paid): offers past the edition are offers, not sales in waiting.
 
 Only product lines count (`shopify_product_type = 'Product'`): frames are lines of their own
 (`Frame`) and are left out of units. Two Shopify products with one title (a private-room
@@ -965,10 +974,12 @@ Sell-through is three things added up, per product:
 
 ```
 sold          units paid for
-drafts        orders awaiting payment: draft orders an advisor raised that have no order
-              yet, and orders still pending payment (not the draw's own pre-authorisation
-              drafts, which are the entries): they take room out of the edition like a
-              sale; from the orders feed (§2.4), null until the product's draw is named there
+drafts        orders awaiting payment: the collectors with a draft order an advisor raised
+              (or an order still pending payment) who have not paid for anything on the
+              release, capped at the product's room left (not the draw's own
+              pre-authorisation drafts, which are the entries): they take room out of the
+              edition like a sale; from the orders feed (§2.4), null until the product's
+              draw is named there
 in hand       eligible draw entries still in the draw, ALLOCATED across the products by the
               maximum-quantity rule below, × the entry → order rate (0.8 unless the release
               sets its own)

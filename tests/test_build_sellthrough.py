@@ -81,8 +81,8 @@ st = build.sellthrough_block({"edition_size": 300, "products": [{"name": "First"
 check([p["name"] for p in st["products"]] == ["First", "Draw 2"], f"legacy names {[p['name'] for p in st['products']]}")
 # 6. the orders feed names both draws: sold and drafts come from it, the stamp clears
 build._ORDERS_FEED = {NAME: {
-    "products": {"Red print": {"unitsPaid": 41, "drafts": 6, "listPrice": 500, "edition": 100},
-                 "Blue print": {"unitsPaid": 22, "drafts": 2, "listPrice": 500, "edition": 200}},
+    "products": {"Red print": {"unitsPaid": 41, "drafts": 6, "draftCustomers": 6, "listPrice": 500, "edition": 100},
+                 "Blue print": {"unitsPaid": 22, "drafts": 2, "draftCustomers": 2, "listPrice": 500, "edition": 200}},
     "draws": {"d1": "Red print", "d2": "Blue print"}, "drafts": 8.0, "unitsPaid": 63.0, "asOf": "2026-08-20",
 }}
 st = build.sellthrough_block(release, NAME, units_sold=40, unconverted=100, inventory_left=260, future_entries=30,

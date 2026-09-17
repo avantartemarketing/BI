@@ -266,6 +266,23 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
 _DEFAULT_NAME = re.compile(r"^Draw \d+$")
 
 
+def _draft_count(r: dict) -> float:
+    """A product's drafts as the card counts them: the collectors with an
+    invoice out who have not paid for anything on the release (an advisor
+    offers several colours to one collector, who takes one), falling back to
+    the draft lines where the feed has no collector count."""
+    dc = r.get("draftCustomers")
+    return float(dc) if _finite(dc) else float(r.get("drafts") or 0)
+
+
+def _cap_drafts(drafts: float, edition, sold: float) -> float:
+    """Drafts never claim more than the room left on the product: offers out
+    past the edition are offers, not sales in waiting."""
+    if _finite(edition) and float(edition) > 0:
+        return max(min(drafts, float(edition) - float(sold)), 0.0)
+    return drafts
+
+
 def attach_orders(products: list[dict], orders: dict | None, draw_products: dict | None, source: str) -> tuple[list[dict], str]:
     """Sales and draft orders per product from the orders feed (docs #6.3;
     shared/sellThrough.mjs attachOrders is the same rule).
@@ -300,13 +317,14 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
         rows = [orders[t] for t in titles]
         q = dict(p)
         q["sold"] = float(sum(float(r.get("unitsPaid") or 0) for r in rows))
-        q["drafts"] = float(sum(float(r.get("drafts") or 0) for r in rows))
+        q["drafts"] = float(sum(_draft_count(r) for r in rows))
         if not q.get("name") or _DEFAULT_NAME.match(str(q["name"])):
             q["name"] = " / ".join(titles)
         if not (_finite(q.get("edition")) and float(q["edition"]) > 0):
             eds = [float(r["edition"]) for r in rows if _finite(r.get("edition")) and float(r["edition"]) > 0]
             if eds and len(eds) == len(rows):
                 q["edition"] = int(round(sum(eds)))
+        q["drafts"] = _cap_drafts(q["drafts"], q.get("edition"), q["sold"])
         prices = [float(r["listPrice"]) for r in rows if _finite(r.get("listPrice"))]
         if prices:
             q["listPrice"] = max(prices)
@@ -319,8 +337,9 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
             if not (float(r.get("unitsPaid") or 0) > 0 or float(r.get("drafts") or 0) > 0):
                 continue
             ed = int(round(float(r["edition"]))) if _finite(r.get("edition")) and float(r["edition"]) > 0 else None
-            extra = {"key": f"p:{t}", "name": t, "edition": ed, "draws": [], "sold": float(r.get("unitsPaid") or 0),
-                     "entrants": 0, "drafts": float(r.get("drafts") or 0), "titles": [t]}
+            sold = float(r.get("unitsPaid") or 0)
+            extra = {"key": f"p:{t}", "name": t, "edition": ed, "draws": [], "sold": sold,
+                     "entrants": 0, "drafts": _cap_drafts(float(_draft_count(r)), ed, sold), "titles": [t]}
             if _finite(r.get("listPrice")):
                 extra["listPrice"] = float(r["listPrice"])
             out.append(extra)

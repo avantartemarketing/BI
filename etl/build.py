@@ -1120,13 +1120,16 @@ def load_orders_feed() -> dict:
                 paid, drafts = num(r.units_paid), num(r.units_draft_pending)
                 price = num(r.list_price_eur)
                 rel["products"][r.product_title] = {
-                    "unitsPaid": paid, "drafts": drafts, "entryDrafts": num(getattr(r, "units_entry_drafts", 0)),
+                    "unitsPaid": paid, "drafts": drafts,
+                    "draftCustomers": num(getattr(r, "draft_customers", "")) if str(getattr(r, "draft_customers", "")).strip() else None,
+                    "entryDrafts": num(getattr(r, "units_entry_drafts", 0)),
                     "refunded": num(r.units_refunded),
                     "fromDrafts": num(r.units_from_drafts), "privateRoom": num(r.units_private_room),
                     "listPrice": price if price > 0 else None, "edition": editions(r.release, r.product_title),
                     "lastOrder": r.last_order or None, "lastDraft": r.last_draft or None,
                 }
-                rel["drafts"] += drafts
+                dc = rel["products"][r.product_title]["draftCustomers"]
+                rel["drafts"] += dc if dc is not None else drafts
                 rel["unitsPaid"] += paid
                 for d in (r.last_order, r.last_draft):
                     if d and (rel["asOf"] is None or d > rel["asOf"]):
@@ -1204,6 +1207,8 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
                                   "editionSum", "editionMismatch")})
     st["soldSource"] = source
     st["allocationStarted"] = bool(feed.get("allocated"))
+    if of and pp.get("drafts") is not None:
+        st["drafts"] = pp["drafts"]   # the products' drafts, counted per collector and capped at their room
     # what the card is still waiting on, so it can say so: sales by product
     # (until every draw is named by the orders feed, the sales the draw cannot
     # name are split by edition size) and draft orders. The card stamps itself

@@ -320,6 +320,12 @@ export function productsFromDraws(draws, configured, editionSize) {
  * products and the sold source: "orders" once every product has its sales
  * from the feed. */
 const DEFAULT_NAME = /^Draw \d+$/;
+// a product's drafts as the card counts them: the collectors with an invoice
+// out who have not paid for anything on the release, else the draft lines;
+// never more than the room left on the product
+const draftCount = (r) => (finite(r.draftCustomers) ? Number(r.draftCustomers) : (Number(r.drafts) || 0));
+const capDrafts = (drafts, edition, sold) =>
+  (finite(edition) && Number(edition) > 0 ? Math.max(Math.min(drafts, Number(edition) - sold), 0) : drafts);
 export function attachOrders(products, orders, drawProducts, source) {
   if (!orders || typeof orders !== "object" || !Object.keys(orders).length) return { products, source };
   const dp = drawProducts && typeof drawProducts === "object" ? drawProducts : {};
@@ -336,12 +342,13 @@ export function attachOrders(products, orders, drawProducts, source) {
     const rows = titles.map((t) => orders[t]);
     const q = { ...p };
     q.sold = rows.reduce((n, r) => n + (Number(r.unitsPaid) || 0), 0);
-    q.drafts = rows.reduce((n, r) => n + (Number(r.drafts) || 0), 0);
+    q.drafts = rows.reduce((n, r) => n + draftCount(r), 0);
     if (!q.name || DEFAULT_NAME.test(String(q.name))) q.name = titles.join(" / ");
     if (!(finite(q.edition) && Number(q.edition) > 0)) {
       const eds = rows.filter((r) => finite(r.edition) && Number(r.edition) > 0).map((r) => Number(r.edition));
       if (eds.length && eds.length === rows.length) q.edition = Math.round(eds.reduce((a, b) => a + b, 0));
     }
+    q.drafts = capDrafts(q.drafts, q.edition, q.sold);
     const prices = rows.filter((r) => finite(r.listPrice)).map((r) => Number(r.listPrice));
     if (prices.length) q.listPrice = Math.max(...prices);
     q.titles = titles;
@@ -352,8 +359,9 @@ export function attachOrders(products, orders, drawProducts, source) {
       if (used.has(t)) continue;
       if (!((Number(r.unitsPaid) || 0) > 0 || (Number(r.drafts) || 0) > 0)) continue;
       const ed = finite(r.edition) && Number(r.edition) > 0 ? Math.round(Number(r.edition)) : null;
-      out.push({ key: `p:${t}`, name: t, edition: ed, draws: [], sold: Number(r.unitsPaid) || 0, entrants: 0,
-        drafts: Number(r.drafts) || 0, titles: [t], ...(finite(r.listPrice) ? { listPrice: Number(r.listPrice) } : {}) });
+      const sold = Number(r.unitsPaid) || 0;
+      out.push({ key: `p:${t}`, name: t, edition: ed, draws: [], sold, entrants: 0,
+        drafts: capDrafts(draftCount(r), ed, sold), titles: [t], ...(finite(r.listPrice) ? { listPrice: Number(r.listPrice) } : {}) });
     }
   }
   return { products: out, source: allNamed ? "orders" : source };

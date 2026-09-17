@@ -32,7 +32,8 @@
      "unitsPaid": 41,
      "drafts": 6,
      "listPrice": 500,
-     "edition": 100
+     "edition": 100,
+     "draftCustomers": 5
     },
     "Blue print": {
      "unitsPaid": 22,
@@ -44,7 +45,8 @@
      "unitsPaid": 9,
      "drafts": 0,
      "listPrice": 60,
-     "edition": null
+     "edition": null,
+     "draftCustomers": 0
     },
     "Nothing sold": {
      "unitsPaid": 0,
@@ -71,7 +73,7 @@
      9
     ],
     "drafts": [
-     6,
+     5,
      2,
      0
     ],
@@ -204,6 +206,84 @@
      null
     ],
     "source": "winners"
+   }
+  },
+  {
+   "name": "drafts count collectors, never more than the room left",
+   "products": [
+    {
+     "key": "d1",
+     "name": "Blue",
+     "edition": 5,
+     "draws": [
+      "d1"
+     ],
+     "sold": 0,
+     "entrants": 12,
+     "drafts": null
+    },
+    {
+     "key": "d2",
+     "name": "Draw 2",
+     "edition": null,
+     "draws": [
+      "d2"
+     ],
+     "sold": 0,
+     "entrants": 12,
+     "drafts": null
+    }
+   ],
+   "orders": {
+    "Blue": {
+     "unitsPaid": 2,
+     "drafts": 10,
+     "draftCustomers": 6,
+     "listPrice": 8250,
+     "edition": 5
+    },
+    "Red": {
+     "unitsPaid": 7,
+     "drafts": 9,
+     "draftCustomers": 4,
+     "listPrice": 8250,
+     "edition": 5
+    },
+    "Green": {
+     "unitsPaid": 1,
+     "drafts": 3,
+     "draftCustomers": 3,
+     "listPrice": 8250,
+     "edition": null
+    }
+   },
+   "drawProducts": {
+    "d1": "Blue",
+    "d2": "Red"
+   },
+   "source": "winners",
+   "expect": {
+    "names": [
+     "Blue",
+     "Red",
+     "Green"
+    ],
+    "sold": [
+     2,
+     7,
+     1
+    ],
+    "drafts": [
+     3,
+     0,
+     3
+    ],
+    "editions": [
+     5,
+     5,
+     null
+    ],
+    "source": "orders"
    }
   }
  ]

@@ -367,7 +367,10 @@ const spendSql = () =>
  *                          awaiting payment (draft orders an advisor raised
  *                          that have no order yet - the PREORDER route is the
  *                          advisor's pre-sale during a campaign - and orders
- *                          still pending), the draw's own pre-authorisation
+ *                          still pending), the collectors those are out to
+ *                          who have not paid for anything on the release (an
+ *                          advisor offers several colours to one collector;
+ *                          the card counts the collector), the draw's own pre-authorisation
  *                          drafts (one per live entry, the DRAW SKU - counted
  *                          apart, because the card already counts those as
  *                          entries), from drafts,
@@ -378,30 +381,39 @@ const spendSql = () =>
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
-  "units_draft_pending", "units_entry_drafts", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
+  "units_draft_pending", "draft_customers", "units_entry_drafts", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
 const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
 
 const ordersSql = () =>
-  "SELECT simple_release_name AS release, ANY_VALUE(release_name) AS campaign_code, product_title,\n" +
-  "  STRING_AGG(DISTINCT CAST(shopify_product_id AS STRING), '|') AS product_ids,\n" +
-  "  STRING_AGG(DISTINCT sku, '|') AS skus,\n" +
-  "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0\n" +
-  "         AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending'), quantity, 0)) AS units_paid,\n" +
-  "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0 AND order_financial_status = 'refunded', quantity, 0)) AS units_refunded,\n" +
-  "  SUM(IF(cancelled_order = 0 AND ((order_source_type = 'Draft' AND NOT REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$'))\n" +
-  "         OR (order_source_type = 'Order' AND order_financial_status = 'pending')), quantity, 0)) AS units_draft_pending,\n" +
-  "  SUM(IF(cancelled_order = 0 AND order_source_type = 'Draft' AND REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$'), quantity, 0)) AS units_entry_drafts,\n" +
-  "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0 AND order_originated_from_drafts = 1, quantity, 0)) AS units_from_drafts,\n" +
-  "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0 AND is_private_room = 1, quantity, 0)) AS units_private_room,\n" +
-  "  APPROX_QUANTILES(IF(shopify_product_variant_price > 0, CAST(shopify_product_variant_price AS FLOAT64), NULL), 2)[OFFSET(1)] AS list_price_eur,\n" +
-  "  MIN(IF(order_source_type = 'Order', shopify_order_created_date_CET, NULL)) AS first_order,\n" +
-  "  MAX(IF(order_source_type = 'Order', shopify_order_created_date_CET, NULL)) AS last_order,\n" +
-  "  MAX(DATE(shopify_draft_order_created_at)) AS last_draft\n" +
-  `FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
-  "WHERE is_test_order = 0 AND shopify_product_type = 'Product'\n" +
-  "  AND simple_release_name IS NOT NULL AND simple_release_name != '' AND product_title IS NOT NULL AND product_title != ''\n" +
-  "  AND (DATE(launch_date) >= @since OR shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)\n" +
-  "GROUP BY release, product_title\nORDER BY release, product_title";
+  "WITH lines AS (\n" +
+  "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
+  "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room,\n" +
+  "    shopify_product_variant_price, shopify_order_created_date_CET AS order_date, DATE(shopify_draft_order_created_at) AS draft_date,\n" +
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AS paid,\n" +
+  "    cancelled_order = 0 AND ((order_source_type = 'Draft' AND NOT REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$'))\n" +
+  "      OR (order_source_type = 'Order' AND order_financial_status = 'pending')) AS awaiting,\n" +
+  "    cancelled_order = 0 AND order_source_type = 'Draft' AND REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$') AS entry_draft\n" +
+  `  FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
+  "  WHERE is_test_order = 0 AND shopify_product_type = 'Product'\n" +
+  "    AND simple_release_name IS NOT NULL AND simple_release_name != '' AND product_title IS NOT NULL AND product_title != ''\n" +
+  "    AND (DATE(launch_date) >= @since OR shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)),\n" +
+  "paid_customers AS (SELECT DISTINCT release, customer_id FROM lines WHERE paid AND customer_id IS NOT NULL)\n" +
+  "SELECT l.release, ANY_VALUE(l.release_name) AS campaign_code, l.product_title,\n" +
+  "  STRING_AGG(DISTINCT CAST(l.shopify_product_id AS STRING), '|') AS product_ids,\n" +
+  "  STRING_AGG(DISTINCT l.sku, '|') AS skus,\n" +
+  "  SUM(IF(l.paid, l.quantity, 0)) AS units_paid,\n" +
+  "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.order_financial_status = 'refunded', l.quantity, 0)) AS units_refunded,\n" +
+  "  SUM(IF(l.awaiting, l.quantity, 0)) AS units_draft_pending,\n" +
+  "  COUNT(DISTINCT IF(l.awaiting AND p.customer_id IS NULL, COALESCE(CAST(l.customer_id AS STRING), CONCAT('line', CAST(l.order_lineitem_id AS STRING))), NULL)) AS draft_customers,\n" +
+  "  SUM(IF(l.entry_draft, l.quantity, 0)) AS units_entry_drafts,\n" +
+  "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.order_originated_from_drafts = 1, l.quantity, 0)) AS units_from_drafts,\n" +
+  "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.is_private_room = 1, l.quantity, 0)) AS units_private_room,\n" +
+  "  APPROX_QUANTILES(IF(l.shopify_product_variant_price > 0, CAST(l.shopify_product_variant_price AS FLOAT64), NULL), 2)[OFFSET(1)] AS list_price_eur,\n" +
+  "  MIN(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS first_order,\n" +
+  "  MAX(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS last_order,\n" +
+  "  MAX(l.draft_date) AS last_draft\n" +
+  "FROM lines l LEFT JOIN paid_customers p ON p.release = l.release AND p.customer_id = l.customer_id\n" +
+  "GROUP BY l.release, l.product_title\nORDER BY l.release, l.product_title";
 
 const drawProductsSql = () =>
   "WITH wins AS (\n" +
