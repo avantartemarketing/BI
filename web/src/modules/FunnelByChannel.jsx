@@ -487,7 +487,7 @@ function buildWaterfall(snap, groups) {
     body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.",
   } : null;
 
-  return { flat, X, expTotal, bmTotal, nowTotal, hasBm, day, words, capped, stretchTip };
+  return { flat, X, domain: [lo - pad, hi + pad], expTotal, bmTotal, nowTotal, hasBm, day, words, capped, stretchTip };
 }
 
 const targetTip = (wf) => ({
@@ -817,12 +817,181 @@ export default function FunnelByChannel({ snap, horizon, only }) {
  * levels of the walk and not stages. Without a walk to draw - no targets, or
  * no row with a reference yet - the card is the tall card's funnel view at
  * this size. */
+
+/* ---- MOCKUPS (temporary): two other shapes for the 2 x 2 card ---------- */
+/* The walk as one list of rows with base heights and the running level in and
+ * out of every row, so the drops between bars can be drawn. */
+function walkRows(wf) {
+  const { flat, expTotal, bmTotal, nowTotal, hasBm, words } = wf;
+  const rows = [];
+  rows.push({ kind: "level", base: 26, label: words.target, value: expTotal, level: expTotal, tip: targetTip(wf), color: C.refLine });
+  if (hasBm) {
+    rows.push({ kind: "stretch", base: 20, from: expTotal, to: bmTotal, level: bmTotal });
+    rows.push({ kind: "level", base: 26, label: words.bm, value: bmTotal, level: bmTotal, tip: bmTip(wf), color: C.refLine, dotted: true });
+  }
+  let lvl = hasBm ? bmTotal : expTotal;
+  for (const r of flat) {
+    if (r.header) rows.push({ kind: "header", base: 25, text: r.header, level: lvl });
+    else if (r.to !== undefined) { rows.push({ kind: "step", base: 20, r, level: r.to }); lvl = r.to; }
+    else rows.push({ kind: "info", base: 20, r, level: r.level });
+  }
+  rows.push({ kind: "level", base: 26, label: "Actual today", value: nowTotal, level: nowTotal, tip: actualTip(wf), color: C.orange });
+  rows.forEach((row, i) => { row.entry = i === 0 ? null : rows[i - 1].level; row.exit = i === rows.length - 1 ? null : row.level; });
+  return rows;
+}
+/* the grey 1px drops from a row's level to the next, as the outcome waterfall draws them */
+function Drops({ entry, exit, X }) {
+  const line = (left, top, bottom, key) => (
+    <div key={key} style={{ position: "absolute", left: `${left}%`, top, bottom, width: 1, marginLeft: -0.5, background: C.planGrey }} />
+  );
+  return <>{entry !== null && entry !== undefined && line(X(entry), 0, "50%", "in")}{exit !== null && exit !== undefined && line(X(exit), "50%", 0, "out")}</>;
+}
+const THICK = "clamp(calc(50% - 12px), 26%, calc(50% - 7px))";
+function WalkRow({ row, X, hasBm, tipApi, thick, drops = true }) {
+  const inset = thick ? THICK : BAR_INSET;
+  const cell = (children) => (
+    <div style={{ position: "relative", alignSelf: "stretch" }}>
+      {drops && <Drops entry={row.entry} exit={row.exit} X={X} />}
+      {children}
+    </div>
+  );
+  if (row.kind === "header") {
+    return (
+      <div style={row_(row.base)}>
+        <div style={{ ...HEAD_LABEL, alignSelf: "end", paddingBottom: 4 }}>{row.text}</div>
+        {cell(null)}
+        <div />
+      </div>
+    );
+  }
+  if (row.kind === "level") {
+    return (
+      <div style={row_(row.base)}>
+        <div style={ANCHOR_LABEL}>{row.label}</div>
+        {cell(<div style={{ position: "absolute", left: 0, right: 0, top: "50%", marginTop: -7, height: 14 }}>
+          <Tick pct={X(row.value)} color={row.color} dotted={!!row.dotted} tip={row.tip} />
+        </div>)}
+        <div className="num" style={ANCHOR_NUM}>{fmt(row.value)}</div>
+      </div>
+    );
+  }
+  if (row.kind === "stretch") {
+    return (
+      <div style={row_(row.base)}>
+        <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Stretch</div>
+        {cell(<div {...tipApi.props(null)} style={{
+          position: "absolute", top: inset, bottom: inset,
+          left: `${X(Math.min(row.from, row.to))}%`, width: `${Math.max(1.2, Math.abs(X(row.to) - X(row.from)))}%`,
+          background: C.refStretch, borderRadius: 3,
+        }} />)}
+        <div className="num" style={ROW_NUM}>{fmtSigned(row.to - row.from)}</div>
+      </div>
+    );
+  }
+  const r = row.r;
+  if (row.kind === "step") {
+    return (
+      <div style={row_(row.base)}>
+        <div style={ROW_LABEL}>{r.label}</div>
+        {cell(<div {...tipApi.props(stepTip(r, hasBm))} style={{
+          position: "absolute", top: inset, bottom: inset,
+          left: `${X(Math.min(r.from, r.to))}%`, width: `${Math.max(1.2, Math.abs(X(r.to) - X(r.from)))}%`,
+          background: r.value >= 0 ? C.wfGreen : C.red, borderRadius: 3,
+        }} />)}
+        <div className="num" style={{ ...ROW_NUM, color: r.value >= 0 ? C.green : C.red }}>{fmtSigned(r.value, 1)}</div>
+      </div>
+    );
+  }
+  return (
+    <div style={row_(row.base)}>
+      <div style={ROW_LABEL}>{r.label}</div>
+      {cell(<div {...tipApi.props(infoTip(r))} style={{
+        position: "absolute", left: `${X(r.level)}%`, top: "50%", marginTop: -5, width: 10, height: 10, marginLeft: -5,
+        borderRadius: "50%", background: NEUTRAL_DOT, boxShadow: RING,
+      }} />)}
+      <div className="num" style={{ ...ROW_NUM, color: C.muted }}>{r.display ?? "–"}</div>
+    </div>
+  );
+}
+const row_ = (base) => ({ ...ROW(base), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" });
+
+/* A: the walk in two columns, split at the group boundary that best balances
+ * the two halves; the right column opens with the level carried over. */
+function WalkColumns({ wf }) {
+  const tipApi = useTip();
+  const rows = walkRows(wf);
+  const total = rows.reduce((a, r) => a + r.base, 0);
+  let best = null, acc = 0;
+  rows.forEach((row, i) => {
+    if (row.kind === "header" && i > 0) { const diff = Math.abs(total - 2 * acc); if (!best || diff < best.diff) best = { i, diff }; }
+    acc += row.base;
+  });
+  const cols = best ? [rows.slice(0, best.i), rows.slice(best.i)] : [rows];
+  const carried = cols.length > 1 ? cols[0][cols[0].length - 1].level : null;
+  return (
+    <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 32 }}>
+      {cols.map((col, ci) => (
+        <div key={ci} style={{ ...FIT, flex: 1 }}>
+          {ci > 0 && (
+            <WalkRow X={wf.X} hasBm={wf.hasBm} tipApi={tipApi} thick row={{
+              kind: "level", base: 26, label: "Running total", value: carried, color: C.planGrey, entry: null, exit: carried,
+              tip: { head: "Running total", rows: [{ label: "Carried from the left", value: fmt(carried, 1) }] },
+            }} />
+          )}
+          {col.map((row, i) => <WalkRow key={i} row={ci > 0 && i === 0 ? { ...row, entry: carried } : row} X={wf.X} hasBm={wf.hasBm} tipApi={tipApi} thick />)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* B: the walk across the whole width, on a unit axis. */
+function niceTicks([lo, hi]) {
+  const span = hi - lo;
+  const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000];
+  const step = steps.find((st) => span / st <= 7) || steps[steps.length - 1];
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) out.push(v);
+  return out;
+}
+function WalkLong({ wf }) {
+  const tipApi = useTip();
+  const rows = walkRows(wf);
+  const ticks = niceTicks(wf.domain);
+  return (
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <div style={FIT}>
+        <div style={{ position: "absolute", left: TRACK_L, right: TRACK_R, top: 0, bottom: 0, pointerEvents: "none" }}>
+          {ticks.map((t) => <div key={t} style={{ position: "absolute", left: `${wf.X(t)}%`, top: 0, bottom: 0, width: 1, background: C.track }} />)}
+        </div>
+        {rows.map((row, i) => <WalkRow key={i} row={row} X={wf.X} hasBm={wf.hasBm} tipApi={tipApi} />)}
+      </div>
+      <div style={{ flex: "0 0 18px", position: "relative", marginLeft: TRACK_L, marginRight: TRACK_R, fontSize: 11, color: C.muted }}>
+        {ticks.map((t) => (
+          <span key={t} className="num" style={{ position: "absolute", left: `${wf.X(t)}%`, top: 4, transform: "translateX(-50%)" }}>{fmt(t)}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+/* ---- end of MOCKUPS ---------------------------------------------------- */
+
 export function FunnelByChannelWide({ snap }) {
   const tipApi = useTip();
   const m = rungModel(snap);
   const wf = m.targeted ? buildWaterfall(snap, m.groups) : null;
   if (!wf) return <FunnelByChannel snap={snap} only="funnel" />;
   const { flat, X, hasBm, words } = wf;
+  const mode = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("wf") : null;
+  if (mode === "cols" || mode === "long") {
+    return (
+      <Card dot={GROUP_DOTS.funnel} title="Funnel by channel"
+        right={<span style={{ fontSize: 11.5, color: C.muted }}>waterfall · secured units, day {wf.day}</span>}>
+        <div className="spacer-16" />
+        {mode === "cols" ? <WalkColumns wf={wf} /> : <WalkLong wf={wf} />}
+      </Card>
+    );
+  }
   const { bench, k } = m;
 
   const rungFor = (r) => {
