@@ -398,12 +398,17 @@ purchase on their entry, through `Collector_Concept`'s account id and Shopify cu
 
 **Drafts are counted per collector, and never past the room.** On launches closed before
 June 2026, 2,372 advisor draft lines became orders, 226 were cancelled and 66 are still open,
-at about one draft per collector: an advisor raises a draft when a collector has said yes. The
-exception is the private-room offer, where one collector is sent a draft for each of several
-colours and takes one (Ai Weiwei, September 2026: 25 draft lines to 10 collectors on 6 unsold
-units). So the card counts `draft_customers`, the collectors with a draft out who have not paid
-for anything on the release, and `attach_orders` caps a product's drafts at its room left
-(edition less units paid): offers past the edition are offers, not sales in waiting.
+at about one draft per collector: an advisor raises a draft when a collector has said yes. A
+collector with two drafts out on one release is still one buyer deciding, so the card counts
+`draft_customers`, the collectors with a draft out who have not paid for anything on the
+release, and `attach_orders` caps a product's drafts at its room left (edition less units
+paid): a draft past the edition is an offer, not a sale in waiting.
+
+**A private-room sale is not a draft.** A collector who buys through the private link places
+an order directly: an Order line with `is_private_room = 1` and a private link recorded, no
+facilitator, counted in `units_paid` and `units_private_room` (Ai Weiwei, September 2026: six
+such orders on 26 and 27 August). An advisor draft is a Draft line a named person raised; the
+two are never the same line.
 
 Only product lines count (`shopify_product_type = 'Product'`): frames are lines of their own
 (`Frame`) and are left out of units. Two Shopify products with one title (a private-room
