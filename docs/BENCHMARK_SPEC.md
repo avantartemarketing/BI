@@ -67,17 +67,67 @@ A release is **never a member of its own benchmark** — always drop its own
 `similar_size` is the suggested basket and the one nearly every release lands on. The clusters
 are **shapes, not sizes** (cluster 0 runs from 15 units to 987 with a median of 214), so
 benchmarking a large edition against its cluster compares it to launches an order of magnitude
-smaller and calls the difference a stretch. `similar_members` therefore searches from strictest
-to loosest and stops at the first rung that answers:
+smaller and calls the difference a stretch. And size is not price: the panel's unit prices run
+from £425 to £7,225 (from Airtable, `etl/pricing.py`), big editions are cheap (Spearman −0.55
+between log price and log units sold), and price predicts conversion beyond size (§3.1.1). So
+the basket is cut on **three things - size, price and shape** - each band in log space, and
+`similar_members` searches from strictest to loosest and stops at the first rung that answers:
 
-1. the shape cluster intersected with a size band, widening the band through 2×, 2.5×, 3×, 4×,
-   needing 8 members;
-2. the size band alone, widening the same way, needing 8;
-3. the **widest** band alone (4×), needing only the 3-member minimum — the widest, not the
+1. the size band, the price band and the shape cluster together, widening both bands through
+   2×, 2.5×, 3×, 4× (`SIMILAR_FACTORS`, the same factor on both bands at each step), needing 8
+   members;
+2. the size band and the price band, widening the same way, needing 8;
+3. the size band and the shape cluster, widening, needing 8;
+4. the size band alone, widening, needing 8;
+5. the **widest** size band alone (4×), needing only the 3-member minimum - the widest, not the
    first that clears 3, because once the band cannot be tight enough to be a real comparable
    there is nothing won by keeping it narrow and a median over three launches moves under any
    one of them;
-4. failing all of that, simply the launches nearest this edition in size, in log space.
+6. failing all of that, simply the launches nearest this edition in size, in log space.
+
+Price is given up before shape (rungs 2 and 3, `SIMILAR_RUNGS`) because that order gave the
+lower leave-one-out error of the two (§3.1.1); both are given up before size because every
+headline number on the page is a volume. A release with no price - a launch being planned with
+the price field empty, or a panel launch Airtable does not know - skips the price rungs and
+gets the ladder as it was; `SIMILAR_USE_PRICE` turns the price rungs off for everyone while the
+price range is still profiled and shown. The band is drawn in sterling: a panel launch carries
+Airtable's euro price at the fixed rate in `etl/pricing.py` (`RATES_TO_GBP`), and a price typed
+into the target form is taken in the currency the form says. The basket says which constraints
+held (`matchedOn`, `factor`) and its description reads them back: "within a factor of 2 on
+units of this edition's 300 and on its unit price of £552, of the same shape".
+
+#### 3.1.1 Why price is in the ladder (`etl/analysis/price_probe.py`, run 2026-09-17)
+
+On the 108 dated draw launches, every one priced from Airtable (`data/release_pricing.csv`),
+each metric in logs:
+
+| metric | Spearman with log price (n) | price elasticity given size (p) | R² size → size+price | leave-one-out error, size+shape → with price |
+|---|---|---|---|---|
+| entries per session | −0.30 (108) | −0.38 (0.007) | 0.02 → 0.09 | 0.557 → 0.547 |
+| units per session | −0.45 (108) | −0.45 (<0.001) | 0.07 → 0.20 | 0.513 → 0.466 |
+| oversubscription | +0.03 (108) | +0.07 (0.46) | 0.01 → 0.02 | 0.458 → 0.450 |
+| conv sess→entry, email | −0.44 (108) | −0.31 (0.012) | 0.14 → 0.19 | 0.595 → 0.586 |
+| conv sess→entry, social | −0.37 (98) | −0.44 (0.002) | 0.05 → 0.14 | 0.655 → 0.605 |
+| conv sess→entry, referral artist | −0.26 (64) | −0.11 (0.63) | 0.06 → 0.07 | 0.641 → 0.658 |
+| conv sess→entry, search/direct/other | −0.35 (107) | −0.18 (0.061) | 0.16 → 0.19 | 0.476 → 0.462 |
+| conv sess→entry, paid | −0.72 (49) | −0.77 (<0.001) | 0.30 → 0.46 | 0.720 → 0.609 |
+| paid cost per eligible entry | +0.62 (30) | +0.57 (0.020) | 0.26 → 0.40 | not benchmarked |
+
+Dearer editions convert worse per session in every channel and cost more per paid entry, and
+the effect survives holding size constant for five of the eight benchmarked metrics (six of nine
+with cost per entry). For entries per session, once price is known size adds nothing (p 0.97).
+Price tertiles separate entries per session, units per session, social and paid conversion
+better than size tertiles do (η² 0.07 vs 0.02, 0.20 vs 0.09, 0.12 vs 0.03, 0.37 vs 0.24); size
+tertiles separate email, referral-artist and search/direct conversion as well or better, which
+is why size stays the harder constraint. The operational test is the last column: every launch
+benchmarked against the basket the ladder gives it without itself, error = |log actual − log
+benchmark|. The price band brings the benchmark closer on seven of eight metrics (paid
+conversion by 0.11, Wilcoxon p 0.008; social by 0.05, p 0.046; units per session by 0.05),
+further on referral-artist conversion by 0.02, and a size+price ladder without shape is worse on
+all but one, so shape stays in. The cost is tighter baskets: the median basket falls from 15
+launches to 10, and 42 of the 108 panel launches get a basket flagged thin (under 10) against 18
+before. The band widens more often too (55 launches answered at 2×, 32 at 2.5×, 13 at 3×, 8 at
+4×, against 99 at 2× before).
 
 **Every release gets a benchmark.** An edition larger than anything on record is benchmarked
 against the largest launches there have been, and the multiplier states how far past them it is
@@ -95,6 +145,10 @@ profile = {
   "members": [release_name, ...],
   "units": float,                 # median tot_total_product_units        -> 214
   "units_p25": float, "units_p75": float,
+  "price": float,                 # median unit_price_gbp over priced members -> 1488 (0 when none)
+  "price_p25": float, "price_p75": float,
+  "n_priced": int,                # members with a price
+  "edition_size": float,          # median Airtable edition size (units on offer), 0 when none
   "sessions": float,              # median tot_sessions_total             -> 23543
   "entries": float,               # median tot_draw_entries_eligible_units
   "campaign_days": float,         # median campaign_days
@@ -111,8 +165,10 @@ Groups are the five display groups: `aa_email`, `aa_social`, `referral_artist`,
 `search_direct_other`, `paid`.
 
 Per-channel benchmarks are **median share × median total**, never the median of the
-per-channel column — so they sum exactly to the headline median. Medians over an empty or
-all-NaN column are `0.0`, never NaN.
+per-channel column - so they sum exactly to the headline median. Medians over an empty or
+all-NaN column are `0.0`, never NaN. The price range is taken over the members Airtable priced
+(`n_priced`), in sterling, and the picker prints it next to the units range on every basket,
+ready-made or hand-picked, so a basket that matches on size but not price is visibly so.
 
 A basket with fewer than **3** members cannot be used (the caller falls back to the
 suggested cluster and records `basket.thin = True` when `n < 10`).
@@ -314,7 +370,7 @@ carry `null` and fall back to a −10% band on `statusPct`.
 - `GET  /api/baskets?release=<id>` → `{ suggested: "cluster_0", baskets: [ {id, kind, name,
   desc, n, disabled?, profile} ], saved: [...] }`
 - `GET  /api/baskets/candidates` → `{ rows: [ {release_name, artist, title, quarter,
-  window_end, campaign_days, units, sessions, paid_share, private_room_share, cluster,
+  window_end, campaign_days, units, sessions, paid_share, private_room_share, price, edition_size, cluster,
   cluster_name} ] }` — the draw panel, newest close first.
 - `POST /api/baskets` `{name, members[]}` → saves a custom basket to `data/app/baskets.json`
   and returns it with `kind: "saved"`.

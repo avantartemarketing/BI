@@ -22,13 +22,20 @@ etl/                    Python pipeline
   extract_content.py      Emplifi posts by campaign     (from the content export)
   build.py                computes targets, trajectory curves, and per-release snapshots
   baskets.py              baskets of comparable launches and the medians the benchmark reads
+  pull_airtable.py        edition pricing from Airtable's Pipeline table -> data/release_pricing.csv
+  pricing.py              the join from that file to the release panel (python3 etl/pricing.py
+                          prints the matching report and the unmatched releases)
   release_features.py     one row per release from the daily funnel (data/app/release_features.csv)
   analysis/               one-off studies behind documented decisions (cpe_elasticity.py,
-                          tier_curve_probe.py, release_clusters.py - the baskets of comparables)
+                          tier_curve_probe.py, release_clusters.py - the baskets of comparables,
+                          price_probe.py - whether price belongs in the basket; it does)
 data/
   spend_daily.csv         extracted spend facts
   content_posts.csv       extracted content facts
-  release_clusters.csv    every release's campaign window, features and basket (docs/RELEASE_CLUSTERS.md)
+  release_clusters.csv    every release's campaign window, features, basket and edition pricing
+                          (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
+  release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
+                          dates, medium - no personal data (etl/pull_airtable.py)
   release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
   app/release_products.json  per release, the draws (one per product) and the entry patterns
@@ -51,6 +58,15 @@ npm start              # serves on :10000
 ```
 
 Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :5173, proxies /api).
+
+Edition pricing (needs `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE` in the environment):
+
+```bash
+python3 etl/pull_airtable.py --list-fields              # field names and types only
+python3 etl/pull_airtable.py                            # -> data/release_pricing.csv
+python3 etl/analysis/release_clusters.py --pricing-only # re-attach prices to the panel on file
+python3 etl/pricing.py                                  # the matching report: what matched how, and what did not
+```
 
 ## Every release, not just the targeted ones
 

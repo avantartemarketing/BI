@@ -527,7 +527,9 @@ share are written to `data/release_cluster_baskets.json`, assignments to
 `data/release_clusters.csv`. Campaign windows for releases without the upstream clock (every
 launch before 2026) are inferred from the funnel - announce from the first run of draw-entry
 days, close from the draw-allocation day - and validated against the clocked releases
-(announce within 2 days on 31 of 32, close exact on 24 of 27).
+(announce within 2 days on 31 of 32, close exact on 24 of 27). Every row also carries the
+edition's unit price, currency, edition size and launch value from Airtable (§4a.2½), so the
+basket layer can match on price as well as size.
 
 ---
 
@@ -590,12 +592,21 @@ suggested one; under **10** it is used but carries `basket.thin = True`, which t
 as a warning. A median over an empty or all-NaN column is `0.0`, never NaN.
 
 The profile is the medians themselves: `n` and `members`; `units` (median
-`tot_total_product_units`) with `units_p25` / `units_p75`; `sessions` (median
+`tot_total_product_units`) with `units_p25` / `units_p75`; `price` (median `unit_price_gbp`
+over the `n_priced` members Airtable priced) with `price_p25` / `price_p75`, and `edition_size`
+(median units on offer); `sessions` (median
 `tot_sessions_total`); `entries` (median `tot_draw_entries_eligible_units`); `campaign_days`;
 `private_room_share`; `share_units` and `share_sessions` per display group; `conv` (median
 `conv_sess_entry_<group>`, 0 where there is no history); and the two products
 `units_by_group` = `share_units[g] × units` and `sessions_by_group` = `share_sessions[g] ×
 sessions`. Groups are the five display groups of §1.3.
+
+The suggested basket, `similar_size` ("Similar size and shape"), is cut on three bands in log
+space - **size, price and shape** - widening the size and price bands through 2×, 2.5×, 3×, 4×
+and giving up price, then shape, then the band's tightness before it gives up on scale; the
+ladder, and the test that put price in it (price predicts session-to-entry conversion beyond
+size on five of eight benchmarked metrics, and the band cuts the leave-one-out benchmark error
+on seven of eight), are in `docs/BENCHMARK_SPEC.md` §3.1 and §3.1.1.
 
 `suggest_basket` picks the basket a release starts on: its own `cluster` if the panel has it,
 else `nearest_cluster`, else the cluster whose median units are closest to the edition size **in
@@ -603,6 +614,59 @@ log space** (the panel runs from tens of units to thousands, so a linear gap wou
 everything in the big basket), tie-broken on paid-session share against the release's paid plan.
 The suggestion is a starting point and is always overridable - `suggestedId` rides on the
 snapshot next to the chosen `id` so the card can say which one was picked for you.
+
+### 4a.2½ Edition pricing (`etl/pull_airtable.py`, `etl/pricing.py`)
+
+The funnel export carries no price and no edition size, and the targets workbook prices only
+the releases with targets set. Airtable's Pipeline table holds every edition's retail price,
+units, launch type, launch date and medium, one record per product (a colourway, a hand-finished
+variant, a bundle). `etl/pull_airtable.py` pulls exactly the fields needed - identity, price,
+size, type, dates, medium, artist tier and genre bucket - and nothing about people: it refuses
+to run if a wanted field turns out to hold a collaborator, email or phone, blanks any cell that
+looks like one, strips links out of rich text, and keeps only records with an artist, a title
+and a launch date that has passed or comes within 120 days. The result is committed as
+`data/release_pricing.csv` (one row per product record, 44 columns, all prices in EUR because
+that is the field's currency in Airtable). Credentials are `AIRTABLE_TOKEN` (read-only),
+`AIRTABLE_BASE_ID` and `AIRTABLE_TABLE`, environment only.
+
+`etl/pricing.py` joins the records to the release list. A **launch** is one artist's records
+under one release code on one launch date (a group show puts eight artists under one code;
+each artist's release is its own row in the panel). Bundles ("Set of 4", a diptych of listed
+prints, any record without an edition size) carry the sum of their parts and are left out, so
+a launch's `unit_price` is the **value-weighted mean over its sized products** (the price of
+the average unit in the edition), `edition_size` the sum of their units, `launch_value` the
+sum of price × units. The match runs strictest first and is never silent: exact artist + title
+(with the launch date inside the campaign window or the named quarter); the artist with the
+launch date inside `[announce − 45d, close + 30d]` (Airtable's launch date is the close of a
+draw and the launch day of a buy-now release); the artist in the named quarter for a release
+without a window; and a close spelling of the artist's name ("Woo Kuk Won" for "Kukwon Woo",
+"Anni Albers" under "Anni and Josef Albers", estate against foundation) with the similarity
+printed and nothing under 0.85 used. Two codes on one date are merged as one launch; two codes
+in the window on different dates go to the nearer one and the report names the loser. Every
+panel row records `price_match` (exact / artist+window / artist+quarter / fuzzy+window / none),
+`price_match_score`, `price_match_days` and `price_note`; `python3 etl/pricing.py` prints the
+whole matching report, with the unmatched releases and their dates to fix in Airtable.
+
+Coverage at the 2026-09-17 pull: 1,103 product records, 660 launches, 358 of the panel's 360
+releases matched (225 exact, 58 artist+window, 72 artist+quarter, 3 fuzzy), all 108 draw
+launches and 46 of 47 legacy launches priced, 359 of the dashboard's 361 releases. Unmatched:
+Michael Kozlowski · Mecha · 2024 Q2 and Michaël Borremans · The Monkey · 2027 Q1 (the artist is
+not in the pull). Units sold inside the window sit at a median 0.90 of Airtable's edition size;
+twelve launches sold more than 5% over it, mostly where Airtable holds one of several products.
+
+Currency: Airtable prices in euros; `unit_price_gbp` and `launch_value_gbp` convert at the
+fixed table `RATES_TO_GBP = {GBP: 1, EUR: 0.85, USD: 0.78}` (rounded 2024-2026 averages, fixed
+so the panel does not move with the market; in log space a fixed rate is a constant shift and
+changes no band and no correlation). The original price and currency are kept beside the
+converted one. **Note for the target form:** its "Unit price (£)" field holds, for eight of the
+nine targeted releases, the same number Airtable holds in euros, so either the workbook is
+entering euro list prices under a sterling label or the two list prices coincide; the basket
+layer reads the form's price in the currency the record says (sterling unless `currency` is set)
+and a factor-2 band absorbs the difference, but the label and the entry should agree.
+
+Refresh: `python3 etl/pull_airtable.py && python3 etl/analysis/release_clusters.py
+--pricing-only` re-attaches the pricing to the panel on file without a BigQuery pull; a full
+`release_clusters.py` run attaches it as it writes the panel.
 
 ### 4a.3 Target maths (`etl/build.py`)
 
