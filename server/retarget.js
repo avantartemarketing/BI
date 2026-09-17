@@ -141,7 +141,10 @@ function retargetSnapshot(snap, inputs, bench, curves, computeTargets, sellThrou
   delete next.benchmarkUnits;   // lever mode has no basket
   next.pct = Math.round(Math.min((next.sold + next.soldPredicted + next.futureEntriesPredicted) / (edition || 1), 1) * 10000) / 10000;
   if (sellThrough && Array.isArray(st.draws) && st.draws.length && Array.isArray(st.patterns)) {
-    const { products, soldSource } = sellThrough.productsFromDraws(st.draws, inputs.products, edition);
+    const fromDraws = sellThrough.productsFromDraws(st.draws, inputs.products, edition);
+    // the orders feed rides on the snapshot, so the sales and drafts per
+    // product survive a save the same way the draws and patterns do
+    const { products, source: soldSource } = sellThrough.attachOrders(fromDraws.products, st.ordersByProduct, st.drawProducts, fromDraws.soldSource);
     const pp = sellThrough.sellThroughProducts({
       products, patterns: st.patterns, rate, edition, soldTotal: sold, futureUnits: future,
       expectedToday: heroExp, benchmarkToday: null, benchmarkClose: null,

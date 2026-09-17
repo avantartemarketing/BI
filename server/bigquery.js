@@ -53,6 +53,10 @@ const SPEND_DAILY = path.join(ROOT, "data", "spend_daily.csv");
 // the event-level feed: pseudonymous person ids only, never the address (see
 // the events section). Lives under sources/ (gitignored), served by no endpoint.
 const LE_EVENTS = path.join(ROOT, "sources", "le_events.csv");
+// orders and drafts by product, and the product each draw sold: aggregates
+// only, written from Order_Line_Concept on every refresh (docs/DATA_MODEL.md 2.4)
+const ORDERS_BY_PRODUCT = path.join(ROOT, "data", "orders_by_product.csv");
+const DRAW_PRODUCTS = path.join(ROOT, "data", "draw_products.csv");
 // what the local funnel file is: window, columns, last date, when it was last
 // pulled in full. Absent = never pulled from BigQuery (or it came from the sheet)
 const META = path.join(ROOT, "sources", "across_time.meta.json");
@@ -63,6 +67,7 @@ const FUNNEL_TABLE = process.env.BQ_FUNNEL_TABLE || "le_funnel_report_split_touc
 const SPEND_TABLE = process.env.BQ_SPEND_TABLE || "meta_ads_insights_export";
 // point this at the data team's email-free view when it exists: same columns, same guards
 const EVENTS_TABLE = process.env.BQ_EVENTS_TABLE || "LE_Funnel_Report";
+const ORDERS_TABLE = process.env.BQ_ORDERS_TABLE || "Order_Line_Concept";
 const EVENTS_SINCE = process.env.BQ_EVENTS_SINCE || "2019-01-01";   // all time: a returning collector's history is the point
 const SINCE = process.env.BQ_SINCE || "2025-01-01";
 const LOCATION = process.env.BQ_LOCATION || undefined; // e.g. "EU"; omit to let BQ infer
@@ -87,7 +92,7 @@ function configured() {
   if (!sa) return null;
   if (!PROJECT_RE.test(PROJECT)) throw new Error(`BQ_PROJECT "${PROJECT}" is not a valid project id`);
   for (const [name, v] of [["BQ_DATASET", DATASET], ["BQ_FUNNEL_TABLE", FUNNEL_TABLE], ["BQ_SPEND_TABLE", SPEND_TABLE],
-                           ["BQ_EVENTS_TABLE", EVENTS_TABLE]]) {
+                           ["BQ_EVENTS_TABLE", EVENTS_TABLE], ["BQ_ORDERS_TABLE", ORDERS_TABLE]]) {
     if (!IDENT.test(v)) throw new Error(`${name} "${v}" must be letters, digits and underscores`);
   }
   if (!DATE_RE.test(SINCE)) throw new Error(`BQ_SINCE "${SINCE}" must be YYYY-MM-DD`);
@@ -349,6 +354,83 @@ const funnelSql = () =>
 const spendSql = () =>
   `SELECT * FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
   "WHERE spend_date >= @since\nORDER BY campaign_name, spend_date";
+
+// ---------------------------------------------------------------- orders and drafts by product
+
+/* Order_Line_Concept is one row per Shopify order line and carries the
+ * customer's email on every row. Nothing here reads it: both queries return
+ * aggregates per release and product, and the join that names the product a
+ * draw sold runs inside BigQuery on the pseudonymous account id, so the rows
+ * that travel are release, product, draw and counts (docs/DATA_MODEL.md 2.4).
+ *   orders_by_product.csv  per release x Shopify product title: units paid
+ *                          (orders, not cancelled, not refunded), refunded,
+ *                          awaiting payment (draft orders with no order yet,
+ *                          and orders still pending), from drafts, private
+ *                          room, the list price, first and last order day,
+ *                          last draft day
+ *   draw_products.csv      per draw: the product its winners bought most, and
+ *                          the share of their orders it took
+ * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
+ * that day is in; the draw map reads events from that day. */
+const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
+  "units_draft_pending", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
+const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
+
+const ordersSql = () =>
+  "SELECT simple_release_name AS release, ANY_VALUE(release_name) AS campaign_code, product_title,\n" +
+  "  STRING_AGG(DISTINCT CAST(shopify_product_id AS STRING), '|') AS product_ids,\n" +
+  "  STRING_AGG(DISTINCT sku, '|') AS skus,\n" +
+  "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0\n" +
+  "         AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending'), quantity, 0)) AS units_paid,\n" +
+  "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0 AND order_financial_status = 'refunded', quantity, 0)) AS units_refunded,\n" +
+  "  SUM(IF(cancelled_order = 0 AND (order_source_type = 'Draft'\n" +
+  "         OR (order_source_type = 'Order' AND order_financial_status = 'pending')), quantity, 0)) AS units_draft_pending,\n" +
+  "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0 AND order_originated_from_drafts = 1, quantity, 0)) AS units_from_drafts,\n" +
+  "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0 AND is_private_room = 1, quantity, 0)) AS units_private_room,\n" +
+  "  APPROX_QUANTILES(IF(shopify_product_variant_price > 0, CAST(shopify_product_variant_price AS FLOAT64), NULL), 2)[OFFSET(1)] AS list_price_eur,\n" +
+  "  MIN(IF(order_source_type = 'Order', shopify_order_created_date_CET, NULL)) AS first_order,\n" +
+  "  MAX(IF(order_source_type = 'Order', shopify_order_created_date_CET, NULL)) AS last_order,\n" +
+  "  MAX(DATE(shopify_draft_order_created_at)) AS last_draft\n" +
+  `FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
+  "WHERE is_test_order = 0 AND shopify_product_type = 'Product'\n" +
+  "  AND simple_release_name IS NOT NULL AND simple_release_name != '' AND product_title IS NOT NULL AND product_title != ''\n" +
+  "  AND (DATE(launch_date) >= @since OR shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)\n" +
+  "GROUP BY release, product_title\nORDER BY release, product_title";
+
+const drawProductsSql = () =>
+  "WITH wins AS (\n" +
+  "  SELECT DISTINCT simple_release_name AS release, aa_account_id, draw_id\n" +
+  `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+  "  WHERE event_name = 'draw entry intent' AND winner AND draw_id IS NOT NULL AND aa_account_id IS NOT NULL AND event_date >= @since),\n" +
+  "buys AS (\n" +
+  "  SELECT DISTINCT simple_release_name AS release, aa_account_id, shopify_order_id\n" +
+  `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+  "  WHERE event_name = 'purchase' AND shopify_order_id IS NOT NULL AND aa_account_id IS NOT NULL AND event_date >= @since),\n" +
+  "pairs AS (\n" +
+  "  SELECT w.release, w.draw_id, o.product_title, COUNT(DISTINCT o.shopify_order_id) AS orders\n" +
+  "  FROM wins w\n" +
+  "  JOIN buys b ON b.release = w.release AND b.aa_account_id = w.aa_account_id\n" +
+  `  JOIN \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\` o ON o.shopify_order_id = b.shopify_order_id AND o.simple_release_name = w.release\n` +
+  "    AND o.shopify_product_type = 'Product' AND o.is_test_order = 0 AND o.product_title IS NOT NULL AND o.product_title != ''\n" +
+  "  GROUP BY 1, 2, 3)\n" +
+  "SELECT release, draw_id, product_title, orders,\n" +
+  "  ROUND(orders / SUM(orders) OVER (PARTITION BY release, draw_id), 3) AS share\n" +
+  "FROM pairs\n" +
+  "QUALIFY ROW_NUMBER() OVER (PARTITION BY release, draw_id ORDER BY orders DESC, product_title) = 1\n" +
+  "ORDER BY release, draw_id";
+
+/* A writer that keeps the columns as they come, once they are the expected
+ * ones: these files are read by name in etl/build.py, so a column added or
+ * renamed upstream is a failed pull, not a silently different file. */
+function passthroughWriter(expect, label) {
+  return (headerRow) => {
+    const header = headerRow.map((h) => String(h ?? "").trim());
+    if (header.length !== expect.length || header.some((h, i) => h !== expect[i])) {
+      throw new Error(`${label} columns are not the expected ${expect.length}: ${header.join(", ")}`);
+    }
+    return { header: header.map(csvCell).join(","), dateIndex: -1, dropped: 0, row: (cells) => cells.map(csvCell).join(",") };
+  };
+}
 
 // ---------------------------------------------------------------- events feed (personal-data rule)
 
@@ -808,6 +890,29 @@ async function pull({ write = true, full = false, events = true, only = null } =
     }
   }
 
+  // orders and drafts by product, and the product each draw sold: two
+  // aggregate queries into two small files, optional like spend
+  let orders = null, ordersNote;
+  if (skip("orders")) {
+    ordersNote = `orders not pulled (--${only})`;
+  } else if (process.env.BQ_ORDERS === "off") {
+    ordersNote = "orders skipped (BQ_ORDERS=off)";
+  } else {
+    const t1 = new Tmp(ORDERS_BY_PRODUCT, write), t2 = new Tmp(DRAW_PRODUCTS, write);
+    try {
+      const a = await streamTable(token, ordersSql(), SINCE, passthroughWriter(ORDERS_HEADER, "orders"), t1);
+      if (a.rows < 10) throw new Error(`orders query returned ${a.rows} rows - not overwriting`);
+      guardShrink("orders query", a.rows, ORDERS_BY_PRODUCT);
+      const b = await streamTable(token, drawProductsSql(), SINCE, passthroughWriter(DRAW_PRODUCTS_HEADER, "draw products"), t2);
+      if (write) { t1.commit(ORDERS_BY_PRODUCT); t2.commit(DRAW_PRODUCTS); } else { t1.discard(); t2.discard(); }
+      orders = { rows: a.rows, draws: b.rows, bytes: a.bytes + b.bytes, cached: a.cached && b.cached };
+      ordersNote = `orders ${a.rows} products, ${b.rows} draws named`;
+    } catch (e) {
+      t1.discard(); t2.discard();
+      ordersNote = `orders unavailable, keeping the last files (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`;
+    }
+  }
+
   // the event-level feed: optional like spend, and a failure of its guards is
   // reported, never worked around - the previous (clean) file keeps serving
   let ev = null, eventsNote;
@@ -845,7 +950,7 @@ async function pull({ write = true, full = false, events = true, only = null } =
     }
   }
 
-  const parts = [funnel, spend, ev, br].filter(Boolean);
+  const parts = [funnel, spend, orders, ev, br].filter(Boolean);
   const bytes = parts.reduce((n, x) => n + x.bytes, 0);
   const gb = (bytes / 1e9).toFixed(2);
   const cached = parts.every((x) => x.cached) ? ", cache hit" : "";
@@ -853,15 +958,16 @@ async function pull({ write = true, full = false, events = true, only = null } =
   const funnelNote = funnel ? `${funnel.note}${dropped}, ` : "";
   return {
     funnelRows: funnel ? funnel.rows : null, spendRows: spend ? spend.rows : null,
+    ordersRows: orders ? orders.rows : null,
     eventsRows: ev ? ev.rows : null, browsingRows: br ? br.rows : null, mode: funnel ? funnel.mode : (only || "events"),
-    summary: `${funnelNote}${spendNote}, ${eventsNote}, ${browsingNote}, since ${SINCE} ` +
+    summary: `${funnelNote}${spendNote}, ${ordersNote}, ${eventsNote}, ${browsingNote}, since ${SINCE} ` +
       `(${gb} GB scanned${cached}, ${sa._env})`,
   };
 }
 
 module.exports = {
   pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
-  ACROSS_TIME, SPEND_DAILY, META,
+  ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
   LE_BROWSING, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
   PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
@@ -870,8 +976,8 @@ module.exports = {
 
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;
 // --write replaces the CSVs, --full forces a full pull, --events or --browsing
-// pulls that one feed alone, --schema lists what the account can see (names
-// only, no rows). Handy from a Render shell.
+// pulls that one feed alone (--orders the orders-by-product pair), --schema
+// lists what the account can see (names only, no rows). Handy from a Render shell.
 if (require.main === module) {
   (async () => {
     if (!configured()) {
@@ -885,8 +991,9 @@ if (require.main === module) {
     }
     const write = process.argv.includes("--write");
     const full = process.argv.includes("--full");
-    const only = process.argv.includes("--events") ? "events" : process.argv.includes("--browsing") ? "browsing" : null;
-    if (only !== "events") {
+    const only = process.argv.includes("--events") ? "events" : process.argv.includes("--browsing") ? "browsing"
+      : process.argv.includes("--orders") ? "orders" : null;
+    if (only !== "events" && only !== "orders") {
       const feed = only === "browsing" ? BROWSING_FEED : FUNNEL_FEED;
       const p = plan(full, feed);
       console.log(`plan (${feed.label}): ${p.mode}${p.reason ? ` (${p.reason})` : ""}`);
@@ -894,6 +1001,7 @@ if (require.main === module) {
     const out = await pull({ write, full, only });
     console.log(out.summary);
     const wrote = [out.funnelRows !== null && ACROSS_TIME, out.spendRows !== null && SPEND_DAILY,
+                   out.ordersRows !== null && `${ORDERS_BY_PRODUCT} + ${DRAW_PRODUCTS}`,
                    out.eventsRows !== null && LE_EVENTS, out.browsingRows !== null && LE_BROWSING].filter(Boolean);
     console.log(write ? `wrote ${wrote.join(", ")}` : "dry run - pass --write to replace the CSVs");
   })().catch((e) => { console.error(String(e.message || e)); process.exit(1); });

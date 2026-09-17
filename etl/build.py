@@ -22,6 +22,9 @@ Inputs:
   data/spend_daily.csv              Meta spend by campaign x day (etl/extract_spend.py)
   data/content_posts.csv            Emplifi posts by campaign (etl/extract_content.py)
   sources/all_sent_emails.csv       email sends - written by the HubSpot pull (server/hubspot.js); the checked-in file is its last pull
+  data/orders_by_product.csv       per release x Shopify product: units paid, awaiting payment (draft orders),
+                                   list price - aggregates from Order_Line_Concept (server/bigquery.js)
+  data/draw_products.csv           the product each draw's winners bought (server/bigquery.js)
   sources/draw_*.csv                draw entry exports (PII is stripped here; never committed)
   etl/release_inputs.json           hand-entered launch inputs per release
   etl/benchmarks.json               frozen benchmark values (docs §4)
@@ -59,7 +62,7 @@ import baskets
 # across the products the way the allocator would place them. The same rule
 # lives in shared/sellThrough.mjs for the server and the web app, and
 # tests/test_sellthrough.py holds the two to the unit.
-from sellthrough import products_from_draws, sell_through_products
+from sellthrough import attach_orders, products_from_draws, sell_through_products
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "sources"
@@ -1033,6 +1036,111 @@ def load_products_feed() -> dict:
     return _PRODUCTS_FEED
 
 
+_ORDERS_FEED: dict | None = None
+_PRODUCT_EDITIONS = None
+_ARTIST_STOP = {"the", "estate", "foundation", "studio", "of", "and"}
+
+
+def _artist_tokens(name) -> set[str]:
+    return {t for t in re.split(r"[^a-z0-9]+", str(name).lower()) if t and t not in _ARTIST_STOP}
+
+
+def product_editions():
+    """Edition size per product from the Airtable pricing rows
+    (data/release_pricing.csv, one row per product): a lookup by release name
+    and Shopify product title. The title must match; among rows that share a
+    title the release's year and then its artist decide, so a reissued title
+    finds its own row, and a title that stays ambiguous gets no edition."""
+    global _PRODUCT_EDITIONS
+    if _PRODUCT_EDITIONS is not None:
+        return _PRODUCT_EDITIONS
+    by_title: dict[str, list] = {}
+    path = DATA / "release_pricing.csv"
+    if path.exists():
+        try:
+            pr = pd.read_csv(path, dtype=str).fillna("")
+            for r in pr.itertuples(index=False):
+                try:
+                    ed = float(r.edition_size)
+                except (TypeError, ValueError):
+                    continue
+                if ed <= 0:
+                    continue
+                year = (str(r.launch_date) or str(r.quarter) or "")[:4]
+                by_title.setdefault(_norm(r.title), []).append((ed, year, _artist_tokens(r.artist)))
+        except Exception as e:  # noqa: BLE001 - a broken pricing file must not stop the build
+            print(f"warning: ignoring {path.name} for product editions: {e}")
+
+    def lookup(release_name: str, product_title: str):
+        cands = by_title.get(_norm(product_title)) or []
+        if not cands:
+            return None
+        parts = [x.strip() for x in str(release_name).split("·")]
+        year = parts[-1][:4] if len(parts) >= 3 else ""
+        artist = _artist_tokens(parts[0]) if parts else set()
+        if len(cands) > 1 and year:
+            cands = [c for c in cands if c[1] == year] or cands
+        if len(cands) > 1 and artist:
+            cands = [c for c in cands if c[2] & artist] or cands
+        return int(round(cands[0][0])) if len({c[0] for c in cands}) == 1 else None
+    _PRODUCT_EDITIONS = lookup
+    return lookup
+
+
+def load_orders_feed() -> dict:
+    """Per release, the orders feed server/bigquery.js writes from
+    Order_Line_Concept (data/orders_by_product.csv and data/draw_products.csv;
+    aggregates only, docs #2.4): products keyed by Shopify title with units
+    paid, orders awaiting payment (drafts), the list price and the Airtable
+    edition where the title matches; the product each draw's winners bought;
+    and the release's totals with the last order or draft day as `asOf`."""
+    global _ORDERS_FEED
+    if _ORDERS_FEED is not None:
+        return _ORDERS_FEED
+    feed: dict = {}
+    p1, p2 = DATA / "orders_by_product.csv", DATA / "draw_products.csv"
+
+    def num(v) -> float:
+        try:
+            return float(v) if str(v).strip() not in ("", "nan") else 0.0
+        except (TypeError, ValueError):
+            return 0.0
+    if p1.exists():
+        try:
+            df = pd.read_csv(p1, dtype=str).fillna("")
+        except Exception as e:  # noqa: BLE001
+            print(f"warning: ignoring {p1.name}: {e}")
+            df = None
+        if df is not None:
+            editions = product_editions()
+            for r in df.itertuples(index=False):
+                rel = feed.setdefault(r.release, {"products": {}, "draws": {}, "drafts": 0.0, "unitsPaid": 0.0, "asOf": None})
+                paid, drafts = num(r.units_paid), num(r.units_draft_pending)
+                price = num(r.list_price_eur)
+                rel["products"][r.product_title] = {
+                    "unitsPaid": paid, "drafts": drafts, "refunded": num(r.units_refunded),
+                    "fromDrafts": num(r.units_from_drafts), "privateRoom": num(r.units_private_room),
+                    "listPrice": price if price > 0 else None, "edition": editions(r.release, r.product_title),
+                    "lastOrder": r.last_order or None, "lastDraft": r.last_draft or None,
+                }
+                rel["drafts"] += drafts
+                rel["unitsPaid"] += paid
+                for d in (r.last_order, r.last_draft):
+                    if d and (rel["asOf"] is None or d > rel["asOf"]):
+                        rel["asOf"] = d
+    if feed and p2.exists():
+        try:
+            dm = pd.read_csv(p2, dtype=str).fillna("")
+            for r in dm.itertuples(index=False):
+                rel = feed.get(r.release)
+                if rel is not None and r.product_title in rel["products"]:
+                    rel["draws"][r.draw_id] = r.product_title
+        except Exception as e:  # noqa: BLE001
+            print(f"warning: ignoring {p2.name}: {e}")
+    _ORDERS_FEED = feed
+    return feed
+
+
 def entry_rate(release: dict) -> float:
     """The entry -> order rate the sell-through prediction converts entries in
     hand at: the release's own (Target setting) when one is typed, else the
@@ -1073,10 +1181,19 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     if bm_close is not None:
         st["benchmarkUnits"] = round(bm_close, 1)
     feed = load_products_feed().get(name)
+    of = load_orders_feed().get(name)
+    if of:
+        # what the orders say for the whole release, draws or no draws: the
+        # draft orders awaiting payment, the units paid, and the day they run to
+        st["drafts"] = round(of["drafts"], 1)
+        st["unitsPaidOrders"] = round(of["unitsPaid"], 1)
+        st["ordersAsOf"] = of["asOf"]
     if not feed or not feed.get("draws"):
         st["incomplete"] = ["products"]
         return st
     products, source = products_from_draws(feed["draws"], release.get("products"), edition)
+    if of:
+        products, source = attach_orders(products, of["products"], of["draws"], source)
     pp = sell_through_products(products, feed.get("patterns") or [], rate=rate, edition=edition,
                                sold_total=units_sold, future_units=future_entries, expected_today=expected_today,
                                benchmark_today=bm_today, benchmark_close=bm_close)
@@ -1085,15 +1202,18 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     st["soldSource"] = source
     st["allocationStarted"] = bool(feed.get("allocated"))
     # what the card is still waiting on, so it can say so: sales by product
-    # (until the purchase feed carries the product, the sales the draw cannot
-    # name are split by edition size) and draft orders (no feed yet). The
-    # card stamps itself "Incomplete data" while this list is not empty.
-    st["incomplete"] = ([] if source == "purchases" else ["sales by product"]) + \
+    # (until every draw is named by the orders feed, the sales the draw cannot
+    # name are split by edition size) and draft orders. The card stamps itself
+    # "Incomplete data" while this list is not empty.
+    st["incomplete"] = ([] if source in ("purchases", "orders") else ["sales by product"]) + \
         (["draft orders"] if any(p.get("drafts") is None for p in products) else [])
-    # the draws and patterns ride along so a save can re-run the rule on the
-    # server without the event feed (server/retarget.js)
+    # the draws, patterns and orders ride along so a save can re-run the rule
+    # on the server without the feeds (server/retarget.js)
     st["draws"] = feed["draws"]
     st["patterns"] = feed.get("patterns") or []
+    if of:
+        st["ordersByProduct"] = of["products"]
+        st["drawProducts"] = of["draws"]
     if edition:
         st["soldPredicted"] = pp["soldPredicted"]
         st["futureEntriesPredicted"] = pp["futureEntriesPredicted"]

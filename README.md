@@ -36,6 +36,9 @@ data/
                           (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
   release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
                           dates, medium - no personal data (etl/pull_airtable.py)
+  orders_by_product.csv   per release x Shopify product: units paid, awaiting payment (draft orders),
+                          list price - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
+  draw_products.csv       the product each draw's winners bought: the draw to product map
   release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
   app/release_products.json  per release, the draws (one per product) and the entry patterns
@@ -189,7 +192,8 @@ would delete the last 45 days.
 
 Check the connection without writing anything: `node server/bigquery.js` prints the plan
 (full or incremental, and why), row counts and GB scanned; add `--write` to replace the
-CSVs, `--full` to force a full pull, `--events` to pull the event-level feed alone.
+CSVs, `--full` to force a full pull, `--events` to pull the event-level feed alone, `--orders`
+the orders-by-product pair alone.
 
 **What the account can see.** `node server/bigquery.js --schema` lists every dataset, table
 and view the service account can list, with column names and types, from the metadata
@@ -209,6 +213,14 @@ team's email-free view once one exists, `BQ_EVENTS_SINCE` (default 2019-01-01) s
 window, `BQ_EVENTS=off` skips it. The file holds pseudonymous account ids, which are still
 personal data: it stays under `sources/`, is served by no endpoint, and nothing derived from
 it leaves the server with an identifier column.
+
+**Orders and drafts by product.** The pull also reads `Order_Line_Concept`, the Shopify order
+lines, into two aggregate files: `data/orders_by_product.csv` (per release and product: units
+paid, orders awaiting payment, list price) and `data/draw_products.csv` (the product each
+draw's winners bought, joined inside BigQuery on the pseudonymous account id). That table
+carries email addresses too; nothing selects them, and only counts per release and product
+leave (docs/DATA_MODEL.md 2.4). `BQ_ORDERS=off` skips the pair, `BQ_ORDERS_TABLE` renames
+the table.
 
 **The export, rebuilt here.** The pull also counts sessions and page views per channel-day
 inside BigQuery (`sources/le_browsing.csv`, `--browsing` pulls it alone, `BQ_BROWSING=off`
@@ -428,16 +440,17 @@ it is a card like the others and moves with them.
 orders not yet paid (rust, striped), the draw entries in hand counted on the product at the
 entry → order rate (orange), at close the units still to come, against the product's edition,
 with demand the product has no room for hatched past its sellout. It is the one card with no
-target or benchmark on it and no prose: the detail is in the popups. While the feeds carry
-neither sales by product nor draft orders the card wears an **Incomplete data** stamp, and the
-sales the draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an
+target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
+orders per product come from the Shopify order lines in BigQuery (`data/orders_by_product.csv`),
+joined to the draws through the product each draw's winners bought (docs 2.4); until every draw
+of a release is named that way the card wears an **Incomplete data** stamp, and the sales the
+draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an
 entrant who entered more products than their maximum quantity is counted on that many
 products only, on whichever have the most room. Products come from the event feed's draws
 (one draw per product) and are named and sized on the Target setting tab, where the entry →
-order rate can also be set per release. Until the feed has run once after a deploy the card
-shows the release as one row and says so; sales the draw cannot name a product for (private
-room, pre-orders) are split by edition size under the stamp. Draft orders are not in any feed
-yet and are drawn only once they are.
+order rate can also be set per release; a product nobody has named takes its Shopify title
+and, where the title matches an Airtable record, its edition. Until the feed has run once after
+a deploy the card shows the release as one row and says so.
 
 Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
 own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up

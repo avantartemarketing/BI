@@ -160,7 +160,7 @@ All funnel data originates in BigQuery `avantarte-data-production.AA_company_tab
 | `le_funnel_report_split_touch_export` | channel × event_date × release | 29 metrics + 5 campaign-clock cols | daily actuals, across-time curves |
 | LE funnel lifetime rollup (importrange "Export!A:AB") | channel × release | sessions (D), Total Product Units (S), eligible entries (M/N/Y), units by route (O/P/Q/R), page views (AA), entries (V/W/X/Z/AB) | launch-total actuals, benchmarks |
 | `tl_funnel_report_split_touch_export` (+ lifetime) | same, TL metrics (subs) | sessions, subs, customers, units by sub | TL side |
-| `order_type_by_release_export` | release × order_date | total_orders, originated_from_drafts, pending_draft, units | draft-order (private room) tracking |
+| `Order_Line_Concept` (BigQuery) | Shopify order line | quantity, list and paid price, financial status, draft origin, private room, product, release | units paid and awaiting payment per product, list price, the product each draw sold (§2.4) |
 | `meta_ads_insights_export` | campaign × spend_date | impressions, reach, link_clicks, **spend** | paid spend actuals |
 | Meta lifetime ("Meta Data for Paid") | campaign | + 7d-click conversions (Purchases, Enter Draw…) | Meta-side attribution |
 | HubSpot email feed (`server/hubspot.js`) | email send | Delivered, Opened, Clicked, Unsubscribed | email funnel rungs |
@@ -341,6 +341,39 @@ instance the same way the build does; `AGG_PROFILE=1` prints the peak after each
 Two feeds now describe the same thing: the rebuilt file is what the dashboard reads, the export
 is the reference the reconciliation checks it against on every refresh.
 
+### 2.4 Orders and drafts by product (`Order_Line_Concept`)
+
+`Order_Line_Concept` is one row per Shopify order line (130k rows, 119 columns) with the
+release (`simple_release_name`, the same key as the funnel), the campaign code (`release_name`),
+the product (`shopify_product_id`, `product_title`, `sku`), `quantity`, the list price
+(`shopify_product_variant_price`, EUR: 3,000 for Glenn Ligon, 500 for the Dali, the workbook's
+figures) and the paid price (`shop_money_price`), `order_source_type` (`Order`, or `Draft` for
+a draft order that has no order yet: no price, no financial status, a
+`shopify_draft_order_created_at`), `order_financial_status` (paid, pending, partially_paid,
+refunded, partially_refunded), `order_originated_from_drafts`, `is_private_room`,
+`cancelled_order`, `order_has_frame`, `launch_type` and `launch_date`. It carries the
+customer's email on every row, so it is read under the same rule as the event feed (§2.1):
+nothing selects the address, and what leaves BigQuery is two aggregate files written by
+`server/bigquery.js` on every refresh (`--orders` pulls them alone; `BQ_ORDERS=off` skips
+them; `BQ_ORDERS_TABLE` renames the table; both take `BQ_SINCE`):
+
+| file | grain | columns |
+|---|---|---|
+| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not refunded, not pending), `units_refunded`, `units_draft_pending` (draft-source lines plus orders still pending payment), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
+| `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
+
+**The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
+named by its winners: the draw entry rows give (release, account, draw) for winners, the
+purchase rows give (release, account, order), and the order line gives the product; the join
+runs inside BigQuery on the pseudonymous account id and only (release, draw, product, count)
+comes out. Winners of several draws buy across them, so the top product takes the draw
+(`share` says how clear it was: 0.6 to 0.9 on the September 2026 releases). A draw with no
+winner who has bought yet has no row, and its product keeps the event feed's figures (§6.3).
+
+Only product lines count (`shopify_product_type = 'Product'`): frames are lines of their own
+(`Frame`) and are left out of units. Two Shopify products with one title (a private-room
+variant at a different price) are one product here. Test orders are dropped.
+
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down
 empirically on the Mondrian and James Jean Blossom draws):
@@ -368,6 +401,28 @@ products among those they entered, draw weighted by `Score`. Equivalent to capac
 `Σ Opportunity Cost` measures the flexibility available.
 
 ---
+
+### 2.5 BigQuery tables and columns in use (the data inventory)
+
+What the app reads, and from which columns, so the data team can see the surface a
+production model has to serve. Everything else in a table is never selected.
+
+| table | read by | columns | for |
+|---|---|---|---|
+| `le_funnel_report_split_touch_export` | `server/bigquery.js` (funnel feed, incremental) | all 34 (no personal data; §2.2) | `sources/across_time.csv`: sessions, entries, units by channel × day × release, the campaign clock |
+| `LE_Funnel_Report` | `server/bigquery.js` (events and browsing feeds) | the event columns named in `EVENT_COLUMNS`: event, date, release, pseudonymous account id, signup, draw entry, winner and purchase flags, order counts, channel groups, locales; never `user_email` | `sources/le_events.csv` and `sources/le_browsing.csv`: the rebuilt export, people per release, the draws and entry patterns behind the per-product sell-through |
+| `LE_Funnel_Report` | `server/bigquery.js` (draw map, §2.4) | event_name, winner, draw_id, aa_account_id, shopify_order_id, simple_release_name, event_date | `data/draw_products.csv` |
+| `meta_ads_insights_export` | `server/bigquery.js` (spend feed) | campaign_name, spend_date, impressions, reach, link_clicks, spend | `data/spend_daily.csv`: paid spend by campaign × day |
+| `Order_Line_Concept` | `server/bigquery.js` (orders feed, §2.4) | simple_release_name, release_name, product_title, shopify_product_id, sku, quantity, order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_product_variant_price, shopify_product_type, is_test_order, launch_date, shopify_order_created_date_CET, shopify_draft_order_created_at, shopify_order_id | `data/orders_by_product.csv` |
+
+Granted and profiled, not yet read: `Order_Concept` (order level: basket size and items,
+first-time buyer, totals, country - units per buyer and buyer mix per release),
+`Marketing_Campaign_Concept` (spend by campaign × day across Meta and Google Ads for both
+accounts, 2022 to date - a cross-platform paid feed to replace the Meta-only one),
+`Collector_Concept` (364k contacts, one row each with the address, name, phone and survey
+answers: only ever aggregates such as marketable contacts by tier and budget band, never a
+row), `TL_Funnel_Report_v2` (the timed-launch event feed, 81 launches: what a TL page would
+read). `tl_funnel_report_split_touch_export` was still denied when this was written.
 
 ## 3. The LE target model - quartile levers (the "By channel" fallback)
 
@@ -895,8 +950,9 @@ Sell-through is three things added up, per product:
 
 ```
 sold          units paid for
-drafts        draft orders not yet paid: they take room out of the edition like a sale
-              (no feed yet; carried as null and drawn, striped rust, once a feed carries them)
+drafts        orders awaiting payment (draft orders with no order yet, orders still pending):
+              they take room out of the edition like a sale; from the orders feed (§2.4),
+              null until the product's draw is named there
 in hand       eligible draw entries still in the draw, ALLOCATED across the products by the
               maximum-quantity rule below, × the entry → order rate (0.8 unless the release
               sets its own)
@@ -920,17 +976,27 @@ which the Target setting tab merges by giving both draws the same name). Per dra
 | bought without a win | `draw_with_purchase` on a losing entry (a re-offer, a private-room buyer's entry) | out of the in-hand pool, as the export's `No_Conv` treats it, but **not** claimed as a sale of that product |
 
 `draw_entry_multiset_preference_max_quantity` is the entrant's maximum quantity across the
-release; empty means no cap. Purchase rows that carry a draw id are summed per draw as well
-(`purchaseUnits`) and take precedence as the product's sold units where the feed tags them;
-otherwise sold per product is the draw's winners who bought. Sales the draw feed cannot name a
-product for - private room, pre-orders, re-offers - are the release's funnel units sold less
-the attributed sum (`unattributedSold`). **Until the sales feed carries the product** they are
-split across the products by edition size (by eligible entrants until every edition is typed),
-carried per product as `soldAssumed`, drawn inside the sold segment and named as an estimate in
-its popup; the snapshot lists what is still missing in `sellthrough.incomplete` (`sales by
-product`, `draft orders`; `products` when the feed has no draws at all) and the card wears an
-**Incomplete data** stamp over the rows while the list is not empty. The stamp leaves by itself
-once purchases are tagged with a product (`soldSource = "purchases"`) and drafts arrive.
+release; empty means no cap. **Sold and drafts per product come from the orders feed** (§2.4):
+each draw is named with the Shopify product its winners bought, and a product whose draws are
+named takes that product's units paid as `sold`, its orders awaiting payment as `drafts`, the
+product title as its name where nobody typed one and its Airtable edition where none is typed
+(`attach_orders` in `etl/sellthrough.py`, the same rule in `shared/sellThrough.mjs`). A title
+no draw names is added as a product of its own once every draw is named; before that it is
+ambiguous and its units stay at release level. Where a draw is not yet named (no winner has
+bought yet) sold per product falls back to the draw's winners who bought, or to the purchase
+rows tagged with a draw id (`purchaseUnits`) where the feed tags them, and drafts stay null.
+Sales no product can be named for - private room, pre-orders, re-offers, and the funnel's
+units where they run ahead of the orders - are the release's funnel units sold less the
+attributed sum (`unattributedSold`), split across the products by edition size (by eligible
+entrants until every edition is typed), carried per product as `soldAssumed`, drawn inside the
+sold segment and named as an estimate in its popup. The snapshot lists what is still missing in
+`sellthrough.incomplete` (`sales by product` and `draft orders` until every draw is named;
+`products` when the feed has no draws at all) and the card wears an **Incomplete data** stamp
+over the rows while the list is not empty; `soldSource` says which rule the sold figures came
+from (`orders`, `purchases`, `winners`). The release-level `sellthrough.drafts`,
+`unitsPaidOrders` and `ordersAsOf` come from the orders feed whenever it has the release,
+draws or no draws, and `ordersByProduct` and `drawProducts` ride on the snapshot so a save
+re-runs the same rule on the server.
 
 `etl/aggregate_events.py` (`products_file`) writes `data/app/release_products.json`: per
 release, the draws with their counts (`entrants`, `eligible`, `winners`, `sold`, `open`,
@@ -1142,7 +1208,8 @@ guard every benchmark mark on the page is written against.
 | `sellthrough.conversion`, `inHandUnits` | the entry → order rate the prediction runs at, and the entries in hand before it (§6.3) |
 | `sellthrough.products[]` | per product: `key`, `name`, `draws`, `edition`, `sold`, `drafts`, `entrants`, `inHand.{open, won}`, `allocated`, `pinned`, `fixed`, `flexible`, `predicted`, `shown`, `room`, `oversubscribed`, `futurePredicted`, `pct`, `pctClose`, `expectedToday`, `benchmarkToday`, `benchmarkClose` (§6.3) |
 | `sellthrough.attributedSold`, `unattributedSold`, `soldSource` | sold units the draw feed named a product for, the rest, and whether products' sales came from tagged purchases or from winners who bought |
-| `sellthrough.drafts`, `incomplete` | draft orders across the release (null until a feed carries them), and what the card is still waiting on: the list behind its Incomplete data stamp (§6.3) |
+| `sellthrough.drafts`, `unitsPaidOrders`, `ordersAsOf`, `incomplete` | orders awaiting payment and units paid across the release from the orders feed, the last order or draft day they run to (absent without the feed), and what the card is still waiting on: the list behind its Incomplete data stamp (§6.3) |
+| `sellthrough.ordersByProduct`, `drawProducts`, `soldSource` | the orders feed for the release (per product title: units paid, drafts, list price, edition) and the product each draw sold, carried so a save re-runs the rule on the server; which rule the sold figures came from (§6.3) |
 | `sellthrough.allocation`, `measure`, `editionSum`, `editionMismatch`, `allocationStarted` | the rule's bookkeeping, whether fill is over editions or in units, the typed editions' sum against the release's, and whether winners have been drawn |
 | `sellthrough.draws`, `patterns` | the draw feed as reduced by `products_file`, so a save re-runs the rule on the server without the feed |
 | `paid.benchmarkUnits`, `benchmarkBudget` | the paid module's two benchmark marks |

@@ -28,6 +28,7 @@ against, so oversubscription stays visible.
 from __future__ import annotations
 
 import math
+import re
 
 
 def _finite(v) -> bool:
@@ -260,6 +261,70 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
             "unpaidWinners": alloc["unpaidWinners"], "flexibleUnits": sum(x["flexible"] for x in rows),
         },
     }
+
+
+_DEFAULT_NAME = re.compile(r"^Draw \d+$")
+
+
+def attach_orders(products: list[dict], orders: dict | None, draw_products: dict | None, source: str) -> tuple[list[dict], str]:
+    """Sales and draft orders per product from the orders feed (docs #6.3;
+    shared/sellThrough.mjs attachOrders is the same rule).
+
+    `orders` is {product title: {unitsPaid, drafts, listPrice, edition}} and
+    `draw_products` {draw id: product title}, the product a draw's winners
+    bought. A product whose draws name a title takes that title's paid units
+    as sold and its orders awaiting payment as drafts, and the title as its
+    name where nobody typed one; a title already taken by an earlier product
+    is not taken twice. Titles no draw names are added as products of their
+    own only once every draw is named, because before that they are
+    ambiguous and stay at release level. Returns the products and the sold
+    source: "orders" once every product has its sales from the feed.
+    """
+    if not orders:
+        return products, source
+    dp = {str(k): v for k, v in (draw_products or {}).items()}
+    used: set[str] = set()
+    all_named = True
+    out = []
+    for p in products:
+        titles = []
+        for d in p.get("draws") or []:
+            t = dp.get(str(d))
+            if t and t in orders and t not in titles and t not in used:
+                titles.append(t)
+        if not titles:
+            all_named = False
+            out.append(dict(p))
+            continue
+        used.update(titles)
+        rows = [orders[t] for t in titles]
+        q = dict(p)
+        q["sold"] = float(sum(float(r.get("unitsPaid") or 0) for r in rows))
+        q["drafts"] = float(sum(float(r.get("drafts") or 0) for r in rows))
+        if not q.get("name") or _DEFAULT_NAME.match(str(q["name"])):
+            q["name"] = " / ".join(titles)
+        if not (_finite(q.get("edition")) and float(q["edition"]) > 0):
+            eds = [float(r["edition"]) for r in rows if _finite(r.get("edition")) and float(r["edition"]) > 0]
+            if eds and len(eds) == len(rows):
+                q["edition"] = int(round(sum(eds)))
+        prices = [float(r["listPrice"]) for r in rows if _finite(r.get("listPrice"))]
+        if prices:
+            q["listPrice"] = max(prices)
+        q["titles"] = titles
+        out.append(q)
+    if all_named:
+        for t, r in orders.items():
+            if t in used:
+                continue
+            if not (float(r.get("unitsPaid") or 0) > 0 or float(r.get("drafts") or 0) > 0):
+                continue
+            ed = int(round(float(r["edition"]))) if _finite(r.get("edition")) and float(r["edition"]) > 0 else None
+            extra = {"key": f"p:{t}", "name": t, "edition": ed, "draws": [], "sold": float(r.get("unitsPaid") or 0),
+                     "entrants": 0, "drafts": float(r.get("drafts") or 0), "titles": [t]}
+            if _finite(r.get("listPrice")):
+                extra["listPrice"] = float(r["listPrice"])
+            out.append(extra)
+    return out, ("orders" if all_named else source)
 
 
 def products_from_draws(draws: list[dict], configured, edition_size=None) -> tuple[list[dict], str]:

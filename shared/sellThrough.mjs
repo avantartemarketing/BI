@@ -308,5 +308,56 @@ export function productsFromDraws(draws, configured, editionSize) {
   return { products, soldSource: tagged ? "purchases" : "winners" };
 }
 
+/* Sales and draft orders per product from the orders feed (docs 6.3; mirror
+ * of etl/sellthrough.attach_orders). `orders` is {product title: {unitsPaid,
+ * drafts, listPrice, edition}} and `drawProducts` {draw id: product title},
+ * the product a draw's winners bought. A product whose draws name a title
+ * takes that title's paid units as sold and its orders awaiting payment as
+ * drafts, and the title as its name where nobody typed one; a title already
+ * taken by an earlier product is not taken twice. Titles no draw names are
+ * added as products of their own only once every draw is named, because
+ * before that they are ambiguous and stay at release level. Returns the
+ * products and the sold source: "orders" once every product has its sales
+ * from the feed. */
+const DEFAULT_NAME = /^Draw \d+$/;
+export function attachOrders(products, orders, drawProducts, source) {
+  if (!orders || typeof orders !== "object" || !Object.keys(orders).length) return { products, source };
+  const dp = drawProducts && typeof drawProducts === "object" ? drawProducts : {};
+  const used = new Set();
+  let allNamed = true;
+  const out = products.map((p) => {
+    const titles = [];
+    for (const d of p.draws || []) {
+      const t = dp[String(d)];
+      if (t && orders[t] && !titles.includes(t) && !used.has(t)) titles.push(t);
+    }
+    if (!titles.length) { allNamed = false; return { ...p }; }
+    titles.forEach((t) => used.add(t));
+    const rows = titles.map((t) => orders[t]);
+    const q = { ...p };
+    q.sold = rows.reduce((n, r) => n + (Number(r.unitsPaid) || 0), 0);
+    q.drafts = rows.reduce((n, r) => n + (Number(r.drafts) || 0), 0);
+    if (!q.name || DEFAULT_NAME.test(String(q.name))) q.name = titles.join(" / ");
+    if (!(finite(q.edition) && Number(q.edition) > 0)) {
+      const eds = rows.filter((r) => finite(r.edition) && Number(r.edition) > 0).map((r) => Number(r.edition));
+      if (eds.length && eds.length === rows.length) q.edition = Math.round(eds.reduce((a, b) => a + b, 0));
+    }
+    const prices = rows.filter((r) => finite(r.listPrice)).map((r) => Number(r.listPrice));
+    if (prices.length) q.listPrice = Math.max(...prices);
+    q.titles = titles;
+    return q;
+  });
+  if (allNamed) {
+    for (const [t, r] of Object.entries(orders)) {
+      if (used.has(t)) continue;
+      if (!((Number(r.unitsPaid) || 0) > 0 || (Number(r.drafts) || 0) > 0)) continue;
+      const ed = finite(r.edition) && Number(r.edition) > 0 ? Math.round(Number(r.edition)) : null;
+      out.push({ key: `p:${t}`, name: t, edition: ed, draws: [], sold: Number(r.unitsPaid) || 0, entrants: 0,
+        drafts: Number(r.drafts) || 0, titles: [t], ...(finite(r.listPrice) ? { listPrice: Number(r.listPrice) } : {}) });
+    }
+  }
+  return { products: out, source: allNamed ? "orders" : source };
+}
+
 const r1 = (v) => Math.round(v * 10) / 10;
 const r4 = (v) => Math.round(v * 10000) / 10000;
