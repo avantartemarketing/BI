@@ -370,10 +370,11 @@ const spendSql = () =>
  *                          still pending), the collectors those are out to
  *                          who have not paid for anything on the release (an
  *                          advisor offers several colours to one collector;
- *                          the card counts the collector), the draw's own pre-authorisation
- *                          drafts (one per live entry, the DRAW SKU - counted
- *                          apart, because the card already counts those as
- *                          entries), from drafts,
+ *                          the card counts the collector), the draw's own
+ *                          pre-authorisation drafts (one per live entry: the
+ *                          DRAW SKU, or any draft the app's own facilitator
+ *                          account wrote - counted apart, because the card
+ *                          already counts those as entries), from drafts,
  *                          private room, the list price, first and last
  *                          order day, last draft day
  *   draw_products.csv      per draw: the product its winners bought most, and
@@ -389,15 +390,27 @@ const ordersSql = () =>
   "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
   "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room,\n" +
   "    shopify_product_variant_price, shopify_order_created_date_CET AS order_date, DATE(shopify_draft_order_created_at) AS draft_date,\n" +
-  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AS paid,\n" +
-  "    cancelled_order = 0 AND ((order_source_type = 'Draft' AND NOT REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$'))\n" +
-  "      OR (order_source_type = 'Order' AND order_financial_status = 'pending')) AS awaiting,\n" +
-  "    cancelled_order = 0 AND order_source_type = 'Draft' AND REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$') AS entry_draft\n" +
+  "    COALESCE(shopify_order_facilitator, '') AS facilitator,\n" +
+  "    REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$') AS draw_sku,\n" +
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AS paid\n" +
   `  FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
   "  WHERE is_test_order = 0 AND shopify_product_type = 'Product'\n" +
   "    AND simple_release_name IS NOT NULL AND simple_release_name != '' AND product_title IS NOT NULL AND product_title != ''\n" +
   "    AND (DATE(launch_date) >= @since OR shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)),\n" +
-  "paid_customers AS (SELECT DISTINCT release, customer_id FROM lines WHERE paid AND customer_id IS NOT NULL)\n" +
+  // the app that pre-authorises a draw entry writes its drafts under one
+  // facilitator account: any account whose drafts are nearly all on the DRAW
+  // SKU is the app, and every draft it writes (some land on the base SKU) is
+  // an entry, not an advisor's draft
+  "app_facilitators AS (\n" +
+  "  SELECT facilitator FROM lines WHERE order_source_type = 'Draft' AND facilitator != ''\n" +
+  "  GROUP BY facilitator HAVING COUNT(*) >= 100 AND COUNTIF(draw_sku) >= 0.9 * COUNT(*)),\n" +
+  "typed AS (\n" +
+  "  SELECT l.*,\n" +
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND (l.draw_sku OR a.facilitator IS NOT NULL) AS entry_draft,\n" +
+  "    l.cancelled_order = 0 AND ((l.order_source_type = 'Draft' AND NOT (l.draw_sku OR a.facilitator IS NOT NULL))\n" +
+  "      OR (l.order_source_type = 'Order' AND l.order_financial_status = 'pending')) AS awaiting\n" +
+  "  FROM lines l LEFT JOIN app_facilitators a ON a.facilitator = l.facilitator),\n" +
+  "paid_customers AS (SELECT DISTINCT release, customer_id FROM typed WHERE paid AND customer_id IS NOT NULL)\n" +
   "SELECT l.release, ANY_VALUE(l.release_name) AS campaign_code, l.product_title,\n" +
   "  STRING_AGG(DISTINCT CAST(l.shopify_product_id AS STRING), '|') AS product_ids,\n" +
   "  STRING_AGG(DISTINCT l.sku, '|') AS skus,\n" +
@@ -412,7 +425,7 @@ const ordersSql = () =>
   "  MIN(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS first_order,\n" +
   "  MAX(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS last_order,\n" +
   "  MAX(l.draft_date) AS last_draft\n" +
-  "FROM lines l LEFT JOIN paid_customers p ON p.release = l.release AND p.customer_id = l.customer_id\n" +
+  "FROM typed l LEFT JOIN paid_customers p ON p.release = l.release AND p.customer_id = l.customer_id\n" +
   "GROUP BY l.release, l.product_title\nORDER BY l.release, l.product_title";
 
 const drawProductsSql = () =>

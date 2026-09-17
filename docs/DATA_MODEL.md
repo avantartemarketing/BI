@@ -372,18 +372,21 @@ winner who has bought yet has no row, and its product keeps the event feed's fig
 
 **Two kinds of draft order.** A draw entry creates a Shopify draft order at entry time as a
 pre-authorisation (the draw entries export's `Shopify Draft Order ID`, assigned at entry, not
-a win signal): since 2025 those are 9,678 of the 10,200 draft-source product lines, on the
-`-DRAW` SKU, one facilitator value across all of them, and a winner's converts to an order
-(`order_originated_from_drafts = 1`). They are the entries in hand the sell-through already
-counts, so they are kept apart as `units_entry_drafts` and never drawn as drafts. The drafts
-the card draws, `units_draft_pending`, are the ones an advisor raises by hand on every other
-route and the orders whose payment is still pending: a commitment awaiting payment, which
-takes room out of the edition like a sale. During a draw campaign that is the `-PREORDER`
-route: a few lines per release (Warhol 14, Ligon 3 in September 2026), raised by two or
-three named facilitators over a handful of days, converting into `-PREORDER` paid orders the
-same way; after a campaign it is `-POSTRELEASE`, `-APSALE`, `-PRIVATE` and the like, or a
-SKU with no route segment. The funnel's `Preorder_App` counts are another thing again (the
-pre-order requests, allocated like a draw) and do not create these drafts.
+a win signal), and an entrant can let the entry be claimed early as a pre-order; a winner's
+converts to an order (`order_originated_from_drafts = 1`). The app writes those drafts under
+one facilitator account: since September 2026 one account has written 9,033 draft lines,
+8,998 of them on the `-DRAW` SKU, across 49 releases, and on a release without a DRAW variant
+per colour it writes them on the base SKU (Ai Weiwei, September 2026: 24 of its 29 entry
+drafts). So the query names the app's accounts by their profile, any facilitator whose drafts
+are at least 100 lines and 90% on the DRAW SKU, and an entry draft is one on the DRAW SKU or
+one the app's account wrote. Those are the entries in hand the sell-through already counts, so
+they are kept apart as `units_entry_drafts` and never drawn as drafts. The drafts the card
+draws, `units_draft_pending`, are the ones a person raises: every other draft-source line, on
+whatever SKU (`-PREORDER` during a campaign, `-POSTRELEASE`, `-APSALE`, `-PRIVATE` and the
+base SKU after it), plus orders whose payment is still pending. Checked against the sales
+team's own count on the live Ai Weiwei release: 2 advisor drafts, one each from two named
+facilitators, where the SKU alone would have said 26. The funnel's `Preorder_App` counts are
+another thing again (the pre-order requests, allocated like a draw).
 
 **Drafts are counted per collector, and never past the room.** On launches closed before
 June 2026, 2,372 advisor draft lines became orders, 226 were cancelled and 66 are still open,
