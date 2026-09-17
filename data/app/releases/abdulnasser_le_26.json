@@ -3217,6 +3217,7 @@
    "Hemisphere": {
     "unitsPaid": 20.0,
     "drafts": 2.0,
+    "draftCustomers": 2.0,
     "entryDrafts": 3.0,
     "refunded": 0.0,
     "fromDrafts": 17.0,

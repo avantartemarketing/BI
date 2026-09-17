@@ -3107,6 +3107,7 @@
    "Ephemerality (13)": {
     "unitsPaid": 34.0,
     "drafts": 2.0,
+    "draftCustomers": 2.0,
     "entryDrafts": 0.0,
     "refunded": 0.0,
     "fromDrafts": 22.0,
@@ -3119,6 +3120,7 @@
    "Ephemerality (15)": {
     "unitsPaid": 27.0,
     "drafts": 2.0,
+    "draftCustomers": 2.0,
     "entryDrafts": 0.0,
     "refunded": 0.0,
     "fromDrafts": 15.0,

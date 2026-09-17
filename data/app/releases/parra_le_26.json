@@ -1773,6 +1773,7 @@
    "il senso di colpa": {
     "unitsPaid": 148.0,
     "drafts": 0.0,
+    "draftCustomers": 0.0,
     "entryDrafts": 4.0,
     "refunded": 0.0,
     "fromDrafts": 102.0,
@@ -1785,6 +1786,7 @@
    "in your detached world": {
     "unitsPaid": 149.0,
     "drafts": 0.0,
+    "draftCustomers": 0.0,
     "entryDrafts": 5.0,
     "refunded": 0.0,
     "fromDrafts": 119.0,
