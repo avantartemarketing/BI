@@ -17,7 +17,7 @@ import { C, fmtSigned, fmtPct, fmtDay, TipProvider, useTip } from "./ui.jsx";
 import HeroBar from "./modules/HeroBar.jsx";
 import LaunchStrip from "./modules/LaunchStrip.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
-import FunnelByChannel from "./modules/FunnelByChannel.jsx";
+import FunnelByChannel, { FunnelByChannelWide } from "./modules/FunnelByChannel.jsx";
 import Trajectory from "./modules/Trajectory.jsx";
 import KeyDrivers from "./modules/KeyDrivers.jsx";
 import PaidRoi from "./modules/PaidRoi.jsx";
@@ -429,6 +429,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       case "channels": return <ChannelsVsTargets snap={snap} horizon={horizon} />;
       case "no_targets": return targeted ? null : <NoTargets snap={snap} onSetup={() => setTab("targets")} />;
       case "funnel": return <FunnelByChannel snap={snap} />;
+      case "funnel_wide": return <FunnelByChannelWide snap={snap} />;
       case "trajectory": return <Trajectory snap={snap} horizon={horizon} />;
       case "drivers": return <KeyDrivers snap={snap} />;
       case "paid_roi": return <PaidRoi snap={snap} />;

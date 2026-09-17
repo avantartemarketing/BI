@@ -2,11 +2,15 @@
  * headers between them. One arrangement for everyone, kept on the server
  * (GET and POST /api/layout; README "Arranging the page"). This file owns the
  * list of cards, so a saved layout naming a card the code no longer has drops
- * it, and a card the code gained since the save joins at the end.
+ * it, and a card the code gained since the save joins at the end - unless the
+ * layout says it was taken off the page, which is what its `removed` list
+ * records.
  *
  * Editing is drag and drop: every card is a handle, a header is dragged by its
  * grip, and a header ends one grid and starts the next, so each section packs
- * on its own. Nothing is kept until Save, which keeps it for everyone. */
+ * on its own. A card's × takes it off the page and the bar's list puts one
+ * back; the list also holds the cards that are not on the page by default (the
+ * 2 × 2 funnel). Nothing is kept until Save, which keeps it for everyone. */
 import React, { useEffect, useState } from "react";
 import { C } from "./ui.jsx";
 
@@ -15,6 +19,8 @@ export const CARDS = [
   { key: "channels", title: "Channels vs targets" },
   { key: "no_targets", title: "No targets set", note: "shown only on a release without targets" },
   { key: "funnel", title: "Funnel by channel", size: "tall" },
+  // not on the page by default: the same card at 2 × 2, both views at once
+  { key: "funnel_wide", title: "Funnel by channel, 2 × 2", size: "big", optional: true, note: "the waterfall and the funnel side by side" },
   { key: "trajectory", title: "Unit trajectory", size: "wide" },
   { key: "drivers", title: "Funnel key drivers" },
   { key: "paid_roi", title: "Paid ROI", size: "wide" },
@@ -24,23 +30,29 @@ export const CARDS = [
   { key: "waterfall", title: "Actual vs target" },
 ];
 const BY_KEY = Object.fromEntries(CARDS.map((c) => [c.key, c]));
+const DEFAULT_KEYS = CARDS.filter((c) => !c.optional).map((c) => c.key);
 
 let seq = 0;
 const newId = () => `h${++seq}`;
-export const defaultItems = () => CARDS.map((c) => ({ type: "card", key: c.key }));
-const isDefault = (items) => items.length === CARDS.length && items.every((it, i) => it.type === "card" && it.key === CARDS[i].key);
+export const defaultItems = () => DEFAULT_KEYS.map((key) => ({ type: "card", key }));
+const isDefault = (items) => items.length === DEFAULT_KEYS.length && items.every((it, i) => it.type === "card" && it.key === DEFAULT_KEYS[i]);
+const onPage = (items) => new Set(items.filter((it) => it.type === "card").map((it) => it.key));
+/* the cards that can be added: every card the page does not show */
+export const missingCards = (items) => { const on = onPage(items); return CARDS.filter((c) => !on.has(c.key)); };
 
 /* A stored layout against the cards the code has: unknown cards go, repeats go,
- * cards the layout never heard of join at the end. Headers pass through and get
- * an id for React's benefit; the server keeps only their text. */
-export function reconcile(items) {
+ * and a card the layout never heard of joins at the end - unless the layout
+ * took it off the page, or it is not on the page by default. Headers pass
+ * through and get an id for React's benefit; the server keeps only their text. */
+export function reconcile(items, removed) {
   const out = [], seen = new Set();
   for (const it of Array.isArray(items) ? items : []) {
     if (!it || typeof it !== "object") continue;
     if (it.type === "card" && BY_KEY[it.key] && !seen.has(it.key)) { seen.add(it.key); out.push({ type: "card", key: it.key }); }
     else if (it.type === "header") out.push({ type: "header", text: String(it.text ?? "").slice(0, 80), id: it.id || newId() });
   }
-  for (const c of CARDS) if (!seen.has(c.key)) out.push({ type: "card", key: c.key });
+  const off = new Set(Array.isArray(removed) ? removed : []);
+  for (const c of CARDS) if (!seen.has(c.key) && !c.optional && !off.has(c.key)) out.push({ type: "card", key: c.key });
   return out;
 }
 
@@ -49,7 +61,7 @@ export function useLayout() {
   useEffect(() => {
     let live = true;
     fetch("/api/layout").then((r) => (r.ok ? r.json() : null)).then((d) => {
-      if (live && d) setDoc({ items: reconcile(d.items), updatedAt: d.updatedAt ?? null, updatedBy: d.updatedBy ?? null });
+      if (live && d) setDoc({ items: reconcile(d.items, d.removed), updatedAt: d.updatedAt ?? null, updatedBy: d.updatedBy ?? null });
     }).catch(() => {});
     return () => { live = false; };
   }, []);
@@ -57,26 +69,39 @@ export function useLayout() {
     // the default is kept as no document at all, so the bar can say nobody has changed it
     const body = isDefault(items) ? null
       : items.map((it) => (it.type === "card" ? { type: "card", key: it.key } : { type: "header", text: it.text.trim() }));
+    // every card the code has that is not on the page, so that a card the code
+    // gains after this save can be told from one somebody took off
+    const on = onPage(items);
+    const removed = body ? CARDS.filter((c) => !on.has(c.key)).map((c) => c.key) : [];
     const r = await fetch("/api/layout", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: body }),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: body, removed }),
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || "Could not save the layout - nothing was changed.");
-    setDoc({ items: reconcile(d.items), updatedAt: d.updatedAt ?? null, updatedBy: d.updatedBy ?? null });
+    setDoc({ items: reconcile(d.items, d.removed), updatedAt: d.updatedAt ?? null, updatedBy: d.updatedBy ?? null });
   };
   return { ...doc, save };
 }
 
-/* The bar above the page while editing: add a header, go back to the default,
- * cancel, or save for everyone. */
+/* The bar above the page while editing: put a card on the page, add a header,
+ * go back to the default, cancel, or save for everyone. */
 export function LayoutBar({ items, onChange, onSave, onCancel, saving, error, updatedAt, updatedBy }) {
   const when = updatedAt ? new Date(updatedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : null;
   const note = updatedBy ? `Last saved by ${updatedBy}${when ? " on " + when : ""}.` : "Nobody has changed the default yet.";
+  const missing = missingCards(items);
+  // a card lands at the top of the page, as a header does, ready to drag into place
+  const add = (key) => { if (key && BY_KEY[key]) onChange([{ type: "card", key }, ...items]); };
   return (
     <div className="layout-bar">
+      <select className="add-card" value="" onChange={(e) => add(e.target.value)} disabled={!missing.length}
+        aria-label="Add a card"
+        title={missing.length ? "Put a card on the page - it lands at the top, ready to drag into place" : "Every card is on the page"}>
+        <option value="">{missing.length ? "Add a card…" : "Every card is on the page"}</option>
+        {missing.map((c) => <option key={c.key} value={c.key}>{c.title}</option>)}
+      </select>
       <button className="btn secondary" onClick={() => onChange([{ type: "header", text: "", id: newId() }, ...items])}>Add header</button>
       <button className="btn secondary" onClick={() => onChange(defaultItems())} disabled={isDefault(items)}>Back to the default</button>
-      <span className="note" style={error ? { color: C.red } : undefined}>{error || `Drag a card or a header to move it. ${note}`}</span>
+      <span className="note" style={error ? { color: C.red } : undefined}>{error || `Drag a card or a header to move it; × takes a card off the page. ${note}`}</span>
       <button className="btn secondary" onClick={onCancel} disabled={saving}>Cancel</button>
       <button className="btn primary" onClick={onSave} disabled={saving}>{saving ? "Saving…" : "Save for everyone"}</button>
     </div>
@@ -158,6 +183,12 @@ export function PageLayout({ items, render, editing = false, onChange }) {
                           <div className="mod-head"><span className="gdot" style={{ background: "#c8c5bc" }} /><span className="title">{card.title}</span></div>
                           <div className="empty-state">{card.note || "nothing to show on this release"}</div>
                         </div>
+                      )}
+                      {editing && (
+                        /* the card under it takes no pointer events while editing, so
+                           the button sits beside it in the slot rather than inside it */
+                        <button className="x" draggable={false} title={`Take ${card.title} off the page`}
+                          onClick={(e) => { e.stopPropagation(); remove(c.idx); }}>&#215;</button>
                       )}
                     </div>
                   );
