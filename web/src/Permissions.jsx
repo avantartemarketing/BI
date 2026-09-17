@@ -1,7 +1,9 @@
 /* Permissions (sidebar → Settings; admins only). App-level, not per-release.
- * Manage who can sign in: add a person with an email, a password you set for
- * them and a role; change a role; reset a password; remove access. Removal
- * takes effect immediately - the person's session dies on their next request. */
+ * Everyone signs in with their company Google account, so this page is an
+ * access list plus a role per person: change a role, add someone ahead of
+ * their first sign-in (to make them an admin, or to pre-approve them when the
+ * server only admits listed accounts), remove access. Removal takes effect
+ * immediately - the person's session dies on their next request. */
 import React, { useEffect, useState } from "react";
 import { Card, C } from "./ui.jsx";
 
@@ -41,7 +43,7 @@ export default function Permissions({ me }) {
       {error ? <div style={{ color: C.red, fontSize: 13 }}>{error}</div> :
        !rows ? <div style={{ color: C.muted }}>Loading…</div> : (
         <div style={{ maxWidth: 760, display: "flex", flexDirection: "column", gap: 24 }}>
-          <Card dot="#28518f" title="Who can sign in">
+          <Card dot="#28518f" title="Who has access">
             <div className="spacer-16" />
             <div style={{ display: "flex", flexDirection: "column" }}>
               {rows.map((u) => (
@@ -58,17 +60,21 @@ export default function Permissions({ me }) {
             <div className="spacer-16" />
             <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.65 }}>
               <p style={{ marginBottom: 10 }}>
+                Everyone signs in with their company Google account. Anyone in the domain is
+                added to this list as a <strong style={{ color: C.ink }}>User</strong> the first time
+                they sign in. Add someone here before that to make them an{" "}
+                <strong style={{ color: C.ink }}>Admin</strong> from the start.
+              </p>
+              <p style={{ marginBottom: 10 }}>
                 <strong style={{ color: C.ink }}>Admin</strong> sees everything a User sees, plus
                 this page. <strong style={{ color: C.ink }}>User</strong> gets the full dashboard -
                 every release, the Overview and Target setting tabs - but no access to accounts.
               </p>
-              <p style={{ marginBottom: 10 }}>
-                Anyone who signs in with their Google account is added here as a user automatically. For password accounts, you set each person's password here and share it with them directly. Passwords are
-                stored hashed and are never shown again, so a forgotten one is reset, not looked up.
-              </p>
               <p>
-                Removing someone signs them out immediately, even mid-session. The last remaining
-                admin cannot be removed or demoted, so this page can never lock itself out.
+                Removing someone signs them out immediately, even mid-session; they are added back
+                as a User if they sign in again, unless the server is set to admit listed accounts
+                only. The last remaining admin cannot be removed or demoted, so this page can never
+                lock itself out.
               </p>
             </div>
           </Card>
@@ -79,8 +85,6 @@ export default function Permissions({ me }) {
 }
 
 function UserRow({ u, lastAdmin, onChanged, onNotice }) {
-  const [resetting, setResetting] = useState(false);
-  const [pw, setPw] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
@@ -94,11 +98,6 @@ function UserRow({ u, lastAdmin, onChanged, onNotice }) {
   const setRole = (role) => run(
     () => api("/api/users", { method: "POST", body: JSON.stringify({ email: u.email, admin: role === "admin" }) }),
     `${u.email} is now ${role === "admin" ? "an admin" : "a user"}.`);
-
-  const saveReset = () => run(async () => {
-    await api("/api/users", { method: "POST", body: JSON.stringify({ email: u.email, password: pw }) });
-    setResetting(false); setPw("");
-  }, `Password updated for ${u.email}.`);
 
   const removeUser = () => {
     if (!window.confirm(`Remove ${u.email}? They will be signed out immediately.`)) return;
@@ -129,32 +128,17 @@ function UserRow({ u, lastAdmin, onChanged, onNotice }) {
         >
           {ROLES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
         </select>
-        <span style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <button style={linkBtn} disabled={busy}
-            onClick={() => { setResetting(!resetting); setPw(""); setErr(null); }}>
-            {resetting ? "cancel" : "reset password"}
-          </button>
-          <button
-            style={{ ...linkBtn, color: u.self || roleLocked ? C.muted : C.red,
-                     opacity: u.self || roleLocked ? 0.45 : 1,
-                     cursor: u.self || roleLocked ? "default" : "pointer" }}
-            disabled={busy || u.self || roleLocked}
-            title={u.self ? "You cannot remove yourself" : roleLocked ? "The last admin cannot be removed" : "Remove access"}
-            onClick={removeUser}
-          >
-            remove
-          </button>
-        </span>
+        <button
+          style={{ ...linkBtn, color: u.self || roleLocked ? C.muted : C.red,
+                   opacity: u.self || roleLocked ? 0.45 : 1,
+                   cursor: u.self || roleLocked ? "default" : "pointer" }}
+          disabled={busy || u.self || roleLocked}
+          title={u.self ? "You cannot remove yourself" : roleLocked ? "The last admin cannot be removed" : "Remove access"}
+          onClick={removeUser}
+        >
+          remove
+        </button>
       </div>
-      {resetting && (
-        <form style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}
-          onSubmit={(e) => { e.preventDefault(); saveReset(); }}>
-          <input className="control" type="password" autoComplete="new-password" autoFocus
-            placeholder="New password (min 8 characters)" value={pw}
-            onChange={(e) => setPw(e.target.value)} style={{ maxWidth: 280 }} />
-          <button className="btn primary" type="submit" disabled={busy || pw.length < 8}>Save</button>
-        </form>
-      )}
       {err && <div style={{ marginTop: 8, fontSize: 12, color: C.red }}>{err}</div>}
     </div>
   );
@@ -162,7 +146,6 @@ function UserRow({ u, lastAdmin, onChanged, onNotice }) {
 
 function AddUser({ onAdded }) {
   const [email, setEmail] = useState("");
-  const [pw, setPw] = useState("");
   const [role, setRole] = useState("user");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -173,10 +156,10 @@ function AddUser({ onAdded }) {
     try {
       await api("/api/users", {
         method: "POST",
-        body: JSON.stringify({ email: email.trim(), password: pw, admin: role === "admin" }),
+        body: JSON.stringify({ email: email.trim(), admin: role === "admin" }),
       });
       onAdded(email.trim().toLowerCase());
-      setEmail(""); setPw(""); setRole("user");
+      setEmail(""); setRole("user");
     } catch (e2) { setErr(String(e2.message || e2)); }
     finally { setBusy(false); }
   };
@@ -191,21 +174,16 @@ function AddUser({ onAdded }) {
   return (
     <form onSubmit={submit} style={{ borderTop: "1px solid #f2f0ea", paddingTop: 16 }}>
       <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
-        <Field label="Email">
+        <Field label="Add someone ahead of their first sign-in">
           <input className="control" type="email" placeholder="name@avantarte.com" autoComplete="off"
             value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </Field>
-        <Field label="Password" width={200}>
-          <input className="control" type="password" placeholder="Min 8 characters" autoComplete="new-password"
-            value={pw} onChange={(e) => setPw(e.target.value)} required />
         </Field>
         <Field label="Role" width={110}>
           <select className="control" value={role} onChange={(e) => setRole(e.target.value)}>
             {ROLES.map((r) => <option key={r.key} value={r.key} title={r.blurb}>{r.label}</option>)}
           </select>
         </Field>
-        <button className="btn primary" type="submit"
-          disabled={busy || pw.length < 8 || !email.includes("@")}>
+        <button className="btn primary" type="submit" disabled={busy || !email.includes("@")}>
           Add person
         </button>
       </div>

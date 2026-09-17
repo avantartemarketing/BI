@@ -1,16 +1,17 @@
 /* Authentication, restricted to one email domain (default avantarte.com).
  *
- * Three ways in, all ending in the same signed HttpOnly session cookie:
- *   - Sign in with Google (server/googleLogin.js): GET /auth/google sends the
- *     browser to Google with a signed state + nonce held in a short-lived
- *     cookie; GET /auth/google/callback verifies state, exchanges the code,
- *     verifies the ID token and its domain, and signs the person in. An
- *     account in the domain that is not yet on the Permissions tab is added
- *     as a user (GOOGLE_LOGIN_ALLOWLIST_ONLY=1 refuses it instead).
- *     LOGIN_GOOGLE_ONLY=1 hides the password form once everyone has moved.
- *   - Password (Permissions tab accounts): POST /auth/login {email, password}.
- *   - Magic link (dormant): POST /auth/request {email} -> single-use signed
- *     token (15 min) emailed as a link -> GET /auth/verify?token=...
+ * Sign in with Google (server/googleLogin.js) is the way in: GET /auth/google
+ * sends the browser to Google with a signed state + nonce held in a
+ * short-lived cookie; GET /auth/google/callback verifies state, exchanges the
+ * code, verifies the ID token and its domain, and sets the signed HttpOnly
+ * session cookie. An account in the domain that is not yet on the Permissions
+ * tab is added as a user (GOOGLE_LOGIN_ALLOWLIST_ONLY=1 refuses it instead).
+ *
+ * With no Google client configured (local development, or a broken
+ * deployment) the old password form and the dormant magic link stand in, so
+ * the app is never unreachable; the moment GOOGLE_OAUTH_CLIENT_ID and
+ * GOOGLE_OAUTH_CLIENT_SECRET are set, those routes answer 404 and the login
+ * page shows only the Google button.
  *
  * Email delivery uses Resend (RESEND_API_KEY + MAIL_FROM on a verified domain).
  * Without a key the link is printed to the server log only (fish it out of the
@@ -174,17 +175,14 @@ const LOGIN_HTML = `<!doctype html>
 </style></head><body>
 <div class="card">
   <h1>Launch Performance</h1>
-  <p>Sign in with your __DOMAIN__ account.</p>
+  <p>Sign in with your __DOMAIN__ Google account.</p>
   __GOOGLE__
-  <form id="f" __FORM__>
-    <input id="email" type="email" placeholder="you@__DOMAIN__" autocomplete="email" required>
-    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
-    <button type="submit">Sign in with password</button>
-  </form>
+  __FORM__
   <div id="err" class="msg" __ERR__></div>
 </div>
 <script>
-  document.getElementById('f').addEventListener('submit', async (e) => {
+  const form = document.getElementById('f');
+  if (form) form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const err = document.getElementById('err');
     err.style.display = 'none';
@@ -206,14 +204,19 @@ const G_LOGO = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="tru
   '<path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.6-4.1-13.5-9.9l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+// the password form exists only while no Google client is configured
+const DEV_FORM = `<div class="or">no Google client configured - development sign-in</div>
+  <form id="f">
+    <input id="email" type="email" placeholder="you@__DOMAIN__" autocomplete="email" required>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit">Sign in with password</button>
+  </form>`.replaceAll("__DOMAIN__", DOMAIN);
+
 function loginHtml(error) {
   const g = google.configured();
-  const googleOnly = g && process.env.LOGIN_GOOGLE_ONLY === "1";
   return LOGIN_HTML
-    .replace("__GOOGLE__", g
-      ? `<a class="gbtn" href="/auth/google">${G_LOGO}Continue with Google</a>` + (googleOnly ? "" : '<div class="or">or</div>')
-      : "")
-    .replace("__FORM__", googleOnly ? 'style="display:none"' : "")
+    .replace("__GOOGLE__", g ? `<a class="gbtn" href="/auth/google">${G_LOGO}Continue with Google</a>` : "")
+    .replace("__FORM__", g ? "" : DEV_FORM)
     .replace("__ERR__", error ? `style="display:block">${esc(error)}` : ">")
     .replace('<div id="err" class="msg" >', '<div id="err" class="msg">');
 }
@@ -268,7 +271,9 @@ function install(app) {
     }
   });
 
-  app.post("/auth/login", (req, res) => {
+  // password and magic-link routes exist only while no Google client is configured
+  const devOnly = (req, res, next) => (google.configured() ? res.status(404).json({ error: "not found" }) : next());
+  app.post("/auth/login", devOnly, (req, res) => {
     const email = String((req.body && req.body.email) || "").trim().toLowerCase();
     const password = String((req.body && req.body.password) || "");
     const ip = req.ip || "?";
@@ -283,7 +288,7 @@ function install(app) {
     res.json({ ok: true });
   });
 
-  app.post("/auth/request", async (req, res) => {
+  app.post("/auth/request", devOnly, async (req, res) => {
     const email = String((req.body && req.body.email) || "").trim().toLowerCase();
     const ip = req.ip || "?";
     if (rateLimited("ip:" + ip, 20) || rateLimited("em:" + email, 5)) {
@@ -300,7 +305,7 @@ function install(app) {
     res.json({ ok: true });
   });
 
-  app.get("/auth/verify", (req, res) => {
+  app.get("/auth/verify", devOnly, (req, res) => {
     const payload = verify(String(req.query.token || ""));
     if (!payload || payload.kind !== "login" || usedTokens.has(payload.id)) {
       return res.status(400).type("html").send(
@@ -340,4 +345,4 @@ function install(app) {
   });
 }
 
-module.exports = { install, sessionFrom, DOMAIN };
+module.exports = { install, sessionFrom, DOMAIN, googleConfigured: google.configured };

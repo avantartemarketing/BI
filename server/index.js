@@ -48,7 +48,12 @@ app.post("/api/users", (req, res) => {
   }
   const existing = users.get(email);
   const change = {};
-  if (body.password !== undefined && body.password !== "") {
+  if (auth.googleConfigured()) {
+    // Google is the only way in: accounts are an access list plus a role
+    if (body.password !== undefined && body.password !== "") {
+      return res.status(400).json({ error: "Passwords are no longer used - people sign in with Google." });
+    }
+  } else if (body.password !== undefined && body.password !== "") {
     if (typeof body.password !== "string" || body.password.length < 8) {
       return res.status(400).json({ error: "Password must be at least 8 characters." });
     }
