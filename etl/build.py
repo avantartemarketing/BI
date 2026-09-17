@@ -1091,8 +1091,10 @@ def load_orders_feed() -> dict:
     """Per release, the orders feed server/bigquery.js writes from
     Order_Line_Concept (data/orders_by_product.csv and data/draw_products.csv;
     aggregates only, docs #2.4): products keyed by Shopify title with units
-    paid, orders awaiting payment (drafts), the list price and the Airtable
-    edition where the title matches; the product each draw's winners bought;
+    paid, orders awaiting payment (drafts: an advisor's draft orders and
+    pending orders, not the draw's own pre-authorisation drafts, which are
+    kept apart as entryDrafts), the list price and the Airtable edition
+    where the title matches; the product each draw's winners bought;
     and the release's totals with the last order or draft day as `asOf`."""
     global _ORDERS_FEED
     if _ORDERS_FEED is not None:
@@ -1118,7 +1120,8 @@ def load_orders_feed() -> dict:
                 paid, drafts = num(r.units_paid), num(r.units_draft_pending)
                 price = num(r.list_price_eur)
                 rel["products"][r.product_title] = {
-                    "unitsPaid": paid, "drafts": drafts, "refunded": num(r.units_refunded),
+                    "unitsPaid": paid, "drafts": drafts, "entryDrafts": num(getattr(r, "units_entry_drafts", 0)),
+                    "refunded": num(r.units_refunded),
                     "fromDrafts": num(r.units_from_drafts), "privateRoom": num(r.units_private_room),
                     "listPrice": price if price > 0 else None, "edition": editions(r.release, r.product_title),
                     "lastOrder": r.last_order or None, "lastDraft": r.last_draft or None,

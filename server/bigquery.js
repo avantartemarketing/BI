@@ -364,16 +364,20 @@ const spendSql = () =>
  * that travel are release, product, draw and counts (docs/DATA_MODEL.md 2.4).
  *   orders_by_product.csv  per release x Shopify product title: units paid
  *                          (orders, not cancelled, not refunded), refunded,
- *                          awaiting payment (draft orders with no order yet,
- *                          and orders still pending), from drafts, private
- *                          room, the list price, first and last order day,
- *                          last draft day
+ *                          awaiting payment (draft orders an advisor raised
+ *                          that have no order yet, and orders still pending),
+ *                          the draw's own pre-authorisation drafts (one per
+ *                          live entry or pre-order request, a DRAW or
+ *                          PREORDER SKU - counted apart, because the card
+ *                          already counts those as entries), from drafts,
+ *                          private room, the list price, first and last
+ *                          order day, last draft day
  *   draw_products.csv      per draw: the product its winners bought most, and
  *                          the share of their orders it took
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
-  "units_draft_pending", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
+  "units_draft_pending", "units_entry_drafts", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
 const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
 
 const ordersSql = () =>
@@ -383,8 +387,9 @@ const ordersSql = () =>
   "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0\n" +
   "         AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending'), quantity, 0)) AS units_paid,\n" +
   "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0 AND order_financial_status = 'refunded', quantity, 0)) AS units_refunded,\n" +
-  "  SUM(IF(cancelled_order = 0 AND (order_source_type = 'Draft'\n" +
+  "  SUM(IF(cancelled_order = 0 AND ((order_source_type = 'Draft' AND NOT REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-(DRAW|PREORDER)$'))\n" +
   "         OR (order_source_type = 'Order' AND order_financial_status = 'pending')), quantity, 0)) AS units_draft_pending,\n" +
+  "  SUM(IF(cancelled_order = 0 AND order_source_type = 'Draft' AND REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-(DRAW|PREORDER)$'), quantity, 0)) AS units_entry_drafts,\n" +
   "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0 AND order_originated_from_drafts = 1, quantity, 0)) AS units_from_drafts,\n" +
   "  SUM(IF(order_source_type = 'Order' AND cancelled_order = 0 AND is_private_room = 1, quantity, 0)) AS units_private_room,\n" +
   "  APPROX_QUANTILES(IF(shopify_product_variant_price > 0, CAST(shopify_product_variant_price AS FLOAT64), NULL), 2)[OFFSET(1)] AS list_price_eur,\n" +

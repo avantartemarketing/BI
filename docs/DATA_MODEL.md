@@ -359,7 +359,7 @@ them; `BQ_ORDERS_TABLE` renames the table; both take `BQ_SINCE`):
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not refunded, not pending), `units_refunded`, `units_draft_pending` (draft-source lines plus orders still pending payment), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
+| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not refunded, not pending), `units_refunded`, `units_draft_pending` (draft orders an advisor raised that have no order yet, plus orders still pending payment), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
@@ -369,6 +369,18 @@ runs inside BigQuery on the pseudonymous account id and only (release, draw, pro
 comes out. Winners of several draws buy across them, so the top product takes the draw
 (`share` says how clear it was: 0.6 to 0.9 on the September 2026 releases). A draw with no
 winner who has bought yet has no row, and its product keeps the event feed's figures (§6.3).
+
+**Two kinds of draft order.** A draw entry and a pre-order request each create a Shopify draft
+order at entry time as a pre-authorisation (the draw entries export's `Shopify Draft Order ID`,
+assigned at entry, not a win signal): since 2025 those are 9,678 of the 10,200 draft-source
+product lines, on a `-DRAW` or `-PREORDER` SKU, and a winner's converts to an order
+(`order_originated_from_drafts = 1`). They are the entries in hand the sell-through already
+counts, so they are kept apart as `units_entry_drafts` and never drawn as drafts. The drafts
+the card draws, `units_draft_pending`, are the ones an advisor raises by hand on every other
+route (private room `-PRIVATE`, `-POSTRELEASE`, `-APSALE`, artist and auction allocations, a
+blank SKU) and the orders whose payment is still pending: a commitment awaiting payment, which
+takes room out of the edition like a sale. Where the routes are read from the SKU's last
+segment, a SKU written without one counts as an advisor's draft.
 
 Only product lines count (`shopify_product_type = 'Product'`): frames are lines of their own
 (`Frame`) and are left out of units. Two Shopify products with one title (a private-room
@@ -950,9 +962,10 @@ Sell-through is three things added up, per product:
 
 ```
 sold          units paid for
-drafts        orders awaiting payment (draft orders with no order yet, orders still pending):
-              they take room out of the edition like a sale; from the orders feed (§2.4),
-              null until the product's draw is named there
+drafts        orders awaiting payment: draft orders an advisor raised that have no order
+              yet, and orders still pending payment (not the draw's own pre-authorisation
+              drafts, which are the entries): they take room out of the edition like a
+              sale; from the orders feed (§2.4), null until the product's draw is named there
 in hand       eligible draw entries still in the draw, ALLOCATED across the products by the
               maximum-quantity rule below, × the entry → order rate (0.8 unless the release
               sets its own)

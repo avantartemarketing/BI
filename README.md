@@ -216,7 +216,8 @@ it leaves the server with an identifier column.
 
 **Orders and drafts by product.** The pull also reads `Order_Line_Concept`, the Shopify order
 lines, into two aggregate files: `data/orders_by_product.csv` (per release and product: units
-paid, orders awaiting payment, list price) and `data/draw_products.csv` (the product each
+paid, orders awaiting payment, list price; the draw's own pre-authorisation drafts, one per
+live entry, are counted apart and never shown as drafts) and `data/draw_products.csv` (the product each
 draw's winners bought, joined inside BigQuery on the pseudonymous account id). That table
 carries email addresses too; nothing selects them, and only counts per release and product
 leave (docs/DATA_MODEL.md 2.4). `BQ_ORDERS=off` skips the pair, `BQ_ORDERS_TABLE` renames
@@ -437,7 +438,8 @@ today and the days to launch on the right (the day of the window is in the strip
 it is a card like the others and moves with them.
 
 **Sell-through by product** (docs §6.3) is one row per product: units paid (rust), draft
-orders not yet paid (rust, striped), the draw entries in hand counted on the product at the
+orders an advisor raised that are not yet paid (rust, striped; the draw's own pre-authorisation
+drafts are the entries, not drafts), the draw entries in hand counted on the product at the
 entry → order rate (orange), at close the units still to come, against the product's edition,
 with demand the product has no room for hatched past its sellout. It is the one card with no
 target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
