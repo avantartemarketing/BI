@@ -60,6 +60,10 @@ check(later.split("\n").slice(-1)[0] === "_Complete data through 17 Sep_", `late
 const closed = composeSellThrough(snap, { today: "2026-10-30" });
 check(closed.includes("(day 24 of 24)"), `closed head: ${closed.split("\n")[0]}`);
 
+// the whole edition is the products' editions added up, not the page's sellout target
+const targeted = composeSellThrough({ ...snap, sellthrough: { ...snap.sellthrough, edition: 500 } }, { today: "2026-09-17" });
+check(targeted.includes("Paid = 94 units (16% of 600)") && targeted.includes("Total ~126 units → 21% of 600"), `edition sum: ${targeted.split("\n")[1]}`);
+
 // a release without products: the release-level figures
 const bare = composeSellThrough({ id: "x", releaseName: "X · Y · 2026 Q1", asOf: "2026-09-17", day: 3, of: 20,
   sellthrough: { edition: 100, sold: 12, drafts: 2, soldPredicted: 8, conversion: 0.8, incomplete: ["products"] } });

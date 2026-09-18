@@ -113,7 +113,14 @@ function composeSellThrough(snap, { link, today } = {}) {
   const st = (snap && snap.sellthrough) || {};
   const products = Array.isArray(st.products) ? st.products : [];
   const names = shortNames(products.map((p) => String(p.name || "")));
-  const edition = num(st.edition) > 0 ? num(st.edition) : null;
+  // the whole edition is the products' editions added up (Warhol: six boxes
+  // of 1,000 and the Lifesize 100, 6,100); the release's own edition size
+  // stands in when a product has none, and it is what the page's targets
+  // use, so the two can differ (the Target setting's 2,440 is the standards'
+  // sellout target, not the edition)
+  const editionSum = products.length && products.every((p) => num(p.edition) > 0)
+    ? products.reduce((n, p) => n + num(p.edition), 0) : null;
+  const edition = editionSum || (num(st.edition) > 0 ? num(st.edition) : null);
   const lines = [];
 
   const sent = today || new Date().toISOString().slice(0, 10);

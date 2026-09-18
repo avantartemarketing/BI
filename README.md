@@ -444,7 +444,9 @@ The message is composed on the server from the same snapshot the card is drawn f
 (`server/slack.js`), so what lands in Slack is what the page says at that moment. The
 header carries the day it is sent, with the campaign day moved on to match; when the
 feeds' last complete day is earlier than that, a last line says "Complete data through"
-that day.
+that day. The percentages are of the whole edition, the products' editions added up
+(Warhol: 6,100 with the Lifesize), not of the sellout target the page's targets use; the
+release's own edition size stands in only when a product has no edition.
 
 Setup, once:
 
