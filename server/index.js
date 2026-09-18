@@ -91,12 +91,23 @@ app.get("/api/curves", (_req, res) => res.sendFile(path.join(DATA, "curves.json"
 // actuals-only pages for everything else in derived/ (rebuilt every refresh,
 // not committed). A release the index lists but neither dir has is one the
 // first refresh after a deploy has not built yet - say so, not "unknown".
-app.get("/api/releases/:id", (req, res) => {
-  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+const slack = require("./slack");
+/* The release's snapshot as the ETL wrote it, or null. */
+function readSnapshot(id) {
   for (const dir of ["releases", "derived"]) {
     const file = path.join(DATA, dir, `${id}.json`);
-    if (fs.existsSync(file)) return res.sendFile(file);
+    if (fs.existsSync(file)) {
+      try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return null; }
+    }
   }
+  return null;
+}
+app.get("/api/releases/:id", (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  const snap = readSnapshot(id);
+  // the Slack channel set for the release rides on the snapshot, so the
+  // sell-through card knows whether its button has somewhere to post
+  if (snap) return res.json({ ...snap, slack: slack.stateFor(id) });
   let listed = false;
   try {
     listed = JSON.parse(fs.readFileSync(path.join(DATA, "index.json"), "utf8")).releases.some((r) => r.id === id);
@@ -484,6 +495,28 @@ app.get("/api/refresh/status", (req, res) => {
 });
 app.post("/api/refresh", (req, res) => res.json(startRefresh(!!(req.body && req.body.full))));
 
+// What the BigQuery service account can see: every dataset, table and view
+// with its column names (never a row), from the metadata endpoints. Cached a
+// day in data/app/bigquery_schema.json; ?refresh=1 lists again; ?format=text
+// gives the readable form for pasting. The first place to look when the
+// account is granted a new table.
+const SCHEMA_PATH = path.join(DATA, "bigquery_schema.json");
+app.get("/api/bigquery/schema", route(async (req, res) => {
+  const bq = require("./bigquery");
+  if (!bq.configured()) return res.status(503).json({ error: "BigQuery is not configured on this server (BIGQUERY_SERVICE_ACCOUNT_JSON)." });
+  let doc = null;
+  const fresh = fs.existsSync(SCHEMA_PATH) && Date.now() - fs.statSync(SCHEMA_PATH).mtimeMs < 24 * 3600 * 1000;
+  if (!req.query.refresh && fresh) {
+    try { doc = JSON.parse(fs.readFileSync(SCHEMA_PATH, "utf8")); } catch { doc = null; }
+  }
+  if (!doc) {
+    doc = await bq.listSchema();
+    fs.writeFileSync(SCHEMA_PATH, JSON.stringify(doc, null, 1));
+  }
+  if (req.query.format === "text") return res.type("text/plain").send(bq.schemaText(doc));
+  res.json(doc);
+}));
+
 // HubSpot email text export (server/emailContent.js): ?run=1 starts the job,
 // the same URL without it reports progress, and the CSV downloads once done.
 const emailContent = require("./emailContent");
@@ -584,6 +617,35 @@ app.post("/api/layout", route(async (req, res) => {
   fs.writeFileSync(tmp, JSON.stringify(doc, null, 1));
   fs.renameSync(tmp, LAYOUT_PATH);
   res.json(doc);
+}));
+
+// ---- sell-through updates to Slack (server/slack.js) ----
+const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || "").replace(/\/+$/, "");
+app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  if (!req.body || req.body.channel === undefined) return res.status(400).json({ error: "channel required (empty clears it)" });
+  const s = auth.sessionFrom(req);
+  try {
+    res.json({ slack: slack.setChannel(id, req.body.channel, s && s.email) });
+  } catch (e) {
+    res.status(400).json({ error: String(e.message || e) });
+  }
+}));
+app.post("/api/releases/:id/slack", route(async (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  const snap = readSnapshot(id);
+  if (!snap) return res.status(404).json({ error: "unknown release" });
+  const st = slack.stateFor(id);
+  if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
+  const text = slack.composeSellThrough(snap, { link: PUBLIC_URL ? `${PUBLIC_URL}/?release=${id}` : null });
+  if (req.body && req.body.dryRun) return res.json({ channel: st.channel, text });
+  try {
+    const out = await slack.postMessage(st.channel, text);
+    const s = auth.sessionFrom(req);
+    res.json({ ok: true, channel: st.channel, ts: out.ts, slack: slack.recordPost(id, s && s.email) });
+  } catch (e) {
+    res.status(502).json({ error: String(e.message || e) });
+  }
 }));
 
 app.use(express.static(DIST));

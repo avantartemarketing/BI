@@ -41,6 +41,10 @@ services:
         sync: false
       - key: NOTION_TOKEN   # Notion internal-integration secret (share the artist-posts database with it) - live artist posts
         sync: false
+      - key: SLACK_BOT_TOKEN   # Slack app bot token (chat:write, chat:write.public) - the sell-through card's Post to Slack button
+        sync: false
+      - key: SLACK_STATE_PATH   # e.g. /var/data/slack.json - the Slack channel set per release
+        sync: false
       - key: RESEND_API_KEY   # only for the magic-link fallback, which exists only without a Google client
         sync: false
       - key: MAIL_FROM        # only for the dormant magic-link flow

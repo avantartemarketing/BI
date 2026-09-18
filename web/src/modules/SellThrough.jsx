@@ -95,6 +95,7 @@ function ProductBar({ row, close, maxV, tips, height = 16, radius = 4 }) {
 export default function SellThrough({ snap, horizon = "today" }) {
   const t = useTip();
   const [scale, setScale] = useState("pct");   // pct | units
+  const [post, setPost] = useState({ state: "idle" });   // the Post to Slack button: idle | posting | done | error
   const st = snap?.sellthrough;
   const close = horizon === "close";
   const targeted = !snap || snap.targeted !== false;
@@ -200,12 +201,41 @@ export default function SellThrough({ snap, horizon = "today" }) {
     </div>
   );
 
+  // "Post to Slack": today's figures to the channel set on the Target setting
+  // tab, composed on the server from this same snapshot (server/slack.js)
+  const channel = (snap && snap.slack && snap.slack.channel) || null;
+  const postToSlack = async () => {
+    setPost({ state: "posting" });
+    try {
+      const r = await fetch(`/api/releases/${snap.id}/slack`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `Slack post failed (${r.status})`);
+      setPost({ state: "done", channel: d.channel });
+      setTimeout(() => setPost((p) => (p.state === "done" ? { state: "idle" } : p)), 5000);
+    } catch (e) {
+      setPost({ state: "error", message: String(e.message || e) });
+    }
+  };
+  const slackButton = snap && snap.id ? (
+    <button
+      className="btn secondary small"
+      disabled={!channel || post.state === "posting"}
+      onClick={postToSlack}
+      title={channel
+        ? `Post today's sell-through figures to #${channel}`
+        : "Set a Slack channel for this release on the Target setting tab, then this posts the figures there"}
+    >
+      {post.state === "posting" ? "Posting…" : post.state === "done" ? `Posted to #${post.channel}` : post.state === "error" ? "Post failed" : "Post to Slack"}
+    </button>
+  ) : null;
+
   return (
     <Card
       dot={GROUP_DOTS.outcome}
       title={close ? "Predicted sell-through by product" : "Sell-through by product"}
       right={(
         <>
+          {slackButton}
           <span className="hint-dotted" {...t.props(methodTip, 300)}>at {rateText} entry → order</span>
           {allEditions && rows.length > 1 && seg(
             [["pct", "%", "Every product on its own edition, so the rows read as sell-through"],
@@ -215,7 +245,10 @@ export default function SellThrough({ snap, horizon = "today" }) {
         </>
       )}
     >
-      <div className="spacer-8" />
+      {/* a refused post says why, in a line of its own so the header keeps its shape */}
+      {post.state === "error"
+        ? <div style={{ color: C.red, fontSize: 12, margin: "2px 0 6px" }}>Not posted to Slack: {post.message}</div>
+        : <div className="spacer-8" />}
       <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 28 }}>
         {/* the release: headline and what it is made of */}
         <div style={{ flex: "0 0 196px", display: "flex", flexDirection: "column", minWidth: 0 }}>

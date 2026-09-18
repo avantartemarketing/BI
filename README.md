@@ -36,6 +36,9 @@ data/
                           (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
   release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
                           dates, medium - no personal data (etl/pull_airtable.py)
+  orders_by_product.csv   per release x Shopify product: units paid, awaiting payment (draft orders),
+                          list price - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
+  draw_products.csv       the product each draw's winners bought: the draw to product map
   release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
   app/release_products.json  per release, the draws (one per product) and the entry patterns
@@ -115,6 +118,7 @@ Render's disk resets on every deploy. Five things live on it and are lost withou
 | `data/inputs.saved.json` | targets edited in the dashboard revert to the repo defaults | `SAVED_INPUTS_PATH` on the disk |
 | `data/targets.log.jsonl`, `data/decisions.log.jsonl` | the audit trails restart | `TARGETS_LOG`, `DECISIONS_PATH` on the disk |
 | `data/layout.json` | the page goes back to its default arrangement (card order, section headers) | `LAYOUT_PATH` on the disk |
+| `data/slack.json` | the Slack channel set per release is forgotten; the Post to Slack button goes grey | `SLACK_STATE_PATH` on the disk |
 
 `SESSION_SECRET` is the one-line fix for re-logins and needs no disk. For the rest, add a
 persistent disk to the service (Render → the service → Disks; 1 GB is plenty), mount it
@@ -126,6 +130,7 @@ SAVED_INPUTS_PATH=/var/data/inputs.saved.json
 TARGETS_LOG=/var/data/targets.log.jsonl
 DECISIONS_PATH=/var/data/decisions.log.jsonl
 LAYOUT_PATH=/var/data/layout.json
+SLACK_STATE_PATH=/var/data/slack.json
 ```
 
 `render.yaml` lists the same keys, but Render ignores that file for a service created in the
@@ -189,7 +194,17 @@ would delete the last 45 days.
 
 Check the connection without writing anything: `node server/bigquery.js` prints the plan
 (full or incremental, and why), row counts and GB scanned; add `--write` to replace the
-CSVs, `--full` to force a full pull, `--events` to pull the event-level feed alone.
+CSVs, `--full` to force a full pull, `--events` to pull the event-level feed alone, `--orders`
+the orders-by-product pair alone.
+
+**What the account can see.** `node server/bigquery.js --schema` lists every dataset, table
+and view the service account can list, with column names and types, from the metadata
+endpoints - no query runs and no row is read - and names the tables that carry both a product
+column and an order or draw column, which is the question behind sales and drafts by product
+(docs §6.3). Signed in, `/api/bigquery/schema?format=text` serves the same listing from the
+live service (`?refresh=1` lists again; the JSON form without `format`), so a newly granted
+table can be checked without a shell. Address-shaped column names are flagged in the listing
+and are never selected by anything here.
 
 **Event-level feed.** The same pull also takes the conversion events (signup, draw entry
 intent, purchase) of `LE_Funnel_Report` into `sources/le_events.csv`. That table carries
@@ -200,6 +215,15 @@ team's email-free view once one exists, `BQ_EVENTS_SINCE` (default 2019-01-01) s
 window, `BQ_EVENTS=off` skips it. The file holds pseudonymous account ids, which are still
 personal data: it stays under `sources/`, is served by no endpoint, and nothing derived from
 it leaves the server with an identifier column.
+
+**Orders and drafts by product.** The pull also reads `Order_Line_Concept`, the Shopify order
+lines, into two aggregate files: `data/orders_by_product.csv` (per release and product: units
+paid, orders awaiting payment, list price; the draw's own pre-authorisation drafts, one per
+live entry, are counted apart and never shown as drafts) and `data/draw_products.csv` (the product each
+draw's winners bought, joined inside BigQuery on the pseudonymous account id). That table
+carries email addresses too; nothing selects them, and only counts per release and product
+leave (docs/DATA_MODEL.md 2.4). `BQ_ORDERS=off` skips the pair, `BQ_ORDERS_TABLE` renames
+the table.
 
 **The export, rebuilt here.** The pull also counts sessions and page views per channel-day
 inside BigQuery (`sources/le_browsing.csv`, `--browsing` pulls it alone, `BQ_BROWSING=off`
@@ -398,6 +422,45 @@ refreshes still come from `npm run etl`. Saved inputs live in
 into `etl/release_inputs.json` to make them permanent); custom baskets live
 beside them in `data/app/baskets.json`.
 
+## Posting sell-through to Slack
+
+The sell-through card has a **Post to Slack** button. It sends the release's current
+figures, in the sales team's own layout, to the channel set for that release:
+
+```
+*Julian Schnabel · Multiple · 2026 Q3* - sales update, 17 Sep (day 11 of 24)
+Paid = 94 units (16% of 600)
+• I: 46/200 ...
+Draw = 30 unique entrants (2 with a win to pay)
+• I: 24 open + 1 to pay ...
+Drafts = 5
+• I: 2 · II: 1 · III: 2
+Estimated sell-through (entries at 80% entry → order, placed by maximum quantity)
+• I: ~62 units → 31% ...
+Total ~126 units → 21% of 600
+```
+
+The message is composed on the server from the same snapshot the card is drawn from
+(`server/slack.js`), so what lands in Slack is what the page says at that moment.
+
+Setup, once:
+
+1. Create a Slack app (api.slack.com/apps → Create New App → From scratch) in the
+   workspace, add the bot scopes `chat:write` and `chat:write.public` under OAuth &
+   Permissions, install it to the workspace, and copy the **Bot User OAuth Token**
+   (`xoxb-…`) into `SLACK_BOT_TOKEN` on Render. The token lives only in the environment.
+2. For a private channel, invite the app to it (`/invite @<app name>`); public channels
+   need nothing.
+3. On the release's **Target setting** tab, type the channel name (without the `#`) in
+   **Slack channel** and press its own **Save**. It is stored in `data/slack.json`
+   (`SLACK_STATE_PATH` on the disk), separately from the targets, so a release without
+   targets can have a channel too.
+
+`PUBLIC_URL` (or Render's own `RENDER_EXTERNAL_URL`) puts an "Open in Launch Performance"
+link at the end of each message that opens the release itself (`?release=<id>`; the address
+bar follows the sidebar for the same reason). Slack's refusals come back on the button in
+words (wrong channel name, bot not invited, token revoked, missing scope).
+
 ## Deploying on Render
 
 The repo ships `render.yaml` - create a Blueprint service from the repo and Render will
@@ -416,19 +479,22 @@ today and the days to launch on the right (the day of the window is in the strip
 it is a card like the others and moves with them.
 
 **Sell-through by product** (docs §6.3) is one row per product: units paid (rust), draft
-orders not yet paid (rust, striped), the draw entries in hand counted on the product at the
+orders an advisor raised that are not yet paid (rust, striped; the draw's own pre-authorisation
+drafts are the entries, not drafts), the draw entries in hand counted on the product at the
 entry → order rate (orange), at close the units still to come, against the product's edition,
 with demand the product has no room for hatched past its sellout. It is the one card with no
-target or benchmark on it and no prose: the detail is in the popups. While the feeds carry
-neither sales by product nor draft orders the card wears an **Incomplete data** stamp, and the
-sales the draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an
+target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
+orders per product come from the Shopify order lines in BigQuery (`data/orders_by_product.csv`),
+joined to the draws through the product each draw's winners bought (docs 2.4); until every draw
+of a release is named that way the card wears an **Incomplete data** stamp, and the sales the
+draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an
 entrant who entered more products than their maximum quantity is counted on that many
 products only, on whichever have the most room. Products come from the event feed's draws
 (one draw per product) and are named and sized on the Target setting tab, where the entry →
-order rate can also be set per release. Until the feed has run once after a deploy the card
-shows the release as one row and says so; sales the draw cannot name a product for (private
-room, pre-orders) are split by edition size under the stamp. Draft orders are not in any feed
-yet and are drawn only once they are.
+order rate can also be set per release; a product nobody has named takes its Shopify title
+and, where the title matches an Airtable record, its edition. Until the feed has run once after
+a deploy the card shows the release as one row and says so. **Post to Slack** in the card's
+header sends these figures to the release's channel (see "Posting sell-through to Slack").
 
 Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
 own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up

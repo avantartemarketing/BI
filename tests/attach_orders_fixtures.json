@@ -1,0 +1,290 @@
+{
+ "cases": [
+  {
+   "name": "every draw named: sales and drafts from the orders, an extra product with no draw",
+   "products": [
+    {
+     "key": "d1",
+     "name": "Draw 1",
+     "edition": null,
+     "draws": [
+      "d1"
+     ],
+     "sold": 3,
+     "entrants": 40,
+     "drafts": null
+    },
+    {
+     "key": "d2",
+     "name": "Blue",
+     "edition": 200,
+     "draws": [
+      "d2",
+      "d3"
+     ],
+     "sold": 5,
+     "entrants": 30,
+     "drafts": null
+    }
+   ],
+   "orders": {
+    "Red print": {
+     "unitsPaid": 41,
+     "drafts": 6,
+     "listPrice": 500,
+     "edition": 100,
+     "draftCustomers": 5
+    },
+    "Blue print": {
+     "unitsPaid": 22,
+     "drafts": 2,
+     "listPrice": 500,
+     "edition": 200
+    },
+    "Poster": {
+     "unitsPaid": 9,
+     "drafts": 0,
+     "listPrice": 60,
+     "edition": null,
+     "draftCustomers": 0
+    },
+    "Nothing sold": {
+     "unitsPaid": 0,
+     "drafts": 0,
+     "listPrice": 60,
+     "edition": null
+    }
+   },
+   "drawProducts": {
+    "d1": "Red print",
+    "d2": "Blue print",
+    "d3": "Blue print"
+   },
+   "source": "winners",
+   "expect": {
+    "names": [
+     "Red print",
+     "Blue",
+     "Poster"
+    ],
+    "sold": [
+     41,
+     22,
+     9
+    ],
+    "drafts": [
+     6,
+     2,
+     0
+    ],
+    "editions": [
+     100,
+     200,
+     null
+    ],
+    "source": "orders"
+   }
+  },
+  {
+   "name": "one draw unnamed: that product keeps the winners' figure, no extra product, source unchanged",
+   "products": [
+    {
+     "key": "d1",
+     "name": "Draw 1",
+     "edition": null,
+     "draws": [
+      "d1"
+     ],
+     "sold": 3,
+     "entrants": 40,
+     "drafts": null
+    },
+    {
+     "key": "d2",
+     "name": "Draw 2",
+     "edition": null,
+     "draws": [
+      "d2"
+     ],
+     "sold": 5,
+     "entrants": 30,
+     "drafts": null
+    }
+   ],
+   "orders": {
+    "Red print": {
+     "unitsPaid": 41,
+     "drafts": 6,
+     "listPrice": 500,
+     "edition": 100
+    },
+    "Poster": {
+     "unitsPaid": 9,
+     "drafts": 0,
+     "listPrice": 60,
+     "edition": null
+    }
+   },
+   "drawProducts": {
+    "d1": "Red print"
+   },
+   "source": "winners",
+   "expect": {
+    "names": [
+     "Red print",
+     "Draw 2"
+    ],
+    "sold": [
+     41,
+     5
+    ],
+    "drafts": [
+     6,
+     null
+    ],
+    "editions": [
+     100,
+     null
+    ],
+    "source": "winners"
+   }
+  },
+  {
+   "name": "a title two draws would take goes to the first only",
+   "products": [
+    {
+     "key": "d1",
+     "name": "Draw 1",
+     "edition": null,
+     "draws": [
+      "d1"
+     ],
+     "sold": 3,
+     "entrants": 40,
+     "drafts": null
+    },
+    {
+     "key": "d2",
+     "name": "Draw 2",
+     "edition": null,
+     "draws": [
+      "d2"
+     ],
+     "sold": 5,
+     "entrants": 30,
+     "drafts": null
+    }
+   ],
+   "orders": {
+    "Red print": {
+     "unitsPaid": 41,
+     "drafts": 6,
+     "listPrice": 500,
+     "edition": 100
+    }
+   },
+   "drawProducts": {
+    "d1": "Red print",
+    "d2": "Red print"
+   },
+   "source": "winners",
+   "expect": {
+    "names": [
+     "Red print",
+     "Draw 2"
+    ],
+    "sold": [
+     41,
+     5
+    ],
+    "drafts": [
+     6,
+     null
+    ],
+    "editions": [
+     100,
+     null
+    ],
+    "source": "winners"
+   }
+  },
+  {
+   "name": "drafts are lines, never more than the room left",
+   "products": [
+    {
+     "key": "d1",
+     "name": "Blue",
+     "edition": 5,
+     "draws": [
+      "d1"
+     ],
+     "sold": 0,
+     "entrants": 12,
+     "drafts": null
+    },
+    {
+     "key": "d2",
+     "name": "Draw 2",
+     "edition": null,
+     "draws": [
+      "d2"
+     ],
+     "sold": 0,
+     "entrants": 12,
+     "drafts": null
+    }
+   ],
+   "orders": {
+    "Blue": {
+     "unitsPaid": 2,
+     "drafts": 10,
+     "draftCustomers": 6,
+     "listPrice": 8250,
+     "edition": 5
+    },
+    "Red": {
+     "unitsPaid": 7,
+     "drafts": 9,
+     "draftCustomers": 4,
+     "listPrice": 8250,
+     "edition": 5
+    },
+    "Green": {
+     "unitsPaid": 1,
+     "drafts": 3,
+     "draftCustomers": 3,
+     "listPrice": 8250,
+     "edition": null
+    }
+   },
+   "drawProducts": {
+    "d1": "Blue",
+    "d2": "Red"
+   },
+   "source": "winners",
+   "expect": {
+    "names": [
+     "Blue",
+     "Red",
+     "Green"
+    ],
+    "sold": [
+     2,
+     7,
+     1
+    ],
+    "drafts": [
+     3,
+     0,
+     3
+    ],
+    "editions": [
+     5,
+     5,
+     null
+    ],
+    "source": "orders"
+   }
+  }
+ ]
+}
