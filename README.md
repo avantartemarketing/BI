@@ -441,7 +441,10 @@ Total ~126 units → 21% of 600
 ```
 
 The message is composed on the server from the same snapshot the card is drawn from
-(`server/slack.js`), so what lands in Slack is what the page says at that moment.
+(`server/slack.js`), so what lands in Slack is what the page says at that moment. The
+header carries the day it is sent, with the campaign day moved on to match; when the
+feeds' last complete day is earlier than that, a last line says "Complete data through"
+that day.
 
 Setup, once:
 

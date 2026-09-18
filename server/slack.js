@@ -66,6 +66,9 @@ const fmtDay = (iso) => {
   const d = new Date(String(iso) + "T00:00:00Z");
   return Number.isNaN(d.getTime()) ? String(iso) : `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
 };
+const dayOf = (iso) => { const d = new Date(String(iso) + "T00:00:00Z"); return Number.isNaN(d.getTime()) ? null : d.getTime(); };
+/* whole days from one ISO date to another, 0 when either is not a date */
+const daysBetween = (a, b) => { const x = dayOf(a), y = dayOf(b); return x === null || y === null ? 0 : Math.round((y - x) / 86400000); };
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const fmt = (v) => Math.round(num(v)).toLocaleString("en-GB");
 const pct = (part, whole) => (whole > 0 ? `${Math.round((num(part) / whole) * 100)}%` : null);
@@ -102,16 +105,23 @@ function entrants(patterns) {
   return { open, won, any };
 }
 
-/* The update as Slack mrkdwn: the sales team's own layout, from the snapshot. */
-function composeSellThrough(snap, { link } = {}) {
+/* The update as Slack mrkdwn: the sales team's own layout, from the snapshot.
+ * The header carries the day the update goes out (`today`, for the tests),
+ * with the campaign day moved on from the snapshot's; when the feeds' last
+ * complete day is earlier than that, the last line says so. */
+function composeSellThrough(snap, { link, today } = {}) {
   const st = (snap && snap.sellthrough) || {};
   const products = Array.isArray(st.products) ? st.products : [];
   const names = shortNames(products.map((p) => String(p.name || "")));
   const edition = num(st.edition) > 0 ? num(st.edition) : null;
   const lines = [];
 
-  const head = `*${snap.releaseName || snap.id}* - sales update, ${fmtDay(snap.asOf)}` +
-    (num(snap.of) > 0 ? ` (day ${fmt(snap.day)} of ${fmt(snap.of)})` : "");
+  const sent = today || new Date().toISOString().slice(0, 10);
+  const lag = Math.max(0, daysBetween(snap.asOf, sent));
+  const of = num(snap.of);
+  const day = Math.min(num(snap.day) + lag, of > 0 ? of : Infinity);
+  const head = `*${snap.releaseName || snap.id}* - sales update, ${fmtDay(sent)}` +
+    (of > 0 ? ` (day ${fmt(day)} of ${fmt(of)})` : "");
   lines.push(head);
 
   // paid
@@ -158,6 +168,7 @@ function composeSellThrough(snap, { link } = {}) {
   if (Array.isArray(st.incomplete) && st.incomplete.length) {
     lines.push(`_Incomplete data: ${st.incomplete.join(", ")}_`);
   }
+  if (lag > 0) lines.push(`_Complete data through ${fmtDay(snap.asOf)}_`);
   if (link) lines.push(`<${link}|Open in Launch Performance>`);
   return lines.join("\n");
 }

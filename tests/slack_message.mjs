@@ -38,7 +38,7 @@ const snap = {
     patterns: [{ open: ["a"], won: [], n: 21 }, { open: ["a", "b"], won: [], n: 6 }, { open: ["a", "b", "c"], won: [], n: 3 }, { open: [], won: ["c"], n: 2 }],
   },
 };
-const text = composeSellThrough(snap, { link: "https://example.test/" });
+const text = composeSellThrough(snap, { link: "https://example.test/", today: "2026-09-17" });
 const lines = text.split("\n");
 check(lines[0] === "*Test Artist · Multiple · 2026 Q3* - sales update, 17 Sep (day 11 of 24)", `head: ${lines[0]}`);
 check(lines[1] === "Paid = 94 units (16% of 600)", `paid: ${lines[1]}`);
@@ -50,6 +50,15 @@ check(lines[12] === "• I: ~62 units → 31%" && lines[14] === "• III: ~24 un
 check(lines[15] === "Total ~126 units → 21% of 600", `total: ${lines[15]}`);
 check(lines[16] === "<https://example.test/|Open in Launch Performance>", `link: ${lines[16]}`);
 check(!text.includes("\u2014"), "no em dash");
+check(!text.includes("Complete data through"), "no lag note when sent on the data's day");
+
+// sent two days after the feeds' last complete day: the header moves on, the last line says so
+const later = composeSellThrough(snap, { today: "2026-09-19" });
+check(later.split("\n")[0] === "*Test Artist · Multiple · 2026 Q3* - sales update, 19 Sep (day 13 of 24)", `later head: ${later.split("\n")[0]}`);
+check(later.split("\n").slice(-1)[0] === "_Complete data through 17 Sep_", `later foot: ${later.split("\n").slice(-1)[0]}`);
+// and never past the campaign's last day
+const closed = composeSellThrough(snap, { today: "2026-10-30" });
+check(closed.includes("(day 24 of 24)"), `closed head: ${closed.split("\n")[0]}`);
 
 // a release without products: the release-level figures
 const bare = composeSellThrough({ id: "x", releaseName: "X · Y · 2026 Q1", asOf: "2026-09-17", day: 3, of: 20,
