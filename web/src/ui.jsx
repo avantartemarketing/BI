@@ -541,7 +541,8 @@ export function RungKey({ bench = true }) {
 export function Lozenge({ dir, children, tip, content, color }) {
   const t = useTip();
   const cls = color || (dir === "up" ? "up" : dir === "down" ? "down" : "neutral");
-  if (content) return <span className={`lozenge ${cls}`} {...t.props(content)}>{children}</span>;
+  // a lozenge with a popup behind it says so with the cursor, as titled elements do
+  if (content) return <span className={`lozenge ${cls}`} style={{ cursor: "help" }} {...t.props(content)}>{children}</span>;
   return <span className={`lozenge ${cls}`} title={tip}>{children}</span>;
 }
 
