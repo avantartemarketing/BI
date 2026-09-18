@@ -309,8 +309,9 @@ the paid team.
 changes are capped at ±30% and changes under 10% are ignored. Forecast ROI
 below target for 3 consecutive days forces a decrease. The recommendation is
 the target above, paced by these rules from today's spend; the card's
-"Capped by" names which one bound it, and its tooltip carries the
-unconstrained figures. With no spend yet there is no price to anchor on: the
+"Capped by" names which one bound it in a word (Sellout, Floor, Pacing, Hold,
+Decrease, Forced, Plan, Zero, Pause, Steady), with the rule in full at the head
+of its tooltip and the unconstrained figures beneath. With no spend yet there is no price to anchor on: the
 first day starts at the plan's daily rate. ROI shown against the
 recommendation is the ROI at that spend level's cost per entry.
 

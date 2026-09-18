@@ -14,9 +14,9 @@
  * Today reads spend and units to date against the campaign's pro-rata share of the
  * close figures - paid pacing is a daily budget decision, so the day count is the
  * honest denominator here. At close it is the projections against the full
- * figures. The Stretch row under "Capped by" names the uplift once in words,
- * because it is the same even multiple on every channel and every day (spec §1)
- * and so has no business being redrawn per bar. */
+ * figures. The stretch is the band each bar draws between the benchmark's
+ * outline and the target's fill; its figures are in that band's popup, so the
+ * card carries no row for it. */
 import React, { useState } from "react";
 import {
   Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip,
@@ -62,9 +62,10 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "ROI floor", value: floorF },
     ],
   };
+  // no figure to move to, or nothing to move: say which, rather than a dash
   const loz =
     d === null || d === 0 ? (
-      <Lozenge dir="neutral" content={lozTip}>-</Lozenge>
+      <Lozenge dir="neutral" content={lozTip}>{noCampaign ? "no campaign" : rec === null ? "no recommendation" : "no change"}</Lozenge>
     ) : d > 0 ? (
       <Lozenge dir="up" content={lozTip}>{"▲ +£" + fmt(d)}</Lozenge>
     ) : (
@@ -72,15 +73,24 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     );
 
   // ----- "Capped by" row: what bound the recommendation -----
+  // One word on the chip, the rule in full at the head of its popup.
   const showCap = !complete && !noCampaign && rec !== null && !!budget.cap;
-  const CAP_LABELS = {
-    supply: "Supply - sell-out", roi_floor: "ROI floor", pacing: "Pacing ±30% / day",
-    roi_band_hold: "ROI band - hold", roi_band_decrease: "ROI band - decrease",
-    forced_decrease: "3 days below target ROI", plan_rate: "Plan rate (first day)",
-    zero_conversion: "Zero conversion yesterday", zero_conversion_pause: "3 days of zero conversion - pause",
-    hold_small_change: "Change under 10% - hold",
+  const CAPS = {
+    supply: ["Sellout", "Supply - sell-out"],
+    roi_floor: ["Floor", "ROI floor"],
+    pacing: ["Pacing", "Pacing ±30% / day"],
+    roi_band_hold: ["Hold", "ROI band - hold"],
+    roi_band_decrease: ["Decrease", "ROI band - decrease"],
+    forced_decrease: ["Forced", "3 days below target ROI - forced decrease"],
+    plan_rate: ["Plan", "Plan rate (first day)"],
+    zero_conversion: ["Zero", "Zero conversion yesterday"],
+    zero_conversion_pause: ["Pause", "3 days of zero conversion - pause"],
+    hold_small_change: ["Steady", "Change under 10% - hold"],
   };
-  const capLabel = (CAP_LABELS[budget.cap] || budget.cap) + (budget.paced ? " · paced" : "");
+  const [capWord, capName] = CAPS[budget.cap] || [budget.cap, budget.cap];
+  const capLabel = capName + (budget.paced ? " · paced" : "");
+  // a cap the pacing rule then limited says so in the popup rather than on the chip
+  const pacedRow = budget.paced ? [{ label: "Pacing", value: "move limited to 30% / day" }] : [];
   const bandTip = {
     head: capLabel,
     body: budget.cap === "pacing"
@@ -102,10 +112,11 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
       { label: "Unconstrained", value: budget.supplySpend !== null && budget.roiSpend !== null && budget.supplySpend !== undefined && budget.roiSpend !== undefined ? money(Math.min(budget.supplySpend, budget.roiSpend)) + " / day" : "–" },
       { label: "ROI at close, at recommended", value: fmt(budget.finalDayRoi, 2) },
+      ...pacedRow,
     ],
   };
   const floorTip = {
-    head: "ROI floor",
+    head: capLabel,
     body: "The floor is on ROI at close, on the same drifting cost path the Paid ROI chart draws. At today's spend that path ends at " +
       fmt(budget.finalDayRoi !== null && budget.cpeAtRecommended && budget.cpeAtClose ? null : null, 2).replace("–", "") +
       "the chart's projected figure; the recommendation is the spend at which it ends on the floor" +
@@ -116,11 +127,12 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cost / unit at close, recommended", value: budget.cpeAtRecommended ? "£" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at close, recommended", value: fmt(budget.finalDayRoi, 2) },
       { label: "Spend at the floor", value: money(rec) + " / day" },
-      ...(budget.paced ? [{ label: "Pacing", value: "cut limited to 30% / day" }] : []),
+      ...pacedRow,
     ],
   };
   const capTip = !["supply", "roi_floor"].includes(budget.cap) ? bandTip : budget.cap === "roi_floor" ? floorTip : budget.cap === "supply" ? {
-    head: "Supply - sell-out",
+    head: capLabel,
+    body: "The spend that sells the edition out by launch, at the cost per entry that spend implies - more would buy entries the edition cannot hold.",
     rows: [
       { label: "Spend cap", value: money(rec) + " / day" },
       { label: "Entries needed", value: fmt(budget.entriesNeeded) },
@@ -128,6 +140,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
         ? [{ label: "Organic still to come", value: fmt(budget.organicFuture) }]
         : []),
       { label: "Final-day ROI", value: fmt(budget.finalDayRoi, 2) },
+      ...pacedRow,
     ],
   } : {
     head: "ROI floor",
@@ -188,10 +201,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     ],
   };
 
-  // ----- the stretch, said once in words rather than redrawn on every bar -----
+  // ----- the stretch: the band on the units bar, named in its popup -----
   const k = snap.benchmark?.k ?? null;
   const stretchUnits = bmUnitsAll === null ? null : unitsTarget - bmUnitsAll * dayFrac;
-  const showStretch = k > 0 && stretchUnits !== null;
   const stretchTip = {
     head: "Stretch",
     rows: [
@@ -218,6 +230,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
 
   const rowGrid = { display: "grid", gridTemplateColumns: "104px 1fr 44px", gap: 12, alignItems: "center" };
   const rowLabel = { fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
+  const oneLine = { minWidth: 0, overflow: "hidden", whiteSpace: "nowrap" };
   const rightLabel = { fontSize: 12, fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums" };
   const legendItem = { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const sw = (bg) => ({ width: 8, height: 8, borderRadius: 2, background: bg, flex: "0 0 8px" });
@@ -235,26 +248,15 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           </>
         )}
       </div>
-      <div style={{ height: 12, flex: "0 0 12px" }} />
+      <div style={{ height: 10, flex: "0 0 10px" }} />
+      {/* the rule that shaped the figure, on one line; its wording is in its popup */}
       {showCap && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
-          <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Capped by</span>
-          <Lozenge color="blue" content={capTip}>{capLabel}</Lozenge>
+          <span style={rowLabel}>Capped by</span>
+          <span style={oneLine}><Lozenge color="blue" content={capTip}>{capWord}</Lozenge></span>
         </div>
       )}
-      {showStretch && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto",
-          marginTop: showCap ? 8 : 0,
-        }}>
-          <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Stretch</span>
-          <Lozenge dir="neutral" content={stretchTip}>
-            {"×" + fmt(k, 2) + " on the benchmark · " + fmtSigned(Math.round(stretchUnits)) +
-              " units " + (close ? "at close" : "by today")}
-          </Lozenge>
-        </div>
-      )}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 20 }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
         <div style={rowGrid}>
           <span style={rowLabel}>Paid units</span>
           <TrackBar
