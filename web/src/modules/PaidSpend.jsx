@@ -14,9 +14,9 @@
  * Today reads spend and units to date against the campaign's pro-rata share of the
  * close figures - paid pacing is a daily budget decision, so the day count is the
  * honest denominator here. At close it is the projections against the full
- * figures. The Stretch row under "Capped by" names the uplift once in words,
- * because it is the same even multiple on every channel and every day (spec §1)
- * and so has no business being redrawn per bar. */
+ * figures. The stretch is the band each bar draws between the benchmark's
+ * outline and the target's fill; its figures are in that band's popup, so the
+ * card carries no row for it. */
 import React, { useState } from "react";
 import {
   Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip,
@@ -189,10 +189,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     ],
   };
 
-  // ----- the stretch, said once in words rather than redrawn on every bar -----
+  // ----- the stretch: the band on the units bar, named in its popup -----
   const k = snap.benchmark?.k ?? null;
   const stretchUnits = bmUnitsAll === null ? null : unitsTarget - bmUnitsAll * dayFrac;
-  const showStretch = k > 0 && stretchUnits !== null;
   const stretchTip = {
     head: "Stretch",
     rows: [
@@ -238,27 +237,11 @@ export default function PaidSpend({ snap, horizon = "today" }) {
         )}
       </div>
       <div style={{ height: 10, flex: "0 0 10px" }} />
-      {/* The two rules that shaped the figure, on one label column so the chips
-          line up, each on one line: a chip that wrapped used to push the bars
-          into it. The full wording of either is in its popup. */}
-      {(showCap || showStretch) && (
-        <div style={{ display: "grid", gridTemplateColumns: "62px 1fr", columnGap: 8, rowGap: 6, alignItems: "center", flex: "0 0 auto" }}>
-          {showCap && (
-            <>
-              <span style={rowLabel}>Capped by</span>
-              <span style={oneLine}><Lozenge color="blue" content={capTip}>{capLabel}</Lozenge></span>
-            </>
-          )}
-          {showStretch && (
-            <>
-              <span style={rowLabel}>Stretch</span>
-              <span style={oneLine}>
-                <Lozenge dir="neutral" content={stretchTip}>
-                  {"×" + fmt(k, 2) + " · " + fmtSigned(Math.round(stretchUnits)) + " units " + (close ? "at close" : "by today")}
-                </Lozenge>
-              </span>
-            </>
-          )}
+      {/* the rule that shaped the figure, on one line; its wording is in its popup */}
+      {showCap && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
+          <span style={rowLabel}>Capped by</span>
+          <span style={oneLine}><Lozenge color="blue" content={capTip}>{capLabel}</Lozenge></span>
         </div>
       )}
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
