@@ -396,7 +396,10 @@ const ordersSql = () =>
   "    shopify_product_variant_price, shopify_order_created_date_CET AS order_date, DATE(shopify_draft_order_created_at) AS draft_date,\n" +
   "    COALESCE(shopify_order_facilitator, '') AS facilitator,\n" +
   "    REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$') AS draw_sku,\n" +
-  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AS paid\n" +
+  // a line with a refund against it inside a partly refunded order is a unit
+  // that came back, the same as a line of a refunded order
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AND refund_id IS NULL AS paid,\n" +
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND (COALESCE(order_financial_status, '') = 'refunded' OR refund_id IS NOT NULL) AS refunded\n" +
   `  FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
   "  WHERE is_test_order = 0 AND shopify_product_type = 'Product'\n" +
   "    AND simple_release_name IS NOT NULL AND simple_release_name != '' AND product_title IS NOT NULL AND product_title != ''\n" +
@@ -438,7 +441,7 @@ const ordersSql = () =>
   "  STRING_AGG(DISTINCT CAST(l.shopify_product_id AS STRING), '|') AS product_ids,\n" +
   "  STRING_AGG(DISTINCT l.sku, '|') AS skus,\n" +
   "  SUM(IF(l.paid, l.quantity, 0)) AS units_paid,\n" +
-  "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.order_financial_status = 'refunded', l.quantity, 0)) AS units_refunded,\n" +
+  "  SUM(IF(l.refunded, l.quantity, 0)) AS units_refunded,\n" +
   "  SUM(IF(l.awaiting, l.quantity, 0)) AS units_draft_pending,\n" +
   "  COUNT(DISTINCT IF(l.awaiting AND p.customer_id IS NULL, COALESCE(CAST(l.customer_id AS STRING), CONCAT('line', CAST(l.order_lineitem_id AS STRING))), NULL)) AS draft_customers,\n" +
   "  SUM(IF(l.entrant_draft, l.quantity, 0)) AS units_entrant_drafts,\n" +

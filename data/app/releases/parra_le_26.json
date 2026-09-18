@@ -156,15 +156,15 @@
    "sense_check_breached": true
   },
   "launch_value": 195000.0,
-  "units_per_buyer": 1.1180417815177943,
+  "units_per_buyer": 1.125043164045779,
   "units_per_buyer_source": "products",
-  "buyers": 268.3262870487147,
+  "buyers": 266.65643558169535,
   "buyers_by_group": {
-   "aa_email": 114.07706522417614,
-   "aa_social": 13.989883455300179,
-   "referral_artist": 5.972107065620281,
-   "search_direct_other": 60.80141605957791,
-   "paid": 73.48581524404017
+   "aa_email": 113.36713942147884,
+   "aa_social": 13.902821439616934,
+   "referral_artist": 5.934941375093241,
+   "search_direct_other": 60.423035935436346,
+   "paid": 73.02849741007003
   },
   "organic_sessions_draw": 7193.943838669566,
   "total_sessions": 20020.26022304833,
@@ -502,37 +502,37 @@
     {
      "date": "2026-08-11",
      "actual": 25.43,
-     "plan": 6.11,
+     "plan": 6.19,
      "proj": null,
-     "bm": 5.48
+     "bm": 5.55
     },
     {
      "date": "2026-08-12",
      "actual": 27.43,
-     "plan": 6.52,
+     "plan": 6.68,
      "proj": null,
-     "bm": 5.84
+     "bm": 5.99
     },
     {
      "date": "2026-08-13",
      "actual": 27.43,
-     "plan": 6.63,
+     "plan": 6.86,
      "proj": null,
-     "bm": 5.95
+     "bm": 6.15
     },
     {
      "date": "2026-08-14",
      "actual": 27.43,
-     "plan": 6.98,
+     "plan": 7.32,
      "proj": null,
-     "bm": 6.26
+     "bm": 6.57
     },
     {
      "date": "2026-08-15",
      "actual": 27.43,
-     "plan": 7.64,
+     "plan": 7.89,
      "proj": null,
-     "bm": 6.85
+     "bm": 7.07
     },
     {
      "date": "2026-08-16",
@@ -1164,16 +1164,16 @@
    "contrib_traffic": -5.4,
    "contrib_conversion": 7.6,
    "bps_actual": 0.023153949129852743,
-   "bps_expected": 0.021941297600765523,
-   "contrib_buyers": 6.8,
-   "contrib_per_buyer": 0.8,
+   "bps_expected": 0.02180475224626474,
+   "contrib_buyers": 7.6,
+   "contrib_per_buyer": -0.0,
    "sessions_benchmark": 4661.9,
    "conv_benchmark": 0.024531287458371995,
    "conv_benchmark_today": 0.024531287458371995,
    "contrib_traffic_bm": 7.8,
    "contrib_conversion_bm": 7.6,
-   "contrib_buyers_bm": 6.8,
-   "contrib_per_buyer_bm": 0.8
+   "contrib_buyers_bm": 7.6,
+   "contrib_per_buyer_bm": -0.0
   },
   "aa_social": {
    "sessions_actual": 1269.0,
@@ -1183,16 +1183,16 @@
    "contrib_traffic": 23.4,
    "contrib_conversion": -8.0,
    "bps_actual": 0.021756413624025916,
-   "bps_expected": 0.027529984426534076,
-   "contrib_buyers": -8.2,
-   "contrib_per_buyer": 0.2,
+   "bps_expected": 0.027358659487083326,
+   "contrib_buyers": -8.0,
+   "contrib_per_buyer": -0.0,
    "sessions_benchmark": 455.7,
    "conv_benchmark": 0.03077967283339929,
    "conv_benchmark_today": 0.03077967283339929,
    "contrib_traffic_bm": 25.0,
    "contrib_conversion_bm": -8.0,
-   "contrib_buyers_bm": -8.2,
-   "contrib_per_buyer_bm": 0.2
+   "contrib_buyers_bm": -8.0,
+   "contrib_per_buyer_bm": -0.0
   },
   "referral_artist": {
    "sessions_actual": 1442.0,
@@ -1202,16 +1202,16 @@
    "contrib_traffic": 18.5,
    "contrib_conversion": 0.7,
    "bps_actual": 0.015996301433194637,
-   "bps_expected": 0.0156419273107338,
-   "contrib_buyers": 0.6,
-   "contrib_per_buyer": 0.2,
+   "bps_expected": 0.015544584275304344,
+   "contrib_buyers": 0.7,
+   "contrib_per_buyer": -0.0,
    "sessions_benchmark": 342.3,
    "conv_benchmark": 0.01748832827686466,
    "conv_benchmark_today": 0.01748832827686466,
    "contrib_traffic_bm": 19.2,
    "contrib_conversion_bm": 0.7,
-   "contrib_buyers_bm": 0.6,
-   "contrib_per_buyer_bm": 0.2
+   "contrib_buyers_bm": 0.7,
+   "contrib_per_buyer_bm": -0.0
   },
   "search_direct_other": {
    "sessions_actual": 1618.0,
@@ -1221,16 +1221,16 @@
    "contrib_traffic": 31.6,
    "contrib_conversion": -37.1,
    "bps_actual": 0.03433594286499107,
-   "bps_expected": 0.055034885774869625,
-   "contrib_buyers": -37.4,
-   "contrib_per_buyer": 0.4,
+   "bps_expected": 0.05469239199329048,
+   "contrib_buyers": -37.1,
+   "contrib_per_buyer": -0.0,
    "sessions_benchmark": 990.6,
    "conv_benchmark": 0.06153130173736355,
    "conv_benchmark_today": 0.06153130173736355,
    "contrib_traffic_bm": 38.6,
    "contrib_conversion_bm": -37.1,
-   "contrib_buyers_bm": -37.4,
-   "contrib_per_buyer_bm": 0.4
+   "contrib_buyers_bm": -37.1,
+   "contrib_per_buyer_bm": -0.0
   },
   "paid": {
    "sessions_actual": 16682.0,
@@ -1240,16 +1240,16 @@
    "contrib_traffic": 24.7,
    "contrib_conversion": -19.9,
    "bps_actual": 0.004634136594333213,
-   "bps_expected": 0.00572930006104784,
-   "contrib_buyers": -20.4,
-   "contrib_per_buyer": 0.5,
+   "bps_expected": 0.005693645410073605,
+   "contrib_buyers": -19.9,
+   "contrib_per_buyer": -0.0,
    "sessions_benchmark": 11500.9,
    "conv_benchmark": 0.006405596847103935,
    "conv_benchmark_today": 0.006405596847103935,
    "contrib_traffic_bm": 33.2,
    "contrib_conversion_bm": -19.9,
-   "contrib_buyers_bm": -20.4,
-   "contrib_per_buyer_bm": 0.5
+   "contrib_buyers_bm": -19.9,
+   "contrib_per_buyer_bm": -0.0
   }
  },
  "paid": {
@@ -1448,7 +1448,7 @@
   "benchmarkBudget": 13039.65
  },
  "unitsPerBuyer": {
-  "plan": 1.118,
+  "plan": 1.125,
   "actual": 1.125
  },
  "email": {
@@ -1512,12 +1512,12 @@
   "sold": 297.0,
   "conversion": 0.8,
   "inHandUnits": 49.0,
-  "soldPredicted": 1.0,
+  "soldPredicted": 0.0,
   "futureEntriesPredicted": 0.0,
   "pct": 1.0,
   "benchmarkUnits": 269.0,
-  "drafts": 2.0,
-  "unitsPaidOrders": 297.0,
+  "drafts": 4.0,
+  "unitsPaidOrders": 287.0,
   "ordersAsOf": "2026-08-21",
   "products": [
    {
@@ -1532,9 +1532,9 @@
      "open": 24,
      "won": 7
     },
-    "sold": 149.0,
-    "soldAssumed": 0.0,
-    "drafts": 1.0,
+    "sold": 144.0,
+    "soldAssumed": 5.0,
+    "drafts": 3.0,
     "allocated": 31,
     "pinned": 7,
     "fixed": 24,
@@ -1562,8 +1562,8 @@
      "open": 28,
      "won": 8
     },
-    "sold": 148.0,
-    "soldAssumed": 0.0,
+    "sold": 143.0,
+    "soldAssumed": 5.0,
     "drafts": 1.0,
     "allocated": 35,
     "pinned": 7,
@@ -1581,8 +1581,8 @@
     "benchmarkClose": 134.5
    }
   ],
-  "attributedSold": 297.0,
-  "unattributedSold": 0.0,
+  "attributedSold": 287.0,
+  "unattributedSold": 10.0,
   "allocation": {
    "entrants": 253,
    "flexibleEntrants": 0,
@@ -1771,12 +1771,12 @@
   ],
   "ordersByProduct": {
    "il senso di colpa": {
-    "unitsPaid": 148.0,
+    "unitsPaid": 143.0,
     "drafts": 1.0,
     "draftCustomers": 1.0,
     "entryDrafts": 3.0,
     "entrantDrafts": 0.0,
-    "refunded": 0.0,
+    "refunded": 5.0,
     "fromDrafts": 102.0,
     "privateRoom": 46.0,
     "listPrice": 650.0,
@@ -1785,12 +1785,12 @@
     "lastDraft": "2026-08-21"
    },
    "in your detached world": {
-    "unitsPaid": 149.0,
+    "unitsPaid": 144.0,
     "drafts": 3.0,
     "draftCustomers": 3.0,
     "entryDrafts": 2.0,
     "entrantDrafts": 0.0,
-    "refunded": 0.0,
+    "refunded": 5.0,
     "fromDrafts": 119.0,
     "privateRoom": 30.0,
     "listPrice": 650.0,
@@ -2003,7 +2003,7 @@
    "paid": 0.005299
   },
   "paidBudget": 13039.65,
-  "unitsPerBuyer": 1.118,
-  "buyers": 240.6
+  "unitsPerBuyer": 1.125,
+  "buyers": 239.1
  }
 }
