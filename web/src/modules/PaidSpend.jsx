@@ -62,9 +62,10 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "ROI floor", value: floorF },
     ],
   };
+  // no figure to move to, or nothing to move: say which, rather than a dash
   const loz =
     d === null || d === 0 ? (
-      <Lozenge dir="neutral" content={lozTip}>-</Lozenge>
+      <Lozenge dir="neutral" content={lozTip}>{noCampaign ? "no campaign" : rec === null ? "no recommendation" : "no change"}</Lozenge>
     ) : d > 0 ? (
       <Lozenge dir="up" content={lozTip}>{"▲ +£" + fmt(d)}</Lozenge>
     ) : (
@@ -77,7 +78,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     supply: "Supply - sell-out", roi_floor: "ROI floor", pacing: "Pacing ±30% / day",
     roi_band_hold: "ROI band - hold", roi_band_decrease: "ROI band - decrease",
     forced_decrease: "3 days below target ROI", plan_rate: "Plan rate (first day)",
-    zero_conversion: "Zero conversion yesterday", zero_conversion_pause: "3 days of zero conversion - pause",
+    zero_conversion: "Zero conversion yesterday", zero_conversion_pause: "Zero conversion 3 days - pause",
     hold_small_change: "Change under 10% - hold",
   };
   const capLabel = (CAP_LABELS[budget.cap] || budget.cap) + (budget.paced ? " · paced" : "");
@@ -218,6 +219,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
 
   const rowGrid = { display: "grid", gridTemplateColumns: "104px 1fr 44px", gap: 12, alignItems: "center" };
   const rowLabel = { fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
+  const oneLine = { minWidth: 0, overflow: "hidden", whiteSpace: "nowrap" };
   const rightLabel = { fontSize: 12, fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums" };
   const legendItem = { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const sw = (bg) => ({ width: 8, height: 8, borderRadius: 2, background: bg, flex: "0 0 8px" });
@@ -235,26 +237,31 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           </>
         )}
       </div>
-      <div style={{ height: 12, flex: "0 0 12px" }} />
-      {showCap && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
-          <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Capped by</span>
-          <Lozenge color="blue" content={capTip}>{capLabel}</Lozenge>
+      <div style={{ height: 10, flex: "0 0 10px" }} />
+      {/* The two rules that shaped the figure, on one label column so the chips
+          line up, each on one line: a chip that wrapped used to push the bars
+          into it. The full wording of either is in its popup. */}
+      {(showCap || showStretch) && (
+        <div style={{ display: "grid", gridTemplateColumns: "62px 1fr", columnGap: 8, rowGap: 6, alignItems: "center", flex: "0 0 auto" }}>
+          {showCap && (
+            <>
+              <span style={rowLabel}>Capped by</span>
+              <span style={oneLine}><Lozenge color="blue" content={capTip}>{capLabel}</Lozenge></span>
+            </>
+          )}
+          {showStretch && (
+            <>
+              <span style={rowLabel}>Stretch</span>
+              <span style={oneLine}>
+                <Lozenge dir="neutral" content={stretchTip}>
+                  {"×" + fmt(k, 2) + " · " + fmtSigned(Math.round(stretchUnits)) + " units " + (close ? "at close" : "by today")}
+                </Lozenge>
+              </span>
+            </>
+          )}
         </div>
       )}
-      {showStretch && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto",
-          marginTop: showCap ? 8 : 0,
-        }}>
-          <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Stretch</span>
-          <Lozenge dir="neutral" content={stretchTip}>
-            {"×" + fmt(k, 2) + " on the benchmark · " + fmtSigned(Math.round(stretchUnits)) +
-              " units " + (close ? "at close" : "by today")}
-          </Lozenge>
-        </div>
-      )}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 20 }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
         <div style={rowGrid}>
           <span style={rowLabel}>Paid units</span>
           <TrackBar
