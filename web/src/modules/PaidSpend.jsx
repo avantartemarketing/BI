@@ -73,15 +73,24 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     );
 
   // ----- "Capped by" row: what bound the recommendation -----
+  // One word on the chip, the rule in full at the head of its popup.
   const showCap = !complete && !noCampaign && rec !== null && !!budget.cap;
-  const CAP_LABELS = {
-    supply: "Supply - sell-out", roi_floor: "ROI floor", pacing: "Pacing ±30% / day",
-    roi_band_hold: "ROI band - hold", roi_band_decrease: "ROI band - decrease",
-    forced_decrease: "3 days below target ROI", plan_rate: "Plan rate (first day)",
-    zero_conversion: "Zero conversion yesterday", zero_conversion_pause: "Zero conversion 3 days - pause",
-    hold_small_change: "Change under 10% - hold",
+  const CAPS = {
+    supply: ["Sellout", "Supply - sell-out"],
+    roi_floor: ["Floor", "ROI floor"],
+    pacing: ["Pacing", "Pacing ±30% / day"],
+    roi_band_hold: ["Hold", "ROI band - hold"],
+    roi_band_decrease: ["Decrease", "ROI band - decrease"],
+    forced_decrease: ["Forced", "3 days below target ROI - forced decrease"],
+    plan_rate: ["Plan", "Plan rate (first day)"],
+    zero_conversion: ["Zero", "Zero conversion yesterday"],
+    zero_conversion_pause: ["Pause", "3 days of zero conversion - pause"],
+    hold_small_change: ["Steady", "Change under 10% - hold"],
   };
-  const capLabel = (CAP_LABELS[budget.cap] || budget.cap) + (budget.paced ? " · paced" : "");
+  const [capWord, capName] = CAPS[budget.cap] || [budget.cap, budget.cap];
+  const capLabel = capName + (budget.paced ? " · paced" : "");
+  // a cap the pacing rule then limited says so in the popup rather than on the chip
+  const pacedRow = budget.paced ? [{ label: "Pacing", value: "move limited to 30% / day" }] : [];
   const bandTip = {
     head: capLabel,
     body: budget.cap === "pacing"
@@ -103,10 +112,11 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
       { label: "Unconstrained", value: budget.supplySpend !== null && budget.roiSpend !== null && budget.supplySpend !== undefined && budget.roiSpend !== undefined ? money(Math.min(budget.supplySpend, budget.roiSpend)) + " / day" : "–" },
       { label: "ROI at close, at recommended", value: fmt(budget.finalDayRoi, 2) },
+      ...pacedRow,
     ],
   };
   const floorTip = {
-    head: "ROI floor",
+    head: capLabel,
     body: "The floor is on ROI at close, on the same drifting cost path the Paid ROI chart draws. At today's spend that path ends at " +
       fmt(budget.finalDayRoi !== null && budget.cpeAtRecommended && budget.cpeAtClose ? null : null, 2).replace("–", "") +
       "the chart's projected figure; the recommendation is the spend at which it ends on the floor" +
@@ -117,11 +127,12 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cost / unit at close, recommended", value: budget.cpeAtRecommended ? "£" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at close, recommended", value: fmt(budget.finalDayRoi, 2) },
       { label: "Spend at the floor", value: money(rec) + " / day" },
-      ...(budget.paced ? [{ label: "Pacing", value: "cut limited to 30% / day" }] : []),
+      ...pacedRow,
     ],
   };
   const capTip = !["supply", "roi_floor"].includes(budget.cap) ? bandTip : budget.cap === "roi_floor" ? floorTip : budget.cap === "supply" ? {
-    head: "Supply - sell-out",
+    head: capLabel,
+    body: "The spend that sells the edition out by launch, at the cost per entry that spend implies - more would buy entries the edition cannot hold.",
     rows: [
       { label: "Spend cap", value: money(rec) + " / day" },
       { label: "Entries needed", value: fmt(budget.entriesNeeded) },
@@ -129,6 +140,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
         ? [{ label: "Organic still to come", value: fmt(budget.organicFuture) }]
         : []),
       { label: "Final-day ROI", value: fmt(budget.finalDayRoi, 2) },
+      ...pacedRow,
     ],
   } : {
     head: "ROI floor",
@@ -241,7 +253,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       {showCap && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
           <span style={rowLabel}>Capped by</span>
-          <span style={oneLine}><Lozenge color="blue" content={capTip}>{capLabel}</Lozenge></span>
+          <span style={oneLine}><Lozenge color="blue" content={capTip}>{capWord}</Lozenge></span>
         </div>
       )}
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
