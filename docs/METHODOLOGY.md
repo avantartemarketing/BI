@@ -45,10 +45,11 @@ split across the products by edition size, and drafts are not drawn.
 per product, and a collector can enter several draws while wanting fewer pieces
 than they entered for: someone who enters four products with a maximum quantity
 of two is one conversion on two of them, not four. The allocator resolves that
-at close by awarding the least-demanded of their products, so the prediction
-counts the same way before close - each such entrant is counted on their
-maximum quantity of products, on whichever of the products they entered have
-the most room left, one unit at a time. Entrants who have already won are
+at close for revenue, awarding the priciest of their products with a unit
+left, so the prediction counts the same way before close - each such entrant
+is counted on their maximum quantity of products, placed one unit at a time
+on the priciest of the products they entered that still has room, then on
+whichever has the most room left. Entrants who have already won are
 counted on what they won. The card says how many entrants that moved and where
 they went.
 

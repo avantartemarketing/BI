@@ -4,9 +4,9 @@
  * can enter more than one draw while wanting fewer pieces than they entered
  * for: someone who enters four products with a maximum quantity of two is one
  * conversion on two products, not four. The allocator resolves that at close
- * by awarding the least-demanded of their products, and the sell-through
- * prediction has to count the same way before close or it overstates demand
- * on every product the flexible entrants also entered.
+ * for revenue, awarding the priciest of their products with a unit left, and
+ * the sell-through prediction has to count the same way before close or it
+ * overstates demand on every product the flexible entrants also entered.
  *
  * This module is that counting rule, shared by the ETL's Python mirror
  * (etl/sellthrough.py, the reference the snapshot is built from), the server
@@ -33,15 +33,21 @@
  *   unpaid wins are pinned to their product first - the allocation is done;
  *   what appetite is left goes to the open entries. An entrant whose appetite
  *   covers every open entry counts once on each; one whose appetite is
- *   smaller is FLEXIBLE and is counted on the products with the most room.
- * The flexible entrants are placed one unit at a time: take the product with
- * the lowest fill (sold plus the units counted so far at the rate, over the
- * edition; plain units when editions are not all known), and give it to the
- * flexible entrant who entered it and has the fewest other options left. So a
- * product short of demand is topped up before a product already spoken for,
- * and an entrant with one alternative is placed before one with five. Ties
- * break on product order and then pattern order, so the same input always
- * gives the same answer on either side.
+ *   smaller is FLEXIBLE and is counted where it earns the most.
+ * The flexible entrants are placed one unit at a time, for revenue: take the
+ * priciest product that still has room at the rate (one more counted unit
+ * fits the edition), the lowest fill (sold plus the units counted so far at
+ * the rate, over the edition) among equal prices, and only once every product
+ * is full the lowest fill, so oversubscription spreads evenly; give the unit
+ * to the flexible entrant who entered it and has the fewest other options
+ * left. Prices are the list prices the orders feed carries: a product without
+ * one takes the median of the others, with none at all the rule is fill
+ * alone, and when editions are not all known there is no room to judge, so
+ * the rule is plain units. So the expensive product is spoken for before a
+ * cheap one gets a unit it could also have sold, and an entrant with one
+ * alternative is placed before one with five. Ties break on product order
+ * and then pattern order, so the same input always gives the same answer on
+ * either side.
  *
  * Nothing here is capped: `allocated` is the demand counted on the product,
  * `predicted` that demand at the rate, and `room` (edition − sold) is what the
@@ -83,6 +89,27 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
   const total = (i) => pinned[i] + fixed[i] + flexible[i];
   const fill = (i) => (byFill ? (sold[i] + r * total(i)) / editions[i] : sold[i] + r * total(i));
   const toSet = productSets(products);
+  // list prices for the revenue rule: a product without one takes the median
+  // of the others; with none at all every price is 0 and fill decides
+  const priceOf = (p) => (finite(p.listPrice) && Number(p.listPrice) > 0 ? Number(p.listPrice) : null);
+  const known = products.map(priceOf).filter((v) => v !== null).sort((a, b) => a - b);
+  const medianPrice = known.length ? known[Math.floor(known.length / 2)] : 0;
+  const prices = products.map((p) => (priceOf(p) !== null ? priceOf(p) : medianPrice));
+  // one more counted unit at the rate still fits the edition
+  const hasRoom = (i) => sold[i] + r * (total(i) + 1) <= editions[i] + 1e-9;
+  // where the next flexible unit goes: revenue first, then fill
+  const better = (i, best) => {
+    if (byFill) {
+      const ri = hasRoom(i), rb = hasRoom(best);
+      if (ri !== rb) return ri;
+      if (ri && Math.abs(prices[i] - prices[best]) > 1e-9) return prices[i] > prices[best];
+    }
+    const fi = fill(i), fb = fill(best);
+    if (Math.abs(fi - fb) > 1e-12) return fi < fb;
+    const ti = total(i), tb = total(best);
+    if (ti !== tb) return ti < tb;
+    return i < best;
+  };
 
   // entrant-level bookkeeping, as counts
   let entrants = 0, flexibleEntrants = 0, surplusEntries = 0, uncapped = 0, unpaidWinners = 0;
@@ -132,15 +159,12 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
   const bump = (i, s) => { if (s.kind === "pinned") pinned[i] += 1; else flexible[i] += 1; };
   for (;;) {
     // which products can still take a flexible unit, and from whom
-    let best = -1, bestFill = 0, bestTotal = 0;
+    let best = -1;
     for (let i = 0; i < P; i++) {
       let can = false;
       for (const s of subs) if (s.n > 0 && s.need > 0 && s.options.includes(i)) { can = true; break; }
       if (!can) continue;
-      const f = fill(i), t = total(i);
-      if (best < 0 || f < bestFill - 1e-12 || (Math.abs(f - bestFill) <= 1e-12 && (t < bestTotal || (t === bestTotal && i < best)))) {
-        best = i; bestFill = f; bestTotal = t;
-      }
+      if (best < 0 || better(i, best)) best = i;
     }
     if (best < 0) break;
     // the most constrained entrant who entered it

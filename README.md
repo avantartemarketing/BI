@@ -16,8 +16,8 @@ etl/                    Python pipeline
   release_inputs.json     hand-entered launch inputs per release (the human decisions)
   benchmarks.json         frozen benchmark values (v1; recompute policy in docs §4)
   sellthrough.py          the per-product sell-through rule (entries in hand allocated by
-                          maximum quantity; docs §6.3) - the reference; shared/sellThrough.mjs
-                          is the same rule for the server and the web app
+                          maximum quantity, for revenue; docs §6.3) - the reference;
+                          shared/sellThrough.mjs is the same rule for the server and the web app
   extract_spend.py        Meta spend by campaign × day  (from the workbook snapshot)
   extract_content.py      Emplifi posts by campaign     (from the content export)
   build.py                computes targets, trajectory curves, and per-release snapshots
@@ -435,7 +435,7 @@ Draw = 30 unique entrants (2 with a win to pay)
 • I: 24 open + 1 to pay ...
 Drafts = 5
 • I: 2 · II: 1 · III: 2
-Estimated sell-through (entries at 80% entry → order, placed by maximum quantity)
+Estimated sell-through (entries at 80% entry → order, placed by maximum quantity for revenue)
 • I: ~62 units → 31% ...
 Total ~126 units → 21% of 600
 ```
@@ -494,7 +494,8 @@ joined to the draws through the product each draw's winners bought (docs 2.4); u
 of a release is named that way the card wears an **Incomplete data** stamp, and the sales the
 draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an
 entrant who entered more products than their maximum quantity is counted on that many
-products only, on whichever have the most room. Products come from the event feed's draws
+products only, placed for revenue: on the priciest of them that still has room, then on
+whichever has the most room. Products come from the event feed's draws
 (one draw per product) and are named and sized on the Target setting tab, where the entry →
 order rate can also be set per release; a product nobody has named takes its Shopify title
 and, where the title matches an Airtable record, its edition. Until the feed has run once after

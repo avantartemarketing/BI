@@ -18,8 +18,9 @@
  *
  * The entries in hand are not simply everyone who entered the product. An
  * entrant who entered four products but wants two is one conversion on two
- * of them, and is counted on whichever of their products have the most room
- * - the same rule the allocator applies at close (shared/sellThrough.mjs).
+ * of them, and is counted where it earns the most: the priciest of their
+ * products with room, then whichever has the most room - the same rule the
+ * allocator applies at close (shared/sellThrough.mjs).
  * The card carries no copy about it: the account of who moved where is in
  * the popup of the in-hand row, the split of sales the feed cannot name a
  * product for in the striped segment's, and the editions are checked where
@@ -154,7 +155,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const methodTip = {
     head: "How the card counts",
     body: `Sold is units paid for, drafts are orders not yet paid. From entries is every eligible entry still in the draw, counted at ${rateText} entry → order. ` +
-      "An entrant who entered more products than they want is counted on their maximum quantity of products only, placed where there is most room - the rule the allocator applies at close." +
+      "An entrant who entered more products than they want is counted on their maximum quantity of products only, placed for revenue: on the priciest product they entered that still has room, then where there is most room - the rule the allocator applies at close." +
       (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };
   /* No copy under the rows. The allocation's account lives in the popup of
@@ -175,7 +176,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
       { label: `Units at ${rateText}`, value: fmt(inHandAll) },
     ],
     body: alloc && alloc.flexibleEntrants > 0
-      ? "An entrant who entered more products than their maximum quantity is counted on that many products only, on whichever of the products they entered have the most room - the rule the allocator applies at close."
+      ? "An entrant who entered more products than their maximum quantity is counted on that many products only, placed for revenue: on the priciest of the products they entered that still has room, then on whichever has the most room - the rule the allocator applies at close."
       : undefined,
   };
 
@@ -315,7 +316,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
                 inHand: { head: r.name, rows: [
                   ...(r.inHand ? [{ label: "Entrants in hand", value: fmt((r.inHand.open ?? 0) + (r.inHand.won ?? 0)) }] : []),
                   ...(finite(r.allocated) ? [{ label: "Counted here", value: fmt(r.allocated) }] : []),
-                  ...((r.flexible ?? 0) > 0 ? [{ label: "Of which placed by room", value: fmt(r.flexible) }] : []),
+                  ...((r.flexible ?? 0) > 0 ? [{ label: "Of which placed for revenue", value: fmt(r.flexible) }] : []),
                   { label: `Units at ${rateText}`, value: fmt(r.shown ?? 0) },
                   ...(roomLeft !== null ? [{ label: "Room left", value: fmt(roomLeft) }] : []),
                 ] },

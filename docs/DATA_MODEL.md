@@ -428,10 +428,11 @@ empirically on the Mondrian and James Jean Blossom draws):
 `demand(product) = Σ entrants eligible for product` (a lower bound per product);
 `total_units_demanded = Σ wanted_units`.
 
-**Allocation rule** (as practised): winners are allocated to maximise sell-through across
-products - an entrant who entered N products but wants M < N is awarded the M **least-demanded**
-products among those they entered, draw weighted by `Score`. Equivalent to capacitated matching;
-`Σ Opportunity Cost` measures the flexibility available.
+**Allocation rule** (as practised): winners are allocated to maximise revenue across
+products - an entrant who entered N products but wants M < N is awarded the M **priciest**
+products among those they entered that still have a unit left, the least-demanded among equal
+prices, draw weighted by `Score`. Equivalent to capacitated matching; `Σ Opportunity Cost`
+measures the flexibility available.
 
 ---
 
@@ -1043,21 +1044,28 @@ entrants share each. Patterns are enough to run the allocation anywhere and name
 **The maximum-quantity rule** (`etl/sellthrough.py`, mirrored in `shared/sellThrough.mjs`,
 held to the unit by `tests/test_sellthrough.py`). An entrant who entered four products with a
 maximum quantity of two is one conversion on two products, not four, and the allocator awards
-the least-demanded of them at close. The prediction counts the same way before close:
+them at close for revenue: the priciest of them with a unit left. The prediction counts the
+same way before close:
 
 ```
 appetite = max quantity − pieces already bought        (no cap: everything entered)
 unpaid wins are pinned to their product first; the appetite left goes to the open entries
 appetite ≥ open entries  → counted once on each (nothing to choose)
-appetite < open entries  → FLEXIBLE: placed one unit at a time on the product with the
-                           lowest fill, taken from the flexible entrant with the fewest
-                           other options left
-fill(p) = (sold_p + rate × counted_p) / edition_p       (plain units until every product
-                                                          has an edition)
+appetite < open entries  → FLEXIBLE: placed one unit at a time, for revenue: on the
+                           priciest product that still has room at the rate, the lowest
+                           fill among equal prices, and only once every product is full
+                           on the lowest fill; taken from the flexible entrant with the
+                           fewest other options left
+room(p)  = sold_p + rate × (counted_p + 1) ≤ edition_p  (one more counted unit still fits)
+fill(p)  = (sold_p + rate × counted_p) / edition_p       (plain units, and no price rule,
+                                                          until every product has an edition)
+price(p) = the list price the orders feed carries       (missing: the median of the others;
+                                                          none at all: fill alone)
 ```
 
-So a product short of demand is topped up before one already spoken for, and an entrant with
-one alternative is placed before one with five. Ties break on product order, then pattern
+So the expensive product is spoken for before a cheap one gets a unit it could also have sold,
+a product short of demand is topped up before one already spoken for among equal prices, and an
+entrant with one alternative is placed before one with five. Ties break on product order, then pattern
 order, so the same input gives the same answer on either side. The snapshot records, per
 product, `allocated` = `pinned` + `fixed` + `flexible` (the demand counted there, in people),
 `predicted` = allocated × rate, `shown` = predicted capped at the room, `oversubscribed` =

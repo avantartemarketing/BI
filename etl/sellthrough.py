@@ -8,16 +8,22 @@ the other.
 A release runs one draw per product. An entrant who enters several draws but
 wants fewer pieces than they entered for is one conversion on their maximum
 quantity of products, not on all of them, and the allocator resolves which at
-close by awarding the least-demanded of their products. This module counts the
-entries in hand the same way before close:
+close for revenue: the priciest of their products with a unit left. This
+module counts the entries in hand the same way before close:
 
   appetite = max quantity - pieces already bought (no cap: all they entered)
   unpaid wins are pinned to their product first; the appetite left goes to
   the open entries. An entrant whose appetite covers every open entry counts
   once on each; one whose appetite is smaller is FLEXIBLE and is placed one
-  unit at a time on the product with the lowest fill (sold + counted so far
-  at the rate, over the edition; plain units when editions are not all
-  known), taken from the flexible entrant with the fewest other options.
+  unit at a time for revenue: on the priciest product that still has room
+  at the rate (one more counted unit fits the edition), the lowest fill
+  (sold + counted so far at the rate, over the edition) among equal prices,
+  and only once every product is full on the lowest fill, so oversubscription
+  spreads evenly; taken from the flexible entrant with the fewest other
+  options. Prices are the list prices the orders feed carries: a product
+  without one takes the median of the others, with none at all the rule is
+  fill alone, and when editions are not all known there is no room to judge,
+  so the rule is plain units.
 
 Inputs are aggregate PATTERNS - how many entrants share this combination of
 open entries, unpaid wins, paid wins, pieces bought and maximum quantity - so
@@ -72,6 +78,34 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
         v = sold[i] + r * total(i)
         return v / editions[i] if by_fill else v
 
+    # list prices for the revenue rule: a product without one takes the median
+    # of the others; with none at all every price is 0 and fill decides
+    def price_of(p):
+        return float(p["listPrice"]) if _finite(p.get("listPrice")) and float(p["listPrice"]) > 0 else None
+    known = sorted(v for v in (price_of(p) for p in products) if v is not None)
+    median_price = known[len(known) // 2] if known else 0.0
+    prices = [price_of(p) if price_of(p) is not None else median_price for p in products]
+
+    def has_room(i: int) -> bool:
+        # one more counted unit at the rate still fits the edition
+        return sold[i] + r * (total(i) + 1) <= editions[i] + 1e-9
+
+    def better(i: int, best: int) -> bool:
+        # where the next flexible unit goes: revenue first, then fill
+        if by_fill:
+            ri, rb = has_room(i), has_room(best)
+            if ri != rb:
+                return ri
+            if ri and abs(prices[i] - prices[best]) > 1e-9:
+                return prices[i] > prices[best]
+        fi, fb = fill(i), fill(best)
+        if abs(fi - fb) > 1e-12:
+            return fi < fb
+        ti, tb = total(i), total(best)
+        if ti != tb:
+            return ti < tb
+        return i < best
+
     entrants = flexible_entrants = surplus = uncapped = unpaid_winners = 0
     subs: list[dict] = []
     order = 0
@@ -121,13 +155,12 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
 
     index = {key_of(s): s for s in subs}
     while True:
-        best, best_fill, best_total = -1, 0.0, 0
+        best = -1
         for i in range(n_products):
             if not any(s["n"] > 0 and s["need"] > 0 and i in s["options"] for s in subs):
                 continue
-            f, t = fill(i), total(i)
-            if best < 0 or f < best_fill - 1e-12 or (abs(f - best_fill) <= 1e-12 and (t < best_total or (t == best_total and i < best))):
-                best, best_fill, best_total = i, f, t
+            if best < 0 or better(i, best):
+                best = i
         if best < 0:
             break
         pick = None

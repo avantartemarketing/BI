@@ -412,6 +412,80 @@
         ]
       },
       "_why": "A is nearly full once its 25 drafts are counted (45 of 50), so the 6 flexible entrants go to B; A's 10 entries show as the 5 units of room it has left"
+    },
+    {
+      "name": "flexible entrants go to the priciest product with room, then by fill",
+      "rate": 0.8,
+      "edition": 410,
+      "soldTotal": 0,
+      "futureUnits": 0,
+      "products": [
+        {
+          "key": "A",
+          "name": "A",
+          "edition": 10,
+          "listPrice": 2500,
+          "draws": [
+            "dA"
+          ],
+          "sold": 0
+        },
+        {
+          "key": "B",
+          "name": "B",
+          "edition": 200,
+          "listPrice": 750,
+          "draws": [
+            "dB"
+          ],
+          "sold": 0
+        },
+        {
+          "key": "C",
+          "name": "C",
+          "edition": 200,
+          "listPrice": 750,
+          "draws": [
+            "dC"
+          ],
+          "sold": 0
+        }
+      ],
+      "patterns": [
+        {
+          "open": [
+            "dA",
+            "dB",
+            "dC"
+          ],
+          "won": [],
+          "sold": [],
+          "bought": 0,
+          "max": 1,
+          "n": 20
+        },
+        {
+          "open": [
+            "dB",
+            "dC"
+          ],
+          "won": [],
+          "sold": [],
+          "bought": 0,
+          "max": 1,
+          "n": 30
+        }
+      ],
+      "expect": {
+        "allocated": [
+          12,
+          19,
+          19
+        ],
+        "flexibleEntrants": 50,
+        "surplusEntries": 70
+      },
+      "_why": "A is the priciest and takes flexible units while one more at 80% still fits its edition of 10 (12 units = 9.6); the other 8 of its entrants and the 30 B/C entrants then split B and C evenly by fill"
     }
   ]
 }
