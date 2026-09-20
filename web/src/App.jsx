@@ -466,6 +466,11 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           <span className="chip" title="No campaign dates in the funnel export - showing the last 90 days of traffic">Catalogue · last 90 days</span>
         )}
         {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
+        {snap.edition && snap.edition.total > snap.edition.target && (
+          <span className="chip" title="The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target">
+            Target {Number(snap.edition.target).toLocaleString("en-GB")} · {Math.round((100 * snap.edition.target) / snap.edition.total)}% of {Number(snap.edition.total).toLocaleString("en-GB")} edition
+          </span>
+        )}
         {!targeted && (
           <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
             title="Nobody has set targets for this release - the page shows actuals only">No targets</span>

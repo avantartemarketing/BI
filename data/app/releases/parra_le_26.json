@@ -16,6 +16,10 @@
  "asOf": "2026-09-19",
  "complete": true,
  "targetingMode": "benchmark",
+ "edition": {
+  "target": 300.0,
+  "total": 300.0
+ },
  "economics": {
   "unitPrice": 650,
   "launchValue": 195000.0,

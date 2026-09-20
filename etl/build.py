@@ -1160,6 +1160,23 @@ def entry_rate(release: dict) -> float:
     return v if 0 < v <= 1 else BENCH["eligible_entry_to_order"]
 
 
+def edition_total(release: dict):
+    """The physical edition: `edition_total` when the target (`edition_size`)
+    is only part of it (Warhol: a 2,440 target on a 6,100 edition), else the
+    target itself. Caps, room and sell-through read against this; the targets
+    and the benchmark uplift read against edition_size."""
+    size = release.get("edition_size")
+    if size is None:
+        return None
+    try:
+        total = float(release.get("edition_total") or 0)
+    except (TypeError, ValueError):
+        total = 0.0
+    if total > float(size):
+        return int(total) if total.is_integer() else total
+    return size
+
+
 def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: float, inventory_left,
                       future_entries: float = 0.0, expected_today=None, bm_today=None, bm_close=None) -> dict:
     """The snapshot's `sellthrough`: the release-level prediction as before,
@@ -1170,7 +1187,7 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     (soldPredicted, futureEntriesPredicted, pct) are the per-product
     calculation summed, so the card's rows and its headline are one sum."""
     rate = entry_rate(release)
-    edition = release.get("edition_size")
+    edition = edition_total(release)   # the whole edition: room and shares read against it
     sold_predicted = unconverted * rate
     # inHandUnits is the entries in hand before the rate, so a save can re-run
     # the prediction at another rate without the funnel (server/retarget.js)
@@ -1771,7 +1788,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
 
     units_sold = float(win["Total_Product_Units"].sum())
     entries_banked = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
-    inventory_left = max(release["edition_size"] - units_sold, 0)
+    inventory_left = max(edition_total(release) - units_sold, 0)
     # Sell-out sizing: paid only tops up the gap ORGANIC is not on course to
     # fill. Net off what is already secured (banked entries count at 0.8) plus
     # the same shape-following organic projection the channel loop below runs
@@ -2302,8 +2319,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     draw = load_draw(release)
 
     day_n = max(min((as_of - announce).days, L), 0)
-    edition = float(release["edition_size"])
-    status_pct = (min(hero_now, edition) - hero_exp) / hero_exp if hero_exp else 0.0
+    edition = float(release["edition_size"])     # the target the plan runs on
+    total = float(edition_total(release))         # the whole edition: caps and oversubscription
+    status_pct = (min(hero_now, total) - hero_exp) / hero_exp if hero_exp else 0.0
     snap = {
         "id": release["id"],
         "releaseName": name,
@@ -2316,6 +2334,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "campaignLengthDays": L, "day": day_n, "of": L,
         "asOf": as_of.isoformat(), "complete": complete,
         "targetingMode": "benchmark" if bench else "levers",
+        # the target the plan runs on and the whole edition; equal unless the
+        # inputs give a total edition the target is only part of
+        "edition": {"target": round(edition, 0), "total": round(total, 0)},
         "economics": {
             "unitPrice": release["unit_price"], "launchValue": targets["launch_value"],
             "artistProfitPerUnit": round(ppu_artist, 2), "aaProfitPerUnit": round(ppu_aa, 2),
@@ -2323,10 +2344,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         },
         "currency": "units",
         "hero": {
-            "now": round(min(hero_now, edition), 0), "expectedToday": round(hero_exp, 0),
-            "delta": round(min(hero_now, edition) - hero_exp, 0),
-            "projected": round(min(hero_proj, edition), 0), "target": round(hero_target, 0),
-            "oversubscribedUnits": round(max(max(hero_now, hero_proj) - edition, 0), 0),
+            "now": round(min(hero_now, total), 0), "expectedToday": round(hero_exp, 0),
+            "delta": round(min(hero_now, total) - hero_exp, 0),
+            "projected": round(min(hero_proj, total), 0), "target": round(hero_target, 0),
+            "oversubscribedUnits": round(max(max(hero_now, hero_proj) - total, 0), 0),
             "statusPct": round(status_pct, 4), "ok": status_pct >= -0.1,
         },
         "targets": targets, "groupTargets": gtargets,

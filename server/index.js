@@ -202,7 +202,7 @@ function defaultsFor(id, disc) {
     id, release_name: disc.release_name, campaign_code: disc.campaign_code || "",
     campaign_name: disc.campaign_name || null, marketing_lead: null, budget_file: null,
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
-    edition_size: null, unit_price: null, artist_profit: null, aa_group_profit: null,
+    edition_size: null, edition_total: null, unit_price: null, artist_profit: null, aa_group_profit: null,
     artist_profit_share: 0.5, framing_available: true, paid_share_override: null,
     paid_channel_size: "Medium", reference_point: "Medium", paid_conv_quality: "Medium", cpp_pick: "Median",
     channel_quality_overrides: {},
@@ -262,6 +262,19 @@ app.post("/api/inputs/:id", route(async (req, res) => {
           : `${f} must be a non-negative number`);
       } else next[f] = f === "edition_size" ? Math.round(v) : v;
     }
+  }
+  // the whole edition when the target (edition_size) is only part of it;
+  // empty means the target is the edition
+  if (body.edition_total !== undefined) {
+    if (body.edition_total === null || body.edition_total === "") next.edition_total = null;
+    else {
+      const v = Number(body.edition_total);
+      if (!Number.isFinite(v) || v < 1) errors.push("total edition must be at least 1, or empty when the target is the whole edition");
+      else next.edition_total = Math.round(v);
+    }
+  }
+  if (next.edition_total !== null && next.edition_total !== undefined && Number(next.edition_total) < Number(next.edition_size)) {
+    errors.push("total edition cannot be smaller than the target");
   }
   if (body.artist_profit_share !== undefined) {
     const v = Number(body.artist_profit_share);

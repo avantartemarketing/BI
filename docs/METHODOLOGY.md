@@ -68,6 +68,7 @@ projections immediately - no data rebuild needed.
 | Input | What it does |
 | --- | --- |
 | Edition size, unit price | Sellout target and launch value (size × price) |
+| Total edition (optional) | The whole edition when the target is only part of it (Warhol: a 2,440 target on 6,100). The hero cap, the room and the sell-through percentages read against it; the targets stay on the target |
 | Private room opens / announce / draw close | The campaign clock every curve runs on |
 | Artist profit, AA Group profit, profit share | Per-unit economics feeding paid ROI |
 | Paid budget share | Who funds the ads. Default: 50/50, or 100% AA on commission / rev-share deals; overridable per release (Glenn Ligon = 100% AA) |

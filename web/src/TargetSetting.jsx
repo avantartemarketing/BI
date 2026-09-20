@@ -387,6 +387,8 @@ export default function TargetSetting({ snap, onSaved }) {
     const raw = String(e.target.value).replace(/[^0-9]/g, "");
     setInp({ ...inp, [k]: raw === "" ? null : parseInt(raw, 10) });
   };
+  // the target is only part of the edition: the rail says so
+  const partialEdition = Number(inp.edition_total) > Number(inp.edition_size) && Number(inp.edition_size) > 0;
   const dateDiff = (a, c) => (a && c ? Math.round((new Date(a) - new Date(c)) / 86400000) : null);
   const days = dateDiff(inp.launch_end, inp.announce_date);
   const prDays = dateDiff(inp.announce_date, inp.private_room_open);
@@ -639,13 +641,16 @@ export default function TargetSetting({ snap, onSaved }) {
         <Card dot="#8a7a52" title="Economics">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
-            <Field label="Edition size (units)">
+            <Field label="Target (units)" tip="The units the launch is targeted to sell by close: the whole edition for most launches. When the target is only part of the edition, put the edition in Total edition.">
               <input className="control num" style={{ fontWeight: 600 }} value={inp.edition_size ?? ""} onChange={setNum("edition_size")} placeholder={creating ? "required" : ""} />
+            </Field>
+            <Field label="Total edition (units)" tip="Only when the target is part of the edition (Warhol: a 2,440 target on 6,100). The hero cap, the room and the sell-through percentages then read against this; the targets stay on the target. Leave empty when the target is the whole edition.">
+              <input className="control num" value={inp.edition_total ?? ""} onChange={setNum("edition_total")} placeholder="same as target" />
             </Field>
             <Field label="Unit price (£)">
               <input className="control num" value={inp.unit_price ?? ""} onChange={setNum("unit_price")} placeholder={creating ? "required" : ""} />
             </Field>
-            <Field label="Launch value" tip="Edition size × unit price - derived.">
+            <Field label="Launch value" tip="Target units × unit price - derived.">
               <input className="control ro num" value={fmtMoney(derived.launch_value)} readOnly />
             </Field>
             <Field label="Artist profit (total £)">
@@ -809,7 +814,8 @@ export default function TargetSetting({ snap, onSaved }) {
           <div className="lead" title="Secured-units sellout target - the hero target on the Overview tab.">
             {creating && missing.length ? "–" : fmt(derived.edition_size)}
           </div>
-          <div className="lead-caption">{creating && missing.length ? "sellout units - enter the economics" : "sellout units"}</div>
+          <div className="lead-caption">{creating && missing.length ? "sellout units - enter the economics"
+            : partialEdition ? `target units · ${Math.round((100 * Number(inp.edition_size)) / Number(inp.edition_total))}% of the ${fmt(inp.edition_total)} edition` : "sellout units"}</div>
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 72px 72px", gap: 4, alignItems: "center" }}>
             <span />

@@ -161,6 +161,11 @@ function composeSellThrough(snap, { link, today } = {}) {
   const head = `*${snap.releaseName || snap.id}* - sales update, ${fmtDay(sent)}` +
     (of > 0 ? ` (day ${fmt(day)} of ${fmt(of)})` : "");
   lines.push(head);
+  // a target that is only part of the edition is said up front, so the
+  // percentages below (of the whole edition) read right
+  if (snap.edition && num(snap.edition.total) > num(snap.edition.target)) {
+    lines.push(`Target ${fmt(snap.edition.target)} units (${Math.round((100 * num(snap.edition.target)) / num(snap.edition.total))}% of the ${fmt(snap.edition.total)} edition)`);
+  }
 
   // paid
   const soldOf = (p) => num(p.sold) + num(p.soldAssumed);

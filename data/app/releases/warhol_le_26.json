@@ -16,6 +16,10 @@
  "asOf": "2026-09-19",
  "complete": false,
  "targetingMode": "benchmark",
+ "edition": {
+  "target": 2440.0,
+  "total": 6100.0
+ },
  "economics": {
   "unitPrice": 1000,
   "launchValue": 2440000.0,
@@ -1692,13 +1696,13 @@
   "artistPostsTarget": null
  },
  "sellthrough": {
-  "edition": 2440,
+  "edition": 6100,
   "sold": 471.0,
   "conversion": 0.8,
   "inHandUnits": 223.0,
   "soldPredicted": 211.2,
   "futureEntriesPredicted": 878.1,
-  "pct": 0.6477,
+  "pct": 0.2591,
   "benchmarkUnits": 865.0,
   "drafts": 20.0,
   "unitsPaidOrders": 464.0,
@@ -1730,9 +1734,9 @@
     "futurePredicted": 137.4,
     "pct": 0.1553,
     "pctClose": 0.2928,
-    "expectedToday": 585.0,
-    "benchmarkToday": 207.4,
-    "benchmarkClose": 354.5
+    "expectedToday": 234.0,
+    "benchmarkToday": 83.0,
+    "benchmarkClose": 141.8
    },
    {
     "key": "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
@@ -1760,9 +1764,9 @@
     "futurePredicted": 152.0,
     "pct": 0.0657,
     "pctClose": 0.2177,
-    "expectedToday": 585.0,
-    "benchmarkToday": 207.4,
-    "benchmarkClose": 354.5
+    "expectedToday": 234.0,
+    "benchmarkToday": 83.0,
+    "benchmarkClose": 141.8
    },
    {
     "key": "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
@@ -1790,9 +1794,9 @@
     "futurePredicted": 152.0,
     "pct": 0.0659,
     "pctClose": 0.2179,
-    "expectedToday": 585.0,
-    "benchmarkToday": 207.4,
-    "benchmarkClose": 354.5
+    "expectedToday": 234.0,
+    "benchmarkToday": 83.0,
+    "benchmarkClose": 141.8
    },
    {
     "key": "draw_3I8C9sXW9TfHkJDRhk873qrZxVP",
@@ -1820,9 +1824,9 @@
     "futurePredicted": 144.7,
     "pct": 0.1103,
     "pctClose": 0.2551,
-    "expectedToday": 585.0,
-    "benchmarkToday": 207.4,
-    "benchmarkClose": 354.5
+    "expectedToday": 234.0,
+    "benchmarkToday": 83.0,
+    "benchmarkClose": 141.8
    },
    {
     "key": "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8",
@@ -1850,9 +1854,9 @@
     "futurePredicted": 0.7,
     "pct": 0.9571,
     "pctClose": 0.9641,
-    "expectedToday": 58.5,
-    "benchmarkToday": 20.7,
-    "benchmarkClose": 35.5
+    "expectedToday": 23.4,
+    "benchmarkToday": 8.3,
+    "benchmarkClose": 14.2
    },
    {
     "key": "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
@@ -1880,9 +1884,9 @@
     "futurePredicted": 139.3,
     "pct": 0.1435,
     "pctClose": 0.2829,
-    "expectedToday": 585.0,
-    "benchmarkToday": 207.4,
-    "benchmarkClose": 354.5
+    "expectedToday": 234.0,
+    "benchmarkToday": 83.0,
+    "benchmarkClose": 141.8
    },
    {
     "key": "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
@@ -1910,9 +1914,9 @@
     "futurePredicted": 152.0,
     "pct": 0.0655,
     "pctClose": 0.2176,
-    "expectedToday": 585.0,
-    "benchmarkToday": 207.4,
-    "benchmarkClose": 354.5
+    "expectedToday": 234.0,
+    "benchmarkToday": 83.0,
+    "benchmarkClose": 141.8
    }
   ],
   "attributedSold": 464.0,
@@ -1927,7 +1931,7 @@
   },
   "measure": "fill",
   "editionSum": 6100.0,
-  "editionMismatch": true,
+  "editionMismatch": false,
   "soldSource": "orders",
   "allocationStarted": true,
   "incomplete": [],

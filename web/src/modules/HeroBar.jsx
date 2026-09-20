@@ -51,6 +51,10 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const expToday = hero.expectedToday ?? 0;
   const day = snap?.day;
   const words = refWords(horizon);
+  // the target is only part of the edition (Warhol: 2,440 of 6,100): the card
+  // says target where it would otherwise say sellout
+  const partial = !!(snap?.edition && snap.edition.total > snap.edition.target);
+  const editionTotal = partial ? snap.edition.total : null;
 
   // the outline only exists when the release has a basket behind it
   const hasBm = !!snap?.benchmark;
@@ -81,7 +85,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
   ];
   const targetTip = {
     // at close the target IS the sellout, so it is named as that
-    head: close ? "Sellout" : `Target by day ${day}`,
+    head: close ? (partial ? `Target · ${Math.round((100 * sellout) / editionTotal)}% of the ${fmt(editionTotal)} edition` : "Sellout") : `Target by day ${day}`,
     rows: refRows,
   };
   const stretchTip = bm === null ? null : {
@@ -119,7 +123,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
   return (
     <Card
       dot={GROUP_DOTS.volume}
-      title="Units vs sellout"
+      title={partial ? "Units vs target" : "Units vs sellout"}
       right={oversub > 0 ? (
         <span
           className="hint-dotted"
@@ -136,7 +140,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
           {fmtSigned(delta)}
         </span>
         <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
-          {close ? "vs sellout at close" : "vs target today"}
+          {close ? (partial ? "vs target at close" : "vs sellout at close") : "vs target today"}
         </span>
       </div>
 

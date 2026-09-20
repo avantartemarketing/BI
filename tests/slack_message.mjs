@@ -19,6 +19,16 @@ check(JSON.stringify(shortNames(["Castles Burning (For Neil Young) I", "Castles 
 check(JSON.stringify(shortNames(["Red", "Blue"])) === JSON.stringify(["Red", "Blue"]), "short unrelated names stay");
 check(JSON.stringify(shortNames(["Only one"])) === JSON.stringify(["Only one"]), "a single name stays");
 
+// a target that is only part of the edition is said under the header
+{
+  const text = composeSellThrough({ id: "x", releaseName: "X", asOf: "2026-09-19", day: 3, of: 10, edition: { target: 2440, total: 6100 },
+    sellthrough: { sold: 100, edition: 6100, conversion: 0.8, products: [] } }, { today: "2026-09-19" });
+  check(text.split("\n")[1] === "Target 2,440 units (40% of the 6,100 edition)", "the target line: " + text.split("\n")[1]);
+  const plain = composeSellThrough({ id: "x", releaseName: "X", asOf: "2026-09-19", day: 3, of: 10, edition: { target: 600, total: 600 },
+    sellthrough: { sold: 100, edition: 600, conversion: 0.8, products: [] } }, { today: "2026-09-19" });
+  check(!/^Target /m.test(plain), "no target line when the target is the edition");
+}
+
 // entrants from patterns: people, not entries
 const en = entrants([
   { open: ["d1"], won: [], n: 5 }, { open: ["d1", "d2"], won: [], n: 3 }, { open: [], won: ["d2"], n: 2 }, { open: [], won: [], sold: ["d1"], n: 9 },

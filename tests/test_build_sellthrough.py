@@ -102,5 +102,11 @@ check(st["soldSource"] == "winners" and st["incomplete"] == ["sales by product",
 check(st["products"][0]["sold"] == 41 and st["products"][1]["drafts"] is None, "the named draw has its orders, the other does not")
 build._ORDERS_FEED = {}
 
+# 8. a target that is only part of the edition: the block reads the whole edition
+st = build.sellthrough_block({**release, "edition_total": 900}, NAME, units_sold=40, unconverted=100, inventory_left=860, future_entries=30)
+check(st["edition"] == 900, f"the whole edition on the block: {st['edition']}")
+check(build.edition_total(release) == 300 and build.edition_total({**release, "edition_total": 200}) == 300, "no total, or one below the target, means the target")
+check(build.edition_total({"edition_size": None}) is None, "no edition size, no total")
+
 print("ok: build sell-through block" if not failed else f"{failed} failure(s)")
 sys.exit(1 if failed else 0)

@@ -36,6 +36,7 @@ Attributes (hand-entered per release today, in the LAUNCH INPUT block of each re
 | `campaign_name` (Meta ads key) | C85 | `GlennLigon_LE_26 · Enter draw` |
 | `campaign_code` | prefix of C85 | `GlennLigon_LE_26` |
 | `edition_size` (units) | G77 | 150 |
+| `edition_total` (units, optional) | - | the whole edition when `edition_size` is a target that is only part of it (Warhol: 6,100 against a 2,440 target); the hero cap, room and sell-through read against it, the targets and K against `edition_size`; the snapshot carries both as `edition.{target,total}` |
 | `unit_price` | G79 | 3,000 |
 | `launch_value` | `=price × size` | 450,000 |
 | `artist_profit` (total) | G81 | 176,879 |
