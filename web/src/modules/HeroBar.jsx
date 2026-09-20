@@ -246,7 +246,7 @@ function HeroActuals({ snap }) {
         </div>
         <div className="legend-row">
           <span className="swatch" style={{ background: C.orange }} />
-          <span style={{ color: C.muted }}>From entries in hand (× 0.8)</span>
+          <span style={{ color: C.muted }}>Draw conversions (entries × 0.8)</span>
           <span className="val">{fmt(banked)}</span>
         </div>
       </div>
