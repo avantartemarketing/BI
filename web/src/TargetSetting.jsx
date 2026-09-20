@@ -609,8 +609,13 @@ export default function TargetSetting({ snap, onSaved }) {
                 <div style={{ fontSize: 11.5, marginTop: 4, color: C.muted }}>last posted {new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
               )}
             </Field>
-            <Field label="Budget file">
-              <input className="control" value={inp.budget_file || ""} onChange={set("budget_file")} />
+            <Field label="Budget file" tip="A link to the budget sheet, kept here for reference. A web address gets an open link beside it.">
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input className="control" value={inp.budget_file || ""} onChange={set("budget_file")} placeholder="https://docs.google.com/spreadsheets/…" />
+                {/^https?:\/\/\S+$/i.test(String(inp.budget_file || "").trim()) && (
+                  <a href={String(inp.budget_file).trim()} target="_blank" rel="noopener noreferrer" className="btn secondary" style={{ flex: "0 0 auto", textDecoration: "none" }}>Open</a>
+                )}
+              </div>
             </Field>
           </div>
           <div className="spacer-16" />
