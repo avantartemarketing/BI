@@ -1,40 +1,40 @@
 {
  "window": [
   "2023-01-01",
-  "2026-09-18"
+  "2026-09-19"
  ],
- "channel_days": 385600,
+ "channel_days": 386137,
  "columns": {
   "Page_Views_Total": {
-   "export": 5279379.0,
-   "rebuilt": 5279379.0,
-   "pct": 0.0,
+   "export": 5314470.0,
+   "rebuilt": 5314756.0,
+   "pct": 5.381533812402742e-05,
    "kind": "counts",
    "within_tolerance": true,
-   "channel_days_differing": 0,
-   "max_abs_diff": 0.0
+   "channel_days_differing": 706,
+   "max_abs_diff": 340.0
   },
   "Sessions_Total": {
-   "export": 2319998.0,
-   "rebuilt": 2319998.0,
-   "pct": 0.0,
+   "export": 2344726.0,
+   "rebuilt": 2344922.0,
+   "pct": 8.35918567883838e-05,
    "kind": "counts",
    "within_tolerance": true,
-   "channel_days_differing": 0,
-   "max_abs_diff": 0.0
+   "channel_days_differing": 415,
+   "max_abs_diff": 209.0
   },
   "Draw_Entries": {
-   "export": 28768.0,
-   "rebuilt": 28769.0,
-   "pct": 3.476084538375973e-05,
+   "export": 28839.0,
+   "rebuilt": 28839.0,
+   "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 27,
-   "max_abs_diff": 1.0
+   "channel_days_differing": 45,
+   "max_abs_diff": 2.0
   },
   "Preorder_App": {
-   "export": 11219.0,
-   "rebuilt": 11219.0,
+   "export": 11276.0,
+   "rebuilt": 11276.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -42,22 +42,22 @@
    "max_abs_diff": 1.0
   },
   "Collectors_Eligible_Entries": {
-   "export": 23959.0,
-   "rebuilt": 23959.0,
+   "export": 24026.0,
+   "rebuilt": 24026.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 20,
-   "max_abs_diff": 1.0
+   "channel_days_differing": 38,
+   "max_abs_diff": 2.0
   },
   "Draw_Entry_Eligible": {
-   "export": 12472.0,
-   "rebuilt": 12472.0,
+   "export": 12539.0,
+   "rebuilt": 12539.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 16,
-   "max_abs_diff": 1.0
+   "channel_days_differing": 29,
+   "max_abs_diff": 2.0
   },
   "Draw_Winner": {
    "export": 12424.0,
@@ -65,16 +65,16 @@
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 10,
+   "channel_days_differing": 14,
    "max_abs_diff": 1.0
   },
   "Preorder_App_Eligable": {
-   "export": 9326.0,
-   "rebuilt": 9326.0,
+   "export": 9379.0,
+   "rebuilt": 9379.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 8,
+   "channel_days_differing": 12,
    "max_abs_diff": 1.0
   },
   "Preorder_Winner": {
@@ -83,44 +83,44 @@
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 6,
+   "channel_days_differing": 8,
    "max_abs_diff": 1.0
   },
   "Unique_Customers": {
-   "export": 21338.0,
-   "rebuilt": 21338.0,
-   "pct": 0.0,
+   "export": 21342.0,
+   "rebuilt": 21343.0,
+   "pct": 4.6855964764314496e-05,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 262,
-   "max_abs_diff": 4.0
+   "channel_days_differing": 246,
+   "max_abs_diff": 5.0
   },
   "Customer_Draw": {
-   "export": 4576.0,
-   "rebuilt": 4570.0,
-   "pct": -0.0013111888111888112,
+   "export": 4577.0,
+   "rebuilt": 4569.0,
+   "pct": -0.0017478697837011142,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 11,
+   "channel_days_differing": 7,
    "max_abs_diff": 2.0
   },
   "Customer_Preorder_App": {
    "export": 5928.0,
-   "rebuilt": 5928.0,
-   "pct": 0.0,
+   "rebuilt": 5929.0,
+   "pct": 0.00016869095816464237,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 10,
+   "channel_days_differing": 11,
    "max_abs_diff": 1.0
   },
   "Customer_Private_Room": {
-   "export": 4305.0,
-   "rebuilt": 4261.0,
-   "pct": -0.010220673635307782,
+   "export": 4306.0,
+   "rebuilt": 4263.0,
+   "pct": -0.009986065954482117,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 93,
-   "max_abs_diff": 7.0
+   "channel_days_differing": 92,
+   "max_abs_diff": 6.0
   },
   "Customers_Presale_Offered": {
    "export": 235.0,
@@ -128,30 +128,30 @@
    "pct": 0.0,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 2,
+   "channel_days_differing": 4,
    "max_abs_diff": 1.0
   },
   "Customer_Other": {
-   "export": 6343.0,
-   "rebuilt": 6344.0,
-   "pct": 0.00015765410688948448,
+   "export": 6345.0,
+   "rebuilt": 6347.0,
+   "pct": 0.00031520882584712374,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 203,
-   "max_abs_diff": 4.0
+   "channel_days_differing": 187,
+   "max_abs_diff": 3.0
   },
   "Draw_Entry_Eligible_No_Conv": {
-   "export": 10383.0,
-   "rebuilt": 10382.0,
-   "pct": -9.631127805065973e-05,
+   "export": 10450.0,
+   "rebuilt": 10449.0,
+   "pct": -9.569377990430622e-05,
    "kind": "people",
    "within_tolerance": true,
-   "channel_days_differing": 11,
-   "max_abs_diff": 1.0
+   "channel_days_differing": 23,
+   "max_abs_diff": 2.0
   },
   "Preorder_App_Eligible_No_Conv": {
-   "export": 2942.0,
-   "rebuilt": 2942.0,
+   "export": 2995.0,
+   "rebuilt": 2995.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -159,36 +159,36 @@
    "max_abs_diff": 1.0
   },
   "Total_Product_Units": {
-   "export": 23289.0,
-   "rebuilt": 23319.0,
-   "pct": 0.001288161793121216,
+   "export": 23295.0,
+   "rebuilt": 23301.0,
+   "pct": 0.00025756600128783,
    "kind": "units",
    "within_tolerance": true,
-   "channel_days_differing": 300,
-   "max_abs_diff": 8.0
+   "channel_days_differing": 277,
+   "max_abs_diff": 7.0
   },
   "Product_Units_Draw": {
-   "export": 4781.0,
-   "rebuilt": 4774.0,
-   "pct": -0.0014641288433382138,
+   "export": 4784.0,
+   "rebuilt": 4775.0,
+   "pct": -0.0018812709030100335,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 11,
+   "channel_days_differing": 7,
    "max_abs_diff": 2.0
   },
   "Product_Units_Preorder_App": {
    "export": 6393.0,
-   "rebuilt": 6391.0,
-   "pct": -0.00031284217112466763,
+   "rebuilt": 6393.0,
+   "pct": 0.0,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 11,
-   "max_abs_diff": 2.0
+   "channel_days_differing": 13,
+   "max_abs_diff": 3.0
   },
   "Product_Units_Private_Room": {
-   "export": 4665.0,
-   "rebuilt": 4612.0,
-   "pct": -0.011361200428724544,
+   "export": 4664.0,
+   "rebuilt": 4616.0,
+   "pct": -0.010291595197255575,
    "kind": "route",
    "within_tolerance": true,
    "channel_days_differing": 93,
@@ -196,47 +196,47 @@
   },
   "Product_Units_Presale_Offered": {
    "export": 261.0,
-   "rebuilt": 265.0,
-   "pct": 0.01532567049808429,
+   "rebuilt": 264.0,
+   "pct": 0.011494252873563218,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 4,
+   "channel_days_differing": 5,
    "max_abs_diff": 3.0
   },
   "Product_Units_Other": {
-   "export": 7248.0,
-   "rebuilt": 7277.0,
-   "pct": 0.0040011037527593815,
+   "export": 7252.0,
+   "rebuilt": 7253.0,
+   "pct": 0.0001378929950358522,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 238,
-   "max_abs_diff": 8.0
+   "channel_days_differing": 214,
+   "max_abs_diff": 7.0
   },
   "Draw_Entries_Total_Units": {
-   "export": 27421.0,
-   "rebuilt": 27421.0,
+   "export": 27508.0,
+   "rebuilt": 27508.0,
    "pct": 0.0,
    "kind": "units",
    "within_tolerance": true,
-   "channel_days_differing": 20,
+   "channel_days_differing": 34,
    "max_abs_diff": 3.0
   },
   "Draw_Entries_Total_Units_No_Conv": {
-   "export": 9453.0,
-   "rebuilt": 9452.0,
-   "pct": -0.00010578652279699566,
+   "export": 9534.0,
+   "rebuilt": 9533.0,
+   "pct": -0.00010488777008600797,
    "kind": "units",
    "within_tolerance": true,
-   "channel_days_differing": 3,
-   "max_abs_diff": 1.0
+   "channel_days_differing": 15,
+   "max_abs_diff": 2.0
   },
   "Draw_Entries_Eligible_Units": {
-   "export": 22394.0,
-   "rebuilt": 22394.0,
+   "export": 22471.0,
+   "rebuilt": 22471.0,
    "pct": 0.0,
    "kind": "units",
    "within_tolerance": true,
-   "channel_days_differing": 12,
+   "channel_days_differing": 28,
    "max_abs_diff": 3.0
   }
  },
