@@ -431,7 +431,7 @@ figures, in the sales team's own layout, to the channel set for that release:
 *Julian Schnabel · Multiple · 2026 Q3* - sales update, 17 Sep (day 11 of 24)
 Paid = 94 units (16% of 600)
 • I: 46/200 ...
-Draw = 30 unique entrants (2 with a win to pay)
+Draw = 30 unique entrants (2 won and not yet paid: not counted, their orders are in Drafts)
 • I: 24 open + 1 to pay ...
 Drafts = 5
 • I: 2 · II: 1 · III: 2

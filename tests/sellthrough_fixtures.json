@@ -115,7 +115,7 @@
       "_why": "A: 150 fixed + 5 uncapped; B and C are topped up evenly by the 120 flexible units (60 entrants x 1, 30 x 2) before A, which is fuller, gets any"
     },
     {
-      "name": "unpaid wins are pinned, paid wins are sold, appetite shrinks by pieces bought",
+      "name": "unpaid wins spend the appetite but count no units, paid wins are sold, appetite shrinks by pieces bought",
       "rate": 0.8,
       "edition": 100,
       "soldTotal": 30,
@@ -189,7 +189,7 @@
       ],
       "expect": {
         "allocated": [
-          10,
+          0,
           16
         ],
         "unattributedSold": 6,
@@ -201,7 +201,8 @@
           27,
           43
         ]
-      }
+      },
+      "_why": "the 10 unpaid wins on A spend their appetite but count nothing; A fills only through sales, so all 12 flexible units go to B, the emptier product"
     },
     {
       "name": "no editions: ranked on units, no room, no shares",

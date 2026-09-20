@@ -360,7 +360,7 @@ them; `BQ_ORDERS_TABLE` renames the table; both take `BQ_SINCE`):
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), `units_draft_pending` (draft orders an advisor raised that have no order yet, plus orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_entrant_drafts` (a person's drafts for collectors with a live entry on the release, counted apart), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
+| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
@@ -1009,7 +1009,7 @@ which the Target setting tab merges by giving both draws the same name). Per dra
 | state | definition | counts as |
 |---|---|---|
 | open | eligible, not won, not bought | in hand, placed by the rule |
-| won | won, not yet bought | in hand, pinned to its product (the allocation is made) |
+| won | won, not yet bought | not counted: spends the winner's appetite; the advisor's order for them, if any, is in the drafts |
 | sold | won and bought | a sale of that product |
 | bought without a win | `draw_with_purchase` on a losing entry (a re-offer, a private-room buyer's entry) | out of the in-hand pool, as the export's `No_Conv` treats it, but **not** claimed as a sale of that product |
 
@@ -1050,7 +1050,9 @@ same way before close:
 
 ```
 appetite = max quantity − pieces already bought        (no cap: everything entered)
-unpaid wins are pinned to their product first; the appetite left goes to the open entries
+unpaid wins spend the appetite first but count no units (a winner who has not paid is a
+draft when an advisor has an order out for them, and nowhere otherwise); the appetite left
+goes to the open entries
 appetite ≥ open entries  → counted once on each (nothing to choose)
 appetite < open entries  → FLEXIBLE: placed one unit at a time, for revenue: on the
                            priciest product that still has room at the rate, the lowest
@@ -1068,7 +1070,8 @@ So the expensive product is spoken for before a cheap one gets a unit it could a
 a product short of demand is topped up before one already spoken for among equal prices, and an
 entrant with one alternative is placed before one with five. Ties break on product order, then pattern
 order, so the same input gives the same answer on either side. The snapshot records, per
-product, `allocated` = `pinned` + `fixed` + `flexible` (the demand counted there, in people),
+product, `allocated` = `fixed` + `flexible` (the demand counted there, in people; `pinned`
+is the unpaid wins, tracked but not counted),
 `predicted` = allocated × rate, `shown` = predicted capped at the room, `oversubscribed` =
 the rest; and for the release `allocation.{entrants, flexibleEntrants, surplusEntries,
 uncapped, unpaidWinners, flexibleUnits}`.

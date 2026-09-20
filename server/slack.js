@@ -179,7 +179,7 @@ function composeSellThrough(snap, { link, today } = {}) {
   // draw entrants
   const en = entrants(st.patterns);
   if (products.length || en.any) {
-    lines.push(`Draw = ${fmt(en.any)} unique entrants` + (en.won ? ` (${fmt(en.won)} with a win to pay)` : ""));
+    lines.push(`Draw = ${fmt(en.any)} unique entrants` + (en.won ? ` (${fmt(en.won)} won and not yet paid: not counted, their orders are in Drafts)` : ""));
     products.forEach((p, i) => {
       const ih = p.inHand || {};
       lines.push(`• ${names[i]}: ${fmt(ih.open)} open` + (num(ih.won) ? ` + ${fmt(ih.won)} to pay` : ""));

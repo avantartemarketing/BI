@@ -1124,6 +1124,7 @@ def load_orders_feed() -> dict:
                     "draftCustomers": num(getattr(r, "draft_customers", "")) if str(getattr(r, "draft_customers", "")).strip() else None,
                     "entryDrafts": num(getattr(r, "units_entry_drafts", 0)),
                     "entrantDrafts": num(getattr(r, "units_entrant_drafts", 0)),
+                    "winnerDrafts": num(getattr(r, "units_winner_drafts", 0)),
                     "refunded": num(r.units_refunded),
                     "fromDrafts": num(r.units_from_drafts), "privateRoom": num(r.units_private_room),
                     "listPrice": price if price > 0 else None, "edition": editions(r.release, r.product_title),

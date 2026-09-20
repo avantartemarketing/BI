@@ -94,7 +94,9 @@ st = sell_through_products(products, r["patterns"], rate=0.8, edition=90, sold_t
 alloc = {p["name"]: p["allocated"] for p in st["products"]}
 # A has 20 + 3 fixed; B has 3 fixed + 2 uncapped; C has 1 pinned and 1 sold. The 8 flexible
 # units level B and C off (fill = sold + 0.8 x counted, over 30) and never reach A
-check(alloc == {"Alpha": 23, "Beta": 5 + 3, "Gamma": 1 + 5}, f"allocation {alloc}")
+# C's pinned win spends its winner's appetite but counts no units, so C is the emptier product and
+# takes 6 of the 8 flexible units, B the other 2
+check(alloc == {"Alpha": 23, "Beta": 5 + 2, "Gamma": 0 + 6}, f"allocation {alloc}")
 check(st["unattributedSold"] == 4 - 1, f"unattributed {st['unattributedSold']}")
 single, _ = products_from_draws(out[ONE]["draws"], [], 50)
 check(single[0]["edition"] == 50 and single[0]["name"] == "Draw 1", f"single product defaults {single}")

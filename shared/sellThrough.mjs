@@ -30,8 +30,10 @@
  *
  * The rule, entrant by entrant:
  *   appetite  = max − bought (no cap: everything they entered)
- *   unpaid wins are pinned to their product first - the allocation is done;
- *   what appetite is left goes to the open entries. An entrant whose appetite
+ *   unpaid wins spend the appetite first but count no units - a winner who
+ *   has not paid is a draft when an advisor has an order out for them, and
+ *   nowhere otherwise; what appetite is left goes to the open entries. An
+ *   entrant whose appetite
  *   covers every open entry counts once on each; one whose appetite is
  *   smaller is FLEXIBLE and is counted where it earns the most.
  * The flexible entrants are placed one unit at a time, for revenue: take the
@@ -86,7 +88,11 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
   // people with an entry in hand on each product, before the rule is applied
   const openPeople = new Array(P).fill(0);
   const wonPeople = new Array(P).fill(0);
-  const total = (i) => pinned[i] + fixed[i] + flexible[i];
+  // the units counted on a product: fixed and flexible entries. Unpaid wins
+  // are tracked as `pinned` (they spend the winner's appetite) but count
+  // nothing: a winner who has not paid is in the drafts when an advisor has
+  // an order out for them, and nowhere otherwise
+  const total = (i) => fixed[i] + flexible[i];
   const fill = (i) => (byFill ? (sold[i] + r * total(i)) / editions[i] : sold[i] + r * total(i));
   const toSet = productSets(products);
   // list prices for the revenue rule: a product without one takes the median
@@ -261,6 +267,7 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
       key: p.key, name: p.name, draws: p.draws || [], edition: e,
       entrants: p.entrants ?? null, inHand: a.inHand,
       sold, soldAssumed: r1(assumed[i]), drafts: finite(p.drafts) ? Number(p.drafts) : null,
+      winnerDrafts: finite(p.winnerDrafts) ? Number(p.winnerDrafts) : null,
       allocated: a.allocated, pinned: a.pinned, fixed: a.fixed, flexible: a.flexible,
       predicted: r1(a.predicted), shown: r1(a.shown), room: a.room, oversubscribed: r1(a.oversubscribed),
       futurePredicted: r1(futureShare[i]),
@@ -373,6 +380,7 @@ export function attachOrders(products, orders, drawProducts, source) {
       if (eds.length && eds.length === rows.length) q.edition = Math.round(eds.reduce((a, b) => a + b, 0));
     }
     q.drafts = capDrafts(q.drafts, q.edition, q.sold);
+    q.winnerDrafts = rows.reduce((n, r) => n + (Number(r.winnerDrafts) || 0), 0);
     const prices = rows.filter((r) => finite(r.listPrice)).map((r) => Number(r.listPrice));
     if (prices.length) q.listPrice = Math.max(...prices);
     q.titles = titles;

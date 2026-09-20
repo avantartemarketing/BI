@@ -12,7 +12,9 @@ close for revenue: the priciest of their products with a unit left. This
 module counts the entries in hand the same way before close:
 
   appetite = max quantity - pieces already bought (no cap: all they entered)
-  unpaid wins are pinned to their product first; the appetite left goes to
+  unpaid wins spend the appetite first but count no units: a winner who has
+  not paid is a draft when an advisor has an order out for them, and nowhere
+  otherwise. The appetite left goes to
   the open entries. An entrant whose appetite covers every open entry counts
   once on each; one whose appetite is smaller is FLEXIBLE and is placed one
   unit at a time for revenue: on the priciest product that still has room
@@ -71,8 +73,12 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
     won_people = [0] * n_products
     to_set = _product_sets(products)
 
+    # the units counted on a product: fixed and flexible entries. Unpaid wins
+    # are tracked as `pinned` (they spend the winner's appetite) but count
+    # nothing: a winner who has not paid is in the drafts when an advisor has
+    # an order out for them, and nowhere otherwise
     def total(i: int) -> int:
-        return pinned[i] + fixed[i] + flexible[i]
+        return fixed[i] + flexible[i]
 
     def fill(i: int) -> float:
         v = sold[i] + r * total(i)
@@ -263,6 +269,7 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
             "key": p.get("key"), "name": p.get("name"), "draws": p.get("draws") or [], "edition": e,
             "entrants": p.get("entrants"), "inHand": a["inHand"],
             "sold": s, "soldAssumed": _r1(assumed[i]), "drafts": float(p["drafts"]) if _finite(p.get("drafts")) else None,
+            "winnerDrafts": float(p["winnerDrafts"]) if _finite(p.get("winnerDrafts")) else None,
             "allocated": a["allocated"], "pinned": a["pinned"], "fixed": a["fixed"], "flexible": a["flexible"],
             "predicted": _r1(a["predicted"]), "shown": _r1(a["shown"]), "room": a["room"],
             "oversubscribed": _r1(a["oversubscribed"]),
@@ -356,6 +363,7 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
             if eds and len(eds) == len(rows):
                 q["edition"] = int(round(sum(eds)))
         q["drafts"] = _cap_drafts(q["drafts"], q.get("edition"), q["sold"])
+        q["winnerDrafts"] = float(sum(float(r.get("winnerDrafts") or 0) for r in rows))
         prices = [float(r["listPrice"]) for r in rows if _finite(r.get("listPrice"))]
         if prices:
             q["listPrice"] = max(prices)

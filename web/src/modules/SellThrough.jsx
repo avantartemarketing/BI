@@ -117,6 +117,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const inHandAll = st.soldPredicted ?? 0;
   const futureAll = close ? st.futureEntriesPredicted ?? 0 : 0;
   const fromFeed = Array.isArray(st.products) && st.products.length > 0;
+  const winnerDraftsAll = fromFeed ? st.products.reduce((n, p) => n + (finite(p.winnerDrafts) ? p.winnerDrafts : 0), 0) : 0;
   // what the feeds do not carry yet; an older snapshot without the field is
   // read the same way the ETL writes it
   const incomplete = Array.isArray(st.incomplete) ? st.incomplete : (fromFeed ? [] : ["products"]);
@@ -154,7 +155,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const rateText = `${Math.round(rate * 100)}%`;
   const methodTip = {
     head: "How the card counts",
-    body: `Paid is units paid for. Drafts are orders raised but not yet paid; they take room like a sale. Draw conversions are the people with a live entry, still in the draw or won and not yet paid, at the ${rateText} rate at which entries become orders. ` +
+    body: `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw conversions are the people still in the draw at the ${rateText} rate at which entries become orders. Winners who have not paid are not counted: their claim is in Drafts when an order is out for them, and nowhere otherwise. ` +
       "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them." +
       (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };
@@ -166,8 +167,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const inHandTip = {
     head: "Draw conversions",
     rows: [
-      ...(alloc ? [{ label: "People with a live entry", value: fmt(alloc.entrants) }] : []),
-      ...(alloc && alloc.unpaidWinners > 0 ? [{ label: "Of which won, not yet paid", value: fmt(alloc.unpaidWinners) }] : []),
+      ...(alloc ? [{ label: "People still in the draw", value: fmt(Math.max((alloc.entrants || 0) - (alloc.unpaidWinners || 0), 0)) }] : []),
+      ...(alloc && alloc.unpaidWinners > 0 ? [{ label: "Won, not yet paid (not counted)", value: fmt(alloc.unpaidWinners) }] : []),
       ...(alloc && alloc.flexibleEntrants > 0 ? [
         { label: "Entered more products than they want", value: fmt(alloc.flexibleEntrants) },
         ...moved.map((p) => ({ label: "Counted on " + p.name, value: "+" + fmt(p.flexible) })),
@@ -274,8 +275,11 @@ export default function SellThrough({ snap, horizon = "today" }) {
                 : undefined,
             })}
             {draftsAll !== null && leftRow("drafts", <span style={{ ...swatch(DRAFTS), background: DRAFTS }} />, "Drafts", fmt(draftsAll), {
-              head: "Drafts", rows: [{ label: "Units", value: fmt(draftsAll) }],
-              body: "Draft orders raised but not yet paid. They take room like a sale.",
+              head: "Drafts", rows: [
+                { label: "Units", value: fmt(draftsAll) },
+                ...(winnerDraftsAll > 0 ? [{ label: "Of which winners' claims", value: fmt(winnerDraftsAll) }] : []),
+              ],
+              body: "Draft orders raised but not yet paid, including the orders advisors have out for winners. They take room like a sale.",
             })}
             {leftRow("inhand", <span style={swatch(C.orange)} />, "Draw conversions", fmt(inHandAll), inHandTip)}
             {close && leftRow("future", <span style={swatch(C.orangeLight)} />, "Still to come", fmt(futureAll), {
@@ -311,9 +315,12 @@ export default function SellThrough({ snap, horizon = "today" }) {
                 ], body: (r.soldAssumed ?? 0) > 0
                   ? `Private-room and pre-order sales the feed cannot name a product for, split across the products by ${allEditions ? "edition size" : "entrants"}: this product's share, an estimate until the sales feed carries the product.`
                   : undefined },
-                drafts: { head: r.name, rows: [{ label: "Drafts", value: fmt(r.drafts ?? 0) }], body: "Draft orders raised but not yet paid. They take room like a sale." },
+                drafts: { head: r.name, rows: [
+                  { label: "Drafts", value: fmt(r.drafts ?? 0) },
+                  ...((r.winnerDrafts ?? 0) > 0 ? [{ label: "Of which winners' claims", value: fmt(r.winnerDrafts) }] : []),
+                ], body: "Draft orders raised but not yet paid, including the orders advisors have out for winners. They take room like a sale." },
                 inHand: (() => {
-                  const people = r.inHand ? (r.inHand.open ?? 0) + (r.inHand.won ?? 0) : null;
+                  const people = r.inHand ? (r.inHand.open ?? 0) : null;
                   const elsewhere = people !== null && finite(r.allocated) ? Math.max(people - r.allocated, 0) : 0;
                   const notes = [];
                   if (elsewhere > 0) notes.push(`${fmt(elsewhere)} of them counted on another product they entered.`);
@@ -321,8 +328,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
                   return { head: r.name, rows: [
                     { label: "Paid", value: fmt((r.sold ?? 0) + (r.soldAssumed ?? 0)) },
                     ...(finite(r.drafts) ? [{ label: "Drafts", value: fmt(r.drafts) }] : []),
-                    ...(people !== null ? [{ label: "People with a live entry", value: fmt(people) }] : []),
-                    ...(r.inHand && (r.inHand.won ?? 0) > 0 ? [{ label: "Of which won, not yet paid", value: fmt(r.inHand.won) }] : []),
+                    ...(people !== null ? [{ label: "People still in the draw", value: fmt(people) }] : []),
+                    ...(r.inHand && (r.inHand.won ?? 0) > 0 ? [{ label: "Won, not yet paid (not counted)", value: fmt(r.inHand.won) }] : []),
                     { label: `Draw conversions at ${rateText}`, value: fmt(r.shown ?? 0) },
                     ...(roomLeft !== null ? [{ label: "Left to sell", value: fmt(roomLeft) }] : []),
                   ], body: notes.length ? notes.join(" ") : undefined };

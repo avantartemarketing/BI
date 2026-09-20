@@ -53,7 +53,7 @@ const lines = text.split("\n");
 check(lines[0] === "*Test Artist · Multiple · 2026 Q3* - sales update, 17 Sep (day 11 of 24)", `head: ${lines[0]}`);
 check(lines[1] === "Paid = 94 units (16% of 600)", `paid: ${lines[1]}`);
 check(lines[2] === "• I: 46/200" && lines[4] === "• III: 16/200", `paid rows: ${lines[2]} ${lines[4]}`);
-check(lines[5] === "Draw = 32 unique entrants (2 with a win to pay)", `draw: ${lines[5]}`);
+check(lines[5] === "Draw = 32 unique entrants (2 won and not yet paid: not counted, their orders are in Drafts)", `draw: ${lines[5]}`);
 check(lines[6] === "• I: 24 open + 1 to pay" && lines[7] === "• II: 13 open", `draw rows: ${lines[6]} ${lines[7]}`);
 check(lines[9] === "Drafts = 5" && lines[10] === "• I: 2 · II: 1 · III: 2", `drafts: ${lines[9]} ${lines[10]}`);
 check(lines[12] === "• I: ~62 units → 31%" && lines[14] === "• III: ~24 units → 12%", `estimate rows: ${lines[12]} ${lines[14]}`);
