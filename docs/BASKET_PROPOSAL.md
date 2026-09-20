@@ -45,8 +45,9 @@ no paid at all. That is the mix the estate and paid points are about.
 
 ## 2. Size and price as the primary criteria
 
-Size is the criterion that carries the benchmark. Price adds nothing to it,
-and the shape cluster takes away from it.
+Size is the criterion that carries the units benchmark; price is the one
+that carries the conversion benchmarks; the shape cluster takes away from
+the first without being needed for the second.
 
 Leave-one-out on the 106 sized launches, benchmark = basket median units:
 
@@ -62,23 +63,48 @@ of 11 predict units worse than size alone at 45. Price does not improve the
 volume prediction because the panel's price and size already move together
 (big editions are cheap), so the size band carries the price information.
 
+Conversion is another matter. The targets hold conversion at the benchmark
+and ask the uplift of traffic, so the sessions and entries targets are the
+units target divided by the basket's conversion rates, and those rates move
+with price more than with anything else on file. By price quartile of the
+draw panel (108 launches, medians):
+
+| Price quartile | Median price | Entries per session | Units per session | Entry to unit |
+|---|---|---|---|---|
+| Cheapest | £616 | 1.4% | 2.29% | 0.39 |
+| Second | £1,275 | 1.6% | 1.76% | 0.21 |
+| Third | £1,976 | 1.1% | 0.92% | 0.22 |
+| Dearest | £5,100 | 0.6% | 0.67% | 0.11 |
+
+Doubling the price cuts units per session by about a quarter (elasticity
+-0.45 in log-log; -0.38 for entries per session), and price explains three
+times as much of the conversion variance as size does (R2 0.20 against 0.07
+for units per session). A £5,000 launch benchmarked on size alone inherits
+a cheaper basket's conversion and a sessions target it could hit without
+trying; a £600 launch the reverse. Conversion is noisy launch to launch (no
+basket predicts it within 1.5x more than four times in ten), so the price
+band does not make the conversion benchmark precise, but it stops it being
+wrong in a known direction.
+
 What the shape cluster is good for is the channel mix. It predicts the paid
 share of units with a mean error of 0.06 against 0.08 to 0.09 for the size
 and price rules, and entries per session within 1.5x for 43% of launches
 against 34% to 38%. Shape is a mix signal, not a volume signal, and section
 4 proposes an explicit switch for the mix instead.
 
-Recommendation: match on size first and price second, keep the widening
-bands and print the band that answered ("within x2.5 on units and price"),
-raise the floor from 8 members to 12, and drop the shape cluster from the
-default. Keep the clusters as ready-made baskets the picker can offer.
+Recommendation: match on size and price together, keep the widening bands
+and print the band that answered ("within x2.5 on units and price"), raise
+the floor from 8 members to 12, and drop the shape cluster from the default.
+Size sets the units median, price sets the conversion medians, and neither
+is given up before the other; the band widens on both. Keep the clusters as
+ready-made baskets the picker can offer.
 
 What this changes on the live releases: nothing on seven of the nine, whose
 size and price band already answers before the shape rung; Parra's basket
 grows from 10 to 15 and its median falls from 269 to 200 (K 1.12 to 1.50);
-James Jean's from 12 to 13 and 476 to 456. The price band is what the team
-sees as like for like, and it costs four points of accuracy against size
-alone, which is a fair price for a basket the team recognises.
+James Jean's from 12 to 13 and 476 to 456. Against size alone the price
+band costs four points of accuracy on the units median and buys conversion
+benchmarks of the right order, which is the better trade.
 
 ## 3. Seeing and editing the basket every time
 
