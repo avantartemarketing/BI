@@ -88,7 +88,7 @@ export function compareWithTool(audit, tool) {
     out.allocations = expected - sold;
     out.excess = out.allocations - audit.allocatable;
     L.push(`The tool expects ${expected} sales against ${sold} sold, so it allocates ${out.allocations} units.`);
-    if (out.excess > 0) L.push(`That is ${out.excess} more than the ${audit.allocatable} people who can be allocated one: at least ${out.excess} unit${out.excess === 1 ? "" : "s"} go to people who cannot take it.`);
+    if (out.excess > 0) L.push(`That is ${out.excess} more than the ${audit.allocatable} people who can be allocated one: at least ${out.excess === 1 ? "1 unit goes" : `${out.excess} units go`} to people who cannot take it.`);
     else if (audit.failedWinners > 0) L.push(`That is within the ${audit.allocatable} who can be allocated, but the tool's list still holds ${audit.failedWinners} winners whose payment failed, and it allocates every entry in its list that is not removed while the inventory lasts, so some of these units are theirs.`);
     else L.push(`That is within the ${audit.allocatable} who can be allocated.`);
   }
