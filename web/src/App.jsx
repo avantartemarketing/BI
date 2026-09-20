@@ -24,6 +24,7 @@ import PaidRoi from "./modules/PaidRoi.jsx";
 import PaidSpend from "./modules/PaidSpend.jsx";
 import SellThrough from "./modules/SellThrough.jsx";
 import Geo from "./modules/Geo.jsx";
+import DrawAudit from "./modules/DrawAudit.jsx";
 import Waterfall from "./modules/Waterfall.jsx";
 import NoTargets from "./modules/NoTargets.jsx";
 import TargetSetting from "./TargetSetting.jsx";
@@ -482,11 +483,12 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
+        <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>
         {tab === "overview" && !editing && (
           <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
         )}
       </nav>
-      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : (
+      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : tab === "audit" ? <DrawAudit snap={snap} /> : (
         <>
           {editing && (
             <LayoutBar items={draft} onChange={setDraft} saving={saving} error={saveError}

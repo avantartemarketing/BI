@@ -422,6 +422,16 @@ refreshes still come from `npm run etl`. Saved inputs live in
 into `etl/release_inputs.json` to make them permanent); custom baskets live
 beside them in `data/app/baskets.json`.
 
+## Auditing the allocator tool with an admin export
+
+The release page has a **Draw audit** tab. Download a draw's entries from the admin
+(`draw-<draw id>-entries.csv`), drop the file on the tab and type the three numbers the
+allocator tool prints for that product: Sold, Entries and Expected Sales. The tab reads the
+file in the browser (nothing is uploaded; it shows counts and draw entry ids, never a name or
+an email) and says how many of the tool's entries can still be allocated, how many are winners
+whose payment failed, and whether the tool allocates more units than there are people to
+allocate to. The logic is `shared/drawAudit.mjs`, tested by `tests/draw_audit.mjs`.
+
 ## Posting sell-through to Slack
 
 The sell-through card has a **Post to Slack** button. It sends the release's current
