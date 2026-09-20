@@ -2520,7 +2520,7 @@
   "pct": 1.0,
   "benchmarkUnits": 149.0,
   "drafts": 2.0,
-  "unitsPaidOrders": 148.0,
+  "unitsPaidOrders": 151.0,
   "ordersAsOf": "2026-09-17",
   "products": [
    {
@@ -2535,8 +2535,8 @@
      "open": 15,
      "won": 5
     },
-    "sold": 73.0,
-    "soldAssumed": 2.2,
+    "sold": 75.0,
+    "soldAssumed": 0.6,
     "drafts": 2.0,
     "allocated": 18,
     "pinned": 5,
@@ -2565,8 +2565,8 @@
      "open": 10,
      "won": 0
     },
-    "sold": 75.0,
-    "soldAssumed": 1.8,
+    "sold": 76.0,
+    "soldAssumed": 0.4,
     "drafts": 0.0,
     "allocated": 10,
     "pinned": 0,
@@ -2584,8 +2584,8 @@
     "benchmarkClose": 74.5
    }
   ],
-  "attributedSold": 148.0,
-  "unattributedSold": 4.0,
+  "attributedSold": 151.0,
+  "unattributedSold": 1.0,
   "allocation": {
    "entrants": 104,
    "flexibleEntrants": 2,
@@ -2754,12 +2754,12 @@
   ],
   "ordersByProduct": {
    "Untitled (Black on Black)": {
-    "unitsPaid": 73.0,
+    "unitsPaid": 75.0,
     "drafts": 2.0,
     "draftCustomers": 0.0,
     "entryDrafts": 33.0,
     "entrantDrafts": 0.0,
-    "refunded": 2.0,
+    "refunded": 0.0,
     "fromDrafts": 55.0,
     "privateRoom": 19.0,
     "listPrice": 3000.0,
@@ -2768,13 +2768,13 @@
     "lastDraft": "2026-09-17"
    },
    "Untitled (White on White)": {
-    "unitsPaid": 75.0,
+    "unitsPaid": 76.0,
     "drafts": 1.0,
     "draftCustomers": 0.0,
     "entryDrafts": 28.0,
     "entrantDrafts": 0.0,
-    "refunded": 2.0,
-    "fromDrafts": 59.0,
+    "refunded": 0.0,
+    "fromDrafts": 58.0,
     "privateRoom": 18.0,
     "listPrice": 3000.0,
     "edition": 75,

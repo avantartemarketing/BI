@@ -2913,7 +2913,7 @@
   "pct": 0.666,
   "benchmarkUnits": 101.0,
   "drafts": 4.0,
-  "unitsPaidOrders": 60.0,
+  "unitsPaidOrders": 61.0,
   "ordersAsOf": "2026-09-15",
   "products": [
    {
@@ -2928,8 +2928,8 @@
      "open": 0,
      "won": 1
     },
-    "sold": 33.0,
-    "soldAssumed": 0.5,
+    "sold": 34.0,
+    "soldAssumed": 0.0,
     "drafts": 2.0,
     "allocated": 1,
     "pinned": 1,
@@ -2937,11 +2937,11 @@
     "flexible": 0,
     "predicted": 0.8,
     "shown": 0.8,
-    "room": 14.5,
+    "room": 14.0,
     "oversubscribed": 0.0,
     "futurePredicted": 0.0,
-    "pct": 0.726,
-    "pctClose": 0.726,
+    "pct": 0.736,
+    "pctClose": 0.736,
     "expectedToday": 50.0,
     "benchmarkToday": 50.5,
     "benchmarkClose": 50.5
@@ -2959,7 +2959,7 @@
      "won": 1
     },
     "sold": 27.0,
-    "soldAssumed": 0.5,
+    "soldAssumed": 0.0,
     "drafts": 2.0,
     "allocated": 1,
     "pinned": 1,
@@ -2967,18 +2967,18 @@
     "flexible": 0,
     "predicted": 0.8,
     "shown": 0.8,
-    "room": 20.5,
+    "room": 21.0,
     "oversubscribed": 0.0,
     "futurePredicted": 0.0,
-    "pct": 0.606,
-    "pctClose": 0.606,
+    "pct": 0.596,
+    "pctClose": 0.596,
     "expectedToday": 50.0,
     "benchmarkToday": 50.5,
     "benchmarkClose": 50.5
    }
   ],
-  "attributedSold": 60.0,
-  "unattributedSold": 1.0,
+  "attributedSold": 61.0,
+  "unattributedSold": 0.0,
   "allocation": {
    "entrants": 32,
    "flexibleEntrants": 0,
@@ -3105,12 +3105,12 @@
   ],
   "ordersByProduct": {
    "Ephemerality (13)": {
-    "unitsPaid": 33.0,
+    "unitsPaid": 34.0,
     "drafts": 2.0,
     "draftCustomers": 2.0,
     "entryDrafts": 0.0,
     "entrantDrafts": 0.0,
-    "refunded": 1.0,
+    "refunded": 0.0,
     "fromDrafts": 22.0,
     "privateRoom": 12.0,
     "listPrice": 2500.0,

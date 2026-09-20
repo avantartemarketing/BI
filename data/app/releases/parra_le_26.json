@@ -1512,12 +1512,12 @@
   "sold": 297.0,
   "conversion": 0.8,
   "inHandUnits": 49.0,
-  "soldPredicted": 0.0,
+  "soldPredicted": 1.0,
   "futureEntriesPredicted": 0.0,
   "pct": 1.0,
   "benchmarkUnits": 269.0,
-  "drafts": 4.0,
-  "unitsPaidOrders": 287.0,
+  "drafts": 2.0,
+  "unitsPaidOrders": 297.0,
   "ordersAsOf": "2026-08-21",
   "products": [
    {
@@ -1532,9 +1532,9 @@
      "open": 24,
      "won": 7
     },
-    "sold": 144.0,
-    "soldAssumed": 5.0,
-    "drafts": 3.0,
+    "sold": 149.0,
+    "soldAssumed": 0.0,
+    "drafts": 1.0,
     "allocated": 31,
     "pinned": 7,
     "fixed": 24,
@@ -1562,8 +1562,8 @@
      "open": 28,
      "won": 8
     },
-    "sold": 143.0,
-    "soldAssumed": 5.0,
+    "sold": 148.0,
+    "soldAssumed": 0.0,
     "drafts": 1.0,
     "allocated": 35,
     "pinned": 7,
@@ -1581,8 +1581,8 @@
     "benchmarkClose": 134.5
    }
   ],
-  "attributedSold": 287.0,
-  "unattributedSold": 10.0,
+  "attributedSold": 297.0,
+  "unattributedSold": 0.0,
   "allocation": {
    "entrants": 253,
    "flexibleEntrants": 0,
@@ -1771,12 +1771,12 @@
   ],
   "ordersByProduct": {
    "il senso di colpa": {
-    "unitsPaid": 143.0,
+    "unitsPaid": 148.0,
     "drafts": 1.0,
     "draftCustomers": 1.0,
     "entryDrafts": 3.0,
     "entrantDrafts": 0.0,
-    "refunded": 5.0,
+    "refunded": 0.0,
     "fromDrafts": 102.0,
     "privateRoom": 46.0,
     "listPrice": 650.0,
@@ -1785,12 +1785,12 @@
     "lastDraft": "2026-08-21"
    },
    "in your detached world": {
-    "unitsPaid": 144.0,
+    "unitsPaid": 149.0,
     "drafts": 3.0,
     "draftCustomers": 3.0,
     "entryDrafts": 2.0,
     "entrantDrafts": 0.0,
-    "refunded": 5.0,
+    "refunded": 0.0,
     "fromDrafts": 119.0,
     "privateRoom": 30.0,
     "listPrice": 650.0,

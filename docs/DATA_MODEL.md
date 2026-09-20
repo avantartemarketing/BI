@@ -343,7 +343,7 @@ is the reference the reconciliation checks it against on every refresh.
 
 ### 2.4 Orders and drafts by product (`Order_Line_Concept`)
 
-`Order_Line_Concept` is one row per Shopify order line (130k rows, 119 columns) with the
+`Order_Line_Concept` is one row per Shopify order line (130k rows, 119 columns; some lines appear twice, as a plain copy or once per refund on the order, so the feed keeps one row per line id) with the
 release (`simple_release_name`, the same key as the funnel), the campaign code (`release_name`),
 the product (`shopify_product_id`, `product_title`, `sku`), `quantity`, the list price
 (`shopify_product_variant_price`, EUR: 3,000 for Glenn Ligon, 500 for the Dali, the workbook's
@@ -359,7 +359,7 @@ them; `BQ_ORDERS_TABLE` renames the table; both take `BQ_SINCE`):
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not refunded, not pending; a line with a refund against it inside a partly refunded order is a unit that came back and counts as refunded), `units_refunded` (lines of refunded orders plus refunded lines of partly refunded ones), `units_draft_pending` (draft orders an advisor raised that have no order yet, plus orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_entrant_drafts` (a person's drafts for collectors with a live entry on the release, counted apart), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
+| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), `units_draft_pending` (draft orders an advisor raised that have no order yet, plus orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_entrant_drafts` (a person's drafts for collectors with a live entry on the release, counted apart), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
@@ -447,7 +447,7 @@ production model has to serve. Everything else in a table is never selected.
 | `LE_Funnel_Report` | `server/bigquery.js` (events and browsing feeds) | the event columns named in `EVENT_COLUMNS`: event, date, release, pseudonymous account id, signup, draw entry, winner and purchase flags, order counts, channel groups, locales; never `user_email` | `sources/le_events.csv` and `sources/le_browsing.csv`: the rebuilt export, people per release, the draws and entry patterns behind the per-product sell-through |
 | `LE_Funnel_Report` | `server/bigquery.js` (draw map, §2.4) | event_name, winner, draw_id, aa_account_id, shopify_order_id, simple_release_name, event_date | `data/draw_products.csv` |
 | `meta_ads_insights_export` | `server/bigquery.js` (spend feed) | campaign_name, spend_date, impressions, reach, link_clicks, spend | `data/spend_daily.csv`: paid spend by campaign × day |
-| `Order_Line_Concept` | `server/bigquery.js` (orders feed, §2.4) | simple_release_name, release_name, product_title, shopify_product_id, sku, quantity, order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_product_variant_price, shopify_product_type, is_test_order, launch_date, shopify_order_created_date_CET, shopify_draft_order_created_at, shopify_order_id | `data/orders_by_product.csv` |
+| `Order_Line_Concept` | `server/bigquery.js` (orders feed, §2.4) | simple_release_name, release_name, product_title, shopify_product_id, sku, quantity, order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_product_variant_price, shopify_product_type, is_test_order, launch_date, shopify_order_created_date_CET, shopify_draft_order_created_at, shopify_order_id, order_lineitem_id, refund_processed_at | `data/orders_by_product.csv` |
 
 Granted and profiled, not yet read: `Order_Concept` (order level: basket size and items,
 first-time buyer, totals, country - units per buyer and buyer mix per release),

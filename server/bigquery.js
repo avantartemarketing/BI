@@ -396,14 +396,20 @@ const ordersSql = () =>
   "    shopify_product_variant_price, shopify_order_created_date_CET AS order_date, DATE(shopify_draft_order_created_at) AS draft_date,\n" +
   "    COALESCE(shopify_order_facilitator, '') AS facilitator,\n" +
   "    REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$') AS draw_sku,\n" +
-  // a line with a refund against it inside a partly refunded order is a unit
-  // that came back, the same as a line of a refunded order
-  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AND refund_id IS NULL AS paid,\n" +
-  "    order_source_type = 'Order' AND cancelled_order = 0 AND (COALESCE(order_financial_status, '') = 'refunded' OR refund_id IS NOT NULL) AS refunded\n" +
+  // refund_id is carried on every line of an order that has a refund, so it
+  // cannot say which line came back: a partly refunded order (nearly always
+  // a frame or the shipping refunded, the piece kept) stays paid, and only an
+  // order refunded in full is a refund
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AS paid,\n" +
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') = 'refunded' AS refunded\n" +
   `  FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
   "  WHERE is_test_order = 0 AND shopify_product_type = 'Product'\n" +
   "    AND simple_release_name IS NOT NULL AND simple_release_name != '' AND product_title IS NOT NULL AND product_title != ''\n" +
-  "    AND (DATE(launch_date) >= @since OR shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)),\n" +
+  "    AND (DATE(launch_date) >= @since OR shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)\n" +
+  // the table holds some order lines twice (a copy of the same line id, or
+  // one row per refund on the order): one row per line id, or every unit of
+  // those lines is counted twice
+  "  QUALIFY order_lineitem_id IS NULL OR ROW_NUMBER() OVER (PARTITION BY order_source_type, order_lineitem_id ORDER BY refund_processed_at DESC) = 1),\n" +
   // the app that pre-authorises a draw entry writes its drafts under one
   // facilitator account: any account whose drafts are nearly all on the DRAW
   // SKU is the app, and every draft it writes (some land on the base SKU) is
