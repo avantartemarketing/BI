@@ -327,9 +327,10 @@ export default function TargetSetting({ snap, onSaved }) {
   const [slackDraft, setSlackDraft] = useState((snap.slack && snap.slack.channel) || "");
   const [slackSaving, setSlackSaving] = useState(false);
   const [slackError, setSlackError] = useState(null);
+  const [slackNote, setSlackNote] = useState(null);   // the server saved, but somewhere that will not last
   const slackCurrent = (snap.slack && snap.slack.channel) || "";
   const saveSlack = async () => {
-    setSlackSaving(true); setSlackError(null);
+    setSlackSaving(true); setSlackError(null); setSlackNote(null);
     try {
       const res = await fetch(`/api/releases/${snap.id}/slack-channel`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: slackDraft }),
@@ -337,13 +338,14 @@ export default function TargetSetting({ snap, onSaved }) {
       const d = await res.json();
       if (!res.ok) { setSlackError(d.error || `save failed (${res.status})`); return; }
       setSlackDraft((d.slack && d.slack.channel) || "");
+      setSlackNote(d.warning || null);
       onSaved({ ...snap, slack: d.slack });
     } catch (e) { setSlackError(String(e)); } finally { setSlackSaving(false); }
   };
 
   useEffect(() => {
     setMeta(null); setInp(null); setQual(null); setError(null); setPick(null); setPicking(false);
-    setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null);
+    setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null); setSlackNote(null);
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
       // a release nobody has set targets for comes back with inputs: null and
@@ -602,7 +604,8 @@ export default function TargetSetting({ snap, onSaved }) {
                 </button>
               </div>
               {slackError && <div style={{ fontSize: 11.5, marginTop: 4, color: C.red }}>{slackError}</div>}
-              {!slackError && snap.slack && snap.slack.lastPostAt && (
+              {!slackError && slackNote && <div style={{ fontSize: 11.5, marginTop: 4, color: C.amber, lineHeight: 1.5 }}>{slackNote}</div>}
+              {!slackError && !slackNote && snap.slack && snap.slack.lastPostAt && (
                 <div style={{ fontSize: 11.5, marginTop: 4, color: C.muted }}>last posted {new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
               )}
             </Field>

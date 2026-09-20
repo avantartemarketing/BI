@@ -8,7 +8,10 @@
  *
  * Channel per release lives in a small document of its own (SLACK_STATE_PATH,
  * default data/slack.json; put it on the persistent disk like the layout), so
- * a release without targets can have a channel too. Posting needs a Slack app
+ * a release without targets can have a channel too. When SLACK_STATE_PATH
+ * points somewhere the service cannot write (the disk not mounted there), the
+ * save lands in data/slack.json instead and the response says so, because
+ * that copy does not survive a deploy. Posting needs a Slack app
  * bot token in SLACK_BOT_TOKEN (scopes chat:write and chat:write.public; for
  * a private channel invite the bot first). README "Posting sell-through to
  * Slack" has the setup. The token stays in the environment: nothing here
@@ -17,20 +20,48 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const STATE_PATH = process.env.SLACK_STATE_PATH || path.join(ROOT, "data", "slack.json");
+const FALLBACK_PATH = process.env.SLACK_STATE_FALLBACK_PATH || path.join(ROOT, "data", "slack.json");
+const STATE_PATH = process.env.SLACK_STATE_PATH || FALLBACK_PATH;
 const API = process.env.SLACK_API || "https://slack.com/api/chat.postMessage";
 const CHANNEL_RE = /^[A-Za-z0-9._-]{1,80}$/;
 
 // ---------------------------------------------------------------- the channel per release
 
+let fallback = null;   // {reason} once the configured path has proved unwritable
+
 function readState() {
-  try { return JSON.parse(fs.readFileSync(STATE_PATH, "utf8")) || {}; } catch { return {}; }
+  // the configured document first, then the fallback copy a failed write left
+  for (const p of STATE_PATH === FALLBACK_PATH ? [STATE_PATH] : [STATE_PATH, FALLBACK_PATH]) {
+    try { return JSON.parse(fs.readFileSync(p, "utf8")) || {}; } catch { /* next */ }
+  }
+  return {};
 }
-function writeState(doc) {
-  fs.mkdirSync(path.dirname(STATE_PATH), { recursive: true });
-  const tmp = STATE_PATH + ".tmp";
+function writeTo(p, doc) {
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  const tmp = p + ".tmp";
   fs.writeFileSync(tmp, JSON.stringify(doc, null, 1));
-  fs.renameSync(tmp, STATE_PATH);
+  fs.renameSync(tmp, p);
+}
+/* Writes the configured document. When that path cannot be made or written
+ * (the persistent disk not mounted where SLACK_STATE_PATH points) the save
+ * lands in the fallback copy instead, so the channel is not lost on the way,
+ * and stateWarning() says so until the process restarts on a mounted disk. */
+function writeState(doc) {
+  if (!fallback) {
+    try { writeTo(STATE_PATH, doc); return; } catch (e) {
+      if (STATE_PATH === FALLBACK_PATH) throw e;
+      fallback = { reason: String(e.code || e.message || e) };
+      console.warn(`slack: cannot write ${STATE_PATH} (${fallback.reason}); saving to ${FALLBACK_PATH}, which does not survive a deploy`);
+    }
+  }
+  writeTo(FALLBACK_PATH, doc);
+}
+/* Null while saves reach the configured path; otherwise one sentence for the
+ * screen: where the save went and why it will not last. */
+function stateWarning() {
+  return fallback
+    ? `Saved, but not on the persistent disk: ${STATE_PATH} cannot be written (${fallback.reason}), so this resets on the next deploy. Mount the disk there or unset SLACK_STATE_PATH.`
+    : null;
 }
 /* {channel, updatedAt, updatedBy, lastPostAt, lastPostBy} or null */
 function stateFor(id) {
@@ -212,4 +243,4 @@ async function postMessage(channel, text) {
   return { ts: json.ts, channel: json.channel };
 }
 
-module.exports = { stateFor, setChannel, recordPost, composeSellThrough, shortNames, entrants, postMessage, STATE_PATH };
+module.exports = { stateFor, setChannel, recordPost, stateWarning, composeSellThrough, shortNames, entrants, postMessage, STATE_PATH };

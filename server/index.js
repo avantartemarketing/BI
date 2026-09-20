@@ -626,7 +626,8 @@ app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
   if (!req.body || req.body.channel === undefined) return res.status(400).json({ error: "channel required (empty clears it)" });
   const s = auth.sessionFrom(req);
   try {
-    res.json({ slack: slack.setChannel(id, req.body.channel, s && s.email) });
+    const state = slack.setChannel(id, req.body.channel, s && s.email);
+    res.json({ slack: state, warning: slack.stateWarning() });
   } catch (e) {
     res.status(400).json({ error: String(e.message || e) });
   }

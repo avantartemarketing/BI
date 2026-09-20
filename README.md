@@ -459,7 +459,10 @@ Setup, once:
 3. On the release's **Target setting** tab, type the channel name (without the `#`) in
    **Slack channel** and press its own **Save**. It is stored in `data/slack.json`
    (`SLACK_STATE_PATH` on the disk), separately from the targets, so a release without
-   targets can have a channel too.
+   targets can have a channel too. If `SLACK_STATE_PATH` points somewhere the service
+   cannot write (an `EACCES` on `/var/data` means no disk is mounted there), the save
+   still lands in `data/slack.json` and the field says so in amber: that copy resets
+   on the next deploy, so mount the disk or unset the variable.
 
 `PUBLIC_URL` (or Render's own `RENDER_EXTERNAL_URL`) puts an "Open in Launch Performance"
 link at the end of each message that opens the release itself (`?release=<id>`; the address
