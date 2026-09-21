@@ -14,16 +14,21 @@
  * nobody can see is a basket nobody can argue with, and the one before this
  * asked people to accept a named basket whose members were a tooltip away.
  *
- * Ready-made is still there, behind the second tab: the four clusters, the last
- * twelve months and the artist's own earlier launches, already matched and with
- * the suggested one flagged. It is the quick way to swap the whole basket at
- * once rather than edit one.
+ * There is nothing else in it. A gallery of named baskets to choose between -
+ * the four clusters, the last twelve months, the artist's own earlier launches,
+ * and saved ones - was a second way to answer the same question that made the
+ * list look like the advanced option, and a basket chosen by name is the thing
+ * this modal exists to stop. The rule that picks the suggestion is untouched;
+ * only the gallery is gone, so what it used to offer is now the order the list
+ * is already in.
  *
- * "Off by" is how far a launch sits from this one: the larger of its units
- * ratio and its price ratio, both taken so they read above 1 whichever side
- * they fall. It is the same measure the search in etl/baskets.py widens - a
- * band of 2x means both within 2x - so the order on screen is the order the
- * rule would have considered them in.
+ * Units x and Price x are how far a launch sits from this one on each axis,
+ * each taken so it reads above 1 whichever side it falls. One number cannot
+ * carry both: a launch matched on size and four times the price is not close,
+ * and the larger of the two said so without saying which. They sort on the
+ * worse of the two, which is how the search in etl/baskets.py reads a band -
+ * 2x means both within 2x - so the order on screen is the order the rule
+ * considered them in.
  *
  * The medians in the Bespoke rail are recomputed in the browser from the
  * candidate rows as ticks change, because a python round-trip per tick would
@@ -34,10 +39,12 @@
  * headline medians a plain median of the panel column is exactly what the ETL
  * takes.
  *
- * Nothing here writes to a release. `onPick` hands the chosen basket back to
- * TargetSetting, which holds it as an unsaved edit until the targets are saved.
- * The one write is `Save as ready-made` (POST /api/baskets), which adds a basket
- * everyone can pick and is deliberately separate from choosing one.
+ * The rail puts this launch beside the basket, a row per statistic, so whether
+ * the basket resembles the launch is read across rather than held in the head.
+ *
+ * Nothing here writes anything. `onPick` hands the chosen members back to
+ * TargetSetting, which holds them as an unsaved edit until the targets are
+ * saved.
  */
 import React, { useEffect, useMemo, useState } from "react";
 import { C, fmt, fmtK, fmtMoney, fmtPct } from "./ui.jsx";
@@ -116,13 +123,22 @@ const Chip = ({ active, onClick, children }) => (
   }}>{children}</button>
 );
 
-const TH = ({ children, align, w }) => (
-  <th style={{
+const TH = ({ children, align, w, title }) => (
+  <th title={title} style={{
     textAlign: align || "left", fontSize: 11.5, fontWeight: 500, color: C.muted,
     padding: "0 8px 6px", position: "sticky", top: 0, background: C.white,
     borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap",
     ...(w ? { width: w } : {}),
   }}>{children}</th>
+);
+
+/* One multiple. Dimmed past 4x, the widest band the search in etl/baskets.py
+   ever widens to, so how far down the list "still comparable" runs is visible
+   without reading every number. */
+const Mult = ({ v }) => (
+  <TD align="right" muted={v === null || v > 4}>
+    {v === null ? "–" : "×" + fmt(v, v < 10 ? 1 : 0)}
+  </TD>
 );
 
 const TD = ({ children, align, muted, colSpan, title }) => (
@@ -133,81 +149,70 @@ const TD = ({ children, align, muted, colSpan, title }) => (
   }}>{children}</td>
 );
 
-/* One ready-made basket. A basket under three members is shown rather than
- * hidden - "same artist, only two earlier launches" is a real answer to the
- * question someone came here to ask, and hiding it would read as a bug. */
-function ReadyCard({ basket, checked, suggested, onChoose }) {
-  const p = basket.profile || {};
-  const disabled = !!basket.disabled || (basket.n || 0) < MIN_MEMBERS;
-  const members = p.members || basket.members || [];
-  return (
-    <label style={{
-      display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 14px",
-      border: `1px solid ${checked ? C.ink : C.border}`, borderRadius: 10,
-      background: checked ? "#faf9f5" : C.white, opacity: disabled ? 0.6 : 1,
-      cursor: disabled ? "default" : "pointer",
-    }}>
-      <input type="radio" name="ready-basket" checked={checked} disabled={disabled}
-        onChange={() => onChoose(basket)} style={{ marginTop: 3, accentColor: C.ink, cursor: "inherit" }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{basket.name}</span>
-          {suggested && (
-            <span className="lozenge blue" style={{ fontSize: 11, padding: "1px 6px" }}
-              title="The basket this release matches on the clustering (BENCHMARK_SPEC 3.3).">Suggested</span>
-          )}
-        </div>
-        <div style={{ fontSize: 12, color: C.muted, marginTop: 3, lineHeight: 1.45 }}>{basket.desc}</div>
-        <div className="num" style={{ fontSize: 12, marginTop: 6, color: disabled ? C.muted : C.ink }}>
-          {disabled
-            ? `Only ${fmt(basket.n)} comparable ${basket.n === 1 ? "launch" : "launches"} - a basket needs at least ${MIN_MEMBERS} to read a median from.`
-            : statsLine(p, basket.n)}
-        </div>
-        {members.length > 0 && (
-          <div style={{ fontSize: 11.5, color: C.muted, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-            title={members.join(", ")}>
-            e.g. {members.slice(0, 3).join(", ")}
-          </div>
-        )}
-      </div>
-    </label>
-  );
-}
-
-/* The live rail: what the ticked launches would make the benchmark. */
-function BespokeRail({ profile, ticked, seed, untouched, saveName, setSaveName, onSave, saving, onUse, note }) {
+/* The rail: this launch beside the basket it is being measured against, one
+ * row per statistic, so "is this basket like my launch?" is answered by
+ * reading across rather than by remembering the header. A launch's own units
+ * and price are the target and the price being set on the tab, which is what
+ * the whole comparison is for; its sessions and paid share are to date and
+ * would be read against closed launches' totals, so those rows are the
+ * basket's alone. */
+function BasketRail({ profile, ticked, seed, untouched, targetUnits, unitPrice, own, placeable, onUse, onClose }) {
   const thin = ticked > 0 && ticked < THIN_MEMBERS;
-  // which basket this is: the one the modal opened on until a tick changes it
-  const which = !seed ? null : untouched ? seed.name : `${seed.name}, edited`;
-  const row = (label, value, tip) => (
-    <div className="legend-row" title={tip}>
-      <span style={{ color: C.muted }}>{label}</span>
-      <span className="val">{value}</span>
+  const which = !seed ? null : untouched ? "as suggested" : "edited";
+  // no launches ticked is no basket at all, and a median of zero is a figure
+  const has = ticked > 0;
+  const bm = (v) => (has ? v : "–");
+  // the sub-line gets the width of the row rather than of the label column: a
+  // price range in the label column is the first thing to be cut off
+  const row = (label, mine, theirs, tip, sub) => (
+    <div title={tip} style={{ padding: "5px 0", borderBottom: `1px solid ${C.hairline}` }}>
+      <div style={{
+        display: "grid", gridTemplateColumns: "1fr 68px 68px", gap: 6, alignItems: "baseline", fontSize: 12,
+      }}>
+        <span style={{ color: C.muted, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {label}
+        </span>
+        <span className="num" style={{ textAlign: "right", color: mine === null ? C.muted : C.ink }}>
+          {mine === null ? "–" : mine}
+        </span>
+        <span className="num" style={{ textAlign: "right", fontWeight: 600 }}>{theirs}</span>
+      </div>
+      {sub && <div style={{ fontSize: 10.5, color: C.muted, opacity: 0.85, marginTop: 1 }}>{sub}</div>}
     </div>
   );
+  const days = own && own.campaign_days > 0 ? own.campaign_days : null;
   return (
     <div style={{
-      width: 268, flex: "0 0 268px", border: `1px solid ${C.border}`, borderRadius: 10,
+      width: 318, flex: "0 0 318px", border: `1px solid ${C.border}`, borderRadius: 10,
       padding: "14px 16px", background: C.white, display: "flex", flexDirection: "column",
     }}>
       <div className="lead" style={{ fontSize: 26 }}>{fmt(ticked)}</div>
       <div className="lead-caption">
         launches ticked{which ? <> · <span title={untouched
-          ? "The basket this release is benchmarked against today. Untick a launch to change it."
-          : "Ticks have moved from the suggested basket, so this saves as a basket of its own."}>{which}</span></> : null}
+          ? "These are the launches the rule picks for this release. Untick one to change it."
+          : "Ticks have moved from the suggested launches."}>{which}</span></> : null}
       </div>
       <div className="spacer-8" />
-      <div className="legend-rows" style={{ marginTop: 0 }}>
-        {row("Units (median)", fmt(profile.units), "The benchmark this basket would set for units at close.")}
-        {row("Middle half", `${fmt(profile.units_p25)}-${fmt(profile.units_p75)}`, "The 25th to 75th percentile of the basket's units - how spread out it is.")}
-        {row("Unit price (median)", profile.price > 0 ? fmtMoney(profile.price) : "–",
-          "Median unit price of the ticked launches in sterling, from Airtable. Launches Airtable could not price are left out.")}
-        {row("Price middle half", profile.price > 0 ? `${fmtMoney(profile.price_p25)}-${fmtMoney(profile.price_p75)}` : "–",
-          "The 25th to 75th percentile of the basket's unit prices.")}
-        {row("Sessions (median)", fmtK(profile.sessions))}
-        {row("Paid share", fmtPct(profile.paid_share, 0), "Median share of sessions coming from paid.")}
-        {row("Campaign days", fmt(profile.campaign_days))}
+      <div style={{
+        display: "grid", gridTemplateColumns: "1fr 68px 68px", gap: 6,
+        fontSize: 10.5, color: C.muted, paddingBottom: 5, borderBottom: `1px solid ${C.border}`,
+      }}>
+        <span />
+        <span style={{ textAlign: "right" }}>This launch</span>
+        <span style={{ textAlign: "right", color: C.ink, fontWeight: 600 }}>Basket</span>
       </div>
+      {row("Units", placeable ? fmt(targetUnits) : null, bm(fmt(profile.units)),
+        "This launch's target against the basket's median units at close - the benchmark.",
+        has ? `median · middle half ${fmt(profile.units_p25)}-${fmt(profile.units_p75)}` : "median")}
+      {row("Unit price", unitPrice > 0 ? fmtMoney(unitPrice) : null,
+        has && profile.price > 0 ? fmtMoney(profile.price) : "–",
+        "Unit price in sterling, from Airtable. Launches Airtable could not price are left out of the median.",
+        has && profile.price > 0 ? `median · middle half ${fmtMoney(profile.price_p25)}-${fmtMoney(profile.price_p75)}` : "median")}
+      {row("Sessions", null, bm(fmtK(profile.sessions)),
+        "The basket's median sessions. This launch's own are to date, so there is nothing to compare them with yet.", "median")}
+      {row("Paid share", null, bm(fmtPct(profile.paid_share, 0)),
+        "Median share of sessions coming from paid.", "median")}
+      {row("Campaign days", days === null ? null : fmt(days), bm(fmt(profile.campaign_days)), undefined, "median")}
       {thin && (
         <div style={{
           marginTop: 12, padding: "8px 10px", borderRadius: 8, fontSize: 11.5, lineHeight: 1.5,
@@ -216,31 +221,22 @@ function BespokeRail({ profile, ticked, seed, untouched, saveName, setSaveName, 
           {fmt(ticked)} launches is thin: one more or one fewer moves the median a lot. Ten or more is steadier.
         </div>
       )}
-      <div style={{ height: 14 }} />
-      <div className="flabel" style={{ marginBottom: 6 }}>Save as ready-made</div>
-      <input className="control" value={saveName} onChange={(e) => setSaveName(e.target.value)}
-        placeholder={seed ? `${seed.name} (edited)` : "Basket name"}
-        title="Saves this selection as a basket everyone can pick, for every release." />
-      {note && <div style={{ fontSize: 11.5, color: note.bad ? C.red : C.muted, marginTop: 8, lineHeight: 1.5 }}>{note.text}</div>}
+      <div style={{ flex: 1, minHeight: 8 }} />
       <div className="btn-row" style={{ marginTop: 14 }}>
         <button className="btn primary" disabled={ticked < MIN_MEMBERS} onClick={onUse}
-          title={ticked < MIN_MEMBERS ? `Tick at least ${MIN_MEMBERS} launches.` : "Uses this selection as the benchmark basket for this release."}>
+          title={ticked < MIN_MEMBERS ? `Tick at least ${MIN_MEMBERS} launches.` : "Uses these launches as the benchmark basket for this release."}>
           Use this basket
         </button>
-        <button className="btn secondary" disabled={saving || ticked < MIN_MEMBERS || !saveName.trim()} onClick={onSave}>
-          {saving ? "Saving…" : "Save"}
-        </button>
+        <button className="btn secondary" onClick={onClose}>Discard</button>
       </div>
     </div>
   );
 }
 
 export default function BasketPicker({ releaseId, releaseName, targetUnits, unitPrice, current, onPick, onClose }) {
-  const [tab, setTab] = useState("list");
   const [ready, setReady] = useState(null);          // {suggested, baskets, saved}
   const [rows, setRows] = useState(null);            // the draw panel, newest close first
   const [error, setError] = useState(null);
-  const [pickedId, setPickedId] = useState(current && current.kind !== "bespoke" ? current.id || null : null);
   // a release is never a member of its own benchmark (§3.1), so its own name is
   // never allowed into the set, not merely unticked in the table
   /* The ticks start as the suggested basket, so the modal opens on an answer
@@ -252,13 +248,10 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
      touched. */
   const [seed, setSeed] = useState(null);       // {id, name, kind, members}
   const [ticked, setTicked] = useState(() => new Set(
-    ((current && current.kind === "bespoke" && current.members) || []).filter((m) => m !== releaseName)
+    ((current && current.members) || []).filter((m) => m !== releaseName)
   ));
   const [query, setQuery] = useState("");
   const [chip, setChip] = useState("similar");
-  const [saveName, setSaveName] = useState((current && current.name) || "");
-  const [saving, setSaving] = useState(false);
-  const [note, setNote] = useState(null);
 
   // Escape closes. Nothing else is trapped: the picker sits over a page that is
   // still readable behind it, and stealing tab focus from it would be worse
@@ -274,7 +267,6 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
     fetch(`/api/baskets${q}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
       setReady(d);
-      setPickedId((id) => id || d.suggested || null);
       // a release that already carries a bespoke basket keeps it; anything else
       // opens on the suggestion, which is what the page is using today
       const sug = [...(d.baskets || []), ...(d.saved || [])].find((b) => b.id === d.suggested);
@@ -295,8 +287,6 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
     () => [...((ready && ready.baskets) || []), ...((ready && ready.saved) || [])],
     [ready]
   );
-  const selected = baskets.find((b) => b.id === pickedId) || null;
-
   const byName = useMemo(() => {
     const m = new Map();
     for (const r of rows || []) m.set(r.release_name, r);
@@ -307,23 +297,17 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
   /* How far a launch is from this one: the larger of the two ratios, each taken
      so it reads above 1 whichever side it falls. Unknown on either axis is
      unplaceable rather than close, so it sorts to the end. */
-  const offBy = useMemo(() => {
+  const ratios = useMemo(() => {
     const ratio = (a, b) => (a > 0 && b > 0 ? Math.max(a / b, b / a) : null);
-    return (r) => {
-      const du = ratio(r.units, targetUnits);
-      const dp = ratio(r.price, unitPrice);
-      if (du === null && dp === null) return null;
-      if (du === null || dp === null) return null;
-      return Math.max(du, dp);
-    };
+    return (r) => ({ units: ratio(r.units, targetUnits), price: ratio(r.price, unitPrice) });
   }, [targetUnits, unitPrice]);
+  // one number to sort on: a launch is only as close as its worse axis, which
+  // is how the search in etl/baskets.py reads a band too
+  const offBy = useMemo(() => (r) => {
+    const { units, price } = ratios(r);
+    return units === null || price === null ? null : Math.max(units, price);
+  }, [ratios]);
   const placeable = targetUnits > 0 && unitPrice > 0;
-
-  const clusterNames = useMemo(() => {
-    const seen = [];
-    for (const r of rows || []) if (r.cluster_name && !seen.includes(r.cluster_name)) seen.push(r.cluster_name);
-    return seen;
-  }, [rows]);
 
   /* Ordered by distance whenever this release has a size and a price to measure
      against, so the launches a basket would be built from are the ones at the
@@ -341,7 +325,6 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
       if (chip === "12m") return r.window_end && new Date(r.window_end).getTime() >= cutoff;
       if (chip === "artist") return !!ownArtist && r.artist === ownArtist;
       if (chip === "ticked") return false;
-      if (chip.startsWith("c:")) return r.cluster_name === chip.slice(2);
       return true;
     });
     if (placeable) {
@@ -370,16 +353,6 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
     const next = new Set(ticked);
     if (next.has(name)) next.delete(name); else next.add(name);
     setTicked(next);
-    setNote(null);
-  };
-
-  const useReady = () => {
-    if (!selected) return;
-    onPick({
-      kind: selected.kind || "ready", id: selected.id, name: selected.name,
-      n: selected.n, members: (selected.profile || {}).members || selected.members || [],
-      profile: selected.profile || null,
-    });
   };
 
   // ticks that still match what the modal opened on are that basket, not a new
@@ -390,7 +363,7 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
     return seed.members.every((m) => ticked.has(m));
   }, [seed, ticked]);
 
-  const useBespoke = () => {
+  const usePick = () => {
     if (untouched) {
       const b = baskets.find((x) => x.id === seed.id);
       if (b) {
@@ -404,35 +377,12 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
     }
     const members = tickedRows.map((r) => r.release_name);
     onPick({
-      kind: "bespoke", name: saveName.trim() || defaultName,
+      kind: "bespoke", name: defaultName,
       n: members.length, members, profile: live,
     });
   };
 
-  /* Save as ready-made. The saved basket comes back with the ETL's own profile,
-   * so it is added to the list and selected rather than re-fetched - the answer
-   * on screen is then the one the server computed, not the browser's preview. */
-  const saveReadyMade = async () => {
-    setSaving(true); setNote(null);
-    try {
-      const res = await fetch("/api/baskets", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: saveName.trim(), members: tickedRows.map((r) => r.release_name) }),
-      });
-      const d = await res.json();
-      if (!res.ok) { setNote({ bad: true, text: d.error || `save failed (${res.status})` }); return; }
-      setReady((prev) => ({ ...(prev || {}), saved: [...((prev && prev.saved) || []), d] }));
-      setPickedId(d.id);
-      setTab("ready");
-      setNote({ text: `Saved as "${d.name}".` });
-    } catch (e) {
-      setNote({ bad: true, text: String(e) });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const loading = !ready && !error;
+  const loading = (!ready || !rows) && !error;
 
   return (
     <div
@@ -455,10 +405,6 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
             <button className="btn secondary" onClick={onClose} style={{ marginLeft: "auto", padding: "4px 10px" }}>Close</button>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 12, flexWrap: "wrap" }}>
-            <div className="seg" role="group" aria-label="Basket kind">
-              <button className={tab === "list" ? "active" : ""} onClick={() => setTab("list")}>Launches</button>
-              <button className={tab === "ready" ? "active" : ""} onClick={() => setTab("ready")}>Ready-made</button>
-            </div>
             <span style={{ fontSize: 12, color: C.muted }}>{EXPLAINER}</span>
             {placeable && (
               <span style={{ fontSize: 12, color: C.muted, marginLeft: "auto", whiteSpace: "nowrap" }}
@@ -471,36 +417,9 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
         </div>
 
         {error && <div style={{ padding: "14px 24px", fontSize: 12.5, color: C.red }}>{error}</div>}
-        {loading && <div style={{ padding: 24, fontSize: 12.5, color: C.muted }}>Loading baskets…</div>}
+        {loading && <div style={{ padding: 24, fontSize: 12.5, color: C.muted }}>Loading launches…</div>}
 
-        {tab === "ready" && ready && (
-          <>
-            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "18px 24px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
-                {baskets.map((b) => (
-                  <ReadyCard key={b.id} basket={b} checked={b.id === pickedId}
-                    suggested={b.id === ready.suggested} onChoose={(x) => setPickedId(x.id)} />
-                ))}
-              </div>
-            </div>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "14px 24px",
-              borderTop: `1px solid ${C.hairline}`, background: "#faf9f5",
-            }}>
-              <span style={{ fontSize: 12.5, color: C.muted, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {selected
-                  ? <>Selected: <b style={{ color: C.ink }}>{selected.name}</b> · benchmark {fmt((selected.profile || {}).units)} units at close</>
-                  : "Nothing selected"}
-              </span>
-              <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
-                <button className="btn primary" disabled={!selected || selected.disabled} onClick={useReady}>Use this basket</button>
-                <button className="btn secondary" onClick={onClose}>Discard</button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {tab === "list" && (
+        {!loading && !error && (
           <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 20, padding: "16px 24px 20px", overflow: "hidden" }}>
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -510,9 +429,6 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
                   <Chip active={chip === "similar"} onClick={() => setChip("similar")}>Most similar</Chip>
                 )}
                 <Chip active={chip === "all"} onClick={() => setChip("all")}>All</Chip>
-                {clusterNames.map((n) => (
-                  <Chip key={n} active={chip === `c:${n}`} onClick={() => setChip(`c:${n}`)}>{n}</Chip>
-                ))}
                 <Chip active={chip === "12m"} onClick={() => setChip("12m")}>Last 12 months</Chip>
                 {ownArtist && <Chip active={chip === "artist"} onClick={() => setChip("artist")}>Same artist</Chip>}
                 <Chip active={chip === "ticked"} onClick={() => setChip("ticked")}>Ticked</Chip>
@@ -529,8 +445,8 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
                       <TH w={78} align="right">Price</TH>
                       <TH w={76} align="right">Sessions</TH>
                       <TH w={54} align="right">Paid</TH>
-                      {placeable && <TH w={64} align="right">Off by</TH>}
-                      <TH w={148}>Basket</TH>
+                      {placeable && <TH w={74} align="right" title="This launch's units divided by theirs, or theirs by this launch's - whichever reads above 1.">Units ×</TH>}
+                      {placeable && <TH w={74} align="right" title="The same on unit price.">Price ×</TH>}
                     </tr>
                   </thead>
                   <tbody>
@@ -552,25 +468,21 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
                           <TD align="right" muted={!(r.price > 0)}>{r.price > 0 ? fmtMoney(r.price) : "–"}</TD>
                           <TD align="right">{fmtK(r.sessions)}</TD>
                           <TD align="right">{fmtPct(r.paid_share, 0)}</TD>
-                          {placeable && (
-                            <TD align="right" muted={(offBy(r) ?? Infinity) > 4}>
-                              {offBy(r) === null ? "–" : "×" + fmt(offBy(r), offBy(r) < 10 ? 1 : 0)}
-                            </TD>
-                          )}
-                          <TD muted title={r.cluster_name || ""}>{r.cluster_name || "–"}</TD>
+                          {placeable && <Mult v={ratios(r).units} />}
+                          {placeable && <Mult v={ratios(r).price} />}
                         </tr>
                       );
                     })}
                     {rows && !shown.length && (
-                      <tr><TD muted colSpan={placeable ? 10 : 9}>No launches match that filter.</TD></tr>
+                      <tr><TD muted colSpan={placeable ? 10 : 8}>No launches match that filter.</TD></tr>
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
-            <BespokeRail profile={live} ticked={tickedRows.length} seed={seed} untouched={untouched}
-              saveName={saveName} setSaveName={setSaveName}
-              onSave={saveReadyMade} saving={saving} onUse={useBespoke} note={note} />
+            <BasketRail profile={live} ticked={tickedRows.length} seed={seed} untouched={untouched}
+              targetUnits={targetUnits} unitPrice={unitPrice} own={byName.get(releaseName)}
+              placeable={placeable} onUse={usePick} onClose={onClose} />
           </div>
         )}
       </div>
