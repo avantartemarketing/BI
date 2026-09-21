@@ -59,6 +59,23 @@ process.env.SLACK_API = `${base}/api/chat.postMessage`;
 process.env.SLACK_API_BASE = `${base}/api`;
 const slack = require(path.join(ROOT, "server", "slack.js"));
 
+// ---- the picture and the message name the products the same way
+const { shortNames } = await import(path.join(ROOT, "web", "src", "modules", "sellThroughImage.mjs"));
+const NAMES = [
+  ["Don\u2019t Let It Bring You Down, It\u2019s Only Castles Burning (For Neil Young) I",
+   "Don\u2019t Let It Bring You Down, It\u2019s Only Castles Burning (For Neil Young) II"],
+  ["Brillo Box Collectable (White Portrait)", "Brillo Box Collectable (Green Landscape)", "Brillo Box Collectable (Lifesize)"],
+  ["Etching", "Lithograph"],                       // nothing shared: both left alone
+  ["Only one"],
+];
+for (const set of NAMES) {
+  check(JSON.stringify(shortNames(set)) === JSON.stringify(slack.shortNames(set)),
+    `the picture and the message shorten alike: ${JSON.stringify(shortNames(set))} vs ${JSON.stringify(slack.shortNames(set))}`);
+}
+check(shortNames(NAMES[1]).join("|") === "White Portrait|Green Landscape|Lifesize",
+  `the shared part goes: ${shortNames(NAMES[1]).join("|")}`);
+check(shortNames(NAMES[2]).join("|") === "Etching|Lithograph", "names with nothing in common are left alone");
+
 // ---- a channel id is not known until a message has been sent, then it is
 slack.setChannel("rel", "sales-updates", "tester");
 check(slack.channelIdFor("rel") === null, "no channel id before the first message");

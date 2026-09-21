@@ -1086,7 +1086,7 @@ Paid, drafts, the draw winners the entries imply and (at close) the units still 
 four tints of the page's orange, darkest to palest as the units get less certain; nothing on
 the card is hatched, and demand past a product's edition is the winners' own tint carrying on
 where the paler room behind the bar stops. `Post to Slack` draws those rows onto a canvas in
-the browser (`web/src/modules/sellThroughImage.js`) and posts the picture with the composed
+the browser (`web/src/modules/sellThroughImage.mjs`) and posts the picture with the composed
 figures as its comment (`server/slack.js`); the drawing is written twice, the figures once.
 
 **No references on this card.** The snapshot still carries the release's pace applied to each

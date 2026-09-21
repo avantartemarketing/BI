@@ -12,7 +12,8 @@
  *
  * No library. The card is rectangles and text, which the 2D context draws
  * directly, and a dependency loaded from a CDN would be blocked on a page
- * this service serves itself. */
+ * this service serves itself. `.mjs` like shared/, because node loads this
+ * file itself in tests/slack_image.mjs to hold its naming rule to Slack's. */
 
 const FONT = '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
@@ -61,6 +62,26 @@ function segment(ctx, x, y, w, h, color, first, last) {
   ctx.fillStyle = color;
   ctx.fillRect(x, y, w, h);
   ctx.restore();
+}
+
+/* Product names without the part they all share: three prints called
+ * "Don't Let It Bring You Down, It's Only Castles Burning (For Neil Young)
+ * I/II/III" become I, II and III. The card can truncate and lean on its
+ * hover; a picture in a channel cannot, and three rows reading the same
+ * cut-off sentence say nothing at all. The same rule composes the message
+ * beside it - server/slack.js shortNames, which tests/slack_image.mjs holds
+ * this to. */
+export function shortNames(names) {
+  if (names.length < 2) return names.slice();
+  let p = names[0];
+  for (const n of names) {
+    let i = 0;
+    while (i < p.length && i < n.length && p[i] === n[i]) i++;
+    p = p.slice(0, i);
+  }
+  p = p.replace(/[^\s(]*$/, "");   // back to the last space or opening bracket
+  if (p.length < 8) return names.slice();
+  return names.map((n) => n.slice(p.length).replace(/^[\s(]+|[\s)]+$/g, "") || n);
 }
 
 function ellipsis(ctx, text, maxW) {
@@ -147,14 +168,15 @@ export function drawSellThrough(canvas, model, scale = 2) {
     ctx.fillText(model.headline.sub, PAD + headW + 12, y);
   }
 
-  // the products
+  // the products, named by what tells them apart
   y += 22;
-  for (const row of model.rows || []) {
+  const names = shortNames((model.rows || []).map((r) => String(r.name || "")));
+  for (const [i, row] of (model.rows || []).entries()) {
     const top = y + (ROW_H - BAR_H) / 2;
     ctx.textAlign = "left";
     ctx.font = `400 15px ${FONT}`;
     ctx.fillStyle = INK;
-    ctx.fillText(ellipsis(ctx, row.name, NAME_W), PAD, top + BAR_H / 2 + 5);
+    ctx.fillText(ellipsis(ctx, names[i], NAME_W), PAD, top + BAR_H / 2 + 5);
 
     // track, then the room out to the sellout, then the segments
     fill(ctx, BAR_X, top, BAR_W, BAR_H, 7, TRACK);
@@ -164,9 +186,9 @@ export function drawSellThrough(canvas, model, scale = 2) {
     const inset = 5;
     const segs = (row.segs || []).filter((s) => s.v > 0);
     let at = 0;
-    segs.forEach((s, i) => {
+    segs.forEach((s, k) => {
       const x0 = px(at); at += s.v;
-      segment(ctx, BAR_X + x0, top + inset, px(at) - x0, BAR_H - inset * 2, s.color, i === 0, i === segs.length - 1 && !(row.over > 0));
+      segment(ctx, BAR_X + x0, top + inset, px(at) - x0, BAR_H - inset * 2, s.color, k === 0, k === segs.length - 1 && !(row.over > 0));
     });
     if (row.over > 0 && row.edition > 0) {
       const x0 = px(row.edition);

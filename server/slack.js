@@ -6,7 +6,7 @@
  * that release on its Target setting tab, with the card itself as a picture.
  * The message is composed from the snapshot the page is showing and the
  * picture is drawn in the browser from what that page is rendering
- * (web/src/modules/sellThroughImage.js), so what lands in Slack is what the
+ * (web/src/modules/sellThroughImage.mjs), so what lands in Slack is what the
  * card says.
  *
  * One post or two. Slack will only attach a file to a channel it can name by

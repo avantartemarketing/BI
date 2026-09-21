@@ -42,7 +42,7 @@
  * the draw feed at all it is one row, the release, as before. */
 import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, ragColor, useTip } from "../ui.jsx";
-import { sellThroughPng } from "./sellThroughImage.js";
+import { sellThroughPng } from "./sellThroughImage.mjs";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 /* One ramp of the page's orange, darkest to palest as the units get less

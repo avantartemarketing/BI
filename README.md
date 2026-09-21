@@ -477,7 +477,7 @@ Total ~126 units → 21% of 600
 ```
 
 The picture is the card's own rows, drawn on a canvas in the browser that is showing them
-(`web/src/modules/sellThroughImage.js`) - the one place with the page's typeface - from a
+(`web/src/modules/sellThroughImage.mjs`) - the one place with the page's typeface - from a
 model the card builds out of what it has just rendered, so only the drawing is written
 twice and never the figures. It carries the release, the campaign day and the rate along
 the top, which the card on the page does not need, so it stands on its own in a channel.
