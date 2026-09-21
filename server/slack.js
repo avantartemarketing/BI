@@ -3,8 +3,19 @@
  * The sell-through card carries a "Post to Slack" button; pressing it sends
  * the release's current sell-through figures - paid, unique draw entrants,
  * drafts and the estimated sell-through, per product - to the channel set for
- * that release on its Target setting tab. The message is composed from the
- * snapshot the page is showing, so what lands in Slack is what the card says.
+ * that release on its Target setting tab, with the card itself as a picture.
+ * The message is composed from the snapshot the page is showing and the
+ * picture is drawn in the browser from what that page is rendering
+ * (web/src/modules/sellThroughImage.mjs), so what lands in Slack is what the
+ * card says.
+ *
+ * One post or two. Slack will only attach a file to a channel it can name by
+ * ID, and the only call this app's scopes guarantee - chat.postMessage -
+ * hands the ID back. So the first post to a channel is the figures (which
+ * returns and stores the ID) and then the picture; from the second post on
+ * the ID is known and it is one post, the picture with the figures as its
+ * comment. A picture that cannot be uploaded at all never costs the figures:
+ * they go as text and the card says the picture did not.
  *
  * Channel per release lives in a small document of its own (SLACK_STATE_PATH,
  * default data/slack.json; put it on the persistent disk like the layout), so
@@ -23,6 +34,7 @@ const ROOT = path.resolve(__dirname, "..");
 const FALLBACK_PATH = process.env.SLACK_STATE_FALLBACK_PATH || path.join(ROOT, "data", "slack.json");
 const STATE_PATH = process.env.SLACK_STATE_PATH || FALLBACK_PATH;
 const API = process.env.SLACK_API || "https://slack.com/api/chat.postMessage";
+const SLACK_API_BASE = process.env.SLACK_API_BASE || "https://slack.com/api";
 const CHANNEL_RE = /^[A-Za-z0-9._-]{1,80}$/;
 
 // ---------------------------------------------------------------- the channel per release
@@ -82,6 +94,25 @@ function setChannel(id, channel, by) {
   writeState(doc);
   return doc[id];
 }
+/* Slack names a channel by ID when a file is attached to it. The ID comes
+ * back from chat.postMessage, so it is kept beside the channel name here;
+ * a channel typed as an ID in the first place is its own. */
+const CHANNEL_ID_RE = /^[CGD][A-Z0-9]{6,}$/;
+function channelIdFor(id) {
+  const st = stateFor(id);
+  if (!st) return null;
+  if (st.channelId && CHANNEL_ID_RE.test(st.channelId)) return st.channelId;
+  return CHANNEL_ID_RE.test(String(st.channel || "")) ? st.channel : null;
+}
+function rememberChannelId(id, channelId) {
+  if (!channelId || !CHANNEL_ID_RE.test(String(channelId))) return null;
+  const doc = readState();
+  if (!doc[id] || doc[id].channelId === channelId) return doc[id] || null;
+  doc[id] = { ...doc[id], channelId };
+  writeState(doc);
+  return doc[id];
+}
+
 function recordPost(id, by) {
   const doc = readState();
   if (!doc[id]) return null;
@@ -229,7 +260,7 @@ const HINTS = {
   invalid_auth: () => "the Slack token is not valid - replace SLACK_BOT_TOKEN",
   token_revoked: () => "the Slack token was revoked - replace SLACK_BOT_TOKEN",
   account_inactive: () => "the Slack app is no longer installed - reinstall it and replace SLACK_BOT_TOKEN",
-  missing_scope: () => "the Slack app needs the chat:write scope (and chat:write.public for channels the bot is not in)",
+  missing_scope: () => "the Slack app needs the chat:write scope (and chat:write.public for channels the bot is not in; files:write to post the card as a picture)",
   msg_too_long: () => "the update is too long for one Slack message",
   ratelimited: () => "Slack is rate limiting the app - try again in a minute",
 };
@@ -252,4 +283,51 @@ async function postMessage(channel, text) {
   return { ts: json.ts, channel: json.channel };
 }
 
-module.exports = { stateFor, setChannel, recordPost, stateWarning, composeSellThrough, shortNames, entrants, postMessage, STATE_PATH };
+/* Slack's external upload, in its three steps: ask for a URL, put the bytes
+ * there, then tell Slack the file is done and which channel it belongs to.
+ * `comment` rides with the file as the message above it, so one post carries
+ * both the picture and the figures. Needs the files:write scope. */
+async function uploadImage({ channelId, png, filename = "card.png", title, comment = null }) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  if (!token) throw new Error("Slack is not connected - set SLACK_BOT_TOKEN to the app's bot token");
+  if (!channelId) throw new Error("no Slack channel id to attach the picture to");
+  const auth = { Authorization: `Bearer ${token}` };
+  const call = async (method, body, headers) => {
+    const res = await fetch(`${SLACK_API_BASE}/${method}`, { method: "POST", headers: { ...auth, ...headers }, body });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.ok) {
+      const code = json.error || `HTTP ${res.status}`;
+      const hint = HINTS[code];
+      throw new Error(hint ? hint(channelId) : `Slack refused the picture (${code})`);
+    }
+    return json;
+  };
+
+  const ask = await call("files.getUploadURLExternal",
+    new URLSearchParams({ filename, length: String(png.length) }),
+    { "Content-Type": "application/x-www-form-urlencoded" });
+
+  // the bytes, as a one-part form; Buffer is a Uint8Array, which fetch takes
+  const boundary = `----launchbi${Date.now().toString(16)}`;
+  const head = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
+    `Content-Type: image/png\r\n\r\n`);
+  const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
+  const put = await fetch(ask.upload_url, {
+    method: "POST",
+    headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
+    body: Buffer.concat([head, png, tail]),
+  });
+  if (!put.ok) throw new Error(`Slack would not take the picture (HTTP ${put.status})`);
+
+  const done = await call("files.completeUploadExternal", JSON.stringify({
+    files: [{ id: ask.file_id, title: title || filename }],
+    channel_id: channelId,
+    ...(comment ? { initial_comment: comment } : {}),
+  }), { "Content-Type": "application/json; charset=utf-8" });
+  return { fileId: ask.file_id, files: done.files };
+}
+
+module.exports = {
+  stateFor, setChannel, recordPost, stateWarning, composeSellThrough, shortNames, entrants,
+  postMessage, uploadImage, channelIdFor, rememberChannelId, STATE_PATH,
+};

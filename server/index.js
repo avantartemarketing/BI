@@ -663,18 +663,49 @@ app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
     res.status(400).json({ error: String(e.message || e) });
   }
 }));
-app.post("/api/releases/:id/slack", route(async (req, res) => {
+/* The card to Slack. The body is either nothing (the figures alone) or the
+ * card drawn as a PNG by the browser that is showing it - the one place with
+ * a canvas and the page's own typeface. Slack can only attach a file to a
+ * channel it knows by ID, so the first post to a channel is the figures
+ * (which returns the ID, kept for next time) and then the picture, and every
+ * post after that is one: the picture with the figures as its comment. A
+ * picture that will not upload never costs the figures. */
+app.post("/api/releases/:id/slack", express.raw({ type: "image/png", limit: "8mb" }), route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   const snap = readSnapshot(id);
   if (!snap) return res.status(404).json({ error: "unknown release" });
   const st = slack.stateFor(id);
   if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
+  const png = Buffer.isBuffer(req.body) && req.body.length ? req.body : null;
   const text = slack.composeSellThrough(snap, { link: PUBLIC_URL ? `${PUBLIC_URL}/?release=${id}` : null });
-  if (req.body && req.body.dryRun) return res.json({ channel: st.channel, text });
+  if (!png && req.body && req.body.dryRun) return res.json({ channel: st.channel, text });
+  const title = `${snap.releaseName || id} - sell-through`;
+  const filename = `sell-through-${id}-${snap.asOf || new Date().toISOString().slice(0, 10)}.png`;
+  const why = (e) => String((e && e.message) || e).replace(/\s+/g, " ").slice(0, 160);
   try {
-    const out = await slack.postMessage(st.channel, text);
+    let warning = null;
+    const known = png ? slack.channelIdFor(id) : null;
+    if (known) {
+      // one post: the picture, with the figures written above it
+      try {
+        await slack.uploadImage({ channelId: known, png, filename, title, comment: text });
+      } catch (e) {
+        await slack.postMessage(st.channel, text);
+        warning = `the picture did not go up (${why(e)}), so the figures went as text`;
+      }
+    } else {
+      const out = await slack.postMessage(st.channel, text);
+      if (out.channel) slack.rememberChannelId(id, out.channel);
+      if (png) {
+        try {
+          await slack.uploadImage({ channelId: out.channel, png, filename, title });
+        } catch (e) {
+          warning = `the picture did not go up (${why(e)})`;
+        }
+      }
+    }
     const s = auth.sessionFrom(req);
-    res.json({ ok: true, channel: st.channel, ts: out.ts, slack: slack.recordPost(id, s && s.email) });
+    res.json({ ok: true, channel: st.channel, warning, slack: slack.recordPost(id, s && s.email) });
   } catch (e) {
     res.status(502).json({ error: String(e.message || e) });
   }
