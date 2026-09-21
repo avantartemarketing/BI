@@ -1039,14 +1039,19 @@ re-runs the same rule on the server.
 `etl/aggregate_events.py` (`products_file`) writes `data/app/release_products.json`: per
 release, the draws with their counts (`entrants`, `eligible`, `winners`, `sold`, `open`,
 `wonUnpaid`, `purchaseUnits`, first and last entry day) and the **entry patterns** - the
-multiset of (open draws, unpaid wins, paid wins, pieces bought, max quantity) with how many
+multiset of (open draws, unpaid wins, paid wins, pieces bought, max quantity, pre-order
+entries) with how many
 entrants share each. Patterns are enough to run the allocation anywhere and name nobody.
 
 **The maximum-quantity rule** (`etl/sellthrough.py`, mirrored in `shared/sellThrough.mjs`,
 held to the unit by `tests/test_sellthrough.py`). An entrant who entered four products with a
 maximum quantity of two is one conversion on two products, not four, and the allocator awards
 them at close for revenue: the priciest of them with a unit left. The prediction counts the
-same way before close:
+same way before close. Each entry converts at its own rate: `pre` on a pattern is the open
+entries that person made as a pre-order, whose card is already authorised, and those count at
+`preorder_conversion_rate` (0.95) against `entry_conversion_rate` (0.8) for a plain entry, so a
+product's prediction is the sum over its entries and not a head count times one rate. A product
+can set its own pre-order rate where its draw has already been run:
 
 ```
 appetite = max quantity − pieces already bought        (no cap: everything entered)

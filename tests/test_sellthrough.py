@@ -35,7 +35,8 @@ failed = 0
 py_results = []
 for c in fixtures["cases"]:
     out = sell_through_products(c["products"], c["patterns"], rate=c["rate"], edition=c["edition"],
-                                sold_total=c["soldTotal"], future_units=c["futureUnits"])
+                                sold_total=c["soldTotal"], future_units=c["futureUnits"],
+                                preorder_rate=c.get("preorderRate"))
     py_results.append(out)
     got = {
         "allocated": [p["allocated"] for p in out["products"]],

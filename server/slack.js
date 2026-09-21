@@ -194,7 +194,11 @@ function composeSellThrough(snap, { link, today } = {}) {
 
   // estimated sell-through as of today: paid + drafts + entries at the rate
   const rate = num(st.conversion) > 0 ? num(st.conversion) : 0.8;
-  lines.push(`Estimated sell-through (entries at ${Math.round(rate * 100)}% entry → order, placed by maximum quantity for revenue)`);
+  const preRate = num(st.preorderConversion) > 0 ? num(st.preorderConversion) : rate;
+  const rateWords = preRate !== rate
+    ? `entries at ${Math.round(rate * 100)}% entry → order, pre-orders at ${Math.round(preRate * 100)}%`
+    : `entries at ${Math.round(rate * 100)}% entry → order`;
+  lines.push(`Estimated sell-through (${rateWords}, placed by maximum quantity for revenue)`);
   if (products.length) {
     let total = 0;
     products.forEach((p, i) => {

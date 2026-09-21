@@ -150,6 +150,7 @@
   },
   "email_session_to_purchase": 0.01072708223,
   "eligible_entry_to_order": 0.8,
+  "preorder_entry_to_order": 0.95,
   "target_buffer": 0.75,
   "cannibalisation": 0.2,
   "paid_drop_off": 0.2,
@@ -440,7 +441,15 @@
     "Referral Artist": "Low",
     "Referral Other": "Medium"
    },
-   "paid_share_override": 0.66
+   "paid_share_override": 0.66,
+   "products": [
+    {
+     "key": "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8",
+     "name": "",
+     "edition": null,
+     "preorderRate": 0.8
+    }
+   ]
   }
  },
  "discovered": {
@@ -4696,7 +4705,7 @@
  "meta_campaigns": [
   {
    "name": "AndyWarhol_TL_26 \u00b7 Enter draw",
-   "spend": 157399.92,
+   "spend": 158898.99,
    "last": "2026-09-21"
   },
   {
@@ -4706,17 +4715,17 @@
   },
   {
    "name": "RobertLongo_LE_26 \u00b7 Enter draw",
-   "spend": 17543.07,
+   "spend": 17571.53,
    "last": "2026-09-21"
   },
   {
    "name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
-   "spend": 12502.75,
+   "spend": 12530.76,
    "last": "2026-09-21"
   },
   {
    "name": "BisaButler_TL_26 \u00b7 Sign-ups",
-   "spend": 11262.02,
+   "spend": 11322.75,
    "last": "2026-09-21"
   },
   {

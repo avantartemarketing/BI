@@ -487,6 +487,85 @@
         "surplusEntries": 70
       },
       "_why": "A is the priciest and takes flexible units while one more at 80% still fits its edition of 10 (12 units = 9.6); the other 8 of its entrants and the 30 B/C entrants then split B and C evenly by fill"
+    },
+    {
+      "name": "pre-order entries convert at their own rate, a product can set its own",
+      "rate": 0.8,
+      "preorderRate": 0.95,
+      "edition": 200,
+      "soldTotal": 0,
+      "futureUnits": 0,
+      "products": [
+        {
+          "key": "A",
+          "name": "A",
+          "edition": 100,
+          "draws": [
+            "dA"
+          ],
+          "sold": 0
+        },
+        {
+          "key": "B",
+          "name": "B",
+          "edition": 100,
+          "draws": [
+            "dB"
+          ],
+          "sold": 0,
+          "preorderRate": 0.5
+        }
+      ],
+      "patterns": [
+        {
+          "open": [
+            "dA"
+          ],
+          "won": [],
+          "sold": [],
+          "pre": [
+            "dA"
+          ],
+          "bought": 0,
+          "max": 1,
+          "n": 10
+        },
+        {
+          "open": [
+            "dB"
+          ],
+          "won": [],
+          "sold": [],
+          "pre": [
+            "dB"
+          ],
+          "bought": 0,
+          "max": 1,
+          "n": 10
+        },
+        {
+          "open": [
+            "dA"
+          ],
+          "won": [],
+          "sold": [],
+          "pre": [],
+          "bought": 0,
+          "max": 1,
+          "n": 5
+        }
+      ],
+      "expect": {
+        "allocated": [
+          15,
+          10
+        ],
+        "shown": [
+          13.5,
+          5.0
+        ]
+      },
+      "_why": "A: 10 pre-orders at 0.95 and 5 plain at 0.8 = 13.5; B's own 0.5 beats the release's 0.95, so its 10 pre-orders are 5"
     }
   ]
 }

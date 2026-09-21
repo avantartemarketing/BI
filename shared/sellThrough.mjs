@@ -72,9 +72,15 @@ function productSets(products) {
   return toSet;
 }
 
-export function allocateEntries({ products, patterns, rate = 0.8 }) {
+export function allocateEntries({ products, patterns, rate = 0.8, preorderRate = null }) {
   const P = products.length;
   const r = finite(rate) ? Number(rate) : 0.8;
+  // a pre-order entry has the card already authorised, so it converts at its
+  // own rate: the product's when one is typed, else the release's, else the
+  // plain entry rate
+  const asRate = (v, fallback) => (finite(v) && Number(v) > 0 && Number(v) <= 1 ? Number(v) : fallback);
+  const preDefault = asRate(preorderRate, r);
+  const preRates = products.map((p) => asRate(p.preorderRate, preDefault));
   // sold and drafts both take room out of the edition
   const sold = products.map((p) => (Number(p.sold) || 0) + (finite(p.drafts) ? Number(p.drafts) : 0));
   const editions = products.map((p) => (finite(p.edition) && Number(p.edition) > 0 ? Number(p.edition) : null));
@@ -93,7 +99,10 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
   // nothing: a winner who has not paid is in the drafts when an advisor has
   // an order out for them, and nowhere otherwise
   const total = (i) => fixed[i] + flexible[i];
-  const fill = (i) => (byFill ? (sold[i] + r * total(i)) / editions[i] : sold[i] + r * total(i));
+  // the orders those entries are expected to become: each at its own rate, so
+  // a product's prediction is the sum and not a count times one rate
+  const pred = new Array(P).fill(0);
+  const fill = (i) => (byFill ? (sold[i] + pred[i]) / editions[i] : sold[i] + pred[i]);
   const toSet = productSets(products);
   // list prices for the revenue rule: a product without one takes the median
   // of the others; with none at all every price is 0 and fill decides
@@ -101,8 +110,8 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
   const known = products.map(priceOf).filter((v) => v !== null).sort((a, b) => a - b);
   const medianPrice = known.length ? known[Math.floor(known.length / 2)] : 0;
   const prices = products.map((p) => (priceOf(p) !== null ? priceOf(p) : medianPrice));
-  // one more counted unit at the rate still fits the edition
-  const hasRoom = (i) => sold[i] + r * (total(i) + 1) <= editions[i] + 1e-9;
+  // one more counted unit, at the larger of the two rates, still fits
+  const hasRoom = (i) => sold[i] + pred[i] + Math.max(r, preRates[i]) <= editions[i] + 1e-9;
   // where the next flexible unit goes: revenue first, then fill
   const better = (i, best) => {
     if (byFill) {
@@ -120,6 +129,8 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
   // entrant-level bookkeeping, as counts
   let entrants = 0, flexibleEntrants = 0, surplusEntries = 0, uncapped = 0, unpaidWinners = 0;
   const subs = [];   // flexible sub-patterns: { options, need, n, order }
+  const preSets = [];   // per pattern: the products entered as a pre-order
+  const rateAt = (i, pre) => (pre.has(i) ? preRates[i] : r);
   let order = 0;
   patterns.forEach((pat, pi) => {
     const n = Number(pat.n) || 0;
@@ -127,6 +138,8 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
     entrants += n;
     const won = toSet(pat.won);
     const soldSet = toSet(pat.sold);
+    const preSet = new Set(toSet(pat.pre));
+    preSets[pi] = preSet;
     const wonSet = new Set(won);
     const open = toSet(pat.open).filter((i) => !wonSet.has(i) && !soldSet.includes(i));
     for (const i of open) openPeople[i] += n;
@@ -151,7 +164,7 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
       return;
     }
     if (appetite >= open.length) {
-      for (const i of open) fixed[i] += n;
+      for (const i of open) { fixed[i] += n; pred[i] += n * rateAt(i, preSet); }
       return;
     }
     flexibleEntrants += n;
@@ -162,7 +175,10 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
   // water-fill the flexible units
   const key = (s) => `${s.pattern}|${s.kind}|${s.need}|${s.options.join(",")}`;
   const index = new Map(subs.map((s) => [key(s), s]));
-  const bump = (i, s) => { if (s.kind === "pinned") pinned[i] += 1; else flexible[i] += 1; };
+  const bump = (i, s) => {
+    if (s.kind === "pinned") pinned[i] += 1;
+    else { flexible[i] += 1; pred[i] += rateAt(i, preSets[s.pattern] || new Set()); }
+  };
   for (;;) {
     // which products can still take a flexible unit, and from whom
     let best = -1;
@@ -199,7 +215,7 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
 
   const out = products.map((p, i) => {
     const allocated = total(i);
-    const predicted = allocated * r;
+    const predicted = pred[i];
     const room = editions[i] === null ? null : Math.max(editions[i] - sold[i], 0);
     const shown = room === null ? predicted : Math.min(predicted, room);
     return {
@@ -209,7 +225,7 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
     };
   });
   return {
-    rate: r, measure: byFill ? "fill" : "units", products: out,
+    rate: r, preorderRate: preDefault, measure: byFill ? "fill" : "units", products: out,
     entrants, flexibleEntrants, surplusEntries, uncapped, unpaidWinners,
   };
 }
@@ -221,7 +237,7 @@ export function allocateEntries({ products, patterns, rate = 0.8 }) {
  * that no product can be named for yet, and it is carried at release level
  * rather than guessed onto products. */
 export function sellThroughProducts({ products, patterns, rate = 0.8, edition = null, soldTotal = null, futureUnits = 0,
-  expectedToday = null, benchmarkToday = null, benchmarkClose = null }) {
+  expectedToday = null, benchmarkToday = null, benchmarkClose = null, preorderRate = null }) {
   const attributed = products.reduce((t, p) => t + (Number(p.sold) || 0), 0);
   const soldAll = finite(soldTotal) ? Math.max(Number(soldTotal), attributed) : attributed;
   const unattributed = Math.max(soldAll - attributed, 0);
@@ -239,7 +255,7 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
   const assumed = products.map((p, i) => (unattributed > 0
     ? unattributed * (wSum > 0 ? weights[i] / wSum : 1 / products.length) : 0));
   const withAssumed = products.map((p, i) => ({ ...p, sold: (Number(p.sold) || 0) + assumed[i] }));
-  const alloc = allocateEntries({ products: withAssumed, patterns, rate });
+  const alloc = allocateEntries({ products: withAssumed, patterns, rate, preorderRate });
   // units still to come: over the room left after what is in hand, else (no
   // editions) by each product's share of the demand so far
   const future = Math.max(Number(futureUnits) || 0, 0);
@@ -327,8 +343,11 @@ export function productsFromDraws(draws, configured, editionSize) {
     const name = (c && typeof c.name === "string" && c.name.trim()) || `Draw ${i + 1}`;
     const edition = c && finite(c.edition) && Number(c.edition) > 0 ? Math.round(Number(c.edition)) : null;
     let g = groups.get(name);
-    if (!g) { g = { key: String(d.id), name, edition, draws: [], sold: 0, entrants: 0, drafts: null }; groups.set(name, g); }
+    if (!g) { g = { key: String(d.id), name, edition, draws: [], sold: 0, entrants: 0, drafts: null, preorderRate: null }; groups.set(name, g); }
     if (g.edition === null && edition !== null) g.edition = edition;
+    // a product can convert its pre-orders at its own rate (a draw already
+    // run, say), typed on the Target setting tab; else the release's
+    if (g.preorderRate === null && c && finite(c.preorderRate)) g.preorderRate = Number(c.preorderRate);
     g.draws.push(String(d.id));
     g.sold += tagged ? (Number(d.purchaseUnits) || 0) : (Number(d.sold) || 0);
     g.entrants += Number(d.eligible) || 0;

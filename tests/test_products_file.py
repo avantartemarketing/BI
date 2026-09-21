@@ -23,15 +23,16 @@ REL = "Test Artist · Multiple · 2026 Q3"
 ONE = "Solo Artist · Single · 2026 Q3"
 
 
-def row(acct, draw, rel=REL, eligible=True, winner=False, bought=False, mq=None, day="2026-08-01", name="draw entry intent", pieces=0):
+def row(acct, draw, rel=REL, eligible=True, winner=False, bought=False, mq=None, day="2026-08-01", name="draw entry intent", pieces=0, pre=False):
     return {"simple_release_name": rel, "aa_account_id": acct, "draw_id": draw, "event_date": pd.Timestamp(day),
             "event_name": name, "draw_entry_eligible": eligible, "winner": winner, "draw_with_purchase": bought,
-            "draw_entry_multiset_preference_max_quantity": mq, "order_pieces": pieces}
+            "pre_order": pre, "draw_entry_multiset_preference_max_quantity": mq, "order_pieces": pieces}
 
 
 rows = []
-# 20 entrants who only entered A, max 1
-rows += [row(f"a{i}", "dA", mq=1) for i in range(20)]
+# 20 entrants who only entered A, max 1; 4 of them entered as a pre-order,
+# so their card is already authorised and they convert at their own rate
+rows += [row(f"a{i}", "dA", mq=1, pre=i < 4) for i in range(20)]
 # 8 entrants in all three draws wanting 1: flexible
 rows += [row(f"f{i}", d, mq=1, day="2026-08-03") for i in range(8) for d in ("dA", "dB", "dC")]
 # 3 entrants in A and B wanting 2: not flexible (appetite covers both)
@@ -74,13 +75,14 @@ check(by["dC"]["eligible"] == 8 + 3, f"dC eligible {by['dC']['eligible']}")
 check(by["dC"]["purchaseUnits"] == 1.0, f"dC purchaseUnits {by['dC']['purchaseUnits']}")
 check(r["entrants"] == 20 + 8 + 3 + 2 + 1 + 3 + 1, f"entrants {r['entrants']}")
 check(r["allocated"] is True, "allocation has started (winners exist)")
-pats = {(tuple(p["open"]), tuple(p["won"]), tuple(p["sold"]), p["bought"], p["max"]): p["n"] for p in r["patterns"]}
-check(pats.get((("dA",), (), (), 0, 1)) == 20, f"20 A-only entrants, got {pats}")
-check(pats.get((("dA", "dB", "dC"), (), (), 0, 1)) == 8, "8 flexible entrants across all three")
-check(pats.get((("dA", "dB"), (), (), 0, 2)) == 3, "3 two-product entrants wanting two")
-check(pats.get((("dB",), (), (), 0, None)) == 2, "2 uncapped entrants on B")
-check(pats.get(((), (), ("dC",), 1, 1)) == 2, "2 paid winners on C")
-check(pats.get(((), ("dC",), (), 0, 1)) == 1, "1 unpaid winner on C")
+pats = {(tuple(p["open"]), tuple(p["won"]), tuple(p["sold"]), p["bought"], p["max"], tuple(p.get("pre") or ())): p["n"] for p in r["patterns"]}
+check(pats.get((("dA",), (), (), 0, 1, ())) == 16, f"16 plain A-only entrants, got {pats}")
+check(pats.get((("dA",), (), (), 0, 1, ("dA",))) == 4, "4 of them entered A as a pre-order")
+check(pats.get((("dA", "dB", "dC"), (), (), 0, 1, ())) == 8, "8 flexible entrants across all three")
+check(pats.get((("dA", "dB"), (), (), 0, 2, ())) == 3, "3 two-product entrants wanting two")
+check(pats.get((("dB",), (), (), 0, None, ())) == 2, "2 uncapped entrants on B")
+check(pats.get(((), (), ("dC",), 1, 1, ())) == 2, "2 paid winners on C")
+check(pats.get(((), ("dC",), (), 0, 1, ())) == 1, "1 unpaid winner on C")
 check(((), (), (), 1, 1) not in pats, "an entrant with nothing in hand and nothing sold is not a pattern")
 check(sum(p["n"] for p in r["patterns"]) == 20 + 8 + 3 + 2 + 2 + 1, f"pattern entrants {sum(p['n'] for p in r['patterns'])}")
 check(out[ONE]["draws"][0]["id"] == "dS" and out[ONE]["draws"][0]["open"] == 5, "the single-draw release")

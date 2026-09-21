@@ -129,6 +129,10 @@ function retargetSnapshot(snap, inputs, bench, curves, computeTargets, sellThrou
   const rateIn = Number(inputs.entry_conversion_rate);
   const rate = Number.isFinite(rateIn) && rateIn > 0 && rateIn <= 1 ? rateIn : (bench.eligible_entry_to_order || 0.8);
   const oldRate = st.conversion || bench.eligible_entry_to_order || 0.8;
+  // a pre-order entry converts at its own rate (docs 6.3): the release's when
+  // one is typed, else the panel's
+  const preIn = Number(inputs.preorder_conversion_rate);
+  const preRate = Number.isFinite(preIn) && preIn > 0 && preIn <= 1 ? preIn : (bench.preorder_entry_to_order || 0.95);
   // entries in hand in units: stored by the ETL; on an older snapshot backed
   // out of the prediction at the rate it was made at
   const inHandUnits = Number.isFinite(st.inHandUnits) ? st.inHandUnits : (oldRate > 0 ? (st.soldPredicted ?? 0) / oldRate : 0);
@@ -140,6 +144,7 @@ function retargetSnapshot(snap, inputs, bench, curves, computeTargets, sellThrou
     edition: total,
     sold,
     conversion: rate,
+    preorderConversion: preRate,
     soldPredicted: r1(Math.min(soldPredicted, inventoryLeft)),
     futureEntriesPredicted: r1(Math.min(future, Math.max(inventoryLeft - soldPredicted, 0))),
   };
@@ -151,7 +156,7 @@ function retargetSnapshot(snap, inputs, bench, curves, computeTargets, sellThrou
     // product survive a save the same way the draws and patterns do
     const { products, source: soldSource } = sellThrough.attachOrders(fromDraws.products, st.ordersByProduct, st.drawProducts, fromDraws.soldSource);
     const pp = sellThrough.sellThroughProducts({
-      products, patterns: st.patterns, rate, edition: total, soldTotal: sold, futureUnits: future,
+      products, patterns: st.patterns, rate, preorderRate: preRate, edition: total, soldTotal: sold, futureUnits: future,
       expectedToday: heroExp, benchmarkToday: null, benchmarkClose: null,
     });
     for (const k of ["products", "attributedSold", "unattributedSold", "allocation", "measure", "editionSum", "editionMismatch"]) next[k] = pp[k];

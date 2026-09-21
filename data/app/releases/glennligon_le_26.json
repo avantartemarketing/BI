@@ -160,15 +160,15 @@
    "sense_check_breached": false
   },
   "launch_value": 450000.0,
-  "units_per_buyer": 1.1249130977251718,
+  "units_per_buyer": 1.1233275402179312,
   "units_per_buyer_source": "products",
-  "buyers": 133.34363365786552,
+  "buyers": 133.53184590391083,
   "buyers_by_group": {
-   "aa_email": 66.9582478091728,
-   "aa_social": 4.193797217600961,
+   "aa_email": 67.05275822459885,
+   "aa_social": 4.199716690260664,
    "referral_artist": 0.0,
-   "search_direct_other": 45.111155026495425,
-   "paid": 17.080433604596355
+   "search_direct_other": 45.174828646122585,
+   "paid": 17.104542342928752
   },
   "organic_sessions_draw": 10145.266902972533,
   "total_sessions": 23701.006711409398,
@@ -341,58 +341,58 @@
     {
      "date": "2026-08-16",
      "actual": 27.76,
-     "plan": 9.73,
+     "plan": 9.64,
      "proj": null,
-     "bm": 9.67
+     "bm": 9.57
     },
     {
      "date": "2026-08-17",
      "actual": 35.74,
-     "plan": 27.43,
+     "plan": 27.16,
      "proj": null,
-     "bm": 27.25
+     "bm": 26.98
     },
     {
      "date": "2026-08-18",
      "actual": 39.74,
-     "plan": 29.38,
+     "plan": 29.28,
      "proj": null,
-     "bm": 29.18
+     "bm": 29.08
     },
     {
      "date": "2026-08-19",
      "actual": 39.74,
-     "plan": 30.95,
+     "plan": 30.86,
      "proj": null,
-     "bm": 30.74
+     "bm": 30.66
     },
     {
      "date": "2026-08-20",
      "actual": 39.74,
-     "plan": 32.07,
+     "plan": 31.79,
      "proj": null,
-     "bm": 31.85
+     "bm": 31.58
     },
     {
      "date": "2026-08-21",
      "actual": 57.87,
-     "plan": 32.18,
+     "plan": 31.88,
      "proj": null,
-     "bm": 31.96
+     "bm": 31.67
     },
     {
      "date": "2026-08-22",
      "actual": 57.87,
-     "plan": 33.96,
+     "plan": 33.73,
      "proj": null,
-     "bm": 33.73
+     "bm": 33.51
     },
     {
      "date": "2026-08-23",
      "actual": 57.87,
-     "plan": 39.05,
+     "plan": 39.01,
      "proj": null,
-     "bm": 38.79
+     "bm": 38.75
     },
     {
      "date": "2026-08-24",
@@ -842,37 +842,37 @@
     {
      "date": "2026-09-05",
      "actual": 2.06,
-     "plan": 2.04,
+     "plan": 2.05,
      "proj": null,
-     "bm": 2.02
+     "bm": 2.04
     },
     {
      "date": "2026-09-06",
      "actual": 2.06,
-     "plan": 2.1,
+     "plan": 2.15,
      "proj": null,
-     "bm": 2.08
+     "bm": 2.13
     },
     {
      "date": "2026-09-07",
      "actual": 2.06,
-     "plan": 2.19,
+     "plan": 2.24,
      "proj": null,
-     "bm": 2.17
+     "bm": 2.23
     },
     {
      "date": "2026-09-08",
      "actual": 2.06,
-     "plan": 2.31,
+     "plan": 2.36,
      "proj": null,
-     "bm": 2.3
+     "bm": 2.34
     },
     {
      "date": "2026-09-09",
      "actual": 2.06,
-     "plan": 2.51,
+     "plan": 2.52,
      "proj": null,
-     "bm": 2.49
+     "bm": 2.5
     },
     {
      "date": "2026-09-10",
@@ -1432,65 +1432,65 @@
     {
      "date": "2026-08-16",
      "actual": 1.03,
-     "plan": 2.28,
+     "plan": 2.27,
      "proj": null,
-     "bm": 2.27
+     "bm": 2.25
     },
     {
      "date": "2026-08-17",
      "actual": 2.22,
-     "plan": 6.43,
+     "plan": 6.39,
      "proj": null,
-     "bm": 6.39
+     "bm": 6.35
     },
     {
      "date": "2026-08-18",
      "actual": 5.08,
-     "plan": 7.54,
+     "plan": 7.5,
      "proj": null,
-     "bm": 7.49
+     "bm": 7.45
     },
     {
      "date": "2026-08-19",
      "actual": 5.08,
-     "plan": 8.2,
+     "plan": 8.16,
      "proj": null,
-     "bm": 8.14
+     "bm": 8.1
     },
     {
      "date": "2026-08-20",
      "actual": 7.14,
-     "plan": 8.29,
+     "plan": 8.25,
      "proj": null,
-     "bm": 8.23
+     "bm": 8.2
     },
     {
      "date": "2026-08-21",
      "actual": 15.67,
-     "plan": 8.58,
+     "plan": 8.54,
      "proj": null,
-     "bm": 8.53
+     "bm": 8.48
     },
     {
      "date": "2026-08-22",
      "actual": 15.67,
-     "plan": 9.58,
+     "plan": 9.53,
      "proj": null,
-     "bm": 9.52
+     "bm": 9.47
     },
     {
      "date": "2026-08-23",
      "actual": 15.67,
-     "plan": 11.84,
+     "plan": 11.78,
      "proj": null,
-     "bm": 11.76
+     "bm": 11.71
     },
     {
      "date": "2026-08-24",
      "actual": 16.82,
-     "plan": 15.99,
+     "plan": 15.96,
      "proj": null,
-     "bm": 15.88
+     "bm": 15.85
     },
     {
      "date": "2026-08-25",
@@ -1807,7 +1807,7 @@
     {
      "date": "2026-08-18",
      "actual": 0.0,
-     "plan": 0.49,
+     "plan": 0.5,
      "proj": null,
      "bm": 0.49
     },
@@ -1816,7 +1816,7 @@
      "actual": 0.0,
      "plan": 0.97,
      "proj": null,
-     "bm": 0.96
+     "bm": 0.97
     },
     {
      "date": "2026-08-20",
@@ -1870,65 +1870,65 @@
     {
      "date": "2026-08-27",
      "actual": 8.89,
-     "plan": 11.9,
+     "plan": 11.88,
      "proj": null,
-     "bm": 11.82
+     "bm": 11.8
     },
     {
      "date": "2026-08-28",
      "actual": 12.25,
-     "plan": 12.63,
+     "plan": 12.59,
      "proj": null,
-     "bm": 12.55
+     "bm": 12.51
     },
     {
      "date": "2026-08-29",
      "actual": 12.25,
-     "plan": 12.88,
+     "plan": 12.84,
      "proj": null,
-     "bm": 12.79
+     "bm": 12.75
     },
     {
      "date": "2026-08-30",
      "actual": 12.25,
-     "plan": 12.98,
+     "plan": 12.94,
      "proj": null,
-     "bm": 12.89
+     "bm": 12.85
     },
     {
      "date": "2026-08-31",
      "actual": 12.25,
-     "plan": 13.01,
+     "plan": 12.97,
      "proj": null,
-     "bm": 12.92
+     "bm": 12.88
     },
     {
      "date": "2026-09-01",
      "actual": 12.25,
-     "plan": 13.58,
+     "plan": 13.54,
      "proj": null,
-     "bm": 13.49
+     "bm": 13.45
     },
     {
      "date": "2026-09-02",
      "actual": 12.25,
-     "plan": 14.16,
+     "plan": 14.12,
      "proj": null,
-     "bm": 14.06
+     "bm": 14.03
     },
     {
      "date": "2026-09-03",
      "actual": 12.25,
-     "plan": 14.73,
+     "plan": 14.7,
      "proj": null,
-     "bm": 14.63
+     "bm": 14.6
     },
     {
      "date": "2026-09-04",
      "actual": 12.25,
-     "plan": 15.07,
+     "plan": 15.06,
      "proj": null,
-     "bm": 14.97
+     "bm": 14.96
     },
     {
      "date": "2026-09-05",
@@ -1982,35 +1982,35 @@
     {
      "date": "2026-09-12",
      "actual": 12.25,
-     "plan": 17.07,
+     "plan": 17.06,
      "proj": null,
-     "bm": 16.96
+     "bm": 16.95
     },
     {
      "date": "2026-09-13",
      "actual": 12.25,
-     "plan": 17.63,
+     "plan": 17.61,
      "proj": null,
-     "bm": 17.51
+     "bm": 17.5
     },
     {
      "date": "2026-09-14",
      "actual": 12.25,
-     "plan": 18.11,
+     "plan": 18.1,
      "proj": null,
-     "bm": 17.99
+     "bm": 17.98
     },
     {
      "date": "2026-09-15",
      "actual": 12.25,
      "plan": 18.52,
      "proj": null,
-     "bm": 18.4
+     "bm": 18.39
     },
     {
      "date": "2026-09-16",
      "actual": 12.25,
-     "plan": 18.89,
+     "plan": 18.88,
      "proj": null,
      "bm": 18.76
     },
@@ -2028,33 +2028,33 @@
  ],
  "funnelByGroup": {
   "aa_email": {
-   "sessions_actual": 4931.0,
+   "sessions_actual": 4929.0,
    "sessions_expected": 6852.3,
-   "conv_actual": 0.01994118839991888,
+   "conv_actual": 0.01994927977277338,
    "conv_expected": 0.010992178143200441,
    "contrib_traffic": -21.1,
    "contrib_conversion": 44.1,
-   "bps_actual": 0.014955891299939161,
-   "bps_expected": 0.009771579836192775,
-   "contrib_buyers": 28.8,
-   "contrib_per_buyer": 15.4,
+   "bps_actual": 0.014961959829580035,
+   "bps_expected": 0.009785372253107855,
+   "contrib_buyers": 28.7,
+   "contrib_per_buyer": 15.5,
    "sessions_benchmark": 6806.7,
    "conv_benchmark": 0.010992178143200441,
    "conv_benchmark_today": 0.010992178143200441,
    "contrib_traffic_bm": -20.6,
    "contrib_conversion_bm": 44.1,
-   "contrib_buyers_bm": 28.8,
-   "contrib_per_buyer_bm": 15.4
+   "contrib_buyers_bm": 28.7,
+   "contrib_per_buyer_bm": 15.5
   },
   "aa_social": {
-   "sessions_actual": 502.0,
+   "sessions_actual": 501.0,
    "sessions_expected": 711.7,
-   "conv_actual": 0.004103585657370518,
+   "conv_actual": 0.004111776447105788,
    "conv_expected": 0.006628498283893386,
    "contrib_traffic": -1.4,
    "contrib_conversion": -1.3,
-   "bps_actual": 0.003077689243027889,
-   "bps_expected": 0.005892453645795134,
+   "bps_actual": 0.0030838323353293414,
+   "bps_expected": 0.005900770742794594,
    "contrib_buyers": -1.6,
    "contrib_per_buyer": 0.3,
    "sessions_benchmark": 707.0,
@@ -2085,22 +2085,22 @@
    "contrib_per_buyer_bm": 0.2
   },
   "search_direct_other": {
-   "sessions_actual": 1125.0,
+   "sessions_actual": 1128.0,
    "sessions_expected": 2145.2,
-   "conv_actual": 0.04933333333333333,
+   "conv_actual": 0.04920212765957447,
    "conv_expected": 0.023655290535105365,
    "contrib_traffic": -24.1,
-   "contrib_conversion": 28.9,
-   "bps_actual": 0.037000000000000005,
-   "bps_expected": 0.021028549301223092,
-   "contrib_buyers": 20.2,
+   "contrib_conversion": 28.8,
+   "bps_actual": 0.036901595744680854,
+   "bps_expected": 0.02105823073697287,
+   "contrib_buyers": 20.1,
    "contrib_per_buyer": 8.7,
    "sessions_benchmark": 2130.9,
    "conv_benchmark": 0.02365529053510536,
    "conv_benchmark_today": 0.02365529053510536,
-   "contrib_traffic_bm": -23.8,
-   "contrib_conversion_bm": 28.9,
-   "contrib_buyers_bm": 20.2,
+   "contrib_traffic_bm": -23.7,
+   "contrib_conversion_bm": 28.8,
+   "contrib_buyers_bm": 20.1,
    "contrib_per_buyer_bm": 8.7
   },
   "paid": {
@@ -2111,7 +2111,7 @@
    "contrib_traffic": -14.9,
    "contrib_conversion": 9.0,
    "bps_actual": 0.003257254646234105,
-   "bps_expected": 0.0012600148605659853,
+   "bps_expected": 0.0012617933498755391,
    "contrib_buyers": 6.9,
    "contrib_per_buyer": 2.1,
    "sessions_benchmark": 13465.4,
@@ -2469,7 +2469,7 @@
   "benchmarkBudget": 3378.21
  },
  "unitsPerBuyer": {
-  "plan": 1.1249,
+  "plan": 1.1233,
   "actual": 1.3333
  },
  "email": {
@@ -2518,6 +2518,7 @@
   "edition": 150,
   "sold": 152.0,
   "conversion": 0.8,
+  "preorderConversion": 0.95,
   "inHandUnits": 23.0,
   "soldPredicted": 0.0,
   "futureEntriesPredicted": 0.0,
@@ -2548,8 +2549,8 @@
     "pinned": 5,
     "fixed": 13,
     "flexible": 0,
-    "predicted": 10.4,
-    "shown": 10.4,
+    "predicted": 11.1,
+    "shown": 11.1,
     "room": null,
     "oversubscribed": 0.0,
     "futurePredicted": 0.0,
@@ -2580,10 +2581,10 @@
     "pinned": 0,
     "fixed": 8,
     "flexible": 2,
-    "predicted": 8.0,
+    "predicted": 8.6,
     "shown": 0.0,
     "room": 0.0,
-    "oversubscribed": 8.0,
+    "oversubscribed": 8.6,
     "futurePredicted": 0.0,
     "pct": 1.0,
     "pctClose": 1.0,
@@ -2643,6 +2644,7 @@
     ],
     "bought": 1,
     "max": 1,
+    "pre": [],
     "n": 29
    },
    {
@@ -2653,17 +2655,8 @@
     ],
     "bought": 1,
     "max": 1,
+    "pre": [],
     "n": 22
-   },
-   {
-    "open": [
-     "draw_3Hau12dgNH8f4QDESaxqqsU2jtF"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "n": 12
    },
    {
     "open": [],
@@ -2674,17 +2667,19 @@
     ],
     "bought": 2,
     "max": 2,
+    "pre": [],
     "n": 9
    },
    {
     "open": [
-     "draw_3HauANGhqsm2Zvx1Gd786gVd05Y"
+     "draw_3Hau12dgNH8f4QDESaxqqsU2jtF"
     ],
     "won": [],
     "sold": [],
     "bought": 0,
     "max": 1,
-    "n": 7
+    "pre": [],
+    "n": 8
    },
    {
     "open": [],
@@ -2694,7 +2689,19 @@
     ],
     "bought": 2,
     "max": 1,
+    "pre": [],
     "n": 7
+   },
+   {
+    "open": [
+     "draw_3HauANGhqsm2Zvx1Gd786gVd05Y"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 5
    },
    {
     "open": [],
@@ -2704,6 +2711,7 @@
     "sold": [],
     "bought": 0,
     "max": 1,
+    "pre": [],
     "n": 5
    },
    {
@@ -2715,7 +2723,21 @@
     ],
     "bought": 2,
     "max": 1,
+    "pre": [],
     "n": 5
+   },
+   {
+    "open": [
+     "draw_3Hau12dgNH8f4QDESaxqqsU2jtF"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3Hau12dgNH8f4QDESaxqqsU2jtF"
+    ],
+    "n": 4
    },
    {
     "open": [],
@@ -2725,17 +2747,20 @@
     ],
     "bought": 2,
     "max": 2,
+    "pre": [],
     "n": 3
    },
    {
     "open": [
-     "draw_3Hau12dgNH8f4QDESaxqqsU2jtF",
      "draw_3HauANGhqsm2Zvx1Gd786gVd05Y"
     ],
     "won": [],
     "sold": [],
     "bought": 0,
     "max": 1,
+    "pre": [
+     "draw_3HauANGhqsm2Zvx1Gd786gVd05Y"
+    ],
     "n": 2
    },
    {
@@ -2746,6 +2771,7 @@
     ],
     "bought": 2,
     "max": 1,
+    "pre": [],
     "n": 2
    },
    {
@@ -2756,7 +2782,38 @@
     "won": [],
     "sold": [],
     "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3Hau12dgNH8f4QDESaxqqsU2jtF",
+     "draw_3HauANGhqsm2Zvx1Gd786gVd05Y"
+    ],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3Hau12dgNH8f4QDESaxqqsU2jtF",
+     "draw_3HauANGhqsm2Zvx1Gd786gVd05Y"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3Hau12dgNH8f4QDESaxqqsU2jtF",
+     "draw_3HauANGhqsm2Zvx1Gd786gVd05Y"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
     "max": 2,
+    "pre": [
+     "draw_3Hau12dgNH8f4QDESaxqqsU2jtF",
+     "draw_3HauANGhqsm2Zvx1Gd786gVd05Y"
+    ],
     "n": 1
    }
   ],
@@ -2999,7 +3056,7 @@
    "paid": 0.002629
   },
   "paidBudget": 3378.21,
-  "unitsPerBuyer": 1.1249,
-  "buyers": 132.5
+  "unitsPerBuyer": 1.1233,
+  "buyers": 132.6
  }
 }

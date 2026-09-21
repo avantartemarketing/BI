@@ -1162,6 +1162,20 @@ def entry_rate(release: dict) -> float:
     return v if 0 < v <= 1 else BENCH["eligible_entry_to_order"]
 
 
+def preorder_rate(release: dict) -> float:
+    """The rate a PRE-ORDER entry converts at: the card is already
+    authorised, so it is charged at the draw rather than invoiced, and the
+    panel puts it at 0.95 against 0.8 for a plain entry. The release's own
+    (Target setting) wins when one is typed, and a product can override it
+    again where its draw has already been run."""
+    v = release.get("preorder_conversion_rate")
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return BENCH.get("preorder_entry_to_order", 0.95)
+    return v if 0 < v <= 1 else BENCH.get("preorder_entry_to_order", 0.95)
+
+
 def edition_total(release: dict):
     """The physical edition: `edition_total` when the target (`edition_size`)
     is only part of it (Warhol: a 2,440 target on a 6,100 edition), else the
@@ -1189,12 +1203,13 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     (soldPredicted, futureEntriesPredicted, pct) are the per-product
     calculation summed, so the card's rows and its headline are one sum."""
     rate = entry_rate(release)
+    pre_rate = preorder_rate(release)
     edition = edition_total(release)   # the whole edition: room and shares read against it
     sold_predicted = unconverted * rate
     # inHandUnits is the entries in hand before the rate, so a save can re-run
     # the prediction at another rate without the funnel (server/retarget.js)
     st: dict = {"edition": edition, "sold": round(units_sold, 0), "conversion": rate,
-                "inHandUnits": round(unconverted, 1)}
+                "preorderConversion": pre_rate, "inHandUnits": round(unconverted, 1)}
     if edition:
         st["soldPredicted"] = round(min(sold_predicted, inventory_left), 1)
         st["futureEntriesPredicted"] = round(min(future_entries, max(inventory_left - sold_predicted, 0)), 1)
@@ -1221,7 +1236,7 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
         products, source = attach_orders(products, of["products"], of["draws"], source)
     pp = sell_through_products(products, feed.get("patterns") or [], rate=rate, edition=edition,
                                sold_total=units_sold, future_units=future_entries, expected_today=expected_today,
-                               benchmark_today=bm_today, benchmark_close=bm_close)
+                               benchmark_today=bm_today, benchmark_close=bm_close, preorder_rate=pre_rate)
     st.update({k: pp[k] for k in ("products", "attributedSold", "unattributedSold", "allocation", "measure",
                                   "editionSum", "editionMismatch")})
     st["soldSource"] = source

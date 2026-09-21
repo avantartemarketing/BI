@@ -55,8 +55,12 @@ the order an advisor sends them after a failed payment is in the drafts for
 all. The card says how many entrants moved and where they went.
 
 The 0.8 is the entry → order rate (80% of eligible entries historically become
-orders) and can be set per release on the Target setting tab, alongside each
-product's name and edition size. Sales the draw cannot name a product for
+orders). An entry made as a PRE-ORDER converts higher, at 0.95: the card is
+already authorised, so it is charged at the draw rather than invoiced
+afterwards. Both rates can be set per release on the Target setting tab,
+alongside each product's name and edition size, and a product can set its own
+pre-order rate where its draw has already been run and those cards have
+already been charged. Sales the draw cannot name a product for
 (private room, pre-orders) are shown at release level rather than guessed onto
 a product.
 
@@ -82,7 +86,8 @@ projections immediately - no data rebuild needed.
 | Channel quality grid (N/A / Low / Medium / High) | Per-channel quartile picks; N/A removes a channel |
 | Meta campaign | Which ad campaign the paid actuals are read from |
 | Products | One row per draw the event feed found: the product's name and its edition size (draws given the same name are one product) |
-| Entry → order rate | What share of entries in hand become orders on the sell-through card; empty means the panel's 80% |
+| Entry → order rate | What share of plain entries in hand become orders on the sell-through card; empty means the panel's 80% |
+| Pre-order → order rate | What share of pre-order entries become orders, their card being already authorised; empty means the panel's 95%. A product can override it in the products table |
 
 ## 3. Benchmarks: everything is a quartile
 

@@ -164,9 +164,12 @@ export default function SellThrough({ snap, horizon = "today" }) {
   } : null;
 
   const rateText = `${Math.round(rate * 100)}%`;
+  const preRate = finite(st.preorderConversion) ? st.preorderConversion : null;
+  const preRateText = preRate === null ? null : `${Math.round(preRate * 100)}%`;
+  const twoRates = preRateText !== null && preRateText !== rateText;
   const methodTip = {
     head: "How the card counts",
-    body: `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw winners (estimate) are the people still in the draw at the ${rateText} rate at which entries become orders. Winners who have not paid are not counted: the order sent after a failed payment is in Drafts for 72 hours, and after that it is out. ` +
+    body: `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw winners (estimate) are the people still in the draw, counted at ${rateText}${twoRates ? `, or at ${preRateText} where they entered as a pre-order and their card is already authorised` : ""}. Winners who have not paid are not counted: the order sent after a failed payment is in Drafts for 72 hours, and after that it is out. ` +
       "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them." +
       (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };
@@ -184,7 +187,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
         { label: "Entered more products than they want", value: fmt(alloc.flexibleEntrants) },
         ...moved.map((p) => ({ label: "Counted on " + p.name, value: "+" + fmt(p.flexible) })),
       ] : []),
-      { label: `Draw winners at ${rateText}`, value: fmt(inHandAll) },
+      { label: twoRates ? `Draw winners at ${rateText}, pre-orders ${preRateText}` : `Draw winners at ${rateText}`, value: fmt(inHandAll) },
     ],
     body: alloc && alloc.flexibleEntrants > 0
       ? "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them."
@@ -257,7 +260,9 @@ export default function SellThrough({ snap, horizon = "today" }) {
       right={(
         <>
           {slackButton}
-          <span className="hint-dotted" {...t.props(methodTip, 300)}>at {rateText} entry → order</span>
+          <span className="hint-dotted" {...t.props(methodTip, 300)}>
+            at {rateText} entry → order{twoRates ? `, ${preRateText} pre-order` : ""}
+          </span>
           {allEditions && rows.length > 1 && seg(
             [["pct", "%", "Every product on its own edition, so the rows read as sell-through"],
              ["units", "Units", "One scale for every product, so the rows read as size"]],
@@ -384,9 +389,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
         {rows.some((r) => (r.oversubscribed ?? 0) > 0) && legendChip({
           key: "over", sw: <span style={{ ...swatch(HATCH), background: HATCH }} />, label: "Beyond the edition", value: null,
         })}
-        <span style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>
-          {allEditions && rows.length > 1 ? (byEdition ? "each bar is its edition" : "one scale, sellout at the paler end") : edition ? "sellout at the paler end" : "units"}
-        </span>
       </div>
     </Card>
   );

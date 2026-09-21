@@ -445,7 +445,7 @@ Draw = 30 unique entrants (2 won and not yet paid: not counted, their orders are
 • I: 24 open + 1 to pay ...
 Drafts = 5
 • I: 2 · II: 1 · III: 2
-Estimated sell-through (entries at 80% entry → order, placed by maximum quantity for revenue)
+Estimated sell-through (entries at 80% entry → order, pre-orders at 95%, placed by maximum quantity for revenue)
 • I: ~62 units → 31% ...
 Total ~126 units → 21% of 600
 ```
@@ -499,7 +499,8 @@ it is a card like the others and moves with them.
 **Sell-through by product** (docs §6.3) is one row per product: units paid (rust), draft
 orders an advisor raised that are not yet paid (rust, striped; the draw's own pre-authorisation
 drafts are the entries, not drafts), the draw entries in hand counted on the product at the
-entry → order rate (orange), at close the units still to come, against the product's edition,
+entry → order rate, or at the pre-order rate where the entrant's card is already authorised
+(orange), at close the units still to come, against the product's edition,
 with demand the product has no room for hatched past its sellout. It is the one card with no
 target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
 orders per product come from the Shopify order lines in BigQuery (`data/orders_by_product.csv`),

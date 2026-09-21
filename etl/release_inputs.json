@@ -243,7 +243,15 @@
     "Referral Artist": "Low",
     "Referral Other": "Medium"
    },
-   "paid_share_override": 0.66
+   "paid_share_override": 0.66,
+   "products": [
+    {
+     "key": "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8",
+     "name": "",
+     "edition": null,
+     "preorderRate": 0.8
+    }
+   ]
   }
  ]
 }

@@ -203,6 +203,7 @@ function defaultsFor(id, disc) {
     campaign_name: disc.campaign_name || null, marketing_lead: null, budget_file: null,
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
     edition_size: null, edition_total: null, unit_price: null, artist_profit: null, aa_group_profit: null,
+    preorder_conversion_rate: null,
     artist_profit_share: 0.5, framing_available: true, paid_share_override: null,
     paid_channel_size: "Medium", reference_point: "Medium", paid_conv_quality: "Medium", cpp_pick: "Median",
     channel_quality_overrides: {},
@@ -348,13 +349,30 @@ app.post("/api/inputs/:id", route(async (req, res) => {
           if (!Number.isFinite(v) || v < 0) errors.push(`the edition of ${name || key || "a product"} must be a non-negative number`);
           else edition = Math.round(v);
         }
-        list.push({ key, name, edition });
+        // a product can convert its pre-orders at its own rate, where its
+        // draw has already been run; empty means the release's
+        let preorderRate = null;
+        if (p.preorderRate !== undefined && p.preorderRate !== null && p.preorderRate !== "") {
+          const v = Number(p.preorderRate);
+          if (!Number.isFinite(v) || v <= 0 || v > 1) errors.push(`the pre-order rate of ${name || key || "a product"} must be a fraction between 0 and 1, or empty`);
+          else preorderRate = v;
+        }
+        list.push({ key, name, edition, preorderRate });
       }
       next.products = list;
     }
   }
   // the entry -> order rate the sell-through prediction converts entries in
   // hand at; empty means the panel's 0.8
+  // the rate a pre-order entry converts at; empty means the panel's 0.95
+  if (body.preorder_conversion_rate !== undefined) {
+    if (body.preorder_conversion_rate === null || body.preorder_conversion_rate === "") next.preorder_conversion_rate = null;
+    else {
+      const v = Number(body.preorder_conversion_rate);
+      if (!Number.isFinite(v) || v <= 0 || v > 1) errors.push("preorder_conversion_rate must be a fraction between 0 and 1, or empty");
+      else next.preorder_conversion_rate = v;
+    }
+  }
   if (body.entry_conversion_rate !== undefined) {
     if (body.entry_conversion_rate === null || body.entry_conversion_rate === "") next.entry_conversion_rate = null;
     else {

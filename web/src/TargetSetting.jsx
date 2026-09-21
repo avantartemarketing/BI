@@ -105,10 +105,12 @@ function Products({ inp, setInp, draws, editionSize }) {
   const rows = feed.map((d, i) => {
     let t = byKey.get(String(d.id)) || null;
     if (!t && nextLegacy < legacy.length) t = legacy[nextLegacy++];
-    return { id: String(d.id), draw: d, name: t && t.name ? t.name : "", edition: t && t.edition !== null && t.edition !== undefined ? t.edition : null, i };
+    return { id: String(d.id), draw: d, name: t && t.name ? t.name : "",
+      edition: t && t.edition !== null && t.edition !== undefined ? t.edition : null,
+      preorderRate: t && t.preorderRate !== null && t.preorderRate !== undefined ? t.preorderRate : null, i };
   });
   const update = (id, patch) => {
-    const next = rows.map((r) => ({ key: r.id, name: r.name, edition: r.edition, ...(r.id === id ? patch : {}) }));
+    const next = rows.map((r) => ({ key: r.id, name: r.name, edition: r.edition, preorderRate: r.preorderRate, ...(r.id === id ? patch : {}) }));
     setInp({ ...inp, products: next });
   };
   const names = new Map();
@@ -117,6 +119,9 @@ function Products({ inp, setInp, draws, editionSize }) {
   const allSet = rows.length > 0 && rows.every((r) => Number(r.edition) > 0);
   const rate = inp.entry_conversion_rate;
   const ratePct = rate === null || rate === undefined || rate === "" ? "" : Math.round(Number(rate) * 100);
+  const preRate = inp.preorder_conversion_rate;
+  const preRatePct = preRate === null || preRate === undefined || preRate === "" ? "" : Math.round(Number(preRate) * 100);
+  const asPct = (v) => (v === null || v === undefined || v === "" ? "" : Math.round(Number(v) * 100));
   return (
     <Card dot="#8a7a52" title="Products">
       <div className="spacer-16" />
@@ -127,9 +132,10 @@ function Products({ inp, setInp, draws, editionSize }) {
         </div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 110px 190px", gap: "8px 16px", alignItems: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 110px 120px 190px", gap: "8px 16px", alignItems: "center" }}>
             <div className="flabel" style={{ marginBottom: 0 }}>Product</div>
             <div className="flabel" style={{ marginBottom: 0 }}>Edition (units)</div>
+            <div className="flabel" style={{ marginBottom: 0 }} title="What share of this product's pre-order entries become orders. Empty means the release's rate below. Set it where the draw has already been run and the cards have already been charged.">Pre-order rate (%)</div>
             <div className="flabel" style={{ marginBottom: 0 }} title="Eligible entrants in the draw, and when the first entry came">Draw</div>
             {rows.map((r) => {
               const dup = names.get((r.name || `Draw ${r.i + 1}`).trim()) > 1;
@@ -140,6 +146,9 @@ function Products({ inp, setInp, draws, editionSize }) {
                     title={dup ? "Two draws with the same name are one product" : undefined} />
                   <input className="control num" value={r.edition ?? ""} placeholder="–"
                     onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); update(r.id, { edition: raw === "" ? null : parseInt(raw, 10) }); }} />
+                  <input className="control num" value={asPct(r.preorderRate)} placeholder={preRatePct === "" ? "95" : String(preRatePct)}
+                    title="Empty means the release's pre-order rate"
+                    onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); update(r.id, { preorderRate: raw === "" ? null : clamp(parseInt(raw, 10), 1, 100) / 100 }); }} />
                   <div style={{ fontSize: 11.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
                     title={`${fmt(r.draw.eligible)} eligible of ${fmt(r.draw.entrants)} entrants · ${fmt(r.draw.winners)} winners · entries ${r.draw.first} to ${r.draw.last}`}>
                     {fmt(r.draw.eligible)} eligible{r.draw.winners > 0 ? ` · ${fmt(r.draw.winners)} won` : ""} · from {shortDay(r.draw.first)}
@@ -165,6 +174,10 @@ function Products({ inp, setInp, draws, editionSize }) {
         <Field label="Entry → order rate (%)" tip="What share of eligible entries in hand become orders - the sell-through prediction counts entries in hand at this rate. Empty means the panel's 80%.">
           <input className="control num" value={ratePct} placeholder="80"
             onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); setInp({ ...inp, entry_conversion_rate: raw === "" ? null : clamp(parseInt(raw, 10), 1, 100) / 100 }); }} />
+        </Field>
+        <Field label="Pre-order → order rate (%)" tip="What share of PRE-ORDER entries become orders. Their card is already authorised, so they are charged at the draw rather than invoiced and convert higher than a plain entry. Empty means the panel's 95%; a product can override it in the table above.">
+          <input className="control num" value={preRatePct} placeholder="95"
+            onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); setInp({ ...inp, preorder_conversion_rate: raw === "" ? null : clamp(parseInt(raw, 10), 1, 100) / 100 }); }} />
         </Field>
       </div>
     </Card>
