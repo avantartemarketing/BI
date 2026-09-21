@@ -503,11 +503,22 @@ a figure. The percentage row is why the division cannot be applied everywhere â€
 the budget and the launch value and cancels, so dividing again would print a benchmark share
 1/K of the real one.
 
-The **basket picker** is a modal with two tabs: `Ready-made` (radio cards with n, median
-units and the middle half, median sessions, paid share, campaign days, examples, and a
-`Suggested` chip on the matched one) and `Bespoke` (search + filters, a tickable table of
-candidates, and a live rail showing the basket's medians, a thin-basket warning under 10,
-and `Save as ready-made`).
+The **basket picker** is a modal with two tabs. It opens on `Launches`: the candidate
+table, ordered by how far each launch sits from this one, with the suggested basket
+already ticked, so the basket is seen and edited rather than accepted by name. Distance
+(`Off by`) is the larger of the units ratio and the price ratio, each taken above 1
+whichever side it falls - the measure `similar_members` widens, so the order on screen is
+the order the rule considered them in. `Most similar` is that measure within 4x on both,
+never fewer than twelve; `All` is the panel, and search, cluster, last-12-months and
+same-artist filters narrow it. A ticked member is never filtered out of the list. The rail
+shows the basket's medians, a thin-basket warning under 10, `Save as ready-made`, and which
+basket the ticks currently are - the suggestion by name until an edit, then "edited". Ticks
+still matching what the modal opened on pick that basket, with its id and the ETL's own
+profile, rather than a bespoke copy of it.
+
+`Ready-made` is the second tab: radio cards with n, median units and the middle half,
+median sessions, paid share, campaign days, examples, and a `Suggested` chip on the matched
+one. It swaps the whole basket at once rather than editing one.
 
 ## 9. Shared web helpers (`web/src/ui.jsx`)
 

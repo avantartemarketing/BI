@@ -216,7 +216,12 @@ words.
 2. The rule: size and price first, shape out of the default, floor 12. One
    function and its tests; two live releases move.
 3. The basket list with ticks on the Target setting tab, on the existing
-   bespoke machinery.
+   bespoke machinery. **Done.** The picker opens on the launches, ordered by
+   distance from this one on units and price, with the suggested basket
+   ticked. Step 2 is not done, so the suggestion is still the old rule's -
+   the list shows what that rule picked, which is the point: Warhol's six
+   members and their 2.5x to 3.9x spread are now on screen rather than
+   behind a name.
 4. `paid_allowed`: the organic median, the paid group removed from the
    targets, the page wording. Touches the target maths in `etl/build.py`
    and `shared/targetModel.mjs`, so it needs the parity tests extended.

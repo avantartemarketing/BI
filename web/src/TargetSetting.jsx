@@ -868,6 +868,7 @@ export default function TargetSetting({ snap, onSaved }) {
 
       {picking && (
         <BasketPicker releaseId={snap.id} releaseName={snap.releaseName} current={spec}
+          targetUnits={Number(inp.edition_size) || 0} unitPrice={Number(inp.unit_price) || 0}
           onPick={onPick} onClose={() => setPicking(false)} />
       )}
     </div>
