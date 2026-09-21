@@ -155,7 +155,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const rateText = `${Math.round(rate * 100)}%`;
   const methodTip = {
     head: "How the card counts",
-    body: `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw conversions are the people still in the draw at the ${rateText} rate at which entries become orders. Winners who have not paid are not counted: their claim is in Drafts when an order is out for them, and nowhere otherwise. ` +
+    body: `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw winners (estimate) are the people still in the draw at the ${rateText} rate at which entries become orders. Winners who have not paid are not counted: their claim is in Drafts when an order is out for them, and nowhere otherwise. ` +
       "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them." +
       (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };
@@ -165,7 +165,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const alloc = st.allocation || null;
   const moved = fromFeed ? st.products.filter((p) => (p.flexible ?? 0) > 0) : [];
   const inHandTip = {
-    head: "Draw conversions",
+    head: "Draw winners (estimate)",
     rows: [
       ...(alloc ? [{ label: "People still in the draw", value: fmt(Math.max((alloc.entrants || 0) - (alloc.unpaidWinners || 0), 0)) }] : []),
       ...(alloc && alloc.unpaidWinners > 0 ? [{ label: "Won, not yet paid (not counted)", value: fmt(alloc.unpaidWinners) }] : []),
@@ -173,7 +173,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
         { label: "Entered more products than they want", value: fmt(alloc.flexibleEntrants) },
         ...moved.map((p) => ({ label: "Counted on " + p.name, value: "+" + fmt(p.flexible) })),
       ] : []),
-      { label: `Conversions at ${rateText}`, value: fmt(inHandAll) },
+      { label: `Draw winners at ${rateText}`, value: fmt(inHandAll) },
     ],
     body: alloc && alloc.flexibleEntrants > 0
       ? "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them."
@@ -281,7 +281,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
               ],
               body: "Draft orders raised but not yet paid, including the orders advisors have out for winners. They take room like a sale.",
             })}
-            {leftRow("inhand", <span style={swatch(C.orange)} />, "Draw conversions", fmt(inHandAll), inHandTip)}
+            {leftRow("inhand", <span style={swatch(C.orange)} />, "Draw winners (estimate)", fmt(inHandAll), inHandTip)}
             {close && leftRow("future", <span style={swatch(C.orangeLight)} />, "Still to come", fmt(futureAll), {
               head: "Still to come", rows: [{ label: "Units", value: fmt(futureAll) }],
               body: "The projection's further units, spread over the products with room left.",
@@ -304,36 +304,13 @@ export default function SellThrough({ snap, horizon = "today" }) {
           <div style={{ flex: 1, minHeight: 0, overflowY: many ? "auto" : "visible", display: "flex", flexDirection: "column", justifyContent: many ? "flex-start" : "center", gap: many ? 2 : 0 }}>
             {rows.map((r) => {
               const pctRow = close ? r.pctClose : r.pct;
-              const roomLeft = r.room === null || r.room === undefined ? null : Math.max(r.room - (r.shown ?? 0), 0);
+              const rowTip = { head: r.name, rows: [
+                { label: "Paid", value: fmt((r.sold ?? 0) + (r.soldAssumed ?? 0)) },
+                { label: "Drafts", value: fmt(r.drafts ?? 0) },
+                { label: "Draw winners (estimate)", value: fmt(r.shown ?? 0) },
+              ] };
               const tips = {
-                sold: { head: r.name, rows: [
-                  { label: "Paid", value: fmt((r.sold ?? 0) + (r.soldAssumed ?? 0)) },
-                  ...((r.soldAssumed ?? 0) > 0 ? [
-                    { label: "Of which named by product", value: fmt(r.sold ?? 0) },
-                    { label: "Of which estimated", value: fmt(r.soldAssumed ?? 0) },
-                  ] : []),
-                ], body: (r.soldAssumed ?? 0) > 0
-                  ? `Private-room and pre-order sales the feed cannot name a product for, split across the products by ${allEditions ? "edition size" : "entrants"}: this product's share, an estimate until the sales feed carries the product.`
-                  : undefined },
-                drafts: { head: r.name, rows: [
-                  { label: "Drafts", value: fmt(r.drafts ?? 0) },
-                  ...((r.winnerDrafts ?? 0) > 0 ? [{ label: "Of which winners' claims", value: fmt(r.winnerDrafts) }] : []),
-                ], body: "Draft orders raised but not yet paid, including the orders advisors have out for winners. They take room like a sale." },
-                inHand: (() => {
-                  const people = r.inHand ? (r.inHand.open ?? 0) : null;
-                  const elsewhere = people !== null && finite(r.allocated) ? Math.max(people - r.allocated, 0) : 0;
-                  const notes = [];
-                  if (elsewhere > 0) notes.push(`${fmt(elsewhere)} of them counted on another product they entered.`);
-                  if ((r.flexible ?? 0) > 0) notes.push(`${fmt(r.flexible)} counted here rather than on another product they entered.`);
-                  return { head: r.name, rows: [
-                    { label: "Paid", value: fmt((r.sold ?? 0) + (r.soldAssumed ?? 0)) },
-                    ...(finite(r.drafts) ? [{ label: "Drafts", value: fmt(r.drafts) }] : []),
-                    ...(people !== null ? [{ label: "People still in the draw", value: fmt(people) }] : []),
-                    ...(r.inHand && (r.inHand.won ?? 0) > 0 ? [{ label: "Won, not yet paid (not counted)", value: fmt(r.inHand.won) }] : []),
-                    { label: `Draw conversions at ${rateText}`, value: fmt(r.shown ?? 0) },
-                    ...(roomLeft !== null ? [{ label: "Left to sell", value: fmt(roomLeft) }] : []),
-                  ], body: notes.length ? notes.join(" ") : undefined };
-                })(),
+                sold: rowTip, drafts: rowTip, inHand: rowTip,
                 future: { head: r.name, rows: [{ label: "Still to come", value: fmt(r.futurePredicted ?? 0) }] },
                 over: { head: r.name, rows: [{ label: "Demand beyond the edition", value: "+" + fmt(r.oversubscribed ?? 0) }],
                   body: "Entries in hand at the rate that this product has no room for." },
@@ -374,7 +351,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
       <div style={{ flex: "0 0 auto", paddingTop: 10, display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px 14px", fontSize: 11, color: C.muted }}>
         <span style={legendItem}><span style={swatch(C.rust)} />Paid</span>
         {rows.some((r) => finite(r.drafts) && r.drafts > 0) && <span style={legendItem}><span style={{ ...swatch(DRAFTS), background: DRAFTS }} />Drafts</span>}
-        <span style={legendItem}><span style={swatch(C.orange)} />Draw conversions</span>
+        <span style={legendItem}><span style={swatch(C.orange)} />Draw winners (estimate)</span>
         {close && <span style={legendItem}><span style={swatch(C.orangeLight)} />Still to come</span>}
         {rows.some((r) => (r.oversubscribed ?? 0) > 0) && (
           <span style={legendItem}><span style={{ ...swatch(HATCH), background: HATCH }} />Beyond the edition</span>
