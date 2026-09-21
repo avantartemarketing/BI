@@ -3019,7 +3019,7 @@
    "kind": "ready",
    "name": "Similar size and shape",
    "n": 8,
-   "thin": true,
+   "thin": false,
    "suggestedId": "similar_size"
   },
   "units": 134.0,

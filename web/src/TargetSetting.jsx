@@ -23,7 +23,7 @@
  * Benchmark and Stretch columns are dashes, and every other part of this tab
  * behaves exactly as it did before the benchmark existed. */
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtMoney, fmtPct, fmtDay } from "./ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
 import { computeTargets } from "../../shared/targetModel.mjs";
 
@@ -85,97 +85,30 @@ function Slider({ options, value, onChange, big, tip }) {
   );
 }
 
-/* The products of the release (docs §6.3): one row per draw the event feed
- * found, with the name and the edition typed against it. Two draws given the
- * same name are one product (a re-run, a second wave). The sell-through card
- * reads sell-through per product only once every product has an edition, and
- * the editions should add up to the release's. The entry → order rate the
- * card converts entries in hand at sits here too, because it is the other
- * half of the same prediction. */
-const shortDay = (iso) => (iso && /^\d{4}-\d{2}-\d{2}/.test(iso) ? fmtDay(new Date(iso + "T00:00:00Z")) : iso || "");
-
-function Products({ inp, setInp, draws, editionSize }) {
-  const feed = draws && Array.isArray(draws.draws) ? draws.draws : [];
-  const typed = Array.isArray(inp.products) ? inp.products : [];
-  const byKey = new Map(typed.filter((p) => p && p.key).map((p) => [String(p.key), p]));
-  const legacy = typed.filter((p) => p && !p.key);
-  // the rows: every draw the feed found, in first-entry order, with what was
-  // typed for it (an older keyless list is matched to the unclaimed draws in order)
-  let nextLegacy = 0;
-  const rows = feed.map((d, i) => {
-    let t = byKey.get(String(d.id)) || null;
-    if (!t && nextLegacy < legacy.length) t = legacy[nextLegacy++];
-    return { id: String(d.id), draw: d, name: t && t.name ? t.name : "",
-      edition: t && t.edition !== null && t.edition !== undefined ? t.edition : null,
-      preorderRate: t && t.preorderRate !== null && t.preorderRate !== undefined ? t.preorderRate : null, i };
-  });
-  const update = (id, patch) => {
-    const next = rows.map((r) => ({ key: r.id, name: r.name, edition: r.edition, preorderRate: r.preorderRate, ...(r.id === id ? patch : {}) }));
-    setInp({ ...inp, products: next });
-  };
-  const names = new Map();
-  rows.forEach((r) => { const n = (r.name || `Draw ${r.i + 1}`).trim(); names.set(n, (names.get(n) || 0) + 1); });
-  const sum = rows.reduce((t, r) => t + (Number(r.edition) || 0), 0);
-  const allSet = rows.length > 0 && rows.every((r) => Number(r.edition) > 0);
-  const rate = inp.entry_conversion_rate;
-  const ratePct = rate === null || rate === undefined || rate === "" ? "" : Math.round(Number(rate) * 100);
-  const preRate = inp.preorder_conversion_rate;
-  const preRatePct = preRate === null || preRate === undefined || preRate === "" ? "" : Math.round(Number(preRate) * 100);
+/* The two rates the sell-through prediction converts entries in hand at: a
+ * plain draw entry, and a pre-order entry whose card is already authorised.
+ *
+ * This used to be a table as well, a row per draw the feed found, with a name,
+ * an edition and a pre-order rate typed against each. The names were never
+ * typed - every release showed "Draw 1" to "Draw 7" - the editions were left
+ * blank because the feed carries them, and the whole grid was three columns of
+ * nothing above the two fields that were actually used. The per-product
+ * overrides still exist in the release's inputs and the ETL still reads them,
+ * so a product that already has one keeps it; there is simply no longer a
+ * table in the way of the rates. */
+function Products({ inp, setInp }) {
   const asPct = (v) => (v === null || v === undefined || v === "" ? "" : Math.round(Number(v) * 100));
+  const ratePct = asPct(inp.entry_conversion_rate);
+  const preRatePct = asPct(inp.preorder_conversion_rate);
   return (
-    <Card dot="#8a7a52" title="Products">
-      <div className="spacer-16" />
-      {rows.length === 0 ? (
-        <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.6 }}>
-          No draws found for this release in the event feed yet. Products appear here once the feed has entries,
-          and the sell-through card shows the release as one row until then.
-        </div>
-      ) : (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 110px 120px 190px", gap: "8px 16px", alignItems: "center" }}>
-            <div className="flabel" style={{ marginBottom: 0 }}>Product</div>
-            <div className="flabel" style={{ marginBottom: 0 }}>Edition (units)</div>
-            <div className="flabel" style={{ marginBottom: 0 }} title="What share of this product's pre-order entries become orders. Empty means the release's rate below. Set it where the draw has already been run and the cards have already been charged.">Pre-order rate (%)</div>
-            <div className="flabel" style={{ marginBottom: 0 }} title="Eligible entrants in the draw, and when the first entry came">Draw</div>
-            {rows.map((r) => {
-              const dup = names.get((r.name || `Draw ${r.i + 1}`).trim()) > 1;
-              return (
-                <React.Fragment key={r.id}>
-                  <input className="control" value={r.name} placeholder={`Draw ${r.i + 1}`}
-                    onChange={(e) => update(r.id, { name: e.target.value })}
-                    title={dup ? "Two draws with the same name are one product" : undefined} />
-                  <input className="control num" value={r.edition ?? ""} placeholder="–"
-                    onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); update(r.id, { edition: raw === "" ? null : parseInt(raw, 10) }); }} />
-                  <input className="control num" value={asPct(r.preorderRate)} placeholder={preRatePct === "" ? "95" : String(preRatePct)}
-                    title="Empty means the release's pre-order rate"
-                    onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); update(r.id, { preorderRate: raw === "" ? null : clamp(parseInt(raw, 10), 1, 100) / 100 }); }} />
-                  <div style={{ fontSize: 11.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                    title={`${fmt(r.draw.eligible)} eligible of ${fmt(r.draw.entrants)} entrants · ${fmt(r.draw.winners)} winners · entries ${r.draw.first} to ${r.draw.last}`}>
-                    {fmt(r.draw.eligible)} eligible{r.draw.winners > 0 ? ` · ${fmt(r.draw.winners)} won` : ""} · from {shortDay(r.draw.first)}
-                  </div>
-                </React.Fragment>
-              );
-            })}
-          </div>
-          <div style={{ fontSize: 11.5, marginTop: 10, lineHeight: 1.5, color: allSet && editionSize > 0 && sum !== editionSize ? C.amber : C.muted }}>
-            {allSet
-              ? (editionSize > 0 && sum !== editionSize
-                ? `Editions add up to ${fmt(sum)}; the release's edition size is ${fmt(editionSize)}.`
-                : `Editions add up to ${fmt(sum)}.`)
-              : rows.length > 1
-                ? "Give every product an edition to read sell-through per product; until then the card compares them in units."
-                : "A single product takes the release's edition size."}
-            {" "}Two draws given the same name are one product.
-          </div>
-        </>
-      )}
+    <Card dot="#8a7a52" title="Conversion of entries in hand">
       <div className="spacer-16" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
         <Field label="Entry → order rate (%)" tip="What share of eligible entries in hand become orders - the sell-through prediction counts entries in hand at this rate. Empty means the panel's 80%.">
           <input className="control num" value={ratePct} placeholder="80"
             onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); setInp({ ...inp, entry_conversion_rate: raw === "" ? null : clamp(parseInt(raw, 10), 1, 100) / 100 }); }} />
         </Field>
-        <Field label="Pre-order → order rate (%)" tip="What share of PRE-ORDER entries become orders. Their card is already authorised, so they are charged at the draw rather than invoiced and convert higher than a plain entry. Empty means the panel's 95%; a product can override it in the table above.">
+        <Field label="Pre-order → order rate (%)" tip="What share of PRE-ORDER entries become orders. Their card is already authorised, so they are charged at the draw rather than invoiced and convert higher than a plain entry. Empty means the panel's 95%.">
           <input className="control num" value={preRatePct} placeholder="95"
             onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); setInp({ ...inp, preorder_conversion_rate: raw === "" ? null : clamp(parseInt(raw, 10), 1, 100) / 100 }); }} />
         </Field>
@@ -698,7 +631,7 @@ export default function TargetSetting({ snap, onSaved }) {
           </div>
         </Card>
 
-        <Products inp={inp} setInp={setInp} draws={meta.draws} editionSize={Number(inp.edition_size) || 0} />
+        <Products inp={inp} setInp={setInp} />
 
         <Card dot={GROUP_DOTS.funnel} title="Benchmark basket">
           <div className="spacer-16" />
