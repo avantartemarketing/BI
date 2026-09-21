@@ -13,6 +13,7 @@
  * typically does" stops looking identical to "behind the basket as well" - the first
  * is a target worth holding, the second is a launch in trouble. */
 import React, { useEffect, useMemo, useState } from "react";
+import { initial as watchInitial, step as watchStep } from "../../shared/refreshWatch.mjs";
 import { C, fmtSigned, fmtPct, fmtDay, TipProvider, useTip } from "./ui.jsx";
 import HeroBar from "./modules/HeroBar.jsx";
 import LaunchStrip from "./modules/LaunchStrip.jsx";
@@ -312,11 +313,14 @@ function useRefreshStatus() {
  * which, and what the refresh is doing about it. */
 function StaleBanner({ asOf, st, onRefreshed }) {
   const ageDays = asOf ? Math.floor((Date.now() - new Date(asOf + "T00:00:00Z").getTime()) / 86400000) - 1 : 0;
-  const prevAt = React.useRef(st && st.at);
+  /* "this page reloads when it lands", below, has to hold for the first refresh
+     after a deploy as well as for the hourly ones - the rule and why it is not
+     the timestamp are in shared/refreshWatch.mjs. */
+  const watch = React.useRef(watchInitial());
   useEffect(() => {
-    // a refresh just landed: reload the page's data
-    if (st && st.at && prevAt.current && st.at !== prevAt.current && !st.running) onRefreshed();
-    prevAt.current = st && st.at;
+    const r = watchStep(watch.current, st);
+    watch.current = r.state;
+    if (r.reload) onRefreshed();
   }, [st && st.at, st && st.running]);
   if (ageDays < 2) return null;
   const through = new Date(asOf + "T00:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
