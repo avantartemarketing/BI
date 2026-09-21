@@ -218,7 +218,8 @@ words.
 3. The basket list with ticks on the Target setting tab, on the existing
    bespoke machinery. **Done.** The picker opens on the launches, ordered by
    distance from this one on units and price, with the suggested basket
-   ticked. Step 2 is not done, so the suggestion is still the old rule's -
+   ticked, and the ready-made gallery is gone: the list is the only way a
+   basket is chosen. Step 2 is not done, so the suggestion is still the old rule's -
    the list shows what that rule picked, which is the point: Warhol's six
    members and their 2.5x to 3.9x spread are now on screen rather than
    behind a name.

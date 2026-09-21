@@ -503,22 +503,32 @@ a figure. The percentage row is why the division cannot be applied everywhere โ€
 the budget and the launch value and cancels, so dividing again would print a benchmark share
 1/K of the real one.
 
-The **basket picker** is a modal with two tabs. It opens on `Launches`: the candidate
-table, ordered by how far each launch sits from this one, with the suggested basket
-already ticked, so the basket is seen and edited rather than accepted by name. Distance
-(`Off by`) is the larger of the units ratio and the price ratio, each taken above 1
-whichever side it falls - the measure `similar_members` widens, so the order on screen is
-the order the rule considered them in. `Most similar` is that measure within 4x on both,
-never fewer than twelve; `All` is the panel, and search, cluster, last-12-months and
-same-artist filters narrow it. A ticked member is never filtered out of the list. The rail
-shows the basket's medians, a thin-basket warning under 10, `Save as ready-made`, and which
-basket the ticks currently are - the suggestion by name until an edit, then "edited". Ticks
-still matching what the modal opened on pick that basket, with its id and the ETL's own
-profile, rather than a bespoke copy of it.
+The **basket picker** is one list, with nothing else in it. It opens on the candidate
+table, ordered by how far each launch sits from this one, with the suggested basket already
+ticked, so the basket is seen and edited rather than accepted by name. `Units x` and
+`Price x` are the two distances, each taken above 1 whichever side it falls; they sort on
+the worse of the two, which is how `similar_members` reads a band, so the order on screen
+is the order the rule considered them in. Two columns rather than one: a launch matched on
+size and four times the price is not close, and a single figure said so without saying
+which axis. `Most similar` is the worse of the two within 4x, never fewer than twelve;
+`All` is the panel, and search, last-12-months, same-artist and ticked filters narrow it. A
+ticked member is never filtered out of any view.
 
-`Ready-made` is the second tab: radio cards with n, median units and the middle half,
-median sessions, paid share, campaign days, examples, and a `Suggested` chip on the matched
-one. It swaps the whole basket at once rather than editing one.
+The rail puts this launch beside the basket, a row per statistic - units, unit price,
+sessions, paid share, campaign days - so whether the basket resembles the launch is read
+across. A launch's own units and price are the target and price being set on the tab;
+sessions and paid share are to date and would be read against closed launches' totals, so
+those rows are the basket's alone. Under them, a thin-basket warning at fewer than 10 and
+which basket the ticks are: "as suggested" until an edit, then "edited". Ticks still
+matching what the modal opened on pick that basket, with its id and the ETL's own profile,
+rather than a bespoke copy of it.
+
+There is no gallery of named baskets to choose between. The clusters, the last twelve
+months, the artist's own earlier launches and saved baskets were a second way to answer the
+same question, and a basket chosen by name is what this modal exists to stop; the rule that
+picks the suggestion (ยง3.1) is untouched, and what the gallery offered is now the order the
+list is already in. `POST /api/baskets` and the `saved` kind remain in the API and in
+`etl/baskets.py`; nothing in the UI reaches them.
 
 ## 9. Shared web helpers (`web/src/ui.jsx`)
 
