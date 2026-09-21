@@ -13,6 +13,7 @@ data/targets.log.jsonl
 data/decisions.log.jsonl
 data/layout.json
 data/artist_posts.csv
+data/notion_posts.csv
 data/app/derived/
 data/inputs.saved.json
 data/email_content.csv

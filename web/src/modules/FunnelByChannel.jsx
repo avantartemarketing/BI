@@ -602,9 +602,14 @@ function rungModel(snap) {
     {
       key: "aa_social", name: "AA Meta", short: "Meta",
       rungs: [
+        // the Notion log records a row per post and no format, so there is no
+        // post/story split to show when it is the source; the Emplifi export
+        // carries one, and says so
         { label: "Posts", kind: "vol", unit: "count",
           v: (social.posts ?? 0) + (social.stories ?? 0), plan: null, bm: null,
-          note: `${fmt(social.posts ?? 0)} posts + ${fmt(social.stories ?? 0)} stories to date` },
+          note: social.postsSource === "notion"
+            ? `${fmt(social.posts ?? 0)} posts to date, from the Notion log`
+            : `${fmt(social.posts ?? 0)} posts + ${fmt(social.stories ?? 0)} stories to date` },
         sess("aa_social"),
         conv("aa_social"),
       ],
