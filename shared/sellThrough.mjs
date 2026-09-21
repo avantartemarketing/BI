@@ -268,6 +268,7 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
       entrants: p.entrants ?? null, inHand: a.inHand,
       sold, soldAssumed: r1(assumed[i]), drafts: finite(p.drafts) ? Number(p.drafts) : null,
       winnerDrafts: finite(p.winnerDrafts) ? Number(p.winnerDrafts) : null,
+      winnerDraftsLapsed: finite(p.winnerDraftsLapsed) ? Number(p.winnerDraftsLapsed) : null,
       allocated: a.allocated, pinned: a.pinned, fixed: a.fixed, flexible: a.flexible,
       predicted: r1(a.predicted), shown: r1(a.shown), room: a.room, oversubscribed: r1(a.oversubscribed),
       futurePredicted: r1(futureShare[i]),
@@ -381,6 +382,7 @@ export function attachOrders(products, orders, drawProducts, source) {
     }
     q.drafts = capDrafts(q.drafts, q.edition, q.sold);
     q.winnerDrafts = rows.reduce((n, r) => n + (Number(r.winnerDrafts) || 0), 0);
+    q.winnerDraftsLapsed = rows.reduce((n, r) => n + (Number(r.winnerDraftsLapsed) || 0), 0);
     const prices = rows.filter((r) => finite(r.listPrice)).map((r) => Number(r.listPrice));
     if (prices.length) q.listPrice = Math.max(...prices);
     q.titles = titles;

@@ -270,6 +270,7 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
             "entrants": p.get("entrants"), "inHand": a["inHand"],
             "sold": s, "soldAssumed": _r1(assumed[i]), "drafts": float(p["drafts"]) if _finite(p.get("drafts")) else None,
             "winnerDrafts": float(p["winnerDrafts"]) if _finite(p.get("winnerDrafts")) else None,
+            "winnerDraftsLapsed": float(p["winnerDraftsLapsed"]) if _finite(p.get("winnerDraftsLapsed")) else None,
             "allocated": a["allocated"], "pinned": a["pinned"], "fixed": a["fixed"], "flexible": a["flexible"],
             "predicted": _r1(a["predicted"]), "shown": _r1(a["shown"]), "room": a["room"],
             "oversubscribed": _r1(a["oversubscribed"]),
@@ -364,6 +365,7 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
                 q["edition"] = int(round(sum(eds)))
         q["drafts"] = _cap_drafts(q["drafts"], q.get("edition"), q["sold"])
         q["winnerDrafts"] = float(sum(float(r.get("winnerDrafts") or 0) for r in rows))
+        q["winnerDraftsLapsed"] = float(sum(float(r.get("winnerDraftsLapsed") or 0) for r in rows))
         prices = [float(r["listPrice"]) for r in rows if _finite(r.get("listPrice"))]
         if prices:
             q["listPrice"] = max(prices)

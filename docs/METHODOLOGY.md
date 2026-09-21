@@ -50,9 +50,9 @@ left, so the prediction counts the same way before close - each such entrant
 is counted on their maximum quantity of products, placed one unit at a time
 on the priciest of the products they entered that still has room, then on
 whichever has the most room left. Winners who have not paid are not counted:
-the order an advisor has out for them is in the drafts, and without one they
-are nowhere until they pay. The card says how many entrants moved and where
-they went.
+the order an advisor sends them after a failed payment is in the drafts for
+72 hours, and unpaid after that it is out, as is a winner with no order at
+all. The card says how many entrants moved and where they went.
 
 The 0.8 is the entry → order rate (80% of eligible entries historically become
 orders) and can be set per release on the Target setting tab, alongside each

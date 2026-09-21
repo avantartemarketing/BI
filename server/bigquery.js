@@ -386,7 +386,7 @@ const spendSql = () =>
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
-  "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
+  "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts", "units_winner_drafts_lapsed", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
 const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
 
 const ordersSql = () =>
@@ -394,6 +394,7 @@ const ordersSql = () =>
   "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
   "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room,\n" +
   "    shopify_product_variant_price, shopify_order_created_date_CET AS order_date, DATE(shopify_draft_order_created_at) AS draft_date,\n" +
+  "    TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), shopify_draft_order_created_at, HOUR) AS draft_age_hours,\n" +
   "    COALESCE(shopify_order_facilitator, '') AS facilitator,\n" +
   "    REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$') AS draw_sku,\n" +
   // refund_id is carried on every line of an order that has a refund, so it
@@ -440,9 +441,15 @@ const ordersSql = () =>
   "typed AS (\n" +
   "  SELECT l.*,\n" +
   "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AS entry_draft,\n" +
-  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NOT NULL AS winner_draft,\n" +
+  // a winner's draft (the order an advisor sends after a failed payment)
+  // counts as a draft for 72 hours; unpaid after that it lapses and is out
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NOT NULL\n" +
+  "      AND NOT (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72) AS winner_draft,\n" +
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NOT NULL\n" +
+  "      AND (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72) AS winner_draft_lapsed,\n" +
   "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NULL AND oe.customer_id IS NOT NULL AS entrant_draft,\n" +
-  "    l.cancelled_order = 0 AND ((l.order_source_type = 'Draft' AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND (uw.customer_id IS NOT NULL OR oe.customer_id IS NULL))\n" +
+  "    l.cancelled_order = 0 AND ((l.order_source_type = 'Draft' AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku))\n" +
+  "        AND ((uw.customer_id IS NOT NULL AND NOT (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72)) OR (uw.customer_id IS NULL AND oe.customer_id IS NULL)))\n" +
   "      OR (l.order_source_type = 'Order' AND l.order_financial_status = 'pending')) AS awaiting\n" +
   "  FROM lines l LEFT JOIN app_facilitators a ON a.facilitator = l.facilitator\n" +
   "  LEFT JOIN open_entrants oe ON oe.release = l.release AND oe.customer_id = l.customer_id\n" +
@@ -458,6 +465,7 @@ const ordersSql = () =>
   "  SUM(IF(l.entrant_draft, l.quantity, 0)) AS units_entrant_drafts,\n" +
   "  SUM(IF(l.entry_draft, l.quantity, 0)) AS units_entry_drafts,\n" +
   "  SUM(IF(l.winner_draft, l.quantity, 0)) AS units_winner_drafts,\n" +
+  "  SUM(IF(l.winner_draft_lapsed, l.quantity, 0)) AS units_winner_drafts_lapsed,\n" +
   "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.order_originated_from_drafts = 1, l.quantity, 0)) AS units_from_drafts,\n" +
   "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.is_private_room = 1, l.quantity, 0)) AS units_private_room,\n" +
   "  APPROX_QUANTILES(IF(l.shopify_product_variant_price > 0, CAST(l.shopify_product_variant_price AS FLOAT64), NULL), 2)[OFFSET(1)] AS list_price_eur,\n" +
