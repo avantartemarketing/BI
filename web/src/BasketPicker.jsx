@@ -52,7 +52,10 @@ import { C, fmt, fmtK, fmtMoney, fmtPct } from "./ui.jsx";
 // both mirror etl/baskets.py, which is the only place they are enforced: below
 // MIN a basket cannot be used at all, below THIN it is usable but thin (§3.2)
 const MIN_MEMBERS = 3;
-const THIN_MEMBERS = 10;
+const THIN_MEMBERS = 6;
+// the suggestion is the nearest SIMILAR_N (etl/baskets.py), so "most similar"
+// shows comfortably past that cut: the members and the ones that just missed
+const SHOW_AT_LEAST = 14;
 const YEAR_MS = 365 * 86400000;
 
 const EXPLAINER = "Benchmark = the median of the basket, per metric and per channel.";
@@ -218,7 +221,8 @@ function BasketRail({ profile, ticked, seed, untouched, targetUnits, unitPrice, 
           marginTop: 12, padding: "8px 10px", borderRadius: 8, fontSize: 11.5, lineHeight: 1.5,
           background: "#fbf1e6", color: "#5a3f0a",
         }}>
-          {fmt(ticked)} launches is thin: one more or one fewer moves the median a lot. Ten or more is steadier.
+          {fmt(ticked)} launches is thin: dropping one moves the median about {ticked <= 4 ? "5" : "3"}%,
+          against 3% at six and under 3% at the eight the suggestion picks.
         </div>
       )}
       <div style={{ flex: 1, minHeight: 8 }} />
@@ -333,7 +337,7 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
         .map((x) => x.r);
       if (chip === "similar") {
         const near = list.filter((r) => ticked.has(r.release_name) || (offBy(r) ?? Infinity) <= 4);
-        list = near.length >= THIN_MEMBERS + 2 ? near : list.slice(0, THIN_MEMBERS + 2);
+        list = near.length >= SHOW_AT_LEAST ? near : list.slice(0, SHOW_AT_LEAST);
       }
     }
     return list;

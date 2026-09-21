@@ -133,35 +133,58 @@ def synthetic_panel(n: int = 40, seed: int = 7) -> pd.DataFrame:
 
 
 def test_price_band() -> None:
+    """The basket is the SIMILAR_N nearest on units and price, and nothing else."""
     panel = synthetic_panel()
-    keep = (B.SIMILAR_USE_PRICE, B.SIMILAR_RUNGS)
+    keep = B.SIMILAR_USE_PRICE
     try:
         B.SIMILAR_USE_PRICE = True
         rel = {"release_name": "new", "edition_size": 150, "unit_price": 1500}
-        members, factor, on = B.similar_members(panel, rel)
-        assert len(members) >= B.SIMILAR_MIN and "price" in on and "size" in on, (len(members), factor, on)
-        rows = panel[panel["release_name"].isin(members)]
-        # every member sits inside both bands at the factor that answered
-        assert ((rows["tot_total_product_units"] >= 150 / factor) & (rows["tot_total_product_units"] <= 150 * factor)).all()
-        assert ((rows["unit_price_gbp"] >= 1500 / factor) & (rows["unit_price_gbp"] <= 1500 * factor)).all()
-        # without a price the band steps aside and the old ladder answers
-        m2, f2, on2 = B.similar_members(panel, {"release_name": "new", "edition_size": 150})
-        assert "price" not in on2 and len(m2) >= len(members), (on2, len(m2), len(members))
+        members, reach, on = B.similar_members(panel, rel)
+        assert len(members) == B.SIMILAR_N and on == ("size", "price"), (len(members), on)
+
+        # the members are exactly the nearest by the worse of the two multiples,
+        # and the reach is how far the furthest of them is
+        def worse(row):
+            u = max(row["tot_total_product_units"] / 150, 150 / row["tot_total_product_units"])
+            q = max(row["unit_price_gbp"] / 1500, 1500 / row["unit_price_gbp"])
+            return max(u, q)
+        d = panel.assign(_d=panel.apply(worse, axis=1)).sort_values("_d", kind="stable")
+        assert members == d.head(B.SIMILAR_N)["release_name"].tolist()
+        assert abs(reach - d.head(B.SIMILAR_N)["_d"].max()) < 1e-9
+        # nothing outside the basket is nearer than anything in it
+        assert d.head(B.SIMILAR_N)["_d"].max() <= d.iloc[B.SIMILAR_N]["_d"] + 1e-9
+
+        # no price: ranked on units alone, still SIMILAR_N of them
+        m2, _r2, on2 = B.similar_members(panel, {"release_name": "new", "edition_size": 150})
+        assert on2 == ("size",) and len(m2) == B.SIMILAR_N
         B.SIMILAR_USE_PRICE = False
-        m3, f3, on3 = B.similar_members(panel, rel)
+        m3, _r3, on3 = B.similar_members(panel, rel)
         assert m3 == m2 and on3 == on2
-        # a price typed in euros converts before the band is drawn
+
+        # a price typed in euros converts before the ranking
         B.SIMILAR_USE_PRICE = True
-        m4, _f4, _on4 = B.similar_members(panel, {"release_name": "new", "edition_size": 150, "unit_price": 1500 / P.RATES_TO_GBP["EUR"], "currency": "EUR"})
+        m4, _r4, _on4 = B.similar_members(panel, {"release_name": "new", "edition_size": 150,
+                                                  "unit_price": 1500 / P.RATES_TO_GBP["EUR"], "currency": "EUR"})
         assert m4 == members
+        # a release never benchmarks against itself
+        own = members[0]
+        m5, _r5, _on5 = B.similar_members(panel, {"release_name": own, "edition_size": 150, "unit_price": 1500})
+        assert own not in m5
+        # no edition size is no basket
+        assert B.similar_members(panel, {"release_name": "new", "unit_price": 1500})[0] == []
+
         # the profile carries the price range over the priced members only
         prof = B.basket_profile(panel.assign(unit_price_gbp=panel["unit_price_gbp"].where(panel.index % 5 != 0)), members)
         assert prof["n_priced"] < prof["n"] and prof["price_p25"] <= prof["price"] <= prof["price_p75"]
-        # the sentence under the basket names both bands
-        desc = B.similar_desc(members, factor, on, 150, 1500)
-        assert "unit price of £1,500" in desc and f"factor of {factor:g}" in desc
+
+        # the sentence names both axes and how close the members turned out
+        desc = B.similar_desc(members, reach, on, 150, 1500)
+        assert "unit price of £1,500" in desc and f"x{reach:,.1f}" in desc
+        # a basket whose furthest member is miles away says so instead
+        far = B.similar_desc(members, 9.0, on, 150, 1500)
+        assert "Nothing on file is close to it" in far
     finally:
-        B.SIMILAR_USE_PRICE, B.SIMILAR_RUNGS = keep
+        B.SIMILAR_USE_PRICE = keep
 
 
 if __name__ == "__main__":

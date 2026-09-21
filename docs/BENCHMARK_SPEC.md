@@ -64,37 +64,56 @@ Built from `data/release_clusters.csv` (rows with `panel == "draw"`, 108 of them
 A release is **never a member of its own benchmark** — always drop its own
 `release_name` from any basket.
 
-`similar_size` is the suggested basket and the one nearly every release lands on. The clusters
-are **shapes, not sizes** (cluster 0 runs from 15 units to 987 with a median of 214), so
-benchmarking a large edition against its cluster compares it to launches an order of magnitude
-smaller and calls the difference a stretch. And size is not price: the panel's unit prices run
-from £425 to £7,225 (from Airtable, `etl/pricing.py`), big editions are cheap (Spearman −0.55
-between log price and log units sold), and price predicts conversion beyond size (§3.1.1). So
-the basket is cut on **three things - size, price and shape** - each band in log space, and
-`similar_members` searches from strictest to loosest and stops at the first rung that answers:
+`similar_size` is the suggested basket and the one every release lands on. It is the
+**`SIMILAR_N` = 8 launches nearest this one on units and unit price**, and nothing else.
+Distance is the larger of the two multiples, each taken so it reads above 1 whichever side it
+falls: a launch is only as near as its worse axis, because matched on size at four times the
+price is not a comparable. That is the figure the picker shows in its two columns, so the
+basket is the top of the list the picker is already ordered by.
 
-1. the size band, the price band and the shape cluster together, widening both bands through
-   2×, 2.5×, 3×, 4× (`SIMILAR_FACTORS`, the same factor on both bands at each step), needing 8
-   members;
-2. the size band and the price band, widening the same way, needing 8;
-3. the size band and the shape cluster, widening, needing 8;
-4. the size band alone, widening, needing 8;
-5. the **widest** size band alone (4×), needing only the 3-member minimum - the widest, not the
-   first that clears 3, because once the band cannot be tight enough to be a real comparable
-   there is nothing won by keeping it narrow and a median over three launches moves under any
-   one of them;
-6. failing all of that, simply the launches nearest this edition in size, in log space.
+Size carries the units benchmark; price carries the conversion benchmarks, the sessions and
+entries targets being the units target over the basket's conversion rates, and those move with
+price more than with anything else on file (§3.1.1). A release with no price is ranked on units
+alone; `SIMILAR_USE_PRICE` turns price off for everyone while the price range is still profiled
+and shown. The comparison is in sterling: a panel launch carries Airtable's euro price at the
+fixed rate in `etl/pricing.py` (`RATES_TO_GBP`), and a price typed into the target form is taken
+in the currency the form says. A release with no edition size has no basket, there being nothing
+to be near to.
 
-Price is given up before shape (rungs 2 and 3, `SIMILAR_RUNGS`) because that order gave the
-lower leave-one-out error of the two (§3.1.1); both are given up before size because every
-headline number on the page is a volume. A release with no price - a launch being planned with
-the price field empty, or a panel launch Airtable does not know - skips the price rungs and
-gets the ladder as it was; `SIMILAR_USE_PRICE` turns the price rungs off for everyone while the
-price range is still profiled and shown. The band is drawn in sterling: a panel launch carries
-Airtable's euro price at the fixed rate in `etl/pricing.py` (`RATES_TO_GBP`), and a price typed
-into the target form is taken in the currency the form says. The basket says which constraints
-held (`matchedOn`, `factor`) and its description reads them back: "within a factor of 2 on
-units of this edition's 300 and on its unit price of £552, of the same shape".
+**Why a fixed count and not a widening band.** The rule before this searched size, price and
+shape bands from strictest to loosest, widening through 2×, 2.5×, 3×, 4× until eight members
+answered, then giving up shape, then price. It picked baskets whose size nobody chose - Warhol
+got six, Zeng Fanzhi twenty-three - and leave-one-out over the 106 priced draw launches says
+the count is what matters and smaller is better. Predicting units at close:
+
+| basket | median error | within 1.5× | within 2× |
+|---|---|---|---|
+| the band rule | ×1.31 | 72% | 92% |
+| nearest 4 | ×1.19 | 82% | 93% |
+| nearest 6 | ×1.15 | 82% | 95% |
+| **nearest 8** | ×1.21 | 83% | 95% |
+| nearest 12 | ×1.23 | 72% | 97% |
+| nearest 20 | ×1.24 | 68% | 89% |
+| nearest 45 | ×1.32 | 65% | 84% |
+
+A paired bootstrap (4,000 resamples) puts eight ahead of twelve in 96% of them and ahead of
+forty-five in all of them, but cannot separate four, six, eight and ten. Two things settle the
+count at eight. Dropping one member moves the median 4.8% at four, 3.3% at six, 2.8% at eight
+and 2.2% at twelve, so eight is where accuracy has stopped improving and steadiness is still
+cheap - and steadiness is what the picker's ticking costs. And the conversion benchmarks, which
+prefer more members, are almost indifferent between eight and forty-five (§3.1.1) while four and
+six give up real ground.
+
+**The shape cluster is gone from selection.** At the same basket size it moved the units
+benchmark for two of nine live releases and left seven untouched - swapping members inside a
+size band barely moves a median. It still names the baskets in §3.1 and still fills the picker.
+
+The basket says which axes ranked it (`matchedOn`) and how far the furthest member is
+(`reach`), and its description reads them back: "The 8 launches nearest on units of this
+edition's 300 and on its unit price of £552 - all within ×1.9 of it." A reach past
+`SCALE_MISMATCH_FACTOR` says so instead: nothing on file is close, the benchmark is what the
+nearest launches on record reached, and the uplift says how far past them this edition is being
+asked to go.
 
 #### 3.1.1 Why price is in the ladder (`etl/analysis/price_probe.py`, run 2026-09-17)
 

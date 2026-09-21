@@ -214,7 +214,29 @@ words.
 1. Members into the snapshot and the Basket line on the Overview. Small,
    and it makes every later change visible.
 2. The rule: size and price first, shape out of the default, floor 12. One
-   function and its tests; two live releases move.
+   function and its tests; two live releases move. **Done, but not as
+   written.** The floor of 12 was wrong, and so was the reading of section 2
+   that led to it: the leave-one-out above compares *rules*, and the basket
+   sizes they happen to produce came along with them. Re-run against basket
+   size directly, over the same 106 launches, units at close:
+
+   | basket | median error | within 1.5x | within 2x |
+   |---|---|---|---|
+   | the band rule | x1.31 | 72% | 92% |
+   | nearest 6 | x1.15 | 82% | 95% |
+   | nearest 8 | x1.21 | 83% | 95% |
+   | nearest 12 | x1.23 | 72% | 97% |
+   | nearest 45 | x1.32 | 65% | 84% |
+
+   Smaller is better, and 45 is worse than the rule it was supposed to beat.
+   "Size alone, typical basket 45, best error" in section 2 was measuring a
+   size-only band, not the 45 nearest on units and price, and the two are not
+   the same selection. The rule is now the 8 nearest on units and price, 8
+   settled on steadiness (dropping one member moves the median 2.8% at eight
+   against 3.3% at six) and on the conversion benchmarks, which prefer more
+   members and are near-indifferent between 8 and 45 while 6 gives up ground.
+   Shape is out of selection, worth two live releases as predicted. Six live
+   releases move in all.
 3. The basket list with ticks on the Target setting tab, on the existing
    bespoke machinery. **Done.** The picker opens on the launches, ordered by
    distance from this one on units and price, with the suggested basket
