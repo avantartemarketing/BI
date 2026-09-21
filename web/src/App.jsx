@@ -448,7 +448,8 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       case "no_targets": return targeted ? null : <NoTargets snap={snap} onSetup={() => setTab("targets")} />;
       case "funnel": return <FunnelByChannel snap={snap} />;
       case "funnel_wide": return <FunnelByChannelWide snap={snap} />;
-      case "trajectory": return <Trajectory snap={snap} horizon={horizon} />;
+      // the trajectory draws one picture: both readings are already on it
+      case "trajectory": return <Trajectory snap={snap} />;
       case "drivers": return <KeyDrivers snap={snap} />;
       case "paid_roi": return <PaidRoi snap={snap} />;
       case "paid_spend": return <PaidSpend snap={snap} horizon={horizon} />;
