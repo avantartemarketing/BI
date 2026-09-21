@@ -35,7 +35,7 @@
  * product editions the card runs on units and says what is missing. Without
  * the draw feed at all it is one row, the release, as before. */
 import React, { useState } from "react";
-import { Card, GROUP_DOTS, HATCH, C, fmt, ragColor, useTip } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, HATCH, C, fmt, ragColor, useTip } from "../ui.jsx";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 /* Draft orders: sold in all but payment, so rust, but striped. */
@@ -113,7 +113,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
 
   if (!st) {
     return (
-      <Card dot={GROUP_DOTS.outcome} title="Sell-through by product">
+      <Card dot={GROUP_DOTS.outcome} title="Sell-through by product" badge={<HorizonBadge horizon={horizon} />}>
         <div className="empty-state">No sell-through model yet</div>
       </Card>
     );
@@ -256,7 +256,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
   return (
     <Card
       dot={GROUP_DOTS.outcome}
-      title={close ? "Predicted sell-through by product" : "Sell-through by product"}
+      title="Sell-through by product"
+      badge={<HorizonBadge horizon={horizon} />}
       right={(
         <>
           {slackButton}
@@ -286,9 +287,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
               {edition ? `of ${fmt(edition)} units` : "units"}
             </span>
           </div>
-          <div className="lead-caption" style={{ marginTop: 0 }}>
-            {close ? "predicted at close" : "as of today"}{edition === null ? " · no edition size set" : ""}
-          </div>
+          {edition === null && <div className="lead-caption" style={{ marginTop: 0 }}>no edition size set</div>}
         </div>
         <div className="spacer-8" />
 

@@ -21,7 +21,7 @@
  * and red below. The stretch multiple is said once, at the foot of the card,
  * rather than drawn on five bars. */
 import React, { useState } from "react";
-import { Card, GROUP_DOTS, BmOutline, C, fmt, useTip, refWords } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, BmOutline, BADGE_WORDS, C, fmt, useTip } from "../ui.jsx";
 
 /* The fill nearly fills the slot and the actual sits well inside it, so the
  * tints and the outline read on both sides of the orange at every card width. */
@@ -44,7 +44,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   const today = horizon !== "close";
   const pct = targeted ? scale === "pct" : false;
   const hasBm = targeted && !!snap?.benchmark;
-  const words = refWords(horizon);
+  const words = BADGE_WORDS;
 
   // Today compares actuals with the target to date; at close compares the projection
   // with the full target (docs §5.4 / §9). The benchmark for the same horizon rides
@@ -79,7 +79,10 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
     bmH: r.bm === null ? null : h(val(r.bm, r.target)),
   }));
 
-  const fillColor = today ? C.orange : C.orangeLight;
+  // one orange across both horizons: a column is either today's actual or the
+  // projection at close, never both, so a change of tint would read as a
+  // change of meaning rather than a change of horizon
+  const fillColor = C.orange;
   const fillLabel = today ? "To date" : "Projected";
   const unit = (v) => fmt(v, v < 10 && v > 0 ? 1 : 0);
   const k = snap?.benchmark?.k ?? null;
@@ -106,6 +109,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
     <Card
       dot={GROUP_DOTS.volume}
       title={targeted ? "Channels vs targets" : "Channels"}
+      badge={<HorizonBadge horizon={horizon} />}
     >
       {targeted && <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, margin: "10px 0 12px", flex: "0 0 auto" }}>
         {seg(
@@ -129,7 +133,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                 ...(withBm ? [{ label: words.bm, value: unit(c.bm) }] : []),
               ];
               const barTip = {
-                head: today ? "Secured to date" : "Projected at close",
+                head: today ? "Secured to date" : "Projected",
                 rows: [{ label: "Units", value: unit(c.bar) }, ...refRows],
               };
               const refTip = {

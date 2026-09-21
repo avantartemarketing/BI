@@ -111,6 +111,26 @@ export function refWords(horizon) {
   };
 }
 
+/* The same two references named plainly, for a card that wears the horizon
+   badge: the lozenge beside the title already says which horizon is being
+   read, so repeating "today" on every row is noise. The cards that read one
+   fixed horizon and carry no badge keep refWords and the word with it. */
+export const BADGE_WORDS = { target: "Target", bm: "Benchmark" };
+
+/* The horizon a card is reading, as a chip beside its title. The cards that
+   answer the page's Today / At close toggle wear it, so the words inside them
+   do not have to repeat which horizon they are on. */
+export function HorizonBadge({ horizon }) {
+  const close = horizon === "close";
+  return (
+    <Lozenge color="neutral" tip={close
+      ? "This card is reading the projection at close. The page's Compare toggle switches it."
+      : "This card is reading where the release is today. The page's Compare toggle switches it."}>
+      {close ? "At close" : "Today"}
+    </Lozenge>
+  );
+}
+
 export const GROUP_DOTS = {
   volume: "#b8862d", funnel: "#4f6fc0", paid: "#eb6834", outcome: "#8a7a52",
 };
@@ -153,12 +173,13 @@ export function ragColor(pct) {
   return C.red;
 }
 
-export function Card({ tall, wide, dot, title, right, children, style }) {
+export function Card({ tall, wide, dot, title, badge, right, children, style }) {
   return (
     <div className={`card${tall ? " tall" : ""}${wide ? " wide" : ""}`} style={style}>
       <div className="mod-head">
         <span className="gdot" style={{ background: dot }} />
         <span className="title">{title}</span>
+        {badge || null}
         {right ? <span className="right">{right}</span> : null}
       </div>
       {children}
@@ -378,7 +399,7 @@ export function BmOutline({ pct, column = false, inset = "0px", radius = 4 }) {
  * outline -> projected fill -> to-date fill -> over-target hatch. The actual is
  * inset top and bottom so the tints still show on both sides of it. */
 export function TrackBar({
-  now, proj, target, bm, full, hatchFrom, height = 20, radius = 4, tips = {},
+  now, proj, target, bm, full, hatchFrom, height = 20, radius = 4, tips = {}, projColor = C.orangeLight,
 }) {
   const t = useTip();
   const tp = (x) => t.props(typeof x === "string" ? { head: x } : x);
@@ -427,7 +448,7 @@ export function TrackBar({
       {hasBm && bm > 0 && <BmOutline pct={pct(bm)} radius={radius} />}
       <div {...tp(tips.proj)} style={{
         position: "absolute", top: inset, bottom: inset, left: 0, width: `${projW}%`,
-        background: C.orangeLight, borderRadius: innerR,
+        background: projColor, borderRadius: innerR,
       }} />
       <div {...tp(tips.now)} style={{
         position: "absolute", top: inset, bottom: inset, left: 0, width: `${nowW}%`,

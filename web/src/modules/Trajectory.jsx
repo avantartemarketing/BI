@@ -20,7 +20,7 @@
  * happened yet. At close the question is "where does this land", a pair of
  * levels: both run across the chart and are named together at the left. */
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtSigned, refWords } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtSigned } from "../ui.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
 const LABEL_TODAY_PX = 38; // rendered width of "today" at 12px
@@ -188,7 +188,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
 
   if (!s.pts.length) {
     return (
-      <Card wide dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
+      <Card wide dot={GROUP_DOTS.volume} title="Unit trajectory" badge={<HorizonBadge horizon={horizon} />} right={right}>
         <div className="empty-state">No daily series yet.</div>
       </Card>
     );
@@ -197,7 +197,6 @@ export default function Trajectory({ snap, horizon = "today" }) {
   const N = Math.max(1, s.pts.length - 1);
   const hasBm = !!snap.benchmark && s.bm !== null && s.bm > 0;
   const close = horizon === "close";
-  const words = refWords(close ? "close" : "today");
   // the target's pace and the benchmark's, each a line
   const has = (v) => v !== null && v !== undefined;
   const planAt = (p) => p.plan;
@@ -385,7 +384,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
   }
 
   return (
-    <Card wide dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
+    <Card wide dot={GROUP_DOTS.volume} title="Unit trajectory" badge={<HorizonBadge horizon={horizon} />} right={right}>
       <div className="spacer-16" />
       <div className="body">
         <div style={{ position: "relative", flex: 1 }}>

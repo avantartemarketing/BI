@@ -19,7 +19,7 @@
  * card carries no row for it. */
 import React, { useState } from "react";
 import {
-  Card, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip,
+  Card, HorizonBadge, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip,
 } from "../ui.jsx";
 
 const money = (v) => "£" + fmt(Math.round(v ?? 0));
@@ -236,7 +236,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const sw = (bg) => ({ width: 8, height: 8, borderRadius: 2, background: bg, flex: "0 0 8px" });
 
   return (
-    <Card dot={GROUP_DOTS.paid} title="Paid spend / day">
+    <Card dot={GROUP_DOTS.paid} title="Paid spend / day" badge={<HorizonBadge horizon={horizon} />}>
       <div className="spacer-8" />
       <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 auto" }}>
         {complete ? (
@@ -353,6 +353,8 @@ function PaidSpendActuals({ snap }) {
   const cur = paid.budget?.current ?? 0;
   const row = { display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, padding: "7px 0", borderBottom: `1px solid ${C.hairline}` };
   const noCampaign = !snap.campaignName;
+  // no badge: with no targets there is nothing to project against, so every
+  // figure here is to date and the page's horizon does not move it
   return (
     <Card dot={GROUP_DOTS.paid} title="Paid spend / day">
       <div className="spacer-8" />
