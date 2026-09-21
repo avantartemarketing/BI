@@ -93,6 +93,16 @@ function ProductBar({ row, close, maxV, tips, height = 16, radius = 4 }) {
   );
 }
 
+/* The card's place on the page: a release with more than four products gets
+   two rows of the grid instead of one, so the bars stay readable instead of
+   thinning to fit. web/src/App.jsx passes this to the layout as the slot's
+   span; four products still sit comfortably in a single row. */
+export const SELL_THROUGH_TWO_ROWS = 4;
+export function sellThroughSize(snap) {
+  const n = ((snap && snap.sellthrough && snap.sellthrough.products) || []).length;
+  return n > SELL_THROUGH_TWO_ROWS ? "big" : "wide";
+}
+
 export default function SellThrough({ snap, horizon = "today" }) {
   const t = useTip();
   const [scale, setScale] = useState("pct");   // pct | units
@@ -188,11 +198,15 @@ export default function SellThrough({ snap, horizon = "today" }) {
       ))}
     </span>
   );
-  const many = rows.length > 6;
-  // the bars share the card's height: fatter for three products than for six,
-  // capped so a single product is not a slab
-  const barH = Math.max(12, Math.min(30, Math.round(96 / Math.max(rows.length, 1))));
-  const rowH = Math.max(24, Math.min(48, barH + 16));
+  // Past four products the card takes two rows of the page grid (see
+  // sellThroughSize), so the bars have roughly three times the height to
+  // share and stay fat rather than thinning to fit.
+  const twoRows = rows.length > SELL_THROUGH_TWO_ROWS;
+  const n = Math.max(rows.length, 1);
+  const barH = twoRows
+    ? Math.max(24, Math.min(44, Math.round(420 / n)))
+    : Math.max(24, Math.min(30, Math.round(120 / n)));
+  const rowH = Math.min(68, barH + (twoRows ? 18 : 16));
   const barR = Math.max(4, Math.round(barH / 4));
 
   /* One key at the foot of the card: swatch, what it is, and the release's
@@ -256,9 +270,10 @@ export default function SellThrough({ snap, horizon = "today" }) {
       {post.state === "error"
         ? <div style={{ color: C.red, fontSize: 12, margin: "2px 0 6px" }}>Not posted to Slack: {post.message}</div>
         : <div className="spacer-8" />}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 28 }}>
-        {/* the release: headline and what it is made of */}
-        <div style={{ flex: "0 0 132px", display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        {/* the release headline, on a line of its own so the bars below it
+            run the full width of the card */}
+        <div style={{ flex: "0 0 auto", display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
           <div className="lead" {...t.props(methodTip, 300)}>
             {headPct === null ? <span style={{ color: C.ink }}>{fmt(headUnits)}</span>
               : <span style={{ color: ragColor(headPct) }}>{Math.round(headPct * 100)}%</span>}
@@ -266,8 +281,11 @@ export default function SellThrough({ snap, horizon = "today" }) {
               {edition ? `of ${fmt(edition)} units` : "units"}
             </span>
           </div>
-          <div className="lead-caption">{close ? "predicted at close" : "as of today"}{edition === null ? " · no edition size set" : ""}</div>
+          <div className="lead-caption" style={{ marginTop: 0 }}>
+            {close ? "predicted at close" : "as of today"}{edition === null ? " · no edition size set" : ""}
+          </div>
         </div>
+        <div className="spacer-8" />
 
         {/* the products, and the stamp over them while a feed is missing */}
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", position: "relative" }}>
@@ -281,7 +299,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
               Incomplete data
             </div>
           )}
-          <div style={{ flex: 1, minHeight: 0, overflowY: many ? "auto" : "visible", display: "flex", flexDirection: "column", justifyContent: many ? "flex-start" : "center", gap: many ? 2 : 0 }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", justifyContent: "center" }}>
             {rows.map((r) => {
               const pctRow = close ? r.pctClose : r.pct;
               const rowTip = { head: r.name, rows: [
@@ -302,7 +320,11 @@ export default function SellThrough({ snap, horizon = "today" }) {
               ] };
               return (
                 <div key={r.key} style={{
-                  display: "grid", gridTemplateColumns: "minmax(0, 256px) 1fr 84px", gap: 12, alignItems: "center", height: rowH,
+                  display: "grid", gridTemplateColumns: "minmax(0, 260px) 1fr 96px", gap: 14, alignItems: "center",
+                  // in a two-row card the rows grow into the height they have,
+                  // so the space between bars stays even instead of pooling
+                  // above and below the block
+                  ...(twoRows ? { flex: "1 1 auto", minHeight: rowH, maxHeight: Math.round(rowH * 1.8) } : { height: rowH }),
                 }}>
                   <div {...t.props(nameTip)} style={{ fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {r.name}
