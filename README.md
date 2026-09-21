@@ -459,8 +459,9 @@ allocate to. The logic is `shared/drawAudit.mjs`, tested by `tests/draw_audit.mj
 
 ## Posting sell-through to Slack
 
-The sell-through card has a **Post to Slack** button. It sends the release's current
-figures, in the sales team's own layout, to the channel set for that release:
+The sell-through card has a **Post to Slack** button. It sends the card itself as a
+picture, with the release's current figures under it in the sales team's own layout, to
+the channel set for that release:
 
 ```
 *Julian Schnabel · Multiple · 2026 Q3* - sales update, 17 Sep (day 11 of 24)
@@ -475,6 +476,19 @@ Estimated sell-through (entries at 80% entry → order, pre-orders at 95%, place
 Total ~126 units → 21% of 600
 ```
 
+The picture is the card's own rows, drawn on a canvas in the browser that is showing them
+(`web/src/modules/sellThroughImage.js`) - the one place with the page's typeface - from a
+model the card builds out of what it has just rendered, so only the drawing is written
+twice and never the figures. It carries the release, the campaign day and the rate along
+the top, which the card on the page does not need, so it stands on its own in a channel.
+A browser that cannot give us a PNG posts the figures alone rather than nothing.
+
+Slack attaches a file only to a channel it knows by ID, and `chat.postMessage` is the one
+call that hands an ID back, so the **first** post to a channel is the figures and then the
+picture, and every post after that is one: the picture with the figures as its comment. A
+picture Slack will not take (`files:write` missing, say) never costs the figures - they go
+as text and the button says why in amber.
+
 The message is composed on the server from the same snapshot the card is drawn from
 (`server/slack.js`), so what lands in Slack is what the page says at that moment. The
 header carries the day it is sent, with the campaign day moved on to match; when the
@@ -486,9 +500,12 @@ release's own edition size stands in only when a product has no edition.
 Setup, once:
 
 1. Create a Slack app (api.slack.com/apps → Create New App → From scratch) in the
-   workspace, add the bot scopes `chat:write` and `chat:write.public` under OAuth &
-   Permissions, install it to the workspace, and copy the **Bot User OAuth Token**
-   (`xoxb-…`) into `SLACK_BOT_TOKEN` on Render. The token lives only in the environment.
+   workspace, add the bot scopes `chat:write`, `chat:write.public` and `files:write`
+   under OAuth & Permissions, install it to the workspace, and copy the **Bot User OAuth
+   Token** (`xoxb-…`) into `SLACK_BOT_TOKEN` on Render. The token lives only in the
+   environment. Without `files:write` the figures still post; only the picture does not,
+   and the button says so. An app installed before the picture existed needs the scope
+   added and the app reinstalled.
 2. For a private channel, invite the app to it (`/invite @<app name>`); public channels
    need nothing.
 3. On the release's **Target setting** tab, type the channel name (without the `#`) in
@@ -521,13 +538,15 @@ Overview opens with the campaign clock, a thin strip from announcement to launch
 today and the days to launch on the right (the day of the window is in the strip's popup);
 it is a card like the others and moves with them.
 
-**Sell-through by product** (docs §6.3) is one row per product: units paid (rust), draft
-orders an advisor raised that are not yet paid (rust, striped; the draw's own pre-authorisation
+**Sell-through by product** (docs §6.3) is one row per product, drawn in one ramp of the
+page's orange, darkest to palest as the units get less certain: units paid (rust), draft
+orders an advisor raised that are not yet paid (orange; the draw's own pre-authorisation
 drafts are the entries, not drafts), the draw entries in hand counted on the product at the
 entry → order rate, or at the pre-order rate where the entrant's card is already authorised
-(orange), at close the units still to come, against the product's edition,
-with demand the product has no room for hatched past its sellout. It is the one card with no
-target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
+(light orange), and at close the units still to come (palest), against the product's
+edition. Nothing is hatched: the four tints are the whole key, and demand a product has no
+room for simply carries on past the point where the paler room behind the bar stops. It is
+the one card with no target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
 orders per product come from the Shopify order lines in BigQuery (`data/orders_by_product.csv`),
 joined to the draws through the product each draw's winners bought (docs 2.4); until every draw
 of a release is named that way the card wears an **Incomplete data** stamp, and the sales the
@@ -539,7 +558,8 @@ whichever has the most room. Products come from the event feed's draws
 order rate can also be set per release; a product nobody has named takes its Shopify title
 and, where the title matches an Airtable record, its edition. Until the feed has run once after
 a deploy the card shows the release as one row and says so. **Post to Slack** in the card's
-header sends these figures to the release's channel (see "Posting sell-through to Slack").
+header sends the card as a picture, with these figures under it, to the release's channel
+(see "Posting sell-through to Slack").
 
 Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
 own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up

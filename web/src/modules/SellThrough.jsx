@@ -1,13 +1,14 @@
 /* Sell-through by product (docs/DATA_MODEL.md §6.3). Wide card (2 cols × 1 row).
  *
  * The question is "how much of each edition is spoken for", so the card is
- * one row per product. Each row is that product's edition, and on it the
- * units already paid for (rust), draft orders not yet paid (rust, striped),
- * the entries in hand counted on the product at the entry → order rate
- * (orange), and at close the units still to come (the projection's light
- * orange). Demand in hand beyond the product's room is the hatch past its
- * sellout, drawn in both horizons because it is the fact the allocator most
- * needs.
+ * one row per product. Each row is that product's edition, and on it one
+ * ramp of the page's orange, darkest to palest as the units get less
+ * certain: paid (rust), draft orders not yet paid (orange), the draw
+ * winners the entries in hand imply at the entry → order rate (light
+ * orange), and at close the units still to come (palest). No hatching
+ * anywhere - the ramp is the whole key, and where a bar runs past its
+ * edition the paler room behind it stops, which is what says the demand has
+ * nowhere to go.
  *
  * Until the feeds carry sales by product and draft orders, the snapshot says
  * what is missing (`sellthrough.incomplete`) and the card wears an
@@ -22,9 +23,14 @@
  * products with room, then whichever has the most room - the same rule the
  * allocator applies at close (shared/sellThrough.mjs).
  * The card carries no copy about it: the account of who moved where is in
- * the popup of the in-hand row, the split of sales the feed cannot name a
- * product for in the striped segment's, and the editions are checked where
- * they are typed, on the Target setting tab.
+ * the popup of the draw-winners key, the split of sales the feed cannot name
+ * a product for in the paid key's, and the editions are checked where they
+ * are typed, on the Target setting tab.
+ *
+ * "Post to Slack" sends the card as a picture: the same rows drawn on a
+ * canvas (sellThroughImage.js) from the model built below, with the figures
+ * the server composes as its comment. The drawing is repeated there, the
+ * numbers are not.
  *
  * No target and no benchmark on this card, by decision: both are on the hero
  * and the channels, and here they only crowded the reading. Each row is the
@@ -35,11 +41,26 @@
  * product editions the card runs on units and says what is missing. Without
  * the draw feed at all it is one row, the release, as before. */
 import React, { useState } from "react";
-import { Card, HorizonBadge, GROUP_DOTS, HATCH, C, fmt, ragColor, useTip } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, ragColor, useTip } from "../ui.jsx";
+import { sellThroughPng } from "./sellThroughImage.js";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
-/* Draft orders: sold in all but payment, so rust, but striped. */
-const DRAFTS = `repeating-linear-gradient(135deg, ${C.rust} 0 2px, #d7a998 2px 5px)`;
+/* One ramp of the page's orange, darkest to palest as the units get less
+ * certain: money in the bank, then an order raised, then the winners the
+ * entries imply, then the campaign's remaining days. Nothing is hatched -
+ * four solid tints of one hue carry the whole reading, and the key is the
+ * same four swatches. */
+const SEG = { paid: C.rust, drafts: C.orange, winners: C.orangeLight, future: C.refBase };
+
+/* A row's segments, in the order they stack. The card's bars and the picture
+ * posted to Slack both draw from this, so the two cannot drift apart. */
+function segmentsOf(row, close) {
+  const segs = [{ key: "sold", v: (row.sold ?? 0) + (row.soldAssumed ?? 0), color: SEG.paid }];
+  if (finite(row.drafts) && row.drafts > 0) segs.push({ key: "drafts", v: row.drafts, color: SEG.drafts });
+  segs.push({ key: "inhand", v: row.shown ?? 0, color: SEG.winners });
+  if (close && (row.futurePredicted ?? 0) > 0) segs.push({ key: "future", v: row.futurePredicted, color: SEG.future });
+  return segs.filter((x) => x.v > 0);
+}
 const swatch = (bg) => ({ width: 9, height: 9, borderRadius: 2, background: bg, flex: "0 0 9px" });
 const legendItem = { display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" };
 
@@ -54,17 +75,8 @@ function ProductBar({ row, close, maxV, tips, height = 16, radius = 4 }) {
   const edition = row.edition;
   const inset = Math.max(3, Math.round(height * 0.2));
   const innerR = Math.max(2, radius - 2);
-  // the sold segment carries the estimated split too, named in its popup
-  const sold = (row.sold ?? 0) + (row.soldAssumed ?? 0);
-  const inHand = row.shown ?? 0;
-  const future = close ? row.futurePredicted ?? 0 : 0;
   const over = row.oversubscribed ?? 0;
-  const segs = [
-    { key: "sold", v: sold, color: C.rust, tip: tips.sold },
-    ...(finite(row.drafts) && row.drafts > 0 ? [{ key: "drafts", v: row.drafts, color: DRAFTS, tip: tips.drafts }] : []),
-    { key: "inhand", v: inHand, color: C.orange, tip: tips.inHand },
-    ...(future > 0 ? [{ key: "future", v: future, color: C.orangeLight, tip: tips.future }] : []),
-  ];
+  const segs = segmentsOf(row, close).map((x) => ({ ...x, tip: tips[x.key === "sold" ? "sold" : x.key === "drafts" ? "drafts" : x.key === "future" ? "future" : "inHand"] }));
   let at = 0;
   return (
     <div style={{ position: "relative", height, background: C.track, borderRadius: radius }}>
@@ -82,10 +94,13 @@ function ProductBar({ row, close, maxV, tips, height = 16, radius = 4 }) {
           }} />
         );
       })}
+      {/* demand with no room left: the winners' own tint, carrying on past
+          the point where the paler room stops - the change of ground under
+          the bar is what says it has nowhere to go */}
       {over > 0 && finite(edition) && (
         <div {...tp(tips.over)} style={{
           position: "absolute", top: inset, bottom: inset, left: `${pct(edition)}%`,
-          width: `${pct(edition + over) - pct(edition)}%`, background: HATCH,
+          width: `${pct(edition + over) - pct(edition)}%`, background: SEG.winners,
           borderTopRightRadius: innerR, borderBottomRightRadius: innerR,
         }} />
       )}
@@ -225,17 +240,66 @@ export default function SellThrough({ snap, horizon = "today" }) {
     </span>
   );
 
-  // "Post to Slack": today's figures to the channel set on the Target setting
-  // tab, composed on the server from this same snapshot (server/slack.js)
+  /* The card as a picture, for Slack: the rows exactly as they are on screen,
+     plus what the page around them supplies (the release, the campaign day,
+     the horizon) so the image stands alone in a channel. Only the drawing is
+     repeated in sellThroughImage.js - every figure here is the one rendered
+     above. */
+  const imageModel = () => ({
+    title: "Sell-through by product",
+    releaseName: snap.artist && snap.title ? `${snap.artist} - ${snap.title}` : (snap.releaseName || snap.id),
+    dayLine: [
+      snap.of > 0 ? `day ${fmt(snap.day)} of ${fmt(snap.of)}` : null,
+      snap.asOf ? `data through ${fmtDay(new Date(snap.asOf + "T00:00:00Z"))}` : null,
+    ].filter(Boolean).join(" · "),
+    horizon: close ? "At close" : "Today",
+    rateLine: `at ${rateText} entry → order${twoRates ? `, ${preRateText} pre-order` : ""}`,
+    headline: {
+      text: headPct === null ? fmt(headUnits) : `${Math.round(headPct * 100)}%`,
+      sub: edition ? `of ${fmt(edition)} units` : "units",
+      color: headPct === null ? C.ink : ragColor(headPct),
+    },
+    rows: rows.map((r) => {
+      const pctRow = close ? r.pctClose : r.pct;
+      const units = soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0);
+      return {
+        name: r.name,
+        maxV: maxFor(r), edition: finite(r.edition) ? r.edition : 0,
+        segs: segmentsOf(r, close).map(({ v, color }) => ({ v, color })),
+        over: r.oversubscribed ?? 0, overColor: SEG.winners,
+        pctText: pctRow === null || pctRow === undefined ? fmt(units) : `${Math.round(pctRow * 100)}%`,
+        ratioText: pctRow === null || pctRow === undefined ? null : `${fmt(units)}/${fmt(r.edition)}`,
+        pctColor: pctRow === null || pctRow === undefined ? C.ink : ragColor(pctRow),
+      };
+    }),
+    legend: [
+      { color: SEG.paid, label: "Paid", value: fmt(sold) },
+      ...(draftsAll !== null && draftsAll > 0 ? [{ color: SEG.drafts, label: "Drafts", value: fmt(draftsAll) }] : []),
+      { color: SEG.winners, label: "Draw winners (estimate)", value: fmt(inHandAll) },
+      ...(close && futureAll > 0 ? [{ color: SEG.future, label: "Still to come", value: fmt(futureAll) }] : []),
+    ],
+    note: incomplete.length ? `Incomplete data: ${incomplete.join(", ")}` : null,
+  });
+
+  /* "Post to Slack": the card as a picture with the figures beneath it, to
+     the channel set on the Target setting tab. The figures are composed on
+     the server from this same snapshot (server/slack.js); the picture is
+     drawn here, because only the browser has a canvas and the face the page
+     is set in. A browser that cannot give us a PNG still posts the figures. */
   const channel = (snap && snap.slack && snap.slack.channel) || null;
   const postToSlack = async () => {
     setPost({ state: "posting" });
     try {
-      const r = await fetch(`/api/releases/${snap.id}/slack`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      let png = null;
+      try { png = await sellThroughPng(imageModel()); } catch (e) { console.warn("sell-through image:", e); }
+      const url = `/api/releases/${snap.id}/slack`;
+      const r = png
+        ? await fetch(url, { method: "POST", headers: { "Content-Type": "image/png" }, body: png })
+        : await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `Slack post failed (${r.status})`);
-      setPost({ state: "done", channel: d.channel });
-      setTimeout(() => setPost((p) => (p.state === "done" ? { state: "idle" } : p)), 5000);
+      setPost({ state: "done", channel: d.channel, warning: d.warning || null });
+      setTimeout(() => setPost((p) => (p.state === "done" ? { state: "idle" } : p)), 6000);
     } catch (e) {
       setPost({ state: "error", message: String(e.message || e) });
     }
@@ -246,8 +310,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
       disabled={!channel || post.state === "posting"}
       onClick={postToSlack}
       title={channel
-        ? `Post today's sell-through figures to #${channel}`
-        : "Set a Slack channel for this release on the Target setting tab, then this posts the figures there"}
+        ? `Post this card, as a picture with the figures under it, to #${channel}`
+        : "Set a Slack channel for this release on the Target setting tab, then this posts the card there"}
     >
       {post.state === "posting" ? "Posting…" : post.state === "done" ? `Posted to #${post.channel}` : post.state === "error" ? "Post failed" : "Post to Slack"}
     </button>
@@ -275,7 +339,9 @@ export default function SellThrough({ snap, horizon = "today" }) {
       {/* a refused post says why, in a line of its own so the header keeps its shape */}
       {post.state === "error"
         ? <div style={{ color: C.red, fontSize: 12, margin: "2px 0 6px" }}>Not posted to Slack: {post.message}</div>
-        : <div className="spacer-8" />}
+        : post.state === "done" && post.warning
+          ? <div style={{ color: C.amber, fontSize: 12, margin: "2px 0 6px" }}>Posted to #{post.channel}, but {post.warning}</div>
+          : <div className="spacer-8" />}
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         {/* the release headline, on a line of its own so the bars below it
             run the full width of the card */}
@@ -324,7 +390,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
               ] };
               return (
                 <div key={r.key} style={{
-                  display: "grid", gridTemplateColumns: "minmax(0, 260px) 1fr 96px", gap: 14, alignItems: "center",
+                  display: "grid", gridTemplateColumns: "minmax(0, 260px) 1fr 132px", gap: 14, alignItems: "center",
                   // in a two-row card the rows grow into the height they have,
                   // so the space between bars stays even instead of pooling
                   // above and below the block
@@ -337,13 +403,13 @@ export default function SellThrough({ snap, horizon = "today" }) {
                   <div className="num" style={{ textAlign: "right", whiteSpace: "nowrap", lineHeight: 1.15 }}>
                     {pctRow !== null && pctRow !== undefined ? (
                       <>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: ragColor(pctRow) }}>{Math.round(pctRow * 100)}%</span>
-                        <span style={{ fontSize: 10.5, color: C.muted, marginLeft: 5 }}>
+                        <span style={{ fontSize: 19, fontWeight: 600, color: ragColor(pctRow), letterSpacing: "-0.01em" }}>{Math.round(pctRow * 100)}%</span>
+                        <span style={{ fontSize: 12, color: C.muted, marginLeft: 6 }}>
                           {fmt(soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0))}/{fmt(r.edition)}
                         </span>
                       </>
                     ) : (
-                      <span style={{ fontSize: 12.5, fontWeight: 600 }}>{fmt(soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0))}</span>
+                      <span style={{ fontSize: 19, fontWeight: 600, letterSpacing: "-0.01em" }}>{fmt(soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0))}</span>
                     )}
                   </div>
                 </div>
@@ -356,7 +422,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
       {/* legend, no rule */}
       <div style={{ flex: "0 0 auto", paddingTop: 10, display: "flex", alignItems: "center", flexWrap: "wrap", gap: "6px 18px", fontSize: 11.5, color: C.muted }}>
         {legendChip({
-          key: "sold", sw: <span style={swatch(C.rust)} />, label: "Paid", value: fmt(sold),
+          key: "sold", sw: <span style={swatch(SEG.paid)} />, label: "Paid", value: fmt(sold),
           tip: { head: "Paid", rows: [
             { label: "Units", value: fmt(sold) },
             ...(fromFeed && (st.unattributedSold ?? 0) > 0 ? [
@@ -369,7 +435,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
             : undefined },
         })}
         {draftsAll !== null && draftsAll > 0 && legendChip({
-          key: "drafts", sw: <span style={{ ...swatch(DRAFTS), background: DRAFTS }} />, label: "Drafts", value: fmt(draftsAll),
+          key: "drafts", sw: <span style={swatch(SEG.drafts)} />, label: "Drafts", value: fmt(draftsAll),
           tip: { head: "Drafts", rows: [
             { label: "Units", value: fmt(draftsAll) },
             ...(winnerDraftsAll > 0 ? [{ label: "Of which winners' claims, under 72 hours old", value: fmt(winnerDraftsAll) }] : []),
@@ -378,15 +444,12 @@ export default function SellThrough({ snap, horizon = "today" }) {
           body: "Draft orders raised but not yet paid. They take room like a sale. The order an advisor sends a winner after a failed payment counts for 72 hours; unpaid after that, it is out." },
         })}
         {legendChip({
-          key: "inhand", sw: <span style={swatch(C.orange)} />, label: "Draw winners (estimate)", value: fmt(inHandAll), tip: inHandTip,
+          key: "inhand", sw: <span style={swatch(SEG.winners)} />, label: "Draw winners (estimate)", value: fmt(inHandAll), tip: inHandTip,
         })}
         {close && legendChip({
-          key: "future", sw: <span style={swatch(C.orangeLight)} />, label: "Still to come", value: fmt(futureAll),
+          key: "future", sw: <span style={swatch(SEG.future)} />, label: "Still to come", value: fmt(futureAll),
           tip: { head: "Still to come", rows: [{ label: "Units", value: fmt(futureAll) }],
             body: "The projection's further units, spread over the products with room left." },
-        })}
-        {rows.some((r) => (r.oversubscribed ?? 0) > 0) && legendChip({
-          key: "over", sw: <span style={{ ...swatch(HATCH), background: HATCH }} />, label: "Beyond the edition", value: null,
         })}
       </div>
     </Card>
