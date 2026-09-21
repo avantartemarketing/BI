@@ -118,6 +118,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const futureAll = close ? st.futureEntriesPredicted ?? 0 : 0;
   const fromFeed = Array.isArray(st.products) && st.products.length > 0;
   const winnerDraftsAll = fromFeed ? st.products.reduce((n, p) => n + (finite(p.winnerDrafts) ? p.winnerDrafts : 0), 0) : 0;
+  const winnerDraftsLapsedAll = fromFeed ? st.products.reduce((n, p) => n + (finite(p.winnerDraftsLapsed) ? p.winnerDraftsLapsed : 0), 0) : 0;
   // what the feeds do not carry yet; an older snapshot without the field is
   // read the same way the ETL writes it
   const incomplete = Array.isArray(st.incomplete) ? st.incomplete : (fromFeed ? [] : ["products"]);
@@ -155,7 +156,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const rateText = `${Math.round(rate * 100)}%`;
   const methodTip = {
     head: "How the card counts",
-    body: `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw winners (estimate) are the people still in the draw at the ${rateText} rate at which entries become orders. Winners who have not paid are not counted: their claim is in Drafts when an order is out for them, and nowhere otherwise. ` +
+    body: `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw winners (estimate) are the people still in the draw at the ${rateText} rate at which entries become orders. Winners who have not paid are not counted: the order sent after a failed payment is in Drafts for 72 hours, and after that it is out. ` +
       "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them." +
       (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };
@@ -188,18 +189,23 @@ export default function SellThrough({ snap, horizon = "today" }) {
     </span>
   );
   const many = rows.length > 6;
-  const rowH = many ? 24 : rows.length > 4 ? 30 : 38;
-  const barH = many ? 12 : 16;
+  // the bars share the card's height: fatter for three products than for six,
+  // capped so a single product is not a slab
+  const barH = Math.max(12, Math.min(30, Math.round(96 / Math.max(rows.length, 1))));
+  const rowH = Math.max(24, Math.min(48, barH + 16));
+  const barR = Math.max(4, Math.round(barH / 4));
 
-  const leftRow = (key, sw, label, value, tip) => (
-    <div key={key} {...t.props(tip)} style={{
-      display: "flex", alignItems: "center", gap: 8, height: 24, fontSize: 12,
-      borderTop: `1px solid ${C.hairline}`,
-    }}>
+  /* One key at the foot of the card: swatch, what it is, and the release's
+     total. The totals used to sit in a column of their own beside the
+     headline; they are here so the product titles get that width. */
+  const legendChip = ({ key, sw, label, value, tip }) => (
+    <span key={key} {...(tip ? t.props(tip) : {})} style={{ ...legendItem, cursor: tip ? "help" : "default" }}>
       {sw}
-      <span style={{ color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
-      <span className="num" style={{ marginLeft: "auto", fontWeight: 600, whiteSpace: "nowrap" }}>{value}</span>
-    </div>
+      <span>{label}</span>
+      {value !== null && value !== undefined && (
+        <span className="num" style={{ fontWeight: 600, color: C.ink }}>{value}</span>
+      )}
+    </span>
   );
 
   // "Post to Slack": today's figures to the channel set on the Target setting
@@ -252,7 +258,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
         : <div className="spacer-8" />}
       <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 28 }}>
         {/* the release: headline and what it is made of */}
-        <div style={{ flex: "0 0 196px", display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <div style={{ flex: "0 0 132px", display: "flex", flexDirection: "column", minWidth: 0 }}>
           <div className="lead" {...t.props(methodTip, 300)}>
             {headPct === null ? <span style={{ color: C.ink }}>{fmt(headUnits)}</span>
               : <span style={{ color: ragColor(headPct) }}>{Math.round(headPct * 100)}%</span>}
@@ -261,32 +267,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
             </span>
           </div>
           <div className="lead-caption">{close ? "predicted at close" : "as of today"}{edition === null ? " · no edition size set" : ""}</div>
-          <div style={{ marginTop: 10 }}>
-            {leftRow("sold", <span style={swatch(C.rust)} />, "Paid", fmt(sold), {
-              head: "Paid", rows: [
-                { label: "Units", value: fmt(sold) },
-                ...(fromFeed && (st.unattributedSold ?? 0) > 0 ? [
-                  { label: "Of which named by product", value: fmt(st.attributedSold ?? 0) },
-                  { label: "Of which estimated", value: fmt(st.unattributedSold ?? 0) },
-                ] : []),
-              ],
-              body: fromFeed && (st.unattributedSold ?? 0) > 0
-                ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
-                : undefined,
-            })}
-            {draftsAll !== null && leftRow("drafts", <span style={{ ...swatch(DRAFTS), background: DRAFTS }} />, "Drafts", fmt(draftsAll), {
-              head: "Drafts", rows: [
-                { label: "Units", value: fmt(draftsAll) },
-                ...(winnerDraftsAll > 0 ? [{ label: "Of which winners' claims", value: fmt(winnerDraftsAll) }] : []),
-              ],
-              body: "Draft orders raised but not yet paid, including the orders advisors have out for winners. They take room like a sale.",
-            })}
-            {leftRow("inhand", <span style={swatch(C.orange)} />, "Draw winners (estimate)", fmt(inHandAll), inHandTip)}
-            {close && leftRow("future", <span style={swatch(C.orangeLight)} />, "Still to come", fmt(futureAll), {
-              head: "Still to come", rows: [{ label: "Units", value: fmt(futureAll) }],
-              body: "The projection's further units, spread over the products with room left.",
-            })}
-          </div>
         </div>
 
         {/* the products, and the stamp over them while a feed is missing */}
@@ -322,12 +302,12 @@ export default function SellThrough({ snap, horizon = "today" }) {
               ] };
               return (
                 <div key={r.key} style={{
-                  display: "grid", gridTemplateColumns: "minmax(0, 128px) 1fr 84px", gap: 10, alignItems: "center", height: rowH,
+                  display: "grid", gridTemplateColumns: "minmax(0, 256px) 1fr 84px", gap: 12, alignItems: "center", height: rowH,
                 }}>
                   <div {...t.props(nameTip)} style={{ fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {r.name}
                   </div>
-                  <ProductBar row={r} close={close} maxV={maxFor(r)} tips={tips} height={barH} />
+                  <ProductBar row={r} close={close} maxV={maxFor(r)} tips={tips} height={barH} radius={barR} />
                   <div className="num" style={{ textAlign: "right", whiteSpace: "nowrap", lineHeight: 1.15 }}>
                     {pctRow !== null && pctRow !== undefined ? (
                       <>
@@ -348,14 +328,40 @@ export default function SellThrough({ snap, horizon = "today" }) {
       </div>
 
       {/* legend, no rule */}
-      <div style={{ flex: "0 0 auto", paddingTop: 10, display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px 14px", fontSize: 11, color: C.muted }}>
-        <span style={legendItem}><span style={swatch(C.rust)} />Paid</span>
-        {rows.some((r) => finite(r.drafts) && r.drafts > 0) && <span style={legendItem}><span style={{ ...swatch(DRAFTS), background: DRAFTS }} />Drafts</span>}
-        <span style={legendItem}><span style={swatch(C.orange)} />Draw winners (estimate)</span>
-        {close && <span style={legendItem}><span style={swatch(C.orangeLight)} />Still to come</span>}
-        {rows.some((r) => (r.oversubscribed ?? 0) > 0) && (
-          <span style={legendItem}><span style={{ ...swatch(HATCH), background: HATCH }} />Beyond the edition</span>
-        )}
+      <div style={{ flex: "0 0 auto", paddingTop: 10, display: "flex", alignItems: "center", flexWrap: "wrap", gap: "6px 18px", fontSize: 11.5, color: C.muted }}>
+        {legendChip({
+          key: "sold", sw: <span style={swatch(C.rust)} />, label: "Paid", value: fmt(sold),
+          tip: { head: "Paid", rows: [
+            { label: "Units", value: fmt(sold) },
+            ...(fromFeed && (st.unattributedSold ?? 0) > 0 ? [
+              { label: "Of which named by product", value: fmt(st.attributedSold ?? 0) },
+              { label: "Of which estimated", value: fmt(st.unattributedSold ?? 0) },
+            ] : []),
+          ],
+          body: fromFeed && (st.unattributedSold ?? 0) > 0
+            ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
+            : undefined },
+        })}
+        {draftsAll !== null && draftsAll > 0 && legendChip({
+          key: "drafts", sw: <span style={{ ...swatch(DRAFTS), background: DRAFTS }} />, label: "Drafts", value: fmt(draftsAll),
+          tip: { head: "Drafts", rows: [
+            { label: "Units", value: fmt(draftsAll) },
+            ...(winnerDraftsAll > 0 ? [{ label: "Of which winners' claims, under 72 hours old", value: fmt(winnerDraftsAll) }] : []),
+            ...(winnerDraftsLapsedAll > 0 ? [{ label: "Winners' claims unpaid after 72 hours (not counted)", value: fmt(winnerDraftsLapsedAll) }] : []),
+          ],
+          body: "Draft orders raised but not yet paid. They take room like a sale. The order an advisor sends a winner after a failed payment counts for 72 hours; unpaid after that, it is out." },
+        })}
+        {legendChip({
+          key: "inhand", sw: <span style={swatch(C.orange)} />, label: "Draw winners (estimate)", value: fmt(inHandAll), tip: inHandTip,
+        })}
+        {close && legendChip({
+          key: "future", sw: <span style={swatch(C.orangeLight)} />, label: "Still to come", value: fmt(futureAll),
+          tip: { head: "Still to come", rows: [{ label: "Units", value: fmt(futureAll) }],
+            body: "The projection's further units, spread over the products with room left." },
+        })}
+        {rows.some((r) => (r.oversubscribed ?? 0) > 0) && legendChip({
+          key: "over", sw: <span style={{ ...swatch(HATCH), background: HATCH }} />, label: "Beyond the edition", value: null,
+        })}
         <span style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>
           {allEditions && rows.length > 1 ? (byEdition ? "each bar is its edition" : "one scale, sellout at the paler end") : edition ? "sellout at the paler end" : "units"}
         </span>
