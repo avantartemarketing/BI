@@ -31,7 +31,7 @@ const AMBER = "#8a5f00";
 const W = 1180;
 const PAD = 36;
 const NAME_W = 300;
-const FIG_W = 156;
+const FIG_W = 146;
 const GAP = 20;
 const BAR_X = PAD + NAME_W + GAP;
 const BAR_W = W - PAD - FIG_W - GAP - BAR_X;
@@ -199,14 +199,14 @@ export function drawSellThrough(canvas, model, scale = 2) {
     ctx.textAlign = "right";
     let right = W - PAD;
     if (row.ratioText) {
-      ctx.font = `400 12px ${FONT}`;
+      ctx.font = `400 13.5px ${FONT}`;
       ctx.fillStyle = MUTED;
       ctx.fillText(row.ratioText, right, top + BAR_H / 2 + 5);
       right -= ctx.measureText(row.ratioText).width + 7;
     }
-    ctx.font = `600 19px ${FONT}`;
+    ctx.font = `600 15px ${FONT}`;
     ctx.fillStyle = row.pctColor || INK;
-    ctx.fillText(row.pctText, right, top + BAR_H / 2 + 6);
+    ctx.fillText(row.pctText, right, top + BAR_H / 2 + 5);
     y += ROW_H;
   }
 

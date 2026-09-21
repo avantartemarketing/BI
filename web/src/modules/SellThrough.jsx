@@ -390,7 +390,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
               ] };
               return (
                 <div key={r.key} style={{
-                  display: "grid", gridTemplateColumns: "minmax(0, 260px) 1fr 132px", gap: 14, alignItems: "center",
+                  display: "grid", gridTemplateColumns: "minmax(0, 260px) 1fr 118px", gap: 14, alignItems: "center",
                   // in a two-row card the rows grow into the height they have,
                   // so the space between bars stays even instead of pooling
                   // above and below the block
@@ -403,13 +403,13 @@ export default function SellThrough({ snap, horizon = "today" }) {
                   <div className="num" style={{ textAlign: "right", whiteSpace: "nowrap", lineHeight: 1.15 }}>
                     {pctRow !== null && pctRow !== undefined ? (
                       <>
-                        <span style={{ fontSize: 19, fontWeight: 600, color: ragColor(pctRow), letterSpacing: "-0.01em" }}>{Math.round(pctRow * 100)}%</span>
-                        <span style={{ fontSize: 12, color: C.muted, marginLeft: 6 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: ragColor(pctRow) }}>{Math.round(pctRow * 100)}%</span>
+                        <span style={{ fontSize: 13, color: C.muted, marginLeft: 6 }}>
                           {fmt(soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0))}/{fmt(r.edition)}
                         </span>
                       </>
                     ) : (
-                      <span style={{ fontSize: 19, fontWeight: 600, letterSpacing: "-0.01em" }}>{fmt(soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0))}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{fmt(soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0))}</span>
                     )}
                   </div>
                 </div>
