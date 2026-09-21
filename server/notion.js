@@ -68,6 +68,35 @@ function propText(p) {
   }
 }
 
+/* What the database actually holds, put where it can be read from the
+ * dashboard rather than from a Notion tab or a server log. The names and types
+ * are every column the matcher had to choose from; the values of the
+ * choice-typed ones are where a post's account, channel or format is recorded,
+ * and that is what a second series - Avant Arte's own posts beside the
+ * artist's - has to be split on. Capped hard on both axes: this rides in a
+ * status line a person reads. */
+const CHOICE = new Set(["select", "multi_select", "status"]);
+const SCHEMA_VALUES = 6;
+
+function noteSchema(schema, props) {
+  for (const [name, p] of Object.entries(props)) {
+    if (!p || !p.type) continue;
+    let e = schema.get(name);
+    if (!e) { e = { type: p.type, values: new Map() }; schema.set(name, e); }
+    if (!CHOICE.has(p.type)) continue;
+    for (const v of propText(p)) e.values.set(v, (e.values.get(v) || 0) + 1);
+  }
+}
+
+function summariseSchema(schema) {
+  return [...schema.entries()].map(([name, e]) => {
+    if (!CHOICE.has(e.type) || !e.values.size) return `${name} (${e.type})`;
+    const vals = [...e.values.entries()].sort((x, y) => y[1] - x[1]);
+    const shown = vals.slice(0, SCHEMA_VALUES).map(([v, n]) => `${v} ${n}`).join(", ");
+    return `${name} (${e.type}: ${shown}${vals.length > SCHEMA_VALUES ? ", …" : ""})`;
+  }).join(" | ");
+}
+
 function propDate(props) {
   const entries = Object.entries(props).filter(([, p]) => p && p.type === "date" && p.date && p.date.start);
   if (!entries.length) return null;
@@ -119,6 +148,7 @@ async function fetchPostsCsv() {
   const releases = knownReleases();
   if (!releases.length) throw new Error("no known releases to match against");
   const counts = new Map(); // "code|date" -> n
+  const schema = new Map();  // property name -> {type, values}
   let matched = 0, unmatched = 0, cursor = undefined, propNames = null;
   for (let page = 0; page < 40; page++) {
     const body = { page_size: 100, ...(cursor ? { start_cursor: cursor } : {}) };
@@ -126,6 +156,9 @@ async function fetchPostsCsv() {
     for (const row of res.results || []) {
       const props = row.properties || {};
       if (!propNames) propNames = Object.keys(props);
+      // every row, matched or not: an unmatched row is still evidence of what
+      // the columns hold, and the unmatched are the ones being asked about
+      noteSchema(schema, props);
       const texts = [];
       for (const p of Object.values(props)) {
         texts.push(...propText(p));
@@ -152,7 +185,7 @@ async function fetchPostsCsv() {
     const [code, date] = key.split("|");
     lines.push(`${code},${date},${n}`);
   }
-  return { csv: lines.join("\n") + "\n", matched, unmatched };
+  return { csv: lines.join("\n") + "\n", matched, unmatched, schema: summariseSchema(schema) };
 }
 
 /* Fetch and write the CSV; returns a status string for the refresh summary. */
@@ -163,7 +196,8 @@ async function refreshArtistPosts() {
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(tmp, out.csv);
   fs.renameSync(tmp, OUT);
-  return `notion ${out.matched} posts` + (out.unmatched ? ` (${out.unmatched} unmatched)` : "");
+  return `notion ${out.matched} posts` + (out.unmatched ? ` (${out.unmatched} unmatched)` : "")
+    + (out.schema ? `; columns: ${out.schema}` : "");
 }
 
-module.exports = { refreshArtistPosts, fetchPostsCsv, matchRelease, propText, propDate };
+module.exports = { refreshArtistPosts, fetchPostsCsv, matchRelease, propText, propDate, noteSchema, summariseSchema };
