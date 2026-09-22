@@ -346,6 +346,55 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
 
 # ---------------------------------------------------------------- ready-made baskets
 
+def _txt(v) -> str:
+    if v is None or (isinstance(v, float) and math.isnan(v)):
+        return ""
+    return str(v)
+
+
+def _day(v) -> str:
+    ts = pd.to_datetime(v, errors="coerce")
+    return "" if pd.isna(ts) else pd.Timestamp(ts).strftime("%Y-%m-%d")
+
+
+def candidate_rows(panel: pd.DataFrame) -> list[dict]:
+    """The draw panel as the picker's candidate rows, newest close first: each
+    launch's units, sessions, paid share, unit price in sterling, edition size,
+    dates and cluster. Every value is JSON-ready.
+
+    One function so the API shim and the build agree to the field: the build
+    writes these rows to data/app/basket_candidates.json on every run, and the
+    server serves that file rather than starting a python process for each
+    open of the picker. shared/basketRule.mjs ranks over exactly these rows.
+    """
+    names = _cluster_names(panel)
+    rows = []
+    if not len(panel):
+        return rows
+    for r in panel.sort_values("window_end", ascending=False, na_position="last").to_dict("records"):
+        cid = _cluster_id(r.get("cluster"))
+        rows.append({
+            "release_name": _txt(r.get("release_name")),
+            "artist": _txt(r.get("artist")),
+            "title": _txt(r.get("title")),
+            "quarter": _txt(r.get("quarter")),
+            "window_start": _day(r.get("window_start")),
+            "window_end": _day(r.get("window_end")),
+            "campaign_days": _num(r.get("campaign_days")),
+            "units": _num(r.get("tot_total_product_units")),
+            "sessions": _num(r.get("tot_sessions_total")),
+            "paid_share": _num(r.get("sess_share_paid")),
+            "private_room_share": _num(r.get("private_room_share")),
+            # the edition's unit price in sterling and its size, from Airtable
+            # via the panel (etl/pricing.py); 0 where Airtable has no match
+            "price": _num(r.get("unit_price_gbp")),
+            "edition_size": _num(r.get("edition_size")),
+            "cluster": cid,
+            "cluster_name": names.get(cid, "") if cid is not None else "",
+        })
+    return rows
+
+
 def _cluster_series(frame: pd.DataFrame) -> pd.Series:
     """The cluster column as numbers.
 
@@ -504,9 +553,13 @@ def own_members(panel: pd.DataFrame, release: dict | None, as_of: date | None = 
     same = pool["artist"].astype(str).str.strip().str.casefold() == artist.casefold()
     earlier = same.to_numpy() & (ends < start).to_numpy()
     d, _on = _distances(pool, release, panel)
+    names = pool["release_name"].astype(str).to_numpy()
     idx = np.where(earlier & (d <= OWN_MAX))[0]
-    idx = idx[np.argsort(d[idx], kind="stable")]
-    return pool["release_name"].to_numpy()[idx].tolist()
+    # nearest first, then by name: a total order, so two launches at the same
+    # distance come out the same way whichever order the panel is read in -
+    # the JS mirror sorts identically, and the parity test holds them to it
+    idx = idx[np.lexsort((names[idx], d[idx]))]
+    return names[idx].tolist()
 
 
 def similar_members(panel: pd.DataFrame, release: dict | None, as_of: date | None = None) -> tuple[list[str], float | None, tuple[str, ...]]:
@@ -548,9 +601,9 @@ def similar_members(panel: pd.DataFrame, release: dict | None, as_of: date | Non
         # three tiers, distance within each: comparable and recent, comparable
         # and older, then everything beyond NEAR
         tier = np.where(d[rest] <= NEAR, np.where(recent[rest], 0, 1), 2)
-        rest = rest[np.lexsort((d[rest], tier))]
+        rest = rest[np.lexsort((names[rest].astype(str), d[rest], tier))]
     else:
-        rest = rest[np.argsort(d[rest], kind="stable")]
+        rest = rest[np.lexsort((names[rest].astype(str), d[rest]))]
 
     members = first + names[rest].tolist()
     members = members[:SIMILAR_N]

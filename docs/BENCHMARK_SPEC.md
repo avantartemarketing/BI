@@ -127,10 +127,19 @@ with Cattelan's own 2 - all within ×1.9 of it." A reach past `SCALE_MISMATCH_FA
 instead: nothing on file is close, the benchmark is what the nearest launches on record reached,
 and the uplift says how far past them this edition is being asked to go.
 
-`GET /api/baskets?release=<id>` takes three previews: `recent=0|1` overrides the saved
-`prefer_recent`, and `units=&price=` stand in for the saved edition size and unit price, so the
-picker can show the basket a target would get before that target is saved. All three are part
-of the server's cache key.
+The rule is mirrored in **`shared/basketRule.mjs`**, and `tests/test_basket_parity.py` holds
+the two to the same eight in the same order over the real panel (every live release, recency
+on and off) and a set of planned-launch edge cases. The picker runs the mirror over the candidate
+rows as someone types, so it answers in milliseconds; the build runs the Python when the basket
+is saved. Ties on distance break on the release name on both sides, a total order, so the two
+cannot disagree over the panel's row order. The candidate rows come from **one function**,
+`candidate_rows` (`etl/baskets.py`): the build writes them to `data/app/basket_candidates.json`
+on every run and `GET /api/baskets/candidates` serves that file, starting a Python process only
+when there is no file yet. Opening the picker is one 50KB fetch and no Python.
+
+`GET /api/baskets?release=<id>` still takes three previews for other callers: `recent=0|1`
+overrides the saved `prefer_recent`, and `units=&price=` stand in for the saved edition size
+and unit price. All three are part of the server's cache key. The picker no longer uses it.
 
 #### 3.1.1 Why price is in the ladder (`etl/analysis/price_probe.py`, run 2026-09-17)
 

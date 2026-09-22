@@ -9,13 +9,15 @@
  * is a picture before it is a list, because "these are the eight nearest" is
  * something a person can check with their eyes and argue with.
  *
- * The rule itself lives in etl/baskets.py (similar_members) and this modal
- * asks the server for the suggestion rather than re-deriving it, so the basket
- * on screen is the basket the ETL will use: the artist's own earlier launches
- * first, then the nearest on units and price, with launches closed in the last
- * eighteen months ranked ahead of older ones among the comparable when "prefer
- * recent" is on. What this file computes itself is only what it draws: each
- * launch's two distances, the reach, the medians of whatever is ticked.
+ * The rule lives in etl/baskets.py (similar_members), which the build runs
+ * when a basket is saved, and in shared/basketRule.mjs, its JS mirror, which
+ * this modal runs over the candidate rows as someone types a target or flips
+ * the recency switch - tests/test_basket_parity.py holds the two to the same
+ * eight in the same order. The rows come from one file the build writes, so
+ * opening the picker is one small fetch and no Python process. The rule: the
+ * artist's own earlier launches first, then the nearest on units and price,
+ * with launches closed in the last eighteen months ranked ahead of older ones
+ * among the comparable when "prefer recent" is on.
  *
  * A release with no target or price yet has nothing to be near to, so the
  * picker's first job is to ask for them, and it does so in place: the two
@@ -30,13 +32,9 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { C, fmt, fmtK, fmtMoney, fmtPct } from "./ui.jsx";
+import { similarMembers, ownMembers, releasePrice, releaseArtist, MIN_MEMBERS, THIN_MEMBERS, NEAR, RECENT_MONTHS } from "../../shared/basketRule.mjs";
 
-// mirror etl/baskets.py, which is the only place they are enforced
-const MIN_MEMBERS = 3;
-const THIN_MEMBERS = 6;
-const SIMILAR_N = 8;
-const NEAR = 4;             // the widest a comparable ever is; the "most similar" band
-const RECENT_MONTHS = 18;
+const SIMILAR_NAME = "Similar size and shape";   // etl/baskets.py SIMILAR_NAME: the basket with id similar_size
 const SHOW_AT_LEAST = 14;   // the members and the ones that just missed
 const YEAR_MS = 365 * 86400000;
 const FIELD = "#c9c7c0";    // the launches that are not in the basket: present, recessive
@@ -184,9 +182,8 @@ const Legend = () => {
   );
 };
 
-export default function BasketPicker({ releaseId, releaseName, targetUnits, unitPrice, preferRecent = true, current, onInputs, onPick, onClose }) {
+export default function BasketPicker({ releaseId, releaseName, artist, currency, announceDate, privateRoomOpen, targetUnits, unitPrice, preferRecent = true, current, onInputs, onPick, onClose }) {
   const [recent, setRecent] = useState(preferRecent !== false);
-  const [ready, setReady] = useState(null);
   const [rows, setRows] = useState(null);
   const [error, setError] = useState(null);
   const [seed, setSeed] = useState(null);         // {id, name, members, own, reach, profile}
@@ -200,7 +197,10 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
   const [draft, setDraft] = useState({ units: targetUnits > 0 ? String(targetUnits) : "", price: unitPrice > 0 ? String(unitPrice) : "" });
 
   const placeable = targetUnits > 0 && unitPrice > 0;
-  const L = useMemo(() => ({ name: releaseName, target: targetUnits, price: unitPrice }), [releaseName, targetUnits, unitPrice]);
+  const L = useMemo(() => ({
+    name: releaseName, artist: artist || "", target: targetUnits, price: unitPrice, currency: currency || "GBP",
+    private_room_open: privateRoomOpen || null, announce_date: announceDate || null,
+  }), [releaseName, artist, targetUnits, unitPrice, currency, privateRoomOpen, announceDate]);
 
   // Escape closes. Nothing else is trapped: the picker sits over a page that is
   // still readable behind it.
@@ -218,41 +218,36 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
     }).catch((e) => setError(String(e)));
   }, []);
 
-  /* The suggestion, from the server, for this target and price and this
-     setting of the recency switch - refetched as any of them change, a beat
-     behind typing. Ticks that still equal the previous suggestion (or are
-     empty) move to the new one; ticks someone has edited are theirs and stay,
-     with the seed updated underneath so the headline still says "edited"
-     against the right thing. */
+  /* The suggestion: the rule in shared/basketRule.mjs over the rows, for this
+     target and price and this setting of the recency switch - the same rule
+     the build runs when the basket is saved, answered here in a few
+     milliseconds rather than by a Python process per keystroke. Ticks that
+     still equal the previous suggestion (or are empty) move to the new one;
+     ticks someone has edited are theirs and stay, with the seed updated
+     underneath so the headline still says "edited" against the right thing. */
+  const rule = useMemo(() => (rows && placeable ? similarMembers(rows, L, { preferRecent: recent }) : null), [rows, L, recent, placeable]);
+  const ownList = useMemo(() => (rows && placeable ? ownMembers(rows, L) : []), [rows, L, placeable]);
   useEffect(() => {
-    if (!placeable) { setSeed(null); seedRef.current = null; return undefined; }
-    const q = `?release=${encodeURIComponent(releaseId || "")}&recent=${recent ? 1 : 0}&units=${targetUnits}&price=${unitPrice}`;
-    const t = setTimeout(() => {
-      fetch(`/api/baskets${q}`).then((r) => r.json()).then((d) => {
-        if (d.error) { setError(d.error); return; }
-        setReady(d);
-        const sug = (d.baskets || []).find((b) => b.id === "similar_size") || null;
-        const members = ((sug && ((sug.profile || {}).members || sug.members)) || []).filter((m) => m !== releaseName);
-        const next = sug && members.length ? { id: sug.id, name: sug.name, kind: "ready", members, own: sug.own || [], reach: sug.reach ?? null, profile: sug.profile || null, desc: sug.desc || "" } : null;
-        const prev = seedRef.current, cur = tickedRef.current;
-        const untouched = !cur.size || (prev && cur.size === prev.members.length && prev.members.every((m) => cur.has(m)));
-        seedRef.current = next; setSeed(next);
-        if (next && untouched) setTicked(new Set(next.members));
-      }).catch((e) => setError(String(e)));
-    }, 220);
-    return () => clearTimeout(t);
-  }, [releaseId, releaseName, recent, targetUnits, unitPrice, placeable]);
+    const next = rule && rule.members.length
+      ? { id: "similar_size", name: SIMILAR_NAME, kind: "ready", members: rule.members, own: ownList, reach: rule.reach }
+      : null;
+    const prev = seedRef.current, cur = tickedRef.current;
+    const untouched = !cur.size || (prev && cur.size === prev.members.length && prev.members.every((m) => cur.has(m)));
+    seedRef.current = next; setSeed(next);
+    if (next && untouched) setTicked(new Set(next.members));
+  }, [rule, ownList]);
 
-  const byName = useMemo(() => new Map((rows || []).map((r) => [r.release_name, r])), [rows]);
-  const ownArtist = useMemo(() => {
-    const me = byName.get(releaseName);
-    return (me && me.artist) || String(releaseName || "").split(" · ")[0].trim();
-  }, [byName, releaseName]);
+  const ownArtist = useMemo(() => (rows ? releaseArtist(rows, L) : (artist || String(releaseName || "").split(" · ")[0].trim())), [rows, L, artist, releaseName]);
+  // the price the rule ranks on: the panel's for a launch it already prices,
+  // the typed one otherwise - the same precedence as the Python side, so the
+  // map and the build agree; the headline says when the two differ
+  const priceUsed = useMemo(() => (rows ? releasePrice(rows, L) : unitPrice), [rows, L, unitPrice]);
+  const LM = useMemo(() => ({ ...L, price: priceUsed }), [L, priceUsed]);
   const isOwn = (r) => !!ownArtist && r.artist === ownArtist && r.release_name !== releaseName;
 
   // each launch's two distances, and its worse one
   const scored = useMemo(() => (rows || []).filter((r) => r.release_name !== releaseName).map((r) => {
-    const du = ratio(r.units, L.target), dp = ratio(r.price, L.price);
+    const du = ratio(r.units, L.target), dp = ratio(r.price, priceUsed);
     return { ...r, du, dp, d: du === null || dp === null ? null : Math.max(du, dp) };
   }).sort((a, b) => (a.d ?? Infinity) - (b.d ?? Infinity)), [rows, releaseName, L]);
 
@@ -305,7 +300,7 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
   };
   const use = () => {
     if (untouched && seed) {
-      onPick({ kind: "ready", id: seed.id, name: seed.name, n: seed.members.length, members: seed.members, profile: seed.profile, preferRecent: recent });
+      onPick({ kind: "ready", id: seed.id, name: seed.name, n: seed.members.length, members: seed.members, profile: live, preferRecent: recent });
       return;
     }
     onPick({ kind: "bespoke", name: `${seed ? seed.name : "Basket"} (edited)`, n: members.length, members: members.map((m) => m.release_name), profile: live, preferRecent: recent });
@@ -313,7 +308,9 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
 
   const headline = () => {
     const n = members.length, who = ownArtist.split(" ").slice(-1)[0];
-    let s = <>The <b>{n}</b> launches nearest to <b>{fmt(L.target)} units at {fmtMoney(L.price)}</b>{ownIn ? <>, starting with {who}'s own {ownIn === 1 ? "one" : ownIn}</> : null}</>;
+    const priced = priceUsed > 0 && unitPrice > 0 && Math.round(priceUsed) !== Math.round(unitPrice)
+      ? <span style={{ color: C.muted }}> (the {fmtMoney(priceUsed)} Airtable has for it, not the {fmtMoney(unitPrice)} typed)</span> : null;
+    let s = <>The <b>{n}</b> launches nearest to <b>{fmt(L.target)} units at {fmtMoney(priceUsed)}</b>{priced}{ownIn ? <>, starting with {who}'s own {ownIn === 1 ? "one" : ownIn}</> : null}</>;
     const cost = passedOver ? <> <span style={{ color: C.amber }}>{passedOver === 1 ? "One nearer launch was" : `${passedOver} nearer launches were`} passed over for being older than {RECENT_MONTHS} months.</span></> : null;
     if (reach === null) return <>{s}.</>;
     if (reach > NEAR) return <>{s}. <span style={{ color: C.amber }}>Nothing on file is this size</span> - these are the nearest we have, the furthest {x(reach)} away.{cost}</>;
@@ -381,7 +378,7 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
             {placeable && (
               <>
                 <div style={{ marginTop: 14 }}>
-                  <Scatter rows={rows} L={L} ticked={ticked} isOwn={isOwn} reach={reach} hover={hover} setHover={setHover} />
+                  <Scatter rows={rows} L={LM} ticked={ticked} isOwn={isOwn} reach={reach} hover={hover} setHover={setHover} />
                   <Legend />
                 </div>
 
@@ -428,7 +425,7 @@ export default function BasketPicker({ releaseId, releaseName, targetUnits, unit
                       <span /><span style={{ textAlign: "right" }}>This launch</span><span style={{ textAlign: "right", color: C.ink, fontWeight: 600 }}>Basket</span>
                     </div>
                     {railRow("Units", fmt(L.target), members.length ? fmt(live.units) : "–", "This launch's target against the basket's median units at close - the benchmark.")}
-                    {railRow("Unit price", fmtMoney(L.price), members.length && live.price > 0 ? fmtMoney(live.price) : "–", "Unit price in sterling, from Airtable. Launches Airtable could not price are left out of the median.")}
+                    {railRow("Unit price", fmtMoney(priceUsed), members.length && live.price > 0 ? fmtMoney(live.price) : "–", "Unit price in sterling, from Airtable. Launches Airtable could not price are left out of the median.")}
                     {railRow("Sessions", null, members.length ? fmtK(live.sessions) : "–", "The basket's median sessions. This launch's own are to date, so there is nothing to compare them with yet.")}
                     {railRow("Paid share", null, members.length ? fmtPct(live.paid_share, 0) : "–", "Median share of sessions coming from paid.")}
                     {railRow("Uplift to target (K)", "", K === null ? "–" : "×" + fmt(K, 2), "The target over the basket's median units: how far past the benchmark this launch is being asked to go.")}

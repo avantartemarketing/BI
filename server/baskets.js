@@ -70,28 +70,7 @@ def day(value):
     return None if pd.isna(value) else str(pd.Timestamp(value).date())
 
 if req.get("op") == "candidates":
-    names = B._cluster_names(panel)
-    rows = []
-    for r in panel.sort_values("window_end", ascending=False, na_position="last").to_dict("records"):
-        cid = B._cluster_id(r.get("cluster"))
-        rows.append({
-            "release_name": txt(r.get("release_name")),
-            "artist": txt(r.get("artist")),
-            "title": txt(r.get("title")),
-            "quarter": txt(r.get("quarter")),
-            "window_end": day(r.get("window_end")),
-            "campaign_days": B._num(r.get("campaign_days")),
-            "units": B._num(r.get("tot_total_product_units")),
-            "sessions": B._num(r.get("tot_sessions_total")),
-            "paid_share": B._num(r.get("sess_share_paid")),
-            "private_room_share": B._num(r.get("private_room_share")),
-            # the edition's unit price in sterling and its size, from Airtable
-            # via the panel (etl/pricing.py); 0 where Airtable has no match
-            "price": B._num(r.get("unit_price_gbp")),
-            "edition_size": B._num(r.get("edition_size")),
-            "cluster": cid,
-            "cluster_name": names.get(cid, "") if cid is not None else "",
-        })
+    rows = B.candidate_rows(panel)
     out = {"rows": rows}
 elif req.get("op") == "profile":
     members = [str(m) for m in (req.get("members") or [])]
@@ -210,8 +189,18 @@ function readyBaskets(releaseId, opts = {}) {
   return cached(key, () => runBaskets({ op: "baskets", release }));
 }
 
-// GET /api/baskets/candidates: the whole draw panel for the Bespoke tab.
+/* GET /api/baskets/candidates: the whole draw panel, as the rows the picker
+ * ranks over (shared/basketRule.mjs). The build writes them to a file on
+ * every run, so serving them is a file read; a python process is only
+ * started when there is no file yet - a fresh checkout before its first
+ * build. That is what made opening the picker take seconds on a shared box,
+ * and it no longer happens on the picker's path at all. */
+const CANDIDATES_PATH = path.join(ROOT, "data", "app", "basket_candidates.json");
 function candidates() {
+  try {
+    const doc = JSON.parse(fs.readFileSync(CANDIDATES_PATH, "utf8"));
+    if (doc && Array.isArray(doc.rows) && doc.rows.length) return Promise.resolve({ rows: doc.rows, asOf: doc.asOf || null });
+  } catch {}
   return cached("candidates", () => runBaskets({ op: "candidates" }));
 }
 

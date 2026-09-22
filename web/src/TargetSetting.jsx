@@ -806,6 +806,10 @@ export default function TargetSetting({ snap, onSaved }) {
         <BasketPicker releaseId={snap.id} releaseName={snap.releaseName} current={spec}
           targetUnits={Number(inp.edition_size) || 0} unitPrice={Number(inp.unit_price) || 0}
           preferRecent={inp.prefer_recent !== false}
+          // what the rule needs to find the artist's own earlier launches and
+          // to read the typed price in its currency (shared/basketRule.mjs)
+          artist={snap.artist || ""} currency={inp.currency || "GBP"}
+          announceDate={inp.announce_date || null} privateRoomOpen={inp.private_room_open || null}
           // the picker asks for a target and a price when there are none, and
           // writes them straight into this form so the basket follows the typing
           onInputs={(patch) => setInp({ ...inp, ...patch })}
