@@ -125,6 +125,19 @@ SIMILAR_NAME = "Similar size and shape"
 SIMILAR_N = 8
 SCALE_MISMATCH_FACTOR = 4.0   # beyond this the basket is not a comparable at all
 
+# The artist's own earlier launches go into the basket first - there is no
+# better comparable than the same artist's last draw - unless one of them is
+# further than OWN_MAX away on either axis, when it is a different kind of
+# launch and takes its chances with everything else.
+OWN_MAX = 3.0
+# "Prefer recent" (release input prefer_recent, on by default) ranks launches
+# closed in the last RECENT_MONTHS ahead of older ones, but only among those
+# within NEAR on both axes: the market moves, so between two comparables the
+# newer one is the better witness, but recency never reaches past what is
+# comparable at all to pull in a launch for being new.
+NEAR = 4.0
+RECENT_MONTHS = 18
+
 # Distance is on two axes, units and unit price (etl/pricing.py,
 # unit_price_gbp), and a launch is only as near as its worse one: matched on
 # size at four times the price is not a comparable, and a single figure taken
@@ -450,28 +463,13 @@ def _ready(bid: str, name: str, desc: str, members: list[str], panel: pd.DataFra
     }
 
 
-def similar_members(panel: pd.DataFrame, release: dict | None) -> tuple[list[str], float | None, tuple[str, ...]]:
-    """The SIMILAR_N launches nearest this one on units and unit price.
-
-    Distance is the larger of the two multiples, each taken so it reads above
-    one whichever side it falls: a launch is only as near as its worse axis.
-    That is the figure the picker shows in its two columns, so the basket is
-    simply the top of the list the picker is already ordered by - there is
-    nothing to explain about why a member is in it beyond where it sits.
-
-    A release with no price is ranked on units alone; one with no edition size
-    has no basket, there being nothing to be near to. A panel shorter than
-    SIMILAR_N gives what it has, down to nothing.
-
-    Returns the members, the reach - how far the furthest member is, so the
-    basket can say how close "closest" turned out to be - and the axes that
-    ranked them, ("size",) or ("size", "price").
-    """
-    own = _own_name(release)
-    pool = panel[panel["release_name"] != own] if own else panel
+def _distances(pool: pd.DataFrame, release: dict | None, panel: pd.DataFrame) -> tuple[np.ndarray, tuple[str, ...]]:
+    """How far every launch in the pool is from this one: the larger of its
+    units multiple and its price multiple, each taken above 1 whichever side
+    it falls, so a launch is only as near as its worse axis. A launch Airtable
+    could not price is ranked on units alone rather than dropped over a
+    missing field. Returns the distances and the axes that set them."""
     size = _num((release or {}).get("edition_size"))
-    if size <= 0 or not len(pool):
-        return [], None, ()
     units = pool["tot_total_product_units"].map(_num).astype(float).to_numpy()
     price = _release_price(panel, release)
     prices = (pd.to_numeric(pool["unit_price_gbp"], errors="coerce").to_numpy()
@@ -485,21 +483,85 @@ def similar_members(panel: pd.DataFrame, release: dict | None) -> tuple[list[str
 
     d = mult(units, size)
     if use_price:
-        # a launch Airtable could not price cannot be ranked on price, and
-        # dropping it entirely would lose a real comparable over a missing
-        # field, so it is ranked on units alone and sorts among the rest
         dp = mult(prices, price)
         d = np.maximum(d, np.where(np.isfinite(dp), dp, 1.0))
-    order = np.argsort(d, kind="stable")[:SIMILAR_N]
-    order = order[np.isfinite(d[order])]
-    if not len(order):
+    return d, (("size", "price") if use_price else ("size",))
+
+
+def own_members(panel: pd.DataFrame, release: dict | None, as_of: date | None = None) -> list[str]:
+    """The artist's own earlier launches that belong in the basket: same
+    artist, closed before this launch opened, and within OWN_MAX on both
+    axes. Nearest first. Empty for an artist with no history on file."""
+    own_name = _own_name(release)
+    pool = panel[panel["release_name"] != own_name] if own_name else panel
+    if not len(pool) or "artist" not in pool.columns or _num((release or {}).get("edition_size")) <= 0:
+        return []
+    artist = _artist_of(panel, release)
+    if not artist:
+        return []
+    start = _release_start(panel, release, as_of or date.today())
+    ends = pd.to_datetime(pool["window_end"], errors="coerce")
+    same = pool["artist"].astype(str).str.strip().str.casefold() == artist.casefold()
+    earlier = same.to_numpy() & (ends < start).to_numpy()
+    d, _on = _distances(pool, release, panel)
+    idx = np.where(earlier & (d <= OWN_MAX))[0]
+    idx = idx[np.argsort(d[idx], kind="stable")]
+    return pool["release_name"].to_numpy()[idx].tolist()
+
+
+def similar_members(panel: pd.DataFrame, release: dict | None, as_of: date | None = None) -> tuple[list[str], float | None, tuple[str, ...]]:
+    """The SIMILAR_N launches nearest this one on units and unit price.
+
+    The artist's own earlier launches go in first (own_members), then the
+    nearest of everything else fills the basket. With prefer_recent on - the
+    default - launches closed in the last RECENT_MONTHS rank ahead of older
+    ones among those within NEAR on both axes; recency never reaches past NEAR.
+
+    Distance is the figure the picker shows in its two columns, so the basket
+    is simply the top of the list the picker is already ordered by. A release
+    with no price is ranked on units alone; one with no edition size has no
+    basket, there being nothing to be near to. A panel shorter than SIMILAR_N
+    gives what it has.
+
+    Returns the members, the reach - how far the furthest member is - and the
+    axes that ranked them, ("size",) or ("size", "price").
+    """
+    own_name = _own_name(release)
+    pool = panel[panel["release_name"] != own_name] if own_name else panel
+    size = _num((release or {}).get("edition_size"))
+    if size <= 0 or not len(pool):
         return [], None, ()
-    members = pool["release_name"].to_numpy()[order].tolist()
-    reach = float(d[order].max())
-    on = ("size", "price") if use_price else ("size",)
+    as_of = as_of or date.today()
+    d, on = _distances(pool, release, panel)
+    names = pool["release_name"].to_numpy()
+
+    first = own_members(panel, release, as_of)
+    taken = set(first)
+    rest = np.array([i for i in range(len(pool)) if names[i] not in taken and np.isfinite(d[i])], dtype=int)
+
+    prefer_recent = (release or {}).get("prefer_recent")
+    prefer_recent = True if prefer_recent is None else bool(prefer_recent)
+    if prefer_recent and len(rest):
+        ends = pd.to_datetime(pool["window_end"], errors="coerce").to_numpy()
+        cutoff = np.datetime64(pd.Timestamp(as_of) - pd.DateOffset(months=RECENT_MONTHS))
+        recent = ends >= cutoff
+        # three tiers, distance within each: comparable and recent, comparable
+        # and older, then everything beyond NEAR
+        tier = np.where(d[rest] <= NEAR, np.where(recent[rest], 0, 1), 2)
+        rest = rest[np.lexsort((d[rest], tier))]
+    else:
+        rest = rest[np.argsort(d[rest], kind="stable")]
+
+    members = first + names[rest].tolist()
+    members = members[:SIMILAR_N]
+    if not members:
+        return [], None, ()
+    by_name = {names[i]: d[i] for i in range(len(pool))}
+    reach = float(max(by_name[m] for m in members))
     return members, reach, on
 
-def similar_desc(members: list[str], reach: float | None, on: tuple[str, ...], size: float, price: float) -> str:
+def similar_desc(members: list[str], reach: float | None, on: tuple[str, ...], size: float, price: float,
+                 own: int = 0, artist: str = "") -> str:
     """The sentence under the basket in the picker.
 
     The count is fixed, so what the sentence has to carry is how close the
@@ -513,6 +575,8 @@ def similar_desc(members: list[str], reach: float | None, on: tuple[str, ...], s
     if "price" in on:
         axes += f" and on its unit price of £{price:,.0f}"
     near = f"The {len(members)} launches nearest on {axes}"
+    if own and artist:
+        near += f", starting with {artist}'s own {own}"
     if reach is None:
         return near + "."
     if reach > SCALE_MISMATCH_FACTOR:
@@ -535,13 +599,17 @@ def ready_baskets(panel: pd.DataFrame, as_of: date, release: dict | None = None)
     cid = _cluster_series(pool)
     out = []
 
-    members, reach, on = similar_members(panel, release)
+    members, reach, on = similar_members(panel, release, as_of)
     size = _num((release or {}).get("edition_size"))
-    desc = similar_desc(members, reach, on, size, _release_price(panel, release))
+    own = [m for m in own_members(panel, release, as_of) if m in members]
+    desc = similar_desc(members, reach, on, size, _release_price(panel, release),
+                        len(own), _artist_of(panel, release).split(" ")[-1] if own else "")
     similar = _ready("similar_size", SIMILAR_NAME, desc, members, panel)
     similar["matchedOn"] = list(on)
     # how far the furthest member is, not a band the search stopped at
     similar["reach"] = reach
+    # the members that are the artist's own, so the picker can mark them
+    similar["own"] = own
     out.append(similar)
 
     for c in range(4):
@@ -589,7 +657,7 @@ def suggest_basket(panel: pd.DataFrame, release: dict) -> str:
     """
     own = _own_name(release)
     pool = panel[panel["release_name"] != own] if own else panel
-    members, _reach, _on = similar_members(panel, release)
+    members, _reach, _on = similar_members(panel, release)  # as_of: today, as the picker's
     if len(members) >= MIN_MEMBERS:
         return "similar_size"
     row = _panel_row(panel, release)

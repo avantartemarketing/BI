@@ -238,15 +238,22 @@ words.
    Shape is out of selection, worth two live releases as predicted. Six live
    releases move in all.
 3. The basket list with ticks on the Target setting tab, on the existing
-   bespoke machinery. **Done.** The picker opens on the launches, ordered by
-   distance from this one on units and price, with the suggested basket
-   ticked, and the ready-made gallery is gone: the list is the only way a
-   basket is chosen. Step 2 is not done, so the suggestion is still the old rule's -
+   bespoke machinery. **Done, then redesigned as the map** (22 September):
+   a scatter of units against price with this launch as the ring, the eight
+   nearest as the basket, the reach drawn as the box it is, the list under it
+   for editing. The rule gained the artist's own earlier launches first
+   (within x3) and a per-release "prefer recent" switch (18 months, a tier
+   among launches within x4, on by default). A release with no target asks
+   for units and price in place. The ready-made gallery is gone. Still open
+   from step 1: the members are not on the snapshot, so the results page
+   cannot yet name them. Step 2 is not done, so the suggestion is still the old rule's -
    the list shows what that rule picked, which is the point: Warhol's six
    members and their 2.5x to 3.9x spread are now on screen rather than
    behind a name.
 4. `paid_allowed`: the organic median, the paid group removed from the
-   targets, the page wording. Touches the target maths in `etl/build.py`
+   targets, the page wording. **Next.** The switch is drawn in the picker and
+   inert, saying so; wiring only the median would leave the paid target
+   allocated against a benchmark that had stripped it. Touches the target maths in `etl/build.py`
    and `shared/targetModel.mjs`, so it needs the parity tests extended.
 5. `artist_status`: the input, the panel column and its hand labelling,
    the same-status rung and the same-status channel shares.

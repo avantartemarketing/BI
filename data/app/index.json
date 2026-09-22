@@ -35,9 +35,9 @@
    "of": 24,
    "complete": false,
    "windowEnd": "2026-09-25",
-   "statusPct": -0.6428,
+   "statusPct": -0.6482,
    "ok": false,
-   "benchmarkPct": -0.629,
+   "benchmarkPct": -0.5518,
    "lastSeen": null,
    "sessions": null
   },
@@ -177,7 +177,7 @@
    "windowEnd": "2026-09-11",
    "statusPct": 0.0,
    "ok": true,
-   "benchmarkPct": 0.4898,
+   "benchmarkPct": 0.6371,
    "lastSeen": null,
    "sessions": null
   },
@@ -217,7 +217,7 @@
    "windowEnd": "2026-08-26",
    "statusPct": -0.39,
    "ok": false,
-   "benchmarkPct": -0.39,
+   "benchmarkPct": -0.4696,
    "lastSeen": null,
    "sessions": null
   },
@@ -237,7 +237,7 @@
    "windowEnd": "2026-08-25",
    "statusPct": -0.4997,
    "ok": false,
-   "benchmarkPct": -0.4027,
+   "benchmarkPct": -0.4803,
    "lastSeen": null,
    "sessions": null
   },
@@ -257,7 +257,7 @@
    "windowEnd": "2026-08-21",
    "statusPct": 0.0,
    "ok": true,
-   "benchmarkPct": 0.2397,
+   "benchmarkPct": 0.3793,
    "lastSeen": null,
    "sessions": null
   },
@@ -277,7 +277,7 @@
    "windowEnd": "2026-08-20",
    "statusPct": -0.0113,
    "ok": true,
-   "benchmarkPct": -0.0584,
+   "benchmarkPct": 0.2475,
    "lastSeen": null,
    "sessions": null
   },
@@ -297,7 +297,7 @@
    "windowEnd": "2026-08-18",
    "statusPct": 0.0,
    "ok": true,
-   "benchmarkPct": 0.3314,
+   "benchmarkPct": 0.6636,
    "lastSeen": null,
    "sessions": null
   },

@@ -187,7 +187,60 @@ def test_price_band() -> None:
         B.SIMILAR_USE_PRICE = keep
 
 
+def test_own_artist_and_recency() -> None:
+    """The artist's own earlier launches go in first; recency reorders only
+    among comparables, and only when asked."""
+    import datetime as dt
+    panel = synthetic_panel().copy()
+    n = len(panel)
+    panel["artist"] = [f"Other {i}" for i in range(n)]
+    panel["window_end"] = pd.Timestamp("2024-01-01")          # old, unless set below
+    panel["tot_total_product_units"] = panel["tot_total_product_units"].astype(float)
+    panel["unit_price_gbp"] = panel["unit_price_gbp"].astype(float)
+    # the same artist: three within x3 (x1.07, x1.07, x2.67), one at x6
+    for i, (u, pr) in enumerate([(140, 1400), (160, 1600), (400, 1500), (900, 1500)]):
+        panel.loc[panel.index[i], ["artist", "tot_total_product_units", "unit_price_gbp"]] = ["Same One", u, pr]
+    own_names = panel["release_name"].iloc[:3].tolist()
+    far_own = panel["release_name"].iloc[3]
+    # a dead-on match by someone else (x1.0), and the recency pair: x1.03 old, x2.0 recent
+    panel.loc[panel.index[4], ["tot_total_product_units", "unit_price_gbp"]] = [150, 1500]
+    exact = panel["release_name"].iloc[4]
+    panel.loc[panel.index[5], ["tot_total_product_units", "unit_price_gbp"]] = [155, 1500]
+    old_near = panel["release_name"].iloc[5]
+    panel.loc[panel.index[6], ["tot_total_product_units", "unit_price_gbp", "window_end"]] = [300, 1500, pd.Timestamp("2026-06-01")]
+    recent_farther = panel["release_name"].iloc[6]
+    as_of = dt.date(2026, 9, 22)
+    rel = {"release_name": "new", "artist": "Same One", "edition_size": 150, "unit_price": 1500, "announce_date": "2026-09-01"}
+
+    own = B.own_members(panel, rel, as_of)
+    assert set(own) == set(own_names) and far_own not in own, own
+
+    members, reach, on = B.similar_members(panel, rel, as_of)
+    # the artist's own three come first, whatever else is nearer
+    assert members[:3] == own, members[:4]
+    assert len(members) == B.SIMILAR_N and far_own not in members
+    # prefer_recent (the default) is a tier, not a tiebreak: among launches
+    # within x4, the recent x2.0 outranks BOTH older ones, the x1.0 included.
+    # That is the strength of the preference as specified; the picker says
+    # what it passed over, and the strength is a decision, not a bug.
+    assert members.index(recent_farther) < members.index(exact) < members.index(old_near), members
+    # off: distance alone, so the dead-on match follows the artist's own and
+    # the older x1.03 comes before the recent x2.0
+    m2, _r2, _on2 = B.similar_members(panel, {**rel, "prefer_recent": False}, as_of)
+    assert m2[:3] == own and m2[3] == exact and old_near in m2, m2
+    # ... and a x2.0 launch only makes the eight if nothing nearer fills them,
+    # which on this panel it does not; if it is in, it is after the x1.03
+    assert recent_farther not in m2 or m2.index(old_near) < m2.index(recent_farther), m2
+    # the artist's own launch that opened after this one is not "earlier"
+    panel.loc[panel.index[0], "window_end"] = pd.Timestamp("2026-12-01")
+    assert own_names[0] not in B.own_members(panel, rel, as_of)
+    # the sentence names the artist's own
+    desc = B.similar_desc(members, reach, on, 150, 1500, 3, "One")
+    assert "starting with One's own 3" in desc, desc
+
+
 if __name__ == "__main__":
     test_launches_and_match()
     test_price_band()
-    print("ok: pricing join and price band")
+    test_own_artist_and_recency()
+    print("ok: pricing join, nearest-8, own artist and recency")

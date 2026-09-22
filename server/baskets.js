@@ -187,9 +187,26 @@ function releaseName(releaseId) {
  * with their profiles, the saved ones, and which one is suggested (§3.3).
  * A missing or unknown release id is not an error - the picker can be opened
  * without one, and then same_artist is simply empty. */
-function readyBaskets(releaseId) {
-  const release = releaseFor(releaseId);
-  const key = "baskets:" + ((release && release.release_name) || "");
+/* `opts.preferRecent` overrides the release's saved prefer_recent for this
+ * listing, so the picker's switch can ask "and without recency?" before the
+ * person has saved anything. It is part of the cache key because it changes
+ * the answer. */
+/* `opts.units` and `opts.price` stand in for the release's saved edition size
+ * and unit price, so the picker can ask for the basket a target would get
+ * before that target is saved - a release with none saved has nothing to be
+ * near to otherwise, and the picker's first job is to ask for them. Both are
+ * part of the cache key because they change the answer. */
+function readyBaskets(releaseId, opts = {}) {
+  let release = releaseFor(releaseId);
+  if (release) {
+    release = { ...release };
+    if (opts.preferRecent !== undefined) release.prefer_recent = !!opts.preferRecent;
+    if (opts.units > 0) release.edition_size = opts.units;
+    if (opts.price > 0) { release.unit_price = opts.price; release.currency = "GBP"; }
+  }
+  const key = "baskets:" + ((release && release.release_name) || "") + ":" +
+    (release && release.prefer_recent === false ? "old" : "recent") + ":" +
+    (opts.units > 0 ? opts.units : "-") + ":" + (opts.price > 0 ? opts.price : "-");
   return cached(key, () => runBaskets({ op: "baskets", release }));
 }
 

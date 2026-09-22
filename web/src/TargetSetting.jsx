@@ -380,6 +380,9 @@ export default function TargetSetting({ snap, onSaved }) {
       benchmark_basket: chosen.kind === "bespoke"
         ? { kind: "bespoke", members: chosen.members, name: chosen.name }
         : { kind: chosen.kind, id: chosen.id },
+      // the picker's recency switch is a release input: the rule reads it on
+      // every rebuild, so the suggestion stays the one that was looked at
+      prefer_recent: chosen.preferRecent !== false,
       // picking a basket is what puts a release on the benchmark model; without
       // a stretch mode the server would leave it on whatever it had
       stretch_mode: inp.stretch_mode || "even",
@@ -802,6 +805,10 @@ export default function TargetSetting({ snap, onSaved }) {
       {picking && (
         <BasketPicker releaseId={snap.id} releaseName={snap.releaseName} current={spec}
           targetUnits={Number(inp.edition_size) || 0} unitPrice={Number(inp.unit_price) || 0}
+          preferRecent={inp.prefer_recent !== false}
+          // the picker asks for a target and a price when there are none, and
+          // writes them straight into this form so the basket follows the typing
+          onInputs={(patch) => setInp({ ...inp, ...patch })}
           onPick={onPick} onClose={() => setPicking(false)} />
       )}
     </div>

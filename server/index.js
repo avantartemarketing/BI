@@ -204,6 +204,7 @@ function defaultsFor(id, disc) {
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
     edition_size: null, edition_total: null, unit_price: null, artist_profit: null, aa_group_profit: null,
     preorder_conversion_rate: null,
+    prefer_recent: true,
     artist_profit_share: 0.5, framing_available: true, paid_share_override: null,
     paid_channel_size: "Medium", reference_point: "Medium", paid_conv_quality: "Medium", cpp_pick: "Median",
     channel_quality_overrides: {},
@@ -325,6 +326,12 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     const check = await baskets.validateBasketSpec(body.benchmark_basket, id);
     if (!check.ok) errors.push(check.error);
     else next.benchmark_basket = check.normalised;
+  }
+  if (body.prefer_recent !== undefined) {
+    // the basket's recency preference: launches closed in the last 18 months
+    // rank first among the comparable ones (etl/baskets.py similar_members)
+    if (typeof body.prefer_recent !== "boolean") errors.push("prefer_recent must be true or false");
+    else next.prefer_recent = body.prefer_recent;
   }
   if (body.stretch_mode !== undefined) {
     if (!STRETCH_MODES.includes(body.stretch_mode)) errors.push(`stretch_mode must be one of ${STRETCH_MODES.join("/")}`);
@@ -490,7 +497,15 @@ app.post("/api/inputs/:id", route(async (req, res) => {
  * baskets are the panel's own history, and the only write here saves a basket
  * for everyone, which is the same posture as saving a release's targets. */
 app.get("/api/baskets", route(async (req, res) => {
-  res.json(await baskets.readyBaskets(req.query.release));
+  // ?recent=0|1 previews the suggestion with the recency preference off or on;
+  // absent, the release's saved prefer_recent (on by default) applies
+  const opts = {};
+  if (req.query.recent === "0" || req.query.recent === "1") opts.preferRecent = req.query.recent === "1";
+  // ?units=&price= preview the basket for a target and price not yet saved
+  const units = Number(req.query.units), price = Number(req.query.price);
+  if (Number.isFinite(units) && units > 0 && units < 1e7) opts.units = Math.round(units);
+  if (Number.isFinite(price) && price > 0 && price < 1e7) opts.price = Math.round(price);
+  res.json(await baskets.readyBaskets(req.query.release, opts));
 }));
 
 app.get("/api/baskets/candidates", route(async (_req, res) => {
