@@ -92,8 +92,14 @@ export function computeTargets(inp, b) {
   groupSessions.paid = paidSessions;
 
   const framing = inp.framing_available !== false;
+  // the framing uplift's terms are release-level inputs; blank means the
+  // benchmark default (the workbook's 0.35 take-up x £94 per frame). Mirrors
+  // frame_terms() in etl/build.py.
+  const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
+  const frameConv = Math.min(Math.max(num(inp.frame_conversion) ?? b.frame_conversion, 0), 1);
+  const frameProfit = Math.max(num(inp.frame_profit_per_unit) ?? b.frame_profit_per_unit, 0);
   const ppuArtist = size ? (inp.artist_profit || 0) / size : 0;
-  const ppuAA = size ? (inp.aa_group_profit || 0) / size + (framing ? b.frame_conversion * b.frame_profit_per_unit : 0) : 0;
+  const ppuAA = size ? (inp.aa_group_profit || 0) / size + (framing ? frameConv * frameProfit : 0) : 0;
 
   return {
     edition_size: size, paid_pct: paidPct, paid_units: paidUnits,
@@ -111,6 +117,8 @@ export function computeTargets(inp, b) {
     entries_target: organicEntries + paidEntries,
     group_units: groupUnits, group_entries: groupEntries, group_sessions: groupSessions,
     ppu_artist: ppuArtist, ppu_aa: ppuAA,
+    frame_conversion: frameConv, frame_profit_per_unit: frameProfit,
+    frame_uplift_per_unit: framing ? frameConv * frameProfit : 0,
     buffer: b.target_buffer,
   };
 }

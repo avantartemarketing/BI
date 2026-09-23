@@ -691,6 +691,32 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
     return out
 
 
+def frame_terms(release: dict, b: dict = BENCH) -> tuple[float, float]:
+    """The framing uplift's two terms for one release: the share of buyers
+    expected to take a frame and AA's profit per frame. Both are release-level
+    inputs (frame_conversion, frame_profit_per_unit on the Target setting tab)
+    with the workbook's constants in benchmarks.json (0.35 and 94) as the
+    defaults - the constants were the same for every release whatever its
+    price point, and a £500 print and a £4,000 one do not frame alike."""
+    conv = release.get("frame_conversion")
+    profit = release.get("frame_profit_per_unit")
+    conv = float(b["frame_conversion"]) if conv is None or conv == "" else float(conv)
+    profit = float(b["frame_profit_per_unit"]) if profit is None or profit == "" else float(profit)
+    return min(max(conv, 0.0), 1.0), max(profit, 0.0)
+
+
+def aa_profit_per_unit(release: dict, b: dict = BENCH) -> float:
+    """AA's profit per unit sold: the group profit spread over the edition,
+    plus the framing uplift (take-up x profit per frame) when framing is
+    offered. The figure every paid ROI on the page divides by (docs §7)."""
+    size = float(release.get("edition_size") or 0)
+    base = (float(release.get("aa_group_profit") or 0) / size) if size else 0.0
+    if release.get("framing_available") is False:
+        return base
+    conv, profit = frame_terms(release, b)
+    return base + conv * profit
+
+
 def compute_targets(release: dict, profile: dict | None = None, upb_slope: float = UNITS_PER_BUYER_FALLBACK) -> dict:
     # Benchmark mode (BENCHMARK_SPEC §4) when the release has a basket profile.
     # A basket whose median units are zero says nothing about what to aim for -
@@ -1874,8 +1900,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                         .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
     spend_day = psp.groupby("spend_date")["spend"].sum()
     drop, cann = b["paid_drop_off"], b["cannibalisation"]
-    ppu_aa = release["aa_group_profit"] / release["edition_size"] + (
-        b["frame_conversion"] * b["frame_profit_per_unit"] if release["framing_available"] else 0)
+    ppu_aa = aa_profit_per_unit(release, b)
+    frame_conv, frame_profit = frame_terms(release, b)
     ppu_artist = (release["artist_profit"] / release["edition_size"]) if release["edition_size"] else 0
     # Who funds the ads. Explicit per-release override (the workbook's "AA budget
     # share (%)" row - e.g. Glenn Ligon 100% AA); default: commission/rev-share
@@ -2490,6 +2516,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "unitPrice": release["unit_price"], "launchValue": targets["launch_value"],
             "artistProfitPerUnit": round(ppu_artist, 2), "aaProfitPerUnit": round(ppu_aa, 2),
             "artistProfitShare": release["artist_profit_share"],
+            # the framing uplift inside aaProfitPerUnit: the terms in force for
+            # this release (its own inputs, else the benchmark defaults)
+            "framingAvailable": release.get("framing_available") is not False,
+            "frameConversion": frame_conv, "frameProfitPerUnit": frame_profit,
+            "frameUpliftPerUnit": round(frame_conv * frame_profit, 2) if release.get("framing_available") is not False else 0.0,
         },
         "currency": "units",
         "hero": {
