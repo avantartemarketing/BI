@@ -7,12 +7,13 @@
  * Airtable has no record for can be added by hand. Typed beats Airtable
  * beats the default, per field, and each figure says where it came from.
  * The release's totals are the products' target units summed, the launch
- * value in sterling, the profits per unit weighted by target units, the
+ * value in euros, the profits per unit weighted by target units, the
  * framing terms over the products that offer a frame, and the paid-budget
  * split from the deal: on a profit-share deal Avant Arte carries its share
  * of the profit, on a revenue-share (royalty) deal it carries the ads
  * outright. tests/test_release_inputs.py holds the two sides to the figure. */
-export const RATES_TO_GBP = { GBP: 1.0, EUR: 0.85, USD: 0.78 };
+export const PAGE_CURRENCY = "EUR";
+export const RATES_TO_EUR = { EUR: 1.0, GBP: 1.18, USD: 0.92 };
 export const PRODUCT_KEYS = ["edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
   "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "framing_available", "frame_conversion",
   "frame_profit_per_unit"];
@@ -68,9 +69,9 @@ export function effectiveProduct(p, b) {
   e.target_units = e.edition ? Math.round(e.edition * e.target_sellthrough) : 0;
   const price = num(pick("unit_price"));
   e.unit_price = price && price > 0 ? price : null;
-  e.currency = String(pick("currency", null, "GBP") || "GBP").toUpperCase();
-  const rate = RATES_TO_GBP[e.currency] ?? 1.0;
-  e.unit_price_gbp = e.unit_price ? round2(e.unit_price * rate) : null;
+  e.currency = String(pick("currency", null, PAGE_CURRENCY) || PAGE_CURRENCY).toUpperCase();
+  const rate = RATES_TO_EUR[e.currency] ?? 1.0;
+  e.unit_price_eur = e.unit_price ? round2(e.unit_price * rate) : null;
   e.artist_profit_per_unit = num(pick("artist_profit_per_unit"));
   e.aa_profit_per_unit = num(pick("aa_profit_per_unit"));
   e.aa_revenue_share = num(pick("aa_revenue_share"));
@@ -107,7 +108,7 @@ export function releaseEconomics(products, legacy, b) {
     const aaShare = lnum("aa_budget_share") ?? (lnum("artist_profit_share") === 0 ? 1.0 : 0.5);
     return {
       mode: "release", edition_size: size, edition_total: Math.max(lnum("edition_total") || 0, size),
-      unit_price: lnum("unit_price") || 0, currency: "GBP", launch_value: size * (lnum("unit_price") || 0),
+      unit_price: lnum("unit_price") || 0, currency: PAGE_CURRENCY, launch_value: size * (lnum("unit_price") || 0),
       ppu_artist: (lnum("artist_profit") || 0) / size,
       ppu_aa: (lnum("aa_group_profit") || 0) / size + (framing ? frameConv * frameProfit : 0),
       framing_available: framing, frame_conversion: frameConv, frame_profit_per_unit: frameProfit,
@@ -116,13 +117,13 @@ export function releaseEconomics(products, legacy, b) {
     };
   }
   if (!sized.length || targets <= 0) {
-    return { mode: "none", edition_size: 0, edition_total: sized.reduce((s, p) => s + p.edition, 0), unit_price: 0, currency: "GBP",
+    return { mode: "none", edition_size: 0, edition_total: sized.reduce((s, p) => s + p.edition, 0), unit_price: 0, currency: PAGE_CURRENCY,
       launch_value: 0, ppu_artist: 0, ppu_aa: 0, framing_available: false, frame_conversion: 0, frame_profit_per_unit: 0,
       frame_uplift_per_unit: 0, aa_budget_share: 0.5, artist_profit_share: 0.5, deal: [] };
   }
-  const priced = sized.filter((p) => p.unit_price_gbp);
+  const priced = sized.filter((p) => p.unit_price_eur);
   const pricedUnits = priced.reduce((s, p) => s + p.target_units, 0);
-  const value = priced.reduce((s, p) => s + p.target_units * p.unit_price_gbp, 0);
+  const value = priced.reduce((s, p) => s + p.target_units * p.unit_price_eur, 0);
   const weighted = (key, of) => {
     const rows = (of || sized).filter((p) => p[key] !== null && p[key] !== undefined && p.target_units > 0);
     const tot = rows.reduce((s, p) => s + p.target_units, 0);
@@ -137,7 +138,7 @@ export function releaseEconomics(products, legacy, b) {
   const uplift = framed.length ? weighted("frame_uplift_per_unit", framed) * (framed.reduce((s, p) => s + p.target_units, 0) / targets) : 0;
   return {
     mode: "products", edition_size: targets, edition_total: sized.reduce((s, p) => s + p.edition, 0),
-    unit_price: pricedUnits ? round2(value / pricedUnits) : 0, currency: "GBP",
+    unit_price: pricedUnits ? round2(value / pricedUnits) : 0, currency: PAGE_CURRENCY,
     launch_value: round2(value), launch_currencies: [...new Set(priced.map((p) => p.currency))].sort(),
     ppu_artist: ppuArtist === null ? 0 : ppuArtist,
     // AA's profit per unit as the build reads it: the group profit spread

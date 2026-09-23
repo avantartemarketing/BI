@@ -129,7 +129,7 @@ function Bar({ v, under, on, prefix, hint }) {
 
 /* The map (named Scatter: a component called Map shadows the Map the file
  * needs for its lookups). Log on both axes because the panel runs from 15 units to 987 and
- * from £425 to £7,225, and a halving is the same distance as a doubling. The
+ * from €425 to €7,225, and a halving is the same distance as a doubling. The
  * reach is drawn as the box it is: "within ×R on both" is a square in log
  * space. This launch is a ring at its target and price, with faint guides to
  * the axes so it can be read off even when it sits past every dot on file. */
@@ -160,7 +160,7 @@ function Scatter({ rows, L, ticked, isOwn, reach, hover, setHover }) {
         {[300, 1000, 3000, 10000].map((t) => (
           <g key={"y" + t}>
             <line x1={m.l} y1={sy(t)} x2={W - m.r} y2={sy(t)} stroke={C.hairline} strokeWidth="1" />
-            <text x={m.l - 6} y={sy(t) + 3.5} textAnchor="end" fontSize="10.5" fill={C.muted}>{t >= 1000 ? "£" + t / 1000 + "k" : "£" + t}</text>
+            <text x={m.l - 6} y={sy(t) + 3.5} textAnchor="end" fontSize="10.5" fill={C.muted}>{t >= 1000 ? "€" + t / 1000 + "k" : "€" + t}</text>
           </g>
         ))}
         <text x={W - m.r} y={H - 4} textAnchor="end" fontSize="10.5" fill={C.muted}>units sold</text>
@@ -225,7 +225,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
 
   const placeable = targetUnits > 0 && unitPrice > 0;
   const L = useMemo(() => ({
-    name: releaseName, artist: artist || "", target: targetUnits, price: unitPrice, currency: currency || "GBP",
+    name: releaseName, artist: artist || "", target: targetUnits, price: unitPrice, currency: currency || "EUR",
     private_room_open: privateRoomOpen || null, announce_date: announceDate || null,
   }), [releaseName, artist, targetUnits, unitPrice, currency, privateRoomOpen, announceDate]);
 
@@ -399,7 +399,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                   onChange={(e) => typed("units", e.target.value)} />
               </div>
               <div>
-                <div className="flabel" style={{ marginBottom: 5 }}>Unit price (£)</div>
+                <div className="flabel" style={{ marginBottom: 5 }}>Unit price (€)</div>
                 <input id="basket-price" className="control num" inputMode="numeric" value={draft.price} placeholder="e.g. 1,500" style={{ width: 130 }}
                   onChange={(e) => typed("price", e.target.value)} />
               </div>
@@ -472,7 +472,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                       <span /><span style={{ textAlign: "right" }}>This launch</span><span style={{ textAlign: "right", color: C.ink, fontWeight: 600 }}>Basket</span>
                     </div>
                     {railRow("Units", fmt(L.target), members.length ? fmt(live.units) : "–", paidOff ? "This launch's target against the basket's median units without paid - the benchmark with paid out of plan." : "This launch's target against the basket's median units at close - the benchmark.")}
-                    {railRow("Unit price", fmtMoney(priceUsed), members.length && live.price > 0 ? fmtMoney(live.price) : "–", "Unit price in sterling, from Airtable. Launches Airtable could not price are left out of the median.")}
+                    {railRow("Unit price", fmtMoney(priceUsed), members.length && live.price > 0 ? fmtMoney(live.price) : "–", "Unit price in euros, from Airtable. Launches Airtable could not price are left out of the median.")}
                     {railRow("Sessions", null, members.length ? fmtK(live.sessions) : "–", "The basket's median sessions. This launch's own are to date, so there is nothing to compare them with yet.")}
                     {railRow("Paid share", null, paidOff ? "not run" : members.length ? fmtPct(liveAll.paid_share, 0) : "–", paidOff ? "Paid is not in plan for this release." : "Median share of sessions coming from paid.")}
                     {railRow("Uplift to target (K)", "", K === null ? "–" : "×" + fmt(K, 2), "The target over the basket's median units: how far past the benchmark this launch is being asked to go.")}

@@ -87,7 +87,7 @@ the edition size, the target sell-through, the unit price, the artist's and
 Avant Arte's profit per unit, the deal's revenue share or profit share, and
 the framing take-up and profit per frame. The release's target is the
 products' editions at their target sell-through, summed; its launch value the
-target units at their prices, in sterling; its profits per unit the products'
+target units at their prices, in euros; its profits per unit the products'
 weighted by target units; and the paid-budget split follows from the deal -
 on a profit-share deal Avant Arte carries its share of the profit, on a
 revenue-share (royalty) deal it carries the ads outright. Until Airtable
@@ -192,7 +192,7 @@ stays on the snapshot as data.
 
 ```
 paid_units  = benchmark_paid_units × K
-paid_budget = paid_units × cost per purchase        (the release's figure, else £177)
+paid_budget = paid_units × cost per purchase        (the release's figure, else €177)
 ```
 
 Sense check: **paid budget should stay under 6% of launch value** - the dashboard
@@ -211,8 +211,8 @@ Basket: the 8 launches nearest in size and price, median 134 units → **K = 1.1
 Benchmark → target by group: AA Email 56.2 → 62.9, AA Meta 4.6 → 5.2, artist
 0.6 → 0.6, search / direct / other 53.0 → 59.3, paid 19.5 → 21.9, which sum to
 150. Sessions 24,402 → 27,316. Entries target 150 ÷ 0.8 = 187.5, against
-134 ÷ 0.8 = 167.5 for the benchmark. Paid budget 21.9 × £177 = **£3,873**
-(benchmark £3,460), 0.9% of the £450,000 launch value.
+134 ÷ 0.8 = 167.5 for the benchmark. Paid budget 21.9 × €177 = **€3,873**
+(benchmark €3,460), 0.9% of the €450,000 launch value.
 
 ## 5. Targets across time: the campaign clock
 
@@ -288,8 +288,9 @@ per unit over the artist's share of the spend. On a revenue-share deal the
 artist carries no spend, so there is no artist ROI to show. The ? popup on the
 card sets out the working with the release's figures.
 
-The spend is Meta's, billed in euros and read in sterling at the same fixed
-rate the product prices use, so every paid figure on the page is sterling. The
+The spend is Meta's, billed in euros, and the page runs in euros, so every
+figure on it is euros (a product priced in another currency is converted at a
+fixed rate). The
 cannibalisation is the release's own from the Target setting tab where one is
 typed, else the 20% standard. Framing profit is Avant Arte's alone: it sits in
 AA's profit per unit and never in the artist's.
@@ -308,7 +309,7 @@ budget          = entries needed × forecast CPE
 ```
 
 A launch pacing well ahead organically can therefore read a recommendation of
-£0/day: nothing extra is needed to secure sell-out, whatever the current ROI.
+€0/day: nothing extra is needed to secure sell-out, whatever the current ROI.
 
 **Price is not flat in spend.** Within a campaign, cost per entry rises with
 daily spend as `spend^0.38` - measured on our own campaigns (13 campaigns, 170

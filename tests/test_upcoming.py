@@ -81,7 +81,7 @@ def test_upcoming() -> None:
     assert horse["id"] == "maurizio_cattelan_multiple_2026_q4" and horse["title"] == "Multiple" and horse["quarter"] == "2026 Q4"
     assert horse["announce_date"] == "2026-09-21" and horse["launch_end"] == "2026-10-15" and horse["dates_note"] is None
     assert horse["private_room_open"] == "2026-09-07"        # announce less the default lead
-    assert horse["edition_size"] == 2000 and horse["unit_price"] == 1275 and horse["currency_native"] == "EUR"
+    assert horse["edition_size"] == 2000 and horse["unit_price"] == 1500 and horse["currency_native"] == "EUR"
     assert horse["airtable_ids"] == "2672|2671" and horse["airtable_release"] == "MaurizioCattHorseLE26"
     assert horse["campaign_code"] == "MaurizioCatt_HorseLE_26"   # the code moving in its window, not the artist's old one
     assert seth["campaign_code"] is None

@@ -161,7 +161,7 @@ export function fmtSigned(n, digits = 0) {
 
 export function fmtMoney(n, digits = 0) {
   if (n === null || n === undefined) return "–";
-  return (n < 0 ? MINUS : "") + "£" + fmt(Math.abs(n), digits);
+  return (n < 0 ? MINUS : "") + "€" + fmt(Math.abs(n), digits);
 }
 
 export function fmtK(n) {

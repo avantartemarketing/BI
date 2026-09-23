@@ -51,7 +51,7 @@ Derived economics:
   = 1,465.29 + 0.35 × 94 = **1,498.19**
 
 `frame_conversion` (the share of buyers taking a frame) and `frame_profit_per_unit` (AA's
-profit per frame, £) are **release-level inputs** on the Target setting tab, shown when framing
+profit per frame, €) are **release-level inputs** on the Target setting tab, shown when framing
 is available; left blank they fall back to the benchmark constants below, which is what every
 release ran on before they were inputs (`frame_terms` in `etl/build.py`, mirrored in
 `shared/economics.mjs`). The snapshot's `economics` block publishes the terms in force
@@ -60,7 +60,7 @@ release ran on before they were inputs (`frame_terms` in `etl/build.py`, mirrore
 it is not fed into the calculation automatically.
 
 Global constants (from the workbook's "PROFIT CALC - DO NOT CHANGE" block):
-`frame_conversion = 0.35`, `frame_profit = £94/unit`, `cannibalisation = 0.2`
+`frame_conversion = 0.35`, `frame_profit = €94/unit`, `cannibalisation = 0.2`
 (the LE standard per the spend rules. The 2026-08-28 tab revision left several
 per-release cannibalisation cells reading 0 via the broken template reference
 (issue 14, §11) - those cells are display artefacts, not the constant. The TL
@@ -205,7 +205,7 @@ record for); blank means Airtable's. The release's figures follow:
 ```
 target units        = Σ round(edition × target sell-through)          # edition_size
 edition             = Σ edition                                        # edition_total
-launch value        = Σ target units × unit price in sterling          # EUR converted at RATES_TO_GBP
+launch value        = Σ target units × unit price in euros          # EUR converted at RATES_TO_EUR
 profit per unit     = Σ target units × profit per unit / Σ target units, for the products that have one
 framing uplift      = Σ over framed products of target units × take-up × profit per frame / Σ target units
 AA budget share     = per product: its AA profit share on a profit-share deal, 1 on a revenue-share deal;
@@ -250,7 +250,7 @@ upcoming_releases`) beside the releases the funnel mentions:
   when the launch has several works, so the page keeps its id when the funnel catches up.
 
 Its page (`build_upcoming`, status `upcoming`, `upcoming: true`) has the dates, the edition,
-the price in sterling at the panel's fixed rates, the works and the project's Airtable status,
+the price in euros at the panel's fixed rates, the works and the project's Airtable status,
 and no actuals; the sidebar lists it under Upcoming with the days until it opens. The
 announce date is Airtable's, else assumed 24 days before the close and said so; the campaign
 code is guessed from the feeds' codes and Meta's campaign names, never from a code a release
@@ -601,7 +601,7 @@ plan sold nothing in the median launch - shows its actuals rather than a target 
 model.
 
 What stayed, and where it moved: the cost per purchase is a figure per release
-(`cost_per_purchase`, £ per paid unit; blank means the panel's median, §4 E); the Referral
+(`cost_per_purchase`, € per paid unit; blank means the panel's median, §4 E); the Referral
 Artist tier became the artist posting tier (`artist_posting_tier`, the cohort of the
 artist-posts benchmark); "N/A" on Referral Artist became the artist's own channels not in plan
 (`channels_off`, spec §4.3); and the order-split medians still place a group's target on its
@@ -688,9 +688,9 @@ them (§4a.2). Their last values are in the repository history.
 Keep 0.8 as the planning constant; surface the per-channel table as diagnostics.
 
 **E. Cost per purchase (paid)**: quartiles over 22 hand-curated historical paid campaigns
-(mixing LE + TL): **Low £128.75 / Median £177 / High £291**. The Median is the default price of
+(mixing LE + TL): **Low €128.75 / Median €177 / High €291**. The Median is the default price of
 a paid unit; a release sets its own `cost_per_purchase` on the Target setting tab (Abdulnasser
-Gharem carries £291, the quartile it was planned at). Companion stats (static): ROI
+Gharem carries €291, the quartile it was planned at). Companion stats (static): ROI
 2.2/3.4/6.9, paid % of units .11/.21/.31.
 
 Recomputation policy for the rebuild: recompute quartiles nightly from BigQuery over a
@@ -773,7 +773,7 @@ suggested one; under **10** it is used but carries `basket.thin = True`, which t
 as a warning. A median over an empty or all-NaN column is `0.0`, never NaN.
 
 The profile is the medians themselves: `n` and `members`; `units` (median
-`tot_total_product_units`) with `units_p25` / `units_p75`; `price` (median `unit_price_gbp`
+`tot_total_product_units`) with `units_p25` / `units_p75`; `price` (median `unit_price_eur`
 over the `n_priced` members Airtable priced) with `price_p25` / `price_p75`, and `edition_size`
 (median units on offer); `sessions` (median
 `tot_sessions_total`); `entries` (median `tot_draw_entries_eligible_units`); `campaign_days`;
@@ -841,15 +841,14 @@ Michael Kozlowski · Mecha · 2024 Q2 and Michaël Borremans · The Monkey · 20
 not in the pull). Units sold inside the window sit at a median 0.90 of Airtable's edition size;
 twelve launches sold more than 5% over it, mostly where Airtable holds one of several products.
 
-Currency: Airtable prices in euros; `unit_price_gbp` and `launch_value_gbp` convert at the
-fixed table `RATES_TO_GBP = {GBP: 1, EUR: 0.85, USD: 0.78}` (rounded 2024-2026 averages, fixed
-so the panel does not move with the market; in log space a fixed rate is a constant shift and
-changes no band and no correlation). The original price and currency are kept beside the
-converted one. **Note for the target form:** its "Unit price (£)" field holds, for eight of the
-nine targeted releases, the same number Airtable holds in euros, so either the workbook is
-entering euro list prices under a sterling label or the two list prices coincide; the basket
-layer reads the form's price in the currency the record says (sterling unless `currency` is set)
-and a factor-2 band absorbs the difference, but the label and the entry should agree.
+Currency: the page runs in euros (`PAGE_CURRENCY`). Airtable prices are euros and pass
+through as they are; `unit_price_eur` and `launch_value_eur` convert a record in another
+currency at the fixed table `RATES_TO_EUR = {EUR: 1, GBP: 1.18, USD: 0.92}` (rounded 2024-2026
+averages, fixed so the panel does not move with the market; in log space a fixed rate is a
+constant shift and changes no band and no correlation). The original price and currency are
+kept beside the converted one. Meta's spend is euros too, and the workbook's cost figures the
+benchmarks came from (cost per purchase, the framing profit) were the same euro figures under
+a euros label, so the numbers stand and only the label moved (2026-09-23).
 
 Refresh: `python3 etl/pull_airtable.py && python3 etl/analysis/release_clusters.py
 --pricing-only` re-attaches the pricing to the panel on file without a BigQuery pull; a full
@@ -1278,9 +1277,9 @@ adjCPE(day)     = spend(day) / (entries(day) × (1 − drop_off))          # cos
 ROI_party(day)  = (1 − cannibalisation) × profit_per_unit_party / (adjCPE × budget_share_party)
 cum versions    = same on Σ spend / Σ entries
 ```
-Spend is Meta's, billed in euros: `load_spend` converts it once to sterling at the fixed
-`RATES_TO_GBP` rate (`SPEND_CURRENCY`, `spendCurrency` and `spendRate` on the paid block), so every
-spend, cost per entry, budget and ROI figure on the page is sterling. `cannibalisation` is the
+Spend is Meta's, billed in euros: `load_spend` converts it once to euros at the fixed
+`RATES_TO_EUR` rate (`SPEND_CURRENCY`, `spendCurrency` and `spendRate` on the paid block), so every
+spend, cost per entry, budget and ROI figure on the page is euros. `cannibalisation` is the
 release's own where the Target setting tab has one (`cannibalisation`, a fraction), else the
 0.2 standard; the paid block publishes the figure in force.
 `budget_share` = who pays for ads (AA/artist), e.g. 100/0 (Glenn Ligon), 33/66 (Jaume Plensa);
@@ -1313,7 +1312,7 @@ budget_to_sellout= entries_needed × forecast_CPE
 daily_spend      = budget_to_sellout / days_until_launch
 ROI_check_party  = profit_per_unit_party / (forecast_CPE × budget_share_party)
 ```
-A launch pacing well ahead organically reads a recommendation of £0/day -
+A launch pacing well ahead organically reads a recommendation of €0/day -
 nothing extra is needed to secure sell-out, whatever the current ROI.
 
 **Pacing rules** (v1 rules engine; target and thresholds):
@@ -1331,7 +1330,7 @@ nothing extra is needed to secure sell-out, whatever the current ROI.
   ± 3.5 (the between-campaign spread), from the 2026-09-23 fit on 29 campaigns and 433
   campaign-days (`etl/analysis/cpe_elasticity.py`: elasticity 0.35 to 0.45 across day filters, drift
   2.6 to 4.0% a day, 1.4% on the 2026 campaigns alone). A campaign that ramps spend and ages at
-  the same time cannot separate the two from its own days - Warhol's 17 days from £1k to £30k a
+  the same time cannot separate the two from its own days - Warhol's 17 days from €1k to €30k a
   day give 0.42 ± 0.53 and −3.5% ± 10 - so for most campaigns the priors carry the drift and the
   campaign's own days move the elasticity only when they are tight. The workbook's 5 / 7 / 10% a
   day by third was the cost rise along its own ramping spend path, which the elasticity already
@@ -1506,7 +1505,7 @@ Pipeline integrity:
 11. `untracked` vs `Untracked` case; header typos (`Eligable`, `reachs`).
 
 Model bugs found in the sheet (the rebuild should implement the *intent*):
-12. "Spend for tomorrow" is clamped to £2 (`min(spend, 2.0)` where 2.0 is a per-unit step;
+12. "Spend for tomorrow" is clamped to €2 (`min(spend, 2.0)` where 2.0 is a per-unit step;
     open comment "should this be 669?"). Intended cap: ±30%/max-increase rules.
 13. ROI shows positive with 0 entries (division fallback) - rebuild should show 0/–.
 14. Template's cannibalisation cell reference is broken (G90 → empty cell); live value 0.2.
@@ -1559,7 +1558,7 @@ cpe_daily_drift_by_third` is now the pure time effect, 0.5% a day (measured 0.36
 `etl/analysis/cpe_elasticity.py`); the workbook values sit beside it as
 `cpe_daily_drift_by_third_workbook`. The workbook's own template, note, produces the same
 runaway "expected daily spend" the first version of this card did (Warhol_LE_26 row 229:
-£181k-256k a day; Dali_LE_26 row 231 suggests £3.7k-10.9k a day against £1.5k spent) and
+€181k-256k a day; Dali_LE_26 row 231 suggests €3.7k-10.9k a day against €1.5k spent) and
 tames it with a "max increase per day 2.0" rule rather than a price that responds to spend.
 
 Provenance of `spend_rules`, corrected: the 0.9 / 1.3 bands, the 30% cap and the 10% dead

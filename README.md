@@ -30,7 +30,7 @@ etl/                    Python pipeline
                           tier_curve_probe.py, release_clusters.py - the baskets of comparables,
                           price_probe.py - whether price belongs in the basket; it does)
 data/
-  spend_daily.csv         extracted spend facts: Meta's spend, in euros (the build reads it in sterling)
+  spend_daily.csv         extracted spend facts: Meta's spend, in euros, the page's currency
   content_posts.csv       extracted content facts (manual Emplifi export; see below)
   notion_posts.csv        posts by release, date and channel, from the Notion log (live)
   release_clusters.csv    every release's campaign window, features, basket and edition pricing
@@ -126,8 +126,10 @@ Render's disk resets on every deploy. Five things live on it and are lost withou
 | `data/slack.json` | the Slack channel set per release is forgotten; the Post to Slack button goes grey | `SLACK_STATE_PATH` on the disk |
 
 `SESSION_SECRET` is the one-line fix for re-logins and needs no disk. For the rest, add a
-persistent disk to the service (Render → the service → Disks; 1 GB is plenty), mount it
-at `/var/data`, and set
+persistent disk to the service (Render → the service → Disks → Add disk; 1 GB is plenty), mount it
+at `/var/data`, and set the six variables under Environment (`render.yaml` carries the same disk
+and paths for a service created from the blueprint). Until this is done the Target setting tab
+shows a red warning on every release, since every save would be lost on the next deploy. Set
 
 ```
 USERS_PATH=/var/data/users.json

@@ -13,7 +13,7 @@ export default function Upcoming({ snap, onSetup }) {
   const d = snap.derived || {};
   const row = { display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, padding: "6px 0", borderBottom: `1px solid ${C.hairline}` };
   const works = String(a.titles || "").split(" / ").filter(Boolean);
-  const native = a.unit_price_native && a.currency_native && a.currency_native !== "GBP"
+  const native = a.unit_price_native && a.currency_native && a.currency_native !== "EUR"
     ? ` (${a.currency_native} ${fmt(a.unit_price_native)} in Airtable)` : "";
   const daysToOpen = snap.windowStart && snap.asOf
     ? Math.round((new Date(snap.windowStart + "T00:00:00Z") - new Date(snap.asOf + "T00:00:00Z")) / 86400000) : null;
@@ -36,7 +36,7 @@ export default function Upcoming({ snap, onSetup }) {
         <div style={row}><span style={{ color: C.muted }}>Edition</span><span className="num">{a.edition_size ? `${fmt(a.edition_size)} units` : "–"}</span></div>
         <div style={row}>
           <span style={{ color: C.muted }}>Unit price</span>
-          <span className="num" title="Converted to sterling at the fixed table the panel uses; check it on the Set up targets tab">{a.unit_price ? fmtMoney(a.unit_price) + native : "–"}</span>
+          <span className="num" title="Converted to euros at the fixed table the panel uses; check it on the Set up targets tab">{a.unit_price ? fmtMoney(a.unit_price) + native : "–"}</span>
         </div>
         <div style={row}>
           <span style={{ color: C.muted }}>{works.length > 1 ? `Works (${works.length})` : "Work"}</span>

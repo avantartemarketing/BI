@@ -111,7 +111,7 @@ check(close(paid["l3dRoi"] / S["paid"]["l3dRoi"], 0.65 / 0.8), f"against the sta
 check(build.cannibalisation_for({"cannibalisation": None}) == build.BENCH["cannibalisation"] and build.cannibalisation_for({"cannibalisation": "junk"}) == build.BENCH["cannibalisation"], "blank or nonsense falls back to the standard")
 print(f"cannibalisation 35%: AA L3D {paid['l3dRoi']} (standard {S['paid']['l3dRoi']})")
 
-# the spend feed is in euros; the loader reads it in sterling
+# the spend feed is in euros; the page runs in euros, so it passes through
 import tempfile
 with tempfile.TemporaryDirectory() as tmp:
     pathlib.Path(tmp, "spend_daily.csv").write_text("campaign_name,spend_date,impressions,reach,link_clicks,spend\nX,2026-09-01,10,8,1,100.0\n")
@@ -121,8 +121,8 @@ with tempfile.TemporaryDirectory() as tmp:
         sp = build.load_spend()
     finally:
         build.DATA = data_was
-check(build.SPEND_CURRENCY == "EUR" and close(float(sp["spend"].iloc[0]), 100.0 * build.pricing.RATES_TO_GBP["EUR"]), f"spend read in sterling: {sp['spend'].iloc[0]}")
-check(paid["spendCurrency"] == "EUR" and paid["spendRate"] == build.pricing.RATES_TO_GBP["EUR"], "the paid block says which currency the spend came in")
+check(build.SPEND_CURRENCY == "EUR" and close(float(sp["spend"].iloc[0]), 100.0 * build.pricing.RATES_TO_EUR["EUR"]), f"spend read in euros: {sp['spend'].iloc[0]}")
+check(paid["spendCurrency"] == "EUR" and paid["spendRate"] == build.pricing.RATES_TO_EUR["EUR"], "the paid block says which currency the spend came in")
 
 print("FAILED" if failed else "ok: party ROI", failed if failed else "")
 sys.exit(1 if failed else 0)

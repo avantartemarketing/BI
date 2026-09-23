@@ -46,7 +46,7 @@ const PY_TIMEOUT_MS = 60 * 1000;
 /* The request/reply contract with the ETL. Three ops, one process each:
  *   {op:"baskets", release}    -> {suggested, baskets, saved}
  *   {op:"candidates"}          -> {rows}          the draw panel, newest first, with each launch's
- *                                                   units, sessions, paid share, unit price (GBP) and edition size
+ *                                                   units, sessions, paid share, unit price (EUR) and edition size
  *   {op:"profile", members}    -> {profile, unknown}
  * as_of is today because that is what the build uses - all_12m is "the last
  * twelve months" as of the run, and the picker has to show the same basket the
@@ -181,7 +181,7 @@ function readyBaskets(releaseId, opts = {}) {
     release = { ...release };
     if (opts.preferRecent !== undefined) release.prefer_recent = !!opts.preferRecent;
     if (opts.units > 0) release.edition_size = opts.units;
-    if (opts.price > 0) { release.unit_price = opts.price; release.currency = "GBP"; }
+    if (opts.price > 0) { release.unit_price = opts.price; release.currency = "EUR"; }
   }
   const key = "baskets:" + ((release && release.release_name) || "") + ":" +
     (release && release.prefer_recent === false ? "old" : "recent") + ":" +

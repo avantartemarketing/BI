@@ -230,13 +230,13 @@ const PCT = new Set(["target_sellthrough", "aa_revenue_share", "aa_profit_share"
 const COLS = {
   edition: ["Edition", "Units in the edition of this work.", 70],
   target_sellthrough: ["Target %", "The share of the edition targeted to sell by close. Blank = Airtable's target (its units target over the edition, else the expected sell-through), else 100%.", 64],
-  unit_price: ["Price", "Retail price per unit, in the currency shown (Airtable prices in euros; the totals convert to sterling at a fixed rate).", 100],
-  artist_profit_per_unit: ["Artist £", "The artist's profit on one unit sold.", 66],
-  aa_profit_per_unit: ["AA £", "Avant Arte's profit on one unit sold, before framing.", 66],
+  unit_price: ["Price", "Retail price per unit, in the currency shown (Airtable prices in euros, the page's currency; a product in another currency is converted at a fixed rate).", 100],
+  artist_profit_per_unit: ["Artist €", "The artist's profit on one unit sold.", 66],
+  aa_profit_per_unit: ["AA €", "Avant Arte's profit on one unit sold, before framing.", 66],
   aa_revenue_share: ["AA rev. %", "Avant Arte's share of revenue on a royalty deal. Blank on a profit-share deal.", 62],
   aa_profit_share: ["AA profit %", "Avant Arte's share of profit on a profit-share deal, which is also its share of the paid budget. Blank on a royalty deal, where Avant Arte carries the ads outright.", 66],
   frame_conversion: ["Frame %", "The share of buyers expected to take a frame. Blank = the benchmark default.", 60],
-  frame_profit_per_unit: ["Frame £", "Avant Arte's profit on each frame sold, which is Avant Arte's alone. Blank = the benchmark default.", 62],
+  frame_profit_per_unit: ["Frame €", "Avant Arte's profit on each frame sold, which is Avant Arte's alone. Blank = the benchmark default.", 62],
 };
 const num = (key) => ({ kind: "num", key, label: COLS[key][0], tip: COLS[key][1], width: COLS[key][2] });
 const EDITION_TABLE = [num("edition"), num("target_sellthrough"), num("unit_price"),
@@ -390,7 +390,7 @@ function ProductsTable({ products, econ, onField, onFieldAll, onName, onAdd, onR
           <td style={{ ...foot, textAlign: "left" }}>Total</td>
           <td style={foot}>{fmt(econ.edition_total)}</td>
           <td style={foot}>{econ.edition_total ? fmtPct(econ.edition_size / econ.edition_total, 0) : "–"}</td>
-          <td style={foot} title="Value-weighted mean price per target unit, in sterling.">{econ.unit_price ? fmtMoney(econ.unit_price, 0) : "–"}</td>
+          <td style={foot} title="Value-weighted mean price per target unit, in euros.">{econ.unit_price ? fmtMoney(econ.unit_price, 0) : "–"}</td>
           <td style={foot}>{fmt(econ.edition_size)}</td>
           <td style={foot} />
         </>
@@ -586,7 +586,7 @@ export default function TargetSetting({ snap, onSaved }) {
     const entry = (inp.products || []).find((t) => t.manual && norm(t.name) === norm(name)) || { manual: true, name };
     const next = { ...entry };
     if (patch.edition_size !== undefined) next.edition = patch.edition_size || null;
-    if (patch.unit_price !== undefined) { next.unit_price = patch.unit_price || null; next.currency = "GBP"; }
+    if (patch.unit_price !== undefined) { next.unit_price = patch.unit_price || null; next.currency = "EUR"; }
     const rest = (inp.products || []).filter((t) => !(t.manual && norm(t.name) === norm(name)));
     setInp({ ...inp, products: [...rest, next] });
   };
@@ -813,7 +813,7 @@ export default function TargetSetting({ snap, onSaved }) {
             <span style={{ color: C.muted }}>Target </span><b>{fmt(econ.edition_size)}</b>
             {econ.edition_total > econ.edition_size ? <span style={{ color: C.muted }}> of {fmt(econ.edition_total)} in the edition</span> : <span style={{ color: C.muted }}> units, the whole edition</span>}
             <span style={{ color: C.muted }}> · launch value </span><b>{fmtMoney(econ.launch_value, 0)}</b>
-            {(econ.launch_currencies || []).some((c) => c !== "GBP") && <span style={{ color: C.muted }}> (from {(econ.launch_currencies || []).join(", ")} at a fixed rate)</span>}
+            {(econ.launch_currencies || []).some((c) => c !== "EUR") && <span style={{ color: C.muted }}> (from {(econ.launch_currencies || []).join(", ")} at a fixed rate)</span>}
             <span style={{ color: C.muted }}> · artist </span><b>{fmtMoney(econ.ppu_artist, 2)}</b><span style={{ color: C.muted }}> and AA </span><b>{fmtMoney(econ.ppu_aa, 2)}</b><span style={{ color: C.muted }}> per unit</span>
             {econ.frame_uplift_per_unit > 0 && <span style={{ color: C.muted }}> (incl. {fmtMoney(econ.frame_uplift_per_unit, 2)} framing)</span>}
             <span style={{ color: C.muted }}> · AA carries </span><b>{fmtPct(econ.aa_budget_share, 0)}</b><span style={{ color: C.muted }}> of paid spend</span>
@@ -852,7 +852,7 @@ export default function TargetSetting({ snap, onSaved }) {
                   units {fmt(profile.units)} ({fmt(profile.units_p25)}-{fmt(profile.units_p75)})
                 </span>
                 {profile.price > 0 && (
-                  <span className="chip" title="Median unit price of the basket in sterling (from Airtable), with its 25th to 75th percentile. The default basket matches on price as well as size (BENCHMARK_SPEC 3.1).">
+                  <span className="chip" title="Median unit price of the basket in euros (from Airtable), with its 25th to 75th percentile. The default basket matches on price as well as size (BENCHMARK_SPEC 3.1).">
                     price {fmtMoney(profile.price)} ({fmtMoney(profile.price_p25)}-{fmtMoney(profile.price_p75)})
                   </span>
                 )}
@@ -926,7 +926,7 @@ export default function TargetSetting({ snap, onSaved }) {
         <Card dot="#c96a3a" title="Paid assumptions">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "16px 20px" }}>
-            <Field label="Cost per paid unit (£)" tip="What a paid unit costs to buy: paid units × this is the paid budget. Blank = the panel's median.">
+            <Field label="Cost per paid unit (€)" tip="What a paid unit costs to buy: paid units × this is the paid budget. Blank = the panel's median.">
               <NumInput value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)}
                 placeholder={`${fmt(Number((b.cost_per_purchase || {}).Median) || 0)} · panel median`}
                 onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); setInp((prev) => ({ ...prev, cost_per_purchase: c === "" ? null : c })); }} />
@@ -938,7 +938,7 @@ export default function TargetSetting({ snap, onSaved }) {
             </Field>
           </div>
           <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginTop: 12 }}>
-            Spend is Meta's, billed in euros and read in sterling at a fixed rate, so every paid figure on the page is sterling.
+            Spend is Meta's, billed in euros, and the page runs in euros: every figure here is euros.
           </div>
         </Card>
 
@@ -1020,7 +1020,7 @@ export default function TargetSetting({ snap, onSaved }) {
           preferRecent={inp.prefer_recent !== false} channelsOff={off}
           // what the rule needs to find the artist's own earlier launches and
           // to read the typed price in its currency (shared/basketRule.mjs)
-          artist={snap.artist || ""} currency="GBP"
+          artist={snap.artist || ""} currency="EUR"
           announceDate={announce || null} privateRoomOpen={prOpen || null}
           // the picker asks for a target and a price when there are none, and
           // writes them onto a product added by hand so the basket follows

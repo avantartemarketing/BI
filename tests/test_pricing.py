@@ -84,7 +84,7 @@ def test_launches_and_match() -> None:
     # the bundle is left out: 150 units, value 500*100 + 700*50
     assert sun["edition_size"] == 150 and sun["launch_value"] == 85000, sun
     assert abs(sun["unit_price"] - 85000 / 150) < 1e-9 and sun["n_products"] == 3 and sun["n_bundles"] == 1
-    assert abs(sun["unit_price_gbp"] - sun["unit_price"] * P.RATES_TO_GBP["EUR"]) < 1e-9
+    assert abs(sun["unit_price_eur"] - sun["unit_price"] * P.RATES_TO_EUR["EUR"]) < 1e-9
 
     res = P.match(panel_rows(), lf)
     got = dict(zip(panel_rows()["release_name"], res["price_match"]))
@@ -124,7 +124,7 @@ def synthetic_panel(n: int = 40, seed: int = 7) -> pd.DataFrame:
         "panel": "draw", "cluster": [i % 2 for i in range(n)],
         "tot_total_product_units": units.round(), "tot_sessions_total": units * 100,
         "tot_draw_entries_eligible_units": units * 1.2, "campaign_days": 25.0, "private_room_share": 0.2,
-        "unit_price_gbp": price.round(), "edition_size": units.round(),
+        "unit_price_eur": price.round(), "edition_size": units.round(),
         "window_end": pd.Timestamp("2025-06-01"), "window_start": pd.Timestamp("2025-05-01"),
     })
     for g in B.GROUPS:
@@ -146,7 +146,7 @@ def test_price_band() -> None:
         # and the reach is how far the furthest of them is
         def worse(row):
             u = max(row["tot_total_product_units"] / 150, 150 / row["tot_total_product_units"])
-            q = max(row["unit_price_gbp"] / 1500, 1500 / row["unit_price_gbp"])
+            q = max(row["unit_price_eur"] / 1500, 1500 / row["unit_price_eur"])
             return max(u, q)
         d = panel.assign(_d=panel.apply(worse, axis=1)).sort_values("_d", kind="stable")
         assert members == d.head(B.SIMILAR_N)["release_name"].tolist()
@@ -164,7 +164,7 @@ def test_price_band() -> None:
         # a price typed in euros converts before the ranking
         B.SIMILAR_USE_PRICE = True
         m4, _r4, _on4 = B.similar_members(panel, {"release_name": "new", "edition_size": 150,
-                                                  "unit_price": 1500 / P.RATES_TO_GBP["EUR"], "currency": "EUR"})
+                                                  "unit_price": 1500 / P.RATES_TO_EUR["EUR"], "currency": "EUR"})
         assert m4 == members
         # a release never benchmarks against itself
         own = members[0]
@@ -174,12 +174,12 @@ def test_price_band() -> None:
         assert B.similar_members(panel, {"release_name": "new", "unit_price": 1500})[0] == []
 
         # the profile carries the price range over the priced members only
-        prof = B.basket_profile(panel.assign(unit_price_gbp=panel["unit_price_gbp"].where(panel.index % 5 != 0)), members)
+        prof = B.basket_profile(panel.assign(unit_price_eur=panel["unit_price_eur"].where(panel.index % 5 != 0)), members)
         assert prof["n_priced"] < prof["n"] and prof["price_p25"] <= prof["price"] <= prof["price_p75"]
 
         # the sentence names both axes and how close the members turned out
         desc = B.similar_desc(members, reach, on, 150, 1500)
-        assert "unit price of £1,500" in desc and f"x{reach:,.1f}" in desc
+        assert "unit price of €1,500" in desc and f"x{reach:,.1f}" in desc
         # a basket whose furthest member is miles away says so instead
         far = B.similar_desc(members, 9.0, on, 150, 1500)
         assert "Nothing on file is close to it" in far
@@ -196,18 +196,18 @@ def test_own_artist_and_recency() -> None:
     panel["artist"] = [f"Other {i}" for i in range(n)]
     panel["window_end"] = pd.Timestamp("2024-01-01")          # old, unless set below
     panel["tot_total_product_units"] = panel["tot_total_product_units"].astype(float)
-    panel["unit_price_gbp"] = panel["unit_price_gbp"].astype(float)
+    panel["unit_price_eur"] = panel["unit_price_eur"].astype(float)
     # the same artist: three within x3 (x1.07, x1.07, x2.67), one at x6
     for i, (u, pr) in enumerate([(140, 1400), (160, 1600), (400, 1500), (900, 1500)]):
-        panel.loc[panel.index[i], ["artist", "tot_total_product_units", "unit_price_gbp"]] = ["Same One", u, pr]
+        panel.loc[panel.index[i], ["artist", "tot_total_product_units", "unit_price_eur"]] = ["Same One", u, pr]
     own_names = panel["release_name"].iloc[:3].tolist()
     far_own = panel["release_name"].iloc[3]
     # a dead-on match by someone else (x1.0), and the recency pair: x1.03 old, x2.0 recent
-    panel.loc[panel.index[4], ["tot_total_product_units", "unit_price_gbp"]] = [150, 1500]
+    panel.loc[panel.index[4], ["tot_total_product_units", "unit_price_eur"]] = [150, 1500]
     exact = panel["release_name"].iloc[4]
-    panel.loc[panel.index[5], ["tot_total_product_units", "unit_price_gbp"]] = [155, 1500]
+    panel.loc[panel.index[5], ["tot_total_product_units", "unit_price_eur"]] = [155, 1500]
     old_near = panel["release_name"].iloc[5]
-    panel.loc[panel.index[6], ["tot_total_product_units", "unit_price_gbp", "window_end"]] = [300, 1500, pd.Timestamp("2026-06-01")]
+    panel.loc[panel.index[6], ["tot_total_product_units", "unit_price_eur", "window_end"]] = [300, 1500, pd.Timestamp("2026-06-01")]
     recent_farther = panel["release_name"].iloc[6]
     as_of = dt.date(2026, 9, 22)
     rel = {"release_name": "new", "artist": "Same One", "edition_size": 150, "unit_price": 1500, "announce_date": "2026-09-01"}

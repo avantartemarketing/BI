@@ -287,13 +287,13 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       if (!dateOf(f)) errors.push(`${f} is needed to set targets - none in the Notion log, the funnel's clock or Airtable, so type it`);
     }
   }
-  // what a paid unit costs to buy, £: paid units x this is the paid budget.
+  // what a paid unit costs to buy, in euros: paid units x this is the paid budget.
   // Empty means the panel's median (etl/benchmarks.json cost_per_purchase).
   if (body.cost_per_purchase !== undefined) {
     if (body.cost_per_purchase === null || body.cost_per_purchase === "") next.cost_per_purchase = null;
     else {
       const v = Number(body.cost_per_purchase);
-      if (!Number.isFinite(v) || v <= 0) errors.push("cost_per_purchase must be a positive number (£ per paid unit) or empty");
+      if (!Number.isFinite(v) || v <= 0) errors.push("cost_per_purchase must be a positive number (euros per paid unit) or empty");
       else next.cost_per_purchase = Math.round(v * 100) / 100;
     }
   }

@@ -242,19 +242,20 @@ def _parse_across_time() -> pd.DataFrame:
     return df
 
 
-# Meta bills the ad account in euros; the page runs in sterling. The spend is
-# converted once, here, at the fixed rate the product prices use
-# (pricing.RATES_TO_GBP), so every spend, cost per entry, budget and ROI
-# figure downstream is sterling while the file keeps Meta's own figures.
+# Meta bills the ad account in euros and the page runs in euros
+# (pricing.PAGE_CURRENCY), so the spend passes through as it is. The
+# conversion stays for a feed in another currency: it would be converted
+# once, here, at the fixed table the product prices use (pricing.RATES_TO_EUR),
+# and the paid block says which currency the spend came in.
 SPEND_CURRENCY = "EUR"
 
 
 def spend_rate() -> float:
-    return float(pricing.RATES_TO_GBP.get(SPEND_CURRENCY, 1.0))
+    return float(pricing.RATES_TO_EUR.get(SPEND_CURRENCY, 1.0))
 
 
 def convert_spend(df: pd.DataFrame) -> pd.DataFrame:
-    """The spend column in sterling."""
+    """The spend column in the page's currency."""
     rate = spend_rate()
     if rate != 1.0 and "spend" in df.columns:
         df = df.copy()
@@ -948,7 +949,7 @@ def frame_terms(release: dict, b: dict = BENCH) -> tuple[float, float]:
     inputs (frame_conversion, frame_profit_per_unit on the Target setting tab)
     with the workbook's constants in benchmarks.json (0.35 and 94) as the
     defaults - the constants were the same for every release whatever its
-    price point, and a £500 print and a £4,000 one do not frame alike."""
+    price point, and a €500 print and a €4,000 one do not frame alike."""
     conv = release.get("frame_conversion")
     profit = release.get("frame_profit_per_unit")
     conv = float(b["frame_conversion"]) if conv is None or conv == "" else float(conv)
@@ -1037,7 +1038,7 @@ def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH) -> dict:
     estimate with its prior by precision: a campaign with a tight estimate
     keeps it, a noisy one leans on the panel. Below cpe_fit_min_days of
     history the priors are used as they are. Warhol's 18 days scaling from
-    £1k to £30k a day gave an elasticity of 0.20 +/- 0.29 and a drift of
+    €1k to €30k a day gave an elasticity of 0.20 +/- 0.29 and a drift of
     0.8% +/- 5.1 a day, which the priors (0.38 +/- 0.19; 2.5% +/- 3.5) pull
     to 0.34 and 2.0%: the spend response is its own, the time decay is
     mostly the panel's, because a campaign that ramps and ages at once
@@ -1962,9 +1963,9 @@ def _effective_product(p: dict, b: dict) -> dict:
     e["target_units"] = int(round(e["edition"] * e["target_sellthrough"])) if e["edition"] else 0
     price = _num(pick("unit_price"))
     e["unit_price"] = price if price and price > 0 else None
-    e["currency"] = str(pick("currency", default="GBP") or "GBP").upper()
-    rate = pricing.RATES_TO_GBP.get(e["currency"], 1.0)
-    e["unit_price_gbp"] = round(e["unit_price"] * rate, 2) if e["unit_price"] else None
+    e["currency"] = str(pick("currency", default=pricing.PAGE_CURRENCY) or pricing.PAGE_CURRENCY).upper()
+    rate = pricing.RATES_TO_EUR.get(e["currency"], 1.0)
+    e["unit_price_eur"] = round(e["unit_price"] * rate, 2) if e["unit_price"] else None
     e["artist_profit_per_unit"] = _num(pick("artist_profit_per_unit"))
     e["aa_profit_per_unit"] = _num(pick("aa_profit_per_unit"))
     e["aa_revenue_share"] = _num(pick("aa_revenue_share"))
@@ -2034,10 +2035,10 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         r["economics_mode"] = "products"
         r["edition_total"] = sum(p["edition"] for p in sized)
         r["edition_size"] = targets
-        priced = [p for p in sized if p["unit_price_gbp"]]
-        value = sum(p["target_units"] * p["unit_price_gbp"] for p in priced)
+        priced = [p for p in sized if p["unit_price_eur"]]
+        value = sum(p["target_units"] * p["unit_price_eur"] for p in priced)
         r["unit_price"] = round(value / sum(p["target_units"] for p in priced), 2) if priced and sum(p["target_units"] for p in priced) else None
-        r["currency"] = "GBP"
+        r["currency"] = pricing.PAGE_CURRENCY
         r["launch_value"] = round(value, 2)
         r["launch_currencies"] = sorted({p["currency"] for p in priced})
 
@@ -2319,7 +2320,7 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
     id when the funnel catches up; adopt_funnel_names covers the launches the
     funnel names differently. The announce date is Airtable's, else assumed
     ASSUMED_CAMPAIGN_DAYS before the close and said so; the price is
-    converted to sterling, the form's currency, at the fixed table. The
+    converted to euros, the page's currency, at the fixed table. The
     campaign code is guessed only among codes active in the launch's own
     window (`activity`, code_activity less the codes releases on file carry):
     before a campaign spends or sends there is nothing to guess from."""
@@ -2367,7 +2368,7 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
         else:
             seen_ids[rid] = 1
         price = float(l.unit_price) if pd.notna(l.unit_price) else None
-        rate = pricing.RATES_TO_GBP.get(str(l.currency or "")) if price is not None else None
+        rate = pricing.RATES_TO_EUR.get(str(l.currency or "")) if price is not None else None
         out.append({
             "id": rid, "release_name": name, "artist": str(l.artist), "title": title, "quarter": quarter,
             "type": "LE", "campaign_code": code, "campaign_name": None,
@@ -2925,7 +2926,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         _cum *= (1 + drift_rate)
         drift_path.append((d, _cum))
     drift_end = drift_path[-1][1] if drift_path else 1.0
-    inv_drift_sum = sum(1 / f for _, f in drift_path)     # entries per £ over the window, relative to today
+    inv_drift_sum = sum(1 / f for _, f in drift_path)     # entries per euro over the window, relative to today
     forecast_cpe = l3d_cpe                                # today's price (per converting unit), the anchor
     cpe_end = l3d_cpe * drift_end if l3d_cpe else None    # at close, at today's spend
 
@@ -2964,7 +2965,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # cpe_spend_elasticity, etl/analysis/cpe_elasticity.py), so the entries a
     # recommendation asks for are priced at the CPE that spend level implies,
     # anchored on today's price at today's spend, and drifting along the same
-    # path the ROI chart draws. Units: sellout_gap is units, the price is £
+    # path the ROI chart draws. Units: sellout_gap is units, the price is euros
     # per converting unit (raw CPE / (1 - drop-off)).
     rules = b["spend_rules"]
     eps = float(cost_terms["elasticity"])
@@ -3571,7 +3572,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                        "suggestedId": basket["suggestedId"]},
             "units": round(profile["units"], 1),
             "unitsP25": round(profile["units_p25"], 1), "unitsP75": round(profile["units_p75"], 1),
-            # the basket's unit prices in sterling (median and middle half), from
+            # the basket's unit prices in euros (median and middle half), from
             # Airtable via the panel - 0 when no member is priced (§3.2)
             "price": round(profile.get("price", 0.0), 1),
             "priceP25": round(profile.get("price_p25", 0.0), 1), "priceP75": round(profile.get("price_p75", 0.0), 1),
