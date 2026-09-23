@@ -192,7 +192,8 @@ function defaultsFor(id, disc) {
     campaign_name: disc.campaign_name || null, marketing_lead: null, budget_file: null,
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
     edition_size: null, unit_price: null, artist_profit: null, aa_group_profit: null,
-    artist_profit_share: 0.5, framing_available: true, paid_share_override: null,
+    artist_profit_share: 0.5, framing_available: true, frame_conversion: null, frame_profit_per_unit: null,
+    paid_share_override: null,
     paid_channel_size: "Medium", reference_point: "Medium", paid_conv_quality: "Medium", cpp_pick: "Median",
     channel_quality_overrides: {},
   };
@@ -267,6 +268,25 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     }
   }
   if (body.framing_available !== undefined) next.framing_available = !!body.framing_available;
+  // the framing uplift's terms: a share of buyers taking a frame and AA's
+  // profit per frame. Empty means the benchmark default (0.35 x £94), which is
+  // what every release ran on before these were inputs.
+  if (body.frame_conversion !== undefined) {
+    if (body.frame_conversion === null || body.frame_conversion === "") next.frame_conversion = null;
+    else {
+      const v = Number(body.frame_conversion);
+      if (!Number.isFinite(v) || v < 0 || v > 1) errors.push("frame_conversion must be 0..1 (the share of buyers taking a frame) or empty");
+      else next.frame_conversion = v;
+    }
+  }
+  if (body.frame_profit_per_unit !== undefined) {
+    if (body.frame_profit_per_unit === null || body.frame_profit_per_unit === "") next.frame_profit_per_unit = null;
+    else {
+      const v = Number(body.frame_profit_per_unit);
+      if (!Number.isFinite(v) || v < 0) errors.push("frame_profit_per_unit must be a non-negative number (£ per frame) or empty");
+      else next.frame_profit_per_unit = v;
+    }
+  }
   for (const [f, allowed] of Object.entries(PICKS)) {
     if (body[f] !== undefined) {
       if (!allowed.includes(body[f])) errors.push(`${f} must be one of ${allowed.join("/")}`);

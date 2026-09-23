@@ -631,10 +631,33 @@ export default function TargetSetting({ snap, onSaved }) {
                 })}
               </div>
             </Field>
+            {inp.framing_available !== false && (
+              <>
+                <Field label="Frame take-up (% of buyers)"
+                  tip={`Share of buyers expected to take a frame. Blank = the benchmark default, ${Math.round(b.frame_conversion * 100)}% (the workbook's constant for every release).`}>
+                  <input className="control num" value={inp.frame_conversion === null || inp.frame_conversion === undefined ? "" : Math.round(Number(inp.frame_conversion) * 100)}
+                    placeholder={`${Math.round(b.frame_conversion * 100)} (default)`}
+                    onChange={(e) => {
+                      const raw = String(e.target.value).replace(/[^0-9]/g, "");
+                      setInp({ ...inp, frame_conversion: raw === "" ? null : clamp((parseInt(raw, 10) || 0) / 100, 0, 1) });
+                    }} />
+                </Field>
+                <Field label="Frame profit (£ per frame)"
+                  tip={`AA's profit on each frame sold. Blank = the benchmark default, £${b.frame_profit_per_unit} (the workbook's constant for every release).`}>
+                  <input className="control num" value={inp.frame_profit_per_unit ?? ""} placeholder={`${b.frame_profit_per_unit} (default)`}
+                    onChange={(e) => {
+                      const raw = String(e.target.value).replace(/[^0-9.]/g, "");
+                      setInp({ ...inp, frame_profit_per_unit: raw === "" ? null : Math.max(parseFloat(raw) || 0, 0) });
+                    }} />
+                </Field>
+              </>
+            )}
             <Field label="Artist profit / unit" tip="Artist total profit ÷ edition size - derived.">
               <input className="control ro num" value={fmtMoney(derived.ppu_artist, 2)} readOnly />
             </Field>
-            <Field label="AA profit / unit" tip={`Includes framing: ${b.frame_conversion} conversion × £${b.frame_profit_per_unit} per frame when available - derived.`}>
+            <Field label="AA profit / unit" tip={inp.framing_available !== false
+              ? `AA Group profit ÷ edition size, plus framing: ${Math.round(derived.frame_conversion * 100)}% take-up × £${fmt(derived.frame_profit_per_unit, 2)} per frame = £${fmt(derived.frame_uplift_per_unit, 2)} per unit - derived.`
+              : "AA Group profit ÷ edition size, no framing - derived."}>
               <input className="control ro num" value={fmtMoney(derived.ppu_aa, 2)} readOnly />
             </Field>
           </div>

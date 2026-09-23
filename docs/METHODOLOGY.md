@@ -70,7 +70,8 @@ projections immediately - no data rebuild needed.
 | Private room opens / announce / draw close | The campaign clock every curve runs on |
 | Artist profit, AA Group profit, profit share | Per-unit economics feeding paid ROI |
 | Paid budget share | Who funds the ads. Default: 50/50, or 100% AA on commission / rev-share deals; overridable per release (Glenn Ligon = 100% AA) |
-| Framing available | Adds 0.35 conversion × £94 profit per frame to AA profit/unit |
+| Framing available | Adds frame take-up × profit per frame to AA profit/unit |
+| Frame take-up, frame profit (optional) | The two terms of that uplift, per release; blank = the benchmark defaults of 35% and £94 |
 | Paid channel size (Small / Medium / Large) | Which quartile of historical paid share to plan for |
 | Paid share overwrite (% of units, optional) | The workbook's "Paid (% Total)" overwrite: sets the paid share directly when the quartile is not the plan (Warhol: 66%); empty means use the pick |
 | Private room share (Low / Medium / High) | Quartile of the private-room + other share |

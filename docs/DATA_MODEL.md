@@ -49,6 +49,15 @@ Derived economics:
 - `aa_profit_per_unit = aa_profit_per_unit_ex_framing + (framing_available ? frame_conversion × frame_profit : 0)`
   = 1,465.29 + 0.35 × 94 = **1,498.19**
 
+`frame_conversion` (the share of buyers taking a frame) and `frame_profit_per_unit` (AA's
+profit per frame, £) are **release-level inputs** on the Target setting tab, shown when framing
+is available; left blank they fall back to the benchmark constants below, which is what every
+release ran on before they were inputs (`frame_terms` in `etl/build.py`, mirrored in
+`shared/targetModel.mjs`). The snapshot's `economics` block publishes the terms in force
+(`frameConversion`, `frameProfitPerUnit`, `frameUpliftPerUnit`). The draw export's per-entry
+"Framed" flag (`framed_share` in the draw block) is the observed take-up where the export exists;
+it is not fed into the calculation automatically.
+
 Global constants (from the workbook's "PROFIT CALC - DO NOT CHANGE" block):
 `frame_conversion = 0.35`, `frame_profit = £94/unit`, `cannibalisation = 0.2`
 (the LE standard per the spend rules. The 2026-08-28 tab revision left several
