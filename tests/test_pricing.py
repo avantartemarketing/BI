@@ -133,38 +133,114 @@ def synthetic_panel(n: int = 40, seed: int = 7) -> pd.DataFrame:
 
 
 def test_price_band() -> None:
+    """The basket is the SIMILAR_N nearest on units and price, and nothing else."""
     panel = synthetic_panel()
-    keep = (B.SIMILAR_USE_PRICE, B.SIMILAR_RUNGS)
+    keep = B.SIMILAR_USE_PRICE
     try:
         B.SIMILAR_USE_PRICE = True
         rel = {"release_name": "new", "edition_size": 150, "unit_price": 1500}
-        members, factor, on = B.similar_members(panel, rel)
-        assert len(members) >= B.SIMILAR_MIN and "price" in on and "size" in on, (len(members), factor, on)
-        rows = panel[panel["release_name"].isin(members)]
-        # every member sits inside both bands at the factor that answered
-        assert ((rows["tot_total_product_units"] >= 150 / factor) & (rows["tot_total_product_units"] <= 150 * factor)).all()
-        assert ((rows["unit_price_gbp"] >= 1500 / factor) & (rows["unit_price_gbp"] <= 1500 * factor)).all()
-        # without a price the band steps aside and the old ladder answers
-        m2, f2, on2 = B.similar_members(panel, {"release_name": "new", "edition_size": 150})
-        assert "price" not in on2 and len(m2) >= len(members), (on2, len(m2), len(members))
+        members, reach, on = B.similar_members(panel, rel)
+        assert len(members) == B.SIMILAR_N and on == ("size", "price"), (len(members), on)
+
+        # the members are exactly the nearest by the worse of the two multiples,
+        # and the reach is how far the furthest of them is
+        def worse(row):
+            u = max(row["tot_total_product_units"] / 150, 150 / row["tot_total_product_units"])
+            q = max(row["unit_price_gbp"] / 1500, 1500 / row["unit_price_gbp"])
+            return max(u, q)
+        d = panel.assign(_d=panel.apply(worse, axis=1)).sort_values("_d", kind="stable")
+        assert members == d.head(B.SIMILAR_N)["release_name"].tolist()
+        assert abs(reach - d.head(B.SIMILAR_N)["_d"].max()) < 1e-9
+        # nothing outside the basket is nearer than anything in it
+        assert d.head(B.SIMILAR_N)["_d"].max() <= d.iloc[B.SIMILAR_N]["_d"] + 1e-9
+
+        # no price: ranked on units alone, still SIMILAR_N of them
+        m2, _r2, on2 = B.similar_members(panel, {"release_name": "new", "edition_size": 150})
+        assert on2 == ("size",) and len(m2) == B.SIMILAR_N
         B.SIMILAR_USE_PRICE = False
-        m3, f3, on3 = B.similar_members(panel, rel)
+        m3, _r3, on3 = B.similar_members(panel, rel)
         assert m3 == m2 and on3 == on2
-        # a price typed in euros converts before the band is drawn
+
+        # a price typed in euros converts before the ranking
         B.SIMILAR_USE_PRICE = True
-        m4, _f4, _on4 = B.similar_members(panel, {"release_name": "new", "edition_size": 150, "unit_price": 1500 / P.RATES_TO_GBP["EUR"], "currency": "EUR"})
+        m4, _r4, _on4 = B.similar_members(panel, {"release_name": "new", "edition_size": 150,
+                                                  "unit_price": 1500 / P.RATES_TO_GBP["EUR"], "currency": "EUR"})
         assert m4 == members
+        # a release never benchmarks against itself
+        own = members[0]
+        m5, _r5, _on5 = B.similar_members(panel, {"release_name": own, "edition_size": 150, "unit_price": 1500})
+        assert own not in m5
+        # no edition size is no basket
+        assert B.similar_members(panel, {"release_name": "new", "unit_price": 1500})[0] == []
+
         # the profile carries the price range over the priced members only
         prof = B.basket_profile(panel.assign(unit_price_gbp=panel["unit_price_gbp"].where(panel.index % 5 != 0)), members)
         assert prof["n_priced"] < prof["n"] and prof["price_p25"] <= prof["price"] <= prof["price_p75"]
-        # the sentence under the basket names both bands
-        desc = B.similar_desc(members, factor, on, 150, 1500)
-        assert "unit price of £1,500" in desc and f"factor of {factor:g}" in desc
+
+        # the sentence names both axes and how close the members turned out
+        desc = B.similar_desc(members, reach, on, 150, 1500)
+        assert "unit price of £1,500" in desc and f"x{reach:,.1f}" in desc
+        # a basket whose furthest member is miles away says so instead
+        far = B.similar_desc(members, 9.0, on, 150, 1500)
+        assert "Nothing on file is close to it" in far
     finally:
-        B.SIMILAR_USE_PRICE, B.SIMILAR_RUNGS = keep
+        B.SIMILAR_USE_PRICE = keep
+
+
+def test_own_artist_and_recency() -> None:
+    """The artist's own earlier launches go in first; recency reorders only
+    among comparables, and only when asked."""
+    import datetime as dt
+    panel = synthetic_panel().copy()
+    n = len(panel)
+    panel["artist"] = [f"Other {i}" for i in range(n)]
+    panel["window_end"] = pd.Timestamp("2024-01-01")          # old, unless set below
+    panel["tot_total_product_units"] = panel["tot_total_product_units"].astype(float)
+    panel["unit_price_gbp"] = panel["unit_price_gbp"].astype(float)
+    # the same artist: three within x3 (x1.07, x1.07, x2.67), one at x6
+    for i, (u, pr) in enumerate([(140, 1400), (160, 1600), (400, 1500), (900, 1500)]):
+        panel.loc[panel.index[i], ["artist", "tot_total_product_units", "unit_price_gbp"]] = ["Same One", u, pr]
+    own_names = panel["release_name"].iloc[:3].tolist()
+    far_own = panel["release_name"].iloc[3]
+    # a dead-on match by someone else (x1.0), and the recency pair: x1.03 old, x2.0 recent
+    panel.loc[panel.index[4], ["tot_total_product_units", "unit_price_gbp"]] = [150, 1500]
+    exact = panel["release_name"].iloc[4]
+    panel.loc[panel.index[5], ["tot_total_product_units", "unit_price_gbp"]] = [155, 1500]
+    old_near = panel["release_name"].iloc[5]
+    panel.loc[panel.index[6], ["tot_total_product_units", "unit_price_gbp", "window_end"]] = [300, 1500, pd.Timestamp("2026-06-01")]
+    recent_farther = panel["release_name"].iloc[6]
+    as_of = dt.date(2026, 9, 22)
+    rel = {"release_name": "new", "artist": "Same One", "edition_size": 150, "unit_price": 1500, "announce_date": "2026-09-01"}
+
+    own = B.own_members(panel, rel, as_of)
+    assert set(own) == set(own_names) and far_own not in own, own
+
+    members, reach, on = B.similar_members(panel, rel, as_of)
+    # the artist's own three come first, whatever else is nearer
+    assert members[:3] == own, members[:4]
+    assert len(members) == B.SIMILAR_N and far_own not in members
+    # prefer_recent (the default) is a tier, not a tiebreak: among launches
+    # within x4, the recent x2.0 outranks BOTH older ones, the x1.0 included.
+    # That is the strength of the preference as specified; the picker says
+    # what it passed over, and the strength is a decision, not a bug.
+    assert members.index(recent_farther) < members.index(exact) < members.index(old_near), members
+    # off: distance alone, so the dead-on match follows the artist's own and
+    # the older x1.03 comes before the recent x2.0
+    m2, _r2, _on2 = B.similar_members(panel, {**rel, "prefer_recent": False}, as_of)
+    assert m2[:3] == own and m2[3] == exact and old_near in m2, m2
+    # ... and a x2.0 launch only makes the eight if nothing nearer fills them,
+    # which on this panel it does not; if it is in, it is after the x1.03
+    assert recent_farther not in m2 or m2.index(old_near) < m2.index(recent_farther), m2
+    # the artist's own launch that opened after this one is not "earlier"
+    panel.loc[panel.index[0], "window_end"] = pd.Timestamp("2026-12-01")
+    assert own_names[0] not in B.own_members(panel, rel, as_of)
+    # the sentence names the artist's own
+    desc = B.similar_desc(members, reach, on, 150, 1500, 3, "One")
+    assert "starting with One's own 3" in desc, desc
 
 
 if __name__ == "__main__":
     test_launches_and_match()
     test_price_band()
-    print("ok: pricing join and price band")
+    test_own_artist_and_recency()
+    print("ok: pricing join, nearest-8, own artist and recency")

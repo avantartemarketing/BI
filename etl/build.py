@@ -2748,6 +2748,11 @@ def main(only: str | None = None):
     index = sort_index(index)
     (APP / "index.json").write_text(json.dumps(
         {"asOf": as_of.isoformat(), "releases": index}, indent=1))
+    # the draw panel as the picker's candidate rows (baskets.candidate_rows),
+    # so the server serves a file rather than starting a python process per
+    # open of the picker
+    (APP / "basket_candidates.json").write_text(json.dumps(
+        {"asOf": as_of.isoformat(), "rows": baskets.candidate_rows(panel)}, indent=1))
 
     # inputs document for the Target setting tab (server + web read this);
     # meta_campaigns feeds the Meta-campaign matcher (most recently active first);

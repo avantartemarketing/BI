@@ -70,28 +70,7 @@ def day(value):
     return None if pd.isna(value) else str(pd.Timestamp(value).date())
 
 if req.get("op") == "candidates":
-    names = B._cluster_names(panel)
-    rows = []
-    for r in panel.sort_values("window_end", ascending=False, na_position="last").to_dict("records"):
-        cid = B._cluster_id(r.get("cluster"))
-        rows.append({
-            "release_name": txt(r.get("release_name")),
-            "artist": txt(r.get("artist")),
-            "title": txt(r.get("title")),
-            "quarter": txt(r.get("quarter")),
-            "window_end": day(r.get("window_end")),
-            "campaign_days": B._num(r.get("campaign_days")),
-            "units": B._num(r.get("tot_total_product_units")),
-            "sessions": B._num(r.get("tot_sessions_total")),
-            "paid_share": B._num(r.get("sess_share_paid")),
-            "private_room_share": B._num(r.get("private_room_share")),
-            # the edition's unit price in sterling and its size, from Airtable
-            # via the panel (etl/pricing.py); 0 where Airtable has no match
-            "price": B._num(r.get("unit_price_gbp")),
-            "edition_size": B._num(r.get("edition_size")),
-            "cluster": cid,
-            "cluster_name": names.get(cid, "") if cid is not None else "",
-        })
+    rows = B.candidate_rows(panel)
     out = {"rows": rows}
 elif req.get("op") == "profile":
     members = [str(m) for m in (req.get("members") or [])]
@@ -187,14 +166,41 @@ function releaseName(releaseId) {
  * with their profiles, the saved ones, and which one is suggested (§3.3).
  * A missing or unknown release id is not an error - the picker can be opened
  * without one, and then same_artist is simply empty. */
-function readyBaskets(releaseId) {
-  const release = releaseFor(releaseId);
-  const key = "baskets:" + ((release && release.release_name) || "");
+/* `opts.preferRecent` overrides the release's saved prefer_recent for this
+ * listing, so the picker's switch can ask "and without recency?" before the
+ * person has saved anything. It is part of the cache key because it changes
+ * the answer. */
+/* `opts.units` and `opts.price` stand in for the release's saved edition size
+ * and unit price, so the picker can ask for the basket a target would get
+ * before that target is saved - a release with none saved has nothing to be
+ * near to otherwise, and the picker's first job is to ask for them. Both are
+ * part of the cache key because they change the answer. */
+function readyBaskets(releaseId, opts = {}) {
+  let release = releaseFor(releaseId);
+  if (release) {
+    release = { ...release };
+    if (opts.preferRecent !== undefined) release.prefer_recent = !!opts.preferRecent;
+    if (opts.units > 0) release.edition_size = opts.units;
+    if (opts.price > 0) { release.unit_price = opts.price; release.currency = "GBP"; }
+  }
+  const key = "baskets:" + ((release && release.release_name) || "") + ":" +
+    (release && release.prefer_recent === false ? "old" : "recent") + ":" +
+    (opts.units > 0 ? opts.units : "-") + ":" + (opts.price > 0 ? opts.price : "-");
   return cached(key, () => runBaskets({ op: "baskets", release }));
 }
 
-// GET /api/baskets/candidates: the whole draw panel for the Bespoke tab.
+/* GET /api/baskets/candidates: the whole draw panel, as the rows the picker
+ * ranks over (shared/basketRule.mjs). The build writes them to a file on
+ * every run, so serving them is a file read; a python process is only
+ * started when there is no file yet - a fresh checkout before its first
+ * build. That is what made opening the picker take seconds on a shared box,
+ * and it no longer happens on the picker's path at all. */
+const CANDIDATES_PATH = path.join(ROOT, "data", "app", "basket_candidates.json");
 function candidates() {
+  try {
+    const doc = JSON.parse(fs.readFileSync(CANDIDATES_PATH, "utf8"));
+    if (doc && Array.isArray(doc.rows) && doc.rows.length) return Promise.resolve({ rows: doc.rows, asOf: doc.asOf || null });
+  } catch {}
   return cached("candidates", () => runBaskets({ op: "candidates" }));
 }
 
