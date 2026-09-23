@@ -200,7 +200,7 @@ The snapshot carries the basket's id, name and count but not its members
 (`snap.benchmark.basket`), so the results page cannot list them today.
 `resolve_basket` already returns the members; writing them into the
 snapshot with each member's units, price and paid share is a small change
-in `etl/build.py` and `server/retarget.js`.
+in `etl/build.py`.
 
 Proposal: a "Basket" line under the hero on the Overview: "9 launches within
 x2 on units and price: Glenn Ligon 149, ... " with the full list in the

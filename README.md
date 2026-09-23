@@ -430,23 +430,22 @@ the benchmark. The basket is picked in a modal (ready-made clusters, or a
 bespoke tick-list of past launches that can be saved); a release is never in
 its own basket.
 
-The older quartile levers (docs §3/§4) are gone from the page; the build keeps
-that model only as the fallback for a basket with no median units, and the
-model in force is on the snapshot as `targetingMode`. What the page asks
-instead is which channels are in plan - Running paid, the artist's own
-channels - and what a paid unit costs to buy (BENCHMARK_SPEC 4.3, 8).
+The older quartile levers (docs/DATA_MODEL.md §3) are gone from the page and,
+since September 2026, from the build: a release that cannot be benchmarked
+shows its actuals. What the page asks instead is which channels are in plan -
+Running paid, the artist's own channels - how much the artist will post, and
+what a paid unit costs to buy (BENCHMARK_SPEC 4.3, 8).
 
 The derived-targets rail recomputes live in the browser via
-`shared/targetModel.mjs`; **Save** persists the inputs (`POST /api/inputs/:id`)
-and the server retargets the release snapshot in place (`server/retarget.js`) -
-plans, expected-today, projections and the rail all update without a full ETL
-run. A save that changes the basket or the stretch mode instead **re-runs the
-Python ETL for that release**, because the benchmark model needs the panel and
-the per-basket curves; the response is the same either way. Full daily-domain
-refreshes still come from `npm run etl`. Saved inputs live in
-`data/app/inputs.json` (ephemeral on Render's free disk - copy changes back
-into `etl/release_inputs.json` to make them permanent); custom baskets live
-beside them in `data/app/baskets.json`.
+`shared/benchmarkModel.mjs` (the per-unit economics via `shared/economics.mjs`);
+**Save** persists the inputs (`POST /api/inputs/:id`) and **re-runs the Python
+ETL for that release**, because the benchmark model needs the panel and the
+per-basket curves - plans, expected-today, projections and the rail all come
+back rebuilt, in a few seconds. Full daily-domain refreshes still come from
+`npm run etl`. Saved inputs live in `data/inputs.saved.json` (`SAVED_INPUTS_PATH`
+relocates it; on Render's free disk copy changes back into
+`etl/release_inputs.json` to make them permanent); custom baskets live in
+`data/app/baskets.json`.
 
 ## Auditing the allocator tool with an admin export
 

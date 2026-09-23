@@ -1,8 +1,8 @@
 {
- "_comment": "Benchmark values v2, transcribed from the 2026-08-28 LAUNCH PERFORMANCE OVERVIEW (recomputed panel; quartiles over the historical release panel; Low=P25, Medium=median, High=P75). Cannibalisation 0.2 - the LE standard per the workbook's spend rules (per-release tabs can show 0 via a broken template cell reference; do not transcribe those). See docs/DATA_MODEL.md #4 for provenance and the recomputation policy. Currency GBP.",
+ "_comment": "Benchmark constants v3. The reference numbers the build still reads, after the quartile-lever model was retired on 2026-09-23 (docs/DATA_MODEL.md #3): the basket of comparable launches is the benchmark for every volume and rate. What stays: order_split (the medians split a display group's target across its raw channels, since the panel is grouped), cost_per_purchase (the Median is the default price of a paid unit; a release can type its own), the entry-to-order rates, cannibalisation 0.2 (the LE standard per the workbook's spend rules), the framing defaults, the budget sense check, the spend rules and the cost-curve priors. Transcribed from the 2026-08-28 LAUNCH PERFORMANCE OVERVIEW (recomputed panel; quartiles over the historical release panel). See docs/DATA_MODEL.md #4 for provenance. Currency GBP.",
  "as_of": "2026-08-28",
  "order_split": {
-  "_meaning": "channel share of unadjusted draw+preorder units; renormalise over non-N/A channels at use",
+  "_meaning": "channel share of unadjusted draw+preorder units, Low=P25 / Medium=median / High=P75; the build reads the Medium column only, renormalised inside each display group, to split a group's basket target across its channels",
   "AA Email Auto": {
    "Low": 0.0125,
    "Medium": 0.02302503882,
@@ -64,90 +64,12 @@
    "High": 0.375
   }
  },
- "session_to_eligible_entry": {
-  "_meaning": "unique eligible entries / unadjusted sessions",
-  "AA Email Auto": {
-   "Low": 0.003828814077,
-   "Medium": 0.04744255004,
-   "High": 0.3039215686
-  },
-  "AA Email Man": {
-   "Low": 0.006864350592,
-   "Medium": 0.01099830795,
-   "High": 0.01738003584
-  },
-  "AA Meta": {
-   "Low": 0.009101349214,
-   "Medium": 0.01472964409,
-   "High": 0.02702089385
-  },
-  "AA Other": {
-   "Low": 0.03956043956,
-   "Medium": 0.07142857143,
-   "High": 0.1607142857
-  },
-  "AA X": {
-   "Low": 0.01123595506,
-   "Medium": 0.02302631579,
-   "High": 0.0303030303
-  },
-  "Direct": {
-   "Low": 0.009006248878,
-   "Medium": 0.01830791493,
-   "High": 0.03014514627
-  },
-  "Organic Search": {
-   "Low": 0.01777777778,
-   "Medium": 0.03278688525,
-   "High": 0.06349206349
-  },
-  "Other": {
-   "Low": 0.009708737864,
-   "Medium": 0.02127659574,
-   "High": 0.03684210526
-  },
-  "Referral Artist": {
-   "Low": 0.006396588486,
-   "Medium": 0.01342281879,
-   "High": 0.02200671391
-  },
-  "Referral Meta": {
-   "Low": 0.008055447429,
-   "Medium": 0.01612903226,
-   "High": 0.03005497615
-  },
-  "Referral Other": {
-   "Low": 0.0177789548,
-   "Medium": 0.03342519384,
-   "High": 0.06610576923
-  },
-  "Referral X": {
-   "Low": 0.008410720104,
-   "Medium": 0.02393939394,
-   "High": 0.150862069
-  }
- },
- "paid_share_of_units": {
-  "Low": 0.07825814536,
-  "Medium": 0.2464953271,
-  "High": 0.3647751136
- },
- "paid_session_to_eligible_entry": {
-  "Low": 0.001546790664,
-  "Medium": 0.004143253907,
-  "High": 0.00978063652
- },
- "pv_other_share_of_units": {
-  "Low": 0.2464788732,
-  "Medium": 0.4610655738,
-  "High": 0.7105263158
- },
  "cost_per_purchase": {
+  "_meaning": "GBP per paid unit, quartiles over the paid campaigns on file; Median is the default the paid budget is priced at when a release has no cost_per_purchase of its own",
   "Low": 128.75,
   "Median": 177,
   "High": 291
  },
- "email_session_to_purchase": 0.01072708223,
  "eligible_entry_to_order": 0.8,
  "preorder_entry_to_order": 0.95,
  "target_buffer": 0.75,

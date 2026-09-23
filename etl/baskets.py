@@ -156,13 +156,11 @@ RECENT_MONTHS = 18
 # moves a median. It still names the basket and still fills the picker.
 SIMILAR_USE_PRICE = True
 
-# The planned paid share of units by paid_channel_size, mirroring the quartiles
-# in etl/benchmarks.json (paid_share_of_units: Low / Medium / High). It is only
-# ever a tie-break between two clusters that sit the same distance from the
-# edition size in log space (§3.3), so a small drift from the frozen benchmark
-# file cannot change a benchmark - and copying it keeps this module free of the
-# ETL's own inputs.
-PAID_PLAN = {"Low": 0.078, "Small": 0.078, "Medium": 0.246, "High": 0.365, "Large": 0.365}
+# The planned paid share of units when the suggestion has to break a tie
+# between two clusters that sit the same distance from the edition size in log
+# space (§3.3): the panel's median paid share (the 2026-08-28 benchmark file),
+# or nothing for a release that will not run paid. It decides nothing else, so
+# a small drift from the panel cannot change a benchmark.
 PAID_PLAN_DEFAULT = 0.246
 
 # Columns the profile reads. Everything numeric is coerced on load because the
@@ -783,10 +781,7 @@ def ready_baskets(panel: pd.DataFrame, as_of: date, release: dict | None = None)
 # ---------------------------------------------------------------- suggestion (§3.3)
 
 def _paid_plan(release: dict | None) -> float:
-    r = release or {}
-    if r.get("paid_share_override") is not None:
-        return _num(r["paid_share_override"])
-    return PAID_PLAN.get(str(r.get("paid_channel_size") or "").strip(), PAID_PLAN_DEFAULT)
+    return 0.0 if "paid" in channels_off_of(release) else PAID_PLAN_DEFAULT
 
 
 def suggest_basket(panel: pd.DataFrame, release: dict) -> str:
