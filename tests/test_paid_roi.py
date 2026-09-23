@@ -103,6 +103,23 @@ check(close(plan_at(announce + timedelta(days=7)), plan_at(announce + timedelta(
 email = next(c for c in S["channels"] if c["key"] == "aa_email")
 check(not close(email["exp"], email["target"] * frac, 0.05), "the organic groups keep their historic shape")
 
+# the paid card's units are the paid group's secured units - the channels
+# card's own column - and its projection the channel's; a full-day reading
+# carries no part day
+check(S["paid"]["unitsToDate"] == ch["now"] and S["paid"]["unitProjected"] == ch["proj"],
+      f"paid units to date / projected are the channel's: {S['paid']['unitsToDate']} vs {ch['now']}, {S['paid']['unitProjected']} vs {ch['proj']}")
+check(all(not r.get("partial") for r in S["paid"]["daily"]), "no part day on a full-day reading")
+# the waterfall's Paid spend step measures spend to date against the same even
+# share of the budget the paid card and the funnel rung read
+wf_today = (S.get("waterfall") or {}).get("today") or {}
+step = next((s["value"] for s in wf_today.get("steps") or [] if s["key"] == "paid_spend"), None)
+cpp = S["targets"]["paid"]["cost_per_purchase"]
+if step is not None and cpp:
+    want = (S["paid"]["spendToDate"] - S["paid"]["spendBudget"] * frac) / cpp
+    check(abs(step - want) <= 2.5, f"the waterfall's paid spend step is on the even paid plan: {step} vs {want:.1f}")
+else:
+    print("(no today waterfall on this build: paid spend step not checked)")
+
 # a revenue-share deal: AA carries the ads, the artist has no ROI to read
 cfg = copy.deepcopy(base)
 cfg["legacy_economics"]["artist_profit_share"] = 0

@@ -1071,7 +1071,8 @@ def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH) -> dict:
            "driftPrior": prior_drift, "elasticityOwn": None, "elasticitySe": None,
            "driftOwn": None, "driftSe": None, "fitDays": 0}
     rows = [(x["date"], float(x["spend"]), float(x["entries"] or 0.0)) for x in (paid_daily or [])
-            if float(x.get("spend") or 0.0) > 20 and float(x.get("entries") or 0.0) >= 1]
+            if float(x.get("spend") or 0.0) > 20 and float(x.get("entries") or 0.0) >= 1
+            and not x.get("partial")]          # the part day is not a day's worth of anything
     if len(rows) < int(b.get("cpe_fit_min_days", 8) or 8):
         return out
     first = date.fromisoformat(rows[0][0])
@@ -2618,13 +2619,18 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         part_entries = float(paid_entries_day.get(as_of, 0.0))
     past_spend = spend_day[spend_day.index <= full_through]
     current_daily = float(past_spend.get(full_through, past_spend.iloc[-1] if len(past_spend) else 0.0))
+    # the part day so far, marked, at the end of the series (as build_release)
+    if full_through < as_of <= launch_end:
+        paid_daily.append({"date": as_of.isoformat(), "spend": round(part_spend, 2), "entries": part_entries,
+                           "roi": None, "roiArtist": None, "partial": True})
+    paid_ch = next((c for c in channels_out if c["key"] == "paid"), None)
     paid_out = {
         "daily": paid_daily,
         "spendToDate": round(cum_spend + part_spend, 2), "entriesToDate": cum_pentries + part_entries,
-        # paid entries are draw entries; only (1 - drop_off) of them convert to
-        # an order. The card's bars are drawn in units, so the units figure is
-        # published rather than left to the page to derive.
-        "unitsToDate": round((cum_pentries + part_entries) * (1 - drop), 1),
+        # the card's bars are drawn in units: the paid group's secured units,
+        # its column on the channels card (units sold + 0.8 x unconverted
+        # entries), published rather than left to the page to derive
+        "unitsToDate": paid_ch["now"] if paid_ch else round((cum_pentries + part_entries) * (1 - drop), 1),
         "cumRoi": None, "l3dRoi": None,
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
         "cumCpe": round(cum_cpe, 2) if cum_cpe else None,
@@ -3272,13 +3278,24 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         hero_bm += bm_tgt; hero_bm_today += bm_exp
 
     # ---- paid block output (docs §7; inputs computed above, before the channel loop)
+    # the part day so far rides at the end of the series, marked, so the ROI
+    # chart's bars sum to the spend to date the paid card reads; the rules,
+    # the cost fit and the rolling ROI above read the full days only
+    if full_through < as_of <= launch_end:
+        paid_daily.append({"date": as_of.isoformat(), "spend": round(part_spend, 2), "entries": part_entries,
+                           "roi": None, "roiArtist": None, "partial": True})
+    # the paid group's own column on the channels card: secured units (units
+    # sold + 0.8 x unconverted entries, every paid channel), so the paid card's
+    # units bar and that column cannot disagree
+    paid_ch = next((c for c in channels_out if c["key"] == "paid"), None)
     paid_out = {
         "daily": paid_daily,
         "spendToDate": round(cum_spend + part_spend, 2),
         "entriesToDate": cum_pentries + part_entries,
         # secured units to date, the same currency as unitTarget, unitProjected
-        # and benchmarkUnits - paid entries are one drop-off short of an order
-        "unitsToDate": round((cum_pentries + part_entries) * (1 - drop), 1),
+        # and benchmarkUnits: the channels card's paid figure, not the paid
+        # entries one drop-off later, which counted a sale as 0.8 of a unit
+        "unitsToDate": paid_ch["now"] if paid_ch else round((cum_pentries + part_entries) * (1 - drop), 1),
         "cumRoi": round(cum_roi, 3) if cum_roi else None,
         "l3dRoi": round(l3d_roi, 3) if l3d_roi is not None else None,
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
@@ -3313,7 +3330,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         },
         "unitTarget": targets["paid"]["units"],
         "entriesProjected": round(cum_pentries + future_cum, 1),
-        "unitProjected": round((cum_pentries + future_cum) * (1 - drop), 1),
+        "unitProjected": paid_ch["proj"] if paid_ch else round((cum_pentries + future_cum) * (1 - drop), 1),
         "spendBudget": round(targets["paid"]["budget"], 2),
         "spendProjectedTotal": round(cum_spend + (planned_spend or 0) * days_left, 2),
         "profitPerUnitAA": round(ppu_aa, 2),
@@ -3440,7 +3457,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     organic_groups = [g for g in DISPLAY_GROUPS if g != "paid"]
     wf_traffic = sum(funnel_by_group[g]["contrib_traffic"] for g in organic_groups)
     wf_conv = sum(funnel_by_group[g]["contrib_conversion"] for g in organic_groups)
-    spend_planned_to_date = targets["paid"]["budget"] * curve_value(rcurves, "paid", "units", pdsa_today)
+    # paid's plan by today is the even share of its days (paid_pace), the share
+    # the paid card, the channels card and the funnel rung read - not the
+    # panel's historic paid shape, which put this step on a different plan
+    spend_planned_to_date = targets["paid"]["budget"] * paid_pace(pdsa_today)
     wf_paid_spend = ((cum_spend - spend_planned_to_date) / targets["paid"]["cost_per_purchase"]
                      ) if targets["paid"]["cost_per_purchase"] else 0.0
     paid_gap = funnel_by_group["paid"]["contrib_traffic"] + funnel_by_group["paid"]["contrib_conversion"]
@@ -3500,7 +3520,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         wf_traffic_bm = sum(funnel_by_group[g]["contrib_traffic_bm"] for g in organic_groups)
         wf_conv_bm = sum(funnel_by_group[g]["contrib_conversion_bm"] for g in organic_groups)
         bm_budget = bm_units["paid"] * targets["paid"]["cost_per_purchase"]
-        spend_bm_to_date = bm_budget * curve_value(rcurves, "paid", "units", pdsa_today)
+        spend_bm_to_date = bm_budget * paid_pace(pdsa_today)
         wf_paid_spend_bm = ((cum_spend - spend_bm_to_date) / targets["paid"]["cost_per_purchase"]
                             ) if targets["paid"]["cost_per_purchase"] else 0.0
         paid_gap_bm = funnel_by_group["paid"]["contrib_traffic_bm"] + funnel_by_group["paid"]["contrib_conversion_bm"]
@@ -3575,7 +3595,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "currency": "units",
         "hero": {
             "now": round(min(hero_now, total), 0), "expectedToday": round(hero_exp, 0),
-            "delta": round(min(hero_now, total) - hero_exp, 0),
+            # the difference of the two figures as printed, so the card, the
+            # trajectory's reading and this agree to the unit
+            "delta": round(min(hero_now, total), 0) - round(hero_exp, 0),
             "projected": round(min(hero_proj, total), 0), "target": round(hero_target, 0),
             "oversubscribedUnits": round(max(max(hero_now, hero_proj) - total, 0), 0),
             "statusPct": round(status_pct, 4), "ok": status_pct >= -0.1,

@@ -1029,7 +1029,8 @@ budget over those days, and the paid block publishes `paidStartDays` and `paidDa
 cards (`paidDayFrac` in `web/src/ui.jsx`). Not the panel's historic paid shape, which starts
 near zero and told the Channels vs targets card there was nothing to expect on days when the
 Paid spend card, reading the even plan, showed the units bought. The organic groups keep their
-shape curves. (2026-09-23.)
+shape curves. The waterfall's Paid spend step (§9) measures spend to date against the same even
+share of the budget. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
@@ -1323,6 +1324,15 @@ spend (`1 − aa_budget_share`). On a deal where the artist carries no spend (a 
 figures are read with sit on the block as `cannibalisation` and `dropOff`, so the Paid ROI card
 can show its working in the ? popup. The card reads AA by default and has an AA / Artist switch
 (kept per browser); the spend recommendation, its ROI floor and the pacing rules stay AA's.
+
+**What the paid block publishes in units and days.** `unitsToDate` and `unitProjected` are the
+paid group's secured units (§6.3½: units sold + 0.8 × unconverted entries, every paid channel),
+the paid column of the channels card, so the Paid spend card's bar and that column are one
+figure; `entriesToDate` and `entriesProjected` stay the paid campaign's draw entries, the
+quantity the CPE and the ROI are priced on. `daily[]` runs over the full days the rules read;
+on a live day the as-of day so far rides at the end as one more row marked `partial: true`
+(its spend and entries, no ROI point), so the Paid ROI chart's bars sum to `spendToDate` and
+the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip that row.
 
 **Budget to sell out** (the sizing decision). The workbook nets off a manual
 `organic_topup` estimate; the dashboard automates it with the shape-following

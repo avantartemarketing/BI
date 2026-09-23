@@ -426,7 +426,7 @@ All new fields are **additive**. Existing consumers keep working.
     "sessions_benchmark": 4579.0, "conv_benchmark": 0.0155 } },
   "sellthrough": { "...existing...": null, "benchmarkUnits": 214.0 },
   "paid": { "...existing...": null, "benchmarkUnits": 55.0, "benchmarkBudget": 9735.0,
-            "unitsToDate": 44.0 },   // entriesToDate x (1 - drop-off); always present
+            "unitsToDate": 44.0 },   // the paid group's secured units (channels[].now for paid); always present
   "waterfall": {
     "benchmark": 214.0, "stretch": 86.0, "target": 300.0, "projection": 336.0,
     "steps": [ ... unchanged ... ],
@@ -447,9 +447,11 @@ largest step, exactly as the close steps do.
 for that group, not its entries per session: it is read against `conv_actual`, which is
 secured units per session, and the two have to be the same quantity.
 
-`paid.unitsToDate` is the paid campaign's own entries one drop-off later, so the Paid spend
-card's "to date", "projected", target and benchmark are all secured units. It is written in
-both the targeted and the actuals-only build. `paid.entriesToDate` keeps its old meaning.
+`paid.unitsToDate` and `paid.unitProjected` are the paid group's secured units (units sold +
+0.8 × unconverted entries, every paid channel) - the paid column of the channels card - so the
+Paid spend card's "to date", "projected", target and benchmark are all secured units and the
+two cards print one figure. Written in both the targeted and the actuals-only build.
+`paid.entriesToDate` keeps its old meaning (the entries the CPE and ROI are priced on).
 
 `hero.benchmarkPct` and the matching `benchmarkPct` on each `index.json` row are
 `(min(secured, edition) − benchmarkToday) / benchmarkToday`. The sidebar's three-state dot
