@@ -149,6 +149,7 @@
  },
  "email_session_to_purchase": 0.01072708223,
  "eligible_entry_to_order": 0.8,
+ "preorder_entry_to_order": 0.95,
  "target_buffer": 0.75,
  "cannibalisation": 0.2,
  "paid_drop_off": 0.2,

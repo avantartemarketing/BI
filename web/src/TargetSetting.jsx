@@ -1,34 +1,34 @@
 /* Target setting tab - the settled design (docs/BENCHMARK_SPEC.md §8, and the
  * Release Target Setting canvas for the parts §8 does not move):
  * inputs left (Release & timeline, Economics with derived per-unit fields,
- * Benchmark basket, Stretch), derived targets rail right, recomputing live via
- * the shared target model. Save persists inputs and the server retargets the
- * release snapshot in place.
+ * Benchmark basket with the channels in plan, Stretch), derived targets rail
+ * right, recomputing live via shared/benchmarkModel.mjs. Save persists the
+ * inputs and the server rebuilds the release on them.
  *
- * §8 replaces the old Model levers card with two cards, and the reason is the
- * change of question. The levers asked "what shape of launch is this?" and
- * every answer was a quartile pick; the benchmark model asks "which past
- * launches is this one like?" and then applies one even uplift K to reach the
- * sellout (§1, §4). So the basket is now the first-class input and the sellout
- * is the only lever - what is left over is the stretch, stated rather than
- * dialled in.
+ * The question this tab asks is "which past launches is this one like?", and
+ * the answer is a basket; one even uplift K then reaches the sellout (§1,
+ * §4). So the basket is the first-class input, the sellout is the only lever
+ * and what is left over is the stretch, stated rather than dialled in. The
+ * quartile levers that used to sit here asked a different question - "what
+ * shape of launch is this?" - and are gone from the page; the build keeps
+ * that model only as the fallback for a basket with no median units.
  *
- * The levers have not gone: a release with no basket, and anyone who picks
- * `By channel`, still runs the quartile model exactly as before (§4,
- * targeting_mode "levers"), so that whole code path survives here untouched
- * behind the `stretch_mode` switch.
+ * Two things a basket cannot know are asked here instead: which channels
+ * this release will not run (paid; the artist's own channels), which take
+ * their medians out of the benchmark and their share out of the target
+ * (§4.3), and what a paid unit costs to buy, which sets the paid budget.
  *
- * Everything benchmark-shaped is guarded on `snap.benchmark` being present
- * (§5: all new fields are additive). Without it the two cards say so, the rail's
- * Benchmark and Stretch columns are dashes, and every other part of this tab
- * behaves exactly as it did before the benchmark existed. */
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtMoney, fmtPct, fmtDay } from "./ui.jsx";
+ * Everything benchmark-shaped is guarded on a basket being present - the
+ * snapshot's, or one picked and not yet saved. Without one the cards say so
+ * and the rail's figures are dashes until a basket is chosen. */
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, GROUP_DOTS, C, fmt, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
 import { computeTargets } from "../../shared/targetModel.mjs";
+import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf } from "../../shared/benchmarkModel.mjs";
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-const BLUE = "#28518f", BLUE_FILL = "#c3d5ee";
+const BLUE = "#2f5fb3";
 
 // the five display groups, in the order the profile dicts are written
 // (etl/baskets.py GROUPS), so the table reads the same way as the snapshot
@@ -40,131 +40,32 @@ const GROUPS = [
   { key: "paid", name: "Paid" },
 ];
 
-function Slider({ options, value, onChange, big, tip }) {
-  const ref = useRef(null);
-  const n = options.length;
-  const idx = Math.max(options.indexOf(value), 0);
-  const pos = (idx / (n - 1)) * 100;
-  const pick = (clientX) => {
-    const r = ref.current.getBoundingClientRect();
-    const i = Math.round(clamp((clientX - r.left) / r.width, 0, 1) * (n - 1));
-    if (options[i] !== value) onChange(options[i]);
-  };
-  const trackTop = big ? 12 : 7;
+/* The two rates the sell-through prediction converts entries in hand at: a
+ * plain draw entry, and a pre-order entry whose card is already authorised.
+ *
+ * This used to be a table as well, a row per draw the feed found, with a name,
+ * an edition and a pre-order rate typed against each. The names were never
+ * typed - every release showed "Draw 1" to "Draw 7" - the editions were left
+ * blank because the feed carries them, and the whole grid was three columns of
+ * nothing above the two fields that were actually used. The per-product
+ * overrides still exist in the release's inputs and the ETL still reads them,
+ * so a product that already has one keeps it; there is simply no longer a
+ * table in the way of the rates. */
+function Products({ inp, setInp }) {
+  const asPct = (v) => (v === null || v === undefined || v === "" ? "" : Math.round(Number(v) * 100));
+  const ratePct = asPct(inp.entry_conversion_rate);
+  const preRatePct = asPct(inp.preorder_conversion_rate);
   return (
-    <div
-      ref={ref}
-      title={tip}
-      onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX); }}
-      onPointerMove={(e) => { if (e.buttons) pick(e.clientX); }}
-      style={{ position: "relative", height: big ? 46 : 20, touchAction: "none", cursor: "pointer", flex: 1 }}
-    >
-      <div style={{ position: "absolute", left: 0, right: 0, top: trackTop, height: 6, background: C.track, borderRadius: 3 }} />
-      <div style={{ position: "absolute", left: 0, top: trackTop, width: `${pos}%`, height: 6, background: BLUE_FILL, borderRadius: 3 }} />
-      {options.map((o, i) => (
-        <span key={o} style={{
-          position: "absolute", left: `${(i / (n - 1)) * 100}%`, top: trackTop - 3,
-          width: 2, height: 12, marginLeft: -1, background: "#c8c5bc",
-        }} />
-      ))}
-      <span style={{
-        position: "absolute", left: `${pos}%`, top: trackTop - 7, width: big ? 20 : 16, height: big ? 20 : 16,
-        marginLeft: big ? -10 : -8, borderRadius: "50%", background: "#fff",
-        border: `${big ? 2.5 : 2}px solid ${BLUE}`, boxSizing: "border-box",
-        boxShadow: "0 1px 4px rgba(20,20,19,0.15)", cursor: "grab",
-      }} />
-      {big && options.map((o, i) => (
-        <span key={o + "-l"} style={{
-          position: "absolute", top: 32, whiteSpace: "nowrap", fontSize: 11.5,
-          left: `${(i / (n - 1)) * 100}%`,
-          transform: i === 0 ? "none" : i === n - 1 ? "translateX(-100%)" : "translateX(-50%)",
-          fontWeight: o === value ? 600 : 500, color: o === value ? BLUE : C.muted,
-        }}>{o}</span>
-      ))}
-    </div>
-  );
-}
-
-/* The products of the release (docs §6.3): one row per draw the event feed
- * found, with the name and the edition typed against it. Two draws given the
- * same name are one product (a re-run, a second wave). The sell-through card
- * reads sell-through per product only once every product has an edition, and
- * the editions should add up to the release's. The entry → order rate the
- * card converts entries in hand at sits here too, because it is the other
- * half of the same prediction. */
-const shortDay = (iso) => (iso && /^\d{4}-\d{2}-\d{2}/.test(iso) ? fmtDay(new Date(iso + "T00:00:00Z")) : iso || "");
-
-function Products({ inp, setInp, draws, editionSize }) {
-  const feed = draws && Array.isArray(draws.draws) ? draws.draws : [];
-  const typed = Array.isArray(inp.products) ? inp.products : [];
-  const byKey = new Map(typed.filter((p) => p && p.key).map((p) => [String(p.key), p]));
-  const legacy = typed.filter((p) => p && !p.key);
-  // the rows: every draw the feed found, in first-entry order, with what was
-  // typed for it (an older keyless list is matched to the unclaimed draws in order)
-  let nextLegacy = 0;
-  const rows = feed.map((d, i) => {
-    let t = byKey.get(String(d.id)) || null;
-    if (!t && nextLegacy < legacy.length) t = legacy[nextLegacy++];
-    return { id: String(d.id), draw: d, name: t && t.name ? t.name : "", edition: t && t.edition !== null && t.edition !== undefined ? t.edition : null, i };
-  });
-  const update = (id, patch) => {
-    const next = rows.map((r) => ({ key: r.id, name: r.name, edition: r.edition, ...(r.id === id ? patch : {}) }));
-    setInp({ ...inp, products: next });
-  };
-  const names = new Map();
-  rows.forEach((r) => { const n = (r.name || `Draw ${r.i + 1}`).trim(); names.set(n, (names.get(n) || 0) + 1); });
-  const sum = rows.reduce((t, r) => t + (Number(r.edition) || 0), 0);
-  const allSet = rows.length > 0 && rows.every((r) => Number(r.edition) > 0);
-  const rate = inp.entry_conversion_rate;
-  const ratePct = rate === null || rate === undefined || rate === "" ? "" : Math.round(Number(rate) * 100);
-  return (
-    <Card dot="#8a7a52" title="Products">
-      <div className="spacer-16" />
-      {rows.length === 0 ? (
-        <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.6 }}>
-          No draws found for this release in the event feed yet. Products appear here once the feed has entries,
-          and the sell-through card shows the release as one row until then.
-        </div>
-      ) : (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 110px 190px", gap: "8px 16px", alignItems: "center" }}>
-            <div className="flabel" style={{ marginBottom: 0 }}>Product</div>
-            <div className="flabel" style={{ marginBottom: 0 }}>Edition (units)</div>
-            <div className="flabel" style={{ marginBottom: 0 }} title="Eligible entrants in the draw, and when the first entry came">Draw</div>
-            {rows.map((r) => {
-              const dup = names.get((r.name || `Draw ${r.i + 1}`).trim()) > 1;
-              return (
-                <React.Fragment key={r.id}>
-                  <input className="control" value={r.name} placeholder={`Draw ${r.i + 1}`}
-                    onChange={(e) => update(r.id, { name: e.target.value })}
-                    title={dup ? "Two draws with the same name are one product" : undefined} />
-                  <input className="control num" value={r.edition ?? ""} placeholder="–"
-                    onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); update(r.id, { edition: raw === "" ? null : parseInt(raw, 10) }); }} />
-                  <div style={{ fontSize: 11.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                    title={`${fmt(r.draw.eligible)} eligible of ${fmt(r.draw.entrants)} entrants · ${fmt(r.draw.winners)} winners · entries ${r.draw.first} to ${r.draw.last}`}>
-                    {fmt(r.draw.eligible)} eligible{r.draw.winners > 0 ? ` · ${fmt(r.draw.winners)} won` : ""} · from {shortDay(r.draw.first)}
-                  </div>
-                </React.Fragment>
-              );
-            })}
-          </div>
-          <div style={{ fontSize: 11.5, marginTop: 10, lineHeight: 1.5, color: allSet && editionSize > 0 && sum !== editionSize ? C.amber : C.muted }}>
-            {allSet
-              ? (editionSize > 0 && sum !== editionSize
-                ? `Editions add up to ${fmt(sum)}; the release's edition size is ${fmt(editionSize)}.`
-                : `Editions add up to ${fmt(sum)}.`)
-              : rows.length > 1
-                ? "Give every product an edition to read sell-through per product; until then the card compares them in units."
-                : "A single product takes the release's edition size."}
-            {" "}Two draws given the same name are one product.
-          </div>
-        </>
-      )}
+    <Card dot="#8a7a52" title="Conversion of entries in hand">
       <div className="spacer-16" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
         <Field label="Entry → order rate (%)" tip="What share of eligible entries in hand become orders - the sell-through prediction counts entries in hand at this rate. Empty means the panel's 80%.">
           <input className="control num" value={ratePct} placeholder="80"
             onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); setInp({ ...inp, entry_conversion_rate: raw === "" ? null : clamp(parseInt(raw, 10), 1, 100) / 100 }); }} />
+        </Field>
+        <Field label="Pre-order → order rate (%)" tip="What share of PRE-ORDER entries become orders. Their card is already authorised, so they are charged at the draw rather than invoiced and convert higher than a plain entry. Empty means the panel's 95%.">
+          <input className="control num" value={preRatePct} placeholder="95"
+            onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); setInp({ ...inp, preorder_conversion_rate: raw === "" ? null : clamp(parseInt(raw, 10), 1, 100) / 100 }); }} />
         </Field>
       </div>
     </Card>
@@ -188,89 +89,30 @@ function CampaignHint({ value, campaigns }) {
   return <div style={style}>{fmtMoney(hit.spend)} spend · last active {hit.last}</div>;
 }
 
-function ScaleHeader() {
+/* A switch: the control, its name, and one clause on what it does. */
+function Switch({ id, on, onChange, label, sub, why }) {
   return (
-    <div style={{ display: "flex", gap: 12 }}>
-      <span style={{ width: 120, flex: "0 0 120px" }} />
-      <div style={{ position: "relative", flex: 1, height: 14, fontSize: 11.5, color: C.muted }}>
-        <span style={{ position: "absolute", left: 0 }}>N/A</span>
-        <span style={{ position: "absolute", left: "33.333%", transform: "translateX(-50%)" }}>Low</span>
-        <span style={{ position: "absolute", left: "66.667%", transform: "translateX(-50%)" }}>Medium</span>
-        <span style={{ position: "absolute", left: "100%", transform: "translateX(-100%)" }}>High</span>
-      </div>
-    </div>
+    <label title={why} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer", userSelect: "none" }}>
+      <input type="checkbox" id={id} checked={on} onChange={(e) => onChange(e.target.checked)}
+        style={{ accentColor: C.ink, width: 15, height: 15, margin: 0, cursor: "pointer" }} />
+      <span>{label} <span style={{ color: C.muted, fontSize: 12 }}>· {sub}</span></span>
+    </label>
   );
 }
 
-/* The quartile levers, exactly as they were when they had a card of their own.
- * They are the whole model for a release with no basket, and the `By channel`
- * arm of the stretch switch for one that has (§4), so this markup is lifted
- * across unchanged rather than rebuilt around the benchmark. */
-function Levers({ inp, setInp, qual, setQual, derived, channels }) {
-  const leverTip = "Every pick selects a quartile of the historical LE panel: Low = 25th percentile, Medium = median, High = 75th.";
+/* One pick from a few words, the way the framing switch is drawn. */
+function Seg({ options, value, onChange, small }) {
   return (
-    <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "28px 48px", padding: "6px 10px 0" }} title={leverTip}>
-        {[
-          { label: "Paid channel size", options: ["Small", "Medium", "Large"], key: "paid_channel_size",
-            tip: `${fmtPct(derived.paid_pct, 1)} · ${fmt(derived.paid_units)} units` },
-          { label: "Private room share", options: ["Low", "Medium", "High"], key: "reference_point",
-            tip: `${fmtPct(derived.pr_other_pct, 1)} · ${fmt(derived.pr_units, 0)} units` },
-          { label: "Paid conversion", options: ["Low", "Medium", "High"], key: "paid_conv_quality",
-            tip: fmtPct(derived.paid.session_to_entry, 2) + " session → entry" },
-          { label: "Cost per purchase", options: ["Low", "Median", "High"], key: "cpp_pick",
-            tip: fmtMoney(derived.paid.cost_per_purchase) + " / unit" },
-        ].map((lv) => (
-          <div key={lv.key}>
-            <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "baseline", gap: 10 }}>
-              {lv.label}
-              {lv.key === "paid_channel_size" && (
-                <label style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 500, color: C.muted, display: "flex", alignItems: "center", gap: 6 }}
-                  title="The workbook's 'Paid (% Total)' overwrite: set the paid share of units directly instead of taking it from the channel-size quartile. Leave empty to use the slider.">
-                  overwrite
-                  <input className="control num" style={{ width: 64, padding: "3px 6px", fontSize: 12 }}
-                    value={inp.paid_share_override === null || inp.paid_share_override === undefined ? "" : Math.round(inp.paid_share_override * 100)}
-                    placeholder="–"
-                    onChange={(e) => {
-                      const raw = String(e.target.value).replace(/[^0-9]/g, "");
-                      setInp({ ...inp, paid_share_override: raw === "" ? null : clamp(parseInt(raw, 10), 0, 100) / 100 });
-                    }} />
-                  <span>% paid</span>
-                </label>
-              )}
-            </div>
-            <div style={{ marginTop: 10, display: "flex", opacity: lv.key === "paid_channel_size" && inp.paid_share_override !== null && inp.paid_share_override !== undefined ? 0.45 : 1 }}>
-              <Slider big options={lv.options}
-                value={lv.key === "paid_channel_size" ? ({ Low: "Small", High: "Large" }[inp[lv.key]] || inp[lv.key]) : inp[lv.key]}
-                onChange={(v) => setInp({ ...inp, [lv.key]: v })} tip={lv.tip} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ height: 28 }} />
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, borderBottom: `1px solid ${C.hairline}`, paddingBottom: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}
-          title="Which quartile of each channel's historical order-split and conversion distributions the targets use. N/A removes the channel (e.g. Referral Artist for an estate).">
-          Channel quality
-        </span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0 48px", padding: "10px 10px 2px" }}>
-        <ScaleHeader /><ScaleHeader />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-        gridTemplateRows: `repeat(${Math.ceil(channels.length / 2)}, 36px)`, gridAutoFlow: "column",
-        gap: "0 48px", padding: "0 10px" }}>
-        {channels.map((c) => (
-          <div key={c} style={{ display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${C.hairline}` }}>
-            <span style={{ width: 120, flex: "0 0 120px", fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c}</span>
-            <Slider options={["N/A", "Low", "Medium", "High"]} value={qual[c]}
-              onChange={(v) => setQual({ ...qual, [c]: v })}
-              tip={`${c} - ${qual[c]}${qual[c] === "N/A" ? " (channel excluded)" : " quartile"}`} />
-          </div>
-        ))}
-      </div>
-    </>
+    <div style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
+      {options.map((o) => {
+        const active = value === o;
+        return (
+          <button key={o} onClick={() => onChange(o)}
+            style={{ fontFamily: "inherit", fontSize: small ? 11.5 : 12, fontWeight: active ? 600 : 500, padding: small ? "3px 10px" : "6px 16px",
+              border: "none", cursor: "pointer", background: active ? "#e6eefa" : "#fff", color: active ? BLUE : C.muted }}>{o}</button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -279,7 +121,7 @@ function Levers({ inp, setInp, qual, setQual, derived, channels }) {
  * difference, so the three columns always read benchmark + stretch = target
  * (§1). Conversion carries no uplift at all - it is held at the benchmark
  * (§4), which is why the column says so. */
-function ChannelRow({ label, bmSessions, bmUnits, conv, k, head, total }) {
+function ChannelRow({ label, bmSessions, bmUnits, conv, k, head, total, off }) {
   const cell = {
     fontSize: 12.5, padding: "7px 6px", textAlign: "right",
     borderBottom: `1px solid ${C.hairline}`, fontVariantNumeric: "tabular-nums",
@@ -296,6 +138,15 @@ function ChannelRow({ label, bmSessions, bmUnits, conv, k, head, total }) {
         <th style={h}>Target units</th>
         <th style={h}>Stretch</th>
         <th style={h} title="Conversion rates are held at the benchmark - the uplift is asked of traffic and spend only.">Conv. (held)</th>
+      </tr>
+    );
+  }
+  if (off) {
+    return (
+      <tr>
+        <td style={{ ...cell, textAlign: "left", whiteSpace: "nowrap", color: C.muted }}>{label}</td>
+        <td colSpan={6} style={{ ...cell, textAlign: "left", color: C.muted, fontStyle: "italic" }}
+          title="Set aside on this tab: its median leaves the benchmark and the other channels carry the whole target.">not in plan</td>
       </tr>
     );
   }
@@ -321,16 +172,41 @@ export default function TargetSetting({ snap, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [error, setError] = useState(null);
+  // the Slack channel the sell-through card posts to: its own small document
+  // on the server (server/slack.js), saved on its own so a release without
+  // targets can have one too
+  const [slackDraft, setSlackDraft] = useState((snap.slack && snap.slack.channel) || "");
+  const [slackSaving, setSlackSaving] = useState(false);
+  const [slackError, setSlackError] = useState(null);
+  const [slackNote, setSlackNote] = useState(null);   // the server saved, but somewhere that will not last
+  const slackCurrent = (snap.slack && snap.slack.channel) || "";
+  const saveSlack = async () => {
+    setSlackSaving(true); setSlackError(null); setSlackNote(null);
+    try {
+      const res = await fetch(`/api/releases/${snap.id}/slack-channel`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: slackDraft }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setSlackError(d.error || `save failed (${res.status})`); return; }
+      setSlackDraft((d.slack && d.slack.channel) || "");
+      setSlackNote(d.warning || null);
+      onSaved({ ...snap, slack: d.slack });
+    } catch (e) { setSlackError(String(e)); } finally { setSlackSaving(false); }
+  };
 
   useEffect(() => {
     setMeta(null); setInp(null); setQual(null); setError(null); setPick(null); setPicking(false);
+    setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null); setSlackNote(null);
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
       // a release nobody has set targets for comes back with inputs: null and
       // the defaults the ETL could derive - the form starts from those
       const start = d.inputs || d.defaults;
       setMeta({ ...d, inputs: start, creating: !d.inputs });
-      setInp({ ...start });
+      // an estate marked Referral Artist N/A under the old levers is an artist
+      // with no channels of their own: the same choice, under its new name
+      const artistNA = ((start.channel_quality_overrides || {})["Referral Artist"]) === "N/A";
+      setInp({ ...start, channels_off: start.channels_off || (artistNA ? ["referral_artist"] : []) });
       setQual({ ...d.channel_quality_default, ...(start.channel_quality_overrides || {}) });
     }).catch((e) => setError(String(e)));
   }, [snap.id]);
@@ -365,6 +241,8 @@ export default function TargetSetting({ snap, onSaved }) {
     const raw = String(e.target.value).replace(/[^0-9]/g, "");
     setInp({ ...inp, [k]: raw === "" ? null : parseInt(raw, 10) });
   };
+  // the target is only part of the edition: the rail says so
+  const partialEdition = Number(inp.edition_total) > Number(inp.edition_size) && Number(inp.edition_size) > 0;
   const dateDiff = (a, c) => (a && c ? Math.round((new Date(a) - new Date(c)) / 86400000) : null);
   const days = dateDiff(inp.launch_end, inp.announce_date);
   const prDays = dateDiff(inp.announce_date, inp.private_room_open);
@@ -384,23 +262,25 @@ export default function TargetSetting({ snap, onSaved }) {
   const prof = (pick && pick.profile) || null;
   const basketName = pick ? pick.name
     : (bm && bm.basket && bm.basket.name) || (spec && spec.name) || "";
+  /* The channels this release will not run (§4.3), and the basket read
+   * without them: the pending pick's live medians when there is one, else
+   * the snapshot's basket re-read from its full medians. Both go through the
+   * same function the build runs, so the table and the rail say now what the
+   * page will say after the save. */
+  const off = channelsOffOf(inp);
+  const isOff = (g) => off.includes(g);
+  const setOff = (g, on) => setInp({ ...inp, channels_off: on ? off.filter((x) => x !== g) : [...off, g] });
+  const profile = prof ? applyChannelsOff(prof, off) : bm ? applyChannelsOff(profileOf(bm), off) : null;
   const editionSize = Number(inp.edition_size) || 0;
+  const bmUnits = profile && profile.units > 0 ? profile.units : null;
   // K follows the sellout box as it is typed, so the table and the stretch
   // never disagree with the number above them; the snapshot's own K is the
   // fallback for a release whose economics are still blank (§4).
-  const k = bm ? (bm.units > 0 && editionSize > 0 ? editionSize / bm.units : bm.k) : null;
-  const bmUnits = prof ? prof.units : bm ? bm.units : null;
+  const k = bmUnits ? (editionSize > 0 ? editionSize / bmUnits : bm ? bm.k : null) : null;
   const stretchUnits = bmUnits !== null && editionSize > 0 ? editionSize - bmUnits : null;
   const stretchPct = bmUnits ? stretchUnits / bmUnits : null;
-  // Benchmarking is the default (§4): a release is on the even uplift unless it
-  // has opted out, so the switch starts on the arm the snapshot was actually
-  // built with - `bm` is present exactly when the ETL ran the basket model.
-  // Reading the saved basket instead would start every release on the levers,
-  // since a release that took the suggested basket never saved one.
-  const stretchMode = inp.stretch_mode || (bm || spec ? "even" : "levers");
-  const paidShare = prof
-    ? (prof.share_sessions ? prof.share_sessions.paid : prof.paid_share)
-    : bm && bm.sessions ? bm.sessionsByGroup.paid / bm.sessions : null;
+  const paidShare = profile ? profile.share_sessions.paid : null;
+  const cpp = (b.cost_per_purchase || {})[inp.cpp_pick || "Median"] ?? 0;
 
   const onPick = (chosen) => {
     setPick(chosen);
@@ -410,9 +290,9 @@ export default function TargetSetting({ snap, onSaved }) {
       benchmark_basket: chosen.kind === "bespoke"
         ? { kind: "bespoke", members: chosen.members, name: chosen.name }
         : { kind: chosen.kind, id: chosen.id },
-      // picking a basket is what puts a release on the benchmark model; without
-      // a stretch mode the server would leave it on whatever it had
-      stretch_mode: inp.stretch_mode || "even",
+      // the picker's recency switch is a release input: the rule reads it on
+      // every rebuild, so the suggestion stays the one that was looked at
+      prefer_recent: chosen.preferRecent !== false,
     });
   };
 
@@ -421,14 +301,15 @@ export default function TargetSetting({ snap, onSaved }) {
     try {
       const res = await fetch(`/api/inputs/${snap.id}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        // benchmark_basket and stretch_mode ride inside `inputs` with everything
-        // else (§6); they are only present in `inp` once a basket has been
-        // chosen or the switch touched, and a save that leaves them out keeps
-        // the release on the JS retarget path rather than a full ETL run.
+        // benchmark_basket rides inside `inputs` with everything else (§6).
+        // The even uplift is the only stretch there is, so every save says so:
+        // a release that once opted for the levers comes back to the basket.
         body: JSON.stringify({ inputs: {
           ...inp,
           campaign_name: (inp.campaign_name || "").trim() || null,
           channel_quality_overrides: qual,
+          channels_off: off,
+          stretch_mode: "even",
         } }),
       });
       const d = await res.json();
@@ -447,94 +328,40 @@ export default function TargetSetting({ snap, onSaved }) {
     setPick(null);
   };
 
-  const channels = Object.keys(meta.channel_quality_default);
-
-  /* The rail's three columns (§8.3). Wherever the basket has the figure itself,
-   * that is what the Benchmark column shows - so the rail and the per-channel
-   * table above it quote the same medians rather than two roundings of them.
-   *
-   * Target ÷ K is only the fallback, and only on the even uplift, for the two
-   * rows the basket has no equivalent for: the draw / private-room split is a
-   * target-model construct, not a channel. On the levers even that is
-   * meaningless - those targets come out of the quartile model, so the quotient
-   * is not the basket's median and printing it would invent a figure - and the
-   * row shows a dash instead.
-   *
-   * The percentage row is why the division cannot simply be applied everywhere:
-   * the uplift is in both the budget and the launch value, so it cancels, and
-   * dividing once more would print a benchmark share 1/K of the real one. */
-  const railRow = (label, value, format, tip, basketBm) => {
-    const bmv = basketBm !== null && basketBm !== undefined ? basketBm
-      : stretchMode === "even" && k && k > 0 ? value / k
-      : null;
-    let stretch = bmv === null ? null : value - bmv;
+  /* The rail's three columns (§8.3), from the same model the build runs:
+   * the target is the basket's median lifted by K, the benchmark is the
+   * median itself, and the stretch is the difference, so benchmark + stretch
+   * = target on every row. Without a basket, or before the sellout is typed,
+   * there is nothing to lift and the rows are dashes. */
+  const T = profile ? benchmarkTargets(profile, {
+    edition_size: editionSize, unit_price: Number(inp.unit_price) || 0, cpp_pick: inp.cpp_pick || "Median",
+    units_per_buyer: (snap.targets || {}).units_per_buyer || 0,
+  }, b) : null;
+  const BM = T ? T.benchmark : null;
+  const railRow = (label, target, bmv, format, tip) => {
+    let stretch = target === null || bmv === null ? null : target - bmv;
     // a stretch that rounds away to nothing in the row's own format is zero, not
-    // a negative sliver of one - the percentage row carries K top and bottom, so
-    // all that is left there is the rounding in the medians the rail quotes
+    // a negative sliver of one
     if (stretch !== null && format(Math.abs(stretch)) === format(0)) stretch = 0;
-    return { label, tip, target: value, bm: bmv, stretch, format };
+    return { label, tip, target, bm: bmv, stretch, format };
   };
-  // the basket's own medians, in the currencies the rail prints
-  const bmPaidUnits = bm ? (bm.unitsByGroup || {}).paid ?? null : null;
-  const bmLaunchValue = bm && bm.units > 0 ? bm.units * (Number(inp.unit_price) || 0) : 0;
-  /* On the even uplift the rail has to read the basket, not the levers. The
-   * lever model is still computed above (it drives the By channel arm and the
-   * economics), but its sessions target is backed out of quartile conversions
-   * and can sit several times the basket's own median - two cards on this page
-   * disagreeing about the same number. The ETL already wrote the basket's
-   * targets into the snapshot, so take those and rescale by the edition size as
-   * it is typed: every volume carries the same K, so one factor moves them all.
-   */
-  const benchScale = bm && bm.k > 0 && k ? k / bm.k : 1;
-  const st = snap.targets || {};
-  const D = stretchMode === "even" && bm && st.total_sessions
-    ? {
-      buyers: (st.buyers || 0) * benchScale,
-      paid_units: (st.paid_units || 0) * benchScale,
-      draw_units: (st.draw_units || 0) * benchScale,
-      pr_units: (st.pr_units || 0) * benchScale,
-      entries_target: (st.entries_target || 0) * benchScale,
-      total_sessions: (st.total_sessions || 0) * benchScale,
-      paid: {
-        budget: ((st.paid || {}).budget || 0) * benchScale,
-        budget_pct_of_launch_value: derived.launch_value
-          ? ((st.paid || {}).budget || 0) * benchScale / derived.launch_value
-          : null,
-      },
-    }
-    : derived;
-
-  /* People, not pieces. On a multi-product release the median buyer takes more
-     than one, so a 900-unit target is not 900 people and reading it as though
-     it were overstates the audience the campaign has to reach by the whole
-     multi-buy rate. The rate is held at the benchmark, so the uplift falls
-     entirely on finding more buyers (BENCHMARK_SPEC 4.2). On the levers there
-     is no scaled target to read, so the row is the edition at the same rate. */
-  const upb = (snap.targets || {}).units_per_buyer || null;
-  const buyersTarget = stretchMode === "even" && bm && D.buyers
-    ? D.buyers
-    : upb ? (Number(inp.edition_size) || 0) / upb : null;
   const railRows = [
-    railRow("Paid units", D.paid_units, (v) => fmt(v, 0), undefined, bmPaidUnits),
-    railRow("Draw / pre-order units", D.draw_units, (v) => fmt(v, 0), undefined, null),
-    railRow("Private room units", D.pr_units, (v) => fmt(v, 0), undefined, null),
-    railRow("Buyers", buyersTarget ?? 0, (v) => fmt(v, 0),
-      upb ? `People, not pieces: the target divided by ${fmt(upb, 3)} units per buyer.`
-          : "People, not pieces.",
-      bm && bm.buyers ? bm.buyers : null),
-    railRow("Eligible entries", D.entries_target, (v) => fmt(v, 0),
-      "Draw + paid units ÷ 0.8 eligible-entry → order rate.",
-      bm ? bm.entries : null),
-    railRow("Sessions", D.total_sessions, (v) => fmt(v, 0),
-      stretchMode === "even"
-        ? "The basket's median sessions, lifted by the same K as every other volume."
-        : "Backed out per channel: entries ÷ session→entry conversion, plus private-room sessions at the email-only conversion. The benchmark beside it is the basket's own median, which the levers are under no obligation to be a multiple of.",
-      bm ? bm.sessions : null),
-    railRow("Paid budget", D.paid.budget, (v) => fmtMoney(v, 0), undefined,
-      bm ? bm.paidBudget : null),
-    railRow("% of launch value", D.paid.budget_pct_of_launch_value ?? 0, (v) => fmtPct(v, 1),
-      "Sense check: paid budget should stay under 6% of launch value.",
-      bm && bmLaunchValue > 0 ? bm.paidBudget / bmLaunchValue : null),
+    railRow("Paid units", T ? T.paid_units : null, BM ? BM.paid_units : null, (v) => fmt(v, 0),
+      isOff("paid") ? "Paid is not in plan for this release." : "The basket's median paid units, lifted by K."),
+    railRow("Draw / pre-order units", T ? T.draw_units : null, BM ? BM.draw_units : null, (v) => fmt(v, 0),
+      "The organic target less the private room's share of it."),
+    railRow("Private room units", T ? T.pr_units : null, BM ? BM.pr_units : null, (v) => fmt(v, 0),
+      "The email group's target at the basket's private-room share."),
+    railRow("Buyers", T ? T.buyers : null, BM ? BM.buyers : null, (v) => fmt(v, 0),
+      T ? `People, not pieces: the target divided by ${fmt(T.units_per_buyer, 3)} units per buyer.` : "People, not pieces."),
+    railRow("Eligible entries", T ? T.entries_target : null, BM ? BM.entries : null, (v) => fmt(v, 0),
+      "Draw + paid units ÷ 0.8 eligible-entry → order rate. The benchmark is the basket's own median entries."),
+    railRow("Sessions", T ? T.total_sessions : null, BM ? BM.sessions : null, (v) => fmt(v, 0),
+      "The basket's median sessions, lifted by the same K as every other volume."),
+    railRow("Paid budget", T ? T.paid.budget : null, BM ? BM.paid_budget : null, (v) => fmtMoney(v, 0),
+      isOff("paid") ? "Paid is not in plan for this release." : `Paid units × ${fmtMoney(cpp)} per unit, the cost per purchase picked under Economics.`),
+    railRow("% of launch value", T ? (T.paid.budget_pct_of_launch_value ?? 0) : null, BM ? (BM.budget_pct_of_launch_value ?? 0) : null, (v) => fmtPct(v, 1),
+      "Sense check: paid budget should stay under 6% of launch value."),
   ];
   const railCell = { fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums" };
 
@@ -574,8 +401,26 @@ export default function TargetSetting({ snap, onSaved }) {
             <Field label="Marketing lead">
               <input className="control" value={inp.marketing_lead || ""} onChange={set("marketing_lead")} />
             </Field>
-            <Field label="Budget file">
-              <input className="control" value={inp.budget_file || ""} onChange={set("budget_file")} />
+            <Field label="Slack channel" tip="Where the Post to Slack button on the sell-through card sends this release's update. The channel name without the #; for a private channel, invite the Launch Performance bot to it first. Saved on its own, separately from the targets.">
+              <div style={{ display: "flex", gap: 8 }}>
+                <input className="control" value={slackDraft} onChange={(e) => setSlackDraft(e.target.value)} placeholder="launch-updates" />
+                <button className="btn secondary" disabled={slackSaving || slackDraft.trim().replace(/^#/, "") === slackCurrent} onClick={saveSlack} style={{ flex: "0 0 auto" }}>
+                  {slackSaving ? "Saving…" : "Save"}
+                </button>
+              </div>
+              {slackError && <div style={{ fontSize: 11.5, marginTop: 4, color: C.red }}>{slackError}</div>}
+              {!slackError && slackNote && <div style={{ fontSize: 11.5, marginTop: 4, color: C.amber, lineHeight: 1.5 }}>{slackNote}</div>}
+              {!slackError && !slackNote && snap.slack && snap.slack.lastPostAt && (
+                <div style={{ fontSize: 11.5, marginTop: 4, color: C.muted }}>last posted {new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
+              )}
+            </Field>
+            <Field label="Budget file" tip="A link to the budget sheet, kept here for reference. A web address gets an open link beside it.">
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input className="control" value={inp.budget_file || ""} onChange={set("budget_file")} placeholder="https://docs.google.com/spreadsheets/…" />
+                {/^https?:\/\/\S+$/i.test(String(inp.budget_file || "").trim()) && (
+                  <a href={String(inp.budget_file).trim()} target="_blank" rel="noopener noreferrer" className="btn secondary" style={{ flex: "0 0 auto", textDecoration: "none" }}>Open</a>
+                )}
+              </div>
             </Field>
           </div>
           <div className="spacer-16" />
@@ -599,13 +444,16 @@ export default function TargetSetting({ snap, onSaved }) {
         <Card dot="#8a7a52" title="Economics">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
-            <Field label="Edition size (units)">
+            <Field label="Target (units)" tip="The units the launch is targeted to sell by close: the whole edition for most launches. When the target is only part of the edition, put the edition in Total edition.">
               <input className="control num" style={{ fontWeight: 600 }} value={inp.edition_size ?? ""} onChange={setNum("edition_size")} placeholder={creating ? "required" : ""} />
+            </Field>
+            <Field label="Total edition (units)" tip="Only when the target is part of the edition (Warhol: a 2,440 target on 6,100). The hero cap, the room and the sell-through percentages then read against this; the targets stay on the target. Leave empty when the target is the whole edition.">
+              <input className="control num" value={inp.edition_total ?? ""} onChange={setNum("edition_total")} placeholder="same as target" />
             </Field>
             <Field label="Unit price (£)">
               <input className="control num" value={inp.unit_price ?? ""} onChange={setNum("unit_price")} placeholder={creating ? "required" : ""} />
             </Field>
-            <Field label="Launch value" tip="Edition size × unit price - derived.">
+            <Field label="Launch value" tip="Target units × unit price - derived.">
               <input className="control ro num" value={fmtMoney(derived.launch_value)} readOnly />
             </Field>
             <Field label="Artist profit (total £)">
@@ -625,7 +473,7 @@ export default function TargetSetting({ snap, onSaved }) {
                   return (
                     <button key={o} onClick={() => setInp({ ...inp, framing_available: o === "Yes" })}
                       style={{ fontFamily: "inherit", fontSize: 12, fontWeight: active ? 600 : 500, padding: "6px 16px",
-                        border: "none", cursor: "pointer", background: active ? "#eaf0fa" : "#fff",
+                        border: "none", cursor: "pointer", background: active ? "#e6eefa" : "#fff",
                         color: active ? BLUE : C.muted }}>{o}</button>
                   );
                 })}
@@ -660,10 +508,16 @@ export default function TargetSetting({ snap, onSaved }) {
               : "AA Group profit ÷ edition size, no framing - derived."}>
               <input className="control ro num" value={fmtMoney(derived.ppu_aa, 2)} readOnly />
             </Field>
+            <Field label="Cost per purchase" tip="What a paid unit costs to buy: the low, median or high quartile of the panel's cost per purchase. Paid units × this is the paid budget.">
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <Seg options={["Low", "Median", "High"]} value={inp.cpp_pick || "Median"} onChange={(v) => setInp({ ...inp, cpp_pick: v })} />
+                <span className="num" style={{ fontSize: 12, color: C.muted }}>{fmtMoney(cpp)} / unit</span>
+              </div>
+            </Field>
           </div>
         </Card>
 
-        <Products inp={inp} setInp={setInp} draws={meta.draws} editionSize={Number(inp.edition_size) || 0} />
+        <Products inp={inp} setInp={setInp} />
 
         <Card dot={GROUP_DOTS.funnel} title="Benchmark basket">
           <div className="spacer-16" />
@@ -679,64 +533,93 @@ export default function TargetSetting({ snap, onSaved }) {
             </button>
           </div>
 
-          {bmUnits === null ? (
+          {profile === null ? (
             <div style={{ fontSize: 12.5, color: C.muted, marginTop: 14, lineHeight: 1.6 }}>
-              This release has no benchmark basket, so it runs on the quartile levers under Stretch.
-              Choose a basket to benchmark it against comparable past launches instead.
+              No basket yet. Choose one to see the benchmark and the targets it gives; a release saved without one is
+              benchmarked against the launches nearest its target and price.
             </div>
           ) : (
             <>
               <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-                <span className="chip" title="Launches in the basket. Under ten and the median moves a lot on one launch.">
+                <span className="chip" title="Launches in the basket. Under six and the median moves a lot on one launch.">
                   {fmt(prof ? prof.n : bm && bm.basket ? bm.basket.n : null)} launches
                 </span>
-                <span className="chip" title="Median units, with the 25th to 75th percentile of the basket beside it.">
-                  units {fmt(bmUnits)} ({fmt(prof ? prof.units_p25 : bm.unitsP25)}-{fmt(prof ? prof.units_p75 : bm.unitsP75)})
+                <span className="chip" title={off.length ? "Median units without the channels set aside, with the 25th to 75th percentile read the same way." : "Median units, with the 25th to 75th percentile of the basket beside it."}>
+                  units {fmt(profile.units)} ({fmt(profile.units_p25)}-{fmt(profile.units_p75)})
                 </span>
-                {(prof ? prof.price : bm && bm.price) > 0 && (
+                {profile.price > 0 && (
                   <span className="chip" title="Median unit price of the basket in sterling (from Airtable), with its 25th to 75th percentile. The default basket matches on price as well as size (BENCHMARK_SPEC 3.1).">
-                    price {fmtMoney(prof ? prof.price : bm.price)} ({fmtMoney(prof ? prof.price_p25 : bm.priceP25)}-{fmtMoney(prof ? prof.price_p75 : bm.priceP75)})
+                    price {fmtMoney(profile.price)} ({fmtMoney(profile.price_p25)}-{fmtMoney(profile.price_p75)})
                   </span>
                 )}
-                <span className="chip">sessions {fmt(prof ? prof.sessions : bm.sessions)}</span>
-                <span className="chip" title="Median share of sessions from paid.">paid {fmtPct(paidShare, 0)}</span>
-                <span className="chip">{fmt(prof ? prof.campaign_days : bm.campaignDays)} campaign days</span>
+                <span className="chip">sessions {fmt(profile.sessions)}</span>
+                <span className="chip" title={isOff("paid") ? "Paid is not in plan for this release." : "Median share of sessions from paid."}>
+                  {isOff("paid") ? "paid not in plan" : `paid ${fmtPct(paidShare, 0)}`}
+                </span>
+                <span className="chip">{fmt(profile.campaign_days)} campaign days</span>
               </div>
               <div style={{ fontSize: 11.5, color: C.muted, marginTop: 10, lineHeight: 1.5 }}>
                 {basketDirty
-                  ? <>Not saved yet. The per-channel figures below are still the basket in force - save to rebuild them.</>
+                  ? <>Not saved yet. The figures below follow the launches ticked; save to rebuild the page on them.</>
                   : bm && bm.basket
                     ? <>Matched from {fmt(bm.basket.n)} comparable launches
                       {bm.basket.id === bm.basket.suggestedId ? ", the suggested basket for this release" : ", chosen by hand"}
-                      {bm.basket.thin ? ". Thin: under ten launches, so the median moves easily." : "."}</>
+                      {bm.basket.thin ? ". Thin: under six launches, so the median moves easily." : "."}</>
                     : null}
               </div>
             </>
           )}
 
-          {bm && (
+          {/* what a basket cannot know: the channels this release will not run
+              (§4.3). Off takes the group's median out of the benchmark and its
+              share out of the target; the other channels carry the whole sellout. */}
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${C.hairline}` }}>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}
+              title="A channel this release will not run leaves the benchmark and the target: the basket is read on its other channels, and they carry the whole sellout between them.">
+              Channels in plan
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 26px", alignItems: "center" }}>
+              <Switch id="ch-paid" on={!isOff("paid")} onChange={(on) => setOff("paid", on)} label="Running paid"
+                sub={isOff("paid") ? "off: benchmarked on what the basket did without paid, and the other channels carry the whole target" : "paid units, spend and the paid benchmark are in"}
+                why="The basket keeps every launch, paid or not; with paid off each counts on its other channels only." />
+              <Switch id="ch-artist" on={!isOff("referral_artist")} onChange={(on) => { setOff("referral_artist", on); if (on && qual["Referral Artist"] === "N/A") setQual({ ...qual, "Referral Artist": "Medium" }); }}
+                label="Artist's own channels"
+                sub={isOff("referral_artist") ? "off: no artist target and no posting benchmark - an estate, or an artist who will not post" : "the artist posts on channels of their own"}
+                why="Off for an estate, or a living artist with no channels of their own. The artist group leaves the benchmark and the funnel expects no posts." />
+              {!isOff("referral_artist") && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: C.muted }}
+                  title="How much the artist will post, against the tiers past campaigns were labelled with: the funnel's posting benchmark is the median of completed campaigns in the same tier.">
+                  posting
+                  <Seg small options={["Low", "Medium", "High"]} value={["Low", "Medium", "High"].includes(qual["Referral Artist"]) ? qual["Referral Artist"] : "Medium"}
+                    onChange={(v) => setQual({ ...qual, "Referral Artist": v })} />
+                </span>
+              )}
+            </div>
+          </div>
+
+          {profile && (
             <>
               <div style={{ height: 18 }} />
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead><ChannelRow head /></thead>
                 <tbody>
                   {GROUPS.map((g) => (
-                    <ChannelRow key={g.key} label={g.name}
-                      bmSessions={bm.sessionsByGroup[g.key] || 0}
-                      bmUnits={bm.unitsByGroup[g.key] || 0}
-                      conv={(bm.convByGroup || {})[g.key] ?? null} k={k} />
+                    <ChannelRow key={g.key} label={g.name} off={isOff(g.key)}
+                      bmSessions={profile.sessions_by_group[g.key] || 0}
+                      bmUnits={profile.units_by_group[g.key] || 0}
+                      conv={profile.conv[g.key] > 0 ? profile.conv[g.key] : null} k={k || 1} />
                   ))}
                   <ChannelRow total label="Total"
-                    bmSessions={GROUPS.reduce((s, g) => s + (bm.sessionsByGroup[g.key] || 0), 0)}
-                    bmUnits={GROUPS.reduce((s, g) => s + (bm.unitsByGroup[g.key] || 0), 0)}
-                    conv={null} k={k} />
+                    bmSessions={profile.sessions}
+                    bmUnits={profile.units}
+                    conv={null} k={k || 1} />
                 </tbody>
               </table>
             </>
           )}
         </Card>
 
-        <Card dot="#4f6fc0" title="Stretch">
+        <Card dot="#4f80d6" title="Stretch">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
             <Field label="Benchmark (units)" tip="The basket's median units at close - what launches like this one typically reach.">
@@ -752,37 +635,12 @@ export default function TargetSetting({ snap, onSaved }) {
             </Field>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18, flexWrap: "wrap" }}>
-            <div className="seg" role="group" aria-label="How the stretch is spread">
-              <button className={stretchMode === "even" ? "active" : ""} disabled={!bm && !spec}
-                title="One uplift on the basket median, on every channel, stage and day."
-                onClick={() => setInp({ ...inp, stretch_mode: "even" })}>Evenly</button>
-              <button className={stretchMode === "levers" ? "active" : ""}
-                onClick={() => setInp({ ...inp, stretch_mode: "levers" })}>By channel</button>
-            </div>
-            <span style={{ fontSize: 12, color: C.muted }}>
-              {stretchMode === "even"
-                ? "One uplift, every channel, every day."
-                : "Quartile levers set each channel's share."}
-            </span>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 14, lineHeight: 1.6 }}>
+            The stretch is spread evenly: every volume - sessions, entries, units and spend - is lifted by the same
+            factor in every channel in plan, on every day of the campaign, and conversion rates are held at the
+            benchmark. A target that quietly assumes the site converts better than it ever has is a target nobody
+            can act on, so the stretch is asked of traffic and spend only.
           </div>
-          <div style={{ fontSize: 12, color: C.muted, marginTop: 10, lineHeight: 1.6 }}>
-            {stretchMode === "even"
-              ? <>Evenly lifts every volume - sessions, entries, units and spend - by the same factor in every channel,
-                on every day of the campaign, and holds conversion rates at the benchmark. A target that quietly assumes
-                the site converts better than it ever has is a target nobody can act on, so the stretch is asked of
-                traffic and spend only.</>
-              : <>By channel hands the split back to the quartile levers below: each one picks a quartile of the
-                historical LE panel, and the channel shares and conversions follow from those picks rather than from the
-                basket. Use it when this release is deliberately shaped unlike the launches it is benchmarked against.</>}
-          </div>
-
-          {stretchMode === "levers" && (
-            <>
-              <div style={{ height: 22 }} />
-              <Levers inp={inp} setInp={setInp} qual={qual} setQual={setQual} derived={derived} channels={channels} />
-            </>
-          )}
         </Card>
       </div>
 
@@ -790,9 +648,10 @@ export default function TargetSetting({ snap, onSaved }) {
         <Card dot="#8a7a52" title="Derived targets">
           <div className="spacer-8" />
           <div className="lead" title="Secured-units sellout target - the hero target on the Overview tab.">
-            {creating && missing.length ? "–" : fmt(derived.edition_size)}
+            {creating && missing.length ? "–" : fmt(editionSize)}
           </div>
-          <div className="lead-caption">{creating && missing.length ? "sellout units - enter the economics" : "sellout units"}</div>
+          <div className="lead-caption">{creating && missing.length ? "sellout units - enter the economics"
+            : partialEdition ? `target units · ${Math.round((100 * Number(inp.edition_size)) / Number(inp.edition_total))}% of the ${fmt(inp.edition_total)} edition` : "sellout units"}</div>
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 72px 72px", gap: 4, alignItems: "center" }}>
             <span />
@@ -804,7 +663,7 @@ export default function TargetSetting({ snap, onSaved }) {
                 <span style={{ fontSize: 12.5, color: C.muted, borderTop: `1px solid ${C.hairline}`, paddingTop: 8, paddingBottom: 8 }} title={r.tip}>{r.label}</span>
                 <span style={{ ...railCell, color: C.muted, borderTop: `1px solid ${C.hairline}`, paddingTop: 8, paddingBottom: 8 }}>{r.bm === null ? "–" : r.format(r.bm)}</span>
                 <span style={{ ...railCell, fontWeight: 600, borderTop: `1px solid ${C.hairline}`, paddingTop: 8, paddingBottom: 8,
-                  color: r.label === "% of launch value" ? (derived.paid.sense_check_breached ? C.red : C.green) : C.ink }}>{r.format(r.target)}</span>
+                  color: r.target === null ? C.muted : r.label === "% of launch value" ? (T && T.paid.sense_check_breached ? C.red : C.green) : C.ink }}>{r.target === null ? "–" : r.format(r.target)}</span>
                 <span style={{ ...railCell, color: C.muted, borderTop: `1px solid ${C.hairline}`, paddingTop: 8, paddingBottom: 8 }}>{r.stretch === null ? "–" : r.format(r.stretch)}</span>
               </React.Fragment>
             ))}
@@ -818,6 +677,11 @@ export default function TargetSetting({ snap, onSaved }) {
             </button>
             <button className="btn secondary" onClick={discard}>Discard</button>
           </div>
+          {!T && !error && !(creating && missing.length > 0) && (
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 10 }}>
+              {profile ? "Type the target units to see the targets." : "Choose a basket to see the targets; saving without one benchmarks against the nearest launches."}
+            </div>
+          )}
           {basketDirty && !error && (
             <div style={{ fontSize: 12, color: C.muted, marginTop: 10 }}>
               A new basket rebuilds this release from the panel, so saving takes longer than usual.
@@ -832,6 +696,15 @@ export default function TargetSetting({ snap, onSaved }) {
 
       {picking && (
         <BasketPicker releaseId={snap.id} releaseName={snap.releaseName} current={spec}
+          targetUnits={Number(inp.edition_size) || 0} unitPrice={Number(inp.unit_price) || 0}
+          preferRecent={inp.prefer_recent !== false} channelsOff={off}
+          // what the rule needs to find the artist's own earlier launches and
+          // to read the typed price in its currency (shared/basketRule.mjs)
+          artist={snap.artist || ""} currency={inp.currency || "GBP"}
+          announceDate={inp.announce_date || null} privateRoomOpen={inp.private_room_open || null}
+          // the picker asks for a target and a price when there are none, and
+          // writes them straight into this form so the basket follows the typing
+          onInputs={(patch) => setInp({ ...inp, ...patch })}
           onPick={onPick} onClose={() => setPicking(false)} />
       )}
     </div>

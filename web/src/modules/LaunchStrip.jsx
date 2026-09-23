@@ -1,8 +1,9 @@
 /* The campaign clock: a thin strip showing where the release sits between
- * announcement and launch. Orange fills to today, a knob marks the day, a tick
- * marks the launch, and the days to go are the strip's only bold words. It is
- * a card of the Overview (Layout.jsx, size "strip": a full-width row of its
- * own), first by default and movable like the rest, and it replaces the
+ * announcement and launch. Blue fills to today, a knob marks the day (the
+ * day of the window is in the strip's popup, not printed over the knob), a
+ * tick marks the launch, and the days to go are the strip's only bold words.
+ * It is a card of the Overview (Layout.jsx, size "strip": a full-width row of
+ * its own), first by default and movable like the rest, and it replaces the
  * "Day N of M" chip the header carried, which gave the position but not the
  * distance or the dates. A catalogue release has no window and gets no strip. */
 import React from "react";
@@ -21,13 +22,15 @@ export default function LaunchStrip({ snap }) {
   const elapsed = Math.round((today - announce) / DAY_MS);
   const left = span - elapsed;
   const opened = elapsed >= 0, launched = elapsed >= span;
-  const p = Math.max(0, Math.min(elapsed / span, 1)) * 100;
+  // the part day moves the knob by the share of it seen
+  const seen = snap.asOfFraction ?? 1;
+  const p = Math.max(0, Math.min((elapsed - (1 - seen)) / span, 1)) * 100;
 
   const rows = [
     { label: opened ? "Announced" : "Announces", value: fmtDay(announce, true) },
     { label: launched ? "Launched" : "Launch", value: fmtDay(launch, true) },
     { label: "Window", value: days(span) },
-    { label: "Today", value: !opened ? `opens in ${days(-elapsed)}` : launched ? (left === 0 ? "launch day" : `${days(-left)} after launch`) : `day ${snap.day} of ${snap.of}` },
+    { label: "Today", value: !opened ? `opens in ${days(-elapsed)}` : launched ? (left === 0 ? "launch day" : `${days(-left)} after launch`) : `day ${snap.day} of ${snap.of}${seen < 1 ? ", so far" : ""}` },
   ];
   if (opened && !launched) rows.push({ label: "Days left", value: String(left) });
 
@@ -42,12 +45,7 @@ export default function LaunchStrip({ snap }) {
       <span>{opened ? "Announced" : "Announces"} {fmtDay(announce, true)}</span>
       <span className="track">
         <span className="fill" style={{ width: `${p}%` }} />
-        {opened && !launched && (
-          <>
-            <span className={`today${p < 50 ? " lead" : ""}`} style={{ left: `${p}%` }}>today · day {snap.day} of {snap.of}</span>
-            <span className="knob" style={{ left: `${p}%` }} />
-          </>
-        )}
+        {opened && !launched && <span className="knob" style={{ left: `${p}%` }} />}
         <span className="launch" />
       </span>
       <span>{right}</span>

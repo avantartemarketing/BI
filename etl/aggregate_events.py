@@ -484,22 +484,29 @@ def products_file(ev: pd.DataFrame) -> dict:
     (`purchaseUnits`), for the day the feed tags purchases with products.
 
     The patterns are the multiset of (open draws, unpaid wins, paid wins,
-    pieces bought, max quantity) with how many entrants share each: enough
-    to run the allocation anywhere, and nothing that names anyone.
+    pieces bought, max quantity, pre-order entries) with how many entrants
+    share each: enough to run the allocation anywhere, and nothing that names
+    anyone. `pre` is the open entries the person made as a pre-order, which
+    convert at their own rate.
     """
     cols = ["simple_release_name", "aa_account_id", "draw_id", "event_date", "draw_entry_eligible", "winner",
-            "draw_with_purchase", "draw_entry_multiset_preference_max_quantity"]
+            "draw_with_purchase", "pre_order", "draw_entry_multiset_preference_max_quantity"]
     de = ev[(ev["event_name"] == "draw entry intent") & ev["draw_id"].notna() & ev["aa_account_id"].notna()]
     de = de[[c for c in cols if c in de.columns]].copy()
+    if "pre_order" not in de.columns:   # a feed from before the flag was carried
+        de["pre_order"] = False
     de["draw_id"] = de["draw_id"].astype(str).str.strip()
     de = de[(de["draw_id"] != "") & (de["draw_id"].str.lower() != "nan")]
     if "draw_entry_multiset_preference_max_quantity" not in de.columns:
         de["draw_entry_multiset_preference_max_quantity"] = np.nan
+    if "pre_order" not in de.columns:   # a feed from before the flag was carried
+        de["pre_order"] = False
     de["mq"] = pd.to_numeric(de["draw_entry_multiset_preference_max_quantity"], errors="coerce")
     de["simple_release_name"] = de["simple_release_name"].astype(str)
     per_entry = (de.groupby(["simple_release_name", "aa_account_id", "draw_id"], observed=True)
                    .agg(eligible=("draw_entry_eligible", "any"), winner=("winner", "any"),
-                        bought=("draw_with_purchase", "any"), first=("event_date", "min"), last=("event_date", "max"))
+                        bought=("draw_with_purchase", "any"), pre=("pre_order", "any"),
+                        first=("event_date", "min"), last=("event_date", "max"))
                    .reset_index())
     per_entrant_mq = de.groupby(["simple_release_name", "aa_account_id"], observed=True)["mq"].max()
     pu = ev[(ev["event_name"] == "purchase") & ev["draw_id"].notna()]
@@ -531,16 +538,20 @@ def products_file(ev: pd.DataFrame) -> dict:
             sold = tuple(sorted(e.loc[e["sold"], "draw_id"]))
             if not (open_ or won or sold):
                 continue
+            # the open entries this person made as a pre-order: their card is
+            # already authorised, so they convert at their own rate (docs #6.3)
+            pre = tuple(sorted(e.loc[e["open"] & e["pre"], "draw_id"]))
             bought = int(e["bought"].sum())
             mq = per_entrant_mq.get((rel, acct), np.nan)
-            key = (open_, won, sold, bought, None if pd.isna(mq) else int(mq))
+            key = (open_, won, sold, bought, None if pd.isna(mq) else int(mq), pre)
             patterns[key] = patterns.get(key, 0) + 1
         out[rel] = {
             "draws": draws,
             "entrants": int(sub["aa_account_id"].nunique()),
             "eligible": int(sub.loc[sub["eligible"], "aa_account_id"].nunique()),
             "allocated": bool(sub["winner"].any()),
-            "patterns": [{"open": list(k[0]), "won": list(k[1]), "sold": list(k[2]), "bought": k[3], "max": k[4], "n": n}
+            "patterns": [{"open": list(k[0]), "won": list(k[1]), "sold": list(k[2]), "bought": k[3], "max": k[4],
+                          "pre": list(k[5]), "n": n}
                          for k, n in sorted(patterns.items(), key=lambda kv: (-kv[1], str(kv[0])))],
         }
     return out

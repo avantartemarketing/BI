@@ -1,4 +1,6 @@
-/* Funnel by channel (spec §4.4, LE relabel per §6). Tall card (1 col × 2 rows).
+/* Funnel by channel (spec §4.4, LE relabel per §6). Tall card (1 col × 2 rows),
+ * and a 2 × 2 version (FunnelByChannelWide, at the foot of this file) that
+ * gives the waterfall view two columns by two rows of room.
  * Always the Today horizon, so the page toggle is accepted and ignored.
  * Five display groups; rungs are built from real snapshot data instead of the
  * mock's static list:
@@ -30,7 +32,7 @@
 import React from "react";
 import {
   Card, GROUP_DOTS, C, fmt, fmtSigned, fmtMoney, MINUS, useTip,
-  rungGeom, rungPos, RungTrack, RungKey, Tick, refWords,
+  rungGeom, rungPos, RungTrack, RungKey, Tick, refWords, dayElapsed,
 } from "../ui.jsx";
 
 const RING = "0 0 0 1px rgba(20,20,19,.45)";
@@ -121,6 +123,25 @@ function buildRung(spec, bench, k) {
   };
 }
 
+/* The rung's marks in their cell: the track, and where the dot ran off the
+ * scale a flag at the end it ran off, rather than letting it pile up silently
+ * against the clamp. Both cards draw their rungs with it. */
+function RungMarks({ r, bench }) {
+  return (
+    <div style={{ position: "relative" }}>
+      <RungTrack dev={r.dev} bmPos={r.bmPos} up={r.up} neutral={r.neutral} bench={bench} />
+      {r.beyond && (
+        <span style={{
+          position: "absolute", top: -1, fontSize: 11, lineHeight: "12px", color: C.muted,
+          ...(r.dev >= 96 ? { left: "calc(100% + 2px)" } : { right: "calc(100% + 2px)" }),
+        }}>
+          {r.dev >= 96 ? "›" : "‹"}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function Rung({ r, bench }) {
   const tipApi = useTip();
   return (
@@ -134,19 +155,7 @@ function Rung({ r, bench }) {
       <div style={{ fontSize: 13, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {r.label}
       </div>
-      <div style={{ position: "relative" }}>
-        <RungTrack dev={r.dev} bmPos={r.bmPos} up={r.up} neutral={r.neutral} bench={bench} />
-        {r.beyond && (
-          /* the dot ran off the scale - say so at the end it ran off, rather
-             than letting it pile up silently against the clamp */
-          <span style={{
-            position: "absolute", top: -1, fontSize: 11, lineHeight: "12px", color: C.muted,
-            ...(r.dev >= 96 ? { left: "calc(100% + 2px)" } : { right: "calc(100% + 2px)" }),
-          }}>
-            {r.dev >= 96 ? "›" : "‹"}
-          </span>
-        )}
-      </div>
+      <RungMarks r={r} bench={bench} />
       <div className="num" style={{ fontSize: 13.5, fontWeight: 600, textAlign: "right", color: r.rag }}>
         {r.delta}
       </div>
@@ -333,7 +342,7 @@ function groupWaterfall(g, snap, vsBm = false) {
   }
   if (g.key === "paid") {
     const paid = snap.paid || {};
-    const day = snap.day ?? 0, of = snap.of ?? 0;
+    const day = dayElapsed(snap), of = snap.of ?? 0;
     const spendA = paid.spendToDate ?? 0;
     const budget = vsBm ? paid.benchmarkBudget : paid.spendBudget;
     const spendE = of > 0 && budget ? (budget * day) / of : null;
@@ -356,7 +365,7 @@ function groupWaterfall(g, snap, vsBm = false) {
     info("Posts", (social.posts ?? 0) + (social.stories ?? 0), null, "count", "no reference - context only");
   }
   if (g.key === "referral_artist") {
-    const of = snap.of ?? 0, day = snap.day ?? 0;
+    const of = snap.of ?? 0, day = dayElapsed(snap);
     const postsA = social.artistPosts ?? null;
     const postsE = of > 0 && social.artistPostsTarget ? (social.artistPostsTarget * day) / of : null;
     if (finite(postsA) && finite(postsE) && postsA > 0 && postsE > 0 && sessE > 0) {
@@ -373,27 +382,43 @@ function groupWaterfall(g, snap, vsBm = false) {
   return { name: g.name, rows, now, exp };
 }
 
-function FunnelWaterfall({ snap, groups }) {
-  const tipApi = useTip();
+/* Every row of the walk states a base height and grows or shrinks in
+ * proportion to it, so the stack always fills its card exactly and never
+ * scrolls: a short walk spreads to the foot of the card instead of stopping
+ * two thirds of the way down, and a long one gives up a little height per row
+ * rather than growing a scrollbar. The longest walk the page can build (every
+ * AA Email stage, the split buyer row, the levels) is 22 rows, inside the tall
+ * card's room at base. The bars grow with their rows, 12px to 18px thick. */
+const BAR_INSET = "clamp(calc(50% - 9px), 20%, calc(50% - 6px))";
+const FIT = { flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", overflow: "hidden" };
+const ANCHOR_LABEL = { fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" };
+const ANCHOR_NUM = { fontSize: 12.5, fontWeight: 600, textAlign: "right" };
+const ROW_LABEL = { fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+const ROW_NUM = { fontSize: 12.5, fontWeight: 600, textAlign: "right" };
+
+/* The walk, as data: from the target - or, with a basket, from the benchmark
+ * with the stretch set aside - down every group's rows to the actual. Null
+ * when there is nothing to walk: no row with a reference yet. */
+function buildWaterfall(snap, groups) {
   const expTotal = snap?.hero?.expectedToday ?? 0;
   const nowTotal = snap?.hero?.now ?? 0;
   const day = snap?.day ?? 0;
 
-  /* The same grammar as the outcome waterfall, off the same snapshot figures:
-   * the list opens at the target, sets the stretch aside as a bar from the
-   * target to the benchmark, and walks from the benchmark with every row read
-   * against the basket, so the rows sum to actual less benchmark and, with the
-   * stretch, to actual less target. Absent a benchmark the list opens at the
-   * target and the rows read against the plan, as everywhere else. */
+  /* Off the same snapshot figures as the outcome waterfall: the list opens at
+   * the benchmark, shows the stretch beneath it as the band up to the target
+   * with the target's tick at its end, and walks from the benchmark with every
+   * row read against the basket, so the rows sum to actual less benchmark and,
+   * with the stretch, to actual less target. Absent a benchmark the list opens
+   * at the target and the rows read against the plan, as everywhere else. */
   const bmTotal = snap?.hero?.benchmarkToday ?? null;
   const hasBm = !!snap?.benchmark && bmTotal !== null && bmTotal !== undefined;
   const stretchTotal = hasBm ? expTotal - bmTotal : null;
   const words = refWords("today");
   const startTotal = hasBm ? bmTotal : expTotal;
 
-  const sections = groups.map((g) => groupWaterfall(g, snap, hasBm));
+  const sections = groups.map((g) => ({ key: g.key, short: g.short, ...groupWaterfall(g, snap, hasBm) }));
   const stepRows = sections.flatMap((s) => s.rows.filter((r) => finite(r.value)));
-  if (!stepRows.length) return <div className="empty-state">No funnel data yet</div>;
+  if (!stepRows.length) return null;
   // per-group rounding only: each group's steps sum to its own gap by
   // construction; the difference to the hero is the edition cap, left visible
   const residual = (nowTotal - startTotal) - stepRows.reduce((a, r) => a + r.value, 0);
@@ -403,7 +428,8 @@ function FunnelWaterfall({ snap, groups }) {
   }
   const capped = Math.abs(residual) > 0.5;
 
-  // running level through every row (info rows carry the level across)
+  // running level through every row (info rows carry the level across); each
+  // row remembers its group, which is how the 2 × 2 card finds its rung
   let cum = startTotal;
   const flat = [];
   // the units-per-buyer steps are one release-level effect split across the
@@ -418,14 +444,14 @@ function FunnelWaterfall({ snap, groups }) {
     flat.push({ header: s.name });
     for (const r of s.rows) {
       if (r.perBuyer) continue;
-      if (finite(r.value)) { const from = cum; cum += r.value; flat.push({ ...r, from, to: cum }); }
-      else flat.push({ ...r, level: cum });
+      if (finite(r.value)) { const from = cum; cum += r.value; flat.push({ ...r, group: s.key, short: s.short, from, to: cum }); }
+      else flat.push({ ...r, group: s.key, short: s.short, level: cum });
     }
   }
   if (perBuyerRow && Math.abs(perBuyerTotal) > 0.05) {
     const from = cum; cum += perBuyerTotal;
     flat.push({ header: "All channels" });
-    flat.push({ ...perBuyerRow, value: perBuyerTotal, from, to: cum });
+    flat.push({ ...perBuyerRow, group: "all", value: perBuyerTotal, from, to: cum });
   }
   const levels = [expTotal, ...flat.filter((r) => r.to !== undefined).map((r) => r.to),
     ...(hasBm ? [bmTotal] : [])];
@@ -434,29 +460,11 @@ function FunnelWaterfall({ snap, groups }) {
   const span = hi + pad - (lo - pad);
   const X = (v) => ((v - (lo - pad)) / span) * 100;
 
-  /* Every row states a base height and grows in proportion to it, so a short
-   * funnel spreads to the foot of the card instead of stopping two thirds of the
-   * way down, and a long one keeps its base heights and scrolls. The bars grow
-   * with their rows between 12px and 18px thick. */
-  const ROW = (base) => ({ flex: `${base} 0 ${base}px`, minHeight: base });
-  const BAR_INSET = "clamp(calc(50% - 9px), 22%, calc(50% - 6px))";
-
-  // a level: its mark is a tick, dotted for the benchmark as its mark is everywhere
-  const anchorRow = (label, value, tip, color = C.refLine, dotted = false) => (
-    <div style={{ ...ROW(26), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
-      <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</div>
-      <div style={{ position: "relative", height: 14 }}>
-        <Tick pct={X(value)} color={color} dotted={dotted} tip={tip} />
-      </div>
-      <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>{fmt(value)}</div>
-    </div>
-  );
-  /* The stretch as a step: the bar from the target down (or up) to the
-   * benchmark in the stretch tint, the same band the bars and the trajectory
-   * draw between the two references. A planning decision rather than
-   * performance, so its figure is in ink, not the step colours; the rows
-   * below read against the basket, so this is the part of the gap to target
-   * that is ambition. */
+  /* The stretch: the band from the benchmark up (or down) to the target in the
+   * stretch tint, the same band the bars and the trajectory draw between the
+   * two references. A planning decision rather than performance, so its
+   * figure is in ink, not the step colours; the rows below read against the
+   * basket, so this is the part of the gap to target that is ambition. */
   const stretchTip = hasBm ? {
     head: "Stretch",
     rows: [
@@ -467,98 +475,43 @@ function FunnelWaterfall({ snap, groups }) {
     ],
     body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.",
   } : null;
-  const stretchRow = () => (
-    <div style={{ ...ROW(20), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
-      <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>Stretch</div>
-      <div style={{ position: "relative", alignSelf: "stretch" }}>
-        <div {...tipApi.props(stretchTip)} style={{
-          position: "absolute", top: BAR_INSET, bottom: BAR_INSET,
-          left: `${X(Math.min(bmTotal, expTotal))}%`,
-          width: `${Math.max(1.2, Math.abs(X(expTotal) - X(bmTotal)))}%`,
-          background: C.refStretch, borderRadius: 3,
-        }} />
-      </div>
-      <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right" }}>{fmtSigned(bmTotal - expTotal)}</div>
-    </div>
-  );
 
-  return (
-    /* Two anchor rows were added above Target today, which on a five-group
-       funnel is enough to push Actual today past the bottom of the card. The
-       rows were trimmed to absorb most of it; the scroll is the guarantee that
-       the closing anchor is never simply cut off on a release with more groups
-       or more stages than this one. */
-    <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      {anchorRow(words.target, expTotal, {
-        head: `Target by day ${day}`,
-        rows: [{ label: "Secured units", value: fmt(expTotal) }],
-      })}
-      {hasBm && stretchRow()}
-      {hasBm && anchorRow(words.bm, bmTotal, {
-        head: "Benchmark today",
-        rows: [{ label: "Secured units", value: fmt(bmTotal) }],
-        body: "The median of the matched basket - what launches like this one typically reach by now. The rows walk from here.",
-      }, C.refLine, true)}
-      {flat.map((r, i) => r.header ? (
-        <div key={"h" + i} style={{ ...ROW(25), display: "flex", alignItems: "flex-end", paddingBottom: 4 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{r.header}</div>
-        </div>
-      ) : r.to !== undefined ? (
-        <div key={r.label + i} style={{ ...ROW(20), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
-          <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
-          <div style={{ position: "relative", alignSelf: "stretch" }}>
-            <div {...tipApi.props({
-              head: r.label, body: r.note,
-              rows: [
-                ...(r.show ? [{ label: "Actual", value: r.show(r.a) }, { label: "Reference", value: r.show(r.e) }] : []),
-                { label: hasBm ? "vs benchmark" : "vs expected", value: fmtSigned(r.value, 1) + " units", color: r.value >= 0 ? C.green : C.red },
-                { label: "Running total", value: fmt(r.to, 1) },
-              ],
-            })} style={{
-              position: "absolute", top: BAR_INSET, bottom: BAR_INSET,
-              left: `${X(Math.min(r.from, r.to))}%`,
-              width: `${Math.max(1.2, Math.abs(X(r.to) - X(r.from)))}%`,
-              background: r.value >= 0 ? C.wfGreen : C.red, borderRadius: 3,
-            }} />
-          </div>
-          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: r.value >= 0 ? C.green : C.red }}>
-            {fmtSigned(r.value, 1)}
-          </div>
-        </div>
-      ) : (
-        <div key={r.label + i} style={{ ...ROW(20), display: "grid", gridTemplateColumns: GRID, gap: COL_GAP, alignItems: "center" }}>
-          <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</div>
-          <div style={{ position: "relative", alignSelf: "stretch" }}>
-            <div {...tipApi.props({ head: r.label, body: r.note, rows: r.tipRows })} style={{
-              position: "absolute", left: `${X(r.level)}%`, top: "50%", marginTop: -5, width: 10, height: 10, marginLeft: -5,
-              borderRadius: "50%", background: NEUTRAL_DOT, boxShadow: RING,
-            }} />
-          </div>
-          <div className="num" style={{ fontSize: 12.5, fontWeight: 600, textAlign: "right", color: C.muted }}>{r.display ?? "–"}</div>
-        </div>
-      ))}
-      {anchorRow("Actual today", nowTotal, {
-        head: "Secured to date",
-        rows: [{ label: "Secured units", value: fmt(nowTotal) }],
-        body: capped ? "The steps add up to more than the gap - the sellout caps the actual." : undefined,
-      }, C.orange)}
-    </div>
-  );
+  return { flat, X, domain: [lo - pad, hi + pad], expTotal, bmTotal, nowTotal, hasBm, day, words, capped, stretchTip };
 }
 
-/* `horizon` is accepted and ignored: this card is always the Today horizon
- * (BENCHMARK_SPEC 2), so the page toggle must not reach it. */
-export default function FunnelByChannel({ snap, horizon }) {
+const targetTip = (wf) => ({
+  head: `Target by day ${wf.day}`,
+  rows: [{ label: "Secured units", value: fmt(wf.expTotal) }],
+});
+const bmTip = (wf) => ({
+  head: "Benchmark today",
+  rows: [{ label: "Secured units", value: fmt(wf.bmTotal) }],
+  body: "The median of the matched basket - what launches like this one typically reach by now. The rows walk from here.",
+});
+const actualTip = (wf) => ({
+  head: "Secured to date",
+  rows: [{ label: "Secured units", value: fmt(wf.nowTotal) }],
+  body: wf.capped ? "The steps add up to more than the gap - the sellout caps the actual." : undefined,
+});
+const stepTip = (r, hasBm) => ({
+  head: r.label, body: r.note,
+  rows: [
+    ...(r.show ? [{ label: "Actual", value: r.show(r.a) }, { label: "Reference", value: r.show(r.e) }] : []),
+    { label: hasBm ? "vs benchmark" : "vs expected", value: fmtSigned(r.value, 1) + " units", color: r.value >= 0 ? C.green : C.red },
+    { label: "Running total", value: fmt(r.to, 1) },
+  ],
+});
+const infoTip = (r) => ({ head: r.label, body: r.note, rows: r.tipRows });
+
+/* The rungs, as data: five groups of { label, v, bm, plan, unit, kind, inv,
+ * note } for buildRung, off the same snapshot the waterfall walks. */
+function rungModel(snap) {
   const targeted = snap?.targeted !== false;
-  // waterfall leads when there is a plan to step from; without targets only the
-  // funnel's actual side exists
-  const [view, setView] = React.useState(targeted ? "wf" : "funnel");
-  React.useEffect(() => setView(targeted ? "wf" : "funnel"), [snap?.id, targeted]);
   const fbg = snap?.funnelByGroup || {};
   const email = snap?.email || {};
   const social = snap?.social || {};
   const paid = snap?.paid || {};
-  const day = snap?.day ?? 0;
+  const day = dayElapsed(snap);
   const of = snap?.of ?? 0;
   const bench = !!snap?.benchmark;
   const k = snap?.benchmark?.k ?? 1;
@@ -572,8 +525,13 @@ export default function FunnelByChannel({ snap, horizon }) {
 
   const pct = (x) => (x === null || x === undefined ? null : x * 100);
   /* Sessions read the per-group benchmark the ETL pro-rated to today, not
-   * benchmark.sessionsByGroup, which is the at-close figure. Conversion is a
-   * rate held at the benchmark, so either source gives the same number. */
+   * benchmark.sessionsByGroup, which is the at-close figure. Conversion reads
+   * the basket's conversion by today as well (conv_benchmark_today, the figure
+   * the waterfall view walks against): a basket's sessions come earlier than
+   * its units, so its conversion by today sits well under its conversion at
+   * close, and a rung read against the at-close figure was behind on every
+   * release for most of the campaign while the walk beside it said otherwise.
+   * The at-close conv_benchmark is the fallback for an older snapshot. */
   const sess = (key) => {
     const g = fbg[key] || {};
     return {
@@ -598,7 +556,7 @@ export default function FunnelByChannel({ snap, horizon }) {
       kind: "rate", unit: "%",
       v: rate(g.conv_actual, upbActual),
       plan: rate(g.conv_expected, upbPlan),
-      bm: rate(g.conv_benchmark ?? bmConv[key] ?? null, upbPlan),
+      bm: rate(g.conv_benchmark_today ?? g.conv_benchmark ?? bmConv[key] ?? null, upbPlan),
     };
   };
 
@@ -622,7 +580,7 @@ export default function FunnelByChannel({ snap, horizon }) {
    * benchmark and the target are the same line and the ring sits on centre. */
   const groups = [
     {
-      key: "aa_email", name: "AA Email",
+      key: "aa_email", name: "AA Email", short: "Email",
       rungs: [
         // benchmark = cohort median delivered total x pooled delivery-timing
         // curve at today's pdsa (computed in the ETL as email.deliveredTarget);
@@ -642,17 +600,22 @@ export default function FunnelByChannel({ snap, horizon }) {
       ],
     },
     {
-      key: "aa_social", name: "AA Meta",
+      key: "aa_social", name: "AA Meta", short: "Meta",
       rungs: [
+        // the Notion log records a row per post and no format, so there is no
+        // post/story split to show when it is the source; the Emplifi export
+        // carries one, and says so
         { label: "Posts", kind: "vol", unit: "count",
           v: (social.posts ?? 0) + (social.stories ?? 0), plan: null, bm: null,
-          note: `${fmt(social.posts ?? 0)} posts + ${fmt(social.stories ?? 0)} stories to date` },
+          note: social.postsSource === "notion"
+            ? `${fmt(social.posts ?? 0)} posts to date, from the Notion log`
+            : `${fmt(social.posts ?? 0)} posts + ${fmt(social.stories ?? 0)} stories to date` },
         sess("aa_social"),
         conv("aa_social"),
       ],
     },
     {
-      key: "referral_artist", name: "Referral artist",
+      key: "referral_artist", name: "Referral artist", short: "Artist",
       rungs: [
         // artist-account posts from the Notion log; benchmark = tier benchmark
         // (median posts among completed campaigns in the same Referral Artist
@@ -664,11 +627,11 @@ export default function FunnelByChannel({ snap, horizon }) {
       ],
     },
     {
-      key: "search_direct_other", name: "Search / direct / other",
+      key: "search_direct_other", name: "Search / direct / other", short: "Direct etc.",
       rungs: [sess("search_direct_other"), conv("search_direct_other")],
     },
     {
-      key: "paid", name: "Paid",
+      key: "paid", name: "Paid", short: "Paid",
       rungs: [
         { label: "Spend", kind: "vol", unit: "eur", v: paid.spendToDate ?? null, plan: spendPlan, bm: spendBm,
           note: "Budget × share of days elapsed. The benchmark budget is the basket's paid spend on the same clock." },
@@ -678,13 +641,64 @@ export default function FunnelByChannel({ snap, horizon }) {
       ],
     },
   ];
+  return { targeted, groups, bench, k };
+}
+
+/* The tall card's funnel view: the groups stacked, one centre line behind them. */
+function RungStack({ m }) {
+  const { groups, bench, k } = m;
+  return (
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", gap: GROUP_GAP }}>
+        {/* One centre line behind every group, so the rungs read as one scale.
+            It has to sit on the middle of the TRACK column, not the middle of
+            the row: inset by the label and the delta plus their gaps. The
+            reference tone when there is a basket to name, neutral grey when
+            there is not. */}
+        <div style={{ position: "absolute", left: TRACK_L, right: TRACK_R, top: 0, bottom: 0, pointerEvents: "none" }}>
+          <div style={{
+            position: "absolute", left: "50%", top: 0, bottom: 0,
+            width: bench ? 1.5 : 1, marginLeft: bench ? -0.75 : -0.5,
+            background: bench ? C.refLine : GUIDE,
+          }} />
+        </div>
+        {groups.map((g) => (
+          <div key={g.name} style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
+            <div style={{ height: 24, flex: "0 0 24px", display: "flex", alignItems: "center" }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap" }}>{g.name}</div>
+            </div>
+            {g.rungs.map((raw) => {
+              const r = buildRung(raw, bench, k);
+              return <Rung key={r.label} r={r} bench={bench} />;
+            })}
+          </div>
+        ))}
+      </div>
+      <RungKey bench={bench} />
+    </div>
+  );
+}
+
+/* `horizon` is accepted and ignored: this card is always the Today horizon
+ * (BENCHMARK_SPEC 2), so the page toggle must not reach it. `only` pins one
+ * view and drops the toggle: the 2 × 2 card falls back to it when there is no
+ * walk to draw beside the rungs. */
+export default function FunnelByChannel({ snap, horizon, only }) {
+  const targeted = snap?.targeted !== false;
+  // waterfall leads when there is a plan to step from; without targets only the
+  // funnel's actual side exists
+  const home = only || (targeted ? "wf" : "funnel");
+  const [view, setView] = React.useState(home);
+  React.useEffect(() => setView(home), [snap?.id, home]);
+  const m = rungModel(snap);
+  const wf = view === "wf" ? buildWaterfall(snap, m.groups) : null;
 
   return (
     <Card
       tall
       dot={GROUP_DOTS.funnel}
       title="Funnel by channel"
-      right={targeted ? (
+      right={only ? null : targeted ? (
         <span className="seg">
           <button className={view === "funnel" ? "active" : ""} onClick={() => setView("funnel")}
             title="Each funnel metric as a deviation: target down the centre, benchmark as a dotted tick, actual as a dot">Funnel</button>
@@ -696,36 +710,242 @@ export default function FunnelByChannel({ snap, horizon }) {
       )}
     >
       <div className="spacer-16" />
-      {view === "wf" ? <FunnelWaterfall snap={snap} groups={groups} /> : (
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-        <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", gap: GROUP_GAP }}>
-          {/* One centre line behind every group, so the rungs read as one scale.
-              It has to sit on the middle of the TRACK column, not the middle of
-              the row: inset by the label and the delta plus their gaps. The
-              reference tone when there is a basket to name, neutral grey when
-              there is not. */}
-          <div style={{ position: "absolute", left: TRACK_L, right: TRACK_R, top: 0, bottom: 0, pointerEvents: "none" }}>
-            <div style={{
-              position: "absolute", left: "50%", top: 0, bottom: 0,
-              width: bench ? 1.5 : 1, marginLeft: bench ? -0.75 : -0.5,
-              background: bench ? C.refLine : GUIDE,
-            }} />
+      {view === "wf"
+        ? (wf ? <Walk wf={wf} layout={WALK_TALL} /> : <div className="empty-state">No funnel data yet</div>)
+        : <RungStack m={m} />}
+    </Card>
+  );
+}
+
+/* The 2 × 2 card: the waterfall and the funnel on the same rows, so a step's
+ * units and its stage's deviation read across one line with the label shared
+ * between them. The walk's rows lead; each finds its rung by label in its own
+ * group (the buyer row under All channels has a rung of its own), and a row
+ * the funnel has no rung for keeps its rung cells empty. The rung's centre
+ * line runs through the group rows only, never through the anchors, which are
+ * levels of the walk and not stages. Without a walk to draw - no targets, or
+ * no row with a reference yet - the card is the tall card's funnel view at
+ * this size. */
+
+/* ---- the waterfall view, in both cards -----------------------------------
+ * The walk opens at the benchmark, with the stretch beneath it as the band up
+ * to the target and the target's tick at its end, and steps down every
+ * channel's rows to the actual. Grey 1px drops carry the running level from
+ * each row to the next, so the walk reads as one line, as the outcome
+ * waterfall draws it (BENCHMARK_SPEC 9). The channels are blocks of rows
+ * rather than rows of their own: the 2 × 2 card names them in a column to
+ * the left and keeps a figure column, running the bars across the card on a
+ * unit axis; the tall card has neither column, so its row labels carry the
+ * channel where the label alone would not say it (Email sessions, Paid spend
+ * - the email chain's own stages and the release-level buyer row stand as they
+ * are), a row's figures are in its popup, on the bar or on its name, and the
+ * levels print theirs beside their label. Pointing at a name lights its bar
+ * and pointing at a bar lights its name; a channel's name lights every row it
+ * has. */
+const WALK_TALL = { group: 0, label: 172, delta: 0, gap: 8, axis: false };
+const WALK_WIDE = { group: 118, label: 112, delta: 56, gap: 10, axis: true, nameSize: 12.5 };
+const HOT_RING = "0 0 0 2px rgba(20,20,19,.35)";
+const HOT_DOT = "#a9a59a";
+/* labels that say which channel they are, or belong to no channel */
+const SELF_NAMED = new Set(["Delivered emails", "Open rate", "Click rate", "Sessions per click", "Units per buyer"]);
+const withChannel = (r) => (SELF_NAMED.has(r.label) || !r.short ? r.label : `${r.short} ${r.label[0].toLowerCase()}${r.label.slice(1)}`);
+
+/* The walk as blocks: the opening levels, one block per channel, the closing
+ * level. Every row carries the running level in and out, which is where its
+ * drops are drawn from and to. */
+function walkBlocks(wf) {
+  const { flat, expTotal, bmTotal, nowTotal, hasBm, words } = wf;
+  const open = hasBm ? [
+    { id: "bm", kind: "level", base: 26, label: words.bm, value: bmTotal, level: bmTotal, tip: bmTip(wf), color: C.refLine, dotted: true },
+    // the stretch: the band from the benchmark to the target, the target's tick
+    // at its end; the walk goes on from the benchmark
+    { id: "stretch", kind: "stretch", base: 24, label: "Stretch to target", from: bmTotal, to: expTotal, value: expTotal, level: bmTotal,
+      tip: wf.stretchTip, targetTip: targetTip(wf) },
+  ] : [
+    { id: "target", kind: "level", base: 26, label: words.target, value: expTotal, level: expTotal, tip: targetTip(wf), color: C.refLine },
+  ];
+  const groups = [];
+  for (const r of flat) {
+    if (r.header) { groups.push({ name: r.header, rows: [] }); continue; }
+    const g = groups[groups.length - 1];
+    const step = r.to !== undefined;
+    g.rows.push({ id: `${g.name}:${g.rows.length}`, group: g.name, kind: step ? "step" : "info", base: 24, r, level: step ? r.to : r.level, full: withChannel(r) });
+  }
+  const close = [{ id: "actual", kind: "level", base: 26, label: "Actual today", value: nowTotal, level: nowTotal, tip: actualTip(wf), color: C.blue }];
+  const all = [...open, ...groups.flatMap((g) => g.rows), ...close];
+  let lvl = null;
+  for (const row of all) { row.entry = lvl; lvl = row.level; row.exit = lvl; }
+  all[all.length - 1].exit = null;
+  return { open, groups, close };
+}
+
+/* the grey drops: from the level a row enters at down to its own mark, and
+ * from the level it leaves at down to the next row */
+function Drops({ entry, exit, X }) {
+  const line = (level, top, bottom) => (
+    <div style={{ position: "absolute", left: `${X(level)}%`, top, bottom, width: 1, marginLeft: -0.5, background: C.planGrey }} />
+  );
+  return (
+    <>
+      {entry !== null && entry !== undefined && line(entry, 0, "50%")}
+      {exit !== null && exit !== undefined && line(exit, "50%", 0)}
+    </>
+  );
+}
+
+/* the unit axis: a round step that gives the walk's range at most seven marks */
+function niceTicks([lo, hi]) {
+  const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000];
+  const step = steps.find((st) => (hi - lo) / st <= 7) || steps[steps.length - 1];
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) out.push(v);
+  return out;
+}
+
+function Walk({ wf, layout: L }) {
+  const tipApi = useTip();
+  const [hot, setHot] = React.useState(null);   // { row } or { group }: what the pointer is on
+  const { open, groups, close } = walkBlocks(wf);
+  const { X, hasBm } = wf;
+  // the columns: the channel name (2 × 2 only), the label, the track, the figure (2 × 2 only)
+  const cols = `${L.group ? `${L.group}px ` : ""}${L.label}px 1fr${L.delta ? ` ${L.delta}px` : ""}`;
+  const col = (n) => n + (L.group ? 1 : 0);   // n: 1 label, 2 track, 3 figure
+  const trackL = (L.group ? L.group + COL_GAP : 0) + L.label + COL_GAP, trackR = L.delta ? L.delta + COL_GAP : 0;
+  const lit = (row) => !!hot && ((hot.row !== undefined && hot.row === row.id) || (hot.group !== undefined && hot.group === row.group));
+  // the popup and the highlight from one pair of handlers
+  const point = (at, tip) => {
+    const t = tipApi.props(tip);
+    return {
+      onMouseEnter: (e) => { setHot(at); if (t.onMouseEnter) t.onMouseEnter(e); },
+      onMouseLeave: (e) => { setHot(null); if (t.onMouseLeave) t.onMouseLeave(e); },
+    };
+  };
+  const grid = (base, gap = 0) => ({
+    flex: `${base + gap} 1 ${base + gap}px`, minHeight: 0, paddingTop: gap,
+    display: "grid", gridTemplateColumns: cols, columnGap: COL_GAP, alignItems: "center",
+  });
+  const bar = (row, from, to, color, tip) => (
+    <div {...point({ row: row.id }, tip)} style={{
+      position: "absolute", top: BAR_INSET, bottom: BAR_INSET,
+      left: `${X(Math.min(from, to))}%`, width: `${Math.max(1.2, Math.abs(X(to) - X(from)))}%`,
+      background: color, borderRadius: 3, boxShadow: lit(row) ? HOT_RING : "none",
+    }} />
+  );
+  const tick = (value, color, dotted, tip) => (
+    <div style={{ position: "absolute", left: 0, right: 0, top: "50%", marginTop: -7, height: 14 }}>
+      <Tick pct={X(value)} color={color} dotted={dotted} tip={tip} />
+    </div>
+  );
+
+  // a level, or the stretch, on a row of its own: the label spans the name and
+  // the label columns, and carries the figure where there is no column for it
+  const levelRow = (row, gap = 0) => {
+    const stretch = row.kind === "stretch";
+    const v = fmt(row.value);
+    return (
+      <div key={row.id} style={grid(row.base, gap)}>
+        <div {...point({ row: row.id }, row.tip)} style={{
+          gridColumn: L.group ? "1 / 3" : "1", overflow: "hidden", textOverflow: "ellipsis",
+          ...(stretch ? { fontSize: 12, color: C.muted, whiteSpace: "nowrap" } : ANCHOR_LABEL),
+        }}>
+          {row.label}
+          {!L.delta && <span className="num" style={{ fontWeight: 600, color: C.ink, marginLeft: 6 }}>{v}</span>}
+        </div>
+        <div style={{ position: "relative", alignSelf: "stretch" }}>
+          <Drops entry={row.entry} exit={row.exit} X={X} />
+          {stretch ? (
+            <>
+              {bar(row, row.from, row.to, C.refStretch, row.tip)}
+              {tick(row.to, C.refLine, false, row.targetTip)}
+            </>
+          ) : tick(row.value, row.color, !!row.dotted, row.tip)}
+        </div>
+        {L.delta ? <div className="num" style={ANCHOR_NUM}>{v}</div> : null}
+      </div>
+    );
+  };
+
+  // one channel: its rows share the block's height in proportion to their base
+  // heights, its name at the top left where the layout has a column for it
+  const channelBlock = (g) => {
+    const sum = g.rows.reduce((a, r) => a + r.base, 0);
+    return (
+      <div key={g.name} style={{ ...grid(sum, L.gap), gridTemplateRows: g.rows.map((r) => `minmax(0, ${r.base}fr)`).join(" ") }}>
+        {L.group ? (
+          <div {...point({ group: g.name }, null)} style={{
+            gridColumn: 1, gridRow: "1 / -1", alignSelf: "start", paddingTop: 4,
+            fontSize: L.nameSize, fontWeight: 600, lineHeight: 1.25,
+          }}>
+            {g.name}
           </div>
-          {groups.map((g) => (
-            <div key={g.name} style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
-              <div style={{ height: 24, flex: "0 0 24px", display: "flex", alignItems: "center" }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap" }}>{g.name}</div>
+        ) : null}
+        {g.rows.map((row, i) => {
+          const r = row.r, step = row.kind === "step", on = lit(row);
+          // the popup names the row in full, whichever card it is on
+          const tip = { ...(step ? stepTip(r, hasBm) : infoTip(r)), head: row.full };
+          const at = { gridRow: i + 1 };
+          return (
+            <React.Fragment key={row.id}>
+              <div {...point({ row: row.id }, tip)} style={{ ...at, gridColumn: col(1), ...ROW_LABEL, color: on ? C.ink : C.muted }}>
+                {L.group ? r.label : row.full}
               </div>
-              {g.rungs.map((raw) => {
-                const r = buildRung(raw, bench, k);
-                return <Rung key={r.label} r={r} bench={bench} />;
-              })}
-            </div>
+              <div style={{ ...at, gridColumn: col(2), position: "relative", alignSelf: "stretch" }}>
+                <Drops entry={row.entry} exit={row.exit} X={X} />
+                {step ? bar(row, r.from, r.to, r.value >= 0 ? C.wfGreen : C.red, tip) : (
+                  <div {...point({ row: row.id }, tip)} style={{
+                    position: "absolute", left: `${X(r.level)}%`, top: "50%", marginTop: -5, width: 10, height: 10, marginLeft: -5,
+                    borderRadius: "50%", background: on ? HOT_DOT : NEUTRAL_DOT, boxShadow: RING,
+                  }} />
+                )}
+              </div>
+              {L.delta ? (
+                <div className="num" style={{ ...at, gridColumn: col(3), ...ROW_NUM, color: step ? (r.value >= 0 ? C.green : C.red) : C.muted }}>
+                  {step ? fmtSigned(r.value, 1) : (r.display ?? "–")}
+                </div>
+              ) : null}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const ticks = L.axis ? niceTicks(wf.domain) : [];
+  return (
+    <>
+      <div style={FIT}>
+        {L.axis && (
+          <div style={{ position: "absolute", left: trackL, right: trackR, top: 0, bottom: 0, pointerEvents: "none" }}>
+            {ticks.map((t) => <div key={t} style={{ position: "absolute", left: `${X(t)}%`, top: 0, bottom: 0, width: 1, background: C.track }} />)}
+          </div>
+        )}
+        {open.map((row) => levelRow(row))}
+        {groups.map(channelBlock)}
+        {close.map((row) => levelRow(row, L.gap))}
+      </div>
+      {L.axis && (
+        <div style={{ flex: "0 0 18px", position: "relative", marginLeft: trackL, marginRight: trackR, fontSize: 11, color: C.muted }}>
+          {ticks.map((t) => (
+            <span key={t} className="num" style={{ position: "absolute", left: `${X(t)}%`, top: 4, transform: "translateX(-50%)" }}>{fmt(t)}</span>
           ))}
         </div>
-        <RungKey bench={bench} />
-      </div>
       )}
+    </>
+  );
+}
+
+/* The 2 × 2 card: the waterfall view with two columns by two rows of room.
+ * Without a walk to draw - no targets, or no row with a reference yet - it is
+ * the tall card's funnel view at this size. */
+export function FunnelByChannelWide({ snap }) {
+  const m = rungModel(snap);
+  const wf = m.targeted ? buildWaterfall(snap, m.groups) : null;
+  if (!wf) return <FunnelByChannel snap={snap} only="funnel" />;
+  return (
+    <Card dot={GROUP_DOTS.funnel} title="Funnel by channel"
+      right={<span style={{ fontSize: 11.5, color: C.muted }}>waterfall · secured units, day {wf.day}</span>}>
+      <div className="spacer-16" />
+      <Walk wf={wf} layout={WALK_WIDE} />
     </Card>
   );
 }

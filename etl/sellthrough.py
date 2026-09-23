@@ -8,16 +8,24 @@ the other.
 A release runs one draw per product. An entrant who enters several draws but
 wants fewer pieces than they entered for is one conversion on their maximum
 quantity of products, not on all of them, and the allocator resolves which at
-close by awarding the least-demanded of their products. This module counts the
-entries in hand the same way before close:
+close for revenue: the priciest of their products with a unit left. This
+module counts the entries in hand the same way before close:
 
   appetite = max quantity - pieces already bought (no cap: all they entered)
-  unpaid wins are pinned to their product first; the appetite left goes to
+  unpaid wins spend the appetite first but count no units: a winner who has
+  not paid is a draft when an advisor has an order out for them, and nowhere
+  otherwise. The appetite left goes to
   the open entries. An entrant whose appetite covers every open entry counts
   once on each; one whose appetite is smaller is FLEXIBLE and is placed one
-  unit at a time on the product with the lowest fill (sold + counted so far
-  at the rate, over the edition; plain units when editions are not all
-  known), taken from the flexible entrant with the fewest other options.
+  unit at a time for revenue: on the priciest product that still has room
+  at the rate (one more counted unit fits the edition), the lowest fill
+  (sold + counted so far at the rate, over the edition) among equal prices,
+  and only once every product is full on the lowest fill, so oversubscription
+  spreads evenly; taken from the flexible entrant with the fewest other
+  options. Prices are the list prices the orders feed carries: a product
+  without one takes the median of the others, with none at all the rule is
+  fill alone, and when editions are not all known there is no room to judge,
+  so the rule is plain units.
 
 Inputs are aggregate PATTERNS - how many entrants share this combination of
 open entries, unpaid wins, paid wins, pieces bought and maximum quantity - so
@@ -28,6 +36,7 @@ against, so oversubscription stays visible.
 from __future__ import annotations
 
 import math
+import re
 
 
 def _finite(v) -> bool:
@@ -48,9 +57,17 @@ def _product_sets(products: list[dict]):
     return to_set
 
 
-def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0.8) -> dict:
+def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0.8,
+                     preorder_rate: float | None = None) -> dict:
     n_products = len(products)
     r = float(rate) if _finite(rate) else 0.8
+    # a pre-order entry has the card already authorised, so it converts at its
+    # own rate: the product's when one is typed, else the release's, else the
+    # plain entry rate
+    def _rate(v, fallback: float) -> float:
+        return float(v) if _finite(v) and 0 < float(v) <= 1 else fallback
+    pre_default = _rate(preorder_rate, r)
+    pre_rates = [_rate(p.get("preorderRate"), pre_default) for p in products]
     # sold and drafts both take room out of the edition
     sold = [float(p.get("sold") or 0) + (float(p["drafts"]) if _finite(p.get("drafts")) else 0.0) for p in products]
     editions = [float(p["edition"]) if _finite(p.get("edition")) and float(p["edition"]) > 0 else None
@@ -64,12 +81,53 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
     won_people = [0] * n_products
     to_set = _product_sets(products)
 
+    # the units counted on a product: fixed and flexible entries. Unpaid wins
+    # are tracked as `pinned` (they spend the winner's appetite) but count
+    # nothing: a winner who has not paid is in the drafts when an advisor has
+    # an order out for them, and nowhere otherwise
     def total(i: int) -> int:
-        return pinned[i] + fixed[i] + flexible[i]
+        return fixed[i] + flexible[i]
+
+    # the orders those entries are expected to become: each at its own rate,
+    # so a product's prediction is the sum and not a count times one rate
+    pred = [0.0] * n_products
 
     def fill(i: int) -> float:
-        v = sold[i] + r * total(i)
+        v = sold[i] + pred[i]
         return v / editions[i] if by_fill else v
+
+    # list prices for the revenue rule: a product without one takes the median
+    # of the others; with none at all every price is 0 and fill decides
+    def price_of(p):
+        return float(p["listPrice"]) if _finite(p.get("listPrice")) and float(p["listPrice"]) > 0 else None
+    known = sorted(v for v in (price_of(p) for p in products) if v is not None)
+    median_price = known[len(known) // 2] if known else 0.0
+    prices = [price_of(p) if price_of(p) is not None else median_price for p in products]
+
+    def has_room(i: int) -> bool:
+        # one more counted unit, at the larger of the two rates, still fits
+        return sold[i] + pred[i] + max(r, pre_rates[i]) <= editions[i] + 1e-9
+
+    def better(i: int, best: int) -> bool:
+        # where the next flexible unit goes: revenue first, then fill
+        if by_fill:
+            ri, rb = has_room(i), has_room(best)
+            if ri != rb:
+                return ri
+            if ri and abs(prices[i] - prices[best]) > 1e-9:
+                return prices[i] > prices[best]
+        fi, fb = fill(i), fill(best)
+        if abs(fi - fb) > 1e-12:
+            return fi < fb
+        ti, tb = total(i), total(best)
+        if ti != tb:
+            return ti < tb
+        return i < best
+
+    pre_sets: list[set] = []
+
+    def rate_at(i: int, pre: set) -> float:
+        return pre_rates[i] if i in pre else r
 
     entrants = flexible_entrants = surplus = uncapped = unpaid_winners = 0
     subs: list[dict] = []
@@ -81,6 +139,10 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
         entrants += n
         won = to_set(pat.get("won"))
         sold_set = to_set(pat.get("sold"))
+        pre_set = set(to_set(pat.get("pre")))
+        while len(pre_sets) <= pi:
+            pre_sets.append(set())
+        pre_sets[pi] = pre_set
         won_set = set(won)
         open_ = [i for i in to_set(pat.get("open")) if i not in won_set and i not in sold_set]
         for i in open_:
@@ -109,6 +171,7 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
         if appetite >= len(open_):
             for i in open_:
                 fixed[i] += n
+                pred[i] += n * rate_at(i, pre_set)
             continue
         flexible_entrants += n
         surplus += n * (len(open_) - int(appetite))
@@ -120,13 +183,12 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
 
     index = {key_of(s): s for s in subs}
     while True:
-        best, best_fill, best_total = -1, 0.0, 0
+        best = -1
         for i in range(n_products):
             if not any(s["n"] > 0 and s["need"] > 0 and i in s["options"] for s in subs):
                 continue
-            f, t = fill(i), total(i)
-            if best < 0 or f < best_fill - 1e-12 or (abs(f - best_fill) <= 1e-12 and (t < best_total or (t == best_total and i < best))):
-                best, best_fill, best_total = i, f, t
+            if best < 0 or better(i, best):
+                best = i
         if best < 0:
             break
         pick = None
@@ -143,6 +205,7 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
             pinned[best] += 1
         else:
             flexible[best] += 1
+            pred[best] += rate_at(best, pre_sets[pick["pattern"]])
         rest = [i for i in pick["options"] if i != best]
         need = pick["need"] - 1
         if need > 0 and rest:
@@ -158,14 +221,14 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
     out = []
     for i, p in enumerate(products):
         allocated = total(i)
-        predicted = allocated * r
+        predicted = pred[i]
         room = None if editions[i] is None else max(editions[i] - sold[i], 0.0)
         shown = predicted if room is None else min(predicted, room)
         out.append({"key": p.get("key"), "allocated": allocated, "pinned": pinned[i], "fixed": fixed[i],
                     "flexible": flexible[i], "inHand": {"open": open_people[i], "won": won_people[i]},
                     "predicted": predicted, "shown": shown, "room": room,
                     "oversubscribed": 0.0 if room is None else max(predicted - room, 0.0)})
-    return {"rate": r, "measure": "fill" if by_fill else "units", "products": out,
+    return {"rate": r, "preorderRate": pre_default, "measure": "fill" if by_fill else "units", "products": out,
             "entrants": entrants, "flexibleEntrants": flexible_entrants, "surplusEntries": surplus,
             "uncapped": uncapped, "unpaidWinners": unpaid_winners}
 
@@ -180,7 +243,7 @@ def _r4(v: float) -> float:
 
 def sell_through_products(products: list[dict], patterns: list[dict], rate: float = 0.8, edition=None,
                           sold_total=None, future_units: float = 0.0, expected_today=None,
-                          benchmark_today=None, benchmark_close=None) -> dict:
+                          benchmark_today=None, benchmark_close=None, preorder_rate=None) -> dict:
     """The per-product block the card reads (mirror of sellThroughProducts)."""
     attributed = sum(float(p.get("sold") or 0) for p in products)
     sold_all = max(float(sold_total), attributed) if _finite(sold_total) else attributed
@@ -196,7 +259,7 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
     assumed = [unattributed * (weights[i] / w_sum if w_sum > 0 else 1.0 / len(products)) if unattributed > 0 else 0.0
                for i in range(len(products))]
     with_assumed = [{**p, "sold": float(p.get("sold") or 0) + assumed[i]} for i, p in enumerate(products)]
-    alloc = allocate_entries(with_assumed, patterns, rate)
+    alloc = allocate_entries(with_assumed, patterns, rate, preorder_rate)
     future = max(float(future_units or 0), 0.0)
     room_after = [None if a["room"] is None else max(a["room"] - a["shown"], 0.0) for a in alloc["products"]]
     room_sum = sum(room_after) if all_editions else None
@@ -229,6 +292,8 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
             "key": p.get("key"), "name": p.get("name"), "draws": p.get("draws") or [], "edition": e,
             "entrants": p.get("entrants"), "inHand": a["inHand"],
             "sold": s, "soldAssumed": _r1(assumed[i]), "drafts": float(p["drafts"]) if _finite(p.get("drafts")) else None,
+            "winnerDrafts": float(p["winnerDrafts"]) if _finite(p.get("winnerDrafts")) else None,
+            "winnerDraftsLapsed": float(p["winnerDraftsLapsed"]) if _finite(p.get("winnerDraftsLapsed")) else None,
             "allocated": a["allocated"], "pinned": a["pinned"], "fixed": a["fixed"], "flexible": a["flexible"],
             "predicted": _r1(a["predicted"]), "shown": _r1(a["shown"]), "room": a["room"],
             "oversubscribed": _r1(a["oversubscribed"]),
@@ -262,6 +327,89 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
     }
 
 
+_DEFAULT_NAME = re.compile(r"^Draw \d+$")
+
+
+def _draft_count(r: dict) -> float:
+    """A product's drafts as the card counts them: the draft lines a person
+    raised that are not the payment step of a live entry - the way the sales
+    team counts its own drafts."""
+    return float(r.get("drafts") or 0)
+
+
+def _cap_drafts(drafts: float, edition, sold: float) -> float:
+    """Drafts never claim more than the room left on the product: offers out
+    past the edition are offers, not sales in waiting."""
+    if _finite(edition) and float(edition) > 0:
+        return max(min(drafts, float(edition) - float(sold)), 0.0)
+    return drafts
+
+
+def attach_orders(products: list[dict], orders: dict | None, draw_products: dict | None, source: str) -> tuple[list[dict], str]:
+    """Sales and draft orders per product from the orders feed (docs #6.3;
+    shared/sellThrough.mjs attachOrders is the same rule).
+
+    `orders` is {product title: {unitsPaid, drafts, listPrice, edition}} and
+    `draw_products` {draw id: product title}, the product a draw's winners
+    bought. A product whose draws name a title takes that title's paid units
+    as sold and its orders awaiting payment as drafts, and the title as its
+    name where nobody typed one; a title already taken by an earlier product
+    is not taken twice. Titles no draw names are added as products of their
+    own only once every draw is named, because before that they are
+    ambiguous and stay at release level. Returns the products and the sold
+    source: "orders" once every product has its sales from the feed.
+    """
+    if not orders:
+        return products, source
+    dp = {str(k): v for k, v in (draw_products or {}).items()}
+    used: set[str] = set()
+    all_named = True
+    out = []
+    for p in products:
+        titles = []
+        for d in p.get("draws") or []:
+            t = dp.get(str(d))
+            if t and t in orders and t not in titles and t not in used:
+                titles.append(t)
+        if not titles:
+            all_named = False
+            out.append(dict(p))
+            continue
+        used.update(titles)
+        rows = [orders[t] for t in titles]
+        q = dict(p)
+        q["sold"] = float(sum(float(r.get("unitsPaid") or 0) for r in rows))
+        q["drafts"] = float(sum(_draft_count(r) for r in rows))
+        if not q.get("name") or _DEFAULT_NAME.match(str(q["name"])):
+            q["name"] = " / ".join(titles)
+        if not (_finite(q.get("edition")) and float(q["edition"]) > 0):
+            eds = [float(r["edition"]) for r in rows if _finite(r.get("edition")) and float(r["edition"]) > 0]
+            if eds and len(eds) == len(rows):
+                q["edition"] = int(round(sum(eds)))
+        q["drafts"] = _cap_drafts(q["drafts"], q.get("edition"), q["sold"])
+        q["winnerDrafts"] = float(sum(float(r.get("winnerDrafts") or 0) for r in rows))
+        q["winnerDraftsLapsed"] = float(sum(float(r.get("winnerDraftsLapsed") or 0) for r in rows))
+        prices = [float(r["listPrice"]) for r in rows if _finite(r.get("listPrice"))]
+        if prices:
+            q["listPrice"] = max(prices)
+        q["titles"] = titles
+        out.append(q)
+    if all_named:
+        for t, r in orders.items():
+            if t in used:
+                continue
+            if not (float(r.get("unitsPaid") or 0) > 0 or float(r.get("drafts") or 0) > 0):
+                continue
+            ed = int(round(float(r["edition"]))) if _finite(r.get("edition")) and float(r["edition"]) > 0 else None
+            sold = float(r.get("unitsPaid") or 0)
+            extra = {"key": f"p:{t}", "name": t, "edition": ed, "draws": [], "sold": sold,
+                     "entrants": 0, "drafts": _cap_drafts(float(_draft_count(r)), ed, sold), "titles": [t]}
+            if _finite(r.get("listPrice")):
+                extra["listPrice"] = float(r["listPrice"])
+            out.append(extra)
+    return out, ("orders" if all_named else source)
+
+
 def products_from_draws(draws: list[dict], configured, edition_size=None) -> tuple[list[dict], str]:
     """The products of a release from the draws the feed found and what was
     typed against them (mirror of productsFromDraws): one draw per product,
@@ -284,10 +432,14 @@ def products_from_draws(draws: list[dict], configured, edition_size=None) -> tup
         g = groups.get(name)
         if g is None:
             g = {"key": str(d.get("id")), "name": name, "edition": edition, "draws": [], "sold": 0,
-                 "entrants": 0, "drafts": None}
+                 "entrants": 0, "drafts": None, "preorderRate": None}
             groups[name] = g
         if g["edition"] is None and edition is not None:
             g["edition"] = edition
+        # a product can convert its pre-orders at its own rate (a draw already
+        # run, say), typed on the Target setting tab; else the release's
+        if g.get("preorderRate") is None and c is not None and _finite(c.get("preorderRate")):
+            g["preorderRate"] = float(c["preorderRate"])
         g["draws"].append(str(d.get("id")))
         g["sold"] += float(d.get("purchaseUnits") or 0) if tagged else float(d.get("sold") or 0)
         g["entrants"] += int(d.get("eligible") or 0)

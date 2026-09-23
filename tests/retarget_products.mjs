@@ -63,5 +63,15 @@ delete bare.sellthrough.draws; delete bare.sellthrough.patterns;
 const out2 = retargetSnapshot(bare, { ...inputs, entry_conversion_rate: 0.5 }, inputsDoc.benchmarks, curves, computeTargets, sellThrough);
 check(out2.sellthrough.products === undefined, "no products without the feed");
 check(out2.sellthrough.soldPredicted === Math.min(25, Math.max(150 - out2.sellthrough.sold, 0)), `in hand at 50%: ${out2.sellthrough.soldPredicted}`);
+// a target that is only part of the edition: the caps and the sell-through read the whole
+// edition, the target stays the target, and the snapshot carries both
+const wide = retargetSnapshot(JSON.parse(JSON.stringify(snap)), { ...inputs, edition_total: 450 }, inputsDoc.benchmarks, curves, computeTargets, sellThrough);
+check(wide.edition && wide.edition.target === 150 && wide.edition.total === 450, `edition target/total ${JSON.stringify(wide.edition)}`);
+check(wide.sellthrough.edition === 450, `sell-through reads the whole edition: ${wide.sellthrough.edition}`);
+check(wide.hero.target === out.hero.target, "the hero target is unchanged by the total");
+check(wide.sellthrough.editionMismatch === true, "the products' 150 no longer matches the whole edition");
+const same = retargetSnapshot(JSON.parse(JSON.stringify(snap)), { ...inputs, edition_total: 100 }, inputsDoc.benchmarks, curves, computeTargets, sellThrough);
+check(same.edition.total === 150 && same.sellthrough.edition === 150, "a total below the target is ignored");
+
 console.log(failed ? `${failed} failure(s)` : "ok: retarget re-runs the per-product rule");
 process.exit(failed ? 1 : 0);

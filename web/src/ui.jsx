@@ -1,8 +1,8 @@
 /* Shared primitives for dashboard modules.
  * Chart conventions (design handoff, final - the "G" board of Target and
  * Benchmark Together):
- *  actual = solid #eb6834 · projection = #f2a07f · overshoot = 135° hatch
- *  target = the fill, in two tints of the actual's own orange: the darker from
+ *  actual = solid #4f80d6 · projection = #a3bfeb · overshoot = 135° hatch
+ *  target = the fill, in two tints of the actual's own blue: the darker from
  *           zero to whichever of target and benchmark is lower, the lighter from
  *           the benchmark up to the target when the target is the higher
  *  benchmark = a dotted outline of the column it would make, drawn over the
@@ -80,25 +80,27 @@ export function useTip() {
 
 
 export const C = {
-  // orangeLight is the projection: the same orange at less than full strength,
-  // because a projection is the actual's own quantity not yet earned. It was a
-  // paler #f7c4ad while the reference was a blue mark; now the references are
-  // tints of this same orange sitting directly behind it, and two pale oranges
-  // one in front of the other told the reader nothing. Deep enough to read as
-  // orange against the reference tints, light enough never to pass for the solid.
-  orange: "#eb6834", orangeLight: "#f2a07f", rust: "#8f3415",
+  // The page's hue: one blue, at the strengths a reading needs. blue is the
+  // actual on every bar and line. blueLight is the projection: the same blue
+  // at less than full strength, because a projection is the actual's own
+  // quantity not yet earned - deep enough to read as blue against the
+  // reference tints sitting directly behind it, light enough never to pass
+  // for the solid. blueDeep is what is most certain, the units paid on the
+  // sell-through card. The hue was an orange until September 2026; every
+  // token kept its role.
+  blue: "#4f80d6", blueLight: "#a3bfeb", blueDeep: "#2f5fb3",
   track: "#ece9e1", ink: "#141413", muted: "#6c6b68", hairline: "#f2f0ea",
   planGrey: "#c8c5bc", targetLine: "#b8b3a6", border: "#e5e4df",
   green: "#0f7052", amber: "#8a5f00", red: "#b8461d", wfGreen: "#2f7d3f",
-  periwinkle: "#a5b6e3", todayLine: "#eeece5", white: "#fffefb",
-  // The two references, in one hue - tints of the actual's own orange, so they
+  todayLine: "#eeece5", white: "#fffefb",
+  // The two references, in one hue - tints of the actual's own blue, so they
   // read as the same measurement at other weights rather than as systems of
   // their own. refBase is the ground both agree on: the fill from zero to
   // whichever is lower. refStretch is the target's extra above the benchmark.
   // refLine is the benchmark's own mark, the dotted outline, a step darker than
   // either tint so it reads on both. refTrack carries a bar's remaining room
   // out to the sellout.
-  refBase: "#f8ccba", refStretch: "#f8ddd0", refLine: "#ea8f66", refTrack: "#faf7f4",
+  refBase: "#d9e4f7", refStretch: "#e6eefa", refLine: "#7fa2e0", refTrack: "#f3f6fc",
 };
 
 /* What the two references are called on a card, so no two cards name them
@@ -111,11 +113,37 @@ export function refWords(horizon) {
   };
 }
 
+/* The same two references named plainly, for a card that wears the horizon
+   badge: the lozenge beside the title already says which horizon is being
+   read, so repeating "today" on every row is noise. The cards that read one
+   fixed horizon and carry no badge keep refWords and the word with it. */
+export const BADGE_WORDS = { target: "Target", bm: "Benchmark" };
+
+/* The horizon a card is reading, as a chip beside its title. The cards that
+   answer the page's Today / At close toggle wear it, so the words inside them
+   do not have to repeat which horizon they are on. */
+export function HorizonBadge({ horizon }) {
+  const close = horizon === "close";
+  return (
+    <Lozenge color="neutral" tip={close
+      ? "This card is reading the projection at close. The page's Compare toggle switches it."
+      : "This card is reading where the release is today. The page's Compare toggle switches it."}>
+      {close ? "At close" : "Today"}
+    </Lozenge>
+  );
+}
+
 export const GROUP_DOTS = {
-  volume: "#b8862d", funnel: "#4f6fc0", paid: "#eb6834", outcome: "#8a7a52",
+  volume: "#b8862d", funnel: "#4f80d6", paid: "#eb6834", outcome: "#8a7a52",
 };
 
 export const MINUS = "−";
+
+/* Days of the window seen so far, with the part day counted for the share of
+ * it observed (snapshot asOfFraction; 1 on a full day and once the window has
+ * closed). The pro-rata references - the budget by today, the posts by today -
+ * read this rather than `day`, which is the day in progress. */
+export const dayElapsed = (snap) => Math.max(0, (snap?.day ?? 0) - (1 - (snap?.asOfFraction ?? 1)));
 
 export function fmt(n, digits = 0) {
   if (n === null || n === undefined || Number.isNaN(n)) return "–";
@@ -153,12 +181,13 @@ export function ragColor(pct) {
   return C.red;
 }
 
-export function Card({ tall, wide, dot, title, right, children, style }) {
+export function Card({ tall, wide, dot, title, badge, right, children, style }) {
   return (
     <div className={`card${tall ? " tall" : ""}${wide ? " wide" : ""}`} style={style}>
       <div className="mod-head">
         <span className="gdot" style={{ background: dot }} />
         <span className="title">{title}</span>
+        {badge || null}
         {right ? <span className="right">{right}</span> : null}
       </div>
       {children}
@@ -174,7 +203,7 @@ export function QBadge({ tip, content }) {
 
 /* The 135° overshoot hatch, shared so the hero legend swatch and the bar itself
  * are cut from the same cloth. */
-export const HATCH = `repeating-linear-gradient(135deg, ${C.orange} 0 1.5px, ${C.orangeLight} 1.5px 5px)`;
+export const HATCH = `repeating-linear-gradient(135deg, ${C.blue} 0 1.5px, ${C.blueLight} 1.5px 5px)`;
 
 /* The live width of an element. Label collision is a pixel question, never a
  * fraction one - two labels 20% apart are comfortable on a wide card and on top
@@ -363,7 +392,7 @@ export function BmOutline({ pct, column = false, inset = "0px", radius = 4 }) {
 /* Horizontal bar with both references and the actual. The fill is the target,
  * darker from zero to whichever of target and benchmark is lower and lighter
  * from the benchmark up to the target when the target is the higher; the
- * benchmark is the dotted outline over it; the actual is the narrower orange
+ * benchmark is the dotted outline over it; the actual is the narrower blue
  * bar in front. A release with no basket has no `bm`, and then the fill is one
  * tint to the target and there is no outline.
  *
@@ -378,7 +407,7 @@ export function BmOutline({ pct, column = false, inset = "0px", radius = 4 }) {
  * outline -> projected fill -> to-date fill -> over-target hatch. The actual is
  * inset top and bottom so the tints still show on both sides of it. */
 export function TrackBar({
-  now, proj, target, bm, full, hatchFrom, height = 20, radius = 4, tips = {},
+  now, proj, target, bm, full, hatchFrom, height = 20, radius = 4, tips = {}, projColor = C.blueLight,
 }) {
   const t = useTip();
   const tp = (x) => t.props(typeof x === "string" ? { head: x } : x);
@@ -427,11 +456,11 @@ export function TrackBar({
       {hasBm && bm > 0 && <BmOutline pct={pct(bm)} radius={radius} />}
       <div {...tp(tips.proj)} style={{
         position: "absolute", top: inset, bottom: inset, left: 0, width: `${projW}%`,
-        background: C.orangeLight, borderRadius: innerR,
+        background: projColor, borderRadius: innerR,
       }} />
       <div {...tp(tips.now)} style={{
         position: "absolute", top: inset, bottom: inset, left: 0, width: `${nowW}%`,
-        background: C.orange, borderRadius: innerR,
+        background: C.blue, borderRadius: innerR,
       }} />
       {showHatch && (
         <div {...tp(tips.overshoot)} style={{
@@ -500,7 +529,7 @@ export function RungTrack({ dev, bmPos, up, neutral, guide, bench = true }) {
       <div style={{
         position: "absolute", left: `${neutral ? 50 : dev}%`, top: 1,
         width: 10, height: 10, marginLeft: -5, borderRadius: "50%",
-        background: neutral ? "#c8c5bc" : up ? C.orange : C.red,
+        background: neutral ? "#c8c5bc" : up ? C.blue : C.red,
         boxShadow: "0 0 0 1px rgba(20,20,19,.45)",
       }} />
     </div>
@@ -519,7 +548,7 @@ export function RungKey({ bench = true }) {
       <span style={item}>
         <span style={{
           width: 10, height: 10, borderRadius: "50%", flex: "0 0 10px",
-          background: C.orange, boxShadow: "0 0 0 1px rgba(20,20,19,.45)",
+          background: C.blue, boxShadow: "0 0 0 1px rgba(20,20,19,.45)",
         }} />
         Actual
       </span>
@@ -541,7 +570,8 @@ export function RungKey({ bench = true }) {
 export function Lozenge({ dir, children, tip, content, color }) {
   const t = useTip();
   const cls = color || (dir === "up" ? "up" : dir === "down" ? "down" : "neutral");
-  if (content) return <span className={`lozenge ${cls}`} {...t.props(content)}>{children}</span>;
+  // a lozenge with a popup behind it says so with the cursor, as titled elements do
+  if (content) return <span className={`lozenge ${cls}`} style={{ cursor: "help" }} {...t.props(content)}>{children}</span>;
   return <span className={`lozenge ${cls}`} title={tip}>{children}</span>;
 }
 

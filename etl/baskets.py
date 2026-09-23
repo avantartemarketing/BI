@@ -71,7 +71,11 @@ GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "pa
 
 READY_WINDOW_DAYS = 365   # "last 12 months" for the all_12m basket
 MIN_MEMBERS = 3           # below this a basket cannot be used at all (§3.2)
-THIN_MEMBERS = 10         # below this it is usable but flagged as thin
+# Below this a basket is usable but flagged as thin. It was ten, which the
+# rule now never reaches: the measure is how far the median moves when one
+# member is dropped, and over the draw panel that is 2.8% at eight, 3.3% at
+# six and 4.8% at four. Six is where it starts to climb, so six is the flag.
+THIN_MEMBERS = 6
 
 # Cluster names come from the panel's own cluster_name column so the picker and
 # the analysis write-up never drift apart. Cluster 2's analysis name carries the
@@ -103,24 +107,54 @@ SIMILAR_NAME = "Similar size and shape"
 # launches to take a median over, and dropping the shape constraint before it
 # gives up on scale. Scale is the harder constraint because every headline
 # number on the page is a volume.
-SIMILAR_FACTORS = (2.0, 2.5, 3.0, 4.0)
-SIMILAR_MIN = 8           # a band narrower than this is too few to median over
+# The basket is the SIMILAR_N launches nearest this one, and nothing else. A
+# widening band picked a set whose size nobody chose - Warhol got six, Zeng
+# Fanzhi twenty-three - and leave-one-out over the 106 priced draw launches
+# says the size is what matters and smaller is better: the band rule predicts
+# units to a median error of x1.31 (72% within 1.5x), the eight nearest to
+# x1.21 (83%), and it degrades steadily from there - twelve x1.23, twenty
+# x1.24, forty-five x1.32, worse than the rule it replaced. A paired bootstrap
+# puts eight ahead of twelve in 96% of resamples and ahead of forty-five in
+# all of them.
+#
+# It cannot separate four, six, eight and ten, so the count is settled on
+# steadiness instead: dropping one member moves the median 4.8% at four, 3.3%
+# at six, 2.8% at eight and 2.2% at twelve. Eight is where accuracy has
+# stopped improving and steadiness is still cheap, which matters because the
+# picker's whole interaction is ticking members in and out.
+SIMILAR_N = 8
 SCALE_MISMATCH_FACTOR = 4.0   # beyond this the basket is not a comparable at all
 
-# The price band. The panel carries every draw launch's unit price from
-# Airtable (etl/pricing.py, unit_price_gbp), and the default basket can match
-# on it the way it matches on size: a band around this edition's price in log
-# space, widened through SIMILAR_FACTORS only as far as it must. Whether it
-# should is an empirical question - does price predict the metrics the
-# benchmark reads, over and above size? - answered by
-# etl/analysis/price_probe.py and recorded in docs/BENCHMARK_SPEC.md §3.1.
-# SIMILAR_USE_PRICE is that answer; with it off the price range is still
-# profiled and shown in the picker, it just does not decide membership.
-# SIMILAR_RUNGS is the order the constraints are given up in, each rung a
-# (shape, price) pair on top of the size band that is on every rung: the
-# probe compares the orders by leave-one-out benchmark error.
+# The artist's own earlier launches go into the basket first - there is no
+# better comparable than the same artist's last draw - unless one of them is
+# further than OWN_MAX away on either axis, when it is a different kind of
+# launch and takes its chances with everything else.
+OWN_MAX = 3.0
+# "Prefer recent" (release input prefer_recent, on by default) ranks launches
+# closed in the last RECENT_MONTHS ahead of older ones, but only among those
+# within NEAR on both axes: the market moves, so between two comparables the
+# newer one is the better witness, but recency never reaches past what is
+# comparable at all to pull in a launch for being new.
+NEAR = 4.0
+RECENT_MONTHS = 18
+
+# Distance is on two axes, units and unit price (etl/pricing.py,
+# unit_price_gbp), and a launch is only as near as its worse one: matched on
+# size at four times the price is not a comparable, and a single figure taken
+# over both axes says so without saying which. Size carries the units
+# benchmark, price carries the conversion benchmarks - the sessions and
+# entries targets are the units target over the basket's conversion rates, and
+# those move with price more than with anything else on file
+# (etl/analysis/price_probe.py, docs/BENCHMARK_SPEC.md 3.1). With
+# SIMILAR_USE_PRICE off the price range is still profiled and shown in the
+# picker, it just does not decide membership.
+#
+# The shape cluster used to be the first constraint, intersected with the
+# bands. It is gone from selection: at the same basket size it moved the units
+# benchmark for two of nine live releases and left seven untouched, which is
+# what the leave-one-out says too - swapping members inside a size band barely
+# moves a median. It still names the basket and still fills the picker.
 SIMILAR_USE_PRICE = True
-SIMILAR_RUNGS = ((True, True), (False, True), (True, False), (False, False))
 
 # The planned paid share of units by paid_channel_size, mirroring the quartiles
 # in etl/benchmarks.json (paid_share_of_units: Low / Medium / High). It is only
@@ -231,6 +265,18 @@ def _num(value: object) -> float:
     return 0.0 if math.isnan(out) or math.isinf(out) else out
 
 
+def _num_or_none(value: object) -> float | None:
+    """A number, or None where there is none: for fields whose absence means
+    "no history" rather than "nothing" (a conversion rate, §3.2)."""
+    if value is None:
+        return None
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return None
+    return None if math.isnan(v) or math.isinf(v) else v
+
+
 def _median(rows: pd.DataFrame, col: str, positive: bool = False) -> float:
     """Median of one column over the basket, 0.0 when nothing qualifies.
 
@@ -310,7 +356,136 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
     }
 
 
+# ---------------------------------------------------------------- channels not in plan (§4.3)
+
+def channels_off_of(release: dict | None) -> list[str]:
+    """The display groups this release will not run - "not running paid", "the
+    artist has no channels of their own" - as the release inputs give them,
+    kept to the known groups, deduplicated and in GROUPS order so two spellings
+    of the same choice are the same choice everywhere."""
+    raw = (release or {}).get("channels_off") or []
+    if isinstance(raw, str):
+        raw = [raw]
+    wanted = {str(g).strip() for g in raw}
+    return [g for g in GROUPS if g in wanted]
+
+
+def apply_channels_off(profile: dict, off: list[str]) -> dict:
+    """The basket read without the channels this release will not run (§4.3).
+
+    A launch that will not run paid is not behind by the paid units the basket
+    typically buys, so those leave the benchmark: the group's median units and
+    sessions go to zero, the headline medians drop to what the remaining
+    groups add up to, entries fall by the same share, and the group's
+    conversion is zero rather than a rate for a channel that will not exist.
+    The uplift K is then the target over the remaining median - the honest
+    statement of what the channels in plan have to do.
+
+    The basket's full medians ride along as the *_all fields so the page can
+    show what was set aside and the browser can re-read the same basket as
+    switches are flipped without another build. With nothing off the profile
+    comes back unchanged apart from those fields. shared/benchmarkModel.mjs
+    mirrors this to the figure and tests/test_channels_off.py holds them to it.
+    """
+    off = [g for g in GROUPS if g in set(off or [])]
+    units_all = dict(profile.get("units_by_group") or {g: 0.0 for g in GROUPS})
+    sess_all = dict(profile.get("sessions_by_group") or {g: 0.0 for g in GROUPS})
+    out = dict(profile)
+    out["channels_off"] = off
+    out["units_all"] = _num(profile.get("units"))
+    out["sessions_all"] = _num(profile.get("sessions"))
+    out["entries_all"] = _num(profile.get("entries"))
+    out["units_by_group_all"] = {g: _num(units_all.get(g)) for g in GROUPS}
+    out["sessions_by_group_all"] = {g: _num(sess_all.get(g)) for g in GROUPS}
+    out["units_p25_all"] = _num(profile.get("units_p25"))
+    out["units_p75_all"] = _num(profile.get("units_p75"))
+    out["conv_all"] = {g: _num((profile.get("conv") or {}).get(g)) for g in GROUPS}
+    if not off:
+        return out
+    keep = [g for g in GROUPS if g not in off]
+    units = sum(_num(units_all.get(g)) for g in keep)
+    sessions = sum(_num(sess_all.get(g)) for g in keep)
+    ratio = (units / out["units_all"]) if out["units_all"] > 0 else 0.0
+    out["units"] = _num(units)
+    out["sessions"] = _num(sessions)
+    out["entries"] = _num(out["entries_all"] * ratio)
+    # the middle half scales with the median: it describes the same launches
+    # read on the same channels
+    out["units_p25"] = _num(_num(profile.get("units_p25")) * ratio)
+    out["units_p75"] = _num(_num(profile.get("units_p75")) * ratio)
+    out["units_by_group"] = {g: (_num(units_all.get(g)) if g in keep else 0.0) for g in GROUPS}
+    out["sessions_by_group"] = {g: (_num(sess_all.get(g)) if g in keep else 0.0) for g in GROUPS}
+    for key, total in (("share_units", units), ("share_sessions", sessions)):
+        src = profile.get(key) or {}
+        # shares over the groups in plan, renormalised so share x total still
+        # adds back to the headline median (§3.2); zero for a group set aside
+        raw = {g: (_num(src.get(g)) if g in keep else 0.0) for g in GROUPS}
+        tot = sum(raw.values())
+        out[key] = {g: (_num(raw[g] / tot) if tot > 0 else 0.0) for g in GROUPS}
+    conv = profile.get("conv") or {}
+    out["conv"] = {g: (_num(conv.get(g)) if g in keep else 0.0) for g in GROUPS}
+    return out
+
+
 # ---------------------------------------------------------------- ready-made baskets
+
+def _txt(v) -> str:
+    if v is None or (isinstance(v, float) and math.isnan(v)):
+        return ""
+    return str(v)
+
+
+def _day(v) -> str:
+    ts = pd.to_datetime(v, errors="coerce")
+    return "" if pd.isna(ts) else pd.Timestamp(ts).strftime("%Y-%m-%d")
+
+
+def candidate_rows(panel: pd.DataFrame) -> list[dict]:
+    """The draw panel as the picker's candidate rows, newest close first: each
+    launch's units, sessions, paid share, unit price in sterling, edition size,
+    dates and cluster. Every value is JSON-ready.
+
+    One function so the API shim and the build agree to the field: the build
+    writes these rows to data/app/basket_candidates.json on every run, and the
+    server serves that file rather than starting a python process for each
+    open of the picker. shared/basketRule.mjs ranks over exactly these rows.
+    """
+    names = _cluster_names(panel)
+    rows = []
+    if not len(panel):
+        return rows
+    for r in panel.sort_values("window_end", ascending=False, na_position="last").to_dict("records"):
+        cid = _cluster_id(r.get("cluster"))
+        rows.append({
+            "release_name": _txt(r.get("release_name")),
+            "artist": _txt(r.get("artist")),
+            "title": _txt(r.get("title")),
+            "quarter": _txt(r.get("quarter")),
+            "window_start": _day(r.get("window_start")),
+            "window_end": _day(r.get("window_end")),
+            "campaign_days": _num(r.get("campaign_days")),
+            "units": _num(r.get("tot_total_product_units")),
+            "sessions": _num(r.get("tot_sessions_total")),
+            "paid_share": _num(r.get("sess_share_paid")),
+            # each group's share of the launch's units and sessions: what the
+            # picker needs to read the basket without a channel (§4.3)
+            "unit_shares": {g: _num(r.get(f"unit_share_{g}")) for g in GROUPS},
+            "sess_shares": {g: _num(r.get(f"sess_share_{g}")) for g in GROUPS},
+            # a conversion the launch has no history for is null, not zero, so
+            # the picker's median drops it the way _median(positive=True) does
+            "convs": {g: _num_or_none(r.get(f"conv_sess_entry_{g}")) for g in GROUPS},
+            "entries": _num(r.get("tot_draw_entries_eligible_units")),
+            "units_per_buyer": _num(r.get("units_per_buyer")),
+            "private_room_share": _num(r.get("private_room_share")),
+            # the edition's unit price in sterling and its size, from Airtable
+            # via the panel (etl/pricing.py); 0 where Airtable has no match
+            "price": _num(r.get("unit_price_gbp")),
+            "edition_size": _num(r.get("edition_size")),
+            "cluster": cid,
+            "cluster_name": names.get(cid, "") if cid is not None else "",
+        })
+    return rows
+
 
 def _cluster_series(frame: pd.DataFrame) -> pd.Series:
     """The cluster column as numbers.
@@ -429,96 +604,131 @@ def _ready(bid: str, name: str, desc: str, members: list[str], panel: pd.DataFra
     }
 
 
-def similar_members(panel: pd.DataFrame, release: dict | None) -> tuple[list[str], float | None, tuple[str, ...]]:
-    """Launches of comparable size, preferring comparable price and shape too.
+def _distances(pool: pd.DataFrame, release: dict | None, panel: pd.DataFrame) -> tuple[np.ndarray, tuple[str, ...]]:
+    """How far every launch in the pool is from this one: the larger of its
+    units multiple and its price multiple, each taken above 1 whichever side
+    it falls, so a launch is only as near as its worse axis. A launch Airtable
+    could not price is ranked on units alone rather than dropped over a
+    missing field. Returns the distances and the axes that set them."""
+    size = _num((release or {}).get("edition_size"))
+    units = pool["tot_total_product_units"].map(_num).astype(float).to_numpy()
+    price = _release_price(panel, release)
+    prices = (pd.to_numeric(pool["unit_price_gbp"], errors="coerce").to_numpy()
+              if "unit_price_gbp" in pool.columns else np.full(len(pool), np.nan))
+    use_price = bool(SIMILAR_USE_PRICE and price > 0 and np.isfinite(prices).any())
 
-    Every release gets a basket. The search runs from strictest to loosest and
-    stops at the first rung that answers:
+    def mult(vals, ref):
+        with np.errstate(divide="ignore", invalid="ignore"):
+            r = np.maximum(vals / ref, ref / vals)
+        return np.where((vals > 0) & np.isfinite(r), r, np.inf)
 
-      1. the size band, the price band and the shape cluster together,
-         widening both bands through SIMILAR_FACTORS;
-      2. the size band and the price band, widening;
-      3. the size band and the shape cluster, widening;
-      4. the size band alone, widening;
-      5. the size band alone at a count that is thin but medianable;
-      6. failing all of that, simply the launches nearest this edition in size.
+    d = mult(units, size)
+    if use_price:
+        dp = mult(prices, price)
+        d = np.maximum(d, np.where(np.isfinite(dp), dp, 1.0))
+    return d, (("size", "price") if use_price else ("size",))
 
-    (The order of 2 and 3 is SIMILAR_RUNGS; rungs with the price band are
-    skipped when SIMILAR_USE_PRICE is off or the release has no price.)
 
-    Rung 6 is what an unprecedented edition gets. A 2,440-unit launch when the
-    biggest draw ever run was 987 has no true comparable, and the honest
-    benchmark is the largest launches on file with a multiplier of about three
-    printed next to them: "three times the biggest thing we have ever done" is
-    a plan someone can argue with. An empty panel is the only case with no
-    basket, and then there is nothing to median over at all.
+def own_members(panel: pd.DataFrame, release: dict | None, as_of: date | None = None) -> list[str]:
+    """The artist's own earlier launches that belong in the basket: same
+    artist, closed before this launch opened, and within OWN_MAX on both
+    axes. Nearest first. Empty for an artist with no history on file."""
+    own_name = _own_name(release)
+    pool = panel[panel["release_name"] != own_name] if own_name else panel
+    if not len(pool) or "artist" not in pool.columns or _num((release or {}).get("edition_size")) <= 0:
+        return []
+    artist = _artist_of(panel, release)
+    if not artist:
+        return []
+    start = _release_start(panel, release, as_of or date.today())
+    ends = pd.to_datetime(pool["window_end"], errors="coerce")
+    same = pool["artist"].astype(str).str.strip().str.casefold() == artist.casefold()
+    earlier = same.to_numpy() & (ends < start).to_numpy()
+    d, _on = _distances(pool, release, panel)
+    names = pool["release_name"].astype(str).to_numpy()
+    idx = np.where(earlier & (d <= OWN_MAX))[0]
+    # nearest first, then by name: a total order, so two launches at the same
+    # distance come out the same way whichever order the panel is read in -
+    # the JS mirror sorts identically, and the parity test holds them to it
+    idx = idx[np.lexsort((names[idx], d[idx]))]
+    return names[idx].tolist()
 
-    Returns the members, the band factor that found them (None when rung 6
-    answered) and the constraints that held on the rung that answered - a
-    tuple drawn from "size", "price", "shape", or ("nearest",) - so the
-    caller can describe the basket: "within a factor of 3 on units and price"
-    is a different sentence from "nearest by size".
+
+def similar_members(panel: pd.DataFrame, release: dict | None, as_of: date | None = None) -> tuple[list[str], float | None, tuple[str, ...]]:
+    """The SIMILAR_N launches nearest this one on units and unit price.
+
+    The artist's own earlier launches go in first (own_members), then the
+    nearest of everything else fills the basket. With prefer_recent on - the
+    default - launches closed in the last RECENT_MONTHS rank ahead of older
+    ones among those within NEAR on both axes; recency never reaches past NEAR.
+
+    Distance is the figure the picker shows in its two columns, so the basket
+    is simply the top of the list the picker is already ordered by. A release
+    with no price is ranked on units alone; one with no edition size has no
+    basket, there being nothing to be near to. A panel shorter than SIMILAR_N
+    gives what it has.
+
+    Returns the members, the reach - how far the furthest member is - and the
+    axes that ranked them, ("size",) or ("size", "price").
     """
-    own = _own_name(release)
-    pool = panel[panel["release_name"] != own] if own else panel
+    own_name = _own_name(release)
+    pool = panel[panel["release_name"] != own_name] if own_name else panel
     size = _num((release or {}).get("edition_size"))
     if size <= 0 or not len(pool):
         return [], None, ()
-    units = pool["tot_total_product_units"].map(_num)
-    row = _panel_row(panel, release)
-    cid = _cluster_id(row.get("cluster")) if row is not None else None
-    if cid is None:
-        cid = _cluster_id((release or {}).get("nearest_cluster"))
-    clusters = _cluster_series(pool)
-    price = _release_price(panel, release)
-    prices = (pd.to_numeric(pool["unit_price_gbp"], errors="coerce") if "unit_price_gbp" in pool.columns
-              else pd.Series(float("nan"), index=pool.index))
-    use_price = bool(SIMILAR_USE_PRICE and price > 0 and prices.notna().any())
-    # the shape and price constraints are given up before the scale one: every
-    # headline figure on the page is a volume, so scale is the harder
-    # constraint and the last to go
-    for shape, priced in SIMILAR_RUNGS:
-        if (shape and cid is None) or (priced and not use_price):
-            continue
-        for f in SIMILAR_FACTORS:
-            band = (units >= size / f) & (units <= size * f)
-            if priced:
-                band &= (prices >= price / f) & (prices <= price * f)
-            if shape:
-                band &= clusters == cid
-            sel = pool[band]
-            if len(sel) >= SIMILAR_MIN:
-                on = ("size",) + (("price",) if priced else ()) + (("shape",) if shape else ())
-                return sel["release_name"].tolist(), f, on
-    # Rung 5: no band reaches eight, so take the widest one if it is medianable
-    # at all. The widest, not the first that clears the minimum - once the band
-    # cannot be tight enough to be a real comparable there is nothing to be won
-    # by keeping it narrow, and a median over three launches moves under any
-    # one of them.
-    f = SIMILAR_FACTORS[-1]
-    widest = pool[(units >= size / f) & (units <= size * f)]
-    if len(widest) >= MIN_MEMBERS:
-        return widest["release_name"].tolist(), f, ("size",)
-    # nearest by size, in log space so a half and a double are the same distance
-    near = pool.assign(_d=(np.log(units.clip(lower=1)) - math.log(max(size, 1))).abs())
-    near = near.nsmallest(min(THIN_MEMBERS, len(near)), "_d")
-    return near["release_name"].tolist(), None, ("nearest",)
+    as_of = as_of or date.today()
+    d, on = _distances(pool, release, panel)
+    names = pool["release_name"].to_numpy()
 
+    first = own_members(panel, release, as_of)
+    taken = set(first)
+    rest = np.array([i for i in range(len(pool)) if names[i] not in taken and np.isfinite(d[i])], dtype=int)
 
-def similar_desc(members: list[str], factor: float | None, on: tuple[str, ...], size: float, price: float) -> str:
-    """The sentence under the Similar basket in the picker, from what held."""
-    if factor is not None:
-        bands = f"units of this edition's {size:,.0f}"
-        if "price" in on:
-            bands += f" and on its unit price of £{price:,.0f}"
-        shape = " of the same shape where there are enough of them" if "shape" in on else ""
-        return f"Launches within a factor of {factor:g} on {bands}{shape}."
-    if members:
-        return (f"No launch on file is close to this edition's {size:,.0f} units, so this is "
-                f"simply the {len(members)} nearest to it by size - the benchmark is what the "
-                f"biggest launches on record reached, and the uplift says how far past them "
-                f"this edition is being asked to go.")
-    return "No launch on file to compare this edition against."
+    prefer_recent = (release or {}).get("prefer_recent")
+    prefer_recent = True if prefer_recent is None else bool(prefer_recent)
+    if prefer_recent and len(rest):
+        ends = pd.to_datetime(pool["window_end"], errors="coerce").to_numpy()
+        cutoff = np.datetime64(pd.Timestamp(as_of) - pd.DateOffset(months=RECENT_MONTHS))
+        recent = ends >= cutoff
+        # three tiers, distance within each: comparable and recent, comparable
+        # and older, then everything beyond NEAR
+        tier = np.where(d[rest] <= NEAR, np.where(recent[rest], 0, 1), 2)
+        rest = rest[np.lexsort((names[rest].astype(str), d[rest], tier))]
+    else:
+        rest = rest[np.lexsort((names[rest].astype(str), d[rest]))]
+
+    members = first + names[rest].tolist()
+    members = members[:SIMILAR_N]
+    if not members:
+        return [], None, ()
+    by_name = {names[i]: d[i] for i in range(len(pool))}
+    reach = float(max(by_name[m] for m in members))
+    return members, reach, on
+
+def similar_desc(members: list[str], reach: float | None, on: tuple[str, ...], size: float, price: float,
+                 own: int = 0, artist: str = "") -> str:
+    """The sentence under the basket in the picker.
+
+    The count is fixed, so what the sentence has to carry is how close the
+    eight turned out to be. Within about twice this edition is a basket of
+    comparables; four times it and the benchmark is "the nearest things we
+    have run", which is a different claim and should read like one.
+    """
+    if not members:
+        return "No launch on file to compare this edition against."
+    axes = f"units of this edition's {size:,.0f}"
+    if "price" in on:
+        axes += f" and on its unit price of £{price:,.0f}"
+    near = f"The {len(members)} launches nearest on {axes}"
+    if own and artist:
+        near += f", starting with {artist}'s own {own}"
+    if reach is None:
+        return near + "."
+    if reach > SCALE_MISMATCH_FACTOR:
+        return (f"{near}. Nothing on file is close to it: the furthest of the eight is "
+                f"x{reach:,.1f} away, so the benchmark is what the nearest launches on record "
+                f"reached and the uplift says how far past them this edition is being asked to go.")
+    return f"{near} - all within x{reach:,.1f} of it."
 
 
 def ready_baskets(panel: pd.DataFrame, as_of: date, release: dict | None = None) -> list[dict]:
@@ -534,12 +744,17 @@ def ready_baskets(panel: pd.DataFrame, as_of: date, release: dict | None = None)
     cid = _cluster_series(pool)
     out = []
 
-    members, factor, on = similar_members(panel, release)
+    members, reach, on = similar_members(panel, release, as_of)
     size = _num((release or {}).get("edition_size"))
-    desc = similar_desc(members, factor, on, size, _release_price(panel, release))
+    own = [m for m in own_members(panel, release, as_of) if m in members]
+    desc = similar_desc(members, reach, on, size, _release_price(panel, release),
+                        len(own), _artist_of(panel, release).split(" ")[-1] if own else "")
     similar = _ready("similar_size", SIMILAR_NAME, desc, members, panel)
     similar["matchedOn"] = list(on)
-    similar["factor"] = factor
+    # how far the furthest member is, not a band the search stopped at
+    similar["reach"] = reach
+    # the members that are the artist's own, so the picker can mark them
+    similar["own"] = own
     out.append(similar)
 
     for c in range(4):
@@ -587,7 +802,7 @@ def suggest_basket(panel: pd.DataFrame, release: dict) -> str:
     """
     own = _own_name(release)
     pool = panel[panel["release_name"] != own] if own else panel
-    members, _factor, _on = similar_members(panel, release)
+    members, _reach, _on = similar_members(panel, release)  # as_of: today, as the picker's
     if len(members) >= MIN_MEMBERS:
         return "similar_size"
     row = _panel_row(panel, release)

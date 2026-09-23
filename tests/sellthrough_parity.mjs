@@ -16,7 +16,7 @@ const results = [];
 for (const c of fixtures.cases) {
   const out = sellThroughProducts({
     products: c.products, patterns: c.patterns, rate: c.rate, edition: c.edition,
-    soldTotal: c.soldTotal, futureUnits: c.futureUnits,
+    soldTotal: c.soldTotal, futureUnits: c.futureUnits, preorderRate: c.preorderRate ?? null,
   });
   results.push({ name: c.name, out });
   const got = {

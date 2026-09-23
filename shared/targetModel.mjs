@@ -18,10 +18,17 @@ export const GROUP_CHANNELS = {
 
 const SIZE_PICK = { Small: "Low", Medium: "Medium", Large: "High", Low: "Low", High: "High" };
 
+const GROUP_OF = Object.fromEntries(Object.entries(GROUP_CHANNELS).flatMap(([g, cs]) => cs.map((c) => [c, g])));
+
 export function computeTargets(inp, b) {
   const size = inp.edition_size || 0;
+  // the channels this release will not run (BENCHMARK_SPEC 4.3): paid is no
+  // share of the edition, and a channel in a group set aside is out the way
+  // N/A takes it out - the same reading etl/build.py gives the lever fallback
+  const off = new Set(Array.isArray(inp.channels_off) ? inp.channels_off : []);
   // the workbook's "Paid (% Total)" overwrite wins over the channel-size quartile
-  const paidPct = inp.paid_share_override !== null && inp.paid_share_override !== undefined && inp.paid_share_override !== ""
+  const paidPct = off.has("paid") ? 0
+    : inp.paid_share_override !== null && inp.paid_share_override !== undefined && inp.paid_share_override !== ""
     ? Number(inp.paid_share_override)
     : b.paid_share_of_units[SIZE_PICK[inp.paid_channel_size]];
   const paidUnits = Math.round(size * paidPct);
@@ -30,8 +37,8 @@ export function computeTargets(inp, b) {
   const prUnits = organicUnits * prPct;
   const drawUnits = organicUnits - prUnits;
 
-  const qualityFor = (c) =>
-    (inp.channel_quality_overrides && inp.channel_quality_overrides[c]) ||
+  const qualityFor = (c) => off.has(GROUP_OF[c]) ? "N/A"
+    : (inp.channel_quality_overrides && inp.channel_quality_overrides[c]) ||
     inp.channel_quality_default[c];
 
   let shareSum = 0;

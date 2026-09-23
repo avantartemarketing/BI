@@ -13,17 +13,19 @@
  * typically does" stops looking identical to "behind the basket as well" - the first
  * is a target worth holding, the second is a launch in trouble. */
 import React, { useEffect, useMemo, useState } from "react";
+import { initial as watchInitial, step as watchStep } from "../../shared/refreshWatch.mjs";
 import { C, fmtSigned, fmtPct, fmtDay, TipProvider, useTip } from "./ui.jsx";
 import HeroBar from "./modules/HeroBar.jsx";
 import LaunchStrip from "./modules/LaunchStrip.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
-import FunnelByChannel from "./modules/FunnelByChannel.jsx";
+import FunnelByChannel, { FunnelByChannelWide } from "./modules/FunnelByChannel.jsx";
 import Trajectory from "./modules/Trajectory.jsx";
 import KeyDrivers from "./modules/KeyDrivers.jsx";
 import PaidRoi from "./modules/PaidRoi.jsx";
 import PaidSpend from "./modules/PaidSpend.jsx";
 import SellThrough from "./modules/SellThrough.jsx";
 import Geo from "./modules/Geo.jsx";
+import DrawAudit from "./modules/DrawAudit.jsx";
 import Waterfall from "./modules/Waterfall.jsx";
 import NoTargets from "./modules/NoTargets.jsx";
 import TargetSetting from "./TargetSetting.jsx";
@@ -74,8 +76,11 @@ export default function App() {
   const loadIndex = () => getJSON("/api/index").then((ix) => { setIndex(ix); return ix; });
   useEffect(() => {
     loadIndex().then((ix) => {
+      // ?release=<id> (the link in a Slack update) opens that release; else the first live one
+      const asked = new URLSearchParams(window.location.search).get("release");
       const live = ix.releases.filter((r) => r.status === "live" || (!r.status && !r.complete));
-      setReleaseId((live[0] || ix.releases[0])?.id ?? null);
+      const first = ix.releases.find((r) => r.id === asked) || live[0] || ix.releases[0];
+      setReleaseId(first?.id ?? null);
     }).catch((e) => setError(String(e)));
   }, []);
 
@@ -113,7 +118,11 @@ export default function App() {
   const pinned = current && current.status !== "live" && view === "release" ? current : null;
 
   if (error) return <div style={{ padding: 40 }}>Failed to load: {error}</div>;
-  const pick = (id) => { setReleaseId(id); setView("release"); };
+  const pick = (id) => {
+    setReleaseId(id); setView("release");
+    // keep the address in step so the page can be shared or reloaded on this release
+    try { window.history.replaceState(null, "", `?release=${encodeURIComponent(id)}`); } catch { /* not important */ }
+  };
 
   return (
     <TipProvider>
@@ -304,11 +313,14 @@ function useRefreshStatus() {
  * which, and what the refresh is doing about it. */
 function StaleBanner({ asOf, st, onRefreshed }) {
   const ageDays = asOf ? Math.floor((Date.now() - new Date(asOf + "T00:00:00Z").getTime()) / 86400000) - 1 : 0;
-  const prevAt = React.useRef(st && st.at);
+  /* "this page reloads when it lands", below, has to hold for the first refresh
+     after a deploy as well as for the hourly ones - the rule and why it is not
+     the timestamp are in shared/refreshWatch.mjs. */
+  const watch = React.useRef(watchInitial());
   useEffect(() => {
-    // a refresh just landed: reload the page's data
-    if (st && st.at && prevAt.current && st.at !== prevAt.current && !st.running) onRefreshed();
-    prevAt.current = st && st.at;
+    const r = watchStep(watch.current, st);
+    watch.current = r.state;
+    if (r.reload) onRefreshed();
   }, [st && st.at, st && st.running]);
   if (ageDays < 2) return null;
   const through = new Date(asOf + "T00:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
@@ -329,7 +341,7 @@ function StaleBanner({ asOf, st, onRefreshed }) {
  * ingestion - expired token, un-shared sheet, an ETL exception - looked
  * identical to a healthy one while the page served frozen numbers. This reads
  * the status the server already records and says which it is. */
-function Freshness({ asOf, st, emailThrough }) {
+function Freshness({ asOf, st, emailThrough, partial }) {
   const t = useTip();
   // the email feed's last send: when it falls a week or more behind the build,
   // every email rung on the page is reading an empty feed, and the header is
@@ -378,7 +390,7 @@ function Freshness({ asOf, st, emailThrough }) {
   return (
     <span className="freshness" style={{ color }} {...t.props(tip)}>
       {stale && <span aria-hidden="true">⚠ </span>}
-      {label}{emailBehind && ` · emails through ${emailThrough}`} · data through {asOf}
+      {label}{emailBehind && ` · emails through ${emailThrough}`} · data through {asOf}{partial && " (today so far)"}
     </span>
   );
 }
@@ -439,7 +451,9 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       case "channels": return <ChannelsVsTargets snap={snap} horizon={horizon} />;
       case "no_targets": return targeted ? null : <NoTargets snap={snap} onSetup={() => setTab("targets")} />;
       case "funnel": return <FunnelByChannel snap={snap} />;
-      case "trajectory": return <Trajectory snap={snap} horizon={horizon} />;
+      case "funnel_wide": return <FunnelByChannelWide snap={snap} />;
+      // the trajectory draws one picture: both readings are already on it
+      case "trajectory": return <Trajectory snap={snap} />;
       case "drivers": return <KeyDrivers snap={snap} />;
       case "paid_roi": return <PaidRoi snap={snap} />;
       case "paid_spend": return <PaidSpend snap={snap} horizon={horizon} />;
@@ -458,22 +472,29 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           <span className="chip" title="No campaign dates in the funnel export - showing the last 90 days of traffic">Catalogue · last 90 days</span>
         )}
         {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
+        {snap.edition && snap.edition.total > snap.edition.target && (
+          <span className="chip" title="The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target">
+            Target {Number(snap.edition.target).toLocaleString("en-GB")} · {Math.round((100 * snap.edition.target) / snap.edition.total)}% of {Number(snap.edition.total).toLocaleString("en-GB")} edition
+          </span>
+        )}
         {!targeted && (
           <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
             title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
         )}
         {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
-        <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough} />
+        <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough}
+          partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} />
       </header>
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
+        <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>
         {tab === "overview" && !editing && (
           <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
         )}
       </nav>
-      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : (
+      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : tab === "audit" ? <DrawAudit snap={snap} /> : (
         <>
           {editing && (
             <LayoutBar items={draft} onChange={setDraft} saving={saving} error={saveError}

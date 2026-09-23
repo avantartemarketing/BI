@@ -75,18 +75,23 @@ function retargetSnapshot(snap, inputs, bench, curves, computeTargets, sellThrou
     heroNow += now; heroExp += exp; heroProj += proj; heroTarget += tgt;
   }
 
-  const edition = t.edition_size;
-  const cappedNow = Math.min(heroNow, edition);
-  const cappedProj = Math.min(heroProj, edition);
+  const edition = t.edition_size;   // the target the plan runs on
+  // the whole edition: caps, room and sell-through read against it when the
+  // target is only part of the edition (edition_total), else the target
+  const totalIn = Number(inputs.edition_total);
+  const total = Number.isFinite(totalIn) && totalIn > edition ? Math.round(totalIn) : edition;
+  const cappedNow = Math.min(heroNow, total);
+  const cappedProj = Math.min(heroProj, total);
   const statusPct = heroExp ? (cappedNow - heroExp) / heroExp : 0;
 
   snap.hero = {
     now: r0(cappedNow), expectedToday: r0(heroExp),
     delta: r0(cappedNow - heroExp),
     projected: r0(complete ? cappedNow : cappedProj), target: r0(heroTarget),
-    oversubscribedUnits: r0(Math.max(Math.max(heroNow, heroProj) - edition, 0)),
+    oversubscribedUnits: r0(Math.max(Math.max(heroNow, heroProj) - total, 0)),
     statusPct: Math.round(statusPct * 10000) / 10000, ok: statusPct >= -0.1,
   };
+  snap.edition = { target: r0(edition), total: r0(total) };
 
   // targets object (same shape the ETL writes)
   snap.targets = {
@@ -124,26 +129,34 @@ function retargetSnapshot(snap, inputs, bench, curves, computeTargets, sellThrou
   const rateIn = Number(inputs.entry_conversion_rate);
   const rate = Number.isFinite(rateIn) && rateIn > 0 && rateIn <= 1 ? rateIn : (bench.eligible_entry_to_order || 0.8);
   const oldRate = st.conversion || bench.eligible_entry_to_order || 0.8;
+  // a pre-order entry converts at its own rate (docs 6.3): the release's when
+  // one is typed, else the panel's
+  const preIn = Number(inputs.preorder_conversion_rate);
+  const preRate = Number.isFinite(preIn) && preIn > 0 && preIn <= 1 ? preIn : (bench.preorder_entry_to_order || 0.95);
   // entries in hand in units: stored by the ETL; on an older snapshot backed
   // out of the prediction at the rate it was made at
   const inHandUnits = Number.isFinite(st.inHandUnits) ? st.inHandUnits : (oldRate > 0 ? (st.soldPredicted ?? 0) / oldRate : 0);
   const soldPredicted = inHandUnits * rate;
-  const inventoryLeft = Math.max(edition - sold, 0);
+  const inventoryLeft = Math.max(total - sold, 0);
   const future = complete ? 0 : Math.max(cappedProj - cappedNow, 0);
   const next = {
     ...st,
-    edition,
+    edition: total,
     sold,
     conversion: rate,
+    preorderConversion: preRate,
     soldPredicted: r1(Math.min(soldPredicted, inventoryLeft)),
     futureEntriesPredicted: r1(Math.min(future, Math.max(inventoryLeft - soldPredicted, 0))),
   };
   delete next.benchmarkUnits;   // lever mode has no basket
-  next.pct = Math.round(Math.min((next.sold + next.soldPredicted + next.futureEntriesPredicted) / (edition || 1), 1) * 10000) / 10000;
+  next.pct = Math.round(Math.min((next.sold + next.soldPredicted + next.futureEntriesPredicted) / (total || 1), 1) * 10000) / 10000;
   if (sellThrough && Array.isArray(st.draws) && st.draws.length && Array.isArray(st.patterns)) {
-    const { products, soldSource } = sellThrough.productsFromDraws(st.draws, inputs.products, edition);
+    const fromDraws = sellThrough.productsFromDraws(st.draws, inputs.products, total);
+    // the orders feed rides on the snapshot, so the sales and drafts per
+    // product survive a save the same way the draws and patterns do
+    const { products, source: soldSource } = sellThrough.attachOrders(fromDraws.products, st.ordersByProduct, st.drawProducts, fromDraws.soldSource);
     const pp = sellThrough.sellThroughProducts({
-      products, patterns: st.patterns, rate, edition, soldTotal: sold, futureUnits: future,
+      products, patterns: st.patterns, rate, preorderRate: preRate, edition: total, soldTotal: sold, futureUnits: future,
       expectedToday: heroExp, benchmarkToday: null, benchmarkClose: null,
     });
     for (const k of ["products", "attributedSold", "unattributedSold", "allocation", "measure", "editionSum", "editionMismatch"]) next[k] = pp[k];

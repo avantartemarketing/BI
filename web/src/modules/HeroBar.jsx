@@ -6,7 +6,7 @@
  * target - darker from zero to whichever of target and benchmark is lower,
  * lighter from the benchmark up to the target when the target is the higher -
  * the benchmark is the dotted outline over it, and the actual is the narrower
- * orange bar in front, on a track whose right edge is the sellout. The two
+ * blue bar in front, on a track whose right edge is the sellout. The two
  * references are named above the bar on two rows of their own, the benchmark
  * above the target, so neither ever prints through the other however close
  * they sit. The headline delta reads against the target: it is what the
@@ -16,8 +16,8 @@
  * past the sellout that cannot convert. */
 import React from "react";
 import {
-  Card, TrackBar, HATCH, GROUP_DOTS, C, fmt, fmtSigned, useTip, useWidth,
-  labelPx, axisLabelLeft, refWords,
+  Card, TrackBar, HATCH, GROUP_DOTS, HorizonBadge, C, fmt, fmtSigned, useTip, useWidth,
+  labelPx, axisLabelLeft, BADGE_WORDS,
 } from "../ui.jsx";
 
 /* The legend's outline swatch: the same dotted silhouette the bar carries. */
@@ -50,7 +50,11 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const sellout = hero.target ?? 0;
   const expToday = hero.expectedToday ?? 0;
   const day = snap?.day;
-  const words = refWords(horizon);
+  const words = BADGE_WORDS;
+  // the target is only part of the edition (Warhol: 2,440 of 6,100): the card
+  // says target where it would otherwise say sellout
+  const partial = !!(snap?.edition && snap.edition.total > snap.edition.target);
+  const editionTotal = partial ? snap.edition.total : null;
 
   // the outline only exists when the release has a basket behind it
   const hasBm = !!snap?.benchmark;
@@ -81,7 +85,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
   ];
   const targetTip = {
     // at close the target IS the sellout, so it is named as that
-    head: close ? "Sellout" : `Target by day ${day}`,
+    head: close ? (partial ? `Target · ${Math.round((100 * sellout) / editionTotal)}% of the ${fmt(editionTotal)} edition` : "Sellout") : `Target by day ${day}`,
     rows: refRows,
   };
   const stretchTip = bm === null ? null : {
@@ -94,7 +98,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
     body: "What the business is asking for over and above the basket - the same even uplift in every channel and on every day.",
   };
   const bmTip = bm === null ? null : {
-    head: close ? "Benchmark at close" : "Benchmark today",
+    head: "Benchmark",
     rows: refRows,
     body: "The median of the matched basket - what launches like this one typically reach.",
   };
@@ -119,7 +123,8 @@ export default function HeroBar({ snap, horizon = "today" }) {
   return (
     <Card
       dot={GROUP_DOTS.volume}
-      title="Units vs sellout"
+      title={partial ? "Units vs target" : "Units vs sellout"}
+      badge={<HorizonBadge horizon={horizon} />}
       right={oversub > 0 ? (
         <span
           className="hint-dotted"
@@ -136,7 +141,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
           {fmtSigned(delta)}
         </span>
         <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
-          {close ? "vs sellout at close" : "vs target today"}
+          {close && !partial ? "vs sellout" : "vs target"}
         </span>
       </div>
 
@@ -155,6 +160,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
         <TrackBar
           now={close ? null : now}
           proj={close ? proj : null}
+          projColor={C.blue}
           target={target}
           bm={bm}
           full={sellout}
@@ -162,7 +168,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
           height={24}
           radius={5}
           tips={{
-            proj: { head: "Projected at close", rows: [
+            proj: { head: "Projected", rows: [
               { label: "Units", value: fmt(proj) },
               ...(overPct !== null ? [{ label: "vs sellout", value: overPct + "%" }] : []),
             ] },
@@ -184,8 +190,8 @@ export default function HeroBar({ snap, horizon = "today" }) {
 
       <div className="legend-rows">
         <div className="legend-row">
-          <span className="swatch" style={{ background: close ? C.orangeLight : C.orange }} />
-          <span style={{ color: C.muted }}>{close ? "Projected demand at close" : "To date"}</span>
+          <span className="swatch" style={{ background: C.blue }} />
+          <span style={{ color: C.muted }}>{close ? "Projected demand" : "To date"}</span>
           <span className="val">{fmt(fill)}</span>
         </div>
         <div className="legend-row" {...t.props(stretchTip || targetTip)}>
@@ -236,13 +242,13 @@ function HeroActuals({ snap }) {
       <div className="lead-caption" style={{ color: C.muted }}>no target set - actuals only</div>
       <div className="legend-rows" style={{ marginTop: 20 }}>
         <div className="legend-row">
-          <span className="swatch" style={{ background: C.rust }} />
+          <span className="swatch" style={{ background: C.blueDeep }} />
           <span style={{ color: C.muted }}>Units sold</span>
           <span className="val">{fmt(sold)}</span>
         </div>
         <div className="legend-row">
-          <span className="swatch" style={{ background: C.orange }} />
-          <span style={{ color: C.muted }}>From entries in hand (× 0.8)</span>
+          <span className="swatch" style={{ background: C.blue }} />
+          <span style={{ color: C.muted }}>Draw conversions (entries × 0.8)</span>
           <span className="val">{fmt(banked)}</span>
         </div>
       </div>

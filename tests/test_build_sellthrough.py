@@ -79,5 +79,34 @@ check(st["pct"] is None and st["measure"] == "units" and st["products"][0]["edit
 #    release whose draws are unnamed gets Draw 1, Draw 2
 st = build.sellthrough_block({"edition_size": 300, "products": [{"name": "First", "edition": None}]}, NAME, 0, 0, 300)
 check([p["name"] for p in st["products"]] == ["First", "Draw 2"], f"legacy names {[p['name'] for p in st['products']]}")
+# 6. the orders feed names both draws: sold and drafts come from it, the stamp clears
+build._ORDERS_FEED = {NAME: {
+    "products": {"Red print": {"unitsPaid": 41, "drafts": 6, "draftCustomers": 6, "listPrice": 500, "edition": 100},
+                 "Blue print": {"unitsPaid": 22, "drafts": 2, "draftCustomers": 2, "listPrice": 500, "edition": 200}},
+    "draws": {"d1": "Red print", "d2": "Blue print"}, "drafts": 8.0, "unitsPaid": 63.0, "asOf": "2026-08-20",
+}}
+st = build.sellthrough_block(release, NAME, units_sold=40, unconverted=100, inventory_left=260, future_entries=30,
+                             expected_today=120, bm_today=90, bm_close=250)
+red, blue = st["products"]
+check([p["name"] for p in st["products"]] == ["Red", "Blue"], "typed names stay")
+check(red["sold"] == 41 and blue["sold"] == 22 and red["drafts"] == 6 and blue["drafts"] == 2, f"orders attached {red['sold']} {blue['drafts']}")
+check(st["soldSource"] == "orders" and st["incomplete"] == [], f"stamp clears {st['soldSource']} {st['incomplete']}")
+check(st["drafts"] == 8.0 and st["unitsPaidOrders"] == 63.0 and st["ordersAsOf"] == "2026-08-20", f"release-level orders {st['drafts']}")
+check(st["attributedSold"] == 63 and st["unattributedSold"] == 0, f"the orders exceed the funnel's 40: nothing unattributed {st['unattributedSold']}")
+check(st["ordersByProduct"]["Red print"]["unitsPaid"] == 41 and st["drawProducts"]["d2"] == "Blue print", "the feed rides on the snapshot")
+
+# 7. one draw unnamed: the stamp stays for sales by product and drafts
+build._ORDERS_FEED[NAME]["draws"] = {"d1": "Red print"}
+st = build.sellthrough_block(release, NAME, units_sold=40, unconverted=100, inventory_left=260, future_entries=30)
+check(st["soldSource"] == "winners" and st["incomplete"] == ["sales by product", "draft orders"], f"partial feed {st['incomplete']}")
+check(st["products"][0]["sold"] == 41 and st["products"][1]["drafts"] is None, "the named draw has its orders, the other does not")
+build._ORDERS_FEED = {}
+
+# 8. a target that is only part of the edition: the block reads the whole edition
+st = build.sellthrough_block({**release, "edition_total": 900}, NAME, units_sold=40, unconverted=100, inventory_left=860, future_entries=30)
+check(st["edition"] == 900, f"the whole edition on the block: {st['edition']}")
+check(build.edition_total(release) == 300 and build.edition_total({**release, "edition_total": 200}) == 300, "no total, or one below the target, means the target")
+check(build.edition_total({"edition_size": None}) is None, "no edition size, no total")
+
 print("ok: build sell-through block" if not failed else f"{failed} failure(s)")
 sys.exit(1 if failed else 0)

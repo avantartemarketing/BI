@@ -53,6 +53,10 @@ const SPEND_DAILY = path.join(ROOT, "data", "spend_daily.csv");
 // the event-level feed: pseudonymous person ids only, never the address (see
 // the events section). Lives under sources/ (gitignored), served by no endpoint.
 const LE_EVENTS = path.join(ROOT, "sources", "le_events.csv");
+// orders and drafts by product, and the product each draw sold: aggregates
+// only, written from Order_Line_Concept on every refresh (docs/DATA_MODEL.md 2.4)
+const ORDERS_BY_PRODUCT = path.join(ROOT, "data", "orders_by_product.csv");
+const DRAW_PRODUCTS = path.join(ROOT, "data", "draw_products.csv");
 // what the local funnel file is: window, columns, last date, when it was last
 // pulled in full. Absent = never pulled from BigQuery (or it came from the sheet)
 const META = path.join(ROOT, "sources", "across_time.meta.json");
@@ -63,6 +67,9 @@ const FUNNEL_TABLE = process.env.BQ_FUNNEL_TABLE || "le_funnel_report_split_touc
 const SPEND_TABLE = process.env.BQ_SPEND_TABLE || "meta_ads_insights_export";
 // point this at the data team's email-free view when it exists: same columns, same guards
 const EVENTS_TABLE = process.env.BQ_EVENTS_TABLE || "LE_Funnel_Report";
+const ORDERS_TABLE = process.env.BQ_ORDERS_TABLE || "Order_Line_Concept";
+// links a draw entrant's account to their Shopify customer id (two id columns, nothing else is selected)
+const COLLECTORS_TABLE = process.env.BQ_COLLECTORS_TABLE || "Collector_Concept";
 const EVENTS_SINCE = process.env.BQ_EVENTS_SINCE || "2019-01-01";   // all time: a returning collector's history is the point
 const SINCE = process.env.BQ_SINCE || "2025-01-01";
 const LOCATION = process.env.BQ_LOCATION || undefined; // e.g. "EU"; omit to let BQ infer
@@ -87,7 +94,7 @@ function configured() {
   if (!sa) return null;
   if (!PROJECT_RE.test(PROJECT)) throw new Error(`BQ_PROJECT "${PROJECT}" is not a valid project id`);
   for (const [name, v] of [["BQ_DATASET", DATASET], ["BQ_FUNNEL_TABLE", FUNNEL_TABLE], ["BQ_SPEND_TABLE", SPEND_TABLE],
-                           ["BQ_EVENTS_TABLE", EVENTS_TABLE]]) {
+                           ["BQ_EVENTS_TABLE", EVENTS_TABLE], ["BQ_ORDERS_TABLE", ORDERS_TABLE], ["BQ_COLLECTORS_TABLE", COLLECTORS_TABLE]]) {
     if (!IDENT.test(v)) throw new Error(`${name} "${v}" must be letters, digits and underscores`);
   }
   if (!DATE_RE.test(SINCE)) throw new Error(`BQ_SINCE "${SINCE}" must be YYYY-MM-DD`);
@@ -147,6 +154,110 @@ function contactKeySql(column) {
   return `TO_HEX(SHA256(CONCAT(@salt, LOWER(TRIM(${column})))))`;
 }
 const contactKeyParams = () => ({ salt: { type: "STRING", value: process.env.PII_HASH_SALT } });
+
+// ---------------------------------------------------------------- what the account can see (names only)
+
+/* Every dataset, table and view the service account can list in the project,
+ * with column names and types, from the REST metadata endpoints: no query
+ * runs, no row is read, nothing is billed. Column names are matched against
+ * the address pattern and FLAGGED, never selected, and a view's SQL is left
+ * out (free text). The first place to look when the account is granted a
+ * new table: `node server/bigquery.js --schema` prints it, GET
+ * /api/bigquery/schema serves it. The product, order, draft and draw flags
+ * are there to answer "does anything here carry the product of a sale". */
+const PRODUCT_COLUMN = /product|sku|variant|artwork|edition|item_|_item|line_item|title/i;
+const ORDER_COLUMN = /order|invoice|checkout|fulfil|refund|cancel|payment|paid/i;
+const DRAFT_COLUMN = /draft/i;
+const DRAW_COLUMN = /draw|entry|entrant|winner|allocat/i;
+const MAX_TABLES = 600;
+
+async function schema(token) {
+  const base = `https://bigquery.googleapis.com/bigquery/v2/projects/${PROJECT}`;
+  const get = async (url) => {
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`BigQuery ${res.status}: ${(json.error && json.error.message) || "?"}`);
+    return json;
+  };
+  const list = async (url, key) => {
+    const out = [];
+    let pageToken = null;
+    do {
+      const page = await get(url + (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""));
+      out.push(...(page[key] || []));
+      pageToken = page.nextPageToken || null;
+    } while (pageToken);
+    return out;
+  };
+  const datasets = await list(`${base}/datasets?all=true&maxResults=200`, "datasets");
+  const out = { project: PROJECT, at: new Date().toISOString(), datasets: [], tables: 0, truncated: false };
+  for (const d of datasets) {
+    const id = d.datasetReference.datasetId;
+    const ds = { id, tables: [] };
+    out.datasets.push(ds);
+    let tables;
+    try { tables = await list(`${base}/datasets/${encodeURIComponent(id)}/tables?maxResults=500`, "tables"); }
+    catch (e) { ds.error = String(e.message || e).replace(/\s+/g, " ").slice(0, 160); continue; }
+    for (const t of tables) {
+      if (out.tables >= MAX_TABLES) { out.truncated = true; break; }
+      out.tables += 1;
+      const tid = t.tableReference.tableId;
+      let meta;
+      try { meta = await get(`${base}/datasets/${encodeURIComponent(id)}/tables/${encodeURIComponent(tid)}`); }
+      catch (e) { ds.tables.push({ id: tid, type: t.type, error: String(e.message || e).replace(/\s+/g, " ").slice(0, 160) }); continue; }
+      const columns = ((meta.schema && meta.schema.fields) || []).map((f) => ({ name: f.name, type: f.type + (f.mode === "REPEATED" ? "[]" : "") }));
+      const names = columns.map((c) => c.name);
+      ds.tables.push({
+        id: tid, type: meta.type || t.type,
+        rows: meta.numRows !== undefined ? Number(meta.numRows) : null,
+        modified: meta.lastModifiedTime ? new Date(Number(meta.lastModifiedTime)).toISOString().slice(0, 10) : null,
+        columns,
+        address: names.filter((n) => PII_COLUMN.test(n)),
+        product: names.filter((n) => PRODUCT_COLUMN.test(n)),
+        order: names.filter((n) => ORDER_COLUMN.test(n)),
+        draft: names.filter((n) => DRAFT_COLUMN.test(n)),
+        draw: names.filter((n) => DRAW_COLUMN.test(n)),
+      });
+    }
+  }
+  return out;
+}
+
+async function listSchema() {
+  const sa = configured();
+  if (!sa) return null;
+  const token = await accessToken(sa, "bigquery");
+  return schema(token);
+}
+
+/* The listing as text, for the terminal and for pasting into a chat: one
+ * line per table with its column names, then the tables worth a look. */
+function schemaText(doc) {
+  const lines = [`${doc.project} - what the service account can see (${doc.at.slice(0, 16)}, ${doc.tables} tables${doc.truncated ? ", truncated" : ""})`];
+  const fmtRows = (n) => (n === null || n === undefined ? "" : n >= 1e6 ? `${(n / 1e6).toFixed(1)}M rows` : n >= 1e3 ? `${(n / 1e3).toFixed(0)}k rows` : `${n} rows`);
+  for (const ds of doc.datasets) {
+    lines.push("", `${ds.id}${ds.error ? `  (${ds.error})` : ""}`);
+    for (const t of ds.tables) {
+      if (t.error) { lines.push(`  ${t.id}  (${t.error})`); continue; }
+      const tags = [t.type, fmtRows(t.rows), t.modified].filter(Boolean).join(", ");
+      lines.push(`  ${t.id}  [${tags}]`);
+      lines.push(`    ${t.columns.map((c) => c.name).join(", ")}`);
+      const flags = [];
+      if (t.address.length) flags.push(`address column, never select: ${t.address.join(", ")}`);
+      if (t.product.length) flags.push(`product: ${t.product.join(", ")}`);
+      if (t.draft.length) flags.push(`draft: ${t.draft.join(", ")}`);
+      if (flags.length) lines.push(`    ! ${flags.join(" | ")}`);
+    }
+  }
+  const worth = [];
+  for (const ds of doc.datasets) for (const t of ds.tables) {
+    if (t.error) continue;
+    if (t.product.length && (t.order.length || t.draw.length)) worth.push(`${ds.id}.${t.id} (product + ${t.order.length ? "order" : "draw"} columns)`);
+    else if (t.draft.length) worth.push(`${ds.id}.${t.id} (draft columns)`);
+  }
+  lines.push("", worth.length ? `Worth a look for sales and drafts by product:\n  ${worth.join("\n  ")}` : "No table carries both a product column and an order or draw column.");
+  return lines.join("\n") + "\n";
+}
 
 // ---------------------------------------------------------------- query
 
@@ -245,6 +356,159 @@ const funnelSql = () =>
 const spendSql = () =>
   `SELECT * FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
   "WHERE spend_date >= @since\nORDER BY campaign_name, spend_date";
+
+// ---------------------------------------------------------------- orders and drafts by product
+
+/* Order_Line_Concept is one row per Shopify order line and carries the
+ * customer's email on every row. Nothing here reads it: both queries return
+ * aggregates per release and product, and the join that names the product a
+ * draw sold runs inside BigQuery on the pseudonymous account id, so the rows
+ * that travel are release, product, draw and counts (docs/DATA_MODEL.md 2.4).
+ *   orders_by_product.csv  per release x Shopify product title: units paid
+ *                          (orders, not cancelled, not refunded), refunded,
+ *                          awaiting payment (draft orders an advisor raised
+ *                          that have no order yet - the PREORDER route is the
+ *                          advisor's pre-sale during a campaign - and orders
+ *                          still pending), the collectors those are out to
+ *                          who have not paid for anything on the release (an
+ *                          advisor offers several colours to one collector;
+ *                          for information), the drafts a person raised for
+ *                          a collector with a live entry on the release (an
+ *                          early claim, a winner's invoice: already on the
+ *                          card as the entry), the app's own pre-authorisation
+ *                          drafts (one per live entry, whatever the SKU -
+ *                          counted apart, because the card already counts
+ *                          those as entries), from drafts,
+ *                          private room, the list price, first and last
+ *                          order day, last draft day
+ *   draw_products.csv      per draw: the product its winners bought most, and
+ *                          the share of their orders it took
+ * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
+ * that day is in; the draw map reads events from that day. */
+const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
+  "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts", "units_winner_drafts_lapsed", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
+const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
+
+const ordersSql = () =>
+  "WITH lines AS (\n" +
+  "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
+  "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room,\n" +
+  "    shopify_product_variant_price, shopify_order_created_date_CET AS order_date, DATE(shopify_draft_order_created_at) AS draft_date,\n" +
+  "    TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), shopify_draft_order_created_at, HOUR) AS draft_age_hours,\n" +
+  "    COALESCE(shopify_order_facilitator, '') AS facilitator,\n" +
+  "    REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$') AS draw_sku,\n" +
+  // refund_id is carried on every line of an order that has a refund, so it
+  // cannot say which line came back: a partly refunded order (nearly always
+  // a frame or the shipping refunded, the piece kept) stays paid, and only an
+  // order refunded in full is a refund
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AS paid,\n" +
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') = 'refunded' AS refunded\n" +
+  `  FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
+  "  WHERE is_test_order = 0 AND shopify_product_type = 'Product'\n" +
+  "    AND simple_release_name IS NOT NULL AND simple_release_name != '' AND product_title IS NOT NULL AND product_title != ''\n" +
+  "    AND (DATE(launch_date) >= @since OR shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)\n" +
+  // the table holds some order lines twice (a copy of the same line id, or
+  // one row per refund on the order): one row per line id, or every unit of
+  // those lines is counted twice
+  "  QUALIFY order_lineitem_id IS NULL OR ROW_NUMBER() OVER (PARTITION BY order_source_type, order_lineitem_id ORDER BY refund_processed_at DESC) = 1),\n" +
+  // the app that pre-authorises a draw entry writes its drafts under one
+  // facilitator account: any account whose drafts are nearly all on the DRAW
+  // SKU is the app, and every draft it writes (some land on the base SKU) is
+  // an entry, not an advisor's draft
+  "app_facilitators AS (\n" +
+  "  SELECT facilitator FROM lines WHERE order_source_type = 'Draft' AND facilitator != ''\n" +
+  "  GROUP BY facilitator HAVING COUNT(*) >= 100 AND COUNTIF(draw_sku) >= 0.9 * COUNT(*)),\n" +
+  // a collector still in a draw (eligible, not won, not bought) is on the
+  // card as that entry, so a draft an advisor raises for them - an early
+  // claim - is the same unit and is counted apart. A winner who has not paid
+  // is not counted as an entry at all: the draft an advisor has out for them
+  // is their claim and counts as a draft, and without one they are nowhere
+  // until they pay. Both sets are joined through the collector table's two
+  // id columns.
+  "entries AS (\n" +
+  "  SELECT e.simple_release_name AS release, c.shopify_customer_id AS customer_id, e.bought, e.eligible, e.won\n" +
+  "  FROM (SELECT simple_release_name, aa_account_id, draw_id, MAX(IF(draw_with_purchase = 1, 1, 0)) AS bought,\n" +
+  "               MAX(IF(draw_entry_eligible, 1, 0)) AS eligible, MAX(IF(winner, 1, 0)) AS won\n" +
+  `        FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+  "        WHERE event_name = 'draw entry intent' AND aa_account_id IS NOT NULL AND draw_id IS NOT NULL AND event_date >= @since\n" +
+  "        GROUP BY 1, 2, 3) e\n" +
+  `  JOIN \`${PROJECT}.${DATASET}.${COLLECTORS_TABLE}\` c ON c.aa_account_id = e.aa_account_id AND c.shopify_customer_id IS NOT NULL),\n` +
+  "open_entrants AS (SELECT DISTINCT release, customer_id FROM entries WHERE bought = 0 AND eligible = 1 AND won = 0),\n" +
+  "unpaid_winners AS (SELECT DISTINCT release, customer_id FROM entries WHERE bought = 0 AND won = 1),\n" +
+  // the app's pre-authorisation is any draft its facilitator account wrote,
+  // and before that account existed (September 2025) a draft with no
+  // facilitator on the DRAW SKU; everything else a person raised
+  "typed AS (\n" +
+  "  SELECT l.*,\n" +
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AS entry_draft,\n" +
+  // a winner's draft (the order an advisor sends after a failed payment)
+  // counts as a draft for 72 hours; unpaid after that it lapses and is out
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NOT NULL\n" +
+  "      AND NOT (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72) AS winner_draft,\n" +
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NOT NULL\n" +
+  "      AND (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72) AS winner_draft_lapsed,\n" +
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NULL AND oe.customer_id IS NOT NULL AS entrant_draft,\n" +
+  "    l.cancelled_order = 0 AND ((l.order_source_type = 'Draft' AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku))\n" +
+  "        AND ((uw.customer_id IS NOT NULL AND NOT (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72)) OR (uw.customer_id IS NULL AND oe.customer_id IS NULL)))\n" +
+  "      OR (l.order_source_type = 'Order' AND l.order_financial_status = 'pending')) AS awaiting\n" +
+  "  FROM lines l LEFT JOIN app_facilitators a ON a.facilitator = l.facilitator\n" +
+  "  LEFT JOIN open_entrants oe ON oe.release = l.release AND oe.customer_id = l.customer_id\n" +
+  "  LEFT JOIN unpaid_winners uw ON uw.release = l.release AND uw.customer_id = l.customer_id),\n" +
+  "paid_customers AS (SELECT DISTINCT release, customer_id FROM typed WHERE paid AND customer_id IS NOT NULL)\n" +
+  "SELECT l.release, ANY_VALUE(l.release_name) AS campaign_code, l.product_title,\n" +
+  "  STRING_AGG(DISTINCT CAST(l.shopify_product_id AS STRING), '|') AS product_ids,\n" +
+  "  STRING_AGG(DISTINCT l.sku, '|') AS skus,\n" +
+  "  SUM(IF(l.paid, l.quantity, 0)) AS units_paid,\n" +
+  "  SUM(IF(l.refunded, l.quantity, 0)) AS units_refunded,\n" +
+  "  SUM(IF(l.awaiting, l.quantity, 0)) AS units_draft_pending,\n" +
+  "  COUNT(DISTINCT IF(l.awaiting AND p.customer_id IS NULL, COALESCE(CAST(l.customer_id AS STRING), CONCAT('line', CAST(l.order_lineitem_id AS STRING))), NULL)) AS draft_customers,\n" +
+  "  SUM(IF(l.entrant_draft, l.quantity, 0)) AS units_entrant_drafts,\n" +
+  "  SUM(IF(l.entry_draft, l.quantity, 0)) AS units_entry_drafts,\n" +
+  "  SUM(IF(l.winner_draft, l.quantity, 0)) AS units_winner_drafts,\n" +
+  "  SUM(IF(l.winner_draft_lapsed, l.quantity, 0)) AS units_winner_drafts_lapsed,\n" +
+  "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.order_originated_from_drafts = 1, l.quantity, 0)) AS units_from_drafts,\n" +
+  "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.is_private_room = 1, l.quantity, 0)) AS units_private_room,\n" +
+  "  APPROX_QUANTILES(IF(l.shopify_product_variant_price > 0, CAST(l.shopify_product_variant_price AS FLOAT64), NULL), 2)[OFFSET(1)] AS list_price_eur,\n" +
+  "  MIN(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS first_order,\n" +
+  "  MAX(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS last_order,\n" +
+  "  MAX(l.draft_date) AS last_draft\n" +
+  "FROM typed l LEFT JOIN paid_customers p ON p.release = l.release AND p.customer_id = l.customer_id\n" +
+  "GROUP BY l.release, l.product_title\nORDER BY l.release, l.product_title";
+
+const drawProductsSql = () =>
+  "WITH wins AS (\n" +
+  "  SELECT DISTINCT simple_release_name AS release, aa_account_id, draw_id\n" +
+  `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+  "  WHERE event_name = 'draw entry intent' AND winner AND draw_id IS NOT NULL AND aa_account_id IS NOT NULL AND event_date >= @since),\n" +
+  "buys AS (\n" +
+  "  SELECT DISTINCT simple_release_name AS release, aa_account_id, shopify_order_id\n" +
+  `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+  "  WHERE event_name = 'purchase' AND shopify_order_id IS NOT NULL AND aa_account_id IS NOT NULL AND event_date >= @since),\n" +
+  "pairs AS (\n" +
+  "  SELECT w.release, w.draw_id, o.product_title, COUNT(DISTINCT o.shopify_order_id) AS orders\n" +
+  "  FROM wins w\n" +
+  "  JOIN buys b ON b.release = w.release AND b.aa_account_id = w.aa_account_id\n" +
+  `  JOIN \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\` o ON o.shopify_order_id = b.shopify_order_id AND o.simple_release_name = w.release\n` +
+  "    AND o.shopify_product_type = 'Product' AND o.is_test_order = 0 AND o.product_title IS NOT NULL AND o.product_title != ''\n" +
+  "  GROUP BY 1, 2, 3)\n" +
+  "SELECT release, draw_id, product_title, orders,\n" +
+  "  ROUND(orders / SUM(orders) OVER (PARTITION BY release, draw_id), 3) AS share\n" +
+  "FROM pairs\n" +
+  "QUALIFY ROW_NUMBER() OVER (PARTITION BY release, draw_id ORDER BY orders DESC, product_title) = 1\n" +
+  "ORDER BY release, draw_id";
+
+/* A writer that keeps the columns as they come, once they are the expected
+ * ones: these files are read by name in etl/build.py, so a column added or
+ * renamed upstream is a failed pull, not a silently different file. */
+function passthroughWriter(expect, label) {
+  return (headerRow) => {
+    const header = headerRow.map((h) => String(h ?? "").trim());
+    if (header.length !== expect.length || header.some((h, i) => h !== expect[i])) {
+      throw new Error(`${label} columns are not the expected ${expect.length}: ${header.join(", ")}`);
+    }
+    return { header: header.map(csvCell).join(","), dateIndex: -1, dropped: 0, row: (cells) => cells.map(csvCell).join(",") };
+  };
+}
 
 // ---------------------------------------------------------------- events feed (personal-data rule)
 
@@ -704,6 +968,29 @@ async function pull({ write = true, full = false, events = true, only = null } =
     }
   }
 
+  // orders and drafts by product, and the product each draw sold: two
+  // aggregate queries into two small files, optional like spend
+  let orders = null, ordersNote;
+  if (skip("orders")) {
+    ordersNote = `orders not pulled (--${only})`;
+  } else if (process.env.BQ_ORDERS === "off") {
+    ordersNote = "orders skipped (BQ_ORDERS=off)";
+  } else {
+    const t1 = new Tmp(ORDERS_BY_PRODUCT, write), t2 = new Tmp(DRAW_PRODUCTS, write);
+    try {
+      const a = await streamTable(token, ordersSql(), SINCE, passthroughWriter(ORDERS_HEADER, "orders"), t1);
+      if (a.rows < 10) throw new Error(`orders query returned ${a.rows} rows - not overwriting`);
+      guardShrink("orders query", a.rows, ORDERS_BY_PRODUCT);
+      const b = await streamTable(token, drawProductsSql(), SINCE, passthroughWriter(DRAW_PRODUCTS_HEADER, "draw products"), t2);
+      if (write) { t1.commit(ORDERS_BY_PRODUCT); t2.commit(DRAW_PRODUCTS); } else { t1.discard(); t2.discard(); }
+      orders = { rows: a.rows, draws: b.rows, bytes: a.bytes + b.bytes, cached: a.cached && b.cached };
+      ordersNote = `orders ${a.rows} products, ${b.rows} draws named`;
+    } catch (e) {
+      t1.discard(); t2.discard();
+      ordersNote = `orders unavailable, keeping the last files (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`;
+    }
+  }
+
   // the event-level feed: optional like spend, and a failure of its guards is
   // reported, never worked around - the previous (clean) file keeps serving
   let ev = null, eventsNote;
@@ -741,7 +1028,7 @@ async function pull({ write = true, full = false, events = true, only = null } =
     }
   }
 
-  const parts = [funnel, spend, ev, br].filter(Boolean);
+  const parts = [funnel, spend, orders, ev, br].filter(Boolean);
   const bytes = parts.reduce((n, x) => n + x.bytes, 0);
   const gb = (bytes / 1e9).toFixed(2);
   const cached = parts.every((x) => x.cached) ? ", cache hit" : "";
@@ -749,23 +1036,26 @@ async function pull({ write = true, full = false, events = true, only = null } =
   const funnelNote = funnel ? `${funnel.note}${dropped}, ` : "";
   return {
     funnelRows: funnel ? funnel.rows : null, spendRows: spend ? spend.rows : null,
+    ordersRows: orders ? orders.rows : null,
     eventsRows: ev ? ev.rows : null, browsingRows: br ? br.rows : null, mode: funnel ? funnel.mode : (only || "events"),
-    summary: `${funnelNote}${spendNote}, ${eventsNote}, ${browsingNote}, since ${SINCE} ` +
+    summary: `${funnelNote}${spendNote}, ${ordersNote}, ${eventsNote}, ${browsingNote}, since ${SINCE} ` +
       `(${gb} GB scanned${cached}, ${sa._env})`,
   };
 }
 
 module.exports = {
   pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
-  ACROSS_TIME, SPEND_DAILY, META,
+  ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
   LE_BROWSING, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
   PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
+  schema, listSchema, schemaText,
 };
 
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;
 // --write replaces the CSVs, --full forces a full pull, --events or --browsing
-// pulls that one feed alone. Handy from a Render shell.
+// pulls that one feed alone (--orders the orders-by-product pair), --schema
+// lists what the account can see (names only, no rows). Handy from a Render shell.
 if (require.main === module) {
   (async () => {
     if (!configured()) {
@@ -773,10 +1063,15 @@ if (require.main === module) {
         "(and BQ_PROJECT/BQ_DATASET if they differ from the defaults).");
       process.exit(1);
     }
+    if (process.argv.includes("--schema")) {
+      process.stdout.write(schemaText(await listSchema()));
+      return;
+    }
     const write = process.argv.includes("--write");
     const full = process.argv.includes("--full");
-    const only = process.argv.includes("--events") ? "events" : process.argv.includes("--browsing") ? "browsing" : null;
-    if (only !== "events") {
+    const only = process.argv.includes("--events") ? "events" : process.argv.includes("--browsing") ? "browsing"
+      : process.argv.includes("--orders") ? "orders" : null;
+    if (only !== "events" && only !== "orders") {
       const feed = only === "browsing" ? BROWSING_FEED : FUNNEL_FEED;
       const p = plan(full, feed);
       console.log(`plan (${feed.label}): ${p.mode}${p.reason ? ` (${p.reason})` : ""}`);
@@ -784,6 +1079,7 @@ if (require.main === module) {
     const out = await pull({ write, full, only });
     console.log(out.summary);
     const wrote = [out.funnelRows !== null && ACROSS_TIME, out.spendRows !== null && SPEND_DAILY,
+                   out.ordersRows !== null && `${ORDERS_BY_PRODUCT} + ${DRAW_PRODUCTS}`,
                    out.eventsRows !== null && LE_EVENTS, out.browsingRows !== null && LE_BROWSING].filter(Boolean);
     console.log(write ? `wrote ${wrote.join(", ")}` : "dry run - pass --write to replace the CSVs");
   })().catch((e) => { console.error(String(e.message || e)); process.exit(1); });

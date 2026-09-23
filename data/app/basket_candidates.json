@@ -1,0 +1,4325 @@
+{
+ "asOf": "2026-09-20",
+ "rows": [
+  {
+   "release_name": "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Tschabalala Self",
+   "title": "Multiple",
+   "quarter": "2026 Q3",
+   "window_start": "2026-06-21",
+   "window_end": "2026-09-04",
+   "campaign_days": 27.0,
+   "units": 101.0,
+   "sessions": 2266.0,
+   "paid_share": 0.000892458723784,
+   "unit_shares": {
+    "aa_email": 0.7244897959183674,
+    "aa_social": 0.010204081632653,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2653061224489796,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.6876394466755913,
+    "aa_social": 0.1378848728246318,
+    "referral_artist": 0.000892458723784,
+    "search_direct_other": 0.1726907630522088,
+    "paid": 0.000892458723784
+   },
+   "convs": {
+    "aa_email": 0.0129785853341985,
+    "aa_social": 0.029126213592233,
+    "referral_artist": null,
+    "search_direct_other": 0.0645994832041343,
+    "paid": null
+   },
+   "entries": 58.0,
+   "units_per_buyer": 1.041237113402062,
+   "private_room_share": 0.8316831683168316,
+   "price": 1700.0,
+   "edition_size": 0.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Zeng Fanzhi \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Zeng Fanzhi",
+   "title": "Multiple",
+   "quarter": "2026 Q3",
+   "window_start": "2026-06-14",
+   "window_end": "2026-08-29",
+   "campaign_days": 28.0,
+   "units": 61.0,
+   "sessions": 10708.0,
+   "paid_share": 0.6475754461365972,
+   "unit_shares": {
+    "aa_email": 0.4745762711864407,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.288135593220339,
+    "paid": 0.2372881355932203
+   },
+   "sess_shares": {
+    "aa_email": 0.250490516677567,
+    "aa_social": 0.0297112958983462,
+    "referral_artist": 0.0029898159394562,
+    "search_direct_other": 0.0692329253480332,
+    "paid": 0.6475754461365972
+   },
+   "convs": {
+    "aa_email": 0.0029839612085042,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0148448043184885,
+    "paid": 0.0018756312220458
+   },
+   "entries": 33.0,
+   "units_per_buyer": 1.297872340425532,
+   "private_room_share": 0.3934426229508196,
+   "price": 2125.0,
+   "edition_size": 100.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Abdulnasser Gharem \u00b7 Hemisphere \u00b7 2026 Q3",
+   "artist": "Abdulnasser Gharem",
+   "title": "Hemisphere",
+   "quarter": "2026 Q3",
+   "window_start": "2026-06-12",
+   "window_end": "2026-08-28",
+   "campaign_days": 29.0,
+   "units": 20.0,
+   "sessions": 11583.0,
+   "paid_share": 0.8328133125325013,
+   "unit_shares": {
+    "aa_email": 0.3333333333333333,
+    "aa_social": 0.1333333333333333,
+    "referral_artist": 0.0666666666666666,
+    "search_direct_other": 0.1333333333333333,
+    "paid": 0.3333333333333333
+   },
+   "sess_shares": {
+    "aa_email": 0.079563182527301,
+    "aa_social": 0.0223608944357774,
+    "referral_artist": 0.0120471485526087,
+    "search_direct_other": 0.0532154619518114,
+    "paid": 0.8328133125325013
+   },
+   "convs": {
+    "aa_email": 0.0021786492374727,
+    "aa_social": 0.0077519379844961,
+    "referral_artist": 0.0071942446043165,
+    "search_direct_other": 0.003257328990228,
+    "paid": 0.0007284837131855
+   },
+   "entries": 14.0,
+   "units_per_buyer": 1.25,
+   "private_room_share": 0.15,
+   "price": 3400.0,
+   "edition_size": 40.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Parra \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Parra",
+   "title": "Multiple",
+   "quarter": "2026 Q3",
+   "window_start": "2026-06-16",
+   "window_end": "2026-08-24",
+   "campaign_days": 21.0,
+   "units": 297.0,
+   "sessions": 26863.0,
+   "paid_share": 0.6216609461274437,
+   "unit_shares": {
+    "aa_email": 0.3846153846153846,
+    "aa_social": 0.0979020979020979,
+    "referral_artist": 0.0664335664335664,
+    "search_direct_other": 0.1748251748251748,
+    "paid": 0.2762237762237762
+   },
+   "sess_shares": {
+    "aa_email": 0.1858304730637218,
+    "aa_social": 0.0479779137442172,
+    "referral_artist": 0.0810699895537979,
+    "search_direct_other": 0.0634606775108192,
+    "paid": 0.6216609461274437
+   },
+   "convs": {
+    "aa_email": 0.0134511142340895,
+    "aa_social": 0.0209953343701399,
+    "referral_artist": 0.0087436723423838,
+    "search_direct_other": 0.0388007054673721,
+    "paid": 0.0047410430294664
+   },
+   "entries": 263.0,
+   "units_per_buyer": 1.125,
+   "private_room_share": 0.2558922558922559,
+   "price": 552.5,
+   "edition_size": 300.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "James Jean \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "James Jean",
+   "title": "Multiple",
+   "quarter": "2026 Q3",
+   "window_start": "2026-06-15",
+   "window_end": "2026-08-23",
+   "campaign_days": 21.0,
+   "units": 587.0,
+   "sessions": 48603.0,
+   "paid_share": 0.7543259017881081,
+   "unit_shares": {
+    "aa_email": 0.2769516728624535,
+    "aa_social": 0.0594795539033457,
+    "referral_artist": 0.1189591078066914,
+    "search_direct_other": 0.2007434944237918,
+    "paid": 0.3438661710037174
+   },
+   "sess_shares": {
+    "aa_email": 0.1247550889929259,
+    "aa_social": 0.0135706478025037,
+    "referral_artist": 0.0548600655845896,
+    "search_direct_other": 0.0524882958318724,
+    "paid": 0.7543259017881081
+   },
+   "convs": {
+    "aa_email": 0.0185154571003471,
+    "aa_social": 0.0440729483282674,
+    "referral_artist": 0.0236842105263157,
+    "search_direct_other": 0.0467583497053045,
+    "paid": 0.0047846889952153
+   },
+   "entries": 519.0,
+   "units_per_buyer": 1.1512770137524557,
+   "private_room_share": 0.0834752981260647,
+   "price": 595.0,
+   "edition_size": 600.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Piet Mondrian Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Piet Mondrian Estate",
+   "title": "Multiple",
+   "quarter": "2026 Q3",
+   "window_start": "2026-06-09",
+   "window_end": "2026-08-21",
+   "campaign_days": 25.0,
+   "units": 884.0,
+   "sessions": 38211.0,
+   "paid_share": 0.4821559970566593,
+   "unit_shares": {
+    "aa_email": 0.4544349939246658,
+    "aa_social": 0.0279465370595382,
+    "referral_artist": 0.0036452004860267,
+    "search_direct_other": 0.2357229647630619,
+    "paid": 0.2782503037667072
+   },
+   "sess_shares": {
+    "aa_email": 0.3083937769368233,
+    "aa_social": 0.0196573110480395,
+    "referral_artist": 0.0014191106906338,
+    "search_direct_other": 0.188373804267844,
+    "paid": 0.4821559970566593
+   },
+   "convs": {
+    "aa_email": 0.0250532594801874,
+    "aa_social": 0.0427807486631016,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0318080357142857,
+    "paid": 0.0139532348612852
+   },
+   "entries": 841.0,
+   "units_per_buyer": 1.3634969325153374,
+   "private_room_share": 0.2002262443438914,
+   "price": 425.0,
+   "edition_size": 900.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Jaume Plensa \u00b7 UTOPIA \u00b7 2026 Q3",
+   "artist": "Jaume Plensa",
+   "title": "UTOPIA",
+   "quarter": "2026 Q3",
+   "window_start": "2026-05-23",
+   "window_end": "2026-08-08",
+   "campaign_days": 22.0,
+   "units": 214.0,
+   "sessions": 65681.0,
+   "paid_share": 0.9205616024878808,
+   "unit_shares": {
+    "aa_email": 0.1507537688442211,
+    "aa_social": 0.0201005025125628,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2010050251256281,
+    "paid": 0.628140703517588
+   },
+   "sess_shares": {
+    "aa_email": 0.0492240617091984,
+    "aa_social": 0.0068904539772554,
+    "referral_artist": 0.0003353760785389,
+    "search_direct_other": 0.0229885057471264,
+    "paid": 0.9205616024878808
+   },
+   "convs": {
+    "aa_email": 0.0102198823165066,
+    "aa_social": 0.0132743362831858,
+    "referral_artist": null,
+    "search_direct_other": 0.0344827586206896,
+    "paid": 0.0021527812277476
+   },
+   "entries": 225.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0560747663551401,
+   "price": 1275.0,
+   "edition_size": 300.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Backside works. \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Backside works.",
+   "title": "Multiple",
+   "quarter": "2026 Q3",
+   "window_start": "2026-05-18",
+   "window_end": "2026-08-02",
+   "campaign_days": 28.0,
+   "units": 87.0,
+   "sessions": 7964.0,
+   "paid_share": 0.2464503042596348,
+   "unit_shares": {
+    "aa_email": 0.3125,
+    "aa_social": 0.0625,
+    "referral_artist": 0.1875,
+    "search_direct_other": 0.4125,
+    "paid": 0.025
+   },
+   "sess_shares": {
+    "aa_email": 0.3419117647058823,
+    "aa_social": 0.0070993914807302,
+    "referral_artist": 0.2252789046653144,
+    "search_direct_other": 0.1792596348884381,
+    "paid": 0.2464503042596348
+   },
+   "convs": {
+    "aa_email": 0.0103819058212829,
+    "aa_social": 0.0892857142857142,
+    "referral_artist": 0.0196961170512099,
+    "search_direct_other": 0.0282885431400282,
+    "paid": 0.0072016460905349
+   },
+   "entries": 125.0,
+   "units_per_buyer": 1.3108108108108107,
+   "private_room_share": 0.2298850574712643,
+   "price": 1445.0,
+   "edition_size": 100.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Ahmed Mater \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Ahmed Mater",
+   "title": "Multiple",
+   "quarter": "2026 Q3",
+   "window_start": "2026-05-17",
+   "window_end": "2026-07-31",
+   "campaign_days": 27.0,
+   "units": 32.0,
+   "sessions": 7842.0,
+   "paid_share": 0.6201224177505739,
+   "unit_shares": {
+    "aa_email": 0.28125,
+    "aa_social": 0.1875,
+    "referral_artist": 0.28125,
+    "search_direct_other": 0.21875,
+    "paid": 0.03125
+   },
+   "sess_shares": {
+    "aa_email": 0.2365467992858964,
+    "aa_social": 0.0354501402703392,
+    "referral_artist": 0.051900025503698,
+    "search_direct_other": 0.0559806171894924,
+    "paid": 0.6201224177505739
+   },
+   "convs": {
+    "aa_email": 0.0032345013477088,
+    "aa_social": 0.014388489208633,
+    "referral_artist": 0.0073710073710073,
+    "search_direct_other": 0.0136674259681093,
+    "paid": 0.0002056343820686
+   },
+   "entries": 20.0,
+   "units_per_buyer": 1.2142857142857142,
+   "private_room_share": 0.21875,
+   "price": 3400.0,
+   "edition_size": 75.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Yoon Hyup \u00b7 Ambre Roulette \u00b7 2026 Q3",
+   "artist": "Yoon Hyup",
+   "title": "Ambre Roulette",
+   "quarter": "2026 Q3",
+   "window_start": "2026-05-11",
+   "window_end": "2026-07-26",
+   "campaign_days": 28.0,
+   "units": 196.0,
+   "sessions": 18877.0,
+   "paid_share": 0.6142872351751304,
+   "unit_shares": {
+    "aa_email": 0.3333333333333333,
+    "aa_social": 0.0564971751412429,
+    "referral_artist": 0.1977401129943503,
+    "search_direct_other": 0.1468926553672316,
+    "paid": 0.2655367231638418
+   },
+   "sess_shares": {
+    "aa_email": 0.2534866389864793,
+    "aa_social": 0.0256574044501224,
+    "referral_artist": 0.0686149260087299,
+    "search_direct_other": 0.0379537953795379,
+    "paid": 0.6142872351751304
+   },
+   "convs": {
+    "aa_email": 0.0062998740025199,
+    "aa_social": 0.0145228215767634,
+    "referral_artist": 0.0232738557020946,
+    "search_direct_other": 0.0462833099579242,
+    "paid": 0.0042461005199306
+   },
+   "entries": 152.0,
+   "units_per_buyer": 1.0051020408163265,
+   "private_room_share": 0.1989795918367347,
+   "price": 722.5,
+   "edition_size": 200.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Zeng Fanzhi \u00b7 Rainbow (Mask Series 1997 no.8) \u00b7 2026 Q3",
+   "artist": "Zeng Fanzhi",
+   "title": "Rainbow (Mask Series 1997 no.8)",
+   "quarter": "2026 Q3",
+   "window_start": "2026-05-12",
+   "window_end": "2026-07-25",
+   "campaign_days": 26.0,
+   "units": 181.0,
+   "sessions": 17026.0,
+   "paid_share": 0.7586857783283195,
+   "unit_shares": {
+    "aa_email": 0.4181818181818181,
+    "aa_social": 0.0424242424242424,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2303030303030303,
+    "paid": 0.3090909090909091
+   },
+   "sess_shares": {
+    "aa_email": 0.1944788533003008,
+    "aa_social": 0.0116793487878251,
+    "referral_artist": 0.0001769598301185,
+    "search_direct_other": 0.0349790597534359,
+    "paid": 0.7586857783283195
+   },
+   "convs": {
+    "aa_email": 0.0154686078252957,
+    "aa_social": 0.0505050505050505,
+    "referral_artist": null,
+    "search_direct_other": 0.072512647554806,
+    "paid": 0.0038874203078836
+   },
+   "entries": 159.0,
+   "units_per_buyer": 1.0274725274725274,
+   "private_room_share": 0.149171270718232,
+   "price": 871.25,
+   "edition_size": 300.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Giuseppe Penone \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Giuseppe Penone",
+   "title": "Multiple",
+   "quarter": "2026 Q3",
+   "window_start": "2026-05-03",
+   "window_end": "2026-07-19",
+   "campaign_days": 29.0,
+   "units": 23.0,
+   "sessions": 8324.0,
+   "paid_share": 0.5633040759889383,
+   "unit_shares": {
+    "aa_email": 0.5,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3636363636363636,
+    "paid": 0.1363636363636363
+   },
+   "sess_shares": {
+    "aa_email": 0.3295659492605506,
+    "aa_social": 0.0340266923169412,
+    "referral_artist": 0.032824335697968,
+    "search_direct_other": 0.0402789467356017,
+    "paid": 0.5633040759889383
+   },
+   "convs": {
+    "aa_email": 0.0014593214155417,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.017910447761194,
+    "paid": 0.0008537886872998
+   },
+   "entries": 15.0,
+   "units_per_buyer": 1.15,
+   "private_room_share": 0.217391304347826,
+   "price": 1870.0,
+   "edition_size": 23.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "LY \u00b7 LUV New Beginnings \u00b7 2026 Q3",
+   "artist": "LY",
+   "title": "LUV New Beginnings",
+   "quarter": "2026 Q3",
+   "window_start": "2026-05-02",
+   "window_end": "2026-07-10",
+   "campaign_days": 21.0,
+   "units": 32.0,
+   "sessions": 5969.0,
+   "paid_share": 0.2635463848347593,
+   "unit_shares": {
+    "aa_email": 0.5333333333333333,
+    "aa_social": 0.1666666666666666,
+    "referral_artist": 0.0666666666666666,
+    "search_direct_other": 0.2333333333333333,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.5631605435329643,
+    "aa_social": 0.0843818151316893,
+    "referral_artist": 0.0353967455124979,
+    "search_direct_other": 0.0535145109880892,
+    "paid": 0.2635463848347593
+   },
+   "convs": {
+    "aa_email": 0.0020851951146857,
+    "aa_social": 0.0099403578528827,
+    "referral_artist": 0.0047393364928909,
+    "search_direct_other": 0.0156739811912225,
+    "paid": 0.0
+   },
+   "entries": 19.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.5,
+   "price": 1955.0,
+   "edition_size": 40.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Hank Willis Thomas \u00b7 \u201cSuccess is no accident.\u201d \u00b7 2026 Q2",
+   "artist": "Hank Willis Thomas",
+   "title": "\u201cSuccess is no accident.\u201d",
+   "quarter": "2026 Q2",
+   "window_start": "2026-04-24",
+   "window_end": "2026-07-03",
+   "campaign_days": 22.0,
+   "units": 289.0,
+   "sessions": 20081.0,
+   "paid_share": 0.7580612858001202,
+   "unit_shares": {
+    "aa_email": 0.3713235294117647,
+    "aa_social": 0.0367647058823529,
+    "referral_artist": 0.0992647058823529,
+    "search_direct_other": 0.1727941176470588,
+    "paid": 0.3198529411764705
+   },
+   "sess_shares": {
+    "aa_email": 0.1601742439415181,
+    "aa_social": 0.0213799319046665,
+    "referral_artist": 0.0229321049469256,
+    "search_direct_other": 0.0374524334067694,
+    "paid": 0.7580612858001202
+   },
+   "convs": {
+    "aa_email": 0.0271959987496092,
+    "aa_social": 0.0234192037470726,
+    "referral_artist": 0.0502183406113537,
+    "search_direct_other": 0.0561497326203208,
+    "paid": 0.0058124174372523
+   },
+   "entries": 253.0,
+   "units_per_buyer": 1.0205479452054795,
+   "private_room_share": 0.1245674740484429,
+   "price": 510.0,
+   "edition_size": 400.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Felipe Pantone \u00b7 Subtractive Variability Dimensional 13 AA \u00b7 2026 Q2",
+   "artist": "Felipe Pantone",
+   "title": "Subtractive Variability Dimensional 13 AA",
+   "quarter": "2026 Q2",
+   "window_start": "2026-04-07",
+   "window_end": "2026-07-02",
+   "campaign_days": 28.0,
+   "units": 151.0,
+   "sessions": 31089.0,
+   "paid_share": 0.742944587628866,
+   "unit_shares": {
+    "aa_email": 0.2867132867132867,
+    "aa_social": 0.0279720279720279,
+    "referral_artist": 0.1048951048951049,
+    "search_direct_other": 0.0769230769230769,
+    "paid": 0.5034965034965035
+   },
+   "sess_shares": {
+    "aa_email": 0.176965206185567,
+    "aa_social": 0.0204896907216494,
+    "referral_artist": 0.0350515463917525,
+    "search_direct_other": 0.0245489690721649,
+    "paid": 0.742944587628866
+   },
+   "convs": {
+    "aa_email": 0.0061896959766976,
+    "aa_social": 0.0062893081761006,
+    "referral_artist": 0.015625,
+    "search_direct_other": 0.0170603674540682,
+    "paid": 0.003599150080222
+   },
+   "entries": 154.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0794701986754966,
+   "price": 1700.0,
+   "edition_size": 200.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Johnson Tsang \u00b7 Alliance \u00b7 2026 Q2",
+   "artist": "Johnson Tsang",
+   "title": "Alliance",
+   "quarter": "2026 Q2",
+   "window_start": "2026-04-20",
+   "window_end": "2026-06-29",
+   "campaign_days": 7.0,
+   "units": 195.0,
+   "sessions": 11428.0,
+   "paid_share": 0.5454226279294303,
+   "unit_shares": {
+    "aa_email": 0.4184782608695652,
+    "aa_social": 0.0815217391304347,
+    "referral_artist": 0.0978260869565217,
+    "search_direct_other": 0.1467391304347826,
+    "paid": 0.2554347826086957
+   },
+   "sess_shares": {
+    "aa_email": 0.3033441586939349,
+    "aa_social": 0.0307206179232862,
+    "referral_artist": 0.0750460809268849,
+    "search_direct_other": 0.0454665145264636,
+    "paid": 0.5454226279294303
+   },
+   "convs": {
+    "aa_email": 0.0159143518518518,
+    "aa_social": 0.0514285714285714,
+    "referral_artist": 0.023391812865497,
+    "search_direct_other": 0.0482625482625482,
+    "paid": 0.0072417122626327
+   },
+   "entries": 163.0,
+   "units_per_buyer": 1.005050505050505,
+   "private_room_share": 0.2256410256410256,
+   "price": 807.5,
+   "edition_size": 200.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Urs Fischer \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Urs Fischer",
+   "title": "Multiple",
+   "quarter": "2026 Q2",
+   "window_start": "2026-04-19",
+   "window_end": "2026-06-28",
+   "campaign_days": 22.0,
+   "units": 111.0,
+   "sessions": 10718.0,
+   "paid_share": 0.4351401869158878,
+   "unit_shares": {
+    "aa_email": 0.4403669724770642,
+    "aa_social": 0.036697247706422,
+    "referral_artist": 0.0458715596330275,
+    "search_direct_other": 0.3394495412844037,
+    "paid": 0.1376146788990825
+   },
+   "sess_shares": {
+    "aa_email": 0.4448598130841121,
+    "aa_social": 0.0297196261682242,
+    "referral_artist": 0.0309345794392523,
+    "search_direct_other": 0.0593457943925233,
+    "paid": 0.4351401869158878
+   },
+   "convs": {
+    "aa_email": 0.0069327731092436,
+    "aa_social": 0.0094339622641509,
+    "referral_artist": 0.0241691842900302,
+    "search_direct_other": 0.0393700787401574,
+    "paid": 0.003221649484536
+   },
+   "entries": 84.0,
+   "units_per_buyer": 1.247191011235955,
+   "private_room_share": 0.1531531531531531,
+   "price": 1062.5,
+   "edition_size": 200.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Miwa Komatsu \u00b7 Three Guardians: Gatekeeping the Heat and Cold \u00b7 2026 Q2",
+   "artist": "Miwa Komatsu",
+   "title": "Three Guardians: Gatekeeping the Heat and Cold",
+   "quarter": "2026 Q2",
+   "window_start": "2026-04-12",
+   "window_end": "2026-06-26",
+   "campaign_days": 27.0,
+   "units": 48.0,
+   "sessions": 4251.0,
+   "paid_share": 0.0011856770215793,
+   "unit_shares": {
+    "aa_email": 0.5,
+    "aa_social": 0.0652173913043478,
+    "referral_artist": 0.1956521739130435,
+    "search_direct_other": 0.2391304347826087,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.6336258003319896,
+    "aa_social": 0.122361868626986,
+    "referral_artist": 0.1600663979132084,
+    "search_direct_other": 0.0827602561062366,
+    "paid": 0.0011856770215793
+   },
+   "convs": {
+    "aa_email": 0.0056137724550898,
+    "aa_social": 0.0116279069767441,
+    "referral_artist": 0.0118518518518518,
+    "search_direct_other": 0.0544412607449856,
+    "paid": null
+   },
+   "entries": 49.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.5416666666666666,
+   "price": 1700.0,
+   "edition_size": 50.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Cindy Sherman \u00b7 Untitled \u00b7 2026 Q2",
+   "artist": "Cindy Sherman",
+   "title": "Untitled",
+   "quarter": "2026 Q2",
+   "window_start": "2026-03-30",
+   "window_end": "2026-06-13",
+   "campaign_days": 27.0,
+   "units": 495.0,
+   "sessions": 30348.0,
+   "paid_share": 0.5105013437738478,
+   "unit_shares": {
+    "aa_email": 0.6237373737373737,
+    "aa_social": 0.0126262626262626,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2525252525252525,
+    "paid": 0.1111111111111111
+   },
+   "sess_shares": {
+    "aa_email": 0.4099007929924682,
+    "aa_social": 0.0177510866319386,
+    "referral_artist": 0.0006304124224426,
+    "search_direct_other": 0.0612163641793025,
+    "paid": 0.5105013437738478
+   },
+   "convs": {
+    "aa_email": 0.0191840699368625,
+    "aa_social": 0.011214953271028,
+    "referral_artist": null,
+    "search_direct_other": 0.0471544715447154,
+    "paid": 0.0038996490315871
+   },
+   "entries": 393.0,
+   "units_per_buyer": 1.016359918200409,
+   "private_room_share": 0.2808080808080808,
+   "price": 1083.75,
+   "edition_size": 500.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Antony Micallef \u00b7 Self Portrait with Blue Slash \u00b7 2026 Q2",
+   "artist": "Antony Micallef",
+   "title": "Self Portrait with Blue Slash",
+   "quarter": "2026 Q2",
+   "window_start": "2026-03-17",
+   "window_end": "2026-06-01",
+   "campaign_days": 28.0,
+   "units": 63.0,
+   "sessions": 6757.0,
+   "paid_share": 0.4538015176313049,
+   "unit_shares": {
+    "aa_email": 0.5263157894736842,
+    "aa_social": 0.0526315789473684,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3684210526315789,
+    "paid": 0.0526315789473684
+   },
+   "sess_shares": {
+    "aa_email": 0.3317958637107573,
+    "aa_social": 0.1135247730992411,
+    "referral_artist": 0.0084808808213063,
+    "search_direct_other": 0.0923969647373902,
+    "paid": 0.4538015176313049
+   },
+   "convs": {
+    "aa_email": 0.0089686098654708,
+    "aa_social": 0.0026212319790301,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0257648953301127,
+    "paid": 0.000655737704918
+   },
+   "entries": 41.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.2222222222222222,
+   "price": 1487.5,
+   "edition_size": 65.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Anni and Josef Albers \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Anni and Josef Albers",
+   "title": "Multiple",
+   "quarter": "2026 Q2",
+   "window_start": "2026-03-16",
+   "window_end": "2026-05-31",
+   "campaign_days": 28.0,
+   "units": 946.0,
+   "sessions": 19644.0,
+   "paid_share": 0.4948893112126971,
+   "unit_shares": {
+    "aa_email": 0.2420814479638009,
+    "aa_social": 0.0271493212669683,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3653846153846153,
+    "paid": 0.3653846153846153
+   },
+   "sess_shares": {
+    "aa_email": 0.2262057630078586,
+    "aa_social": 0.002927731265088,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2759771945143561,
+    "paid": 0.4948893112126971
+   },
+   "convs": {
+    "aa_email": 0.0499545867393278,
+    "aa_social": 0.7719298245614035,
+    "referral_artist": null,
+    "search_direct_other": 0.0718406849060115,
+    "paid": 0.0524130773222625
+   },
+   "entries": 1177.0,
+   "units_per_buyer": 1.1783132530120481,
+   "private_room_share": 0.0570824524312896,
+   "price": 460.3113941967445,
+   "edition_size": 1413.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Takashi Murakami \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Takashi Murakami",
+   "title": "Multiple",
+   "quarter": "2026 Q2",
+   "window_start": "2026-03-15",
+   "window_end": "2026-05-30",
+   "campaign_days": 28.0,
+   "units": 846.0,
+   "sessions": 22717.0,
+   "paid_share": 0.0025858225590726,
+   "unit_shares": {
+    "aa_email": 0.5443037974683544,
+    "aa_social": 0.0518987341772151,
+    "referral_artist": 0.0037974683544303,
+    "search_direct_other": 0.389873417721519,
+    "paid": 0.010126582278481
+   },
+   "sess_shares": {
+    "aa_email": 0.5952741863575568,
+    "aa_social": 0.0966116807846634,
+    "referral_artist": 0.016941596076683,
+    "search_direct_other": 0.2885867142220241,
+    "paid": 0.0025858225590726
+   },
+   "convs": {
+    "aa_email": 0.0580437387657279,
+    "aa_social": 0.0724503922473465,
+    "referral_artist": 0.0210526315789473,
+    "search_direct_other": 0.1033523868376332,
+    "paid": 0.3275862068965517
+   },
+   "entries": 1692.0,
+   "units_per_buyer": 1.2087591240875912,
+   "private_room_share": 0.3026004728132387,
+   "price": 595.0,
+   "edition_size": 1200.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Eddie Martinez \u00b7 Olive Garden \u00b7 2026 Q2",
+   "artist": "Eddie Martinez",
+   "title": "Olive Garden",
+   "quarter": "2026 Q2",
+   "window_start": "2026-03-10",
+   "window_end": "2026-05-25",
+   "campaign_days": 28.0,
+   "units": 97.0,
+   "sessions": 7938.0,
+   "paid_share": 0.379984856133266,
+   "unit_shares": {
+    "aa_email": 0.6774193548387096,
+    "aa_social": 0.053763440860215,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.1935483870967742,
+    "paid": 0.075268817204301
+   },
+   "sess_shares": {
+    "aa_email": 0.5181726400807672,
+    "aa_social": 0.0485865724381625,
+    "referral_artist": 0.0069409389197375,
+    "search_direct_other": 0.0463149924280666,
+    "paid": 0.379984856133266
+   },
+   "convs": {
+    "aa_email": 0.0104724792985874,
+    "aa_social": 0.0155844155844155,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0435967302452316,
+    "paid": 0.0023248090335436
+   },
+   "entries": 75.0,
+   "units_per_buyer": 1.00990099009901,
+   "private_room_share": 0.268041237113402,
+   "price": 1062.5,
+   "edition_size": 200.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Maurizio Cattelan \u00b7 THERAPY \u00b7 2026 Q2",
+   "artist": "Maurizio Cattelan",
+   "title": "THERAPY",
+   "quarter": "2026 Q2",
+   "window_start": "2026-02-27",
+   "window_end": "2026-05-08",
+   "campaign_days": 22.0,
+   "units": 317.0,
+   "sessions": 13988.0,
+   "paid_share": 0.5729473457366568,
+   "unit_shares": {
+    "aa_email": 0.5777027027027027,
+    "aa_social": 0.0101351351351351,
+    "referral_artist": 0.0067567567567567,
+    "search_direct_other": 0.304054054054054,
+    "paid": 0.1013513513513513
+   },
+   "sess_shares": {
+    "aa_email": 0.3239709790963292,
+    "aa_social": 0.0086200703972415,
+    "referral_artist": 0.0032325263989655,
+    "search_direct_other": 0.0912290783708067,
+    "paid": 0.5729473457366568
+   },
+   "convs": {
+    "aa_email": 0.0199556541019955,
+    "aa_social": 0.0333333333333333,
+    "referral_artist": 0.0444444444444444,
+    "search_direct_other": 0.0503937007874015,
+    "paid": 0.0037612838515546
+   },
+   "entries": 194.0,
+   "units_per_buyer": 1.0284810126582278,
+   "private_room_share": 0.3375394321766561,
+   "price": 680.0,
+   "edition_size": 327.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Paul Insect \u00b7 Prismatic Visions \u00b7 2026 Q2",
+   "artist": "Paul Insect",
+   "title": "Prismatic Visions",
+   "quarter": "2026 Q2",
+   "window_start": "2026-02-23",
+   "window_end": "2026-05-03",
+   "campaign_days": 21.0,
+   "units": 48.0,
+   "sessions": 7395.0,
+   "paid_share": 0.1389265383572784,
+   "unit_shares": {
+    "aa_email": 0.5,
+    "aa_social": 0.0833333333333333,
+    "referral_artist": 0.125,
+    "search_direct_other": 0.2708333333333333,
+    "paid": 0.0208333333333333
+   },
+   "sess_shares": {
+    "aa_email": 0.6208999728923827,
+    "aa_social": 0.0509623204120357,
+    "referral_artist": 0.1027378693412849,
+    "search_direct_other": 0.0864732989970181,
+    "paid": 0.1389265383572784
+   },
+   "convs": {
+    "aa_email": 0.005893909626719,
+    "aa_social": 0.0079787234042553,
+    "referral_artist": 0.0092348284960422,
+    "search_direct_other": 0.0141065830721003,
+    "paid": 0.0009756097560975
+   },
+   "entries": 47.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.1041666666666666,
+   "price": 1700.0,
+   "edition_size": 51.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Maurizio Cattelan \u00b7 La Nona Ora \u00b7 2026 Q2",
+   "artist": "Maurizio Cattelan",
+   "title": "La Nona Ora",
+   "quarter": "2026 Q2",
+   "window_start": "2026-02-16",
+   "window_end": "2026-04-26",
+   "campaign_days": 21.0,
+   "units": 620.0,
+   "sessions": 151487.0,
+   "paid_share": 0.8834339600182517,
+   "unit_shares": {
+    "aa_email": 0.2940140845070422,
+    "aa_social": 0.0404929577464788,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3538732394366197,
+    "paid": 0.3116197183098591
+   },
+   "sess_shares": {
+    "aa_email": 0.0585045529992924,
+    "aa_social": 0.0112353606358989,
+    "referral_artist": 0.0005885503805738,
+    "search_direct_other": 0.0462375759659831,
+    "paid": 0.8834339600182517
+   },
+   "convs": {
+    "aa_email": 0.0110772013111789,
+    "aa_social": 0.011183048852266,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0273169336384439,
+    "paid": 0.001235103898437
+   },
+   "entries": 483.0,
+   "units_per_buyer": 1.0124416796267497,
+   "private_room_share": 0.146774193548387,
+   "price": 1870.0,
+   "edition_size": 666.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Ai Weiwei \u00b7 Arm \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Ai Weiwei",
+   "title": "Arm \u00b7 Multiple",
+   "quarter": "2026 Q2",
+   "window_start": "2026-02-14",
+   "window_end": "2026-04-25",
+   "campaign_days": 22.0,
+   "units": 146.0,
+   "sessions": 17209.0,
+   "paid_share": 0.5153367091554625,
+   "unit_shares": {
+    "aa_email": 0.5109489051094891,
+    "aa_social": 0.0218978102189781,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2627737226277372,
+    "paid": 0.2043795620437956
+   },
+   "sess_shares": {
+    "aa_email": 0.3287934346079972,
+    "aa_social": 0.036901228100809,
+    "referral_artist": 0.0286944880973168,
+    "search_direct_other": 0.0902741400384145,
+    "paid": 0.5153367091554625
+   },
+   "convs": {
+    "aa_email": 0.0116834838024429,
+    "aa_social": 0.0063091482649842,
+    "referral_artist": 0.0081135902636916,
+    "search_direct_other": 0.0361057382333978,
+    "paid": 0.0056471651231082
+   },
+   "entries": 183.0,
+   "units_per_buyer": 1.0138888888888888,
+   "private_room_share": 0.1575342465753424,
+   "price": 1402.5,
+   "edition_size": 200.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Grant Riven Yun \u00b7 High Fly Over the Valley \u00b7 2026 Q2",
+   "artist": "Grant Riven Yun",
+   "title": "High Fly Over the Valley",
+   "quarter": "2026 Q2",
+   "window_start": "2026-01-27",
+   "window_end": "2026-04-11",
+   "campaign_days": 26.0,
+   "units": 18.0,
+   "sessions": 4385.0,
+   "paid_share": 0.4152581087254454,
+   "unit_shares": {
+    "aa_email": 0.3529411764705882,
+    "aa_social": 0.0588235294117647,
+    "referral_artist": 0.1176470588235294,
+    "search_direct_other": 0.4705882352941176,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.277067153951576,
+    "aa_social": 0.09113750571037,
+    "referral_artist": 0.1130653266331658,
+    "search_direct_other": 0.1034719049794426,
+    "paid": 0.4152581087254454
+   },
+   "convs": {
+    "aa_email": 0.0057708161582852,
+    "aa_social": 0.0025062656641604,
+    "referral_artist": 0.004040404040404,
+    "search_direct_other": 0.0088300220750551,
+    "paid": 0.0
+   },
+   "entries": 14.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0555555555555555,
+   "price": 3524.3902439024387,
+   "edition_size": 41.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Luc Tuymans \u00b7 Bell Boy \u00b7 2026 Q1",
+   "artist": "Luc Tuymans",
+   "title": "Bell Boy",
+   "quarter": "2026 Q1",
+   "window_start": "2026-01-17",
+   "window_end": "2026-04-03",
+   "campaign_days": 28.0,
+   "units": 91.0,
+   "sessions": 5791.0,
+   "paid_share": 0.245365512416929,
+   "unit_shares": {
+    "aa_email": 0.3902439024390244,
+    "aa_social": 0.1097560975609756,
+    "referral_artist": 0.073170731707317,
+    "search_direct_other": 0.2926829268292683,
+    "paid": 0.1341463414634146
+   },
+   "sess_shares": {
+    "aa_email": 0.3226652675760755,
+    "aa_social": 0.1358866736621196,
+    "referral_artist": 0.1511017838405036,
+    "search_direct_other": 0.1449807625043721,
+    "paid": 0.245365512416929
+   },
+   "convs": {
+    "aa_email": 0.0173441734417344,
+    "aa_social": 0.0102960102960102,
+    "referral_artist": 0.0046296296296296,
+    "search_direct_other": 0.0639324487334137,
+    "paid": 0.0099786172487526
+   },
+   "entries": 113.0,
+   "units_per_buyer": 1.1318681318681318,
+   "private_room_share": 0.1538461538461538,
+   "price": 1275.0,
+   "edition_size": 100.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "DRIFT \u00b7 Proto Nature I \u00b7 2026 Q1",
+   "artist": "DRIFT",
+   "title": "Proto Nature I",
+   "quarter": "2026 Q1",
+   "window_start": "2026-01-06",
+   "window_end": "2026-03-22",
+   "campaign_days": 27.0,
+   "units": 19.0,
+   "sessions": 7856.0,
+   "paid_share": 0.3556576093889527,
+   "unit_shares": {
+    "aa_email": 0.4375,
+    "aa_social": 0.0625,
+    "referral_artist": 0.25,
+    "search_direct_other": 0.25,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3376706212527108,
+    "aa_social": 0.0505166475315729,
+    "referral_artist": 0.1840796019900497,
+    "search_direct_other": 0.0720755198367138,
+    "paid": 0.3556576093889527
+   },
+   "convs": {
+    "aa_email": 0.0026445032111824,
+    "aa_social": 0.0025252525252525,
+    "referral_artist": 0.0048510048510048,
+    "search_direct_other": 0.0053097345132743,
+    "paid": 0.0
+   },
+   "entries": 19.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0,
+   "price": 5100.0,
+   "edition_size": 50.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Jeff Koons \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Jeff Koons",
+   "title": "Multiple",
+   "quarter": "2026 Q1",
+   "window_start": "2026-01-04",
+   "window_end": "2026-03-20",
+   "campaign_days": 27.0,
+   "units": 468.0,
+   "sessions": 150129.0,
+   "paid_share": 0.8590653258289098,
+   "unit_shares": {
+    "aa_email": 0.3177339901477832,
+    "aa_social": 0.0541871921182266,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3645320197044335,
+    "paid": 0.2635467980295566
+   },
+   "sess_shares": {
+    "aa_email": 0.0715076422417242,
+    "aa_social": 0.0088492624503187,
+    "referral_artist": 2.6674491184080665e-05,
+    "search_direct_other": 0.0605510949878631,
+    "paid": 0.8590653258289098
+   },
+   "convs": {
+    "aa_email": 0.0106313531660915,
+    "aa_social": 0.014318010550113,
+    "referral_artist": null,
+    "search_direct_other": 0.0096916299559471,
+    "paid": 0.0008694167145363
+   },
+   "entries": 337.0,
+   "units_per_buyer": 1.0872340425531914,
+   "private_room_share": 0.0277777777777777,
+   "price": 2550.0,
+   "edition_size": 666.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Jean-Michel Othoniel \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Jean-Michel Othoniel",
+   "title": "Multiple",
+   "quarter": "2026 Q1",
+   "window_start": "2025-12-19",
+   "window_end": "2026-03-06",
+   "campaign_days": 29.0,
+   "units": 119.0,
+   "sessions": 17340.0,
+   "paid_share": 0.8358183079056866,
+   "unit_shares": {
+    "aa_email": 0.2743362831858407,
+    "aa_social": 0.0353982300884955,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3008849557522124,
+    "paid": 0.3893805309734513
+   },
+   "sess_shares": {
+    "aa_email": 0.0687702265372168,
+    "aa_social": 0.0305709662505779,
+    "referral_artist": 0.0005201109570041,
+    "search_direct_other": 0.0643203883495145,
+    "paid": 0.8358183079056866
+   },
+   "convs": {
+    "aa_email": 0.0126050420168067,
+    "aa_social": 0.0075614366729678,
+    "referral_artist": null,
+    "search_direct_other": 0.0296495956873315,
+    "paid": 0.0035262393694254
+   },
+   "entries": 103.0,
+   "units_per_buyer": 1.043103448275862,
+   "private_room_share": 0.1512605042016806,
+   "price": 2975.0,
+   "edition_size": 120.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Maurizio Cattelan \u00b7 Window \u00b7 2026 Q1",
+   "artist": "Maurizio Cattelan",
+   "title": "Window",
+   "quarter": "2026 Q1",
+   "window_start": "2025-12-12",
+   "window_end": "2026-02-23",
+   "campaign_days": 25.0,
+   "units": 296.0,
+   "sessions": 24976.0,
+   "paid_share": 0.6099705562053805,
+   "unit_shares": {
+    "aa_email": 0.5320754716981132,
+    "aa_social": 0.0490566037735849,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3094339622641509,
+    "paid": 0.1094339622641509
+   },
+   "sess_shares": {
+    "aa_email": 0.2524099544226192,
+    "aa_social": 0.0431976767636026,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0944218126083975,
+    "paid": 0.6099705562053805
+   },
+   "convs": {
+    "aa_email": 0.0214125918823905,
+    "aa_social": 0.0102707749766573,
+    "referral_artist": null,
+    "search_direct_other": 0.0469884664673216,
+    "paid": 0.0029756000793493
+   },
+   "entries": 306.0,
+   "units_per_buyer": 1.073943661971831,
+   "private_room_share": 0.402027027027027,
+   "price": 1275.0,
+   "edition_size": 300.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Pejac \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Pejac",
+   "title": "Multiple",
+   "quarter": "2026 Q1",
+   "window_start": "2025-12-09",
+   "window_end": "2026-02-06",
+   "campaign_days": 11.0,
+   "units": 111.0,
+   "sessions": 25261.0,
+   "paid_share": 0.4017131300313281,
+   "unit_shares": {
+    "aa_email": 0.4466019417475728,
+    "aa_social": 0.029126213592233,
+    "referral_artist": 0.116504854368932,
+    "search_direct_other": 0.4077669902912621,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.2782250069397629,
+    "aa_social": 0.0235158821429987,
+    "referral_artist": 0.1961771820597216,
+    "search_direct_other": 0.1003687988261886,
+    "paid": 0.4017131300313281
+   },
+   "convs": {
+    "aa_email": 0.0076966932725199,
+    "aa_social": 0.0033726812816188,
+    "referral_artist": 0.0052557105316353,
+    "search_direct_other": 0.0173844330304227,
+    "paid": 0.0
+   },
+   "entries": 131.0,
+   "units_per_buyer": 1.008695652173913,
+   "private_room_share": 0.0,
+   "price": 3293.75,
+   "edition_size": 288.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Lee Ufan \u00b7 Dialogue \u00b7 2026 Q1",
+   "artist": "Lee Ufan",
+   "title": "Dialogue",
+   "quarter": "2026 Q1",
+   "window_start": "2025-11-24",
+   "window_end": "2026-02-02",
+   "campaign_days": 22.0,
+   "units": 127.0,
+   "sessions": 41770.0,
+   "paid_share": 0.7895103216514643,
+   "unit_shares": {
+    "aa_email": 0.4778761061946903,
+    "aa_social": 0.0442477876106194,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4513274336283185,
+    "paid": 0.0265486725663716
+   },
+   "sess_shares": {
+    "aa_email": 0.1205952952472395,
+    "aa_social": 0.0381901104176668,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0517042726836293,
+    "paid": 0.7895103216514643
+   },
+   "convs": {
+    "aa_email": 0.0093550955414012,
+    "aa_social": 0.0119421747328724,
+    "referral_artist": null,
+    "search_direct_other": 0.0371402042711234,
+    "paid": 0.0017025934146119
+   },
+   "entries": 208.0,
+   "units_per_buyer": 1.246031746031746,
+   "private_room_share": 0.5039370078740157,
+   "price": 7225.0,
+   "edition_size": 150.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Ferrari Sheppard \u00b7 Put Some Red On It \u00b7 2026 Q1",
+   "artist": "Ferrari Sheppard",
+   "title": "Put Some Red On It",
+   "quarter": "2026 Q1",
+   "window_start": "2025-11-24",
+   "window_end": "2026-02-01",
+   "campaign_days": 21.0,
+   "units": 101.0,
+   "sessions": 11769.0,
+   "paid_share": 0.667064744519321,
+   "unit_shares": {
+    "aa_email": 0.3033707865168539,
+    "aa_social": 0.0337078651685393,
+    "referral_artist": 0.1123595505617977,
+    "search_direct_other": 0.3258426966292135,
+    "paid": 0.2247191011235955
+   },
+   "sess_shares": {
+    "aa_email": 0.1774289857544997,
+    "aa_social": 0.0334385396229634,
+    "referral_artist": 0.0679860104068924,
+    "search_direct_other": 0.0540817196963234,
+    "paid": 0.667064744519321
+   },
+   "convs": {
+    "aa_email": 0.0096153846153846,
+    "aa_social": 0.0178571428571428,
+    "referral_artist": 0.0112923462986198,
+    "search_direct_other": 0.0268138801261829,
+    "paid": 0.0025575447570332
+   },
+   "entries": 76.0,
+   "units_per_buyer": 1.01,
+   "private_room_share": 0.1683168316831683,
+   "price": 1062.5,
+   "edition_size": 100.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Johnson Tsang \u00b7 Work in Progress \u00b7 2026 Q1",
+   "artist": "Johnson Tsang",
+   "title": "Work in Progress",
+   "quarter": "2026 Q1",
+   "window_start": "2025-11-03",
+   "window_end": "2026-01-26",
+   "campaign_days": 36.0,
+   "units": 148.0,
+   "sessions": 6157.0,
+   "paid_share": 0.0174979558462796,
+   "unit_shares": {
+    "aa_email": 0.3432835820895522,
+    "aa_social": 0.0820895522388059,
+    "referral_artist": 0.2014925373134328,
+    "search_direct_other": 0.3507462686567164,
+    "paid": 0.0223880597014925
+   },
+   "sess_shares": {
+    "aa_email": 0.3514309076042518,
+    "aa_social": 0.1538838920686835,
+    "referral_artist": 0.2827473426001635,
+    "search_direct_other": 0.1944399018806214,
+    "paid": 0.0174979558462796
+   },
+   "convs": {
+    "aa_email": 0.0339692880409492,
+    "aa_social": 0.0191285866099893,
+    "referral_artist": 0.0208212839791787,
+    "search_direct_other": 0.0622371740958788,
+    "paid": 0.0467289719626168
+   },
+   "entries": 214.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.277027027027027,
+   "price": 765.0,
+   "edition_size": 150.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Joakim Ojanen \u00b7 The dance we dance when we are together \u00b7 2026 Q1",
+   "artist": "Joakim Ojanen",
+   "title": "The dance we dance when we are together",
+   "quarter": "2026 Q1",
+   "window_start": "2025-11-01",
+   "window_end": "2026-01-25",
+   "campaign_days": 37.0,
+   "units": 50.0,
+   "sessions": 5389.0,
+   "paid_share": 0.6679738562091503,
+   "unit_shares": {
+    "aa_email": 0.2790697674418604,
+    "aa_social": 0.1162790697674418,
+    "referral_artist": 0.0232558139534883,
+    "search_direct_other": 0.3023255813953488,
+    "paid": 0.2790697674418604
+   },
+   "sess_shares": {
+    "aa_email": 0.1514472455648926,
+    "aa_social": 0.0754435107376283,
+    "referral_artist": 0.0248366013071895,
+    "search_direct_other": 0.0802987861811391,
+    "paid": 0.6679738562091503
+   },
+   "convs": {
+    "aa_email": 0.0135635018495684,
+    "aa_social": 0.0198019801980198,
+    "referral_artist": 0.0075187969924812,
+    "search_direct_other": 0.0232558139534883,
+    "paid": 0.0036343304445065
+   },
+   "entries": 43.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.1,
+   "price": 425.0,
+   "edition_size": 100.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Judy Chicago \u00b7 Reincarnation Triptych \u00b7 2025 Q4",
+   "artist": "Judy Chicago",
+   "title": "Reincarnation Triptych",
+   "quarter": "2025 Q4",
+   "window_start": "2025-09-12",
+   "window_end": "2025-11-28",
+   "campaign_days": 29.0,
+   "units": 44.0,
+   "sessions": 9892.0,
+   "paid_share": 0.4860857200893764,
+   "unit_shares": {
+    "aa_email": 0.6388888888888888,
+    "aa_social": 0.0277777777777777,
+    "referral_artist": 0.0555555555555555,
+    "search_direct_other": 0.1944444444444444,
+    "paid": 0.0833333333333333
+   },
+   "sess_shares": {
+    "aa_email": 0.3473491773308958,
+    "aa_social": 0.0418444038188096,
+    "referral_artist": 0.0440788137314645,
+    "search_direct_other": 0.0806418850294535,
+    "paid": 0.4860857200893764
+   },
+   "convs": {
+    "aa_email": 0.0084795321637426,
+    "aa_social": 0.0024271844660194,
+    "referral_artist": 0.0023041474654377,
+    "search_direct_other": 0.0201511335012594,
+    "paid": 0.0012536564981195
+   },
+   "entries": 54.0,
+   "units_per_buyer": 1.0888888888888888,
+   "private_room_share": 0.2045454545454545,
+   "price": 2125.0,
+   "edition_size": 0.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Ai Weiwei \u00b7 Multiple \u00b7 2025 Q4",
+   "artist": "Ai Weiwei",
+   "title": "Multiple",
+   "quarter": "2025 Q4",
+   "window_start": "2025-09-05",
+   "window_end": "2025-11-20",
+   "campaign_days": 28.0,
+   "units": 149.0,
+   "sessions": 23543.0,
+   "paid_share": 0.5504021105484873,
+   "unit_shares": {
+    "aa_email": 0.5985915492957746,
+    "aa_social": 0.0140845070422535,
+    "referral_artist": 0.0070422535211267,
+    "search_direct_other": 0.2535211267605634,
+    "paid": 0.1267605633802817
+   },
+   "sess_shares": {
+    "aa_email": 0.311050593591762,
+    "aa_social": 0.0337432449682992,
+    "referral_artist": 0.0177013744095995,
+    "search_direct_other": 0.0871026764818518,
+    "paid": 0.5504021105484873
+   },
+   "convs": {
+    "aa_email": 0.0102599179206566,
+    "aa_social": 0.0050441361916771,
+    "referral_artist": 0.0120192307692307,
+    "search_direct_other": 0.0317537860283341,
+    "paid": 0.0026285272516428
+   },
+   "entries": 186.0,
+   "units_per_buyer": 1.0273972602739727,
+   "private_room_share": 0.3221476510067114,
+   "price": 1700.0,
+   "edition_size": 200.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Alex Katz \u00b7 Ada Ada \u00b7 2025 Q4",
+   "artist": "Alex Katz",
+   "title": "Ada Ada",
+   "quarter": "2025 Q4",
+   "window_start": "2025-08-17",
+   "window_end": "2025-11-02",
+   "campaign_days": 29.0,
+   "units": 194.0,
+   "sessions": 43103.0,
+   "paid_share": 0.7451642187099928,
+   "unit_shares": {
+    "aa_email": 0.3798882681564245,
+    "aa_social": 0.0279329608938547,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3519553072625698,
+    "paid": 0.2402234636871508
+   },
+   "sess_shares": {
+    "aa_email": 0.1829100812364703,
+    "aa_social": 0.0175508018900863,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0543748981634505,
+    "paid": 0.7451642187099928
+   },
+   "convs": {
+    "aa_email": 0.0073810129804021,
+    "aa_social": 0.0106100795755968,
+    "referral_artist": null,
+    "search_direct_other": 0.0273972602739726,
+    "paid": 0.0018430012807297
+   },
+   "entries": 192.0,
+   "units_per_buyer": 1.0256410256410255,
+   "private_room_share": 0.2010309278350515,
+   "price": 4250.0,
+   "edition_size": 200.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Maurizio Cattelan \u00b7 We are the Revolution \u00b7 2025 Q4",
+   "artist": "Maurizio Cattelan",
+   "title": "We are the Revolution",
+   "quarter": "2025 Q4",
+   "window_start": "2025-08-09",
+   "window_end": "2025-10-30",
+   "campaign_days": 34.0,
+   "units": 987.0,
+   "sessions": 100589.0,
+   "paid_share": 0.79686264302804,
+   "unit_shares": {
+    "aa_email": 0.3359116022099447,
+    "aa_social": 0.0596685082872928,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3513812154696132,
+    "paid": 0.2530386740331491
+   },
+   "sess_shares": {
+    "aa_email": 0.0925490274593815,
+    "aa_social": 0.0225841650566105,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0880041644559678,
+    "paid": 0.79686264302804
+   },
+   "convs": {
+    "aa_email": 0.0411032990805841,
+    "aa_social": 0.0336879432624113,
+    "referral_artist": null,
+    "search_direct_other": 0.0652940507337049,
+    "paid": 0.0060300749990578
+   },
+   "entries": 1532.0,
+   "units_per_buyer": 1.0225409836065573,
+   "private_room_share": 0.0770010131712259,
+   "price": 1275.0,
+   "edition_size": 1000.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Harland Miller \u00b7 Multiple \u00b7 2025 Q3",
+   "artist": "Harland Miller",
+   "title": "Multiple",
+   "quarter": "2025 Q3",
+   "window_start": "2025-07-14",
+   "window_end": "2025-10-03",
+   "campaign_days": 33.0,
+   "units": 116.0,
+   "sessions": 7146.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.4324324324324324,
+    "aa_social": 0.054054054054054,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.5135135135135135,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.7229948026408204,
+    "aa_social": 0.0664419159994381,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2105632813597415,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.015348746842821,
+    "aa_social": 0.0105708245243128,
+    "referral_artist": null,
+    "search_direct_other": 0.0633755837224816,
+    "paid": null
+   },
+   "entries": 182.0,
+   "units_per_buyer": 1.1304347826086956,
+   "private_room_share": 0.1637931034482758,
+   "price": 6800.0,
+   "edition_size": 125.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Woo Kuk Won \u00b7 Multiple \u00b7 2025 Q3",
+   "artist": "Woo Kuk Won",
+   "title": "Multiple",
+   "quarter": "2025 Q3",
+   "window_start": "2025-07-19",
+   "window_end": "2025-10-03",
+   "campaign_days": 28.0,
+   "units": 179.0,
+   "sessions": 4574.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.3859649122807017,
+    "aa_social": 0.0292397660818713,
+    "referral_artist": 0.087719298245614,
+    "search_direct_other": 0.4970760233918128,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.4851354327240696,
+    "aa_social": 0.121999559568377,
+    "referral_artist": 0.2455406298172208,
+    "search_direct_other": 0.1473243778903325,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0313209260099863,
+    "aa_social": 0.0108303249097472,
+    "referral_artist": 0.0224215246636771,
+    "search_direct_other": 0.1449925261584454,
+    "paid": null
+   },
+   "entries": 199.0,
+   "units_per_buyer": 1.391304347826087,
+   "private_room_share": 0.3798882681564245,
+   "price": 1275.0,
+   "edition_size": 200.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Tomokazu Matsuyama \u00b7 Morning Sun Dance \u00b7 2025 Q3",
+   "artist": "Tomokazu Matsuyama",
+   "title": "Morning Sun Dance",
+   "quarter": "2025 Q3",
+   "window_start": "2025-07-26",
+   "window_end": "2025-10-02",
+   "campaign_days": 20.0,
+   "units": 45.0,
+   "sessions": 3484.0,
+   "paid_share": 0.0002870264064293,
+   "unit_shares": {
+    "aa_email": 0.5,
+    "aa_social": 0.0526315789473684,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4473684210526316,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.7827210103329506,
+    "aa_social": 0.1047646383467279,
+    "referral_artist": 0.0063145809414466,
+    "search_direct_other": 0.1059127439724454,
+    "paid": 0.0002870264064293
+   },
+   "convs": {
+    "aa_email": 0.0047671433810047,
+    "aa_social": 0.0027397260273972,
+    "referral_artist": null,
+    "search_direct_other": 0.013550135501355,
+    "paid": null
+   },
+   "entries": 19.0,
+   "units_per_buyer": 1.4634146341463414,
+   "private_room_share": 0.3555555555555555,
+   "price": 4250.0,
+   "edition_size": 60.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "En Iwamura \u00b7 Multiple \u00b7 2025 Q3",
+   "artist": "En Iwamura",
+   "title": "Multiple",
+   "quarter": "2025 Q3",
+   "window_start": "2025-06-17",
+   "window_end": "2025-08-30",
+   "campaign_days": 26.0,
+   "units": 33.0,
+   "sessions": 16358.0,
+   "paid_share": 0.7693062626510458,
+   "unit_shares": {
+    "aa_email": 0.1875,
+    "aa_social": 0.0,
+    "referral_artist": 0.0625,
+    "search_direct_other": 0.46875,
+    "paid": 0.28125
+   },
+   "sess_shares": {
+    "aa_email": 0.1240262528369011,
+    "aa_social": 0.0150279089738085,
+    "referral_artist": 0.0323866772986566,
+    "search_direct_other": 0.0592528982395878,
+    "paid": 0.7693062626510458
+   },
+   "convs": {
+    "aa_email": 0.0009891196834817,
+    "aa_social": 0.0,
+    "referral_artist": 0.0018939393939393,
+    "search_direct_other": 0.0124223602484472,
+    "paid": 0.0005581247010046
+   },
+   "entries": 22.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.1212121212121212,
+   "price": 3825.0,
+   "edition_size": 50.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Johnson Tsang \u00b7 Remembrance \u00b7 2025 Q3",
+   "artist": "Johnson Tsang",
+   "title": "Remembrance",
+   "quarter": "2025 Q3",
+   "window_start": "2025-05-30",
+   "window_end": "2025-08-17",
+   "campaign_days": 31.0,
+   "units": 148.0,
+   "sessions": 9074.0,
+   "paid_share": 0.5849245115452931,
+   "unit_shares": {
+    "aa_email": 0.3120567375886525,
+    "aa_social": 0.1276595744680851,
+    "referral_artist": 0.0638297872340425,
+    "search_direct_other": 0.226950354609929,
+    "paid": 0.2695035460992908
+   },
+   "sess_shares": {
+    "aa_email": 0.180728241563055,
+    "aa_social": 0.0479573712255772,
+    "referral_artist": 0.0452930728241563,
+    "search_direct_other": 0.1410968028419183,
+    "paid": 0.5849245115452931
+   },
+   "convs": {
+    "aa_email": 0.0141277641277641,
+    "aa_social": 0.0277777777777777,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.025177025963808,
+    "paid": 0.0064528373505409
+   },
+   "entries": 103.0,
+   "units_per_buyer": 1.0201342281879195,
+   "private_room_share": 0.2567567567567567,
+   "price": 765.0,
+   "edition_size": 150.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Katherine Bradford \u00b7 Swing Over Pool \u00b7 2025 Q3",
+   "artist": "Katherine Bradford",
+   "title": "Swing Over Pool",
+   "quarter": "2025 Q3",
+   "window_start": "2025-06-01",
+   "window_end": "2025-08-15",
+   "campaign_days": 27.0,
+   "units": 117.0,
+   "sessions": 2492.0,
+   "paid_share": 0.0264981655116184,
+   "unit_shares": {
+    "aa_email": 0.3873873873873873,
+    "aa_social": 0.1261261261261261,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4594594594594595,
+    "paid": 0.027027027027027
+   },
+   "sess_shares": {
+    "aa_email": 0.5079494496534855,
+    "aa_social": 0.1292295148797391,
+    "referral_artist": 0.0008153281695882,
+    "search_direct_other": 0.3355075417855687,
+    "paid": 0.0264981655116184
+   },
+   "convs": {
+    "aa_email": 0.0280898876404494,
+    "aa_social": 0.0473186119873817,
+    "referral_artist": null,
+    "search_direct_other": 0.0498177399756986,
+    "paid": 0.0307692307692307
+   },
+   "entries": 94.0,
+   "units_per_buyer": 1.108974358974359,
+   "private_room_share": 0.0769230769230769,
+   "price": 722.5,
+   "edition_size": 200.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Antony Micallef \u00b7 Self Portrait with Yellow Lake and Magenta \u00b7 2025 Q3",
+   "artist": "Antony Micallef",
+   "title": "Self Portrait with Yellow Lake and Magenta",
+   "quarter": "2025 Q3",
+   "window_start": "2025-05-18",
+   "window_end": "2025-08-01",
+   "campaign_days": 27.0,
+   "units": 59.0,
+   "sessions": 3493.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.6071428571428571,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3928571428571428,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.7397417503586801,
+    "aa_social": 0.0771879483500717,
+    "referral_artist": 0.0163558106169297,
+    "search_direct_other": 0.1667144906743185,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0046547711404189,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0137693631669535,
+    "paid": null
+   },
+   "entries": 21.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.5932203389830508,
+   "price": 1487.5,
+   "edition_size": 60.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "James Jarvis \u00b7 Hang in there! \u00b7 2025 Q3",
+   "artist": "James Jarvis",
+   "title": "Hang in there!",
+   "quarter": "2025 Q3",
+   "window_start": "2025-05-18",
+   "window_end": "2025-08-01",
+   "campaign_days": 27.0,
+   "units": 147.0,
+   "sessions": 12668.0,
+   "paid_share": 0.669411671549608,
+   "unit_shares": {
+    "aa_email": 0.463768115942029,
+    "aa_social": 0.0434782608695652,
+    "referral_artist": 0.0217391304347826,
+    "search_direct_other": 0.217391304347826,
+    "paid": 0.2536231884057971
+   },
+   "sess_shares": {
+    "aa_email": 0.1802993111093515,
+    "aa_social": 0.0297727452688257,
+    "referral_artist": 0.0633462665294164,
+    "search_direct_other": 0.0571700055427983,
+    "paid": 0.669411671549608
+   },
+   "convs": {
+    "aa_email": 0.0166886253842775,
+    "aa_social": 0.0106382978723404,
+    "referral_artist": 0.00125,
+    "search_direct_other": 0.0373961218836565,
+    "paid": 0.0048497752543174
+   },
+   "entries": 116.0,
+   "units_per_buyer": 1.0342465753424657,
+   "private_room_share": 0.3401360544217687,
+   "price": 510.0,
+   "edition_size": 150.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Dominique Fung \u00b7 Handheld Fan \u00b7 2025 Q3",
+   "artist": "Dominique Fung",
+   "title": "Handheld Fan",
+   "quarter": "2025 Q3",
+   "window_start": "2025-05-10",
+   "window_end": "2025-07-25",
+   "campaign_days": 28.0,
+   "units": 35.0,
+   "sessions": 1442.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.1875,
+    "aa_social": 0.15625,
+    "referral_artist": 0.21875,
+    "search_direct_other": 0.4375,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3680895731280615,
+    "aa_social": 0.1672498250524842,
+    "referral_artist": 0.1602519244226732,
+    "search_direct_other": 0.3044086773967809,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0133079847908745,
+    "aa_social": 0.0292887029288702,
+    "referral_artist": 0.0305676855895196,
+    "search_direct_other": 0.032183908045977,
+    "paid": null
+   },
+   "entries": 37.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.1142857142857142,
+   "price": 977.5,
+   "edition_size": 60.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Yoon Hyup \u00b7 Summer in San Sebastian \u00b7 2025 Q3",
+   "artist": "Yoon Hyup",
+   "title": "Summer in San Sebastian",
+   "quarter": "2025 Q3",
+   "window_start": "2025-04-25",
+   "window_end": "2025-07-11",
+   "campaign_days": 29.0,
+   "units": 200.0,
+   "sessions": 6861.0,
+   "paid_share": 0.0016274596833851,
+   "unit_shares": {
+    "aa_email": 0.5760869565217391,
+    "aa_social": 0.0489130434782608,
+    "referral_artist": 0.0489130434782608,
+    "search_direct_other": 0.3206521739130434,
+    "paid": 0.0054347826086956
+   },
+   "sess_shares": {
+    "aa_email": 0.6856043793460571,
+    "aa_social": 0.0760467524781772,
+    "referral_artist": 0.0454209202544755,
+    "search_direct_other": 0.191300488237905,
+    "paid": 0.0016274596833851
+   },
+   "convs": {
+    "aa_email": 0.0192058696590418,
+    "aa_social": 0.0291828793774319,
+    "referral_artist": 0.0456026058631921,
+    "search_direct_other": 0.0580046403712296,
+    "paid": null
+   },
+   "entries": 198.0,
+   "units_per_buyer": 1.0199004975124377,
+   "private_room_share": 0.445,
+   "price": 722.5,
+   "edition_size": 200.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Lee Ufan \u00b7 Multiple \u00b7 2025 Q2",
+   "artist": "Lee Ufan",
+   "title": "Multiple",
+   "quarter": "2025 Q2",
+   "window_start": "2025-04-07",
+   "window_end": "2025-06-29",
+   "campaign_days": 35.0,
+   "units": 291.0,
+   "sessions": 84811.0,
+   "paid_share": 0.8018034009017004,
+   "unit_shares": {
+    "aa_email": 0.3122362869198312,
+    "aa_social": 0.0337552742616033,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.540084388185654,
+    "paid": 0.1139240506329113
+   },
+   "sess_shares": {
+    "aa_email": 0.0968440484220242,
+    "aa_social": 0.0194185097092548,
+    "referral_artist": 0.00015383341025,
+    "search_direct_other": 0.0817802075567704,
+    "paid": 0.8018034009017004
+   },
+   "convs": {
+    "aa_email": 0.011852394916911,
+    "aa_social": 0.0073126142595978,
+    "referral_artist": null,
+    "search_direct_other": 0.0285052814353928,
+    "paid": 0.0020661766876236
+   },
+   "entries": 452.0,
+   "units_per_buyer": 1.1280276816608996,
+   "private_room_share": 0.2783505154639175,
+   "price": 5100.0,
+   "edition_size": 450.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "LY \u00b7 LUV Blossoming \u00b7 2025 Q2",
+   "artist": "LY",
+   "title": "LUV Blossoming",
+   "quarter": "2025 Q2",
+   "window_start": "2025-02-25",
+   "window_end": "2025-05-17",
+   "campaign_days": 33.0,
+   "units": 38.0,
+   "sessions": 3586.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.3611111111111111,
+    "aa_social": 0.0555555555555555,
+    "referral_artist": 0.1111111111111111,
+    "search_direct_other": 0.4722222222222222,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.6311198649409117,
+    "aa_social": 0.0911648846370287,
+    "referral_artist": 0.1049521665728756,
+    "search_direct_other": 0.172763083849184,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0053499777084262,
+    "aa_social": 0.015432098765432,
+    "referral_artist": 0.0134048257372654,
+    "search_direct_other": 0.019543973941368,
+    "paid": null
+   },
+   "entries": 34.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.4210526315789473,
+   "price": 1955.0,
+   "edition_size": 40.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Ferrari Sheppard \u00b7 Iris \u00b7 2025 Q2",
+   "artist": "Ferrari Sheppard",
+   "title": "Iris",
+   "quarter": "2025 Q2",
+   "window_start": "2025-02-18",
+   "window_end": "2025-05-04",
+   "campaign_days": 27.0,
+   "units": 75.0,
+   "sessions": 4142.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.5945945945945946,
+    "aa_social": 0.0135135135135135,
+    "referral_artist": 0.0405405405405405,
+    "search_direct_other": 0.3513513513513513,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.6616964067465168,
+    "aa_social": 0.0794426790515766,
+    "referral_artist": 0.1185529210461989,
+    "search_direct_other": 0.1403079931557076,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0169929811599556,
+    "aa_social": 0.0123076923076923,
+    "referral_artist": 0.0474226804123711,
+    "search_direct_other": 0.0540069686411149,
+    "paid": null
+   },
+   "entries": 105.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.5066666666666667,
+   "price": 1062.5,
+   "edition_size": 75.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Other World \u00b7 Dogs of War \u00b7 2025 Q2",
+   "artist": "Other World",
+   "title": "Dogs of War",
+   "quarter": "2025 Q2",
+   "window_start": "2025-02-07",
+   "window_end": "2025-04-18",
+   "campaign_days": 22.0,
+   "units": 19.0,
+   "sessions": 2023.0,
+   "paid_share": 0.0014932802389248,
+   "unit_shares": {
+    "aa_email": 0.3333333333333333,
+    "aa_social": 0.2666666666666666,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.2882030861124938,
+    "aa_social": 0.3295171727227476,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3807864609258337,
+    "paid": 0.0014932802389248
+   },
+   "convs": {
+    "aa_email": 0.0138169257340241,
+    "aa_social": 0.0075528700906344,
+    "referral_artist": null,
+    "search_direct_other": 0.0209150326797385,
+    "paid": null
+   },
+   "entries": 32.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.4210526315789473,
+   "price": 2125.0,
+   "edition_size": 25.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Harland Miller \u00b7 York So Good They Named It Once \u00b7 2025 Q2",
+   "artist": "Harland Miller",
+   "title": "York So Good They Named It Once",
+   "quarter": "2025 Q2",
+   "window_start": "2025-01-31",
+   "window_end": "2025-04-17",
+   "campaign_days": 28.0,
+   "units": 52.0,
+   "sessions": 7261.0,
+   "paid_share": 0.0001381406271584,
+   "unit_shares": {
+    "aa_email": 0.5102040816326531,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4489795918367347,
+    "paid": 0.0408163265306122
+   },
+   "sess_shares": {
+    "aa_email": 0.7332504489570383,
+    "aa_social": 0.0690703135792236,
+    "referral_artist": 0.0001381406271584,
+    "search_direct_other": 0.1974029562094212,
+    "paid": 0.0001381406271584
+   },
+   "convs": {
+    "aa_email": 0.0060286360211002,
+    "aa_social": 0.002,
+    "referral_artist": null,
+    "search_direct_other": 0.0111966410076976,
+    "paid": null
+   },
+   "entries": 51.0,
+   "units_per_buyer": 1.0192307692307692,
+   "private_room_share": 0.0,
+   "price": 5100.0,
+   "edition_size": 50.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Hajime Sorayama \u00b7 Untitled \u00b7 2025 Q2",
+   "artist": "Hajime Sorayama",
+   "title": "Untitled",
+   "quarter": "2025 Q2",
+   "window_start": "2025-01-24",
+   "window_end": "2025-04-10",
+   "campaign_days": 28.0,
+   "units": 456.0,
+   "sessions": 36053.0,
+   "paid_share": 0.7331511585756908,
+   "unit_shares": {
+    "aa_email": 0.3530805687203791,
+    "aa_social": 0.0687203791469194,
+    "referral_artist": 0.0165876777251184,
+    "search_direct_other": 0.1800947867298578,
+    "paid": 0.3815165876777251
+   },
+   "sess_shares": {
+    "aa_email": 0.1645428435992527,
+    "aa_social": 0.040124919833812,
+    "referral_artist": 0.0124083317067729,
+    "search_direct_other": 0.0497727462844714,
+    "paid": 0.7331511585756908
+   },
+   "convs": {
+    "aa_email": 0.0199966107439417,
+    "aa_social": 0.0166782487838776,
+    "referral_artist": 0.0179775280898876,
+    "search_direct_other": 0.0464985994397759,
+    "paid": 0.0064275662723918
+   },
+   "entries": 425.0,
+   "units_per_buyer": 1.0151515151515151,
+   "private_room_share": 0.1228070175438596,
+   "price": 595.0,
+   "edition_size": 500.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Miwa Komatsu \u00b7 Innocent Days and Wishes \u00b7 2025 Q2",
+   "artist": "Miwa Komatsu",
+   "title": "Innocent Days and Wishes",
+   "quarter": "2025 Q2",
+   "window_start": "2025-01-18",
+   "window_end": "2025-04-05",
+   "campaign_days": 29.0,
+   "units": 25.0,
+   "sessions": 2017.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.0416666666666666,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.9583333333333334,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.4407796101949025,
+    "aa_social": 0.0989505247376311,
+    "referral_artist": 0.2358820589705147,
+    "search_direct_other": 0.2243878060969515,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0272108843537414,
+    "aa_social": 0.0151515151515151,
+    "referral_artist": 0.0296610169491525,
+    "search_direct_other": 0.0311804008908685,
+    "paid": null
+   },
+   "entries": 55.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.6,
+   "price": 2720.0,
+   "edition_size": 25.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Jammie Holmes \u00b7 Fred \u00b7 2025 Q1",
+   "artist": "Jammie Holmes",
+   "title": "Fred",
+   "quarter": "2025 Q1",
+   "window_start": "2024-12-20",
+   "window_end": "2025-03-07",
+   "campaign_days": 29.0,
+   "units": 73.0,
+   "sessions": 3156.0,
+   "paid_share": 0.0003198976327575,
+   "unit_shares": {
+    "aa_email": 0.6567164179104478,
+    "aa_social": 0.0746268656716417,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2238805970149253,
+    "paid": 0.044776119402985
+   },
+   "sess_shares": {
+    "aa_email": 0.608765195137556,
+    "aa_social": 0.1717850287907869,
+    "referral_artist": 0.082213691618682,
+    "search_direct_other": 0.1369161868202175,
+    "paid": 0.0003198976327575
+   },
+   "convs": {
+    "aa_email": 0.0126116657908565,
+    "aa_social": 0.0111731843575419,
+    "referral_artist": 0.0077821011673151,
+    "search_direct_other": 0.0163551401869158,
+    "paid": null
+   },
+   "entries": 43.0,
+   "units_per_buyer": 1.0133333333333334,
+   "private_room_share": 0.3150684931506849,
+   "price": 765.0,
+   "edition_size": 75.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Taku Obata \u00b7 B BOY JUSHI \u00b7 2025 Q1",
+   "artist": "Taku Obata",
+   "title": "B BOY JUSHI",
+   "quarter": "2025 Q1",
+   "window_start": "2024-12-02",
+   "window_end": "2025-02-24",
+   "campaign_days": 36.0,
+   "units": 149.0,
+   "sessions": 4807.0,
+   "paid_share": 0.0004214075010535,
+   "unit_shares": {
+    "aa_email": 0.2978723404255319,
+    "aa_social": 0.2411347517730496,
+    "referral_artist": 0.1631205673758865,
+    "search_direct_other": 0.2907801418439716,
+    "paid": 0.0070921985815602
+   },
+   "sess_shares": {
+    "aa_email": 0.3185840707964602,
+    "aa_social": 0.2081753055204382,
+    "referral_artist": 0.2513695743784239,
+    "search_direct_other": 0.2214496418036241,
+    "paid": 0.0004214075010535
+   },
+   "convs": {
+    "aa_email": 0.0205026455026455,
+    "aa_social": 0.0576923076923076,
+    "referral_artist": 0.046940486169321,
+    "search_direct_other": 0.0313986679352997,
+    "paid": null
+   },
+   "entries": 182.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.2885906040268456,
+   "price": 467.5,
+   "edition_size": 150.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "George Condo \u00b7 Fashion Model \u00b7 2025 Q1",
+   "artist": "George Condo",
+   "title": "Fashion Model",
+   "quarter": "2025 Q1",
+   "window_start": "2024-12-01",
+   "window_end": "2025-02-21",
+   "campaign_days": 34.0,
+   "units": 142.0,
+   "sessions": 8475.0,
+   "paid_share": 0.0003570578433706,
+   "unit_shares": {
+    "aa_email": 0.515625,
+    "aa_social": 0.015625,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4609375,
+    "paid": 0.0078125
+   },
+   "sess_shares": {
+    "aa_email": 0.6828136158057605,
+    "aa_social": 0.0422518447988574,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2745774815520114,
+    "paid": 0.0003570578433706
+   },
+   "convs": {
+    "aa_email": 0.0081924350705943,
+    "aa_social": 0.0,
+    "referral_artist": null,
+    "search_direct_other": 0.0073688773298656,
+    "paid": null
+   },
+   "entries": 67.0,
+   "units_per_buyer": 1.0780141843971631,
+   "private_room_share": 0.028169014084507,
+   "price": 7225.0,
+   "edition_size": 150.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Will Cotton \u00b7 The Cowgirl \u00b7 2025 Q1",
+   "artist": "Will Cotton",
+   "title": "The Cowgirl",
+   "quarter": "2025 Q1",
+   "window_start": "2024-12-06",
+   "window_end": "2025-02-17",
+   "campaign_days": 25.0,
+   "units": 99.0,
+   "sessions": 6516.0,
+   "paid_share": 0.5442744552619379,
+   "unit_shares": {
+    "aa_email": 0.3473684210526316,
+    "aa_social": 0.031578947368421,
+    "referral_artist": 0.0210526315789473,
+    "search_direct_other": 0.3263157894736842,
+    "paid": 0.2736842105263158
+   },
+   "sess_shares": {
+    "aa_email": 0.2138772987173543,
+    "aa_social": 0.067068459279864,
+    "referral_artist": 0.0579508576726935,
+    "search_direct_other": 0.1168289290681502,
+    "paid": 0.5442744552619379
+   },
+   "convs": {
+    "aa_email": 0.0223988439306358,
+    "aa_social": 0.0092165898617511,
+    "referral_artist": 0.0026666666666666,
+    "search_direct_other": 0.0383597883597883,
+    "paid": 0.0065303804656445
+   },
+   "entries": 90.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0404040404040404,
+   "price": 722.5,
+   "edition_size": 200.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Jenny Holzer \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Jenny Holzer",
+   "title": "Multiple",
+   "quarter": "2025 Q1",
+   "window_start": "2024-11-12",
+   "window_end": "2025-01-31",
+   "campaign_days": 32.0,
+   "units": 24.0,
+   "sessions": 5083.0,
+   "paid_share": 0.8278785488958991,
+   "unit_shares": {
+    "aa_email": 0.2352941176470588,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4117647058823529,
+    "paid": 0.3529411764705882
+   },
+   "sess_shares": {
+    "aa_email": 0.1121845425867507,
+    "aa_social": 0.001577287066246,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0583596214511041,
+    "paid": 0.8278785488958991
+   },
+   "convs": {
+    "aa_email": 0.0070298769771528,
+    "aa_social": null,
+    "referral_artist": null,
+    "search_direct_other": 0.0,
+    "paid": 0.0014289116456299
+   },
+   "entries": 10.0,
+   "units_per_buyer": 1.3157894736842106,
+   "private_room_share": 0.2083333333333333,
+   "price": 5100.0,
+   "edition_size": 30.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Harland Miller \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Harland Miller",
+   "title": "Multiple",
+   "quarter": "2025 Q1",
+   "window_start": "2024-10-26",
+   "window_end": "2025-01-31",
+   "campaign_days": 49.0,
+   "units": 20.0,
+   "sessions": 2995.0,
+   "paid_share": 0.6511705685618729,
+   "unit_shares": {
+    "aa_email": 0.4736842105263157,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.1052631578947368,
+    "paid": 0.4210526315789473
+   },
+   "sess_shares": {
+    "aa_email": 0.2682274247491639,
+    "aa_social": 0.0043478260869565,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0762541806020066,
+    "paid": 0.6511705685618729
+   },
+   "convs": {
+    "aa_email": 0.0099750623441396,
+    "aa_social": null,
+    "referral_artist": null,
+    "search_direct_other": 0.0043859649122807,
+    "paid": 0.0041088854648176
+   },
+   "entries": 17.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.1,
+   "price": 5100.0,
+   "edition_size": 30.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Hilary Pecis \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Hilary Pecis",
+   "title": "Multiple",
+   "quarter": "2025 Q1",
+   "window_start": "2024-10-26",
+   "window_end": "2025-01-31",
+   "campaign_days": 49.0,
+   "units": 38.0,
+   "sessions": 559.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.4117647058823529,
+    "aa_social": 0.1176470588235294,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4117647058823529,
+    "paid": 0.0588235294117647
+   },
+   "sess_shares": {
+    "aa_email": 0.6624775583482945,
+    "aa_social": 0.0143626570915619,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3231597845601436,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.008130081300813,
+    "aa_social": null,
+    "referral_artist": null,
+    "search_direct_other": 0.0222222222222222,
+    "paid": null
+   },
+   "entries": 12.0,
+   "units_per_buyer": 2.375,
+   "private_room_share": 0.2105263157894736,
+   "price": 5100.0,
+   "edition_size": 30.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Derek Fordjour \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Derek Fordjour",
+   "title": "Multiple",
+   "quarter": "2025 Q1",
+   "window_start": "2024-10-26",
+   "window_end": "2025-01-31",
+   "campaign_days": 49.0,
+   "units": 26.0,
+   "sessions": 687.0,
+   "paid_share": 0.0029498525073746,
+   "unit_shares": {
+    "aa_email": 0.3333333333333333,
+    "aa_social": 0.1666666666666666,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4583333333333333,
+    "paid": 0.0416666666666666
+   },
+   "sess_shares": {
+    "aa_email": 0.5943952802359882,
+    "aa_social": 0.0132743362831858,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3893805309734513,
+    "paid": 0.0029498525073746
+   },
+   "convs": {
+    "aa_email": 0.0124069478908188,
+    "aa_social": null,
+    "referral_artist": null,
+    "search_direct_other": 0.0265151515151515,
+    "paid": null
+   },
+   "entries": 17.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.1538461538461538,
+   "price": 5100.0,
+   "edition_size": 30.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Ai Weiwei \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "Ai Weiwei",
+   "title": "Multiple",
+   "quarter": "2024 Q4",
+   "window_start": "2024-10-06",
+   "window_end": "2024-12-13",
+   "campaign_days": 20.0,
+   "units": 202.0,
+   "sessions": 8657.0,
+   "paid_share": 0.0001161575095829,
+   "unit_shares": {
+    "aa_email": 0.6084656084656085,
+    "aa_social": 0.0529100529100529,
+    "referral_artist": 0.0158730158730158,
+    "search_direct_other": 0.3227513227513227,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.7313276803345337,
+    "aa_social": 0.0680683006156348,
+    "referral_artist": 0.0385642931815541,
+    "search_direct_other": 0.1619235683586944,
+    "paid": 0.0001161575095829
+   },
+   "convs": {
+    "aa_email": 0.0144536213468869,
+    "aa_social": 0.0221843003412969,
+    "referral_artist": 0.0120481927710843,
+    "search_direct_other": 0.0258249641319942,
+    "paid": null
+   },
+   "entries": 149.0,
+   "units_per_buyer": 1.0740740740740742,
+   "private_room_share": 0.2821782178217821,
+   "price": 1402.5,
+   "edition_size": 200.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Jos\u00e9 Parl\u00e1 \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "Jos\u00e9 Parl\u00e1",
+   "title": "Multiple",
+   "quarter": "2024 Q4",
+   "window_start": "2024-09-27",
+   "window_end": "2024-12-05",
+   "campaign_days": 21.0,
+   "units": 98.0,
+   "sessions": 5436.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.5227272727272727,
+    "aa_social": 0.0568181818181818,
+    "referral_artist": 0.0795454545454545,
+    "search_direct_other": 0.3409090909090909,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.6592756836659276,
+    "aa_social": 0.0585735402808573,
+    "referral_artist": 0.053030303030303,
+    "search_direct_other": 0.229120473022912,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0095291479820627,
+    "aa_social": 0.0126182965299684,
+    "referral_artist": 0.0034843205574912,
+    "search_direct_other": 0.0177419354838709,
+    "paid": null
+   },
+   "entries": 64.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.5306122448979592,
+   "price": 965.9090909090908,
+   "edition_size": 110.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Miwa Komatsu \u00b7 White and Black Guiding Yamainu-sama \u00b7 2024 Q4",
+   "artist": "Miwa Komatsu",
+   "title": "White and Black Guiding Yamainu-sama",
+   "quarter": "2024 Q4",
+   "window_start": "2024-09-06",
+   "window_end": "2024-11-23",
+   "campaign_days": 30.0,
+   "units": 15.0,
+   "sessions": 3518.0,
+   "paid_share": 0.0002856326763781,
+   "unit_shares": {
+    "aa_email": 0.7333333333333333,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2666666666666666,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3687517852042273,
+    "aa_social": 0.0334190231362467,
+    "referral_artist": 0.4755784061696658,
+    "search_direct_other": 0.1219651528134818,
+    "paid": 0.0002856326763781
+   },
+   "convs": {
+    "aa_email": 0.0077459333849728,
+    "aa_social": 0.0512820512820512,
+    "referral_artist": 0.0126126126126126,
+    "search_direct_other": 0.0444964871194379,
+    "paid": null
+   },
+   "entries": 56.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.8,
+   "price": 6800.0,
+   "edition_size": 15.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Woo Kuk Won \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "Woo Kuk Won",
+   "title": "Multiple",
+   "quarter": "2024 Q4",
+   "window_start": "2024-09-09",
+   "window_end": "2024-11-22",
+   "campaign_days": 26.0,
+   "units": 85.0,
+   "sessions": 4834.0,
+   "paid_share": 0.0010442773600668,
+   "unit_shares": {
+    "aa_email": 0.2926829268292683,
+    "aa_social": 0.0609756097560975,
+    "referral_artist": 0.024390243902439,
+    "search_direct_other": 0.6219512195121951,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3688387635756057,
+    "aa_social": 0.1269841269841269,
+    "referral_artist": 0.204469507101086,
+    "search_direct_other": 0.2986633249791144,
+    "paid": 0.0010442773600668
+   },
+   "convs": {
+    "aa_email": 0.0283125707814269,
+    "aa_social": 0.0180921052631578,
+    "referral_artist": 0.0204290091930541,
+    "search_direct_other": 0.1,
+    "paid": null
+   },
+   "entries": 228.0,
+   "units_per_buyer": 1.3484848484848484,
+   "private_room_share": 0.388235294117647,
+   "price": 1275.0,
+   "edition_size": 100.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Ai Weiwei \u00b7 To Be Looked At... \u00b7 2024 Q4",
+   "artist": "Ai Weiwei",
+   "title": "To Be Looked At...",
+   "quarter": "2024 Q4",
+   "window_start": "2024-08-31",
+   "window_end": "2024-11-07",
+   "campaign_days": 20.0,
+   "units": 187.0,
+   "sessions": 7812.0,
+   "paid_share": 0.0003853069612124,
+   "unit_shares": {
+    "aa_email": 0.7237569060773481,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2762430939226519,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.8049062419727716,
+    "aa_social": 0.0288980220909324,
+    "referral_artist": 0.0272283585923452,
+    "search_direct_other": 0.1385820703827382,
+    "paid": 0.0003853069612124
+   },
+   "convs": {
+    "aa_email": 0.0134035423647678,
+    "aa_social": 0.0044444444444444,
+    "referral_artist": 0.0141509433962264,
+    "search_direct_other": 0.0389249304911955,
+    "paid": null
+   },
+   "entries": 134.0,
+   "units_per_buyer": 1.02020202020202,
+   "private_room_share": 0.6310160427807486,
+   "price": 1870.0,
+   "edition_size": 200.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Parra \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "Parra",
+   "title": "Multiple",
+   "quarter": "2024 Q4",
+   "window_start": "2024-08-19",
+   "window_end": "2024-10-27",
+   "campaign_days": 21.0,
+   "units": 235.0,
+   "sessions": 21452.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.2523364485981308,
+    "aa_social": 0.0514018691588785,
+    "referral_artist": 0.3878504672897196,
+    "search_direct_other": 0.308411214953271,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.1455133008617459,
+    "aa_social": 0.0455226676657924,
+    "referral_artist": 0.6296834020232297,
+    "search_direct_other": 0.1792806294492319,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0074026392018023,
+    "aa_social": 0.0123456790123456,
+    "referral_artist": 0.0104871699516548,
+    "search_direct_other": 0.0208986415882967,
+    "paid": null
+   },
+   "entries": 270.0,
+   "units_per_buyer": 1.0476190476190477,
+   "private_room_share": 0.3957446808510638,
+   "price": 510.0,
+   "edition_size": 300.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Johnson Tsang \u00b7 The Moment \u00b7 2024 Q4",
+   "artist": "Johnson Tsang",
+   "title": "The Moment",
+   "quarter": "2024 Q4",
+   "window_start": "2024-07-27",
+   "window_end": "2024-10-12",
+   "campaign_days": 29.0,
+   "units": 249.0,
+   "sessions": 9616.0,
+   "paid_share": 0.2862231534834992,
+   "unit_shares": {
+    "aa_email": 0.3905579399141631,
+    "aa_social": 0.0858369098712446,
+    "referral_artist": 0.0257510729613733,
+    "search_direct_other": 0.3905579399141631,
+    "paid": 0.1072961373390558
+   },
+   "sess_shares": {
+    "aa_email": 0.2277632268203247,
+    "aa_social": 0.0836039811419591,
+    "referral_artist": 0.0711367207962283,
+    "search_direct_other": 0.3312729177579884,
+    "paid": 0.2862231534834992
+   },
+   "convs": {
+    "aa_email": 0.0257589696412143,
+    "aa_social": 0.0150375939849624,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0275142314990512,
+    "paid": 0.0091508052708638
+   },
+   "entries": 183.0,
+   "units_per_buyer": 1.0241935483870968,
+   "private_room_share": 0.2650602409638554,
+   "price": 595.0,
+   "edition_size": 250.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Taku Obata \u00b7 B BOY SEIDOU \u00b7 2024 Q4",
+   "artist": "Taku Obata",
+   "title": "B BOY SEIDOU",
+   "quarter": "2024 Q4",
+   "window_start": "2024-07-29",
+   "window_end": "2024-10-04",
+   "campaign_days": 19.0,
+   "units": 24.0,
+   "sessions": 9119.0,
+   "paid_share": 0.6711771177117711,
+   "unit_shares": {
+    "aa_email": 0.0454545454545454,
+    "aa_social": 0.1363636363636363,
+    "referral_artist": 0.0909090909090909,
+    "search_direct_other": 0.4545454545454545,
+    "paid": 0.2727272727272727
+   },
+   "sess_shares": {
+    "aa_email": 0.1376237623762376,
+    "aa_social": 0.0545654565456545,
+    "referral_artist": 0.035093509350935,
+    "search_direct_other": 0.1015401540154015,
+    "paid": 0.6711771177117711
+   },
+   "convs": {
+    "aa_email": 0.0007993605115907,
+    "aa_social": 0.0040322580645161,
+    "referral_artist": 0.006269592476489,
+    "search_direct_other": 0.0065005417118093,
+    "paid": 0.00098344533683
+   },
+   "entries": 17.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0833333333333333,
+   "price": 5100.0,
+   "edition_size": 25.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "TIDE \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "TIDE",
+   "title": "Multiple",
+   "quarter": "2024 Q4",
+   "window_start": "2024-07-15",
+   "window_end": "2024-09-27",
+   "campaign_days": 26.0,
+   "units": 29.0,
+   "sessions": 3535.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.2727272727272727,
+    "aa_social": 0.0454545454545454,
+    "referral_artist": 0.1363636363636363,
+    "search_direct_other": 0.5454545454545454,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.4623472577436772,
+    "aa_social": 0.1562944018186985,
+    "referral_artist": 0.2668371696504689,
+    "search_direct_other": 0.1145211707871554,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0104486785494775,
+    "aa_social": 0.0072727272727272,
+    "referral_artist": 0.0085197018104366,
+    "search_direct_other": 0.0223325062034739,
+    "paid": null
+   },
+   "entries": 40.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.4137931034482758,
+   "price": 2380.0,
+   "edition_size": 30.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Danielle Mckinney \u00b7 Shelter \u00b7 2024 Q3",
+   "artist": "Danielle Mckinney",
+   "title": "Shelter",
+   "quarter": "2024 Q3",
+   "window_start": "2024-07-06",
+   "window_end": "2024-09-14",
+   "campaign_days": 22.0,
+   "units": 99.0,
+   "sessions": 4820.0,
+   "paid_share": 0.0025178346621905,
+   "unit_shares": {
+    "aa_email": 0.1333333333333333,
+    "aa_social": 0.0,
+    "referral_artist": 0.0444444444444444,
+    "search_direct_other": 0.8222222222222222,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.1059588753671842,
+    "aa_social": 0.1137221989089383,
+    "referral_artist": 0.5258078052874527,
+    "search_direct_other": 0.2519932857742341,
+    "paid": 0.0025178346621905
+   },
+   "convs": {
+    "aa_email": 0.0712871287128712,
+    "aa_social": 0.0535055350553505,
+    "referral_artist": 0.0195530726256983,
+    "search_direct_other": 0.0491257285595337,
+    "paid": null
+   },
+   "entries": 180.0,
+   "units_per_buyer": 1.0505050505050506,
+   "private_room_share": 0.101010101010101,
+   "price": 1487.5,
+   "edition_size": 100.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Antony Micallef \u00b7 Portrait of Francis Bacon \u00b7 2024 Q3",
+   "artist": "Antony Micallef",
+   "title": "Portrait of Francis Bacon",
+   "quarter": "2024 Q3",
+   "window_start": "2024-06-22",
+   "window_end": "2024-08-30",
+   "campaign_days": 21.0,
+   "units": 49.0,
+   "sessions": 2314.0,
+   "paid_share": 0.0004438526409232,
+   "unit_shares": {
+    "aa_email": 0.3513513513513513,
+    "aa_social": 0.027027027027027,
+    "referral_artist": 0.3513513513513513,
+    "search_direct_other": 0.2702702702702703,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.2547714158899245,
+    "aa_social": 0.1011984021304926,
+    "referral_artist": 0.4660452729693741,
+    "search_direct_other": 0.1775410563692854,
+    "paid": 0.0004438526409232
+   },
+   "convs": {
+    "aa_email": 0.0104529616724738,
+    "aa_social": 0.0131578947368421,
+    "referral_artist": 0.0238095238095238,
+    "search_direct_other": 0.025,
+    "paid": null
+   },
+   "entries": 58.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.3265306122448979,
+   "price": 1487.5,
+   "edition_size": 50.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Slawn \u00b7 Ugly Bastard \u00b7 2024 Q3",
+   "artist": "Slawn",
+   "title": "Ugly Bastard",
+   "quarter": "2024 Q3",
+   "window_start": "2024-06-08",
+   "window_end": "2024-08-11",
+   "campaign_days": 16.0,
+   "units": 91.0,
+   "sessions": 12176.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.2597402597402597,
+    "aa_social": 0.0909090909090909,
+    "referral_artist": 0.1168831168831168,
+    "search_direct_other": 0.5324675324675324,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.0779854449222626,
+    "aa_social": 0.0238173999338405,
+    "referral_artist": 0.437231227257691,
+    "search_direct_other": 0.4609659278862058,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.024390243902439,
+    "aa_social": 0.0208333333333333,
+    "referral_artist": 0.0015131454511064,
+    "search_direct_other": 0.007534983853606,
+    "paid": null
+   },
+   "entries": 93.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0,
+   "price": 807.5,
+   "edition_size": 100.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Magdalena Suarez Frimkess \u00b7 Homage for Jasper Johns \u00b7 2024 Q3",
+   "artist": "Magdalena Suarez Frimkess",
+   "title": "Homage for Jasper Johns",
+   "quarter": "2024 Q3",
+   "window_start": "2024-05-27",
+   "window_end": "2024-08-09",
+   "campaign_days": 26.0,
+   "units": 24.0,
+   "sessions": 2111.0,
+   "paid_share": 0.3939971414959504,
+   "unit_shares": {
+    "aa_email": 0.6111111111111112,
+    "aa_social": 0.1111111111111111,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2222222222222222,
+    "paid": 0.0555555555555555
+   },
+   "sess_shares": {
+    "aa_email": 0.4249642686993806,
+    "aa_social": 0.1048118151500714,
+    "referral_artist": 0.0019056693663649,
+    "search_direct_other": 0.0743211052882324,
+    "paid": 0.3939971414959504
+   },
+   "convs": {
+    "aa_email": 0.0134529147982062,
+    "aa_social": 0.0136363636363636,
+    "referral_artist": null,
+    "search_direct_other": 0.0128205128205128,
+    "paid": 0.0024183796856106
+   },
+   "entries": 24.0,
+   "units_per_buyer": 1.0384615384615385,
+   "private_room_share": 0.0,
+   "price": 850.0,
+   "edition_size": 35.0,
+   "cluster": 1,
+   "cluster_name": "Paid-supported small editions"
+  },
+  {
+   "release_name": "Paul Insect \u00b7 Multiple \u00b7 2024 Q3",
+   "artist": "Paul Insect",
+   "title": "Multiple",
+   "quarter": "2024 Q3",
+   "window_start": "2024-05-28",
+   "window_end": "2024-08-02",
+   "campaign_days": 18.0,
+   "units": 92.0,
+   "sessions": 5879.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.4722222222222222,
+    "aa_social": 0.1388888888888889,
+    "referral_artist": 0.0694444444444444,
+    "search_direct_other": 0.3194444444444444,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.4407070533722327,
+    "aa_social": 0.1616612321949545,
+    "referral_artist": 0.1180710485670156,
+    "search_direct_other": 0.2795606658657971,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0124610591900311,
+    "aa_social": 0.0063694267515923,
+    "referral_artist": 0.0087209302325581,
+    "search_direct_other": 0.007366482504604,
+    "paid": null
+   },
+   "entries": 60.0,
+   "units_per_buyer": 1.0333333333333334,
+   "private_room_share": 0.25,
+   "price": 1721.25,
+   "edition_size": 100.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Pejac \u00b7 Multiple \u00b7 2024 Q3",
+   "artist": "Pejac",
+   "title": "Multiple",
+   "quarter": "2024 Q3",
+   "window_start": "2024-05-31",
+   "window_end": "2024-07-21",
+   "campaign_days": 3.0,
+   "units": 765.0,
+   "sessions": 36500.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.4464285714285714,
+    "aa_social": 0.0119047619047619,
+    "referral_artist": 0.0967261904761904,
+    "search_direct_other": 0.4449404761904761,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.4406927626020839,
+    "aa_social": 0.0407772458462405,
+    "referral_artist": 0.1505209800056322,
+    "search_direct_other": 0.3680090115460434,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0488210109272157,
+    "aa_social": 0.029696132596685,
+    "referral_artist": 0.0179607109448082,
+    "search_direct_other": 0.0624426078971533,
+    "paid": null
+   },
+   "entries": 1934.0,
+   "units_per_buyer": 1.1708766716196137,
+   "private_room_share": 0.0143790849673202,
+   "price": 1202.142857142857,
+   "edition_size": 700.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Eddie Martinez \u00b7 Scaffold \u00b7 2024 Q2",
+   "artist": "Eddie Martinez",
+   "title": "Scaffold",
+   "quarter": "2024 Q2",
+   "window_start": "2024-03-24",
+   "window_end": "2024-06-21",
+   "campaign_days": 41.0,
+   "units": 196.0,
+   "sessions": 8023.0,
+   "paid_share": 0.2415574596774193,
+   "unit_shares": {
+    "aa_email": 0.4756097560975609,
+    "aa_social": 0.0426829268292682,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4207317073170731,
+    "paid": 0.0609756097560975
+   },
+   "sess_shares": {
+    "aa_email": 0.4557711693548387,
+    "aa_social": 0.0587197580645161,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2439516129032258,
+    "paid": 0.2415574596774193
+   },
+   "convs": {
+    "aa_email": 0.0185236383743433,
+    "aa_social": 0.0107296137339055,
+    "referral_artist": null,
+    "search_direct_other": 0.0263429752066115,
+    "paid": 0.0067814293166405
+   },
+   "entries": 153.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.1020408163265306,
+   "price": 1062.5,
+   "edition_size": 200.0,
+   "cluster": 0,
+   "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Ka\u00ef \u00b7 Content \u00b7 2024 Q2",
+   "artist": "Ka\u00ef",
+   "title": "Content",
+   "quarter": "2024 Q2",
+   "window_start": "2024-03-30",
+   "window_end": "2024-06-01",
+   "campaign_days": 15.0,
+   "units": 162.0,
+   "sessions": 2374.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.1285714285714285,
+    "aa_social": 0.2428571428571428,
+    "referral_artist": 0.2714285714285714,
+    "search_direct_other": 0.3571428571428571,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3318984072320275,
+    "aa_social": 0.1838140335772707,
+    "referral_artist": 0.2922944468359879,
+    "search_direct_other": 0.1919931123547137,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0064850843060959,
+    "aa_social": 0.0304449648711943,
+    "referral_artist": 0.0206185567010309,
+    "search_direct_other": 0.0269058295964125,
+    "paid": null
+   },
+   "entries": 49.0,
+   "units_per_buyer": 2.0238095238095237,
+   "private_room_share": 0.345679012345679,
+   "price": 1020.0,
+   "edition_size": 140.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Asuka Anastacia Ogawa \u00b7 Sleepy \u00b7 2024 Q2",
+   "artist": "Asuka Anastacia Ogawa",
+   "title": "Sleepy",
+   "quarter": "2024 Q2",
+   "window_start": "2024-03-23",
+   "window_end": "2024-05-25",
+   "campaign_days": 15.0,
+   "units": 51.0,
+   "sessions": 1456.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.4736842105263157,
+    "aa_social": 0.0789473684210526,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4473684210526316,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.6632088520055325,
+    "aa_social": 0.1438450899031811,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.1929460580912863,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0156412930135557,
+    "aa_social": 0.0432692307692307,
+    "referral_artist": null,
+    "search_direct_other": 0.075268817204301,
+    "paid": null
+   },
+   "entries": 52.0,
+   "units_per_buyer": 1.0196078431372548,
+   "private_room_share": 0.4117647058823529,
+   "price": 425.0,
+   "edition_size": 50.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Peter Halley \u00b7 Rising High II \u00b7 2024 Q2",
+   "artist": "Peter Halley",
+   "title": "Rising High II",
+   "quarter": "2024 Q2",
+   "window_start": "2024-03-18",
+   "window_end": "2024-05-20",
+   "campaign_days": 15.0,
+   "units": 25.0,
+   "sessions": 1414.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.2916666666666667,
+    "aa_social": 0.1666666666666666,
+    "referral_artist": 0.0833333333333333,
+    "search_direct_other": 0.4583333333333333,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.6197583511016347,
+    "aa_social": 0.0796019900497512,
+    "referral_artist": 0.0618336886993603,
+    "search_direct_other": 0.2388059701492537,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0080275229357798,
+    "aa_social": 0.0178571428571428,
+    "referral_artist": 0.0229885057471264,
+    "search_direct_other": 0.0297619047619047,
+    "paid": null
+   },
+   "entries": 21.0,
+   "units_per_buyer": 1.2058823529411764,
+   "private_room_share": 0.04,
+   "price": 3400.0,
+   "edition_size": 40.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Javier Calleja \u00b7 Multiple \u00b7 2024 Q2",
+   "artist": "Javier Calleja",
+   "title": "Multiple",
+   "quarter": "2024 Q2",
+   "window_start": "2024-03-01",
+   "window_end": "2024-05-03",
+   "campaign_days": 15.0,
+   "units": 264.0,
+   "sessions": 8035.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.5294117647058824,
+    "aa_social": 0.0542986425339366,
+    "referral_artist": 0.0361990950226244,
+    "search_direct_other": 0.3800904977375565,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.5946486621655414,
+    "aa_social": 0.1054013503375844,
+    "referral_artist": 0.0543885971492873,
+    "search_direct_other": 0.2455613903475869,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.011143818334735,
+    "aa_social": 0.0142348754448398,
+    "referral_artist": 0.0206896551724137,
+    "search_direct_other": 0.0208757637474541,
+    "paid": null
+   },
+   "entries": 126.0,
+   "units_per_buyer": 1.0269230769230768,
+   "private_room_share": 0.4469696969696969,
+   "price": 1360.0,
+   "edition_size": 500.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "George Condo \u00b7 Multiple \u00b7 2024 Q1",
+   "artist": "George Condo",
+   "title": "Multiple",
+   "quarter": "2024 Q1",
+   "window_start": "2024-01-01",
+   "window_end": "2024-03-23",
+   "campaign_days": 34.0,
+   "units": 443.0,
+   "sessions": 10794.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.0806916426512968,
+    "aa_social": 0.0259365994236311,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.8933717579250721,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.2831983424373705,
+    "aa_social": 0.1819551704652477,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.5348464870973818,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0425673428666444,
+    "aa_social": 0.0129399585921325,
+    "referral_artist": null,
+    "search_direct_other": 0.0667371016023948,
+    "paid": null
+   },
+   "entries": 607.0,
+   "units_per_buyer": 1.41635687732342,
+   "private_room_share": 0.0,
+   "price": 5100.0,
+   "edition_size": 450.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Emily Xie \u00b7 Guardian Lion \u00b7 2024 Q1",
+   "artist": "Emily Xie",
+   "title": "Guardian Lion",
+   "quarter": "2024 Q1",
+   "window_start": "2024-01-07",
+   "window_end": "2024-03-10",
+   "campaign_days": 15.0,
+   "units": 28.0,
+   "sessions": 1819.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.4375,
+    "aa_social": 0.0625,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.5,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3972299168975069,
+    "aa_social": 0.1235457063711911,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4792243767313019,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0237099023709902,
+    "aa_social": 0.0269058295964125,
+    "referral_artist": null,
+    "search_direct_other": 0.0161849710982658,
+    "paid": null
+   },
+   "entries": 51.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.1071428571428571,
+   "price": 2125.0,
+   "edition_size": 30.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Baldur Helgason \u00b7 Menippean Satire \u00b7 2024 Q1",
+   "artist": "Baldur Helgason",
+   "title": "Menippean Satire",
+   "quarter": "2024 Q1",
+   "window_start": "2023-12-26",
+   "window_end": "2024-02-24",
+   "campaign_days": 12.0,
+   "units": 46.0,
+   "sessions": 2591.0,
+   "paid_share": 0.0011596443757247,
+   "unit_shares": {
+    "aa_email": 0.3684210526315789,
+    "aa_social": 0.1578947368421052,
+    "referral_artist": 0.0263157894736842,
+    "search_direct_other": 0.4473684210526316,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.6656358716660224,
+    "aa_social": 0.1171240819482025,
+    "referral_artist": 0.0367220718979512,
+    "search_direct_other": 0.1793583301120989,
+    "paid": 0.0011596443757247
+   },
+   "convs": {
+    "aa_email": 0.0034843205574912,
+    "aa_social": 0.0165016501650165,
+    "referral_artist": 0.0105263157894736,
+    "search_direct_other": 0.0193965517241379,
+    "paid": null
+   },
+   "entries": 24.0,
+   "units_per_buyer": 1.0425531914893618,
+   "private_room_share": 0.391304347826087,
+   "price": 1445.0,
+   "edition_size": 50.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "DeeKay \u00b7 Love Ripples \u00b7 2024 Q1",
+   "artist": "DeeKay",
+   "title": "Love Ripples",
+   "quarter": "2024 Q1",
+   "window_start": "2023-12-25",
+   "window_end": "2024-02-17",
+   "campaign_days": 6.0,
+   "units": 30.0,
+   "sessions": 4893.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.0,
+    "aa_social": 0.1904761904761904,
+    "referral_artist": 0.1904761904761904,
+    "search_direct_other": 0.6190476190476191,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.1599000624609619,
+    "aa_social": 0.1819696023318759,
+    "referral_artist": 0.4559650218613366,
+    "search_direct_other": 0.2021653133458255,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.03515625,
+    "aa_social": 0.028604118993135,
+    "referral_artist": 0.0251141552511415,
+    "search_direct_other": 0.05870236869207,
+    "paid": null
+   },
+   "entries": 195.0,
+   "units_per_buyer": 1.03125,
+   "private_room_share": 0.0,
+   "price": 5100.0,
+   "edition_size": 30.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Laura El \u00b7 Park Ave \u00b7 2024 Q1",
+   "artist": "Laura El",
+   "title": "Park Ave",
+   "quarter": "2024 Q1",
+   "window_start": "2023-12-08",
+   "window_end": "2024-02-16",
+   "campaign_days": 22.0,
+   "units": 30.0,
+   "sessions": 2534.0,
+   "paid_share": 0.0004045307443365,
+   "unit_shares": {
+    "aa_email": 0.3157894736842105,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.6842105263157895,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.4801779935275081,
+    "aa_social": 0.1019417475728155,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4174757281553398,
+    "paid": 0.0004045307443365
+   },
+   "convs": {
+    "aa_email": 0.012636899747262,
+    "aa_social": 0.0039682539682539,
+    "referral_artist": null,
+    "search_direct_other": 0.0232558139534883,
+    "paid": null
+   },
+   "entries": 47.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.2666666666666666,
+   "price": 1275.0,
+   "edition_size": 30.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "William Mapan \u00b7 Centrifuge \u00b7 2024 Q1",
+   "artist": "William Mapan",
+   "title": "Centrifuge",
+   "quarter": "2024 Q1",
+   "window_start": "2023-11-28",
+   "window_end": "2024-01-27",
+   "campaign_days": 12.0,
+   "units": 34.0,
+   "sessions": 1550.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.2222222222222222,
+    "aa_social": 0.1111111111111111,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.6666666666666666,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.0699774266365688,
+    "aa_social": 0.3702031602708803,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.5598194130925508,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.032258064516129,
+    "aa_social": 0.0203252032520325,
+    "referral_artist": null,
+    "search_direct_other": 0.0564516129032258,
+    "paid": null
+   },
+   "entries": 86.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0588235294117647,
+   "price": 4250.0,
+   "edition_size": 35.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Jake Fried \u00b7 Open Eyes (Signal) \u00b7 2024 Q1",
+   "artist": "Jake Fried",
+   "title": "Open Eyes (Signal)",
+   "quarter": "2024 Q1",
+   "window_start": "2023-11-24",
+   "window_end": "2024-01-20",
+   "campaign_days": 9.0,
+   "units": 25.0,
+   "sessions": 1622.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 1.0,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3872053872053872,
+    "aa_social": 0.0377104377104377,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.5750841750841751,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0139130434782608,
+    "aa_social": 0.0,
+    "referral_artist": null,
+    "search_direct_other": 0.0128805620608899,
+    "paid": null
+   },
+   "entries": 25.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.16,
+   "price": 2337.5,
+   "edition_size": 30.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "LY \u00b7 LUV Somewhere New \u00b7 2023 Q4",
+   "artist": "LY",
+   "title": "LUV Somewhere New",
+   "quarter": "2023 Q4",
+   "window_start": "2023-10-09",
+   "window_end": "2023-12-15",
+   "campaign_days": 19.0,
+   "units": 31.0,
+   "sessions": 3439.0,
+   "paid_share": 0.0002993115833582,
+   "unit_shares": {
+    "aa_email": 0.0952380952380952,
+    "aa_social": 0.1428571428571428,
+    "referral_artist": 0.1904761904761904,
+    "search_direct_other": 0.5714285714285714,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3469021251122418,
+    "aa_social": 0.1307991619275666,
+    "referral_artist": 0.279856330439988,
+    "search_direct_other": 0.2421430709368452,
+    "paid": 0.0002993115833582
+   },
+   "convs": {
+    "aa_email": 0.0379637618636755,
+    "aa_social": 0.034324942791762,
+    "referral_artist": 0.041711229946524,
+    "search_direct_other": 0.0630407911001236,
+    "paid": null
+   },
+   "entries": 157.0,
+   "units_per_buyer": 1.032258064516129,
+   "private_room_share": 0.0967741935483871,
+   "price": 1955.0,
+   "edition_size": 30.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Tomokazu Matsuyama \u00b7 Perfect All Alone Ironic \u00b7 2023 Q4",
+   "artist": "Tomokazu Matsuyama",
+   "title": "Perfect All Alone Ironic",
+   "quarter": "2023 Q4",
+   "window_start": "2023-10-10",
+   "window_end": "2023-12-08",
+   "campaign_days": 11.0,
+   "units": 57.0,
+   "sessions": 3506.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.5227272727272727,
+    "aa_social": 0.0227272727272727,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4545454545454545,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.7974175035868005,
+    "aa_social": 0.0579626972740315,
+    "referral_artist": 0.0172166427546628,
+    "search_direct_other": 0.127403156384505,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0028787333573227,
+    "aa_social": 0.0049504950495049,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.027027027027027,
+    "paid": null
+   },
+   "entries": 22.0,
+   "units_per_buyer": 1.4210526315789473,
+   "private_room_share": 0.631578947368421,
+   "price": 4250.0,
+   "edition_size": 75.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Dennis Osadebe \u00b7 In Search For Light \u00b7 2023 Q4",
+   "artist": "Dennis Osadebe",
+   "title": "In Search For Light",
+   "quarter": "2023 Q4",
+   "window_start": "2023-09-29",
+   "window_end": "2023-12-03",
+   "campaign_days": 17.0,
+   "units": 49.0,
+   "sessions": 875.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.073170731707317,
+    "aa_social": 0.048780487804878,
+    "referral_artist": 0.1707317073170731,
+    "search_direct_other": 0.7073170731707317,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3016431924882629,
+    "aa_social": 0.0786384976525821,
+    "referral_artist": 0.2852112676056338,
+    "search_direct_other": 0.3345070422535211,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0700389105058365,
+    "aa_social": 0.0597014925373134,
+    "referral_artist": 0.0534979423868312,
+    "search_direct_other": 0.0421052631578947,
+    "paid": null
+   },
+   "entries": 51.0,
+   "units_per_buyer": 1.0204081632653061,
+   "private_room_share": 0.0,
+   "price": 722.5,
+   "edition_size": 50.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Alpha Centauri Kid \u00b7 Warothy \u00b7 2023 Q4",
+   "artist": "Alpha Centauri Kid",
+   "title": "Warothy",
+   "quarter": "2023 Q4",
+   "window_start": "2023-09-19",
+   "window_end": "2023-11-25",
+   "campaign_days": 19.0,
+   "units": 30.0,
+   "sessions": 4345.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.0,
+    "aa_social": 0.0909090909090909,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.9090909090909092,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.0694962686567164,
+    "aa_social": 0.2339085820895522,
+    "referral_artist": 0.0960820895522388,
+    "search_direct_other": 0.6005130597014925,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0838926174496644,
+    "aa_social": 0.1086739780658025,
+    "referral_artist": 0.0339805825242718,
+    "search_direct_other": 0.1328155339805825,
+    "paid": null
+   },
+   "entries": 597.0,
+   "units_per_buyer": 1.24,
+   "private_room_share": 0.0,
+   "price": 4250.0,
+   "edition_size": 25.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Yoon Hyup \u00b7 In The City \u00b7 2023 Q4",
+   "artist": "Yoon Hyup",
+   "title": "In The City",
+   "quarter": "2023 Q4",
+   "window_start": "2023-09-24",
+   "window_end": "2023-11-23",
+   "campaign_days": 12.0,
+   "units": 199.0,
+   "sessions": 4652.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.3733333333333333,
+    "aa_social": 0.04,
+    "referral_artist": 0.1733333333333333,
+    "search_direct_other": 0.4133333333333333,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.314721919302072,
+    "aa_social": 0.0527808069792802,
+    "referral_artist": 0.2547437295528899,
+    "search_direct_other": 0.3777535441657579,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0235620235620235,
+    "aa_social": 0.0537190082644628,
+    "referral_artist": 0.0453767123287671,
+    "search_direct_other": 0.056581986143187,
+    "paid": null
+   },
+   "entries": 223.0,
+   "units_per_buyer": 1.00990099009901,
+   "private_room_share": 0.3417085427135678,
+   "price": 637.5,
+   "edition_size": 200.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Jonny Niesche \u00b7 Diamond Vibration (Caught by the fuzz) \u00b7 2023 Q4",
+   "artist": "Jonny Niesche",
+   "title": "Diamond Vibration (Caught by the fuzz)",
+   "quarter": "2023 Q4",
+   "window_start": "2023-09-08",
+   "window_end": "2023-11-17",
+   "campaign_days": 22.0,
+   "units": 49.0,
+   "sessions": 1276.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.303030303030303,
+    "aa_social": 0.0909090909090909,
+    "referral_artist": 0.2424242424242424,
+    "search_direct_other": 0.3636363636363636,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3381410256410256,
+    "aa_social": 0.0745192307692307,
+    "referral_artist": 0.2676282051282051,
+    "search_direct_other": 0.3197115384615384,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0402843601895734,
+    "aa_social": 0.043010752688172,
+    "referral_artist": 0.0329341317365269,
+    "search_direct_other": 0.0451127819548872,
+    "paid": null
+   },
+   "entries": 56.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.1836734693877551,
+   "price": 1445.0,
+   "edition_size": 50.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Luis Ponce \u00b7 And the Absurd Was Born \u00b7 2023 Q4",
+   "artist": "Luis Ponce",
+   "title": "And the Absurd Was Born",
+   "quarter": "2023 Q4",
+   "window_start": "2023-09-09",
+   "window_end": "2023-11-13",
+   "campaign_days": 17.0,
+   "units": 24.0,
+   "sessions": 1412.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.0,
+    "aa_social": 0.25,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.75,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.1119081779053084,
+    "aa_social": 0.2202295552367288,
+    "referral_artist": 0.0007173601147776,
+    "search_direct_other": 0.667144906743185,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.032051282051282,
+    "aa_social": 0.0618892508143322,
+    "referral_artist": null,
+    "search_direct_other": 0.0279569892473118,
+    "paid": null
+   },
+   "entries": 59.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0833333333333333,
+   "price": 1997.5,
+   "edition_size": 25.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Kotao Tomozawa \u00b7 Multiple \u00b7 2023 Q4",
+   "artist": "Kotao Tomozawa",
+   "title": "Multiple",
+   "quarter": "2023 Q4",
+   "window_start": "2023-09-02",
+   "window_end": "2023-11-11",
+   "campaign_days": 22.0,
+   "units": 41.0,
+   "sessions": 4122.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.2068965517241379,
+    "aa_social": 0.0344827586206896,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.7586206896551724,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.1717343711992216,
+    "aa_social": 0.0313792264655801,
+    "referral_artist": 0.0029189978107516,
+    "search_direct_other": 0.7939674045244466,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0084985835694051,
+    "aa_social": 0.0465116279069767,
+    "referral_artist": null,
+    "search_direct_other": 0.0122549019607843,
+    "paid": null
+   },
+   "entries": 56.0,
+   "units_per_buyer": 1.1666666666666667,
+   "private_room_share": 0.5121951219512195,
+   "price": 4250.0,
+   "edition_size": 40.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
+  },
+  {
+   "release_name": "Camilla Engstr\u00f6m \u00b7 Island Creators \u00b7 2023 Q4",
+   "artist": "Camilla Engstr\u00f6m",
+   "title": "Island Creators",
+   "quarter": "2023 Q4",
+   "window_start": "2023-08-26",
+   "window_end": "2023-11-10",
+   "campaign_days": 28.0,
+   "units": 46.0,
+   "sessions": 1759.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.1739130434782608,
+    "aa_social": 0.0869565217391304,
+    "referral_artist": 0.0869565217391304,
+    "search_direct_other": 0.6521739130434783,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.3768873403019744,
+    "aa_social": 0.1051103368176538,
+    "referral_artist": 0.1591173054587688,
+    "search_direct_other": 0.3588850174216028,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0215716486902927,
+    "aa_social": 0.0165745856353591,
+    "referral_artist": 0.0072992700729927,
+    "search_direct_other": 0.029126213592233,
+    "paid": null
+   },
+   "entries": 41.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0652173913043478,
+   "price": 850.0,
+   "edition_size": 50.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Roby Dwi Antono \u00b7 CLEMENTINE \u00b7 2023 Q4",
+   "artist": "Roby Dwi Antono",
+   "title": "CLEMENTINE",
+   "quarter": "2023 Q4",
+   "window_start": "2023-08-26",
+   "window_end": "2023-11-03",
+   "campaign_days": 21.0,
+   "units": 39.0,
+   "sessions": 2103.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.1739130434782608,
+    "aa_social": 0.0434782608695652,
+    "referral_artist": 0.1304347826086956,
+    "search_direct_other": 0.6521739130434783,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.4529667149059334,
+    "aa_social": 0.0694645441389291,
+    "referral_artist": 0.315967197298601,
+    "search_direct_other": 0.1616015436565364,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.007454739084132,
+    "aa_social": 0.0277777777777777,
+    "referral_artist": 0.0045801526717557,
+    "search_direct_other": 0.0388059701492537,
+    "paid": null
+   },
+   "entries": 29.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0256410256410256,
+   "price": 4250.0,
+   "edition_size": 50.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Johnson Tsang \u00b7 Open the Right Mind \u00b7 2023 Q4",
+   "artist": "Johnson Tsang",
+   "title": "Open the Right Mind",
+   "quarter": "2023 Q4",
+   "window_start": "2023-08-11",
+   "window_end": "2023-10-28",
+   "campaign_days": 30.0,
+   "units": 196.0,
+   "sessions": 2661.0,
+   "paid_share": 0.0003829950210647,
+   "unit_shares": {
+    "aa_email": 0.492063492063492,
+    "aa_social": 0.0793650793650793,
+    "referral_artist": 0.0634920634920634,
+    "search_direct_other": 0.365079365079365,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.2340099578705476,
+    "aa_social": 0.2152432018383761,
+    "referral_artist": 0.2317119877441593,
+    "search_direct_other": 0.3186518575258522,
+    "paid": 0.0003829950210647
+   },
+   "convs": {
+    "aa_email": 0.1031096563011456,
+    "aa_social": 0.0195729537366548,
+    "referral_artist": 0.0148760330578512,
+    "search_direct_other": 0.0408653846153846,
+    "paid": null
+   },
+   "entries": 128.0,
+   "units_per_buyer": 2.0194174757281553,
+   "private_room_share": 0.010204081632653,
+   "price": 595.0,
+   "edition_size": 100.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Arghavan Khosravi \u00b7 The Earring \u00b7 2023 Q4",
+   "artist": "Arghavan Khosravi",
+   "title": "The Earring",
+   "quarter": "2023 Q4",
+   "window_start": "2023-08-14",
+   "window_end": "2023-10-26",
+   "campaign_days": 25.0,
+   "units": 20.0,
+   "sessions": 1008.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.0833333333333333,
+    "aa_social": 0.0833333333333333,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.8333333333333334,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.4765234765234765,
+    "aa_social": 0.0779220779220779,
+    "referral_artist": 0.1098901098901098,
+    "search_direct_other": 0.3356643356643357,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0041928721174004,
+    "aa_social": 0.0256410256410256,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.0208333333333333,
+    "paid": null
+   },
+   "entries": 13.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.0,
+   "price": 3187.5,
+   "edition_size": 25.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Miwa Komatsu \u00b7 Multiple \u00b7 2023 Q4",
+   "artist": "Miwa Komatsu",
+   "title": "Multiple",
+   "quarter": "2023 Q4",
+   "window_start": "2023-08-11",
+   "window_end": "2023-10-19",
+   "campaign_days": 21.0,
+   "units": 67.0,
+   "sessions": 3387.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.1153846153846153,
+    "aa_social": 0.0576923076923076,
+    "referral_artist": 0.2307692307692307,
+    "search_direct_other": 0.5961538461538461,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.1321786690975387,
+    "aa_social": 0.0914615618353084,
+    "referral_artist": 0.3834700698875721,
+    "search_direct_other": 0.3928896991795806,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0436781609195402,
+    "aa_social": 0.0730897009966777,
+    "referral_artist": 0.0491283676703645,
+    "search_direct_other": 0.0587780355761794,
+    "paid": null
+   },
+   "entries": 189.0,
+   "units_per_buyer": 1.0396039603960396,
+   "private_room_share": 0.1641791044776119,
+   "price": 1445.0,
+   "edition_size": 50.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  },
+  {
+   "release_name": "Ripcache \u00b7 Security \u00b7 2023 Q3",
+   "artist": "Ripcache",
+   "title": "Security",
+   "quarter": "2023 Q3",
+   "window_start": "2023-07-18",
+   "window_end": "2023-09-23",
+   "campaign_days": 19.0,
+   "units": 31.0,
+   "sessions": 2977.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.0952380952380952,
+    "aa_social": 0.0952380952380952,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.8095238095238095,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.0535593220338983,
+    "aa_social": 0.4471186440677966,
+    "referral_artist": 0.0033898305084745,
+    "search_direct_other": 0.4959322033898305,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0949367088607595,
+    "aa_social": 0.0773313115996967,
+    "referral_artist": null,
+    "search_direct_other": 0.099794941900205,
+    "paid": null
+   },
+   "entries": 337.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.032258064516129,
+   "price": 2550.0,
+   "edition_size": 32.0,
+   "cluster": 3,
+   "cluster_name": "Artist-audience draws"
+  }
+ ]
+}

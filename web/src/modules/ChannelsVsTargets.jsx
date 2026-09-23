@@ -5,7 +5,7 @@
  * the fill, darker from the baseline to whichever of target and benchmark is
  * lower and lighter from the benchmark up to the target when the target is the
  * higher; the benchmark as a dotted outline of the column it would make, over
- * the fill; the actual as the narrower orange column in front. Nothing about the
+ * the fill; the actual as the narrower blue column in front. Nothing about the
  * drawing changes between a release whose targets sit above the basket and one
  * whose targets sit below it - only where the outline lands - so the legend has
  * the same shape either way and a benchmark above its target needs no special
@@ -21,10 +21,10 @@
  * and red below. The stretch multiple is said once, at the foot of the card,
  * rather than drawn on five bars. */
 import React, { useState } from "react";
-import { Card, GROUP_DOTS, BmOutline, C, fmt, useTip, refWords } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, BmOutline, BADGE_WORDS, C, fmt, useTip } from "../ui.jsx";
 
 /* The fill nearly fills the slot and the actual sits well inside it, so the
- * tints and the outline read on both sides of the orange at every card width. */
+ * tints and the outline read on both sides of the blue at every card width. */
 const REF_INSET = "6%";
 const BAR_INSET = "27%";
 
@@ -44,7 +44,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   const today = horizon !== "close";
   const pct = targeted ? scale === "pct" : false;
   const hasBm = targeted && !!snap?.benchmark;
-  const words = refWords(horizon);
+  const words = BADGE_WORDS;
 
   // Today compares actuals with the target to date; at close compares the projection
   // with the full target (docs §5.4 / §9). The benchmark for the same horizon rides
@@ -79,12 +79,18 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
     bmH: r.bm === null ? null : h(val(r.bm, r.target)),
   }));
 
-  const fillColor = today ? C.orange : C.orangeLight;
+  // one blue across both horizons: a column is either today's actual or the
+  // projection at close, never both, so a change of tint would read as a
+  // change of meaning rather than a change of horizon
+  const fillColor = C.blue;
   const fillLabel = today ? "To date" : "Projected";
   const unit = (v) => fmt(v, v < 10 && v > 0 ? 1 : 0);
   const k = snap?.benchmark?.k ?? null;
   // the uplift is one multiple, so the stretch band is on every column or none
   const anyStretch = cols.some((c) => c.bm !== null && c.target > c.bm);
+  // the groups this release set aside (BENCHMARK_SPEC 4.3): no target, no
+  // benchmark, and the foot says so rather than printing a dash
+  const offGroups = new Set((snap.benchmark && snap.benchmark.channelsOff) || []);
   const stretchNote = k > 0
     ? `The target is ×${fmt(k, 2)} the benchmark - the same even uplift in every channel and on every day.`
     : undefined;
@@ -106,6 +112,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
     <Card
       dot={GROUP_DOTS.volume}
       title={targeted ? "Channels vs targets" : "Channels"}
+      badge={<HorizonBadge horizon={horizon} />}
     >
       {targeted && <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, margin: "10px 0 12px", flex: "0 0 auto" }}>
         {seg(
@@ -129,7 +136,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                 ...(withBm ? [{ label: words.bm, value: unit(c.bm) }] : []),
               ];
               const barTip = {
-                head: today ? "Secured to date" : "Projected at close",
+                head: today ? "Secured to date" : "Projected",
                 rows: [{ label: "Units", value: unit(c.bar) }, ...refRows],
               };
               const refTip = {
@@ -194,13 +201,14 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                     {c.name}
                   </div>
                   <div
-                    className="num"
+                    className={offGroups.has(c.key) ? undefined : "num"}
+                    title={offGroups.has(c.key) ? "Not in plan for this release: no target and no benchmark. What it secures still counts." : undefined}
                     style={{
-                      fontSize: 11, fontWeight: 600,
+                      fontSize: offGroups.has(c.key) ? 9.5 : 11, fontWeight: 600,
                       color: c.pctOfTarget === null ? C.muted : c.pctOfTarget >= 100 ? C.green : C.red,
                     }}
                   >
-                    {c.pctOfTarget === null ? "–" : (capped ? "›999%" : c.pctOfTarget + "%")}
+                    {offGroups.has(c.key) ? "not in plan" : c.pctOfTarget === null ? "–" : (capped ? "›999%" : c.pctOfTarget + "%")}
                   </div>
                 </div>
               );

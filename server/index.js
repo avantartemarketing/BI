@@ -91,12 +91,23 @@ app.get("/api/curves", (_req, res) => res.sendFile(path.join(DATA, "curves.json"
 // actuals-only pages for everything else in derived/ (rebuilt every refresh,
 // not committed). A release the index lists but neither dir has is one the
 // first refresh after a deploy has not built yet - say so, not "unknown".
-app.get("/api/releases/:id", (req, res) => {
-  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+const slack = require("./slack");
+/* The release's snapshot as the ETL wrote it, or null. */
+function readSnapshot(id) {
   for (const dir of ["releases", "derived"]) {
     const file = path.join(DATA, dir, `${id}.json`);
-    if (fs.existsSync(file)) return res.sendFile(file);
+    if (fs.existsSync(file)) {
+      try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return null; }
+    }
   }
+  return null;
+}
+app.get("/api/releases/:id", (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  const snap = readSnapshot(id);
+  // the Slack channel set for the release rides on the snapshot, so the
+  // sell-through card knows whether its button has somewhere to post
+  if (snap) return res.json({ ...snap, slack: slack.stateFor(id) });
   let listed = false;
   try {
     listed = JSON.parse(fs.readFileSync(path.join(DATA, "index.json"), "utf8")).releases.some((r) => r.id === id);
@@ -155,6 +166,9 @@ const PICKS = {
   cpp_pick: ["Low", "Median", "High"],
 };
 const QUALITIES = ["High", "Medium", "Low", "N/A"];
+// the display groups a release can set aside - "not running paid", "the
+// artist has no channels of their own" (BENCHMARK_SPEC 4.3; etl/baskets.py GROUPS)
+const CHANNEL_GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
 // how the stretch (target - benchmark) is spread: one even uplift on every
 // channel, or the old quartile levers (BENCHMARK_SPEC §1, §8)
 const STRETCH_MODES = ["even", "levers"];
@@ -191,11 +205,13 @@ function defaultsFor(id, disc) {
     id, release_name: disc.release_name, campaign_code: disc.campaign_code || "",
     campaign_name: disc.campaign_name || null, marketing_lead: null, budget_file: null,
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
-    edition_size: null, unit_price: null, artist_profit: null, aa_group_profit: null,
+    edition_size: null, edition_total: null, unit_price: null, artist_profit: null, aa_group_profit: null,
+    preorder_conversion_rate: null,
+    prefer_recent: true,
     artist_profit_share: 0.5, framing_available: true, frame_conversion: null, frame_profit_per_unit: null,
     paid_share_override: null,
     paid_channel_size: "Medium", reference_point: "Medium", paid_conv_quality: "Medium", cpp_pick: "Median",
-    channel_quality_overrides: {},
+    channel_quality_overrides: {}, channels_off: [],
   };
 }
 
@@ -252,6 +268,19 @@ app.post("/api/inputs/:id", route(async (req, res) => {
           : `${f} must be a non-negative number`);
       } else next[f] = f === "edition_size" ? Math.round(v) : v;
     }
+  }
+  // the whole edition when the target (edition_size) is only part of it;
+  // empty means the target is the edition
+  if (body.edition_total !== undefined) {
+    if (body.edition_total === null || body.edition_total === "") next.edition_total = null;
+    else {
+      const v = Number(body.edition_total);
+      if (!Number.isFinite(v) || v < 1) errors.push("total edition must be at least 1, or empty when the target is the whole edition");
+      else next.edition_total = Math.round(v);
+    }
+  }
+  if (next.edition_total !== null && next.edition_total !== undefined && Number(next.edition_total) < Number(next.edition_size)) {
+    errors.push("total edition cannot be smaller than the target");
   }
   if (body.artist_profit_share !== undefined) {
     const v = Number(body.artist_profit_share);
@@ -321,6 +350,26 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     if (!check.ok) errors.push(check.error);
     else next.benchmark_basket = check.normalised;
   }
+  if (body.prefer_recent !== undefined) {
+    // the basket's recency preference: launches closed in the last 18 months
+    // rank first among the comparable ones (etl/baskets.py similar_members)
+    if (typeof body.prefer_recent !== "boolean") errors.push("prefer_recent must be true or false");
+    else next.prefer_recent = body.prefer_recent;
+  }
+  /* The channels this release will not run (BENCHMARK_SPEC 4.3): group keys,
+   * kept to the known ones and in their fixed order. Every group off would
+   * leave nothing to benchmark or target, so that is refused. */
+  if (body.channels_off !== undefined) {
+    const raw = body.channels_off === null ? [] : body.channels_off;
+    if (!Array.isArray(raw) || raw.some((g) => typeof g !== "string")) errors.push("channels_off must be a list of channel groups");
+    else {
+      const unknown = raw.filter((g) => !CHANNEL_GROUPS.includes(g));
+      if (unknown.length) errors.push(`unknown channel group ${unknown.join(", ")}`);
+      const off = CHANNEL_GROUPS.filter((g) => raw.includes(g));
+      if (off.length === CHANNEL_GROUPS.length) errors.push("every channel is off - at least one has to be in plan");
+      next.channels_off = off;
+    }
+  }
   if (body.stretch_mode !== undefined) {
     if (!STRETCH_MODES.includes(body.stretch_mode)) errors.push(`stretch_mode must be one of ${STRETCH_MODES.join("/")}`);
     else next.stretch_mode = body.stretch_mode;
@@ -344,13 +393,30 @@ app.post("/api/inputs/:id", route(async (req, res) => {
           if (!Number.isFinite(v) || v < 0) errors.push(`the edition of ${name || key || "a product"} must be a non-negative number`);
           else edition = Math.round(v);
         }
-        list.push({ key, name, edition });
+        // a product can convert its pre-orders at its own rate, where its
+        // draw has already been run; empty means the release's
+        let preorderRate = null;
+        if (p.preorderRate !== undefined && p.preorderRate !== null && p.preorderRate !== "") {
+          const v = Number(p.preorderRate);
+          if (!Number.isFinite(v) || v <= 0 || v > 1) errors.push(`the pre-order rate of ${name || key || "a product"} must be a fraction between 0 and 1, or empty`);
+          else preorderRate = v;
+        }
+        list.push({ key, name, edition, preorderRate });
       }
       next.products = list;
     }
   }
   // the entry -> order rate the sell-through prediction converts entries in
   // hand at; empty means the panel's 0.8
+  // the rate a pre-order entry converts at; empty means the panel's 0.95
+  if (body.preorder_conversion_rate !== undefined) {
+    if (body.preorder_conversion_rate === null || body.preorder_conversion_rate === "") next.preorder_conversion_rate = null;
+    else {
+      const v = Number(body.preorder_conversion_rate);
+      if (!Number.isFinite(v) || v <= 0 || v > 1) errors.push("preorder_conversion_rate must be a fraction between 0 and 1, or empty");
+      else next.preorder_conversion_rate = v;
+    }
+  }
   if (body.entry_conversion_rate !== undefined) {
     if (body.entry_conversion_rate === null || body.entry_conversion_rate === "") next.entry_conversion_rate = null;
     else {
@@ -468,7 +534,15 @@ app.post("/api/inputs/:id", route(async (req, res) => {
  * baskets are the panel's own history, and the only write here saves a basket
  * for everyone, which is the same posture as saving a release's targets. */
 app.get("/api/baskets", route(async (req, res) => {
-  res.json(await baskets.readyBaskets(req.query.release));
+  // ?recent=0|1 previews the suggestion with the recency preference off or on;
+  // absent, the release's saved prefer_recent (on by default) applies
+  const opts = {};
+  if (req.query.recent === "0" || req.query.recent === "1") opts.preferRecent = req.query.recent === "1";
+  // ?units=&price= preview the basket for a target and price not yet saved
+  const units = Number(req.query.units), price = Number(req.query.price);
+  if (Number.isFinite(units) && units > 0 && units < 1e7) opts.units = Math.round(units);
+  if (Number.isFinite(price) && price > 0 && price < 1e7) opts.price = Math.round(price);
+  res.json(await baskets.readyBaskets(req.query.release, opts));
 }));
 
 app.get("/api/baskets/candidates", route(async (_req, res) => {
@@ -503,6 +577,28 @@ app.get("/api/refresh/status", (req, res) => {
   res.json(st.at || st.running ? st : { ...st, note: "no refresh attempted since boot yet" });
 });
 app.post("/api/refresh", (req, res) => res.json(startRefresh(!!(req.body && req.body.full))));
+
+// What the BigQuery service account can see: every dataset, table and view
+// with its column names (never a row), from the metadata endpoints. Cached a
+// day in data/app/bigquery_schema.json; ?refresh=1 lists again; ?format=text
+// gives the readable form for pasting. The first place to look when the
+// account is granted a new table.
+const SCHEMA_PATH = path.join(DATA, "bigquery_schema.json");
+app.get("/api/bigquery/schema", route(async (req, res) => {
+  const bq = require("./bigquery");
+  if (!bq.configured()) return res.status(503).json({ error: "BigQuery is not configured on this server (BIGQUERY_SERVICE_ACCOUNT_JSON)." });
+  let doc = null;
+  const fresh = fs.existsSync(SCHEMA_PATH) && Date.now() - fs.statSync(SCHEMA_PATH).mtimeMs < 24 * 3600 * 1000;
+  if (!req.query.refresh && fresh) {
+    try { doc = JSON.parse(fs.readFileSync(SCHEMA_PATH, "utf8")); } catch { doc = null; }
+  }
+  if (!doc) {
+    doc = await bq.listSchema();
+    fs.writeFileSync(SCHEMA_PATH, JSON.stringify(doc, null, 1));
+  }
+  if (req.query.format === "text") return res.type("text/plain").send(bq.schemaText(doc));
+  res.json(doc);
+}));
 
 // HubSpot email text export (server/emailContent.js): ?run=1 starts the job,
 // the same URL without it reports progress, and the CSV downloads once done.
@@ -556,12 +652,15 @@ app.post("/api/decisions", (req, res) => {
 // ---- the page layout: one arrangement of the release page's cards and section
 // headers for everyone (web/src/Layout.jsx; README "Arranging the page"). The
 // client owns the list of cards; here the shape is checked and the document
-// kept. No document means the default. ----
+// kept. No document means the default. `removed` names the cards taken off
+// the page, so the client can tell them from a card the code gained since the
+// save, which still joins everyone's page. ----
 const LAYOUT_PATH = process.env.LAYOUT_PATH || path.join(ROOT, "data", "layout.json");
+const keysIn = (items) => new Set(items.filter((it) => it.type === "card").map((it) => it.key));
 function readLayout() {
   try { return JSON.parse(fs.readFileSync(LAYOUT_PATH, "utf8")); } catch { return { items: null, updatedAt: null, updatedBy: null }; }
 }
-function layoutProblem(items) {
+function layoutProblem(items, removed) {
   if (!Array.isArray(items) || items.length > 60) return "items is a list of at most 60 entries";
   const keys = new Set();
   for (const it of items) {
@@ -574,21 +673,25 @@ function layoutProblem(items) {
       if (typeof it.text !== "string" || it.text.length > 80) return "a header carries up to 80 characters of text";
     } else return "an entry is a card or a header";
   }
+  if (removed !== undefined && (!Array.isArray(removed) || removed.length > 60
+      || removed.some((k) => typeof k !== "string" || !/^[a-z_]{1,32}$/.test(k)))) return "removed is a list of card names";
   return null;
 }
 app.get("/api/layout", (_req, res) => res.json(readLayout()));
 app.post("/api/layout", route(async (req, res) => {
   const items = req.body ? req.body.items : undefined;
+  const removed = req.body ? req.body.removed : undefined;
   if (items === undefined) return res.status(400).json({ error: "items required: a list, or null for the default" });
   if (items === null) {
     fs.rmSync(LAYOUT_PATH, { force: true });
     return res.json({ items: null, updatedAt: null, updatedBy: null });
   }
-  const problem = layoutProblem(items);
+  const problem = layoutProblem(items, removed);
   if (problem) return res.status(400).json({ error: problem });
   const s = auth.sessionFrom(req);
   const doc = {
     items: items.map((it) => (it.type === "card" ? { type: "card", key: it.key } : { type: "header", text: it.text.trim() })),
+    removed: (removed || []).filter((k) => !keysIn(items).has(k)),
     updatedAt: new Date().toISOString(),
     updatedBy: (s && s.email) || null,
   };
@@ -597,6 +700,67 @@ app.post("/api/layout", route(async (req, res) => {
   fs.writeFileSync(tmp, JSON.stringify(doc, null, 1));
   fs.renameSync(tmp, LAYOUT_PATH);
   res.json(doc);
+}));
+
+// ---- sell-through updates to Slack (server/slack.js) ----
+const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || "").replace(/\/+$/, "");
+app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  if (!req.body || req.body.channel === undefined) return res.status(400).json({ error: "channel required (empty clears it)" });
+  const s = auth.sessionFrom(req);
+  try {
+    const state = slack.setChannel(id, req.body.channel, s && s.email);
+    res.json({ slack: state, warning: slack.stateWarning() });
+  } catch (e) {
+    res.status(400).json({ error: String(e.message || e) });
+  }
+}));
+/* The card to Slack. The body is either nothing (the figures alone) or the
+ * card drawn as a PNG by the browser that is showing it - the one place with
+ * a canvas and the page's own typeface. Slack can only attach a file to a
+ * channel it knows by ID, so the first post to a channel is the figures
+ * (which returns the ID, kept for next time) and then the picture, and every
+ * post after that is one: the picture with the figures as its comment. A
+ * picture that will not upload never costs the figures. */
+app.post("/api/releases/:id/slack", express.raw({ type: "image/png", limit: "8mb" }), route(async (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  const snap = readSnapshot(id);
+  if (!snap) return res.status(404).json({ error: "unknown release" });
+  const st = slack.stateFor(id);
+  if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
+  const png = Buffer.isBuffer(req.body) && req.body.length ? req.body : null;
+  const text = slack.composeSellThrough(snap, { link: PUBLIC_URL ? `${PUBLIC_URL}/?release=${id}` : null });
+  if (!png && req.body && req.body.dryRun) return res.json({ channel: st.channel, text });
+  const title = `${snap.releaseName || id} - sell-through`;
+  const filename = `sell-through-${id}-${snap.asOf || new Date().toISOString().slice(0, 10)}.png`;
+  const why = (e) => String((e && e.message) || e).replace(/\s+/g, " ").slice(0, 160);
+  try {
+    let warning = null;
+    const known = png ? slack.channelIdFor(id) : null;
+    if (known) {
+      // one post: the picture, with the figures written above it
+      try {
+        await slack.uploadImage({ channelId: known, png, filename, title, comment: text });
+      } catch (e) {
+        await slack.postMessage(st.channel, text);
+        warning = `the picture did not go up (${why(e)}), so the figures went as text`;
+      }
+    } else {
+      const out = await slack.postMessage(st.channel, text);
+      if (out.channel) slack.rememberChannelId(id, out.channel);
+      if (png) {
+        try {
+          await slack.uploadImage({ channelId: out.channel, png, filename, title });
+        } catch (e) {
+          warning = `the picture did not go up (${why(e)})`;
+        }
+      }
+    }
+    const s = auth.sessionFrom(req);
+    res.json({ ok: true, channel: st.channel, warning, slack: slack.recordPost(id, s && s.email) });
+  } catch (e) {
+    res.status(502).json({ error: String(e.message || e) });
+  }
 }));
 
 app.use(express.static(DIST));
