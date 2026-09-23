@@ -271,6 +271,14 @@ The headline and the chart line are the **trailing-3-calendar-day** rolling
 version of this: a window with spend but no entries reads as ROI 0 (money out,
 nothing in), and CPE is treated as unknown until entries return.
 
+The profit per unit and the budget share are the release's own, from the Target
+setting tab (§2): the products' figures weighted by their target units (AA's
+includes the framing uplift). The card shows Avant Arte's ROI by default and
+can be switched to the artist's reading of the same days - the artist's profit
+per unit over the artist's share of the spend. On a revenue-share deal the
+artist carries no spend, so there is no artist ROI to show. The ? popup on the
+card sets out the working with the release's figures.
+
 **Budget to sell out** (the sizing decision). Paid is sized to top up only the
 gap organic is *not* on course to fill - not to buy the whole remaining edition
 by itself:

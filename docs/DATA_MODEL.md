@@ -1189,7 +1189,20 @@ ROI_party(day)  = (1 − cannibalisation) × profit_per_unit_party / (adjCPE × 
 cum versions    = same on Σ spend / Σ entries
 ```
 `budget_share` = who pays for ads (AA/artist), e.g. 100/0 (Glenn Ligon), 33/66 (Jaume Plensa);
-distinct from `profit_share`.
+distinct from `profit_share`. `profit_per_unit_party` and `budget_share_party` are the
+release's own, from the Target setting tab (§1.6): the products' figures weighted by their
+target units, or the release-level `legacy_economics` while it stands; AA's profit per unit
+includes the framing uplift.
+
+Both parties are published. AA's reading is the paid block's `cumRoi`, `l3dRoi`, `daily[].roi`,
+`roiPath` and `budget.finalDayRoi`; the artist's is `paid.artist` (`cumRoi`, `l3dRoi`, `roiPath`,
+`roiDeclineModel`, `finalDayRoi`, `profitPerUnit`, `budgetShare`) and `daily[].roiArtist`: the same
+days and the same forward path, with the artist's profit per unit over the artist's share of the
+spend (`1 − aa_budget_share`). On a deal where the artist carries no spend (a revenue share,
+`aa_budget_share` 1) every artist figure is `None`: there is no artist ROI to read. The terms the
+figures are read with sit on the block as `cannibalisation` and `dropOff`, so the Paid ROI card
+can show its working in the ? popup. The card reads AA by default and has an AA / Artist switch
+(kept per browser); the spend recommendation, its ROI floor and the pacing rules stay AA's.
 
 **Budget to sell out** (the sizing decision). The workbook nets off a manual
 `organic_topup` estimate; the dashboard automates it with the shape-following

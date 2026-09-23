@@ -2092,7 +2092,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         s_, e_ = float(spend_day.get(d, 0.0)), float(paid_entries_day.get(d, 0.0))
         cum_spend += s_; cum_pentries += e_
         win3 = (win3 + [(s_, e_)])[-3:]
-        paid_daily.append({"date": d.isoformat(), "spend": round(s_, 2), "entries": e_, "roi": None})
+        paid_daily.append({"date": d.isoformat(), "spend": round(s_, 2), "entries": e_, "roi": None, "roiArtist": None})
     s3, e3 = sum(x for x, _ in win3), sum(y for _, y in win3)
     l3d_raw = s3 / e3 if e3 > 0 else None
     l3d_cpe = l3d_raw / (1 - drop) if l3d_raw else None
@@ -2115,6 +2115,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
         "cumCpe": round(cum_cpe, 2) if cum_cpe else None,
         "roiDeclineModel": {"start": None, "dailyFactor": None}, "roiTarget": None,
+        "artist": None,
         "budget": {"current": round(current_daily, 2), "recommended": None, "cap": None,
                    "finalDayRoi": None, "floor": None, "budgetToSellOut": None,
                    "entriesNeeded": None, "selloutGap": None, "organicFuture": None,
@@ -2356,9 +2357,21 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     aa_budget_share = release.get("aa_budget_share")
     if aa_budget_share is None:
         aa_budget_share = 1.0 if release["artist_profit_share"] == 0 else 0.5
+    artist_budget_share = max(0.0, 1.0 - float(aa_budget_share))
+
+    def party_roi(ppu: float, share: float, adj_cpe: float | None) -> float | None:
+        """ROI_party (docs 7): a party's profit on a converting entry, net of
+        cannibalisation, over what that entry cost the party. None when the
+        cost is unknown or the party carries none of the spend (the artist on
+        a revenue-share deal), so there is no ROI to read."""
+        if not adj_cpe or share <= 0:
+            return None
+        return (1 - cann) * ppu / (adj_cpe * share)
 
     # daily 'roi' is the trailing-3-CALENDAR-day rolling ROI: a window with
-    # spend but no entries is a genuine 0, a window with no spend is null
+    # spend but no entries is a genuine 0, a window with no spend is null.
+    # AA's reading is 'roi', the artist's 'roiArtist': the same days, the
+    # artist's profit per unit over the artist's share of the spend.
     paid_daily = []
     cum_spend = cum_pentries = 0.0
     win3: list[tuple[float, float]] = []
@@ -2372,14 +2385,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         if len(win3) > 3:
             win3.pop(0)
         s3 = sum(x for x, _ in win3); e3 = sum(y for _, y in win3)
-        if s3 <= 0:
-            roi3 = None
-        elif e3 <= 0:
-            roi3 = 0.0
-        else:
-            roi3 = (1 - cann) * ppu_aa / ((s3 / (e3 * (1 - drop))) * aa_budget_share)
+        adj3 = (s3 / (e3 * (1 - drop))) if s3 > 0 and e3 > 0 else None
+        roi3 = None if s3 <= 0 else 0.0 if e3 <= 0 else party_roi(ppu_aa, aa_budget_share, adj3)
+        roi3_artist = (None if s3 <= 0 or artist_budget_share <= 0 else 0.0 if e3 <= 0
+                       else party_roi(ppu_artist, artist_budget_share, adj3))
         paid_daily.append({"date": d.isoformat(), "spend": round(s, 2), "entries": e,
-                           "roi": round(roi3, 3) if roi3 is not None else None})
+                           "roi": round(roi3, 3) if roi3 is not None else None,
+                           "roiArtist": round(roi3_artist, 3) if roi3_artist is not None else None})
     # the part day so far: in the to-date figures, never in the rules
     part_spend = part_entries = 0.0
     if full_through < as_of <= launch_end:
@@ -2391,9 +2403,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     l3d_raw_cpe = s3 / e3 if e3 > 0 else None
     l3d_cpe = l3d_raw_cpe / (1 - drop) if l3d_raw_cpe else None
     cum_adj_cpe = cum_spend / (cum_pentries * (1 - drop)) if cum_pentries else None
-    cum_roi = ((1 - cann) * ppu_aa / (cum_adj_cpe * aa_budget_share)) if cum_adj_cpe else None
-    l3d_roi = ((1 - cann) * ppu_aa / (l3d_cpe * aa_budget_share)) if l3d_cpe \
-        else (0.0 if s3 > 0 else None)
+    cum_roi = party_roi(ppu_aa, aa_budget_share, cum_adj_cpe)
+    l3d_roi = party_roi(ppu_aa, aa_budget_share, l3d_cpe) if l3d_cpe else (0.0 if s3 > 0 else None)
+    # the artist's reading of the same days: None throughout when the artist
+    # carries none of the spend
+    cum_roi_artist = party_roi(ppu_artist, artist_budget_share, cum_adj_cpe)
+    l3d_roi_artist = (party_roi(ppu_artist, artist_budget_share, l3d_cpe) if l3d_cpe
+                      else (0.0 if s3 > 0 and artist_budget_share > 0 else None))
 
     # ---- one forward cost path, shared by the ROI chart and the recommendation.
     # Cost per entry drifts by the LE spend rules' daily tiers (5/7/10% a day
@@ -2536,10 +2552,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             if abs(recommended - s0) < rules["ignore_change_below"] * s0:
                 recommended, cap = s0, "hold_small_change"
     cpe_rec = cpe_at(recommended, drift_end) if recommended else None
-    final_day_roi = ((1 - cann) * ppu_aa / (cpe_rec * aa_budget_share)) if cpe_rec else None
-    # the chart's line: ROI at today's spend along the drift path
+    final_day_roi = party_roi(ppu_aa, aa_budget_share, cpe_rec)
+    final_day_roi_artist = party_roi(ppu_artist, artist_budget_share, cpe_rec)
+    # the chart's line: ROI at today's spend along the drift path, each party
+    # on the same path
     roi_path = ([{"date": d.isoformat(), "roi": round(l3d_roi / f, 3)} for d, f in drift_path]
                 if l3d_roi is not None and not complete else [])
+    roi_path_artist = ([{"date": d.isoformat(), "roi": round(l3d_roi_artist / f, 3)} for d, f in drift_path]
+                       if l3d_roi_artist is not None and not complete else [])
 
     daily_factor = round(1 / (1 + drift_rate), 4)
 
@@ -2758,6 +2778,22 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "profitPerUnitAA": round(ppu_aa, 2),
         "profitPerUnitArtist": round(ppu_artist, 2),
         "aaBudgetShare": aa_budget_share,
+        # the terms every ROI above is read with, so the card can show its working
+        "cannibalisation": cann,
+        "dropOff": drop,
+        # the artist's ROI (docs 7): the same days and the same forward path,
+        # with the artist's profit per unit and share of the spend. Every
+        # figure is None on a deal where the artist carries no spend.
+        "artist": {
+            "cumRoi": round(cum_roi_artist, 3) if cum_roi_artist else None,
+            "l3dRoi": round(l3d_roi_artist, 3) if l3d_roi_artist is not None else None,
+            "roiDeclineModel": {"start": round(l3d_roi_artist, 3) if l3d_roi_artist is not None else None,
+                                "dailyFactor": daily_factor},
+            "roiPath": roi_path_artist,
+            "finalDayRoi": round(final_day_roi_artist, 3) if final_day_roi_artist else None,
+            "profitPerUnit": round(ppu_artist, 2),
+            "budgetShare": round(artist_budget_share, 4),
+        },
     }
     if bench:
         # what the basket typically buys, and what it typically costs to buy -
