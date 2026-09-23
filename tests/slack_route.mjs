@@ -1,11 +1,12 @@
 /* POST /api/releases/:id/slack end to end, against a stand-in Slack.
  *
  * Starts the service with SLACK_API_BASE pointed at a local stand-in, signs
- * in, and presses the button the way the browser does: a PNG body. Checks
- * the two shapes the route has - the first post to a channel is the figures
- * and then the picture, because only a message hands Slack's channel id
- * back; every post after that is one, the picture with the figures as its
- * comment - and that a picture Slack will not take never costs the figures.
+ * in, and presses the button the way the browser does: a PNG body. The post
+ * is the picture and nothing else. The first post to a channel named on the
+ * Target setting tab looks its id up (conversations.list) and keeps it;
+ * every post after that is the upload alone. A picture Slack refuses is a
+ * failed post, said plainly, with no text sent in its place; a body that is
+ * not a picture is refused before Slack is asked anything.
  *
  *   node tests/slack_route.mjs
  */
@@ -32,15 +33,20 @@ const body = (req) => new Promise((resolve) => {
 const slackStub = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
   const raw = await body(req);
-  seen.push({ path: url.pathname, raw });
+  seen.push({ path: url.pathname, raw, query: url.searchParams });
   const json = (o) => { res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify(o)); };
-  if (url.pathname === "/api/chat.postMessage") return json({ ok: true, ts: "1.1", channel: "C0SALESUPD1" });
+  if (url.pathname === "/api/conversations.list") {
+    // two pages: the channel is on the second, so the paging is exercised
+    if (!url.searchParams.get("cursor")) return json({ ok: true, channels: [{ id: "C0OTHER0001", name: "general" }], response_metadata: { next_cursor: "p2" } });
+    return json({ ok: true, channels: [{ id: "C0SALESUPD1", name: "sales-updates" }], response_metadata: { next_cursor: "" } });
+  }
   if (url.pathname === "/api/files.getUploadURLExternal") {
     if (refuseUpload) return json({ ok: false, error: "missing_scope" });
     return json({ ok: true, file_id: "F1", upload_url: `http://127.0.0.1:${slackStub.address().port}/upload` });
   }
   if (url.pathname === "/upload") { res.writeHead(200); return res.end("OK"); }
   if (url.pathname === "/api/files.completeUploadExternal") return json({ ok: true, files: [{ id: "F1" }] });
+  if (url.pathname === "/api/chat.postMessage") return json({ ok: true, ts: "1.1", channel: "C0SALESUPD1" });
   res.writeHead(404); res.end("no");
 });
 await new Promise((r) => slackStub.listen(0, "127.0.0.1", r));
@@ -94,53 +100,45 @@ const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
   "base64");
 
-// ---- the first post: the figures, then the picture
+// ---- the first post: the channel looked up by name, then the picture, no message
 seen.length = 0;
 let r = await send(`/api/releases/${RELEASE}/slack`, { method: "POST", headers: { "Content-Type": "image/png" }, body: PNG });
 let d = await r.json().catch(() => ({}));
 check(r.ok, `first post accepted (${r.status} ${JSON.stringify(d).slice(0, 200)})`);
-check(!d.warning, `nothing to warn about: ${d.warning || "none"}`);
 check(seen.map((s) => s.path).join(" ") ===
-  "/api/chat.postMessage /api/files.getUploadURLExternal /upload /api/files.completeUploadExternal",
-  `figures then picture: ${seen.map((s) => s.path).join(" ")}`);
-const posted = JSON.parse(seen[0].raw.toString());
-check(/sales update/.test(posted.text) && posted.channel === "#sales-updates", "the figures went to the channel by name");
-check(seen[2].raw.includes(PNG), "the picture's bytes reached the upload url");
-check(JSON.parse(seen[3].raw.toString()).channel_id === "C0SALESUPD1", "the picture is attached to the id the message returned");
+  "/api/conversations.list /api/conversations.list /api/files.getUploadURLExternal /upload /api/files.completeUploadExternal",
+  `looked up over two pages, then the picture: ${seen.map((s) => s.path).join(" ")}`);
+check(!seen.some((s) => s.path === "/api/chat.postMessage"), "no message goes with the picture");
+check(seen[1].query.get("cursor") === "p2", "the second page is asked for by its cursor");
+check(seen[3].raw.includes(PNG), "the picture's bytes reached the upload url");
+const done = JSON.parse(seen[4].raw.toString());
+check(done.channel_id === "C0SALESUPD1", "the picture is attached to the id the lookup found");
+check(done.initial_comment === undefined, "and carries no comment");
 
-// ---- the second: one post, the picture with the figures as its comment
+// ---- the second: the id is kept, so it is the upload alone
 seen.length = 0;
 r = await send(`/api/releases/${RELEASE}/slack`, { method: "POST", headers: { "Content-Type": "image/png" }, body: PNG });
 d = await r.json().catch(() => ({}));
-check(r.ok && !d.warning, `second post accepted (${r.status})`);
+check(r.ok, `second post accepted (${r.status})`);
 check(seen.map((s) => s.path).join(" ") ===
   "/api/files.getUploadURLExternal /upload /api/files.completeUploadExternal",
-  `one post, no message: ${seen.map((s) => s.path).join(" ")}`);
-check(/sales update/.test(JSON.parse(seen[2].raw.toString()).initial_comment || ""), "the figures are the picture's comment");
+  `the upload alone: ${seen.map((s) => s.path).join(" ")}`);
 
-// ---- a picture Slack will not take still posts the figures, and says so
+// ---- a picture Slack will not take is a failed post, said plainly; nothing else is sent
 seen.length = 0;
 refuseUpload = true;
 r = await send(`/api/releases/${RELEASE}/slack`, { method: "POST", headers: { "Content-Type": "image/png" }, body: PNG });
 d = await r.json().catch(() => ({}));
-check(r.ok, `a refused picture is not a failed post (${r.status})`);
-check(/picture did not go up/.test(d.warning || ""), `the card is told why: ${d.warning}`);
-check(seen.some((s) => s.path === "/api/chat.postMessage"), "the figures went as text instead");
+check(r.status === 502 && /files:write/.test(d.error || ""), `a refused picture fails with the scope named: ${r.status} ${d.error}`);
+check(!seen.some((s) => s.path === "/api/chat.postMessage"), "no text is sent in its place");
 refuseUpload = false;
 
-// ---- no picture at all: the figures, as before
+// ---- no picture at all is refused before Slack is asked anything
 seen.length = 0;
 r = await send(`/api/releases/${RELEASE}/slack`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-check(r.ok, `figures-only post accepted (${r.status})`);
-check(seen.map((s) => s.path).join(" ") === "/api/chat.postMessage", `with no picture it is a message and nothing else: ${seen.map((s) => s.path).join(" ")}`);
-
-// ---- the dry run still answers with the text, unposted
-seen.length = 0;
-r = await send(`/api/releases/${RELEASE}/slack`, {
-  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dryRun: true }),
-});
 d = await r.json().catch(() => ({}));
-check(r.ok && /sales update/.test(d.text || "") && seen.length === 0, "a dry run composes and sends nothing");
+check(r.status === 400 && /could not draw/.test(d.error || ""), `a post without a picture is refused: ${r.status} ${d.error}`);
+check(seen.length === 0, "and Slack is not called");
 
 stop();
 console.log(failed ? `${failed} failure(s)` : "ok: the Slack route");

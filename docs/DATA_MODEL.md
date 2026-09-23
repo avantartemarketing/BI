@@ -1080,8 +1080,8 @@ Paid, drafts, the draw winners the entries imply and (at close) the units still 
 four tints of the page's blue, deepest to palest as the units get less certain; nothing on
 the card is hatched, and demand past a product's edition is the winners' own tint carrying on
 where the paler room behind the bar stops. `Post to Slack` draws those rows onto a canvas in
-the browser (`web/src/modules/sellThroughImage.mjs`) and posts the picture with the composed
-figures as its comment (`server/slack.js`); the drawing is written twice, the figures once.
+the browser (`web/src/modules/sellThroughImage.mjs`) and posts the picture, and nothing else,
+to the release's channel (`server/slack.js`); the drawing is written twice, the figures once.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
 pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven

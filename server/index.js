@@ -640,7 +640,6 @@ app.post("/api/layout", route(async (req, res) => {
 }));
 
 // ---- sell-through updates to Slack (server/slack.js) ----
-const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || "").replace(/\/+$/, "");
 app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   if (!req.body || req.body.channel === undefined) return res.status(400).json({ error: "channel required (empty clears it)" });
@@ -665,36 +664,23 @@ app.post("/api/releases/:id/slack", express.raw({ type: "image/png", limit: "8mb
   if (!snap) return res.status(404).json({ error: "unknown release" });
   const st = slack.stateFor(id);
   if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
+  // the picture, and nothing else: the browser draws it, so a body that is
+  // not a PNG is a browser that could not
   const png = Buffer.isBuffer(req.body) && req.body.length ? req.body : null;
-  const text = slack.composeSellThrough(snap, { link: PUBLIC_URL ? `${PUBLIC_URL}/?release=${id}` : null });
-  if (!png && req.body && req.body.dryRun) return res.json({ channel: st.channel, text });
+  if (!png) return res.status(400).json({ error: "the browser could not draw the card as a picture, so nothing was posted" });
   const title = `${snap.releaseName || id} - sell-through`;
   const filename = `sell-through-${id}-${snap.asOf || new Date().toISOString().slice(0, 10)}.png`;
-  const why = (e) => String((e && e.message) || e).replace(/\s+/g, " ").slice(0, 160);
   try {
-    let warning = null;
-    const known = png ? slack.channelIdFor(id) : null;
-    if (known) {
-      // one post: the picture, with the figures written above it
-      try {
-        await slack.uploadImage({ channelId: known, png, filename, title, comment: text });
-      } catch (e) {
-        await slack.postMessage(st.channel, text);
-        warning = `the picture did not go up (${why(e)}), so the figures went as text`;
-      }
-    } else {
-      const out = await slack.postMessage(st.channel, text);
-      if (out.channel) slack.rememberChannelId(id, out.channel);
-      if (png) {
-        try {
-          await slack.uploadImage({ channelId: out.channel, png, filename, title });
-        } catch (e) {
-          warning = `the picture did not go up (${why(e)})`;
-        }
-      }
+    // the channel by id: kept from an earlier post, typed as one, or looked up by name once
+    let channelId = slack.channelIdFor(id);
+    if (!channelId) {
+      channelId = await slack.lookupChannelId(st.channel);
+      if (!channelId) return res.status(502).json({ error: `Slack has no channel called #${st.channel} that the app can see - check the name, or type the channel's id instead` });
+      slack.rememberChannelId(id, channelId);
     }
+    await slack.uploadImage({ channelId, png, filename, title });
     const s = auth.sessionFrom(req);
-    res.json({ ok: true, channel: st.channel, warning, slack: slack.recordPost(id, s && s.email) });
+    res.json({ ok: true, channel: st.channel, slack: slack.recordPost(id, s && s.email) });
   } catch (e) {
     res.status(502).json({ error: String(e.message || e) });
   }

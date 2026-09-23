@@ -1,21 +1,18 @@
 /* Sell-through updates to Slack, on demand.
  *
  * The sell-through card carries a "Post to Slack" button; pressing it sends
- * the release's current sell-through figures - paid, unique draw entrants,
- * drafts and the estimated sell-through, per product - to the channel set for
- * that release on its Target setting tab, with the card itself as a picture.
- * The message is composed from the snapshot the page is showing and the
- * picture is drawn in the browser from what that page is rendering
- * (web/src/modules/sellThroughImage.mjs), so what lands in Slack is what the
- * card says.
+ * the card itself, as a picture and nothing else, to the channel set for that
+ * release on its Target setting tab. The picture is drawn in the browser from
+ * what the page is rendering (web/src/modules/sellThroughImage.mjs), so what
+ * lands in Slack is what the card says. No text goes with it, by decision:
+ * the picture carries the figures.
  *
- * One post or two. Slack will only attach a file to a channel it can name by
- * ID, and the only call this app's scopes guarantee - chat.postMessage -
- * hands the ID back. So the first post to a channel is the figures (which
- * returns and stores the ID) and then the picture; from the second post on
- * the ID is known and it is one post, the picture with the figures as its
- * comment. A picture that cannot be uploaded at all never costs the figures:
- * they go as text and the card says the picture did not.
+ * Slack will only attach a file to a channel it can name by ID. A channel
+ * typed as an ID is its own; a channel typed by name is looked up once
+ * (conversations.list, scope channels:read, groups:read for a private one)
+ * and the ID kept beside the name, so every post after the first is one
+ * call. composeSellThrough, the figures as a message, stays here for the
+ * day the text is wanted back; the route no longer sends it.
  *
  * Channel per release lives in a small document of its own (SLACK_STATE_PATH,
  * default data/slack.json; put it on the persistent disk like the layout), so
@@ -97,9 +94,9 @@ function setChannel(id, channel, by) {
   writeState(doc);
   return doc[id];
 }
-/* Slack names a channel by ID when a file is attached to it. The ID comes
- * back from chat.postMessage, so it is kept beside the channel name here;
- * a channel typed as an ID in the first place is its own. */
+/* Slack names a channel by ID when a file is attached to it. The ID is
+ * looked up once and kept beside the channel name here; a channel typed as
+ * an ID in the first place is its own. */
 const CHANNEL_ID_RE = /^[CGD][A-Z0-9]{6,}$/;
 function channelIdFor(id) {
   const st = stateFor(id);
@@ -260,12 +257,12 @@ function composeSellThrough(snap, { link, today } = {}) {
 
 const HINTS = {
   channel_not_found: (c) => `Slack cannot find #${c} - check the name; for a private channel invite the bot first`,
-  not_in_channel: (c) => `the bot is not in #${c} - a public channel needs the chat:write.public and channels:join scopes; a private one needs the bot invited (/invite it), then post again`,
+  not_in_channel: (c) => `the bot is not in ${c} - a public channel needs the channels:join scope; a private one needs the bot invited (/invite it), then post again`,
   is_archived: (c) => `#${c} is archived`,
   invalid_auth: () => "the Slack token is not valid - replace SLACK_BOT_TOKEN",
   token_revoked: () => "the Slack token was revoked - replace SLACK_BOT_TOKEN",
   account_inactive: () => "the Slack app is no longer installed - reinstall it and replace SLACK_BOT_TOKEN",
-  missing_scope: () => "the Slack app needs the chat:write scope (chat:write.public to post to public channels it has not joined, channels:join to join one for the picture, files:write to post the card as a picture)",
+  missing_scope: () => "the Slack app needs the files:write scope to post the card as a picture (channels:read to find a channel by name, channels:join to join a public channel for the picture)",
   msg_too_long: () => "the update is too long for one Slack message",
   ratelimited: () => "Slack is rate limiting the app - try again in a minute",
 };
@@ -300,6 +297,36 @@ async function postMessage(channel, text) {
     throw refusal(code, hint ? hint(channel) : `Slack refused the message (${code})`);
   }
   return { ts: json.ts, channel: json.channel };
+}
+
+/* The id of a channel named on the Target setting tab: conversations.list,
+ * page by page, until the name matches (scope channels:read; groups:read as
+ * well for a private channel the bot is in). Null when no channel has the
+ * name. The refusals name the scope. */
+const LIST_HINTS = {
+  missing_scope: () => "the Slack app needs the channels:read scope to find a channel by name (groups:read as well for a private one) - add it and reinstall the app, or type the channel's id instead of its name",
+};
+async function lookupChannelId(name) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  if (!token) throw new Error("Slack is not connected - set SLACK_BOT_TOKEN to the app's bot token (README: Posting sell-through to Slack)");
+  const want = String(name || "").trim().replace(/^#/, "").toLowerCase();
+  let cursor = "";
+  for (let page = 0; page < 20; page++) {
+    const q = new URLSearchParams({ types: "public_channel,private_channel", exclude_archived: "true", limit: "1000" });
+    if (cursor) q.set("cursor", cursor);
+    const res = await fetch(`${SLACK_API_BASE}/conversations.list?${q}`, { headers: { Authorization: `Bearer ${token}` } });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.ok) {
+      const code = json.error || `HTTP ${res.status}`;
+      const hint = LIST_HINTS[code] || HINTS[code];
+      throw refusal(code, hint ? hint(name) : `Slack would not list its channels (${code})`);
+    }
+    const hit = (json.channels || []).find((c) => String(c.name || "").toLowerCase() === want);
+    if (hit && hit.id) return hit.id;
+    cursor = (json.response_metadata && json.response_metadata.next_cursor) || "";
+    if (!cursor) break;
+  }
+  return null;
 }
 
 /* Joins a public channel by id (scope channels:join), so a picture can be
@@ -380,5 +407,5 @@ async function uploadImage({ channelId, png, filename = "card.png", title, comme
 
 module.exports = {
   stateFor, setChannel, recordPost, stateWarning, composeSellThrough, shortNames, entrants,
-  postMessage, uploadImage, joinChannel, channelIdFor, rememberChannelId, STATE_PATH,
+  postMessage, uploadImage, joinChannel, lookupChannelId, channelIdFor, rememberChannelId, STATE_PATH,
 };
