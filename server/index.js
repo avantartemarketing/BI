@@ -166,6 +166,9 @@ const PICKS = {
   cpp_pick: ["Low", "Median", "High"],
 };
 const QUALITIES = ["High", "Medium", "Low", "N/A"];
+// the display groups a release can set aside - "not running paid", "the
+// artist has no channels of their own" (BENCHMARK_SPEC 4.3; etl/baskets.py GROUPS)
+const CHANNEL_GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
 // how the stretch (target - benchmark) is spread: one even uplift on every
 // channel, or the old quartile levers (BENCHMARK_SPEC §1, §8)
 const STRETCH_MODES = ["even", "levers"];
@@ -207,7 +210,7 @@ function defaultsFor(id, disc) {
     prefer_recent: true,
     artist_profit_share: 0.5, framing_available: true, paid_share_override: null,
     paid_channel_size: "Medium", reference_point: "Medium", paid_conv_quality: "Medium", cpp_pick: "Median",
-    channel_quality_overrides: {},
+    channel_quality_overrides: {}, channels_off: [],
   };
 }
 
@@ -332,6 +335,20 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     // rank first among the comparable ones (etl/baskets.py similar_members)
     if (typeof body.prefer_recent !== "boolean") errors.push("prefer_recent must be true or false");
     else next.prefer_recent = body.prefer_recent;
+  }
+  /* The channels this release will not run (BENCHMARK_SPEC 4.3): group keys,
+   * kept to the known ones and in their fixed order. Every group off would
+   * leave nothing to benchmark or target, so that is refused. */
+  if (body.channels_off !== undefined) {
+    const raw = body.channels_off === null ? [] : body.channels_off;
+    if (!Array.isArray(raw) || raw.some((g) => typeof g !== "string")) errors.push("channels_off must be a list of channel groups");
+    else {
+      const unknown = raw.filter((g) => !CHANNEL_GROUPS.includes(g));
+      if (unknown.length) errors.push(`unknown channel group ${unknown.join(", ")}`);
+      const off = CHANNEL_GROUPS.filter((g) => raw.includes(g));
+      if (off.length === CHANNEL_GROUPS.length) errors.push("every channel is off - at least one has to be in plan");
+      next.channels_off = off;
+    }
   }
   if (body.stretch_mode !== undefined) {
     if (!STRETCH_MODES.includes(body.stretch_mode)) errors.push(`stretch_mode must be one of ${STRETCH_MODES.join("/")}`);

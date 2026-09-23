@@ -88,6 +88,9 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   const k = snap?.benchmark?.k ?? null;
   // the uplift is one multiple, so the stretch band is on every column or none
   const anyStretch = cols.some((c) => c.bm !== null && c.target > c.bm);
+  // the groups this release set aside (BENCHMARK_SPEC 4.3): no target, no
+  // benchmark, and the foot says so rather than printing a dash
+  const offGroups = new Set((snap.benchmark && snap.benchmark.channelsOff) || []);
   const stretchNote = k > 0
     ? `The target is ×${fmt(k, 2)} the benchmark - the same even uplift in every channel and on every day.`
     : undefined;
@@ -198,13 +201,14 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                     {c.name}
                   </div>
                   <div
-                    className="num"
+                    className={offGroups.has(c.key) ? undefined : "num"}
+                    title={offGroups.has(c.key) ? "Not in plan for this release: no target and no benchmark. What it secures still counts." : undefined}
                     style={{
-                      fontSize: 11, fontWeight: 600,
+                      fontSize: offGroups.has(c.key) ? 9.5 : 11, fontWeight: 600,
                       color: c.pctOfTarget === null ? C.muted : c.pctOfTarget >= 100 ? C.green : C.red,
                     }}
                   >
-                    {c.pctOfTarget === null ? "–" : (capped ? "›999%" : c.pctOfTarget + "%")}
+                    {offGroups.has(c.key) ? "not in plan" : c.pctOfTarget === null ? "–" : (capped ? "›999%" : c.pctOfTarget + "%")}
                   </div>
                 </div>
               );

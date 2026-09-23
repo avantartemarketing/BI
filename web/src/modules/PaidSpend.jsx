@@ -158,6 +158,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     : dayElapsed(snap) > 0 && snap.of > 0 ? Math.min(1, dayElapsed(snap) / snap.of)
     : 1;
   const hasBm = !!snap.benchmark;
+  // paid set aside for this release (BENCHMARK_SPEC 4.3): the target and the
+  // budget are zero by choice, and the card says so above the bars
+  const paidOff = hasBm && (snap.benchmark.channelsOff || []).includes("paid");
   const bmUnitsAll = hasBm && paid.benchmarkUnits !== null && paid.benchmarkUnits !== undefined
     ? paid.benchmarkUnits : null;
   const bmSpendAll = hasBm && paid.benchmarkBudget !== null && paid.benchmarkBudget !== undefined
@@ -249,6 +252,12 @@ export default function PaidSpend({ snap, horizon = "today" }) {
         )}
       </div>
       <div style={{ height: 10, flex: "0 0 10px" }} />
+      {paidOff && (
+        <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, flex: "0 0 auto", marginBottom: 6 }}
+          title="Set on the Target setting tab. The benchmark reads the basket without its paid units and the other channels carry the whole target.">
+          Paid is not in plan for this release: no target and no budget. Any spend and units below are what actually ran.
+        </div>
+      )}
       {/* the rule that shaped the figure, on one line; its wording is in its popup */}
       {showCap && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
