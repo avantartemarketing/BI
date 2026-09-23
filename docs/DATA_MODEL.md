@@ -1267,6 +1267,7 @@ guard every benchmark mark on the page is written against.
 | `benchmark.sessions`, `entries`, `campaignDays` | the other headline medians of the profile |
 | `benchmark.k` | the even uplift K |
 | `benchmark.stretchUnits`, `stretchPct` | `target − benchmark` in units, and `K − 1` |
+| `asOf`, `completeThrough`, `asOfFraction` | the newest day in the feed (today, part-observed, while the feed is live), the last full day, and the share of the as-of day seen (1 on a full day and once the window has closed). The actuals run through `asOf`; the paid pacing rules, the run rates and `complete` read `completeThrough`; every reference by today is read at the share, so the page compares the day so far with the same share of the basket's day |
 | `benchmark.unitsByGroup`, `sessionsByGroup`, `convByGroup` | the per-group medians (conversion is held, so `convByGroup` is both benchmark and target) |
 | `benchmark.paidBudget` | benchmark paid units × median cost per purchase × K |
 | `hero.benchmark`, `benchmarkToday`, `stretch` | benchmark at close, benchmark pace to today, the stretch |

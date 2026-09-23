@@ -19,7 +19,7 @@
  * card carries no row for it. */
 import React, { useState } from "react";
 import {
-  Card, HorizonBadge, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip,
+  Card, HorizonBadge, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip, dayElapsed,
 } from "../ui.jsx";
 
 const money = (v) => "£" + fmt(Math.round(v ?? 0));
@@ -155,7 +155,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   // Today's references are the pro-rata share of the close figures: the paid plan
   // is a flat daily budget, so days elapsed is the share of it that should be spent.
   const dayFrac = close ? 1
-    : snap.day > 0 && snap.of > 0 ? Math.min(1, snap.day / snap.of)
+    : dayElapsed(snap) > 0 && snap.of > 0 ? Math.min(1, dayElapsed(snap) / snap.of)
     : 1;
   const hasBm = !!snap.benchmark;
   const bmUnitsAll = hasBm && paid.benchmarkUnits !== null && paid.benchmarkUnits !== undefined

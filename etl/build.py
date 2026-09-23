@@ -47,7 +47,11 @@ import pathlib
 import re
 import sys
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:  # pragma: no cover - Python < 3.9
+    ZoneInfo = None
 
 import numpy as np
 import pandas as pd
@@ -798,6 +802,30 @@ def pdsa_for(release: dict, d: date) -> float:
     return (d - a).days / L if L else 0.0
 
 
+def observation_clock(newest: date, now: datetime | None = None) -> tuple[date, date, float]:
+    """The feed's newest day, the last full day, and the share of the newest day seen.
+
+    While the feed is live its newest day is the current calendar day, and
+    that day is only part-observed: sessions, entries and orders keep landing
+    until midnight. The page shows the day so far - the actuals run through it -
+    but anything that treats a day as a whole observation (the paid pacing
+    rules, the run rates, whether a campaign is complete) stops at the last
+    full day, and the references "by today" are read at the share of today
+    seen, so a morning reading is not behind for hours that have not happened.
+    A newest day already in the past is a full day. The clock is London's, the
+    business's own; `now` is injectable for tests."""
+    if now is None:
+        try:
+            now = datetime.now(ZoneInfo("Europe/London")) if ZoneInfo else datetime.now(timezone.utc)
+        except Exception:  # no tz database on the box
+            now = datetime.now(timezone.utc)
+    today = now.date()
+    if newest < today:
+        return newest, newest, 1.0
+    seen = round((now.hour * 60 + now.minute) / 1440, 4)
+    return today, today - timedelta(days=1), seen
+
+
 EMAIL_REF_MONTHS = 24   # rate references: draw launches that closed within this span
 
 
@@ -1521,7 +1549,8 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
 
 def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.DataFrame,
                   content: pd.DataFrame, as_of: date, email_bench: dict | None = None,
-                  artist_posts: pd.DataFrame | None = None) -> dict:
+                  artist_posts: pd.DataFrame | None = None,
+                  full_through: date | None = None, seen: float = 1.0) -> dict:
     """Actuals-only snapshot for a release nobody has set targets for. Same
     shape as build_release's so the page code has one contract, with every
     target-derived field None and targeted: False - the page shows what
@@ -1530,13 +1559,15 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     b = BENCH
     e2o = b["eligible_entry_to_order"]
     name = rec["release_name"]
+    full_through = full_through or as_of
+    seen = 1.0 if full_through >= as_of else seen
     dated = rec["announce_date"] is not None
     if dated:
         announce = date.fromisoformat(rec["announce_date"])
         launch_end = date.fromisoformat(rec["launch_end"])
         window_start = announce - timedelta(days=PR_LEAD_DAYS)
         L = (launch_end - announce).days
-        complete = as_of >= launch_end
+        complete = full_through >= launch_end
         day_n = max(min((as_of - announce).days, L), 0)
     else:
         launch_end = as_of
@@ -1611,7 +1642,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     paid_daily, win3 = [], []
     cum_spend = cum_pentries = 0.0
     for d in days:
-        if d > min(as_of, launch_end):
+        if d > min(full_through, launch_end):
             break
         s_, e_ = float(spend_day.get(d, 0.0)), float(paid_entries_day.get(d, 0.0))
         cum_spend += s_; cum_pentries += e_
@@ -1621,14 +1652,20 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     l3d_raw = s3 / e3 if e3 > 0 else None
     l3d_cpe = l3d_raw / (1 - drop) if l3d_raw else None
     cum_cpe = cum_spend / (cum_pentries * (1 - drop)) if cum_pentries else None
-    current_daily = float(spend_day.get(as_of, spend_day.iloc[-1] if len(spend_day) else 0.0))
+    # the part day so far: in the to-date figures, never in the rates
+    part_spend = part_entries = 0.0
+    if full_through < as_of <= launch_end:
+        part_spend = float(spend_day.get(as_of, 0.0))
+        part_entries = float(paid_entries_day.get(as_of, 0.0))
+    past_spend = spend_day[spend_day.index <= full_through]
+    current_daily = float(past_spend.get(full_through, past_spend.iloc[-1] if len(past_spend) else 0.0))
     paid_out = {
         "daily": paid_daily,
-        "spendToDate": round(cum_spend, 2), "entriesToDate": cum_pentries,
+        "spendToDate": round(cum_spend + part_spend, 2), "entriesToDate": cum_pentries + part_entries,
         # paid entries are draw entries; only (1 - drop_off) of them convert to
         # an order. The card's bars are drawn in units, so the units figure is
         # published rather than left to the page to derive.
-        "unitsToDate": round(cum_pentries * (1 - drop), 1),
+        "unitsToDate": round((cum_pentries + part_entries) * (1 - drop), 1),
         "cumRoi": None, "l3dRoi": None,
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
         "cumCpe": round(cum_cpe, 2) if cum_cpe else None,
@@ -1636,7 +1673,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "budget": {"current": round(current_daily, 2), "recommended": None, "cap": None,
                    "finalDayRoi": None, "floor": None, "budgetToSellOut": None,
                    "entriesNeeded": None, "selloutGap": None, "organicFuture": None,
-                   "daysLeft": max((launch_end - as_of).days, 0)},
+                   "daysLeft": max((launch_end - full_through).days, 0)},
         "unitTarget": None, "entriesProjected": None, "unitProjected": None,
         "spendBudget": None, "spendProjectedTotal": None,
         "profitPerUnitAA": None, "profitPerUnitArtist": None, "aaBudgetShare": None,
@@ -1674,6 +1711,8 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "windowEnd": rec["launch_end"] if dated else None,
         "campaignLengthDays": L if dated else None, "day": day_n, "of": L,
         "asOf": as_of.isoformat(), "complete": complete,
+        "completeThrough": full_through.isoformat(),
+        "asOfFraction": 1.0 if (complete or as_of > launch_end) else round(seen, 4),
         "targeted": False, "catalogue": not dated,
         "derived": {
             "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
@@ -1702,7 +1741,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   posts_bench: dict | None = None,
                   email_bench: dict | None = None,
                   panel: pd.DataFrame | None = None,
-                  people: pd.DataFrame | None = None) -> dict:
+                  people: pd.DataFrame | None = None,
+                  full_through: date | None = None, seen: float = 1.0) -> dict:
     b = BENCH
     # one fit per build, over every release whose product count is recorded (§4.2)
     upb_slope = units_per_buyer_curve(people)
@@ -1789,8 +1829,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
 
     # daily series per display group: actual cumulative entries + plan
     days = list(daterange(window_start, launch_end))
-    day_idx = min((as_of - announce).days, (launch_end - announce).days)
-    complete = as_of >= launch_end
+    # the last full day, and the share of the newest day seen: the part day is
+    # in the actuals, the rules read full days, the references sit at the share
+    full_through = full_through or as_of
+    seen = 1.0 if full_through >= as_of else seen
+    complete = full_through >= launch_end
+    # where today sits on the campaign clock, at the share of it seen
+    pdsa_today = pdsa_for(release, min(as_of, launch_end))
+    if as_of <= launch_end and L > 0:
+        pdsa_today = max(pdsa_today - (1 - seen) / L, 0.0)
 
     by_group_day = (win.groupby(["group", "event_date"])
                     .agg(sessions=("Sessions_Total", "sum"),
@@ -1825,7 +1872,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     cum_spend = cum_pentries = 0.0
     win3: list[tuple[float, float]] = []
     for d in days:
-        if d > min(as_of, launch_end):
+        if d > min(full_through, launch_end):
             break
         s = float(spend_day.get(d, 0.0))
         e = float(paid_entries_day.get(d, 0.0))
@@ -1842,6 +1889,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             roi3 = (1 - cann) * ppu_aa / ((s3 / (e3 * (1 - drop))) * aa_budget_share)
         paid_daily.append({"date": d.isoformat(), "spend": round(s, 2), "entries": e,
                            "roi": round(roi3, 3) if roi3 is not None else None})
+    # the part day so far: in the to-date figures, never in the rules
+    part_spend = part_entries = 0.0
+    if full_through < as_of <= launch_end:
+        part_spend = float(spend_day.get(as_of, 0.0))
+        part_entries = float(paid_entries_day.get(as_of, 0.0))
     # trailing 3-calendar-day CPE (adjusted = per expected-converting unit);
     # CPE stays unknown when the window bought no entries - the ROI reads 0
     s3 = sum(x for x, _ in win3); e3 = sum(y for _, y in win3)
@@ -1861,7 +1913,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     tiers = b["spend_rules"]["cpe_daily_drift_by_third"]
     drift_path = []                     # (day, cumulative drift factor) per future day
     _cum = 1.0
-    for d in daterange(as_of + timedelta(days=1), launch_end):
+    for d in daterange(full_through + timedelta(days=1), launch_end):
         _t3 = min(int(max(pdsa_for(release, d), 0) * 3), 2)
         _cum *= (1 + tiers[_t3])
         drift_path.append((d, _cum))
@@ -1880,7 +1932,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     secured_now = units_sold + b["eligible_entry_to_order"] * entries_banked
     organic_future = 0.0
     if not complete:
-        pdsa_now = pdsa_for(release, min(as_of, launch_end))
+        pdsa_now = pdsa_today
         obs = by_group_day[by_group_day["event_date"] <= min(as_of, launch_end)]
         for og in DISPLAY_GROUPS:
             if og == "paid":
@@ -1894,8 +1946,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             organic_future += tgt_g * (1 - w_g) * (1 + w_g * (r_perf - 1))
     sellout_gap = max(release["edition_size"] - secured_now - organic_future, 0.0)
     entries_needed = sellout_gap * (1 + drop)
-    days_left = max((launch_end - as_of).days, 0)
-    current_daily = float(spend_day.get(as_of, spend_day.iloc[-1] if len(spend_day) else 0.0))
+    days_left = max((launch_end - full_through).days, 0)
+    past_spend = spend_day[spend_day.index <= full_through]
+    current_daily = float(past_spend.get(full_through, past_spend.iloc[-1] if len(past_spend) else 0.0))
 
     # ---- the recommendation (docs §7).
     # Price: cost per entry is not flat in spend. Within a campaign it rises as
@@ -1994,7 +2047,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 if l3d_roi is not None and not complete else [])
 
     drift = b["spend_rules"]["cpe_daily_drift_by_third"]
-    third = min(int(max(pdsa_for(release, as_of), 0) * 3), 2)
+    third = min(int(max(pdsa_for(release, min(full_through, launch_end)), 0) * 3), 2)
     daily_factor = round(1 / (1 + drift[third]), 4)
 
     # forward path: projected spend ÷ projected cost-per-entry per future day.
@@ -2007,12 +2060,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     future_cum = 0.0
     cpe_fwd = l3d_raw_cpe
     if not complete:
-        prev_curve = curve_value(rcurves, "paid", "entries", pdsa_for(release, as_of))
-        for d in daterange(as_of + timedelta(days=1), launch_end):
+        prev_curve = curve_value(rcurves, "paid", "entries", pdsa_today)
+        for d in daterange(full_through + timedelta(days=1), launch_end):
+            # the part day counts for what is left of it
+            share = (1 - seen) if (d == as_of and as_of > full_through) else 1.0
             if cpe_fwd and planned_spend:
                 t3 = min(int(max(pdsa_for(release, d), 0) * 3), 2)
                 cpe_fwd = cpe_fwd * (1 + drift[t3])
-                future_cum += planned_spend / cpe_fwd
+                future_cum += share * planned_spend / cpe_fwd
             else:
                 # no spend history yet: fall back to the paid target trajectory
                 cv = curve_value(rcurves, "paid", "entries", pdsa_for(release, d))
@@ -2053,7 +2108,6 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             if bench:
                 row_out["bm"] = round(bm_day, 2)
             daily.append(row_out)
-        pdsa_today = pdsa_for(release, min(as_of, launch_end))
         w = curve_value(rcurves, g, "units", pdsa_today)   # share of campaign observed, per historic shape
         bm_exp = bm_tgt * w                                # benchmark pace by today
         exp = bm_exp * k if bench else tgt * w
@@ -2077,7 +2131,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             r_perf = min(max((now / exp) if exp > 0 else 1.0, 0.25), 2.5)
             r_shrunk = 1 + w * (r_perf - 1)
             proj = now + tgt * (1 - w) * r_shrunk
-            for d in daterange(as_of + timedelta(days=1), launch_end):
+            for d in daterange(full_through + timedelta(days=1), launch_end):
                 i = (d - window_start).days
                 cv = curve_value(rcurves, g, "units", pdsa_for(release, d))
                 frac = (cv - w) / (1 - w) if w < 1 else 1.0
@@ -2167,11 +2221,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # ---- paid block output (docs §7; inputs computed above, before the channel loop)
     paid_out = {
         "daily": paid_daily,
-        "spendToDate": round(cum_spend, 2),
-        "entriesToDate": cum_pentries,
+        "spendToDate": round(cum_spend + part_spend, 2),
+        "entriesToDate": cum_pentries + part_entries,
         # secured units to date, the same currency as unitTarget, unitProjected
         # and benchmarkUnits - paid entries are one drop-off short of an order
-        "unitsToDate": round(cum_pentries * (1 - drop), 1),
+        "unitsToDate": round((cum_pentries + part_entries) * (1 - drop), 1),
         "cumRoi": round(cum_roi, 3) if cum_roi else None,
         "l3dRoi": round(l3d_roi, 3) if l3d_roi is not None else None,
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
@@ -2257,7 +2311,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     if rate_chain and sess_plan:
         email_out["deliveredTarget"] = round(sess_plan / rate_chain, 1)
     elif email_bench and email_bench["total"] is not None:
-        p = pdsa_for(release, min(as_of, launch_end))
+        p = pdsa_today
         grid, cur = CURVE_GRID, email_bench["curve"]
         if p <= grid[0]:
             w = 0.0
@@ -2297,7 +2351,6 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # ---- sell-through: the release-level prediction, and per product where
     # the event feed has the draws (docs §6.3, sellthrough_block)
     unconverted = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
-    pdsa_today = pdsa_for(release, min(as_of, launch_end))
     # units still to come = the shaped secured-units projection beyond today (docs §5.4/§6.4)
     future_entries = 0.0 if complete else max(hero_proj - hero_now, 0.0)
     sellthrough = sellthrough_block(release, name, units_sold, unconverted, inventory_left, future_entries,
@@ -2407,6 +2460,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "windowStart": release["announce_date"], "windowEnd": release["launch_end"],
         "campaignLengthDays": L, "day": day_n, "of": L,
         "asOf": as_of.isoformat(), "complete": complete,
+        # the last full day, and the share of the as-of day seen (1 once the
+        # window has closed): the page reads "so far today" off the second
+        "completeThrough": full_through.isoformat(),
+        "asOfFraction": 1.0 if (complete or as_of > launch_end) else round(seen, 4),
         "targetingMode": "benchmark" if bench else "levers",
         # the target the plan runs on and the whole edition; equal unless the
         # inputs give a total edition the target is only part of
@@ -2635,7 +2692,11 @@ def main(only: str | None = None):
     window exports - are left alone, because a save cannot change them.
     """
     at = load_across_time()
-    as_of = at["event_date"].max() - timedelta(days=1)  # last full day (export cut mid-day)
+    # the newest day in the feed is the as-of day, part-observed while it is
+    # today; the rules and completeness read the last full day (observation_clock)
+    as_of, full_through, seen = observation_clock(at["event_date"].max())
+    print(f"clock: data through {as_of}" + (f", {seen:.0%} of the day seen; full days through {full_through}"
+                                          if full_through < as_of else ", a full day"))
     spend = load_spend()
     emails = load_emails()
     people = load_people()
@@ -2690,7 +2751,8 @@ def main(only: str | None = None):
         if cfg is None:
             raise SystemExit(f"build: no configured release with id {only!r}")
         snap = build_release(cfg, at, spend, emails, content, curves, as_of,
-                             artist_posts, posts_bench, email_bench, panel, people)
+                             artist_posts, posts_bench, email_bench, panel, people,
+                                 full_through=full_through, seen=seen)
         check_snapshot(snap)
         (APP / "releases" / f"{only}.json").write_text(json.dumps(snap, indent=1))
         bmk = snap.get("benchmark")
@@ -2711,7 +2773,8 @@ def main(only: str | None = None):
         cfg = configured.pop(rec["release_name"], None)
         if cfg:
             snap = build_release(cfg, at, spend, emails, content, curves, as_of,
-                                 artist_posts, posts_bench, email_bench, panel, people)
+                                 artist_posts, posts_bench, email_bench, panel, people,
+                                 full_through=full_through, seen=seen)
             check_snapshot(snap)
             (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
             add(snap, "closed" if snap["complete"] else "live")
@@ -2725,7 +2788,7 @@ def main(only: str | None = None):
         else:
             rec["campaign_name"] = match_campaign(rec["campaign_code"], spend)
             snap = build_actuals(rec, by_name[rec["release_name"]], spend, emails, content, as_of,
-                                 email_bench, artist_posts)
+                                 email_bench, artist_posts, full_through=full_through, seen=seen)
             check_snapshot(snap)
             (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
             written.add(f"{rec['id']}.json")
@@ -2735,7 +2798,8 @@ def main(only: str | None = None):
     # traffic) still get built, as before
     for cfg in configured.values():
         snap = build_release(cfg, at, spend, emails, content, curves, as_of,
-                             artist_posts, posts_bench, email_bench, panel, people)
+                             artist_posts, posts_bench, email_bench, panel, people,
+                                 full_through=full_through, seen=seen)
         check_snapshot(snap)
         (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
         add(snap, "closed" if snap["complete"] else "live")
