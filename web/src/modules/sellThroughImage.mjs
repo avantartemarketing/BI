@@ -7,10 +7,10 @@
  * disagree with the page it was posted from.
  *
  * It is drawn to stand alone in a channel, which the card on the page does
- * not have to: the release and the campaign day are along the top, the rate
- * and the horizon are named, and the key carries the release's totals. Its
- * type is set large for its frame, because Slack fits a picture to a fixed
- * height and the type has to survive that fit.
+ * not have to: the release and the campaign day are along the top, and the
+ * key carries the release's totals. Its type is set large for its frame,
+ * because Slack fits a picture to a fixed height and the type has to
+ * survive that fit, and its lines are spaced for that type.
  *
  * No library. The card is rectangles and text, which the 2D context draws
  * directly, and a dependency loaded from a CDN would be blocked on a page
@@ -63,7 +63,7 @@ const fill = (ctx, x, y, w, h, r, color) => { roundRect(ctx, x, y, w, h, r); ctx
  * ends of the run, so a row reads as one bar rather than a row of tiles. */
 function segment(ctx, x, y, w, h, color, first, last) {
   if (w <= 0.4) return;
-  const r = Math.min(4, h / 2);
+  const r = Math.min(2, h / 2);   // concentric with the track's corner: its 8px less the 6px inset
   ctx.save();
   roundRect(ctx, x - (first ? 0 : r), y, w + (first ? 0 : r) - (last ? 0 : r) + (last ? 0 : r), h, r);
   ctx.clip();
@@ -100,10 +100,13 @@ function ellipsis(ctx, text, maxW) {
   return cut + "…";
 }
 
-const height = (model) => {
-  const rows = (model.rows || []).length;
-  return 150 + rows * ROW_H + 30 + (model.note ? 26 : 0) + PAD;
-};
+// The head's lines and the foot, spaced for the type they carry: the
+// release at 64, the rule at 88, the title at 128, the headline at 190, the
+// rows from 222; under the last row 18px to the rule, 34px to the key's
+// baseline and 30px below it (a note takes 26px more).
+const ROWS_TOP = 222;
+const FOOT = 18 + 34 + 30;
+const height = (model) => ROWS_TOP + (model.rows || []).length * ROW_H + FOOT + (model.note ? 26 : 0);
 
 /* Draws the card onto a canvas sized for it. `model` is what SellThrough.jsx
  * is showing: see imageModel there. */
@@ -122,7 +125,7 @@ export function drawSellThrough(canvas, model, scale = 2) {
   roundRect(ctx, 0.5, 0.5, W - 1, H - 1, 12);
   ctx.stroke();
 
-  let y = PAD + 18;
+  let y = 64;
   // release and campaign day
   ctx.font = `600 30px ${FONT}`;
   ctx.fillStyle = INK;
@@ -135,36 +138,20 @@ export function drawSellThrough(canvas, model, scale = 2) {
     ctx.fillText(model.dayLine, W - PAD, y);
   }
 
-  y += 16;
+  y = 88;
   ctx.fillStyle = HAIRLINE;
   ctx.fillRect(PAD, y, W - PAD * 2, 1);
 
-  // the card's own title, the horizon, and the rate it counts at
-  y += 30;
+  // the card's own title; a projection says so in it, since it is not
+  // where things stand but where they are heading
+  y = 128;
   ctx.textAlign = "left";
   ctx.font = `600 22px ${FONT}`;
   ctx.fillStyle = INK;
-  ctx.fillText(model.title || "Sell-through by product", PAD, y);
-  const titleW = ctx.measureText(model.title || "Sell-through by product").width;
-  if (model.horizon) {
-    ctx.font = `500 15px ${FONT}`;
-    const w = ctx.measureText(model.horizon).width + 20;
-    fill(ctx, PAD + titleW + 12, y - 17, w, 26, 6, "#faf9f5");
-    ctx.strokeStyle = BORDER;
-    roundRect(ctx, PAD + titleW + 12.5, y - 16.5, w - 1, 25, 6);
-    ctx.stroke();
-    ctx.fillStyle = MUTED;
-    ctx.fillText(model.horizon, PAD + titleW + 22, y + 2);
-  }
-  if (model.rateLine) {
-    ctx.font = `400 17px ${FONT}`;
-    ctx.fillStyle = MUTED;
-    ctx.textAlign = "right";
-    ctx.fillText(model.rateLine, W - PAD, y);
-  }
+  ctx.fillText((model.title || "Sell-through by product") + (model.horizon === "At close" ? " at close" : ""), PAD, y);
 
   // the headline
-  y += 46;
+  y = 190;
   ctx.textAlign = "left";
   ctx.font = `600 46px ${FONT}`;
   ctx.fillStyle = INK;
@@ -177,7 +164,7 @@ export function drawSellThrough(canvas, model, scale = 2) {
   }
 
   // the products, named by what tells them apart
-  y += 22;
+  y = ROWS_TOP;
   const names = shortNames((model.rows || []).map((r) => String(r.name || "")));
   for (const [i, row] of (model.rows || []).entries()) {
     const top = y + (ROW_H - BAR_H) / 2;
@@ -220,10 +207,10 @@ export function drawSellThrough(canvas, model, scale = 2) {
   }
 
   // the key, with the release's totals
-  y += 8;
+  y += 18;
   ctx.fillStyle = HAIRLINE;
   ctx.fillRect(PAD, y, W - PAD * 2, 1);
-  y += 24;
+  y += 34;
   ctx.textAlign = "left";
   let x = PAD;
   for (const item of model.legend || []) {

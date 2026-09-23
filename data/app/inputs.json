@@ -18486,9 +18486,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2026-09-25",
-   "launch_end": "2026-10-30",
-   "private_room_open": "2026-09-11",
+   "announce_date": "2026-09-24",
+   "launch_end": "2026-10-29",
+   "private_room_open": "2026-09-10",
    "dates_note": null
   },
   "cai_guo_qiang_snow_lotus_no_1_2024_q1": {
@@ -21451,7 +21451,7 @@
    "campaign_code": null,
    "campaign_name": null,
    "announce_date": "2026-09-30",
-   "launch_end": "2026-10-29",
+   "launch_end": "2026-10-28",
    "private_room_open": "2026-09-16",
    "dates_note": null
   },

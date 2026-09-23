@@ -494,8 +494,8 @@ Total ~126 units → 21% of 600
 The picture is the card's own rows, drawn on a canvas in the browser that is showing them
 (`web/src/modules/sellThroughImage.mjs`) - the one place with the page's typeface - from a
 model the card builds out of what it has just rendered, so only the drawing is written
-twice and never the figures. It carries the release, the campaign day and the rate along
-the top, which the card on the page does not need, so it stands on its own in a channel.
+twice and never the figures. It carries the release and the campaign day along the top,
+which the card on the page does not need, so it stands on its own in a channel.
 Slack fits an inline picture to a fixed height, so how big it reads is its type divided
 by its height: the frame keeps the card's proportions, 1180 CSS pixels by the rows'
 height at two times that, and the type and the bars are set large inside it. A browser

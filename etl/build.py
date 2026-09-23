@@ -452,6 +452,85 @@ def redistribute_untracked(df: pd.DataFrame) -> pd.DataFrame:
     return tracked
 
 
+# ---- untracked share (docs §1.3): how much of a release has no channel -----
+UNTRACKED_METRICS = {"entries": "Draw_Entries_Eligible_Units", "units": "Total_Product_Units"}
+UNTRACKED_MIN_COUNT = 5        # below this a high share is a handful of rows, not a tracking fault
+UNTRACKED_HIGH_MULTIPLE = 2.0  # "much higher than normal": over twice the median, and past the 90th percentile
+UNTRACKED_NORM_MIN = 8         # fewer recent launches than this and the norm reads the whole panel
+
+
+def untracked_shares(frame: pd.DataFrame) -> dict:
+    """Each metric's untracked share of a frame that still carries the
+    Untracked channel: {metric: {share, count, total}}. Sessions always carry
+    a channel in the feed, so only entries and units are read."""
+    unt = frame[frame["channel"] == "Untracked"] if "channel" in frame.columns else frame.iloc[0:0]
+    out = {}
+    for key, col in UNTRACKED_METRICS.items():
+        total = float(frame[col].sum()) if col in frame.columns else 0.0
+        count = float(unt[col].sum()) if col in unt.columns else 0.0
+        out[key] = {"share": (count / total) if total > 0 else None, "count": count, "total": total}
+    return out
+
+
+def untracked_norms(at: pd.DataFrame, panel: pd.DataFrame | None, as_of: date) -> dict | None:
+    """What an untracked share normally is: the median and 90th percentile
+    over the draw panel's launches closed in the last RECENT_MONTHS, each
+    read over its own window. Tracking has tightened - older launches ran
+    ten to fifty per cent untracked, recent ones three - so the bar is set by
+    recent launches, and by the whole panel only when fewer than
+    UNTRACKED_NORM_MIN are that recent."""
+    if panel is None or not len(panel) or "window_end" not in panel.columns:
+        return None
+    ends = pd.to_datetime(panel["window_end"], errors="coerce")
+    cutoff = pd.Timestamp(as_of) - pd.DateOffset(months=baskets.RECENT_MONTHS)
+    recent = panel[ends >= cutoff]
+    use_recent = len(recent) >= UNTRACKED_NORM_MIN
+    pool = recent if use_recent else panel
+    shares: dict[str, list[float]] = {k: [] for k in UNTRACKED_METRICS}
+    for r in pool.to_dict("records"):
+        ws = pd.to_datetime(r.get("window_start"), errors="coerce")
+        we = pd.to_datetime(r.get("window_end"), errors="coerce")
+        if pd.isna(ws) or pd.isna(we):
+            continue
+        sub = at[(at["simple_release_name"] == r["release_name"])
+                 & (at["event_date"] >= ws.date()) & (at["event_date"] <= we.date())]
+        if sub.empty:
+            continue
+        for k, v in untracked_shares(sub).items():
+            if v["share"] is not None:
+                shares[k].append(v["share"])
+    out: dict = {"recentMonths": baskets.RECENT_MONTHS if use_recent else None}
+    for k, xs in shares.items():
+        ser = pd.Series(xs, dtype=float)
+        out[k] = {"median": round(float(ser.median()), 4) if len(ser) else None,
+                  "p90": round(float(ser.quantile(0.9)), 4) if len(ser) else None, "n": int(len(ser))}
+    return out
+
+
+def untracked_block(win: pd.DataFrame, norms: dict | None) -> dict:
+    """The snapshot's `untracked` block: this release's untracked share of
+    entries and of units over its window, what is normal, and `high` - the
+    metrics whose share is much higher than normal: over twice the median and
+    past the 90th percentile, on at least UNTRACKED_MIN_COUNT rows so a
+    handful cannot trip it. The Target setting tab warns on it: the
+    redistribution above is a proportion, and the more it has to move, the
+    less the channel picture can be trusted (docs §1.3)."""
+    shares = untracked_shares(win)
+    high = []
+    for k, v in shares.items():
+        n = (norms or {}).get(k) or {}
+        med, p90 = n.get("median"), n.get("p90")
+        if v["share"] is None or med is None or p90 is None or v["count"] < UNTRACKED_MIN_COUNT:
+            continue
+        if v["share"] > max(p90, UNTRACKED_HIGH_MULTIPLE * med):
+            high.append(k)
+    return {
+        **{k: {"share": round(v["share"], 4) if v["share"] is not None else None,
+               "count": round(v["count"], 1), "total": round(v["total"], 1)} for k, v in shares.items()},
+        "normal": norms,
+        "high": high,
+    }
+
 POSTING_TIERS = ("Low", "Medium", "High")
 
 
@@ -1914,7 +1993,8 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
 def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.DataFrame,
                   content: pd.DataFrame, as_of: date, email_bench: dict | None = None,
                   artist_posts: pd.DataFrame | None = None,
-                  full_through: date | None = None, seen: float = 1.0) -> dict:
+                  full_through: date | None = None, seen: float = 1.0,
+                  untracked_norms: dict | None = None) -> dict:
     """Actuals-only snapshot for a release nobody has set targets for. Same
     shape as build_release's so the page code has one contract, with every
     target-derived field None and targeted: False - the page shows what
@@ -1942,6 +2022,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     rat = rat.copy()
     rat["group"] = rat["channel"].map(GROUP_OF)
     win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= min(as_of, launch_end + timedelta(days=2)))]
+    untracked = untracked_block(win, untracked_norms)
     win = redistribute_untracked(win)
     # Orders from draw winners land in the two days after close. win keeps
     # them (that is what the grace is for) but the daily series ends at close,
@@ -2078,6 +2159,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "completeThrough": full_through.isoformat(),
         "asOfFraction": 1.0 if (complete or as_of > launch_end) else round(seen, 4),
         "targeted": False, "catalogue": not dated,
+        "untracked": untracked,
         "derived": {
             "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
             "dates_source": "campaign clock" if dated else None, "dates_note": rec["dates_note"],
@@ -2127,7 +2209,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   email_bench: dict | None = None,
                   panel: pd.DataFrame | None = None,
                   people: pd.DataFrame | None = None,
-                  full_through: date | None = None, seen: float = 1.0) -> dict:
+                  full_through: date | None = None, seen: float = 1.0,
+                  untracked_norms: dict | None = None) -> dict:
     b = BENCH
     # a release handed in unresolved (a test, a script) is resolved here the way
     # main() resolves every configured release: its products, dates and
@@ -2221,6 +2304,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     rat["group"] = rat["channel"].map(GROUP_OF)
     window_start = min(pr_open, announce)
     win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= min(as_of, launch_end + timedelta(days=2)))]
+    # how much of the window has no channel, read before the fold below hides it
+    untracked = untracked_block(win, untracked_norms)
     # Fold Untracked into the tracked channels ONCE, here, so the group rollups
     # below and the release-level sums further down agree (docs §1.3).
     win = redistribute_untracked(win)
@@ -2917,6 +3002,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # what the plan assumes each buyer takes and what they have taken so
         # far, so the funnel can split its conversion step in two (§4.2)
         "unitsPerBuyer": {"plan": round(upb_plan, 4), "actual": round(upb_actual, 4)},
+        # the untracked share of the window against what is normal (§1.3)
+        "untracked": untracked,
         "email": email_out,
         "social": social_out,
         "sellthrough": sellthrough,
@@ -3192,6 +3279,11 @@ def main(only: str | None = None):
         print("email refs: none yet (fewer than 2 completed draw launches with sends on file) - UI defaults apply")
     by_name = {n: g for n, g in at.groupby("simple_release_name")}
     configured = {r["release_name"]: r for r in INPUTS["releases"]}
+    # what an untracked share normally is, once, for every page's warning (§1.3)
+    norms = untracked_norms(at, panel, as_of)
+    if norms:
+        print("untracked norm: " + ", ".join(f"{k} median {v['median']:.1%} p90 {v['p90']:.1%} (n={v['n']})"
+                                             for k, v in norms.items() if isinstance(v, dict) and v.get("median") is not None))
 
     if only:
         cfg = next((r for r in INPUTS["releases"] if r["id"] == only), None)
@@ -3199,7 +3291,7 @@ def main(only: str | None = None):
             raise SystemExit(f"build: no configured release with id {only!r}")
         snap = build_release(cfg, at, spend, emails, content, curves, as_of,
                              artist_posts, posts_bench, email_bench, panel, people,
-                                 full_through=full_through, seen=seen)
+                                 full_through=full_through, seen=seen, untracked_norms=norms)
         check_snapshot(snap)
         (APP / "releases" / f"{only}.json").write_text(json.dumps(snap, indent=1))
         bmk = snap.get("benchmark")
@@ -3221,7 +3313,7 @@ def main(only: str | None = None):
         if cfg:
             snap = build_release(cfg, at, spend, emails, content, curves, as_of,
                                  artist_posts, posts_bench, email_bench, panel, people,
-                                 full_through=full_through, seen=seen)
+                                 full_through=full_through, seen=seen, untracked_norms=norms)
             check_snapshot(snap)
             (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
             add(snap, "closed" if snap["complete"] else "live")
@@ -3235,7 +3327,8 @@ def main(only: str | None = None):
         else:
             rec["campaign_name"] = match_campaign(rec["campaign_code"], spend)
             snap = build_actuals(rec, by_name[rec["release_name"]], spend, emails, content, as_of,
-                                 email_bench, artist_posts, full_through=full_through, seen=seen)
+                                 email_bench, artist_posts, full_through=full_through, seen=seen,
+                                 untracked_norms=norms)
             check_snapshot(snap)
             (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
             written.add(f"{rec['id']}.json")
@@ -3246,7 +3339,7 @@ def main(only: str | None = None):
     for cfg in configured.values():
         snap = build_release(cfg, at, spend, emails, content, curves, as_of,
                              artist_posts, posts_bench, email_bench, panel, people,
-                                 full_through=full_through, seen=seen)
+                                 full_through=full_through, seen=seen, untracked_norms=norms)
         check_snapshot(snap)
         (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
         add(snap, "closed" if snap["complete"] else "live")

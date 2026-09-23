@@ -94,6 +94,15 @@ Normalisation rules:
   `adjusted(c) = x(c) + untracked × x(c) / Σ tracked x`. This is applied to *actuals* before
   comparing to targets. Conversion-rate *benchmarks*, by convention, use **unadjusted**
   denominators (the sheet is consistent about this; keep it).
+- **Untracked alert**: the redistribution is a proportion, and the more it has to move the
+  less the channel picture can be trusted, so every snapshot carries `untracked`: the
+  release's untracked share of eligible entries and of units over its window (sessions always
+  carry a channel), the norm it is read against - the median and 90th percentile over the
+  draw panel's launches closed in the last 18 months, each over its own window; the whole
+  panel when fewer than eight are that recent - and `high`, the metrics whose share is over
+  twice the median and past the 90th percentile on at least five rows. The Target setting tab
+  shows a warning when `high` is not empty. Tracking has tightened: older launches ran ten to
+  fifty per cent untracked, recent ones about three, which is why the norm is recent.
 - **Paid Search** has no benchmarks, no spend feed, and never appears in the daily export -
   every "Total Paid" benchmark is an alias of Paid Social. Model paid = Paid Social; keep Paid
   Search only as a raw actuals bucket.
@@ -1136,7 +1145,9 @@ never spread; past seven they scroll. The key sits on the headline's own line, w
 gives the rows their height. Each row carries its units of the edition (198 of 1,000) in muted
 text and its percentage in ink, each in a column of its own so the two never read as one
 figure, and no RAG colour, which said "bad" about a product that was simply mid-campaign. The
-Units toggle puts the bars on one scale for the card.
+head carries the title and the horizon and nothing else: no scale toggle and no rate, by
+decision; every bar is its product against its own edition, and the rate the estimate runs at
+is in the headline's popup and in the Slack message.
 
 **No references on this card.** The snapshot still carries the release's pace applied to each
 product's edition (`expectedToday_p = edition_p × hero.expectedToday / edition`, likewise
@@ -1315,6 +1326,7 @@ actuals-only page omits it.
 | Field | What it holds |
 |---|---|
 | `targetingMode` | always `"benchmark"` since 2026-09-23 (§3); kept so older readers of the field still resolve |
+| `untracked` | `{entries: {share, count, total}, units: {...}, normal: {recentMonths, entries: {median, p90, n}, units: {...}}, high: [...]}` - the untracked share of the window against what is normal (§1.3); the Target setting tab warns when `high` names a metric |
 | `benchmark.basket` | `{id, kind, name, n, thin, suggestedId}`; `kind` is `ready`, `bespoke` or `saved` |
 | `benchmark.units`, `unitsP25`, `unitsP75` | the basket's median units and its middle half |
 | `benchmark.sessions`, `entries`, `campaignDays` | the other headline medians of the profile |
