@@ -194,28 +194,31 @@ export default function PaidRoi({ snap }) {
   const finalTip = `${view.label} ROI final ` + fmt(view.cum, 2) + targetLine;
 
   const statVal = { fontSize: 13, fontWeight: 600, color: C.ink };
-  const right = (
-    <div style={{ display: "flex", gap: 20, alignItems: "baseline" }}>
-      {targeted && artist && (
-        <span className="seg compact" title="Whose ROI: Avant Arte's or the artist's, each their profit per unit over their share of the spend">
-          <button className={party === "aa" ? "active" : ""} onClick={() => setParty("aa")}
-            title="Avant Arte's ROI: its profit per unit over its share of the paid spend">AA</button>
-          <button className={party === "artist" ? "active" : ""} disabled={!artistOk} onClick={() => setParty("artist")}
-            style={artistOk ? undefined : { opacity: 0.45, cursor: "default" }}
-            title={artistOk ? "The artist's ROI: their profit per unit over their share of the paid spend" : artistReason}>Artist</button>
-        </span>
-      )}
-      <span
-        title={`Cumulative ${view.label} ROI: ${view.label} profit on the paid entries that convert, net of cannibalisation, ÷ ${view.label}'s share of the spend, whole campaign`}
-        style={{ display: "flex", gap: 6, alignItems: "baseline", whiteSpace: "nowrap" }}
-      >
-        ROI total <span className="num" style={statVal}>{fmt(targeted ? view.cum : null, 2)}</span>
-      </span>
+  // the head keeps the party switch; the two whole-campaign totals stand
+  // beside the headline, cost per entry over the cumulative ROI
+  const right = targeted && artist ? (
+    <span className="seg compact" title="Whose ROI: Avant Arte's or the artist's, each their profit per unit over their share of the spend">
+      <button className={party === "aa" ? "active" : ""} onClick={() => setParty("aa")}
+        title="Avant Arte's ROI: its profit per unit over its share of the paid spend">AA</button>
+      <button className={party === "artist" ? "active" : ""} disabled={!artistOk} onClick={() => setParty("artist")}
+        style={artistOk ? undefined : { opacity: 0.45, cursor: "default" }}
+        title={artistOk ? "The artist's ROI: their profit per unit over their share of the paid spend" : artistReason}>Artist</button>
+    </span>
+  ) : null;
+  const statRow = { display: "flex", gap: 6, alignItems: "baseline", whiteSpace: "nowrap", fontSize: 12, color: C.muted };
+  const totals = (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flex: "0 0 auto" }}>
       <span
         title={"Cost per converting entry, whole campaign: spend ÷ the entries that become orders (" + pct(1 - dropOff) + " of entries)"}
-        style={{ display: "flex", gap: 6, alignItems: "baseline", whiteSpace: "nowrap" }}
+        style={statRow}
       >
         €/entry total <span className="num" style={statVal}>{fmt(paid.cumCpe, 2)}</span>
+      </span>
+      <span
+        title={`Cumulative ${view.label} ROI: ${view.label} profit on the paid entries that convert, net of cannibalisation, ÷ ${view.label}'s share of the spend, whole campaign`}
+        style={statRow}
+      >
+        ROI total <span className="num" style={statVal}>{fmt(targeted ? view.cum : null, 2)}</span>
       </span>
     </div>
   );
@@ -232,10 +235,13 @@ export default function PaidRoi({ snap }) {
   return (
     <Card wide dot={GROUP_DOTS.paid} title="Paid ROI" right={right}>
       <div className="spacer-8" />
-      <div className="lead">{fmt(leadVal, 2)}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flex: "0 0 auto" }}>
-        <span style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>{leadCaption}</span>
-        <QBadge content={moreTip} />
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flex: "0 0 auto" }}>
+        <div className="lead">
+          <span>{fmt(leadVal, 2)}</span>
+          <span style={{ fontSize: 12, fontWeight: 400, letterSpacing: 0, color: C.muted, whiteSpace: "nowrap" }}>{leadCaption}</span>
+          <QBadge content={moreTip} />
+        </div>
+        {totals}
       </div>
       <div style={{ height: 12, flex: "0 0 12px" }} />
       <div className="body">
