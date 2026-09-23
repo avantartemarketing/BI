@@ -1410,10 +1410,19 @@ def load_orders_feed() -> dict:
         if df is not None:
             editions = product_editions()
             for r in df.itertuples(index=False):
-                rel = feed.setdefault(r.release, {"products": {}, "draws": {}, "drafts": 0.0, "unitsPaid": 0.0, "asOf": None})
+                rel = feed.setdefault(r.release, {"products": {}, "draws": {}, "drafts": 0.0, "unitsPaid": 0.0, "asOf": None,
+                                                  "framing": {"prints": 0.0, "frames": 0.0, "notOffered": 0.0,
+                                                              "entrantPrints": 0.0, "entrantFrames": 0.0}})
                 paid, drafts = num(r.units_paid), num(r.units_draft_pending)
                 price = num(r.list_price_eur)
+                # framing (docs 6.4): the paid prints a frame was on offer for
+                # and the frames bought with them, and the same on the app's
+                # entry drafts; a feed pulled before the columns existed reads
+                # as no framing, and the card stays off the page
+                offered, frames = num(getattr(r, "prints_offered_paid", "")), num(getattr(r, "frames_paid", ""))
+                e_prints, e_frames = num(getattr(r, "prints_offered_entry_drafts", "")), num(getattr(r, "frames_entry_drafts", ""))
                 rel["products"][r.product_title] = {
+                    "printsOffered": offered, "frames": frames, "entrantPrints": e_prints, "entrantFrames": e_frames,
                     "unitsPaid": paid, "drafts": drafts,
                     "draftCustomers": num(getattr(r, "draft_customers", "")) if str(getattr(r, "draft_customers", "")).strip() else None,
                     "entryDrafts": num(getattr(r, "units_entry_drafts", 0)),
@@ -1427,6 +1436,12 @@ def load_orders_feed() -> dict:
                 }
                 rel["drafts"] += drafts
                 rel["unitsPaid"] += paid
+                fr = rel["framing"]
+                fr["prints"] += offered
+                fr["frames"] += frames
+                fr["notOffered"] += max(paid - offered, 0.0)
+                fr["entrantPrints"] += e_prints
+                fr["entrantFrames"] += e_frames
                 for d in (r.last_order, r.last_draft):
                     if d and (rel["asOf"] is None or d > rel["asOf"]):
                         rel["asOf"] = d
@@ -1468,6 +1483,73 @@ def preorder_rate(release: dict) -> float:
     except (TypeError, ValueError):
         return BENCH.get("preorder_entry_to_order", 0.95)
     return v if 0 < v <= 1 else BENCH.get("preorder_entry_to_order", 0.95)
+
+
+FRAMING_MIN_PRINTS = 30   # a launch's frames-per-print rate is a benchmark reading from this many prints on offer
+FRAMING_MIN_MEMBERS = 3   # and the basket's median needs this many such launches
+
+
+def framing_benchmark(basket: dict | None, feed: dict | None = None) -> dict | None:
+    """The basket's frames per print: the median over its members' own rates
+    in the orders feed (docs/DATA_MODEL.md 6.4), each member read from at
+    least FRAMING_MIN_PRINTS prints a frame was on offer for, so a launch
+    that sold a handful of prints does not set the reference. None without a
+    basket, or with fewer than FRAMING_MIN_MEMBERS members the feed can rate:
+    the feed starts at BQ_SINCE, and a basket of older launches has nothing
+    to read."""
+    members = list((basket or {}).get("members") or [])
+    if not members:
+        return None
+    feed = load_orders_feed() if feed is None else feed
+    rates = []
+    for m in members:
+        f = (feed.get(m) or {}).get("framing") or {}
+        if float(f.get("prints") or 0) >= FRAMING_MIN_PRINTS:
+            rates.append(float(f["frames"]) / float(f["prints"]))
+    if len(rates) < FRAMING_MIN_MEMBERS:
+        return None
+    return {"rate": round(float(np.median(rates)), 4), "n": len(rates), "of": len(members)}
+
+
+def framing_block(release: dict, of: dict | None, basket: dict | None, b: dict = BENCH) -> dict | None:
+    """The Framing card's figures (docs/DATA_MODEL.md 6.4): frames per print,
+    on the prints a frame was on offer for. Buyers: the paid prints and the
+    frames bought with them, a frame per print at most (the feed caps an
+    order's frames at its prints). Entrants: the same on the app's
+    pre-authorisation drafts, the frames the people still in the draw have
+    asked for, which is what allocation will bring. Against the plan's rate
+    (frame_terms: the release's own frame_conversion, else the benchmark
+    default) and the basket's median. Per work, for the hover, with the
+    works a frame was never on offer for named apart so their absence from
+    the rate is explained. None when nothing has been offered a frame, and
+    the card stays off the page."""
+    f = (of or {}).get("framing") or {}
+    prints, frames = float(f.get("prints") or 0), float(f.get("frames") or 0)
+    e_prints, e_frames = float(f.get("entrantPrints") or 0), float(f.get("entrantFrames") or 0)
+    if prints <= 0 and e_prints <= 0:
+        return None
+    conv, _profit = frame_terms(release, b)
+    products = (of or {}).get("products") or {}
+    works = []
+    for title, p in products.items():
+        po = float(p.get("printsOffered") or 0)
+        if po > 0:
+            fr = float(p.get("frames") or 0)
+            works.append({"name": title, "prints": int(round(po)), "frames": round(fr, 1), "rate": round(fr / po, 4)})
+    works.sort(key=lambda w: (-w["rate"], w["name"]))
+    not_offered = sorted(t for t, p in products.items()
+                         if float(p.get("unitsPaid") or 0) > 0 and float(p.get("printsOffered") or 0) <= 0)
+    return {
+        "prints": int(round(prints)), "frames": round(frames, 1),
+        "rate": round(frames / prints, 4) if prints > 0 else None,
+        "entrants": ({"prints": int(round(e_prints)), "frames": round(e_frames, 1), "rate": round(e_frames / e_prints, 4)}
+                     if e_prints > 0 else None),
+        "plan": None if release.get("framing_available") is False else round(conv, 4),
+        "benchmark": framing_benchmark(basket),
+        "works": works,
+        "notOffered": {"units": int(round(float(f.get("notOffered") or 0))), "works": not_offered},
+        "asOf": (of or {}).get("asOf"),
+    }
 
 
 def edition_total(release: dict):
@@ -2275,7 +2357,7 @@ def build_upcoming(rec: dict, as_of: date, email_bench: dict | None = None, full
         "hero": {"now": 0, "expectedToday": None, "delta": None, "projected": None,
                  "target": None, "oversubscribedUnits": 0, "statusPct": None, "ok": None},
         "targets": None, "groupTargets": None, "channels": [], "funnelByGroup": {}, "paid": None,
-        "email": None, "social": None, "sellthrough": None, "draw": None, "geo": None, "waterfall": None,
+        "email": None, "social": None, "sellthrough": None, "framing": None, "draw": None, "geo": None, "waterfall": None,
         "totals": {"sessions": 0, "units": 0, "entries": 0},
         "benchmarks": {"chargeDropOff": 1 - BENCH["eligible_entry_to_order"], "cannibalisation": BENCH["cannibalisation"],
                        "targetBuffer": BENCH["target_buffer"], **email_refs(email_bench)},
@@ -2467,6 +2549,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "funnelByGroup": funnel_by_group, "paid": paid_out,
         "email": email_out, "social": social_out,
         "sellthrough": sellthrough_block({"edition_size": None}, rec["release_name"], units_sold, unconverted, None),
+        "framing": framing_block(rec, load_orders_feed().get(rec["release_name"]), None, b),
         "draw": None, "geo": None, "waterfall": None,
         "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
                    "entries": round(float(upto["Draw_Entries_Eligible_Units"].sum()))},
@@ -3340,6 +3423,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "email": email_out,
         "social": social_out,
         "sellthrough": sellthrough,
+        # frames per print, against the plan's rate and the basket's (§6.4)
+        "framing": framing_block(release, load_orders_feed().get(name), basket, b),
         "draw": draw,
         "geo": None,  # country dim not in any feed yet (docs §12)
         "waterfall": waterfall,

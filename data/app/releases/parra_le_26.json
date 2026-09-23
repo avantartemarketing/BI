@@ -1354,145 +1354,169 @@
     "date": "2026-07-29",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-07-30",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-07-31",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-01",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-02",
     "spend": 77.48,
     "entries": 0.0,
-    "roi": 0.0
+    "roi": 0.0,
+    "roiArtist": 0.0
    },
    {
     "date": "2026-08-03",
     "spend": 382.48,
     "entries": 7.411764705882353,
-    "roi": 3.886
+    "roi": 3.886,
+    "roiArtist": 1.851
    },
    {
     "date": "2026-08-04",
     "spend": 446.18,
     "entries": 15.0,
-    "roi": 5.965
+    "roi": 5.965,
+    "roiArtist": 2.841
    },
    {
     "date": "2026-08-05",
     "spend": 611.76,
     "entries": 16.0,
-    "roi": 6.431
+    "roi": 6.431,
+    "roiArtist": 3.064
    },
    {
     "date": "2026-08-06",
     "spend": 647.66,
     "entries": 13.0,
-    "roi": 6.221
+    "roi": 6.221,
+    "roiArtist": 2.964
    },
    {
     "date": "2026-08-07",
     "spend": 276.23,
     "entries": 5.0,
-    "roi": 5.339
+    "roi": 5.339,
+    "roiArtist": 2.543
    },
    {
     "date": "2026-08-08",
     "spend": 0.0,
     "entries": 1.0,
-    "roi": 4.96
+    "roi": 4.96,
+    "roiArtist": 2.363
    },
    {
     "date": "2026-08-09",
     "spend": 0.0,
     "entries": 1.0,
-    "roi": 6.111
+    "roi": 6.111,
+    "roiArtist": 2.911
    },
    {
     "date": "2026-08-10",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-11",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-12",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-13",
     "spend": 143.5,
     "entries": 7.0,
-    "roi": 11.764
+    "roi": 11.764,
+    "roiArtist": 5.604
    },
    {
     "date": "2026-08-14",
     "spend": 141.33,
     "entries": 7.0,
-    "roi": 11.854
+    "roi": 11.854,
+    "roiArtist": 5.647
    },
    {
     "date": "2026-08-15",
     "spend": 65.97,
     "entries": 3.0,
-    "roi": 11.687
+    "roi": 11.687,
+    "roiArtist": 5.567
    },
    {
     "date": "2026-08-16",
     "spend": 97.64,
     "entries": 2.0,
-    "roi": 9.49
+    "roi": 9.49,
+    "roiArtist": 4.521
    },
    {
     "date": "2026-08-17",
     "spend": 40.91,
     "entries": 2.0,
-    "roi": 8.254
+    "roi": 8.254,
+    "roiArtist": 3.932
    },
    {
     "date": "2026-08-18",
     "spend": 100.87,
     "entries": 0.0,
-    "roi": 4.029
+    "roi": 4.029,
+    "roiArtist": 1.919
    },
    {
     "date": "2026-08-19",
     "spend": 36.97,
     "entries": 1.0,
-    "roi": 4.047
+    "roi": 4.047,
+    "roiArtist": 1.928
    },
    {
     "date": "2026-08-20",
     "spend": 140.26,
     "entries": 6.0,
-    "roi": 6.07
+    "roi": 6.07,
+    "roiArtist": 2.892
    },
    {
     "date": "2026-08-21",
     "spend": 63.4,
     "entries": 3.0,
-    "roi": 10.022
+    "roi": 10.022,
+    "roiArtist": 4.774
    }
   ],
   "spendToDate": 3272.64,
@@ -1552,6 +1576,20 @@
   "profitPerUnitAA": 188.41,
   "profitPerUnitArtist": 89.75,
   "aaBudgetShare": 0.5,
+  "cannibalisation": 0.2,
+  "dropOff": 0.2,
+  "artist": {
+   "cumRoi": 3.139,
+   "l3dRoi": 4.774,
+   "roiDeclineModel": {
+    "start": 4.774,
+    "dailyFactor": 1.0
+   },
+   "roiPath": [],
+   "finalDayRoi": null,
+   "profitPerUnit": 89.75,
+   "budgetShare": 0.5
+  },
   "benchmarkUnits": 57.6,
   "benchmarkBudget": 10191.48
  },
@@ -1966,6 +2004,10 @@
   ],
   "ordersByProduct": {
    "il senso di colpa": {
+    "printsOffered": 148.0,
+    "frames": 59.0,
+    "entrantPrints": 3.0,
+    "entrantFrames": 2.0,
     "unitsPaid": 148.0,
     "drafts": 1.0,
     "draftCustomers": 1.0,
@@ -1982,6 +2024,10 @@
     "lastDraft": "2026-08-21"
    },
    "in your detached world": {
+    "printsOffered": 149.0,
+    "frames": 64.0,
+    "entrantPrints": 2.0,
+    "entrantFrames": 2.0,
     "unitsPaid": 149.0,
     "drafts": 3.0,
     "draftCustomers": 3.0,
@@ -2002,6 +2048,41 @@
    "draw_3GXfw6SiKLy9sUEEWPQ6Ofx1eRh": "in your detached world",
    "draw_3GXg1nIv2Yb544b76bltvXvH5il": "il senso di colpa"
   }
+ },
+ "framing": {
+  "prints": 297,
+  "frames": 123.0,
+  "rate": 0.4141,
+  "entrants": {
+   "prints": 5,
+   "frames": 4.0,
+   "rate": 0.8
+  },
+  "plan": 0.35,
+  "benchmark": {
+   "rate": 0.4286,
+   "n": 7,
+   "of": 8
+  },
+  "works": [
+   {
+    "name": "in your detached world",
+    "prints": 149,
+    "frames": 64.0,
+    "rate": 0.4295
+   },
+   {
+    "name": "il senso di colpa",
+    "prints": 148,
+    "frames": 59.0,
+    "rate": 0.3986
+   }
+  ],
+  "notOffered": {
+   "units": 0,
+   "works": []
+  },
+  "asOf": "2026-08-21"
  },
  "draw": null,
  "geo": null,

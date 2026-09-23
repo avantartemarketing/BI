@@ -2221,295 +2221,344 @@
     "date": "2026-07-31",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-01",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-02",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-03",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-04",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-05",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-06",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-07",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-08",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-09",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-10",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-11",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-12",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-13",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-14",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-15",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-16",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-17",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-18",
     "spend": 89.97,
     "entries": 0.0,
-    "roi": 0.0
+    "roi": 0.0,
+    "roiArtist": null
    },
    {
     "date": "2026-08-19",
     "spend": 275.51,
     "entries": 1.0,
-    "roi": 2.284
+    "roi": 2.284,
+    "roiArtist": null
    },
    {
     "date": "2026-08-20",
     "spend": 318.13,
     "entries": 4.0,
-    "roi": 6.107
+    "roi": 6.107,
+    "roiArtist": null
    },
    {
     "date": "2026-08-21",
     "spend": 508.99,
     "entries": 3.0,
-    "roi": 6.058
+    "roi": 6.058,
+    "roiArtist": null
    },
    {
     "date": "2026-08-22",
     "spend": 637.72,
     "entries": 2.5,
-    "roi": 5.415
+    "roi": 5.415,
+    "roiArtist": null
    },
    {
     "date": "2026-08-23",
     "spend": 836.16,
     "entries": 0.0,
-    "roi": 2.316
+    "roi": 2.316,
+    "roiArtist": null
    },
    {
     "date": "2026-08-24",
     "spend": 690.4,
     "entries": 0.0,
-    "roi": 0.964
+    "roi": 0.964,
+    "roiArtist": null
    },
    {
     "date": "2026-08-25",
     "spend": 488.97,
     "entries": 0.0,
-    "roi": 0.0
+    "roi": 0.0,
+    "roiArtist": null
    },
    {
     "date": "2026-08-26",
     "spend": 241.1,
     "entries": 1.0,
-    "roi": 0.588
+    "roi": 0.588,
+    "roiArtist": null
    },
    {
     "date": "2026-08-27",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": 1.144
+    "roi": 1.144,
+    "roiArtist": null
    },
    {
     "date": "2026-08-28",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": 3.463
+    "roi": 3.463,
+    "roiArtist": null
    },
    {
     "date": "2026-08-29",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-30",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-31",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-01",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-02",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-03",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-04",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-05",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-06",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-07",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-08",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-09",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-10",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-11",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-12",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-13",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-14",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-15",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-16",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-17",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    }
   ],
   "spendToDate": 4086.95,
@@ -2569,6 +2618,20 @@
   "profitPerUnitAA": 1304.53,
   "profitPerUnitArtist": 1179.19,
   "aaBudgetShare": 1.0,
+  "cannibalisation": 0.2,
+  "dropOff": 0.2,
+  "artist": {
+   "cumRoi": null,
+   "l3dRoi": null,
+   "roiDeclineModel": {
+    "start": null,
+    "dailyFactor": 0.9756
+   },
+   "roiPath": [],
+   "finalDayRoi": null,
+   "profitPerUnit": 1179.19,
+   "budgetShare": 0.0
+  },
   "benchmarkUnits": 19.5,
   "benchmarkBudget": 3459.62
  },
@@ -2657,7 +2720,7 @@
   "benchmarkUnits": 134.0,
   "drafts": 0.0,
   "unitsPaidOrders": 151.0,
-  "ordersAsOf": "2026-09-17",
+  "ordersAsOf": "2026-09-22",
   "products": [
    {
     "key": "draw_3Hau12dgNH8f4QDESaxqqsU2jtF",
@@ -2671,7 +2734,7 @@
      "open": 15,
      "won": 5
     },
-    "sold": 75.0,
+    "sold": 76.0,
     "soldAssumed": 0.5,
     "drafts": 0.0,
     "winnerDrafts": 0.0,
@@ -2703,7 +2766,7 @@
      "open": 10,
      "won": 1
     },
-    "sold": 76.0,
+    "sold": 75.0,
     "soldAssumed": 0.5,
     "drafts": 0.0,
     "winnerDrafts": 0.0,
@@ -2961,8 +3024,12 @@
   ],
   "ordersByProduct": {
    "Untitled (Black on Black)": {
-    "unitsPaid": 75.0,
-    "drafts": 2.0,
+    "printsOffered": 76.0,
+    "frames": 52.0,
+    "entrantPrints": 0.0,
+    "entrantFrames": 0.0,
+    "unitsPaid": 76.0,
+    "drafts": 3.0,
     "draftCustomers": 0.0,
     "entryDrafts": 0.0,
     "entrantDrafts": 0.0,
@@ -2973,11 +3040,15 @@
     "privateRoom": 19.0,
     "listPrice": 3000.0,
     "edition": 75,
-    "lastOrder": "2026-09-17",
-    "lastDraft": "2026-09-17"
+    "lastOrder": "2026-09-21",
+    "lastDraft": "2026-09-22"
    },
    "Untitled (White on White)": {
-    "unitsPaid": 76.0,
+    "printsOffered": 75.0,
+    "frames": 56.0,
+    "entrantPrints": 0.0,
+    "entrantFrames": 0.0,
+    "unitsPaid": 75.0,
     "drafts": 1.0,
     "draftCustomers": 0.0,
     "entryDrafts": 0.0,
@@ -2985,7 +3056,7 @@
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
     "refunded": 0.0,
-    "fromDrafts": 58.0,
+    "fromDrafts": 57.0,
     "privateRoom": 18.0,
     "listPrice": 3000.0,
     "edition": 75,
@@ -2997,6 +3068,37 @@
    "draw_3Hau12dgNH8f4QDESaxqqsU2jtF": "Untitled (Black on Black)",
    "draw_3HauANGhqsm2Zvx1Gd786gVd05Y": "Untitled (White on White)"
   }
+ },
+ "framing": {
+  "prints": 151,
+  "frames": 108.0,
+  "rate": 0.7152,
+  "entrants": null,
+  "plan": 0.35,
+  "benchmark": {
+   "rate": 0.5177,
+   "n": 6,
+   "of": 8
+  },
+  "works": [
+   {
+    "name": "Untitled (White on White)",
+    "prints": 75,
+    "frames": 56.0,
+    "rate": 0.7467
+   },
+   {
+    "name": "Untitled (Black on Black)",
+    "prints": 76,
+    "frames": 52.0,
+    "rate": 0.6842
+   }
+  ],
+  "notOffered": {
+   "units": 0,
+   "works": []
+  },
+  "asOf": "2026-09-22"
  },
  "draw": null,
  "geo": null,

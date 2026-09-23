@@ -1387,145 +1387,169 @@
     "date": "2026-08-19",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-20",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-21",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-08-22",
     "spend": 124.66,
     "entries": 2.0,
-    "roi": 3.206
+    "roi": 3.206,
+    "roiArtist": null
    },
    {
     "date": "2026-08-23",
     "spend": 356.81,
     "entries": 11.0,
-    "roi": 5.395
+    "roi": 5.395,
+    "roiArtist": null
    },
    {
     "date": "2026-08-24",
     "spend": 1551.55,
     "entries": 9.346153846153847,
-    "roi": 2.196
+    "roi": 2.196,
+    "roiArtist": null
    },
    {
     "date": "2026-08-25",
     "spend": 805.95,
     "entries": 17.0,
-    "roi": 2.749
+    "roi": 2.749,
+    "roiArtist": null
    },
    {
     "date": "2026-08-26",
     "spend": 2015.23,
     "entries": 38.0,
-    "roi": 2.94
+    "roi": 2.94,
+    "roiArtist": null
    },
    {
     "date": "2026-08-27",
     "spend": 3916.93,
     "entries": 73.0,
-    "roi": 3.796
+    "roi": 3.796,
+    "roiArtist": null
    },
    {
     "date": "2026-08-28",
     "spend": 5685.69,
     "entries": 66.10989010989012,
-    "roi": 3.046
+    "roi": 3.046,
+    "roiArtist": null
    },
    {
     "date": "2026-08-29",
     "spend": 6354.26,
     "entries": 83.4059405940594,
-    "roi": 2.786
+    "roi": 2.786,
+    "roiArtist": null
    },
    {
     "date": "2026-08-30",
     "spend": 5613.9,
     "entries": 65.79268292682927,
-    "roi": 2.437
+    "roi": 2.437,
+    "roiArtist": null
    },
    {
     "date": "2026-08-31",
     "spend": 5259.59,
     "entries": 43.671875,
-    "roi": 2.237
+    "roi": 2.237,
+    "roiArtist": null
    },
    {
     "date": "2026-09-01",
     "spend": 5964.63,
     "entries": 32.0,
-    "roi": 1.679
+    "roi": 1.679,
+    "roiArtist": null
    },
    {
     "date": "2026-09-02",
     "spend": 5964.46,
     "entries": 42.0,
-    "roi": 1.368
+    "roi": 1.368,
+    "roiArtist": null
    },
    {
     "date": "2026-09-03",
     "spend": 7148.72,
     "entries": 54.675,
-    "roi": 1.348
+    "roi": 1.348,
+    "roiArtist": null
    },
    {
     "date": "2026-09-04",
     "spend": 6560.71,
     "entries": 37.0,
-    "roi": 1.358
+    "roi": 1.358,
+    "roiArtist": null
    },
    {
     "date": "2026-09-05",
     "spend": 6975.12,
     "entries": 34.0,
-    "roi": 1.214
+    "roi": 1.214,
+    "roiArtist": null
    },
    {
     "date": "2026-09-06",
     "spend": 7784.94,
     "entries": 47.74603174603175,
-    "roi": 1.113
+    "roi": 1.113,
+    "roiArtist": null
    },
    {
     "date": "2026-09-07",
     "spend": 2434.1,
     "entries": 20.0,
-    "roi": 1.182
+    "roi": 1.182,
+    "roiArtist": null
    },
    {
     "date": "2026-09-08",
     "spend": 329.09,
     "entries": 5.25,
-    "roi": 1.383
+    "roi": 1.383,
+    "roiArtist": null
    },
    {
     "date": "2026-09-09",
     "spend": 626.43,
     "entries": 6.0,
-    "roi": 1.842
+    "roi": 1.842,
+    "roiArtist": null
    },
    {
     "date": "2026-09-10",
     "spend": 413.63,
     "entries": 12.0,
-    "roi": 3.393
+    "roi": 3.393,
+    "roiArtist": null
    },
    {
     "date": "2026-09-11",
     "spend": 269.75,
     "entries": 10.952380952380953,
-    "roi": 4.417
+    "roi": 4.417,
+    "roiArtist": null
    }
   ],
   "spendToDate": 76156.15,
@@ -1585,6 +1609,20 @@
   "profitPerUnitAA": 312.21,
   "profitPerUnitArtist": 0.0,
   "aaBudgetShare": 1.0,
+  "cannibalisation": 0.2,
+  "dropOff": 0.2,
+  "artist": {
+   "cumRoi": null,
+   "l3dRoi": null,
+   "roiDeclineModel": {
+    "start": null,
+    "dailyFactor": 0.9886
+   },
+   "roiPath": [],
+   "finalDayRoi": null,
+   "profitPerUnit": 0.0,
+   "budgetShare": 0.0
+  },
   "benchmarkUnits": 218.5,
   "benchmarkBudget": 38675.01
  },
@@ -1645,13 +1683,13 @@
   "conversion": 0.8,
   "preorderConversion": 0.95,
   "inHandUnits": 162.0,
-  "soldPredicted": 12.0,
+  "soldPredicted": 11.0,
   "futureEntriesPredicted": 0.0,
   "pct": 0.9233,
   "benchmarkUnits": 731.6,
-  "drafts": 13.0,
-  "unitsPaidOrders": 1083.0,
-  "ordersAsOf": "2026-09-19",
+  "drafts": 7.0,
+  "unitsPaidOrders": 1090.0,
+  "ordersAsOf": "2026-09-23",
   "products": [
    {
     "key": "draw_3HVEoNf2VUny6oZdLzwRscj7A5y",
@@ -1665,9 +1703,9 @@
      "open": 113,
      "won": 15
     },
-    "sold": 391.0,
+    "sold": 394.0,
     "soldAssumed": 0.0,
-    "drafts": 4.0,
+    "drafts": 2.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
     "allocated": 102,
@@ -1675,9 +1713,9 @@
     "fixed": 102,
     "flexible": 0,
     "predicted": 92.4,
-    "shown": 5.0,
-    "room": 5.0,
-    "oversubscribed": 87.4,
+    "shown": 4.0,
+    "room": 4.0,
+    "oversubscribed": 88.4,
     "futurePredicted": 0.0,
     "pct": 1.0,
     "pctClose": 1.0,
@@ -1697,9 +1735,9 @@
      "open": 0,
      "won": 30
     },
-    "sold": 303.0,
+    "sold": 305.0,
     "soldAssumed": 0.0,
-    "drafts": 5.0,
+    "drafts": 3.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
     "allocated": 0,
@@ -1729,9 +1767,9 @@
      "open": 55,
      "won": 16
     },
-    "sold": 389.0,
+    "sold": 391.0,
     "soldAssumed": 0.0,
-    "drafts": 4.0,
+    "drafts": 2.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
     "allocated": 54,
@@ -1750,7 +1788,7 @@
     "benchmarkClose": 243.9
    }
   ],
-  "attributedSold": 1083.0,
+  "attributedSold": 1090.0,
   "unattributedSold": 0.0,
   "allocation": {
    "entrants": 1027,
@@ -2428,51 +2466,63 @@
   ],
   "ordersByProduct": {
    "Millet's Architectonic Angelus": {
-    "unitsPaid": 389.0,
-    "drafts": 4.0,
-    "draftCustomers": 2.0,
+    "printsOffered": 391.0,
+    "frames": 237.0,
+    "entrantPrints": 1.0,
+    "entrantFrames": 1.0,
+    "unitsPaid": 391.0,
+    "drafts": 2.0,
+    "draftCustomers": 1.0,
     "entryDrafts": 1.0,
     "entrantDrafts": 0.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
     "refunded": 0.0,
-    "fromDrafts": 372.0,
+    "fromDrafts": 374.0,
     "privateRoom": 17.0,
     "listPrice": 500.0,
     "edition": 400,
-    "lastOrder": "2026-09-19",
+    "lastOrder": "2026-09-21",
     "lastDraft": "2026-09-14"
    },
    "The Phantom Cart": {
-    "unitsPaid": 391.0,
-    "drafts": 4.0,
-    "draftCustomers": 2.0,
+    "printsOffered": 394.0,
+    "frames": 262.0,
+    "entrantPrints": 0.0,
+    "entrantFrames": 0.0,
+    "unitsPaid": 394.0,
+    "drafts": 2.0,
+    "draftCustomers": 1.0,
     "entryDrafts": 0.0,
     "entrantDrafts": 0.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
     "refunded": 0.0,
-    "fromDrafts": 382.0,
+    "fromDrafts": 385.0,
     "privateRoom": 9.0,
     "listPrice": 500.0,
     "edition": 400,
-    "lastOrder": "2026-09-19",
+    "lastOrder": "2026-09-23",
     "lastDraft": "2026-09-14"
    },
    "The Spectre of Sex Appeal": {
-    "unitsPaid": 303.0,
-    "drafts": 5.0,
-    "draftCustomers": 3.0,
-    "entryDrafts": 69.0,
+    "printsOffered": 305.0,
+    "frames": 130.0,
+    "entrantPrints": 68.0,
+    "entrantFrames": 29.0,
+    "unitsPaid": 305.0,
+    "drafts": 3.0,
+    "draftCustomers": 2.0,
+    "entryDrafts": 68.0,
     "entrantDrafts": 0.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
     "refunded": 0.0,
-    "fromDrafts": 290.0,
+    "fromDrafts": 292.0,
     "privateRoom": 13.0,
     "listPrice": 500.0,
     "edition": 400,
-    "lastOrder": "2026-09-19",
+    "lastOrder": "2026-09-22",
     "lastDraft": "2026-09-14"
    }
   },
@@ -2481,6 +2531,47 @@
    "draw_3HVEtUHPmTJGHPQ2BvMebpaBU4F": "The Spectre of Sex Appeal",
    "draw_3HVEzXvouuqQgiWLOZ1qlX1QK5y": "Millet's Architectonic Angelus"
   }
+ },
+ "framing": {
+  "prints": 1090,
+  "frames": 629.0,
+  "rate": 0.5771,
+  "entrants": {
+   "prints": 69,
+   "frames": 30.0,
+   "rate": 0.4348
+  },
+  "plan": 0.35,
+  "benchmark": {
+   "rate": 0.4798,
+   "n": 6,
+   "of": 8
+  },
+  "works": [
+   {
+    "name": "The Phantom Cart",
+    "prints": 394,
+    "frames": 262.0,
+    "rate": 0.665
+   },
+   {
+    "name": "Millet's Architectonic Angelus",
+    "prints": 391,
+    "frames": 237.0,
+    "rate": 0.6061
+   },
+   {
+    "name": "The Spectre of Sex Appeal",
+    "prints": 305,
+    "frames": 130.0,
+    "rate": 0.4262
+   }
+  ],
+  "notOffered": {
+   "units": 0,
+   "works": []
+  },
+  "asOf": "2026-09-23"
  },
  "draw": null,
  "geo": null,

@@ -31,6 +31,7 @@ export const CARDS = [
   { key: "paid_roi", title: "Paid ROI", size: "wide" },
   { key: "paid_spend", title: "Paid spend / day" },
   { key: "sell_through", title: "Sell-through by product", size: "wide" },
+  { key: "framing", title: "Framing", note: "shown only on a release with a frame on offer" },
   { key: "geo", title: "Entries by country" },
   { key: "waterfall", title: "Actual vs target" },
 ];

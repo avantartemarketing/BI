@@ -23,6 +23,7 @@ import Trajectory from "./modules/Trajectory.jsx";
 import KeyDrivers from "./modules/KeyDrivers.jsx";
 import PaidRoi from "./modules/PaidRoi.jsx";
 import PaidSpend from "./modules/PaidSpend.jsx";
+import Framing from "./modules/Framing.jsx";
 import SellThrough from "./modules/SellThrough.jsx";
 import Geo from "./modules/Geo.jsx";
 import DrawAudit from "./modules/DrawAudit.jsx";
@@ -470,6 +471,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       case "paid_roi": return <PaidRoi snap={snap} />;
       case "paid_spend": return <PaidSpend snap={snap} horizon={horizon} />;
       case "sell_through": return <SellThrough snap={snap} horizon={horizon} />;
+      case "framing": return <Framing snap={snap} />;
       case "geo": return <Geo snap={snap} />;
       case "waterfall": return <Waterfall snap={snap} horizon={horizon} />;
       default: return null;
