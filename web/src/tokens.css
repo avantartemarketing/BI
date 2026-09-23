@@ -10,15 +10,17 @@
   --muted: #6c6b68;
   --dotted: #ddd9cf;
 
-  --orange: #eb6834;
-  --orange-light: #f2a07f;
-  --rust: #8f3415;
-  --periwinkle: #a5b6e3;
-  --blue: #4f6fc0;
-  --blue-deep: #28518f;
-  --blue-tint: #eaf0fa;
-  --blue-tint-border: #c3d5ee;
-  /* The two references, in one hue - tints of the actual's own orange, so
+  /* The page's hue: one blue, at the strengths a reading needs. --blue is the
+   * actual on every bar and line; --blue-light the projection; --blue-deep
+   * what is most certain, the units paid on the sell-through card, and the
+   * text of the blue lozenges. It was an orange until September 2026; every
+   * token kept its role. */
+  --blue: #4f80d6;
+  --blue-light: #a3bfeb;
+  --blue-deep: #2f5fb3;
+  --blue-tint: #e6eefa;
+  --blue-tint-border: #c4d5f2;
+  /* The two references, in one hue - tints of the actual's own blue, so
    * they read as the same measurement at other weights rather than as systems
    * of their own. Both are on every bar at once (docs/BENCHMARK_SPEC 7).
    * --ref-base is the target's fill from zero to whichever of target and
@@ -27,10 +29,10 @@
    * --ref-line is the benchmark's dotted outline, a step darker than either
    * tint so it reads on both; --ref-track carries a bar's remaining room out
    * to the sellout. */
-  --ref-base: #f8ccba;
-  --ref-stretch: #f8ddd0;
-  --ref-line: #ea8f66;
-  --ref-track: #faf7f4;
+  --ref-base: #d9e4f7;
+  --ref-stretch: #e6eefa;
+  --ref-line: #7fa2e0;
+  --ref-track: #f3f6fc;
 
   --green: #0f7052;
   --amber: #8a5f00;
@@ -38,7 +40,7 @@
   --wf-green: #2f7d3f;
 
   --dot-volume: #b8862d;
-  --dot-funnel: #4f6fc0;
+  --dot-funnel: #4f80d6;
   --dot-paid: #eb6834;
   --dot-outcome: #8a7a52;
 
@@ -133,10 +135,10 @@ html, body {
 }
 .launch-strip b { color: var(--ink); font-weight: 600; }
 .launch-strip .track { position: relative; flex: 1; height: 6px; border-radius: 3px; background: var(--track); }
-.launch-strip .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--orange); }
+.launch-strip .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--blue); }
 .launch-strip .knob {
   position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px;
-  border-radius: 50%; background: var(--orange); box-shadow: 0 0 0 2px var(--card);
+  border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 2px var(--card);
 }
 .launch-strip .launch { position: absolute; right: -1px; top: -3px; width: 2px; height: 12px; border-radius: 1px; background: var(--ink); }
 
@@ -190,17 +192,17 @@ button[title], select[title] { cursor: pointer; }
   border: 1px solid transparent;
 }
 .lozenge.up { background: var(--loz-green-bg); border-color: var(--loz-green-border); color: var(--green); }
-.lozenge.down { background: var(--loz-red-bg); border-color: var(--loz-red-border); color: var(--rust); }
+.lozenge.down { background: var(--loz-red-bg); border-color: var(--loz-red-border); color: var(--red); }
 .lozenge.blue { background: var(--blue-tint); border-color: var(--blue-tint-border); color: var(--blue-deep); }
 .lozenge.neutral { background: var(--loz-neutral-bg); border-color: var(--loz-neutral-border); color: var(--muted); }
 
 /* channel lozenges (key drivers) */
 .chan-loz { font-size: 12px; font-weight: 500; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
-.chan-loz.aa_email { background: #fbe4d8; color: #8f3415; }
+.chan-loz.aa_email { background: #e3ebf9; color: #2f5fb3; }
 .chan-loz.aa_social { background: #eae6f5; color: #4a3b7a; }
 .chan-loz.referral_artist { background: #e2ece4; color: #0f5237; }
 .chan-loz.search_direct_other { background: #ece9e1; color: #5c5849; }
-.chan-loz.paid { background: #fbe4d8; color: #8f3415; }
+.chan-loz.paid { background: #e3ebf9; color: #2f5fb3; }
 
 /* segmented toggle */
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
@@ -249,7 +251,7 @@ select.native {
   font-family: inherit; font-size: 13px; color: var(--ink); padding: 0 10px; width: 100%;
   box-sizing: border-box;
 }
-.control:focus { outline: 2px solid var(--orange-light); outline-offset: -1px; }
+.control:focus { outline: 2px solid var(--blue-light); outline-offset: -1px; }
 .control.ro { background: var(--bg); color: var(--muted); }
 .btn:disabled { opacity: 0.6; cursor: default; }
 /* a button that fits a card header (the sell-through card's Post to Slack) */

@@ -602,9 +602,14 @@ function rungModel(snap) {
     {
       key: "aa_social", name: "AA Meta", short: "Meta",
       rungs: [
+        // the Notion log records a row per post and no format, so there is no
+        // post/story split to show when it is the source; the Emplifi export
+        // carries one, and says so
         { label: "Posts", kind: "vol", unit: "count",
           v: (social.posts ?? 0) + (social.stories ?? 0), plan: null, bm: null,
-          note: `${fmt(social.posts ?? 0)} posts + ${fmt(social.stories ?? 0)} stories to date` },
+          note: social.postsSource === "notion"
+            ? `${fmt(social.posts ?? 0)} posts to date, from the Notion log`
+            : `${fmt(social.posts ?? 0)} posts + ${fmt(social.stories ?? 0)} stories to date` },
         sess("aa_social"),
         conv("aa_social"),
       ],
@@ -766,7 +771,7 @@ function walkBlocks(wf) {
     const step = r.to !== undefined;
     g.rows.push({ id: `${g.name}:${g.rows.length}`, group: g.name, kind: step ? "step" : "info", base: 24, r, level: step ? r.to : r.level, full: withChannel(r) });
   }
-  const close = [{ id: "actual", kind: "level", base: 26, label: "Actual today", value: nowTotal, level: nowTotal, tip: actualTip(wf), color: C.orange }];
+  const close = [{ id: "actual", kind: "level", base: 26, label: "Actual today", value: nowTotal, level: nowTotal, tip: actualTip(wf), color: C.blue }];
   const all = [...open, ...groups.flatMap((g) => g.rows), ...close];
   let lvl = null;
   for (const row of all) { row.entry = lvl; lvl = row.level; row.exit = lvl; }

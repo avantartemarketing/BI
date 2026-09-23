@@ -43,7 +43,7 @@ export default function Permissions({ me }) {
       {error ? <div style={{ color: C.red, fontSize: 13 }}>{error}</div> :
        !rows ? <div style={{ color: C.muted }}>Loading…</div> : (
         <div style={{ maxWidth: 760, display: "flex", flexDirection: "column", gap: 24 }}>
-          <Card dot="#28518f" title="Who has access">
+          <Card dot="#2f5fb3" title="Who has access">
             <div className="spacer-16" />
             <div style={{ display: "flex", flexDirection: "column" }}>
               {rows.map((u) => (

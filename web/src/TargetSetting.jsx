@@ -23,12 +23,12 @@
  * Benchmark and Stretch columns are dashes, and every other part of this tab
  * behaves exactly as it did before the benchmark existed. */
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtMoney, fmtPct, fmtDay } from "./ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
 import { computeTargets } from "../../shared/targetModel.mjs";
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-const BLUE = "#28518f", BLUE_FILL = "#c3d5ee";
+const BLUE = "#2f5fb3", BLUE_FILL = "#c4d5f2";
 
 // the five display groups, in the order the profile dicts are written
 // (etl/baskets.py GROUPS), so the table reads the same way as the snapshot
@@ -85,86 +85,32 @@ function Slider({ options, value, onChange, big, tip }) {
   );
 }
 
-/* The products of the release (docs §6.3): one row per draw the event feed
- * found, with the name and the edition typed against it. Two draws given the
- * same name are one product (a re-run, a second wave). The sell-through card
- * reads sell-through per product only once every product has an edition, and
- * the editions should add up to the release's. The entry → order rate the
- * card converts entries in hand at sits here too, because it is the other
- * half of the same prediction. */
-const shortDay = (iso) => (iso && /^\d{4}-\d{2}-\d{2}/.test(iso) ? fmtDay(new Date(iso + "T00:00:00Z")) : iso || "");
-
-function Products({ inp, setInp, draws, editionSize }) {
-  const feed = draws && Array.isArray(draws.draws) ? draws.draws : [];
-  const typed = Array.isArray(inp.products) ? inp.products : [];
-  const byKey = new Map(typed.filter((p) => p && p.key).map((p) => [String(p.key), p]));
-  const legacy = typed.filter((p) => p && !p.key);
-  // the rows: every draw the feed found, in first-entry order, with what was
-  // typed for it (an older keyless list is matched to the unclaimed draws in order)
-  let nextLegacy = 0;
-  const rows = feed.map((d, i) => {
-    let t = byKey.get(String(d.id)) || null;
-    if (!t && nextLegacy < legacy.length) t = legacy[nextLegacy++];
-    return { id: String(d.id), draw: d, name: t && t.name ? t.name : "", edition: t && t.edition !== null && t.edition !== undefined ? t.edition : null, i };
-  });
-  const update = (id, patch) => {
-    const next = rows.map((r) => ({ key: r.id, name: r.name, edition: r.edition, ...(r.id === id ? patch : {}) }));
-    setInp({ ...inp, products: next });
-  };
-  const names = new Map();
-  rows.forEach((r) => { const n = (r.name || `Draw ${r.i + 1}`).trim(); names.set(n, (names.get(n) || 0) + 1); });
-  const sum = rows.reduce((t, r) => t + (Number(r.edition) || 0), 0);
-  const allSet = rows.length > 0 && rows.every((r) => Number(r.edition) > 0);
-  const rate = inp.entry_conversion_rate;
-  const ratePct = rate === null || rate === undefined || rate === "" ? "" : Math.round(Number(rate) * 100);
+/* The two rates the sell-through prediction converts entries in hand at: a
+ * plain draw entry, and a pre-order entry whose card is already authorised.
+ *
+ * This used to be a table as well, a row per draw the feed found, with a name,
+ * an edition and a pre-order rate typed against each. The names were never
+ * typed - every release showed "Draw 1" to "Draw 7" - the editions were left
+ * blank because the feed carries them, and the whole grid was three columns of
+ * nothing above the two fields that were actually used. The per-product
+ * overrides still exist in the release's inputs and the ETL still reads them,
+ * so a product that already has one keeps it; there is simply no longer a
+ * table in the way of the rates. */
+function Products({ inp, setInp }) {
+  const asPct = (v) => (v === null || v === undefined || v === "" ? "" : Math.round(Number(v) * 100));
+  const ratePct = asPct(inp.entry_conversion_rate);
+  const preRatePct = asPct(inp.preorder_conversion_rate);
   return (
-    <Card dot="#8a7a52" title="Products">
-      <div className="spacer-16" />
-      {rows.length === 0 ? (
-        <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.6 }}>
-          No draws found for this release in the event feed yet. Products appear here once the feed has entries,
-          and the sell-through card shows the release as one row until then.
-        </div>
-      ) : (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 110px 190px", gap: "8px 16px", alignItems: "center" }}>
-            <div className="flabel" style={{ marginBottom: 0 }}>Product</div>
-            <div className="flabel" style={{ marginBottom: 0 }}>Edition (units)</div>
-            <div className="flabel" style={{ marginBottom: 0 }} title="Eligible entrants in the draw, and when the first entry came">Draw</div>
-            {rows.map((r) => {
-              const dup = names.get((r.name || `Draw ${r.i + 1}`).trim()) > 1;
-              return (
-                <React.Fragment key={r.id}>
-                  <input className="control" value={r.name} placeholder={`Draw ${r.i + 1}`}
-                    onChange={(e) => update(r.id, { name: e.target.value })}
-                    title={dup ? "Two draws with the same name are one product" : undefined} />
-                  <input className="control num" value={r.edition ?? ""} placeholder="–"
-                    onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); update(r.id, { edition: raw === "" ? null : parseInt(raw, 10) }); }} />
-                  <div style={{ fontSize: 11.5, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                    title={`${fmt(r.draw.eligible)} eligible of ${fmt(r.draw.entrants)} entrants · ${fmt(r.draw.winners)} winners · entries ${r.draw.first} to ${r.draw.last}`}>
-                    {fmt(r.draw.eligible)} eligible{r.draw.winners > 0 ? ` · ${fmt(r.draw.winners)} won` : ""} · from {shortDay(r.draw.first)}
-                  </div>
-                </React.Fragment>
-              );
-            })}
-          </div>
-          <div style={{ fontSize: 11.5, marginTop: 10, lineHeight: 1.5, color: allSet && editionSize > 0 && sum !== editionSize ? C.amber : C.muted }}>
-            {allSet
-              ? (editionSize > 0 && sum !== editionSize
-                ? `Editions add up to ${fmt(sum)}; the release's edition size is ${fmt(editionSize)}.`
-                : `Editions add up to ${fmt(sum)}.`)
-              : rows.length > 1
-                ? "Give every product an edition to read sell-through per product; until then the card compares them in units."
-                : "A single product takes the release's edition size."}
-            {" "}Two draws given the same name are one product.
-          </div>
-        </>
-      )}
+    <Card dot="#8a7a52" title="Conversion of entries in hand">
       <div className="spacer-16" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
         <Field label="Entry → order rate (%)" tip="What share of eligible entries in hand become orders - the sell-through prediction counts entries in hand at this rate. Empty means the panel's 80%.">
           <input className="control num" value={ratePct} placeholder="80"
             onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); setInp({ ...inp, entry_conversion_rate: raw === "" ? null : clamp(parseInt(raw, 10), 1, 100) / 100 }); }} />
+        </Field>
+        <Field label="Pre-order → order rate (%)" tip="What share of PRE-ORDER entries become orders. Their card is already authorised, so they are charged at the draw rather than invoiced and convert higher than a plain entry. Empty means the panel's 95%.">
+          <input className="control num" value={preRatePct} placeholder="95"
+            onChange={(e) => { const raw = String(e.target.value).replace(/[^0-9]/g, ""); setInp({ ...inp, preorder_conversion_rate: raw === "" ? null : clamp(parseInt(raw, 10), 1, 100) / 100 }); }} />
         </Field>
       </div>
     </Card>
@@ -327,9 +273,10 @@ export default function TargetSetting({ snap, onSaved }) {
   const [slackDraft, setSlackDraft] = useState((snap.slack && snap.slack.channel) || "");
   const [slackSaving, setSlackSaving] = useState(false);
   const [slackError, setSlackError] = useState(null);
+  const [slackNote, setSlackNote] = useState(null);   // the server saved, but somewhere that will not last
   const slackCurrent = (snap.slack && snap.slack.channel) || "";
   const saveSlack = async () => {
-    setSlackSaving(true); setSlackError(null);
+    setSlackSaving(true); setSlackError(null); setSlackNote(null);
     try {
       const res = await fetch(`/api/releases/${snap.id}/slack-channel`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: slackDraft }),
@@ -337,13 +284,14 @@ export default function TargetSetting({ snap, onSaved }) {
       const d = await res.json();
       if (!res.ok) { setSlackError(d.error || `save failed (${res.status})`); return; }
       setSlackDraft((d.slack && d.slack.channel) || "");
+      setSlackNote(d.warning || null);
       onSaved({ ...snap, slack: d.slack });
     } catch (e) { setSlackError(String(e)); } finally { setSlackSaving(false); }
   };
 
   useEffect(() => {
     setMeta(null); setInp(null); setQual(null); setError(null); setPick(null); setPicking(false);
-    setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null);
+    setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null); setSlackNote(null);
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
       // a release nobody has set targets for comes back with inputs: null and
@@ -385,6 +333,8 @@ export default function TargetSetting({ snap, onSaved }) {
     const raw = String(e.target.value).replace(/[^0-9]/g, "");
     setInp({ ...inp, [k]: raw === "" ? null : parseInt(raw, 10) });
   };
+  // the target is only part of the edition: the rail says so
+  const partialEdition = Number(inp.edition_total) > Number(inp.edition_size) && Number(inp.edition_size) > 0;
   const dateDiff = (a, c) => (a && c ? Math.round((new Date(a) - new Date(c)) / 86400000) : null);
   const days = dateDiff(inp.launch_end, inp.announce_date);
   const prDays = dateDiff(inp.announce_date, inp.private_room_open);
@@ -430,6 +380,9 @@ export default function TargetSetting({ snap, onSaved }) {
       benchmark_basket: chosen.kind === "bespoke"
         ? { kind: "bespoke", members: chosen.members, name: chosen.name }
         : { kind: chosen.kind, id: chosen.id },
+      // the picker's recency switch is a release input: the rule reads it on
+      // every rebuild, so the suggestion stays the one that was looked at
+      prefer_recent: chosen.preferRecent !== false,
       // picking a basket is what puts a release on the benchmark model; without
       // a stretch mode the server would leave it on whatever it had
       stretch_mode: inp.stretch_mode || "even",
@@ -602,12 +555,18 @@ export default function TargetSetting({ snap, onSaved }) {
                 </button>
               </div>
               {slackError && <div style={{ fontSize: 11.5, marginTop: 4, color: C.red }}>{slackError}</div>}
-              {!slackError && snap.slack && snap.slack.lastPostAt && (
+              {!slackError && slackNote && <div style={{ fontSize: 11.5, marginTop: 4, color: C.amber, lineHeight: 1.5 }}>{slackNote}</div>}
+              {!slackError && !slackNote && snap.slack && snap.slack.lastPostAt && (
                 <div style={{ fontSize: 11.5, marginTop: 4, color: C.muted }}>last posted {new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
               )}
             </Field>
-            <Field label="Budget file">
-              <input className="control" value={inp.budget_file || ""} onChange={set("budget_file")} />
+            <Field label="Budget file" tip="A link to the budget sheet, kept here for reference. A web address gets an open link beside it.">
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input className="control" value={inp.budget_file || ""} onChange={set("budget_file")} placeholder="https://docs.google.com/spreadsheets/…" />
+                {/^https?:\/\/\S+$/i.test(String(inp.budget_file || "").trim()) && (
+                  <a href={String(inp.budget_file).trim()} target="_blank" rel="noopener noreferrer" className="btn secondary" style={{ flex: "0 0 auto", textDecoration: "none" }}>Open</a>
+                )}
+              </div>
             </Field>
           </div>
           <div className="spacer-16" />
@@ -631,13 +590,16 @@ export default function TargetSetting({ snap, onSaved }) {
         <Card dot="#8a7a52" title="Economics">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
-            <Field label="Edition size (units)">
+            <Field label="Target (units)" tip="The units the launch is targeted to sell by close: the whole edition for most launches. When the target is only part of the edition, put the edition in Total edition.">
               <input className="control num" style={{ fontWeight: 600 }} value={inp.edition_size ?? ""} onChange={setNum("edition_size")} placeholder={creating ? "required" : ""} />
+            </Field>
+            <Field label="Total edition (units)" tip="Only when the target is part of the edition (Warhol: a 2,440 target on 6,100). The hero cap, the room and the sell-through percentages then read against this; the targets stay on the target. Leave empty when the target is the whole edition.">
+              <input className="control num" value={inp.edition_total ?? ""} onChange={setNum("edition_total")} placeholder="same as target" />
             </Field>
             <Field label="Unit price (£)">
               <input className="control num" value={inp.unit_price ?? ""} onChange={setNum("unit_price")} placeholder={creating ? "required" : ""} />
             </Field>
-            <Field label="Launch value" tip="Edition size × unit price - derived.">
+            <Field label="Launch value" tip="Target units × unit price - derived.">
               <input className="control ro num" value={fmtMoney(derived.launch_value)} readOnly />
             </Field>
             <Field label="Artist profit (total £)">
@@ -657,7 +619,7 @@ export default function TargetSetting({ snap, onSaved }) {
                   return (
                     <button key={o} onClick={() => setInp({ ...inp, framing_available: o === "Yes" })}
                       style={{ fontFamily: "inherit", fontSize: 12, fontWeight: active ? 600 : 500, padding: "6px 16px",
-                        border: "none", cursor: "pointer", background: active ? "#eaf0fa" : "#fff",
+                        border: "none", cursor: "pointer", background: active ? "#e6eefa" : "#fff",
                         color: active ? BLUE : C.muted }}>{o}</button>
                   );
                 })}
@@ -672,7 +634,7 @@ export default function TargetSetting({ snap, onSaved }) {
           </div>
         </Card>
 
-        <Products inp={inp} setInp={setInp} draws={meta.draws} editionSize={Number(inp.edition_size) || 0} />
+        <Products inp={inp} setInp={setInp} />
 
         <Card dot={GROUP_DOTS.funnel} title="Benchmark basket">
           <div className="spacer-16" />
@@ -745,7 +707,7 @@ export default function TargetSetting({ snap, onSaved }) {
           )}
         </Card>
 
-        <Card dot="#4f6fc0" title="Stretch">
+        <Card dot="#4f80d6" title="Stretch">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
             <Field label="Benchmark (units)" tip="The basket's median units at close - what launches like this one typically reach.">
@@ -801,7 +763,8 @@ export default function TargetSetting({ snap, onSaved }) {
           <div className="lead" title="Secured-units sellout target - the hero target on the Overview tab.">
             {creating && missing.length ? "–" : fmt(derived.edition_size)}
           </div>
-          <div className="lead-caption">{creating && missing.length ? "sellout units - enter the economics" : "sellout units"}</div>
+          <div className="lead-caption">{creating && missing.length ? "sellout units - enter the economics"
+            : partialEdition ? `target units · ${Math.round((100 * Number(inp.edition_size)) / Number(inp.edition_total))}% of the ${fmt(inp.edition_total)} edition` : "sellout units"}</div>
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 72px 72px", gap: 4, alignItems: "center" }}>
             <span />
@@ -841,6 +804,15 @@ export default function TargetSetting({ snap, onSaved }) {
 
       {picking && (
         <BasketPicker releaseId={snap.id} releaseName={snap.releaseName} current={spec}
+          targetUnits={Number(inp.edition_size) || 0} unitPrice={Number(inp.unit_price) || 0}
+          preferRecent={inp.prefer_recent !== false}
+          // what the rule needs to find the artist's own earlier launches and
+          // to read the typed price in its currency (shared/basketRule.mjs)
+          artist={snap.artist || ""} currency={inp.currency || "GBP"}
+          announceDate={inp.announce_date || null} privateRoomOpen={inp.private_room_open || null}
+          // the picker asks for a target and a price when there are none, and
+          // writes them straight into this form so the basket follows the typing
+          onInputs={(patch) => setInp({ ...inp, ...patch })}
           onPick={onPick} onClose={() => setPicking(false)} />
       )}
     </div>

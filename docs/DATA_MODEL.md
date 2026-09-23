@@ -36,6 +36,7 @@ Attributes (hand-entered per release today, in the LAUNCH INPUT block of each re
 | `campaign_name` (Meta ads key) | C85 | `GlennLigon_LE_26 · Enter draw` |
 | `campaign_code` | prefix of C85 | `GlennLigon_LE_26` |
 | `edition_size` (units) | G77 | 150 |
+| `edition_total` (units, optional) | - | the whole edition when `edition_size` is a target that is only part of it (Warhol: 6,100 against a 2,440 target); the hero cap, room and sell-through read against it, the targets and K against `edition_size`; the snapshot carries both as `edition.{target,total}` |
 | `unit_price` | G79 | 3,000 |
 | `launch_value` | `=price × size` | 450,000 |
 | `artist_profit` (total) | G81 | 176,879 |
@@ -343,7 +344,7 @@ is the reference the reconciliation checks it against on every refresh.
 
 ### 2.4 Orders and drafts by product (`Order_Line_Concept`)
 
-`Order_Line_Concept` is one row per Shopify order line (130k rows, 119 columns) with the
+`Order_Line_Concept` is one row per Shopify order line (130k rows, 119 columns; some lines appear twice, as a plain copy or once per refund on the order, so the feed keeps one row per line id) with the
 release (`simple_release_name`, the same key as the funnel), the campaign code (`release_name`),
 the product (`shopify_product_id`, `product_title`, `sku`), `quantity`, the list price
 (`shopify_product_variant_price`, EUR: 3,000 for Glenn Ligon, 500 for the Dali, the workbook's
@@ -359,7 +360,7 @@ them; `BQ_ORDERS_TABLE` renames the table; both take `BQ_SINCE`):
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not refunded, not pending), `units_refunded`, `units_draft_pending` (draft orders an advisor raised that have no order yet, plus orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_entrant_drafts` (a person's drafts for collectors with a live entry on the release, counted apart), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
+| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
@@ -428,10 +429,11 @@ empirically on the Mondrian and James Jean Blossom draws):
 `demand(product) = Σ entrants eligible for product` (a lower bound per product);
 `total_units_demanded = Σ wanted_units`.
 
-**Allocation rule** (as practised): winners are allocated to maximise sell-through across
-products - an entrant who entered N products but wants M < N is awarded the M **least-demanded**
-products among those they entered, draw weighted by `Score`. Equivalent to capacitated matching;
-`Σ Opportunity Cost` measures the flexibility available.
+**Allocation rule** (as practised): winners are allocated to maximise revenue across
+products - an entrant who entered N products but wants M < N is awarded the M **priciest**
+products among those they entered that still have a unit left, the least-demanded among equal
+prices, draw weighted by `Score`. Equivalent to capacitated matching; `Σ Opportunity Cost`
+measures the flexibility available.
 
 ---
 
@@ -446,7 +448,7 @@ production model has to serve. Everything else in a table is never selected.
 | `LE_Funnel_Report` | `server/bigquery.js` (events and browsing feeds) | the event columns named in `EVENT_COLUMNS`: event, date, release, pseudonymous account id, signup, draw entry, winner and purchase flags, order counts, channel groups, locales; never `user_email` | `sources/le_events.csv` and `sources/le_browsing.csv`: the rebuilt export, people per release, the draws and entry patterns behind the per-product sell-through |
 | `LE_Funnel_Report` | `server/bigquery.js` (draw map, §2.4) | event_name, winner, draw_id, aa_account_id, shopify_order_id, simple_release_name, event_date | `data/draw_products.csv` |
 | `meta_ads_insights_export` | `server/bigquery.js` (spend feed) | campaign_name, spend_date, impressions, reach, link_clicks, spend | `data/spend_daily.csv`: paid spend by campaign × day |
-| `Order_Line_Concept` | `server/bigquery.js` (orders feed, §2.4) | simple_release_name, release_name, product_title, shopify_product_id, sku, quantity, order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_product_variant_price, shopify_product_type, is_test_order, launch_date, shopify_order_created_date_CET, shopify_draft_order_created_at, shopify_order_id | `data/orders_by_product.csv` |
+| `Order_Line_Concept` | `server/bigquery.js` (orders feed, §2.4) | simple_release_name, release_name, product_title, shopify_product_id, sku, quantity, order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_product_variant_price, shopify_product_type, is_test_order, launch_date, shopify_order_created_date_CET, shopify_draft_order_created_at, shopify_order_id, order_lineitem_id, refund_processed_at | `data/orders_by_product.csv` |
 
 Granted and profiled, not yet read: `Order_Concept` (order level: basket size and items,
 first-time buyer, totals, country - units per buyer and buyer mix per release),
@@ -1007,7 +1009,7 @@ which the Target setting tab merges by giving both draws the same name). Per dra
 | state | definition | counts as |
 |---|---|---|
 | open | eligible, not won, not bought | in hand, placed by the rule |
-| won | won, not yet bought | in hand, pinned to its product (the allocation is made) |
+| won | won, not yet bought | not counted: spends the winner's appetite; the advisor's order for them, if any, is in the drafts |
 | sold | won and bought | a sale of that product |
 | bought without a win | `draw_with_purchase` on a losing entry (a re-offer, a private-room buyer's entry) | out of the in-hand pool, as the export's `No_Conv` treats it, but **not** claimed as a sale of that product |
 
@@ -1037,40 +1039,72 @@ re-runs the same rule on the server.
 `etl/aggregate_events.py` (`products_file`) writes `data/app/release_products.json`: per
 release, the draws with their counts (`entrants`, `eligible`, `winners`, `sold`, `open`,
 `wonUnpaid`, `purchaseUnits`, first and last entry day) and the **entry patterns** - the
-multiset of (open draws, unpaid wins, paid wins, pieces bought, max quantity) with how many
+multiset of (open draws, unpaid wins, paid wins, pieces bought, max quantity, pre-order
+entries) with how many
 entrants share each. Patterns are enough to run the allocation anywhere and name nobody.
 
 **The maximum-quantity rule** (`etl/sellthrough.py`, mirrored in `shared/sellThrough.mjs`,
 held to the unit by `tests/test_sellthrough.py`). An entrant who entered four products with a
 maximum quantity of two is one conversion on two products, not four, and the allocator awards
-the least-demanded of them at close. The prediction counts the same way before close:
+them at close for revenue: the priciest of them with a unit left. The prediction counts the
+same way before close. Each entry converts at its own rate: `pre` on a pattern is the open
+entries that person made as a pre-order, whose card is already authorised, and those count at
+`preorder_conversion_rate` (0.95) against `entry_conversion_rate` (0.8) for a plain entry, so a
+product's prediction is the sum over its entries and not a head count times one rate. A product
+can set its own pre-order rate where its draw has already been run:
 
 ```
 appetite = max quantity − pieces already bought        (no cap: everything entered)
-unpaid wins are pinned to their product first; the appetite left goes to the open entries
+unpaid wins spend the appetite first but count no units (a winner who has not paid is a
+draft when an advisor has an order out for them, and nowhere otherwise); the appetite left
+goes to the open entries
 appetite ≥ open entries  → counted once on each (nothing to choose)
-appetite < open entries  → FLEXIBLE: placed one unit at a time on the product with the
-                           lowest fill, taken from the flexible entrant with the fewest
-                           other options left
-fill(p) = (sold_p + rate × counted_p) / edition_p       (plain units until every product
-                                                          has an edition)
+appetite < open entries  → FLEXIBLE: placed one unit at a time, for revenue: on the
+                           priciest product that still has room at the rate, the lowest
+                           fill among equal prices, and only once every product is full
+                           on the lowest fill; taken from the flexible entrant with the
+                           fewest other options left
+room(p)  = sold_p + rate × (counted_p + 1) ≤ edition_p  (one more counted unit still fits)
+fill(p)  = (sold_p + rate × counted_p) / edition_p       (plain units, and no price rule,
+                                                          until every product has an edition)
+price(p) = the list price the orders feed carries       (missing: the median of the others;
+                                                          none at all: fill alone)
 ```
 
-So a product short of demand is topped up before one already spoken for, and an entrant with
-one alternative is placed before one with five. Ties break on product order, then pattern
+So the expensive product is spoken for before a cheap one gets a unit it could also have sold,
+a product short of demand is topped up before one already spoken for among equal prices, and an
+entrant with one alternative is placed before one with five. Ties break on product order, then pattern
 order, so the same input gives the same answer on either side. The snapshot records, per
-product, `allocated` = `pinned` + `fixed` + `flexible` (the demand counted there, in people),
+product, `allocated` = `fixed` + `flexible` (the demand counted there, in people; `pinned`
+is the unpaid wins, tracked but not counted),
 `predicted` = allocated × rate, `shown` = predicted capped at the room, `oversubscribed` =
 the rest; and for the release `allocation.{entrants, flexibleEntrants, surplusEntries,
 uncapped, unpaidWinners, flexibleUnits}`.
+
+**The card's colours are one ramp, and the picture posted to Slack is the same drawing.**
+Paid, drafts, the draw winners the entries imply and (at close) the units still to come are
+four tints of the page's blue, deepest to palest as the units get less certain; nothing on
+the card is hatched, and demand past a product's edition is the winners' own tint carrying on
+where the paler room behind the bar stops. `Post to Slack` draws those rows onto a canvas in
+the browser (`web/src/modules/sellThroughImage.mjs`) and posts the picture with the composed
+figures as its comment (`server/slack.js`); the drawing is written twice, the figures once.
+
+**One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
+pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven
+products, 14px bars on 28; five, 19 on 39; four, 24 on 49; three or fewer, 30 on 60, the cap
+being what keeps one edition from filling the card). The rows start under the headline and
+never spread; past seven they scroll. The key sits on the headline's own line, which is what
+gives the rows their height. Each row carries one figure, its percentage, in ink: no units
+beside it and no RAG colour, which said "bad" about a product that was simply mid-campaign.
+The Units toggle shows units of edition instead, on one scale for the card.
 
 **No references on this card.** The snapshot still carries the release's pace applied to each
 product's edition (`expectedToday_p = edition_p × hero.expectedToday / edition`, likewise
 `benchmarkToday_p` and `benchmarkClose_p`), but the card draws neither the target fill nor the
 benchmark outline, by decision: both are on the hero and the channels, and on this card they
 crowded the one reading it is for, each product against its own edition. The card carries no
-prose either; the allocation's account is in the in-hand row's popup, the split of unattributed
-sales in the striped segment's, and the editions are checked on the Target setting tab.
+prose either; the allocation's account is in the draw-winners key's popup, the split of
+unattributed sales in the paid key's, and the editions are checked on the Target setting tab.
 
 **Products and editions** are typed on the Target setting tab (`products:
 [{key: draw_id, name, edition}]`; `productsFromDraws`): one row per draw the feed found, a

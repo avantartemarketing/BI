@@ -63,13 +63,20 @@ METRICS = {
 PREDICTORS = {"log price": "log_price", "log units sold": "log_units", "log edition size": "log_edition",
               "log launch value": "log_value"}
 
-# the ladders compared in the leave-one-out test: (use price, rungs), each
-# rung a (shape, price) pair on top of the size band that is on every rung
+# the rules compared in the leave-one-out test: (use price, how many members).
+# The widening ladder is gone - the basket is the N nearest - so what is left
+# to compare is how many and on which axes. The units benchmark chose eight
+# (etl/baskets.py SIMILAR_N); these rows are here to say what that costs the
+# conversion benchmarks, which are the ones price is supposed to carry and
+# which a smaller basket has fewer launches to median over.
 LADDERS = {
-    "size+shape (the ladder before this change)": (False, ((True, False), (False, False))),
-    "size+price+shape, price given up before shape": (True, ((True, True), (False, True), (True, False), (False, False))),
-    "size+price+shape, shape given up before price": (True, ((True, True), (True, False), (False, True), (False, False))),
-    "size+price, no shape": (True, ((False, True), (False, False))),
+    "size only, 8": (False, 8),
+    "size+price, 4": (True, 4),
+    "size+price, 6": (True, 6),
+    "size+price, 8 (the rule)": (True, 8),
+    "size+price, 12": (True, 12),
+    "size+price, 20": (True, 20),
+    "size+price, 45": (True, 45),
 }
 
 
@@ -218,20 +225,24 @@ def loo_errors(panel: pd.DataFrame, d: pd.DataFrame) -> tuple[pd.DataFrame, pd.D
     The benchmark for a launch is what the ladder would give it today with
     itself dropped (similar_members never includes the release), so this is
     exactly the number the dashboard would print for it."""
-    keep_use, keep_rungs = B.SIMILAR_USE_PRICE, B.SIMILAR_RUNGS
+    keep_use, keep_n = B.SIMILAR_USE_PRICE, B.SIMILAR_N
     errors, rungs, sizes = {}, {}, {}
     per_release: dict[str, dict[str, pd.Series]] = {}
     try:
-        for name, (use_price, ladder) in LADDERS.items():
-            B.SIMILAR_USE_PRICE, B.SIMILAR_RUNGS = use_price, ladder
+        for name, (use_price, n) in LADDERS.items():
+            B.SIMILAR_USE_PRICE, B.SIMILAR_N = use_price, n
             errs = {m: [] for m in METRICS if m != "paid cost per entry"}
             on_count: dict[str, int] = {}
             ns = []
             rows_err = []
             for _, r in d.iterrows():
                 rel = {"release_name": r["release_name"], "edition_size": float(r["tot_total_product_units"])}
-                members, factor, on = B.similar_members(panel, rel)
-                on_count[" + ".join(on) + (f" x{factor:g}" if factor else "")] = on_count.get(" + ".join(on) + (f" x{factor:g}" if factor else ""), 0) + 1
+                members, reach, on = B.similar_members(panel, rel)
+                # how far the basket had to reach, in bands, rather than which
+                # rung answered - there are no rungs any more
+                band = next((f"x{t:g}" for t in (1.5, 2, 3, 4) if reach and reach <= t), "further") if reach else "-"
+                key = " + ".join(on) + ", within " + band
+                on_count[key] = on_count.get(key, 0) + 1
                 prof = B.basket_profile(panel, members)
                 ns.append(prof["n"])
                 bench = {
@@ -254,7 +265,7 @@ def loo_errors(panel: pd.DataFrame, d: pd.DataFrame) -> tuple[pd.DataFrame, pd.D
             sizes[name] = (float(np.median(ns)), float(np.mean(ns)))
             per_release[name] = pd.DataFrame(rows_err).set_index("release_name")
     finally:
-        B.SIMILAR_USE_PRICE, B.SIMILAR_RUNGS = keep_use, keep_rungs
+        B.SIMILAR_USE_PRICE, B.SIMILAR_N = keep_use, keep_n
     tab = pd.DataFrame({name: {f"{m} mean": v[0] for m, v in e.items()} | {f"{m} median": v[1] for m, v in e.items()}
                         for name, e in errors.items()})
     tab.loc["basket size (median, mean)"] = [f"{sizes[n][0]:.0f}, {sizes[n][1]:.1f}" for n in tab.columns]

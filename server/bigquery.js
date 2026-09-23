@@ -386,7 +386,7 @@ const spendSql = () =>
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
-  "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
+  "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts", "units_winner_drafts_lapsed", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
 const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
 
 const ordersSql = () =>
@@ -394,13 +394,23 @@ const ordersSql = () =>
   "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
   "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room,\n" +
   "    shopify_product_variant_price, shopify_order_created_date_CET AS order_date, DATE(shopify_draft_order_created_at) AS draft_date,\n" +
+  "    TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), shopify_draft_order_created_at, HOUR) AS draft_age_hours,\n" +
   "    COALESCE(shopify_order_facilitator, '') AS facilitator,\n" +
   "    REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$') AS draw_sku,\n" +
-  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AS paid\n" +
+  // refund_id is carried on every line of an order that has a refund, so it
+  // cannot say which line came back: a partly refunded order (nearly always
+  // a frame or the shipping refunded, the piece kept) stays paid, and only an
+  // order refunded in full is a refund
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AS paid,\n" +
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') = 'refunded' AS refunded\n" +
   `  FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
   "  WHERE is_test_order = 0 AND shopify_product_type = 'Product'\n" +
   "    AND simple_release_name IS NOT NULL AND simple_release_name != '' AND product_title IS NOT NULL AND product_title != ''\n" +
-  "    AND (DATE(launch_date) >= @since OR shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)),\n" +
+  "    AND (DATE(launch_date) >= @since OR shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)\n" +
+  // the table holds some order lines twice (a copy of the same line id, or
+  // one row per refund on the order): one row per line id, or every unit of
+  // those lines is counted twice
+  "  QUALIFY order_lineitem_id IS NULL OR ROW_NUMBER() OVER (PARTITION BY order_source_type, order_lineitem_id ORDER BY refund_processed_at DESC) = 1),\n" +
   // the app that pre-authorises a draw entry writes its drafts under one
   // facilitator account: any account whose drafts are nearly all on the DRAW
   // SKU is the app, and every draft it writes (some land on the base SKU) is
@@ -408,41 +418,54 @@ const ordersSql = () =>
   "app_facilitators AS (\n" +
   "  SELECT facilitator FROM lines WHERE order_source_type = 'Draft' AND facilitator != ''\n" +
   "  GROUP BY facilitator HAVING COUNT(*) >= 100 AND COUNTIF(draw_sku) >= 0.9 * COUNT(*)),\n" +
-  // a collector with a live entry on the release (open, or won and not yet
-  // paid) is already on the card as that entry, and a draft an advisor raises
-  // for them - an early claim, a winner's invoice - is the same unit: joined
-  // here through the collector table's two id columns, counted apart
-  "live_entrants AS (\n" +
-  "  SELECT e.simple_release_name AS release, c.shopify_customer_id AS customer_id\n" +
+  // a collector still in a draw (eligible, not won, not bought) is on the
+  // card as that entry, so a draft an advisor raises for them - an early
+  // claim - is the same unit and is counted apart. A winner who has not paid
+  // is not counted as an entry at all: the draft an advisor has out for them
+  // is their claim and counts as a draft, and without one they are nowhere
+  // until they pay. Both sets are joined through the collector table's two
+  // id columns.
+  "entries AS (\n" +
+  "  SELECT e.simple_release_name AS release, c.shopify_customer_id AS customer_id, e.bought, e.eligible, e.won\n" +
   "  FROM (SELECT simple_release_name, aa_account_id, draw_id, MAX(IF(draw_with_purchase = 1, 1, 0)) AS bought,\n" +
   "               MAX(IF(draw_entry_eligible, 1, 0)) AS eligible, MAX(IF(winner, 1, 0)) AS won\n" +
   `        FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
   "        WHERE event_name = 'draw entry intent' AND aa_account_id IS NOT NULL AND draw_id IS NOT NULL AND event_date >= @since\n" +
   "        GROUP BY 1, 2, 3) e\n" +
-  `  JOIN \`${PROJECT}.${DATASET}.${COLLECTORS_TABLE}\` c ON c.aa_account_id = e.aa_account_id AND c.shopify_customer_id IS NOT NULL\n` +
-  "  WHERE e.bought = 0 AND (e.eligible = 1 OR e.won = 1)\n" +
-  "  GROUP BY 1, 2),\n" +
+  `  JOIN \`${PROJECT}.${DATASET}.${COLLECTORS_TABLE}\` c ON c.aa_account_id = e.aa_account_id AND c.shopify_customer_id IS NOT NULL),\n` +
+  "open_entrants AS (SELECT DISTINCT release, customer_id FROM entries WHERE bought = 0 AND eligible = 1 AND won = 0),\n" +
+  "unpaid_winners AS (SELECT DISTINCT release, customer_id FROM entries WHERE bought = 0 AND won = 1),\n" +
   // the app's pre-authorisation is any draft its facilitator account wrote,
   // and before that account existed (September 2025) a draft with no
   // facilitator on the DRAW SKU; everything else a person raised
   "typed AS (\n" +
   "  SELECT l.*,\n" +
   "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AS entry_draft,\n" +
-  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND w.customer_id IS NOT NULL AS entrant_draft,\n" +
-  "    l.cancelled_order = 0 AND ((l.order_source_type = 'Draft' AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND w.customer_id IS NULL)\n" +
+  // a winner's draft (the order an advisor sends after a failed payment)
+  // counts as a draft for 72 hours; unpaid after that it lapses and is out
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NOT NULL\n" +
+  "      AND NOT (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72) AS winner_draft,\n" +
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NOT NULL\n" +
+  "      AND (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72) AS winner_draft_lapsed,\n" +
+  "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NULL AND oe.customer_id IS NOT NULL AS entrant_draft,\n" +
+  "    l.cancelled_order = 0 AND ((l.order_source_type = 'Draft' AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku))\n" +
+  "        AND ((uw.customer_id IS NOT NULL AND NOT (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72)) OR (uw.customer_id IS NULL AND oe.customer_id IS NULL)))\n" +
   "      OR (l.order_source_type = 'Order' AND l.order_financial_status = 'pending')) AS awaiting\n" +
   "  FROM lines l LEFT JOIN app_facilitators a ON a.facilitator = l.facilitator\n" +
-  "  LEFT JOIN live_entrants w ON w.release = l.release AND w.customer_id = l.customer_id),\n" +
+  "  LEFT JOIN open_entrants oe ON oe.release = l.release AND oe.customer_id = l.customer_id\n" +
+  "  LEFT JOIN unpaid_winners uw ON uw.release = l.release AND uw.customer_id = l.customer_id),\n" +
   "paid_customers AS (SELECT DISTINCT release, customer_id FROM typed WHERE paid AND customer_id IS NOT NULL)\n" +
   "SELECT l.release, ANY_VALUE(l.release_name) AS campaign_code, l.product_title,\n" +
   "  STRING_AGG(DISTINCT CAST(l.shopify_product_id AS STRING), '|') AS product_ids,\n" +
   "  STRING_AGG(DISTINCT l.sku, '|') AS skus,\n" +
   "  SUM(IF(l.paid, l.quantity, 0)) AS units_paid,\n" +
-  "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.order_financial_status = 'refunded', l.quantity, 0)) AS units_refunded,\n" +
+  "  SUM(IF(l.refunded, l.quantity, 0)) AS units_refunded,\n" +
   "  SUM(IF(l.awaiting, l.quantity, 0)) AS units_draft_pending,\n" +
   "  COUNT(DISTINCT IF(l.awaiting AND p.customer_id IS NULL, COALESCE(CAST(l.customer_id AS STRING), CONCAT('line', CAST(l.order_lineitem_id AS STRING))), NULL)) AS draft_customers,\n" +
   "  SUM(IF(l.entrant_draft, l.quantity, 0)) AS units_entrant_drafts,\n" +
   "  SUM(IF(l.entry_draft, l.quantity, 0)) AS units_entry_drafts,\n" +
+  "  SUM(IF(l.winner_draft, l.quantity, 0)) AS units_winner_drafts,\n" +
+  "  SUM(IF(l.winner_draft_lapsed, l.quantity, 0)) AS units_winner_drafts_lapsed,\n" +
   "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.order_originated_from_drafts = 1, l.quantity, 0)) AS units_from_drafts,\n" +
   "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.is_private_room = 1, l.quantity, 0)) AS units_private_room,\n" +
   "  APPROX_QUANTILES(IF(l.shopify_product_variant_price > 0, CAST(l.shopify_product_variant_price AS FLOAT64), NULL), 2)[OFFSET(1)] AS list_price_eur,\n" +

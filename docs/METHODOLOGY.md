@@ -45,16 +45,22 @@ split across the products by edition size, and drafts are not drawn.
 per product, and a collector can enter several draws while wanting fewer pieces
 than they entered for: someone who enters four products with a maximum quantity
 of two is one conversion on two of them, not four. The allocator resolves that
-at close by awarding the least-demanded of their products, so the prediction
-counts the same way before close - each such entrant is counted on their
-maximum quantity of products, on whichever of the products they entered have
-the most room left, one unit at a time. Entrants who have already won are
-counted on what they won. The card says how many entrants that moved and where
-they went.
+at close for revenue, awarding the priciest of their products with a unit
+left, so the prediction counts the same way before close - each such entrant
+is counted on their maximum quantity of products, placed one unit at a time
+on the priciest of the products they entered that still has room, then on
+whichever has the most room left. Winners who have not paid are not counted:
+the order an advisor sends them after a failed payment is in the drafts for
+72 hours, and unpaid after that it is out, as is a winner with no order at
+all. The card says how many entrants moved and where they went.
 
 The 0.8 is the entry → order rate (80% of eligible entries historically become
-orders) and can be set per release on the Target setting tab, alongside each
-product's name and edition size. Sales the draw cannot name a product for
+orders). An entry made as a PRE-ORDER converts higher, at 0.95: the card is
+already authorised, so it is charged at the draw rather than invoiced
+afterwards. Both rates can be set per release on the Target setting tab,
+alongside each product's name and edition size, and a product can set its own
+pre-order rate where its draw has already been run and those cards have
+already been charged. Sales the draw cannot name a product for
 (private room, pre-orders) are shown at release level rather than guessed onto
 a product.
 
@@ -67,6 +73,7 @@ projections immediately - no data rebuild needed.
 | Input | What it does |
 | --- | --- |
 | Edition size, unit price | Sellout target and launch value (size × price) |
+| Total edition (optional) | The whole edition when the target is only part of it (Warhol: a 2,440 target on 6,100). The hero cap, the room and the sell-through percentages read against it; the targets stay on the target |
 | Private room opens / announce / draw close | The campaign clock every curve runs on |
 | Artist profit, AA Group profit, profit share | Per-unit economics feeding paid ROI |
 | Paid budget share | Who funds the ads. Default: 50/50, or 100% AA on commission / rev-share deals; overridable per release (Glenn Ligon = 100% AA) |
@@ -79,7 +86,8 @@ projections immediately - no data rebuild needed.
 | Channel quality grid (N/A / Low / Medium / High) | Per-channel quartile picks; N/A removes a channel |
 | Meta campaign | Which ad campaign the paid actuals are read from |
 | Products | One row per draw the event feed found: the product's name and its edition size (draws given the same name are one product) |
-| Entry → order rate | What share of entries in hand become orders on the sell-through card; empty means the panel's 80% |
+| Entry → order rate | What share of plain entries in hand become orders on the sell-through card; empty means the panel's 80% |
+| Pre-order → order rate | What share of pre-order entries become orders, their card being already authorised; empty means the panel's 95%. A product can override it in the products table |
 
 ## 3. Benchmarks: everything is a quartile
 

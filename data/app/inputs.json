@@ -150,6 +150,7 @@
   },
   "email_session_to_purchase": 0.01072708223,
   "eligible_entry_to_order": 0.8,
+  "preorder_entry_to_order": 0.95,
   "target_buffer": 0.75,
   "cannibalisation": 0.2,
   "paid_drop_off": 0.2,
@@ -425,6 +426,7 @@
    "announce_date": "2026-09-03",
    "launch_end": "2026-09-30",
    "edition_size": 2440,
+   "edition_total": 6100,
    "unit_price": 1000,
    "artist_profit": 1235875.0,
    "aa_group_profit": 1973248.0,
@@ -439,7 +441,15 @@
     "Referral Artist": "Low",
     "Referral Other": "Medium"
    },
-   "paid_share_override": 0.66
+   "paid_share_override": 0.66,
+   "products": [
+    {
+     "key": "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8",
+     "name": "",
+     "edition": null,
+     "preorderRate": 0.8
+    }
+   ]
   }
  },
  "discovered": {
@@ -4695,23 +4705,33 @@
  "meta_campaigns": [
   {
    "name": "AndyWarhol_TL_26 \u00b7 Enter draw",
-   "spend": 84947.34,
-   "last": "2026-09-18"
+   "spend": 158898.99,
+   "last": "2026-09-21"
   },
   {
    "name": "SalvadorDali_LE_26 \u00b7 Enter draw",
    "spend": 76156.15,
-   "last": "2026-09-18"
+   "last": "2026-09-21"
   },
   {
    "name": "RobertLongo_LE_26 \u00b7 Enter draw",
-   "spend": 12171.69,
-   "last": "2026-09-18"
+   "spend": 17571.53,
+   "last": "2026-09-21"
   },
   {
    "name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
-   "spend": 7875.92,
-   "last": "2026-09-18"
+   "spend": 12530.76,
+   "last": "2026-09-21"
+  },
+  {
+   "name": "BisaButler_TL_26 \u00b7 Sign-ups",
+   "spend": 11322.75,
+   "last": "2026-09-21"
+  },
+  {
+   "name": "GlennLigon_LE_26 \u00b7 Enter draw",
+   "spend": 4086.95,
+   "last": "2026-09-21"
   },
   {
    "name": "Abdulnasser_LE_26 \u00b7 Enter draw",
@@ -4724,18 +4744,8 @@
    "last": "2026-09-18"
   },
   {
-   "name": "GlennLigon_LE_26 \u00b7 Enter draw",
-   "spend": 4086.95,
-   "last": "2026-09-18"
-  },
-  {
    "name": "Parra_LE_26 \u00b7 Enter draw",
    "spend": 3272.64,
-   "last": "2026-09-18"
-  },
-  {
-   "name": "BisaButler_TL_26 \u00b7 Sign-ups",
-   "spend": 2813.28,
    "last": "2026-09-18"
   },
   {

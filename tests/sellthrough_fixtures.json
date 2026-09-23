@@ -115,7 +115,7 @@
       "_why": "A: 150 fixed + 5 uncapped; B and C are topped up evenly by the 120 flexible units (60 entrants x 1, 30 x 2) before A, which is fuller, gets any"
     },
     {
-      "name": "unpaid wins are pinned, paid wins are sold, appetite shrinks by pieces bought",
+      "name": "unpaid wins spend the appetite but count no units, paid wins are sold, appetite shrinks by pieces bought",
       "rate": 0.8,
       "edition": 100,
       "soldTotal": 30,
@@ -189,7 +189,7 @@
       ],
       "expect": {
         "allocated": [
-          10,
+          0,
           16
         ],
         "unattributedSold": 6,
@@ -201,7 +201,8 @@
           27,
           43
         ]
-      }
+      },
+      "_why": "the 10 unpaid wins on A spend their appetite but count nothing; A fills only through sales, so all 12 flexible units go to B, the emptier product"
     },
     {
       "name": "no editions: ranked on units, no room, no shares",
@@ -412,6 +413,159 @@
         ]
       },
       "_why": "A is nearly full once its 25 drafts are counted (45 of 50), so the 6 flexible entrants go to B; A's 10 entries show as the 5 units of room it has left"
+    },
+    {
+      "name": "flexible entrants go to the priciest product with room, then by fill",
+      "rate": 0.8,
+      "edition": 410,
+      "soldTotal": 0,
+      "futureUnits": 0,
+      "products": [
+        {
+          "key": "A",
+          "name": "A",
+          "edition": 10,
+          "listPrice": 2500,
+          "draws": [
+            "dA"
+          ],
+          "sold": 0
+        },
+        {
+          "key": "B",
+          "name": "B",
+          "edition": 200,
+          "listPrice": 750,
+          "draws": [
+            "dB"
+          ],
+          "sold": 0
+        },
+        {
+          "key": "C",
+          "name": "C",
+          "edition": 200,
+          "listPrice": 750,
+          "draws": [
+            "dC"
+          ],
+          "sold": 0
+        }
+      ],
+      "patterns": [
+        {
+          "open": [
+            "dA",
+            "dB",
+            "dC"
+          ],
+          "won": [],
+          "sold": [],
+          "bought": 0,
+          "max": 1,
+          "n": 20
+        },
+        {
+          "open": [
+            "dB",
+            "dC"
+          ],
+          "won": [],
+          "sold": [],
+          "bought": 0,
+          "max": 1,
+          "n": 30
+        }
+      ],
+      "expect": {
+        "allocated": [
+          12,
+          19,
+          19
+        ],
+        "flexibleEntrants": 50,
+        "surplusEntries": 70
+      },
+      "_why": "A is the priciest and takes flexible units while one more at 80% still fits its edition of 10 (12 units = 9.6); the other 8 of its entrants and the 30 B/C entrants then split B and C evenly by fill"
+    },
+    {
+      "name": "pre-order entries convert at their own rate, a product can set its own",
+      "rate": 0.8,
+      "preorderRate": 0.95,
+      "edition": 200,
+      "soldTotal": 0,
+      "futureUnits": 0,
+      "products": [
+        {
+          "key": "A",
+          "name": "A",
+          "edition": 100,
+          "draws": [
+            "dA"
+          ],
+          "sold": 0
+        },
+        {
+          "key": "B",
+          "name": "B",
+          "edition": 100,
+          "draws": [
+            "dB"
+          ],
+          "sold": 0,
+          "preorderRate": 0.5
+        }
+      ],
+      "patterns": [
+        {
+          "open": [
+            "dA"
+          ],
+          "won": [],
+          "sold": [],
+          "pre": [
+            "dA"
+          ],
+          "bought": 0,
+          "max": 1,
+          "n": 10
+        },
+        {
+          "open": [
+            "dB"
+          ],
+          "won": [],
+          "sold": [],
+          "pre": [
+            "dB"
+          ],
+          "bought": 0,
+          "max": 1,
+          "n": 10
+        },
+        {
+          "open": [
+            "dA"
+          ],
+          "won": [],
+          "sold": [],
+          "pre": [],
+          "bought": 0,
+          "max": 1,
+          "n": 5
+        }
+      ],
+      "expect": {
+        "allocated": [
+          15,
+          10
+        ],
+        "shown": [
+          13.5,
+          5.0
+        ]
+      },
+      "_why": "A: 10 pre-orders at 0.95 and 5 plain at 0.8 = 13.5; B's own 0.5 beats the release's 0.95, so its 10 pre-orders are 5"
     }
   ]
 }

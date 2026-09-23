@@ -202,7 +202,9 @@ function defaultsFor(id, disc) {
     id, release_name: disc.release_name, campaign_code: disc.campaign_code || "",
     campaign_name: disc.campaign_name || null, marketing_lead: null, budget_file: null,
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
-    edition_size: null, unit_price: null, artist_profit: null, aa_group_profit: null,
+    edition_size: null, edition_total: null, unit_price: null, artist_profit: null, aa_group_profit: null,
+    preorder_conversion_rate: null,
+    prefer_recent: true,
     artist_profit_share: 0.5, framing_available: true, paid_share_override: null,
     paid_channel_size: "Medium", reference_point: "Medium", paid_conv_quality: "Medium", cpp_pick: "Median",
     channel_quality_overrides: {},
@@ -263,6 +265,19 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       } else next[f] = f === "edition_size" ? Math.round(v) : v;
     }
   }
+  // the whole edition when the target (edition_size) is only part of it;
+  // empty means the target is the edition
+  if (body.edition_total !== undefined) {
+    if (body.edition_total === null || body.edition_total === "") next.edition_total = null;
+    else {
+      const v = Number(body.edition_total);
+      if (!Number.isFinite(v) || v < 1) errors.push("total edition must be at least 1, or empty when the target is the whole edition");
+      else next.edition_total = Math.round(v);
+    }
+  }
+  if (next.edition_total !== null && next.edition_total !== undefined && Number(next.edition_total) < Number(next.edition_size)) {
+    errors.push("total edition cannot be smaller than the target");
+  }
   if (body.artist_profit_share !== undefined) {
     const v = Number(body.artist_profit_share);
     if (!Number.isFinite(v) || v < 0 || v > 1) errors.push("artist_profit_share must be 0..1");
@@ -312,6 +327,12 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     if (!check.ok) errors.push(check.error);
     else next.benchmark_basket = check.normalised;
   }
+  if (body.prefer_recent !== undefined) {
+    // the basket's recency preference: launches closed in the last 18 months
+    // rank first among the comparable ones (etl/baskets.py similar_members)
+    if (typeof body.prefer_recent !== "boolean") errors.push("prefer_recent must be true or false");
+    else next.prefer_recent = body.prefer_recent;
+  }
   if (body.stretch_mode !== undefined) {
     if (!STRETCH_MODES.includes(body.stretch_mode)) errors.push(`stretch_mode must be one of ${STRETCH_MODES.join("/")}`);
     else next.stretch_mode = body.stretch_mode;
@@ -335,13 +356,30 @@ app.post("/api/inputs/:id", route(async (req, res) => {
           if (!Number.isFinite(v) || v < 0) errors.push(`the edition of ${name || key || "a product"} must be a non-negative number`);
           else edition = Math.round(v);
         }
-        list.push({ key, name, edition });
+        // a product can convert its pre-orders at its own rate, where its
+        // draw has already been run; empty means the release's
+        let preorderRate = null;
+        if (p.preorderRate !== undefined && p.preorderRate !== null && p.preorderRate !== "") {
+          const v = Number(p.preorderRate);
+          if (!Number.isFinite(v) || v <= 0 || v > 1) errors.push(`the pre-order rate of ${name || key || "a product"} must be a fraction between 0 and 1, or empty`);
+          else preorderRate = v;
+        }
+        list.push({ key, name, edition, preorderRate });
       }
       next.products = list;
     }
   }
   // the entry -> order rate the sell-through prediction converts entries in
   // hand at; empty means the panel's 0.8
+  // the rate a pre-order entry converts at; empty means the panel's 0.95
+  if (body.preorder_conversion_rate !== undefined) {
+    if (body.preorder_conversion_rate === null || body.preorder_conversion_rate === "") next.preorder_conversion_rate = null;
+    else {
+      const v = Number(body.preorder_conversion_rate);
+      if (!Number.isFinite(v) || v <= 0 || v > 1) errors.push("preorder_conversion_rate must be a fraction between 0 and 1, or empty");
+      else next.preorder_conversion_rate = v;
+    }
+  }
   if (body.entry_conversion_rate !== undefined) {
     if (body.entry_conversion_rate === null || body.entry_conversion_rate === "") next.entry_conversion_rate = null;
     else {
@@ -459,7 +497,15 @@ app.post("/api/inputs/:id", route(async (req, res) => {
  * baskets are the panel's own history, and the only write here saves a basket
  * for everyone, which is the same posture as saving a release's targets. */
 app.get("/api/baskets", route(async (req, res) => {
-  res.json(await baskets.readyBaskets(req.query.release));
+  // ?recent=0|1 previews the suggestion with the recency preference off or on;
+  // absent, the release's saved prefer_recent (on by default) applies
+  const opts = {};
+  if (req.query.recent === "0" || req.query.recent === "1") opts.preferRecent = req.query.recent === "1";
+  // ?units=&price= preview the basket for a target and price not yet saved
+  const units = Number(req.query.units), price = Number(req.query.price);
+  if (Number.isFinite(units) && units > 0 && units < 1e7) opts.units = Math.round(units);
+  if (Number.isFinite(price) && price > 0 && price < 1e7) opts.price = Math.round(price);
+  res.json(await baskets.readyBaskets(req.query.release, opts));
 }));
 
 app.get("/api/baskets/candidates", route(async (_req, res) => {
@@ -626,23 +672,55 @@ app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
   if (!req.body || req.body.channel === undefined) return res.status(400).json({ error: "channel required (empty clears it)" });
   const s = auth.sessionFrom(req);
   try {
-    res.json({ slack: slack.setChannel(id, req.body.channel, s && s.email) });
+    const state = slack.setChannel(id, req.body.channel, s && s.email);
+    res.json({ slack: state, warning: slack.stateWarning() });
   } catch (e) {
     res.status(400).json({ error: String(e.message || e) });
   }
 }));
-app.post("/api/releases/:id/slack", route(async (req, res) => {
+/* The card to Slack. The body is either nothing (the figures alone) or the
+ * card drawn as a PNG by the browser that is showing it - the one place with
+ * a canvas and the page's own typeface. Slack can only attach a file to a
+ * channel it knows by ID, so the first post to a channel is the figures
+ * (which returns the ID, kept for next time) and then the picture, and every
+ * post after that is one: the picture with the figures as its comment. A
+ * picture that will not upload never costs the figures. */
+app.post("/api/releases/:id/slack", express.raw({ type: "image/png", limit: "8mb" }), route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   const snap = readSnapshot(id);
   if (!snap) return res.status(404).json({ error: "unknown release" });
   const st = slack.stateFor(id);
   if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
+  const png = Buffer.isBuffer(req.body) && req.body.length ? req.body : null;
   const text = slack.composeSellThrough(snap, { link: PUBLIC_URL ? `${PUBLIC_URL}/?release=${id}` : null });
-  if (req.body && req.body.dryRun) return res.json({ channel: st.channel, text });
+  if (!png && req.body && req.body.dryRun) return res.json({ channel: st.channel, text });
+  const title = `${snap.releaseName || id} - sell-through`;
+  const filename = `sell-through-${id}-${snap.asOf || new Date().toISOString().slice(0, 10)}.png`;
+  const why = (e) => String((e && e.message) || e).replace(/\s+/g, " ").slice(0, 160);
   try {
-    const out = await slack.postMessage(st.channel, text);
+    let warning = null;
+    const known = png ? slack.channelIdFor(id) : null;
+    if (known) {
+      // one post: the picture, with the figures written above it
+      try {
+        await slack.uploadImage({ channelId: known, png, filename, title, comment: text });
+      } catch (e) {
+        await slack.postMessage(st.channel, text);
+        warning = `the picture did not go up (${why(e)}), so the figures went as text`;
+      }
+    } else {
+      const out = await slack.postMessage(st.channel, text);
+      if (out.channel) slack.rememberChannelId(id, out.channel);
+      if (png) {
+        try {
+          await slack.uploadImage({ channelId: out.channel, png, filename, title });
+        } catch (e) {
+          warning = `the picture did not go up (${why(e)})`;
+        }
+      }
+    }
     const s = auth.sessionFrom(req);
-    res.json({ ok: true, channel: st.channel, ts: out.ts, slack: slack.recordPost(id, s && s.email) });
+    res.json({ ok: true, channel: st.channel, warning, slack: slack.recordPost(id, s && s.email) });
   } catch (e) {
     res.status(502).json({ error: String(e.message || e) });
   }

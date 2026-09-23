@@ -10,17 +10,18 @@
  * lines, since a pace is a line: the target's pace is a solid line, the
  * benchmark's pace (daily[].bm, summed across groups for "all" exactly as the
  * plan is, so the two are always built the same way) is a dotted one, and the
- * actual is the orange line in front. No area under any of them: a fill said
+ * actual is the blue line in front. No area under any of them: a fill said
  * nothing the lines did not, and hid the actual where it ran below the target.
  * The second reference is one more line, not a second system.
  *
- * The two horizons want two pictures. Today the question is "where should we
- * be by now", a reading taken at a single x: both references become short ticks
- * on the today line, and the curves ahead of today fade, because they have not
- * happened yet. At close the question is "where does this land", a pair of
- * levels: both run across the chart and are named together at the left. */
+ * One picture, whichever horizon the page is on. The chart already answers both
+ * questions at once: the readings on the today line say where the release should
+ * be by now, and the dashed projection running on to the last day, with its
+ * percentage of target at the end, says where it lands. Redrawing the references
+ * as levels for the second question only took the first one away, so the card
+ * no longer follows the page toggle and carries no horizon badge. */
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtSigned, refWords } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, fmtSigned } from "../ui.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
 const LABEL_TODAY_PX = 38; // rendered width of "today" at 12px
@@ -146,7 +147,7 @@ function pathOf(pts, get, from, to, x, y) {
 /* The same polyline closed back along the baseline, so the reference can be a
  * filled area. Drawn from the first point rather than from x=0 because a series
  * that starts a day in should not be given a day it did not have. */
-export default function Trajectory({ snap, horizon = "today" }) {
+export default function Trajectory({ snap }) {
   const [sel, setSel] = useState("all");
   const [hover, setHover] = useState(null);   // {i, frac}
   // the plot's real height, so label spacing can be set in pixels rather than
@@ -196,8 +197,6 @@ export default function Trajectory({ snap, horizon = "today" }) {
 
   const N = Math.max(1, s.pts.length - 1);
   const hasBm = !!snap.benchmark && s.bm !== null && s.bm > 0;
-  const close = horizon === "close";
-  const words = refWords(close ? "close" : "today");
   // the target's pace and the benchmark's, each a line
   const has = (v) => v !== null && v !== undefined;
   const planAt = (p) => p.plan;
@@ -212,7 +211,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
   const nowVal = s.pts[todayIdx]?.actual ?? s.now;
 
   // paths, each in a past and a future half so the half that has not happened
-  // yet can drop back today; at close the full-width forms are used
+  // yet can drop back today
   const seg = (fn, from, to) => fn(s.pts, from, to, x, y);
   const targetLine = (pts, from, to, x, y) => pathOf(pts, planAt, from, to, x, y);
   const bmLine = (pts, from, to, x, y) => (hasBm ? pathOf(pts, bmAt, from, to, x, y) : "");
@@ -253,8 +252,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
   const planToday = s.pts[todayIdx]?.plan ?? s.exp;
   const bmTodayPt = s.pts[todayIdx]?.bm;
   const bmToday = hasBm ? (bmTodayPt !== null && bmTodayPt !== undefined ? bmTodayPt : s.bmExp) : null;
-  const showToday = targeted && !close;
-  const showClose = targeted && close;
+  const showToday = targeted;
 
   const projPct = targeted && s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
   // axis: % of target when there is one, secured units when there is not
@@ -432,35 +430,39 @@ export default function Trajectory({ snap, horizon = "today" }) {
                 );
               })}
               {projPath && (
-                <path d={projPath} fill="none" stroke={C.orangeLight} strokeWidth="2.4"
+                <path d={projPath} fill="none" stroke={C.blueLight} strokeWidth="2.4"
                   strokeDasharray="6 5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               )}
               {actPath && (
-                <path d={actPath} fill="none" stroke={C.orange} strokeWidth="3"
+                <path d={actPath} fill="none" stroke={C.blue} strokeWidth="3"
                   strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-              )}
-              {/* at close both references are levels, drawn right across the
-                  chart: the target solid, the benchmark dotted, as everywhere */}
-              {showClose && hasBm && (
-                <line x1="0" y1={y(s.bm).toFixed(1)} x2={X1} y2={y(s.bm).toFixed(1)}
-                  stroke={C.refLine} strokeWidth="2" strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
-              )}
-              {showClose && s.target > 0 && (
-                <line x1="0" y1={y(s.target).toFixed(1)} x2={X1} y2={y(s.target).toFixed(1)}
-                  stroke={C.refLine} strokeWidth="2" vectorEffect="non-scaling-stroke" />
               )}
             </svg>
 
-            {/* hover: guide line + marker + light popup */}
+            {/* hover: guide line + a marker on every line the guide crosses +
+                light popup. The popup reads three figures off one day, so each
+                one is marked where it was read: the actual (or, ahead of today,
+                the projection) in its blue, the target as a solid reference
+                dot and the benchmark as a hollow one, the same solid-and-outline
+                grammar the references wear everywhere else. */}
             {hover && s.pts[hover.i] && (() => {
               const hp = s.pts[hover.i];
+              const ahead = has(hp.actual) ? false : has(hp.proj);
               const val = hp.actual ?? hp.proj ?? hp.plan;
               const flip = hover.i / N > 0.6;
+              const at = `${(hover.i / N) * 100}%`;
+              const mark = (v, extra) => ({
+                position: "absolute", left: at, top: pctTop(y(v)),
+                width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%",
+                boxShadow: "0 0 0 2px #fff", pointerEvents: "none", boxSizing: "border-box", ...extra,
+              });
               return (
                 <>
-                  <div style={{ position: "absolute", left: `${(hover.i / N) * 100}%`, top: 0, bottom: 0, width: 1, background: C.dotted ?? "#ddd9cf", pointerEvents: "none" }} />
-                  {val !== null && val !== undefined && (
-                    <div style={{ position: "absolute", left: `${(hover.i / N) * 100}%`, top: pctTop(y(val)), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: C.orange, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
+                  <div style={{ position: "absolute", left: at, top: 0, bottom: 0, width: 1, background: C.dotted ?? "#ddd9cf", pointerEvents: "none" }} />
+                  {targeted && has(hp.plan) && <div style={mark(hp.plan, { background: C.refLine })} />}
+                  {hasBm && has(hp.bm) && <div style={mark(hp.bm, { background: "#fff", border: `2px solid ${C.refLine}` })} />}
+                  {has(val) && (
+                    <div style={mark(val, { background: ahead ? C.blueLight : C.blue })} />
                   )}
                   <div className="chart-tip" style={{ left: `${(hover.i / N) * 100}%`, top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
                     <div className="t-head">Day {hover.i}</div>
@@ -486,11 +488,11 @@ export default function Trajectory({ snap, horizon = "today" }) {
               title={nowTip}
               style={{
                 position: "absolute", left: `${(todayFrac * 100).toFixed(2)}%`, top: pctTop(y(nowVal)),
-                width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: "50%", background: C.orange,
+                width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: "50%", background: C.blue,
               }}
             />
 
-            {/* Today: the three numbers are one reading taken at one x, so they are
+            {/* The three numbers are one reading taken at one x, so they are
                 stacked on the today line rather than spread across the chart. */}
             {showToday && (
               <>
@@ -514,7 +516,7 @@ export default function Trajectory({ snap, horizon = "today" }) {
                 style={{
                   position: "absolute", left: "100%", top: pctTop(y(s.proj)),
                   width: 10, height: 10, margin: "-5px 0 0 -5px", borderRadius: "50%",
-                  background: "#fff", border: `2.2px solid ${C.orangeLight}`, boxSizing: "border-box",
+                  background: "#fff", border: `2.2px solid ${C.blueLight}`, boxSizing: "border-box",
                 }}
               />
             )}
@@ -535,27 +537,6 @@ export default function Trajectory({ snap, horizon = "today" }) {
             <div style={{ ...axisLabel, top: pctTop(y(axisTop)) }}>{axisLabelTop}</div>
             <div style={{ ...axisLabel, top: pctTop(y(axisTop / 2)) }}>{axisLabelMid}</div>
             <div style={{ ...axisLabel, top: "100%" }}>0</div>
-
-            {/* At close the reference is one level, named where it sits, with the
-                other one alongside it as a plain figure rather than a second
-                line to read the release against. */}
-            {showClose && s.target > 0 && (
-              <div
-                style={{
-                  position: "absolute", left: 8, top: pctTop(y(Math.max(s.target, hasBm ? s.bm : 0))),
-                  transform: "translateY(-145%)",
-                  paddingRight: 6, background: "#fff", fontSize: 12, fontWeight: 500,
-                  color: C.ink, whiteSpace: "nowrap",
-                }}
-              >
-                target {fmt(s.target)}
-                {hasBm && (
-                  <span style={{ fontWeight: 400, color: C.muted }}>
-                    {"  ·  benchmark " + fmt(s.bm)}
-                  </span>
-                )}
-              </div>
-            )}
 
             {/* x axis */}
             {showDay1Label && <div style={{ ...xLabel, left: 0 }}>day 1</div>}

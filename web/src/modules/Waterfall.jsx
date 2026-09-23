@@ -17,7 +17,7 @@
  * re-derived here; on a complete release the projection equals the actual
  * close. */
 import React, { useState } from "react";
-import { Card, GROUP_DOTS, C, QBadge, fmt, fmtSigned, useTip, refWords, LevelWaterfall, waterfallOpening, waterfallScale } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, BADGE_WORDS, C, QBadge, fmt, fmtSigned, useTip, LevelWaterfall, waterfallOpening, waterfallScale } from "../ui.jsx";
 
 export default function Waterfall({ snap, horizon = "today" }) {
   const tipApi = useTip();
@@ -46,7 +46,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const outcome = (isToday ? view.actual : view.projection) ?? 0;
   const complete = !!snap?.complete;
   const steps = view.steps || [];
-  const words = refWords(isToday ? "today" : "close");
+  const words = BADGE_WORDS;
 
   const bmRaw = view.benchmark;
   // the walk from the benchmark needs the contributors measured against it; an
@@ -67,9 +67,9 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const net = outcome - target;
   const netC = net >= 0 ? C.green : C.red;
   const closeWord = complete ? "Final" : "Projected";
-  const outcomeLabel = isToday ? "Actual today" : "Projection";
+  const outcomeLabel = isToday ? "Actual" : "Projection";
   const netTip = {
-    head: isToday ? "Secured to date" : closeWord + " at close",
+    head: isToday ? "Secured to date" : closeWord,
     rows: [
       { label: outcomeLabel, value: fmt(outcome) },
       { label: words.target, value: fmt(target) },
@@ -119,7 +119,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const rows = [
     ...waterfallOpening({ hasBm, bm: benchmark, target, words, k }),
     ...stepRows,
-    { kind: "level", key: "outcome", label: outcomeLabel, value: outcome, color: C.orange,
+    { kind: "level", key: "outcome", label: outcomeLabel, value: outcome, color: C.blue,
       tip: {
         head: isToday ? "Secured to date" : closeWord + " demand at close",
         rows: [{ label: "Units", value: fmt(outcome) }],
@@ -140,6 +140,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
     <Card
       dot={GROUP_DOTS.outcome}
       title={title}
+      badge={<HorizonBadge horizon={isToday ? "today" : "close"} />}
       right={
         <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
           {seg}
@@ -178,7 +179,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
           {hasBm ? "" : "levers, no comparable basket · "}
           {isToday
             ? "secured units" + (snap?.day ? ", day " + snap.day : "")
-            : "units at close"}
+            : "units"}
         </span>
       </div>
     </Card>

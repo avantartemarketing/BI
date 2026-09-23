@@ -118,10 +118,15 @@ export function LayoutBar({ items, onChange, onSave, onCancel, saving, error, up
 /* items -> the page. `render(key)` gives the card for a key, or null when the
  * card has nothing to show on this release; a null card is left out, or drawn
  * as a ghost while editing so it can still be placed. */
-export function PageLayout({ items, render, editing = false, onChange }) {
+export function PageLayout({ items, render, editing = false, onChange, sizes = null }) {
   const [drag, setDrag] = useState(null);   // index of the item on the move
   const [over, setOver] = useState(null);   // { idx, before }: where it would land
   useEffect(() => { if (!editing) { setDrag(null); setOver(null); } }, [editing]);
+
+  // a card can ask for a different span on this release than the registry's
+  // default; none does today (the sell-through card did, before it fixed
+  // its rows' geometry)
+  const size = (card) => (sizes && sizes[card.key]) || card.size;
 
   const move = (from, to) => {
     // `to` counts positions before the removal; the item lands in front of it
@@ -213,7 +218,7 @@ export function PageLayout({ items, render, editing = false, onChange }) {
             {cards.map((c) => {
               const card = BY_KEY[c.key];
               return (
-                <div key={c.key} className={`slot${card.size ? " " + card.size : ""}${editing ? " edit" : ""}${dropClass(c.idx)}`}
+                <div key={c.key} className={`slot${size(card) ? " " + size(card) : ""}${editing ? " edit" : ""}${dropClass(c.idx)}`}
                   draggable={editing} onDragStart={editing ? dragStart(c.idx) : undefined} onDragEnd={dragEnd}
                   onDragOver={dragOver(c.idx, "x")} onDrop={drop}>
                   {c.node || ghost(card)}
