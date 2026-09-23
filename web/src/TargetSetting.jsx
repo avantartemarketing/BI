@@ -620,7 +620,15 @@ export default function TargetSetting({ snap, onSaved }) {
     <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
 
-        {creating && (
+        {creating && snap.upcoming && (
+          <div style={{ padding: "12px 16px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a", fontSize: 12.5, lineHeight: 1.5 }}>
+            <b>Upcoming launch.</b> Known to Airtable, not yet to the funnel report. The dates{dv.dates_note ? ` (${dv.dates_note})` : ""} and
+            {atProducts.length ? ` the ${atProducts.length} work${atProducts.length === 1 ? "" : "s"} with their editions and prices` : " the works"} below
+            come from Airtable with their source shown. Check them, tick the Meta campaign, set the channels in plan, choose the basket
+            and save: the page then carries the plan, and the funnel's actuals attach to it once the report picks the launch up.
+          </div>
+        )}
+        {creating && !snap.upcoming && (
           <div style={{ padding: "12px 16px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a", fontSize: 12.5, lineHeight: 1.5 }}>
             <b>No targets yet.</b> The page currently shows actuals only.
             {" "}The dates come from the Notion log where it has them, else the funnel export's campaign clock, else Airtable - check them.

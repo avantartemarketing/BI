@@ -28,6 +28,7 @@ import Geo from "./modules/Geo.jsx";
 import DrawAudit from "./modules/DrawAudit.jsx";
 import Waterfall from "./modules/Waterfall.jsx";
 import NoTargets from "./modules/NoTargets.jsx";
+import Upcoming from "./modules/Upcoming.jsx";
 import TargetSetting from "./TargetSetting.jsx";
 import Permissions from "./Permissions.jsx";
 import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
@@ -43,7 +44,7 @@ async function getJSON(url) {
   return r.json();
 }
 
-const STATUS_LABEL = { live: "in flight", closed: "closed", catalogue: "catalogue" };
+const STATUS_LABEL = { live: "in flight", upcoming: "upcoming", closed: "closed", catalogue: "catalogue" };
 
 /* Search across every release the funnel data mentions - artist, title,
  * quarter, campaign code or id - keeping the index's own order (in flight,
@@ -101,7 +102,7 @@ export default function App() {
   };
 
   const groups = useMemo(() => {
-    if (!index) return { live: [], all: [] };
+    if (!index) return { live: [], upcoming: [], all: [] };
     const all = index.releases.map((r) => ({ ...r, status: r.status || (r.complete ? "closed" : "live") }));
     // in flight reads top to bottom by days to launch; a release whose window
     // has not opened yet sits under the ones that have, soonest first
@@ -111,11 +112,13 @@ export default function App() {
       return c.opensIn > 0 ? 1e6 + c.opensIn : c.daysLeft;
     };
     const live = all.filter((r) => r.status === "live").sort((a, b) => order(a) - order(b));
-    return { live, all };
+    // the launches Airtable knows and the funnel does not yet, soonest close first
+    const upcoming = all.filter((r) => r.status === "upcoming").sort((a, b) => String(a.windowEnd || "").localeCompare(String(b.windowEnd || "")));
+    return { live, upcoming, all };
   }, [index]);
   const results = useMemo(() => searchReleases(groups.all, query), [groups, query]);
   const current = groups.all.find((r) => r.id === releaseId);
-  const pinned = current && current.status !== "live" && view === "release" ? current : null;
+  const pinned = current && current.status !== "live" && current.status !== "upcoming" && view === "release" ? current : null;
 
   if (error) return <div style={{ padding: 40 }}>Failed to load: {error}</div>;
   const pick = (id) => {
@@ -132,6 +135,12 @@ export default function App() {
         <div className="section-label split">In flight{groups.live.length > 0 && <small>days left</small>}</div>
         {groups.live.length === 0 && <div className="hint">Nothing in flight</div>}
         {groups.live.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
+        {groups.upcoming.length > 0 && (
+          <>
+            <div className="section-label split" title="Launches Airtable knows and the funnel report does not yet - set their targets before they open">Upcoming<small>days to open / close</small></div>
+            {groups.upcoming.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
+          </>
+        )}
         {pinned && (
           <>
             <div className="section-label">Viewing</div>
@@ -259,13 +268,15 @@ function ReleaseRow({ r, asOf, active, onClick }) {
   if (state) rows.push({ label: "Pace", value: STATE[state].word, color: STATE[state].color });
   rows.push({ label: "Status", value: STATUS_LABEL[status] || status });
   if (r.quarter) rows.push({ label: "Quarter", value: r.quarter });
-  if (!targeted) rows.push({ label: "Targets", value: "not set - actuals only" });
+  if (!targeted) rows.push({ label: "Targets", value: status === "upcoming" ? "not set - opens soon" : "not set - actuals only" });
   if (status === "catalogue" && r.lastSeen) rows.push({ label: "Last traffic", value: r.lastSeen });
   const content = { head: r.releaseName || r.name, rows };
 
   // the second line and the figure on the right
   let when, count = null;
   if (!clock) when = status === "closed" ? "Closed" : "Catalogue";
+  else if (status === "upcoming" && clock.opensIn > 0) { when = `Opens ${fmtDay(clock.announce)}`; count = clock.opensIn; }
+  else if (status === "upcoming") { when = `Closes ${fmtDay(clock.launch)}`; count = Math.max(clock.daysLeft, 0); }
   else if (clock.opensIn > 0) when = `Opens ${fmtDay(clock.announce)}`;
   else if (status === "closed") when = `Closed ${fmtDay(clock.launch)}`;
   else { when = fmtDay(clock.launch); count = Math.max(clock.daysLeft, 0); }
@@ -279,7 +290,7 @@ function ReleaseRow({ r, asOf, active, onClick }) {
         <span className="when">{when}</span>
       </span>
       {count !== null && <span className="left">{count}<small>d</small></span>}
-      {clock && clock.opensIn > 0 && <span className="left none">·</span>}
+      {clock && clock.opensIn > 0 && count === null && <span className="left none">·</span>}
     </button>
   );
 }
@@ -424,6 +435,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   useEffect(() => { setTab("overview"); setHorizon("today"); }, [snap.id]);
   const targeted = snap.targeted !== false;
   const catalogue = !!snap.catalogue;
+  const upcoming = !!snap.upcoming;
   // nothing to compare against without targets, and a catalogue page has no campaign
   const showHorizon = targeted && !catalogue;
 
@@ -471,6 +483,9 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         {catalogue && (
           <span className="chip" title="No campaign dates in the funnel export - showing the last 90 days of traffic">Catalogue · last 90 days</span>
         )}
+        {upcoming && (
+          <span className="chip" title="Known to Airtable; the funnel report has no rows for it yet">Upcoming · from Airtable</span>
+        )}
         {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
         {snap.edition && snap.edition.total > snap.edition.target && (
           <span className="chip" title="The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target">
@@ -489,12 +504,14 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
-        <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>
+        {!upcoming && <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>}
         {tab === "overview" && !editing && (
           <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
         )}
       </nav>
-      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : tab === "audit" ? <DrawAudit snap={snap} /> : (
+      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : tab === "audit" && !upcoming ? <DrawAudit snap={snap} /> : upcoming ? (
+        <div style={{ maxWidth: 560, marginTop: 24 }}><Upcoming snap={snap} onSetup={() => setTab("targets")} /></div>
+      ) : (
         <>
           {editing && (
             <LayoutBar items={draft} onChange={setDraft} saving={saving} error={saveError}

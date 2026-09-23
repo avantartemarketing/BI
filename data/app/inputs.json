@@ -353,12 +353,12 @@
   "glennligon_le_26": {
    "airtable": {
     "match": "artist+window",
-    "note": "titles: Untitled (White on White) / fca",
+    "note": "titles: Untitled (Black on Black) / Untitled (White on White)",
     "products": [
      {
-      "airtable_id": "2583",
-      "name": "Untitled (White on White)",
-      "project_code": "GLENNLIGO-2583",
+      "airtable_id": "2926",
+      "name": "Untitled (Black on Black)",
+      "project_code": "GLENNLIGO-2926",
       "edition": 75,
       "target_sellthrough": null,
       "unit_price": 3000.0,
@@ -372,9 +372,9 @@
       "frame_profit_per_unit": null
      },
      {
-      "airtable_id": "2926",
-      "name": "fca",
-      "project_code": "GLENNLIGO-2926",
+      "airtable_id": "2583",
+      "name": "Untitled (White on White)",
+      "project_code": "GLENNLIGO-2583",
       "edition": 75,
       "target_sellthrough": null,
       "unit_price": 3000.0,
@@ -399,9 +399,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
+    "private_room_open": "2026-08-03",
+    "announce_date": "2026-08-17",
+    "launch_end": "2026-09-17"
    },
    "campaigns": [
     "GlennLigon_LE_26 \u00b7 Enter draw"
@@ -472,9 +472,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
+    "private_room_open": "2026-08-07",
+    "announce_date": "2026-08-21",
+    "launch_end": "2026-09-11"
    },
    "campaigns": [
     "SalvadorDali_LE_26 \u00b7 Enter draw"
@@ -513,9 +513,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
+    "private_room_open": "2026-07-13",
+    "announce_date": "2026-07-27",
+    "launch_end": "2026-08-25"
    },
    "campaigns": [
     "Abdulnasser_LE_26 \u00b7 Enter draw"
@@ -570,9 +570,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
+    "private_room_open": "2026-07-15",
+    "announce_date": "2026-07-29",
+    "launch_end": "2026-08-26"
    },
    "campaigns": [
     "ZengFanzhi_LE_26 \u00b7 Enter draw"
@@ -643,9 +643,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
+    "private_room_open": "2026-07-10",
+    "announce_date": "2026-07-24",
+    "launch_end": "2026-08-18"
    },
    "campaigns": [
     "PietMondrian_LE_26 \u00b7 Enter draw"
@@ -716,9 +716,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
+    "private_room_open": "2026-08-17",
+    "announce_date": "2026-08-31",
+    "launch_end": "2026-09-25"
    },
    "campaigns": [
     "JulianSchnabel_LE_26 \u00b7 Enter draw"
@@ -773,9 +773,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
+    "private_room_open": "2026-07-17",
+    "announce_date": "2026-07-31",
+    "launch_end": "2026-08-21"
    },
    "campaigns": [
     "Parra_LE_26 \u00b7 Enter draw"
@@ -830,9 +830,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
+    "private_room_open": "2026-07-16",
+    "announce_date": "2026-07-30",
+    "launch_end": "2026-08-20"
    },
    "campaigns": [
     "JamesJean_Blossom_26 \u00b7 Enter draw"
@@ -967,9 +967,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
+    "private_room_open": "2026-08-19",
+    "announce_date": "2026-09-02",
+    "launch_end": "2026-09-30"
    },
    "campaigns": [
     "AndyWarhol_TL_26 \u00b7 Enter draw"
@@ -3084,11 +3084,11 @@
   "cai_guo_qiang_multiple_2026_q4": {
    "airtable": {
     "match": "artist+window",
-    "note": "titles: Pegasus (blue) / Pegasus (brown)",
+    "note": "titles: Blue Pegasus / Brown Pegasus",
     "products": [
      {
       "airtable_id": "1832",
-      "name": "Pegasus (blue)",
+      "name": "Blue Pegasus",
       "project_code": "CAIGUO-QI-1832",
       "edition": 100,
       "target_sellthrough": null,
@@ -3104,7 +3104,7 @@
      },
      {
       "airtable_id": "3282",
-      "name": "Pegasus (brown)",
+      "name": "Brown Pegasus",
       "project_code": "CAIGUO-QI-3282",
       "edition": 100,
       "target_sellthrough": null,
@@ -3130,9 +3130,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": "2026-09-11",
-    "announce_date": "2026-09-25",
-    "launch_end": "2026-10-30"
+    "private_room_open": "2026-09-10",
+    "announce_date": "2026-09-24",
+    "launch_end": "2026-10-29"
    },
    "campaigns": []
   },
@@ -15101,7 +15101,7 @@
      }
     ],
     "announce_date": "2026-09-30",
-    "launch_end": "2026-10-28",
+    "launch_end": "2026-10-29",
     "private_room_open": null,
     "marketing_lead": null
    },
@@ -15113,7 +15113,7 @@
    "clock": {
     "private_room_open": "2026-09-16",
     "announce_date": "2026-09-30",
-    "launch_end": "2026-10-29"
+    "launch_end": "2026-10-28"
    },
    "campaigns": []
   },
@@ -17970,6 +17970,234 @@
     ],
     "announce_date": null,
     "launch_end": "2022-07-20",
+    "private_room_open": null,
+    "marketing_lead": null
+   },
+   "notion": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "clock": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "campaigns": []
+  },
+  "david_wojnarowicz_estate_multiple_2026_q4": {
+   "airtable": {
+    "match": "artist+window",
+    "note": "titles: History Keeps Me Awake at Night / Inside This House",
+    "products": [
+     {
+      "airtable_id": "2896",
+      "name": "History Keeps Me Awake at Night",
+      "project_code": "DAVIDWOJN-2896",
+      "edition": 150,
+      "target_sellthrough": null,
+      "unit_price": 600.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": null,
+      "framing_available": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null
+     },
+     {
+      "airtable_id": "3069",
+      "name": "Inside This House",
+      "project_code": "DAVIDWOJN-3069",
+      "edition": 150,
+      "target_sellthrough": null,
+      "unit_price": 600.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": null,
+      "framing_available": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null
+     }
+    ],
+    "announce_date": "2026-09-08",
+    "launch_end": "2026-10-08",
+    "private_room_open": null,
+    "marketing_lead": null
+   },
+   "notion": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "clock": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "campaigns": []
+  },
+  "maurizio_cattelan_multiple_2026_q4": {
+   "airtable": {
+    "match": "artist+window",
+    "note": "titles: Not Afraid of Love / Novecento; not MaurizioNonaOraPlinth26 (36 days off)",
+    "products": [
+     {
+      "airtable_id": "2672",
+      "name": "Not Afraid of Love",
+      "project_code": "MAURIZIOC-2672",
+      "edition": 1000,
+      "target_sellthrough": null,
+      "unit_price": 1500.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": null,
+      "framing_available": null,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null
+     },
+     {
+      "airtable_id": "2671",
+      "name": "Novecento",
+      "project_code": "MAURIZIOC-2671",
+      "edition": 1000,
+      "target_sellthrough": null,
+      "unit_price": 1500.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": null,
+      "framing_available": null,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null
+     }
+    ],
+    "announce_date": "2026-09-21",
+    "launch_end": "2026-10-15",
+    "private_room_open": null,
+    "marketing_lead": null
+   },
+   "notion": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "clock": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "campaigns": [
+    "MaurizioCatt_HorseLE_26 \u00b7 Enter draw"
+   ]
+  },
+  "kukwon_woo_multiple_2026_q4": {
+   "airtable": {
+    "match": "artist+window",
+    "note": "titles: The Princess (Belle) / The Princess (Cinderella)",
+    "products": [
+     {
+      "airtable_id": "2954",
+      "name": "The Princess (Belle)",
+      "project_code": "KUKWONWOO-2954",
+      "edition": 50,
+      "target_sellthrough": null,
+      "unit_price": 1500.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": null,
+      "framing_available": null,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null
+     },
+     {
+      "airtable_id": "2617",
+      "name": "The Princess (Cinderella)",
+      "project_code": "KUKWONWOO-2617",
+      "edition": 50,
+      "target_sellthrough": null,
+      "unit_price": 1500.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": null,
+      "framing_available": null,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null
+     }
+    ],
+    "announce_date": "2026-10-01",
+    "launch_end": "2026-10-29",
+    "private_room_open": null,
+    "marketing_lead": null
+   },
+   "notion": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "clock": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "campaigns": []
+  },
+  "pejac_multiple_2026_q4": {
+   "airtable": {
+    "match": "artist+window",
+    "note": "titles: FOUR SEASONS [OG Sculpture - 4 units] / LARGE FORMAT PAINTINGS [OG painting - 1/5] / LARGE FORMAT PAINTINGS [OG painting",
+    "products": [],
+    "announce_date": null,
+    "launch_end": null,
+    "private_room_open": null,
+    "marketing_lead": null
+   },
+   "notion": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "clock": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "campaigns": []
+  },
+  "seth_armstrong_micheltorena_2026_q4": {
+   "airtable": {
+    "match": "exact",
+    "note": "",
+    "products": [
+     {
+      "airtable_id": "2909",
+      "name": "Micheltorena",
+      "project_code": "SETHARMST-2909",
+      "edition": 100,
+      "target_sellthrough": null,
+      "unit_price": 900.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": null,
+      "framing_available": null,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null
+     }
+    ],
+    "announce_date": "2026-11-11",
+    "launch_end": "2026-12-03",
     "private_room_open": null,
     "marketing_lead": null
    },
@@ -22234,6 +22462,101 @@
    "launch_end": null,
    "private_room_open": null,
    "dates_note": null
+  },
+  "david_wojnarowicz_estate_multiple_2026_q4": {
+   "release_name": "David Wojnarowicz Estate \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "David Wojnarowicz Estate",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": "2026-09-08",
+   "launch_end": "2026-10-08",
+   "private_room_open": "2026-08-25",
+   "dates_note": null,
+   "source": "airtable",
+   "airtable_release": "DavidWojnLE26",
+   "airtable_ids": "2896|3069",
+   "titles": "History Keeps Me Awake at Night / Inside This House",
+   "n_products": 2,
+   "launch_type": "Draw",
+   "project_status": "03. Proofing"
+  },
+  "maurizio_cattelan_multiple_2026_q4": {
+   "release_name": "Maurizio Cattelan \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "Maurizio Cattelan",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "MaurizioCatt_HorseLE_26",
+   "campaign_name": "MaurizioCatt_HorseLE_26 \u00b7 Enter draw",
+   "announce_date": "2026-09-21",
+   "launch_end": "2026-10-15",
+   "private_room_open": "2026-09-07",
+   "dates_note": null,
+   "source": "airtable",
+   "airtable_release": "MaurizioCattHorseLE26",
+   "airtable_ids": "2672|2671",
+   "titles": "Not Afraid of Love / Novecento",
+   "n_products": 2,
+   "launch_type": "",
+   "project_status": "3.5. Pre-Launch"
+  },
+  "kukwon_woo_multiple_2026_q4": {
+   "release_name": "Kukwon Woo \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "Kukwon Woo",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": "2026-10-01",
+   "launch_end": "2026-10-29",
+   "private_room_open": "2026-09-17",
+   "dates_note": null,
+   "source": "airtable",
+   "airtable_release": "KukwonWooLE26",
+   "airtable_ids": "2954|2617",
+   "titles": "The Princess (Belle) / The Princess (Cinderella)",
+   "n_products": 2,
+   "launch_type": "",
+   "project_status": "03. Proofing"
+  },
+  "pejac_multiple_2026_q4": {
+   "release_name": "Pejac \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "Pejac",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": "2026-10-20",
+   "launch_end": "2026-11-13",
+   "private_room_open": "2026-10-06",
+   "dates_note": "announce date assumed: Airtable has none for it yet",
+   "source": "airtable",
+   "airtable_release": "PejacLE26",
+   "airtable_ids": "3077|3078|3080|3082|3079|3081|3088|3087|3085|3084|3090|3083|3086|3089|3113|3073|3071|3074|3072|3076|3075|3092|3091",
+   "titles": "FOUR SEASONS [OG Sculpture - 4 units] / LARGE FORMAT PAINTINGS [OG painting - 1/5] / LARGE FORMAT PAINTINGS [OG painting - 2/5] / LARGE FORMAT PAINTINGS [OG painting - 3/5] / LARGE FORMAT PAINTINGS [OG painting - 4/5] / LARGE FORMAT PAINTINGS [OG painting - 5/5] / MID-FORMAT PAINTINGS [OG Painting 1/8] / MID-FORMAT PAINTINGS [OG Painting 2/8] / MID-FORMAT PAINTINGS [OG Painting 3/8] / MID-FORMAT PAINTINGS [OG Painting 4/8] / MID-FORMAT PAINTINGS [OG Painting 5/8] / MID-FORMAT PAINTINGS [OG Painting 6/8] / MID-FORMAT PAINTINGS [OG Painting 7/8] / MID-FORMAT PAINTINGS [OG Painting 8/8] / POSTCARDS [Details & Pricing TBC] / SELF DEFENCE [OG - Painting 1/6] / SELF DEFENCE [OG - Painting 2/6] / SELF DEFENCE [OG - Painting 3/6] / SELF DEFENCE [OG - Painting 4/6] / SELF DEFENCE [OG - Painting 5/6] / SELF DEFENCE [OG - Painting 6/6] / Sandbags with Sandcastle [Installation 1] / Starry Night with Cartridges [Installation 2]",
+   "n_products": 23,
+   "launch_type": "",
+   "project_status": "1.5. Agreed to edition"
+  },
+  "seth_armstrong_micheltorena_2026_q4": {
+   "release_name": "Seth Armstrong \u00b7 Micheltorena \u00b7 2026 Q4",
+   "artist": "Seth Armstrong",
+   "title": "Micheltorena",
+   "type": "LE",
+   "campaign_code": null,
+   "campaign_name": null,
+   "announce_date": "2026-11-11",
+   "launch_end": "2026-12-03",
+   "private_room_open": "2026-10-28",
+   "dates_note": null,
+   "source": "airtable",
+   "airtable_release": "SethArmstrongLE26",
+   "airtable_ids": "2909",
+   "titles": "Micheltorena",
+   "n_products": 1,
+   "launch_type": "Draw",
+   "project_status": "03. Proofing"
   }
  },
  "meta_campaigns": [

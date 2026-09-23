@@ -79,6 +79,10 @@ APP = DATA / "app"
 # targeted ones under APP/releases are - they are the boot-time fallback).
 DERIVED = APP / "derived"
 PR_LEAD_DAYS = 14        # default private-room lead before announce for a derived release
+UPCOMING_DAYS = 120      # an Airtable launch this far ahead is listed before the funnel sees it (§1.7)
+UPCOMING_UNTYPED_DAYS = 60   # ... but one Airtable has not typed as a draw only this far ahead
+UPCOMING_TYPES = {"Draw", ""}   # the LE draw path; blank is a project Airtable has not typed yet
+ASSUMED_CAMPAIGN_DAYS = 24      # announce to close, when Airtable has no announce date yet
 CATALOGUE_DAYS = 90      # window shown for a release with no campaign clock
 
 BENCH = json.loads((ROOT / "etl" / "benchmarks.json").read_text())
@@ -1528,6 +1532,33 @@ def known_codes(emails: pd.DataFrame, content: pd.DataFrame, artist_posts: pd.Da
     return {c for c in out if _CODE_RE.match(c)}
 
 
+def code_activity(spend: pd.DataFrame | None, emails: pd.DataFrame | None) -> dict[str, tuple[date, date]]:
+    """When each campaign code was active: the first and last day it spent on
+    Meta or sent an email. A launch the funnel has not seen yet is matched to
+    a code by this, not by the artist's name alone: an artist's earlier code
+    is still on file, and only the code moving in the launch's own window
+    can be the launch's."""
+    lo: dict[str, date] = {}
+    hi: dict[str, date] = {}
+
+    def take(code: str, day) -> None:
+        if not _CODE_RE.match(code) or pd.isna(day):
+            return
+        d = pd.Timestamp(day).date()
+        lo[code] = min(lo.get(code, d), d)
+        hi[code] = max(hi.get(code, d), d)
+
+    if spend is not None and {"campaign_name", "spend_date"} <= set(spend.columns):
+        for name, day in zip(spend["campaign_name"], spend["spend_date"]):
+            if isinstance(name, str):
+                take(name.split(" · ")[0].strip(), day)
+    if emails is not None and {"campaign", "sent_at"} <= set(emails.columns):
+        for code, day in zip(emails["campaign"], emails["sent_at"]):
+            if isinstance(code, str):
+                take(code.strip(), day)
+    return {c: (lo[c], hi[c]) for c in lo}
+
+
 def guess_code(artist: str, title: str, year: int, codes: set[str], siblings: int = 1) -> str | None:
     """Best guess at the campaign code for a release nobody has configured, from
     the codes the email / content feeds already use. The code's first segment
@@ -1988,6 +2019,207 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
             "sessions": float(st["sessions"]), "entries": float(st["entries"]), "units": float(st["units"]),
         })
     return out
+
+
+# ---------------------------------------------------------------- upcoming launches (docs §1.7)
+
+def _frame_of_releases(records: list[dict]) -> pd.DataFrame:
+    """Releases on file as the frame etl/pricing.py matches Airtable launches to."""
+    rows = []
+    for r in records:
+        parts = [p.strip() for p in str(r["release_name"]).split(" · ")]
+        qm = _QUARTER_RE.match(parts[-1]) if len(parts) >= 2 else None
+        rows.append({
+            "release_name": r["release_name"],
+            "artist": r.get("artist") or parts[0],
+            "title": r["title"] if r.get("title") is not None else (" · ".join(parts[1:-1]) if qm and len(parts) >= 3 else " · ".join(parts[1:])),
+            "quarter": r.get("quarter") or (parts[-1] if qm else ""),
+            "announce": r.get("announce_date"), "close": r.get("launch_end"), "panel": "",
+        })
+    return pd.DataFrame(rows, columns=["release_name", "artist", "title", "quarter", "announce", "close", "panel"])
+
+
+def airtable_ids_on_file(records: list[dict], launch_frame: pd.DataFrame | None) -> dict[str, set[str]]:
+    """release_name -> the Airtable record ids of the launch it matched, for
+    every release the matcher (etl/pricing.py match) could place."""
+    if not records or launch_frame is None or not len(launch_frame):
+        return {}
+    frame = _frame_of_releases(records)
+    res = pricing.match(frame, launch_frame)
+    out: dict[str, set[str]] = {}
+    for name, ids in zip(frame["release_name"], res["airtable_ids"]):
+        if isinstance(ids, str) and ids:
+            out[name] = set(ids.split("|"))
+    return out
+
+
+def load_launches() -> pd.DataFrame | None:
+    """Airtable's launches (etl/pricing.py), or None when the file is not there:
+    a checkout without it loses the upcoming list, not the build."""
+    try:
+        return pricing.launches(pricing.load_pricing())
+    except (OSError, ValueError, KeyError) as e:
+        print(f"airtable: no launches ({e}) - no upcoming releases")
+        return None
+
+
+def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], as_of: date,
+                      activity: dict[str, tuple[date, date]] | None = None) -> list[dict]:
+    """The launches Airtable knows and the funnel does not yet (§1.7), as the
+    records build_upcoming reads: draws closing after today and within
+    UPCOMING_DAYS, whose Airtable records no release on file matched.
+
+    Named the way the funnel will name them - "Artist · Title · YYYY Qn", the
+    title "Multiple" when the launch has several works - so the page keeps its
+    id when the funnel catches up; adopt_funnel_names covers the launches the
+    funnel names differently. The announce date is Airtable's, else assumed
+    ASSUMED_CAMPAIGN_DAYS before the close and said so; the price is
+    converted to sterling, the form's currency, at the fixed table. The
+    campaign code is guessed only among codes active in the launch's own
+    window (`activity`, code_activity less the codes releases on file carry):
+    before a campaign spends or sends there is nothing to guess from."""
+    if launch_frame is None or not len(launch_frame):
+        return []
+    on_file = airtable_ids_on_file(existing, launch_frame)
+    used: set[str] = set().union(*on_file.values()) if on_file else set()
+    names = {r["release_name"] for r in existing}
+    horizon = as_of + timedelta(days=UPCOMING_DAYS)
+    out, seen_ids = [], {}
+    for l in launch_frame.sort_values("launch_date").itertuples():
+        if pd.isna(l.launch_date):
+            continue
+        close = l.launch_date.date()
+        if not (as_of < close <= horizon):
+            continue
+        if str(l.launch_type or "") not in UPCOMING_TYPES:
+            continue
+        # a project two months out with no launch type is not a campaign yet
+        if not str(l.launch_type or "") and close > as_of + timedelta(days=UPCOMING_UNTYPED_DAYS):
+            continue
+        if str(l.project_status or "").startswith("1.4"):   # pitching: nothing to plan yet
+            continue
+        ids = set(str(l.airtable_ids).split("|")) if l.airtable_ids else set()
+        if ids & used:
+            continue
+        title = "Multiple" if int(l.n_products) > 1 else str(l.titles)
+        quarter = pricing.quarter_of(l.launch_date)
+        name = f"{l.artist} · {title} · {quarter}"
+        if name in names:
+            continue
+        assumed = pd.isna(l.announce_date) or l.announce_date.date() >= close
+        announce = close - timedelta(days=ASSUMED_CAMPAIGN_DAYS) if assumed else l.announce_date.date()
+        pr_open = l.private_room_date.date() if not pd.isna(l.private_room_date) else announce - timedelta(days=PR_LEAD_DAYS)
+        # the codes moving in this launch's window, none of which a release on
+        # file carries: a lone one for this artist cannot be an earlier
+        # launch's, so the sibling rule guess_code applies to the funnel's
+        # releases does not apply, and the page marks the code as guessed
+        lo_w, hi_w = announce - timedelta(days=30), close + timedelta(days=2)
+        moving = {c for c, (lo, hi) in (activity or {}).items() if hi >= lo_w and lo <= hi_w}
+        code = guess_code(str(l.artist), title, close.year, moving, 1)
+        rid = slugify(name) or "release"
+        if rid in seen_ids:
+            seen_ids[rid] += 1; rid = f"{rid}_{seen_ids[rid]}"
+        else:
+            seen_ids[rid] = 1
+        price = float(l.unit_price) if pd.notna(l.unit_price) else None
+        rate = pricing.RATES_TO_GBP.get(str(l.currency or "")) if price is not None else None
+        out.append({
+            "id": rid, "release_name": name, "artist": str(l.artist), "title": title, "quarter": quarter,
+            "type": "LE", "campaign_code": code, "campaign_name": None,
+            "announce_date": announce.isoformat(), "launch_end": close.isoformat(),
+            "private_room_open": pr_open.isoformat(),
+            "dates_note": "announce date assumed: Airtable has none for it yet" if assumed else None,
+            "first_seen": None, "last_seen": None, "sessions": 0.0, "entries": 0.0, "units": 0.0,
+            "source": "airtable",
+            "edition_size": int(l.edition_size) if pd.notna(l.edition_size) and l.edition_size > 0 else None,
+            "unit_price": int(round(price * rate)) if price is not None and rate else None,
+            "unit_price_native": price, "currency_native": str(l.currency or ""),
+            "airtable_release": str(l.airtable_release or ""), "airtable_ids": str(l.airtable_ids or ""),
+            "titles": str(l.titles), "n_products": int(l.n_products),
+            "launch_type": str(l.launch_type or ""), "project_status": str(l.project_status or ""),
+        })
+    return out
+
+
+def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_frame: pd.DataFrame | None) -> list[tuple[str, str, str]]:
+    """A release set up before the funnel saw it carries the Airtable ids it
+    was set up from (§1.7). When a funnel release now matches that launch, the
+    input takes the funnel's name, so the actuals attach to the targets
+    instead of opening a second, untargeted page beside them. The rename is
+    written back to the saved inputs so it holds; the id, and so the page's
+    address, does not change."""
+    funnel_names = {r["release_name"] for r in discovered}
+    pending = [c for c in configured if c.get("airtable_ids") and c["release_name"] not in funnel_names]
+    if not pending or launch_frame is None or not len(launch_frame):
+        return []
+    on_file = airtable_ids_on_file(discovered, launch_frame)
+    taken = {c["release_name"] for c in configured}
+    renamed = []
+    for c in pending:
+        ids = set(str(c["airtable_ids"]).split("|"))
+        hits = [n for n, s in on_file.items() if s & ids and n not in taken]
+        if len(hits) != 1:
+            continue
+        old, new = c["release_name"], hits[0]
+        c["release_name"] = new
+        c["adopted_from"] = old
+        taken.add(new)
+        renamed.append((c["id"], old, new))
+    if renamed and _saved_inputs.exists():
+        try:
+            doc = json.loads(_saved_inputs.read_text())
+            rel = doc.get("releases") or {}
+            for rid, old, new in renamed:
+                if rid in rel:
+                    rel[rid]["release_name"] = new
+                    rel[rid]["adopted_from"] = old
+            tmp = _saved_inputs.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(doc, indent=1))
+            tmp.replace(_saved_inputs)
+        except (OSError, ValueError) as e:
+            print(f"warning: could not write the adopted names back to {_saved_inputs.name}: {e}")
+    for rid, old, new in renamed:
+        print(f"{rid}: the funnel now carries this launch as {new!r} (set up as {old!r}) - adopted")
+    return renamed
+
+
+def build_upcoming(rec: dict, as_of: date, email_bench: dict | None = None, full_through: date | None = None) -> dict:
+    """The page for a launch Airtable knows and the funnel does not yet (§1.7):
+    its dates, edition and price, and no actuals. Same top-level keys as
+    build_actuals so the app has one contract. Setting targets promotes it to
+    build_release, which draws the plan against an empty window until the
+    funnel carries the release and its actuals attach."""
+    announce = date.fromisoformat(rec["announce_date"])
+    close = date.fromisoformat(rec["launch_end"])
+    L = max((close - announce).days, 1)
+    return {
+        "id": rec["id"], "releaseName": rec["release_name"],
+        "artist": rec["artist"], "title": rec["title"], "quarter": rec["quarter"], "type": "LE",
+        "campaignCode": rec["campaign_code"], "campaignName": None, "marketingLead": None,
+        "privateRoomOpen": rec["private_room_open"],
+        "windowStart": rec["announce_date"], "windowEnd": rec["launch_end"],
+        "campaignLengthDays": L, "day": max(min((as_of - announce).days, L), 0), "of": L,
+        "asOf": as_of.isoformat(), "complete": False,
+        "completeThrough": (full_through or as_of).isoformat(), "asOfFraction": 1.0,
+        "targeted": False, "catalogue": False, "upcoming": True,
+        "untracked": None,
+        "derived": {
+            "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
+            "dates_source": "airtable", "dates_note": rec["dates_note"],
+            "campaign_code": rec["campaign_code"], "first_seen": None, "last_seen": None,
+        },
+        "airtable": {k: rec.get(k) for k in (
+            "airtable_release", "airtable_ids", "titles", "n_products", "launch_type", "project_status",
+            "edition_size", "unit_price", "unit_price_native", "currency_native", "private_room_open")},
+        "economics": None, "currency": "units",
+        "hero": {"now": 0, "expectedToday": None, "delta": None, "projected": None,
+                 "target": None, "oversubscribedUnits": 0, "statusPct": None, "ok": None},
+        "targets": None, "groupTargets": None, "channels": [], "funnelByGroup": {}, "paid": None,
+        "email": None, "social": None, "sellthrough": None, "draw": None, "geo": None, "waterfall": None,
+        "totals": {"sessions": 0, "units": 0, "entries": 0},
+        "benchmarks": {"chargeDropOff": 1 - BENCH["eligible_entry_to_order"], "cannibalisation": BENCH["cannibalisation"],
+                       "targetBuffer": BENCH["target_buffer"], **email_refs(email_bench)},
+    }
 
 
 def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.DataFrame,
@@ -3217,11 +3449,12 @@ def sort_index(index: list[dict]) -> list[dict]:
     by traffic. The sidebar's order, in one place for both build paths."""
     live = [e for e in index if e["status"] == "live"]
     live.sort(key=lambda e: (e["windowEnd"] or "", -(e["sessions"] or 0)))
+    upcoming = sorted([e for e in index if e["status"] == "upcoming"], key=lambda e: e["windowEnd"] or "")
     closed = sorted([e for e in index if e["status"] == "closed"],
                     key=lambda e: e["windowEnd"] or "", reverse=True)
     catalogue = sorted([e for e in index if e["status"] == "catalogue"],
                        key=lambda e: -(e["sessions"] or 0))
-    return live + closed + catalogue
+    return live + upcoming + closed + catalogue
 
 
 def patch_index(snap: dict, as_of: date) -> None:
@@ -3271,6 +3504,21 @@ def main(only: str | None = None):
     # Every release the funnel data mentions. The configured ones (target
     # inputs on file) get the full build; the rest get an actuals-only page.
     discovered = discover_releases(at, as_of, known_codes(emails, content, artist_posts))
+    # Airtable's launches: a release set up before the funnel saw it takes the
+    # funnel's name once it appears, and the launches the funnel has not seen
+    # yet are listed as upcoming so targets can be set before they open (§1.7).
+    # Before the inputs are resolved, so an adopted name is the one resolved.
+    launch_frame = load_launches()
+    adopt_funnel_names(INPUTS["releases"], discovered, launch_frame)
+    # the codes an upcoming launch can be guessed from: those moving on Meta
+    # or in the sends, less every code a release on file already carries
+    in_use = {str(r.get("campaign_code")) for r in discovered + INPUTS["releases"] if r.get("campaign_code")}
+    activity = {c: w for c, w in code_activity(spend, emails).items() if c not in in_use}
+    upcoming = upcoming_releases(launch_frame, discovered + INPUTS["releases"], as_of, activity)
+    for r in upcoming:
+        r["campaign_name"] = match_campaign(r["campaign_code"], spend)
+    if upcoming:
+        print("upcoming from Airtable: " + ", ".join(f"{r['release_name']} (closes {r['launch_end']})" for r in upcoming))
     # the inputs in force for every configured release: Airtable's products,
     # the Notion dates, the typed figures, the funnel's clock (resolve_release)
     notion = load_notion_campaigns()
@@ -3371,6 +3619,16 @@ def main(only: str | None = None):
             written.add(f"{rec['id']}.json")
             add(snap, "catalogue" if snap["catalogue"] else ("closed" if snap["complete"] else "live"))
             n_actuals += 1
+    # the launches Airtable knows and the funnel does not yet: a page each,
+    # with the dates, edition and price to set targets from (§1.7)
+    n_upcoming = 0
+    for rec in upcoming:
+        snap = build_upcoming(rec, as_of, email_bench, full_through)
+        check_snapshot(snap)
+        (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
+        written.add(f"{rec['id']}.json")
+        add(snap, "upcoming")
+        n_upcoming += 1
     # configured releases the funnel data does not mention yet (announced, no
     # traffic) still get built, as before
     for cfg in configured.values():
@@ -3413,6 +3671,9 @@ def main(only: str | None = None):
             **{r["id"]: sourced_inputs(r, spend, notion) for r in INPUTS["releases"]},
             **{r["id"]: sourced_inputs(r, spend, notion) for r in discovered
                if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}},
+            # an upcoming launch's Airtable products, so the Set up targets tab
+            # starts from them before the funnel has a row (§1.7)
+            **{r["id"]: sourced_inputs(r, spend, notion) for r in upcoming},
         },
         "discovered": {
             r["id"]: {
@@ -3420,11 +3681,16 @@ def main(only: str | None = None):
                 "type": r["type"], "campaign_code": r["campaign_code"],
                 "campaign_name": r.get("campaign_name"),
                 "announce_date": r["announce_date"], "launch_end": r["launch_end"],
-                "private_room_open": ((date.fromisoformat(r["announce_date"]) - timedelta(days=PR_LEAD_DAYS)).isoformat()
-                                      if r["announce_date"] else None),
+                "private_room_open": r.get("private_room_open") or (
+                    (date.fromisoformat(r["announce_date"]) - timedelta(days=PR_LEAD_DAYS)).isoformat()
+                    if r["announce_date"] else None),
                 "dates_note": r["dates_note"],
+                # an upcoming launch brings Airtable's edition, price and
+                # record ids, the defaults the Set up targets tab starts from
+                **{k: r[k] for k in ("source", "airtable_release", "airtable_ids", "titles", "n_products",
+                                     "launch_type", "project_status") if k in r},
             }
-            for r in discovered if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}
+            for r in discovered + upcoming if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}
         },
         "meta_campaigns": [
             {"name": r.campaign_name, "spend": round(float(r.spend), 2), "last": r.last.isoformat()}
@@ -3432,7 +3698,7 @@ def main(only: str | None = None):
         ],
     }, indent=1))
     print(funnel_coverage(at, curves))
-    print(f"wrote {n_full} targeted + {n_actuals} actuals-only releases "
+    print(f"wrote {n_full} targeted + {n_actuals} actuals-only + {n_upcoming} upcoming releases "
           f"({sum(1 for e in index if e['status'] == 'live')} live) -> {APP}")
 
 

@@ -29,9 +29,10 @@ const REF_TRACK = "#f3f6fc";
 const BORDER = "#e5e4df";
 const AMBER = "#8a5f00";
 
-// Layout, in CSS pixels; the canvas is drawn at `scale` times this. Slack
-// fits an inline picture to a fixed height and lets the width follow, so
-// how big the picture reads is the type divided by the picture's height.
+// Layout, in CSS pixels; the canvas is drawn at `scale` times this, 3.2 by
+// default: 3776 pixels wide, sixty percent more than the two-times file it
+// was. Slack fits an inline picture to a fixed height and lets the width
+// follow, so how big the picture reads is the type divided by its height.
 // The frame keeps its proportions, 1180 by the rows' height, and the type
 // and the bars are set large inside it: what is 15px on the page is 22px
 // here, on the same 46px rows, which reads half as big again in a channel.
@@ -110,7 +111,7 @@ const height = (model) => ROWS_TOP + (model.rows || []).length * ROW_H + FOOT + 
 
 /* Draws the card onto a canvas sized for it. `model` is what SellThrough.jsx
  * is showing: see imageModel there. */
-export function drawSellThrough(canvas, model, scale = 2) {
+export function drawSellThrough(canvas, model, scale = 3.2) {
   const H = height(model);
   canvas.width = Math.round(W * scale);
   canvas.height = Math.round(H * scale);
@@ -240,7 +241,7 @@ export function drawSellThrough(canvas, model, scale = 2) {
 
 /* The card as a PNG Blob. Waits for the page's own face to load first, so
  * the image is set in Inter like the page and not in a fallback. */
-export async function sellThroughPng(model, { scale = 2 } = {}) {
+export async function sellThroughPng(model, { scale = 3.2 } = {}) {
   if (typeof document === "undefined") throw new Error("no document to draw on");
   if (document.fonts && document.fonts.ready) {
     try { await document.fonts.ready; } catch { /* draw in whatever is loaded */ }

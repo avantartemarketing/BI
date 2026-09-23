@@ -154,6 +154,14 @@ def _worst_status(values: pd.Series) -> str:
     return max(got, key=lambda v: order.index(v) if v in order else len(order))
 
 
+def _first_day(values: pd.Series | None):
+    """The earliest date in a column, as a Timestamp, or NaT when there is none."""
+    if values is None:
+        return pd.NaT
+    days = pd.to_datetime(values, errors="coerce").dropna()
+    return days.min() if len(days) else pd.NaT
+
+
 def _mode(values: pd.Series) -> str:
     got = values.dropna().astype(str)
     got = got[got != ""]
@@ -203,6 +211,11 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
             "quarter": quarter_of(g["launch_date"].min()),
             "launch_type": _mode(g["launch_type"]), "edition_type": _mode(g["edition_type"]),
             "product_type": _mode(g["product_type"]), "price_status": _worst_status(g["price_status"]),
+            # the campaign's other dates and where the project stands, for a
+            # launch the funnel has not seen yet (etl/build.py upcoming_releases)
+            "announce_date": _first_day(g.get("announce_date")),
+            "private_room_date": _first_day(g.get("private_room_date")),
+            "project_status": _mode(g["project_status"]) if "project_status" in g.columns else "",
         })
     out = pd.DataFrame(rows)
     rate = out["currency"].map(RATES_TO_GBP)

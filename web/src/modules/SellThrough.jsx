@@ -38,10 +38,9 @@
  * a product for in the paid key's, and the editions are checked where they
  * are typed, on the Target setting tab.
  *
- * "Post to Slack" sends the card as a picture: the same rows drawn on a
- * canvas (sellThroughImage.mjs) from the model built below, with the figures
- * the server composes as its comment. The drawing is repeated there, the
- * numbers are not.
+ * "Post to Slack" sends the card as a picture and nothing else: the same
+ * rows drawn on a canvas (sellThroughImage.mjs) from the model built below.
+ * The drawing is repeated there, the numbers are not.
  *
  * No target and no benchmark on this card, by decision: both are on the hero
  * and the channels, and here they only crowded the reading. Each row is the
@@ -286,21 +285,16 @@ export default function SellThrough({ snap, horizon = "today" }) {
     note: incomplete.length ? `Incomplete data: ${incomplete.join(", ")}` : null,
   });
 
-  /* "Post to Slack": the card as a picture with the figures beneath it, to
-     the channel set on the Target setting tab. The figures are composed on
-     the server from this same snapshot (server/slack.js); the picture is
-     drawn here, because only the browser has a canvas and the face the page
-     is set in. A browser that cannot give us a PNG still posts the figures. */
+  /* "Post to Slack": the card as a picture, and nothing else, to the channel
+     set on the Target setting tab. The picture is drawn here, because only
+     the browser has a canvas and the face the page is set in; the server
+     (server/slack.js) attaches it to the channel. */
   const channel = (snap && snap.slack && snap.slack.channel) || null;
   const postToSlack = async () => {
     setPost({ state: "posting" });
     try {
-      let png = null;
-      try { png = await sellThroughPng(imageModel()); } catch (e) { console.warn("sell-through image:", e); }
-      const url = `/api/releases/${snap.id}/slack`;
-      const r = png
-        ? await fetch(url, { method: "POST", headers: { "Content-Type": "image/png" }, body: png })
-        : await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const png = await sellThroughPng(imageModel());
+      const r = await fetch(`/api/releases/${snap.id}/slack`, { method: "POST", headers: { "Content-Type": "image/png" }, body: png });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `Slack post failed (${r.status})`);
       setPost({ state: "done", channel: d.channel, warning: d.warning || null });
@@ -318,7 +312,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
     : post.state === "done"
       ? `Posted to #${post.channel}${post.warning ? `, but ${post.warning}` : ""}`
       : channel
-        ? `Post this card, as a picture with the figures under it, to #${channel}`
+        ? `Post this card, as a picture, to #${channel}`
         : "Set a Slack channel for this release on the Target setting tab, then this posts the card there";
   const slackButton = snap && snap.id ? (
     <button
