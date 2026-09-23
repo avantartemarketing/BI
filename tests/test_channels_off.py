@@ -113,13 +113,25 @@ def test_targets_without_a_channel() -> None:
             assert build.referral_artist_tier(r) == "N/A"
             assert t["per_channel"]["Referral Artist"]["purchases"] == 0.0
     assert seen_paid_off and seen_artist_off
-    # the lever fallback honours the same choice
-    r = dict(cases[0]["release"], channels_off=["paid", "referral_artist"], paid_share_override=0.4)
-    lever = build.compute_targets(r, None)
-    assert lever["paid_units"] == 0 and lever["paid_pct"] == 0.0
-    assert lever["per_channel"]["Referral Artist"]["quality"] == "N/A"
-    assert lever["per_channel"]["Referral Artist"]["purchases"] == 0.0
-    assert build.quality_for(r, "AA Email Auto") != "N/A"
+    # there is no other model: without a basket there are no targets
+    r = dict(cases[0]["release"], channels_off=["paid", "referral_artist"])
+    assert build.compute_targets(r, None) is None
+    assert build.compute_targets(r, {"units": 0.0}) is None
+    # the private room is not split out of the organic target any more: the
+    # groups' units are the whole edition and every unit is asked for as an entry
+    r = dict(cases[0]["release"], units_per_buyer=1.25)
+    t = build.benchmark_targets(r, B.apply_channels_off(cases[0]["profile"], []))
+    assert "pr_units" not in t and "draw_units" not in t
+    assert close(t["entries_target"], float(r["edition_size"]) / build.BENCH["eligible_entry_to_order"])
+    assert close(sum(pc["purchases"] for pc in t["per_channel"].values()) + t["paid_units"], float(r["edition_size"]))
+    # the price of a paid unit: the release's own figure, else the panel's median
+    assert build.cost_per_purchase_for({}) == build.BENCH["cost_per_purchase"]["Median"]
+    assert build.cost_per_purchase_for({"cost_per_purchase": 210}) == 210.0
+    assert build.cost_per_purchase_for({"cpp_pick": "High"}) == build.BENCH["cost_per_purchase"]["High"]
+    assert build.referral_artist_tier({"artist_posting_tier": "High"}) == "High"
+    assert build.referral_artist_tier({"channel_quality_overrides": {"Referral Artist": "Low"}}) == "Low"
+    assert build.referral_artist_tier({"channels_off": ["referral_artist"], "artist_posting_tier": "High"}) == "N/A"
+    assert build.referral_artist_tier({}) == "Medium"
     print(f"targets without a channel: ok over {len(cases)} cases")
 
 
@@ -130,7 +142,7 @@ def test_js_agrees() -> None:
         "cases": [{
             "name": c["name"], "off": c["off"], "profile": c["profile"],
             "inp": {"edition_size": c["release"]["edition_size"], "unit_price": c["release"]["unit_price"],
-                    "cpp_pick": c["release"].get("cpp_pick", "Median"), "units_per_buyer": 1.25},
+                    "cost_per_purchase": c["release"].get("cost_per_purchase"), "units_per_buyer": 1.25},
         } for c in cases],
     }
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
@@ -154,7 +166,7 @@ def test_js_agrees() -> None:
                 checks[f"profile.{key}.{grp}"] = (prof[key][grp], js["profile"][key][grp])
         jt = js["targets"]
         checks["k"] = (float(r["edition_size"]) / prof["units"], jt["k"])
-        for key in ("paid_units", "organic_units", "pr_units", "draw_units", "entries_target", "total_sessions", "buyers", "launch_value"):
+        for key in ("paid_units", "organic_units", "entries_target", "total_sessions", "buyers", "launch_value"):
             checks[key] = (t[key], jt[key])
         checks["paid.budget"] = (t["paid"]["budget"], jt["paid"]["budget"])
         checks["paid.pct"] = (t["paid"]["budget_pct_of_launch_value"] or 0.0, jt["paid"]["budget_pct_of_launch_value"] or 0.0)
@@ -162,7 +174,7 @@ def test_js_agrees() -> None:
         for grp in GROUPS:
             checks[f"group.{grp}.units"] = (g[grp]["units"], jt["units_by_group"][grp])
             checks[f"group.{grp}.sessions"] = (g[grp]["sessions"], jt["sessions_by_group"][grp])
-        checks["benchmark.entries"] = (prof["entries"], jt["benchmark"]["entries"])
+        checks["benchmark.entries"] = (prof["units"] / build.BENCH["eligible_entry_to_order"], jt["benchmark"]["entries"])
         checks["benchmark.paid_budget"] = (prof["units_by_group"]["paid"] * t["paid"]["cost_per_purchase"], jt["benchmark"]["paid_budget"])
         for key, (py, jsv) in checks.items():
             if isinstance(py, (list, bool)) or isinstance(jsv, (list, bool)):

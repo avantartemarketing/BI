@@ -74,7 +74,6 @@ function liveProfile(rows) {
     sessions, paid_share: median(rows.map((r) => r.paid_share)),
     entries: median(rows.map((r) => r.entries)),
     campaign_days: median(rows.map((r) => r.campaign_days)),
-    private_room_share: median(rows.map((r) => r.private_room_share)),
     units_per_buyer: positive(rows.map((r) => r.units_per_buyer)),
     share_units, share_sessions,
     units_by_group: Object.fromEntries(GROUPS.map((g) => [g, share_units[g] * total])),

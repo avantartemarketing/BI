@@ -176,7 +176,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
           minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 10,
         }}>
           {/* where there is no basket at all, the model that set the target instead */}
-          {hasBm ? "" : "levers, no comparable basket · "}
+          {hasBm ? "" : "no comparable basket · "}
           {isToday
             ? "secured units" + (snap?.day ? ", day " + snap.day : "")
             : "units"}

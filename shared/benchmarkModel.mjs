@@ -11,7 +11,7 @@
  *
  * A profile is the basket's medians as etl/baskets.py basket_profile writes
  * them: units, sessions, entries, units_p25, units_p75, units_by_group,
- * sessions_by_group, share_units, share_sessions, conv, private_room_share.
+ * sessions_by_group, share_units, share_sessions, conv.
  * The snapshot's benchmark block carries the same figures under camel-case
  * names, with the basket's full medians as the *All fields; profileOf turns
  * that block back into a profile so the switches can be re-read in place.
@@ -88,42 +88,45 @@ export function profileOf(bm) {
     units_by_group: byGroup(unitsByGroup, (_g, v) => v), sessions_by_group: byGroup(sessByGroup, (_g, v) => v),
     share_units: shares(unitsByGroup), share_sessions: shares(sessByGroup),
     conv: byGroup(bm.convByGroupAll || bm.convByGroup, (_g, v) => v),
-    private_room_share: num(bm.privateRoomShare),
     units_per_buyer: num(bm.unitsPerBuyer),
   };
 }
 
 /* The targets from a basket's medians (BENCHMARK_SPEC 4): one even uplift
  * K = sellout / median units carries every volume, conversion rates are held.
- * `inp` is the release: edition_size, unit_price, cpp_pick, units_per_buyer
- * (the plan's rate, from the snapshot). `b` is etl/benchmarks.json. Returns
- * the figures the rail prints, each beside the benchmark it is lifted from -
- * the basket's own median, unscaled - so benchmark + stretch = target on every
- * row. Null when the profile has no median units to lift. */
+ * `inp` is the release: edition_size, unit_price, cost_per_purchase (blank
+ * means the panel's median), units_per_buyer (the plan's rate, from the
+ * snapshot). `b` is etl/benchmarks.json. Returns the figures the rail prints,
+ * each beside the benchmark it is lifted from - the basket's own median,
+ * unscaled - so benchmark + stretch = target on every row. Null when the
+ * profile has no median units to lift. */
 export function benchmarkTargets(profile, inp, b) {
   const size = num(inp.edition_size);
   const median = num(profile.units);
   if (!(median > 0) || !(size > 0)) return null;
   const k = size / median;
   const e2o = num(b.eligible_entry_to_order) || 0.8;
-  const cpp = num((b.cost_per_purchase || {})[inp.cpp_pick || "Median"]);
+  // what a paid unit costs to buy: the release's own figure, else the panel's
+  // median (etl/build.py cost_per_purchase_for)
+  const cpp = num(inp.cost_per_purchase) > 0 ? num(inp.cost_per_purchase) : num((b.cost_per_purchase || {}).Median);
   const upb = num(inp.units_per_buyer) > 0 ? num(inp.units_per_buyer) : (num(profile.units_per_buyer) > 0 ? num(profile.units_per_buyer) : 1);
-  const prs = num(profile.private_room_share);
   const price = num(inp.unit_price);
   const maxPct = num(b.budget_sense_check_max_pct_of_launch_value);
   const ug = byGroup(profile.units_by_group, (_g, v) => v);
   const sg = byGroup(profile.sessions_by_group, (_g, v) => v);
-  const bmPaid = ug.paid, bmPr = ug.aa_email * prs, bmDraw = median - bmPaid - bmPr;
+  const bmPaid = ug.paid;
   const bmSessions = GROUPS.reduce((s, g) => s + sg[g], 0);
   const bmBudget = bmPaid * cpp, bmLaunchValue = median * price;
-  const paidUnits = bmPaid * k, prUnits = bmPr * k, drawUnits = size - paidUnits - prUnits;
+  const paidUnits = bmPaid * k;
   const budget = bmBudget * k, launchValue = size * price;
   return {
     k, edition_size: size, cost_per_purchase: cpp, units_per_buyer: upb,
     units_by_group: byGroup(ug, (_g, v) => v * k), sessions_by_group: byGroup(sg, (_g, v) => v * k),
-    paid_units: paidUnits, organic_units: size - paidUnits, pr_units: prUnits, draw_units: drawUnits,
+    paid_units: paidUnits, organic_units: size - paidUnits,
     buyers: size / upb,
-    entries_target: (drawUnits + paidUnits) / e2o,
+    // every unit of the edition is asked for as an entry at the eligible-entry
+    // rate (etl/build.py benchmark_targets): the whole edition over that rate
+    entries_target: size / e2o,
     total_sessions: bmSessions * k,
     paid: {
       units: paidUnits, budget,
@@ -132,10 +135,11 @@ export function benchmarkTargets(profile, inp, b) {
     },
     launch_value: launchValue,
     benchmark: {
-      units: median, paid_units: bmPaid, pr_units: bmPr, draw_units: bmDraw,
-      // the basket's own median entries, not the target divided back: the
-      // rail quotes what the basket did wherever the basket has the figure
-      buyers: median / upb, entries: num(profile.entries), sessions: bmSessions,
+      units: median, paid_units: bmPaid,
+      // the basket's median units asked for as entries the way the target is,
+      // so the row keeps the K ratio like every other; the basket's measured
+      // median entries stay on the snapshot as data (benchmark.entries)
+      buyers: median / upb, entries: median / e2o, sessions: bmSessions,
       paid_budget: bmBudget, budget_pct_of_launch_value: bmLaunchValue > 0 ? bmBudget / bmLaunchValue : null,
     },
   };

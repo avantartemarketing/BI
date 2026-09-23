@@ -147,8 +147,8 @@ function readJson(file, fallback) {
 /* The release as the ETL knows it: a dashboard save wins over the ETL's own
  * inputs, and a release nobody has set targets for is still in `discovered`
  * with enough (name, dates, edition size) for the suggestion to work. Python
- * reads release_name, edition_size, paid_channel_size, paid_share_override and
- * the dates off this, and tolerates any of them being absent. */
+ * reads release_name, edition_size, channels_off and the dates off this, and
+ * tolerates any of them being absent. */
 function releaseFor(releaseId) {
   const id = String(releaseId || "").replace(/[^a-z0-9_]/g, "");
   if (!id) return null;

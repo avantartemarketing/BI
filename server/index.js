@@ -119,7 +119,6 @@ app.get("/api/releases/:id", (req, res) => {
 });
 
 // ---- target-setting inputs (docs §3; the Target setting tab) ----
-const { retargetSnapshot } = require("./retarget");
 // the benchmark basket behind a release's targets (docs/BENCHMARK_SPEC.md §6);
 // every median it serves comes from etl/baskets.py, never from JS
 const baskets = require("./baskets");
@@ -130,10 +129,8 @@ const baskets = require("./baskets");
 const INPUTS_PATH = path.join(DATA, "inputs.json");
 const SAVED_INPUTS_PATH = process.env.SAVED_INPUTS_PATH || path.join(ROOT, "data", "inputs.saved.json");
 const TARGETS_LOG = process.env.TARGETS_LOG || path.join(ROOT, "data", "targets.log.jsonl");
-const modelPromise = import("../shared/targetModel.mjs");
 // the per-product sell-through rule, re-run on a save that changes product
 // editions or the entry -> order rate (docs/DATA_MODEL.md §6.3)
-const sellThroughPromise = import("../shared/sellThrough.mjs");
 // the draws the event feed found per release (etl/aggregate_events.py), so the
 // Target setting tab can list them for naming and sizing; counts only
 const PRODUCTS_FEED = path.join(DATA, "release_products.json");
@@ -159,19 +156,16 @@ const route = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).ca
   if (!res.headersSent) res.status(500).json({ error: "Something went wrong saving that - nothing was changed." });
 });
 
-const PICKS = {
-  paid_channel_size: ["Small", "Medium", "Large", "Low", "High"],
-  reference_point: ["Low", "Medium", "High"],
-  paid_conv_quality: ["Low", "Medium", "High"],
-  cpp_pick: ["Low", "Median", "High"],
-};
-const QUALITIES = ["High", "Medium", "Low", "N/A"];
 // the display groups a release can set aside - "not running paid", "the
 // artist has no channels of their own" (BENCHMARK_SPEC 4.3; etl/baskets.py GROUPS)
 const CHANNEL_GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
-// how the stretch (target - benchmark) is spread: one even uplift on every
-// channel, or the old quartile levers (BENCHMARK_SPEC §1, §8)
-const STRETCH_MODES = ["even", "levers"];
+// how much the artist is expected to post: the cohort the artist-posts
+// benchmark pools completed campaigns by (etl/build.py referral_artist_tier)
+const POSTING_TIERS = ["Low", "Medium", "High"];
+// the inputs of the quartile-lever model, retired 2026-09-23 (docs/DATA_MODEL.md
+// §3): a save drops them from a release that still carries them
+const RETIRED_INPUTS = ["paid_channel_size", "reference_point", "paid_conv_quality", "cpp_pick",
+  "channel_quality_overrides", "paid_share_override", "stretch_mode"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function readSaved() {
@@ -209,9 +203,7 @@ function defaultsFor(id, disc) {
     preorder_conversion_rate: null,
     prefer_recent: true,
     artist_profit_share: 0.5, framing_available: true, frame_conversion: null, frame_profit_per_unit: null,
-    paid_share_override: null,
-    paid_channel_size: "Medium", reference_point: "Medium", paid_conv_quality: "Medium", cpp_pick: "Median",
-    channel_quality_overrides: {}, channels_off: [],
+    cost_per_purchase: null, artist_posting_tier: "Medium", channels_off: [],
   };
 }
 
@@ -225,7 +217,6 @@ app.get("/api/inputs/:id", (req, res) => {
     inputs: inputs || null,
     defaults: disc ? defaultsFor(id, disc) : null,
     derived: disc || null,
-    channel_quality_default: doc.channel_quality_default,
     benchmarks: doc.benchmarks,
     meta_campaigns: doc.meta_campaigns || [],
     // the draws (one per product) the event feed found for this release
@@ -287,14 +278,20 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     if (!Number.isFinite(v) || v < 0 || v > 1) errors.push("artist_profit_share must be 0..1");
     else next.artist_profit_share = v;
   }
-  // the workbook's "Paid (% Total)" overwrite; null means use the channel-size pick
-  if (body.paid_share_override !== undefined) {
-    if (body.paid_share_override === null || body.paid_share_override === "") next.paid_share_override = null;
+  // what a paid unit costs to buy, £: paid units x this is the paid budget.
+  // Empty means the panel's median (etl/benchmarks.json cost_per_purchase).
+  if (body.cost_per_purchase !== undefined) {
+    if (body.cost_per_purchase === null || body.cost_per_purchase === "") next.cost_per_purchase = null;
     else {
-      const v = Number(body.paid_share_override);
-      if (!Number.isFinite(v) || v < 0 || v > 1) errors.push("paid_share_override must be 0..1 (a fraction of units) or empty");
-      else next.paid_share_override = v;
+      const v = Number(body.cost_per_purchase);
+      if (!Number.isFinite(v) || v <= 0) errors.push("cost_per_purchase must be a positive number (£ per paid unit) or empty");
+      else next.cost_per_purchase = Math.round(v * 100) / 100;
     }
+  }
+  // how much the artist will post, the cohort of the artist-posts benchmark
+  if (body.artist_posting_tier !== undefined) {
+    if (!POSTING_TIERS.includes(body.artist_posting_tier)) errors.push(`artist_posting_tier must be one of ${POSTING_TIERS.join("/")}`);
+    else next.artist_posting_tier = body.artist_posting_tier;
   }
   if (body.framing_available !== undefined) next.framing_available = !!body.framing_available;
   // the framing uplift's terms: a share of buyers taking a frame and AA's
@@ -316,12 +313,6 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       else next.frame_profit_per_unit = v;
     }
   }
-  for (const [f, allowed] of Object.entries(PICKS)) {
-    if (body[f] !== undefined) {
-      if (!allowed.includes(body[f])) errors.push(`${f} must be one of ${allowed.join("/")}`);
-      else next[f] = body[f];
-    }
-  }
   for (const f of ["private_room_open", "announce_date", "launch_end"]) {
     if (body[f] !== undefined) {
       if (!DATE_RE.test(String(body[f]))) errors.push(`${f} must be YYYY-MM-DD`);
@@ -331,20 +322,11 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   for (const f of ["marketing_lead", "budget_file", "campaign_name", "campaign_code"]) {
     if (body[f] !== undefined) next[f] = body[f] === null ? null : String(body[f]).slice(0, 200);
   }
-  if (body.channel_quality_overrides !== undefined) {
-    const ov = {};
-    for (const [c, q] of Object.entries(body.channel_quality_overrides || {})) {
-      if (!(c in doc.channel_quality_default)) errors.push(`unknown channel ${c}`);
-      else if (!QUALITIES.includes(q)) errors.push(`bad quality for ${c}`);
-      else if (doc.channel_quality_default[c] !== q) ov[c] = q;
-    }
-    next.channel_quality_overrides = ov;
-  }
-  /* The benchmark basket and the stretch mode (BENCHMARK_SPEC §6). An
-   * unresolvable basket is reported here and the save is refused: falling back
-   * to the suggestion would leave someone looking at a benchmark line they did
-   * not choose and cannot tell apart from the one they did. null clears the
-   * basket and puts the release back on the lever model. */
+  /* The benchmark basket (BENCHMARK_SPEC §6). An unresolvable basket is
+   * reported here and the save is refused: falling back to the suggestion
+   * would leave someone looking at a benchmark line they did not choose and
+   * cannot tell apart from the one they did. null clears the basket, and the
+   * release is benchmarked against the suggested one again. */
   if (body.benchmark_basket !== undefined) {
     const check = await baskets.validateBasketSpec(body.benchmark_basket, id);
     if (!check.ok) errors.push(check.error);
@@ -370,10 +352,11 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       next.channels_off = off;
     }
   }
-  if (body.stretch_mode !== undefined) {
-    if (!STRETCH_MODES.includes(body.stretch_mode)) errors.push(`stretch_mode must be one of ${STRETCH_MODES.join("/")}`);
-    else next.stretch_mode = body.stretch_mode;
-  }
+  // the retired inputs leave a release the first time it is saved again; the
+  // posting tier they carried has its own field now, so it is carried over
+  const legacyTier = ((next.channel_quality_overrides || {})["Referral Artist"]);
+  if (next.artist_posting_tier === undefined && POSTING_TIERS.includes(legacyTier)) next.artist_posting_tier = legacyTier;
+  for (const f of RETIRED_INPUTS) delete next[f];
   /* The products (docs §6.3): one entry per draw the feed found - its id as
    * the key, the name typed for it and its edition size. Two draws with the
    * same name are one product. Editions are optional; the card runs on units
@@ -435,7 +418,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   // output carries no stamp, so a default can still change under it
   next.saved_at = new Date().toISOString();
   if (creating) {
-    // Nothing to retarget - the release only has an actuals-only page. Save
+    // Nothing to rebuild in place - the release only has an actuals-only page. Save
     // the inputs and let the full ETL build it (build.py picks the saved
     // inputs up and promotes the release). This one stays on the whole-
     // catalogue build on purpose: promotion moves the release out of the
@@ -458,75 +441,29 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   }
   if (!fs.existsSync(snapPath)) return res.status(404).json({ error: "no snapshot for release" });
 
-  const snap = JSON.parse(fs.readFileSync(snapPath, "utf8"));
-
-  /* Benchmark mode is sticky, so a release already on a basket sends EVERY
-   * save through the ETL - not just the ones that touch the basket or the
-   * stretch mode. retargetSnapshot only knows the lever model: it would move
-   * hero.target while leaving benchmark.units and benchmark.k untouched, and
-   * the page would then show a target and a benchmark that no longer agree
-   * (a unit_price edit alone was enough to leave a stored k out by a third). */
-  const benchmarkEdit =
-    JSON.stringify(next.benchmark_basket || null) !== JSON.stringify(current.benchmark_basket || null) ||
-    (next.stretch_mode || null) !== (current.stretch_mode || null) ||
-    !!(snap.benchmark && snap.benchmark.units > 0);
-
-  /* A new basket or stretch mode cannot be retargeted in JS: the benchmark is
-   * the basket's medians and its pace curves are built from the basket's own
-   * members (BENCHMARK_SPEC §4, §4.1), neither of which is in the snapshot.
-   * So this save takes the ETL branch - build.py reads the inputs just written
-   * - and retargetSnapshot keeps the lever-mode edits. On a failed rebuild the
-   * inputs still stand; the JS retarget is deliberately not used as a fallback
-   * because it would answer with lever targets under a benchmark heading. */
-  if (benchmarkEdit) {
-    writeSaved(id, next);
-    fs.appendFileSync(TARGETS_LOG, JSON.stringify({
-      ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard",
-    }) + "\n");
-    try {
-      // one release, not the catalogue: a save cannot move any other page, and
-      // the whole-catalogue build costs about seven times as much (server/sheets.js)
-      await sheets.runEtl(id);
-    } catch (e) {
-      return res.status(502).json({
-        error: "Inputs saved, but the benchmark rebuild failed (" + String((e && e.message) || e).slice(0, 200) +
-          ") - the page will update on the next data refresh.",
-      });
-    }
-    baskets.invalidate();   // a full ETL run is the one thing that moves the panel
-    if (!fs.existsSync(snapPath)) return res.status(502).json({ error: "Inputs saved, but the rebuild did not produce the page - check the refresh status." });
-    return res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")) });
-  }
-
-  const curves = JSON.parse(fs.readFileSync(path.join(DATA, "curves.json"), "utf8"));
-  const bench = doc.benchmarks;
-  const mergedForModel = { ...next, channel_quality_default: doc.channel_quality_default };
-  const { computeTargets } = await modelPromise;
-  const sellThrough = await sellThroughPromise;
-  const updated = retargetSnapshot(snap, mergedForModel, bench, curves, computeTargets, sellThrough);
-
+  /* Every save rebuilds the release with the Python ETL: the benchmark is the
+   * basket's medians and its pace curves are built from the basket's own
+   * members (BENCHMARK_SPEC §4, §4.1), neither of which is in the snapshot,
+   * and a changed Meta-campaign match re-attributes the paid spend, which only
+   * the build can do. One release, not the catalogue: a save cannot move any
+   * other page, and the whole-catalogue build costs about seven times as much
+   * (server/sheets.js). On a failed rebuild the inputs still stand and the
+   * page catches up on the next data refresh. */
   writeSaved(id, next);
-  fs.writeFileSync(snapPath, JSON.stringify(updated, null, 1));
   fs.appendFileSync(TARGETS_LOG, JSON.stringify({
     ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard",
   }) + "\n");
-
-  // A changed Meta-campaign match re-attributes paid spend, which only the full
-  // ETL can do - rerun it (build.py overlays the inputs just saved) and return
-  // the rebuilt snapshot. On failure the retargeted snapshot still stands.
-  if ((next.campaign_name || null) !== (current.campaign_name || null)) {
-    try {
-      await sheets.runEtl();
-      return res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")) });
-    } catch (e) {
-      return res.json({
-        snapshot: updated,
-        warning: "Saved, but paid spend could not be re-attributed yet (" +
-          String((e && e.message) || e).slice(0, 200) + ") - it will catch up on the next data refresh.",
-      });
-    }
+  try {
+    await sheets.runEtl(id);
+  } catch (e) {
+    return res.status(502).json({
+      error: "Inputs saved, but the rebuild failed (" + String((e && e.message) || e).slice(0, 200) +
+        ") - the page will update on the next data refresh.",
+    });
   }
-  res.json({ snapshot: updated });
+  baskets.invalidate();   // a full ETL run is the one thing that moves the panel
+  if (!fs.existsSync(snapPath)) return res.status(502).json({ error: "Inputs saved, but the rebuild did not produce the page - check the refresh status." });
+  res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")) });
 }));
 
 /* ---- benchmark baskets (BENCHMARK_SPEC §6; the basket picker) ----

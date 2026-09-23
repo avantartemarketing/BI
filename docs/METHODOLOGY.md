@@ -1,7 +1,7 @@
 # Target-setting methodology
 
 How every target on the Launch Performance dashboard is derived - the inputs, the
-benchmarks behind each pick, the step-by-step model, and how a launch-total target
+benchmark basket behind them, the step-by-step model, and how a launch-total target
 becomes a day-by-day expectation and a forward projection.
 
 This page describes **Limited Edition (LE) draw releases**. The full technical
@@ -67,8 +67,8 @@ a product.
 ## 2. The inputs (Target setting tab)
 
 Each release carries a small set of human decisions, editable on its **Target
-setting** tab. Saving recomputes the release's targets, plan curves and
-projections immediately - no data rebuild needed.
+setting** tab. Saving rebuilds the release's targets, plan curves and
+projections from its basket; it takes a few seconds.
 
 | Input | What it does |
 | --- | --- |
@@ -79,94 +79,101 @@ projections immediately - no data rebuild needed.
 | Paid budget share | Who funds the ads. Default: 50/50, or 100% AA on commission / rev-share deals; overridable per release (Glenn Ligon = 100% AA) |
 | Framing available | Adds frame take-up × profit per frame to AA profit/unit |
 | Frame take-up, frame profit (optional) | The two terms of that uplift, per release; blank = the benchmark defaults of 35% and £94 |
-| Paid channel size (Small / Medium / Large) | Which quartile of historical paid share to plan for |
-| Paid share overwrite (% of units, optional) | The workbook's "Paid (% Total)" overwrite: sets the paid share directly when the quartile is not the plan (Warhol: 66%); empty means use the pick |
-| Private room share (Low / Medium / High) | Quartile of the private-room + other share |
-| Paid conversion (Low / Medium / High) | Quartile of paid session → entry conversion |
-| Cost per purchase (Low / Median / High) | £128.75 / £177 / £291 per paid unit |
-| Channel quality grid (N/A / Low / Medium / High) | Per-channel quartile picks; N/A removes a channel |
+| Benchmark basket | The comparable past launches the release is measured against: the suggested basket (nearest in size and price, the artist's own launches first, recent ones preferred) or one picked by hand |
+| Channels in plan | Running paid; the artist's own channels. A group switched off leaves the benchmark and the target, and the other channels carry the whole sellout |
+| Artist posting tier (Low / Medium / High) | How much the artist will post: the cohort of past campaigns the artist-posts benchmark is read from |
+| Cost per purchase (£, optional) | What a paid unit costs to buy: paid units × this is the paid budget. Blank = the panel's median, £177 |
 | Meta campaign | Which ad campaign the paid actuals are read from |
 | Products | One row per draw the event feed found: the product's name and its edition size (draws given the same name are one product) |
 | Entry → order rate | What share of plain entries in hand become orders on the sell-through card; empty means the panel's 80% |
 | Pre-order → order rate | What share of pre-order entries become orders, their card being already authorised; empty means the panel's 95%. A product can override it in the products table |
 
-## 3. Benchmarks: everything is a quartile
+## 3. The benchmark: a basket of comparable launches
 
-Every reference number in the model is a **quartile of the historical LE release
-panel**: Low = 25th percentile, Medium = median, High = 75th percentile. Picking
-"High" for a channel does not inflate the total - it changes that channel's
-*share* of a fixed total, because shares are renormalised (step 3 below).
+Every reference number on the page comes from the release's **benchmark basket**:
+the past draw launches most like this one, matched on edition size and unit
+price, with the artist's own earlier launches first and recent launches
+preferred. The benchmark is that basket's **median**, per metric and per channel
+group: units, sessions and eligible entries at close, each group's share of
+them, each group's conversion rate, the campaign length, and the pace through
+the window. The basket is suggested automatically and can be changed on the
+Target setting tab; a release is never in its own basket.
 
-The benchmark tables are frozen as a versioned file (`etl/benchmarks.json`, dated)
-and only change deliberately, so targets never drift silently.
-
-**A new artist, or a collaboration unlike any we have run, has no previous campaign
-to pick quartiles against.** For that case the history has been sorted into baskets
-of comparable releases - paid-led headline launches, paid-supported small editions,
-email-led collector launches with a private room, artist-audience draws - each with
-its own Low / Medium / High for every channel share, conversion and campaign stage.
-Pick the basket the launch is designed to be and read the picks from it:
-`docs/RELEASE_CLUSTERS.md` (the analysis, with example releases) and
-`data/release_cluster_baskets.json` (the numbers).
+Until September 2026 the model was a stack of quartile picks instead - a Low /
+Medium / High chosen per channel from the whole historical panel. That model was
+retired: it asked a question about the panel rather than about this launch, and
+nobody used it once baskets existed. What survives of it is a handful of
+constants (`etl/benchmarks.json`): the 0.8 eligible-entry → order rate (0.95 for
+pre-orders), the 20% cannibalisation, the framing defaults, the 6% budget sense
+check, the paid spend rules, and two tables read at the median only - the
+channel order split, which places a channel group's target on its individual
+channels, and the cost per purchase, the default price of a paid unit.
 
 ## 4. The target model, step by step
 
-### Step 1 - split the edition into paid vs organic
+### Step 1 - the uplift
 
 ```
-paid_pct      = paid-share benchmark for the size pick    (Low 7.8% · Medium 24.6% · High 36.5%)
-paid_units    = round(edition_size × paid_pct)
-organic_units = edition_size − paid_units
+K = target units / benchmark units
 ```
 
-### Step 2 - split organic into draw vs private room
+The target is the edition, or the part of it being sold. K is the one even
+uplift applied to **every volume** the basket reports - units, sessions, entries
+and spend - in every channel group and on every day of the campaign.
+**Conversion rates are held at the benchmark**: a target that quietly assumes
+the site converts better than it ever has is a target nobody can act on, so the
+stretch is asked of traffic and spend only.
+
+### Step 2 - channel groups
 
 ```
-pr_share    = private-room + other share benchmark        (Low 24.6% · Medium 46.1% · High 71.1%)
-pr_units    = organic_units × pr_share
-draw_units  = organic_units − pr_units
+target_units(g)    = benchmark_units(g)    × K        for each of the five groups
+target_sessions(g) = benchmark_sessions(g) × K
 ```
 
-Private-room units ride with the AA Email group in channel roll-ups (the
-workbook's own convention), so group targets still sum exactly to the edition.
+The five groups are AA Email, AA Meta (the brand's own social), the artist's own
+channels, search / direct / other, and paid. A group switched off under
+**Channels in plan** leaves the benchmark first: its medians go to zero, the
+benchmark units drop to what the other groups add up to, and K is the target
+over that smaller number - so the channels in plan carry the whole sellout
+between them.
 
-### Step 3 - split draw units across the organic channels
+Organic units are no longer split into a draw half and a private-room half. The
+private room is still measured - the sell-through card counts it and the basket
+records its share - but it is not a target of its own: every organic unit is
+targeted through its channel group, which is how the LE workbook has set its
+targets since September 2026.
 
-Each of the 12 organic channels has an **order-split benchmark** (its historical
-share of draw + pre-order units) at the picked quality. Shares are renormalised
-over the channels that exist for this release:
+### Step 3 - channels inside a group
 
-```
-order_split(c)      = share(c, quality) / Σ share over non-N/A channels
-target_purchases(c) = draw_units × order_split(c)
-```
+The funnel export is trustworthy at the group level, so the basket knows what a
+group sells, not what each channel inside it sells. A group's target is placed
+on its channels with the historical **order-split medians** (each channel's
+median share of units), renormalised inside the group. Conversion inside a group
+is the group's benchmark rate.
 
-The default quality row (overridable per release): AA Email Auto **High**, AA
-Email Man **High**, AA Meta **Medium**, AA Other **Medium**, AA X **Low**, Direct
-**Medium**, Organic Search **Medium**, Other **Medium**, Referral Artist
-**Medium** (N/A for estates, High for hype artists), Referral Meta **Medium**,
-Referral Other **N/A**, Referral X **N/A**.
-
-### Step 4 - back out entries and sessions per channel
-
-```
-target_entries(c)  = target_purchases(c) / 0.8              (eligible entry → order rate)
-target_sessions(c) = target_entries(c) / conv(c, quality)   (session → eligible entry benchmark)
-```
-
-Private-room sessions are modelled separately and email-only:
-`pr_units ÷ 0.010727` (the median email session → purchase rate).
-
-### Step 5 - paid targets and budget
+### Step 4 - entries
 
 ```
-paid_entries      = paid_units / 0.8
-paid_sessions     = paid_entries / paid conversion pick     (Medium = 0.42%)
-paid_budget       = cost-per-purchase pick × paid_units     (£128.75 / £177 / £291)
+target_entries(c) = target_units(c) / 0.8
+entries target    = target units / 0.8
+```
+
+Every unit is asked for as an eligible entry converting at the panel's 80% rate.
+The benchmark beside it is the basket's median units asked for the same way, so
+the row keeps the K ratio; what the basket's launches actually drew in entries
+stays on the snapshot as data.
+
+### Step 5 - paid budget
+
+```
+paid_units  = benchmark_paid_units × K
+paid_budget = paid_units × cost per purchase        (the release's figure, else £177)
 ```
 
 Sense check: **paid budget should stay under 6% of launch value** - the dashboard
-flags a breach but does not block it.
+flags a breach but does not block it. A release that will not run paid says so
+with the switch: paid leaves the benchmark, and its target and budget are zero.
 
 ### Step 6 - buffer
 
@@ -176,10 +183,12 @@ below buffer is red.
 
 ### Worked example - Glenn Ligon (edition 150)
 
-150 units → paid **37** (Medium, 24.6%) + organic 113 → private room **52.1**
-(Medium, 46.1%) + draw **60.9** → e.g. AA Email Man: 27.3 purchases → 34.1
-entries → 1,961 sessions. Total organic draw sessions 4,076; private-room
-sessions 4,857; paid sessions 11,163; paid budget = £177 × 37 = **£6,549**.
+Basket: the 8 launches nearest in size and price, median 134 units → **K = 1.12**.
+Benchmark → target by group: AA Email 56.2 → 62.9, AA Meta 4.6 → 5.2, artist
+0.6 → 0.6, search / direct / other 53.0 → 59.3, paid 19.5 → 21.9, which sum to
+150. Sessions 24,402 → 27,316. Entries target 150 ÷ 0.8 = 187.5, against
+134 ÷ 0.8 = 167.5 for the benchmark. Paid budget 21.9 × £177 = **£3,873**
+(benchmark £3,460), 0.9% of the £450,000 launch value.
 
 ## 5. Targets across time: the campaign clock
 
@@ -340,11 +349,13 @@ recommendation is the ROI at that spend level's cost per entry.
 - **Artist posts** pull live from the team's Notion log when connected. Their
   benchmark follows the same cohort approach as every other channel: expected
   posts = the median artist-post count among completed campaigns in the same
-  **Referral Artist tier** (the channel-quality pick on the Target setting tab),
-  pro-rated by days elapsed. It stays blank until at least two completed
+  **posting tier** (Low / Medium / High beside the artist switch on the Target
+  setting tab), pro-rated by days elapsed. It stays blank until at least two completed
   campaigns in the cohort have logged posts.
-- **Benchmarks** are frozen quartiles of the historical panel, versioned and
+- **Benchmarks** come from the release's basket, cut from the draw panel on every
+  build. The few constants that remain (`etl/benchmarks.json`) are versioned and
   dated; recomputing them is a deliberate act, not a side effect of new data.
 
-Open-ended judgement calls - the size pick, channel qualities, the Meta campaign
-match - live on each release's Target setting tab, where every change is logged.
+Open-ended judgement calls - the basket, the channels in plan, the cost per
+purchase, the Meta campaign match - live on each release's Target setting tab,
+where every change is logged.

@@ -54,7 +54,7 @@ Derived economics:
 profit per frame, £) are **release-level inputs** on the Target setting tab, shown when framing
 is available; left blank they fall back to the benchmark constants below, which is what every
 release ran on before they were inputs (`frame_terms` in `etl/build.py`, mirrored in
-`shared/targetModel.mjs`). The snapshot's `economics` block publishes the terms in force
+`shared/economics.mjs`). The snapshot's `economics` block publishes the terms in force
 (`frameConversion`, `frameProfitPerUnit`, `frameUpliftPerUnit`). The draw export's per-entry
 "Framed" flag (`framed_share` in the draw block) is the observed take-up where the export exists;
 it is not fed into the calculation automatically.
@@ -468,105 +468,92 @@ answers: only ever aggregates such as marketable contacts by tier and budget ban
 row), `TL_Funnel_Report_v2` (the timed-launch event feed, 81 launches: what a TL page would
 read). `tl_funnel_report_split_touch_export` was still denied when this was written.
 
-## 3. The LE target model - quartile levers (the "By channel" fallback)
+## 3. The quartile-lever model (retired 2026-09-23)
 
-This reproduces the LE_Template TARGET SETTING block exactly. All benchmarks are quartiles of
-the historical release panel (§4).
+The first target model reproduced the LE_Template TARGET SETTING block: the edition split
+into paid and organic by a paid-share quartile, organic split into draw and private room by a
+private-room-share quartile, the draw units placed on twelve channels by an order-split
+quartile per channel, entries backed out at 0.8 and sessions at a session → entry quartile
+per channel, private-room sessions at an email-only rate, and a paid budget at a cost per
+purchase quartile - every pick Low / Medium / High from the whole historical panel (§4).
 
-**This is no longer the default, and no longer on the page.** Every release takes the basket
-model of §4a (`targeting_mode = "benchmark"`), where the edition is split by what comparable
-launches actually did rather than by a quartile pick per channel; a release with no saved
-basket is benchmarked against the suggested one. The quartile levers below survive only as
-the fallback the build takes when a basket has no median units (and for saved inputs that
-still say `stretch_mode: "levers"`), so steps 1-6 are still live code, not history, but
-nothing on the Target setting tab reaches them any more; §4a describes what replaces them
-and what it keeps. Two of their inputs the benchmark still reads: the cost per purchase pick
-(the paid budget) and the Referral Artist tier (the artist-posts benchmark). A channel the
-release will not run - paid, or the artist's own - is set aside with `channels_off`
-(BENCHMARK_SPEC §4.3), which the fallback honours too: paid share zero, its channels `N/A`.
+It was retired on 2026-09-23. The basket model of §4a had been the default since baskets
+existed, every targeted release ran on it, and the levers asked a question about the panel
+("what share should email carry at the good quartile?") rather than about the launch. The
+same month the LE workbook dropped the private-room split from its own target logic, so the
+one thing the levers modelled that the basket did not was gone from the source as well.
 
-### Step 1 - split edition into paid vs organic
-```
-paid_pct      = benchmark("paid share of units", size_pick)      # Low .0789 / Medium .2619 / High .3901
-paid_units    = round(edition_size × paid_pct)
-organic_units = edition_size − paid_units
-```
-`size_pick` ("Paid channel size" Small→Low / Medium / Large→High) is a per-release judgement call.
-A release can instead carry `paid_share_override` (a fraction of units) - the workbook's "Paid
-(% Total)" overwrite on row 137 of the LE tab - which replaces `paid_pct` outright. Warhol's tab
-sets 0.66 (1,610 of 2,440 units paid, budget £284,970); the High quartile alone would give 890.
-Live releases use Medium (Glenn Ligon, Schnabel) or High (Dali, Mondrian, Zeng Fanzhi, Parra,
-James Jean, Abdulnasser).
+What went: the quartile branch of `compute_targets`, `quality_for`, the per-channel quality
+grid and its inputs (`paid_channel_size`, `reference_point`, `paid_conv_quality`, `cpp_pick`,
+`channel_quality_overrides`, `paid_share_override`, `stretch_mode`), the server's JavaScript
+retarget (`server/retarget.js`, `shared/targetModel.mjs`) and the quartile tables it read
+(session → entry by channel, paid share of units, paid session → entry, private-room share,
+email session → purchase). A save now rebuilds the release with the Python ETL, every time.
+A release that cannot be benchmarked - no draw panel on file, or a basket whose channels in
+plan sold nothing in the median launch - shows its actuals rather than a target from another
+model.
 
-### Step 2 - split organic into Draw/Pre-order vs Private-Room/Other
-```
-pr_other_pct = benchmark("PV+Other share of units", reference_point)   # Low .2879 / Medium .4667 / High .7115
-pr_units     = organic_units × pr_other_pct
-draw_units   = organic_units − pr_units
-```
-Every live release uses Medium (0.4667). Overridable per release (never used so far).
+What stayed, and where it moved: the cost per purchase is a figure per release
+(`cost_per_purchase`, £ per paid unit; blank means the panel's median, §4 E); the Referral
+Artist tier became the artist posting tier (`artist_posting_tier`, the cohort of the
+artist-posts benchmark); "N/A" on Referral Artist became the artist's own channels not in plan
+(`channels_off`, spec §4.3); and the order-split medians still place a group's target on its
+channels (§4a.3). Inputs saved under the old names are read by the build until they are saved
+again, and a save drops them.
 
-### Step 3 - channel targets for draw/pre-order purchases
-Each of the 12 organic channels gets a **quality pick** (High/Medium/Low = which quartile of the
-historical distribution to use; N/A = channel doesn't exist for this release, e.g. Referral
-Artist for an estate). The default row used by every live release:
-`AA Email Auto: High, AA Email Man: High, AA Meta: Medium, AA Other: Medium, AA X: Low,
-Direct: Medium, Organic Search: Medium, Other: Medium, Referral Artist: Medium (N/A for estates,
-High for hype artists), Referral Meta: Medium, Referral Other: N/A, Referral X: N/A`.
+The full lever arithmetic is in the repository history at that date, and in the workbook's
+`LE_Template - old` tab.
+
+## 3a. The TL target model, as the workbook computes it (recorded 2026-09-23, not built)
+
+The dashboard has no timed-launch path yet: `type` is always `LE`, though the
+`TL_Funnel_Report_v2` feed exists (§2.5). When one is built, the workbook's TL_Template is the
+spec. Its September 2026 revision keeps orders and units apart, which the earlier tab did not.
+In its terms:
 
 ```
-share(c)            = benchmark("order split", c, quality(c))          # §4 table A
-order_split(c)      = share(c) / Σ share                               # renormalised over non-N/A channels
-target_purchases(c) = draw_units × order_split(c)
+total purchases      = edition target                     # ÷ (1 + 0.2 multiple adjustment) on a Multiple
+orders               = total purchases / purchases per order        # 1.0948, the panel median
+orders excl. drafts  = orders × (1 − draft-order share)             # 0.0714, the panel median
+paid orders          = round(orders excl. drafts × paid share pick) # Low / Median / High of orders paid vs total
+organic orders       = orders excl. drafts − paid orders
 ```
 
-### Step 4 - back out entries and sessions per channel
-```
-target_eligible_entries(c) = target_purchases(c) / 0.8            # 0.8 = eligible-entry → order rate ("1 − drop-off")
-conv(c)                    = benchmark("session → eligible entry", c, quality(c))   # §4 table B
-target_sessions(c)         = target_eligible_entries(c) / conv(c)
-```
+Organic, full release: the organic orders placed on the channels by the order split (median
+share per channel), sessions = orders ÷ the channel's session → order rate. Pre-launch: each
+channel's orders × its pre-launch share of orders, sign-ups = orders ÷ sign-up → order rate,
+sessions = sign-ups ÷ session → sign-up rate. Units on every row = orders × purchases per
+order × (1 + bundle adjustment).
 
-Private-room sessions are modelled separately, email-only:
-`target_pr_sessions = pr_units / email_session_to_purchase` where
-`email_session_to_purchase = 0.010727` (median AA Email Man session→purchase across the panel; v2 recompute).
+Paid: the paid orders split 70 / 30 between pre-launch and launch. Pre-launch: implied
+sign-ups = orders ÷ sign-up → order, implied sessions = sign-ups ÷ session → sign-up, budget =
+cost per converted sign-up × orders. Launch: implied sessions = orders ÷ session → purchase,
+budget = cost per sale × orders. The rate and cost picks are quartiles of the paid data
+analysis tab. Units for each phase = orders × purchases per order × (1 + bundle adjustment).
+Sense check: total budget ≤ 6% of launch value.
 
-### Step 5 - paid targets and budget
-```
-paid_eligible_entries = paid_units / 0.8
-paid_conv             = benchmark("session → eligible entry", Paid Social, quality_pick)  # Medium = 0.0042099 on all live releases
-target_paid_sessions  = paid_eligible_entries / paid_conv
-cost_per_purchase     = CPP benchmark pick                        # Low 128.75 / Median 177 / High 291
-paid_budget           = cost_per_purchase × paid_units
-```
-Sense check: `paid_budget / launch_value ≤ 6%` (flag only - 4 of 8 live releases breach it:
-Dali & Mondrian 13.8%, Parra 10.6%, James Jean 9.9%).
-
-### Step 6 - buffer
-`target_inc_buffer = 0.75 × target` for any metric ("Target inc. buffer") - a 25% haircut used
-as the amber line on charts.
-
-### Worked example (Glenn Ligon · Multiple · 2026 Q3)
-150 units → paid 39 (Medium 26.19%), organic 111 → PR/Other 51.8 (46.67%), draw 59.2 →
-AA Email Man target purchases 26.2, entries 32.8, sessions 1,885 … total organic-draw sessions
-3,953; PR sessions 4,558; paid sessions 11,580; budget = 177 × 39 = £6,903.
-
----
+Actuals for the charts are reported in both currencies - sessions → units and sessions →
+orders, sign-ups → units and sign-ups → orders - with an unattributed-order check, and the
+paid ads block carries an Action row, tomorrow's recommended spend and cumulative ROI.
 
 ## 4. Benchmarks (how the reference numbers are computed)
+
+Since 2026-09-23 the benchmark for every volume and rate is the release's basket (§4a). This
+section keeps the panel-wide reference tables: the two the build still reads (A at the median,
+E), the constants, and the record of the rest.
 
 Panel: all releases in the funnel import **not** marked excluded on `Release Selection`
 (intended rule: exclude pre-2024 + manual exclusions; currently 142 included - see §11 for the
 leaks). For each per-release ratio, zero values are blanked (survivorship: benchmark conditions
 on the channel having converted at least once).
 
-**"Quality"/"size" = which quartile you pick, not an attribute of the release:**
-`Low = 25th percentile, Medium = median (order-split & session-conv tables) or mean (PV-conv and
-EE→order tables - inconsistent, see §11), High = 75th percentile.`
+`Low = 25th percentile, Medium = median, High = 75th percentile` of the panel.
 
 Key benchmark values in force (LE):
 
-**A. Order split by channel** (share of unadjusted draw+pre-order units; renormalised at use):
+**A. Order split by channel** (share of unadjusted draw+pre-order units). The build reads the
+Medium column only, renormalised inside a display group, to place the group's basket target on
+its channels (§4a.3):
 
 | Channel | Low | Medium | High |
 |---|---|---|---|
@@ -584,36 +571,20 @@ Key benchmark values in force (LE):
 | Referral Other | .0146 | .0291 | .0499 |
 | Referral X | .1397 | .2500 | .3636 |
 
-**B. Session → unique eligible entry** (unadjusted sessions denominator):
-
-| Channel | Low | Medium | High |
-|---|---|---|---|
-| AA Email Auto | .0062 | .0474 | .3039 |
-| AA Email Man | .0067 | .0105 | .0174 |
-| AA Meta | .0093 | .0140 | .0258 |
-| AA Other | .0396 | .0714 | .1607 |
-| AA X | .0133 | .0247 | .0354 |
-| Direct | .0090 | .0186 | .0301 |
-| Organic Search | .0172 | .0306 | .0670 |
-| Other | .0138 | .0172 | .0352 |
-| Paid Social | .00163 | .00421 | .01213 |
-| Referral Artist | .0060 | .0134 | .0238 |
-| Referral Meta | .0072 | .0151 | .0357 |
-| Referral Other | .0169 | .0322 | .0667 |
-| Referral X | .0093 | .0302 | .0345 |
-
-**C. Unit-mix quartiles** (share of adjusted total units): PV+Other = .2879 / .4667 / .7115;
-Draws .1734/.3203/.6939; Preorder .0528/.4758/.6353.
+**B, C and F** - session → unique eligible entry by channel, the unit mix (private room +
+other, draws, pre-orders) and the email-only session → purchase rate - were the lever model's
+tables and were retired with it (§3): the basket's own conversion and mix per group replaced
+them (§4a.2). Their last values are in the repository history.
 
 **D. Eligible entry → order** ("drop-off" complement): benchmark table exists
 (total .43/.66/.90, capped at 1) but the model **assumes a flat 0.8** everywhere (hardcoded).
 Keep 0.8 as the planning constant; surface the per-channel table as diagnostics.
 
 **E. Cost per purchase (paid)**: quartiles over 22 hand-curated historical paid campaigns
-(mixing LE + TL): **Low £128.75 / Median £177 / High £291**. Companion stats (static): ROI
+(mixing LE + TL): **Low £128.75 / Median £177 / High £291**. The Median is the default price of
+a paid unit; a release sets its own `cost_per_purchase` on the Target setting tab (Abdulnasser
+Gharem carries £291, the quartile it was planned at). Companion stats (static): ROI
 2.2/3.4/6.9, paid % of units .11/.21/.31.
-
-**F. Email-only session → purchase** (private room divisor): median .010727 (v2).
 
 Recomputation policy for the rebuild: recompute quartiles nightly from BigQuery over a
 **correctly filtered panel** (year ≥ 2024, exclude undersubscribed: oversubscription ≤ 10 units,
@@ -780,16 +751,18 @@ the basket did, not by a quartile pick:
 K            = edition_size / profile["units"]
 units[g]     = profile["units_by_group"][g]    × K        # sums to edition_size exactly
 sessions[g]  = profile["sessions_by_group"][g] × K
-entries[g]   = units[g] / 0.8                             # the eligible-entry → order rate, §3 step 4
-paid_budget  = profile["units_by_group"]["paid"] × cost_per_purchase("Median") × K
+entries[g]   = units[g] / 0.8                             # the eligible-entry → order rate, §4 D
+paid_budget  = profile["units_by_group"]["paid"] × cost_per_purchase × K    # the release's figure, else the panel median (§4 E)
 ```
 
-`compute_targets` returns the **same top-level keys** in either mode, so nothing downstream
-branches on the model: `edition_size`, `paid_pct`, `paid_units`, `organic_units`, `pr_other_pct`,
-`pr_units`, `draw_units`, `per_channel`, `pr_sessions`, `paid{…}`, `launch_value`,
-`organic_sessions_draw`, `total_sessions`, `entries_target`, `buffer`. The private room keeps the
-§6.3½ convention - `pr_units = units["aa_email"] × profile["private_room_share"]`, draw units are
-the rest of organic - and `group_targets` still sums to the edition size exactly.
+`compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
+`per_channel`, `paid{…}`, `launch_value`, `units_per_buyer`, `buyers`, `buyers_by_group`,
+`organic_sessions`, `total_sessions`, `entries_target`, `buffer` - or `None` when the release
+has no basket to read (§3). Organic units are not split into a draw half and a private-room
+half: every organic unit is targeted through its group and asked for as an entry, so
+`entries_target = edition_size / 0.8`, and `group_targets` sums to the edition size exactly.
+The private room stays a measured quantity - the basket's `private_room_share`, the orders
+feed's private-room units on the sell-through card - not a target of its own.
 
 The 12-channel `per_channel` table (§3 step 3) is **synthesised** rather than abandoned: each
 group's target is split across its raw channels with the `order_split` medians of
@@ -880,9 +853,8 @@ day removes the units-curve jump entirely, proving it is allocation bookkeeping,
 last-day demand; a historical secured-units curve is NOT reconstructable because the export
 retroactively reclassifies converted entries out of `*_No_Conv`.
 
-**Curves are tier-blind, and that is deliberate.** A channel's quality pick sets its
-LEVEL (which quartile of the share panel it plans for) but every release shares one pooled
-median SHAPE per display group. Tested 2026-08-29 with `etl/analysis/tier_curve_probe.py`:
+**Curves are tier-blind, and that is deliberate.** The target sets a channel's LEVEL but
+every release shares one median SHAPE per display group. Tested 2026-08-29 with `etl/analysis/tier_curve_probe.py`:
 split the clean panel in half by each group's realised share, difference each group's curve
 against that release's own all-channel curve (so a release that simply ran early does not
 read as a tier effect in all five of its groups), then permutation-test the gap. Across 11
@@ -919,7 +891,7 @@ which is a product decision before the curves can be cohorted in the build.
 **The panel is now per basket, with the pooled curve behind it.** The open question closed the
 way §5.3's re-read pointed: a release's curves come from **its own basket's members**, not from
 the whole panel, and the basket is a product decision made in the picker (§4a.2) rather than
-inferred from the paid-size lever. `build_curves(at, members=None)` takes the member filter;
+inferred from a paid-share pick. `build_curves(at, members=None)` takes the member filter;
 with no filter it builds the pooled panel curve exactly as before, so every release without a
 basket is unaffected. Fallback is per metric and per group, not per release: where **fewer than
 4** members qualify for a series `build_curves` already returns `None` for it and `curve_value`
@@ -1261,7 +1233,7 @@ data), `reOfferRecovery`.
 ```
 dim_release(release_name PK, campaign_code, type LE|TL, artist, announce_date,
             private_room_open, launch_end, campaign_length_days, edition_size, unit_price,
-            economics…, model_picks {paid_size, reference_point, cpp_pick, quality_by_channel})
+            economics…, benchmark_basket, channels_off, artist_posting_tier, cost_per_purchase)
 dim_product(release_name FK, product_name, edition)
 fact_funnel_daily(release_name, channel, event_date, sessions, page_views, draw_entries,
             eligible_entry_units, eligible_units_no_conv, units_total, units_by_route…,
@@ -1284,12 +1256,13 @@ store per release, fetched per release+day"; projections are stored, not client-
 ## 10a. Snapshot fields for the benchmark model
 
 Every field here is **additive** (spec §5). A consumer that does not know them renders exactly as
-it did before, and a snapshot written in lever mode simply omits `snap.benchmark` - which is the
-guard every benchmark mark on the page is written against.
+it did before. `snap.benchmark` is the guard every benchmark mark on the page is written
+against; since the lever model was retired every targeted snapshot carries it, and an
+actuals-only page omits it.
 
 | Field | What it holds |
 |---|---|
-| `targetingMode` | `"benchmark"` or `"levers"` - which model §4a/§3 wrote this snapshot |
+| `targetingMode` | always `"benchmark"` since 2026-09-23 (§3); kept so older readers of the field still resolve |
 | `benchmark.basket` | `{id, kind, name, n, thin, suggestedId}`; `kind` is `ready`, `bespoke` or `saved` |
 | `benchmark.units`, `unitsP25`, `unitsP75` | the basket's median units and its middle half |
 | `benchmark.sessions`, `entries`, `campaignDays` | the other headline medians of the profile |
@@ -1300,7 +1273,7 @@ guard every benchmark mark on the page is written against.
 | `benchmark.paidBudget` | benchmark paid units × median cost per purchase × K |
 | `benchmark.channelsOff` | the display groups this release set aside (BENCHMARK_SPEC §4.3); their medians are zero above and the other channels carry the target |
 | `benchmark.unitsAll`, `sessionsAll`, `entriesAll`, `unitsP25All`, `unitsP75All`, `unitsByGroupAll`, `sessionsByGroupAll`, `convByGroupAll` | the basket's full medians before any channel was set aside, so the page can say what left and the browser can re-read the basket as the switches move |
-| `benchmark.privateRoomShare` | the basket's median private-room share of email units, which the browser's rail needs for the draw / private-room split |
+| `benchmark.privateRoomShare` | the basket's median private-room share of email units - descriptive; nothing derives a target from it since the split went (§3) |
 | `hero.benchmark`, `benchmarkToday`, `stretch` | benchmark at close, benchmark pace to today, the stretch |
 | `channels[].bm`, `bmExp` | per group: benchmark at close, benchmark by today |
 | `channels[].daily[].bm` | the benchmark plan for that day, beside `actual` / `plan` / `proj` |
@@ -1441,10 +1414,10 @@ announce). A release with no clock at all is *catalogue*: still drawing traffic,
 window - 320 of the 353 names in the sheet-capped export, median 24 sessions over four
 months, versus a median of ~9,000 for the 33 that carry the clock.
 
-Known divergence: a snapshot last written by the server's JavaScript retarget
-(`server/retarget.js` + `shared/targetModel.mjs`) differs from the Python build by ~0.05
-units on per-day projections and serialises whole numbers as integers. Same model, two
-implementations; the Python build is the reference.
+The server's JavaScript retarget (`server/retarget.js` + `shared/targetModel.mjs`), which
+used to rewrite a snapshot in the browser's model on save and differed from the Python build
+by ~0.05 units on per-day projections, went with the lever model (§3): every save rebuilds
+the release with the Python ETL, so there is one implementation.
 
 ## 11c. Benchmark model: decisions taken, and why
 
@@ -1459,8 +1432,8 @@ The four that were live arguments, recorded so they are not relitigated from the
 25. **The stretch is one even uplift, with conversion rates held.** K multiplies every volume in
     every channel on every day; no channel is asked to convert better than the basket did. The
     alternative - spreading the uplift by channel, or buying part of it with a conversion
-    assumption - is exactly the quartile-lever model, which is no longer offered on the page:
-    the one channel-level choice that remains is whether a channel is in plan at all
+    assumption - is exactly the quartile-lever model, retired on 2026-09-23 (§3): the one
+    channel-level choice that remains is whether a channel is in plan at all
     (BENCHMARK_SPEC §4.3). Keeping
     rates at the benchmark is also what puts the funnel rungs' benchmark tick (§4a.1, spec §7)
     1/K off the centre on a volume rung - target is benchmark × K - and on the centre line on a
