@@ -1187,11 +1187,14 @@ composed on the server from the same snapshot (`server/slack.js`): the release a
 the headline with the campaign day, and under it the framing take-up (`framing.rate`, the
 Framing card's frames per print, §6.4, with the count behind it and the plan beside it; the
 entrants' rate before a sale; the plan alone on a snapshot without the block; nothing where
-no print has a frame on offer); a `table` block of the products, three columns - the name,
-its units of the edition, its share - with no bar, because a bar drawn in text wrapped on a
-phone; and the release's totals (paid, drafts, draw winners, at close the units still to
-come) as a context line. The figures are computed once, on the server, at the horizon the
-page is on.
+no print has a frame on offer); the works, as a `table` block (the name, its units of the
+edition, its share, with no bar, because a bar drawn in text wrapped on a phone) or, by the
+request's `layout`, as Slack's own bar chart (`data_visualization`, one bar per work at its
+share of the edition), the chart with a sortable `data_table` (work, share, units, paid), or
+a `carousel` of cards; and the release's totals (paid, awaiting payment, expected from the
+draw, at close the units still to come) with the framing line as plain sentences. The
+figures are computed once, on the server, at the horizon the page is on; `layout: "test"`
+posts the three non-table layouts to a named channel as a look, recording nothing.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
 pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven
