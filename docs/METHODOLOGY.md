@@ -64,6 +64,15 @@ already been charged. Sales the draw cannot name a product for
 (private room, pre-orders) are shown at release level rather than guessed onto
 a product.
 
+**Direct as a source.** The Overview has a Direct switch. As a channel, Direct
+is what the funnel export attributes to it. Spread, its sessions, entries and
+units are shared out over the other channels in proportion to what each did
+that day, the way the untracked rows always are, and the benchmark's channel
+split is read the same way (the panel's typical Direct share of the
+Search/direct/other group, spread over every group pro rata). Totals and what
+has been sold do not move; the channel cards, the funnel and paid do, and the
+plan's pace shifts a little with the channel mix.
+
 ## 2. The inputs (Target setting tab)
 
 Almost nothing on the **Target setting** tab is typed. The figures come from
@@ -78,7 +87,7 @@ the edition size, the target sell-through, the unit price, the artist's and
 Avant Arte's profit per unit, the deal's revenue share or profit share, and
 the framing take-up and profit per frame. The release's target is the
 products' editions at their target sell-through, summed; its launch value the
-target units at their prices, in sterling; its profits per unit the products'
+target units at their prices, in euros; its profits per unit the products'
 weighted by target units; and the paid-budget split follows from the deal -
 on a profit-share deal Avant Arte carries its share of the profit, on a
 revenue-share (royalty) deal it carries the ads outright. Until Airtable
@@ -183,7 +192,7 @@ stays on the snapshot as data.
 
 ```
 paid_units  = benchmark_paid_units × K
-paid_budget = paid_units × cost per purchase        (the release's figure, else £177)
+paid_budget = paid_units × cost per purchase        (the release's figure, else €177)
 ```
 
 Sense check: **paid budget should stay under 6% of launch value** - the dashboard
@@ -202,8 +211,8 @@ Basket: the 8 launches nearest in size and price, median 134 units → **K = 1.1
 Benchmark → target by group: AA Email 56.2 → 62.9, AA Meta 4.6 → 5.2, artist
 0.6 → 0.6, search / direct / other 53.0 → 59.3, paid 19.5 → 21.9, which sum to
 150. Sessions 24,402 → 27,316. Entries target 150 ÷ 0.8 = 187.5, against
-134 ÷ 0.8 = 167.5 for the benchmark. Paid budget 21.9 × £177 = **£3,873**
-(benchmark £3,460), 0.9% of the £450,000 launch value.
+134 ÷ 0.8 = 167.5 for the benchmark. Paid budget 21.9 × €177 = **€3,873**
+(benchmark €3,460), 0.9% of the €450,000 launch value.
 
 ## 5. Targets across time: the campaign clock
 
@@ -271,6 +280,21 @@ The headline and the chart line are the **trailing-3-calendar-day** rolling
 version of this: a window with spend but no entries reads as ROI 0 (money out,
 nothing in), and CPE is treated as unknown until entries return.
 
+The profit per unit and the budget share are the release's own, from the Target
+setting tab (§2): the products' figures weighted by their target units (AA's
+includes the framing uplift). The card shows Avant Arte's ROI by default and
+can be switched to the artist's reading of the same days - the artist's profit
+per unit over the artist's share of the spend. On a revenue-share deal the
+artist carries no spend, so there is no artist ROI to show. The ? popup on the
+card sets out the working with the release's figures.
+
+The spend is Meta's, billed in euros, and the page runs in euros, so every
+figure on it is euros (a product priced in another currency is converted at a
+fixed rate). The
+cannibalisation is the release's own from the Target setting tab where one is
+typed, else the 20% standard. Framing profit is Avant Arte's alone: it sits in
+AA's profit per unit and never in the artist's.
+
 **Budget to sell out** (the sizing decision). Paid is sized to top up only the
 gap organic is *not* on course to fill - not to buy the whole remaining edition
 by itself:
@@ -285,7 +309,7 @@ budget          = entries needed × forecast CPE
 ```
 
 A launch pacing well ahead organically can therefore read a recommendation of
-£0/day: nothing extra is needed to secure sell-out, whatever the current ROI.
+€0/day: nothing extra is needed to secure sell-out, whatever the current ROI.
 
 **Price is not flat in spend.** Within a campaign, cost per entry rises with
 daily spend as `spend^0.38` - measured on our own campaigns (13 campaigns, 170

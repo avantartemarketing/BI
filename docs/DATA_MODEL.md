@@ -51,7 +51,7 @@ Derived economics:
   = 1,465.29 + 0.35 × 94 = **1,498.19**
 
 `frame_conversion` (the share of buyers taking a frame) and `frame_profit_per_unit` (AA's
-profit per frame, £) are **release-level inputs** on the Target setting tab, shown when framing
+profit per frame, €) are **release-level inputs** on the Target setting tab, shown when framing
 is available; left blank they fall back to the benchmark constants below, which is what every
 release ran on before they were inputs (`frame_terms` in `etl/build.py`, mirrored in
 `shared/economics.mjs`). The snapshot's `economics` block publishes the terms in force
@@ -60,7 +60,7 @@ release ran on before they were inputs (`frame_terms` in `etl/build.py`, mirrore
 it is not fed into the calculation automatically.
 
 Global constants (from the workbook's "PROFIT CALC - DO NOT CHANGE" block):
-`frame_conversion = 0.35`, `frame_profit = £94/unit`, `cannibalisation = 0.2`
+`frame_conversion = 0.35`, `frame_profit = €94/unit`, `cannibalisation = 0.2`
 (the LE standard per the spend rules. The 2026-08-28 tab revision left several
 per-release cannibalisation cells reading 0 via the broken template reference
 (issue 14, §11) - those cells are display artefacts, not the constant. The TL
@@ -103,6 +103,20 @@ Normalisation rules:
   twice the median and past the 90th percentile on at least five rows. The Target setting tab
   shows a warning when `high` is not empty. Tracking has tightened: older launches ran ten to
   fifty per cent untracked, recent ones about three, which is why the norm is recent.
+- **Direct as a source (the dashboard's Direct switch)**: Direct traffic is mostly people who
+  saw something elsewhere and typed the address, so the Overview can read it the way Untracked
+  is read: `redistribute_channel(win, "Direct")` spreads Direct's sessions, entries and units
+  over the other channels in proportion to what they did that day (the rule above with Direct
+  in Untracked's place), and the benchmark's channel split is read the same way, with the
+  panel's median Direct share of the Search/direct/other group (`direct_share_norm`, the
+  cohort of the untracked norm) leaving the group and landing on every group pro rata
+  (`spread_profile`; the headline medians and K do not move). The ETL builds every page both
+  ways (`with_direct_spread`) and stores the blocks that differ under `variants.direct_spread`;
+  `directShare` carries Direct's share of the release's window as the funnel attributes it.
+  The switch in the page head lays the variant over the page, so every card reads one
+  attribution; it is a methodology choice and sticks per browser. Totals, what has been sold
+  and the spend do not move; the plan's pace and the projections shift a little with the
+  channel mix (each group has its own curve), and paid reads the entries it is given.
 - **Paid Search** has no benchmarks, no spend feed, and never appears in the daily export -
   every "Total Paid" benchmark is an alias of Paid Social. Model paid = Paid Social; keep Paid
   Search only as a raw actuals bucket.
@@ -191,7 +205,7 @@ record for); blank means Airtable's. The release's figures follow:
 ```
 target units        = Σ round(edition × target sell-through)          # edition_size
 edition             = Σ edition                                        # edition_total
-launch value        = Σ target units × unit price in sterling          # EUR converted at RATES_TO_GBP
+launch value        = Σ target units × unit price in euros          # EUR converted at RATES_TO_EUR
 profit per unit     = Σ target units × profit per unit / Σ target units, for the products that have one
 framing uplift      = Σ over framed products of target units × take-up × profit per frame / Σ target units
 AA budget share     = per product: its AA profit share on a profit-share deal, 1 on a revenue-share deal;
@@ -217,6 +231,40 @@ name; the pull never takes an email), else what was typed. **The campaign code**
 saved, else the prefix of the first Meta campaign's name, else the guess from the email and
 content feeds. **The Meta campaigns** (`campaign_names`) are the list saved, else the draw
 campaign the spend feed names for the code; paid spend is summed over the list.
+
+### 1.7 Upcoming launches (from Airtable)
+
+The funnel report only carries a release once it has traffic under a release name, and a
+campaign can be spending on Meta for days before that. Airtable's Pipeline table knows the
+launch earlier: its works, its edition and price, its private-room, announce and launch
+dates. So the build lists **upcoming launches** from Airtable (`etl/build.py
+upcoming_releases`) beside the releases the funnel mentions:
+
+- a draw (`launch_type` Draw, or blank - a project Airtable has not typed yet) closing after
+  the build date and within 120 days (60 for a blank type), not at the pitching stage;
+- whose Airtable records no release on file already matched - the same matcher the panel's
+  pricing uses (`etl/pricing.py match`), run over every discovered and configured release,
+  so the artist's earlier launch does not stand for the new one and a launch the funnel
+  already carries under its own title is not listed twice;
+- named the way the funnel will name it, `Artist · Title · YYYY Qn` with the title `Multiple`
+  when the launch has several works, so the page keeps its id when the funnel catches up.
+
+Its page (`build_upcoming`, status `upcoming`, `upcoming: true`) has the dates, the edition,
+the price in euros at the panel's fixed rates, the works and the project's Airtable status,
+and no actuals; the sidebar lists it under Upcoming with the days until it opens. The
+announce date is Airtable's, else assumed 24 days before the close and said so; the campaign
+code is guessed from the feeds' codes and Meta's campaign names, never from a code a release
+on file already carries. `inputs.json` `discovered` carries the edition, the price and the
+Airtable record ids as the defaults the Set up targets tab starts from, and a save keeps the
+ids on the inputs (`airtable_release`, `airtable_ids`).
+
+**When the funnel catches up.** A configured release the funnel does not mention, whose
+inputs carry Airtable ids, is checked on every build against the funnel's releases matched
+to those ids (`adopt_funnel_names`). One match and the input takes the funnel's release
+name - written back to the saved inputs with `adopted_from` - so the actuals attach to the
+targets that were set, under the page's existing id, rather than opening a second, untargeted
+page beside them. The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when
+`AIRTABLE_TOKEN` is set; without it the checked-in file stands.
 
 ## 2. Source feeds
 
@@ -426,7 +474,7 @@ them; `BQ_ORDERS_TABLE` renames the table; both take `BQ_SINCE`):
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
+| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft`; and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts) |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
@@ -470,9 +518,11 @@ such orders on 26 and 27 August). An advisor draft is a Draft line a named perso
 two are never the same line. The funnel's `Preorder_App` counts are another thing again (the
 pre-order requests, allocated like a draw).
 
-Only product lines count (`shopify_product_type = 'Product'`): frames are lines of their own
-(`Frame`) and are left out of units. Two Shopify products with one title (a private-room
-variant at a different price) are one product here. Test orders are dropped.
+Only product lines count as units (`shopify_product_type = 'Product'`): a frame is a line of
+its own (`Frame`) with no release on it, left out of units and counted in the four framing
+columns by joining it to the prints through the order (§6.4). Two Shopify products with one
+title (a private-room variant at a different price) are one product here. Test orders are
+dropped.
 
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down
@@ -551,7 +601,7 @@ plan sold nothing in the median launch - shows its actuals rather than a target 
 model.
 
 What stayed, and where it moved: the cost per purchase is a figure per release
-(`cost_per_purchase`, £ per paid unit; blank means the panel's median, §4 E); the Referral
+(`cost_per_purchase`, € per paid unit; blank means the panel's median, §4 E); the Referral
 Artist tier became the artist posting tier (`artist_posting_tier`, the cohort of the
 artist-posts benchmark); "N/A" on Referral Artist became the artist's own channels not in plan
 (`channels_off`, spec §4.3); and the order-split medians still place a group's target on its
@@ -638,9 +688,9 @@ them (§4a.2). Their last values are in the repository history.
 Keep 0.8 as the planning constant; surface the per-channel table as diagnostics.
 
 **E. Cost per purchase (paid)**: quartiles over 22 hand-curated historical paid campaigns
-(mixing LE + TL): **Low £128.75 / Median £177 / High £291**. The Median is the default price of
+(mixing LE + TL): **Low €128.75 / Median €177 / High €291**. The Median is the default price of
 a paid unit; a release sets its own `cost_per_purchase` on the Target setting tab (Abdulnasser
-Gharem carries £291, the quartile it was planned at). Companion stats (static): ROI
+Gharem carries €291, the quartile it was planned at). Companion stats (static): ROI
 2.2/3.4/6.9, paid % of units .11/.21/.31.
 
 Recomputation policy for the rebuild: recompute quartiles nightly from BigQuery over a
@@ -723,7 +773,7 @@ suggested one; under **10** it is used but carries `basket.thin = True`, which t
 as a warning. A median over an empty or all-NaN column is `0.0`, never NaN.
 
 The profile is the medians themselves: `n` and `members`; `units` (median
-`tot_total_product_units`) with `units_p25` / `units_p75`; `price` (median `unit_price_gbp`
+`tot_total_product_units`) with `units_p25` / `units_p75`; `price` (median `unit_price_eur`
 over the `n_priced` members Airtable priced) with `price_p25` / `price_p75`, and `edition_size`
 (median units on offer); `sessions` (median
 `tot_sessions_total`); `entries` (median `tot_draw_entries_eligible_units`); `campaign_days`;
@@ -791,15 +841,14 @@ Michael Kozlowski · Mecha · 2024 Q2 and Michaël Borremans · The Monkey · 20
 not in the pull). Units sold inside the window sit at a median 0.90 of Airtable's edition size;
 twelve launches sold more than 5% over it, mostly where Airtable holds one of several products.
 
-Currency: Airtable prices in euros; `unit_price_gbp` and `launch_value_gbp` convert at the
-fixed table `RATES_TO_GBP = {GBP: 1, EUR: 0.85, USD: 0.78}` (rounded 2024-2026 averages, fixed
-so the panel does not move with the market; in log space a fixed rate is a constant shift and
-changes no band and no correlation). The original price and currency are kept beside the
-converted one. **Note for the target form:** its "Unit price (£)" field holds, for eight of the
-nine targeted releases, the same number Airtable holds in euros, so either the workbook is
-entering euro list prices under a sterling label or the two list prices coincide; the basket
-layer reads the form's price in the currency the record says (sterling unless `currency` is set)
-and a factor-2 band absorbs the difference, but the label and the entry should agree.
+Currency: the page runs in euros (`PAGE_CURRENCY`). Airtable prices are euros and pass
+through as they are; `unit_price_eur` and `launch_value_eur` convert a record in another
+currency at the fixed table `RATES_TO_EUR = {EUR: 1, GBP: 1.18, USD: 0.92}` (rounded 2024-2026
+averages, fixed so the panel does not move with the market; in log space a fixed rate is a
+constant shift and changes no band and no correlation). The original price and currency are
+kept beside the converted one. Meta's spend is euros too, and the workbook's cost figures the
+benchmarks came from (cost per purchase, the framing profit) were the same euro figures under
+a euros label, so the numbers stand and only the label moved (2026-09-23).
 
 Refresh: `python3 etl/pull_airtable.py && python3 etl/analysis/release_clusters.py
 --pricing-only` re-attaches the pricing to the panel on file without a BigQuery pull; a full
@@ -1171,6 +1220,46 @@ the card's rows and its headline are one sum; without it they are the release-le
 as before (`inHandUnits × rate`, capped). The hero's secured units stay on the funnel export
 and can differ from the card by the entries the rule does not count.
 
+### 6.4 Framing take-up (the Framing card)
+
+**The measure is frames per print, on the prints a frame was on offer for.** A frame is a
+Shopify line of its own (`shopify_product_type = 'Frame'`, no release name), so it is joined
+to the prints through the order. Per order the frames count a frame per print at most
+(`LEAST(frames, prints on offer)`), and go to the order's prints pro rata when it holds
+several, so a release's total is exact and a product's is exact whenever the order held one
+print, which is nearly every order. A print a frame was on offer for is a product line whose
+`framing_offered` is `Optional framing on order` or `Frame included`; `No framing` and blank
+are the prints that could not be framed (the Lifesize Brillo Box), left out of the rate and
+counted apart. The rate is read on prints rather than orders because the economics are per
+print: 71% of the Warhol buyers took a frame but 67% of the prints went out framed, a few
+multi-print orders having framed only some.
+
+Two populations, on the same scale (the feed's four columns, §2.4):
+
+| Bar | Numerator / denominator | What it says |
+|---|---|---|
+| Buyers | `frames_paid` / `prints_offered_paid` (paid orders: not cancelled, not pending, not refunded in full) | what has gone out framed |
+| Entrants | `frames_entry_drafts` / `prints_offered_entry_drafts` (the app's pre-authorisation drafts, §2.4) | the frames the people still in the draw have asked for: what allocation brings if they win at this rate |
+
+**References.** The plan is the release's frame conversion (`frame_terms`: the product's
+Airtable figure or the typed one, weighted over the products that frame, else the panel
+default `frame_conversion` in `etl/benchmarks.json`), drawn as the pale fill; a release whose
+products have no framing option has no plan mark. The benchmark is the basket's median
+frames per print, read from the same feed over the members with at least 30 prints on offer
+(`framing_benchmark`; none when fewer than three members qualify, since the feed starts at
+`BQ_SINCE`), drawn as the dotted outline. On the September 2026 panel the draw launches run
+at 0.54 frames per print, the timed launches at 0.35 (which is where the plan default came
+from), and the estate draws higher still (Mondrian 0.67, Warhol 0.67, Dali 0.58,
+Murakami 0.55).
+
+The snapshot's `framing` block (`framing_block`): `prints`, `frames`, `rate`; `entrants`
+(`prints`, `frames`, `rate`, or null without entry drafts); `plan`; `benchmark`
+(`rate`, `n` members rated, `of` members in the basket, or null); `works[]` (per product with
+prints on offer: `name`, `prints`, `frames`, `rate`, sorted by rate, the card's hover);
+`notOffered` (`units` paid with no framing option, and the `works`); `asOf`. Null when
+nothing on the release has been offered a frame, and the card stays off the page. A feed
+pulled before the four columns existed reads as no framing.
+
 ---
 
 ## 7. Paid: in-flight model (the Paid Calculator, reproduced exactly)
@@ -1188,8 +1277,26 @@ adjCPE(day)     = spend(day) / (entries(day) × (1 − drop_off))          # cos
 ROI_party(day)  = (1 − cannibalisation) × profit_per_unit_party / (adjCPE × budget_share_party)
 cum versions    = same on Σ spend / Σ entries
 ```
+Spend is Meta's, billed in euros: `load_spend` converts it once to euros at the fixed
+`RATES_TO_EUR` rate (`SPEND_CURRENCY`, `spendCurrency` and `spendRate` on the paid block), so every
+spend, cost per entry, budget and ROI figure on the page is euros. `cannibalisation` is the
+release's own where the Target setting tab has one (`cannibalisation`, a fraction), else the
+0.2 standard; the paid block publishes the figure in force.
 `budget_share` = who pays for ads (AA/artist), e.g. 100/0 (Glenn Ligon), 33/66 (Jaume Plensa);
-distinct from `profit_share`.
+distinct from `profit_share`. `profit_per_unit_party` and `budget_share_party` are the
+release's own, from the Target setting tab (§1.6): the products' figures weighted by their
+target units, or the release-level `legacy_economics` while it stands; AA's profit per unit
+includes the framing uplift.
+
+Both parties are published. AA's reading is the paid block's `cumRoi`, `l3dRoi`, `daily[].roi`,
+`roiPath` and `budget.finalDayRoi`; the artist's is `paid.artist` (`cumRoi`, `l3dRoi`, `roiPath`,
+`roiDeclineModel`, `finalDayRoi`, `profitPerUnit`, `budgetShare`) and `daily[].roiArtist`: the same
+days and the same forward path, with the artist's profit per unit over the artist's share of the
+spend (`1 − aa_budget_share`). On a deal where the artist carries no spend (a revenue share,
+`aa_budget_share` 1) every artist figure is `None`: there is no artist ROI to read. The terms the
+figures are read with sit on the block as `cannibalisation` and `dropOff`, so the Paid ROI card
+can show its working in the ? popup. The card reads AA by default and has an AA / Artist switch
+(kept per browser); the spend recommendation, its ROI floor and the pacing rules stay AA's.
 
 **Budget to sell out** (the sizing decision). The workbook nets off a manual
 `organic_topup` estimate; the dashboard automates it with the shape-following
@@ -1205,7 +1312,7 @@ budget_to_sellout= entries_needed × forecast_CPE
 daily_spend      = budget_to_sellout / days_until_launch
 ROI_check_party  = profit_per_unit_party / (forecast_CPE × budget_share_party)
 ```
-A launch pacing well ahead organically reads a recommendation of £0/day -
+A launch pacing well ahead organically reads a recommendation of €0/day -
 nothing extra is needed to secure sell-out, whatever the current ROI.
 
 **Pacing rules** (v1 rules engine; target and thresholds):
@@ -1223,7 +1330,7 @@ nothing extra is needed to secure sell-out, whatever the current ROI.
   ± 3.5 (the between-campaign spread), from the 2026-09-23 fit on 29 campaigns and 433
   campaign-days (`etl/analysis/cpe_elasticity.py`: elasticity 0.35 to 0.45 across day filters, drift
   2.6 to 4.0% a day, 1.4% on the 2026 campaigns alone). A campaign that ramps spend and ages at
-  the same time cannot separate the two from its own days - Warhol's 17 days from £1k to £30k a
+  the same time cannot separate the two from its own days - Warhol's 17 days from €1k to €30k a
   day give 0.42 ± 0.53 and −3.5% ± 10 - so for most campaigns the priors carry the drift and the
   campaign's own days move the elasticity only when they are tight. The workbook's 5 / 7 / 10% a
   day by third was the cost rise along its own ramping spend path, which the elasticity already
@@ -1283,6 +1390,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), `cap` recorded; Implement → append-only decision log |
 | Sell-through by product | rows | §6.3: per product sold / entries in hand allocated by the maximum-quantity rule × the entry → order rate / (at close) units still to come, against the product's edition; no target or benchmark drawn |
 | Entries by country | top 5 | geo split of entries (requires country dim in the daily feed - **currently missing; needs adding to the BigQuery export**) |
+| Framing | buyers, entrants | §6.4: frames per print on the prints a frame was on offer for, paid orders and the app's pre-authorisation drafts, against the plan's frame conversion and the basket's median |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
 
 LE benchmark fields carried on the release document: `chargeDropOff = 0.2`,
@@ -1296,7 +1404,7 @@ data), `reOfferRecovery`.
 ```
 dim_release(release_name PK, campaign_code, type LE|TL, artist, announce_date,
             private_room_open, launch_end, campaign_length_days, edition_size, unit_price,
-            economics…, benchmark_basket, channels_off, artist_posting_tier, cost_per_purchase)
+            economics…, benchmark_basket, channels_off, artist_posting_tier, cost_per_purchase, cannibalisation)
 dim_product(release_name FK, product_name, edition)
 fact_funnel_daily(release_name, channel, event_date, sessions, page_views, draw_entries,
             eligible_entry_units, eligible_units_no_conv, units_total, units_by_route…,
@@ -1326,7 +1434,10 @@ actuals-only page omits it.
 | Field | What it holds |
 |---|---|
 | `targetingMode` | always `"benchmark"` since 2026-09-23 (§3); kept so older readers of the field still resolve |
+| `upcoming`, `airtable` | `true` on a launch listed from Airtable before the funnel carries it (§1.7), with `airtable` holding its release code, record ids, works, edition, price and project status |
 | `untracked` | `{entries: {share, count, total}, units: {...}, normal: {recentMonths, entries: {median, p90, n}, units: {...}}, high: [...]}` - the untracked share of the window against what is normal (§1.3); the Target setting tab warns when `high` names a metric |
+| `directShare` | `{sessions, entries, units}` - Direct's share of the window as the funnel attributes it (§1.3) |
+| `variants.direct_spread` | the top-level blocks that differ when Direct is spread over the other channels (`channels`, `funnelByGroup`, `paid`, `targets`, `groupTargets`, `waterfall`, `benchmark`, ...); the Overview's Direct switch lays them over the page (§1.3) |
 | `benchmark.basket` | `{id, kind, name, n, thin, suggestedId}`; `kind` is `ready`, `bespoke` or `saved` |
 | `benchmark.units`, `unitsP25`, `unitsP75` | the basket's median units and its middle half |
 | `benchmark.sessions`, `entries`, `campaignDays` | the other headline medians of the profile |
@@ -1349,6 +1460,7 @@ actuals-only page omits it.
 | `sellthrough.products[]` | per product: `key`, `name`, `draws`, `edition`, `sold`, `drafts`, `entrants`, `inHand.{open, won}`, `allocated`, `pinned`, `fixed`, `flexible`, `predicted`, `shown`, `room`, `oversubscribed`, `futurePredicted`, `pct`, `pctClose`, `expectedToday`, `benchmarkToday`, `benchmarkClose` (§6.3) |
 | `sellthrough.attributedSold`, `unattributedSold`, `soldSource` | sold units the draw feed named a product for, the rest, and whether products' sales came from tagged purchases or from winners who bought |
 | `sellthrough.drafts`, `unitsPaidOrders`, `ordersAsOf`, `incomplete` | orders awaiting payment and units paid across the release from the orders feed, the last order or draft day they run to (absent without the feed), and what the card is still waiting on: the list behind its Incomplete data stamp (§6.3) |
+| `framing` | `{prints, frames, rate, entrants: {prints, frames, rate} or null, plan, benchmark: {rate, n, of} or null, works: [...], notOffered: {units, works}, asOf}` - frames per print for the Framing card (§6.4); null when nothing on the release has been offered a frame |
 | `slack` | added by the server when it serves the snapshot, not by the ETL: `{channel, updatedAt, updatedBy, lastPostAt, lastPostBy}` from `data/slack.json`, or null. The sell-through card's Post to Slack button posts to `channel`; the Target setting tab sets it (`server/slack.js`) |
 | `sellthrough.ordersByProduct`, `drawProducts`, `soldSource` | the orders feed for the release (per product title: units paid, drafts, list price, edition) and the product each draw sold, carried so a save re-runs the rule on the server; which rule the sold figures came from (§6.3) |
 | `sellthrough.allocation`, `measure`, `editionSum`, `editionMismatch`, `allocationStarted` | the rule's bookkeeping, whether fill is over editions or in units, the typed editions' sum against the release's, and whether winners have been drawn |
@@ -1393,7 +1505,7 @@ Pipeline integrity:
 11. `untracked` vs `Untracked` case; header typos (`Eligable`, `reachs`).
 
 Model bugs found in the sheet (the rebuild should implement the *intent*):
-12. "Spend for tomorrow" is clamped to £2 (`min(spend, 2.0)` where 2.0 is a per-unit step;
+12. "Spend for tomorrow" is clamped to €2 (`min(spend, 2.0)` where 2.0 is a per-unit step;
     open comment "should this be 669?"). Intended cap: ±30%/max-increase rules.
 13. ROI shows positive with 0 entries (division fallback) - rebuild should show 0/–.
 14. Template's cannibalisation cell reference is broken (G90 → empty cell); live value 0.2.
@@ -1446,7 +1558,7 @@ cpe_daily_drift_by_third` is now the pure time effect, 0.5% a day (measured 0.36
 `etl/analysis/cpe_elasticity.py`); the workbook values sit beside it as
 `cpe_daily_drift_by_third_workbook`. The workbook's own template, note, produces the same
 runaway "expected daily spend" the first version of this card did (Warhol_LE_26 row 229:
-£181k-256k a day; Dali_LE_26 row 231 suggests £3.7k-10.9k a day against £1.5k spent) and
+€181k-256k a day; Dali_LE_26 row 231 suggests €3.7k-10.9k a day against €1.5k spent) and
 tames it with a "max increase per day 2.0" rule rather than a price that responds to spend.
 
 Provenance of `spend_rules`, corrected: the 0.9 / 1.3 bands, the 30% cap and the 10% dead

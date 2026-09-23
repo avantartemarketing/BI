@@ -1,5 +1,7 @@
 # Baskets: what the data says and a proposal
 
+> Figures in this proposal are in sterling at the 0.85 rate then in use; the dashboard now runs in euros (docs/DATA_MODEL.md, currency).
+
 An analysis of how the benchmark basket could be chosen and shown better,
 against the five points raised on 20 September: size and price as the
 primary criteria, seeing and editing the basket every time, estates against

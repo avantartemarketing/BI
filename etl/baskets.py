@@ -45,13 +45,13 @@ from datetime import date
 
 import pandas as pd
 
-# The fixed rates the panel's unit_price_gbp was converted at. The API shim
+# The fixed rates the panel's unit_price_eur was converted at. The API shim
 # imports this module as etl.baskets from the repo root, the ETL as baskets
 # from inside etl/, so both spellings of the neighbour are tried.
 try:
-    from pricing import RATES_TO_GBP
+    from pricing import RATES_TO_EUR
 except ImportError:  # pragma: no cover - the shim's import path
-    from etl.pricing import RATES_TO_GBP
+    from etl.pricing import RATES_TO_EUR
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -139,7 +139,7 @@ NEAR = 4.0
 RECENT_MONTHS = 18
 
 # Distance is on two axes, units and unit price (etl/pricing.py,
-# unit_price_gbp), and a launch is only as near as its worse one: matched on
+# unit_price_eur), and a launch is only as near as its worse one: matched on
 # size at four times the price is not a comparable, and a single figure taken
 # over both axes says so without saying which. Size carries the units
 # benchmark, price carries the conversion benchmarks - the sessions and
@@ -172,7 +172,7 @@ _BASE_NUMERIC = [
     "tot_draw_entries_total_units", "campaign_days", "private_room_share", "oversubscription",
     "cluster", "cluster_k2", "nearest_cluster", "dist_to_centroid", "year",
     # edition pricing, joined from Airtable by etl/pricing.py (docs/DATA_MODEL.md)
-    "unit_price", "unit_price_gbp", "edition_size", "launch_value", "launch_value_gbp",
+    "unit_price", "unit_price_eur", "edition_size", "launch_value", "launch_value_eur",
     "n_products", "price_min", "price_max", "price_match_score", "price_match_days",
 ]
 _GROUP_NUMERIC = ["unit_share_", "sess_share_", "ent_share_", "conv_sess_entry_",
@@ -322,9 +322,9 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
     sessions = _median(rows, "tot_sessions_total")
     share_units = _shares(rows, "unit_share_")
     share_sessions = _shares(rows, "sess_share_")
-    # the basket's unit prices in sterling, from Airtable via the panel; a
+    # the basket's unit prices in euros, from Airtable via the panel; a
     # member without one is skipped, and n_priced says how many had one
-    priced = pd.to_numeric(rows.get("unit_price_gbp"), errors="coerce") if "unit_price_gbp" in rows.columns else pd.Series(dtype=float)
+    priced = pd.to_numeric(rows.get("unit_price_eur"), errors="coerce") if "unit_price_eur" in rows.columns else pd.Series(dtype=float)
     priced = priced[priced > 0]
     return {
         "n": len(used),
@@ -440,7 +440,7 @@ def _day(v) -> str:
 
 def candidate_rows(panel: pd.DataFrame) -> list[dict]:
     """The draw panel as the picker's candidate rows, newest close first: each
-    launch's units, sessions, paid share, unit price in sterling, edition size,
+    launch's units, sessions, paid share, unit price in euros, edition size,
     dates and cluster. Every value is JSON-ready.
 
     One function so the API shim and the build agree to the field: the build
@@ -475,9 +475,9 @@ def candidate_rows(panel: pd.DataFrame) -> list[dict]:
             "entries": _num(r.get("tot_draw_entries_eligible_units")),
             "units_per_buyer": _num(r.get("units_per_buyer")),
             "private_room_share": _num(r.get("private_room_share")),
-            # the edition's unit price in sterling and its size, from Airtable
+            # the edition's unit price in euros and its size, from Airtable
             # via the panel (etl/pricing.py); 0 where Airtable has no match
-            "price": _num(r.get("unit_price_gbp")),
+            "price": _num(r.get("unit_price_eur")),
             "edition_size": _num(r.get("edition_size")),
             "cluster": cid,
             "cluster_name": names.get(cid, "") if cid is not None else "",
@@ -573,20 +573,20 @@ def _release_start(panel: pd.DataFrame, release: dict | None, as_of: date) -> pd
 
 
 def _release_price(panel: pd.DataFrame, release: dict | None) -> float:
-    """This release's unit price in sterling, or 0.0 when it has none.
+    """This release's unit price in euros, or 0.0 when it has none.
 
     A release in the panel carries Airtable's value-weighted price already
     converted. One being planned has the price typed into the target form,
-    in the currency the form says (sterling unless the record carries a
+    in the currency the form says (euros unless the record carries a
     currency), converted at the same fixed table as the panel so the band is
     drawn in one currency."""
     row = _panel_row(panel, release)
-    if row is not None and _num(row.get("unit_price_gbp")) > 0:
-        return _num(row["unit_price_gbp"])
+    if row is not None and _num(row.get("unit_price_eur")) > 0:
+        return _num(row["unit_price_eur"])
     price = _num((release or {}).get("unit_price"))
     if price <= 0:
         return 0.0
-    return price * RATES_TO_GBP.get(str((release or {}).get("currency") or "GBP").upper(), 1.0)
+    return price * RATES_TO_EUR.get(str((release or {}).get("currency") or "EUR").upper(), 1.0)
 
 
 def _ready(bid: str, name: str, desc: str, members: list[str], panel: pd.DataFrame) -> dict:
@@ -611,8 +611,8 @@ def _distances(pool: pd.DataFrame, release: dict | None, panel: pd.DataFrame) ->
     size = _num((release or {}).get("edition_size"))
     units = pool["tot_total_product_units"].map(_num).astype(float).to_numpy()
     price = _release_price(panel, release)
-    prices = (pd.to_numeric(pool["unit_price_gbp"], errors="coerce").to_numpy()
-              if "unit_price_gbp" in pool.columns else np.full(len(pool), np.nan))
+    prices = (pd.to_numeric(pool["unit_price_eur"], errors="coerce").to_numpy()
+              if "unit_price_eur" in pool.columns else np.full(len(pool), np.nan))
     use_price = bool(SIMILAR_USE_PRICE and price > 0 and np.isfinite(prices).any())
 
     def mult(vals, ref):
@@ -716,7 +716,7 @@ def similar_desc(members: list[str], reach: float | None, on: tuple[str, ...], s
         return "No launch on file to compare this edition against."
     axes = f"units of this edition's {size:,.0f}"
     if "price" in on:
-        axes += f" and on its unit price of £{price:,.0f}"
+        axes += f" and on its unit price of €{price:,.0f}"
     near = f"The {len(members)} launches nearest on {axes}"
     if own and artist:
         near += f", starting with {artist}'s own {own}"

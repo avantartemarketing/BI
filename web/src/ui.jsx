@@ -161,7 +161,7 @@ export function fmtSigned(n, digits = 0) {
 
 export function fmtMoney(n, digits = 0) {
   if (n === null || n === undefined) return "–";
-  return (n < 0 ? MINUS : "") + "£" + fmt(Math.abs(n), digits);
+  return (n < 0 ? MINUS : "") + "€" + fmt(Math.abs(n), digits);
 }
 
 export function fmtK(n) {
@@ -407,7 +407,7 @@ export function BmOutline({ pct, column = false, inset = "0px", radius = 4 }) {
  * outline -> projected fill -> to-date fill -> over-target hatch. The actual is
  * inset top and bottom so the tints still show on both sides of it. */
 export function TrackBar({
-  now, proj, target, bm, full, hatchFrom, height = 20, radius = 4, tips = {}, projColor = C.blueLight,
+  now, proj, target, bm, full, max, hatchFrom, height = 20, radius = 4, tips = {}, projColor = C.blueLight,
 }) {
   const t = useTip();
   const tp = (x) => t.props(typeof x === "string" ? { head: x } : x);
@@ -416,7 +416,10 @@ export function TrackBar({
   const lo = hasBm ? Math.min(tgt, bm) : tgt;
   const refMax = hasBm ? Math.max(tgt, bm) : tgt;
   const maxData = Math.max(now ?? 0, proj ?? 0);
-  const maxV = full > 0
+  // `max` is a hard ceiling for a bar on a bounded scale (a rate: the track
+  // is exactly 0 to 100%, with no room drawn past it); `full` is a sellout,
+  // which a reference or a projection can run past and the bar should show
+  const maxV = max > 0 ? max : full > 0
     ? Math.max(full, refMax, maxData) * 1.02
     : Math.max(refMax > 0 ? refMax * 1.2 : 0, maxData * 1.04);
   const scale = maxV > 0 ? 100 / maxV : 0;
@@ -595,3 +598,27 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const fmtDay = (d, weekday = false) =>
   `${weekday ? WEEKDAYS[d.getUTCDay()] + " " : ""}${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+
+/* The calendar day a day of the window is. The ETL counts days from the
+ * announce (snap.windowStart): day 0 is the announce day, snap.day is the
+ * as-of day, snap.of is the close, and the daily arrays are indexed the same
+ * way, so day N is windowStart + N days. Null on a snapshot without a window. */
+export const windowDate = (snap, day) => {
+  if (!snap || !snap.windowStart || !(day >= 0)) return null;
+  const t = Date.parse(snap.windowStart + "T00:00:00Z");
+  return Number.isFinite(t) ? new Date(t + day * 86400000) : null;
+};
+
+/* A day of the window named by its date, with the day number after it: a day
+ * number alone only reads against the campaign clock, a date reads on its
+ * own. "Mon 21 Sep · day 18"; "day 18" when the window has no start. */
+export const dayLabel = (snap, day, weekday = false) => {
+  const d = windowDate(snap, day);
+  return d ? `${fmtDay(d, weekday)} · day ${day}` : `day ${day}`;
+};
+
+/* The date alone for an axis end, falling back to the day number. */
+export const dayAxisLabel = (snap, day) => {
+  const d = windowDate(snap, day);
+  return d ? fmtDay(d) : `day ${day}`;
+};

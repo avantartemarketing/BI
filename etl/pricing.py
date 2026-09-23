@@ -39,14 +39,14 @@ What a matched release gets
                   in the currency Airtable holds (EUR today) - the price of the
                   average unit in the edition, not of the average product
   currency        that currency
-  unit_price_gbp  unit_price converted at RATES_TO_GBP, a fixed table so the
+  unit_price_eur  unit_price converted at RATES_TO_EUR, a fixed table so the
                   panel does not move with the exchange rate; in log space a
                   fixed rate is a constant shift, so it changes no correlation
                   and no band, only the number printed
   edition_size    the sum of the sized products' units - the edition on offer,
                   which is not the panel's tot_total_product_units (units sold
                   inside the window)
-  launch_value    unit_price x edition_size, and launch_value_gbp likewise
+  launch_value    unit_price x edition_size, and launch_value_eur likewise
   plus the code, product count, price spread, launch and edition type, and
   price_match / price_match_score / price_match_days / price_note saying how
   the row was matched.
@@ -72,11 +72,14 @@ PANEL_PATH = ROOT / "data" / "release_clusters.csv"
 INDEX_PATH = ROOT / "data" / "app" / "index.json"
 INPUTS_PATH = ROOT / "data" / "app" / "inputs.json"
 
-# Fixed rates to sterling, documented in docs/DATA_MODEL.md. Rounded 2024-2026
+# The page runs in euros: Airtable's prices and Meta's spend are euros and pass
+# through as they are. Fixed rates to euros for a record in another currency,
+# documented in docs/DATA_MODEL.md. Rounded 2024-2026
 # averages; the point is a panel that does not move with the market, not a
 # rate that is right today. Airtable prices in euros; the others are here so a
 # record priced in another currency converts rather than failing.
-RATES_TO_GBP = {"GBP": 1.0, "EUR": 0.85, "USD": 0.78}
+PAGE_CURRENCY = "EUR"
+RATES_TO_EUR = {"EUR": 1.0, "GBP": 1.18, "USD": 0.92}
 
 WINDOW_BEFORE_DAYS = 45   # a launch date this far before the announce still belongs to the campaign (early access)
 WINDOW_AFTER_DAYS = 30    # and this far after the close (a draw that ran past the clock)
@@ -87,7 +90,7 @@ STOP_TOKENS = {"the", "estate", "foundation", "of", "and"}
 BUNDLE_RE = re.compile(r"set of|\[|diptych|triptych", re.I)
 
 PRICE_COLS = ["airtable_release", "airtable_ids", "n_products", "unit_price", "price_min", "price_max", "currency",
-              "unit_price_gbp", "edition_size", "launch_value", "launch_value_gbp", "airtable_launch_date",
+              "unit_price_eur", "edition_size", "launch_value", "launch_value_eur", "airtable_launch_date",
               "airtable_launch_type", "airtable_edition_type", "airtable_product_type", "price_status",
               "price_match", "price_match_score", "price_match_days", "price_note"]
 
@@ -154,6 +157,14 @@ def _worst_status(values: pd.Series) -> str:
     return max(got, key=lambda v: order.index(v) if v in order else len(order))
 
 
+def _first_day(values: pd.Series | None):
+    """The earliest date in a column, as a Timestamp, or NaT when there is none."""
+    if values is None:
+        return pd.NaT
+    days = pd.to_datetime(values, errors="coerce").dropna()
+    return days.min() if len(days) else pd.NaT
+
+
 def _mode(values: pd.Series) -> str:
     got = values.dropna().astype(str)
     got = got[got != ""]
@@ -203,11 +214,16 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
             "quarter": quarter_of(g["launch_date"].min()),
             "launch_type": _mode(g["launch_type"]), "edition_type": _mode(g["edition_type"]),
             "product_type": _mode(g["product_type"]), "price_status": _worst_status(g["price_status"]),
+            # the campaign's other dates and where the project stands, for a
+            # launch the funnel has not seen yet (etl/build.py upcoming_releases)
+            "announce_date": _first_day(g.get("announce_date")),
+            "private_room_date": _first_day(g.get("private_room_date")),
+            "project_status": _mode(g["project_status"]) if "project_status" in g.columns else "",
         })
     out = pd.DataFrame(rows)
-    rate = out["currency"].map(RATES_TO_GBP)
-    out["unit_price_gbp"] = out["unit_price"] * rate
-    out["launch_value_gbp"] = out["launch_value"] * rate
+    rate = out["currency"].map(RATES_TO_EUR)
+    out["unit_price_eur"] = out["unit_price"] * rate
+    out["launch_value_eur"] = out["launch_value"] * rate
     return out
 
 
@@ -294,9 +310,9 @@ def _combine(chosen: list[pd.Series]) -> dict:
         "launch_date": frame["launch_date"].min(),
         "price_status": _worst_status(frame["price_status"]),
     })
-    rate = RATES_TO_GBP.get(out.get("currency") or "", float("nan"))
-    out["unit_price_gbp"] = out["unit_price"] * rate
-    out["launch_value_gbp"] = out["launch_value"] * rate
+    rate = RATES_TO_EUR.get(out.get("currency") or "", float("nan"))
+    out["unit_price_eur"] = out["unit_price"] * rate
+    out["launch_value_eur"] = out["launch_value"] * rate
     return out
 
 
@@ -429,7 +445,7 @@ def report() -> None:
     print(f"Airtable: {len(records)} product records, {len(lf)} launches (a release code on a launch date); "
           f"{int(records['bundle'].sum())} records are bundles or unsized and do not count towards a launch's price or size")
     print(f"launches priced: {lf['unit_price'].notna().sum()}, sized: {lf['edition_size'].notna().sum()}; "
-          f"currency: {lf['currency'].value_counts().to_dict()}; rates to GBP: {RATES_TO_GBP}")
+          f"currency: {lf['currency'].value_counts().to_dict()}; rates to EUR: {RATES_TO_EUR}")
 
     panel = pd.read_csv(PANEL_PATH, low_memory=False)
     res = match(panel, lf)

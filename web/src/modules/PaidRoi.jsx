@@ -11,12 +11,20 @@
  * negative ROI axis is meaningless; complete releases draw actuals only.
  * Paid is live while there has been spend in the last three days, the window
  * the headline reads; switched off, the projection would be a path for spend
- * nobody is making, so the line ends where the spend did and says so. */
+ * nobody is making, so the line ends where the spend did and says so.
+ *
+ * The ROI is a party's (docs §7): profit per unit net of cannibalisation over
+ * the cost of a converting entry and that party's share of the spend, both
+ * from the Target setting tab. AA's reading is the default; the switch in the
+ * head shows the artist's reading of the same days (paid.artist, daily
+ * roiArtist), and stays put when the artist carries none of the spend or has
+ * no profit per unit recorded. The ? popup shows the working. */
 import React, { useState } from "react";
-import { Card, QBadge, GROUP_DOTS, C, fmt } from "../ui.jsx";
+import { Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel } from "../ui.jsx";
 
 const W = 480, H = 200, BAND_TOP = 132;
 const DAY_MS = 86400000;
+const PARTY_PREF = "paidRoiParty";   // the switch sticks across releases, per browser
 
 function dayIndex(dateStr, windowStart, fallback) {
   if (windowStart) {
@@ -26,8 +34,12 @@ function dayIndex(dateStr, windowStart, fallback) {
   return fallback;
 }
 
+const readParty = () => { try { return localStorage.getItem(PARTY_PREF) === "artist" ? "artist" : "aa"; } catch { return "aa"; } };
+const pct = (x) => (x === null || x === undefined ? "–" : fmt(100 * x, 0) + "%");
+
 export default function PaidRoi({ snap }) {
   const [hover, setHover] = useState(null);   // day number
+  const [partyPref, setPartyPref] = useState(readParty);
   const paid = snap.paid || {};
   const daily = paid.daily || [];
   const complete = !!snap.complete;
@@ -49,6 +61,22 @@ export default function PaidRoi({ snap }) {
     );
   }
 
+  // ----- whose ROI: AA's, or the artist's reading of the same days -----
+  const artist = paid.artist || null;
+  const artistReason = !artist ? "The artist's reading needs a rebuilt snapshot"
+    : !((artist.budgetShare ?? 0) > 0) ? "The artist carries none of the paid spend on this deal, so there is no artist ROI"
+    : !((artist.profitPerUnit ?? 0) > 0) ? "No artist profit per unit on the Target setting tab yet"
+    : null;
+  const artistOk = targeted && artistReason === null;
+  const party = partyPref === "artist" && artistOk ? "artist" : "aa";
+  const setParty = (v) => { setPartyPref(v); try { localStorage.setItem(PARTY_PREF, v); } catch { /* per-browser convenience only */ } };
+  const view = party === "artist"
+    ? { label: "Artist", key: "roiArtist", cum: artist.cumRoi, l3d: artist.l3dRoi, path: artist.roiPath || [],
+        start: (artist.roiDeclineModel || {}).start, target: null, ppu: artist.profitPerUnit, share: artist.budgetShare }
+    : { label: "AA", key: "roi", cum: paid.cumRoi, l3d: paid.l3dRoi, path: paid.roiPath || [],
+        start: (paid.roiDeclineModel || {}).start, target: paid.roiTarget ?? null, ppu: paid.profitPerUnitAA, share: paid.aaBudgetShare };
+  const targetLine = view.target !== null && view.target !== undefined ? "\nTarget " + fmt(view.target, 2) : "";
+
   // ----- series mapped onto campaign days 1..of -----
   const n = daily.length;
   const pts = daily
@@ -56,7 +84,7 @@ export default function PaidRoi({ snap }) {
       d: dayIndex(d.date, snap.windowStart, (snap.day ?? 0) - (n - 1 - i)),
       spend: d.spend ?? 0,
       entries: d.entries ?? null,
-      roi: d.roi ?? null,
+      roi: d[view.key] ?? null,
     }))
     .filter((p) => p.d >= 1 && p.d <= of);
 
@@ -71,12 +99,12 @@ export default function PaidRoi({ snap }) {
   const factor = model.dailyFactor ?? null;
   const anchor = lastRoiPt
     ? { d: lastRoiPt.d, v: lastRoiPt.roi }
-    : model.start !== null && model.start !== undefined ? { d: today, v: model.start } : null;
-  // The dotted line is the ETL's forward path (paid.roiPath: today's spend,
-  // cost drifting by the spend rules' tiers) - the same path the budget
+    : view.start !== null && view.start !== undefined ? { d: today, v: view.start } : null;
+  // The dotted line is the ETL's forward path (roiPath: today's spend, cost
+  // drifting by the spend rules' tiers) - the same path the budget
   // recommendation's ROI floor is judged on, so the two cards cannot
   // disagree. The geometric model is only a fallback for older snapshots.
-  const pathPts = (paid.roiPath || [])
+  const pathPts = view.path
     .map((p) => ({ d: dayIndex(p.date, snap.windowStart, null), v: p.roi }))
     .filter((p) => p.d !== null && p.d >= 1 && p.d <= of && p.v !== null && p.v !== undefined);
   const showModel = !complete && paidLive && anchor !== null && anchor.d <= of && (pathPts.length > 0 || factor !== null);
@@ -90,7 +118,7 @@ export default function PaidRoi({ snap }) {
   const domVals = [
     ...roiPts.map((p) => p.roi),
     ...decline.map((p) => p.v),
-    ...(paid.roiTarget !== null && paid.roiTarget !== undefined ? [paid.roiTarget] : []),
+    ...(view.target !== null && view.target !== undefined ? [view.target] : []),
   ];
   let lo = 0, hi = 1;
   if (domVals.length) {
@@ -122,44 +150,72 @@ export default function PaidRoi({ snap }) {
       x: Math.min(Math.max(x(p.d) - bw / 2, 0), W - bw).toFixed(1),
       y: (H - h).toFixed(1),
       h: h.toFixed(1),
-      tip: "Day " + p.d + " spend £" + fmt(p.spend),
+      tip: dayLabel(snap, p.d) + ": spend €" + fmt(p.spend),
     };
   });
 
   // ----- lead + header stats -----
   // ROI needs the profit split; without targets the lead is cost per entry
-  const leadVal = !targeted ? (complete ? paid.cumCpe : paid.l3dCpe) : complete ? paid.cumRoi : paid.l3dRoi;
+  const leadVal = !targeted ? (complete ? paid.cumCpe : paid.l3dCpe) : complete ? view.cum : view.l3d;
   const leadCaption = !targeted
-    ? (complete ? "£ per entry, whole campaign - ROI needs targets" : "£ per entry, last 3 days - ROI needs targets")
-    : complete ? "ROI final" : "ROI last 3 days";
-  const moreTip = {
-    head: "Paid ROI",
+    ? (complete ? "€ per entry, whole campaign - ROI needs targets" : "€ per entry, last 3 days - ROI needs targets")
+    : complete ? `${view.label} ROI final` : `${view.label} ROI last 3 days`;
+  // the working behind the headline: the figures it is read from, in the
+  // order they are applied, so the basis is on the card and not in a doc
+  const cpeUsed = complete ? paid.cumCpe : paid.l3dCpe;
+  const dropOff = paid.dropOff ?? 0.2;
+  // the spend feed is Meta's, billed in euros; the build converts it once
+  const spendNote = paid.spendCurrency && paid.spendCurrency !== "EUR"
+    ? ` Spend is Meta's, billed in ${paid.spendCurrency === "EUR" ? "euros" : paid.spendCurrency}, converted to euros at a fixed rate (${paid.spendRate}).` : "";
+  const moreTip = !targeted ? {
+    head: "Paid cost",
     rows: [
-      { label: "ROI total", value: fmt(paid.cumRoi, 2) },
-      { label: "£/entry L3D", value: fmt(paid.l3dCpe, 2) },
-      { label: "£/entry total", value: fmt(paid.cumCpe, 2) },
+      { label: "€/entry L3D", value: fmt(paid.l3dCpe, 2) },
+      { label: "€/entry total", value: fmt(paid.cumCpe, 2) },
     ],
+    body: "Cost per converting entry: spend over the entries that become orders (" + pct(1 - dropOff) + " of them). ROI needs the profit split from the Target setting tab." + spendNote,
+  } : {
+    head: `${view.label} ROI - how it is read`,
+    rows: [
+      { label: `${view.label} profit per unit`, value: "€" + fmt(view.ppu, 2) },
+      { label: "less cannibalisation", value: pct(paid.cannibalisation ?? 0.2) },
+      { label: complete ? "÷ € per converting entry, whole campaign" : "÷ € per converting entry, last 3 days", value: fmt(cpeUsed, 2) },
+      { label: `÷ ${view.label} share of the spend`, value: pct(view.share) },
+      { label: complete ? "= ROI final" : "= ROI last 3 days", value: fmt(leadVal, 2) },
+      { label: "ROI total", value: fmt(view.cum, 2) },
+      { label: "€/entry L3D", value: fmt(paid.l3dCpe, 2) },
+      { label: "€/entry total", value: fmt(paid.cumCpe, 2) },
+    ],
+    body: "Profit per unit, the share of the spend and the cannibalisation are the Target setting tab's (products and economics, paid assumptions; the AA figure includes the framing uplift, which is Avant Arte's alone). A converting entry is one that becomes an order, "
+      + pct(1 - dropOff) + " of entries." + spendNote,
   };
-  const todayTip =
-    "ROI last 3 days " + fmt(paid.l3dRoi, 2) +
-    "\nTarget " + fmt(paid.roiTarget, 2);
-  const projTip = "Projected ROI at close " + fmt(declineEnd, 2) + "\nTarget " + fmt(paid.roiTarget, 2);
-  const finalTip = "ROI final " + fmt(paid.cumRoi, 2) + "\nTarget " + fmt(paid.roiTarget, 2);
+  const todayTip = `${view.label} ROI last 3 days ` + fmt(view.l3d, 2) + targetLine;
+  const projTip = `Projected ${view.label} ROI at close ` + fmt(declineEnd, 2) + targetLine;
+  const finalTip = `${view.label} ROI final ` + fmt(view.cum, 2) + targetLine;
 
   const statVal = { fontSize: 13, fontWeight: 600, color: C.ink };
   const right = (
     <div style={{ display: "flex", gap: 20, alignItems: "baseline" }}>
+      {targeted && artist && (
+        <span className="seg compact" title="Whose ROI: Avant Arte's or the artist's, each their profit per unit over their share of the spend">
+          <button className={party === "aa" ? "active" : ""} onClick={() => setParty("aa")}
+            title="Avant Arte's ROI: its profit per unit over its share of the paid spend">AA</button>
+          <button className={party === "artist" ? "active" : ""} disabled={!artistOk} onClick={() => setParty("artist")}
+            style={artistOk ? undefined : { opacity: 0.45, cursor: "default" }}
+            title={artistOk ? "The artist's ROI: their profit per unit over their share of the paid spend" : artistReason}>Artist</button>
+        </span>
+      )}
       <span
-        title="Cumulative profit-based ROI: profit attributed to paid entries ÷ total spend, whole campaign"
+        title={`Cumulative ${view.label} ROI: ${view.label} profit on the paid entries that convert, net of cannibalisation, ÷ ${view.label}'s share of the spend, whole campaign`}
         style={{ display: "flex", gap: 6, alignItems: "baseline", whiteSpace: "nowrap" }}
       >
-        ROI total <span className="num" style={statVal}>{fmt(paid.cumRoi, 2)}</span>
+        ROI total <span className="num" style={statVal}>{fmt(targeted ? view.cum : null, 2)}</span>
       </span>
       <span
-        title="Cumulative cost per draw entry across the whole campaign"
+        title={"Cost per converting entry, whole campaign: spend ÷ the entries that become orders (" + pct(1 - dropOff) + " of entries)"}
         style={{ display: "flex", gap: 6, alignItems: "baseline", whiteSpace: "nowrap" }}
       >
-        £/entry total <span className="num" style={statVal}>{fmt(paid.cumCpe, 2)}</span>
+        €/entry total <span className="num" style={statVal}>{fmt(paid.cumCpe, 2)}</span>
       </span>
     </div>
   );
@@ -234,10 +290,10 @@ export default function PaidRoi({ snap }) {
                     <div style={{ position: "absolute", left: leftPct(hover), top: topPct(markV), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: roiV !== null ? C.blue : C.blueLight, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
                   )}
                   <div className="chart-tip" style={{ left: leftPct(hover), top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
-                    <div className="t-head">Day {hover}</div>
-                    {p && <div className="t-row"><span>ROI (3d)</span><span className="v">{roiV !== null ? fmt(roiV, 2) : "–"}</span></div>}
+                    <div className="t-head">{dayLabel(snap, hover, true)}</div>
+                    {p && <div className="t-row"><span>{view.label} ROI (3d)</span><span className="v">{roiV !== null ? fmt(roiV, 2) : "–"}</span></div>}
                     {roiV === null && projV !== undefined && <div className="t-row"><span>ROI projected</span><span className="v">{fmt(projV, 2)}</span></div>}
-                    {p && <div className="t-row"><span>Spend</span><span className="v">£{fmt(p.spend, 2)}</span></div>}
+                    {p && <div className="t-row"><span>Spend</span><span className="v">€{fmt(p.spend, 2)}</span></div>}
                     {p && <div className="t-row"><span>Entries</span><span className="v">{fmt(p.entries ?? 0)}</span></div>}
                   </div>
                 </>
@@ -309,17 +365,17 @@ export default function PaidRoi({ snap }) {
             {roiPts.length > 0 && <div style={{ ...axisLabel, top: "100%" }}>{lo.toFixed(2)}</div>}
 
             {/* x axis */}
-            <div style={{ ...xLabel, left: 0 }}>day 1</div>
+            <div style={{ ...xLabel, left: 0 }} title="announced">{dayAxisLabel(snap, 0)}</div>
             {showTodayLabel && (
               <div style={{ ...xLabel, left: leftPct(today), transform: "translateX(-50%)", color: C.ink }}>
                 today
               </div>
             )}
-            <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }}>day {of}</div>
+            <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }} title={`close · day ${of}`}>{dayAxisLabel(snap, of)}</div>
 
             {/* spend band caption */}
             <div
-              title={"Daily spend bars on their own axis: £0 to £" + fmt(spendHi)}
+              title={"Daily spend bars on their own axis: €0 to €" + fmt(spendHi)}
               style={{ position: "absolute", right: "2%", top: "82%", fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}
             >
               daily spend

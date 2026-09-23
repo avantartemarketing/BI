@@ -53,8 +53,8 @@ def test_products_and_totals() -> None:
         red, blue = r["economics_products"]
         # Airtable's figures in force, the target as units target over edition
         assert red["target_units"] == 40 and blue["target_units"] == 50 and r["edition_size"] == 90 and r["edition_total"] == 150
-        assert close(red["unit_price_gbp"], 850.0) and close(blue["unit_price_gbp"], 1700.0)
-        assert close(r["launch_value"], 40 * 850 + 50 * 1700) and r["launch_currencies"] == ["EUR"]
+        assert close(red["unit_price_eur"], 1000.0) and close(blue["unit_price_eur"], 2000.0)
+        assert close(r["launch_value"], 40 * 1000 + 50 * 2000) and r["launch_currencies"] == ["EUR"]
         # the artist's profit per unit: weighted over the products that have one
         assert close(r["artist_profit"] / r["edition_size"], 300.0)
         # the deal: Red a profit share (AA carries 50% of the ads), Blue a
@@ -82,13 +82,13 @@ def test_products_and_totals() -> None:
 
         # typed figures over Airtable's, a product added by hand, a draw entry left alone
         typed = [{"airtable_id": "11", "target_sellthrough": 0.5, "aa_profit_share": 0.6},
-                 {"manual": True, "name": "Print set", "edition": 20, "unit_price": 500, "currency": "GBP"},
+                 {"manual": True, "name": "Print set", "edition": 20, "unit_price": 500, "currency": "EUR"},
                  {"key": "draw_1", "name": "Red draw", "edition": None, "preorderRate": 0.9}]
         r4 = build.resolve_release(dict(base, products=typed), None, {})
         by = {p["name"]: p for p in r4["economics_products"]}
         assert set(by) == {"Red", "Blue", "Print set"}, set(by)
         assert by["Red"]["target_units"] == 50 and by["Red"]["sources"]["target_sellthrough"] == "typed"
-        assert by["Red"]["aa_budget_share"] == 0.6 and by["Print set"]["unit_price_gbp"] == 500.0
+        assert by["Red"]["aa_budget_share"] == 0.6 and by["Print set"]["unit_price_eur"] == 500.0
         assert r4["edition_size"] == 120 and r4["edition_total"] == 170
         assert build.draw_products_typed(r4) == [typed[2]]
 
@@ -163,7 +163,7 @@ def test_js_agrees() -> None:
         {"name": "airtable only", "airtable": AT, "typed": [], "legacy": None},
         {"name": "typed over airtable, manual product", "airtable": AT,
          "typed": [{"airtable_id": "11", "target_sellthrough": 0.5, "aa_profit_share": 0.6, "frame_conversion": 0.2},
-                   {"manual": True, "name": "Print set", "edition": 20, "unit_price": 500, "currency": "GBP", "aa_revenue_share": 0.3},
+                   {"manual": True, "name": "Print set", "edition": 20, "unit_price": 500, "currency": "EUR", "aa_revenue_share": 0.3},
                    {"key": "draw_1", "name": "Red draw", "edition": None, "preorderRate": 0.9}], "legacy": None},
         {"name": "legacy totals", "airtable": AT, "typed": [],
          "legacy": {"edition_size": 200, "edition_total": 300, "unit_price": 900, "artist_profit": 20000, "aa_group_profit": 40000, "artist_profit_share": 0}},
@@ -186,7 +186,7 @@ def test_js_agrees() -> None:
         js = got[c["name"]]
         assert [p["name"] for p in py_products] == [p["name"] for p in js["products"]], (c["name"], [p["name"] for p in js["products"]])
         for pp, jp in zip(py_products, js["products"]):
-            for key in ("edition", "target_sellthrough", "target_units", "unit_price", "unit_price_gbp", "artist_profit_per_unit",
+            for key in ("edition", "target_sellthrough", "target_units", "unit_price", "unit_price_eur", "artist_profit_per_unit",
                         "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "frame_conversion", "frame_profit_per_unit",
                         "frame_uplift_per_unit", "aa_budget_share"):
                 a, bb = pp.get(key), jp.get(key)

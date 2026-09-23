@@ -33,9 +33,9 @@ assert len(rows) > 20, "the draw panel is on file"
 
 # the currency table is duplicated in the mirror: hold it to the python one
 mjs = (ROOT / "shared" / "basketRule.mjs").read_text()
-found = re.search(r"const RATES_TO_GBP = \{([^}]*)\}", mjs)
+found = re.search(r"const RATES_TO_EUR = \{([^}]*)\}", mjs)
 js_rates = {k.strip(): float(v) for k, v in (kv.split(":") for kv in found.group(1).split(","))}
-assert js_rates == {k: float(v) for k, v in P.RATES_TO_GBP.items()}, (js_rates, P.RATES_TO_GBP)
+assert js_rates == {k: float(v) for k, v in P.RATES_TO_EUR.items()}, (js_rates, P.RATES_TO_EUR)
 
 
 def case(name, rel, prefer_recent=True):
@@ -45,14 +45,14 @@ def case(name, rel, prefer_recent=True):
 cases = []
 for r in json.loads((ROOT / "etl" / "release_inputs.json").read_text())["releases"]:
     rel = {"release_name": r["release_name"], "edition_size": r.get("edition_size"), "unit_price": r.get("unit_price"),
-           "currency": r.get("currency") or "GBP", "artist": r["release_name"].split("·")[0].strip(),
+           "currency": r.get("currency") or "EUR", "artist": r["release_name"].split("·")[0].strip(),
            "announce_date": r.get("announce_date"), "private_room_open": r.get("private_room_open"),
            "launch_end": r.get("launch_end")}
     for pr in (True, False):
         cases.append(case(f"{rel['artist']} recent={pr}", rel, pr))
 
 cattelan = {"release_name": "Maurizio Cattelan · Something New · 2026 Q4", "edition_size": 600, "unit_price": 1500,
-            "currency": "GBP", "artist": "Maurizio Cattelan", "announce_date": "2026-10-01"}
+            "currency": "EUR", "artist": "Maurizio Cattelan", "announce_date": "2026-10-01"}
 somebody = {"release_name": "Somebody · Piece · 2026 Q4", "artist": "Somebody", "announce_date": "2026-10-01"}
 cases += [
     case("new Cattelan", cattelan),

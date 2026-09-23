@@ -21,12 +21,10 @@
  * as levels for the second question only took the first one away, so the card
  * no longer follows the page toggle and carries no horizon badge. */
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtSigned } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, fmtSigned, dayLabel, dayAxisLabel, labelPx } from "../ui.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
 const LABEL_TODAY_PX = 38; // rendered width of "today" at 12px
-const LABEL_DAY_PX = 46;   // rendered width of "day 21" at 12px
-const LABEL_DAY1_PX = 36;  // rendered width of "day 1" at 12px
 
 /* ---- placing the readings ----------------------------------------------------
  * The readings on the today line are set where nothing else is drawn. Each has
@@ -276,11 +274,15 @@ export default function Trajectory({ snap }) {
    * the axis already ends there. The fraction is the fallback before the first
    * measurement lands. */
   const showTodayLabel = !complete;
+  // the axis ends are the announce and close dates ("3 Sep", "30 Sep": the
+  // points at index 0 and index of), the day number when the window has no
+  // start; their widths as drawn at 12px
+  const day1Text = dayAxisLabel(snap, 0), endText = dayAxisLabel(snap, of);
   const day1Room = plotW > 0
-    ? todayFrac * plotW - (LABEL_TODAY_PX / 2 + LABEL_DAY1_PX + 8)
+    ? todayFrac * plotW - (LABEL_TODAY_PX / 2 + labelPx(day1Text) + 8)
     : (todayFrac < 0.08 ? -1 : 1);
   const endLabelRoom = plotW > 0
-    ? (1 - todayFrac) * plotW - (LABEL_TODAY_PX / 2 + LABEL_DAY_PX + 10)
+    ? (1 - todayFrac) * plotW - (LABEL_TODAY_PX / 2 + labelPx(endText) + 10)
     : (todayFrac > 0.82 ? -1 : 1);
   const showDay1Label = !(showTodayLabel && day1Room < 0);
   const showEndLabel = !(showTodayLabel && endLabelRoom < 0);
@@ -465,7 +467,7 @@ export default function Trajectory({ snap }) {
                     <div style={mark(val, { background: ahead ? C.blueLight : C.blue })} />
                   )}
                   <div className="chart-tip" style={{ left: `${(hover.i / N) * 100}%`, top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
-                    <div className="t-head">Day {hover.i}</div>
+                    <div className="t-head">{dayLabel(snap, hover.i, true)}</div>
                     {hp.actual !== null && hp.actual !== undefined && (
                       <div className="t-row"><span>Secured</span><span className="v">{fmt(hp.actual)}</span></div>
                     )}
@@ -539,14 +541,14 @@ export default function Trajectory({ snap }) {
             <div style={{ ...axisLabel, top: "100%" }}>0</div>
 
             {/* x axis */}
-            {showDay1Label && <div style={{ ...xLabel, left: 0 }}>day 1</div>}
+            {showDay1Label && <div style={{ ...xLabel, left: 0 }} title="announced">{day1Text}</div>}
             {showTodayLabel && (
               <div style={{ ...xLabel, left: `${(todayFrac * 100).toFixed(2)}%`, transform: "translateX(-50%)", color: C.ink }}>
                 today
               </div>
             )}
             {showEndLabel && (
-              <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }}>day {of}</div>
+              <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }} title={`close · day ${of}`}>{endText}</div>
             )}
           </div>
         </div>

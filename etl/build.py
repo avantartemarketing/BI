@@ -43,6 +43,7 @@ import json
 import math
 import collections
 import os
+import time
 import pathlib
 import re
 import sys
@@ -71,14 +72,29 @@ import pricing
 from sellthrough import attach_orders, products_from_draws, sell_through_products
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SOURCES = ROOT / "sources"
+# the pulled feeds live in the repo's sources/ (gitignored) unless SOURCES_PATH
+# puts them on a disk that survives a deploy (README, "Keeping state across
+# deploys"); a file that is also checked in (the HubSpot sends) is read from
+# the repo when the disk has no copy yet
+REPO_SOURCES = ROOT / "sources"
+SOURCES = pathlib.Path(os.environ.get("SOURCES_PATH") or REPO_SOURCES)
 DATA = ROOT / "data"
 APP = DATA / "app"
+
+
+def source_file(name: str) -> pathlib.Path:
+    """A feed file by name: the SOURCES copy, else the checked-in one."""
+    p = SOURCES / name
+    return p if p.exists() or SOURCES == REPO_SOURCES else REPO_SOURCES / name
 # actuals-only pages for every release the funnel data mentions but nobody has
 # set targets for. Regenerated on every refresh and not committed (the
 # targeted ones under APP/releases are - they are the boot-time fallback).
 DERIVED = APP / "derived"
 PR_LEAD_DAYS = 14        # default private-room lead before announce for a derived release
+UPCOMING_DAYS = 120      # an Airtable launch this far ahead is listed before the funnel sees it (§1.7)
+UPCOMING_UNTYPED_DAYS = 60   # ... but one Airtable has not typed as a draw only this far ahead
+UPCOMING_TYPES = {"Draw", ""}   # the LE draw path; blank is a project Airtable has not typed yet
+ASSUMED_CAMPAIGN_DAYS = 24      # announce to close, when Airtable has no announce date yet
 CATALOGUE_DAYS = 90      # window shown for a release with no campaign clock
 
 BENCH = json.loads((ROOT / "etl" / "benchmarks.json").read_text())
@@ -155,10 +171,10 @@ FUNNEL_COLS = FUNNEL_LABELS + [
 # export and says so, rather than serving a frozen copy while the export
 # keeps moving.
 def funnel_file() -> pathlib.Path:
-    export = SOURCES / "across_time.csv"
+    export = source_file("across_time.csv")
     if os.environ.get("FUNNEL_SOURCE") == "export":
         return export
-    rebuilt = SOURCES / "across_time.rebuilt.csv"
+    rebuilt = source_file("across_time.rebuilt.csv")
     if not rebuilt.exists():
         print("funnel: across_time.rebuilt.csv is missing (run etl/aggregate_events.py) - reading the export")
         return export
@@ -172,6 +188,33 @@ FUNNEL_FILE = funnel_file()
 
 
 def load_across_time() -> pd.DataFrame:
+    """The funnel frame, parsed once per export. The parse and the fan-out
+    groupby are the single-release build's largest fixed cost, so the frame
+    is kept beside the app data keyed on the export's size and mtime, and a
+    build that finds the same export reads it back instead of parsing."""
+    cache, meta = APP / "funnel.cache.pkl", APP / "funnel.cache.json"
+    key = None
+    try:
+        st = FUNNEL_FILE.stat()
+        key = {"path": str(FUNNEL_FILE), "mtime_ns": st.st_mtime_ns, "size": st.st_size, "cols": FUNNEL_COLS, "v": 1}
+        if cache.exists() and meta.exists() and json.loads(meta.read_text()) == key:
+            df = pd.read_pickle(cache)
+            print(f"funnel: {len(df)} rows from the cached parse of {FUNNEL_FILE.name}")
+            return df
+    except (OSError, ValueError):
+        key = None
+    df = _parse_across_time()
+    if key is not None:
+        try:
+            APP.mkdir(parents=True, exist_ok=True)
+            df.to_pickle(cache)
+            meta.write_text(json.dumps(key))
+        except OSError:
+            pass
+    return df
+
+
+def _parse_across_time() -> pd.DataFrame:
     df = pd.read_csv(FUNNEL_FILE, usecols=lambda c: c in FUNNEL_COLS,
                      dtype={c: "category" for c in FUNNEL_LABELS})
     missing = [c for c in FUNNEL_COLS if c not in df.columns]
@@ -210,15 +253,36 @@ def load_across_time() -> pd.DataFrame:
     return df
 
 
+# Meta bills the ad account in euros and the page runs in euros
+# (pricing.PAGE_CURRENCY), so the spend passes through as it is. The
+# conversion stays for a feed in another currency: it would be converted
+# once, here, at the fixed table the product prices use (pricing.RATES_TO_EUR),
+# and the paid block says which currency the spend came in.
+SPEND_CURRENCY = "EUR"
+
+
+def spend_rate() -> float:
+    return float(pricing.RATES_TO_EUR.get(SPEND_CURRENCY, 1.0))
+
+
+def convert_spend(df: pd.DataFrame) -> pd.DataFrame:
+    """The spend column in the page's currency."""
+    rate = spend_rate()
+    if rate != 1.0 and "spend" in df.columns:
+        df = df.copy()
+        df["spend"] = df["spend"].astype(float) * rate
+    return df
+
+
 def load_spend() -> pd.DataFrame:
     df = pd.read_csv(DATA / "spend_daily.csv")
     df["spend_date"] = pd.to_datetime(df["spend_date"]).dt.date
-    return df
+    return convert_spend(df)
 
 
 def load_emails() -> pd.DataFrame:
     # the HubSpot pull writes this file on every refresh; run without it if absent
-    if not (SOURCES / "all_sent_emails.csv").exists():
+    if not source_file("all_sent_emails.csv").exists():
         print("warning: sources/all_sent_emails.csv missing - email panels will be empty")
         return pd.DataFrame({
             "name": pd.Series(dtype=str), "sent_at": pd.Series(dtype="datetime64[ns]"),
@@ -226,7 +290,7 @@ def load_emails() -> pd.DataFrame:
             "opened": pd.Series(dtype=float), "clicked": pd.Series(dtype=float),
             "unsubscribed": pd.Series(dtype=float), "email_type": pd.Series(dtype=str),
         })
-    df = pd.read_csv(SOURCES / "all_sent_emails.csv")
+    df = pd.read_csv(source_file("all_sent_emails.csv"))
     df = df.rename(columns={
         "Email Name": "name", "Send Date (Your time zone)": "sent_at",
         "Campaign": "campaign", "Delivered": "delivered", "Opened": "opened",
@@ -416,22 +480,25 @@ _CLOCK_COLS = {"days_since_announcement", "days_until_launch",
                "pct_days_since_announcement", "pct_days_until_launch"}
 
 
-def redistribute_untracked(df: pd.DataFrame) -> pd.DataFrame:
-    """Spread the Untracked channel pro-rata over the tracked ones (docs §1.3).
+def redistribute_channel(df: pd.DataFrame, channel: str) -> pd.DataFrame:
+    """Spread one channel pro-rata over the others, day by day (docs §1.3).
 
     Untracked carries real demand - up to a quarter of a release's units - and
     no display group claims it, so leaving it in place drops it from every
     channel rollup while the release-level sums still count it. That mismatch
     is what let hero.now print below sellthrough.sold, which is arithmetically
     impossible for secured units. Folding it in here, before anything reads the
-    frame, keeps both paths on one basis.
+    frame, keeps both paths on one basis. The same rule reads Direct as a
+    source for the other channels when the dashboard's Direct switch is on:
+    every metric of the channel lands on the others in proportion to what
+    they did that day.
 
-    Shares come from the same day's tracked mix. A day carrying untracked
-    volume with nothing tracked to spread it over would lose that volume, so
-    it is pooled and shared out on the release's overall mix instead.
+    Shares come from the same day's mix of the other channels. A day carrying
+    the channel's volume with nothing else to spread it over would lose that
+    volume, so it is pooled and shared out on the release's overall mix instead.
     """
-    unt = df[df["channel"] == "Untracked"]
-    tracked = df[df["channel"] != "Untracked"].copy()
+    unt = df[df["channel"] == channel]
+    tracked = df[df["channel"] != channel].copy()
     if unt.empty or tracked.empty:
         return tracked
     cols = [c for c in df.select_dtypes(include="number").columns if c not in _CLOCK_COLS]
@@ -450,6 +517,106 @@ def redistribute_untracked(df: pd.DataFrame) -> pd.DataFrame:
             add = add + orphan * vals / rel_total
         tracked[m] = vals + add
     return tracked
+
+
+def redistribute_untracked(df: pd.DataFrame) -> pd.DataFrame:
+    """The Untracked fold (docs §1.3): redistribute_channel on Untracked."""
+    return redistribute_channel(df, "Untracked")
+
+
+# ---- Direct as a source (docs §1.3): the dashboard's Direct switch ----------
+DIRECT_METRICS = {"sessions": "Sessions_Total", "entries": "Draw_Entries_Eligible_Units", "units": "Total_Product_Units"}
+
+
+def channel_share(frame: pd.DataFrame, channel: str, within_group: bool = False) -> dict:
+    """A channel's share of each metric: of the whole frame, or of its own
+    display group. {metric: share or None when there is nothing to share}."""
+    if "channel" not in frame.columns:
+        return {k: None for k in DIRECT_METRICS}
+    sub = frame[frame["channel"] == channel]
+    base = frame[frame["channel"].map(GROUP_OF) == GROUP_OF.get(channel)] if within_group else frame
+    out = {}
+    for key, col in DIRECT_METRICS.items():
+        total = float(base[col].sum()) if col in base.columns else 0.0
+        part = float(sub[col].sum()) if col in sub.columns else 0.0
+        out[key] = round(part / total, 4) if total > 0 else None
+    return out
+
+
+def direct_share_norm(at: pd.DataFrame, panel: pd.DataFrame | None, as_of: date) -> dict | None:
+    """What share of the Search/direct/other group Direct normally is: the
+    median over the draw panel's launches closed in the last RECENT_MONTHS,
+    each over its own window (the cohort untracked_norms reads). The Direct
+    switch reads the benchmark's channel split with this much of the group
+    spread over the other channels, the same rule the actuals get."""
+    if panel is None or not len(panel) or "window_end" not in panel.columns:
+        return None
+    ends = pd.to_datetime(panel["window_end"], errors="coerce")
+    cutoff = pd.Timestamp(as_of) - pd.DateOffset(months=baskets.RECENT_MONTHS)
+    recent = panel[ends >= cutoff]
+    use_recent = len(recent) >= UNTRACKED_NORM_MIN
+    pool = recent if use_recent else panel
+    shares: dict[str, list[float]] = {k: [] for k in DIRECT_METRICS}
+    for r in pool.to_dict("records"):
+        ws = pd.to_datetime(r.get("window_start"), errors="coerce")
+        we = pd.to_datetime(r.get("window_end"), errors="coerce")
+        if pd.isna(ws) or pd.isna(we):
+            continue
+        sub = at[(at["simple_release_name"] == r["release_name"])
+                 & (at["event_date"] >= ws.date()) & (at["event_date"] <= we.date())]
+        if sub.empty:
+            continue
+        for k, v in channel_share(sub, "Direct", within_group=True).items():
+            if v is not None:
+                shares[k].append(v)
+    out: dict = {"recentMonths": baskets.RECENT_MONTHS if use_recent else None}
+    for k, xs in shares.items():
+        ser = pd.Series(xs, dtype=float)
+        out[k] = round(float(ser.median()), 4) if len(ser) else None
+    out["n"] = max(len(xs) for xs in shares.values()) if shares else 0
+    return out
+
+
+def spread_profile(profile: dict, norm: dict | None) -> dict:
+    """The basket's medians read with Direct spread: Direct's share of the
+    Search/direct/other group (the panel's median, direct_share_norm) leaves
+    the group and lands on every group in proportion to what remains, units
+    and sessions alike. The headline medians do not move, so K does not
+    either; conversion stays at the benchmark like every other rate."""
+    if not norm:
+        return profile
+    out = dict(profile)
+    for key, metric in (("units_by_group", "units"), ("sessions_by_group", "sessions")):
+        share = norm.get(metric)
+        grp = {g: float(v or 0.0) for g, v in (out.get(key) or {}).items()}
+        if share is None or not grp:
+            continue
+        d = grp.get("search_direct_other", 0.0) * float(share)
+        if d <= 0:
+            continue
+        grp["search_direct_other"] -= d
+        tot = sum(grp.values())
+        if tot > 0:
+            grp = {g: v + d * v / tot for g, v in grp.items()}
+        else:
+            grp["search_direct_other"] += d
+        out[key] = {g: round(v, 6) for g, v in grp.items()}
+        total = float(out.get(metric) or 0.0)
+        if total > 0:
+            out["share_units" if metric == "units" else "share_sessions"] = {g: round(v / total, 6) for g, v in out[key].items()}
+    out["direct_spread"] = norm
+    return out
+
+
+def with_direct_spread(build, *args, **kwargs) -> dict:
+    """A page built both ways: as the funnel attributes it, and with Direct
+    spread over the other channels (docs §1.3). The blocks that differ ride
+    under `variants.direct_spread`, and the dashboard's Direct switch lays
+    them over the page without another build."""
+    snap = build(*args, **kwargs)
+    alt = build(*args, **kwargs, direct_spread=True)
+    snap["variants"] = {"direct_spread": {k: v for k, v in alt.items() if k != "variants" and v != snap.get(k)}}
+    return snap
 
 
 # ---- untracked share (docs §1.3): how much of a release has no channel -----
@@ -793,12 +960,24 @@ def frame_terms(release: dict, b: dict = BENCH) -> tuple[float, float]:
     inputs (frame_conversion, frame_profit_per_unit on the Target setting tab)
     with the workbook's constants in benchmarks.json (0.35 and 94) as the
     defaults - the constants were the same for every release whatever its
-    price point, and a £500 print and a £4,000 one do not frame alike."""
+    price point, and a €500 print and a €4,000 one do not frame alike."""
     conv = release.get("frame_conversion")
     profit = release.get("frame_profit_per_unit")
     conv = float(b["frame_conversion"]) if conv is None or conv == "" else float(conv)
     profit = float(b["frame_profit_per_unit"]) if profit is None or profit == "" else float(profit)
     return min(max(conv, 0.0), 1.0), max(profit, 0.0)
+
+
+def cannibalisation_for(release: dict, b: dict = BENCH) -> float:
+    """The share of paid entries that would have come anyway (docs 7): the
+    release's own figure from the Target setting tab, else the LE standard
+    in the benchmarks. The ROI and the budget floor read profit net of it."""
+    v = release.get("cannibalisation")
+    try:
+        v = float(v) if v not in (None, "") else None
+    except (TypeError, ValueError):
+        v = None
+    return min(max(v, 0.0), 0.95) if v is not None else float(b["cannibalisation"])
 
 
 def aa_profit_per_unit(release: dict, b: dict = BENCH) -> float:
@@ -870,7 +1049,7 @@ def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH) -> dict:
     estimate with its prior by precision: a campaign with a tight estimate
     keeps it, a noisy one leans on the panel. Below cpe_fit_min_days of
     history the priors are used as they are. Warhol's 18 days scaling from
-    £1k to £30k a day gave an elasticity of 0.20 +/- 0.29 and a drift of
+    €1k to €30k a day gave an elasticity of 0.20 +/- 0.29 and a drift of
     0.8% +/- 5.1 a day, which the priors (0.38 +/- 0.19; 2.5% +/- 3.5) pull
     to 0.34 and 2.0%: the spend response is its own, the time decay is
     mostly the panel's, because a campaign that ramps and ages at once
@@ -1209,13 +1388,13 @@ def basket_curves(at: pd.DataFrame, basket: dict, pooled: dict) -> dict:
 
 def load_draw(release: dict) -> dict | None:
     fname = release.get("draw_entries_file")
-    if not fname or not (SOURCES / fname).exists():
+    if not fname or not source_file(fname).exists():
         return None
     products = [p["name"] for p in draw_products_typed(release) if p.get("name")]
     per_product = defaultdict(int)
     tiers = defaultdict(int)
     total = eligible = framed = preorder = wanted_units = surplus = 0
-    with (SOURCES / fname).open() as f:
+    with source_file(fname).open() as f:
         for row in csv.DictReader(f):
             total += 1
             ok = not (row.get("Exclusion") or row.get("Removal") or row.get("Processing Error"))
@@ -1346,10 +1525,19 @@ def load_orders_feed() -> dict:
         if df is not None:
             editions = product_editions()
             for r in df.itertuples(index=False):
-                rel = feed.setdefault(r.release, {"products": {}, "draws": {}, "drafts": 0.0, "unitsPaid": 0.0, "asOf": None})
+                rel = feed.setdefault(r.release, {"products": {}, "draws": {}, "drafts": 0.0, "unitsPaid": 0.0, "asOf": None,
+                                                  "framing": {"prints": 0.0, "frames": 0.0, "notOffered": 0.0,
+                                                              "entrantPrints": 0.0, "entrantFrames": 0.0}})
                 paid, drafts = num(r.units_paid), num(r.units_draft_pending)
                 price = num(r.list_price_eur)
+                # framing (docs 6.4): the paid prints a frame was on offer for
+                # and the frames bought with them, and the same on the app's
+                # entry drafts; a feed pulled before the columns existed reads
+                # as no framing, and the card stays off the page
+                offered, frames = num(getattr(r, "prints_offered_paid", "")), num(getattr(r, "frames_paid", ""))
+                e_prints, e_frames = num(getattr(r, "prints_offered_entry_drafts", "")), num(getattr(r, "frames_entry_drafts", ""))
                 rel["products"][r.product_title] = {
+                    "printsOffered": offered, "frames": frames, "entrantPrints": e_prints, "entrantFrames": e_frames,
                     "unitsPaid": paid, "drafts": drafts,
                     "draftCustomers": num(getattr(r, "draft_customers", "")) if str(getattr(r, "draft_customers", "")).strip() else None,
                     "entryDrafts": num(getattr(r, "units_entry_drafts", 0)),
@@ -1363,6 +1551,12 @@ def load_orders_feed() -> dict:
                 }
                 rel["drafts"] += drafts
                 rel["unitsPaid"] += paid
+                fr = rel["framing"]
+                fr["prints"] += offered
+                fr["frames"] += frames
+                fr["notOffered"] += max(paid - offered, 0.0)
+                fr["entrantPrints"] += e_prints
+                fr["entrantFrames"] += e_frames
                 for d in (r.last_order, r.last_draft):
                     if d and (rel["asOf"] is None or d > rel["asOf"]):
                         rel["asOf"] = d
@@ -1404,6 +1598,73 @@ def preorder_rate(release: dict) -> float:
     except (TypeError, ValueError):
         return BENCH.get("preorder_entry_to_order", 0.95)
     return v if 0 < v <= 1 else BENCH.get("preorder_entry_to_order", 0.95)
+
+
+FRAMING_MIN_PRINTS = 30   # a launch's frames-per-print rate is a benchmark reading from this many prints on offer
+FRAMING_MIN_MEMBERS = 3   # and the basket's median needs this many such launches
+
+
+def framing_benchmark(basket: dict | None, feed: dict | None = None) -> dict | None:
+    """The basket's frames per print: the median over its members' own rates
+    in the orders feed (docs/DATA_MODEL.md 6.4), each member read from at
+    least FRAMING_MIN_PRINTS prints a frame was on offer for, so a launch
+    that sold a handful of prints does not set the reference. None without a
+    basket, or with fewer than FRAMING_MIN_MEMBERS members the feed can rate:
+    the feed starts at BQ_SINCE, and a basket of older launches has nothing
+    to read."""
+    members = list((basket or {}).get("members") or [])
+    if not members:
+        return None
+    feed = load_orders_feed() if feed is None else feed
+    rates = []
+    for m in members:
+        f = (feed.get(m) or {}).get("framing") or {}
+        if float(f.get("prints") or 0) >= FRAMING_MIN_PRINTS:
+            rates.append(float(f["frames"]) / float(f["prints"]))
+    if len(rates) < FRAMING_MIN_MEMBERS:
+        return None
+    return {"rate": round(float(np.median(rates)), 4), "n": len(rates), "of": len(members)}
+
+
+def framing_block(release: dict, of: dict | None, basket: dict | None, b: dict = BENCH) -> dict | None:
+    """The Framing card's figures (docs/DATA_MODEL.md 6.4): frames per print,
+    on the prints a frame was on offer for. Buyers: the paid prints and the
+    frames bought with them, a frame per print at most (the feed caps an
+    order's frames at its prints). Entrants: the same on the app's
+    pre-authorisation drafts, the frames the people still in the draw have
+    asked for, which is what allocation will bring. Against the plan's rate
+    (frame_terms: the release's own frame_conversion, else the benchmark
+    default) and the basket's median. Per work, for the hover, with the
+    works a frame was never on offer for named apart so their absence from
+    the rate is explained. None when nothing has been offered a frame, and
+    the card stays off the page."""
+    f = (of or {}).get("framing") or {}
+    prints, frames = float(f.get("prints") or 0), float(f.get("frames") or 0)
+    e_prints, e_frames = float(f.get("entrantPrints") or 0), float(f.get("entrantFrames") or 0)
+    if prints <= 0 and e_prints <= 0:
+        return None
+    conv, _profit = frame_terms(release, b)
+    products = (of or {}).get("products") or {}
+    works = []
+    for title, p in products.items():
+        po = float(p.get("printsOffered") or 0)
+        if po > 0:
+            fr = float(p.get("frames") or 0)
+            works.append({"name": title, "prints": int(round(po)), "frames": round(fr, 1), "rate": round(fr / po, 4)})
+    works.sort(key=lambda w: (-w["rate"], w["name"]))
+    not_offered = sorted(t for t, p in products.items()
+                         if float(p.get("unitsPaid") or 0) > 0 and float(p.get("printsOffered") or 0) <= 0)
+    return {
+        "prints": int(round(prints)), "frames": round(frames, 1),
+        "rate": round(frames / prints, 4) if prints > 0 else None,
+        "entrants": ({"prints": int(round(e_prints)), "frames": round(e_frames, 1), "rate": round(e_frames / e_prints, 4)}
+                     if e_prints > 0 else None),
+        "plan": None if release.get("framing_available") is False else round(conv, 4),
+        "benchmark": framing_benchmark(basket),
+        "works": works,
+        "notOffered": {"units": int(round(float(f.get("notOffered") or 0))), "works": not_offered},
+        "asOf": (of or {}).get("asOf"),
+    }
 
 
 def edition_total(release: dict):
@@ -1526,6 +1787,33 @@ def known_codes(emails: pd.DataFrame, content: pd.DataFrame, artist_posts: pd.Da
         if frame is not None and col in frame.columns:
             out.update(str(v) for v in frame[col].dropna().unique())
     return {c for c in out if _CODE_RE.match(c)}
+
+
+def code_activity(spend: pd.DataFrame | None, emails: pd.DataFrame | None) -> dict[str, tuple[date, date]]:
+    """When each campaign code was active: the first and last day it spent on
+    Meta or sent an email. A launch the funnel has not seen yet is matched to
+    a code by this, not by the artist's name alone: an artist's earlier code
+    is still on file, and only the code moving in the launch's own window
+    can be the launch's."""
+    lo: dict[str, date] = {}
+    hi: dict[str, date] = {}
+
+    def take(code: str, day) -> None:
+        if not _CODE_RE.match(code) or pd.isna(day):
+            return
+        d = pd.Timestamp(day).date()
+        lo[code] = min(lo.get(code, d), d)
+        hi[code] = max(hi.get(code, d), d)
+
+    if spend is not None and {"campaign_name", "spend_date"} <= set(spend.columns):
+        for name, day in zip(spend["campaign_name"], spend["spend_date"]):
+            if isinstance(name, str):
+                take(name.split(" · ")[0].strip(), day)
+    if emails is not None and {"campaign", "sent_at"} <= set(emails.columns):
+        for code, day in zip(emails["campaign"], emails["sent_at"]):
+            if isinstance(code, str):
+                take(code.strip(), day)
+    return {c: (lo[c], hi[c]) for c in lo}
 
 
 def guess_code(artist: str, title: str, year: int, codes: set[str], siblings: int = 1) -> str | None:
@@ -1686,9 +1974,9 @@ def _effective_product(p: dict, b: dict) -> dict:
     e["target_units"] = int(round(e["edition"] * e["target_sellthrough"])) if e["edition"] else 0
     price = _num(pick("unit_price"))
     e["unit_price"] = price if price and price > 0 else None
-    e["currency"] = str(pick("currency", default="GBP") or "GBP").upper()
-    rate = pricing.RATES_TO_GBP.get(e["currency"], 1.0)
-    e["unit_price_gbp"] = round(e["unit_price"] * rate, 2) if e["unit_price"] else None
+    e["currency"] = str(pick("currency", default=pricing.PAGE_CURRENCY) or pricing.PAGE_CURRENCY).upper()
+    rate = pricing.RATES_TO_EUR.get(e["currency"], 1.0)
+    e["unit_price_eur"] = round(e["unit_price"] * rate, 2) if e["unit_price"] else None
     e["artist_profit_per_unit"] = _num(pick("artist_profit_per_unit"))
     e["aa_profit_per_unit"] = _num(pick("aa_profit_per_unit"))
     e["aa_revenue_share"] = _num(pick("aa_revenue_share"))
@@ -1758,10 +2046,10 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         r["economics_mode"] = "products"
         r["edition_total"] = sum(p["edition"] for p in sized)
         r["edition_size"] = targets
-        priced = [p for p in sized if p["unit_price_gbp"]]
-        value = sum(p["target_units"] * p["unit_price_gbp"] for p in priced)
+        priced = [p for p in sized if p["unit_price_eur"]]
+        value = sum(p["target_units"] * p["unit_price_eur"] for p in priced)
         r["unit_price"] = round(value / sum(p["target_units"] for p in priced), 2) if priced and sum(p["target_units"] for p in priced) else None
-        r["currency"] = "GBP"
+        r["currency"] = pricing.PAGE_CURRENCY
         r["launch_value"] = round(value, 2)
         r["launch_currencies"] = sorted({p["currency"] for p in priced})
 
@@ -1990,11 +2278,213 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
     return out
 
 
+# ---------------------------------------------------------------- upcoming launches (docs §1.7)
+
+def _frame_of_releases(records: list[dict]) -> pd.DataFrame:
+    """Releases on file as the frame etl/pricing.py matches Airtable launches to."""
+    rows = []
+    for r in records:
+        parts = [p.strip() for p in str(r["release_name"]).split(" · ")]
+        qm = _QUARTER_RE.match(parts[-1]) if len(parts) >= 2 else None
+        rows.append({
+            "release_name": r["release_name"],
+            "artist": r.get("artist") or parts[0],
+            "title": r["title"] if r.get("title") is not None else (" · ".join(parts[1:-1]) if qm and len(parts) >= 3 else " · ".join(parts[1:])),
+            "quarter": r.get("quarter") or (parts[-1] if qm else ""),
+            "announce": r.get("announce_date"), "close": r.get("launch_end"), "panel": "",
+        })
+    return pd.DataFrame(rows, columns=["release_name", "artist", "title", "quarter", "announce", "close", "panel"])
+
+
+def airtable_ids_on_file(records: list[dict], launch_frame: pd.DataFrame | None) -> dict[str, set[str]]:
+    """release_name -> the Airtable record ids of the launch it matched, for
+    every release the matcher (etl/pricing.py match) could place."""
+    if not records or launch_frame is None or not len(launch_frame):
+        return {}
+    frame = _frame_of_releases(records)
+    res = pricing.match(frame, launch_frame)
+    out: dict[str, set[str]] = {}
+    for name, ids in zip(frame["release_name"], res["airtable_ids"]):
+        if isinstance(ids, str) and ids:
+            out[name] = set(ids.split("|"))
+    return out
+
+
+def load_launches() -> pd.DataFrame | None:
+    """Airtable's launches (etl/pricing.py), or None when the file is not there:
+    a checkout without it loses the upcoming list, not the build."""
+    try:
+        return pricing.launches(pricing.load_pricing())
+    except (OSError, ValueError, KeyError) as e:
+        print(f"airtable: no launches ({e}) - no upcoming releases")
+        return None
+
+
+def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], as_of: date,
+                      activity: dict[str, tuple[date, date]] | None = None) -> list[dict]:
+    """The launches Airtable knows and the funnel does not yet (§1.7), as the
+    records build_upcoming reads: draws closing after today and within
+    UPCOMING_DAYS, whose Airtable records no release on file matched.
+
+    Named the way the funnel will name them - "Artist · Title · YYYY Qn", the
+    title "Multiple" when the launch has several works - so the page keeps its
+    id when the funnel catches up; adopt_funnel_names covers the launches the
+    funnel names differently. The announce date is Airtable's, else assumed
+    ASSUMED_CAMPAIGN_DAYS before the close and said so; the price is
+    converted to euros, the page's currency, at the fixed table. The
+    campaign code is guessed only among codes active in the launch's own
+    window (`activity`, code_activity less the codes releases on file carry):
+    before a campaign spends or sends there is nothing to guess from."""
+    if launch_frame is None or not len(launch_frame):
+        return []
+    on_file = airtable_ids_on_file(existing, launch_frame)
+    used: set[str] = set().union(*on_file.values()) if on_file else set()
+    names = {r["release_name"] for r in existing}
+    horizon = as_of + timedelta(days=UPCOMING_DAYS)
+    out, seen_ids = [], {}
+    for l in launch_frame.sort_values("launch_date").itertuples():
+        if pd.isna(l.launch_date):
+            continue
+        close = l.launch_date.date()
+        if not (as_of < close <= horizon):
+            continue
+        if str(l.launch_type or "") not in UPCOMING_TYPES:
+            continue
+        # a project two months out with no launch type is not a campaign yet
+        if not str(l.launch_type or "") and close > as_of + timedelta(days=UPCOMING_UNTYPED_DAYS):
+            continue
+        if str(l.project_status or "").startswith("1.4"):   # pitching: nothing to plan yet
+            continue
+        ids = set(str(l.airtable_ids).split("|")) if l.airtable_ids else set()
+        if ids & used:
+            continue
+        title = "Multiple" if int(l.n_products) > 1 else str(l.titles)
+        quarter = pricing.quarter_of(l.launch_date)
+        name = f"{l.artist} · {title} · {quarter}"
+        if name in names:
+            continue
+        assumed = pd.isna(l.announce_date) or l.announce_date.date() >= close
+        announce = close - timedelta(days=ASSUMED_CAMPAIGN_DAYS) if assumed else l.announce_date.date()
+        pr_open = l.private_room_date.date() if not pd.isna(l.private_room_date) else announce - timedelta(days=PR_LEAD_DAYS)
+        # the codes moving in this launch's window, none of which a release on
+        # file carries: a lone one for this artist cannot be an earlier
+        # launch's, so the sibling rule guess_code applies to the funnel's
+        # releases does not apply, and the page marks the code as guessed
+        lo_w, hi_w = announce - timedelta(days=30), close + timedelta(days=2)
+        moving = {c for c, (lo, hi) in (activity or {}).items() if hi >= lo_w and lo <= hi_w}
+        code = guess_code(str(l.artist), title, close.year, moving, 1)
+        rid = slugify(name) or "release"
+        if rid in seen_ids:
+            seen_ids[rid] += 1; rid = f"{rid}_{seen_ids[rid]}"
+        else:
+            seen_ids[rid] = 1
+        price = float(l.unit_price) if pd.notna(l.unit_price) else None
+        rate = pricing.RATES_TO_EUR.get(str(l.currency or "")) if price is not None else None
+        out.append({
+            "id": rid, "release_name": name, "artist": str(l.artist), "title": title, "quarter": quarter,
+            "type": "LE", "campaign_code": code, "campaign_name": None,
+            "announce_date": announce.isoformat(), "launch_end": close.isoformat(),
+            "private_room_open": pr_open.isoformat(),
+            "dates_note": "announce date assumed: Airtable has none for it yet" if assumed else None,
+            "first_seen": None, "last_seen": None, "sessions": 0.0, "entries": 0.0, "units": 0.0,
+            "source": "airtable",
+            "edition_size": int(l.edition_size) if pd.notna(l.edition_size) and l.edition_size > 0 else None,
+            "unit_price": int(round(price * rate)) if price is not None and rate else None,
+            "unit_price_native": price, "currency_native": str(l.currency or ""),
+            "airtable_release": str(l.airtable_release or ""), "airtable_ids": str(l.airtable_ids or ""),
+            "titles": str(l.titles), "n_products": int(l.n_products),
+            "launch_type": str(l.launch_type or ""), "project_status": str(l.project_status or ""),
+        })
+    return out
+
+
+def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_frame: pd.DataFrame | None) -> list[tuple[str, str, str]]:
+    """A release set up before the funnel saw it carries the Airtable ids it
+    was set up from (§1.7). When a funnel release now matches that launch, the
+    input takes the funnel's name, so the actuals attach to the targets
+    instead of opening a second, untargeted page beside them. The rename is
+    written back to the saved inputs so it holds; the id, and so the page's
+    address, does not change."""
+    funnel_names = {r["release_name"] for r in discovered}
+    pending = [c for c in configured if c.get("airtable_ids") and c["release_name"] not in funnel_names]
+    if not pending or launch_frame is None or not len(launch_frame):
+        return []
+    on_file = airtable_ids_on_file(discovered, launch_frame)
+    taken = {c["release_name"] for c in configured}
+    renamed = []
+    for c in pending:
+        ids = set(str(c["airtable_ids"]).split("|"))
+        hits = [n for n, s in on_file.items() if s & ids and n not in taken]
+        if len(hits) != 1:
+            continue
+        old, new = c["release_name"], hits[0]
+        c["release_name"] = new
+        c["adopted_from"] = old
+        taken.add(new)
+        renamed.append((c["id"], old, new))
+    if renamed and _saved_inputs.exists():
+        try:
+            doc = json.loads(_saved_inputs.read_text())
+            rel = doc.get("releases") or {}
+            for rid, old, new in renamed:
+                if rid in rel:
+                    rel[rid]["release_name"] = new
+                    rel[rid]["adopted_from"] = old
+            tmp = _saved_inputs.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(doc, indent=1))
+            tmp.replace(_saved_inputs)
+        except (OSError, ValueError) as e:
+            print(f"warning: could not write the adopted names back to {_saved_inputs.name}: {e}")
+    for rid, old, new in renamed:
+        print(f"{rid}: the funnel now carries this launch as {new!r} (set up as {old!r}) - adopted")
+    return renamed
+
+
+def build_upcoming(rec: dict, as_of: date, email_bench: dict | None = None, full_through: date | None = None) -> dict:
+    """The page for a launch Airtable knows and the funnel does not yet (§1.7):
+    its dates, edition and price, and no actuals. Same top-level keys as
+    build_actuals so the app has one contract. Setting targets promotes it to
+    build_release, which draws the plan against an empty window until the
+    funnel carries the release and its actuals attach."""
+    announce = date.fromisoformat(rec["announce_date"])
+    close = date.fromisoformat(rec["launch_end"])
+    L = max((close - announce).days, 1)
+    return {
+        "id": rec["id"], "releaseName": rec["release_name"],
+        "artist": rec["artist"], "title": rec["title"], "quarter": rec["quarter"], "type": "LE",
+        "campaignCode": rec["campaign_code"], "campaignName": None, "marketingLead": None,
+        "privateRoomOpen": rec["private_room_open"],
+        "windowStart": rec["announce_date"], "windowEnd": rec["launch_end"],
+        "campaignLengthDays": L, "day": max(min((as_of - announce).days, L), 0), "of": L,
+        "asOf": as_of.isoformat(), "complete": False,
+        "completeThrough": (full_through or as_of).isoformat(), "asOfFraction": 1.0,
+        "targeted": False, "catalogue": False, "upcoming": True,
+        "untracked": None,
+        "derived": {
+            "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
+            "dates_source": "airtable", "dates_note": rec["dates_note"],
+            "campaign_code": rec["campaign_code"], "first_seen": None, "last_seen": None,
+        },
+        "airtable": {k: rec.get(k) for k in (
+            "airtable_release", "airtable_ids", "titles", "n_products", "launch_type", "project_status",
+            "edition_size", "unit_price", "unit_price_native", "currency_native", "private_room_open")},
+        "economics": None, "currency": "units",
+        "hero": {"now": 0, "expectedToday": None, "delta": None, "projected": None,
+                 "target": None, "oversubscribedUnits": 0, "statusPct": None, "ok": None},
+        "targets": None, "groupTargets": None, "channels": [], "funnelByGroup": {}, "paid": None,
+        "email": None, "social": None, "sellthrough": None, "framing": None, "draw": None, "geo": None, "waterfall": None,
+        "totals": {"sessions": 0, "units": 0, "entries": 0},
+        "benchmarks": {"chargeDropOff": 1 - BENCH["eligible_entry_to_order"], "cannibalisation": BENCH["cannibalisation"],
+                       "targetBuffer": BENCH["target_buffer"], **email_refs(email_bench)},
+    }
+
+
 def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.DataFrame,
                   content: pd.DataFrame, as_of: date, email_bench: dict | None = None,
                   artist_posts: pd.DataFrame | None = None,
                   full_through: date | None = None, seen: float = 1.0,
-                  untracked_norms: dict | None = None) -> dict:
+                  untracked_norms: dict | None = None, direct_spread: bool = False,
+                  direct_norm: dict | None = None) -> dict:
     """Actuals-only snapshot for a release nobody has set targets for. Same
     shape as build_release's so the page code has one contract, with every
     target-derived field None and targeted: False - the page shows what
@@ -2024,6 +2514,11 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= min(as_of, launch_end + timedelta(days=2)))]
     untracked = untracked_block(win, untracked_norms)
     win = redistribute_untracked(win)
+    # Direct's share of the window as the funnel attributes it, read before
+    # the Direct switch's spread (below) moves it: the switch's tooltip
+    direct_share = channel_share(win, "Direct")
+    if direct_spread:
+        win = redistribute_channel(win, "Direct")
     # Orders from draw winners land in the two days after close. win keeps
     # them (that is what the grace is for) but the daily series ends at close,
     # so the hero, the channels and sell-through disagreed by exactly those
@@ -2092,7 +2587,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         s_, e_ = float(spend_day.get(d, 0.0)), float(paid_entries_day.get(d, 0.0))
         cum_spend += s_; cum_pentries += e_
         win3 = (win3 + [(s_, e_)])[-3:]
-        paid_daily.append({"date": d.isoformat(), "spend": round(s_, 2), "entries": e_, "roi": None})
+        paid_daily.append({"date": d.isoformat(), "spend": round(s_, 2), "entries": e_, "roi": None, "roiArtist": None})
     s3, e3 = sum(x for x, _ in win3), sum(y for _, y in win3)
     l3d_raw = s3 / e3 if e3 > 0 else None
     l3d_cpe = l3d_raw / (1 - drop) if l3d_raw else None
@@ -2115,6 +2610,8 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
         "cumCpe": round(cum_cpe, 2) if cum_cpe else None,
         "roiDeclineModel": {"start": None, "dailyFactor": None}, "roiTarget": None,
+        "artist": None,
+        "spendCurrency": SPEND_CURRENCY, "spendRate": spend_rate(),
         "budget": {"current": round(current_daily, 2), "recommended": None, "cap": None,
                    "finalDayRoi": None, "floor": None, "budgetToSellOut": None,
                    "entriesNeeded": None, "selloutGap": None, "organicFuture": None,
@@ -2160,6 +2657,9 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "asOfFraction": 1.0 if (complete or as_of > launch_end) else round(seen, 4),
         "targeted": False, "catalogue": not dated,
         "untracked": untracked,
+        # Direct's share of the window (sessions, entries, units) as the
+        # funnel attributes it, for the dashboard's Direct switch
+        "directShare": direct_share,
         "derived": {
             "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
             "dates_source": "campaign clock" if dated else None, "dates_note": rec["dates_note"],
@@ -2173,6 +2673,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "funnelByGroup": funnel_by_group, "paid": paid_out,
         "email": email_out, "social": social_out,
         "sellthrough": sellthrough_block({"edition_size": None}, rec["release_name"], units_sold, unconverted, None),
+        "framing": framing_block(rec, load_orders_feed().get(rec["release_name"]), None, b),
         "draw": None, "geo": None, "waterfall": None,
         "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
                    "entries": round(float(upto["Draw_Entries_Eligible_Units"].sum()))},
@@ -2210,7 +2711,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   panel: pd.DataFrame | None = None,
                   people: pd.DataFrame | None = None,
                   full_through: date | None = None, seen: float = 1.0,
-                  untracked_norms: dict | None = None) -> dict:
+                  untracked_norms: dict | None = None, direct_spread: bool = False,
+                  direct_norm: dict | None = None) -> dict:
     b = BENCH
     # a release handed in unresolved (a test, a script) is resolved here the way
     # main() resolves every configured release: its products, dates and
@@ -2239,6 +2741,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # benchmark mark on the page (BENCHMARK_SPEC §4.3)
         off = baskets.channels_off_of(release)
         basket["profile"] = baskets.apply_channels_off(basket["profile"], off)
+        if direct_spread:
+            # the benchmark's channel split read the same way as the actuals
+            basket["profile"] = spread_profile(basket["profile"], direct_norm)
         if basket["profile"]["units"] <= 0:
             print(f"{release['id']}: basket {basket['id']} has no median units on the channels in plan")
             basket = None
@@ -2264,7 +2769,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         rat = at[at["simple_release_name"] == name]
         return build_actuals(actuals_rec(release, rat), rat, spend, emails, content, as_of,
                              email_bench, artist_posts, full_through=full_through, seen=seen,
-                             untracked_norms=untracked_norms)
+                             untracked_norms=untracked_norms, direct_spread=direct_spread)
     # every targeted release is benchmarked; the flag survives as the guard on
     # the benchmark block below
     bench = True
@@ -2310,6 +2815,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # Fold Untracked into the tracked channels ONCE, here, so the group rollups
     # below and the release-level sums further down agree (docs §1.3).
     win = redistribute_untracked(win)
+    # Direct's share of the window as the funnel attributes it, read before
+    # the Direct switch's spread (below) moves it: the switch's tooltip
+    direct_share = channel_share(win, "Direct")
+    if direct_spread:
+        win = redistribute_channel(win, "Direct")
     # Orders from draw winners land in the two days after close. win keeps
     # them (that is what the grace is for) but the daily series ends at close,
     # so the hero, the channels and sell-through disagreed by exactly those
@@ -2346,7 +2856,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     paid_entries_day = (win[win["channel"] == "Paid Social"]
                         .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
     spend_day = psp.groupby("spend_date")["spend"].sum()
-    drop, cann = b["paid_drop_off"], b["cannibalisation"]
+    drop, cann = b["paid_drop_off"], cannibalisation_for(release, b)
     ppu_aa = aa_profit_per_unit(release, b)
     frame_conv, frame_profit = frame_terms(release, b)
     ppu_artist = (release["artist_profit"] / release["edition_size"]) if release["edition_size"] else 0
@@ -2356,9 +2866,21 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     aa_budget_share = release.get("aa_budget_share")
     if aa_budget_share is None:
         aa_budget_share = 1.0 if release["artist_profit_share"] == 0 else 0.5
+    artist_budget_share = max(0.0, 1.0 - float(aa_budget_share))
+
+    def party_roi(ppu: float, share: float, adj_cpe: float | None) -> float | None:
+        """ROI_party (docs 7): a party's profit on a converting entry, net of
+        cannibalisation, over what that entry cost the party. None when the
+        cost is unknown or the party carries none of the spend (the artist on
+        a revenue-share deal), so there is no ROI to read."""
+        if not adj_cpe or share <= 0:
+            return None
+        return (1 - cann) * ppu / (adj_cpe * share)
 
     # daily 'roi' is the trailing-3-CALENDAR-day rolling ROI: a window with
-    # spend but no entries is a genuine 0, a window with no spend is null
+    # spend but no entries is a genuine 0, a window with no spend is null.
+    # AA's reading is 'roi', the artist's 'roiArtist': the same days, the
+    # artist's profit per unit over the artist's share of the spend.
     paid_daily = []
     cum_spend = cum_pentries = 0.0
     win3: list[tuple[float, float]] = []
@@ -2372,14 +2894,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         if len(win3) > 3:
             win3.pop(0)
         s3 = sum(x for x, _ in win3); e3 = sum(y for _, y in win3)
-        if s3 <= 0:
-            roi3 = None
-        elif e3 <= 0:
-            roi3 = 0.0
-        else:
-            roi3 = (1 - cann) * ppu_aa / ((s3 / (e3 * (1 - drop))) * aa_budget_share)
+        adj3 = (s3 / (e3 * (1 - drop))) if s3 > 0 and e3 > 0 else None
+        roi3 = None if s3 <= 0 else 0.0 if e3 <= 0 else party_roi(ppu_aa, aa_budget_share, adj3)
+        roi3_artist = (None if s3 <= 0 or artist_budget_share <= 0 else 0.0 if e3 <= 0
+                       else party_roi(ppu_artist, artist_budget_share, adj3))
         paid_daily.append({"date": d.isoformat(), "spend": round(s, 2), "entries": e,
-                           "roi": round(roi3, 3) if roi3 is not None else None})
+                           "roi": round(roi3, 3) if roi3 is not None else None,
+                           "roiArtist": round(roi3_artist, 3) if roi3_artist is not None else None})
     # the part day so far: in the to-date figures, never in the rules
     part_spend = part_entries = 0.0
     if full_through < as_of <= launch_end:
@@ -2391,9 +2912,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     l3d_raw_cpe = s3 / e3 if e3 > 0 else None
     l3d_cpe = l3d_raw_cpe / (1 - drop) if l3d_raw_cpe else None
     cum_adj_cpe = cum_spend / (cum_pentries * (1 - drop)) if cum_pentries else None
-    cum_roi = ((1 - cann) * ppu_aa / (cum_adj_cpe * aa_budget_share)) if cum_adj_cpe else None
-    l3d_roi = ((1 - cann) * ppu_aa / (l3d_cpe * aa_budget_share)) if l3d_cpe \
-        else (0.0 if s3 > 0 else None)
+    cum_roi = party_roi(ppu_aa, aa_budget_share, cum_adj_cpe)
+    l3d_roi = party_roi(ppu_aa, aa_budget_share, l3d_cpe) if l3d_cpe else (0.0 if s3 > 0 else None)
+    # the artist's reading of the same days: None throughout when the artist
+    # carries none of the spend
+    cum_roi_artist = party_roi(ppu_artist, artist_budget_share, cum_adj_cpe)
+    l3d_roi_artist = (party_roi(ppu_artist, artist_budget_share, l3d_cpe) if l3d_cpe
+                      else (0.0 if s3 > 0 and artist_budget_share > 0 else None))
 
     # ---- one forward cost path, shared by the ROI chart and the recommendation.
     # Cost per entry drifts by the LE spend rules' daily tiers (5/7/10% a day
@@ -2412,7 +2937,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         _cum *= (1 + drift_rate)
         drift_path.append((d, _cum))
     drift_end = drift_path[-1][1] if drift_path else 1.0
-    inv_drift_sum = sum(1 / f for _, f in drift_path)     # entries per £ over the window, relative to today
+    inv_drift_sum = sum(1 / f for _, f in drift_path)     # entries per euro over the window, relative to today
     forecast_cpe = l3d_cpe                                # today's price (per converting unit), the anchor
     cpe_end = l3d_cpe * drift_end if l3d_cpe else None    # at close, at today's spend
 
@@ -2451,7 +2976,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # cpe_spend_elasticity, etl/analysis/cpe_elasticity.py), so the entries a
     # recommendation asks for are priced at the CPE that spend level implies,
     # anchored on today's price at today's spend, and drifting along the same
-    # path the ROI chart draws. Units: sellout_gap is units, the price is £
+    # path the ROI chart draws. Units: sellout_gap is units, the price is euros
     # per converting unit (raw CPE / (1 - drop-off)).
     rules = b["spend_rules"]
     eps = float(cost_terms["elasticity"])
@@ -2536,10 +3061,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             if abs(recommended - s0) < rules["ignore_change_below"] * s0:
                 recommended, cap = s0, "hold_small_change"
     cpe_rec = cpe_at(recommended, drift_end) if recommended else None
-    final_day_roi = ((1 - cann) * ppu_aa / (cpe_rec * aa_budget_share)) if cpe_rec else None
-    # the chart's line: ROI at today's spend along the drift path
+    final_day_roi = party_roi(ppu_aa, aa_budget_share, cpe_rec)
+    final_day_roi_artist = party_roi(ppu_artist, artist_budget_share, cpe_rec)
+    # the chart's line: ROI at today's spend along the drift path, each party
+    # on the same path
     roi_path = ([{"date": d.isoformat(), "roi": round(l3d_roi / f, 3)} for d, f in drift_path]
                 if l3d_roi is not None and not complete else [])
+    roi_path_artist = ([{"date": d.isoformat(), "roi": round(l3d_roi_artist / f, 3)} for d, f in drift_path]
+                       if l3d_roi_artist is not None and not complete else [])
 
     daily_factor = round(1 / (1 + drift_rate), 4)
 
@@ -2758,6 +3287,25 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "profitPerUnitAA": round(ppu_aa, 2),
         "profitPerUnitArtist": round(ppu_artist, 2),
         "aaBudgetShare": aa_budget_share,
+        # the terms every ROI above is read with, so the card can show its working
+        "cannibalisation": cann,
+        "dropOff": drop,
+        # the spend feed's currency and the fixed rate it was converted at
+        "spendCurrency": SPEND_CURRENCY,
+        "spendRate": spend_rate(),
+        # the artist's ROI (docs 7): the same days and the same forward path,
+        # with the artist's profit per unit and share of the spend. Every
+        # figure is None on a deal where the artist carries no spend.
+        "artist": {
+            "cumRoi": round(cum_roi_artist, 3) if cum_roi_artist else None,
+            "l3dRoi": round(l3d_roi_artist, 3) if l3d_roi_artist is not None else None,
+            "roiDeclineModel": {"start": round(l3d_roi_artist, 3) if l3d_roi_artist is not None else None,
+                                "dailyFactor": daily_factor},
+            "roiPath": roi_path_artist,
+            "finalDayRoi": round(final_day_roi_artist, 3) if final_day_roi_artist else None,
+            "profitPerUnit": round(ppu_artist, 2),
+            "budgetShare": round(artist_budget_share, 4),
+        },
     }
     if bench:
         # what the basket typically buys, and what it typically costs to buy -
@@ -3005,9 +3553,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "unitsPerBuyer": {"plan": round(upb_plan, 4), "actual": round(upb_actual, 4)},
         # the untracked share of the window against what is normal (§1.3)
         "untracked": untracked,
+        # Direct's share of the window (sessions, entries, units) as the
+        # funnel attributes it, for the dashboard's Direct switch
+        "directShare": direct_share,
         "email": email_out,
         "social": social_out,
         "sellthrough": sellthrough,
+        # frames per print, against the plan's rate and the basket's (§6.4)
+        "framing": framing_block(release, load_orders_feed().get(name), basket, b),
         "draw": draw,
         "geo": None,  # country dim not in any feed yet (docs §12)
         "waterfall": waterfall,
@@ -3030,7 +3583,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                        "suggestedId": basket["suggestedId"]},
             "units": round(profile["units"], 1),
             "unitsP25": round(profile["units_p25"], 1), "unitsP75": round(profile["units_p75"], 1),
-            # the basket's unit prices in sterling (median and middle half), from
+            # the basket's unit prices in euros (median and middle half), from
             # Airtable via the panel - 0 when no member is priced (§3.2)
             "price": round(profile.get("price", 0.0), 1),
             "priceP25": round(profile.get("price_p25", 0.0), 1), "priceP75": round(profile.get("price_p75", 0.0), 1),
@@ -3181,11 +3734,12 @@ def sort_index(index: list[dict]) -> list[dict]:
     by traffic. The sidebar's order, in one place for both build paths."""
     live = [e for e in index if e["status"] == "live"]
     live.sort(key=lambda e: (e["windowEnd"] or "", -(e["sessions"] or 0)))
+    upcoming = sorted([e for e in index if e["status"] == "upcoming"], key=lambda e: e["windowEnd"] or "")
     closed = sorted([e for e in index if e["status"] == "closed"],
                     key=lambda e: e["windowEnd"] or "", reverse=True)
     catalogue = sorted([e for e in index if e["status"] == "catalogue"],
                        key=lambda e: -(e["sessions"] or 0))
-    return live + closed + catalogue
+    return live + upcoming + closed + catalogue
 
 
 def patch_index(snap: dict, as_of: date) -> None:
@@ -3221,6 +3775,15 @@ def main(only: str | None = None):
     whole-catalogue artefacts - inputs.json, the reconciliation, the people and
     window exports - are left alone, because a save cannot change them.
     """
+    t_start = time.perf_counter()
+    marks: list[tuple[str, float]] = []
+    last = [t_start]
+
+    def mark(label: str) -> None:
+        now = time.perf_counter()
+        marks.append((label, now - last[0]))
+        last[0] = now
+
     at = load_across_time()
     # the newest day in the feed is the as-of day, part-observed while it is
     # today; the rules and completeness read the last full day (observation_clock)
@@ -3235,11 +3798,31 @@ def main(only: str | None = None):
     # Every release the funnel data mentions. The configured ones (target
     # inputs on file) get the full build; the rest get an actuals-only page.
     discovered = discover_releases(at, as_of, known_codes(emails, content, artist_posts))
+    # Airtable's launches: a release set up before the funnel saw it takes the
+    # funnel's name once it appears, and the launches the funnel has not seen
+    # yet are listed as upcoming so targets can be set before they open (§1.7).
+    # Before the inputs are resolved, so an adopted name is the one resolved.
+    mark("load")
+    launch_frame = load_launches()
+    adopt_funnel_names(INPUTS["releases"], discovered, launch_frame)
+    upcoming: list[dict] = []
+    if not only:
+        # the codes an upcoming launch can be guessed from: those moving on Meta
+        # or in the sends, less every code a release on file already carries.
+        # A single-release build writes no upcoming page, so it skips this.
+        in_use = {str(r.get("campaign_code")) for r in discovered + INPUTS["releases"] if r.get("campaign_code")}
+        activity = {c: w for c, w in code_activity(spend, emails).items() if c not in in_use}
+        upcoming = upcoming_releases(launch_frame, discovered + INPUTS["releases"], as_of, activity)
+        for r in upcoming:
+            r["campaign_name"] = match_campaign(r["campaign_code"], spend)
+        if upcoming:
+            print("upcoming from Airtable: " + ", ".join(f"{r['release_name']} (closes {r['launch_end']})" for r in upcoming))
     # the inputs in force for every configured release: Airtable's products,
     # the Notion dates, the typed figures, the funnel's clock (resolve_release)
     notion = load_notion_campaigns()
     raw_inputs = [dict(r) for r in INPUTS["releases"]]
     resolve_inputs(discovered, spend, notion)
+    mark("inputs")
     posts_bench = artist_posts_benchmarks(artist_posts, as_of)
     # The draw panel, loaded once and passed down: every basket a release could
     # be benchmarked against is cut from it (BENCHMARK_SPEC §3). A panel that
@@ -3280,19 +3863,42 @@ def main(only: str | None = None):
         print("email refs: none yet (fewer than 2 completed draw launches with sends on file) - UI defaults apply")
     by_name = {n: g for n, g in at.groupby("simple_release_name")}
     configured = {r["release_name"]: r for r in INPUTS["releases"]}
-    # what an untracked share normally is, once, for every page's warning (§1.3)
-    norms = untracked_norms(at, panel, as_of)
+    # what an untracked share normally is, once, for every page's warning
+    # (§1.3). A function of the export and the panel, not of any release's
+    # inputs, so a single-release build reads the full build's figure back
+    # while the export is the same day's.
+    norms_path = APP / "untracked_norms.json"
+    norms = direct_norm = None
+    cached_ok = False
+    if only and norms_path.exists():
+        try:
+            cached = json.loads(norms_path.read_text())
+            if cached.get("asOf") == as_of.isoformat() and "direct" in cached:
+                norms, direct_norm, cached_ok = cached.get("norms"), cached.get("direct"), True
+        except (OSError, ValueError):
+            cached_ok = False
+    if not cached_ok:
+        norms = untracked_norms(at, panel, as_of)
+        # and what share of its group Direct normally is, for the Direct switch
+        direct_norm = direct_share_norm(at, panel, as_of)
+        try:
+            norms_path.write_text(json.dumps({"asOf": as_of.isoformat(), "norms": norms, "direct": direct_norm}, indent=1))
+        except OSError:
+            pass
+    if direct_norm and direct_norm.get("units") is not None:
+        print(f"direct norm: {direct_norm['units']:.1%} of its group's units, {direct_norm['sessions']:.1%} of its sessions (n={direct_norm['n']})")
     if norms:
         print("untracked norm: " + ", ".join(f"{k} median {v['median']:.1%} p90 {v['p90']:.1%} (n={v['n']})"
                                              for k, v in norms.items() if isinstance(v, dict) and v.get("median") is not None))
+    mark("benchmarks")
 
     if only:
         cfg = next((r for r in INPUTS["releases"] if r["id"] == only), None)
         if cfg is None:
             raise SystemExit(f"build: no configured release with id {only!r}")
-        snap = build_release(cfg, at, spend, emails, content, curves, as_of,
+        snap = with_direct_spread(build_release, cfg, at, spend, emails, content, curves, as_of,
                              artist_posts, posts_bench, email_bench, panel, people,
-                                 full_through=full_through, seen=seen, untracked_norms=norms)
+                                 full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
         check_snapshot(snap)
         (APP / "releases" / f"{only}.json").write_text(json.dumps(snap, indent=1))
         bmk = snap.get("benchmark")
@@ -3302,6 +3908,9 @@ def main(only: str | None = None):
               + (f" benchmark={bmk['units']} (x{bmk['k']}, {bmk['basket']['id']} n={bmk['basket']['n']})"
                  if bmk else ""))
         patch_index(snap, as_of)
+        mark("release")
+        print("timing: " + " | ".join(f"{label} {secs:.1f}s" for label, secs in marks)
+              + f" | total {time.perf_counter() - t_start:.1f}s")
         print(f"wrote 1 release ({only}) -> {APP}")
         return
 
@@ -3312,9 +3921,9 @@ def main(only: str | None = None):
     for rec in discovered:
         cfg = configured.pop(rec["release_name"], None)
         if cfg:
-            snap = build_release(cfg, at, spend, emails, content, curves, as_of,
+            snap = with_direct_spread(build_release, cfg, at, spend, emails, content, curves, as_of,
                                  artist_posts, posts_bench, email_bench, panel, people,
-                                 full_through=full_through, seen=seen, untracked_norms=norms)
+                                 full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
             check_snapshot(snap)
             (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
             add(snap, "closed" if snap["complete"] else "live")
@@ -3327,20 +3936,30 @@ def main(only: str | None = None):
                      if bmk else ""))
         else:
             rec["campaign_name"] = match_campaign(rec["campaign_code"], spend)
-            snap = build_actuals(rec, by_name[rec["release_name"]], spend, emails, content, as_of,
+            snap = with_direct_spread(build_actuals, rec, by_name[rec["release_name"]], spend, emails, content, as_of,
                                  email_bench, artist_posts, full_through=full_through, seen=seen,
-                                 untracked_norms=norms)
+                                 untracked_norms=norms, direct_norm=direct_norm)
             check_snapshot(snap)
             (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
             written.add(f"{rec['id']}.json")
             add(snap, "catalogue" if snap["catalogue"] else ("closed" if snap["complete"] else "live"))
             n_actuals += 1
+    # the launches Airtable knows and the funnel does not yet: a page each,
+    # with the dates, edition and price to set targets from (§1.7)
+    n_upcoming = 0
+    for rec in upcoming:
+        snap = build_upcoming(rec, as_of, email_bench, full_through)
+        check_snapshot(snap)
+        (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
+        written.add(f"{rec['id']}.json")
+        add(snap, "upcoming")
+        n_upcoming += 1
     # configured releases the funnel data does not mention yet (announced, no
     # traffic) still get built, as before
     for cfg in configured.values():
-        snap = build_release(cfg, at, spend, emails, content, curves, as_of,
+        snap = with_direct_spread(build_release, cfg, at, spend, emails, content, curves, as_of,
                              artist_posts, posts_bench, email_bench, panel, people,
-                                 full_through=full_through, seen=seen, untracked_norms=norms)
+                                 full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
         check_snapshot(snap)
         (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
         add(snap, "closed" if snap["complete"] else "live")
@@ -3377,6 +3996,9 @@ def main(only: str | None = None):
             **{r["id"]: sourced_inputs(r, spend, notion) for r in INPUTS["releases"]},
             **{r["id"]: sourced_inputs(r, spend, notion) for r in discovered
                if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}},
+            # an upcoming launch's Airtable products, so the Set up targets tab
+            # starts from them before the funnel has a row (§1.7)
+            **{r["id"]: sourced_inputs(r, spend, notion) for r in upcoming},
         },
         "discovered": {
             r["id"]: {
@@ -3384,11 +4006,16 @@ def main(only: str | None = None):
                 "type": r["type"], "campaign_code": r["campaign_code"],
                 "campaign_name": r.get("campaign_name"),
                 "announce_date": r["announce_date"], "launch_end": r["launch_end"],
-                "private_room_open": ((date.fromisoformat(r["announce_date"]) - timedelta(days=PR_LEAD_DAYS)).isoformat()
-                                      if r["announce_date"] else None),
+                "private_room_open": r.get("private_room_open") or (
+                    (date.fromisoformat(r["announce_date"]) - timedelta(days=PR_LEAD_DAYS)).isoformat()
+                    if r["announce_date"] else None),
                 "dates_note": r["dates_note"],
+                # an upcoming launch brings Airtable's edition, price and
+                # record ids, the defaults the Set up targets tab starts from
+                **{k: r[k] for k in ("source", "airtable_release", "airtable_ids", "titles", "n_products",
+                                     "launch_type", "project_status") if k in r},
             }
-            for r in discovered if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}
+            for r in discovered + upcoming if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}
         },
         "meta_campaigns": [
             {"name": r.campaign_name, "spend": round(float(r.spend), 2), "last": r.last.isoformat()}
@@ -3396,7 +4023,7 @@ def main(only: str | None = None):
         ],
     }, indent=1))
     print(funnel_coverage(at, curves))
-    print(f"wrote {n_full} targeted + {n_actuals} actuals-only releases "
+    print(f"wrote {n_full} targeted + {n_actuals} actuals-only + {n_upcoming} upcoming releases "
           f"({sum(1 for e in index if e['status'] == 'live')} live) -> {APP}")
 
 

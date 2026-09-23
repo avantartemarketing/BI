@@ -27,7 +27,9 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const OUT = process.env.HUBSPOT_CSV || path.join(ROOT, "sources", "all_sent_emails.csv");
+// written beside the other pulled feeds (SOURCES_PATH on a persistent disk, else the
+// repo's sources/, where the checked-in copy is the ETL's fallback)
+const OUT = process.env.HUBSPOT_CSV || path.join(process.env.SOURCES_PATH || path.join(ROOT, "sources"), "all_sent_emails.csv");
 const SAVED = process.env.SAVED_INPUTS_PATH || path.join(ROOT, "data", "inputs.saved.json");
 const API = process.env.HUBSPOT_API || "https://api.hubapi.com/marketing/v3/emails";
 /* The listing comes back oldest first, so a page cap cuts off the newest sends,
@@ -139,7 +141,11 @@ function parseCsvLine(line) {
 const rowKey = (name, sent) => `${name}#${String(sent).slice(0, 10)}`;
 function readExisting() {
   let text;
-  try { text = fs.readFileSync(OUT, "utf8"); } catch { return new Map(); }
+  // the last pull's rows; on a disk that has no pull yet (SOURCES_PATH just
+  // set), the checked-in copy, so nothing older than the API's window is lost
+  try { text = fs.readFileSync(OUT, "utf8"); } catch {
+    try { text = fs.readFileSync(path.join(ROOT, "sources", "all_sent_emails.csv"), "utf8"); } catch { return new Map(); }
+  }
   const rows = new Map();
   for (const line of text.split(/\r?\n/).slice(1)) {
     if (!line.trim()) continue;
@@ -226,4 +232,4 @@ async function refreshEmails() {
   return `hubspot ${out.rows} emails, sends through ${out.through} (${out.pulled} pulled, ${how}, ${out.kept} kept from the file${cap}); ${out.summary}`;
 }
 
-module.exports = { refreshEmails, fetchEmailsCsv, matchCampaign, campaignIndex, knownCampaignCodes, summarise, parseCsvLine };
+module.exports = { refreshEmails, fetchEmailsCsv, matchCampaign, campaignIndex, knownCampaignCodes, summarise, parseCsvLine, OUT };

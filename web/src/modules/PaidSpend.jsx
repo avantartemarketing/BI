@@ -22,8 +22,8 @@ import {
   Card, HorizonBadge, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip, dayElapsed,
 } from "../ui.jsx";
 
-const money = (v) => "£" + fmt(Math.round(v ?? 0));
-const moneyK = (v) => "£" + fmtK(v ?? 0);
+const money = (v) => "€" + fmt(Math.round(v ?? 0));
+const moneyK = (v) => "€" + fmtK(v ?? 0);
 
 export default function PaidSpend({ snap, horizon = "today" }) {
   const tipApi = useTip();
@@ -50,8 +50,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     rows: [
       { label: "Current", value: money(cur) },
       { label: "Recommended", value: money(rec) },
-      { label: "Cost / unit now", value: budget.cpeNow ? "£" + fmt(budget.cpeNow) : "–" },
-      { label: "Cost / unit at recommended", value: budget.cpeAtRecommended ? "£" + fmt(budget.cpeAtRecommended) : "–" },
+      { label: "Cost / unit now", value: budget.cpeNow ? "€" + fmt(budget.cpeNow) : "–" },
+      { label: "Cost / unit at recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at recommended", value: fmt(budget.finalDayRoi, 2) },
       { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
       { label: "Spend to sell out / day", value: budget.supplySpend !== null && budget.supplySpend !== undefined ? money(budget.supplySpend) : "–" },
@@ -67,9 +67,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     d === null || d === 0 ? (
       <Lozenge dir="neutral" content={lozTip}>{noCampaign ? "no campaign" : rec === null ? "no recommendation" : "no change"}</Lozenge>
     ) : d > 0 ? (
-      <Lozenge dir="up" content={lozTip}>{"▲ +£" + fmt(d)}</Lozenge>
+      <Lozenge dir="up" content={lozTip}>{"▲ +€" + fmt(d)}</Lozenge>
     ) : (
-      <Lozenge dir="down" content={lozTip}>{"▼ " + MINUS + "£" + fmt(-d)}</Lozenge>
+      <Lozenge dir="down" content={lozTip}>{"▼ " + MINUS + "€" + fmt(-d)}</Lozenge>
     );
 
   // ----- "Capped by" row: what bound the recommendation -----
@@ -133,8 +133,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       // the cost curve the path is drawn on: this campaign's own response to
       // spend and to time where it has enough days, shrunk to the panel's
       ...costCurveRows,
-      { label: "Cost / unit at close, today's spend", value: budget.cpeAtClose ? "£" + fmt(budget.cpeAtClose) : "–" },
-      { label: "Cost / unit at close, recommended", value: budget.cpeAtRecommended ? "£" + fmt(budget.cpeAtRecommended) : "–" },
+      { label: "Cost / unit at close, today's spend", value: budget.cpeAtClose ? "€" + fmt(budget.cpeAtClose) : "–" },
+      { label: "Cost / unit at close, recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at close, recommended", value: fmt(budget.finalDayRoi, 2) },
       { label: "Spend at the floor", value: money(rec) + " / day" },
       ...pacedRow,
@@ -387,7 +387,7 @@ function PaidSpendActuals({ snap }) {
         <div style={row}><span style={{ color: C.muted }}>Campaign</span><span style={{ fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }} title={snap.campaignName || ""}>{snap.campaignName || "–"}</span></div>
         <div style={row}><span style={{ color: C.muted }}>Spend to date</span><span className="num">{money(spend)}</span></div>
         <div style={row}><span style={{ color: C.muted }}>Paid entries to date</span><span className="num">{fmt(entries)}</span></div>
-        <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }}>£ per entry, whole campaign</span><span className="num">{paid.cumCpe ? "£" + fmt(paid.cumCpe, 2) : "–"}</span></div>
+        <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }}>€ per entry, whole campaign</span><span className="num">{paid.cumCpe ? "€" + fmt(paid.cumCpe, 2) : "–"}</span></div>
       </div>
     </Card>
   );

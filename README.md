@@ -30,7 +30,7 @@ etl/                    Python pipeline
                           tier_curve_probe.py, release_clusters.py - the baskets of comparables,
                           price_probe.py - whether price belongs in the basket; it does)
 data/
-  spend_daily.csv         extracted spend facts
+  spend_daily.csv         extracted spend facts: Meta's spend, in euros, the page's currency
   content_posts.csv       extracted content facts (manual Emplifi export; see below)
   notion_posts.csv        posts by release, date and channel, from the Notion log (live)
   release_clusters.csv    every release's campaign window, features, basket and edition pricing
@@ -38,7 +38,8 @@ data/
   release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
                           dates, medium - no personal data (etl/pull_airtable.py)
   orders_by_product.csv   per release x Shopify product: units paid, awaiting payment (draft orders),
-                          list price - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
+                          list price, prints with a frame on offer and the frames bought with them
+                          (docs 6.4) - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
   draw_products.csv       the product each draw's winners bought: the draw to product map
   release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
@@ -113,11 +114,12 @@ output) and reruns the full ETL, which promotes the release.
 
 ## Keeping state across deploys (Render)
 
-Render's disk resets on every deploy. Five things live on it and are lost without these:
+Render's disk resets on every deploy. Six things live on it and are lost without these:
 
 | What | Symptom when lost | Fix |
 |---|---|---|
 | Session secret | everyone is signed out after each deploy | set `SESSION_SECRET` (any long random string) under Environment |
+| `sources/` - the pulled feeds: the funnel export, the events and browsing feeds and their incremental bookmarks, the HubSpot sends | every deploy starts with no feed, so the boot refresh is a full multi-year pull plus the whole ETL, and until it finishes the page serves the snapshots committed in the repo, however old their data; a second deploy in that time kills the refresh and starts it over | `SOURCES_PATH` on the disk: the boot refresh is then an incremental pull |
 | `data/users.json` | roles set in Permissions reset; people are re-added as users on their next Google sign-in | `USERS_PATH` on a persistent disk |
 | `data/inputs.saved.json` | targets edited in the dashboard revert to the repo defaults | `SAVED_INPUTS_PATH` on the disk |
 | `data/targets.log.jsonl`, `data/decisions.log.jsonl` | the audit trails restart | `TARGETS_LOG`, `DECISIONS_PATH` on the disk |
@@ -125,10 +127,13 @@ Render's disk resets on every deploy. Five things live on it and are lost withou
 | `data/slack.json` | the Slack channel set per release is forgotten; the Post to Slack button goes grey | `SLACK_STATE_PATH` on the disk |
 
 `SESSION_SECRET` is the one-line fix for re-logins and needs no disk. For the rest, add a
-persistent disk to the service (Render → the service → Disks; 1 GB is plenty), mount it
-at `/var/data`, and set
+persistent disk to the service (Render → the service → Disks → Add disk; 1 GB is plenty), mount it
+at `/var/data`, and set the seven variables under Environment (`render.yaml` carries the same disk
+and paths for a service created from the blueprint). Until this is done the Target setting tab
+shows a red warning on every release, since every save would be lost on the next deploy. Set
 
 ```
+SOURCES_PATH=/var/data/sources
 USERS_PATH=/var/data/users.json
 SAVED_INPUTS_PATH=/var/data/inputs.saved.json
 TARGETS_LOG=/var/data/targets.log.jsonl
@@ -137,6 +142,12 @@ LAYOUT_PATH=/var/data/layout.json
 SLACK_STATE_PATH=/var/data/slack.json
 ```
 
+`SOURCES_PATH` is a directory (the server creates it); the feeds are about 250 MB, so the
+1 GB disk still has room. The first refresh after setting it is a full pull, since the disk
+starts empty; every deploy after that finds the feeds and their bookmarks in place. The
+checked-in `sources/all_sent_emails.csv` stands in for the email panels until the first
+HubSpot pull has written the disk's own copy.
+
 `render.yaml` lists the same keys, but Render ignores that file for a service created in the
 dashboard, so they have to be set by hand. The ETL's own output (`data/app/`) is regenerated
 on every refresh and needs nothing.
@@ -144,8 +155,10 @@ on every refresh and needs nothing.
 ## Refreshing data
 
 **Live (production):** on boot and every hour the server rewrites
-`sources/across_time.csv` and `data/spend_daily.csv` and reruns the ETL in place - no
-redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
+`sources/across_time.csv` and `data/spend_daily.csv`, pulls Airtable's Pipeline table to
+`data/release_pricing.csv` when `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID` and `AIRTABLE_TABLE`
+are set (the launches ahead of the funnel appear in the sidebar as Upcoming, docs
+`DATA_MODEL.md` 1.7), and reruns the ETL in place - no redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
 (signed-in session required): both **start** the refresh and return at once with
 `running: true`; poll `GET /api/refresh/status` for the outcome, or hover the header's
 source-freshness line, which shows the same thing. A refresh is a multi-year BigQuery pull
@@ -188,7 +201,8 @@ file in atomically (`sources/across_time.meta.json` records the window, columns 
 date). The overlap is not a nicety: entry-to-order conversion keeps changing a day's row
 until the draw settles, so recent history is live. A **full** pull runs every
 `BQ_FULL_EVERY_DAYS` (default 7), on `?run=1&full=1`, when `BQ_SINCE` or the column set
-changes, or when there is no local file - and it reports how many days older than the
+changes, or when there is no local file (which on Render is after every deploy unless
+`SOURCES_PATH` keeps the feeds on the persistent disk) - and it reports how many days older than the
 overlap changed upstream since the last full pull, so "historic data doesn't change" is
 measured rather than assumed. An upstream backfill (announcement dates for the back
 catalogue, say) rewrites the clock columns years back; the weekly full pull is what picks
@@ -223,7 +237,9 @@ it leaves the server with an identifier column.
 **Orders and drafts by product.** The pull also reads `Order_Line_Concept`, the Shopify order
 lines, into two aggregate files: `data/orders_by_product.csv` (per release and product: units
 paid, orders awaiting payment, list price; the draw's own pre-authorisation drafts, one per
-live entry, are counted apart and never shown as drafts) and `data/draw_products.csv` (the product each
+live entry, are counted apart and never shown as drafts; and the framing, the prints a frame
+was on offer for and the frames bought with them, joined to the prints through the order,
+docs 6.4) and `data/draw_products.csv` (the product each
 draw's winners bought, joined inside BigQuery on the pseudonymous account id). That table
 carries email addresses too; nothing selects them, and only counts per release and product
 leave (docs/DATA_MODEL.md 2.4). `BQ_ORDERS=off` skips the pair, `BQ_ORDERS_TABLE` renames
@@ -453,14 +469,7 @@ basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 
 The derived-targets rail recomputes live in the browser via
 `shared/benchmarkModel.mjs` (the per-unit economics via `shared/economics.mjs`);
-**Save** persists the inputs (`POST /api/inputs/:id`) and **re-runs the Python
-ETL for that release**, because the benchmark model needs the panel and the
-per-basket curves - plans, expected-today, projections and the rail all come
-back rebuilt, in a few seconds. Full daily-domain refreshes still come from
-`npm run etl`. Saved inputs live in `data/inputs.saved.json` (`SAVED_INPUTS_PATH`
-relocates it; on Render's free disk copy changes back into
-`etl/release_inputs.json` to make them permanent); custom baskets live in
-`data/app/baskets.json`.
+**Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue; a first save runs the full build so the release is promoted) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
 
 ## Auditing the allocator tool with an admin export
 
@@ -564,6 +573,15 @@ a deploy the card shows the release as one row and says so. **Post to Slack** in
 header sends the card as a picture, with these figures under it, to the release's channel
 (see "Posting sell-through to Slack").
 
+**Framing** (docs §6.4) is frames per print on the prints a frame was on offer for: the
+headline is the prints sold that went out framed, against the plan's frame conversion, and
+two bars on one 0 to 100% scale carry the buyers (prints sold) and the entrants (the frames
+on the app's pre-authorisation drafts, which is what allocation brings), each with the plan
+as the pale fill and the basket's median as the dotted outline. Prints with no framing option
+(the Lifesize Brillo Box) are left out of the rate and counted in the key. Hover the buyers'
+bar for the rate by work. The card is off the page on a release nothing has been offered a
+frame on, and reads from the same orders feed as sell-through.
+
 Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
 own blue (darker to whichever of target and benchmark is lower, lighter from the benchmark up
 to the target), the benchmark as a dotted outline over it, and the actual in front. A single
@@ -571,6 +589,12 @@ to the target), the benchmark as a dotted outline over it, and the actual in fro
 headline deltas read against the target. Plan curves are built from the release's own basket
 where it has enough members and fall back to the pooled panel curve per metric (docs §5.3).
 Paid ROI is the exception: no reference and no horizon.
+
+Beside it, a **Direct** switch (shown once the ETL has built the page both ways): *Channel*
+reads Direct as the funnel attributes it; *Spread* shares Direct's sessions, entries and units
+out over the other channels in proportion to their own, day by day, and reads the benchmark's
+channel split the same way (docs/DATA_MODEL.md 1.3). Totals and what has been sold do not
+move; the plan's pace shifts a little with the mix. The choice sticks per browser.
 
 ### Arranging the page
 

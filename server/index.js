@@ -210,10 +210,21 @@ function defaultsFor(id, disc) {
     campaign_names: disc.campaign_name ? [disc.campaign_name] : [], marketing_lead: null,
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
     products: [], legacy_economics: null,
+    // an upcoming launch (docs 1.7) brings the Airtable record ids the build
+    // uses to attach the funnel's actuals to these targets once it carries
+    // the release; its products and dates come through `sourced` like any other
+    airtable_release: disc.airtable_release || null, airtable_ids: disc.airtable_ids || null,
     preorder_conversion_rate: null,
     prefer_recent: true,
-    cost_per_purchase: null, artist_posting_tier: "Medium", channels_off: [],
+    cost_per_purchase: null, cannibalisation: null, artist_posting_tier: "Medium", channels_off: [],
   };
+}
+
+/* Where the saves land. Render resets the service's own disk on every deploy,
+ * so a save is durable only when SAVED_INPUTS_PATH points somewhere else (a
+ * persistent disk, README); the tab says so when it does not. */
+function storageInfo() {
+  return { durable: !!process.env.SAVED_INPUTS_PATH, path: SAVED_INPUTS_PATH };
 }
 
 /* What the feeds hold for a release (the ETL's sourced block of inputs.json,
@@ -238,6 +249,7 @@ app.get("/api/inputs/:id", (req, res) => {
     meta_campaigns: doc.meta_campaigns || [],
     // the draws (one per product) the event feed found for this release
     draws: drawsFor((inputs || disc || {}).release_name),
+    storage: storageInfo(),
   });
 });
 
@@ -275,14 +287,24 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       if (!dateOf(f)) errors.push(`${f} is needed to set targets - none in the Notion log, the funnel's clock or Airtable, so type it`);
     }
   }
-  // what a paid unit costs to buy, £: paid units x this is the paid budget.
+  // what a paid unit costs to buy, in euros: paid units x this is the paid budget.
   // Empty means the panel's median (etl/benchmarks.json cost_per_purchase).
   if (body.cost_per_purchase !== undefined) {
     if (body.cost_per_purchase === null || body.cost_per_purchase === "") next.cost_per_purchase = null;
     else {
       const v = Number(body.cost_per_purchase);
-      if (!Number.isFinite(v) || v <= 0) errors.push("cost_per_purchase must be a positive number (£ per paid unit) or empty");
+      if (!Number.isFinite(v) || v <= 0) errors.push("cost_per_purchase must be a positive number (euros per paid unit) or empty");
       else next.cost_per_purchase = Math.round(v * 100) / 100;
+    }
+  }
+  // the share of paid entries that would have come anyway (docs 7), a
+  // fraction; empty means the LE standard (etl/benchmarks.json cannibalisation)
+  if (body.cannibalisation !== undefined) {
+    if (body.cannibalisation === null || body.cannibalisation === "") next.cannibalisation = null;
+    else {
+      const v = Number(body.cannibalisation);
+      if (!Number.isFinite(v) || v < 0 || v >= 1) errors.push("cannibalisation must be a fraction from 0 up to 1 (the share of paid entries that would have come anyway) or empty");
+      else next.cannibalisation = Math.round(v * 10000) / 10000;
     }
   }
   // how much the artist will post, the cohort of the artist-posts benchmark
@@ -310,7 +332,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       else next[f] = body[f];
     }
   }
-  for (const f of ["marketing_lead", "campaign_code"]) {
+  for (const f of ["marketing_lead", "campaign_code", "airtable_release", "airtable_ids"]) {
     if (body[f] !== undefined) next[f] = body[f] === null ? null : String(body[f]).slice(0, 200);
   }
   /* The benchmark basket (BENCHMARK_SPEC §6). An unresolvable basket is
@@ -435,54 +457,51 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   // the ETL overlays only stamped entries over the repo defaults - its own
   // output carries no stamp, so a default can still change under it
   next.saved_at = new Date().toISOString();
-  if (creating) {
-    // Nothing to rebuild in place - the release only has an actuals-only page. Save
-    // the inputs and let the full ETL build it (build.py picks the saved
-    // inputs up and promotes the release). This one stays on the whole-
-    // catalogue build on purpose: promotion moves the release out of the
-    // derived set, and only the full build clears the actuals-only page it
-    // leaves behind.
-    writeSaved(id, next);
-    fs.appendFileSync(TARGETS_LOG, JSON.stringify({
-      ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard", created: true,
-    }) + "\n");
-    try {
-      await sheets.runEtl();
-    } catch (e) {
-      return res.status(502).json({
-        error: "Inputs saved, but the rebuild failed (" + String((e && e.message) || e).slice(0, 200) +
-          ") - the page will update on the next data refresh.",
-      });
-    }
-    if (!fs.existsSync(snapPath)) return res.status(502).json({ error: "Inputs saved, but the rebuild did not produce the page - check the refresh status." });
-    return res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")), created: true });
-  }
-  if (!fs.existsSync(snapPath)) return res.status(404).json({ error: "no snapshot for release" });
-
-  /* Every save rebuilds the release with the Python ETL: the benchmark is the
-   * basket's medians and its pace curves are built from the basket's own
-   * members (BENCHMARK_SPEC §4, §4.1), neither of which is in the snapshot,
-   * and a changed Meta-campaign match re-attributes the paid spend, which only
-   * the build can do. One release, not the catalogue: a save cannot move any
-   * other page, and the whole-catalogue build costs about seven times as much
-   * (server/sheets.js). On a failed rebuild the inputs still stand and the
-   * page catches up on the next data refresh. */
+  if (!creating && !fs.existsSync(snapPath)) return res.status(404).json({ error: "no snapshot for release" });
   writeSaved(id, next);
   fs.appendFileSync(TARGETS_LOG, JSON.stringify({
-    ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard",
+    ts: new Date().toISOString(), releaseId: id, inputs: next, actor: "dashboard", ...(creating ? { created: true } : {}),
   }) + "\n");
-  try {
-    await sheets.runEtl(id);
-  } catch (e) {
-    return res.status(502).json({
-      error: "Inputs saved, but the rebuild failed (" + String((e && e.message) || e).slice(0, 200) +
-        ") - the page will update on the next data refresh.",
-    });
-  }
-  baskets.invalidate();   // a full ETL run is the one thing that moves the panel
-  if (!fs.existsSync(snapPath)) return res.status(502).json({ error: "Inputs saved, but the rebuild did not produce the page - check the refresh status." });
-  res.json({ snapshot: JSON.parse(fs.readFileSync(snapPath, "utf8")) });
+  /* Every save rebuilds the release with the Python ETL: the benchmark is the
+   * basket's medians and its pace curves are built from the basket's own
+   * members (BENCHMARK_SPEC 4, 4.1), neither of which is in the snapshot,
+   * and a changed Meta-campaign match re-attributes the paid spend, which
+   * only the build can do. The answer does not wait for it: the build runs
+   * behind the response and the tab polls GET /api/inputs/:id/build, so a
+   * slow build neither holds the browser nor outruns Render's proxy. One
+   * release, not the catalogue - except a first save: promotion moves the
+   * release out of the derived set, and only the full build clears the
+   * actuals-only page it leaves behind. On a failed rebuild the inputs
+   * still stand and the page catches up on the next data refresh. */
+  const build = startBuild(id, creating);
+  res.json({ queued: true, created: creating, build: publicBuild(build), storage: storageInfo() });
 }));
+
+/* The builds saves have started, one record per release, for the tab to poll. */
+const builds = new Map();
+function publicBuild(rec) {
+  if (!rec) return { status: "idle" };
+  return { status: rec.status, startedAt: rec.startedAt, finishedAt: rec.finishedAt || null, seconds: rec.seconds || null,
+    full: !!rec.full, error: rec.error || null, message: rec.message || null };
+}
+function startBuild(id, full) {
+  const started = Date.now();
+  const rec = { status: "running", startedAt: new Date(started).toISOString(), full: !!full };
+  builds.set(id, rec);
+  (full ? sheets.runEtl() : sheets.runEtl(id))
+    .then((message) => { rec.status = "done"; rec.message = String(message || "").slice(0, 300); })
+    .catch((e) => { rec.status = "failed"; rec.error = String((e && e.message) || e).slice(0, 300); console.error(`build ${id}: ${rec.error}`); })
+    .finally(() => {
+      rec.finishedAt = new Date().toISOString();
+      rec.seconds = Math.round((Date.now() - started) / 100) / 10;
+      baskets.invalidate();   // a full ETL run is the one thing that moves the panel
+    });
+  return rec;
+}
+app.get("/api/inputs/:id/build", (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  res.json({ ...publicBuild(builds.get(id)), snapshot: fs.existsSync(path.join(DATA, "releases", `${id}.json`)) });
+});
 
 /* ---- benchmark baskets (BENCHMARK_SPEC §6; the basket picker) ----
  * Read-only for anyone with a session, like the inputs routes above: the
@@ -567,7 +586,7 @@ app.get("/api/emails/content/status", (req, res) => {
 const FEATURES = path.join(DATA, "release_features.csv");
 let featuresBuild = null;
 app.get("/api/funnel/releases.csv", async (_req, res) => {
-  const src = path.join(ROOT, "sources", "across_time.csv");
+  const src = require("./bigquery").ACROSS_TIME;
   const stale = !fs.existsSync(FEATURES) || (fs.existsSync(src) && fs.statSync(src).mtimeMs > fs.statSync(FEATURES).mtimeMs);
   if (stale) {
     featuresBuild = featuresBuild || new Promise((resolve, reject) => {

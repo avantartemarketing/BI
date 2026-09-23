@@ -48,18 +48,24 @@ const readline = require("readline");
 const { serviceAccount, accessToken } = require("./googleAuth");
 
 const ROOT = path.resolve(__dirname, "..");
-const ACROSS_TIME = path.join(ROOT, "sources", "across_time.csv");
+// where the pulled feeds and their bookmarks live: the repo's sources/ (gitignored)
+// unless SOURCES_PATH puts them on a disk that survives a deploy, so the boot
+// refresh after one is incremental rather than a full pull (README, "Keeping
+// state across deploys")
+const SOURCES = process.env.SOURCES_PATH || path.join(ROOT, "sources");
+try { fs.mkdirSync(SOURCES, { recursive: true }); } catch (e) { /* reported by the first write */ }
+const ACROSS_TIME = path.join(SOURCES, "across_time.csv");
 const SPEND_DAILY = path.join(ROOT, "data", "spend_daily.csv");
 // the event-level feed: pseudonymous person ids only, never the address (see
 // the events section). Lives under sources/ (gitignored), served by no endpoint.
-const LE_EVENTS = path.join(ROOT, "sources", "le_events.csv");
+const LE_EVENTS = path.join(SOURCES, "le_events.csv");
 // orders and drafts by product, and the product each draw sold: aggregates
 // only, written from Order_Line_Concept on every refresh (docs/DATA_MODEL.md 2.4)
 const ORDERS_BY_PRODUCT = path.join(ROOT, "data", "orders_by_product.csv");
 const DRAW_PRODUCTS = path.join(ROOT, "data", "draw_products.csv");
 // what the local funnel file is: window, columns, last date, when it was last
 // pulled in full. Absent = never pulled from BigQuery (or it came from the sheet)
-const META = path.join(ROOT, "sources", "across_time.meta.json");
+const META = path.join(SOURCES, "across_time.meta.json");
 
 const PROJECT = process.env.BQ_PROJECT || "avantarte-data-production";
 const DATASET = process.env.BQ_DATASET || "AA_company_tables";
@@ -380,19 +386,27 @@ const spendSql = () =>
  *                          counted apart, because the card already counts
  *                          those as entries), from drafts,
  *                          private room, the list price, first and last
- *                          order day, last draft day
+ *                          order day, last draft day; and the framing
+ *                          (docs/DATA_MODEL.md 6.4): the paid prints a frame
+ *                          was on offer for and the frames bought with them,
+ *                          and the same for the app's entry drafts
  *   draw_products.csv      per draw: the product its winners bought most, and
  *                          the share of their orders it took
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
-  "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts", "units_winner_drafts_lapsed", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft"];
+  "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts", "units_winner_drafts_lapsed", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft",
+  "prints_offered_paid", "frames_paid", "prints_offered_entry_drafts", "frames_entry_drafts"];
 const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
 
 const ordersSql = () =>
   "WITH lines AS (\n" +
   "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
-  "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room,\n" +
+  "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_order_id AS order_id,\n" +
+  // a frame was on offer for the print: the line's framing_offered says so
+  // ("Optional framing on order", "Frame included"; "No framing" and blank
+  // are the prints that could not be framed, the Lifesize Brillo Box)
+  "    framing_offered IN ('Optional framing on order', 'Frame included') AS offered,\n" +
   "    shopify_product_variant_price, shopify_order_created_date_CET AS order_date, DATE(shopify_draft_order_created_at) AS draft_date,\n" +
   "    TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), shopify_draft_order_created_at, HOUR) AS draft_age_hours,\n" +
   "    COALESCE(shopify_order_facilitator, '') AS facilitator,\n" +
@@ -411,6 +425,22 @@ const ordersSql = () =>
   // one row per refund on the order): one row per line id, or every unit of
   // those lines is counted twice
   "  QUALIFY order_lineitem_id IS NULL OR ROW_NUMBER() OVER (PARTITION BY order_source_type, order_lineitem_id ORDER BY refund_processed_at DESC) = 1),\n" +
+  // a frame is a line of its own (shopify_product_type = 'Frame') with no
+  // release on it, so it is joined to the prints through the order, on an
+  // order or a draft alike; one row per line id, as for the prints
+  "frames AS (\n" +
+  "  SELECT order_source_type, order_id, SUM(quantity) AS frame_units FROM (\n" +
+  "    SELECT order_source_type, shopify_order_id AS order_id, quantity\n" +
+  `    FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
+  "    WHERE is_test_order = 0 AND shopify_product_type = 'Frame' AND shopify_order_id IS NOT NULL\n" +
+  "      AND (shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)\n" +
+  "    QUALIFY order_lineitem_id IS NULL OR ROW_NUMBER() OVER (PARTITION BY order_source_type, order_lineitem_id ORDER BY refund_processed_at DESC) = 1)\n" +
+  "  GROUP BY 1, 2),\n" +
+  // the frames an order holds go to the prints in it a frame was on offer
+  // for, a frame per print at most, and pro rata across those prints when
+  // the order holds several: the release's total is exact, a product's is
+  // exact whenever the order held one print, which is nearly every order
+  "order_prints AS (SELECT order_source_type, order_id, SUM(IF(offered, quantity, 0)) AS offered_units FROM lines GROUP BY 1, 2),\n" +
   // the app that pre-authorises a draw entry writes its drafts under one
   // facilitator account: any account whose drafts are nearly all on the DRAW
   // SKU is the app, and every draft it writes (some land on the base SKU) is
@@ -450,8 +480,11 @@ const ordersSql = () =>
   "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AND uw.customer_id IS NULL AND oe.customer_id IS NOT NULL AS entrant_draft,\n" +
   "    l.cancelled_order = 0 AND ((l.order_source_type = 'Draft' AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku))\n" +
   "        AND ((uw.customer_id IS NOT NULL AND NOT (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72)) OR (uw.customer_id IS NULL AND oe.customer_id IS NULL)))\n" +
-  "      OR (l.order_source_type = 'Order' AND l.order_financial_status = 'pending')) AS awaiting\n" +
+  "      OR (l.order_source_type = 'Order' AND l.order_financial_status = 'pending')) AS awaiting,\n" +
+  "    IF(l.offered AND op.offered_units > 0, l.quantity / op.offered_units * LEAST(COALESCE(f.frame_units, 0), op.offered_units), 0) AS frames_line\n" +
   "  FROM lines l LEFT JOIN app_facilitators a ON a.facilitator = l.facilitator\n" +
+  "  LEFT JOIN order_prints op ON op.order_source_type = l.order_source_type AND op.order_id = l.order_id\n" +
+  "  LEFT JOIN frames f ON f.order_source_type = l.order_source_type AND f.order_id = l.order_id\n" +
   "  LEFT JOIN open_entrants oe ON oe.release = l.release AND oe.customer_id = l.customer_id\n" +
   "  LEFT JOIN unpaid_winners uw ON uw.release = l.release AND uw.customer_id = l.customer_id),\n" +
   "paid_customers AS (SELECT DISTINCT release, customer_id FROM typed WHERE paid AND customer_id IS NOT NULL)\n" +
@@ -471,7 +504,13 @@ const ordersSql = () =>
   "  APPROX_QUANTILES(IF(l.shopify_product_variant_price > 0, CAST(l.shopify_product_variant_price AS FLOAT64), NULL), 2)[OFFSET(1)] AS list_price_eur,\n" +
   "  MIN(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS first_order,\n" +
   "  MAX(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS last_order,\n" +
-  "  MAX(l.draft_date) AS last_draft\n" +
+  "  MAX(l.draft_date) AS last_draft,\n" +
+  // framing (docs/DATA_MODEL.md 6.4): the paid prints a frame was on offer
+  // for and the frames bought with them; the same on the app's entry drafts
+  "  SUM(IF(l.paid AND l.offered, l.quantity, 0)) AS prints_offered_paid,\n" +
+  "  ROUND(SUM(IF(l.paid, l.frames_line, 0)), 2) AS frames_paid,\n" +
+  "  SUM(IF(l.entry_draft AND l.offered, l.quantity, 0)) AS prints_offered_entry_drafts,\n" +
+  "  ROUND(SUM(IF(l.entry_draft, l.frames_line, 0)), 2) AS frames_entry_drafts\n" +
   "FROM typed l LEFT JOIN paid_customers p ON p.release = l.release AND p.customer_id = l.customer_id\n" +
   "GROUP BY l.release, l.product_title\nORDER BY l.release, l.product_title";
 
@@ -629,8 +668,8 @@ function eventsWriter(headerRow) {
  * be too many to bring here: 7.4M since 2023 for two numbers per channel-day.
  * No identifier is read, so nothing personal is involved. The result has the
  * daily export's grain and lets etl/aggregate_events.py rebuild the export. */
-const LE_BROWSING = path.join(ROOT, "sources", "le_browsing.csv");
-const BROWSING_META = path.join(ROOT, "sources", "le_browsing.meta.json");
+const LE_BROWSING = path.join(SOURCES, "le_browsing.csv");
+const BROWSING_META = path.join(SOURCES, "le_browsing.meta.json");
 const BROWSING_KEYS = ["AA_session_custom_channel_group_split_touch", "event_date", "simple_release_name",
                        "campaign_stage", "days_since_announcement", "days_until_launch",
                        "pct_days_since_announcement", "pct_days_until_launch"];
@@ -1045,9 +1084,9 @@ async function pull({ write = true, full = false, events = true, only = null } =
 
 module.exports = {
   pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
-  ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
+  SOURCES, ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
-  LE_BROWSING, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
+  LE_BROWSING, BROWSING_META, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
   PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
   schema, listSchema, schemaText,
 };

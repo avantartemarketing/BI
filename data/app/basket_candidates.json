@@ -1,5 +1,5 @@
 {
- "asOf": "2026-09-21",
+ "asOf": "2026-09-23",
  "rows": [
   {
    "release_name": "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
@@ -36,7 +36,7 @@
    "entries": 58.0,
    "units_per_buyer": 1.041237113402062,
    "private_room_share": 0.8316831683168316,
-   "price": 1700.0,
+   "price": 2000.0,
    "edition_size": 0.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -76,7 +76,7 @@
    "entries": 33.0,
    "units_per_buyer": 1.297872340425532,
    "private_room_share": 0.3934426229508196,
-   "price": 2125.0,
+   "price": 2500.0,
    "edition_size": 100.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -116,7 +116,7 @@
    "entries": 14.0,
    "units_per_buyer": 1.25,
    "private_room_share": 0.15,
-   "price": 3400.0,
+   "price": 4000.0,
    "edition_size": 40.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -156,7 +156,7 @@
    "entries": 263.0,
    "units_per_buyer": 1.125,
    "private_room_share": 0.2558922558922559,
-   "price": 552.5,
+   "price": 650.0,
    "edition_size": 300.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -196,7 +196,7 @@
    "entries": 519.0,
    "units_per_buyer": 1.1512770137524557,
    "private_room_share": 0.0834752981260647,
-   "price": 595.0,
+   "price": 700.0,
    "edition_size": 600.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -236,7 +236,7 @@
    "entries": 841.0,
    "units_per_buyer": 1.3671274961597542,
    "private_room_share": 0.2002262443438914,
-   "price": 425.0,
+   "price": 500.0,
    "edition_size": 900.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -276,7 +276,7 @@
    "entries": 225.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0560747663551401,
-   "price": 1275.0,
+   "price": 1500.0,
    "edition_size": 300.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -316,7 +316,7 @@
    "entries": 125.0,
    "units_per_buyer": 1.3108108108108107,
    "private_room_share": 0.2298850574712643,
-   "price": 1445.0,
+   "price": 1700.0,
    "edition_size": 100.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -356,7 +356,7 @@
    "entries": 20.0,
    "units_per_buyer": 1.2142857142857142,
    "private_room_share": 0.21875,
-   "price": 3400.0,
+   "price": 4000.0,
    "edition_size": 75.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -396,7 +396,7 @@
    "entries": 152.0,
    "units_per_buyer": 1.0051020408163265,
    "private_room_share": 0.1989795918367347,
-   "price": 722.5,
+   "price": 850.0,
    "edition_size": 200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -436,7 +436,7 @@
    "entries": 159.0,
    "units_per_buyer": 1.0274725274725274,
    "private_room_share": 0.149171270718232,
-   "price": 871.25,
+   "price": 1025.0,
    "edition_size": 300.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -476,7 +476,7 @@
    "entries": 15.0,
    "units_per_buyer": 1.15,
    "private_room_share": 0.217391304347826,
-   "price": 1870.0,
+   "price": 2200.0,
    "edition_size": 23.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -516,7 +516,7 @@
    "entries": 19.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.5,
-   "price": 1955.0,
+   "price": 2300.0,
    "edition_size": 40.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -556,7 +556,7 @@
    "entries": 253.0,
    "units_per_buyer": 1.0205479452054795,
    "private_room_share": 0.1245674740484429,
-   "price": 510.0,
+   "price": 600.0,
    "edition_size": 400.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -596,7 +596,7 @@
    "entries": 154.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0794701986754966,
-   "price": 1700.0,
+   "price": 2000.0,
    "edition_size": 200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -636,7 +636,7 @@
    "entries": 163.0,
    "units_per_buyer": 1.005050505050505,
    "private_room_share": 0.2256410256410256,
-   "price": 807.5,
+   "price": 950.0,
    "edition_size": 200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -676,7 +676,7 @@
    "entries": 84.0,
    "units_per_buyer": 1.247191011235955,
    "private_room_share": 0.1531531531531531,
-   "price": 1062.5,
+   "price": 1250.0,
    "edition_size": 200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -716,7 +716,7 @@
    "entries": 49.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.5416666666666666,
-   "price": 1700.0,
+   "price": 2000.0,
    "edition_size": 50.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -756,7 +756,7 @@
    "entries": 393.0,
    "units_per_buyer": 1.016359918200409,
    "private_room_share": 0.2808080808080808,
-   "price": 1083.75,
+   "price": 1275.0,
    "edition_size": 500.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -796,7 +796,7 @@
    "entries": 41.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.2222222222222222,
-   "price": 1487.5,
+   "price": 1750.0,
    "edition_size": 65.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -836,7 +836,7 @@
    "entries": 1177.0,
    "units_per_buyer": 1.1795180722891567,
    "private_room_share": 0.0570824524312896,
-   "price": 460.3113941967445,
+   "price": 541.5428167020524,
    "edition_size": 1413.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -874,9 +874,9 @@
     "paid": 0.3275862068965517
    },
    "entries": 1692.0,
-   "units_per_buyer": 1.2113702623906706,
+   "units_per_buyer": 1.2131386861313869,
    "private_room_share": 0.3026004728132387,
-   "price": 595.0,
+   "price": 700.0,
    "edition_size": 1200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -916,7 +916,7 @@
    "entries": 75.0,
    "units_per_buyer": 1.00990099009901,
    "private_room_share": 0.268041237113402,
-   "price": 1062.5,
+   "price": 1250.0,
    "edition_size": 200.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -956,7 +956,7 @@
    "entries": 194.0,
    "units_per_buyer": 1.028391167192429,
    "private_room_share": 0.3375394321766561,
-   "price": 680.0,
+   "price": 800.0,
    "edition_size": 327.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -996,7 +996,7 @@
    "entries": 47.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1041666666666666,
-   "price": 1700.0,
+   "price": 2000.0,
    "edition_size": 51.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -1036,7 +1036,7 @@
    "entries": 483.0,
    "units_per_buyer": 1.0124223602484472,
    "private_room_share": 0.146774193548387,
-   "price": 1870.0,
+   "price": 2200.0,
    "edition_size": 666.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1076,7 +1076,7 @@
    "entries": 183.0,
    "units_per_buyer": 1.0138888888888888,
    "private_room_share": 0.1575342465753424,
-   "price": 1402.5,
+   "price": 1650.0,
    "edition_size": 200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1116,7 +1116,7 @@
    "entries": 14.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0555555555555555,
-   "price": 3524.3902439024387,
+   "price": 4146.341463414634,
    "edition_size": 41.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -1156,7 +1156,7 @@
    "entries": 113.0,
    "units_per_buyer": 1.1318681318681318,
    "private_room_share": 0.1538461538461538,
-   "price": 1275.0,
+   "price": 1500.0,
    "edition_size": 100.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -1196,7 +1196,7 @@
    "entries": 19.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0,
-   "price": 5100.0,
+   "price": 6000.0,
    "edition_size": 50.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -1236,7 +1236,7 @@
    "entries": 337.0,
    "units_per_buyer": 1.0872340425531914,
    "private_room_share": 0.0277777777777777,
-   "price": 2550.0,
+   "price": 3000.0,
    "edition_size": 666.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1276,7 +1276,7 @@
    "entries": 103.0,
    "units_per_buyer": 1.043103448275862,
    "private_room_share": 0.1512605042016806,
-   "price": 2975.0,
+   "price": 3500.0,
    "edition_size": 120.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1316,7 +1316,7 @@
    "entries": 306.0,
    "units_per_buyer": 1.073943661971831,
    "private_room_share": 0.402027027027027,
-   "price": 1275.0,
+   "price": 1500.0,
    "edition_size": 300.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1356,7 +1356,7 @@
    "entries": 131.0,
    "units_per_buyer": 1.0086206896551724,
    "private_room_share": 0.0,
-   "price": 3293.75,
+   "price": 3875.0,
    "edition_size": 288.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1396,7 +1396,7 @@
    "entries": 208.0,
    "units_per_buyer": 1.246031746031746,
    "private_room_share": 0.5039370078740157,
-   "price": 7225.0,
+   "price": 8500.0,
    "edition_size": 150.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1436,7 +1436,7 @@
    "entries": 76.0,
    "units_per_buyer": 1.01,
    "private_room_share": 0.1683168316831683,
-   "price": 1062.5,
+   "price": 1250.0,
    "edition_size": 100.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1476,7 +1476,7 @@
    "entries": 214.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.277027027027027,
-   "price": 765.0,
+   "price": 900.0,
    "edition_size": 150.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -1516,7 +1516,7 @@
    "entries": 43.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1,
-   "price": 425.0,
+   "price": 500.0,
    "edition_size": 100.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -1556,7 +1556,7 @@
    "entries": 54.0,
    "units_per_buyer": 1.0888888888888888,
    "private_room_share": 0.2045454545454545,
-   "price": 2125.0,
+   "price": 2500.0,
    "edition_size": 0.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -1596,7 +1596,7 @@
    "entries": 186.0,
    "units_per_buyer": 1.0273972602739727,
    "private_room_share": 0.3221476510067114,
-   "price": 1700.0,
+   "price": 2000.0,
    "edition_size": 200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1636,7 +1636,7 @@
    "entries": 192.0,
    "units_per_buyer": 1.0256410256410255,
    "private_room_share": 0.2010309278350515,
-   "price": 4250.0,
+   "price": 5000.0,
    "edition_size": 200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1676,7 +1676,7 @@
    "entries": 1532.0,
    "units_per_buyer": 1.0235655737704918,
    "private_room_share": 0.0770010131712259,
-   "price": 1275.0,
+   "price": 1500.0,
    "edition_size": 1000.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1714,9 +1714,9 @@
     "paid": null
    },
    "entries": 182.0,
-   "units_per_buyer": 1.2608695652173914,
+   "units_per_buyer": 1.1956521739130435,
    "private_room_share": 0.1637931034482758,
-   "price": 6800.0,
+   "price": 8000.0,
    "edition_size": 125.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -1754,9 +1754,9 @@
     "paid": null
    },
    "entries": 199.0,
-   "units_per_buyer": 1.391304347826087,
+   "units_per_buyer": 1.382608695652174,
    "private_room_share": 0.3798882681564245,
-   "price": 1275.0,
+   "price": 1500.0,
    "edition_size": 200.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -1796,7 +1796,7 @@
    "entries": 19.0,
    "units_per_buyer": 1.4634146341463414,
    "private_room_share": 0.3555555555555555,
-   "price": 4250.0,
+   "price": 5000.0,
    "edition_size": 60.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -1836,7 +1836,7 @@
    "entries": 22.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1212121212121212,
-   "price": 3825.0,
+   "price": 4500.0,
    "edition_size": 50.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -1876,7 +1876,7 @@
    "entries": 103.0,
    "units_per_buyer": 1.0201342281879195,
    "private_room_share": 0.2567567567567567,
-   "price": 765.0,
+   "price": 900.0,
    "edition_size": 150.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -1916,7 +1916,7 @@
    "entries": 94.0,
    "units_per_buyer": 1.108974358974359,
    "private_room_share": 0.0769230769230769,
-   "price": 722.5,
+   "price": 850.0,
    "edition_size": 200.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -1956,7 +1956,7 @@
    "entries": 21.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.5932203389830508,
-   "price": 1487.5,
+   "price": 1750.0,
    "edition_size": 60.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -1996,7 +1996,7 @@
    "entries": 116.0,
    "units_per_buyer": 1.0342465753424657,
    "private_room_share": 0.3401360544217687,
-   "price": 510.0,
+   "price": 600.0,
    "edition_size": 150.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -2036,7 +2036,7 @@
    "entries": 37.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1142857142857142,
-   "price": 977.5,
+   "price": 1150.0,
    "edition_size": 60.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -2076,7 +2076,7 @@
    "entries": 198.0,
    "units_per_buyer": 1.0199004975124377,
    "private_room_share": 0.445,
-   "price": 722.5,
+   "price": 850.0,
    "edition_size": 200.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2114,9 +2114,9 @@
     "paid": 0.0020661766876236
    },
    "entries": 452.0,
-   "units_per_buyer": 1.1453287197231834,
+   "units_per_buyer": 1.1314878892733564,
    "private_room_share": 0.2783505154639175,
-   "price": 5100.0,
+   "price": 6000.0,
    "edition_size": 450.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -2156,7 +2156,7 @@
    "entries": 34.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.4210526315789473,
-   "price": 1955.0,
+   "price": 2300.0,
    "edition_size": 40.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2196,7 +2196,7 @@
    "entries": 105.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.5066666666666667,
-   "price": 1062.5,
+   "price": 1250.0,
    "edition_size": 75.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2236,7 +2236,7 @@
    "entries": 32.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.4210526315789473,
-   "price": 2125.0,
+   "price": 2500.0,
    "edition_size": 25.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2276,7 +2276,7 @@
    "entries": 51.0,
    "units_per_buyer": 1.0192307692307692,
    "private_room_share": 0.0,
-   "price": 5100.0,
+   "price": 6000.0,
    "edition_size": 50.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2316,7 +2316,7 @@
    "entries": 425.0,
    "units_per_buyer": 1.0151515151515151,
    "private_room_share": 0.1228070175438596,
-   "price": 595.0,
+   "price": 700.0,
    "edition_size": 500.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -2356,7 +2356,7 @@
    "entries": 55.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.6,
-   "price": 2720.0,
+   "price": 3200.0,
    "edition_size": 25.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2396,7 +2396,7 @@
    "entries": 43.0,
    "units_per_buyer": 1.0133333333333334,
    "private_room_share": 0.3150684931506849,
-   "price": 765.0,
+   "price": 900.0,
    "edition_size": 75.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2436,7 +2436,7 @@
    "entries": 182.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.2885906040268456,
-   "price": 467.5,
+   "price": 550.0,
    "edition_size": 150.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2476,7 +2476,7 @@
    "entries": 67.0,
    "units_per_buyer": 1.0780141843971631,
    "private_room_share": 0.028169014084507,
-   "price": 7225.0,
+   "price": 8500.0,
    "edition_size": 150.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2516,7 +2516,7 @@
    "entries": 90.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0404040404040404,
-   "price": 722.5,
+   "price": 850.0,
    "edition_size": 200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -2556,7 +2556,7 @@
    "entries": 10.0,
    "units_per_buyer": 1.3157894736842106,
    "private_room_share": 0.2083333333333333,
-   "price": 5100.0,
+   "price": 6000.0,
    "edition_size": 30.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -2596,7 +2596,7 @@
    "entries": 17.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1,
-   "price": 5100.0,
+   "price": 6000.0,
    "edition_size": 30.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -2636,7 +2636,7 @@
    "entries": 12.0,
    "units_per_buyer": 2.375,
    "private_room_share": 0.2105263157894736,
-   "price": 5100.0,
+   "price": 6000.0,
    "edition_size": 30.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2676,7 +2676,7 @@
    "entries": 17.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1538461538461538,
-   "price": 5100.0,
+   "price": 6000.0,
    "edition_size": 30.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2716,7 +2716,7 @@
    "entries": 149.0,
    "units_per_buyer": 1.0740740740740742,
    "private_room_share": 0.2821782178217821,
-   "price": 1402.5,
+   "price": 1650.0,
    "edition_size": 200.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2756,7 +2756,7 @@
    "entries": 64.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.5306122448979592,
-   "price": 965.9090909090908,
+   "price": 1136.3636363636365,
    "edition_size": 110.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2796,7 +2796,7 @@
    "entries": 56.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.8,
-   "price": 6800.0,
+   "price": 8000.0,
    "edition_size": 15.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2836,7 +2836,7 @@
    "entries": 228.0,
    "units_per_buyer": 1.3484848484848484,
    "private_room_share": 0.388235294117647,
-   "price": 1275.0,
+   "price": 1500.0,
    "edition_size": 100.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2876,7 +2876,7 @@
    "entries": 134.0,
    "units_per_buyer": 1.02020202020202,
    "private_room_share": 0.6310160427807486,
-   "price": 1870.0,
+   "price": 2200.0,
    "edition_size": 200.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2916,7 +2916,7 @@
    "entries": 270.0,
    "units_per_buyer": 1.0476190476190477,
    "private_room_share": 0.3957446808510638,
-   "price": 510.0,
+   "price": 600.0,
    "edition_size": 300.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -2956,7 +2956,7 @@
    "entries": 183.0,
    "units_per_buyer": 1.0241935483870968,
    "private_room_share": 0.2650602409638554,
-   "price": 595.0,
+   "price": 700.0,
    "edition_size": 250.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -2996,7 +2996,7 @@
    "entries": 17.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0833333333333333,
-   "price": 5100.0,
+   "price": 6000.0,
    "edition_size": 25.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -3036,7 +3036,7 @@
    "entries": 40.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.4137931034482758,
-   "price": 2380.0,
+   "price": 2800.0,
    "edition_size": 30.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -3076,7 +3076,7 @@
    "entries": 180.0,
    "units_per_buyer": 1.0505050505050506,
    "private_room_share": 0.101010101010101,
-   "price": 1487.5,
+   "price": 1750.0,
    "edition_size": 100.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3116,7 +3116,7 @@
    "entries": 58.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.3265306122448979,
-   "price": 1487.5,
+   "price": 1750.0,
    "edition_size": 50.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -3156,7 +3156,7 @@
    "entries": 93.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0,
-   "price": 807.5,
+   "price": 950.0,
    "edition_size": 100.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3196,7 +3196,7 @@
    "entries": 24.0,
    "units_per_buyer": 1.0384615384615385,
    "private_room_share": 0.0,
-   "price": 850.0,
+   "price": 1000.0,
    "edition_size": 35.0,
    "cluster": 1,
    "cluster_name": "Paid-supported small editions"
@@ -3236,7 +3236,7 @@
    "entries": 60.0,
    "units_per_buyer": 1.0333333333333334,
    "private_room_share": 0.25,
-   "price": 1721.25,
+   "price": 2025.0,
    "edition_size": 100.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -3276,7 +3276,7 @@
    "entries": 1934.0,
    "units_per_buyer": 1.1708766716196137,
    "private_room_share": 0.0143790849673202,
-   "price": 1202.142857142857,
+   "price": 1414.2857142857142,
    "edition_size": 700.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -3316,7 +3316,7 @@
    "entries": 153.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1020408163265306,
-   "price": 1062.5,
+   "price": 1250.0,
    "edition_size": 200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
@@ -3356,7 +3356,7 @@
    "entries": 49.0,
    "units_per_buyer": 2.0238095238095237,
    "private_room_share": 0.345679012345679,
-   "price": 1020.0,
+   "price": 1200.0,
    "edition_size": 140.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -3396,7 +3396,7 @@
    "entries": 52.0,
    "units_per_buyer": 1.0196078431372548,
    "private_room_share": 0.4117647058823529,
-   "price": 425.0,
+   "price": 500.0,
    "edition_size": 50.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -3436,7 +3436,7 @@
    "entries": 21.0,
    "units_per_buyer": 1.2058823529411764,
    "private_room_share": 0.04,
-   "price": 3400.0,
+   "price": 4000.0,
    "edition_size": 40.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3476,7 +3476,7 @@
    "entries": 126.0,
    "units_per_buyer": 1.0269230769230768,
    "private_room_share": 0.4469696969696969,
-   "price": 1360.0,
+   "price": 1600.0,
    "edition_size": 500.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -3514,9 +3514,9 @@
     "paid": null
    },
    "entries": 607.0,
-   "units_per_buyer": 1.4014869888475836,
+   "units_per_buyer": 1.3977695167286246,
    "private_room_share": 0.0,
-   "price": 5100.0,
+   "price": 6000.0,
    "edition_size": 450.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3556,7 +3556,7 @@
    "entries": 51.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1071428571428571,
-   "price": 2125.0,
+   "price": 2500.0,
    "edition_size": 30.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3596,7 +3596,7 @@
    "entries": 24.0,
    "units_per_buyer": 1.0425531914893618,
    "private_room_share": 0.391304347826087,
-   "price": 1445.0,
+   "price": 1700.0,
    "edition_size": 50.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -3636,7 +3636,7 @@
    "entries": 195.0,
    "units_per_buyer": 1.03125,
    "private_room_share": 0.0,
-   "price": 5100.0,
+   "price": 6000.0,
    "edition_size": 30.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3676,7 +3676,7 @@
    "entries": 47.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.2666666666666666,
-   "price": 1275.0,
+   "price": 1500.0,
    "edition_size": 30.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3716,7 +3716,7 @@
    "entries": 86.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0588235294117647,
-   "price": 4250.0,
+   "price": 5000.0,
    "edition_size": 35.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3756,7 +3756,7 @@
    "entries": 25.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.16,
-   "price": 2337.5,
+   "price": 2750.0,
    "edition_size": 30.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3796,7 +3796,7 @@
    "entries": 157.0,
    "units_per_buyer": 1.032258064516129,
    "private_room_share": 0.0967741935483871,
-   "price": 1955.0,
+   "price": 2300.0,
    "edition_size": 30.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3836,7 +3836,7 @@
    "entries": 22.0,
    "units_per_buyer": 1.4210526315789473,
    "private_room_share": 0.631578947368421,
-   "price": 4250.0,
+   "price": 5000.0,
    "edition_size": 75.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -3876,7 +3876,7 @@
    "entries": 51.0,
    "units_per_buyer": 1.0204081632653061,
    "private_room_share": 0.0,
-   "price": 722.5,
+   "price": 850.0,
    "edition_size": 50.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3916,7 +3916,7 @@
    "entries": 597.0,
    "units_per_buyer": 1.24,
    "private_room_share": 0.0,
-   "price": 4250.0,
+   "price": 5000.0,
    "edition_size": 25.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3956,7 +3956,7 @@
    "entries": 223.0,
    "units_per_buyer": 1.00990099009901,
    "private_room_share": 0.3417085427135678,
-   "price": 637.5,
+   "price": 750.0,
    "edition_size": 200.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -3996,7 +3996,7 @@
    "entries": 56.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1836734693877551,
-   "price": 1445.0,
+   "price": 1700.0,
    "edition_size": 50.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -4036,7 +4036,7 @@
    "entries": 59.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0833333333333333,
-   "price": 1997.5,
+   "price": 2350.0,
    "edition_size": 25.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -4076,7 +4076,7 @@
    "entries": 56.0,
    "units_per_buyer": 1.1666666666666667,
    "private_room_share": 0.5121951219512195,
-   "price": 4250.0,
+   "price": 5000.0,
    "edition_size": 40.0,
    "cluster": 2,
    "cluster_name": "Email-led collector launches"
@@ -4116,7 +4116,7 @@
    "entries": 41.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0652173913043478,
-   "price": 850.0,
+   "price": 1000.0,
    "edition_size": 50.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -4156,7 +4156,7 @@
    "entries": 29.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0256410256410256,
-   "price": 4250.0,
+   "price": 5000.0,
    "edition_size": 50.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -4196,7 +4196,7 @@
    "entries": 128.0,
    "units_per_buyer": 2.0194174757281553,
    "private_room_share": 0.010204081632653,
-   "price": 595.0,
+   "price": 700.0,
    "edition_size": 100.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -4236,7 +4236,7 @@
    "entries": 13.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0,
-   "price": 3187.5,
+   "price": 3750.0,
    "edition_size": 25.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -4276,7 +4276,7 @@
    "entries": 189.0,
    "units_per_buyer": 1.0396039603960396,
    "private_room_share": 0.1641791044776119,
-   "price": 1445.0,
+   "price": 1700.0,
    "edition_size": 50.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
@@ -4316,7 +4316,7 @@
    "entries": 337.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.032258064516129,
-   "price": 2550.0,
+   "price": 3000.0,
    "edition_size": 32.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"

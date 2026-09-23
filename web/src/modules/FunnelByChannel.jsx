@@ -32,7 +32,7 @@
 import React from "react";
 import {
   Card, GROUP_DOTS, C, fmt, fmtSigned, fmtMoney, MINUS, useTip,
-  rungGeom, rungPos, RungTrack, RungKey, Tick, refWords, dayElapsed,
+  rungGeom, rungPos, RungTrack, RungKey, Tick, refWords, dayElapsed, dayLabel,
 } from "../ui.jsx";
 
 const RING = "0 0 0 1px rgba(20,20,19,.45)";
@@ -476,11 +476,11 @@ function buildWaterfall(snap, groups) {
     body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.",
   } : null;
 
-  return { flat, X, domain: [lo - pad, hi + pad], expTotal, bmTotal, nowTotal, hasBm, day, words, capped, stretchTip };
+  return { flat, X, domain: [lo - pad, hi + pad], expTotal, bmTotal, nowTotal, hasBm, day, dayText: dayLabel(snap, day), words, capped, stretchTip };
 }
 
 const targetTip = (wf) => ({
-  head: `Target by day ${wf.day}`,
+  head: `Target by ${wf.dayText}`,
   rows: [{ label: "Secured units", value: fmt(wf.expTotal) }],
 });
 const bmTip = (wf) => ({

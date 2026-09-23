@@ -13,7 +13,7 @@
  * half-CPU box made that seconds per keystroke; it is now a few milliseconds.
  *
  * Rows are the candidate rows (etl/baskets.py candidate_rows): release_name,
- * artist, title, window_start, window_end (ISO days), units, price (GBP, 0
+ * artist, title, window_start, window_end (ISO days), units, price (EUR, 0
  * when Airtable has none), sessions, paid_share, campaign_days, edition_size.
  * `L` is the release: {name, artist, target, price, currency?,
  * private_room_open?, announce_date?, launch_end?}.
@@ -30,20 +30,20 @@ const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const day = (s) => { if (!s) return null; const d = new Date(String(s).slice(0, 10) + "T00:00:00Z"); return Number.isNaN(d.getTime()) ? null : d; };
 const fold = (s) => String(s || "").trim().toLowerCase();
 
-/* This release's unit price in sterling, the way the Python side finds it: a
+/* This release's unit price in euros, the way the Python side finds it: a
  * release already on the panel carries Airtable's value-weighted price and
  * that is used; one being planned has the price typed into the form, in the
  * currency the form says. A typed price does not move a release the panel
  * already prices - that is the Python behaviour, mirrored here so the picker
  * and the build rank on the same number. */
-// mirrors etl/pricing.py RATES_TO_GBP, which tests/test_basket_parity.py checks
-const RATES_TO_GBP = { GBP: 1.0, EUR: 0.85, USD: 0.78 };
+// mirrors etl/pricing.py RATES_TO_EUR, which tests/test_basket_parity.py checks
+const RATES_TO_EUR = { EUR: 1.0, GBP: 1.18, USD: 0.92 };
 export function releasePrice(rows, L) {
   const me = rows.find((r) => r.release_name === L.name);
   if (me && num(me.price) > 0) return num(me.price);
   const p = num(L.price);
   if (p <= 0) return 0;
-  return p * (RATES_TO_GBP[String(L.currency || "GBP").toUpperCase()] ?? 1.0);
+  return p * (RATES_TO_EUR[String(L.currency || "EUR").toUpperCase()] ?? 1.0);
 }
 
 /* When this launch's own window opens - the cut-off for "earlier" launches by

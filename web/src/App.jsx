@@ -23,11 +23,13 @@ import Trajectory from "./modules/Trajectory.jsx";
 import KeyDrivers from "./modules/KeyDrivers.jsx";
 import PaidRoi from "./modules/PaidRoi.jsx";
 import PaidSpend from "./modules/PaidSpend.jsx";
+import Framing from "./modules/Framing.jsx";
 import SellThrough from "./modules/SellThrough.jsx";
 import Geo from "./modules/Geo.jsx";
 import DrawAudit from "./modules/DrawAudit.jsx";
 import Waterfall from "./modules/Waterfall.jsx";
 import NoTargets from "./modules/NoTargets.jsx";
+import Upcoming from "./modules/Upcoming.jsx";
 import TargetSetting from "./TargetSetting.jsx";
 import Permissions from "./Permissions.jsx";
 import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
@@ -43,7 +45,7 @@ async function getJSON(url) {
   return r.json();
 }
 
-const STATUS_LABEL = { live: "in flight", closed: "closed", catalogue: "catalogue" };
+const STATUS_LABEL = { live: "in flight", upcoming: "upcoming", closed: "closed", catalogue: "catalogue" };
 
 /* Search across every release the funnel data mentions - artist, title,
  * quarter, campaign code or id - keeping the index's own order (in flight,
@@ -101,7 +103,7 @@ export default function App() {
   };
 
   const groups = useMemo(() => {
-    if (!index) return { live: [], all: [] };
+    if (!index) return { live: [], upcoming: [], all: [] };
     const all = index.releases.map((r) => ({ ...r, status: r.status || (r.complete ? "closed" : "live") }));
     // in flight reads top to bottom by days to launch; a release whose window
     // has not opened yet sits under the ones that have, soonest first
@@ -111,11 +113,13 @@ export default function App() {
       return c.opensIn > 0 ? 1e6 + c.opensIn : c.daysLeft;
     };
     const live = all.filter((r) => r.status === "live").sort((a, b) => order(a) - order(b));
-    return { live, all };
+    // the launches Airtable knows and the funnel does not yet, soonest close first
+    const upcoming = all.filter((r) => r.status === "upcoming").sort((a, b) => String(a.windowEnd || "").localeCompare(String(b.windowEnd || "")));
+    return { live, upcoming, all };
   }, [index]);
   const results = useMemo(() => searchReleases(groups.all, query), [groups, query]);
   const current = groups.all.find((r) => r.id === releaseId);
-  const pinned = current && current.status !== "live" && view === "release" ? current : null;
+  const pinned = current && current.status !== "live" && current.status !== "upcoming" && view === "release" ? current : null;
 
   if (error) return <div style={{ padding: 40 }}>Failed to load: {error}</div>;
   const pick = (id) => {
@@ -132,6 +136,12 @@ export default function App() {
         <div className="section-label split">In flight{groups.live.length > 0 && <small>days left</small>}</div>
         {groups.live.length === 0 && <div className="hint">Nothing in flight</div>}
         {groups.live.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
+        {groups.upcoming.length > 0 && (
+          <>
+            <div className="section-label split" title="Launches Airtable knows and the funnel report does not yet - set their targets before they open">Upcoming<small>days to open / close</small></div>
+            {groups.upcoming.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
+          </>
+        )}
         {pinned && (
           <>
             <div className="section-label">Viewing</div>
@@ -259,13 +269,15 @@ function ReleaseRow({ r, asOf, active, onClick }) {
   if (state) rows.push({ label: "Pace", value: STATE[state].word, color: STATE[state].color });
   rows.push({ label: "Status", value: STATUS_LABEL[status] || status });
   if (r.quarter) rows.push({ label: "Quarter", value: r.quarter });
-  if (!targeted) rows.push({ label: "Targets", value: "not set - actuals only" });
+  if (!targeted) rows.push({ label: "Targets", value: status === "upcoming" ? "not set - opens soon" : "not set - actuals only" });
   if (status === "catalogue" && r.lastSeen) rows.push({ label: "Last traffic", value: r.lastSeen });
   const content = { head: r.releaseName || r.name, rows };
 
   // the second line and the figure on the right
   let when, count = null;
   if (!clock) when = status === "closed" ? "Closed" : "Catalogue";
+  else if (status === "upcoming" && clock.opensIn > 0) { when = `Opens ${fmtDay(clock.announce)}`; count = clock.opensIn; }
+  else if (status === "upcoming") { when = `Closes ${fmtDay(clock.launch)}`; count = Math.max(clock.daysLeft, 0); }
   else if (clock.opensIn > 0) when = `Opens ${fmtDay(clock.announce)}`;
   else if (status === "closed") when = `Closed ${fmtDay(clock.launch)}`;
   else { when = fmtDay(clock.launch); count = Math.max(clock.daysLeft, 0); }
@@ -279,7 +291,7 @@ function ReleaseRow({ r, asOf, active, onClick }) {
         <span className="when">{when}</span>
       </span>
       {count !== null && <span className="left">{count}<small>d</small></span>}
-      {clock && clock.opensIn > 0 && <span className="left none">·</span>}
+      {clock && clock.opensIn > 0 && count === null && <span className="left none">·</span>}
     </button>
   );
 }
@@ -417,13 +429,44 @@ function HorizonToggle({ horizon, onChange }) {
   );
 }
 
+/* Direct as a channel of its own, or spread over the others (docs §1.3).
+ * The ETL builds every page both ways and the blocks that differ ride under
+ * snap.variants.direct_spread; laying them over the snapshot here makes the
+ * switch instant and puts every card on the same attribution. It is a
+ * methodology choice, not a reading of one launch, so it sticks per browser. */
+const DIRECT_PREF = "directSpread";
+const readDirectPref = () => { try { return localStorage.getItem(DIRECT_PREF) === "1"; } catch { return false; } };
+function DirectToggle({ on, onChange, share, pushRight }) {
+  const pct = (x) => (x === null || x === undefined ? "–" : Math.round(100 * x) + "%");
+  const tip = `Direct is ${pct(share && share.entries)} of this release's entries and ${pct(share && share.units)} of its units as the funnel attributes them. `
+    + "Spread shares Direct out over the other channels in proportion to their own volumes, day by day, and reads the benchmark's channel split the same way. "
+    + "Totals and what has been sold do not move; the plan's pace and the projections can shift a little with the channel mix, and paid reads the entries it is given.";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: pushRight ? "auto" : 0 }} title={tip}>
+      <span style={{ fontSize: 12, color: "#6c6b68" }}>Direct</span>
+      <div className="seg" role="group" aria-label="Direct attribution">
+        <button className={on ? "" : "active"} onClick={() => onChange(false)}
+          title="Direct stays a channel of its own, as the funnel export attributes it">Channel</button>
+        <button className={on ? "active" : ""} onClick={() => onChange(true)}
+          title="Direct's sessions, entries and units are shared out over the other channels in proportion to their own">Spread</button>
+      </div>
+    </div>
+  );
+}
+
 function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   const [tab, setTab] = useState("overview");
   const [horizon, setHorizon] = useState("today");
+  const [directSpread, setDirectSpreadState] = useState(readDirectPref);
+  const setDirectSpread = (v) => { setDirectSpreadState(v); try { localStorage.setItem(DIRECT_PREF, v ? "1" : "0"); } catch { /* per-browser convenience only */ } };
+  const variant = snap.variants && snap.variants.direct_spread;
+  // the page the cards read: the snapshot, or the snapshot with Direct spread
+  const view = useMemo(() => (directSpread && variant ? { ...snap, ...variant } : snap), [snap, variant, directSpread]);
   // a new release is a new reading: start it on the tab and the horizon everyone shares
   useEffect(() => { setTab("overview"); setHorizon("today"); }, [snap.id]);
   const targeted = snap.targeted !== false;
   const catalogue = !!snap.catalogue;
+  const upcoming = !!snap.upcoming;
   // nothing to compare against without targets, and a catalogue page has no campaign
   const showHorizon = targeted && !catalogue;
 
@@ -446,20 +489,21 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   useEffect(() => { if (tab !== "overview") stopEdit(); }, [tab]);
   const renderCard = (key) => {
     switch (key) {
-      case "clock": return <LaunchStrip snap={snap} />;
-      case "hero": return <HeroBar snap={snap} horizon={horizon} />;
-      case "channels": return <ChannelsVsTargets snap={snap} horizon={horizon} />;
-      case "no_targets": return targeted ? null : <NoTargets snap={snap} onSetup={() => setTab("targets")} />;
-      case "funnel": return <FunnelByChannel snap={snap} />;
-      case "funnel_wide": return <FunnelByChannelWide snap={snap} />;
+      case "clock": return <LaunchStrip snap={view} />;
+      case "hero": return <HeroBar snap={view} horizon={horizon} />;
+      case "channels": return <ChannelsVsTargets snap={view} horizon={horizon} />;
+      case "no_targets": return targeted ? null : <NoTargets snap={view} onSetup={() => setTab("targets")} />;
+      case "funnel": return <FunnelByChannel snap={view} />;
+      case "funnel_wide": return <FunnelByChannelWide snap={view} />;
       // the trajectory draws one picture: both readings are already on it
-      case "trajectory": return <Trajectory snap={snap} />;
-      case "drivers": return <KeyDrivers snap={snap} />;
-      case "paid_roi": return <PaidRoi snap={snap} />;
-      case "paid_spend": return <PaidSpend snap={snap} horizon={horizon} />;
-      case "sell_through": return <SellThrough snap={snap} horizon={horizon} />;
-      case "geo": return <Geo snap={snap} />;
-      case "waterfall": return <Waterfall snap={snap} horizon={horizon} />;
+      case "trajectory": return <Trajectory snap={view} />;
+      case "drivers": return <KeyDrivers snap={view} />;
+      case "paid_roi": return <PaidRoi snap={view} />;
+      case "paid_spend": return <PaidSpend snap={view} horizon={horizon} />;
+      case "sell_through": return <SellThrough snap={view} horizon={horizon} />;
+      case "framing": return <Framing snap={view} />;
+      case "geo": return <Geo snap={view} />;
+      case "waterfall": return <Waterfall snap={view} horizon={horizon} />;
       default: return null;
     }
   };
@@ -470,6 +514,9 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         <span className={`badge ${String(snap.type || "LE").toLowerCase()}`}>{snap.type || "LE"}</span>
         {catalogue && (
           <span className="chip" title="No campaign dates in the funnel export - showing the last 90 days of traffic">Catalogue · last 90 days</span>
+        )}
+        {upcoming && (
+          <span className="chip" title="Known to Airtable; the funnel report has no rows for it yet">Upcoming · from Airtable</span>
         )}
         {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
         {snap.edition && snap.edition.total > snap.edition.target && (
@@ -482,6 +529,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
             title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
         )}
         {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
+        {variant && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} pushRight={!showHorizon} />}
         <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough}
           partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} />
       </header>
@@ -489,12 +537,14 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
-        <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>
+        {!upcoming && <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>}
         {tab === "overview" && !editing && (
           <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
         )}
       </nav>
-      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : tab === "audit" ? <DrawAudit snap={snap} /> : (
+      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : tab === "audit" && !upcoming ? <DrawAudit snap={snap} /> : upcoming ? (
+        <div style={{ maxWidth: 560, marginTop: 24 }}><Upcoming snap={snap} onSetup={() => setTab("targets")} /></div>
+      ) : (
         <>
           {editing && (
             <LayoutBar items={draft} onChange={setDraft} saving={saving} error={saveError}

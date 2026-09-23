@@ -87,9 +87,9 @@ Size carries the units benchmark; price carries the conversion benchmarks, the s
 entries targets being the units target over the basket's conversion rates, and those move with
 price more than with anything else on file (§3.1.1). A release with no price is ranked on units
 alone; `SIMILAR_USE_PRICE` turns price off for everyone while the price range is still profiled
-and shown. The comparison is in sterling: a panel launch carries Airtable's euro price at the
-fixed rate in `etl/pricing.py` (`RATES_TO_GBP`), and a price typed into the target form is taken
-in the currency the form says. A release with no edition size has no basket, there being nothing
+and shown. The comparison is in euros: a panel launch carries Airtable's euro price as it is,
+and a price typed into the target form in another currency is converted at the fixed table in
+`etl/pricing.py` (`RATES_TO_EUR`); a price typed in euros is taken as it is. A release with no edition size has no basket, there being nothing
 to be near to.
 
 **Why a fixed count and not a widening band.** The rule before this searched size, price and
@@ -122,7 +122,7 @@ size band barely moves a median. It still names the baskets in §3.1 and still f
 
 The basket says which axes ranked it (`matchedOn`), how far the furthest member is
 (`reach`) and which members are the artist's own (`own`), and its description reads them back:
-"The 8 launches nearest on units of this edition's 300 and on its unit price of £552, starting
+"The 8 launches nearest on units of this edition's 300 and on its unit price of €552, starting
 with Cattelan's own 2 - all within ×1.9 of it." A reach past `SCALE_MISMATCH_FACTOR` says so
 instead: nothing on file is close, the benchmark is what the nearest launches on record reached,
 and the uplift says how far past them this edition is being asked to go.
@@ -190,7 +190,7 @@ profile = {
   "members": [release_name, ...],
   "units": float,                 # median tot_total_product_units        -> 214
   "units_p25": float, "units_p75": float,
-  "price": float,                 # median unit_price_gbp over priced members -> 1488 (0 when none)
+  "price": float,                 # median unit_price_eur over priced members -> 1488 (0 when none)
   "price_p25": float, "price_p75": float,
   "n_priced": int,                # members with a price
   "edition_size": float,          # median Airtable edition size (units on offer), 0 when none
@@ -212,7 +212,7 @@ Groups are the five display groups: `aa_email`, `aa_social`, `referral_artist`,
 Per-channel benchmarks are **median share × median total**, never the median of the
 per-channel column - so they sum exactly to the headline median. Medians over an empty or
 all-NaN column are `0.0`, never NaN. The price range is taken over the members Airtable priced
-(`n_priced`), in sterling, and the picker prints it next to the units range on every basket,
+(`n_priced`), in euros, and the picker prints it next to the units range on every basket,
 ready-made or hand-picked, so a basket that matches on size but not price is visibly so.
 
 A basket with fewer than **3** members cannot be used (the caller falls back to the
@@ -471,7 +471,7 @@ carry `null` and fall back to a −10% band on `statusPct`.
   and pre-order rate), `legacy_economics: null` to clear the release-level figures a release
   still carries, `marketing_lead` and the three dates (typed fallbacks, read after the feeds),
   `benchmark_basket: {kind: "ready"|"bespoke"|"saved", id?: string, members?: string[]}`,
-  `channels_off` (§4.3), `cost_per_purchase` (£ per paid unit; empty means the panel median)
+  `channels_off` (§4.3), `cost_per_purchase` (€ per paid unit; empty means the panel median)
   and `artist_posting_tier` (Low / Medium / High). A release is set up only once a product
   has an edition and a price and the dates resolve. Validation: `kind` in the three values; `id` must
   resolve; `members` must be known release names, at least 3, and must not contain this
@@ -526,6 +526,12 @@ Labels that are placed by value never print through one another. Two rules, both
 pixels off the real element rather than assumed from a fraction, because the same fraction
 buys different room on a one-column card and a two-column one:
 
+- `POST /api/inputs/:id` also takes `cannibalisation` (a fraction from 0 up to 1, the share of paid
+  entries that would have come anyway; empty = the 0.2 standard) beside `cost_per_purchase`. The
+  answer does not wait for the rebuild: `{queued, created, build, storage}` comes back at once, the
+  build runs behind it, and `GET /api/inputs/:id/build` reports `running`, `done` or `failed`
+  (with `seconds` and the error). `storage.durable` on both says whether saves land on a
+  persistent disk (`SAVED_INPUTS_PATH`); the tab warns when they do not.
 - **Readings stacked on one line** (the trajectory's today column) spread with `spreadLabels`:
   sorted, pushed to a minimum gap, squeezed back inside the plot. The ticks and dots stay on
   their true values - only the text moves, which is what keeps a moved label honest.
@@ -593,7 +599,7 @@ The quartile levers are gone from the page and, since 2026-09-23, from the build
 3. **Derived targets** rail — three columns: Benchmark, Target, Stretch, computed in the
    browser from the basket's medians (`shared/benchmarkModel.mjs`) as the sellout, the cost
    per purchase and the switches change; dashes until there is a basket and a sellout.
-4. **Economics** — gains **Cost per purchase**, £ per paid unit, blank meaning the panel's
+4. **Economics** - gains **Cost per purchase**, € per paid unit, blank meaning the panel's
    median: paid units × it is the paid budget.
 
 The paid-share overwrite, the paid channel size, private room share, paid conversion and the

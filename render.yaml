@@ -8,6 +8,17 @@ services:
     buildCommand: npm ci && npm run build && ((python3 -m venv .venv && .venv/bin/pip install --quiet pandas) || echo "pandas install failed - live refresh disabled")
     startCommand: npm start
     healthCheckPath: /healthz
+    # Everything people save in the dashboard - targets, roles, the page
+    # layout, the Slack channels, the audit trails - lives on this disk. Without
+    # it the service's own disk is reset on every deploy and all of it is lost
+    # (README, "Render's disk resets"). A service created in the dashboard
+    # ignores this file: add the disk there (Disks -> Add disk, mount path
+    # /var/data, 1 GB) and set the seven *_PATH variables below to the paths
+    # shown, then deploy.
+    disk:
+      name: state
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       # Render ignores this file for a service created in the dashboard - set
       # these by hand under Environment. Without SESSION_SECRET every deploy
@@ -15,16 +26,18 @@ services:
       # target edits and the decision log reset on every deploy.
       - key: SESSION_SECRET
         generateValue: true
-      - key: USERS_PATH          # e.g. /var/data/users.json on a persistent disk mounted at /var/data
-        sync: false
-      - key: SAVED_INPUTS_PATH   # e.g. /var/data/inputs.saved.json
-        sync: false
-      - key: TARGETS_LOG         # e.g. /var/data/targets.log.jsonl
-        sync: false
-      - key: DECISIONS_PATH      # e.g. /var/data/decisions.log.jsonl
-        sync: false
-      - key: LAYOUT_PATH         # e.g. /var/data/layout.json
-        sync: false
+      - key: SOURCES_PATH        # the pulled feeds and their bookmarks; without it every deploy starts with a full pull
+        value: /var/data/sources
+      - key: USERS_PATH
+        value: /var/data/users.json
+      - key: SAVED_INPUTS_PATH
+        value: /var/data/inputs.saved.json
+      - key: TARGETS_LOG
+        value: /var/data/targets.log.jsonl
+      - key: DECISIONS_PATH
+        value: /var/data/decisions.log.jsonl
+      - key: LAYOUT_PATH
+        value: /var/data/layout.json
       - key: BIGQUERY_SERVICE_ACCOUNT_JSON   # BigQuery reader key JSON - the preferred feed (Data Viewer on the dataset + Job User on the project)
         sync: false
       - key: BQ_SINCE   # how far back to pull; also sets the BigQuery bill (default 2025-01-01)
@@ -43,8 +56,8 @@ services:
         sync: false
       - key: SLACK_BOT_TOKEN   # Slack app bot token (chat:write, chat:write.public) - the sell-through card's Post to Slack button
         sync: false
-      - key: SLACK_STATE_PATH   # e.g. /var/data/slack.json - the Slack channel set per release
-        sync: false
+      - key: SLACK_STATE_PATH
+        value: /var/data/slack.json
       - key: RESEND_API_KEY   # only for the magic-link fallback, which exists only without a Google client
         sync: false
       - key: MAIL_FROM        # only for the dormant magic-link flow
