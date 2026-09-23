@@ -319,7 +319,11 @@ recommendation is the ROI at that spend level's cost per entry.
 
 - **Daily funnel** (sessions, entries, units by channel × day) and **Meta spend**
   are pulled live from the *LE Paid Calculator* Google Sheet on boot and every
-  hour; the dashboard header shows the latest complete day.
+  hour. The header's "data through" day is the newest day in the feed, which while the
+  feed is live is today, part-observed: the actuals run through it and the header says
+  "today so far". The paid pacing rules, the run rates and whether a campaign is complete
+  read only full days, and every reference "by today" is read at the share of today seen,
+  so a morning reading is not behind for hours that have not happened.
 - **Email** stats pull live from HubSpot on every refresh (`HUBSPOT_TOKEN`); the
   checked-in CSV is the last pull and serves only until the first refresh. The header
   says "emails through" a date whenever the feed falls more than a week behind the

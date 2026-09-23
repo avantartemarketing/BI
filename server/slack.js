@@ -168,7 +168,9 @@ function composeSellThrough(snap, { link, today } = {}) {
   if (Array.isArray(st.incomplete) && st.incomplete.length) {
     lines.push(`_Incomplete data: ${st.incomplete.join(", ")}_`);
   }
-  if (lag > 0) lines.push(`_Complete data through ${fmtDay(snap.asOf)}_`);
+  // the last full day: the as-of day itself is only part-observed while it is today
+  const through = snap.completeThrough || snap.asOf;
+  if (daysBetween(through, sent) > 0) lines.push(`_Complete data through ${fmtDay(through)}_`);
   if (link) lines.push(`<${link}|Open in Launch Performance>`);
   return lines.join("\n");
 }

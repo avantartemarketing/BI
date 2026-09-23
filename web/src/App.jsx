@@ -336,7 +336,7 @@ function StaleBanner({ asOf, st, onRefreshed }) {
  * ingestion - expired token, un-shared sheet, an ETL exception - looked
  * identical to a healthy one while the page served frozen numbers. This reads
  * the status the server already records and says which it is. */
-function Freshness({ asOf, st, emailThrough }) {
+function Freshness({ asOf, st, emailThrough, partial }) {
   const t = useTip();
   // the email feed's last send: when it falls a week or more behind the build,
   // every email rung on the page is reading an empty feed, and the header is
@@ -385,7 +385,7 @@ function Freshness({ asOf, st, emailThrough }) {
   return (
     <span className="freshness" style={{ color }} {...t.props(tip)}>
       {stale && <span aria-hidden="true">⚠ </span>}
-      {label}{emailBehind && ` · emails through ${emailThrough}`} · data through {asOf}
+      {label}{emailBehind && ` · emails through ${emailThrough}`} · data through {asOf}{partial && " (today so far)"}
     </span>
   );
 }
@@ -471,7 +471,8 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
             title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
         )}
         {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
-        <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough} />
+        <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough}
+          partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} />
       </header>
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
       <nav className="tabs" style={{ marginTop: 20 }}>

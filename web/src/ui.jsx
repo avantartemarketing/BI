@@ -117,6 +117,12 @@ export const GROUP_DOTS = {
 
 export const MINUS = "−";
 
+/* Days of the window seen so far, with the part day counted for the share of
+ * it observed (snapshot asOfFraction; 1 on a full day and once the window has
+ * closed). The pro-rata references - the budget by today, the posts by today -
+ * read this rather than `day`, which is the day in progress. */
+export const dayElapsed = (snap) => Math.max(0, (snap?.day ?? 0) - (1 - (snap?.asOfFraction ?? 1)));
+
 export function fmt(n, digits = 0) {
   if (n === null || n === undefined || Number.isNaN(n)) return "–";
   const v = Number(n);
