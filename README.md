@@ -491,10 +491,11 @@ Slack attaches a file only to a channel it knows by ID, and `chat.postMessage` i
 call that hands an ID back, so the **first** post to a channel is the figures and then the
 picture, and every post after that is one: the picture with the figures as its comment. A
 picture Slack will not take (`files:write` missing, say) never costs the figures - they go
-as text and the button says why in amber. A public channel nobody invited the bot to takes
+as text and the button's hover says why (the button itself only ever reads Post to Slack,
+Posting, Done or Failed, so the card's head never reflows). A public channel nobody invited the bot to takes
 the figures as they are (`chat:write.public`), and when it refuses the picture because the
 bot is not a member, the bot joins the channel (`channels:join`) and sends it again; a
-private channel cannot be joined that way, so the button asks for an invite.
+private channel cannot be joined that way, so the button's hover asks for an invite.
 
 The message is composed on the server from the same snapshot the card is drawn from
 (`server/slack.js`), so what lands in Slack is what the page says at that moment. The
@@ -511,7 +512,7 @@ Setup, once:
    `channels:join` under OAuth & Permissions, install it to the workspace, and copy the
    **Bot User OAuth Token** (`xoxb-…`) into `SLACK_BOT_TOKEN` on Render. The token lives
    only in the environment. Without `files:write` the figures still post; only the picture
-   does not, and the button says so. Without `channels:join` the picture only reaches
+   does not, and the button's hover says so. Without `channels:join` the picture only reaches
    channels the bot has been invited to. An app installed before a scope existed needs
    the scope added and the app reinstalled.
 2. For a private channel, invite the app to it (`/invite @<app name>`); public channels
