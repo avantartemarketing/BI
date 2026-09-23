@@ -1,32 +1,24 @@
 /* Sell-through updates to Slack, on demand.
  *
  * The sell-through card carries a "Post to Slack" button; pressing it sends
- * the card itself, as a picture and nothing else, to the channel set for that
- * release on its Target setting tab. The picture is drawn in the browser from
- * what the page is rendering (web/src/modules/sellThroughImage.mjs), so what
- * lands in Slack is what the card says. No text goes with it, by decision:
- * the picture carries the figures.
- *
- * Slack will only attach a file to a channel it can name by ID. A channel
- * typed as an ID is its own; a channel typed by name is looked up once
- * (conversations.list, scope channels:read, groups:read for a private one)
- * and the ID kept beside the name, so every post after the first is one
- * call. composeSellThrough, the figures as a message, stays here for the
- * day the text is wanted back; the route no longer sends it.
+ * the card as a Slack message - a Block Kit table of the products, each with
+ * a bar drawn in text, under the release's headline - to the channel set for
+ * that release on its Target setting tab. The message is composed here from
+ * the snapshot the page is showing, by the card's own rules (docs 6.3), so
+ * what lands in Slack is what the card says, set in Slack's own type at
+ * Slack's own size. It replaced a picture of the card, which Slack shrank to
+ * a fixed height whatever its size.
  *
  * Channel per release lives in a small document of its own (SLACK_STATE_PATH,
  * default data/slack.json; put it on the persistent disk like the layout), so
  * a release without targets can have a channel too. When SLACK_STATE_PATH
  * points somewhere the service cannot write (the disk not mounted there), the
  * save lands in data/slack.json instead and the response says so, because
- * that copy does not survive a deploy. Posting needs a Slack app
- * bot token in SLACK_BOT_TOKEN (scopes chat:write, chat:write.public,
- * files:write and channels:join). A public channel needs no invitation:
- * the figures post to it as they are, and when the picture is refused
- * because the bot is not a member, the bot joins the channel and tries
- * again. A private channel cannot be joined that way; invite the bot first.
- * README "Posting sell-through to Slack" has the setup. The token stays in
- * the environment: nothing here logs it or writes it anywhere. */
+ * that copy does not survive a deploy. Posting needs a Slack app bot token in
+ * SLACK_BOT_TOKEN (scopes chat:write, and chat:write.public for a public
+ * channel the bot has not joined; for a private channel invite the bot
+ * first). README "Posting sell-through to Slack" has the setup. The token
+ * stays in the environment: nothing here logs it or writes it anywhere. */
 const fs = require("fs");
 const path = require("path");
 
@@ -34,7 +26,6 @@ const ROOT = path.resolve(__dirname, "..");
 const FALLBACK_PATH = process.env.SLACK_STATE_FALLBACK_PATH || path.join(ROOT, "data", "slack.json");
 const STATE_PATH = process.env.SLACK_STATE_PATH || FALLBACK_PATH;
 const API = process.env.SLACK_API || "https://slack.com/api/chat.postMessage";
-const SLACK_API_BASE = process.env.SLACK_API_BASE || "https://slack.com/api";
 const CHANNEL_RE = /^[A-Za-z0-9._-]{1,80}$/;
 
 // ---------------------------------------------------------------- the channel per release
@@ -94,25 +85,6 @@ function setChannel(id, channel, by) {
   writeState(doc);
   return doc[id];
 }
-/* Slack names a channel by ID when a file is attached to it. The ID is
- * looked up once and kept beside the channel name here; a channel typed as
- * an ID in the first place is its own. */
-const CHANNEL_ID_RE = /^[CGD][A-Z0-9]{6,}$/;
-function channelIdFor(id) {
-  const st = stateFor(id);
-  if (!st) return null;
-  if (st.channelId && CHANNEL_ID_RE.test(st.channelId)) return st.channelId;
-  return CHANNEL_ID_RE.test(String(st.channel || "")) ? st.channel : null;
-}
-function rememberChannelId(id, channelId) {
-  if (!channelId || !CHANNEL_ID_RE.test(String(channelId))) return null;
-  const doc = readState();
-  if (!doc[id] || doc[id].channelId === channelId) return doc[id] || null;
-  doc[id] = { ...doc[id], channelId };
-  writeState(doc);
-  return doc[id];
-}
-
 function recordPost(id, by) {
   const doc = readState();
   if (!doc[id]) return null;
@@ -132,12 +104,13 @@ const dayOf = (iso) => { const d = new Date(String(iso) + "T00:00:00Z"); return 
 /* whole days from one ISO date to another, 0 when either is not a date */
 const daysBetween = (a, b) => { const x = dayOf(a), y = dayOf(b); return x === null || y === null ? 0 : Math.round((y - x) / 86400000); };
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+const finite = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 const fmt = (v) => Math.round(num(v)).toLocaleString("en-GB");
-const pct = (part, whole) => (whole > 0 ? `${Math.round((num(part) / whole) * 100)}%` : null);
 
 /* Product names without the part they all share: "Untitled (White on White)"
  * and "Untitled (Black on Black)" become "White on White" and "Black on
- * Black"; the three Schnabel prints become I, II and III. */
+ * Black"; the three Schnabel prints become I, II and III. The card can
+ * truncate and lean on its hover; a table in a channel cannot. */
 function shortNames(names) {
   if (names.length < 2) return names.slice();
   let p = names[0];
@@ -151,261 +124,170 @@ function shortNames(names) {
   return names.map((n) => n.slice(p.length).replace(/^[\s(]+|[\s)]+$/g, "") || n);
 }
 
-/* People with an entry still in the draw, from the entry patterns the
- * snapshot carries (docs 6.3): each pattern is one combination of open
- * entries and unpaid wins with how many entrants share it. */
-function entrants(patterns) {
-  let open = 0, won = 0, any = 0;
-  for (const p of patterns || []) {
-    const hasOpen = Array.isArray(p.open) && p.open.length > 0;
-    const hasWon = Array.isArray(p.won) && p.won.length > 0;
-    const n = num(p.n);
-    if (hasOpen) open += n;
-    if (hasWon) won += n;
-    if (hasOpen || hasWon) any += n;
+/* The bar for one product, in text: BAR_WIDTH glyphs to the edition, the fill
+ * in three weights (paid, drafts, the draw winners the entries imply) and at
+ * close a fourth for the units still to come; the room left is a rule through
+ * the middle. All five glyphs are one family of the character set, which a
+ * font supplies at one width, so every bar is the same length. The fill is
+ * rounded once as a running total, so the segments never drift from their
+ * sum and the rule always completes the bar; something spoken for always
+ * shows, even a unit of a thousand. */
+const BAR_WIDTH = 25;
+const GLYPH = { paid: "█", drafts: "▓", winners: "▒", future: "░", room: "─" };
+function bar(edition, parts) {
+  if (!(edition > 0)) return "";
+  let at = 0, drawn = 0, out = "";
+  for (const part of parts) {
+    at += Math.max(0, num(part.v));
+    const to = Math.min(BAR_WIDTH, Math.round((at / edition) * BAR_WIDTH));
+    if (to > drawn) { out += part.glyph.repeat(to - drawn); drawn = to; }
   }
-  return { open, won, any };
+  if (drawn === 0) {
+    const first = parts.find((part) => num(part.v) > 0);
+    if (first) { out = first.glyph; drawn = 1; }
+  }
+  return out + GLYPH.room.repeat(Math.max(0, BAR_WIDTH - drawn));
 }
 
-/* The update as Slack mrkdwn: the sales team's own layout, from the snapshot.
- * The header carries the day the update goes out (`today`, for the tests),
- * with the campaign day moved on from the snapshot's; when the feeds' last
- * complete day is earlier than that, the last line says so. */
-function composeSellThrough(snap, { link, today } = {}) {
+const bold = (t) => ({ type: "rich_text", elements: [{ type: "rich_text_section", elements: [{ type: "text", text: String(t), style: { bold: true } }] }] });
+const raw = (t) => ({ type: "raw_text", text: String(t) });
+
+/* The update as Block Kit: the release as a header, the card's headline and
+ * the campaign day as a section, the products as a table (name, bar, units
+ * of the edition, the share), the key as a context line, and a note while a
+ * feed is missing. `horizon` is the page's toggle: "close" reads the
+ * projection, as the card does. The header carries the day the update goes
+ * out (`today`, for the tests), with the campaign day moved on from the
+ * snapshot's. Returns the blocks and the one-line text Slack shows in
+ * notifications. */
+function composeSellThroughBlocks(snap, { horizon = "today", today } = {}) {
   const st = (snap && snap.sellthrough) || {};
+  const close = horizon === "close";
   const products = Array.isArray(st.products) ? st.products : [];
   const names = shortNames(products.map((p) => String(p.name || "")));
-  // the whole edition is the products' editions added up (Warhol: six boxes
-  // of 1,000 and the Lifesize 100, 6,100); the release's own edition size
-  // stands in when a product has none, and it is what the page's targets
-  // use, so the two can differ (the Target setting's 2,440 is the standards'
-  // sellout target, not the edition)
+  const soldOf = (p) => num(p.sold) + num(p.soldAssumed);
+  // the whole edition is the products' editions added up; the release's own
+  // edition size stands in when a product has none
   const editionSum = products.length && products.every((p) => num(p.edition) > 0)
     ? products.reduce((n, p) => n + num(p.edition), 0) : null;
   const edition = editionSum || (num(st.edition) > 0 ? num(st.edition) : null);
-  const lines = [];
 
+  // the campaign day, moved on to the day this goes out
   const sent = today || new Date().toISOString().slice(0, 10);
   const lag = Math.max(0, daysBetween(snap.asOf, sent));
   const of = num(snap.of);
   const day = Math.min(num(snap.day) + lag, of > 0 ? of : Infinity);
-  const head = `*${snap.releaseName || snap.id}* - sales update, ${fmtDay(sent)}` +
-    (of > 0 ? ` (day ${fmt(day)} of ${fmt(of)})` : "");
-  lines.push(head);
-  // a target that is only part of the edition is said up front, so the
-  // percentages below (of the whole edition) read right
-  if (snap.edition && num(snap.edition.total) > num(snap.edition.target)) {
-    lines.push(`Target ${fmt(snap.edition.target)} units (${Math.round((100 * num(snap.edition.target)) / num(snap.edition.total))}% of the ${fmt(snap.edition.total)} edition)`);
-  }
+  const through = snap.completeThrough || snap.asOf;
+  const dayLine = [of > 0 ? `day ${fmt(day)} of ${fmt(of)}` : null, through ? `data through ${fmtDay(through)}` : null].filter(Boolean).join(" · ");
 
-  // paid
-  const soldOf = (p) => num(p.sold) + num(p.soldAssumed);
-  const paid = products.length ? products.reduce((n, p) => n + soldOf(p), 0) : num(st.sold);
-  lines.push(`Paid = ${fmt(paid)} units` + (edition ? ` (${pct(paid, edition)} of ${fmt(edition)})` : ""));
-  products.forEach((p, i) => {
-    const e = num(p.edition) > 0 ? num(p.edition) : null;
-    lines.push(`• ${names[i]}: ${fmt(soldOf(p))}${e ? `/${fmt(e)}` : ""}`);
+  // the headline, as the card computes it
+  const sold = num(st.sold), drafts = finite(st.drafts) ? num(st.drafts) : null, inHand = num(st.soldPredicted);
+  const future = close ? num(st.futureEntriesPredicted) : 0;
+  const headPct = edition ? (close ? num(st.pct) : Math.min((sold + (drafts || 0) + inHand) / edition, 1)) : null;
+  const headline = headPct === null
+    ? `${fmt(sold + (drafts || 0) + inHand + future)} units`
+    : `${Math.round(headPct * 100)}% of ${fmt(edition)} units`;
+
+  // framing: frames per print on the prints a frame was on offer for, from
+  // the orders - the Framing card's own figure (docs 6.4); before any print
+  // is sold, the rate the entrants' pre-authorised prints ask for; with no
+  // framing block at all (a snapshot from before it), the plan's rate, said
+  // to be the plan. Nothing on a release where no print has a frame on offer.
+  const fr = snap.framing;
+  const plan = fr && finite(fr.plan) ? num(fr.plan)
+    : snap.economics && finite(snap.economics.frameConversion) ? num(snap.economics.frameConversion) : null;
+  const framingOff = fr === null || !!(snap.economics && snap.economics.framingAvailable === false);
+  const pc = (v) => `*${Math.round(v * 100)}%*`;
+  const planNote = plan !== null ? ` · plan ${Math.round(plan * 100)}%` : "";
+  const framing = framingOff ? null
+    : fr && finite(fr.rate) && num(fr.prints) > 0
+      ? `Framing conversion ${pc(fr.rate)} · ${fmt(fr.frames)} frames on ${fmt(fr.prints)} prints sold${planNote}`
+      : fr && fr.entrants && finite(fr.entrants.rate) && num(fr.entrants.prints) > 0
+        ? `Framing conversion ${pc(fr.entrants.rate)} of the prints entrants pre-authorised${planNote}`
+        : plan !== null ? `Framing conversion ${pc(plan)} (plan)` : null;
+
+  // the rows: the products, or the release as one row without the draw feed
+  const rowsIn = products.length ? products.map((p, i) => ({
+    name: names[i], edition: num(p.edition) > 0 ? num(p.edition) : null,
+    paid: soldOf(p), drafts: num(p.drafts), winners: num(p.shown), future: close ? num(p.futurePredicted) : 0,
+    pct: close ? p.pctClose : p.pct,
+  })) : [{
+    name: String(snap.releaseName || snap.id || "Release"), edition,
+    paid: sold, drafts: drafts || 0, winners: inHand, future, pct: headPct,
+  }];
+  const rows = rowsIn.map((r) => {
+    const units = r.paid + r.drafts + r.winners + r.future;
+    const pct = r.edition ? (finite(r.pct) ? num(r.pct) : Math.min(units / r.edition, 1)) : null;
+    const fill = bar(r.edition, [
+      { v: r.paid, glyph: GLYPH.paid }, { v: r.drafts, glyph: GLYPH.drafts },
+      { v: r.winners, glyph: GLYPH.winners }, { v: r.future, glyph: GLYPH.future },
+    ]);
+    return [
+      raw(r.name),
+      raw(fill || " "),
+      raw(r.edition ? `${fmt(units)} of ${fmt(r.edition)}` : fmt(units)),
+      bold(pct === null ? "-" : `${Math.round(pct * 100)}%`),
+    ];
   });
 
-  // draw entrants
-  const en = entrants(st.patterns);
-  if (products.length || en.any) {
-    lines.push(`Draw = ${fmt(en.any)} unique entrants` + (en.won ? ` (${fmt(en.won)} won and not yet paid: not counted, their orders are in Drafts)` : ""));
-    products.forEach((p, i) => {
-      const ih = p.inHand || {};
-      lines.push(`• ${names[i]}: ${fmt(ih.open)} open` + (num(ih.won) ? ` + ${fmt(ih.won)} to pay` : ""));
-    });
-  }
+  const key = [
+    `${GLYPH.paid} Paid *${fmt(sold)}*`,
+    drafts !== null && drafts > 0 ? `${GLYPH.drafts} Drafts *${fmt(drafts)}*` : null,
+    `${GLYPH.winners} Draw winners (estimate) *${fmt(inHand)}*`,
+    close && future > 0 ? `${GLYPH.future} Still to come *${fmt(future)}*` : null,
+  ].filter(Boolean).join("   ");
+  const incomplete = Array.isArray(st.incomplete) ? st.incomplete : [];
+  const releaseName = String(snap.releaseName || snap.id || "Release");
 
-  // drafts
-  if (st.drafts !== null && st.drafts !== undefined) {
-    lines.push(`Drafts = ${fmt(st.drafts)}`);
-    if (products.length) lines.push("• " + products.map((p, i) => `${names[i]}: ${fmt(p.drafts)}`).join(" · "));
-  }
-
-  // estimated sell-through as of today: paid + drafts + entries at the rate
-  const rate = num(st.conversion) > 0 ? num(st.conversion) : 0.8;
-  const preRate = num(st.preorderConversion) > 0 ? num(st.preorderConversion) : rate;
-  const rateWords = preRate !== rate
-    ? `entries at ${Math.round(rate * 100)}% entry → order, pre-orders at ${Math.round(preRate * 100)}%`
-    : `entries at ${Math.round(rate * 100)}% entry → order`;
-  lines.push(`Estimated sell-through (${rateWords}, placed by maximum quantity for revenue)`);
-  if (products.length) {
-    let total = 0;
-    products.forEach((p, i) => {
-      const today = soldOf(p) + num(p.drafts) + num(p.shown);
-      total += today;
-      const e = num(p.edition) > 0 ? num(p.edition) : null;
-      lines.push(`• ${names[i]}: ~${fmt(today)} units` + (e ? ` → ${pct(today, e)}` : ""));
-    });
-    lines.push(`Total ~${fmt(total)} units` + (edition ? ` → ${pct(total, edition)} of ${fmt(edition)}` : ""));
-  } else {
-    const today = num(st.sold) + num(st.drafts) + num(st.soldPredicted);
-    lines.push(`~${fmt(today)} units` + (edition ? ` → ${pct(today, edition)} of ${fmt(edition)}` : ""));
-  }
-  if (Array.isArray(st.incomplete) && st.incomplete.length) {
-    lines.push(`_Incomplete data: ${st.incomplete.join(", ")}_`);
-  }
-  // the last full day: the as-of day itself is only part-observed while it is today
-  const through = snap.completeThrough || snap.asOf;
-  if (daysBetween(through, sent) > 0) lines.push(`_Complete data through ${fmtDay(through)}_`);
-  if (link) lines.push(`<${link}|Open in Launch Performance>`);
-  return lines.join("\n");
+  const blocks = [
+    { type: "header", text: { type: "plain_text", text: releaseName.slice(0, 150) } },
+    { type: "section", text: { type: "mrkdwn", text:
+      `*Sell-through by product · ${headline}*${close ? " · at close" : ""}${dayLine ? ` · ${dayLine}` : ""}${framing ? `\n${framing}` : ""}` } },
+    { type: "table",
+      column_settings: [{ align: "left" }, { align: "left" }, { align: "right" }, { align: "right" }],
+      rows: [[bold("Product"), raw(" "), bold("Units"), bold("Sold"), ], ...rows] },
+    { type: "context", elements: [{ type: "mrkdwn", text: key }] },
+  ];
+  if (incomplete.length) blocks.push({ type: "context", elements: [{ type: "mrkdwn", text: `_Incomplete data: ${incomplete.join(", ")}_` }] });
+  return { text: `${releaseName}: sell-through ${headline}${close ? " at close" : ""}`, blocks };
 }
 
 // ---------------------------------------------------------------- posting
 
 const HINTS = {
   channel_not_found: (c) => `Slack cannot find #${c} - check the name; for a private channel invite the bot first`,
-  not_in_channel: (c) => `the bot is not in ${c} - a public channel needs the channels:join scope; a private one needs the bot invited (/invite it), then post again`,
+  not_in_channel: (c) => `the bot is not in #${c} - a public channel needs the chat:write.public scope; a private one needs the bot invited (/invite it), then post again`,
   is_archived: (c) => `#${c} is archived`,
   invalid_auth: () => "the Slack token is not valid - replace SLACK_BOT_TOKEN",
   token_revoked: () => "the Slack token was revoked - replace SLACK_BOT_TOKEN",
   account_inactive: () => "the Slack app is no longer installed - reinstall it and replace SLACK_BOT_TOKEN",
-  missing_scope: () => "the Slack app needs the files:write scope to post the card as a picture (channels:read to find a channel by name, channels:join to join a public channel for the picture)",
+  missing_scope: () => "the Slack app needs the chat:write scope (and chat:write.public for channels the bot is not in)",
+  invalid_blocks: () => "Slack refused the message's layout (invalid_blocks) - the table block needs a current Slack workspace",
   msg_too_long: () => "the update is too long for one Slack message",
   ratelimited: () => "Slack is rate limiting the app - try again in a minute",
 };
-/* conversations.join's own refusals */
-const JOIN_HINTS = {
-  method_not_supported_for_channel_type: (c) => `${c} is a private channel, which the bot cannot join by itself - invite it (/invite the app), then post again`,
-  missing_scope: () => "the Slack app needs the channels:join scope to join a public channel by itself - add it and reinstall the app, or invite the bot to the channel",
-  is_archived: (c) => `${c} is archived`,
-  channel_not_found: (c) => `Slack cannot find the channel ${c}`,
-};
-/* An Error carrying Slack's own code, so a caller can act on one refusal
- * (not_in_channel) and pass the rest on with their hints. */
-function refusal(code, hint) {
-  const e = new Error(hint);
-  e.code = code;
-  return e;
-}
 
-async function postMessage(channel, text) {
+/* One message to a channel, by name or by id: the text Slack shows in a
+ * notification, and the blocks it shows in the channel. */
+async function postMessage(channel, text, blocks = null) {
   const token = process.env.SLACK_BOT_TOKEN;
   if (!token) throw new Error("Slack is not connected - set SLACK_BOT_TOKEN to the app's bot token (README: Posting sell-through to Slack)");
   const isId = /^[CG][A-Z0-9]{8,}$/.test(channel);
   const res = await fetch(API, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify({ channel: isId ? channel : `#${channel}`, text, unfurl_links: false, unfurl_media: false }),
+    body: JSON.stringify({ channel: isId ? channel : `#${channel}`, text, ...(blocks ? { blocks } : {}), unfurl_links: false, unfurl_media: false }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json.ok) {
     const code = json.error || `HTTP ${res.status}`;
     const hint = HINTS[code];
-    throw refusal(code, hint ? hint(channel) : `Slack refused the message (${code})`);
+    throw new Error(hint ? hint(channel) : `Slack refused the message (${code})`);
   }
   return { ts: json.ts, channel: json.channel };
 }
 
-/* The id of a channel named on the Target setting tab: conversations.list,
- * page by page, until the name matches (scope channels:read; groups:read as
- * well for a private channel the bot is in). Null when no channel has the
- * name. The refusals name the scope. */
-const LIST_HINTS = {
-  missing_scope: () => "the Slack app needs the channels:read scope to find a channel by name (groups:read as well for a private one) - add it and reinstall the app, or type the channel's id instead of its name",
-};
-async function lookupChannelId(name) {
-  const token = process.env.SLACK_BOT_TOKEN;
-  if (!token) throw new Error("Slack is not connected - set SLACK_BOT_TOKEN to the app's bot token (README: Posting sell-through to Slack)");
-  const want = String(name || "").trim().replace(/^#/, "").toLowerCase();
-  let cursor = "";
-  for (let page = 0; page < 20; page++) {
-    const q = new URLSearchParams({ types: "public_channel,private_channel", exclude_archived: "true", limit: "1000" });
-    if (cursor) q.set("cursor", cursor);
-    const res = await fetch(`${SLACK_API_BASE}/conversations.list?${q}`, { headers: { Authorization: `Bearer ${token}` } });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || !json.ok) {
-      const code = json.error || `HTTP ${res.status}`;
-      const hint = LIST_HINTS[code] || HINTS[code];
-      throw refusal(code, hint ? hint(name) : `Slack would not list its channels (${code})`);
-    }
-    const hit = (json.channels || []).find((c) => String(c.name || "").toLowerCase() === want);
-    if (hit && hit.id) return hit.id;
-    cursor = (json.response_metadata && json.response_metadata.next_cursor) || "";
-    if (!cursor) break;
-  }
-  return null;
-}
-
-/* Joins a public channel by id (scope channels:join), so a picture can be
- * attached to a channel nobody invited the bot to. Slack lets no app join a
- * private channel this way; the refusal says to invite the bot. */
-async function joinChannel(channelId) {
-  const token = process.env.SLACK_BOT_TOKEN;
-  if (!token) throw new Error("Slack is not connected - set SLACK_BOT_TOKEN to the app's bot token");
-  const res = await fetch(`${SLACK_API_BASE}/conversations.join`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify({ channel: channelId }),
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json.ok) {
-    const code = json.error || `HTTP ${res.status}`;
-    const hint = JOIN_HINTS[code];
-    throw refusal(code, hint ? hint(channelId) : `the bot could not join the channel (${code})`);
-  }
-  return (json.channel && json.channel.id) || channelId;
-}
-
-/* Slack's external upload, in its three steps: ask for a URL, put the bytes
- * there, then tell Slack the file is done and which channel it belongs to.
- * `comment` rides with the file as the message above it, so one post carries
- * both the picture and the figures. Needs the files:write scope. A file can
- * only be attached to a channel the bot is in, and chat:write.public does not
- * cover that the way it covers a message, so when the last step is refused
- * for that reason the bot joins the channel (channels:join) and asks once
- * more. */
-async function uploadImage({ channelId, png, filename = "card.png", title, comment = null }) {
-  const token = process.env.SLACK_BOT_TOKEN;
-  if (!token) throw new Error("Slack is not connected - set SLACK_BOT_TOKEN to the app's bot token");
-  if (!channelId) throw new Error("no Slack channel id to attach the picture to");
-  const auth = { Authorization: `Bearer ${token}` };
-  const call = async (method, body, headers) => {
-    const res = await fetch(`${SLACK_API_BASE}/${method}`, { method: "POST", headers: { ...auth, ...headers }, body });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || !json.ok) {
-      const code = json.error || `HTTP ${res.status}`;
-      const hint = HINTS[code];
-      throw refusal(code, hint ? hint(channelId) : `Slack refused the picture (${code})`);
-    }
-    return json;
-  };
-
-  const ask = await call("files.getUploadURLExternal",
-    new URLSearchParams({ filename, length: String(png.length) }),
-    { "Content-Type": "application/x-www-form-urlencoded" });
-
-  // the bytes, as a one-part form; Buffer is a Uint8Array, which fetch takes
-  const boundary = `----launchbi${Date.now().toString(16)}`;
-  const head = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
-    `Content-Type: image/png\r\n\r\n`);
-  const tail = Buffer.from(`\r\n--${boundary}--\r\n`);
-  const put = await fetch(ask.upload_url, {
-    method: "POST",
-    headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
-    body: Buffer.concat([head, png, tail]),
-  });
-  if (!put.ok) throw new Error(`Slack would not take the picture (HTTP ${put.status})`);
-
-  const finish = () => call("files.completeUploadExternal", JSON.stringify({
-    files: [{ id: ask.file_id, title: title || filename }],
-    channel_id: channelId,
-    ...(comment ? { initial_comment: comment } : {}),
-  }), { "Content-Type": "application/json; charset=utf-8" });
-  let done;
-  try {
-    done = await finish();
-  } catch (e) {
-    if (e.code !== "not_in_channel") throw e;
-    await joinChannel(channelId);   // a public channel nobody invited the bot to
-    done = await finish();
-  }
-  return { fileId: ask.file_id, files: done.files };
-}
-
 module.exports = {
-  stateFor, setChannel, recordPost, stateWarning, composeSellThrough, shortNames, entrants,
-  postMessage, uploadImage, joinChannel, lookupChannelId, channelIdFor, rememberChannelId, STATE_PATH,
+  stateFor, setChannel, recordPost, stateWarning, composeSellThroughBlocks, shortNames, bar, BAR_WIDTH, GLYPH,
+  postMessage, STATE_PATH,
 };

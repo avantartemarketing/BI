@@ -38,9 +38,9 @@
  * a product for in the paid key's, and the editions are checked where they
  * are typed, on the Target setting tab.
  *
- * "Post to Slack" sends the card as a picture and nothing else: the same
- * rows drawn on a canvas (sellThroughImage.mjs) from the model built below.
- * The drawing is repeated there, the numbers are not.
+ * "Post to Slack" sends the card as a Slack message: a table of the rows
+ * with bars drawn in text, composed on the server from the same snapshot by
+ * the same rules (server/slack.js), at the horizon this page is on.
  *
  * No target and no benchmark on this card, by decision: both are on the hero
  * and the channels, and here they only crowded the reading. Each row is the
@@ -53,8 +53,7 @@
  * missing. Without the draw feed at all it is one row, the release, as
  * before. */
 import React, { useState } from "react";
-import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, useTip } from "../ui.jsx";
-import { sellThroughPng } from "./sellThroughImage.mjs";
+import { Card, HorizonBadge, GROUP_DOTS, C, fmt, useTip } from "../ui.jsx";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 /* One ramp of the page's blue, deepest to palest as the units get less
@@ -249,52 +248,16 @@ export default function SellThrough({ snap, horizon = "today" }) {
     </span>
   );
 
-  /* The card as a picture, for Slack: the rows exactly as they are on screen,
-     plus what the page around them supplies (the release, the campaign day,
-     the horizon) so the image stands alone in a channel. Only the drawing is
-     repeated in sellThroughImage.mjs - every figure here is the one rendered
-     above. */
-  const imageModel = () => ({
-    title: "Sell-through by product",
-    releaseName: snap.artist && snap.title ? `${snap.artist} - ${snap.title}` : (snap.releaseName || snap.id),
-    dayLine: [
-      snap.of > 0 ? `day ${fmt(snap.day)} of ${fmt(snap.of)}` : null,
-      snap.asOf ? `data through ${fmtDay(new Date(snap.asOf + "T00:00:00Z"))}` : null,
-    ].filter(Boolean).join(" · "),
-    horizon: close ? "At close" : "Today",
-    headline: {
-      text: headText,
-      sub: edition ? `of ${fmt(edition)} units` : "units",
-    },
-    rows: rows.map((r) => {
-      const fig = figureOf(r);
-      return {
-        name: r.name,
-        maxV: maxFor(r), edition: finite(r.edition) ? r.edition : 0,
-        segs: segmentsOf(r, close).map(({ v, color }) => ({ v, color })),
-        over: r.oversubscribed ?? 0, overColor: SEG.winners,
-        unitsText: fig.units, pctText: fig.pct,
-      };
-    }),
-    legend: [
-      { color: SEG.paid, label: "Paid", value: fmt(sold) },
-      ...(draftsAll !== null && draftsAll > 0 ? [{ color: SEG.drafts, label: "Drafts", value: fmt(draftsAll) }] : []),
-      { color: SEG.winners, label: "Draw winners (estimate)", value: fmt(inHandAll) },
-      ...(close && futureAll > 0 ? [{ color: SEG.future, label: "Still to come", value: fmt(futureAll) }] : []),
-    ],
-    note: incomplete.length ? `Incomplete data: ${incomplete.join(", ")}` : null,
-  });
-
-  /* "Post to Slack": the card as a picture, and nothing else, to the channel
-     set on the Target setting tab. The picture is drawn here, because only
-     the browser has a canvas and the face the page is set in; the server
-     (server/slack.js) attaches it to the channel. */
+  /* "Post to Slack": the card as a message, to the channel set on the Target
+     setting tab, at the horizon this page is on. The server composes it from
+     the same snapshot (server/slack.js). */
   const channel = (snap && snap.slack && snap.slack.channel) || null;
   const postToSlack = async () => {
     setPost({ state: "posting" });
     try {
-      const png = await sellThroughPng(imageModel());
-      const r = await fetch(`/api/releases/${snap.id}/slack`, { method: "POST", headers: { "Content-Type": "image/png" }, body: png });
+      const r = await fetch(`/api/releases/${snap.id}/slack`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ horizon: close ? "close" : "today" }),
+      });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `Slack post failed (${r.status})`);
       setPost({ state: "done", channel: d.channel, warning: d.warning || null });
@@ -312,7 +275,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
     : post.state === "done"
       ? `Posted to #${post.channel}${post.warning ? `, but ${post.warning}` : ""}`
       : channel
-        ? `Post this card, as a picture, to #${channel}`
+        ? `Post this card, as a message with a table of the products, to #${channel}`
         : "Set a Slack channel for this release on the Target setting tab, then this posts the card there";
   const slackButton = snap && snap.id ? (
     <button

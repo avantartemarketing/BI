@@ -669,34 +669,23 @@ app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
     res.status(400).json({ error: String(e.message || e) });
   }
 }));
-/* The card to Slack. The body is either nothing (the figures alone) or the
- * card drawn as a PNG by the browser that is showing it - the one place with
- * a canvas and the page's own typeface. Slack can only attach a file to a
- * channel it knows by ID, so the first post to a channel is the figures
- * (which returns the ID, kept for next time) and then the picture, and every
- * post after that is one: the picture with the figures as its comment. A
- * picture that will not upload never costs the figures. */
-app.post("/api/releases/:id/slack", express.raw({ type: "image/png", limit: "8mb" }), route(async (req, res) => {
+/* The card to Slack, as a message: the release, the headline, the framing
+ * take-up and a table of the products with bars drawn in text, composed
+ * from the snapshot on disk by the card's own rules (server/slack.js). The
+ * body says which horizon the page is on ({horizon: "today" | "close"});
+ * {dryRun: true} returns the message instead of posting it. */
+app.post("/api/releases/:id/slack", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   const snap = readSnapshot(id);
   if (!snap) return res.status(404).json({ error: "unknown release" });
   const st = slack.stateFor(id);
   if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
-  // the picture, and nothing else: the browser draws it, so a body that is
-  // not a PNG is a browser that could not
-  const png = Buffer.isBuffer(req.body) && req.body.length ? req.body : null;
-  if (!png) return res.status(400).json({ error: "the browser could not draw the card as a picture, so nothing was posted" });
-  const title = `${snap.releaseName || id} - sell-through`;
-  const filename = `sell-through-${id}-${snap.asOf || new Date().toISOString().slice(0, 10)}.png`;
+  // the message, by the card's rules, at the horizon the page is on
+  const horizon = req.body && req.body.horizon === "close" ? "close" : "today";
+  const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon });
+  if (req.body && req.body.dryRun) return res.json({ channel: st.channel, text, blocks });
   try {
-    // the channel by id: kept from an earlier post, typed as one, or looked up by name once
-    let channelId = slack.channelIdFor(id);
-    if (!channelId) {
-      channelId = await slack.lookupChannelId(st.channel);
-      if (!channelId) return res.status(502).json({ error: `Slack has no channel called #${st.channel} that the app can see - check the name, or type the channel's id instead` });
-      slack.rememberChannelId(id, channelId);
-    }
-    await slack.uploadImage({ channelId, png, filename, title });
+    await slack.postMessage(st.channel, text, blocks);
     const s = auth.sessionFrom(req);
     res.json({ ok: true, channel: st.channel, slack: slack.recordPost(id, s && s.email) });
   } catch (e) {
