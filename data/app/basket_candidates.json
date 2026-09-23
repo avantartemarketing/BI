@@ -1,5 +1,5 @@
 {
- "asOf": "2026-09-21",
+ "asOf": "2026-09-23",
  "rows": [
   {
    "release_name": "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
@@ -874,7 +874,7 @@
     "paid": 0.3275862068965517
    },
    "entries": 1692.0,
-   "units_per_buyer": 1.2113702623906706,
+   "units_per_buyer": 1.2131386861313869,
    "private_room_share": 0.3026004728132387,
    "price": 595.0,
    "edition_size": 1200.0,
@@ -1714,7 +1714,7 @@
     "paid": null
    },
    "entries": 182.0,
-   "units_per_buyer": 1.2608695652173914,
+   "units_per_buyer": 1.1956521739130435,
    "private_room_share": 0.1637931034482758,
    "price": 6800.0,
    "edition_size": 125.0,
@@ -1754,7 +1754,7 @@
     "paid": null
    },
    "entries": 199.0,
-   "units_per_buyer": 1.391304347826087,
+   "units_per_buyer": 1.382608695652174,
    "private_room_share": 0.3798882681564245,
    "price": 1275.0,
    "edition_size": 200.0,
@@ -2114,7 +2114,7 @@
     "paid": 0.0020661766876236
    },
    "entries": 452.0,
-   "units_per_buyer": 1.1453287197231834,
+   "units_per_buyer": 1.1314878892733564,
    "private_room_share": 0.2783505154639175,
    "price": 5100.0,
    "edition_size": 450.0,
@@ -3514,7 +3514,7 @@
     "paid": null
    },
    "entries": 607.0,
-   "units_per_buyer": 1.4014869888475836,
+   "units_per_buyer": 1.3977695167286246,
    "private_room_share": 0.0,
    "price": 5100.0,
    "edition_size": 450.0,
