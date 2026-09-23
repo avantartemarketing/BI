@@ -89,6 +89,20 @@ check(close(paid["l3dRoi"], (1 - paid["cannibalisation"]) * ppu_aa / (paid["l3dC
 check(close(art["l3dRoi"], (1 - paid["cannibalisation"]) * ppu_artist / (paid["l3dCpe"] * art["budgetShare"])), "the artist's L3D is the same working")
 print(f"profit share: AA {paid['cumRoi']} artist {art['cumRoi']} (ratio {ratio:.3f}); shares AA {share_aa} artist {art['budgetShare']}")
 
+# the paid channel's plan by today is the even daily budget's share, the
+# plan the paid spend card reads, not the panel's historic paid shape
+ch = next(c for c in S["channels"] if c["key"] == "paid")
+L = (launch - announce).days
+# paid starts the day after the announce: the even share runs over L - 1 days
+frac = min(1.0, ((TODAY - announce).days - 1) / (L - 1))
+check(close(ch["exp"], ch["target"] * frac, 0.02) and ch["exp"] > 0, f"paid expected by today is the even share of its days: {ch['exp']} vs {ch['target']} x {frac:.3f}")
+check(S["paid"]["paidStartDays"] == 1 and S["paid"]["paidDays"] == L - 1, "the paid block says when paid starts")
+plan_at = lambda d: next(r["plan"] for r in ch["daily"] if r["date"] == d.isoformat())
+check(plan_at(announce) == 0 and plan_at(announce + timedelta(days=1)) == 0, "nothing is expected of paid on the announce day or its first day")
+check(close(plan_at(announce + timedelta(days=7)), plan_at(announce + timedelta(days=13)) / 2, 0.02), "and the paid plan line is straight from the day after the announce")
+email = next(c for c in S["channels"] if c["key"] == "aa_email")
+check(not close(email["exp"], email["target"] * frac, 0.05), "the organic groups keep their historic shape")
+
 # a revenue-share deal: AA carries the ads, the artist has no ROI to read
 cfg = copy.deepcopy(base)
 cfg["legacy_economics"]["artist_profit_share"] = 0

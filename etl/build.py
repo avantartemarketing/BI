@@ -79,7 +79,11 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPO_SOURCES = ROOT / "sources"
 SOURCES = pathlib.Path(os.environ.get("SOURCES_PATH") or REPO_SOURCES)
 DATA = ROOT / "data"
-APP = DATA / "app"
+# The build's output: the pages, the index, the inputs document, the caches.
+# APP_DATA_PATH relocates it (a persistent disk on Render, README "Render's
+# disk resets"), so the pages of the last run serve straight after a deploy;
+# the repo's data/app is the seed the server copies in when the disk is empty.
+APP = pathlib.Path(os.environ.get("APP_DATA_PATH") or (DATA / "app"))
 
 
 def source_file(name: str) -> pathlib.Path:
@@ -91,6 +95,7 @@ def source_file(name: str) -> pathlib.Path:
 # targeted ones under APP/releases are - they are the boot-time fallback).
 DERIVED = APP / "derived"
 PR_LEAD_DAYS = 14        # default private-room lead before announce for a derived release
+PAID_START_DAYS = 1      # paid starts the day after the announce: its plan and daily rate run from there to the close (docs 7)
 UPCOMING_DAYS = 120      # an Airtable launch this far ahead is listed before the funnel sees it (§1.7)
 UPCOMING_UNTYPED_DAYS = 60   # ... but one Airtable has not typed as a draw only this far ahead
 UPCOMING_TYPES = {"Draw", ""}   # the LE draw path; blank is a project Airtable has not typed yet
@@ -1878,6 +1883,15 @@ def _num(v):
     return None if math.isnan(f) else f
 
 
+def notion_dates_for(notion: dict | None, code: str | None, release_name: str | None) -> dict:
+    """The Notion log's dates for a release: by its campaign code, else by its
+    name - an upcoming launch has a page and a log before it has a code."""
+    n = notion or {}
+    by_code = n.get(str(code)) if code else None
+    by_name = n.get("name:" + str(release_name)) if release_name else None
+    return dict(by_code or by_name or {})
+
+
 def load_notion_campaigns() -> dict:
     """Campaign dates from the Notion log (server/notion.js writes
     data/notion_campaigns.csv on every refresh): per campaign code, the day
@@ -1894,9 +1908,14 @@ def load_notion_campaigns() -> dict:
     out = {}
     for r in df.to_dict("records"):
         code = str(r.get("campaign_code") or "").strip()
-        if not code:
-            continue
-        out[code] = {k: (str(r.get(k) or "")[:10] or None) for k in ("private_room_open", "announce_date", "launch_end")}
+        name = str(r.get("release_name") or "").strip()
+        vals = {k: (str(r.get(k) or "")[:10] or None) for k in ("private_room_open", "announce_date", "launch_end")}
+        # keyed by the campaign code and by the release name, so a launch
+        # without a code yet (notion_dates_for) is still found
+        if code:
+            out[code] = vals
+        if name:
+            out["name:" + name] = vals
     return out
 
 
@@ -2083,7 +2102,7 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
     # dates: the Notion log, then what was typed, then the funnel's campaign
     # clock (measured: exact for the announce), then Airtable's planned dates
     code = r.get("campaign_code") or None
-    nd = (notion or {}).get(code or "", {}) if code else {}
+    nd = notion_dates_for(notion, code, r.get("release_name"))
     clock = r.get("clock_dates") or {}
     for key, at_key in (("private_room_open", "private_room_date"), ("announce_date", "announce_date"), ("launch_end", "launch_date")):
         for src_name, v in (("notion", nd.get(key)), ("typed", r.get(key)), ("clock", clock.get(key)), ("airtable", at.get(at_key))):
@@ -2155,7 +2174,7 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
     the marketing lead and the Meta campaigns named for the code."""
     at = pricing.release_products(rec)
     code = rec.get("campaign_code")
-    nd = (notion or {}).get(code or "", {}) if code else {}
+    nd = notion_dates_for(notion, code, rec.get("release_name"))
     # the product fields the tab reads (shared/economics.mjs PRODUCT_KEYS and
     # the identity); the record's other columns stay in the pricing file
     keep = ("airtable_id", "name", "project_code", "edition", "target_sellthrough", "unit_price", "currency",
@@ -2981,7 +3000,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     rules = b["spend_rules"]
     eps = float(cost_terms["elasticity"])
     s0 = current_daily if current_daily > 0 else 0.0
-    plan_rate = (targets["paid"]["budget"] / L) if L else 0.0
+    # the plan's daily rate: the paid budget over the days paid runs, the day
+    # after the announce to the close (PAID_START_DAYS)
+    plan_rate = (targets["paid"]["budget"] / max(L - PAID_START_DAYS, 1)) if L else 0.0
     cpe_max = (1 - cann) * ppu_aa / (b["roi_floor"] * aa_budget_share)   # price at the ROI floor
 
     def cpe_at(spend, drift=1.0):
@@ -3101,6 +3122,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     hero_bm = hero_bm_today = 0.0        # benchmark at close, benchmark by today
     funnel_by_group = {}
     e2o = b["eligible_entry_to_order"]
+    # Paid follows spend, and spend is planned evenly over the days paid runs:
+    # from the day after the announce (PAID_START_DAYS) to the close. So the
+    # paid plan by any day is the even share of the target over those days -
+    # not the panel's historic paid shape, which starts near zero and told the
+    # channel card there was nothing to expect on days when the paid card,
+    # reading the even plan, showed the units bought. One plan, three cards.
+    def paid_pace(frac: float) -> float:
+        days = float(frac) * L - PAID_START_DAYS
+        return min(max(days / max(L - PAID_START_DAYS, 1), 0.0), 1.0)
     for g, spec in DISPLAY_GROUPS.items():
         sub = by_group_day[by_group_day["group"] == g].set_index("event_date")
         # SECURED UNITS - the unified page currency (docs §6.4):
@@ -3117,7 +3147,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             cum_nc += float(row["entries_no_conv"]) if row is not None else 0.0
             cum_s += float(row["sessions"]) if row is not None else 0.0
             p = pdsa_for(release, d)
-            cv = curve_value(rcurves, g, "units", p)
+            cv = paid_pace(p) if g == "paid" else curve_value(rcurves, g, "units", p)   # paid: the even share of its days
             # in benchmark mode the plan IS the benchmark lifted by K, taken
             # off the one curve, so the two lines the trajectory draws are in
             # the K ratio on every day rather than only in total (§4.1)
@@ -3129,10 +3159,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             if bench:
                 row_out["bm"] = round(bm_day, 2)
             daily.append(row_out)
-        w = curve_value(rcurves, g, "units", pdsa_today)   # share of campaign observed, per historic shape
+        # the share of the campaign observed: per the group's historic shape,
+        # and for paid the even daily budget's share (see paid_pace above)
+        w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, "units", pdsa_today)
         bm_exp = bm_tgt * w                                # benchmark pace by today
         exp = bm_exp * k if bench else tgt * w
-        sess_w = curve_value(rcurves, g, "sessions", pdsa_today)
+        sess_w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, "sessions", pdsa_today)
         sess_exp = sess_tgt * sess_w
         now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
         # Forward projection (docs §5.4): the remaining volume follows this channel's
@@ -3290,6 +3322,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # the terms every ROI above is read with, so the card can show its working
         "cannibalisation": cann,
         "dropOff": drop,
+        # paid runs from this many days after the announce to the close: the
+        # plan by today and the daily rate are read over those days (docs 7)
+        "paidStartDays": PAID_START_DAYS,
+        "paidDays": max(L - PAID_START_DAYS, 1),
         # the spend feed's currency and the fixed rate it was converted at
         "spendCurrency": SPEND_CURRENCY,
         "spendRate": spend_rate(),
@@ -3742,7 +3778,7 @@ def sort_index(index: list[dict]) -> list[dict]:
     return live + upcoming + closed + catalogue
 
 
-def patch_index(snap: dict, as_of: date) -> None:
+def patch_index(snap: dict, as_of: date | None, status: str | None = None) -> None:
     """Replace one release's row in the index written by the last full build.
 
     A save cannot add or remove releases, so every other row still stands; only
@@ -3754,13 +3790,53 @@ def patch_index(snap: dict, as_of: date) -> None:
         print("index: none on disk - run a full build to create it")
         return
     doc = json.loads(path.read_text())
-    status = "closed" if snap["complete"] else "live"
+    status = status or ("closed" if snap["complete"] else "live")
     row = index_row(snap, status)
     rows = [r for r in doc.get("releases", []) if r.get("id") != snap["id"]]
     rows.append(row)
     doc["releases"] = sort_index(rows)
-    doc["asOf"] = as_of.isoformat()
+    if as_of is not None:
+        doc["asOf"] = as_of.isoformat()
     path.write_text(json.dumps(doc, indent=1))
+
+
+def build_upcoming_pages() -> int:
+    """The upcoming pages alone, from Airtable's launches and the releases on
+    file, with no funnel export needed (§1.7). The server runs this at boot
+    when the index lists an upcoming launch whose page is not on disk - a
+    deploy without a persistent disk loses every page that is not in the
+    repo - so those pages are back within seconds while the full refresh
+    pulls the feeds. The index's own as-of is left as the last build set it;
+    the pages count their days from today."""
+    launch_frame = load_launches()
+    if launch_frame is None or not len(launch_frame):
+        print("upcoming: no Airtable launches on file - nothing to build")
+        return 0
+    as_of = date.today()
+    existing: list[dict] = []
+    try:
+        doc = json.loads((APP / "inputs.json").read_text())
+        # the releases the funnel had at the last build; the upcoming ones are
+        # rebuilt here, so they are not "on file"
+        existing = [r for r in (doc.get("discovered") or {}).values() if r.get("source") != "airtable"]
+    except (OSError, ValueError):
+        existing = []
+    spend = load_spend() if (DATA / "spend_daily.csv").exists() else None
+    emails = load_emails()
+    in_use = {str(r.get("campaign_code")) for r in existing + INPUTS["releases"] if r.get("campaign_code")}
+    activity = {c: w for c, w in code_activity(spend, emails).items() if c not in in_use}
+    upcoming = upcoming_releases(launch_frame, existing + INPUTS["releases"], as_of, activity)
+    DERIVED.mkdir(parents=True, exist_ok=True)
+    n = 0
+    for rec in upcoming:
+        rec["campaign_name"] = match_campaign(rec["campaign_code"], spend) if (rec.get("campaign_code") and spend is not None) else None
+        snap = build_upcoming(rec, as_of, None, as_of)
+        check_snapshot(snap)
+        (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
+        patch_index(snap, None, status="upcoming")
+        n += 1
+    print(f"upcoming: wrote {n} page(s) from Airtable -> {DERIVED}")
+    return n
 
 
 def main(only: str | None = None):
@@ -4032,6 +4108,10 @@ if __name__ == "__main__":
     # else a save cannot change is left as the last full build wrote it
     args = sys.argv[1:]
     one = None
+    if "--upcoming" in args:
+        # the upcoming pages alone, from Airtable, no funnel export needed
+        build_upcoming_pages()
+        sys.exit(0)
     if "--release" in args:
         i = args.index("--release")
         if i + 1 >= len(args):

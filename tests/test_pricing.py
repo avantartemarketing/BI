@@ -244,3 +244,18 @@ if __name__ == "__main__":
     test_price_band()
     test_own_artist_and_recency()
     print("ok: pricing join, nearest-8, own artist and recency")
+
+
+def test_one_member_basket() -> None:
+    """One launch is a basket (MIN_MEMBERS 1): its own figures are the medians."""
+    panel = B.load_panel()
+    one = str(panel.iloc[0]["release_name"])
+    prof = B.basket_profile(panel, [one])
+    assert B.MIN_MEMBERS == 1 and prof["n"] == 1 and prof["members"] == [one]
+    assert prof["units"] == float(panel.iloc[0]["tot_total_product_units"]) and prof["units_p25"] == prof["units_p75"] == prof["units"]
+    assert B.basket_profile(panel, [])["n"] == 0
+    print("one-member basket: ok")
+
+
+if __name__ == "__main__" and "test_one_member_basket" in globals():
+    test_one_member_basket()

@@ -22,8 +22,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 # sources/); the HubSpot sends fall back to the checked-in copy
 SOURCES = pathlib.Path(os.environ.get("SOURCES_PATH") or (ROOT / "sources"))
 SRC = SOURCES / "across_time.csv"
-OUT = ROOT / "data" / "app" / "release_features.csv"
-INPUTS = ROOT / "data" / "app" / "inputs.json"
+APP = pathlib.Path(os.environ.get("APP_DATA_PATH") or (ROOT / "data" / "app"))   # the build's output, relocatable
+OUT = APP / "release_features.csv"
+INPUTS = APP / "inputs.json"
 EMAILS = SOURCES / "all_sent_emails.csv" if (SOURCES / "all_sent_emails.csv").exists() else ROOT / "sources" / "all_sent_emails.csv"
 PR_LEAD_DAYS = 14
 

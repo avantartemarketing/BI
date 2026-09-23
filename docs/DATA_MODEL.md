@@ -219,9 +219,17 @@ them at the top level are read the same way. The snapshot's `economics` block pu
 products in force, `mode` (`products` or `release`) and `deal`.
 
 **Dates.** The Notion log first: `server/notion.js` reads each matched row's words for the
-stage it records (early access / private room → `private_room_open`; announce; launch, draw
-close, last chance → `launch_end`) and writes `data/notion_campaigns.csv`; a campaigns database
-named by `NOTION_CAMPAIGNS_DB` supplies date columns by name over that. Then what was typed,
+stage it records (early access, exclusive access, private room → `private_room_open`; announce;
+launch, draw close, last chance → `launch_end`) and writes `data/notion_campaigns.csv`. The
+private room opens on the day the early-access email is scheduled for: among a release's
+early-access rows the one whose channel is an email (`isEmailRow`) sets the date, and a story
+or post on that stage stands in only when no email row is on file. A row belongs to a release
+by its campaign code, else by its full name, else by the artist's name with the row's Live
+Date placing it in the launch whose window holds it (`matchRelease`; an artist has many
+launches), so an upcoming launch that has no code yet gets its dates too: the file carries
+`campaign_code` and `release_name`, and the ETL looks a release up by either
+(`notion_dates_for`). A campaigns database named by `NOTION_CAMPAIGNS_DB` supplies date
+columns by name over that. Then what was typed,
 then the funnel export's campaign clock (measured, exact for the announce), then Airtable's
 planned dates. The private room defaults to two weeks before the announce when nothing has it.
 `inputSources` on the snapshot names the source of each.
@@ -1012,6 +1020,16 @@ pooled on entries at the same time. Curves are cached per basket id for the run,
 picker, the snapshot and the re-run all ask for the same ones. Entries curves differ least
 between baskets (0.03-0.14 from pooled, above), so in practice it is the sessions and units
 shapes that move.
+
+**Paid's plan by today is the even daily budget's share of the days paid runs.** Paid starts
+the day after the announce (`PAID_START_DAYS` = 1) and runs to the close, so the paid group's
+plan line, its expected-by-today and its benchmark-by-today read
+`target × clamp((days elapsed − 1) / (campaign days − 1))`, the plan's daily rate is the paid
+budget over those days, and the paid block publishes `paidStartDays` and `paidDays` for the
+cards (`paidDayFrac` in `web/src/ui.jsx`). Not the panel's historic paid shape, which starts
+near zero and told the Channels vs targets card there was nothing to expect on days when the
+Paid spend card, reading the even plan, showed the units bought. The organic groups keep their
+shape curves. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the

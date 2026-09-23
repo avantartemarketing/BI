@@ -114,12 +114,13 @@ output) and reruns the full ETL, which promotes the release.
 
 ## Keeping state across deploys (Render)
 
-Render's disk resets on every deploy. Six things live on it and are lost without these:
+Render's disk resets on every deploy. Seven things live on it and are lost without these:
 
 | What | Symptom when lost | Fix |
 |---|---|---|
 | Session secret | everyone is signed out after each deploy | set `SESSION_SECRET` (any long random string) under Environment |
 | `sources/` - the pulled feeds: the funnel export, the events and browsing feeds and their incremental bookmarks, the HubSpot sends | every deploy starts with no feed, so the boot refresh is a full multi-year pull plus the whole ETL, and until it finishes the page serves the snapshots committed in the repo, however old their data; a second deploy in that time kills the refresh and starts it over | `SOURCES_PATH` on the disk: the boot refresh is then an incremental pull |
+| `data/app/` - the built pages, the index and the inputs document (the 350-odd actuals-only and upcoming pages are not in the repo) | after a deploy every page not in the repo reads "not built yet" until the boot refresh has pulled the feeds and built the catalogue, minutes at best; the upcoming pages alone are rebuilt from Airtable within seconds of the start | `APP_DATA_PATH` on the disk: the last run's pages serve at once and the refresh updates them; the repo's copies seed an empty disk |
 | `data/users.json` | roles set in Permissions reset; people are re-added as users on their next Google sign-in | `USERS_PATH` on a persistent disk |
 | `data/inputs.saved.json` | targets edited in the dashboard revert to the repo defaults | `SAVED_INPUTS_PATH` on the disk |
 | `data/targets.log.jsonl`, `data/decisions.log.jsonl` | the audit trails restart | `TARGETS_LOG`, `DECISIONS_PATH` on the disk |
@@ -128,12 +129,13 @@ Render's disk resets on every deploy. Six things live on it and are lost without
 
 `SESSION_SECRET` is the one-line fix for re-logins and needs no disk. For the rest, add a
 persistent disk to the service (Render → the service → Disks → Add disk; 1 GB is plenty), mount it
-at `/var/data`, and set the seven variables under Environment (`render.yaml` carries the same disk
+at `/var/data`, and set the eight variables under Environment (`render.yaml` carries the same disk
 and paths for a service created from the blueprint). Until this is done the Target setting tab
 shows a red warning on every release, since every save would be lost on the next deploy. Set
 
 ```
 SOURCES_PATH=/var/data/sources
+APP_DATA_PATH=/var/data/app
 USERS_PATH=/var/data/users.json
 SAVED_INPUTS_PATH=/var/data/inputs.saved.json
 TARGETS_LOG=/var/data/targets.log.jsonl
@@ -161,7 +163,10 @@ are set (the launches ahead of the funnel appear in the sidebar as Upcoming, doc
 `DATA_MODEL.md` 1.7), and reruns the ETL in place - no redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
 (signed-in session required): both **start** the refresh and return at once with
 `running: true`; poll `GET /api/refresh/status` for the outcome, or hover the header's
-source-freshness line, which shows the same thing. A refresh is a multi-year BigQuery pull
+source-freshness line, which shows the same thing. A page built from data older than the last full
+day also carries an amber banner under the header: how many days behind it is, and what the
+refresh is doing about it, with the time it started. The page reloads itself when that refresh
+lands. Data through yesterday is normal until the first refresh of the day and is not flagged. A refresh is a multi-year BigQuery pull
 plus the ETL and takes a few minutes - longer than Render's proxy will hold a request
 open, so an endpoint that waited for it came back as a 502.
 There are two paths to the same two files, and BigQuery wins whenever it is configured.
@@ -469,7 +474,7 @@ basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 
 The derived-targets rail recomputes live in the browser via
 `shared/benchmarkModel.mjs` (the per-unit economics via `shared/economics.mjs`);
-**Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue; a first save runs the full build so the release is promoted) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
+**Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue, a first save included: the server removes the upcoming or actuals-only page the built one replaces) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
 
 ## Auditing the allocator tool with an admin export
 

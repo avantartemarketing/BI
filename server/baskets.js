@@ -30,7 +30,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const DATA = path.join(ROOT, "data", "app");
+const DATA = process.env.APP_DATA_PATH || path.join(ROOT, "data", "app");   // the build's output, relocatable (server/index.js)
 const INPUTS_PATH = path.join(DATA, "inputs.json");
 // same file the dashboard's own saves go to (server/index.js), so a release set
 // up from the dashboard can be benchmarked before the next ETL run
@@ -39,7 +39,7 @@ const SAVED_INPUTS_PATH = process.env.SAVED_INPUTS_PATH || path.join(ROOT, "data
 const SAVED_BASKETS_PATH = path.join(DATA, "baskets.json");
 
 const KINDS = ["ready", "bespoke", "saved"];
-const MIN_MEMBERS = 3;            // baskets.py MIN_MEMBERS (§3.2)
+const MIN_MEMBERS = 1;            // baskets.py MIN_MEMBERS (§3.2): one launch is a basket, flagged thin
 const TTL_MS = 2 * 60 * 1000;
 const PY_TIMEOUT_MS = 60 * 1000;
 
@@ -195,7 +195,7 @@ function readyBaskets(releaseId, opts = {}) {
  * started when there is no file yet - a fresh checkout before its first
  * build. That is what made opening the picker take seconds on a shared box,
  * and it no longer happens on the picker's path at all. */
-const CANDIDATES_PATH = path.join(ROOT, "data", "app", "basket_candidates.json");
+const CANDIDATES_PATH = path.join(DATA, "basket_candidates.json");
 function candidates() {
   try {
     const doc = JSON.parse(fs.readFileSync(CANDIDATES_PATH, "utf8"));
@@ -253,7 +253,7 @@ async function validateBasketSpec(spec, releaseId) {
     }
     const unique = [...new Set(members)];
     if (unique.length < MIN_MEMBERS) {
-      return { ok: false, error: `a basket needs at least ${MIN_MEMBERS} comparable launches - this one has ${unique.length}` };
+      return { ok: false, error: `a basket needs at least ${MIN_MEMBERS} comparable launch${MIN_MEMBERS === 1 ? "" : "es"} - this one has ${unique.length}` };
     }
     const normalised = { kind: "bespoke", members: unique };
     if (spec.name) normalised.name = String(spec.name).slice(0, 200);
@@ -266,8 +266,8 @@ async function validateBasketSpec(spec, releaseId) {
   const pool = (kind === "saved" ? listed.saved : listed.baskets) || [];
   const hit = pool.find((b) => b.id === id);
   if (!hit) return { ok: false, error: `no ${kind} basket with id "${id}"` };
-  // a basket under three members cannot be used at all (§3.2) - same_artist is
-  // routinely that thin, so this is a real answer to give the picker, not an edge case
+  // an empty basket cannot be used at all (§3.2) - same_artist is routinely
+  // empty for a first launch, so this is a real answer to give the picker
   if (hit.n < MIN_MEMBERS) {
     return { ok: false, error: `"${hit.name}" has only ${hit.n} comparable launches - a basket needs at least ${MIN_MEMBERS}` };
   }

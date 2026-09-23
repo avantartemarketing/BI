@@ -319,12 +319,18 @@ function useRefreshStatus() {
   return st;
 }
 
-/* A page built from data older than a day is the committed fallback (served
- * after a deploy until the first refresh lands) or the product of a refresh
- * that has been failing. Both looked like "the numbers are just low". Say
- * which, and what the refresh is doing about it. */
+/* A page built from data older than the last full day is the committed
+ * fallback (served after a deploy until the first refresh lands) or the
+ * product of a refresh that has been failing. Both looked like "the numbers
+ * are just low". Say which, how far behind, and what the refresh is doing
+ * about it, with the time it started. Data through yesterday is normal until
+ * the first refresh of the day and is not flagged. */
 function StaleBanner({ asOf, st, onRefreshed }) {
-  const ageDays = asOf ? Math.floor((Date.now() - new Date(asOf + "T00:00:00Z").getTime()) / 86400000) - 1 : 0;
+  // whole days between the data's last day and today, on the calendar the
+  // reader is on: through the 21st read on the 23rd is two days behind
+  const now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const ageDays = asOf ? Math.round((today - new Date(asOf + "T00:00:00Z").getTime()) / 86400000) : 0;
   /* "this page reloads when it lands", below, has to hold for the first refresh
      after a deploy as well as for the hourly ones - the rule and why it is not
      the timestamp are in shared/refreshWatch.mjs. */
@@ -335,16 +341,19 @@ function StaleBanner({ asOf, st, onRefreshed }) {
     if (r.reload) onRefreshed();
   }, [st && st.at, st && st.running]);
   if (ageDays < 2) return null;
-  const through = new Date(asOf + "T00:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const through = fmtDay(new Date(asOf + "T00:00:00Z"), true);
+  const clock = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   let what;
   if (st === undefined) what = "Checking whether a refresh is running…";
-  else if (st && st.running) what = "A refresh is running now - this page reloads when it lands (a first refresh after a deploy takes a few minutes).";
-  else if (st && st.at && st.ok === false) what = `The last refresh failed: ${String(st.etl || st.bigquery || st.sheet || "").slice(0, 160)}`;
-  else if (st && st.at) what = "The last refresh succeeded but did not move this page - the source feed may not have newer rows for it.";
-  else what = "No refresh has completed since the app started - the first one after a deploy takes a few minutes.";
+  else if (st && st.running) what = `A refresh started at ${clock(st.runningSince)} is running now; this page reloads itself when it lands. ` +
+    "The first refresh after a deploy takes several minutes.";
+  else if (st && st.at && st.ok === false) what = `The last refresh, at ${clock(st.at)}, failed: ${String(st.etl || st.bigquery || st.sheet || "").slice(0, 160)}`;
+  else if (st && st.at) what = `The last refresh, at ${clock(st.at)}, succeeded but did not move this page - the source feed may not have newer rows for it.`;
+  else what = "No refresh has completed since the app started - the first one after a deploy takes several minutes.";
   return (
-    <div style={{ margin: "14px 0 0", padding: "10px 14px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a", fontSize: 12.5, lineHeight: 1.5 }}>
-      <b>Built from data through {through}</b> ({ageDays} days old). {what}
+    <div role="status" style={{ margin: "14px 0 0", padding: "10px 14px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a",
+                                borderLeft: "3px solid #8a5f00", fontSize: 13, lineHeight: 1.5 }}>
+      <b>Built from data through {through}, {ageDays} days behind.</b> {what}
     </div>
   );
 }

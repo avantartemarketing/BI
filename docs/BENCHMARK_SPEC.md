@@ -59,7 +59,7 @@ Built from `data/release_clusters.csv` (rows with `panel == "draw"`, 108 of them
 | `cluster_2` | Email-led collector launches | `cluster == 2` |
 | `cluster_3` | Artist-audience draws | `cluster == 3` |
 | `all_12m` | All draw launches, last 12 months | `window_end` within 365 days of `as_of` |
-| `same_artist` | Same artist, earlier launches | same `artist`, `window_end < window_start` of this release; **disabled when < 3 members** |
+| `same_artist` | Same artist, earlier launches | same `artist`, `window_end < window_start` of this release; **disabled when it has no members** |
 
 A release is **never a member of its own benchmark** — always drop its own
 `release_name` from any basket.
@@ -272,6 +272,11 @@ target_plan[g][d]    = benchmark_plan[g][d] * K
 So target and benchmark stay in exactly the K ratio on every day — which is what makes the
 even uplift legible on the trajectory.
 
+Paid is the exception to the curves: its plan by any day is the even share of its target over
+the days paid runs, the day after the announce to the close (`PAID_START_DAYS`), since paid
+follows spend and the budget is planned evenly over those days; the channel card, the
+trajectory's paid line and the paid spend card read that one plan.
+
 ### 4.3 Channels not in plan
 
 A basket cannot know that this release will not run paid, or that the artist has no channels
@@ -474,7 +479,8 @@ carry `null` and fall back to a −10% band on `statusPct`.
   `channels_off` (§4.3), `cost_per_purchase` (€ per paid unit; empty means the panel median)
   and `artist_posting_tier` (Low / Medium / High). A release is set up only once a product
   has an edition and a price and the dates resolve. Validation: `kind` in the three values; `id` must
-  resolve; `members` must be known release names, at least 3, and must not contain this
+  resolve; `members` must be known release names, at least 1 (a single launch is a basket:
+  its own figures are the medians, and the picker flags it thin), and must not contain this
   release. An invalid basket is a 400, not a silent fallback.
 
 Because the benchmark model needs the panel and the basket curves, **every** save re-runs
@@ -653,7 +659,7 @@ The rail puts this launch beside the basket, a row per statistic - units, unit p
 sessions, paid share, campaign days - so whether the basket resembles the launch is read
 across. A launch's own units and price are the target and price being set on the tab;
 sessions and paid share are to date and would be read against closed launches' totals, so
-those rows are the basket's alone. Under them, a thin-basket warning at fewer than 10 and
+those rows are the basket's alone. Under them, a thin-basket warning at fewer than 6 and
 which basket the ticks are: "as suggested" until an edit, then "edited". Ticks still
 matching what the modal opened on pick that basket, with its id and the ETL's own profile,
 rather than a bespoke copy of it.

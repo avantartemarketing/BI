@@ -35,9 +35,9 @@
    "of": 24,
    "complete": false,
    "windowEnd": "2026-09-25",
-   "statusPct": -0.6503,
+   "statusPct": -0.6597,
    "ok": false,
-   "benchmarkPct": -0.5545,
+   "benchmarkPct": -0.6467,
    "lastSeen": null,
    "sessions": null
   },
@@ -75,9 +75,9 @@
    "of": 27,
    "complete": false,
    "windowEnd": "2026-09-30",
-   "statusPct": -0.4442,
+   "statusPct": -0.4809,
    "ok": false,
-   "benchmarkPct": 0.6835,
+   "benchmarkPct": 0.5725,
    "lastSeen": null,
    "sessions": null
   },
@@ -257,7 +257,7 @@
    "windowEnd": "2026-09-17",
    "statusPct": 0.0,
    "ok": true,
-   "benchmarkPct": 0.1194,
+   "benchmarkPct": 0.1321,
    "lastSeen": null,
    "sessions": null
   },
@@ -277,7 +277,7 @@
    "windowEnd": "2026-09-11",
    "statusPct": 0.0,
    "ok": true,
-   "benchmarkPct": 0.6401,
+   "benchmarkPct": 0.6811,
    "lastSeen": null,
    "sessions": null
   },
