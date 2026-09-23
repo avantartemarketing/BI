@@ -114,11 +114,12 @@ output) and reruns the full ETL, which promotes the release.
 
 ## Keeping state across deploys (Render)
 
-Render's disk resets on every deploy. Five things live on it and are lost without these:
+Render's disk resets on every deploy. Six things live on it and are lost without these:
 
 | What | Symptom when lost | Fix |
 |---|---|---|
 | Session secret | everyone is signed out after each deploy | set `SESSION_SECRET` (any long random string) under Environment |
+| `sources/` - the pulled feeds: the funnel export, the events and browsing feeds and their incremental bookmarks, the HubSpot sends | every deploy starts with no feed, so the boot refresh is a full multi-year pull plus the whole ETL, and until it finishes the page serves the snapshots committed in the repo, however old their data; a second deploy in that time kills the refresh and starts it over | `SOURCES_PATH` on the disk: the boot refresh is then an incremental pull |
 | `data/users.json` | roles set in Permissions reset; people are re-added as users on their next Google sign-in | `USERS_PATH` on a persistent disk |
 | `data/inputs.saved.json` | targets edited in the dashboard revert to the repo defaults | `SAVED_INPUTS_PATH` on the disk |
 | `data/targets.log.jsonl`, `data/decisions.log.jsonl` | the audit trails restart | `TARGETS_LOG`, `DECISIONS_PATH` on the disk |
@@ -132,6 +133,7 @@ and paths for a service created from the blueprint). Until this is done the Targ
 shows a red warning on every release, since every save would be lost on the next deploy. Set
 
 ```
+SOURCES_PATH=/var/data/sources
 USERS_PATH=/var/data/users.json
 SAVED_INPUTS_PATH=/var/data/inputs.saved.json
 TARGETS_LOG=/var/data/targets.log.jsonl
@@ -139,6 +141,12 @@ DECISIONS_PATH=/var/data/decisions.log.jsonl
 LAYOUT_PATH=/var/data/layout.json
 SLACK_STATE_PATH=/var/data/slack.json
 ```
+
+`SOURCES_PATH` is a directory (the server creates it); the feeds are about 250 MB, so the
+1 GB disk still has room. The first refresh after setting it is a full pull, since the disk
+starts empty; every deploy after that finds the feeds and their bookmarks in place. The
+checked-in `sources/all_sent_emails.csv` stands in for the email panels until the first
+HubSpot pull has written the disk's own copy.
 
 `render.yaml` lists the same keys, but Render ignores that file for a service created in the
 dashboard, so they have to be set by hand. The ETL's own output (`data/app/`) is regenerated
@@ -193,7 +201,8 @@ file in atomically (`sources/across_time.meta.json` records the window, columns 
 date). The overlap is not a nicety: entry-to-order conversion keeps changing a day's row
 until the draw settles, so recent history is live. A **full** pull runs every
 `BQ_FULL_EVERY_DAYS` (default 7), on `?run=1&full=1`, when `BQ_SINCE` or the column set
-changes, or when there is no local file - and it reports how many days older than the
+changes, or when there is no local file (which on Render is after every deploy unless
+`SOURCES_PATH` keeps the feeds on the persistent disk) - and it reports how many days older than the
 overlap changed upstream since the last full pull, so "historic data doesn't change" is
 measured rather than assumed. An upstream backfill (announcement dates for the back
 catalogue, say) rewrites the clock columns years back; the weekly full pull is what picks

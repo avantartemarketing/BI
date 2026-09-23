@@ -48,18 +48,24 @@ const readline = require("readline");
 const { serviceAccount, accessToken } = require("./googleAuth");
 
 const ROOT = path.resolve(__dirname, "..");
-const ACROSS_TIME = path.join(ROOT, "sources", "across_time.csv");
+// where the pulled feeds and their bookmarks live: the repo's sources/ (gitignored)
+// unless SOURCES_PATH puts them on a disk that survives a deploy, so the boot
+// refresh after one is incremental rather than a full pull (README, "Keeping
+// state across deploys")
+const SOURCES = process.env.SOURCES_PATH || path.join(ROOT, "sources");
+try { fs.mkdirSync(SOURCES, { recursive: true }); } catch (e) { /* reported by the first write */ }
+const ACROSS_TIME = path.join(SOURCES, "across_time.csv");
 const SPEND_DAILY = path.join(ROOT, "data", "spend_daily.csv");
 // the event-level feed: pseudonymous person ids only, never the address (see
 // the events section). Lives under sources/ (gitignored), served by no endpoint.
-const LE_EVENTS = path.join(ROOT, "sources", "le_events.csv");
+const LE_EVENTS = path.join(SOURCES, "le_events.csv");
 // orders and drafts by product, and the product each draw sold: aggregates
 // only, written from Order_Line_Concept on every refresh (docs/DATA_MODEL.md 2.4)
 const ORDERS_BY_PRODUCT = path.join(ROOT, "data", "orders_by_product.csv");
 const DRAW_PRODUCTS = path.join(ROOT, "data", "draw_products.csv");
 // what the local funnel file is: window, columns, last date, when it was last
 // pulled in full. Absent = never pulled from BigQuery (or it came from the sheet)
-const META = path.join(ROOT, "sources", "across_time.meta.json");
+const META = path.join(SOURCES, "across_time.meta.json");
 
 const PROJECT = process.env.BQ_PROJECT || "avantarte-data-production";
 const DATASET = process.env.BQ_DATASET || "AA_company_tables";
@@ -662,8 +668,8 @@ function eventsWriter(headerRow) {
  * be too many to bring here: 7.4M since 2023 for two numbers per channel-day.
  * No identifier is read, so nothing personal is involved. The result has the
  * daily export's grain and lets etl/aggregate_events.py rebuild the export. */
-const LE_BROWSING = path.join(ROOT, "sources", "le_browsing.csv");
-const BROWSING_META = path.join(ROOT, "sources", "le_browsing.meta.json");
+const LE_BROWSING = path.join(SOURCES, "le_browsing.csv");
+const BROWSING_META = path.join(SOURCES, "le_browsing.meta.json");
 const BROWSING_KEYS = ["AA_session_custom_channel_group_split_touch", "event_date", "simple_release_name",
                        "campaign_stage", "days_since_announcement", "days_until_launch",
                        "pct_days_since_announcement", "pct_days_until_launch"];
@@ -1078,9 +1084,9 @@ async function pull({ write = true, full = false, events = true, only = null } =
 
 module.exports = {
   pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
-  ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
+  SOURCES, ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
-  LE_BROWSING, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
+  LE_BROWSING, BROWSING_META, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
   PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
   schema, listSchema, schemaText,
 };

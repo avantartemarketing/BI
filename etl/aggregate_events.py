@@ -51,7 +51,9 @@ import numpy as np
 import pandas as pd
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SOURCES = ROOT / "sources"
+# the pulled feeds' directory: the repo's sources/, or the persistent disk
+# SOURCES_PATH names (README, "Keeping state across deploys")
+SOURCES = pathlib.Path(os.environ.get("SOURCES_PATH") or (ROOT / "sources"))
 BROWSING = SOURCES / "le_browsing.csv"
 EVENTS = SOURCES / "le_events.csv"
 EXPORT = SOURCES / "across_time.csv"

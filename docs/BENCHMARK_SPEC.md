@@ -599,7 +599,7 @@ The quartile levers are gone from the page and, since 2026-09-23, from the build
 3. **Derived targets** rail — three columns: Benchmark, Target, Stretch, computed in the
    browser from the basket's medians (`shared/benchmarkModel.mjs`) as the sellout, the cost
    per purchase and the switches change; dashes until there is a basket and a sellout.
-4. **Economics** — gains **Cost per purchase**, € per paid unit, blank meaning the panel's
+4. **Economics** - gains **Cost per purchase**, € per paid unit, blank meaning the panel's
    median: paid units × it is the paid budget.
 
 The paid-share overwrite, the paid channel size, private room share, paid conversion and the
