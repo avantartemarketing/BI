@@ -562,12 +562,18 @@ seen and edited rather than accepted by name.
 
 A release with no target or price yet has nothing to be near to, so the picker asks for them
 first, in place: two fields at the top write straight back to the Target setting form and the
-suggestion follows as they are typed, against the unsaved values. `Units x` and
-`Price x` are the two distances, each taken above 1 whichever side it falls; they sort on
-the worse of the two, which is how `similar_members` reads a band, so the order on screen
-is the order the rule considered them in. Two columns rather than one: a launch matched on
-size and four times the price is not close, and a single figure said so without saying
-which axis. `Most similar` is the worse of the two within 4x, never fewer than twelve;
+suggestion follows as they are typed, against the unsaved values. `Units` and `Price`
+are the two distances, each taken above 1 whichever side it falls, and each is drawn as a
+bar from the centre of its track: a launch that sold fewer units, or was priced lower, than
+this one extends left, one that sold more or was priced higher extends right, log-scaled so
+×2 fills a third of its side and ×8 all of it. An exact match is a tick on the centre line
+rather than an empty track, so nothing reads as missing; pointing at a bar says the figure,
+which way it falls and by how much. The units figure beside the bar is what that launch
+sold inside its window, never its edition size, read against this launch's target. They
+sort on the worse of the two, which is how `similar_members` reads a band, so the order on
+screen is the order the rule considered them in. Two columns rather than one: a launch
+matched on size and four times the price is not close, and a single figure said so without
+saying which axis. `Most similar` is the worse of the two within 4x, never fewer than twelve;
 `All` is the panel, and search, last-12-months, same-artist and ticked filters narrow it. A
 ticked member is never filtered out of any view.
 

@@ -85,15 +85,25 @@ function Switch({ id, on, onChange, label, sub, off, why }) {
   );
 }
 
-/* One distance, as a bar: the length is log-scaled so ×2 is a quarter of the
- * track and ×8 fills it, which is the range that matters. Dimmed past NEAR. */
-function Bar({ v, on, prefix }) {
-  const w = v === null ? 0 : Math.min(Math.log(v) / Math.log(8), 1) * 100;
+/* One distance, as a bar from the centre of its track: a launch that sold
+ * fewer units, or was priced lower, than this one extends left; one that sold
+ * more, or was priced higher, extends right. The length is log-scaled so ×2
+ * fills a third of its side and ×8 all of it, which is the range that matters.
+ * An exact match is a tick on the centre line rather than an empty track, so
+ * nothing reads as missing, and a bar never shrinks below the tick. Dimmed
+ * past NEAR. */
+function Bar({ v, under, on, prefix, hint }) {
+  const w = v === null ? 0 : Math.min(Math.log(v) / Math.log(8), 1) * 50;
+  const tone = on ? C.orange : FIELD;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "44px 1fr 40px", gap: "0 8px", alignItems: "center", fontSize: 11, color: C.muted }}>
+    <div title={hint} style={{ display: "grid", gridTemplateColumns: "44px 1fr 40px", gap: "0 8px", alignItems: "center", fontSize: 11, color: C.muted }}>
       <span className="num" style={{ textAlign: "right" }}>{prefix}</span>
-      <div style={{ height: 6, borderRadius: 3, background: C.hairline, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${w.toFixed(0)}%`, borderRadius: 3, background: on ? C.orange : FIELD }} />
+      <div style={{ height: 6, borderRadius: 3, background: C.hairline, position: "relative" }}>
+        <div style={{ position: "absolute", left: "50%", top: -1, bottom: -1, width: 1, marginLeft: -0.5, background: C.planGrey }} />
+        {v === null ? null : v <= 1
+          ? <div style={{ position: "absolute", left: "50%", top: -2, bottom: -2, width: 3, marginLeft: -1.5, borderRadius: 1.5, background: tone }} />
+          : <div style={{ position: "absolute", top: 0, bottom: 0, width: `${w.toFixed(1)}%`, minWidth: 3, background: tone,
+              ...(under ? { right: "50%", borderRadius: "3px 0 0 3px" } : { left: "50%", borderRadius: "0 3px 3px 0" }) }} />}
       </div>
       <span className="num" style={{ color: v !== null && v > NEAR ? C.muted : C.ink }}>{x(v)}</span>
     </div>
@@ -251,6 +261,13 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
     return { ...r, du, dp, d: du === null || dp === null ? null : Math.max(du, dp) };
   }).sort((a, b) => (a.d ?? Infinity) - (b.d ?? Infinity)), [rows, releaseName, L]);
 
+  // what a bar says when pointed at: the figure, which way it falls and by how much
+  const unitsHint = (r) => r.units === L.target ? `Sold ${fmt(r.units)} units in its window, the same as this launch's target`
+    : `Sold ${fmt(r.units)} units in its window, ${x(r.du)} ${r.units < L.target ? "fewer" : "more"} than this launch's target of ${fmt(L.target)}`;
+  const priceHint = (r) => !(r.price > 0) ? "Airtable has no unit price for it, so it is ranked on units alone"
+    : r.dp !== null && r.dp <= 1 ? `Priced at ${fmtMoney(r.price)}, the same as this launch`
+    : `Priced at ${fmtMoney(r.price)}, ${x(r.dp)} ${r.price < priceUsed ? "lower" : "higher"} than this launch's ${fmtMoney(priceUsed)}`;
+
   const members = useMemo(() => scored.filter((s) => ticked.has(s.release_name)), [scored, ticked]);
   const reach = members.length ? Math.max(...members.map((m) => m.d ?? 0)) : null;
   const live = useMemo(() => liveProfile(members), [members]);
@@ -393,7 +410,11 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                       <Chip active={chip === "ticked"} onClick={() => setChip("ticked")}>Ticked</Chip>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "22px minmax(0, 1fr) 190px 190px", gap: "0 14px", fontSize: 11, color: C.muted, paddingBottom: 6, borderBottom: `1px solid ${C.border}` }}>
-                      <span /><span>Launch</span><span style={{ paddingLeft: 52 }}>Units</span><span style={{ paddingLeft: 52 }}>Price</span>
+                      <span /><span>Launch</span>
+                      {["Units", "Price"].map((h) => (
+                        // over the centre line of its bars, which is where this launch sits
+                        <span key={h} style={{ display: "grid", gridTemplateColumns: "44px 1fr 40px", gap: "0 8px" }}><span /><span style={{ textAlign: "center" }}>{h}</span><span /></span>
+                      ))}
                     </div>
                     {shown.map((r) => {
                       const on = ticked.has(r.release_name), own = isOwn(r);
@@ -408,8 +429,8 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                             {r.artist} · {r.title} <span style={{ color: C.muted, fontSize: 11.5 }}>{String(r.window_end || "").slice(0, 4)}</span>
                             {own && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 600, letterSpacing: ".03em", padding: "1px 6px", borderRadius: 4, background: C.rust, color: C.white, verticalAlign: 1 }}>own</span>}
                           </div>
-                          <Bar v={r.du} on={on} prefix={fmt(r.units)} />
-                          <Bar v={r.dp} on={on} prefix={r.price > 0 ? fmtMoney(r.price) : "–"} />
+                          <Bar v={r.du} under={r.units < L.target} on={on} prefix={fmt(r.units)} hint={unitsHint(r)} />
+                          <Bar v={r.dp} under={r.price > 0 && r.price < priceUsed} on={on} prefix={r.price > 0 ? fmtMoney(r.price) : "–"} hint={priceHint(r)} />
                         </div>
                       );
                     })}
