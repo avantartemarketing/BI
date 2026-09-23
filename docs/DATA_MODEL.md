@@ -1201,18 +1201,17 @@ Paid, drafts, the draw winners the entries imply and (at close) the units still 
 four tints of the page's blue, deepest to palest as the units get less certain; nothing on
 the card is hatched, and demand past a product's edition is the winners' own tint carrying on
 where the paler room behind the bar stops. `Post to Slack` sends those rows as a Slack message
-composed on the server from the same snapshot (`server/slack.js`): the release as a header;
-the headline with the campaign day, and under it the framing take-up (`framing.rate`, the
-Framing card's frames per print, §6.4, with the count behind it and the plan beside it; the
-entrants' rate before a sale; the plan alone on a snapshot without the block; nothing where
-no print has a frame on offer); the works, as a `table` block (the name, its units of the
-edition, its share, with no bar, because a bar drawn in text wrapped on a phone) or, by the
-request's `layout`, as Slack's own bar chart (`data_visualization`, one bar per work at its
-share of the edition), the chart with a sortable `data_table` (work, share, units, paid), or
-a `carousel` of cards; and the release's totals (paid, awaiting payment, expected from the
-draw, at close the units still to come) with the framing line as plain sentences. The
-figures are computed once, on the server, at the horizon the page is on; `layout: "test"`
-posts the three non-table layouts to a named channel as a look, recording nothing.
+composed on the server from the same snapshot (`server/slack.js`): the artist as a header;
+the works' shared title and the campaign day on one line; Slack's `data_table`, one row per
+work with its units (today, or projected at close), its target (typed per product on the
+Target setting tab when targets are set that way, else the release's target split by edition
+share, the rule the references follow), how far along the target it is, its edition and its
+sell-through, and a bold Total row adding them up; then, in small type, the day the figures
+run to, the totals (paid, awaiting payment, expected from the draw, at close the units still
+to come) and the framing take-up (`framing.rate`, the Framing card's frames per print, §6.4,
+with the count behind it and the plan beside it; the entrants' rate before a sale; the plan
+alone on a snapshot without the block; nothing where no print has a frame on offer) as plain
+sentences. The figures are computed once, on the server, at the horizon the page is on.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
 pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven

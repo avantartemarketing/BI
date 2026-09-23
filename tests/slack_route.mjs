@@ -2,12 +2,10 @@
  *
  * Starts the service with SLACK_API pointed at a local stand-in, signs in,
  * and presses the button the way the browser does: a JSON body naming the
- * horizon and, for a test, a layout. One chat.postMessage call carries the
- * message, blocks and all, to the channel by name; a dry run returns the
- * message and calls nothing; a refusal from Slack is a failed post said in
- * words; a release without a channel is refused before Slack is asked
- * anything; the layout test posts the three candidates, each named, to the
- * channel it is given, and says which of them Slack refused.
+ * horizon. One chat.postMessage call carries the message, blocks and all,
+ * to the channel by name; a dry run returns the message and calls nothing;
+ * a refusal from Slack is a failed post said in words; a release without a
+ * channel is refused before Slack is asked anything.
  *
  *   node tests/slack_route.mjs
  */
@@ -26,7 +24,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // ---- the stand-in Slack
 const seen = [];
 let refuse = null;   // an error code to answer with instead of ok
-let refuseWhen = null;   // or a test of the message body that earns the refusal
 const body = (req) => new Promise((resolve) => {
   const parts = [];
   req.on("data", (c) => parts.push(c));
@@ -40,7 +37,7 @@ const slackStub = http.createServer(async (req, res) => {
   seen.push({ path: url.pathname, json, authorized: /^Bearer \S+$/.test(req.headers.authorization || "") });
   const answer = (o) => { res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify(o)); };
   if (url.pathname === "/api/chat.postMessage") {
-    if (refuse && (!refuseWhen || refuseWhen(json))) return answer({ ok: false, error: refuse });
+    if (refuse) return answer({ ok: false, error: refuse });
     return answer({ ok: true, ts: "1.1", channel: "C0SALESUPD1" });
   }
   res.writeHead(404); res.end("no");
@@ -72,7 +69,6 @@ const stop = () => { app.kill(); slackStub.close(); };
 process.on("exit", stop);
 
 const base = `http://127.0.0.1:${PORT}`;
-const slackStateNow = () => { try { return JSON.parse(fs.readFileSync(path.join(tmp, "slack.json"), "utf8")); } catch { return null; } };
 for (let i = 0; i < 40; i++) {
   try { if ((await fetch(`${base}/healthz`)).ok) break; } catch { /* still starting */ }
   await sleep(250);
@@ -117,9 +113,9 @@ check(seen[0].authorized, "the call carries the bot token");
 check(msg.channel === "#sales-updates", `to the channel by name: ${msg.channel}`);
 check(/^Julian Schnabel: \d+% sold through, [\d,]+ of [\d,]+ units$/.test(msg.text || ""), `the notification text: ${msg.text}`);
 const types = (msg.blocks || []).map((b) => b.type);
-check(types.join(" ") === "header context section table section", `the blocks: ${types.join(" ")}`);
-const table = (msg.blocks || []).find((b) => b.type === "table");
-check(table && table.rows.length === 4 && table.rows.every((r) => r.length === 3) && /^\d+ of 200$/.test(table.rows[1][1].text), "three products, three cells each: name, units of the edition, share");
+check(types.join(" ") === "header section data_table context", `the blocks: ${types.join(" ")}`);
+const table = (msg.blocks || []).find((b) => b.type === "data_table");
+check(table && table.rows.length === 5 && table.rows.every((r) => r.length === 6), "three works and a Total row, six cells each");
 check(msg.unfurl_links === false && msg.unfurl_media === false, "no unfurling");
 check(!/at close/.test(msg.text), "today's horizon says nothing about close");
 
@@ -128,41 +124,8 @@ seen.length = 0;
 r = await post(RELEASE, { horizon: "close", dryRun: true });
 d = await r.json().catch(() => ({}));
 check(r.ok && Array.isArray(d.blocks) && d.channel === "sales-updates", `dry run returns the message (${r.status})`);
-check(/: \d+% projected at close, /.test(d.text || "") && /^\*\d+% projected at close\*/.test((d.blocks.find((b) => b.type === "section") || { text: {} }).text.text || ""), `at close: ${d.text}`);
+check(/: \d+% projected at close, /.test(d.text || "") && d.blocks.find((b) => b.type === "data_table").rows[0][1].text === "Units at close", `at close: ${d.text}`);
 check(seen.length === 0, "a dry run calls nothing");
-
-// ---- a layout named in the body: the chart, as a dry run; an unknown one is the table
-seen.length = 0;
-r = await post(RELEASE, { horizon: "today", layout: "chart", dryRun: true });
-d = await r.json().catch(() => ({}));
-check(r.ok && d.layout === "chart" && d.blocks.some((b) => b.type === "data_visualization"), `the chart layout on request (${r.status} ${d.layout})`);
-r = await post(RELEASE, { horizon: "today", layout: "no_such", dryRun: true });
-d = await r.json().catch(() => ({}));
-check(r.ok && d.layout === "table" && d.blocks.some((b) => b.type === "table"), `an unknown layout is the table (${d.layout})`);
-check(seen.length === 0, "dry runs call nothing");
-
-// ---- the layout test: three named messages to the channel it is given, nothing recorded
-r = await post(RELEASE, { horizon: "today", layout: "test", channel: "#slack-test", dryRun: true });
-d = await r.json().catch(() => ({}));
-check(r.ok && d.channel === "slack-test" && d.test.map((t) => t.layout).join(" ") === "chart chart_table cards", `the test's dry run lists the three (${r.status} ${JSON.stringify(d).slice(0, 120)})`);
-check(d.test.every((t) => t.blocks[0].type === "context" && /Option [ABC]/.test(t.blocks[0].elements[0].text)), "each named as an option");
-seen.length = 0;
-const before = JSON.stringify(slackStateNow());
-r = await post(RELEASE, { horizon: "today", layout: "test", channel: "slack-test" });
-d = await r.json().catch(() => ({}));
-check(r.ok && d.ok === true && d.posted.join(" ") === "chart chart_table cards" && d.failed.length === 0 && !d.warning, `the test posts three (${r.status} ${JSON.stringify(d).slice(0, 160)})`);
-check(seen.length === 3 && seen.every((s) => s.path === "/api/chat.postMessage" && s.json.channel === "#slack-test"), `three messages to #slack-test: ${seen.map((s) => s.json && s.json.channel).join(" ")}`);
-check(seen.map((s) => s.json.blocks.map((b) => b.type).filter((t) => ["data_visualization", "data_table", "carousel"].includes(t)).join("+")).join(" ") === "data_visualization data_visualization+data_table carousel", `one layout each, in order: ${seen.map((s) => s.json.blocks.map((b) => b.type).join(",")).join(" | ")}`);
-check(JSON.stringify(slackStateNow()) === before, "a test records no post against the release");
-// one of them refused by Slack: the others still post, and the answer says which failed
-seen.length = 0;
-refuse = "invalid_blocks"; refuseWhen = (json) => JSON.stringify(json.blocks).includes('"data_table"');
-r = await post(RELEASE, { horizon: "today", layout: "test", channel: "slack-test" });
-d = await r.json().catch(() => ({}));
-check(r.ok && d.posted.join(" ") === "chart cards" && d.failed.length === 1 && d.failed[0].layout === "chart_table" && /chart_table did not post/.test(d.warning || ""), `a refused layout is named (${r.status} ${JSON.stringify(d).slice(0, 200)})`);
-refuse = null; refuseWhen = null;
-r = await post(RELEASE, { horizon: "today", layout: "test", channel: "bad name" });
-check(r.status === 400, `a channel name Slack could not take is refused (${r.status})`);
 
 // ---- a refusal from Slack is a failed post, said in words
 seen.length = 0;
