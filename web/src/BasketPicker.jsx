@@ -75,6 +75,10 @@ function liveProfile(rows) {
     entries: median(rows.map((r) => r.entries)),
     campaign_days: median(rows.map((r) => r.campaign_days)),
     units_per_buyer: positive(rows.map((r) => r.units_per_buyer)),
+    // what a paid unit cost the members' launches: the median over those with
+    // a reading once three have one (etl/baskets.py basket_profile)
+    cost_per_purchase: rows.filter((r) => r.cost_per_paid_unit > 0).length >= 3 ? positive(rows.map((r) => r.cost_per_paid_unit)) : 0,
+    n_costed: rows.filter((r) => r.cost_per_paid_unit > 0).length,
     share_units, share_sessions,
     units_by_group: Object.fromEntries(GROUPS.map((g) => [g, share_units[g] * total])),
     sessions_by_group: Object.fromEntries(GROUPS.map((g) => [g, share_sessions[g] * sessions])),

@@ -696,9 +696,15 @@ them (§4a.2). Their last values are in the repository history.
 Keep 0.8 as the planning constant; surface the per-channel table as diagnostics.
 
 **E. Cost per purchase (paid)**: quartiles over 22 hand-curated historical paid campaigns
-(mixing LE + TL): **Low €128.75 / Median €177 / High €291**. The Median is the default price of
-a paid unit; a release sets its own `cost_per_purchase` on the Target setting tab (Abdulnasser
-Gharem carries €291, the quartile it was planned at). Companion stats (static): ROI
+(mixing LE + TL): **Low €128.75 / Median €177 / High €291**. Since 2026-09-23 the price of a
+paid unit comes from the basket first: each panel launch's cost per paid unit is Meta's spend
+under its campaign code inside its window over the paid units the funnel attributed
+(`baskets.attach_paid_costs`, a reading from 5 paid units and some spend; the campaign code is
+the orders feed's, §2.4), and the basket's median over the members with a reading prices the
+paid budget once three have one (`profile.cost_per_purchase`, `n_costed`). The release's own
+`cost_per_purchase` on the Target setting tab comes before it (Abdulnasser Gharem carries
+€291, the quartile it was planned at), and the Median constant stands in when the basket has
+too few readings. `targets.paid.cost_per_purchase_source` says which of the three priced it. Companion stats (static): ROI
 2.2/3.4/6.9, paid % of units .11/.21/.31.
 
 Recomputation policy for the rebuild: recompute quartiles nightly from BigQuery over a
@@ -872,7 +878,7 @@ K            = edition_size / profile["units"]
 units[g]     = profile["units_by_group"][g]    × K        # sums to edition_size exactly
 sessions[g]  = profile["sessions_by_group"][g] × K
 entries[g]   = units[g] / 0.8                             # the eligible-entry → order rate, §4 D
-paid_budget  = profile["units_by_group"]["paid"] × cost_per_purchase × K    # the release's figure, else the panel median (§4 E)
+paid_budget  = profile["units_by_group"]["paid"] × cost_per_purchase × K    # the release's figure, else the basket's median cost per paid unit, else the panel constant (§4 E)
 ```
 
 `compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
@@ -1474,7 +1480,9 @@ actuals-only page omits it.
 | `benchmark.stretchUnits`, `stretchPct` | `target − benchmark` in units, and `K − 1` |
 | `asOf`, `completeThrough`, `asOfFraction` | the newest day in the feed (today, part-observed, while the feed is live), the last full day, and the share of the as-of day seen (1 on a full day and once the window has closed). The actuals run through `asOf`; the paid pacing rules, the run rates and `complete` read `completeThrough`; every reference by today is read at the share, so the page compares the day so far with the same share of the basket's day |
 | `benchmark.unitsByGroup`, `sessionsByGroup`, `convByGroup` | the per-group medians (conversion is held, so `convByGroup` is both benchmark and target) |
-| `benchmark.paidBudget` | benchmark paid units × median cost per purchase × K |
+| `benchmark.paidBudget` | benchmark paid units × the cost per purchase in force × K |
+| `benchmark.costPerPurchase`, `costPerPurchaseN` | the basket's median cost per paid unit (0 when fewer than three members have a reading, and the panel constant prices the budget) and the members with one (§4 E) |
+| `targets.paid.cost_per_purchase`, `cost_per_purchase_source` | the price a paid unit is planned at and where it came from: `release`, `basket` or `panel` |
 | `benchmark.channelsOff` | the display groups this release set aside (BENCHMARK_SPEC §4.3); their medians are zero above and the other channels carry the target |
 | `benchmark.unitsAll`, `sessionsAll`, `entriesAll`, `unitsP25All`, `unitsP75All`, `unitsByGroupAll`, `sessionsByGroupAll`, `convByGroupAll` | the basket's full medians before any channel was set aside, so the page can say what left and the browser can re-read the basket as the switches move |
 | `benchmark.privateRoomShare` | the basket's median private-room share of email units - descriptive; nothing derives a target from it since the split went (§3) |

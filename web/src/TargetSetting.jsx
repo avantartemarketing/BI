@@ -527,7 +527,10 @@ export default function TargetSetting({ snap, onSaved }) {
   const stretchUnits = bmUnits !== null && editionSize > 0 ? editionSize - bmUnits : null;
   const stretchPct = bmUnits ? stretchUnits / bmUnits : null;
   const paidShare = profile ? profile.share_sessions.paid : null;
-  const cpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : (Number((b.cost_per_purchase || {}).Median) || 0);
+  // the price of a paid unit: the release's own, else the basket's median cost
+  // per paid unit, else the panel's constant (shared/benchmarkModel.mjs)
+  const basketCpp = profile && Number(profile.cost_per_purchase) > 0 ? Number(profile.cost_per_purchase) : 0;
+  const cpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : basketCpp > 0 ? basketCpp : (Number((b.cost_per_purchase || {}).Median) || 0);
   const partialEdition = econ.edition_total > econ.edition_size && econ.edition_size > 0;
 
   /* ---- the products: a typed figure lands on the entry for that product
@@ -926,9 +929,12 @@ export default function TargetSetting({ snap, onSaved }) {
         <Card dot="#c96a3a" title="Paid assumptions">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "16px 20px" }}>
-            <Field label="Cost per paid unit (€)" tip="What a paid unit costs to buy: paid units × this is the paid budget. Blank = the panel's median.">
+            <Field label="Cost per paid unit (€)" tip={"What a paid unit costs to buy: paid units × this is the paid budget. Blank = the basket's median cost per paid unit "
+              + "(each launch's Meta spend over the paid units it sold), or the panel's median when fewer than three of the basket's launches have spend on file."}>
               <NumInput value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)}
-                placeholder={`${fmt(Number((b.cost_per_purchase || {}).Median) || 0)} · panel median`}
+                placeholder={basketCpp > 0
+                  ? `${fmt(basketCpp)} · basket median, ${profile.n_costed || 0} launches`
+                  : `${fmt(Number((b.cost_per_purchase || {}).Median) || 0)} · panel median`}
                 onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); setInp((prev) => ({ ...prev, cost_per_purchase: c === "" ? null : c })); }} />
             </Field>
             <Field label="Paid cannibalisation (%)" tip="The share of paid entries that would have come anyway. The ROI and the budget floor read profit net of it. Blank = the LE standard.">
