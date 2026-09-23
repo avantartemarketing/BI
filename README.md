@@ -489,28 +489,21 @@ allocate to. The logic is `shared/drawAudit.mjs`, tested by `tests/draw_audit.mj
 ## Posting sell-through to Slack
 
 The sell-through card has a **Post to Slack** button. It sends the card as a Block Kit
-message to the channel set for that release: the artist as the header, the works and the
-campaign day in small type under it, the headline in bold ("15% sold through, 888 of 6,100
-units"), the works, then the totals (paid, awaiting payment, expected from the draw, at
-close the units still to come) and the framing take-up in plain sentences. The message is
-composed on the server (`server/slack.js`) from the same snapshot the card reads, by the
-card's own rules, at the horizon the page is on. It replaced a picture of the card, which
-Slack fits to a fixed height whatever the file's size, and then a table with bars drawn in
-text, which wrapped on a phone.
-
-The works come in one of four layouts, `{layout}` in the button's request: `table` (the
-default: work, units of the edition, share, in Slack's `table` block), `chart` (Slack's own
-bar chart, the `data_visualization` block, one bar per work at its share of the edition;
-labels are cut to Slack's 20 characters), `chart_table` (the chart, then the sortable
-`data_table` with work, share, units and paid, its numbers sorting as numbers) and `cards`
-(a `carousel` of one card per work, ten at most). Without the draw feed every layout is the
-release as one table row. To try the three candidates in a channel, open the dashboard with
-`?slackLayout=test&slackChannel=slack-test` and press Post to Slack: the chart, the chart
-with the table and the cards go out as three messages, each headed "Option A", "B" or "C",
-to that channel, nothing is recorded against the release, and the button's hover names any
-layout Slack refused (a workspace without a block answers `invalid_blocks`). `?slackLayout=`
-with one layout name posts that layout to the release's own channel. The notification text
-is the headline alone.
+message to the channel set for that release: the artist as the header; the works' shared
+title and the campaign day on one line ("Brillo Box Collectable, day 20 of 27"); Slack's
+`data_table`, one row per work with its units today (at close, the projection), its target,
+how far along the target it is, its edition and its sell-through, and a bold **Total** row
+adding them up; then, in small type, the day the figures run to, the totals (paid, awaiting
+payment, expected from the draw, at close the units still to come) and the framing take-up
+in plain sentences. The figures in the table are numbers with their words, so a column
+sorts as numbers on a tap; the header row is plain text, as Slack requires. A work's target
+is the one typed for it on the Target setting tab when targets are set per product, else
+the release's target split by edition share, the rule the card's references follow. The
+message is composed on the server (`server/slack.js`) from the same snapshot the card
+reads, by the card's own rules, at the horizon the page is on. It replaced a picture of
+the card, which Slack fits to a fixed height whatever the file's size, then a table with
+bars drawn in text, which wrapped on a phone, then a plain `table` block; the data table
+was the one that read on a phone. The notification text is the headline alone.
 
 The framing line is the Framing card's own figure (docs 6.4): frames per print on the prints
 sold that a frame was on offer for, with the count behind it and the plan's rate beside it.

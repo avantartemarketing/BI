@@ -179,9 +179,10 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const bmBody = "The median of the matched basket - what launches like this one typically reach.";
 
   // paid.daily carries draw ENTRIES; the target, the projection and the benchmark
-  // are all in secured units, so the bar reads paid.unitsToDate - the same entries
-  // one drop-off later. Summing the daily entries here put the bar over its own
-  // target on every release with a drop-off.
+  // are all in secured units, so the bar reads paid.unitsToDate, the paid group's
+  // secured units - the figure the channels card's paid column shows, so the two
+  // cards cannot disagree. Summing the daily entries here put the bar over its
+  // own target on every release with a drop-off.
   const unitsNow = Math.round(paid.unitsToDate ?? 0);
   const unitsProj = complete ? unitsNow : (paid.unitProjected ?? unitsNow);
   const unitsFill = close ? unitsProj : unitsNow;

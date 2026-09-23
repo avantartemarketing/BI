@@ -283,6 +283,12 @@ The headline and the chart line are the **trailing-3-calendar-day** rolling
 version of this: a window with spend but no entries reads as ROI 0 (money out,
 nothing in), and CPE is treated as unknown until entries return.
 
+The units the Paid spend card draws are the paid group's secured units (§1), the
+same figure as its column on the channels card; the entries above are what the
+cost per entry and the ROI are priced on. The Paid ROI chart's bars are the full
+days plus the day so far, which is drawn but carries no ROI point, so the bars
+sum to the spend to date.
+
 The profit per unit and the budget share are the release's own, from the Target
 setting tab (§2): the products' figures weighted by their target units (AA's
 includes the framing uplift). The card shows Avant Arte's ROI by default and

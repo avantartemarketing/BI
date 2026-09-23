@@ -21,7 +21,7 @@
  * as levels for the second question only took the first one away, so the card
  * no longer follows the page toggle and carries no horizon badge. */
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, labelPx } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, labelPx, dayElapsed } from "../ui.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
 const LABEL_TODAY_PX = 38; // rendered width of "today" at 12px
@@ -129,19 +129,6 @@ function seriesFor(snap, sel) {
   };
 }
 
-/* One polyline over an index range, nulls skipped. Kept as a function so the plan and
- * benchmark curves can be cut at today and drawn twice without two spellings of the
- * same maths. */
-function pathOf(pts, get, from, to, x, y) {
-  const out = [];
-  for (let i = Math.max(0, from); i <= to && i < pts.length; i++) {
-    const v = get(pts[i]);
-    if (v === null || v === undefined) continue;
-    out.push((out.length ? "L" : "M") + x(i).toFixed(1) + "," + y(v).toFixed(1));
-  }
-  return out.length > 1 ? out.join(" ") : "";
-}
-
 /* The same polyline closed back along the baseline, so the reference can be a
  * filled area. Drawn from the first point rather than from x=0 because a series
  * that starts a day in should not be given a day it did not have. */
@@ -167,6 +154,10 @@ export default function Trajectory({ snap }) {
   const of = snap.of || 1;
   const day = Math.max(0, Math.min(snap.day ?? 0, of));
   const complete = !!snap.complete;
+  // where today sits on the campaign clock: the day so far, at the share of
+  // it seen (dayElapsed), which is where the hero reads its target by today;
+  // the whole day once the window has closed
+  const elapsed = complete ? day : Math.max(0, Math.min(dayElapsed(snap), of));
   const targeted = snap.targeted !== false;   // no targets: actual line only, unit axis
 
   const s = useMemo(() => seriesFor(snap, sel), [snap, sel]);
@@ -204,30 +195,51 @@ export default function Trajectory({ snap }) {
   const y = (v) => Y0 - (Math.max(0, v) / yTopV) * (Y0 - YTOP);
   const pctTop = (yy) => ((yy / Y0) * 100).toFixed(2) + "%";
 
-  const todayIdx = Math.min(day, N);
-  const todayFrac = todayIdx / N;
+  const todayIdx = Math.min(day, N);            // the day's own row, for the point read on it
+  const todayPos = Math.min(elapsed, N);        // the today line, at the share of the day seen
+  const todayFrac = todayPos / N;
   const nowVal = s.pts[todayIdx]?.actual ?? s.now;
 
+  // a series' value at a fractional index, read off the straight line between
+  // its neighbours, so a path can be cut at the today line rather than at the
+  // nearest whole day
+  const valueAt = (get, t) => {
+    const i = Math.floor(t), j = Math.min(i + 1, N), f = t - i;
+    const a = has(s.pts[i]) ? get(s.pts[i]) : null, b = has(s.pts[j]) ? get(s.pts[j]) : null;
+    if (!has(a)) return null;
+    if (!has(b) || f === 0) return a;
+    return a + (b - a) * f;
+  };
+  // one polyline over a range whose ends may fall inside a day, nulls skipped
+  const cutPath = (get, from, to) => {
+    const out = [];
+    const push = (t, v) => { if (has(v)) out.push((out.length ? "L" : "M") + x(t).toFixed(1) + "," + y(v).toFixed(1)); };
+    if (from !== Math.floor(from)) push(from, valueAt(get, from));
+    for (let i = Math.ceil(from); i <= Math.floor(to) && i < s.pts.length; i++) push(i, has(s.pts[i]) ? get(s.pts[i]) : null);
+    if (to !== Math.floor(to)) push(to, valueAt(get, to));
+    return out.length > 1 ? out.join(" ") : "";
+  };
+
   // paths, each in a past and a future half so the half that has not happened
-  // yet can drop back today
-  const seg = (fn, from, to) => fn(s.pts, from, to, x, y);
-  const targetLine = (pts, from, to, x, y) => pathOf(pts, planAt, from, to, x, y);
-  const bmLine = (pts, from, to, x, y) => (hasBm ? pathOf(pts, bmAt, from, to, x, y) : "");
-  const halves = { past: [0, todayIdx], future: [todayIdx, N], full: [0, N] };
+  // yet can drop back at the today line
+  const halves = { past: [0, todayPos], future: [todayPos, N], full: [0, N] };
   const draw = {};
   for (const [name, [a, b]] of Object.entries(halves)) {
-    draw[name] = { target: seg(targetLine, a, b), bm: seg(bmLine, a, b) };
+    draw[name] = { target: cutPath(planAt, a, b), bm: hasBm ? cutPath(bmAt, a, b) : "" };
   }
 
   let lastA = -1;
   s.pts.forEach((p, i) => {
     if (p.actual !== null && p.actual !== undefined) lastA = i;
   });
+  // the day so far is the last point, and it sits on the today line: at the
+  // share of the day seen, not at the whole of it
+  const actX = (i) => x(i === lastA && lastA === todayIdx && !complete ? todayPos : i);
   const actPath =
     lastA >= 1
       ? s.pts
           .slice(0, lastA + 1)
-          .map((p, i) => (i ? "L" : "M") + x(i).toFixed(1) + "," + y(p.actual ?? 0).toFixed(1))
+          .map((p, i) => (i ? "L" : "M") + actX(i).toFixed(1) + "," + y(p.actual ?? 0).toFixed(1))
           .join(" ")
       : "";
 
@@ -236,7 +248,7 @@ export default function Trajectory({ snap }) {
   const showProjSeg = targeted && !complete && day < of;
   let projPath = "";
   if (showProjSeg) {
-    const segs = ["M" + x(todayIdx).toFixed(1) + "," + y(nowVal).toFixed(1)];
+    const segs = ["M" + x(todayPos).toFixed(1) + "," + y(nowVal).toFixed(1)];
     s.pts.forEach((p, i) => {
       if (i > todayIdx && p.proj !== null && p.proj !== undefined) {
         segs.push("L" + x(i).toFixed(1) + "," + y(p.proj).toFixed(1));
@@ -246,10 +258,12 @@ export default function Trajectory({ snap }) {
     projPath = segs.join(" ");
   }
 
-  // the readings taken on the today line
-  const planToday = s.pts[todayIdx]?.plan ?? s.exp;
-  const bmTodayPt = s.pts[todayIdx]?.bm;
-  const bmToday = hasBm ? (bmTodayPt !== null && bmTodayPt !== undefined ? bmTodayPt : s.bmExp) : null;
+  // the readings taken on the today line: the target and the benchmark by
+  // today at the share of the day seen (exp, bmExp) - the hero's expectedToday
+  // and benchmarkToday, summed the same way - rather than the whole day's row,
+  // which on a morning reading is hours the release has not had yet
+  const planToday = s.exp;
+  const bmToday = hasBm ? s.bmExp : null;
   const showToday = targeted;
 
   const projPct = targeted && s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
@@ -322,12 +336,12 @@ export default function Trajectory({ snap }) {
     };
     const curves = [...polylines((p) => p.actual, 0, lastA), ...polylines(planAt, 0, N), ...(hasBm ? polylines(bmAt, 0, N) : [])];
     if (showProjSeg) {
-      const pr = [{ x: px(todayIdx), y: py(nowVal) }];
+      const pr = [{ x: px(todayPos), y: py(nowVal) }];
       s.pts.forEach((p, i) => { if (i > todayIdx && has(p.proj)) pr.push({ x: px(i), y: py(p.proj) }); });
       if (pr.length === 1) pr.push({ x: plotW, y: py(s.proj) });
       curves.push(pr);
     }
-    const ax = px(todayIdx), ayNow = py(nowVal), ayEnd = py(complete ? nowVal : s.proj);
+    const ax = px(todayPos), ayNow = py(nowVal), ayEnd = py(complete ? nowVal : s.proj);
     const font = (weight) => `${weight} 12px ${pageFont()}`;
     const blocks = [
       { x0: ax - 5, y0: ayNow - 5, x1: ax + 5, y1: ayNow + 5 },   // the today dot

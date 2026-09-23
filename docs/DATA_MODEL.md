@@ -1035,7 +1035,8 @@ budget over those days, and the paid block publishes `paidStartDays` and `paidDa
 cards (`paidDayFrac` in `web/src/ui.jsx`). Not the panel's historic paid shape, which starts
 near zero and told the Channels vs targets card there was nothing to expect on days when the
 Paid spend card, reading the even plan, showed the units bought. The organic groups keep their
-shape curves. (2026-09-23.)
+shape curves. The waterfall's Paid spend step (§9) measures spend to date against the same even
+share of the budget. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
@@ -1207,18 +1208,17 @@ Paid, drafts, the draw winners the entries imply and (at close) the units still 
 four tints of the page's blue, deepest to palest as the units get less certain; nothing on
 the card is hatched, and demand past a product's edition is the winners' own tint carrying on
 where the paler room behind the bar stops. `Post to Slack` sends those rows as a Slack message
-composed on the server from the same snapshot (`server/slack.js`): the release as a header;
-the headline with the campaign day, and under it the framing take-up (`framing.rate`, the
-Framing card's frames per print, §6.4, with the count behind it and the plan beside it; the
-entrants' rate before a sale; the plan alone on a snapshot without the block; nothing where
-no print has a frame on offer); the works, as a `table` block (the name, its units of the
-edition, its share, with no bar, because a bar drawn in text wrapped on a phone) or, by the
-request's `layout`, as Slack's own bar chart (`data_visualization`, one bar per work at its
-share of the edition), the chart with a sortable `data_table` (work, share, units, paid), or
-a `carousel` of cards; and the release's totals (paid, awaiting payment, expected from the
-draw, at close the units still to come) with the framing line as plain sentences. The
-figures are computed once, on the server, at the horizon the page is on; `layout: "test"`
-posts the three non-table layouts to a named channel as a look, recording nothing.
+composed on the server from the same snapshot (`server/slack.js`): the artist as a header;
+the works' shared title and the campaign day on one line; Slack's `data_table`, one row per
+work with its units (today, or projected at close), its target (typed per product on the
+Target setting tab when targets are set that way, else the release's target split by edition
+share, the rule the references follow), how far along the target it is, its edition and its
+sell-through, and a bold Total row adding them up; then, in small type, the day the figures
+run to, the totals (paid, awaiting payment, expected from the draw, at close the units still
+to come) and the framing take-up (`framing.rate`, the Framing card's frames per print, §6.4,
+with the count behind it and the plan beside it; the entrants' rate before a sale; the plan
+alone on a snapshot without the block; nothing where no print has a frame on offer) as plain
+sentences. The figures are computed once, on the server, at the horizon the page is on.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
 pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven
@@ -1332,6 +1332,15 @@ spend (`1 − aa_budget_share`). On a deal where the artist carries no spend (a 
 figures are read with sit on the block as `cannibalisation` and `dropOff`, so the Paid ROI card
 can show its working in the ? popup. The card reads AA by default and has an AA / Artist switch
 (kept per browser); the spend recommendation, its ROI floor and the pacing rules stay AA's.
+
+**What the paid block publishes in units and days.** `unitsToDate` and `unitProjected` are the
+paid group's secured units (§6.3½: units sold + 0.8 × unconverted entries, every paid channel),
+the paid column of the channels card, so the Paid spend card's bar and that column are one
+figure; `entriesToDate` and `entriesProjected` stay the paid campaign's draw entries, the
+quantity the CPE and the ROI are priced on. `daily[]` runs over the full days the rules read;
+on a live day the as-of day so far rides at the end as one more row marked `partial: true`
+(its spend and entries, no ROI point), so the Paid ROI chart's bars sum to `spendToDate` and
+the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip that row.
 
 **Budget to sell out** (the sizing decision). The workbook nets off a manual
 `organic_topup` estimate; the dashboard automates it with the shape-following

@@ -81,11 +81,19 @@ check(B["hero"]["expectedToday"] < A["hero"]["expectedToday"] < C["hero"]["expec
       f"target by today sits between yesterday's and the end of today: {B['hero']['expectedToday']} < {A['hero']['expectedToday']} < {C['hero']['expectedToday']}")
 check(B["hero"]["benchmarkToday"] < A["hero"]["benchmarkToday"] < C["hero"]["benchmarkToday"], "benchmark by today between")
 pd_ = A["paid"]
-check(pd_["daily"][-1]["date"] == (TODAY - timedelta(days=1)).isoformat(), f"paid rules see full days only: {pd_['daily'][-1]['date']}")
+full_rows = [r for r in pd_["daily"] if not r.get("partial")]
+check(full_rows[-1]["date"] == (TODAY - timedelta(days=1)).isoformat(), f"paid rules see full days only: {full_rows[-1]['date']}")
+check(pd_["daily"][-1]["date"] == TODAY.isoformat() and pd_["daily"][-1].get("partial") is True and pd_["daily"][-1]["roi"] is None,
+      f"the part day rides at the end of the series, marked and without an ROI point: {pd_['daily'][-1]}")
+check(abs(sum(r["spend"] for r in pd_["daily"]) - pd_["spendToDate"]) < 0.01,
+      f"the series sums to the spend to date: {sum(r['spend'] for r in pd_['daily'])} vs {pd_['spendToDate']}")
+check(all(not r.get("partial") for r in B["paid"]["daily"]) and all(not r.get("partial") for r in C["paid"]["daily"]), "a full day is not marked partial")
 check(abs(pd_["spendToDate"] - (B["paid"]["spendToDate"] + 200.0)) < 0.01, f"spend to date carries the part day: {pd_['spendToDate']} vs {B['paid']['spendToDate']}")
 check(pd_["budget"]["current"] == 500.0, f"current daily is yesterday's full day: {pd_['budget']['current']}")
 check(A["paid"]["budget"]["daysLeft"] == (launch - (TODAY - timedelta(days=1))).days, f"days left counts today: {A['paid']['budget']['daysLeft']}")
 ch = {c["key"]: c for c in A["channels"]}
+check(A["paid"]["unitsToDate"] == ch["paid"]["now"] and A["paid"]["unitProjected"] == ch["paid"]["proj"],
+      f"the paid card's units are the channels card's paid column: {A['paid']['unitsToDate']} vs {ch['paid']['now']}")
 last_actual = [r for r in ch["aa_email"]["daily"] if r["actual"] is not None][-1]
 check(last_actual["date"] == TODAY.isoformat(), f"trajectory actual runs through today: {last_actual['date']}")
 today_row = next(r for r in ch["aa_email"]["daily"] if r["date"] == TODAY.isoformat())
@@ -107,7 +115,11 @@ atD = frame(TODAY, 0.4, rel=rec["release_name"], ann=announce, lau=launch, start
 D = build.build_actuals(rec, atD, spend_frame(TODAY, 0.4), emails, content, TODAY, None, full_through=TODAY - timedelta(days=1), seen=0.4375)
 build.check_snapshot(D)
 check(D["asOf"] == TODAY.isoformat() and D["completeThrough"] == (TODAY - timedelta(days=1)).isoformat() and D["asOfFraction"] == 0.4375 and D["day"] == 22, f"actuals dates {D['asOf']} {D['completeThrough']} {D['day']}")
-check(D["paid"]["daily"][-1]["date"] == (TODAY - timedelta(days=1)).isoformat(), "actuals paid daily on full days")
+check([r for r in D["paid"]["daily"] if not r.get("partial")][-1]["date"] == (TODAY - timedelta(days=1)).isoformat()
+      and D["paid"]["daily"][-1].get("partial") is True
+      and abs(sum(r["spend"] for r in D["paid"]["daily"]) - D["paid"]["spendToDate"]) < 0.01,
+      "actuals paid daily: the full days, then the part day, summing to the spend to date")
+check(D["paid"]["unitsToDate"] == next(c for c in D["channels"] if c["key"] == "paid")["now"], "actuals: the paid card's units are the paid channel's")
 print(f"D: day {D['day']}/{D['of']} now={D['hero']['now']} complete={D['complete']}")
 
 # launch day, part-observed: not complete until the day is full
