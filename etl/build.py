@@ -3119,6 +3119,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     hero_bm = hero_bm_today = 0.0        # benchmark at close, benchmark by today
     funnel_by_group = {}
     e2o = b["eligible_entry_to_order"]
+    # Paid follows spend, and spend is planned evenly over the campaign (the
+    # budget over its days), so the paid plan by any day is the even share of
+    # the target - not the panel's historic paid shape, which starts near zero
+    # (paid campaigns used to begin after the announce) and told the channel
+    # card there was nothing to expect on days when the paid card, reading the
+    # same even plan, showed the units bought. One plan, three cards.
+    paid_pace = lambda frac: min(max(float(frac), 0.0), 1.0)   # noqa: E731
     for g, spec in DISPLAY_GROUPS.items():
         sub = by_group_day[by_group_day["group"] == g].set_index("event_date")
         # SECURED UNITS - the unified page currency (docs §6.4):
@@ -3135,7 +3142,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             cum_nc += float(row["entries_no_conv"]) if row is not None else 0.0
             cum_s += float(row["sessions"]) if row is not None else 0.0
             p = pdsa_for(release, d)
-            cv = curve_value(rcurves, g, "units", p)
+            cv = paid_pace(p) if g == "paid" else curve_value(rcurves, g, "units", p)
             # in benchmark mode the plan IS the benchmark lifted by K, taken
             # off the one curve, so the two lines the trajectory draws are in
             # the K ratio on every day rather than only in total (§4.1)
@@ -3147,10 +3154,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             if bench:
                 row_out["bm"] = round(bm_day, 2)
             daily.append(row_out)
-        w = curve_value(rcurves, g, "units", pdsa_today)   # share of campaign observed, per historic shape
+        # the share of the campaign observed: per the group's historic shape,
+        # and for paid the even daily budget's share (see paid_pace above)
+        w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, "units", pdsa_today)
         bm_exp = bm_tgt * w                                # benchmark pace by today
         exp = bm_exp * k if bench else tgt * w
-        sess_w = curve_value(rcurves, g, "sessions", pdsa_today)
+        sess_w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, "sessions", pdsa_today)
         sess_exp = sess_tgt * sess_w
         now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
         # Forward projection (docs §5.4): the remaining volume follows this channel's

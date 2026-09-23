@@ -272,6 +272,10 @@ target_plan[g][d]    = benchmark_plan[g][d] * K
 So target and benchmark stay in exactly the K ratio on every day — which is what makes the
 even uplift legible on the trajectory.
 
+Paid is the exception to the curves: its plan by any day is the even share of its target
+(days elapsed over campaign days), since paid follows spend and the budget is planned evenly;
+the channel card, the trajectory's paid line and the paid spend card read that one plan.
+
 ### 4.3 Channels not in plan
 
 A basket cannot know that this release will not run paid, or that the artist has no channels
