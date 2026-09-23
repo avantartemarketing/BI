@@ -38,9 +38,10 @@
  * a product for in the paid key's, and the editions are checked where they
  * are typed, on the Target setting tab.
  *
- * "Post to Slack" sends the card as a Slack message: a table of the rows
- * with bars drawn in text, composed on the server from the same snapshot by
- * the same rules (server/slack.js), at the horizon this page is on.
+ * "Post to Slack" sends the card as a Slack message: a table of the rows,
+ * figures only so it reads on a phone, composed on the server from the same
+ * snapshot by the same rules (server/slack.js), at the horizon this page is
+ * on.
  *
  * No target and no benchmark on this card, by decision: both are on the hero
  * and the channels, and here they only crowded the reading. Each row is the

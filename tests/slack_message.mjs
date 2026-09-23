@@ -1,5 +1,6 @@
-/* The Slack sell-through update as Block Kit, composed from a synthetic
- * snapshot and the real ones on disk, checked block by block.
+/* The Slack sell-through update as Block Kit - a three-column table of the
+ * products, figures only - composed from a synthetic snapshot and the real
+ * ones on disk, checked block by block.
  *   node tests/slack_message.mjs [--print]   (--print shows the real ones as text) */
 import fs from "node:fs";
 import path from "node:path";
@@ -8,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const here = path.dirname(fileURLToPath(import.meta.url));
-const { composeSellThroughBlocks, shortNames, bar, BAR_WIDTH, GLYPH } = require(path.join(here, "..", "server", "slack.js"));
+const { composeSellThroughBlocks, shortNames } = require(path.join(here, "..", "server", "slack.js"));
 const print = process.argv.includes("--print");
 let failed = 0;
 const check = (cond, msg) => { if (!cond) { failed += 1; console.log("FAIL " + msg); } };
@@ -33,21 +34,6 @@ check(JSON.stringify(shortNames(["Castles Burning (For Neil Young) I", "Castles 
 check(JSON.stringify(shortNames(["Red", "Blue"])) === JSON.stringify(["Red", "Blue"]), "short unrelated names stay");
 check(JSON.stringify(shortNames(["Only one"])) === JSON.stringify(["Only one"]), "a single name stays");
 
-// the bar: BAR_WIDTH glyphs to the edition, the fill rounded as a running
-// total, the room a rule; something spoken for always shows
-const seg = (paid, drafts, winners, future = 0) => [
-  { v: paid, glyph: GLYPH.paid }, { v: drafts, glyph: GLYPH.drafts }, { v: winners, glyph: GLYPH.winners }, { v: future, glyph: GLYPH.future }];
-check(BAR_WIDTH === 25, `the bar is 25 wide, not ${BAR_WIDTH}`);
-check(bar(100, seg(40, 4, 16)) === "██████████▓▒▒▒▒──────────", `a 60% bar: ${bar(100, seg(40, 4, 16))}`);
-check(bar(100, seg(40, 4, 16, 20)) === "██████████▓▒▒▒▒░░░░░─────", `the same at close: ${bar(100, seg(40, 4, 16, 20))}`);
-check(bar(1000, seg(1, 0, 0)) === "█" + "─".repeat(24), `one unit of a thousand still shows: ${bar(1000, seg(1, 0, 0))}`);
-check(bar(100, seg(120, 0, 0)) === "█".repeat(25), "demand past the edition fills the bar and stops");
-check(bar(100, seg(0, 0, 0)) === "─".repeat(25), "nothing spoken for is the rule alone");
-check(bar(0, seg(5, 0, 0)) === "" && bar(null, seg(5, 0, 0)) === "", "no edition, no bar");
-for (const [e, p] of [[7, 3], [333, 100], [1000, 999], [60, 59.6]]) {
-  check([...bar(e, seg(p, 0.2, 0.3))].length === 25, `every bar is 25 glyphs (${p} of ${e})`);
-}
-
 // a synthetic release, mid-campaign
 const snap = {
   id: "test_le_26", releaseName: "Test Artist · Multiple · 2026 Q3", asOf: "2026-09-17", completeThrough: "2026-09-17", day: 11, of: 24,
@@ -70,26 +56,26 @@ const today = composeSellThroughBlocks(snap, { today: "2026-09-17" });
   const lines = section.text.text.split("\n");
   check(lines[0] === "*Sell-through by product · 21% of 600 units* · day 11 of 24 · data through 17 Sep", `headline: ${lines[0]}`);
   check(lines[1] === "Framing conversion *43%* · 40 frames on 94 prints sold · plan 35%", `framing from the orders: ${lines[1]}`);
-  check(table.column_settings.length === 4 && table.column_settings[3].align === "right", "four columns, the figures right-aligned");
-  check(table.rows.length === 4 && table.rows[0].map(cellText).join("|") === "Product| |Units|Sold", `the header row: ${table.rows[0].map(cellText).join("|")}`);
+  check(table.column_settings.length === 3 && table.column_settings[0].is_wrapped === true && table.column_settings[2].align === "right",
+    "three columns: the name may wrap on a phone, the figures sit right");
+  check(table.rows.length === 4 && table.rows[0].map(cellText).join("|") === "Product|Units|Sold", `the header row: ${table.rows[0].map(cellText).join("|")}`);
   const row = table.rows[1].map(cellText);
   check(row[0] === "I" && table.rows[3].map(cellText)[0] === "III", `short names in the rows: ${row[0]}`);
-  check(row[1] === "██████▒▒" + "─".repeat(17), `the first bar: ${row[1]}`);
-  check(row[2] === "62 of 200" && row[3] === "31%", `units and share: ${row[2]} ${row[3]}`);
-  check(table.rows[1][3].type === "rich_text" && table.rows[1][0].type === "raw_text", "the share is bold, the name plain");
-  check(contexts.length === 1 && contexts[0] === "█ Paid *94*   ▓ Drafts *5*   ▒ Draw winners (estimate) *27*", `the key: ${contexts[0]}`);
+  check(row.length === 3 && row[1] === "62 of 200" && row[2] === "31%", `units and share, nothing else: ${row.join(" | ")}`);
+  check(table.rows[1][2].type === "rich_text" && table.rows[1][0].type === "raw_text", "the share is bold, the name plain");
+  check(contexts.length === 1 && contexts[0] === "Paid *94* · Drafts *5* · Draw winners (estimate) *27*", `the totals: ${contexts[0]}`);
   check(today.text === "Test Artist · Multiple · 2026 Q3: sell-through 21% of 600 units", `notification text: ${today.text}`);
   check(!JSON.stringify(today).includes("\u2014"), "no em dash");
 }
 
-// at close: the projection's share, the units still to come in the bars and the key
+// at close: the projection's share, the units still to come in the rows and the totals
 const close = composeSellThroughBlocks(snap, { horizon: "close", today: "2026-09-17" });
 {
   const { section, table, contexts } = parts(close.blocks);
   check(section.text.text.startsWith("*Sell-through by product · 31% of 600 units* · at close · day 11"), `close headline: ${section.text.text.split("\n")[0]}`);
   const row = table.rows[1].map(cellText);
-  check(row[1] === "██████▒▒░░" + "─".repeat(15) && row[2] === "82 of 200" && row[3] === "41%", `close row (82.4 of 200 is 10.3 glyphs, so 10): ${row.join(" ")}`);
-  check(contexts[0].endsWith("░ Still to come *60*"), `close key: ${contexts[0]}`);
+  check(row[1] === "82 of 200" && row[2] === "41%", `close row: ${row.join(" | ")}`);
+  check(contexts[0].endsWith(" · Still to come *60*"), `close totals: ${contexts[0]}`);
   check(close.text.endsWith(" at close"), `close text: ${close.text}`);
 }
 
@@ -130,16 +116,16 @@ const close = composeSellThroughBlocks(snap, { horizon: "close", today: "2026-09
   const { section, table, contexts } = parts(bare.blocks);
   check(section.text.text.startsWith("*Sell-through by product · 22% of 100 units*"), `bare headline: ${section.text.text}`);
   const row = table.rows[1].map(cellText);
-  check(table.rows.length === 2 && row[0] === "X · Y · 2026 Q1" && row[1] === "███▓▒▒" + "─".repeat(19) && row[2] === "22 of 100" && row[3] === "22%", `bare row: ${row.join(" ")}`);
+  check(table.rows.length === 2 && row[0] === "X · Y · 2026 Q1" && row[1] === "22 of 100" && row[2] === "22%", `bare row: ${row.join(" | ")}`);
   check(contexts[1] === "_Incomplete data: products_", `bare note: ${contexts[1]}`);
-  // and without an edition at all: units, no share, no bar
+  // and without an edition at all: units, no share
   const units = composeSellThroughBlocks({ id: "x", releaseName: "X", asOf: "2026-09-17", day: 3, of: 20,
     sellthrough: { sold: 12, drafts: 0, soldPredicted: 8, incomplete: ["products"] } }, { today: "2026-09-17" });
   const urow = parts(units.blocks).table.rows[1].map(cellText);
-  check(parts(units.blocks).section.text.text.startsWith("*Sell-through by product · 20 units*") && urow[1] === " " && urow[2] === "20" && urow[3] === "-", `units only: ${urow.join(" ")}`);
+  check(parts(units.blocks).section.text.text.startsWith("*Sell-through by product · 20 units*") && urow[1] === "20" && urow[2] === "-", `units only: ${urow.join(" | ")}`);
 }
 
-// the real snapshots on disk, if any: they must compose, every bar the same width
+// the real snapshots on disk, if any: they must compose, three cells a row, figures only
 const dir = path.join(here, "..", "data", "app", "releases");
 if (fs.existsSync(dir)) {
   for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".json"))) {
@@ -148,7 +134,7 @@ if (fs.existsSync(dir)) {
       const m = composeSellThroughBlocks(s, { horizon });
       const { table } = parts(m.blocks);
       check(table && table.rows.length >= 2, `${f} composes at ${horizon}`);
-      check(table.rows.slice(1).every((r) => [...cellText(r[1])].length === 25 || cellText(r[1]) === " "), `${f}: every bar 25 wide at ${horizon}`);
+      check(table.rows.every((r) => r.length === 3) && !/[█▓▒░─]/.test(JSON.stringify(m.blocks)), `${f}: three cells a row and no bar glyphs at ${horizon}`);
       check(JSON.stringify(m.blocks).length < 10000, `${f}: under Slack's size limit at ${horizon}`);
     }
     if (print && /schnabel|warhol/.test(f)) console.log("\n" + asText(composeSellThroughBlocks(s)));

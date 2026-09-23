@@ -485,19 +485,15 @@ allocate to. The logic is `shared/drawAudit.mjs`, tested by `tests/draw_audit.mj
 
 The sell-through card has a **Post to Slack** button. It sends the card as a Slack message
 to the channel set for that release: the release as a header, the card's headline with the
-campaign day and the framing take-up under it, a table of the products (name, a bar drawn in
-text, units of the edition, share sold) and the key. The message is composed on the server
+campaign day and the framing take-up under it, a table of the products (name, units of the
+edition, share sold) and the release's totals (paid, drafts, draw winners, at close the
+units still to come) in a line under it. The message is composed on the server
 (`server/slack.js`) from the same snapshot the card reads, by the card's own rules, at the
 horizon the page is on; the browser sends only `{horizon}`. It replaced a picture of the
-card: Slack fits an inline picture to a fixed height whatever the file's size, so it read
-small, while a message is set in Slack's own type at Slack's own size.
-
-The bars are text: 25 glyphs to the edition, the fill in three weights (`█` paid, `▓`
-drafts, `▒` the draw winners the entries imply) and at close a fourth (`░` still to come),
-the room left a rule (`─`), so every bar is the same length and reads to 100%. The fill is
-rounded once as a running total, so the segments never drift from their sum, and a unit of
-a thousand still shows one glyph. The table is Slack's `table` block, which needs a current
-Slack workspace; the notification text is the headline alone.
+card, which Slack fits to a fixed height whatever the file's size, and then a table with
+bars drawn in text, which wrapped on a phone: figures only, three columns, and the name
+column may wrap so the figures never do. The table is Slack's `table` block, which needs a
+current Slack workspace; the notification text is the headline alone.
 
 The framing line is the Framing card's own figure (docs 6.4): frames per print on the prints
 sold that a frame was on offer for, with the count behind it and the plan's rate beside it.
@@ -571,8 +567,8 @@ whichever has the most room. Products come from the event feed's draws
 order rate can also be set per release; a product nobody has named takes its Shopify title
 and, where the title matches an Airtable record, its edition. Until the feed has run once after
 a deploy the card shows the release as one row and says so. **Post to Slack** in the card's
-head sends the card as a message, these rows as a table with bars drawn in text and the
-framing take-up above them, to the release's channel (see "Posting sell-through to Slack").
+head sends the card as a message, these rows as a table of figures with the framing take-up
+above them, to the release's channel (see "Posting sell-through to Slack").
 
 **Framing** (docs §6.4) is frames per print on the prints a frame was on offer for: the
 headline is the prints sold that went out framed, against the plan's frame conversion, and

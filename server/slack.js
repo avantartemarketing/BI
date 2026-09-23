@@ -1,13 +1,15 @@
 /* Sell-through updates to Slack, on demand.
  *
  * The sell-through card carries a "Post to Slack" button; pressing it sends
- * the card as a Slack message - a Block Kit table of the products, each with
- * a bar drawn in text, under the release's headline - to the channel set for
- * that release on its Target setting tab. The message is composed here from
- * the snapshot the page is showing, by the card's own rules (docs 6.3), so
- * what lands in Slack is what the card says, set in Slack's own type at
- * Slack's own size. It replaced a picture of the card, which Slack shrank to
- * a fixed height whatever its size.
+ * the card as a Slack message - a Block Kit table of the products, three
+ * columns (the product, its units of the edition, its share), under the
+ * release's headline and the framing take-up - to the channel set for that
+ * release on its Target setting tab. The message is composed here from the
+ * snapshot the page is showing, by the card's own rules (docs 6.3), so what
+ * lands in Slack is what the card says, set in Slack's own type at Slack's
+ * own size. It replaced a picture of the card, which Slack shrank to a
+ * fixed height whatever its size, and then a table with bars drawn in text,
+ * which a phone wrapped. Figures only, so it reads on a phone.
  *
  * Channel per release lives in a small document of its own (SLACK_STATE_PATH,
  * default data/slack.json; put it on the persistent disk like the layout), so
@@ -124,42 +126,17 @@ function shortNames(names) {
   return names.map((n) => n.slice(p.length).replace(/^[\s(]+|[\s)]+$/g, "") || n);
 }
 
-/* The bar for one product, in text: BAR_WIDTH glyphs to the edition, the fill
- * in three weights (paid, drafts, the draw winners the entries imply) and at
- * close a fourth for the units still to come; the room left is a rule through
- * the middle. All five glyphs are one family of the character set, which a
- * font supplies at one width, so every bar is the same length. The fill is
- * rounded once as a running total, so the segments never drift from their
- * sum and the rule always completes the bar; something spoken for always
- * shows, even a unit of a thousand. */
-const BAR_WIDTH = 25;
-const GLYPH = { paid: "█", drafts: "▓", winners: "▒", future: "░", room: "─" };
-function bar(edition, parts) {
-  if (!(edition > 0)) return "";
-  let at = 0, drawn = 0, out = "";
-  for (const part of parts) {
-    at += Math.max(0, num(part.v));
-    const to = Math.min(BAR_WIDTH, Math.round((at / edition) * BAR_WIDTH));
-    if (to > drawn) { out += part.glyph.repeat(to - drawn); drawn = to; }
-  }
-  if (drawn === 0) {
-    const first = parts.find((part) => num(part.v) > 0);
-    if (first) { out = first.glyph; drawn = 1; }
-  }
-  return out + GLYPH.room.repeat(Math.max(0, BAR_WIDTH - drawn));
-}
-
 const bold = (t) => ({ type: "rich_text", elements: [{ type: "rich_text_section", elements: [{ type: "text", text: String(t), style: { bold: true } }] }] });
 const raw = (t) => ({ type: "raw_text", text: String(t) });
 
-/* The update as Block Kit: the release as a header, the card's headline and
- * the campaign day as a section, the products as a table (name, bar, units
- * of the edition, the share), the key as a context line, and a note while a
- * feed is missing. `horizon` is the page's toggle: "close" reads the
- * projection, as the card does. The header carries the day the update goes
- * out (`today`, for the tests), with the campaign day moved on from the
- * snapshot's. Returns the blocks and the one-line text Slack shows in
- * notifications. */
+/* The update as Block Kit: the release as a header, the card's headline,
+ * the campaign day and the framing take-up as a section, the products as a
+ * table (name, units of the edition, the share), the release's totals as a
+ * context line, and a note while a feed is missing. `horizon` is the page's
+ * toggle: "close" reads the projection, as the card does. The section
+ * carries the day the update goes out (`today`, for the tests), with the
+ * campaign day moved on from the snapshot's. Returns the blocks and the
+ * one-line text Slack shows in notifications. */
 function composeSellThroughBlocks(snap, { horizon = "today", today } = {}) {
   const st = (snap && snap.sellthrough) || {};
   const close = horizon === "close";
@@ -218,24 +195,20 @@ function composeSellThroughBlocks(snap, { horizon = "today", today } = {}) {
   const rows = rowsIn.map((r) => {
     const units = r.paid + r.drafts + r.winners + r.future;
     const pct = r.edition ? (finite(r.pct) ? num(r.pct) : Math.min(units / r.edition, 1)) : null;
-    const fill = bar(r.edition, [
-      { v: r.paid, glyph: GLYPH.paid }, { v: r.drafts, glyph: GLYPH.drafts },
-      { v: r.winners, glyph: GLYPH.winners }, { v: r.future, glyph: GLYPH.future },
-    ]);
     return [
       raw(r.name),
-      raw(fill || " "),
       raw(r.edition ? `${fmt(units)} of ${fmt(r.edition)}` : fmt(units)),
       bold(pct === null ? "-" : `${Math.round(pct * 100)}%`),
     ];
   });
 
+  // the release's totals, the parts the units column adds up
   const key = [
-    `${GLYPH.paid} Paid *${fmt(sold)}*`,
-    drafts !== null && drafts > 0 ? `${GLYPH.drafts} Drafts *${fmt(drafts)}*` : null,
-    `${GLYPH.winners} Draw winners (estimate) *${fmt(inHand)}*`,
-    close && future > 0 ? `${GLYPH.future} Still to come *${fmt(future)}*` : null,
-  ].filter(Boolean).join("   ");
+    `Paid *${fmt(sold)}*`,
+    drafts !== null && drafts > 0 ? `Drafts *${fmt(drafts)}*` : null,
+    `Draw winners (estimate) *${fmt(inHand)}*`,
+    close && future > 0 ? `Still to come *${fmt(future)}*` : null,
+  ].filter(Boolean).join(" · ");
   const incomplete = Array.isArray(st.incomplete) ? st.incomplete : [];
   const releaseName = String(snap.releaseName || snap.id || "Release");
 
@@ -244,8 +217,8 @@ function composeSellThroughBlocks(snap, { horizon = "today", today } = {}) {
     { type: "section", text: { type: "mrkdwn", text:
       `*Sell-through by product · ${headline}*${close ? " · at close" : ""}${dayLine ? ` · ${dayLine}` : ""}${framing ? `\n${framing}` : ""}` } },
     { type: "table",
-      column_settings: [{ align: "left" }, { align: "left" }, { align: "right" }, { align: "right" }],
-      rows: [[bold("Product"), raw(" "), bold("Units"), bold("Sold"), ], ...rows] },
+      column_settings: [{ align: "left", is_wrapped: true }, { align: "right" }, { align: "right" }],
+      rows: [[bold("Product"), bold("Units"), bold("Sold")], ...rows] },
     { type: "context", elements: [{ type: "mrkdwn", text: key }] },
   ];
   if (incomplete.length) blocks.push({ type: "context", elements: [{ type: "mrkdwn", text: `_Incomplete data: ${incomplete.join(", ")}_` }] });
@@ -288,6 +261,6 @@ async function postMessage(channel, text, blocks = null) {
 }
 
 module.exports = {
-  stateFor, setChannel, recordPost, stateWarning, composeSellThroughBlocks, shortNames, bar, BAR_WIDTH, GLYPH,
+  stateFor, setChannel, recordPost, stateWarning, composeSellThroughBlocks, shortNames,
   postMessage, STATE_PATH,
 };

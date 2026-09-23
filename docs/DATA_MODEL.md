@@ -1187,10 +1187,10 @@ composed on the server from the same snapshot (`server/slack.js`): the release a
 the headline with the campaign day, and under it the framing take-up (`framing.rate`, the
 Framing card's frames per print, §6.4, with the count behind it and the plan beside it; the
 entrants' rate before a sale; the plan alone on a snapshot without the block; nothing where
-no print has a frame on offer); a `table` block of the products, each with its bar drawn in
-text - 25 glyphs to the edition, `█ ▓ ▒` for the three weights, `░` at close for the units
-still to come, the room left a rule `─` - its units of the edition and its share; and the
-key as a context line. The figures are computed once, on the server, at the horizon the
+no print has a frame on offer); a `table` block of the products, three columns - the name,
+its units of the edition, its share - with no bar, because a bar drawn in text wrapped on a
+phone; and the release's totals (paid, drafts, draw winners, at close the units still to
+come) as a context line. The figures are computed once, on the server, at the horizon the
 page is on.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the

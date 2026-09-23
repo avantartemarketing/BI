@@ -115,7 +115,7 @@ check(/^Julian Schnabel/.test(msg.text || "") && /sell-through \d+% of/.test(msg
 const types = (msg.blocks || []).map((b) => b.type);
 check(types.join(" ").startsWith("header section table context"), `the blocks: ${types.join(" ")}`);
 const table = (msg.blocks || []).find((b) => b.type === "table");
-check(table && table.rows.length === 4 && table.rows[1][1].text.length === 25, "three products, each with a 25-glyph bar");
+check(table && table.rows.length === 4 && table.rows.every((r) => r.length === 3) && /^\d+ of 200$/.test(table.rows[1][1].text), "three products, three cells each: name, units of the edition, share");
 check(msg.unfurl_links === false && msg.unfurl_media === false, "no unfurling");
 check(!/at close/.test(msg.text), "today's horizon says nothing about close");
 
