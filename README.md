@@ -480,13 +480,12 @@ Total ~126 units → 21% of 600
 The picture is the card's own rows, drawn on a canvas in the browser that is showing them
 (`web/src/modules/sellThroughImage.mjs`) - the one place with the page's typeface - from a
 model the card builds out of what it has just rendered, so only the drawing is written
-twice and never the figures. It carries the release, the campaign day and the rate along
-the top, which the card on the page does not need, so it stands on its own in a channel.
-Slack fits a picture inline to a fixed height and lets the width follow, so the type a
-reader gets is the type divided by the picture's height. The picture keeps the card's own
-shape, the rows one under another and the key at the foot, but is set compactly: bigger
-type in tighter rows and no more height than the rows need, which is what makes it arrive
-readable. A browser that cannot give us a PNG posts the figures alone rather than nothing.
+twice and never the figures. It is the card as it is on the page, at the card's own size
+and in its own type, less the two controls, drawn at three times the card's pixels so it
+is crisp at whatever size Slack shows it; the message it rides with names the release.
+Slack fits an inline picture to its own box, so how large it appears is Slack's to decide,
+and a wide, short picture such as this card gets the most of that box. A browser that
+cannot give us a PNG posts the figures alone rather than nothing.
 
 Slack attaches a file only to a channel it knows by ID, and `chat.postMessage` is the one
 call that hands an ID back, so the **first** post to a channel is the figures and then the
