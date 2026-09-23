@@ -83,6 +83,20 @@ for (let i = 0; i < 120; i++) {
 check(st && ["done", "failed"].includes(st.status) && typeof st.seconds === "number", `the build reported an outcome: ${JSON.stringify(st).slice(0, 200)}`);
 check((await get(`/api/inputs/unknown_release_x/build`)).body.status === "idle", "no build on record reads idle");
 
+// a bespoke basket of one launch is a basket (MIN_MEMBERS 1); an empty one is not
+// a member is a launch of the draw panel, named the panel's way
+const panelCsv = fs.readFileSync(path.join(ROOT, "data", "release_clusters.csv"), "utf8").split("\n");
+const panelHead = panelCsv[0].split(",");
+const colName = panelHead.indexOf("release_name"), colPanel = panelHead.indexOf("panel");
+const anyRelease = panelCsv.slice(1).map((l) => l.split(",")).find((c) => c[colPanel] === "draw" && c[colName] && !/Schnabel/.test(c[colName]));
+if (anyRelease) {
+  const one = await post(`/api/inputs/${RELEASE}`, { inputs: { benchmark_basket: { kind: "bespoke", members: [anyRelease[colName]], name: "one launch" } } });
+  check(one.status === 200 && one.body.queued === true, `a one-launch basket is accepted: ${one.status} ${JSON.stringify(one.body).slice(0, 120)}`);
+  for (let i = 0; i < 120; i++) { const b = (await get(`/api/inputs/${RELEASE}/build`)).body; if (b.status !== "running") break; await sleep(500); }
+  const none = await post(`/api/inputs/${RELEASE}`, { inputs: { benchmark_basket: { kind: "bespoke", members: [] } } });
+  check(none.status === 400 && /at least 1/.test(none.body.error || ""), `an empty basket is refused: ${none.status} ${none.body.error}`);
+}
+
 // a first save of a launch the funnel has not seen (an upcoming page from
 // Airtable): queued the same way, as a one-release build, not the catalogue
 const inputsDoc = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "app", "inputs.json"), "utf8"));
