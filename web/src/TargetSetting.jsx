@@ -1,35 +1,32 @@
-/* Target setting tab - the settled design (docs/BENCHMARK_SPEC.md §8, and the
- * Release Target Setting canvas for the parts §8 does not move):
- * inputs left (Release & timeline, Economics with derived per-unit fields,
- * Benchmark basket with the channels in plan, Stretch), derived targets rail
- * right, recomputing live via shared/benchmarkModel.mjs. Save persists the
- * inputs and the server rebuilds the release on them.
+/* Target setting tab (docs/BENCHMARK_SPEC.md §8, docs/DATA_MODEL.md §1.6):
+ * what the feeds hold for the release on the left, the derived targets on
+ * the right, recomputing live via shared/economics.mjs and
+ * shared/benchmarkModel.mjs. Save persists the inputs and the server rebuilds
+ * the release on them.
  *
- * The question this tab asks is "which past launches is this one like?", and
- * the answer is a basket; one even uplift K then reaches the sellout (§1,
- * §4). So the basket is the first-class input, the sellout is the only lever
- * and what is left over is the stretch, stated rather than dialled in. The
- * quartile levers that used to sit here asked a different question - "what
- * shape of launch is this?" - and are gone: from the page, and since
- * 2026-09-23 from the build too (docs/DATA_MODEL.md §3). A release that
- * cannot be benchmarked shows its actuals.
+ * Almost nothing here is typed. The products and their economics come from
+ * Airtable, per work (edition, target sell-through, price, the artist's and
+ * Avant Arte's profit per unit, the deal's revenue or profit share, the
+ * framing assumptions), with a cell to type over any figure Airtable does not
+ * hold yet. The dates come from the Notion log (the early-access email opens
+ * the private room; the announce; the launch), then the funnel's own clock,
+ * then Airtable; the marketing lead from Airtable. What a person decides is
+ * which Meta campaigns are this release's, which channels it will not run,
+ * and which basket it is measured against.
  *
- * Two things a basket cannot know are asked here instead: which channels
- * this release will not run (paid; the artist's own channels), which take
- * their medians out of the benchmark and their share out of the target
- * (§4.3), and what a paid unit costs to buy, which sets the paid budget.
- *
- * Everything benchmark-shaped is guarded on a basket being present - the
- * snapshot's, or one picked and not yet saved. Without one the cards say so
- * and the rail's figures are dashes until a basket is chosen. */
+ * A release set up before the model went per product still carries its
+ * release-level figures (legacy_economics); they stand in for its totals
+ * until they are cleared here, and the products show what Airtable holds
+ * beside them. */
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, GROUP_DOTS, C, fmt, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
-import { computeEconomics } from "../../shared/economics.mjs";
+import { resolveProducts, releaseEconomics, LEGACY_KEYS } from "../../shared/economics.mjs";
 import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf } from "../../shared/benchmarkModel.mjs";
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 const BLUE = "#2f5fb3";
+const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 // the five display groups, in the order the profile dicts are written
 // (etl/baskets.py GROUPS), so the table reads the same way as the snapshot
@@ -41,18 +38,25 @@ const GROUPS = [
   { key: "paid", name: "Paid" },
 ];
 
+const SOURCE_WORDS = { notion: "Notion", airtable: "Airtable", clock: "funnel clock", typed: "typed", default: "default", matched: "matched", saved: "chosen" };
+
+/* Where a figure came from, as a small chip. */
+function SourceChip({ source, title }) {
+  if (!source) return null;
+  const strong = source === "notion" || source === "airtable";
+  return (
+    <span title={title} style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: 0.2, padding: "2px 7px", borderRadius: 999,
+      background: strong ? "#e6eefa" : "#f1efe8", color: strong ? BLUE : C.muted, whiteSpace: "nowrap" }}>
+      {SOURCE_WORDS[source] || source}
+    </span>
+  );
+}
+
 /* The two rates the sell-through prediction converts entries in hand at: a
  * plain draw entry, and a pre-order entry whose card is already authorised.
- *
- * This used to be a table as well, a row per draw the feed found, with a name,
- * an edition and a pre-order rate typed against each. The names were never
- * typed - every release showed "Draw 1" to "Draw 7" - the editions were left
- * blank because the feed carries them, and the whole grid was three columns of
- * nothing above the two fields that were actually used. The per-product
- * overrides still exist in the release's inputs and the ETL still reads them,
- * so a product that already has one keeps it; there is simply no longer a
- * table in the way of the rates. */
-function Products({ inp, setInp }) {
+ * The per-product overrides still exist in the release's inputs and the ETL
+ * still reads them; there is simply no table in the way of the rates. */
+function Rates({ inp, setInp }) {
   const asPct = (v) => (v === null || v === undefined || v === "" ? "" : Math.round(Number(v) * 100));
   const ratePct = asPct(inp.entry_conversion_rate);
   const preRatePct = asPct(inp.preorder_conversion_rate);
@@ -73,22 +77,12 @@ function Products({ inp, setInp }) {
   );
 }
 
-const Field = ({ label, tip, children }) => (
+const Field = ({ label, tip, children, right }) => (
   <div>
-    <div className="flabel" title={tip}>{label}</div>
+    <div className="flabel" title={tip} style={right ? { display: "flex", alignItems: "center", gap: 8 } : undefined}>{label}{right}</div>
     {children}
   </div>
 );
-
-/* Match status for the Meta-campaign picker, against the live spend feed. */
-function CampaignHint({ value, campaigns }) {
-  const v = (value || "").trim();
-  const style = { fontSize: 11.5, marginTop: 4, color: C.muted };
-  if (!v) return <div style={style}>no campaign matched - paid modules stay empty</div>;
-  const hit = (campaigns || []).find((c) => c.name === v);
-  if (!hit) return <div style={{ ...style, color: C.amber }}>no spend rows with this exact name yet</div>;
-  return <div style={style}>{fmtMoney(hit.spend)} spend · last active {hit.last}</div>;
-}
 
 /* A switch: the control, its name, and one clause on what it does. */
 function Switch({ id, on, onChange, label, sub, why }) {
@@ -113,6 +107,53 @@ function Seg({ options, value, onChange, small }) {
               border: "none", cursor: "pointer", background: active ? "#e6eefa" : "#fff", color: active ? BLUE : C.muted }}>{o}</button>
         );
       })}
+    </div>
+  );
+}
+
+/* The Meta campaigns whose spend is this release's: the ones the spend feed
+ * names for the campaign code, ticked or not, and any other campaign added by
+ * name. The draw campaign is what the code matches on its own. */
+function Campaigns({ code, chosen, all, suggested, onChange }) {
+  const [adding, setAdding] = useState("");
+  const byName = new Map((all || []).map((c) => [c.name, c]));
+  const named = (all || []).filter((c) => code && c.name.startsWith(`${code} · `)).map((c) => c.name);
+  const listed = [...new Set([...named, ...(suggested || []), ...chosen])];
+  const toggle = (name, on) => onChange(on ? [...chosen, name] : chosen.filter((n) => n !== name));
+  const add = () => {
+    const name = adding.trim();
+    if (name && !chosen.includes(name)) onChange([...chosen, name]);
+    setAdding("");
+  };
+  return (
+    <div>
+      {listed.length === 0 && (
+        <div style={{ fontSize: 12, color: C.muted, marginBottom: 6 }}>No campaign in the spend feed is named for {code ? `"${code}"` : "this release's code"} yet.</div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {listed.map((name) => {
+          const hit = byName.get(name);
+          return (
+            <label key={name} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, cursor: "pointer" }}>
+              <input type="checkbox" checked={chosen.includes(name)} onChange={(e) => toggle(name, e.target.checked)}
+                style={{ accentColor: C.ink, width: 14, height: 14, margin: 0 }} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+              <span style={{ color: hit ? C.muted : C.amber, fontSize: 11.5, marginLeft: "auto", whiteSpace: "nowrap" }}>
+                {hit ? `${fmtMoney(hit.spend)} · last ${hit.last}` : "no spend rows by this name"}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <input className="control" list="meta-campaigns" value={adding} placeholder="add another campaign by name"
+          style={{ fontSize: 12 }} onChange={(e) => setAdding(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
+        <datalist id="meta-campaigns">
+          {(all || []).filter((c) => !chosen.includes(c.name)).map((c) => <option key={c.name} value={c.name} />)}
+        </datalist>
+        <button className="btn secondary" onClick={add} disabled={!adding.trim()} style={{ flex: "0 0 auto" }}>Add</button>
+      </div>
     </div>
   );
 }
@@ -164,8 +205,167 @@ function ChannelRow({ label, bmSessions, bmUnits, conv, k, head, total, off }) {
   );
 }
 
+/* The products and their economics: a row per work, Airtable's figures as
+ * the placeholders, a typed figure over any of them (blank = Airtable's), the
+ * totals the release runs on underneath. Two tables share the rows - the
+ * edition and price first, the per-unit economics second - so the whole
+ * thing fits beside the rail on a laptop without scrolling sideways.
+ * Percentages are typed as whole numbers and kept as fractions. */
+const PCT = new Set(["target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion"]);
+// key -> label, tip, column width (the input plus its cell padding)
+const COLS = {
+  edition: ["Edition", "Units in the edition of this work.", 70],
+  target_sellthrough: ["Target %", "The share of the edition targeted to sell by close. Blank = Airtable's target (its units target over the edition, else the expected sell-through), else 100%.", 64],
+  unit_price: ["Price", "Retail price per unit, in the currency shown (Airtable prices in euros; the totals convert to sterling at a fixed rate).", 100],
+  artist_profit_per_unit: ["Artist £", "The artist's profit on one unit sold.", 66],
+  aa_profit_per_unit: ["AA £", "Avant Arte's profit on one unit sold, before framing.", 66],
+  aa_revenue_share: ["AA rev. %", "Avant Arte's share of revenue on a royalty deal. Blank on a profit-share deal.", 62],
+  aa_profit_share: ["AA profit %", "Avant Arte's share of profit on a profit-share deal, which is also its share of the paid budget. Blank on a royalty deal, where Avant Arte carries the ads outright.", 66],
+  frame_conversion: ["Frame %", "The share of buyers expected to take a frame. Blank = the benchmark default.", 60],
+  frame_profit_per_unit: ["Frame £", "Avant Arte's profit on each frame sold. Blank = the benchmark default.", 62],
+};
+const num = (key) => ({ kind: "num", key, label: COLS[key][0], tip: COLS[key][1], width: COLS[key][2] });
+const EDITION_TABLE = [num("edition"), num("target_sellthrough"), num("unit_price"),
+  { kind: "target", label: "Target", tip: "Target units: edition × target %.", width: 62 },
+  { kind: "remove", width: 30 }];
+const ECON_TABLE = [num("artist_profit_per_unit"), num("aa_profit_per_unit"), num("aa_revenue_share"), num("aa_profit_share"),
+  { kind: "frame", label: "Frame?", tip: "Whether a frame is offered on this work.", width: 46 },
+  num("frame_conversion"), num("frame_profit_per_unit")];
+
+/* The names as the narrow second table shows them: what differs between the
+ * products, when they all share a lead ("Brillo Box Collectable (Lifesize)"
+ * reads as "(Lifesize)"). The full name stays in the tooltip. */
+function shortNames(products) {
+  const names = products.map((p) => String(p.name || ""));
+  // the lead is what Airtable's names share; a product added by hand keeps
+  // its full name unless it shares the lead too
+  const pool = products.filter((p) => p.airtable_id).map((p) => String(p.name || ""));
+  const base = pool.length >= 2 ? pool : names;
+  if (base.length < 2) return names;
+  let pre = base[0];
+  for (const n of base) {
+    let i = 0;
+    while (i < pre.length && i < n.length && pre[i] === n[i]) i++;
+    pre = pre.slice(0, i);
+  }
+  pre = pre.slice(0, pre.lastIndexOf(" ") + 1);
+  if (pre.trim().length < 4) return names;
+  return names.map((n) => (n.startsWith(pre) && n.slice(pre.length).trim() ? "…" + n.slice(pre.length).trim() : n));
+}
+
+function ProductsTable({ products, econ, onField, onName, onAdd, onRemove, airtableNote }) {
+  const short = shortNames(products);
+  const th = { fontSize: 11, color: C.muted, fontWeight: 500, textAlign: "right", padding: "4px 4px", borderBottom: `1px solid ${C.border}`, lineHeight: 1.25, verticalAlign: "bottom" };
+  const td = { padding: "4px 4px", borderBottom: `1px solid ${C.hairline}`, verticalAlign: "middle" };
+  const foot = { ...td, borderBottom: "none", textAlign: "right", fontWeight: 600, fontSize: 12.5, fontVariantNumeric: "tabular-nums" };
+  const show = (key, v) => (v === null || v === undefined ? "" : PCT.has(key) ? String(Math.round(v * 1000) / 10) : String(Math.round(v * 100) / 100));
+  // rows are keyed by the Airtable id, else the row's place in the list: a
+  // manual product's name is typed in place, so it cannot be the key
+  const rowKey = (p, i) => (p.airtable_id ? `a-${p.airtable_id}` : `m-${i}`);
+  const numCell = (p, key) => {
+    const src = p.sources[key];
+    const typedHere = src === "typed";
+    return (
+      <td key={key} style={td}>
+        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+          <input className="control num" style={{ width: "100%", minWidth: 0, padding: "4px 6px", fontSize: 12, textAlign: "right", fontWeight: typedHere ? 600 : 400 }}
+            value={typedHere ? show(key, p[key]) : ""}
+            placeholder={src ? show(key, p[key]) || "–" : "–"}
+            title={src === "airtable" ? "Airtable's figure - type over it to override" : src === "default" ? "The benchmark default - type over it to override" : typedHere ? "Typed here; clear to go back to Airtable's" : "Airtable holds none - type it"}
+            onChange={(e) => onField(p, key, e.target.value)} />
+          {key === "unit_price" && <span style={{ fontSize: 10.5, color: C.muted, flex: "0 0 26px" }}>{p.currency}</span>}
+        </div>
+      </td>
+    );
+  };
+  const nameCell = (p, i, editable) => (
+    <td style={{ ...td, fontSize: 12.5, overflow: "hidden" }}>
+      {editable && !p.airtable_id
+        ? <input className="control" value={p.name} placeholder="Product name" style={{ fontSize: 12, padding: "4px 6px" }} onChange={(e) => onName(p, e.target.value)} />
+        : <span title={`${p.name || "unnamed"}${p.airtable_id ? ` · Airtable ${p.project_code || p.airtable_id}` : ""}`}
+            style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: p.name ? C.ink : C.muted }}>{editable ? p.name || "unnamed" : short[i] || "unnamed"}</span>}
+    </td>
+  );
+  const cell = (p, c, j) => {
+    if (c.kind === "num") return numCell(p, c.key);
+    if (c.kind === "target") return <td key={j} style={{ ...td, textAlign: "right", fontSize: 12.5, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{p.edition ? fmt(p.target_units) : "–"}</td>;
+    if (c.kind === "frame") {
+      return (
+        <td key={j} style={{ ...td, textAlign: "center" }}>
+          <input type="checkbox" checked={!!p.framing_available} title={p.sources.framing_available === "typed" ? "Typed here" : "Airtable's framing option"}
+            onChange={(e) => onField(p, "framing_available", e.target.checked)} style={{ accentColor: C.ink, margin: 0 }} />
+        </td>
+      );
+    }
+    return (
+      <td key={j} style={{ ...td, textAlign: "right" }}>
+        {!p.airtable_id && <button className="btn secondary" style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => onRemove(p)} title="Remove this product">×</button>}
+      </td>
+    );
+  };
+  const table = (caption, cols, editable, footer) => (
+    <div style={{ marginTop: caption ? 14 : 0 }}>
+      {caption && <div style={{ fontSize: 11.5, fontWeight: 600, color: C.muted, marginBottom: 2 }}>{caption}</div>}
+      <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+        <colgroup>
+          <col />
+          {cols.map((c, j) => <col key={j} style={{ width: c.width }} />)}
+        </colgroup>
+        <thead>
+          <tr>
+            <th style={{ ...th, textAlign: "left" }}>Product</th>
+            {cols.map((c, j) => <th key={j} style={{ ...th, textAlign: c.kind === "frame" ? "center" : "right" }} title={c.tip}>{c.label || ""}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((p, i) => (
+            <tr key={rowKey(p, i)}>
+              {nameCell(p, i, editable)}
+              {cols.map((c, j) => cell(p, c, j))}
+            </tr>
+          ))}
+          {products.length === 0 && (
+            <tr><td colSpan={cols.length + 1} style={{ ...td, color: C.muted, fontSize: 12.5, padding: "10px 4px" }}>
+              No products yet: Airtable has no record matched to this release{airtableNote ? ` (${airtableNote})` : ""}. Add the works by hand until it does.
+            </td></tr>
+          )}
+        </tbody>
+        {products.length > 0 && <tfoot><tr>{footer}</tr></tfoot>}
+      </table>
+    </div>
+  );
+  const aaBeforeFraming = (econ.ppu_aa || 0) - (econ.frame_uplift_per_unit || 0);
+  return (
+    <div>
+      {table(null, EDITION_TABLE, true, (
+        <>
+          <td style={{ ...foot, textAlign: "left" }}>Total</td>
+          <td style={foot}>{fmt(econ.edition_total)}</td>
+          <td style={foot}>{econ.edition_total ? fmtPct(econ.edition_size / econ.edition_total, 0) : "–"}</td>
+          <td style={foot} title="Value-weighted mean price per target unit, in sterling.">{econ.unit_price ? fmtMoney(econ.unit_price, 0) : "–"}</td>
+          <td style={foot}>{fmt(econ.edition_size)}</td>
+          <td style={foot} />
+        </>
+      ))}
+      {products.length > 0 && table("Economics per unit", ECON_TABLE, false, (
+        <>
+          <td style={{ ...foot, textAlign: "left" }} title="Weighted over the target units.">Per target unit</td>
+          <td style={foot}>{econ.ppu_artist > 0 ? fmtMoney(econ.ppu_artist, 2) : "–"}</td>
+          <td style={foot} title="Before framing.">{aaBeforeFraming > 0 ? fmtMoney(aaBeforeFraming, 2) : "–"}</td>
+          <td style={foot} colSpan={3} />
+          <td style={foot} colSpan={2} title="The framing uplift over every target unit.">{econ.frame_uplift_per_unit > 0 ? `+${fmtMoney(econ.frame_uplift_per_unit, 2)}` : "–"}</td>
+        </>
+      ))}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+        <button className="btn secondary" onClick={onAdd} style={{ fontSize: 12 }}>Add a product</button>
+        <span style={{ fontSize: 11.5, color: C.muted }}>Grey figures are Airtable's; a typed figure overrides it, blank goes back to it.</span>
+      </div>
+    </div>
+  );
+}
+
 export default function TargetSetting({ snap, onSaved }) {
-  const [meta, setMeta] = useState(null);       // {inputs, benchmarks, ...}
+  const [meta, setMeta] = useState(null);       // {inputs, sourced, benchmarks, meta_campaigns, derived, draws, creating}
   const [inp, setInp] = useState(null);         // editable inputs
   const [pick, setPick] = useState(null);       // a basket chosen in the picker, not yet saved
   const [picking, setPicking] = useState(false);
@@ -202,63 +402,65 @@ export default function TargetSetting({ snap, onSaved }) {
       // a release nobody has set targets for comes back with inputs: null and
       // the defaults the ETL could derive - the form starts from those
       const raw = d.inputs || d.defaults;
-      // inputs saved under the retired levers carried two of today's choices
-      // as the Referral Artist row of the channel-quality grid: N/A was an
-      // artist with no channels of their own, Low / High the posting tier
-      const legacy = (raw.channel_quality_overrides || {})["Referral Artist"];
-      const start = {
-        ...raw,
-        channels_off: raw.channels_off || (legacy === "N/A" ? ["referral_artist"] : []),
-        artist_posting_tier: raw.artist_posting_tier || (["Low", "Medium", "High"].includes(legacy) ? legacy : "Medium"),
-      };
+      // inputs saved under earlier shapes: the Referral Artist row of the
+      // retired quality grid (N/A = the artist's own channels off; Low / High
+      // the posting tier), one Meta campaign, and the release-level economics
+      // at the top level (kept as legacy_economics until cleared)
+      const legacyTier = (raw.channel_quality_overrides || {})["Referral Artist"];
+      const topLegacy = {};
+      for (const k of LEGACY_KEYS) if (raw[k] !== undefined && raw[k] !== null) topLegacy[k] = raw[k];
+      const start = { ...raw };
+      for (const k of LEGACY_KEYS) delete start[k];
+      Object.assign(start, {
+        channels_off: raw.channels_off || (legacyTier === "N/A" ? ["referral_artist"] : []),
+        artist_posting_tier: raw.artist_posting_tier || (["Low", "Medium", "High"].includes(legacyTier) ? legacyTier : "Medium"),
+        campaign_names: Array.isArray(raw.campaign_names) ? raw.campaign_names : (raw.campaign_name ? [raw.campaign_name] : []),
+        products: Array.isArray(raw.products) ? raw.products : [],
+        legacy_economics: raw.legacy_economics !== undefined ? raw.legacy_economics : (Object.keys(topLegacy).length ? topLegacy : null),
+      });
+      delete start.campaign_name;
       setMeta({ ...d, inputs: start, creating: !d.inputs });
       setInp({ ...start });
     }).catch((e) => setError(String(e)));
   }, [snap.id]);
 
   const creating = !!(meta && meta.creating);
-  const missing = useMemo(() => {
-    if (!inp) return [];
-    const req = [["edition_size", "edition size"], ["unit_price", "unit price"], ["artist_profit", "artist profit"],
-      ["aa_group_profit", "AA Group profit"], ["private_room_open", "private room date"],
-      ["announce_date", "announce date"], ["launch_end", "close date"]];
-    return req.filter(([k]) => inp[k] === null || inp[k] === undefined || inp[k] === "").map(([, l]) => l);
-  }, [inp]);
+  const b = meta ? meta.benchmarks : null;
+  const sourced = (meta && meta.sourced) || { airtable: { match: "none", note: "", products: [] }, notion: {}, clock: {}, campaigns: [] };
+  const atProducts = (sourced.airtable && sourced.airtable.products) || [];
 
-  // the per-unit economics the form prints, live as the figures are typed
-  // (shared/economics.mjs mirrors the build's frame_terms and aa_profit_per_unit)
-  const derived = useMemo(() => {
-    if (!meta || !inp) return null;
-    // the economics divide by the edition size - feed a placeholder while it
-    // is still blank so the form can render at all
-    const safe = { ...inp, edition_size: Number(inp.edition_size) || 1, unit_price: Number(inp.unit_price) || 0,
-      artist_profit: Number(inp.artist_profit) || 0, aa_group_profit: Number(inp.aa_group_profit) || 0 };
-    return computeEconomics(safe, meta.benchmarks);
-  }, [meta, inp]);
+  // the products in force and the release's economics, live as figures are
+  // typed (shared/economics.mjs mirrors resolve_release in the build)
+  const products = useMemo(() => (inp && b ? resolveProducts(atProducts, inp.products, b) : []), [inp, b, atProducts]);
+  const econ = useMemo(() => (inp && b ? releaseEconomics(products, inp.legacy_economics, b) : null), [products, inp, b]);
 
   if (error && !meta) return <div style={{ color: C.muted, padding: 24 }}>Failed to load inputs: {error}</div>;
-  if (!derived) return <div style={{ color: C.muted, padding: 24 }}>Loading…</div>;
+  if (!inp || !econ) return <div style={{ color: C.muted, padding: 24 }}>Loading…</div>;
 
-  const b = meta.benchmarks;
   const set = (k) => (e) => setInp({ ...inp, [k]: e.target.value });
-  const setNum = (k) => (e) => {
-    const raw = String(e.target.value).replace(/[^0-9]/g, "");
-    setInp({ ...inp, [k]: raw === "" ? null : parseInt(raw, 10) });
-  };
-  // the target is only part of the edition: the rail says so
-  const partialEdition = Number(inp.edition_total) > Number(inp.edition_size) && Number(inp.edition_size) > 0;
-  const dateDiff = (a, c) => (a && c ? Math.round((new Date(a) - new Date(c)) / 86400000) : null);
-  const days = dateDiff(inp.launch_end, inp.announce_date);
-  const prDays = dateDiff(inp.announce_date, inp.private_room_open);
   const dv = meta.derived || {};
 
-  /* ---- the benchmark half of the form (§5, §8) ----
-   * `bm` is the snapshot's benchmark block: the basket in force on the page as
-   * it stands. `pick` is a basket chosen in the picker and not yet saved - its
-   * profile is what the chips show, because that is what the person is
-   * choosing, while the per-channel table stays on `bm` because per-channel
-   * medians are median share x median total (§3.2) and only the ETL computes
-   * them. The pending line below the chips says which is which. */
+  /* ---- the dates, by source: the Notion log, then what was typed, then the
+   * funnel's clock, then Airtable (resolve_release reads them the same way) */
+  const dateOf = (f) => {
+    const n = (sourced.notion || {})[f], c = (sourced.clock || {})[f], a = (sourced.airtable || {})[f];
+    if (n) return [n, "notion"];
+    if (inp[f] && inp[f] !== c) return [inp[f], "typed"];
+    if (inp[f] && inp[f] === c) return [c, "clock"];
+    if (c) return [c, "clock"];
+    if (a) return [a, "airtable"];
+    return [null, null];
+  };
+  const [prOpen, prSrc] = dateOf("private_room_open");
+  const [announce, annSrc] = dateOf("announce_date");
+  const [closes, closeSrc] = dateOf("launch_end");
+  const dateDiff = (a, c) => (a && c ? Math.round((new Date(a) - new Date(c)) / 86400000) : null);
+  const days = dateDiff(closes, announce);
+  const prDays = dateDiff(announce, prOpen);
+  const leadFromAirtable = (sourced.airtable || {}).marketing_lead || null;
+  const codeInForce = inp.campaign_code || (inp.campaign_names[0] ? inp.campaign_names[0].split(" · ")[0] : "") || dv.campaign_code || "";
+
+  /* ---- the benchmark half of the form (§5, §8) ---- */
   const bm = snap.benchmark || null;
   const savedSpec = (meta.inputs && meta.inputs.benchmark_basket) || null;
   const spec = inp.benchmark_basket || null;
@@ -266,28 +468,59 @@ export default function TargetSetting({ snap, onSaved }) {
   const prof = (pick && pick.profile) || null;
   const basketName = pick ? pick.name
     : (bm && bm.basket && bm.basket.name) || (spec && spec.name) || "";
-  /* The channels this release will not run (§4.3), and the basket read
-   * without them: the pending pick's live medians when there is one, else
-   * the snapshot's basket re-read from its full medians. Both go through the
-   * same function the build runs, so the table and the rail say now what the
-   * page will say after the save. */
   const off = channelsOffOf(inp);
   const isOff = (g) => off.includes(g);
   const setOff = (g, on) => setInp({ ...inp, channels_off: on ? off.filter((x) => x !== g) : [...off, g] });
   const profile = prof ? applyChannelsOff(prof, off) : bm ? applyChannelsOff(profileOf(bm), off) : null;
-  const editionSize = Number(inp.edition_size) || 0;
+  const editionSize = econ.edition_size || 0;
   const bmUnits = profile && profile.units > 0 ? profile.units : null;
-  // K follows the sellout box as it is typed, so the table and the stretch
-  // never disagree with the number above them; the snapshot's own K is the
-  // fallback for a release whose economics are still blank (§4).
   const k = bmUnits ? (editionSize > 0 ? editionSize / bmUnits : bm ? bm.k : null) : null;
   const stretchUnits = bmUnits !== null && editionSize > 0 ? editionSize - bmUnits : null;
   const stretchPct = bmUnits ? stretchUnits / bmUnits : null;
   const paidShare = profile ? profile.share_sessions.paid : null;
-  // what a paid unit costs to buy: the release's own figure, else the panel's
-  // median (the same reading as etl/build.py cost_per_purchase_for)
-  const cppDefault = Number((b.cost_per_purchase || {}).Median) || 0;
-  const cpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : cppDefault;
+  const cpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : (Number((b.cost_per_purchase || {}).Median) || 0);
+  const partialEdition = econ.edition_total > econ.edition_size && econ.edition_size > 0;
+
+  /* ---- the products: a typed figure lands on the entry for that product
+   * (by Airtable id, or by name for one added by hand), blank clears it */
+  const typedEntry = (p) => (inp.products || []).find((t) => (p.airtable_id ? String(t.airtable_id) === String(p.airtable_id) : (t.manual && norm(t.name) === norm(p.name))));
+  const withEntry = (p, patch) => {
+    const list = [...(inp.products || [])];
+    let i = list.findIndex((t) => (p.airtable_id ? String(t.airtable_id) === String(p.airtable_id) : (t.manual && norm(t.name) === norm(p.name))));
+    if (i < 0) { list.push(p.airtable_id ? { airtable_id: p.airtable_id } : { manual: true, name: p.name }); i = list.length - 1; }
+    list[i] = { ...list[i], ...patch };
+    setInp({ ...inp, products: list });
+  };
+  const onField = (p, key, raw) => {
+    if (key === "framing_available") { withEntry(p, { framing_available: !!raw }); return; }
+    const clean = String(raw).replace(/[^0-9.]/g, "");
+    if (clean === "") { withEntry(p, { [key]: null }); return; }
+    let v = parseFloat(clean);
+    if (!Number.isFinite(v)) return;
+    if (PCT.has(key)) v = clamp(v, 0, 100) / 100;
+    if (key === "edition") v = Math.round(v);
+    withEntry(p, { [key]: v });
+  };
+  const onName = (p, name) => {
+    const list = (inp.products || []).map((t) => (t.manual && norm(t.name) === norm(p.name) ? { ...t, name } : t));
+    setInp({ ...inp, products: list });
+  };
+  const onAdd = () => {
+    const n = (inp.products || []).filter((t) => t.manual).length + 1;
+    setInp({ ...inp, products: [...(inp.products || []), { manual: true, name: `Product ${n}` }] });
+  };
+  const onRemove = (p) => setInp({ ...inp, products: (inp.products || []).filter((t) => !(t.manual && norm(t.name) === norm(p.name))) });
+  // the picker asks for a target and a price when there are none: they land
+  // on a product added by hand, so the basket follows the typing
+  const onPickerInputs = (patch) => {
+    const name = "Release";
+    const entry = (inp.products || []).find((t) => t.manual && norm(t.name) === norm(name)) || { manual: true, name };
+    const next = { ...entry };
+    if (patch.edition_size !== undefined) next.edition = patch.edition_size || null;
+    if (patch.unit_price !== undefined) { next.unit_price = patch.unit_price || null; next.currency = "GBP"; }
+    const rest = (inp.products || []).filter((t) => !(t.manual && norm(t.name) === norm(name)));
+    setInp({ ...inp, products: [...rest, next] });
+  };
 
   const onPick = (chosen) => {
     setPick(chosen);
@@ -303,17 +536,23 @@ export default function TargetSetting({ snap, onSaved }) {
     });
   };
 
+  // what the targets still need before the release can be set up
+  const missing = [];
+  if (!(econ.edition_size > 0)) missing.push("a product with an edition");
+  if (econ.edition_size > 0 && !(econ.launch_value > 0)) missing.push("a unit price");
+  if (!announce) missing.push("the announce date");
+  if (!closes) missing.push("the draw close");
+
   const save = async () => {
     setSaving(true); setError(null);
     try {
+      // legacy_economics rides only as a clearing (null): the figures
+      // themselves are never re-sent, the server keeps or drops the block
+      const { legacy_economics, campaign_name, ...rest } = inp;
+      const body = { ...rest, channels_off: off, ...(legacy_economics === null ? { legacy_economics: null } : {}) };
       const res = await fetch(`/api/inputs/${snap.id}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        // benchmark_basket rides inside `inputs` with everything else (§6)
-        body: JSON.stringify({ inputs: {
-          ...inp,
-          campaign_name: (inp.campaign_name || "").trim() || null,
-          channels_off: off,
-        } }),
+        body: JSON.stringify({ inputs: body }),
       });
       const d = await res.json();
       if (!res.ok) { setError(d.error || `save failed (${res.status})`); return; }
@@ -330,20 +569,14 @@ export default function TargetSetting({ snap, onSaved }) {
     setPick(null);
   };
 
-  /* The rail's three columns (§8.3), from the same model the build runs:
-   * the target is the basket's median lifted by K, the benchmark is the
-   * median itself, and the stretch is the difference, so benchmark + stretch
-   * = target on every row. Without a basket, or before the sellout is typed,
-   * there is nothing to lift and the rows are dashes. */
+  /* The rail's three columns (§8.3), from the same model the build runs. */
   const T = profile ? benchmarkTargets(profile, {
-    edition_size: editionSize, unit_price: Number(inp.unit_price) || 0, cost_per_purchase: cpp,
+    edition_size: editionSize, unit_price: econ.unit_price || 0, cost_per_purchase: cpp,
     units_per_buyer: (snap.targets || {}).units_per_buyer || 0,
   }, b) : null;
   const BM = T ? T.benchmark : null;
   const railRow = (label, target, bmv, format, tip) => {
     let stretch = target === null || bmv === null ? null : target - bmv;
-    // a stretch that rounds away to nothing in the row's own format is zero, not
-    // a negative sliver of one
     if (stretch !== null && format(Math.abs(stretch)) === format(0)) stretch = 0;
     return { label, tip, target, bm: bmv, stretch, format };
   };
@@ -357,11 +590,20 @@ export default function TargetSetting({ snap, onSaved }) {
     railRow("Sessions", T ? T.total_sessions : null, BM ? BM.sessions : null, (v) => fmt(v, 0),
       "The basket's median sessions, lifted by the same K as every other volume."),
     railRow("Paid budget", T ? T.paid.budget : null, BM ? BM.paid_budget : null, (v) => fmtMoney(v, 0),
-      isOff("paid") ? "Paid is not in plan for this release." : `Paid units × ${fmtMoney(cpp)} per unit, the cost per purchase under Economics.`),
+      isOff("paid") ? "Paid is not in plan for this release." : `Paid units × ${fmtMoney(cpp)} per unit, the panel's median cost per purchase.`),
     railRow("% of launch value", T ? (T.paid.budget_pct_of_launch_value ?? 0) : null, BM ? (BM.budget_pct_of_launch_value ?? 0) : null, (v) => fmtPct(v, 1),
       "Sense check: paid budget should stay under 6% of launch value."),
   ];
   const railCell = { fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums" };
+  const dateField = (label, f, value, src, tip) => (
+    <Field label={label} tip={tip} right={<SourceChip source={src} title={src === "notion" ? "From the Notion log" : src === "clock" ? "From the funnel export's campaign clock" : src === "airtable" ? "From Airtable" : src === "typed" ? "Typed here" : ""} />}>
+      {src === "notion"
+        ? <input className="control ro" value={value || ""} readOnly />
+        : <input className="control" type="date" value={value || ""} onChange={set(f)} />}
+    </Field>
+  );
+  const legacy = inp.legacy_economics;
+  const airtableMatch = (sourced.airtable || {}).match || "none";
 
   /* Untracked much higher than normal (DATA_MODEL 1.3): the build says which
    * of entries and units has a share over twice the panel's median and past
@@ -381,11 +623,9 @@ export default function TargetSetting({ snap, onSaved }) {
         {creating && (
           <div style={{ padding: "12px 16px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a", fontSize: 12.5, lineHeight: 1.5 }}>
             <b>No targets yet.</b> The page currently shows actuals only.
-            {dv.announce_date
-              ? <> Dates below come from the funnel export's campaign clock and can be a day out - check them.</>
-              : <> No campaign dates were found in the funnel export - enter them.</>}
-            {dv.campaign_code ? <> The campaign code is a guess from the email feed.</> : null}
-            {" "}Fill in the economics and save: the page rebuilds with expected-today, projections, paid ROI and sell-through.
+            {" "}The dates come from the Notion log where it has them, else the funnel export's campaign clock, else Airtable - check them.
+            {atProducts.length ? ` Airtable holds ${atProducts.length} product${atProducts.length === 1 ? "" : "s"} for this release.` : " Airtable has no product matched to this release yet: add the works by hand."}
+            {" "}Tick the Meta campaigns, set the channels in plan, and save: the page rebuilds with expected-today, projections, paid ROI and sell-through.
           </div>
         )}
 
@@ -404,54 +644,42 @@ export default function TargetSetting({ snap, onSaved }) {
             <Field label="Release name" tip="Simple Release Name - the join key across every feed; changing it would orphan the actuals, so it is fixed here.">
               <input className="control ro" value={snap.releaseName} readOnly />
             </Field>
-            <Field label="Meta campaign" tip="Which Meta ad campaign this release's paid actuals are read from - rows matching this exact name in the live spend feed. Saving a change re-attributes the paid numbers.">
-              <input className="control" list="meta-campaigns" value={inp.campaign_name || ""}
-                placeholder="- not matched -" onChange={set("campaign_name")} />
-              <datalist id="meta-campaigns">
-                {(meta.meta_campaigns || []).map((c) => <option key={c.name} value={c.name} />)}
-              </datalist>
-              <CampaignHint value={inp.campaign_name} campaigns={meta.meta_campaigns} />
+            <Field label="Campaign code" tip="The code the email, Instagram and artist-post feeds tag this campaign with (e.g. GlennLigon_LE_26) - it joins those panels to the release. Read off the Meta campaign's name, or guessed from the feeds."
+              right={<SourceChip source={inp.campaign_code ? "typed" : inp.campaign_names[0] ? "matched" : dv.campaign_code ? "matched" : null} title={inp.campaign_code ? "As saved" : "From the Meta campaign's name, else the email and content feeds"} />}>
+              {codeInForce
+                ? <input className="control ro" value={codeInForce} readOnly />
+                : <input className="control" value={inp.campaign_code || ""} onChange={set("campaign_code")} placeholder="Artist_LE_26 - no code found in any feed" />}
             </Field>
-            <Field label="Campaign code" tip="The code the email, Instagram and artist-post feeds tag this campaign with (e.g. GlennLigon_LE_26) - it joins those panels to the release.">
-              <input className="control" value={inp.campaign_code || ""} onChange={set("campaign_code")} placeholder="Artist_LE_26" />
-              {creating && dv.campaign_code && <div style={{ fontSize: 11.5, marginTop: 4, color: C.muted }}>guessed from the email and content feeds - correct it if wrong</div>}
+            <Field label="Meta campaigns" tip="Which Meta ad campaigns this release's paid actuals are read from - rows matching these names in the live spend feed, summed. The draw campaign named for the code is ticked on its own; add a purchases or sign-ups campaign when it belongs to this release.">
+              <Campaigns code={codeInForce} chosen={inp.campaign_names} all={meta.meta_campaigns} suggested={sourced.campaigns}
+                onChange={(names) => setInp({ ...inp, campaign_names: names })} />
             </Field>
-            <Field label="Marketing lead">
-              <input className="control" value={inp.marketing_lead || ""} onChange={set("marketing_lead")} />
-            </Field>
-            <Field label="Slack channel" tip="Where the Post to Slack button on the sell-through card sends this release's update. The channel name without the #; for a private channel, invite the Launch Performance bot to it first. Saved on its own, separately from the targets.">
-              <div style={{ display: "flex", gap: 8 }}>
-                <input className="control" value={slackDraft} onChange={(e) => setSlackDraft(e.target.value)} placeholder="launch-updates" />
-                <button className="btn secondary" disabled={slackSaving || slackDraft.trim().replace(/^#/, "") === slackCurrent} onClick={saveSlack} style={{ flex: "0 0 auto" }}>
-                  {slackSaving ? "Saving…" : "Save"}
-                </button>
-              </div>
-              {slackError && <div style={{ fontSize: 11.5, marginTop: 4, color: C.red }}>{slackError}</div>}
-              {!slackError && slackNote && <div style={{ fontSize: 11.5, marginTop: 4, color: C.amber, lineHeight: 1.5 }}>{slackNote}</div>}
-              {!slackError && !slackNote && snap.slack && snap.slack.lastPostAt && (
-                <div style={{ fontSize: 11.5, marginTop: 4, color: C.muted }}>last posted {new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
-              )}
-            </Field>
-            <Field label="Budget file" tip="A link to the budget sheet, kept here for reference. A web address gets an open link beside it.">
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input className="control" value={inp.budget_file || ""} onChange={set("budget_file")} placeholder="https://docs.google.com/spreadsheets/…" />
-                {/^https?:\/\/\S+$/i.test(String(inp.budget_file || "").trim()) && (
-                  <a href={String(inp.budget_file).trim()} target="_blank" rel="noopener noreferrer" className="btn secondary" style={{ flex: "0 0 auto", textDecoration: "none" }}>Open</a>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <Field label="Marketing lead" right={<SourceChip source={leadFromAirtable ? "airtable" : inp.marketing_lead ? "typed" : null} title={leadFromAirtable ? "From Airtable" : "Typed here until Airtable holds it"} />}>
+                {leadFromAirtable
+                  ? <input className="control ro" value={leadFromAirtable} readOnly />
+                  : <input className="control" value={inp.marketing_lead || ""} onChange={set("marketing_lead")} placeholder="not in Airtable yet - type it" />}
+              </Field>
+              <Field label="Slack channel" tip="Where the Post to Slack button on the sell-through card sends this release's update. The channel name without the #; for a private channel, invite the Launch Performance bot to it first. Saved on its own, separately from the targets.">
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input className="control" value={slackDraft} onChange={(e) => setSlackDraft(e.target.value)} placeholder="launch-updates" />
+                  <button className="btn secondary" disabled={slackSaving || slackDraft.trim().replace(/^#/, "") === slackCurrent} onClick={saveSlack} style={{ flex: "0 0 auto" }}>
+                    {slackSaving ? "Saving…" : "Save"}
+                  </button>
+                </div>
+                {slackError && <div style={{ fontSize: 11.5, marginTop: 4, color: C.red }}>{slackError}</div>}
+                {!slackError && slackNote && <div style={{ fontSize: 11.5, marginTop: 4, color: C.amber, lineHeight: 1.5 }}>{slackNote}</div>}
+                {!slackError && !slackNote && snap.slack && snap.slack.lastPostAt && (
+                  <div style={{ fontSize: 11.5, marginTop: 4, color: C.muted }}>last posted {new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</div>
                 )}
-              </div>
-            </Field>
+              </Field>
+            </div>
           </div>
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
-            <Field label="Private room opens">
-              <input className="control" type="date" value={inp.private_room_open || ""} onChange={set("private_room_open")} />
-            </Field>
-            <Field label="Announce date">
-              <input className="control" type="date" value={inp.announce_date || ""} onChange={set("announce_date")} />
-            </Field>
-            <Field label="Draw closes">
-              <input className="control" type="date" value={inp.launch_end || ""} onChange={set("launch_end")} />
-            </Field>
+            {dateField("Private room opens", "private_room_open", prOpen, prSrc, "The day of the early-access email, from the Notion log. Until the log has it: what is typed, else two weeks before the announce.")}
+            {dateField("Announce date", "announce_date", announce, annSrc, "From the Notion log; else what is typed, else the funnel export's campaign clock, else Airtable.")}
+            {dateField("Draw closes", "launch_end", closes, closeSrc, "The launch: the day the draw closes and sales open. From the Notion log; else what is typed, else the funnel export's campaign clock, else Airtable.")}
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
             <span className="chip" title="Announce → draw close. The campaign clock runs on this window.">Campaign {days === null ? "–" : days} days</span>
@@ -459,85 +687,37 @@ export default function TargetSetting({ snap, onSaved }) {
           </div>
         </Card>
 
-        <Card dot="#8a7a52" title="Economics">
-          <div className="spacer-16" />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
-            <Field label="Target (units)" tip="The units the launch is targeted to sell by close: the whole edition for most launches. When the target is only part of the edition, put the edition in Total edition.">
-              <input className="control num" style={{ fontWeight: 600 }} value={inp.edition_size ?? ""} onChange={setNum("edition_size")} placeholder={creating ? "required" : ""} />
-            </Field>
-            <Field label="Total edition (units)" tip="Only when the target is part of the edition (Warhol: a 2,440 target on 6,100). The hero cap, the room and the sell-through percentages then read against this; the targets stay on the target. Leave empty when the target is the whole edition.">
-              <input className="control num" value={inp.edition_total ?? ""} onChange={setNum("edition_total")} placeholder="same as target" />
-            </Field>
-            <Field label="Unit price (£)">
-              <input className="control num" value={inp.unit_price ?? ""} onChange={setNum("unit_price")} placeholder={creating ? "required" : ""} />
-            </Field>
-            <Field label="Launch value" tip="Target units × unit price - derived.">
-              <input className="control ro num" value={fmtMoney(derived.launch_value)} readOnly />
-            </Field>
-            <Field label="Artist profit (total £)">
-              <input className="control num" value={inp.artist_profit ?? ""} onChange={setNum("artist_profit")} placeholder={creating ? "required" : ""} />
-            </Field>
-            <Field label="AA Group profit (total £)">
-              <input className="control num" value={inp.aa_group_profit ?? ""} onChange={setNum("aa_group_profit")} placeholder={creating ? "required" : ""} />
-            </Field>
-            <Field label="Artist profit share" tip="Who pays for paid ads. 0% for commission / rev-share estates - AA then carries 100% of spend.">
-              <input className="control num" value={Math.round((inp.artist_profit_share ?? 0) * 100) + "%"}
-                onChange={(e) => setInp({ ...inp, artist_profit_share: clamp((parseInt(String(e.target.value).replace(/[^0-9]/g, ""), 10) || 0) / 100, 0, 1) })} />
-            </Field>
-            <Field label="Framing available">
-              <div style={{ display: "inline-flex", border: `1px solid ${C.border}`, borderRadius: 8, overflow: "hidden" }}>
-                {["Yes", "No"].map((o) => {
-                  const active = (inp.framing_available !== false) === (o === "Yes");
-                  return (
-                    <button key={o} onClick={() => setInp({ ...inp, framing_available: o === "Yes" })}
-                      style={{ fontFamily: "inherit", fontSize: 12, fontWeight: active ? 600 : 500, padding: "6px 16px",
-                        border: "none", cursor: "pointer", background: active ? "#e6eefa" : "#fff",
-                        color: active ? BLUE : C.muted }}>{o}</button>
-                  );
-                })}
-              </div>
-            </Field>
-            {inp.framing_available !== false && (
-              <>
-                <Field label="Frame take-up (% of buyers)"
-                  tip={`Share of buyers expected to take a frame. Blank = the benchmark default, ${Math.round(b.frame_conversion * 100)}% (the workbook's constant for every release).`}>
-                  <input className="control num" value={inp.frame_conversion === null || inp.frame_conversion === undefined ? "" : Math.round(Number(inp.frame_conversion) * 100)}
-                    placeholder={`${Math.round(b.frame_conversion * 100)} (default)`}
-                    onChange={(e) => {
-                      const raw = String(e.target.value).replace(/[^0-9]/g, "");
-                      setInp({ ...inp, frame_conversion: raw === "" ? null : clamp((parseInt(raw, 10) || 0) / 100, 0, 1) });
-                    }} />
-                </Field>
-                <Field label="Frame profit (£ per frame)"
-                  tip={`AA's profit on each frame sold. Blank = the benchmark default, £${b.frame_profit_per_unit} (the workbook's constant for every release).`}>
-                  <input className="control num" value={inp.frame_profit_per_unit ?? ""} placeholder={`${b.frame_profit_per_unit} (default)`}
-                    onChange={(e) => {
-                      const raw = String(e.target.value).replace(/[^0-9.]/g, "");
-                      setInp({ ...inp, frame_profit_per_unit: raw === "" ? null : Math.max(parseFloat(raw) || 0, 0) });
-                    }} />
-                </Field>
-              </>
-            )}
-            <Field label="Artist profit / unit" tip="Artist total profit ÷ edition size - derived.">
-              <input className="control ro num" value={fmtMoney(derived.ppu_artist, 2)} readOnly />
-            </Field>
-            <Field label="AA profit / unit" tip={inp.framing_available !== false
-              ? `AA Group profit ÷ edition size, plus framing: ${Math.round(derived.frame_conversion * 100)}% take-up × £${fmt(derived.frame_profit_per_unit, 2)} per frame = £${fmt(derived.frame_uplift_per_unit, 2)} per unit - derived.`
-              : "AA Group profit ÷ edition size, no framing - derived."}>
-              <input className="control ro num" value={fmtMoney(derived.ppu_aa, 2)} readOnly />
-            </Field>
-            <Field label="Cost per purchase (£ per paid unit)"
-              tip={`What a paid unit costs to buy: paid units × this is the paid budget. Blank = the panel's median, £${fmt(cppDefault, 0)}.`}>
-              <input className="control num" value={inp.cost_per_purchase ?? ""} placeholder={`${fmt(cppDefault, 0)} (default)`}
-                onChange={(e) => {
-                  const raw = String(e.target.value).replace(/[^0-9.]/g, "");
-                  setInp({ ...inp, cost_per_purchase: raw === "" ? null : Math.max(parseFloat(raw) || 0, 0) });
-                }} />
-            </Field>
+        <Card dot="#8a7a52" title="Products & economics">
+          <div className="spacer-8" />
+          <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginBottom: 10 }}>
+            {airtableMatch !== "none"
+              ? <>Airtable holds {atProducts.length} product{atProducts.length === 1 ? "" : "s"} for this launch (matched by {airtableMatch}). Their edition, target, price and economics are read from there as they are filled in; type over a figure only where Airtable has none or is wrong.</>
+              : <>Airtable has no record matched to this release{(sourced.airtable || {}).note ? ` - ${(sourced.airtable || {}).note}` : ""}. Add the works by hand until it does.</>}
+          </div>
+          {legacy && (
+            <div style={{ padding: "10px 14px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a", fontSize: 12.5, lineHeight: 1.6, marginBottom: 14 }}>
+              <b>Release-level figures still in force.</b> This release was set up before the model went per product: target {fmt(legacy.edition_size)}{legacy.edition_total > legacy.edition_size ? ` of ${fmt(legacy.edition_total)}` : ""} units at {fmtMoney(legacy.unit_price || 0, 0)},
+              artist {fmtMoney((legacy.artist_profit || 0) / (legacy.edition_size || 1), 0)} and AA {fmtMoney((legacy.aa_group_profit || 0) / (legacy.edition_size || 1), 0)} per unit.
+              The products below are what Airtable holds; the totals switch to them when these are cleared.
+              {" "}<button className="btn secondary" style={{ fontSize: 11.5, padding: "3px 10px", marginLeft: 6 }}
+                onClick={() => setInp({ ...inp, legacy_economics: null })} title="Drop the release-level figures: the products' figures carry the totals from the next save.">Use the products' figures</button>
+            </div>
+          )}
+          <ProductsTable products={products} econ={econ} onField={onField} onName={onName} onAdd={onAdd} onRemove={onRemove}
+            airtableNote={(sourced.airtable || {}).note} />
+          <div style={{ marginTop: 14, fontSize: 12.5, lineHeight: 1.7 }}>
+            <span style={{ color: C.muted }}>Target </span><b>{fmt(econ.edition_size)}</b>
+            {econ.edition_total > econ.edition_size ? <span style={{ color: C.muted }}> of {fmt(econ.edition_total)} in the edition</span> : <span style={{ color: C.muted }}> units, the whole edition</span>}
+            <span style={{ color: C.muted }}> · launch value </span><b>{fmtMoney(econ.launch_value, 0)}</b>
+            {(econ.launch_currencies || []).some((c) => c !== "GBP") && <span style={{ color: C.muted }}> (from {(econ.launch_currencies || []).join(", ")} at a fixed rate)</span>}
+            <span style={{ color: C.muted }}> · artist </span><b>{fmtMoney(econ.ppu_artist, 2)}</b><span style={{ color: C.muted }}> and AA </span><b>{fmtMoney(econ.ppu_aa, 2)}</b><span style={{ color: C.muted }}> per unit</span>
+            {econ.frame_uplift_per_unit > 0 && <span style={{ color: C.muted }}> (incl. {fmtMoney(econ.frame_uplift_per_unit, 2)} framing)</span>}
+            <span style={{ color: C.muted }}> · AA carries </span><b>{fmtPct(econ.aa_budget_share, 0)}</b><span style={{ color: C.muted }}> of paid spend</span>
+            <span style={{ color: C.muted }}> ({econ.deal && econ.deal.length ? econ.deal.join(" and ") : legacy ? "as set up" : "no deal recorded, 50/50 assumed"})</span>
           </div>
         </Card>
 
-        <Products inp={inp} setInp={setInp} />
+        <Rates inp={inp} setInp={setInp} />
 
         <Card dot={GROUP_DOTS.funnel} title="Benchmark basket">
           <div className="spacer-16" />
@@ -645,11 +825,10 @@ export default function TargetSetting({ snap, onSaved }) {
             <Field label="Benchmark (units)" tip="The basket's median units at close - what launches like this one typically reach.">
               <input className="control ro num" value={bmUnits === null ? "–" : fmt(bmUnits)} readOnly />
             </Field>
-            <Field label="Sellout (units)" tip="The edition size, mirrored from Economics - the business target.">
-              <input className="control num" style={{ fontWeight: 600 }} value={inp.edition_size ?? ""}
-                onChange={setNum("edition_size")} placeholder={creating ? "required" : ""} />
+            <Field label="Target (units)" tip="The products' editions at their target sell-through, summed - the business target, from the products table above.">
+              <input className="control ro num" style={{ fontWeight: 600 }} value={editionSize > 0 ? fmt(editionSize) : "–"} readOnly />
             </Field>
-            <Field label="Stretch" tip="Sellout − benchmark: how much more than a typical launch this one is being asked for.">
+            <Field label="Stretch" tip="Target − benchmark: how much more than a typical launch this one is being asked for.">
               <input className="control ro num"
                 value={stretchUnits === null ? "–" : `+${fmt(stretchUnits)} units · +${fmtPct(stretchPct, 0)}`} readOnly />
             </Field>
@@ -667,11 +846,11 @@ export default function TargetSetting({ snap, onSaved }) {
       <div style={{ width: 384, flex: "0 0 384px", position: "sticky", top: 28 }}>
         <Card dot="#8a7a52" title="Derived targets">
           <div className="spacer-8" />
-          <div className="lead" title="Secured-units sellout target - the hero target on the Overview tab.">
-            {creating && missing.length ? "–" : fmt(editionSize)}
+          <div className="lead" title="Secured-units target - the hero target on the Overview tab.">
+            {editionSize > 0 ? fmt(editionSize) : "–"}
           </div>
-          <div className="lead-caption">{creating && missing.length ? "sellout units - enter the economics"
-            : partialEdition ? `target units · ${Math.round((100 * Number(inp.edition_size)) / Number(inp.edition_total))}% of the ${fmt(inp.edition_total)} edition` : "sellout units"}</div>
+          <div className="lead-caption">{editionSize <= 0 ? "target units - a product with an edition is needed"
+            : partialEdition ? `target units · ${Math.round((100 * econ.edition_size) / econ.edition_total)}% of the ${fmt(econ.edition_total)} edition` : "target units, the whole edition"}</div>
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 72px 72px", gap: 4, alignItems: "center" }}>
             <span />
@@ -689,17 +868,15 @@ export default function TargetSetting({ snap, onSaved }) {
             ))}
           </div>
           <div className="btn-row" style={{ marginTop: 16 }}>
-            <button className="btn primary" disabled={saving || (creating && missing.length > 0)} onClick={save}
-              title={creating
-                ? (missing.length ? `Still needed: ${missing.join(", ")}` : "Saves the inputs and rebuilds this release with the full target model.")
-                : "Saves the inputs and recomputes this release's targets, plan curves and projections."}>
+            <button className="btn primary" disabled={saving || missing.length > 0} onClick={save}
+              title={missing.length ? `Still needed: ${missing.join(", ")}` : creating ? "Saves the inputs and rebuilds this release with the full target model." : "Saves the inputs and recomputes this release's targets, plan curves and projections."}>
               {saving ? (creating ? "Building…" : "Saving…") : savedFlash ? "✓ Saved" : creating ? "Set targets" : "Save targets"}
             </button>
             <button className="btn secondary" onClick={discard}>Discard</button>
           </div>
-          {!T && !error && !(creating && missing.length > 0) && (
+          {!T && !error && missing.length === 0 && (
             <div style={{ fontSize: 12, color: C.muted, marginTop: 10 }}>
-              {profile ? "Type the target units to see the targets." : "Choose a basket to see the targets; saving without one benchmarks against the nearest launches."}
+              Choose a basket to see the targets; saving without one benchmarks against the nearest launches.
             </div>
           )}
           {basketDirty && !error && (
@@ -707,7 +884,7 @@ export default function TargetSetting({ snap, onSaved }) {
               A new basket rebuilds this release from the panel, so saving takes longer than usual.
             </div>
           )}
-          {creating && missing.length > 0 && !error && (
+          {missing.length > 0 && !error && (
             <div style={{ fontSize: 12, color: C.muted, marginTop: 10 }}>Still needed: {missing.join(", ")}</div>
           )}
           {error && <div style={{ fontSize: 12, color: C.red, marginTop: 10 }}>{error}</div>}
@@ -716,15 +893,15 @@ export default function TargetSetting({ snap, onSaved }) {
 
       {picking && (
         <BasketPicker releaseId={snap.id} releaseName={snap.releaseName} current={spec}
-          targetUnits={Number(inp.edition_size) || 0} unitPrice={Number(inp.unit_price) || 0}
+          targetUnits={editionSize} unitPrice={econ.unit_price || 0}
           preferRecent={inp.prefer_recent !== false} channelsOff={off}
           // what the rule needs to find the artist's own earlier launches and
           // to read the typed price in its currency (shared/basketRule.mjs)
-          artist={snap.artist || ""} currency={inp.currency || "GBP"}
-          announceDate={inp.announce_date || null} privateRoomOpen={inp.private_room_open || null}
+          artist={snap.artist || ""} currency="GBP"
+          announceDate={announce || null} privateRoomOpen={prOpen || null}
           // the picker asks for a target and a price when there are none, and
-          // writes them straight into this form so the basket follows the typing
-          onInputs={(patch) => setInp({ ...inp, ...patch })}
+          // writes them onto a product added by hand so the basket follows
+          onInputs={onPickerInputs}
           onPick={onPick} onClose={() => setPicking(false)} />
       )}
     </div>

@@ -165,7 +165,17 @@ const POSTING_TIERS = ["Low", "Medium", "High"];
 // the inputs of the quartile-lever model, retired 2026-09-23 (docs/DATA_MODEL.md
 // §3): a save drops them from a release that still carries them
 const RETIRED_INPUTS = ["paid_channel_size", "reference_point", "paid_conv_quality", "cpp_pick",
-  "channel_quality_overrides", "paid_share_override", "stretch_mode"];
+  "channel_quality_overrides", "paid_share_override", "stretch_mode", "budget_file"];
+// the release-level economics a release was set up with before the model went
+// per product (docs §1.6): kept under legacy_economics until cleared on the tab
+const LEGACY_KEYS = ["edition_size", "edition_total", "unit_price", "artist_profit", "aa_group_profit",
+  "artist_profit_share", "framing_available", "frame_conversion", "frame_profit_per_unit", "aa_budget_share"];
+// a product's figures as typed over Airtable's: [field, floor, ceiling, integer?]
+const PRODUCT_FIELDS = [["edition", 1, null, true], ["target_sellthrough", 0, 1, false], ["unit_price", 0.01, null, false],
+  ["artist_profit_per_unit", 0, null, false], ["aa_profit_per_unit", 0, null, false], ["aa_revenue_share", 0, 1, false],
+  ["aa_profit_share", 0, 1, false], ["frame_conversion", 0, 1, false], ["frame_profit_per_unit", 0, null, false]];
+const CURRENCIES = ["GBP", "EUR", "USD"];
+const economicsPromise = import("../shared/economics.mjs");
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function readSaved() {
@@ -197,14 +207,20 @@ function readInputsDoc() {
 function defaultsFor(id, disc) {
   return {
     id, release_name: disc.release_name, campaign_code: disc.campaign_code || "",
-    campaign_name: disc.campaign_name || null, marketing_lead: null, budget_file: null,
+    campaign_names: disc.campaign_name ? [disc.campaign_name] : [], marketing_lead: null,
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
-    edition_size: null, edition_total: null, unit_price: null, artist_profit: null, aa_group_profit: null,
+    products: [], legacy_economics: null,
     preorder_conversion_rate: null,
     prefer_recent: true,
-    artist_profit_share: 0.5, framing_available: true, frame_conversion: null, frame_profit_per_unit: null,
     cost_per_purchase: null, artist_posting_tier: "Medium", channels_off: [],
   };
+}
+
+/* What the feeds hold for a release (the ETL's sourced block of inputs.json,
+ * docs §1.6): Airtable's products and dates, the Notion dates, the campaigns
+ * named for the code. Empty until the build has run once on this checkout. */
+function sourcedFor(doc, id) {
+  return (doc.sourced && doc.sourced[id]) || { airtable: { match: "none", note: "", products: [] }, notion: {}, clock: {}, campaigns: [] };
 }
 
 app.get("/api/inputs/:id", (req, res) => {
@@ -217,6 +233,7 @@ app.get("/api/inputs/:id", (req, res) => {
     inputs: inputs || null,
     defaults: disc ? defaultsFor(id, disc) : null,
     derived: disc || null,
+    sourced: sourcedFor(doc, id),
     benchmarks: doc.benchmarks,
     meta_campaigns: doc.meta_campaigns || [],
     // the draws (one per product) the event feed found for this release
@@ -239,44 +256,24 @@ app.post("/api/inputs/:id", route(async (req, res) => {
 
   const next = { ...current };
   const errors = [];
+  const sourced = sourcedFor(doc, id);
+  const { resolveProducts, releaseEconomics } = await economicsPromise;
+  // the release-level figures a release was set up with before the model went
+  // per product: inputs saved under the old shape carry them at the top level,
+  // and a save moves them under legacy_economics; null clears them, and the
+  // products carry the totals from then on
+  const topLegacy = {};
+  for (const k of LEGACY_KEYS) if (next[k] !== undefined) { if (next[k] !== null) topLegacy[k] = next[k]; delete next[k]; }
+  if (next.legacy_economics === undefined && Object.keys(topLegacy).length) next.legacy_economics = topLegacy;
+  if (body.legacy_economics !== undefined) {
+    if (body.legacy_economics === null) next.legacy_economics = null;
+    else errors.push("legacy_economics can only be cleared (null); the figures are per product now");
+  }
+  const dateOf = (f) => body[f] || current[f] || (sourced.notion || {})[f] || (sourced.clock || {})[f] || (sourced.airtable || {})[f];
   if (creating) {
-    for (const f of ["edition_size", "unit_price", "artist_profit", "aa_group_profit"]) {
-      if (body[f] === undefined || body[f] === null || body[f] === "") errors.push(`${f} is required to set targets`);
+    for (const f of ["announce_date", "launch_end"]) {
+      if (!dateOf(f)) errors.push(`${f} is needed to set targets - none in the Notion log, the funnel's clock or Airtable, so type it`);
     }
-    for (const f of ["announce_date", "launch_end", "private_room_open"]) {
-      if (!body[f] && !current[f]) errors.push(`${f} is required to set targets`);
-    }
-  }
-  for (const f of ["edition_size", "unit_price", "artist_profit", "aa_group_profit"]) {
-    if (body[f] !== undefined) {
-      const v = Number(body[f]);
-      // edition_size is a divisor throughout the model - zero freezes every
-      // release's rebuild, not just this one
-      const floor = f === "edition_size" ? 1 : 0;
-      if (!Number.isFinite(v) || v < floor) {
-        errors.push(f === "edition_size"
-          ? "edition size must be at least 1"
-          : `${f} must be a non-negative number`);
-      } else next[f] = f === "edition_size" ? Math.round(v) : v;
-    }
-  }
-  // the whole edition when the target (edition_size) is only part of it;
-  // empty means the target is the edition
-  if (body.edition_total !== undefined) {
-    if (body.edition_total === null || body.edition_total === "") next.edition_total = null;
-    else {
-      const v = Number(body.edition_total);
-      if (!Number.isFinite(v) || v < 1) errors.push("total edition must be at least 1, or empty when the target is the whole edition");
-      else next.edition_total = Math.round(v);
-    }
-  }
-  if (next.edition_total !== null && next.edition_total !== undefined && Number(next.edition_total) < Number(next.edition_size)) {
-    errors.push("total edition cannot be smaller than the target");
-  }
-  if (body.artist_profit_share !== undefined) {
-    const v = Number(body.artist_profit_share);
-    if (!Number.isFinite(v) || v < 0 || v > 1) errors.push("artist_profit_share must be 0..1");
-    else next.artist_profit_share = v;
   }
   // what a paid unit costs to buy, £: paid units x this is the paid budget.
   // Empty means the panel's median (etl/benchmarks.json cost_per_purchase).
@@ -293,24 +290,18 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     if (!POSTING_TIERS.includes(body.artist_posting_tier)) errors.push(`artist_posting_tier must be one of ${POSTING_TIERS.join("/")}`);
     else next.artist_posting_tier = body.artist_posting_tier;
   }
-  if (body.framing_available !== undefined) next.framing_available = !!body.framing_available;
-  // the framing uplift's terms: a share of buyers taking a frame and AA's
-  // profit per frame. Empty means the benchmark default (0.35 x £94), which is
-  // what every release ran on before these were inputs.
-  if (body.frame_conversion !== undefined) {
-    if (body.frame_conversion === null || body.frame_conversion === "") next.frame_conversion = null;
+  /* The Meta campaigns whose spend is this release's: names as the spend feed
+   * spells them, the draw campaign first. campaign_name is kept as the first
+   * for readers of the older field. */
+  if (body.campaign_names !== undefined || body.campaign_name !== undefined) {
+    let raw = body.campaign_names !== undefined ? body.campaign_names : [body.campaign_name];
+    if (raw === null) raw = [];
+    if (!Array.isArray(raw) || raw.some((n) => n !== null && typeof n !== "string")) errors.push("campaign_names must be a list of campaign names");
     else {
-      const v = Number(body.frame_conversion);
-      if (!Number.isFinite(v) || v < 0 || v > 1) errors.push("frame_conversion must be 0..1 (the share of buyers taking a frame) or empty");
-      else next.frame_conversion = v;
-    }
-  }
-  if (body.frame_profit_per_unit !== undefined) {
-    if (body.frame_profit_per_unit === null || body.frame_profit_per_unit === "") next.frame_profit_per_unit = null;
-    else {
-      const v = Number(body.frame_profit_per_unit);
-      if (!Number.isFinite(v) || v < 0) errors.push("frame_profit_per_unit must be a non-negative number (£ per frame) or empty");
-      else next.frame_profit_per_unit = v;
+      const names = [...new Set(raw.map((n) => String(n || "").trim().slice(0, 200)).filter(Boolean))];
+      if (names.length > 12) errors.push("campaign_names: at most 12 campaigns");
+      next.campaign_names = names;
+      next.campaign_name = names[0] || null;
     }
   }
   for (const f of ["private_room_open", "announce_date", "launch_end"]) {
@@ -319,7 +310,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       else next[f] = body[f];
     }
   }
-  for (const f of ["marketing_lead", "budget_file", "campaign_name", "campaign_code"]) {
+  for (const f of ["marketing_lead", "campaign_code"]) {
     if (body[f] !== undefined) next[f] = body[f] === null ? null : String(body[f]).slice(0, 200);
   }
   /* The benchmark basket (BENCHMARK_SPEC §6). An unresolvable basket is
@@ -357,37 +348,64 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   const legacyTier = ((next.channel_quality_overrides || {})["Referral Artist"]);
   if (next.artist_posting_tier === undefined && POSTING_TIERS.includes(legacyTier)) next.artist_posting_tier = legacyTier;
   for (const f of RETIRED_INPUTS) delete next[f];
-  /* The products (docs §6.3): one entry per draw the feed found - its id as
-   * the key, the name typed for it and its edition size. Two draws with the
-   * same name are one product. Editions are optional; the card runs on units
-   * until every product has one. */
+  /* The products (docs §1.6, §6.3). Two kinds share the list. An economics
+   * product carries airtable_id (Airtable's record for the work) or manual:
+   * true (a work Airtable has no record for), and the figures typed over
+   * Airtable's: its edition, target sell-through, price and currency, the
+   * artist's and Avant Arte's profit per unit, the deal's revenue or profit
+   * share, the framing take-up and profit; empty means Airtable's, or the
+   * default. A draw entry (key = the draw id) is the sell-through card's: the
+   * name typed for the draw, its edition and its pre-order rate. */
   if (body.products !== undefined) {
     if (body.products === null) next.products = null;
-    else if (!Array.isArray(body.products) || body.products.length > 40) errors.push("products is a list of up to 40 entries");
+    else if (!Array.isArray(body.products) || body.products.length > 60) errors.push("products is a list of up to 60 entries");
     else {
       const list = [];
       for (const p of body.products) {
         if (!p || typeof p !== "object") { errors.push("every product is an object"); break; }
         const key = p.key === undefined || p.key === null || p.key === "" ? null : String(p.key).slice(0, 80);
-        const name = p.name === undefined || p.name === null ? "" : String(p.name).slice(0, 120).trim();
-        let edition = null;
-        if (p.edition !== undefined && p.edition !== null && p.edition !== "") {
-          const v = Number(p.edition);
-          if (!Number.isFinite(v) || v < 0) errors.push(`the edition of ${name || key || "a product"} must be a non-negative number`);
-          else edition = Math.round(v);
+        const airtableId = p.airtable_id === undefined || p.airtable_id === null || p.airtable_id === "" ? null : String(p.airtable_id).slice(0, 40);
+        const manual = !!p.manual && !airtableId;
+        const name = p.name === undefined || p.name === null ? "" : String(p.name).slice(0, 160).trim();
+        const label = name || airtableId || key || "a product";
+        const entry = airtableId ? { airtable_id: airtableId, name } : manual ? { manual: true, name } : { key, name };
+        if (manual && !name) errors.push("a product added by hand needs a name");
+        const numField = (f, floor, ceil, integer) => {
+          if (p[f] === undefined || p[f] === null || p[f] === "") return null;
+          const v = Number(p[f]);
+          if (!Number.isFinite(v) || (floor !== null && v < floor) || (ceil !== null && v > ceil)) {
+            errors.push(`the ${f.replace(/_/g, " ")} of ${label} must be ${ceil !== null ? `a fraction between ${floor} and ${ceil}` : `a number of at least ${floor}`}, or empty`);
+            return null;
+          }
+          return integer ? Math.round(v) : v;
+        };
+        if (airtableId || manual) {
+          for (const [f, floor, ceil, integer] of PRODUCT_FIELDS) entry[f] = numField(f, floor, ceil, integer);
+          if (p.currency !== undefined && p.currency !== null && p.currency !== "") {
+            const c = String(p.currency).toUpperCase();
+            if (!CURRENCIES.includes(c)) errors.push(`the currency of ${label} must be one of ${CURRENCIES.join("/")}`);
+            else entry.currency = c;
+          }
+          if (p.framing_available !== undefined && p.framing_available !== null && p.framing_available !== "") entry.framing_available = !!p.framing_available;
+          if (entry.aa_revenue_share !== null && entry.aa_profit_share !== null) errors.push(`${label} cannot carry both a revenue share and a profit share - the deal is one or the other`);
+        } else {
+          entry.edition = numField("edition", 0, null, true);
         }
         // a product can convert its pre-orders at its own rate, where its
         // draw has already been run; empty means the release's
-        let preorderRate = null;
-        if (p.preorderRate !== undefined && p.preorderRate !== null && p.preorderRate !== "") {
-          const v = Number(p.preorderRate);
-          if (!Number.isFinite(v) || v <= 0 || v > 1) errors.push(`the pre-order rate of ${name || key || "a product"} must be a fraction between 0 and 1, or empty`);
-          else preorderRate = v;
-        }
-        list.push({ key, name, edition, preorderRate });
+        entry.preorderRate = numField("preorderRate", 0.000001, 1, false);
+        list.push(entry);
       }
       next.products = list;
     }
+  }
+  // what the targets need: a product with an edition and a price, from
+  // Airtable or typed, or the release-level figures it still carries
+  if (creating || next.legacy_economics === null) {
+    const products = resolveProducts((sourced.airtable || {}).products || [], next.products || [], doc.benchmarks || {});
+    const econ = releaseEconomics(products, next.legacy_economics || null, doc.benchmarks || {});
+    if (!(econ.edition_size > 0)) errors.push("no product has an edition yet - Airtable holds none for this release, so type one on the products table");
+    else if (!(econ.launch_value > 0)) errors.push("no product has a unit price yet - type one on the products table");
   }
   // the entry -> order rate the sell-through prediction converts entries in
   // hand at; empty means the panel's 0.8

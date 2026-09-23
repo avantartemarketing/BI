@@ -461,10 +461,19 @@ carry `null` and fall back to a −10% band on `statusPct`.
   cluster_name} ] }` — the draw panel, newest close first.
 - `POST /api/baskets` `{name, members[]}` → saves a custom basket to `data/app/baskets.json`
   and returns it with `kind: "saved"`.
-- `POST /api/inputs/:id` additionally accepts
+- `GET /api/inputs/:id` returns the inputs as saved and, under `sourced`, what the feeds hold
+  for the release (DATA_MODEL §1.6): Airtable's products, dates and marketing lead, the Notion
+  dates, the funnel clock's dates and the Meta campaigns named for the code.
+- `POST /api/inputs/:id` accepts `campaign_names` (the Meta campaigns whose spend is the
+  release's), `products[]` (per product, keyed by `airtable_id` or `manual: true`: the edition,
+  target sell-through, price and currency, profits per unit, revenue or profit share, framing
+  take-up and profit typed over Airtable's; a draw entry keyed by `key` keeps its name, edition
+  and pre-order rate), `legacy_economics: null` to clear the release-level figures a release
+  still carries, `marketing_lead` and the three dates (typed fallbacks, read after the feeds),
   `benchmark_basket: {kind: "ready"|"bespoke"|"saved", id?: string, members?: string[]}`,
   `channels_off` (§4.3), `cost_per_purchase` (£ per paid unit; empty means the panel median)
-  and `artist_posting_tier` (Low / Medium / High). Validation: `kind` in the three values; `id` must
+  and `artist_posting_tier` (Low / Medium / High). A release is set up only once a product
+  has an edition and a price and the dates resolve. Validation: `kind` in the three values; `id` must
   resolve; `members` must be known release names, at least 3, and must not contain this
   release. An invalid basket is a 400, not a silent fallback.
 

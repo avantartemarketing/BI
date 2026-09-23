@@ -12,16 +12,27 @@ once per release, into data/release_pricing.csv. The panel builder
 etl/baskets.py reads the price off the panel.
 
 What it pulls, and what it refuses to
-  Only the fields named in FIELDS below: the release's identity (artist, title,
+  The fields named in FIELDS below: the release's identity (artist, title,
   project code), its price and price status, its edition size, its launch and
-  edition type, its launch dates and its medium. The table has four hundred
-  fields, and many of the others are about people: collaborators, modifiers,
-  Slack ids, and lookups of the artist's ethnicity and gender. None of that is
-  needed to price a basket, so none of it is requested, and the guard in
-  `check_schema` refuses to run if a wanted field turns out to hold a person
-  (a collaborator, email, phone, or lookup of one) - a field can be retyped in
-  Airtable without anyone here noticing. Cell values are scanned for anything
-  email- or phone-shaped and blanked if found, on the same reasoning.
+  edition type, its launch dates and its medium. Then the OPTIONAL_FIELDS: the
+  per-product target economics the dashboard's Target setting tab reads
+  (target sell-through, the artist's and Avant Arte's profit per unit, the
+  deal's revenue or profit share, the framing assumptions) and the marketing
+  lead. Those are pulled when the table has them and left blank when it does
+  not, so the pull works while the fields are still being added; a field
+  under another name is pointed at with AIRTABLE_FIELD_<column> in the
+  environment (AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner").
+
+  The table has four hundred fields, and many of the others are about people:
+  collaborators, modifiers, Slack ids, and lookups of the artist's ethnicity
+  and gender. None of that is needed, so none of it is requested, and the
+  guard in `check_schema` refuses to run if a wanted field turns out to hold
+  a person (a collaborator, email, phone, or lookup of one) - a field can be
+  retyped in Airtable without anyone here noticing. The one exception is the
+  marketing lead, a colleague's name the dashboard shows beside the release:
+  from a collaborator field only the display name is taken, never the email,
+  and an email- or phone-typed field is still refused. Cell values are
+  scanned for anything email- or phone-shaped and blanked if found.
 
 Credentials come from the environment only (AIRTABLE_TOKEN, a read-only
 personal access token; AIRTABLE_BASE_ID; AIRTABLE_TABLE). They are never
@@ -110,6 +121,22 @@ FIELDS: list[tuple[str, str]] = [
     ("New / Repeat", "new_or_repeat"),
     ("Expected sell-through %", "expected_sellthrough"),
 ]
+# Airtable field -> CSV column, pulled only when the table has the field (a
+# missing one leaves its column blank and is named in the pull's report). The
+# per-product economics the Target setting tab reads, and the marketing lead.
+OPTIONAL_FIELDS: list[tuple[str, str]] = [
+    ("Target sell-through %", "target_sellthrough"),
+    ("Artist profit per unit", "artist_profit_per_unit"),
+    ("AA profit per unit", "aa_profit_per_unit"),
+    ("AA revenue share", "aa_revenue_share"),
+    ("AA profit share", "aa_profit_share"),
+    ("Framing conversion", "frame_conversion"),
+    ("Framing profit per unit", "frame_profit_per_unit"),
+    ("Marketing lead", "marketing_lead"),
+]
+LEAD_COL = "marketing_lead"
+# a percentage field arrives as 0.4 or, typed as a number, as 40: read either
+PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion"}
 PRICE_FIELD = "Total Unit Price (Retail)"
 DATE_COLS = {"launch_date", "announce_date", "private_room_date", "tl_end_date"}
 # the columns the join in release_clusters.py needs; a pull missing one of these
@@ -178,9 +205,19 @@ def field_kind(field: dict) -> str:
     return str(field.get("type"))
 
 
-def check_schema(fields: dict) -> tuple[list[str], str]:
+def optional_fields() -> list[tuple[str, str]]:
+    """OPTIONAL_FIELDS with any name overridden from the environment."""
+    out = []
+    for name, col in OPTIONAL_FIELDS:
+        override = os.environ.get(f"AIRTABLE_FIELD_{col.upper()}", "").strip()
+        out.append((override or name, col))
+    return out
+
+
+def check_schema(fields: dict) -> tuple[list[str], str, dict[str, str], list[str]]:
     """Every wanted field must exist and must not hold a person. Returns the
-    field names to request and the price field's currency code."""
+    field names to request, the price field's currency code, the optional
+    fields found (name -> column) and the optional ones the table lacks."""
     missing = [name for name, _ in FIELDS if name not in fields]
     if missing:
         sys.exit("fields not in the table: " + ", ".join(repr(m) for m in missing))
@@ -189,20 +226,38 @@ def check_schema(fields: dict) -> tuple[list[str], str]:
         kind = field_kind(fields[name])
         if kind in PERSON_TYPES or fields[name].get("type") in PERSON_TYPES:
             bad.append(f"{name!r} ({kind})")
+    found: dict[str, str] = {}
+    absent: list[str] = []
+    for name, col in optional_fields():
+        if name not in fields:
+            absent.append(name)
+            continue
+        kind = field_kind(fields[name])
+        ftype = fields[name].get("type")
+        if col == LEAD_COL:
+            # a colleague's name, never an address: a collaborator field is
+            # read for its display name only, an email or phone field is refused
+            if kind in ("email", "phoneNumber") or ftype in ("email", "phoneNumber", "multipleAttachments"):
+                bad.append(f"{name!r} ({kind})")
+                continue
+        elif kind in PERSON_TYPES or ftype in PERSON_TYPES:
+            bad.append(f"{name!r} ({kind})")
+            continue
+        found[name] = col
     if bad:
         sys.exit("refusing to pull fields that hold a person: " + ", ".join(bad))
     symbol = ((fields[PRICE_FIELD].get("options") or {}).get("symbol") or "").strip()
     currency = CURRENCY_OF_SYMBOL.get(symbol)
     if not currency:
         sys.exit(f"the price field's currency symbol {symbol!r} is not one this pull knows")
-    return [name for name, _ in FIELDS], currency
+    return [name for name, _ in FIELDS] + list(found), currency, found, absent
 
 
 def list_fields(fields: dict) -> None:
     """Names and types of every field in the table - nothing else. The
     wanted ones are marked, and the ones the guard would refuse are flagged."""
     print(f"{len(fields)} fields")
-    wanted = {name for name, _ in FIELDS}
+    wanted = {name for name, _ in FIELDS} | {name for name, _ in optional_fields()}
     for name, f in fields.items():
         kind = field_kind(f)
         flags = []
@@ -252,6 +307,9 @@ def flatten(value, col: str, hits: list[int]) -> object:
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, (int, float)):
+        if col in PERCENT_COLS and value > 1:
+            # a percentage typed as a whole number (40 for 40%): a fraction everywhere here
+            value = value / 100
         # a percent comes back as 0.7000000000000001; six places is more than any field carries
         return round(value, 6) if isinstance(value, float) else value
     if isinstance(value, list):
@@ -259,7 +317,10 @@ def flatten(value, col: str, hits: list[int]) -> object:
         parts = [str(p) for p in parts if p not in ("", None)]
         return " | ".join(dict.fromkeys(parts))
     if isinstance(value, dict):
-        # attachments and collaborators come back as objects; neither is wanted
+        # attachments and collaborators come back as objects; neither is wanted,
+        # except the marketing lead's display name (never the email beside it)
+        if col == LEAD_COL:
+            return scrub(re.sub(r"\s+", " ", str(value.get("name") or "")).strip(), hits)
         return ""
     text = str(value)
     if col in DATE_COLS or col == "launch_time":
@@ -288,17 +349,21 @@ def keep(row: dict, today: date, everything: bool) -> bool:
 
 
 def pull(tok: str, base: str, table: str, fields: dict, out: pathlib.Path, everything: bool) -> None:
-    names, currency = check_schema(fields)
-    by_name = dict(FIELDS)
+    names, currency, found, absent = check_schema(fields)
+    by_name = {**dict(FIELDS), **found}
     cols = [col for _, col in FIELDS]
     cols.insert(cols.index("unit_price") + 1, "currency")
+    # the optional columns are always in the file, blank where the table has
+    # no such field yet, so a reader can rely on the header
+    cols += [col for _, col in OPTIONAL_FIELDS]
     hits = [0]
     rows, seen, dropped = [], 0, 0
     today = date.today()
     for rec in records(tok, base, table, names):
         seen += 1
         f = rec.get("fields", {})
-        row = {by_name[name]: flatten(f.get(name), by_name[name], hits) for name in names}
+        row = {col: "" for col in cols}
+        row.update({by_name[name]: flatten(f.get(name), by_name[name], hits) for name in names})
         row["currency"] = currency if row.get("unit_price") not in ("", None) else ""
         if keep(row, today, everything):
             rows.append(row)
@@ -321,6 +386,12 @@ def pull(tok: str, base: str, table: str, fields: dict, out: pathlib.Path, every
         print(f"{seen} records in the table; kept {len(rows)} ({past} launched, {len(rows) - past} launching within "
               f"{UPCOMING_DAYS} days), dropped {dropped} without an artist, a title and such a launch date")
     print(f"of the kept rows: {priced} priced ({currency}), {sized} with an edition size, {dated} with a launch date")
+    if found:
+        filled = {col: sum(1 for r in rows if r.get(col) not in ("", None)) for col in found.values()}
+        print("target fields pulled: " + ", ".join(f"{name!r} -> {col} ({filled[col]} filled)" for name, col in found.items()))
+    if absent:
+        print("target fields not in the table yet (columns left blank): " + ", ".join(repr(a) for a in absent)
+              + " - name a field that holds one with AIRTABLE_FIELD_<column>")
     if hits[0]:
         print(f"blanked {hits[0]} cells that held something email- or phone-shaped")
     print(f"wrote {out} ({len(cols)} columns)")

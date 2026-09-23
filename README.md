@@ -63,7 +63,10 @@ npm start              # serves on :10000
 
 Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :5173, proxies /api).
 
-Edition pricing (needs `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE` in the environment):
+Edition pricing and the per-product target economics (needs `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID`,
+`AIRTABLE_TABLE` in the environment; the live refresh runs this every cycle when the token is set;
+`AIRTABLE_FIELD_<column>` names a target field spelled another way, e.g.
+`AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner"`):
 
 ```bash
 python3 etl/pull_airtable.py --list-fields              # field names and types only
@@ -327,6 +330,12 @@ and share the posts database page with that integration. Each refresh queries
 the database (`server/notion.js`), matches rows to releases by campaign code / release
 name / artist name found in any text column, and writes `data/notion_posts.csv`
 (`campaign_code,date,channel,posts`). `NOTION_ARTIST_POSTS_DB` overrides the database id.
+The same pass reads each row's words for the moment it records - an early-access email
+(which opens the private room), the announce, the launch or draw close - and writes
+`data/notion_campaigns.csv` (`campaign_code,private_room_open,announce_date,launch_end`),
+which the build reads before anything typed; `NOTION_CAMPAIGNS_DB` names a campaigns
+database whose date columns (matched by name: early access / private room, announce,
+launch / close) override those.
 
 The channel comes from the database's Channel column - values are written by hand
 ("AA IG Main", "Artist post", "Partner post") so they are read by shape, not from a
@@ -432,9 +441,15 @@ its own basket.
 
 The older quartile levers (docs/DATA_MODEL.md §3) are gone from the page and,
 since September 2026, from the build: a release that cannot be benchmarked
-shows its actuals. What the page asks instead is which channels are in plan -
-Running paid, the artist's own channels - how much the artist will post, and
-what a paid unit costs to buy (BENCHMARK_SPEC 4.3, 8).
+shows its actuals. Almost nothing on the tab is typed (docs/DATA_MODEL.md
+§1.6): the products and their economics come from Airtable per work (edition,
+target sell-through, price, profits per unit, the deal's revenue or profit
+share, framing), with a cell to type over any figure Airtable does not hold
+yet; the dates from the Notion log (the early-access email opens the private
+room), then the funnel's clock, then Airtable; the marketing lead from
+Airtable. What the page asks is which Meta campaigns are the release's, which
+channels are in plan - Running paid, the artist's own channels - and which
+basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 
 The derived-targets rail recomputes live in the browser via
 `shared/benchmarkModel.mjs` (the per-unit economics via `shared/economics.mjs`);
