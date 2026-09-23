@@ -1354,145 +1354,169 @@
     "date": "2026-07-28",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-07-29",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-07-30",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-07-31",
     "spend": 75.37,
     "entries": 3.125,
-    "roi": 13.432
+    "roi": 13.432,
+    "roiArtist": 9.858
    },
    {
     "date": "2026-08-01",
     "spend": 179.28,
     "entries": 10.0,
-    "roi": 16.697
+    "roi": 16.697,
+    "roiArtist": 12.254
    },
    {
     "date": "2026-08-02",
     "spend": 238.35,
     "entries": 8.0,
-    "roi": 13.882
+    "roi": 13.882,
+    "roiArtist": 10.188
    },
    {
     "date": "2026-08-03",
     "spend": 402.5,
     "entries": 4.246153846153846,
-    "roi": 8.788
+    "roi": 8.788,
+    "roiArtist": 6.449
    },
    {
     "date": "2026-08-04",
     "spend": 462.51,
     "entries": 3.3,
-    "roi": 4.565
+    "roi": 4.565,
+    "roiArtist": 3.35
    },
    {
     "date": "2026-08-05",
     "spend": 604.52,
     "entries": 5.5,
-    "roi": 2.876
+    "roi": 2.876,
+    "roiArtist": 2.111
    },
    {
     "date": "2026-08-06",
     "spend": 664.95,
     "entries": 12.0,
-    "roi": 3.891
+    "roi": 3.891,
+    "roiArtist": 2.855
    },
    {
     "date": "2026-08-07",
     "spend": 833.18,
     "entries": 10.0,
-    "roi": 4.237
+    "roi": 4.237,
+    "roiArtist": 3.109
    },
    {
     "date": "2026-08-08",
     "spend": 1209.78,
     "entries": 11.0,
-    "roi": 3.948
+    "roi": 3.948,
+    "roiArtist": 2.897
    },
    {
     "date": "2026-08-09",
     "spend": 1285.02,
     "entries": 6.0,
-    "roi": 2.628
+    "roi": 2.628,
+    "roiArtist": 1.929
    },
    {
     "date": "2026-08-10",
     "spend": 717.3,
     "entries": 9.0,
-    "roi": 2.622
+    "roi": 2.622,
+    "roiArtist": 1.924
    },
    {
     "date": "2026-08-11",
     "spend": 735.09,
     "entries": 7.466666666666667,
-    "roi": 2.659
+    "roi": 2.659,
+    "roiArtist": 1.951
    },
    {
     "date": "2026-08-12",
     "spend": 1111.65,
     "entries": 8.0,
-    "roi": 3.091
+    "roi": 3.091,
+    "roiArtist": 2.269
    },
    {
     "date": "2026-08-13",
     "spend": 1466.23,
     "entries": 14.736842105263158,
-    "roi": 2.953
+    "roi": 2.953,
+    "roiArtist": 2.168
    },
    {
     "date": "2026-08-14",
     "spend": 1594.83,
     "entries": 9.0,
-    "roi": 2.464
+    "roi": 2.464,
+    "roiArtist": 1.808
    },
    {
     "date": "2026-08-15",
     "spend": 1991.97,
     "entries": 14.777777777777779,
-    "roi": 2.469
+    "roi": 2.469,
+    "roiArtist": 1.812
    },
    {
     "date": "2026-08-16",
     "spend": 2100.3,
     "entries": 9.0,
-    "roi": 1.867
+    "roi": 1.867,
+    "roiArtist": 1.37
    },
    {
     "date": "2026-08-17",
     "spend": 2398.41,
     "entries": 11.6875,
-    "roi": 1.77
+    "roi": 1.77,
+    "roiArtist": 1.299
    },
    {
     "date": "2026-08-18",
     "spend": 2161.51,
     "entries": 14.3,
-    "roi": 1.702
+    "roi": 1.702,
+    "roiArtist": 1.249
    },
    {
     "date": "2026-08-19",
     "spend": 3074.33,
     "entries": 20.579710144927535,
-    "roi": 1.976
+    "roi": 1.976,
+    "roiArtist": 1.45
    },
    {
     "date": "2026-08-20",
     "spend": 2629.05,
     "entries": 11.23913043478261,
-    "roi": 1.9
+    "roi": 1.9,
+    "roiArtist": 1.394
    }
   ],
   "spendToDate": 25936.13,
@@ -1552,6 +1576,20 @@
   "profitPerUnitAA": 253.09,
   "profitPerUnitArtist": 185.74,
   "aaBudgetShare": 0.5,
+  "cannibalisation": 0.2,
+  "dropOff": 0.2,
+  "artist": {
+   "cumRoi": 1.86,
+   "l3dRoi": 1.394,
+   "roiDeclineModel": {
+    "start": 1.394,
+    "dailyFactor": 1.0
+   },
+   "roiPath": [],
+   "finalDayRoi": null,
+   "profitPerUnit": 185.74,
+   "budgetShare": 0.5
+  },
   "benchmarkUnits": 134.7,
   "benchmarkBudget": 23845.46
  },

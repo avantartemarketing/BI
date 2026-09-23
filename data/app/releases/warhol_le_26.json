@@ -1729,127 +1729,148 @@
     "date": "2026-09-01",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-02",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-03",
     "spend": 0.0,
     "entries": 0.0,
-    "roi": null
+    "roi": null,
+    "roiArtist": null
    },
    {
     "date": "2026-09-04",
     "spend": 753.21,
     "entries": 0.0,
-    "roi": 0.0
+    "roi": 0.0,
+    "roiArtist": 0.0
    },
    {
     "date": "2026-09-05",
     "spend": 1624.78,
     "entries": 0.0,
-    "roi": 0.0
+    "roi": 0.0,
+    "roiArtist": 0.0
    },
    {
     "date": "2026-09-06",
     "spend": 1236.06,
     "entries": 3.0,
-    "roi": 0.894
+    "roi": 0.894,
+    "roiArtist": 0.538
    },
    {
     "date": "2026-09-07",
     "spend": 1896.59,
     "entries": 16.0,
-    "roi": 4.302
+    "roi": 4.302,
+    "roiArtist": 2.589
    },
    {
     "date": "2026-09-08",
     "spend": 3404.53,
     "entries": 9.142857142857142,
-    "roi": 4.638
+    "roi": 4.638,
+    "roiArtist": 2.791
    },
    {
     "date": "2026-09-09",
     "spend": 3291.06,
     "entries": 10.0,
-    "roi": 4.406
+    "roi": 4.406,
+    "roiArtist": 2.652
    },
    {
     "date": "2026-09-10",
     "spend": 4353.39,
     "entries": 19.0,
-    "roi": 3.719
+    "roi": 3.719,
+    "roiArtist": 2.238
    },
    {
     "date": "2026-09-11",
     "spend": 5188.19,
     "entries": 9.72,
-    "roi": 3.25
+    "roi": 3.25,
+    "roiArtist": 1.956
    },
    {
     "date": "2026-09-12",
     "spend": 5660.31,
     "entries": 5.0,
-    "roi": 2.39
+    "roi": 2.39,
+    "roiArtist": 1.438
    },
    {
     "date": "2026-09-13",
     "spend": 7602.33,
     "entries": 12.0,
-    "roi": 1.56
+    "roi": 1.56,
+    "roiArtist": 0.939
    },
    {
     "date": "2026-09-14",
     "spend": 5914.46,
     "entries": 11.0,
-    "roi": 1.573
+    "roi": 1.573,
+    "roiArtist": 0.947
    },
    {
     "date": "2026-09-15",
     "spend": 7123.32,
     "entries": 15.0,
-    "roi": 1.983
+    "roi": 1.983,
+    "roiArtist": 1.194
    },
    {
     "date": "2026-09-16",
     "spend": 13348.67,
     "entries": 39.06382978723404,
-    "roi": 2.656
+    "roi": 2.656,
+    "roiArtist": 1.599
    },
    {
     "date": "2026-09-17",
     "spend": 14658.65,
     "entries": 30.0,
-    "roi": 2.578
+    "roi": 2.578,
+    "roiArtist": 1.551
    },
    {
     "date": "2026-09-18",
     "spend": 25389.31,
     "entries": 33.0,
-    "roi": 2.059
+    "roi": 2.059,
+    "roiArtist": 1.239
    },
    {
     "date": "2026-09-19",
     "spend": 23126.0,
     "entries": 43.58904109589041,
-    "roi": 1.818
+    "roi": 1.818,
+    "roiArtist": 1.094
    },
    {
     "date": "2026-09-20",
     "spend": 24730.9,
     "entries": 55.0,
-    "roi": 1.935
+    "roi": 1.935,
+    "roiArtist": 1.165
    },
    {
     "date": "2026-09-21",
     "spend": 30199.43,
     "entries": 10.058823529411764,
-    "roi": 1.499
+    "roi": 1.499,
+    "roiArtist": 0.902
    }
   ],
   "spendToDate": 179501.19,
@@ -1946,6 +1967,57 @@
   "profitPerUnitAA": 841.61,
   "profitPerUnitArtist": 506.51,
   "aaBudgetShare": 0.5,
+  "cannibalisation": 0.2,
+  "dropOff": 0.2,
+  "artist": {
+   "cumRoi": 1.158,
+   "l3dRoi": 0.902,
+   "roiDeclineModel": {
+    "start": 0.902,
+    "dailyFactor": 0.9722
+   },
+   "roiPath": [
+    {
+     "date": "2026-09-22",
+     "roi": 0.877
+    },
+    {
+     "date": "2026-09-23",
+     "roi": 0.853
+    },
+    {
+     "date": "2026-09-24",
+     "roi": 0.829
+    },
+    {
+     "date": "2026-09-25",
+     "roi": 0.806
+    },
+    {
+     "date": "2026-09-26",
+     "roi": 0.784
+    },
+    {
+     "date": "2026-09-27",
+     "roi": 0.762
+    },
+    {
+     "date": "2026-09-28",
+     "roi": 0.741
+    },
+    {
+     "date": "2026-09-29",
+     "roi": 0.72
+    },
+    {
+     "date": "2026-09-30",
+     "roi": 0.7
+    }
+   ],
+   "finalDayRoi": 0.638,
+   "profitPerUnit": 506.51,
+   "budgetShare": 0.5
+  },
   "benchmarkUnits": 204.7,
   "benchmarkBudget": 36226.15
  },
