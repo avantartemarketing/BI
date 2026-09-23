@@ -63,7 +63,7 @@ const fill = (ctx, x, y, w, h, r, color) => { roundRect(ctx, x, y, w, h, r); ctx
  * ends of the run, so a row reads as one bar rather than a row of tiles. */
 function segment(ctx, x, y, w, h, color, first, last) {
   if (w <= 0.4) return;
-  const r = Math.min(4, h / 2);
+  const r = Math.min(2, h / 2);   // concentric with the track's corner: its 8px less the 6px inset
   ctx.save();
   roundRect(ctx, x - (first ? 0 : r), y, w + (first ? 0 : r) - (last ? 0 : r) + (last ? 0 : r), h, r);
   ctx.clip();
