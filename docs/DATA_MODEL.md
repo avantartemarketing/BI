@@ -464,13 +464,17 @@ read). `tl_funnel_report_split_touch_export` was still denied when this was writ
 This reproduces the LE_Template TARGET SETTING block exactly. All benchmarks are quartiles of
 the historical release panel (§4).
 
-**This is no longer the default.** A release with a benchmark basket takes the basket model of
-§4a (`targeting_mode = "benchmark"`, the `Evenly` side of the Target setting switch), where the
-edition is split by what comparable launches actually did rather than by a quartile pick per
-channel. The quartile levers below are the other side of that switch - `By channel`,
-`targeting_mode = "levers"` - and run **unchanged** for any release without a basket, which is
-every release until one is chosen and every release whose panel row is missing. Steps 1-6 are
-therefore still live code, not history; §4a describes what replaces them and what it keeps.
+**This is no longer the default, and no longer on the page.** Every release takes the basket
+model of §4a (`targeting_mode = "benchmark"`), where the edition is split by what comparable
+launches actually did rather than by a quartile pick per channel; a release with no saved
+basket is benchmarked against the suggested one. The quartile levers below survive only as
+the fallback the build takes when a basket has no median units (and for saved inputs that
+still say `stretch_mode: "levers"`), so steps 1-6 are still live code, not history, but
+nothing on the Target setting tab reaches them any more; §4a describes what replaces them
+and what it keeps. Two of their inputs the benchmark still reads: the cost per purchase pick
+(the paid budget) and the Referral Artist tier (the artist-posts benchmark). A channel the
+release will not run - paid, or the artist's own - is set aside with `channels_off`
+(BENCHMARK_SPEC §4.3), which the fallback honours too: paid share zero, its channels `N/A`.
 
 ### Step 1 - split edition into paid vs organic
 ```
@@ -1259,6 +1263,9 @@ guard every benchmark mark on the page is written against.
 | `benchmark.stretchUnits`, `stretchPct` | `target − benchmark` in units, and `K − 1` |
 | `benchmark.unitsByGroup`, `sessionsByGroup`, `convByGroup` | the per-group medians (conversion is held, so `convByGroup` is both benchmark and target) |
 | `benchmark.paidBudget` | benchmark paid units × median cost per purchase × K |
+| `benchmark.channelsOff` | the display groups this release set aside (BENCHMARK_SPEC §4.3); their medians are zero above and the other channels carry the target |
+| `benchmark.unitsAll`, `sessionsAll`, `entriesAll`, `unitsP25All`, `unitsP75All`, `unitsByGroupAll`, `sessionsByGroupAll`, `convByGroupAll` | the basket's full medians before any channel was set aside, so the page can say what left and the browser can re-read the basket as the switches move |
+| `benchmark.privateRoomShare` | the basket's median private-room share of email units, which the browser's rail needs for the draw / private-room split |
 | `hero.benchmark`, `benchmarkToday`, `stretch` | benchmark at close, benchmark pace to today, the stretch |
 | `channels[].bm`, `bmExp` | per group: benchmark at close, benchmark by today |
 | `channels[].daily[].bm` | the benchmark plan for that day, beside `actual` / `plan` / `proj` |
@@ -1417,8 +1424,9 @@ The four that were live arguments, recorded so they are not relitigated from the
 25. **The stretch is one even uplift, with conversion rates held.** K multiplies every volume in
     every channel on every day; no channel is asked to convert better than the basket did. The
     alternative - spreading the uplift by channel, or buying part of it with a conversion
-    assumption - is exactly the quartile-lever model, which is still available behind the
-    `By channel` switch for anyone who wants to make that argument release by release. Keeping
+    assumption - is exactly the quartile-lever model, which is no longer offered on the page:
+    the one channel-level choice that remains is whether a channel is in plan at all
+    (BENCHMARK_SPEC §4.3). Keeping
     rates at the benchmark is also what puts the funnel rungs' benchmark tick (§4a.1, spec §7)
     1/K off the centre on a volume rung - target is benchmark × K - and on the centre line on a
     rate rung: there the two references are the same figure, and the two readings are the same

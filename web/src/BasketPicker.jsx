@@ -33,6 +33,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { C, fmt, fmtK, fmtMoney, fmtPct } from "./ui.jsx";
 import { similarMembers, ownMembers, releasePrice, releaseArtist, MIN_MEMBERS, THIN_MEMBERS, NEAR, RECENT_MONTHS } from "../../shared/basketRule.mjs";
+import { GROUPS, applyChannelsOff } from "../../shared/benchmarkModel.mjs";
 
 const SIMILAR_NAME = "Similar size and shape";   // etl/baskets.py SIMILAR_NAME: the basket with id similar_size
 const SHOW_AT_LEAST = 14;   // the members and the ones that just missed
@@ -56,12 +57,29 @@ const median = (values) => quantile(values, 0.5);
  * the basket is saved; this is the shape of the answer, not the answer. */
 function liveProfile(rows) {
   const units = rows.map((r) => r.units), priced = rows.map((r) => r.price).filter((p) => p > 0);
+  const total = median(units), sessions = median(rows.map((r) => r.sessions));
+  // each group's median share, renormalised so share x total adds back to the
+  // headline median - etl/baskets.py _shares, over the same rows
+  const shares = (key) => {
+    const raw = Object.fromEntries(GROUPS.map((g) => [g, median(rows.map((r) => ((r[key] || {})[g])))]));
+    const tot = GROUPS.reduce((s, g) => s + raw[g], 0);
+    return Object.fromEntries(GROUPS.map((g) => [g, tot > 0 ? raw[g] / tot : 0]));
+  };
+  const share_units = shares("unit_shares"), share_sessions = shares("sess_shares");
+  const positive = (vals) => median(vals.filter((v) => typeof v === "number" && v > 0));
   return {
     n: rows.length, members: rows.map((r) => r.release_name),
-    units: median(units), units_p25: quantile(units, 0.25), units_p75: quantile(units, 0.75),
+    units: total, units_p25: quantile(units, 0.25), units_p75: quantile(units, 0.75),
     price: median(priced), price_p25: quantile(priced, 0.25), price_p75: quantile(priced, 0.75), n_priced: priced.length,
-    sessions: median(rows.map((r) => r.sessions)), paid_share: median(rows.map((r) => r.paid_share)),
+    sessions, paid_share: median(rows.map((r) => r.paid_share)),
+    entries: median(rows.map((r) => r.entries)),
     campaign_days: median(rows.map((r) => r.campaign_days)),
+    private_room_share: median(rows.map((r) => r.private_room_share)),
+    units_per_buyer: positive(rows.map((r) => r.units_per_buyer)),
+    share_units, share_sessions,
+    units_by_group: Object.fromEntries(GROUPS.map((g) => [g, share_units[g] * total])),
+    sessions_by_group: Object.fromEntries(GROUPS.map((g) => [g, share_sessions[g] * sessions])),
+    conv: Object.fromEntries(GROUPS.map((g) => [g, positive(rows.map((r) => (r.convs || {})[g]))])),
   };
 }
 
@@ -192,7 +210,7 @@ const Legend = () => {
   );
 };
 
-export default function BasketPicker({ releaseId, releaseName, artist, currency, announceDate, privateRoomOpen, targetUnits, unitPrice, preferRecent = true, current, onInputs, onPick, onClose }) {
+export default function BasketPicker({ releaseId, releaseName, artist, currency, announceDate, privateRoomOpen, targetUnits, unitPrice, preferRecent = true, channelsOff = [], current, onInputs, onPick, onClose }) {
   const [recent, setRecent] = useState(preferRecent !== false);
   const [rows, setRows] = useState(null);
   const [error, setError] = useState(null);
@@ -270,7 +288,13 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
 
   const members = useMemo(() => scored.filter((s) => ticked.has(s.release_name)), [scored, ticked]);
   const reach = members.length ? Math.max(...members.map((m) => m.d ?? 0)) : null;
-  const live = useMemo(() => liveProfile(members), [members]);
+  const liveAll = useMemo(() => liveProfile(members), [members]);
+  // the switches are release inputs: the rail reads the basket the way the
+  // build will, without the channels set aside (BENCHMARK_SPEC 4.3)
+  const off = channelsOff || [];
+  const paidOff = off.includes("paid");
+  const live = useMemo(() => applyChannelsOff(liveAll, off), [liveAll, off]);
+  const setPaid = (on) => onInputs && onInputs({ channels_off: on ? off.filter((g) => g !== "paid") : [...off, "paid"] });
   const untouched = !!seed && ticked.size === seed.members.length && seed.members.every((m) => ticked.has(m));
   const ownIn = members.filter(isOwn).length;
   const K = live.units > 0 && L.target > 0 ? L.target / live.units : null;
@@ -317,10 +341,10 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
   };
   const use = () => {
     if (untouched && seed) {
-      onPick({ kind: "ready", id: seed.id, name: seed.name, n: seed.members.length, members: seed.members, profile: live, preferRecent: recent });
+      onPick({ kind: "ready", id: seed.id, name: seed.name, n: seed.members.length, members: seed.members, profile: liveAll, preferRecent: recent });
       return;
     }
-    onPick({ kind: "bespoke", name: `${seed ? seed.name : "Basket"} (edited)`, n: members.length, members: members.map((m) => m.release_name), profile: live, preferRecent: recent });
+    onPick({ kind: "bespoke", name: `${seed ? seed.name : "Basket"} (edited)`, n: members.length, members: members.map((m) => m.release_name), profile: liveAll, preferRecent: recent });
   };
 
   const headline = () => {
@@ -329,9 +353,11 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
       ? <span style={{ color: C.muted }}> (the {fmtMoney(priceUsed)} Airtable has for it, not the {fmtMoney(unitPrice)} typed)</span> : null;
     let s = <>The <b>{n}</b> launches nearest to <b>{fmt(L.target)} units at {fmtMoney(priceUsed)}</b>{priced}{ownIn ? <>, starting with {who}'s own {ownIn === 1 ? "one" : ownIn}</> : null}</>;
     const cost = passedOver ? <> <span style={{ color: C.amber }}>{passedOver === 1 ? "One nearer launch was" : `${passedOver} nearer launches were`} passed over for being older than {RECENT_MONTHS} months.</span></> : null;
-    if (reach === null) return <>{s}.</>;
-    if (reach > NEAR) return <>{s}. <span style={{ color: C.amber }}>Nothing on file is this size</span> - these are the nearest we have, the furthest {x(reach)} away.{cost}</>;
-    return <>{s} - all within <b>{x(reach)}</b> of it{untouched ? "" : " · edited"}.{cost}</>;
+    // the switches change how the basket is read, not which launches are in it
+    const paidNote = paidOff ? <span style={{ color: C.muted }}> Paid is not in plan, so the basket is read without its paid units.</span> : null;
+    if (reach === null) return <>{s}.{paidNote}</>;
+    if (reach > NEAR) return <>{s}. <span style={{ color: C.amber }}>Nothing on file is this size</span> - these are the nearest we have, the furthest {x(reach)} away.{cost}{paidNote}</>;
+    return <>{s} - all within <b>{x(reach)}</b> of it{untouched ? "" : " · edited"}.{cost}{paidNote}</>;
   };
 
   const loading = !rows && !error;
@@ -386,8 +412,9 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 18px", alignItems: "center", marginTop: 12 }}>
               <Switch id="basket-recent" on={recent} onChange={setRecent} label="Prefer recent" sub={`last ${RECENT_MONTHS} months first`} />
-              <Switch id="basket-paid" on={true} off label="Will run paid" sub="off measures against organic units - next, needs the target maths"
-                why="Turning paid off will count every member on its organic units only. It changes the targets too, so it comes with the target maths rather than half of it now." />
+              <Switch id="basket-paid" on={!paidOff} onChange={setPaid} label="Running paid"
+                sub={paidOff ? "off: the basket is read without its paid units" : "off reads the basket without its paid units"}
+                why="The basket keeps every launch, paid or not. With paid off each counts on its other channels only, so the benchmark is what launches like this reached without paid and the whole target falls on the channels in plan. Saved with the targets." />
               <Switch id="basket-estate" on={/estate|foundation/i.test(ownArtist)} off label="Estate" sub="needs the panel labelled"
                 why="One of the launches on file is an estate by name. The panel needs labelling before this can change the basket." />
             </div>
@@ -445,10 +472,10 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 72px", gap: 8, fontSize: 11, color: C.muted, marginTop: 10, paddingBottom: 5, borderBottom: `1px solid ${C.border}` }}>
                       <span /><span style={{ textAlign: "right" }}>This launch</span><span style={{ textAlign: "right", color: C.ink, fontWeight: 600 }}>Basket</span>
                     </div>
-                    {railRow("Units", fmt(L.target), members.length ? fmt(live.units) : "–", "This launch's target against the basket's median units at close - the benchmark.")}
+                    {railRow("Units", fmt(L.target), members.length ? fmt(live.units) : "–", paidOff ? "This launch's target against the basket's median units without paid - the benchmark with paid out of plan." : "This launch's target against the basket's median units at close - the benchmark.")}
                     {railRow("Unit price", fmtMoney(priceUsed), members.length && live.price > 0 ? fmtMoney(live.price) : "–", "Unit price in sterling, from Airtable. Launches Airtable could not price are left out of the median.")}
                     {railRow("Sessions", null, members.length ? fmtK(live.sessions) : "–", "The basket's median sessions. This launch's own are to date, so there is nothing to compare them with yet.")}
-                    {railRow("Paid share", null, members.length ? fmtPct(live.paid_share, 0) : "–", "Median share of sessions coming from paid.")}
+                    {railRow("Paid share", null, paidOff ? "not run" : members.length ? fmtPct(liveAll.paid_share, 0) : "–", paidOff ? "Paid is not in plan for this release." : "Median share of sessions coming from paid.")}
                     {railRow("Uplift to target (K)", "", K === null ? "–" : "×" + fmt(K, 2), "The target over the basket's median units: how far past the benchmark this launch is being asked to go.")}
                     {thin && (
                       <div style={{ marginTop: 12, padding: "8px 10px", borderRadius: 8, fontSize: 11.5, lineHeight: 1.5, background: "#fbf1e6", color: "#5a3f0a" }}>

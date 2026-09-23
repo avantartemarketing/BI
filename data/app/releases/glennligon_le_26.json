@@ -3056,6 +3056,34 @@
    "search_direct_other": 0.028397,
    "paid": 0.003077
   },
+  "channelsOff": [],
+  "unitsAll": 134.0,
+  "sessionsAll": 24402.0,
+  "entriesAll": 142.5,
+  "unitsP25All": 108.5,
+  "unitsP75All": 161.8,
+  "unitsByGroupAll": {
+   "aa_email": 56.2,
+   "aa_social": 4.6,
+   "referral_artist": 0.6,
+   "search_direct_other": 53.0,
+   "paid": 19.5
+  },
+  "sessionsByGroupAll": {
+   "aa_email": 5666.1,
+   "aa_social": 540.7,
+   "referral_artist": 228.5,
+   "search_direct_other": 2075.1,
+   "paid": 15891.7
+  },
+  "convByGroupAll": {
+   "aa_email": 0.010321,
+   "aa_social": 0.007437,
+   "referral_artist": 0.013822,
+   "search_direct_other": 0.028397,
+   "paid": 0.003077
+  },
+  "privateRoomShare": 0.2155,
   "paidBudget": 3459.62,
   "unitsPerBuyer": 1.1233,
   "buyers": 119.3

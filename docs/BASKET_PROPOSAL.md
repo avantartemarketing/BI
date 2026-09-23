@@ -251,10 +251,16 @@ words.
    members and their 2.5x to 3.9x spread are now on screen rather than
    behind a name.
 4. `paid_allowed`: the organic median, the paid group removed from the
-   targets, the page wording. **Next.** The switch is drawn in the picker and
-   inert, saying so; wiring only the median would leave the paid target
-   allocated against a benchmark that had stripped it. Touches the target maths in `etl/build.py`
-   and `shared/targetModel.mjs`, so it needs the parity tests extended.
+   targets, the page wording. **Done, as `channels_off`** (BENCHMARK_SPEC
+   4.3): a list of groups rather than one flag, so the artist's own channels
+   can be set aside the same way. The picker's switch is live, the Target
+   setting tab has the switches and the per-channel table reads `not in
+   plan`, the Overview's channel and paid cards say so, and
+   `tests/test_channels_off.py` holds the JS rail to the Python build. The
+   median is share-based - the basket's median share of each group times its
+   median total, which is what the per-channel table already read - rather
+   than the per-member organic median first proposed, so the table, the rail
+   and the build all quote one number.
 5. `artist_status`: the input, the panel column and its hand labelling,
    the same-status rung and the same-status channel shares.
 

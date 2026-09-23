@@ -265,6 +265,18 @@ def _num(value: object) -> float:
     return 0.0 if math.isnan(out) or math.isinf(out) else out
 
 
+def _num_or_none(value: object) -> float | None:
+    """A number, or None where there is none: for fields whose absence means
+    "no history" rather than "nothing" (a conversion rate, §3.2)."""
+    if value is None:
+        return None
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return None
+    return None if math.isnan(v) or math.isinf(v) else v
+
+
 def _median(rows: pd.DataFrame, col: str, positive: bool = False) -> float:
     """Median of one column over the basket, 0.0 when nothing qualifies.
 
@@ -344,6 +356,77 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
     }
 
 
+# ---------------------------------------------------------------- channels not in plan (§4.3)
+
+def channels_off_of(release: dict | None) -> list[str]:
+    """The display groups this release will not run - "not running paid", "the
+    artist has no channels of their own" - as the release inputs give them,
+    kept to the known groups, deduplicated and in GROUPS order so two spellings
+    of the same choice are the same choice everywhere."""
+    raw = (release or {}).get("channels_off") or []
+    if isinstance(raw, str):
+        raw = [raw]
+    wanted = {str(g).strip() for g in raw}
+    return [g for g in GROUPS if g in wanted]
+
+
+def apply_channels_off(profile: dict, off: list[str]) -> dict:
+    """The basket read without the channels this release will not run (§4.3).
+
+    A launch that will not run paid is not behind by the paid units the basket
+    typically buys, so those leave the benchmark: the group's median units and
+    sessions go to zero, the headline medians drop to what the remaining
+    groups add up to, entries fall by the same share, and the group's
+    conversion is zero rather than a rate for a channel that will not exist.
+    The uplift K is then the target over the remaining median - the honest
+    statement of what the channels in plan have to do.
+
+    The basket's full medians ride along as the *_all fields so the page can
+    show what was set aside and the browser can re-read the same basket as
+    switches are flipped without another build. With nothing off the profile
+    comes back unchanged apart from those fields. shared/benchmarkModel.mjs
+    mirrors this to the figure and tests/test_channels_off.py holds them to it.
+    """
+    off = [g for g in GROUPS if g in set(off or [])]
+    units_all = dict(profile.get("units_by_group") or {g: 0.0 for g in GROUPS})
+    sess_all = dict(profile.get("sessions_by_group") or {g: 0.0 for g in GROUPS})
+    out = dict(profile)
+    out["channels_off"] = off
+    out["units_all"] = _num(profile.get("units"))
+    out["sessions_all"] = _num(profile.get("sessions"))
+    out["entries_all"] = _num(profile.get("entries"))
+    out["units_by_group_all"] = {g: _num(units_all.get(g)) for g in GROUPS}
+    out["sessions_by_group_all"] = {g: _num(sess_all.get(g)) for g in GROUPS}
+    out["units_p25_all"] = _num(profile.get("units_p25"))
+    out["units_p75_all"] = _num(profile.get("units_p75"))
+    out["conv_all"] = {g: _num((profile.get("conv") or {}).get(g)) for g in GROUPS}
+    if not off:
+        return out
+    keep = [g for g in GROUPS if g not in off]
+    units = sum(_num(units_all.get(g)) for g in keep)
+    sessions = sum(_num(sess_all.get(g)) for g in keep)
+    ratio = (units / out["units_all"]) if out["units_all"] > 0 else 0.0
+    out["units"] = _num(units)
+    out["sessions"] = _num(sessions)
+    out["entries"] = _num(out["entries_all"] * ratio)
+    # the middle half scales with the median: it describes the same launches
+    # read on the same channels
+    out["units_p25"] = _num(_num(profile.get("units_p25")) * ratio)
+    out["units_p75"] = _num(_num(profile.get("units_p75")) * ratio)
+    out["units_by_group"] = {g: (_num(units_all.get(g)) if g in keep else 0.0) for g in GROUPS}
+    out["sessions_by_group"] = {g: (_num(sess_all.get(g)) if g in keep else 0.0) for g in GROUPS}
+    for key, total in (("share_units", units), ("share_sessions", sessions)):
+        src = profile.get(key) or {}
+        # shares over the groups in plan, renormalised so share x total still
+        # adds back to the headline median (§3.2); zero for a group set aside
+        raw = {g: (_num(src.get(g)) if g in keep else 0.0) for g in GROUPS}
+        tot = sum(raw.values())
+        out[key] = {g: (_num(raw[g] / tot) if tot > 0 else 0.0) for g in GROUPS}
+    conv = profile.get("conv") or {}
+    out["conv"] = {g: (_num(conv.get(g)) if g in keep else 0.0) for g in GROUPS}
+    return out
+
+
 # ---------------------------------------------------------------- ready-made baskets
 
 def _txt(v) -> str:
@@ -384,6 +467,15 @@ def candidate_rows(panel: pd.DataFrame) -> list[dict]:
             "units": _num(r.get("tot_total_product_units")),
             "sessions": _num(r.get("tot_sessions_total")),
             "paid_share": _num(r.get("sess_share_paid")),
+            # each group's share of the launch's units and sessions: what the
+            # picker needs to read the basket without a channel (§4.3)
+            "unit_shares": {g: _num(r.get(f"unit_share_{g}")) for g in GROUPS},
+            "sess_shares": {g: _num(r.get(f"sess_share_{g}")) for g in GROUPS},
+            # a conversion the launch has no history for is null, not zero, so
+            # the picker's median drops it the way _median(positive=True) does
+            "convs": {g: _num_or_none(r.get(f"conv_sess_entry_{g}")) for g in GROUPS},
+            "entries": _num(r.get("tot_draw_entries_eligible_units")),
+            "units_per_buyer": _num(r.get("units_per_buyer")),
             "private_room_share": _num(r.get("private_room_share")),
             # the edition's unit price in sterling and its size, from Airtable
             # via the panel (etl/pricing.py); 0 where Airtable has no match

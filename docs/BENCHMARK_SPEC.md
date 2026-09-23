@@ -229,8 +229,10 @@ suggested cluster and records `basket.thin = True` when `n < 10`).
 
 ## 4. Target maths (`etl/build.py`)
 
-When a release has a benchmark basket, `targeting_mode` is `"benchmark"`; otherwise the
-existing quartile-lever model runs unchanged (`"levers"`).
+Every release is benchmarked (`targeting_mode` `"benchmark"`): a release with no saved basket
+takes the suggested one. The quartile-lever model survives only as the fallback for a basket
+with no median units, and for a release whose saved inputs still say `stretch_mode: "levers"`
+(`"levers"`); the page no longer offers it.
 
 ```
 K            = edition_size / profile["units"]
@@ -266,6 +268,37 @@ target_plan[g][d]    = benchmark_plan[g][d] * K
 
 So target and benchmark stay in exactly the K ratio on every day — which is what makes the
 even uplift legible on the trajectory.
+
+### 4.3 Channels not in plan
+
+A basket cannot know that this release will not run paid, or that the artist has no channels
+of their own. The release says so instead: `channels_off`, a list of display-group keys
+(`paid`, `referral_artist`, ...), set from the Channels in plan switches on the Target setting
+tab and from the picker's Running paid switch. `etl/baskets.py apply_channels_off` reads the
+basket without those groups before anything else sees it:
+
+```
+units_by_group[g]    = 0                      for g in channels_off
+units                = Σ units_by_group[g]    over the groups in plan   (was the basket median)
+sessions             = Σ sessions_by_group[g] over the groups in plan
+entries, units_p25/75  scale by units / units_all
+share_*              renormalised over the groups in plan; conv[g] = 0 for g off
+K                    = edition_size / units                             (larger: fewer channels carry it)
+```
+
+The basket keeps every member, paid or not; each simply counts on its other channels. So the
+benchmark is what launches like this reached without paid, the group's target is zero, its
+budget is zero, and the other channels carry the whole sellout between them. An artist with
+no channels of their own is the same reading on `referral_artist`, and the funnel then expects
+no artist posts (`referral_artist_tier` is `N/A`). The lever fallback honours the same list:
+paid share zero, every channel in an off group `N/A`.
+
+The basket's full medians ride on the profile as `units_all`, `units_by_group_all` and the
+rest, so the snapshot can say what was set aside and the browser can re-read the same basket
+as the switches are flipped. `shared/benchmarkModel.mjs` mirrors `apply_channels_off` and
+`benchmark_targets` to the figure; `tests/test_channels_off.py` holds the two to it over the
+live baskets with every combination of switch that matters. Turning every channel off is
+refused at the API.
 
 ### 4.2 Units per buyer
 
@@ -361,7 +394,14 @@ All new fields are **additive**. Existing consumers keep working.
     "unitsByGroup":    { "aa_email": 83.5, ... },
     "sessionsByGroup": { "aa_email": 4579.0, ... },
     "convByGroup":     { "aa_email": 0.0155, ... },
-    "paidBudget": 9735.0
+    "paidBudget": 9735.0,
+    // §4.3: the groups set aside, and the basket's full medians before they were
+    "channelsOff": ["paid"],
+    "unitsAll": 268.0, "sessionsAll": 61000.0, "entriesAll": 240.0,
+    "unitsP25All": 190.0, "unitsP75All": 520.0,
+    "unitsByGroupAll": { "aa_email": 83.5, ..., "paid": 54.0 },
+    "sessionsByGroupAll": { ... }, "convByGroupAll": { ... },
+    "privateRoomShare": 0.115
   },
   "hero": {
     "...existing...": null,
@@ -528,25 +568,36 @@ sent nothing", which is a third thing entirely.
 
 ## 8. Target setting
 
-The quartile levers are replaced (kept behind an `Evenly | By channel` switch) by:
+The quartile levers are gone from the page (the build keeps the model only as the fallback of
+§4). In their place:
 
 1. **Benchmark basket** card — the chosen basket, its profile chips, a `Change basket`
-   button opening the picker, and the per-channel table
-   `benchmark sessions | target sessions | benchmark units | target units | stretch | conv (held)`.
+   button opening the picker, the **Channels in plan** switches (§4.3: Running paid; Artist's
+   own channels, with a posting tier beside it while on), and the per-channel table
+   `benchmark sessions | target sessions | benchmark units | target units | stretch | conv (held)`,
+   where a group set aside reads `not in plan`. The table and the chips follow the switches
+   and the launches ticked in the picker live, through the same model the build runs.
 2. **Stretch** card — benchmark (read-only), sellout (the edition size input), the stretch
-   that falls out, and the `Evenly | By channel` switch.
-3. **Derived targets** rail — three columns: Benchmark, Target, Stretch.
+   that falls out, and one sentence on how it is spread: evenly, conversion held.
+3. **Derived targets** rail — three columns: Benchmark, Target, Stretch, computed in the
+   browser from the basket's medians (`shared/benchmarkModel.mjs`) as the sellout, the cost
+   per purchase and the switches change; dashes until there is a basket and a sellout.
+4. **Economics** — gains the **Cost per purchase** pick (low, median or high quartile of the
+   panel), the one lever the benchmark still needs: paid units × it is the paid budget.
+
+The paid-share overwrite, the paid channel size, private room share, paid conversion and the
+per-channel quality rows are no longer on the page. The inputs are still accepted, and still
+read by the lever fallback, but the benchmark ignores them: the paid share is the basket's,
+and a release that will not run paid says so with the switch rather than with a zero.
 
 The rail's Benchmark column takes the basket's own median wherever the basket has one
 (`unitsByGroup.paid`, `entries`, `sessions`, `paidBudget`, and `paidBudget ÷ basket launch
 value` for the percentage row), so the rail and the per-channel table above it quote the
-same figures. `target ÷ K` is the fallback, and only under `Evenly`, for the two rows the
-basket has no equivalent for — the draw / private-room split is a target-model construct,
-not a channel. Under `By channel` those rows show a dash: the levers' targets come out of
-the quartile model, so the quotient is not the basket's median and printing it would invent
-a figure. The percentage row is why the division cannot be applied everywhere — K is in both
-the budget and the launch value and cancels, so dividing again would print a benchmark share
-1/K of the real one.
+same figures. The two rows the basket has no equivalent for — the draw / private-room split
+is a target-model construct, not a channel — take the benchmark's email units at the basket's
+private-room share, and the rest. The percentage row is why a plain `target ÷ K` cannot be
+applied everywhere — K is in both the budget and the launch value and cancels, so dividing
+again would print a benchmark share 1/K of the real one.
 
 The **basket picker** is a map. Every launch on file is a dot on a scatter of units sold
 (x, log) against unit price (y, log); this launch is a ring at its target and price, with faint
@@ -555,8 +606,9 @@ eight filled dots nearest it, the artist's own members as diamonds; and the reac
 the box it is, since "within ×R on both" is a square in log space. Above the map, one sentence
 says what was chosen and why, in amber where the honest thing is a warning ("Nothing on file is
 this size"; "2 nearer launches were passed over for being older than 18 months"), and three
-switches: Prefer recent (live, per release), Will run paid and Estate (drawn and inert, each
-saying why: the first needs the target maths, the second the panel labelled). Under the map,
+switches: Prefer recent (live, per release), Running paid (live: off reads the basket without
+its paid units, §4.3, and is saved with the targets as `channels_off`) and Estate (drawn and
+inert, saying why: the panel needs labelling). Under the map,
 the candidate table ordered by distance with the suggested basket ticked, so the basket is
 seen and edited rather than accepted by name.
 

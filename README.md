@@ -430,10 +430,11 @@ the benchmark. The basket is picked in a modal (ready-made clusters, or a
 bespoke tick-list of past launches that can be saved); a release is never in
 its own basket.
 
-The older quartile levers (notched sliders over the benchmark quartiles, docs
-§3/§4) are still there as the `By channel` side of the stretch switch, and are
-what a release without a basket uses - the model in force is on the snapshot as
-`targetingMode`.
+The older quartile levers (docs §3/§4) are gone from the page; the build keeps
+that model only as the fallback for a basket with no median units, and the
+model in force is on the snapshot as `targetingMode`. What the page asks
+instead is which channels are in plan - Running paid, the artist's own
+channels - and what a paid unit costs to buy (BENCHMARK_SPEC 4.3, 8).
 
 The derived-targets rail recomputes live in the browser via
 `shared/targetModel.mjs`; **Save** persists the inputs (`POST /api/inputs/:id`)

@@ -443,6 +443,10 @@ def redistribute_untracked(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def referral_artist_tier(release: dict) -> str:
+    # an artist with no channels of their own posts nothing: N/A, whatever
+    # tier the override says (§4.3)
+    if "referral_artist" in baskets.channels_off_of(release):
+        return "N/A"
     default = INPUTS["channel_quality_default"].get("Referral Artist", "Medium")
     return (release.get("channel_quality_overrides") or {}).get("Referral Artist", default)
 
@@ -478,6 +482,10 @@ def artist_posts_benchmarks(ap: pd.DataFrame, as_of: date) -> dict:
 # ---------------------------------------------------------------- target model (docs §3)
 
 def quality_for(release: dict, channel: str) -> str:
+    # a channel in a group the release will not run is out of the lever
+    # model the way N/A takes it out (§4.3)
+    if GROUP_OF.get(channel) in baskets.channels_off_of(release):
+        return "N/A"
     return release.get("channel_quality_overrides", {}).get(
         channel, INPUTS["channel_quality_default"][channel])
 
@@ -696,6 +704,8 @@ def compute_targets(release: dict, profile: dict | None = None, upb_slope: float
     # directly when the quartile pick is not the plan (Warhol: 66% paid)
     if release.get("paid_share_override") is not None:
         paid_pct = float(release["paid_share_override"])
+    if "paid" in baskets.channels_off_of(release):
+        paid_pct = 0.0
     paid_units = round(size * paid_pct)
     organic_units = size - paid_units
     pr_pct = b["pv_other_share_of_units"][release["reference_point"]]
@@ -1722,6 +1732,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     basket = profile = None
     if release.get("stretch_mode") != "levers" and panel is not None and len(panel):
         basket = baskets.resolve_basket(release.get("benchmark_basket"), panel, release, as_of)
+        # the channels this release will not run leave the basket's medians
+        # before anything reads them: K, the per-group targets, every
+        # benchmark mark on the page (BENCHMARK_SPEC §4.3)
+        off = baskets.channels_off_of(release)
+        basket["profile"] = baskets.apply_channels_off(basket["profile"], off)
         if basket["profile"]["units"] <= 0:
             print(f"{release['id']}: basket {basket['id']} has no median units - staying on the levers")
             basket = None
@@ -1735,6 +1750,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # empty panel is not. scaleMismatch is still published so the card
             # can say the basket is nowhere near this edition's size.
             profile = basket["profile"]
+            if off:
+                print(f"{release['id']}: not in plan: {', '.join(off)} - benchmarked on the basket's other "
+                      f"channels ({profile['units']:.0f} of {profile['units_all']:.0f} median units)")
             if basket.get("scaleMismatch"):
                 print(f"{release['id']}: edition {release['edition_size']:.0f} is far outside the "
                       f"panel - benchmarked against {basket['id']} (n={basket['n']}, "
@@ -2468,6 +2486,19 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "unitsByGroup": {g: round(v, 1) for g, v in bm_units.items()},
             "sessionsByGroup": {g: round(v, 1) for g, v in bm_sessions.items()},
             "convByGroup": {g: round(v, 6) for g, v in profile["conv"].items()},
+            # the channels set aside for this release and the basket's full
+            # medians before they were (§4.3): what the page says was set
+            # aside, and what the browser re-reads as the switches are flipped
+            "channelsOff": list(profile.get("channels_off") or []),
+            "unitsAll": round(profile.get("units_all", profile["units"]), 1),
+            "sessionsAll": round(profile.get("sessions_all", profile["sessions"]), 1),
+            "entriesAll": round(profile.get("entries_all", profile["entries"]), 1),
+            "unitsP25All": round(profile.get("units_p25_all", profile["units_p25"]), 1),
+            "unitsP75All": round(profile.get("units_p75_all", profile["units_p75"]), 1),
+            "unitsByGroupAll": {g: round(v, 1) for g, v in (profile.get("units_by_group_all") or bm_units).items()},
+            "sessionsByGroupAll": {g: round(v, 1) for g, v in (profile.get("sessions_by_group_all") or bm_sessions).items()},
+            "convByGroupAll": {g: round(v, 6) for g, v in (profile.get("conv_all") or profile["conv"]).items()},
+            "privateRoomShare": round(profile["private_room_share"], 4),
             "paidBudget": round(bm_units["paid"] * targets["paid"]["cost_per_purchase"], 2),
             # the people behind the basket's units, at the rate the target
             # holds. The rate is held at the benchmark, so the whole uplift
