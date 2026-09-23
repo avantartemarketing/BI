@@ -73,7 +73,10 @@ def live_cases():
     panel = B.load_panel()
     panel = panel[panel["panel"] == "draw"] if "panel" in panel.columns else panel
     cases = []
-    for r in build.INPUTS["releases"]:
+    for raw in build.INPUTS["releases"]:
+        # the inputs as the build reads them: products, dates and campaigns
+        # resolved from the feeds and the typed figures (resolve_release)
+        r = build.resolve_release(raw, None, {})
         if not r.get("edition_size") or not r.get("unit_price"):
             continue
         basket = B.resolve_basket(r.get("benchmark_basket"), panel, r, AS_OF)

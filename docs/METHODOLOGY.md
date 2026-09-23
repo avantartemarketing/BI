@@ -66,27 +66,42 @@ a product.
 
 ## 2. The inputs (Target setting tab)
 
-Each release carries a small set of human decisions, editable on its **Target
-setting** tab. Saving rebuilds the release's targets, plan curves and
-projections from its basket; it takes a few seconds.
+Almost nothing on the **Target setting** tab is typed. The figures come from
+the systems that already hold them, per product, and the tab shows where each
+came from; what a person decides is which Meta campaigns are the release's,
+which channels it will not run, and which basket it is measured against.
+Saving rebuilds the release's targets, plan curves and projections from its
+basket; it takes a few seconds.
 
-| Input | What it does |
+**From Airtable, per product** (the Pipeline table, one record per work):
+the edition size, the target sell-through, the unit price, the artist's and
+Avant Arte's profit per unit, the deal's revenue share or profit share, and
+the framing take-up and profit per frame. The release's target is the
+products' editions at their target sell-through, summed; its launch value the
+target units at their prices, in sterling; its profits per unit the products'
+weighted by target units; and the paid-budget split follows from the deal -
+on a profit-share deal Avant Arte carries its share of the profit, on a
+revenue-share (royalty) deal it carries the ads outright. Until Airtable
+holds a figure, it can be typed over on the products table, and a work
+Airtable has no record for can be added by hand.
+
+**From the Notion log:** the private room opens with the early-access email,
+then the announce and the launch (the day the draw closes). Where the log has
+no date yet, what was typed stands, then the funnel export's own campaign
+clock, then Airtable's planned dates. **From Airtable:** the marketing lead.
+
+| Decision | What it does |
 | --- | --- |
-| Edition size, unit price | Sellout target and launch value (size × price) |
-| Total edition (optional) | The whole edition when the target is only part of it (Warhol: a 2,440 target on 6,100). The hero cap, the room and the sell-through percentages read against it; the targets stay on the target |
-| Private room opens / announce / draw close | The campaign clock every curve runs on |
-| Artist profit, AA Group profit, profit share | Per-unit economics feeding paid ROI |
-| Paid budget share | Who funds the ads. Default: 50/50, or 100% AA on commission / rev-share deals; overridable per release (Glenn Ligon = 100% AA) |
-| Framing available | Adds frame take-up × profit per frame to AA profit/unit |
-| Frame take-up, frame profit (optional) | The two terms of that uplift, per release; blank = the benchmark defaults of 35% and £94 |
-| Benchmark basket | The comparable past launches the release is measured against: the suggested basket (nearest in size and price, the artist's own launches first, recent ones preferred) or one picked by hand |
+| Meta campaigns | Which ad campaigns the paid actuals are read from, summed. The draw campaign named for the code is ticked on its own |
 | Channels in plan | Running paid; the artist's own channels. A group switched off leaves the benchmark and the target, and the other channels carry the whole sellout |
+| Benchmark basket | The comparable past launches the release is measured against: the suggested basket (nearest in size and price, the artist's own launches first, recent ones preferred) or one picked by hand |
 | Artist posting tier (Low / Medium / High) | How much the artist will post: the cohort of past campaigns the artist-posts benchmark is read from |
-| Cost per purchase (£, optional) | What a paid unit costs to buy: paid units × this is the paid budget. Blank = the panel's median, £177 |
-| Meta campaign | Which ad campaign the paid actuals are read from |
-| Products | One row per draw the event feed found: the product's name and its edition size (draws given the same name are one product) |
-| Entry → order rate | What share of plain entries in hand become orders on the sell-through card; empty means the panel's 80% |
-| Pre-order → order rate | What share of pre-order entries become orders, their card being already authorised; empty means the panel's 95%. A product can override it in the products table |
+| Entry → order rate, pre-order → order rate | What share of entries in hand become orders on the sell-through card; empty means the panel's 80% and 95% |
+
+A release set up before the model went per product still carries the
+release-level figures it was set up with (target, edition, price, profits).
+They stand in for its totals, and the tab says so, until they are cleared
+there; the products then carry them.
 
 ## 3. The benchmark: a basket of comparable launches
 
