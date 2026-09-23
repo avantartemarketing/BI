@@ -1,25 +1,11 @@
 {
- "_comment": "Hand-entered launch inputs transcribed from the LAUNCH PERFORMANCE OVERVIEW per-release tabs (LAUNCH INPUT + TARGET SETTING blocks). These are the human decisions of the model; everything else is derived. channel_quality order/keys match the 12 organic channels. Dates ISO. Currency GBP.",
- "channel_quality_default": {
-  "AA Email Auto": "High",
-  "AA Email Man": "High",
-  "AA Meta": "Medium",
-  "AA Other": "Medium",
-  "AA X": "Low",
-  "Direct": "Medium",
-  "Organic Search": "Medium",
-  "Other": "Medium",
-  "Referral Artist": "Medium",
-  "Referral Meta": "Medium",
-  "Referral Other": "N/A",
-  "Referral X": "N/A"
- },
+ "_comment": "Hand-entered launch inputs transcribed from the LAUNCH PERFORMANCE OVERVIEW per-release tabs (LAUNCH INPUT + TARGET SETTING blocks), as the dashboard's Target setting tab edits them. These are the human decisions of the model; everything else is derived from the benchmark basket. Optional per release: benchmark_basket, channels_off (display groups not in plan), artist_posting_tier (Low / Medium / High, the artist-posts benchmark cohort), cost_per_purchase (GBP per paid unit, else the panel median), frame_conversion and frame_profit_per_unit. Dates ISO. Currency GBP.",
  "releases": [
   {
    "id": "glennligon_le_26",
-   "release_name": "Glenn Ligon \u00b7 Multiple \u00b7 2026 Q3",
+   "release_name": "Glenn Ligon · Multiple · 2026 Q3",
    "campaign_code": "GlennLigon_LE_26",
-   "campaign_name": "GlennLigon_LE_26 \u00b7 Enter draw",
+   "campaign_name": "GlennLigon_LE_26 · Enter draw",
    "marketing_lead": "Maria",
    "private_room_open": "2026-07-31",
    "announce_date": "2026-08-17",
@@ -30,18 +16,13 @@
    "aa_group_profit": 190745.0,
    "artist_profit_share": 0.5,
    "aa_budget_share": 1.0,
-   "framing_available": true,
-   "paid_channel_size": "Medium",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {}
+   "framing_available": true
   },
   {
    "id": "dali_le_26",
-   "release_name": "Salvador Dali Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "release_name": "Salvador Dali Estate · Multiple · 2026 Q3",
    "campaign_code": "SalvadorDali_LE_26",
-   "campaign_name": "SalvadorDali_LE_26 \u00b7 Enter draw",
+   "campaign_name": "SalvadorDali_LE_26 · Enter draw",
    "marketing_lead": "Clare",
    "private_room_open": "2026-08-19",
    "announce_date": "2026-08-21",
@@ -52,19 +33,15 @@
    "aa_group_profit": 335178,
    "artist_profit_share": 0,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {
-    "Referral Artist": "N/A"
-   }
+   "channels_off": [
+    "referral_artist"
+   ]
   },
   {
    "id": "abdulnasser_le_26",
-   "release_name": "Abdulnasser Gharem \u00b7 Hemisphere \u00b7 2026 Q3",
+   "release_name": "Abdulnasser Gharem · Hemisphere · 2026 Q3",
    "campaign_code": "Abdulnasser_LE_26",
-   "campaign_name": "Abdulnasser_LE_26 \u00b7 Enter draw",
+   "campaign_name": "Abdulnasser_LE_26 · Enter draw",
    "marketing_lead": "Maria",
    "private_room_open": "2026-06-23",
    "announce_date": "2026-07-27",
@@ -75,17 +52,13 @@
    "aa_group_profit": 85820,
    "artist_profit_share": 0.5,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "High",
-   "channel_quality_overrides": {}
+   "cost_per_purchase": 291
   },
   {
    "id": "zengfanzhi_le_26",
-   "release_name": "Zeng Fanzhi \u00b7 Multiple \u00b7 2026 Q3",
+   "release_name": "Zeng Fanzhi · Multiple · 2026 Q3",
    "campaign_code": "ZengFanzhi_LE_26",
-   "campaign_name": "ZengFanzhi_LE_26 \u00b7 Enter draw",
+   "campaign_name": "ZengFanzhi_LE_26 · Enter draw",
    "marketing_lead": "Maria",
    "private_room_open": "2026-06-29",
    "announce_date": "2026-07-29",
@@ -95,18 +68,13 @@
    "artist_profit": 80605,
    "aa_group_profit": 117936,
    "artist_profit_share": 0.5,
-   "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {}
+   "framing_available": true
   },
   {
    "id": "mondrian_le_26",
-   "release_name": "Piet Mondrian Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "release_name": "Piet Mondrian Estate · Multiple · 2026 Q3",
    "campaign_code": "PietMondrian_LE_26",
-   "campaign_name": "PietMondrian_LE_26 \u00b7 Enter draw",
+   "campaign_name": "PietMondrian_LE_26 · Enter draw",
    "marketing_lead": "Clare",
    "private_room_open": "2026-06-23",
    "announce_date": "2026-07-24",
@@ -117,11 +85,6 @@
    "aa_group_profit": 221529,
    "artist_profit_share": 0,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {},
    "draw_entries_file": "draw_mondrian_entries.csv",
    "products": [
     {
@@ -140,9 +103,9 @@
   },
   {
    "id": "julianschnabel_le_26",
-   "release_name": "Julian Schnabel \u00b7 Multiple \u00b7 2026 Q3",
+   "release_name": "Julian Schnabel · Multiple · 2026 Q3",
    "campaign_code": "JulianSchnabel_LE_26",
-   "campaign_name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
+   "campaign_name": "JulianSchnabel_LE_26 · Enter draw",
    "_campaign_note": "Campaign Name cell is empty on the source tab -> paid spend actuals structurally zero in the sheet; fix when the Meta campaign exists.",
    "marketing_lead": "Maria",
    "private_room_open": "2026-07-30",
@@ -153,18 +116,13 @@
    "artist_profit": 254165,
    "aa_group_profit": 335957,
    "artist_profit_share": 0.5,
-   "framing_available": true,
-   "paid_channel_size": "Medium",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {}
+   "framing_available": true
   },
   {
    "id": "parra_le_26",
-   "release_name": "Parra \u00b7 Multiple \u00b7 2026 Q3",
+   "release_name": "Parra · Multiple · 2026 Q3",
    "campaign_code": "Parra_LE_26",
-   "campaign_name": "Parra_LE_26 \u00b7 Enter draw",
+   "campaign_name": "Parra_LE_26 · Enter draw",
    "marketing_lead": "Clare",
    "private_room_open": "2026-07-29",
    "announce_date": "2026-07-31",
@@ -175,19 +133,13 @@
    "aa_group_profit": 46652,
    "artist_profit_share": 0.5,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {
-    "Referral Artist": "High"
-   }
+   "artist_posting_tier": "High"
   },
   {
    "id": "jamesjean_blossom_26",
-   "release_name": "James Jean \u00b7 Multiple \u00b7 2026 Q3",
+   "release_name": "James Jean · Multiple · 2026 Q3",
    "campaign_code": "JamesJean_Blossom_26",
-   "campaign_name": "JamesJean_Blossom_26 \u00b7 Enter draw",
+   "campaign_name": "JamesJean_Blossom_26 · Enter draw",
    "marketing_lead": "Clare",
    "private_room_open": "2026-07-28",
    "announce_date": "2026-07-30",
@@ -198,13 +150,7 @@
    "aa_group_profit": 132117,
    "artist_profit_share": 0.5,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {
-    "Referral Artist": "High"
-   },
+   "artist_posting_tier": "High",
    "draw_entries_file": "draw_jamesjean_blossom_entries.csv",
    "products": [
     {
@@ -219,9 +165,9 @@
   },
   {
    "id": "warhol_le_26",
-   "release_name": "Andy Warhol Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "release_name": "Andy Warhol Estate · Multiple · 2026 Q3",
    "campaign_code": "AndyWarhol_TL_26",
-   "campaign_name": "AndyWarhol_TL_26 \u00b7 Enter draw",
+   "campaign_name": "AndyWarhol_TL_26 · Enter draw",
    "marketing_lead": "Clare",
    "budget_file": "ANDYWARHO-2383 STANDARD & XL Project Budget July 2026",
    "private_room_open": "2026-09-01",
@@ -234,16 +180,7 @@
    "aa_group_profit": 1973248.0,
    "artist_profit_share": 0.5,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Low",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {
-    "AA Email Auto": "Low",
-    "Referral Artist": "Low",
-    "Referral Other": "Medium"
-   },
-   "paid_share_override": 0.66,
+   "artist_posting_tier": "Low",
    "products": [
     {
      "key": "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8",

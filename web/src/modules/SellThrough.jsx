@@ -47,9 +47,10 @@
  * and the channels, and here they only crowded the reading. Each row is the
  * product against its own edition and nothing else.
  *
- * One toggle, for the bars' scale: % puts every product on its own edition,
- * so the bars read as sell-through; Units keeps one scale, so they read as
- * size. Without product editions the card runs on units and says what is
+ * Nothing in the head but the title and the horizon: no toggle and no rate,
+ * by decision. Every bar is its product against its own edition; the rate
+ * the estimate runs at is in the headline's popup and in the Slack message.
+ * Without product editions the card runs on units and says what is
  * missing. Without the draw feed at all it is one row, the release, as
  * before. */
 import React, { useState } from "react";
@@ -66,7 +67,7 @@ const SEG = { paid: C.blueDeep, drafts: C.blue, winners: C.blueLight, future: C.
 
 /* The rows' geometry: the height they share, and the most one row may take.
  * ROWS_H is seven rows at 28px - what a wide card has left under its head,
- * the headline line and the gaps around them, less 12px to spare. */
+ * the headline line and the gaps around them, less 5px to spare. */
 const ROWS_H = 196;
 const PITCH_MAX = 60;
 
@@ -129,7 +130,6 @@ function ProductBar({ row, close, maxV, tips, height = 14, radius = 4 }) {
 
 export default function SellThrough({ snap, horizon = "today" }) {
   const t = useTip();
-  const [scale, setScale] = useState("pct");   // pct | units
   const [post, setPost] = useState({ state: "idle" });   // the Post to Slack button: idle | posting | done | error
   const st = snap?.sellthrough;
   const close = horizon === "close";
@@ -168,13 +168,15 @@ export default function SellThrough({ snap, horizon = "today" }) {
     pctClose: st.pct ?? null,
   }];
   const allEditions = rows.every((r) => finite(r.edition) && r.edition > 0);
-  const byEdition = allEditions && scale === "pct";
-  // one scale for the Units view: the biggest edition, or the biggest demand
+  const byEdition = allEditions;
+  // one scale when an edition is missing: the biggest edition, or the biggest demand
   const soldOf = (r) => (r.sold ?? 0) + (r.soldAssumed ?? 0) + (finite(r.drafts) ? r.drafts : 0);
   const demandOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0) + (r.oversubscribed ?? 0);
   const unitsOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0);
-  const unitsMax = Math.max(...rows.map((r) => Math.max(r.edition ?? 0, demandOf(r))), 1) * 1.02;
-  const maxFor = (r) => (byEdition ? Math.max(r.edition, demandOf(r)) * 1.02 : unitsMax);
+  // no headroom past the edition: the bar's end is the edition's, so the pale
+  // room runs to the track's corner and no grey shows past it
+  const unitsMax = Math.max(...rows.map((r) => Math.max(r.edition ?? 0, demandOf(r))), 1);
+  const maxFor = (r) => (byEdition ? Math.max(r.edition, demandOf(r)) : unitsMax);
 
   // the headline: what is spoken for today, or the prediction at close
   const headPct = edition ? (close ? st.pct ?? 0 : Math.min((sold + (draftsAll ?? 0) + inHandAll) / edition, 1)) : null;
@@ -228,13 +230,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
       : undefined,
   };
 
-  const seg = (opts, value, set) => (
-    <span className="seg compact">
-      {opts.map(([v, label, tip]) => (
-        <button key={v} className={value === v ? "active" : ""} onClick={() => set(v)} title={tip}>{label}</button>
-      ))}
-    </span>
-  );
   /* One rule for the rows: the pitch is the height they share divided by the
      count, capped, and the bar is half of it. */
   const n = Math.max(rows.length, 1);
@@ -268,7 +263,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
       snap.asOf ? `data through ${fmtDay(new Date(snap.asOf + "T00:00:00Z"))}` : null,
     ].filter(Boolean).join(" · "),
     horizon: close ? "At close" : "Today",
-    rateLine: `at ${rateText} entry → order${twoRates ? `, ${preRateText} pre-order` : ""}`,
     headline: {
       text: headText,
       sub: edition ? `of ${fmt(edition)} units` : "units",
@@ -315,16 +309,29 @@ export default function SellThrough({ snap, horizon = "today" }) {
       setPost({ state: "error", message: String(e.message || e) });
     }
   };
+  /* The button keeps one width through its states, so the head never
+     reflows while it works: Post to Slack, Posting…, Done, Failed. What
+     happened in detail (the channel, a picture that did not go up, why a
+     post was refused) is on its hover, not on a line of its own. */
+  const slackTitle = post.state === "error"
+    ? `Not posted to Slack: ${post.message}`
+    : post.state === "done"
+      ? `Posted to #${post.channel}${post.warning ? `, but ${post.warning}` : ""}`
+      : channel
+        ? `Post this card, as a picture with the figures under it, to #${channel}`
+        : "Set a Slack channel for this release on the Target setting tab, then this posts the card there";
   const slackButton = snap && snap.id ? (
     <button
       className="btn secondary small"
       disabled={!channel || post.state === "posting"}
       onClick={postToSlack}
-      title={channel
-        ? `Post this card, as a picture with the figures under it, to #${channel}`
-        : "Set a Slack channel for this release on the Target setting tab, then this posts the card there"}
+      title={slackTitle}
+      style={{
+        minWidth: 100, textAlign: "center",
+        color: post.state === "error" ? C.red : post.state === "done" && post.warning ? C.amber : undefined,
+      }}
     >
-      {post.state === "posting" ? "Posting…" : post.state === "done" ? `Posted to #${post.channel}` : post.state === "error" ? "Post failed" : "Post to Slack"}
+      {post.state === "posting" ? "Posting…" : post.state === "done" ? "Done" : post.state === "error" ? "Failed" : "Post to Slack"}
     </button>
   ) : null;
 
@@ -333,32 +340,13 @@ export default function SellThrough({ snap, horizon = "today" }) {
       dot={GROUP_DOTS.outcome}
       title="Sell-through by product"
       badge={<HorizonBadge horizon={horizon} />}
-      right={(
-        <>
-          {slackButton}
-          <span className="hint-dotted" {...t.props(methodTip, 300)}>
-            at {rateText} entry → order{twoRates ? `, ${preRateText} pre-order` : ""}
-          </span>
-          {allEditions && rows.length > 1 && seg(
-            [["pct", "%", "Every product on its own edition, so the rows read as sell-through"],
-             ["units", "Units", "One scale for every product, so the rows read as size"]],
-            scale, setScale,
-          )}
-        </>
-      )}
+      right={slackButton}
     >
-      {/* a refused post says why, on a line of its own; it takes its height
-          from the rows, which scroll for the seconds it shows */}
-      {post.state === "error"
-        ? <div style={{ color: C.red, fontSize: 12, margin: "2px 0 4px" }}>Not posted to Slack: {post.message}</div>
-        : post.state === "done" && post.warning
-          ? <div style={{ color: C.amber, fontSize: 12, margin: "2px 0 4px" }}>Posted to #{post.channel}, but {post.warning}</div>
-          : null}
-
       {/* the headline line: the release's figure on the left, its key on the
-          right, one 36px line */}
-      <div style={{ marginTop: 4, height: 36, flex: "0 0 36px", display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-        <div className="lead" {...t.props(methodTip, 300)} style={{ lineHeight: "36px", whiteSpace: "nowrap", color: C.ink }}>
+          right, one line, spaced from the head as every card's lead is (an
+          8px spacer and the lead's own line) */}
+      <div style={{ marginTop: 8, height: 39, flex: "0 0 39px", display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <div className="lead" {...t.props(methodTip, 300)} style={{ lineHeight: "39px", whiteSpace: "nowrap", color: C.ink }}>
           <span>{headText}</span>
           <span style={{ fontSize: 12, fontWeight: 400, color: C.muted }}>
             {edition ? `of ${fmt(edition)} units` : "units"}

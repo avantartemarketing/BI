@@ -9,13 +9,13 @@ Implements docs/DATA_MODEL.md exactly:
   §8 email/social funnel rungs
   §9 module map (hero, trajectory, channels, funnel contributions, waterfall)
 
-and docs/BENCHMARK_SPEC.md §4-§5 for a release benchmarked against a basket of
-comparable launches: the target is then the basket's medians lifted by one even
-uplift K rather than a stack of quartile picks, and the snapshot carries the
-benchmark alongside the target so every card can draw both. That path only
-opens when the release's inputs name a benchmark_basket; without one the
-quartile levers run exactly as they always have and no benchmark is written
-(docs/BENCHMARK_SPEC.md §4, "targeting_mode").
+and docs/BENCHMARK_SPEC.md §4-§5: every targeted release is benchmarked
+against a basket of comparable launches - the saved one, or the one its own
+shape puts it in - and the target is the basket's medians lifted by one even
+uplift K. The snapshot carries the benchmark alongside the target so every
+card can draw both. The quartile-lever model that stood in when a release had
+no basket was retired on 2026-09-23 (docs/DATA_MODEL.md §3); a release that
+cannot be benchmarked shows its actuals.
 
 Inputs:
   sources/across_time.csv           daily funnel export (channel x day x release + campaign clock)
@@ -105,7 +105,12 @@ if _saved_inputs.exists():
     except (ValueError, KeyError) as e:
         print(f"warning: ignoring saved inputs overlay: {e}")
 
-ORGANIC_CHANNELS = list(INPUTS["channel_quality_default"].keys())
+# the twelve organic channels of the funnel export (docs §1.3), in the order
+# the target table prints them
+ORGANIC_CHANNELS = [
+    "AA Email Auto", "AA Email Man", "AA Meta", "AA Other", "AA X", "Direct",
+    "Organic Search", "Other", "Referral Artist", "Referral Meta", "Referral Other", "Referral X",
+]
 INPUTS_CODES = [r["campaign_code"] for r in INPUTS["releases"] if r.get("campaign_code")]
 
 # Display grouping (docs §1.3). AA Other goes to search/direct/other (the sheet dropped it).
@@ -525,14 +530,23 @@ def untracked_block(win: pd.DataFrame, norms: dict | None) -> dict:
         "high": high,
     }
 
+POSTING_TIERS = ("Low", "Medium", "High")
+
 
 def referral_artist_tier(release: dict) -> str:
-    # an artist with no channels of their own posts nothing: N/A, whatever
-    # tier the override says (§4.3)
+    """How much the artist is expected to post: the tier the artist-posts
+    benchmark pools completed campaigns by. N/A for an artist with no channels
+    of their own (§4.3), else the release's artist_posting_tier, Medium by
+    default. Inputs saved before the tier had a field of its own carried it as
+    the Referral Artist row of the retired channel-quality grid, so that
+    spelling is still read."""
     if "referral_artist" in baskets.channels_off_of(release):
         return "N/A"
-    default = INPUTS["channel_quality_default"].get("Referral Artist", "Medium")
-    return (release.get("channel_quality_overrides") or {}).get("Referral Artist", default)
+    tier = release.get("artist_posting_tier")
+    if tier in POSTING_TIERS:
+        return tier
+    legacy = (release.get("channel_quality_overrides") or {}).get("Referral Artist")
+    return legacy if legacy in POSTING_TIERS else "Medium"
 
 
 def artist_posts_benchmarks(ap: pd.DataFrame, as_of: date) -> dict:
@@ -565,13 +579,17 @@ def artist_posts_benchmarks(ap: pd.DataFrame, as_of: date) -> dict:
 
 # ---------------------------------------------------------------- target model (docs §3)
 
-def quality_for(release: dict, channel: str) -> str:
-    # a channel in a group the release will not run is out of the lever
-    # model the way N/A takes it out (§4.3)
-    if GROUP_OF.get(channel) in baskets.channels_off_of(release):
-        return "N/A"
-    return release.get("channel_quality_overrides", {}).get(
-        channel, INPUTS["channel_quality_default"][channel])
+def cost_per_purchase_for(release: dict, b: dict = BENCH) -> float:
+    """What a paid unit costs to buy, the price the paid budget is set at:
+    the release's own figure (cost_per_purchase on the Target setting tab)
+    or the panel's median. A release saved while the figure was still a
+    quartile pick (cpp_pick, retired) is read at that quartile."""
+    own = release.get("cost_per_purchase")
+    if own not in (None, "") and float(own) > 0:
+        return float(own)
+    pick = release.get("cpp_pick")
+    table = b["cost_per_purchase"]
+    return float(table[pick] if pick in table else table["Median"])
 
 
 def _group_channel_split(group: str) -> dict[str, float]:
@@ -678,10 +696,15 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
     better than it ever has is a target nobody can act on, so the uplift is
     asked of traffic and spend only.
 
-    The return carries exactly the lever model's top-level keys. Everything
-    downstream - group_targets, the channel loop, the paid model, the web's
-    target rail - reads this dict by name, and the benchmark is a different way
-    of arriving at the same quantities, not a different set of them.
+    Organic units are not split into a draw half and a private-room half any
+    more: every organic unit goes through its group's channel split and is
+    asked for as an entry at the eligible-entry rate, which is how the LE
+    workbook has set its targets since September 2026. The private room is
+    still measured (the panel's private_room_share, the orders feed's
+    private-room units) - it is just not a target of its own.
+
+    Everything downstream - group_targets, the channel loop, the paid model,
+    the web's target rail - reads this dict by name (docs/DATA_MODEL.md §4a.3).
     """
     b = BENCH
     size = float(release["edition_size"])
@@ -692,8 +715,6 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
 
     paid_units = units["paid"]
     organic_units = size - paid_units
-    pr_units = units["aa_email"] * profile["private_room_share"]
-    draw_units = organic_units - pr_units
 
     # How many people the edition needs, not how many pieces. On a multi-product
     # release the median buyer takes more than one, so a 1,200-unit target is
@@ -708,38 +729,30 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
     for g in DISPLAY_GROUPS:
         if g == "paid":
             continue
-        # private-room units ride with AA Email by the workbook's convention
-        # (group_targets adds them back), so only the draw half of the email
-        # group is what its channels split between them
-        g_units = units[g] - (pr_units if g == "aa_email" else 0.0)
         conv = profile["conv"][g]
         for c, share in _group_channel_split(g).items():
-            purchases = g_units * share
+            purchases = units[g] * share
             per_channel[c] = {
                 # "benchmark" rather than a quartile: no lever was picked here
                 "quality": "benchmark",
-                # kept as the share of all draw units, the meaning the lever
-                # model gives this key, so the target table reads the same
-                "order_split": (purchases / draw_units) if draw_units else share,
+                # the channel's share of all organic units
+                "order_split": (purchases / organic_units) if organic_units else share,
                 "purchases": purchases,
                 "eligible_entries": purchases / e2o,
                 "sessions": sessions[g] * share,
                 "session_to_entry": conv,
             }
 
-    cpp = b["cost_per_purchase"][release["cpp_pick"]]
+    cpp = cost_per_purchase_for(release, b)
     budget = profile["units_by_group"]["paid"] * cpp * k
     launch_value = size * release["unit_price"]
-    organic_sessions_draw = sum(pc["sessions"] for pc in per_channel.values())
+    organic_sessions = sum(pc["sessions"] for pc in per_channel.values())
 
     out = {
         "edition_size": release["edition_size"],
         "paid_pct": (paid_units / size) if size else 0.0, "paid_units": paid_units,
         "organic_units": organic_units,
-        "pr_other_pct": (pr_units / organic_units) if organic_units else 0.0,
-        "pr_units": pr_units, "draw_units": draw_units,
         "per_channel": per_channel,
-        "pr_sessions": pr_units / b["email_session_to_purchase"],
         "paid": {
             "units": paid_units, "eligible_entries": paid_units / e2o,
             "sessions": sessions["paid"], "session_to_entry": profile["conv"]["paid"],
@@ -750,16 +763,14 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
         "launch_value": launch_value,
         "units_per_buyer": upb, "units_per_buyer_source": upb_source,
         "buyers": size / upb, "buyers_by_group": buyers,
-        "organic_sessions_draw": organic_sessions_draw,
-        # the basket's own session total at the uplift. Private-room sessions
-        # are not added on top as the lever model does: the email median is
+        "organic_sessions": organic_sessions,
+        # the basket's own session total at the uplift: the email median is
         # measured on launches that ran a private room, so those sessions are
-        # already inside it and counting them twice would inflate the only
-        # number on the page that claims to be all the traffic.
-        "total_sessions": organic_sessions_draw + sessions["paid"],
+        # already inside it
+        "total_sessions": organic_sessions + sessions["paid"],
         # entries carry the same uplift as the units they convert from (§4):
-        # every secured unit is an entry that converted at e2o, private-room
-        # units included, so the whole edition divided by that rate
+        # every unit of the edition is asked for as an entry that converts at
+        # e2o, so the whole edition divided by that rate
         "entries_target": sum(pc["eligible_entries"] for pc in per_channel.values()) + paid_units / e2o,
         "buffer": b["target_buffer"],
     }
@@ -771,95 +782,50 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
     return out
 
 
-def compute_targets(release: dict, profile: dict | None = None, upb_slope: float = UNITS_PER_BUYER_FALLBACK) -> dict:
-    # Benchmark mode (BENCHMARK_SPEC §4) when the release has a basket profile.
-    # A basket whose median units are zero says nothing about what to aim for -
-    # there is no K to compute - so it falls through to the levers rather than
-    # failing the build.
+def frame_terms(release: dict, b: dict = BENCH) -> tuple[float, float]:
+    """The framing uplift's two terms for one release: the share of buyers
+    expected to take a frame and AA's profit per frame. Both are release-level
+    inputs (frame_conversion, frame_profit_per_unit on the Target setting tab)
+    with the workbook's constants in benchmarks.json (0.35 and 94) as the
+    defaults - the constants were the same for every release whatever its
+    price point, and a £500 print and a £4,000 one do not frame alike."""
+    conv = release.get("frame_conversion")
+    profit = release.get("frame_profit_per_unit")
+    conv = float(b["frame_conversion"]) if conv is None or conv == "" else float(conv)
+    profit = float(b["frame_profit_per_unit"]) if profit is None or profit == "" else float(profit)
+    return min(max(conv, 0.0), 1.0), max(profit, 0.0)
+
+
+def aa_profit_per_unit(release: dict, b: dict = BENCH) -> float:
+    """AA's profit per unit sold: the group profit spread over the edition,
+    plus the framing uplift (take-up x profit per frame) when framing is
+    offered. The figure every paid ROI on the page divides by (docs §7)."""
+    size = float(release.get("edition_size") or 0)
+    base = (float(release.get("aa_group_profit") or 0) / size) if size else 0.0
+    if release.get("framing_available") is False:
+        return base
+    conv, profit = frame_terms(release, b)
+    return base + conv * profit
+
+
+def compute_targets(release: dict, profile: dict | None, upb_slope: float = UNITS_PER_BUYER_FALLBACK) -> dict | None:
+    """The release's targets from its basket (BENCHMARK_SPEC §4), or None when
+    there is no basket to read: no draw panel on file, or a basket whose
+    channels in plan sold nothing in the median launch, so there is no K to
+    compute. The quartile-lever model that used to stand in here was retired
+    on 2026-09-23 (docs/DATA_MODEL.md §3): a release without a benchmark shows
+    its actuals, it is not given a target from a different model."""
     if profile and profile.get("units"):
         return benchmark_targets(release, profile, upb_slope)
-    b = BENCH
-    size = release["edition_size"]
-    _lever_upb, _lever_upb_src = units_per_buyer_for(release, None, upb_slope)
-    paid_pct = b["paid_share_of_units"][
-        {"Small": "Low", "Medium": "Medium", "Large": "High",
-         "Low": "Low", "High": "High"}[release["paid_channel_size"]]]
-    # the workbook's "Paid (% Total)" overwrite: the team sets the paid share
-    # directly when the quartile pick is not the plan (Warhol: 66% paid)
-    if release.get("paid_share_override") is not None:
-        paid_pct = float(release["paid_share_override"])
-    if "paid" in baskets.channels_off_of(release):
-        paid_pct = 0.0
-    paid_units = round(size * paid_pct)
-    organic_units = size - paid_units
-    pr_pct = b["pv_other_share_of_units"][release["reference_point"]]
-    pr_units = organic_units * pr_pct
-    draw_units = organic_units - pr_units
-
-    shares = {}
-    for c in ORGANIC_CHANNELS:
-        q = quality_for(release, c)
-        shares[c] = 0.0 if q == "N/A" else b["order_split"][c][q]
-    total_share = sum(shares.values())
-    split = {c: (s / total_share if total_share else 0.0) for c, s in shares.items()}
-
-    e2o = b["eligible_entry_to_order"]
-    per_channel = {}
-    for c in ORGANIC_CHANNELS:
-        q = quality_for(release, c)
-        purchases = draw_units * split[c]
-        entries = purchases / e2o
-        conv = b["session_to_eligible_entry"][c][q] if q != "N/A" else 0.0
-        sessions = entries / conv if conv else 0.0
-        per_channel[c] = {
-            "quality": q, "order_split": split[c], "purchases": purchases,
-            "eligible_entries": entries, "sessions": sessions, "session_to_entry": conv,
-        }
-
-    pr_sessions = pr_units / b["email_session_to_purchase"]
-
-    paid_conv = b["paid_session_to_eligible_entry"][release["paid_conv_quality"]]
-    paid_entries = paid_units / e2o
-    paid_sessions = paid_entries / paid_conv
-    cpp = b["cost_per_purchase"][release["cpp_pick"]]
-    budget = cpp * paid_units
-    launch_value = size * release["unit_price"]
-
-    return {
-        "edition_size": size,
-        "paid_pct": paid_pct, "paid_units": paid_units,
-        "organic_units": organic_units,
-        "pr_other_pct": pr_pct, "pr_units": pr_units, "draw_units": draw_units,
-        "per_channel": per_channel,
-        "pr_sessions": pr_sessions,
-        "paid": {
-            "units": paid_units, "eligible_entries": paid_entries,
-            "sessions": paid_sessions, "session_to_entry": paid_conv,
-            "cost_per_purchase": cpp, "budget": budget,
-            "budget_pct_of_launch_value": budget / launch_value if launch_value else None,
-            "sense_check_breached": (budget / launch_value) > b["budget_sense_check_max_pct_of_launch_value"] if launch_value else False,
-        },
-        "launch_value": launch_value,
-        # the lever arm has no basket to read a rate off, so it takes the curve
-        # at the release's own product count, or one piece per buyer (§4.2)
-        "units_per_buyer": _lever_upb, "units_per_buyer_source": _lever_upb_src,
-        "buyers": float(release["edition_size"]) / _lever_upb,
-        "organic_sessions_draw": sum(pc["sessions"] for pc in per_channel.values()),
-        "total_sessions": sum(pc["sessions"] for pc in per_channel.values()) + pr_sessions + paid_sessions,
-        # the eligible-entry target the rail prints; the JS model has always
-        # returned it, so a snapshot without it leaves that row reading zero
-        "entries_target": sum(pc["eligible_entries"] for pc in per_channel.values()) + paid_entries,
-        "buffer": b["target_buffer"],
-    }
+    return None
 
 
 def group_targets(targets: dict) -> dict:
     """Roll per-channel targets up to display groups.
 
-    `units` is the secured-units target (draw/pre-order purchases per channel;
-    private-room units ride with AA Email per the workbook convention - the
-    template models all PR purchases through the email channel; paid = paid
-    units). Group unit targets sum exactly to the edition size (sellout).
+    `units` is the secured-units target: organic purchases per channel, and
+    paid units for the paid group. Group unit targets sum exactly to the
+    edition size (sellout).
     """
     out = {}
     for g, spec in DISPLAY_GROUPS.items():
@@ -874,7 +840,7 @@ def group_targets(targets: dict) -> dict:
             out[g] = {
                 "entries": sum(targets["per_channel"][c]["eligible_entries"] for c in chans),
                 "purchases": purchases,
-                "units": purchases + (targets["pr_units"] if g == "aa_email" else 0.0),
+                "units": purchases,
                 "sessions": sum(targets["per_channel"][c]["sessions"] for c in chans),
             }
     return out
@@ -883,6 +849,66 @@ def group_targets(targets: dict) -> dict:
 # ---------------------------------------------------------------- curves (docs §5)
 
 CLEAN_EXCLUDE_STAGES = {"Missing campaign dates", "Outside campaign window"}
+
+
+def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH) -> dict:
+    """How this campaign's cost per entry has responded to its own spend and
+    its own age, shrunk to the panel's priors (docs §7).
+
+    Fits log(cpe) = a + eps x log(spend) + drift x day on the campaign's days
+    with spend and at least one paid entry, the same regression the panel
+    priors come from (etl/analysis/cpe_elasticity.py), then combines each
+    estimate with its prior by precision: a campaign with a tight estimate
+    keeps it, a noisy one leans on the panel. Below cpe_fit_min_days of
+    history the priors are used as they are. Warhol's 18 days scaling from
+    £1k to £30k a day gave an elasticity of 0.20 +/- 0.29 and a drift of
+    0.8% +/- 5.1 a day, which the priors (0.38 +/- 0.19; 2.5% +/- 3.5) pull
+    to 0.34 and 2.0%: the spend response is its own, the time decay is
+    mostly the panel's, because a campaign that ramps and ages at once
+    cannot separate the two from its own days.
+
+    Returns the values used (elasticity, drift per day) and how they were
+    reached (own estimates, standard errors, days), all JSON-ready."""
+    prior_eps = float(b.get("cpe_spend_elasticity", 0.0) or 0.0)
+    prior_eps_sd = float(b.get("cpe_spend_elasticity_sd", 0.0) or 0.0)
+    tiers = b["spend_rules"]["cpe_daily_drift_by_third"]
+    prior_drift = float(sum(tiers) / len(tiers))
+    prior_drift_sd = float(b["spend_rules"].get("cpe_daily_drift_sd", 0.0) or 0.0)
+    out = {"elasticity": prior_eps, "driftPerDay": prior_drift, "elasticityPrior": prior_eps,
+           "driftPrior": prior_drift, "elasticityOwn": None, "elasticitySe": None,
+           "driftOwn": None, "driftSe": None, "fitDays": 0}
+    rows = [(x["date"], float(x["spend"]), float(x["entries"] or 0.0)) for x in (paid_daily or [])
+            if float(x.get("spend") or 0.0) > 20 and float(x.get("entries") or 0.0) >= 1]
+    if len(rows) < int(b.get("cpe_fit_min_days", 8) or 8):
+        return out
+    first = date.fromisoformat(rows[0][0])
+    X = np.column_stack([np.ones(len(rows)), np.log([r[1] for r in rows]),
+                         [(date.fromisoformat(r[0]) - first).days for r in rows]])
+    y = np.log([r[1] / r[2] for r in rows])
+    beta, *_ = np.linalg.lstsq(X, y, rcond=None)
+    resid = y - X @ beta
+    dof = len(rows) - X.shape[1]
+    if dof <= 0:
+        return out
+    try:
+        cov = (float(resid @ resid) / dof) * np.linalg.inv(X.T @ X)
+    except np.linalg.LinAlgError:
+        return out
+    se = np.sqrt(np.clip(np.diag(cov), 0, None))
+    out.update({"elasticityOwn": round(float(beta[1]), 4), "elasticitySe": round(float(se[1]), 4),
+                "driftOwn": round(float(beta[2]), 5), "driftSe": round(float(se[2]), 5), "fitDays": len(rows)})
+
+    def shrink(own: float, own_se: float, prior: float, prior_sd: float) -> float:
+        if not (own_se > 0) or not np.isfinite(own_se):
+            return prior
+        if not (prior_sd > 0):
+            return prior
+        w_own, w_prior = 1 / own_se ** 2, 1 / prior_sd ** 2
+        return (own * w_own + prior * w_prior) / (w_own + w_prior)
+
+    out["elasticity"] = round(float(min(max(shrink(beta[1], se[1], prior_eps, prior_eps_sd), 0.0), 1.0)), 4)
+    out["driftPerDay"] = round(float(min(max(shrink(beta[2], se[2], prior_drift, prior_drift_sd), 0.0), 0.10)), 5)
+    return out
 
 
 def pdsa_for(release: dict, d: date) -> float:
@@ -1401,8 +1427,8 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     pre_rate = preorder_rate(release)
     edition = edition_total(release)   # the whole edition: room and shares read against it
     sold_predicted = unconverted * rate
-    # inHandUnits is the entries in hand before the rate, so a save can re-run
-    # the prediction at another rate without the funnel (server/retarget.js)
+    # inHandUnits is the entries in hand before the rate, so the prediction can
+    # be re-read at another rate without the funnel
     st: dict = {"edition": edition, "sold": round(units_sold, 0), "conversion": rate,
                 "preorderConversion": pre_rate, "inHandUnits": round(unconverted, 1)}
     if edition:
@@ -1444,8 +1470,8 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     # "Incomplete data" while this list is not empty.
     st["incomplete"] = ([] if source in ("purchases", "orders") else ["sales by product"]) + \
         (["draft orders"] if any(p.get("drafts") is None for p in products) else [])
-    # the draws, patterns and orders ride along so a save can re-run the rule
-    # on the server without the feeds (server/retarget.js)
+    # the draws, patterns and orders ride along so the rule can be re-run
+    # without the feeds (shared/sellThrough.mjs, tests/sellthrough_parity.mjs)
     st["draws"] = feed["draws"]
     st["patterns"] = feed.get("patterns") or []
     if of:
@@ -1828,6 +1854,27 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     }
 
 
+def actuals_rec(release: dict, rat: pd.DataFrame) -> dict:
+    """A configured release as the record build_actuals reads - the shape
+    discover_releases writes - for the release that has inputs but no basket
+    to be targeted from."""
+    parts = [p.strip() for p in str(release["release_name"]).split(" · ")]
+    qm = _QUARTER_RE.match(parts[-1]) if len(parts) >= 2 else None
+    dates = rat["event_date"] if len(rat) else None
+    return {
+        "id": release["id"], "release_name": release["release_name"],
+        "artist": parts[0],
+        "title": " · ".join(parts[1:-1]) if qm and len(parts) >= 3 else (" · ".join(parts[1:]) or ""),
+        "quarter": parts[-1] if qm else None,
+        "type": release.get("type", "LE"),
+        "campaign_code": release.get("campaign_code"), "campaign_name": release.get("campaign_name"),
+        "announce_date": release["announce_date"], "launch_end": release["launch_end"],
+        "dates_note": None,
+        "first_seen": (dates.min() if dates is not None else date.fromisoformat(release["announce_date"])).isoformat(),
+        "last_seen": (dates.max() if dates is not None else date.fromisoformat(release["launch_end"])).isoformat(),
+    }
+
+
 def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   emails: pd.DataFrame, content: pd.DataFrame, curves: dict,
                   as_of: date, artist_posts: pd.DataFrame | None = None,
@@ -1846,15 +1893,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     pr_open = date.fromisoformat(release["private_room_open"])
     L = (launch_end - announce).days
 
-    # ---- benchmark or levers (BENCHMARK_SPEC §3-§5). Benchmarking is the
-    # default: a release with no saved basket is compared against the basket
-    # its own shape puts it in (baskets.suggest_basket), so a launch is
-    # measured against comparable launches from the day it is discovered and
-    # nobody has to pick anything first. The quartile levers survive as the
-    # explicit opt-out - stretch_mode "levers" - for the release whose target
-    # is not an even uplift on what similar launches do.
+    # ---- the benchmark (BENCHMARK_SPEC §3-§5). A release with no saved
+    # basket is compared against the basket its own shape puts it in
+    # (baskets.suggest_basket), so a launch is measured against comparable
+    # launches from the day it is discovered and nobody has to pick anything
+    # first. There is no other model: without a basket to read, the release
+    # keeps its actuals-only page (docs/DATA_MODEL.md §3).
     basket = profile = None
-    if release.get("stretch_mode") != "levers" and panel is not None and len(panel):
+    if panel is not None and len(panel):
         basket = baskets.resolve_basket(release.get("benchmark_basket"), panel, release, as_of)
         # the channels this release will not run leave the basket's medians
         # before anything reads them: K, the per-group targets, every
@@ -1862,7 +1908,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         off = baskets.channels_off_of(release)
         basket["profile"] = baskets.apply_channels_off(basket["profile"], off)
         if basket["profile"]["units"] <= 0:
-            print(f"{release['id']}: basket {basket['id']} has no median units - staying on the levers")
+            print(f"{release['id']}: basket {basket['id']} has no median units on the channels in plan")
             basket = None
         else:
             # Every release gets a benchmark, including one bigger than
@@ -1881,7 +1927,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 print(f"{release['id']}: edition {release['edition_size']:.0f} is far outside the "
                       f"panel - benchmarked against {basket['id']} (n={basket['n']}, "
                       f"medians {basket['profile']['units']:.0f})")
-    bench = profile is not None
+    if profile is None:
+        print(f"{release['id']}: no benchmark basket - the page shows actuals only")
+        rat = at[at["simple_release_name"] == name]
+        return build_actuals(actuals_rec(release, rat), rat, spend, emails, content, as_of,
+                             email_bench, artist_posts, full_through=full_through, seen=seen)
+    # every targeted release is benchmarked; the flag survives as the guard on
+    # the benchmark block below
+    bench = True
     # The draw records how many products it offered, so a release with no
     # curated product list still gets its count rather than falling through to
     # the basket median. Only where the count is trustworthy: before 2025-08-28
@@ -1960,8 +2013,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                         .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
     spend_day = psp.groupby("spend_date")["spend"].sum()
     drop, cann = b["paid_drop_off"], b["cannibalisation"]
-    ppu_aa = release["aa_group_profit"] / release["edition_size"] + (
-        b["frame_conversion"] * b["frame_profit_per_unit"] if release["framing_available"] else 0)
+    ppu_aa = aa_profit_per_unit(release, b)
+    frame_conv, frame_profit = frame_terms(release, b)
     ppu_artist = (release["artist_profit"] / release["edition_size"]) if release["edition_size"] else 0
     # Who funds the ads. Explicit per-release override (the workbook's "AA budget
     # share (%)" row - e.g. Glenn Ligon 100% AA); default: commission/rev-share
@@ -2014,12 +2067,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # flat "forecast CPE = L3D x 1.5" described the same future for the budget;
     # using one for the chart and the other for the decision put them on
     # different paths, and the floor could pass while the line went under 1.
-    tiers = b["spend_rules"]["cpe_daily_drift_by_third"]
+    # The campaign's own cost curve, shrunk to the panel's priors: how fast
+    # its cost per entry rises with spend (eps) and with time (drift), from
+    # its own days where it has enough of them (docs §7, campaign_cost_terms)
+    cost_terms = campaign_cost_terms(paid_daily, b)
+    drift_rate = cost_terms["driftPerDay"]
     drift_path = []                     # (day, cumulative drift factor) per future day
     _cum = 1.0
     for d in daterange(full_through + timedelta(days=1), launch_end):
-        _t3 = min(int(max(pdsa_for(release, d), 0) * 3), 2)
-        _cum *= (1 + tiers[_t3])
+        _cum *= (1 + drift_rate)
         drift_path.append((d, _cum))
     drift_end = drift_path[-1][1] if drift_path else 1.0
     inv_drift_sum = sum(1 / f for _, f in drift_path)     # entries per £ over the window, relative to today
@@ -2056,14 +2112,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
 
     # ---- the recommendation (docs §7).
     # Price: cost per entry is not flat in spend. Within a campaign it rises as
-    # spend^eps (eps measured on our own campaigns, benchmarks
-    # cpe_spend_elasticity; etl/analysis/cpe_elasticity.py), so the entries a
+    # spend^eps (eps: this campaign's own response shrunk to the panel's,
+    # campaign_cost_terms above; the panel's from benchmarks
+    # cpe_spend_elasticity, etl/analysis/cpe_elasticity.py), so the entries a
     # recommendation asks for are priced at the CPE that spend level implies,
     # anchored on today's price at today's spend, and drifting along the same
     # path the ROI chart draws. Units: sellout_gap is units, the price is £
     # per converting unit (raw CPE / (1 - drop-off)).
     rules = b["spend_rules"]
-    eps = float(b.get("cpe_spend_elasticity", 0.0) or 0.0)
+    eps = float(cost_terms["elasticity"])
     s0 = current_daily if current_daily > 0 else 0.0
     plan_rate = (targets["paid"]["budget"] / L) if L else 0.0
     cpe_max = (1 - cann) * ppu_aa / (b["roi_floor"] * aa_budget_share)   # price at the ROI floor
@@ -2150,14 +2207,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     roi_path = ([{"date": d.isoformat(), "roi": round(l3d_roi / f, 3)} for d, f in drift_path]
                 if l3d_roi is not None and not complete else [])
 
-    drift = b["spend_rules"]["cpe_daily_drift_by_third"]
-    third = min(int(max(pdsa_for(release, min(full_through, launch_end)), 0) * 3), 2)
-    daily_factor = round(1 / (1 + drift[third]), 4)
+    daily_factor = round(1 / (1 + drift_rate), 4)
 
     # forward path: projected spend ÷ projected cost-per-entry per future day.
     # Projections describe the CURRENT trajectory (spend run-rate as-is); the
     # recommended budget is the intervention shown alongside, not the projection.
-    # Efficiency decays by the launch-window-third drift tiers (5%/7%/10% per day).
+    # Efficiency decays at the campaign's drift rate, the same path as above.
     planned_spend = current_daily if current_daily > 0 else (
         recommended if (days_left and recommended) else 0.0)
     paid_future = {}          # date -> cumulative projected entries beyond today
@@ -2169,8 +2224,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # the part day counts for what is left of it
             share = (1 - seen) if (d == as_of and as_of > full_through) else 1.0
             if cpe_fwd and planned_spend:
-                t3 = min(int(max(pdsa_for(release, d), 0) * 3), 2)
-                cpe_fwd = cpe_fwd * (1 + drift[t3])
+                cpe_fwd = cpe_fwd * (1 + drift_rate)
                 future_cum += share * planned_spend / cpe_fwd
             else:
                 # no spend history yet: fall back to the paid target trajectory
@@ -2351,7 +2405,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "cpeAtClose": round(cpe_end, 2) if cpe_end else None,
             "driftToClose": round(drift_end, 3),
             "paced": paced,
+            # the cost curve in force and where it came from (campaign_cost_terms)
             "elasticity": eps,
+            "driftPerDay": drift_rate,
+            "costTerms": cost_terms,
             "band": band, "forcedDecrease": forced, "zeroConversionDays": zero_days,
             "cumRoi": round(cum_roi, 3) if cum_roi else None,
             "entriesNeeded": round(entries_needed, 1),
@@ -2568,7 +2625,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # window has closed): the page reads "so far today" off the second
         "completeThrough": full_through.isoformat(),
         "asOfFraction": 1.0 if (complete or as_of > launch_end) else round(seen, 4),
-        "targetingMode": "benchmark" if bench else "levers",
+        "targetingMode": "benchmark",
         # the target the plan runs on and the whole edition; equal unless the
         # inputs give a total edition the target is only part of
         "edition": {"target": round(edition, 0), "total": round(total, 0)},
@@ -2576,6 +2633,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "unitPrice": release["unit_price"], "launchValue": targets["launch_value"],
             "artistProfitPerUnit": round(ppu_artist, 2), "aaProfitPerUnit": round(ppu_aa, 2),
             "artistProfitShare": release["artist_profit_share"],
+            # the framing uplift inside aaProfitPerUnit: the terms in force for
+            # this release (its own inputs, else the benchmark defaults)
+            "framingAvailable": release.get("framing_available") is not False,
+            "frameConversion": frame_conv, "frameProfitPerUnit": frame_profit,
+            "frameUpliftPerUnit": round(frame_conv * frame_profit, 2) if release.get("framing_available") is not False else 0.0,
         },
         "currency": "units",
         "hero": {
@@ -2825,13 +2887,13 @@ def main(only: str | None = None):
     # The draw panel, loaded once and passed down: every basket a release could
     # be benchmarked against is cut from it (BENCHMARK_SPEC §3). A panel that
     # is not there - a checkout without the clustering output - is not a reason
-    # to fail the build; those releases simply stay on the levers.
+    # to fail the build; those releases get their actuals-only pages until it is.
     try:
         panel = baskets.load_panel()
         print(f"baskets: {len(panel)} draw launches in the panel")
     except (OSError, ValueError, KeyError) as e:
         panel = None
-        print(f"baskets: no draw panel ({e}) - every release stays on the lever model")
+        print(f"baskets: no draw panel ({e}) - no release can be benchmarked, so none is targeted")
 
     APP.mkdir(parents=True, exist_ok=True)
     (APP / "releases").mkdir(exist_ok=True)
@@ -2953,7 +3015,6 @@ def main(only: str | None = None):
                  .sort_values(["last", "spend"], ascending=False))
     (APP / "inputs.json").write_text(json.dumps({
         "benchmarks": BENCH,
-        "channel_quality_default": INPUTS["channel_quality_default"],
         "releases": {r["id"]: r for r in INPUTS["releases"]},
         "discovered": {
             r["id"]: {

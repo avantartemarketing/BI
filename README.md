@@ -430,23 +430,22 @@ the benchmark. The basket is picked in a modal (ready-made clusters, or a
 bespoke tick-list of past launches that can be saved); a release is never in
 its own basket.
 
-The older quartile levers (docs §3/§4) are gone from the page; the build keeps
-that model only as the fallback for a basket with no median units, and the
-model in force is on the snapshot as `targetingMode`. What the page asks
-instead is which channels are in plan - Running paid, the artist's own
-channels - and what a paid unit costs to buy (BENCHMARK_SPEC 4.3, 8).
+The older quartile levers (docs/DATA_MODEL.md §3) are gone from the page and,
+since September 2026, from the build: a release that cannot be benchmarked
+shows its actuals. What the page asks instead is which channels are in plan -
+Running paid, the artist's own channels - how much the artist will post, and
+what a paid unit costs to buy (BENCHMARK_SPEC 4.3, 8).
 
 The derived-targets rail recomputes live in the browser via
-`shared/targetModel.mjs`; **Save** persists the inputs (`POST /api/inputs/:id`)
-and the server retargets the release snapshot in place (`server/retarget.js`) -
-plans, expected-today, projections and the rail all update without a full ETL
-run. A save that changes the basket or the stretch mode instead **re-runs the
-Python ETL for that release**, because the benchmark model needs the panel and
-the per-basket curves; the response is the same either way. Full daily-domain
-refreshes still come from `npm run etl`. Saved inputs live in
-`data/app/inputs.json` (ephemeral on Render's free disk - copy changes back
-into `etl/release_inputs.json` to make them permanent); custom baskets live
-beside them in `data/app/baskets.json`.
+`shared/benchmarkModel.mjs` (the per-unit economics via `shared/economics.mjs`);
+**Save** persists the inputs (`POST /api/inputs/:id`) and **re-runs the Python
+ETL for that release**, because the benchmark model needs the panel and the
+per-basket curves - plans, expected-today, projections and the rail all come
+back rebuilt, in a few seconds. Full daily-domain refreshes still come from
+`npm run etl`. Saved inputs live in `data/inputs.saved.json` (`SAVED_INPUTS_PATH`
+relocates it; on Render's free disk copy changes back into
+`etl/release_inputs.json` to make them permanent); custom baskets live in
+`data/app/baskets.json`.
 
 ## Auditing the allocator tool with an admin export
 
@@ -482,19 +481,20 @@ The picture is the card's own rows, drawn on a canvas in the browser that is sho
 model the card builds out of what it has just rendered, so only the drawing is written
 twice and never the figures. It carries the release, the campaign day and the rate along
 the top, which the card on the page does not need, so it stands on its own in a channel.
-It is composed 500 CSS pixels wide (drawn at two times that), because Slack shows a
-picture inline about 400 pixels wide whatever the file's size: at the page's width it
-arrived at a third of its size, unreadable. A browser that cannot give us a PNG posts the
-figures alone rather than nothing.
+Slack fits an inline picture to a fixed height, so how big it reads is its type divided
+by its height: the frame keeps the card's proportions, 1180 CSS pixels by the rows'
+height at two times that, and the type and the bars are set large inside it. A browser
+that cannot give us a PNG posts the figures alone rather than nothing.
 
 Slack attaches a file only to a channel it knows by ID, and `chat.postMessage` is the one
 call that hands an ID back, so the **first** post to a channel is the figures and then the
 picture, and every post after that is one: the picture with the figures as its comment. A
 picture Slack will not take (`files:write` missing, say) never costs the figures - they go
-as text and the button says why in amber. A public channel nobody invited the bot to takes
+as text and the button's hover says why (the button itself only ever reads Post to Slack,
+Posting, Done or Failed, so the card's head never reflows). A public channel nobody invited the bot to takes
 the figures as they are (`chat:write.public`), and when it refuses the picture because the
 bot is not a member, the bot joins the channel (`channels:join`) and sends it again; a
-private channel cannot be joined that way, so the button asks for an invite.
+private channel cannot be joined that way, so the button's hover asks for an invite.
 
 The message is composed on the server from the same snapshot the card is drawn from
 (`server/slack.js`), so what lands in Slack is what the page says at that moment. The
@@ -511,7 +511,7 @@ Setup, once:
    `channels:join` under OAuth & Permissions, install it to the workspace, and copy the
    **Bot User OAuth Token** (`xoxb-…`) into `SLACK_BOT_TOKEN` on Render. The token lives
    only in the environment. Without `files:write` the figures still post; only the picture
-   does not, and the button says so. Without `channels:join` the picture only reaches
+   does not, and the button's hover says so. Without `channels:join` the picture only reaches
    channels the bot has been invited to. An app installed before a scope existed needs
    the scope added and the app reinstalled.
 2. For a private channel, invite the app to it (`/invite @<app name>`); public channels

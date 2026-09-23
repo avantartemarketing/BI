@@ -197,7 +197,7 @@ profile = {
   "sessions": float,              # median tot_sessions_total             -> 23543
   "entries": float,               # median tot_draw_entries_eligible_units
   "campaign_days": float,         # median campaign_days
-  "private_room_share": float,    # median
+  "private_room_share": float,    # median; descriptive since 2026-09-23 (DATA_MODEL §3)
   "share_units":    {group: float},   # median unit_share_<g>, renormalised to sum 1
   "share_sessions": {group: float},   # median sess_share_<g>, renormalised to sum 1
   "conv":           {group: float},   # median conv_sess_entry_<g> (0 when no history)
@@ -225,29 +225,32 @@ suggested cluster and records `basket.thin = True` when `n < 10`).
 1. If the release is in the panel and has a `cluster`, use `cluster_<n>`.
 2. Otherwise use `nearest_cluster` if present.
 3. Otherwise pick the cluster whose median units are closest to the edition size in log
-   space, tie-broken by paid-session share against the release's paid plan.
+   space, tie-broken by paid-session share against the panel's median paid share (none when
+   paid is not in plan).
 
 ## 4. Target maths (`etl/build.py`)
 
 Every release is benchmarked (`targeting_mode` `"benchmark"`): a release with no saved basket
-takes the suggested one. The quartile-lever model survives only as the fallback for a basket
-with no median units, and for a release whose saved inputs still say `stretch_mode: "levers"`
-(`"levers"`); the page no longer offers it.
+takes the suggested one. There is no other model: the quartile levers were retired on
+2026-09-23 (DATA_MODEL §3), and a release with no basket to read - no draw panel on file, or
+no median units on the channels in plan - keeps its actuals-only page.
 
 ```
 K            = edition_size / profile["units"]
 units[g]     = profile["units_by_group"][g]    * K       # sums to edition_size exactly
 sessions[g]  = profile["sessions_by_group"][g] * K
 entries[g]   = units[g] / e2o                            # e2o = eligible_entry_to_order (0.8)
-paid_budget  = profile["units_by_group"]["paid"] * cost_per_purchase["Median"] * K
+entries      = edition_size / e2o                        # every unit asked for as an entry
+paid_budget  = profile["units_by_group"]["paid"] * cost_per_purchase * K   # the release's figure, else the panel median
 ```
 
-`compute_targets` in benchmark mode returns the **same top-level keys** as the lever model
-so nothing downstream breaks: `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
-`pr_other_pct`, `pr_units`, `draw_units`, `per_channel`, `pr_sessions`, `paid{...}`,
-`launch_value`, `organic_sessions_draw`, `total_sessions`, `entries_target`, `buffer`.
+`compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
+`per_channel`, `paid{...}`, `launch_value`, `units_per_buyer`, `buyers`, `buyers_by_group`,
+`organic_sessions`, `total_sessions`, `entries_target`, `buffer` - or `None` with no basket.
 
-- `pr_units = units["aa_email"] * profile["private_room_share"]`, `draw_units = organic − pr`.
+- Organic units are not split into draw and private room (the LE workbook dropped that split
+  in September 2026 and the model followed): every organic unit is targeted through its group
+  and asked for as an entry, so `entries_target = edition_size / e2o`.
 - `per_channel` is **synthesised** by splitting each group's target across its raw channels
   with the `order_split` medians from `etl/benchmarks.json`, renormalised inside the group.
   It carries the same keys as before (`quality`, `order_split`, `purchases`,
@@ -290,8 +293,7 @@ The basket keeps every member, paid or not; each simply counts on its other chan
 benchmark is what launches like this reached without paid, the group's target is zero, its
 budget is zero, and the other channels carry the whole sellout between them. An artist with
 no channels of their own is the same reading on `referral_artist`, and the funnel then expects
-no artist posts (`referral_artist_tier` is `N/A`). The lever fallback honours the same list:
-paid share zero, every channel in an off group `N/A`.
+no artist posts (`referral_artist_tier` is `N/A`).
 
 The basket's full medians ride on the profile as `units_all`, `units_by_group_all` and the
 rest, so the snapshot can say what was set aside and the browser can re-read the same basket
@@ -384,7 +386,7 @@ All new fields are **additive**. Existing consumers keep working.
 
 ```jsonc
 {
-  "targetingMode": "benchmark",         // or "levers"
+  "targetingMode": "benchmark",         // the only model since 2026-09-23
   "benchmark": {
     "basket": { "id": "cluster_0", "kind": "ready", "name": "Paid-led headline launches",
                 "n": 33, "thin": false, "suggestedId": "cluster_0" },
@@ -408,7 +410,7 @@ All new fields are **additive**. Existing consumers keep working.
     "benchmark": 214.0,          // at close
     "benchmarkToday": 132.0,     // benchmark pace by today
     "stretch": 86.0,
-    "benchmarkPct": 0.1212       // secured vs benchmarkToday; null in lever mode
+    "benchmarkPct": 0.1212       // secured vs benchmarkToday; null on an actuals-only page
   },
   "channels": [ { "...existing...": null,
     "bm": 83.5,        // benchmark at close, this group
@@ -447,7 +449,7 @@ both the targeted and the actuals-only build. `paid.entriesToDate` keeps its old
 `hero.benchmarkPct` and the matching `benchmarkPct` on each `index.json` row are
 `(min(secured, edition) − benchmarkToday) / benchmarkToday`. The sidebar's three-state dot
 reads the **sign** of it; there is no threshold to pick, and 1/K runs from +15% to −54%
-across the launches on file, so a fixed one is wrong on most of them. Lever-mode releases
+across the launches on file, so a fixed one is wrong on most of them. Actuals-only pages
 carry `null` and fall back to a −10% band on `statusPct`.
 
 ## 6. API
@@ -460,18 +462,16 @@ carry `null` and fall back to a −10% band on `statusPct`.
 - `POST /api/baskets` `{name, members[]}` → saves a custom basket to `data/app/baskets.json`
   and returns it with `kind: "saved"`.
 - `POST /api/inputs/:id` additionally accepts
-  `benchmark_basket: {kind: "ready"|"bespoke"|"saved", id?: string, members?: string[]}`
-  and `stretch_mode: "even" | "levers"`. Validation: `kind` in the three values; `id` must
+  `benchmark_basket: {kind: "ready"|"bespoke"|"saved", id?: string, members?: string[]}`,
+  `channels_off` (§4.3), `cost_per_purchase` (£ per paid unit; empty means the panel median)
+  and `artist_posting_tier` (Low / Medium / High). Validation: `kind` in the three values; `id` must
   resolve; `members` must be known release names, at least 3, and must not contain this
   release. An invalid basket is a 400, not a silent fallback.
 
-Because the benchmark model needs the panel and the basket curves, **every** save on a
-release whose snapshot carries a `benchmark` block re-runs the Python ETL, as does any save
-that changes `benchmark_basket` or `stretch_mode`. Benchmark mode is sticky: the JS
-`retargetSnapshot` only knows the lever model, so on a benchmark release it would move
-`hero.target` and leave `benchmark.units` and `benchmark.k` behind, and the page would then
-quote a target and a benchmark that no longer agree. `retargetSnapshot` stays as the fast
-path for lever-mode edits only. The save response is unchanged in shape.
+Because the benchmark model needs the panel and the basket curves, **every** save re-runs
+the Python ETL for the release. The JavaScript retarget that used to answer lever-mode edits
+in the browser's model went with the levers (`server/retarget.js`, 2026-09-23). The save
+response is unchanged in shape.
 
 That ETL run rebuilds **one release**, not the catalogue: `build.py --release <id>` reuses the
 curve panel already on disk, builds the one snapshot and patches its row into `index.json`.
@@ -558,7 +558,7 @@ under the list: the row's tooltip names the state on its Pace row.
 Everything degrades: when `snap.benchmark` is absent there is no outline, no tick and no
 lighter band - the fill is one tint to the target - the rung centres fall back to the neutral
 plan grey, and every card renders exactly as it did before the benchmark model existed. Both
-waterfalls say so in their footer - `levers, no comparable basket` - because a mark that is
+waterfalls say so in their footer - `no comparable basket` - because a mark that is
 simply missing explains nothing.
 
 The email card distinguishes its two silences the same way. `email.feedThrough` is the last
@@ -570,8 +570,8 @@ sent nothing", which is a third thing entirely.
 
 ## 8. Target setting
 
-The quartile levers are gone from the page (the build keeps the model only as the fallback of
-§4). In their place:
+The quartile levers are gone from the page and, since 2026-09-23, from the build (DATA_MODEL
+§3). In their place:
 
 1. **Benchmark basket** card — the chosen basket, its profile chips, a `Change basket`
    button opening the picker, the **Channels in plan** switches (§4.3: Running paid; Artist's
@@ -584,22 +584,25 @@ The quartile levers are gone from the page (the build keeps the model only as th
 3. **Derived targets** rail — three columns: Benchmark, Target, Stretch, computed in the
    browser from the basket's medians (`shared/benchmarkModel.mjs`) as the sellout, the cost
    per purchase and the switches change; dashes until there is a basket and a sellout.
-4. **Economics** — gains the **Cost per purchase** pick (low, median or high quartile of the
-   panel), the one lever the benchmark still needs: paid units × it is the paid budget.
+4. **Economics** — gains **Cost per purchase**, £ per paid unit, blank meaning the panel's
+   median: paid units × it is the paid budget.
 
 The paid-share overwrite, the paid channel size, private room share, paid conversion and the
-per-channel quality rows are no longer on the page. The inputs are still accepted, and still
-read by the lever fallback, but the benchmark ignores them: the paid share is the basket's,
-and a release that will not run paid says so with the switch rather than with a zero.
+per-channel quality rows are gone: a save drops them from a release that still carries them.
+The paid share is the basket's, and a release that will not run paid says so with the switch
+rather than with a zero. The Referral Artist tier lives on as the posting tier beside the
+artist switch (`artist_posting_tier`).
 
 The rail's Benchmark column takes the basket's own median wherever the basket has one
-(`unitsByGroup.paid`, `entries`, `sessions`, `paidBudget`, and `paidBudget ÷ basket launch
-value` for the percentage row), so the rail and the per-channel table above it quote the
-same figures. The two rows the basket has no equivalent for — the draw / private-room split
-is a target-model construct, not a channel — take the benchmark's email units at the basket's
-private-room share, and the rest. The percentage row is why a plain `target ÷ K` cannot be
-applied everywhere — K is in both the budget and the launch value and cancels, so dividing
-again would print a benchmark share 1/K of the real one.
+(`unitsByGroup.paid`, `sessions`, `paidBudget`, and `paidBudget ÷ basket launch value` for
+the percentage row), so the rail and the per-channel table above it quote the same figures;
+the entries row shows the basket's median units asked for as entries at 0.8, the way the
+target is, so that row keeps the K ratio too (the measured median entries stay on the
+snapshot as `benchmark.entries`). The draw / private-room rows it used to carry went with
+the split. The
+percentage row is why a plain `target ÷ K` cannot be applied everywhere — K is in both the
+budget and the launch value and cancels, so dividing again would print a benchmark share 1/K
+of the real one.
 
 The **basket picker** is a map. Every launch on file is a dot on a scatter of units sold
 (x, log) against unit price (y, log); this launch is a ring at its target and price, with faint

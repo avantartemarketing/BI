@@ -27,7 +27,11 @@
   "launchValue": 250000.0,
   "artistProfitPerUnit": 806.05,
   "aaProfitPerUnit": 1212.26,
-  "artistProfitShare": 0.5
+  "artistProfitShare": 0.5,
+  "framingAvailable": true,
+  "frameConversion": 0.35,
+  "frameProfitPerUnit": 94.0,
+  "frameUpliftPerUnit": 32.9
  },
  "currency": "units",
  "hero": {
@@ -49,29 +53,26 @@
   "paid_pct": 0.1015077940559472,
   "paid_units": 10.15077940559472,
   "organic_units": 89.84922059440528,
-  "pr_other_pct": 0.11450348076265636,
-  "pr_units": 10.288048501871152,
-  "draw_units": 79.56117209253412,
   "per_channel": {
    "AA Email Auto": {
     "quality": "benchmark",
-    "order_split": 0.03667624886287775,
-    "purchases": 2.9180053474880254,
-    "eligible_entries": 3.6475066843600317,
+    "order_split": 0.04008865344169443,
+    "purchases": 3.601934266415468,
+    "eligible_entries": 4.502417833019335,
     "sessions": 335.86615424701523,
     "session_to_entry": 0.01032091187096975
    },
    "AA Email Man": {
     "quality": "benchmark",
-    "order_split": 0.5150287846948763,
-    "purchases": 40.97629377171776,
-    "eligible_entries": 51.220367214647204,
+    "order_split": 0.562947714182075,
+    "purchases": 50.580413354661474,
+    "eligible_entries": 63.22551669332684,
     "sessions": 4716.423914798615,
     "session_to_entry": 0.01032091187096975
    },
    "AA Meta": {
     "quality": "benchmark",
-    "order_split": 0.01900033301728128,
+    "order_split": 0.016824728751152946,
     "purchases": 1.511688765003374,
     "eligible_entries": 1.8896109562542174,
     "sessions": 237.6100368928539,
@@ -79,7 +80,7 @@
    },
    "AA X": {
     "quality": "benchmark",
-    "order_split": 0.021608221862015557,
+    "order_split": 0.019134005245723045,
     "purchases": 1.7191754581774779,
     "eligible_entries": 2.148969322721847,
     "sessions": 270.2231792017902,
@@ -87,7 +88,7 @@
    },
    "Referral Artist": {
     "quality": "benchmark",
-    "order_split": 0.005008485913961906,
+    "order_split": 0.004434996843462533,
     "purchases": 0.3984810097237563,
     "eligible_entries": 0.4981012621546953,
     "sessions": 366.3476488918928,
@@ -95,7 +96,7 @@
    },
    "Direct": {
     "quality": "benchmark",
-    "order_split": 0.11368229672566615,
+    "order_split": 0.10066527804948423,
     "purchases": 9.044696773665253,
     "eligible_entries": 11.305870967081566,
     "sessions": 407.21055609537444,
@@ -103,7 +104,7 @@
    },
    "Organic Search": {
     "quality": "benchmark",
-    "order_split": 0.05135304374092464,
+    "order_split": 0.04547294148483182,
     "purchases": 4.085708350547137,
     "eligible_entries": 5.107135438183922,
     "sessions": 183.94685981226138,
@@ -111,7 +112,7 @@
    },
    "Other": {
     "quality": "benchmark",
-    "order_split": 0.012685723805436254,
+    "order_split": 0.01123316427372011,
     "purchases": 1.0092910548026706,
     "eligible_entries": 1.261613818503338,
     "sessions": 45.44032619036406,
@@ -119,7 +120,7 @@
    },
    "AA Other": {
     "quality": "benchmark",
-    "order_split": 0.005550082714491385,
+    "order_split": 0.004914578925161469,
     "purchases": 0.44157108597544803,
     "eligible_entries": 0.55196385746931,
     "sessions": 19.880424073391442,
@@ -127,7 +128,7 @@
    },
    "Referral Meta": {
     "quality": "benchmark",
-    "order_split": 0.01898712507399287,
+    "order_split": 0.016813033163344777,
     "purchases": 1.5106379255544164,
     "eligible_entries": 1.8882974069430205,
     "sessions": 68.01197708638006,
@@ -135,7 +136,7 @@
    },
    "Referral Other": {
     "quality": "benchmark",
-    "order_split": 0.02004196536029059,
+    "order_split": 0.01774709056521273,
     "purchases": 1.5945622551026875,
     "eligible_entries": 1.9932028188783593,
     "sessions": 71.7904202736395,
@@ -143,44 +144,43 @@
    },
    "Referral X": {
     "quality": "benchmark",
-    "order_split": 0.18037768822818512,
+    "order_split": 0.1597238150741367,
     "purchases": 14.351060294776103,
     "eligible_entries": 17.938825368470127,
     "sessions": 646.1137824110664,
     "session_to_entry": 0.02896906941367985
    }
   },
-  "pr_sessions": 959.0724002375017,
   "paid": {
    "units": 10.15077940559472,
    "eligible_entries": 12.6884742569934,
    "sessions": 7652.439067851442,
    "session_to_entry": 0.0035626947248237,
-   "cost_per_purchase": 177,
+   "cost_per_purchase": 177.0,
    "budget": 1796.6879547902654,
    "budget_pct_of_launch_value": 0.007186751819161062,
    "sense_check_breached": false
   },
   "launch_value": 250000.0,
-  "units_per_buyer": 1.1233275402179312,
+  "units_per_buyer": 1.1289756989564663,
   "units_per_buyer_source": "products",
-  "buyers": 89.02123060260723,
+  "buyers": 88.5758657980255,
   "buyers_by_group": {
-   "aa_email": 48.233792621665174,
-   "aa_social": 2.87615509057496,
-   "referral_artist": 0.3547326985737828,
-   "search_direct_other": 28.52020144917686,
-   "paid": 9.03634874261644
+   "aa_email": 47.99248351506478,
+   "aa_social": 2.86176595844109,
+   "referral_artist": 0.3529580044035313,
+   "search_direct_other": 28.377517576362905,
+   "paid": 8.99114074375319
   },
-  "organic_sessions_draw": 7368.865279974646,
+  "organic_sessions": 7368.865279974646,
   "total_sessions": 15021.304347826088,
-  "entries_target": 112.13993937266102,
+  "entries_target": 124.99999999999997,
   "buffer": 0.75
  },
  "groupTargets": {
   "aa_email": {
-   "entries": 54.867873899007236,
-   "purchases": 43.89429911920579,
+   "entries": 67.72793452634617,
+   "purchases": 54.18234762107694,
    "units": 54.18234762107694,
    "sessions": 5052.290069045631
   },
@@ -2377,16 +2377,16 @@
    "contrib_traffic": -25.5,
    "contrib_conversion": 0.3,
    "bps_actual": 0.00833500655003122,
-   "bps_expected": 0.00954691673726019,
-   "contrib_buyers": -3.6,
-   "contrib_per_buyer": 3.9,
+   "bps_expected": 0.009499154414966217,
+   "contrib_buyers": -3.5,
+   "contrib_per_buyer": 3.8,
    "sessions_benchmark": 5810.1,
    "conv_benchmark": 0.010724314495131889,
    "conv_benchmark_today": 0.010724314495131889,
    "contrib_traffic_bm": -33.6,
    "contrib_conversion_bm": 0.3,
-   "contrib_buyers_bm": -3.6,
-   "contrib_per_buyer_bm": 3.9
+   "contrib_buyers_bm": -3.5,
+   "contrib_per_buyer_bm": 3.8
   },
   "aa_social": {
    "sessions_actual": 316.0,
@@ -2396,7 +2396,7 @@
    "contrib_traffic": -1.2,
    "contrib_conversion": -2.0,
    "bps_actual": 0.0,
-   "bps_expected": 0.00566358205690692,
+   "bps_expected": 0.005635247691060341,
    "contrib_buyers": -2.0,
    "contrib_per_buyer": 0.0,
    "sessions_benchmark": 584.0,
@@ -2415,7 +2415,7 @@
    "contrib_traffic": -0.4,
    "contrib_conversion": -0.0,
    "bps_actual": 0.0,
-   "bps_expected": 0.0009682952781238197,
+   "bps_expected": 0.0009634509883471022,
    "contrib_buyers": -0.0,
    "contrib_per_buyer": 0.0,
    "sessions_benchmark": 421.3,
@@ -2434,16 +2434,16 @@
    "contrib_traffic": -15.7,
    "contrib_conversion": 1.5,
    "bps_actual": 0.018649046503847442,
-   "bps_expected": 0.01977281839006477,
+   "bps_expected": 0.019673896848105506,
    "contrib_buyers": -0.9,
-   "contrib_per_buyer": 2.4,
+   "contrib_per_buyer": 2.3,
    "sessions_benchmark": 1658.8,
    "conv_benchmark": 0.02221135144528733,
    "conv_benchmark_today": 0.02221135144528733,
    "contrib_traffic_bm": -20.5,
    "contrib_conversion_bm": 1.5,
    "contrib_buyers_bm": -0.9,
-   "contrib_per_buyer_bm": 2.4
+   "contrib_per_buyer_bm": 2.3
   },
   "paid": {
    "sessions_actual": 6932.0,
@@ -2453,15 +2453,15 @@
    "contrib_traffic": -1.0,
    "contrib_conversion": 5.0,
    "bps_actual": 0.0015827760067352171,
-   "bps_expected": 0.0011808455660338312,
-   "contrib_buyers": 3.1,
+   "bps_expected": 0.0011749379072517872,
+   "contrib_buyers": 3.2,
    "contrib_per_buyer": 1.9,
    "sessions_benchmark": 8800.3,
    "conv_benchmark": 0.0013264763450700342,
    "conv_benchmark_today": 0.0013264763450700342,
    "contrib_traffic_bm": -2.5,
    "contrib_conversion_bm": 5.0,
-   "contrib_buyers_bm": 3.1,
+   "contrib_buyers_bm": 3.2,
    "contrib_per_buyer_bm": 1.9
   }
  },
@@ -2831,7 +2831,7 @@
   "cumCpe": 408.1,
   "roiDeclineModel": {
    "start": null,
-   "dailyFactor": 0.995
+   "dailyFactor": 0.9621
   },
   "roiPath": [],
   "roiTarget": 1.1,
@@ -2849,7 +2849,19 @@
    "cpeAtClose": null,
    "driftToClose": 1.0,
    "paced": false,
-   "elasticity": 0.38,
+   "elasticity": 0.6723,
+   "driftPerDay": 0.03935,
+   "costTerms": {
+    "elasticity": 0.6723,
+    "driftPerDay": 0.03935,
+    "elasticityPrior": 0.38,
+    "driftPrior": 0.025000000000000005,
+    "elasticityOwn": 1.105,
+    "elasticitySe": 0.2312,
+    "driftOwn": 0.05483,
+    "driftSe": 0.03636,
+    "fitDays": 9
+   },
    "band": "increase",
    "forcedDecrease": false,
    "zeroConversionDays": 0,
@@ -2871,7 +2883,7 @@
   "benchmarkBudget": 2066.19
  },
  "unitsPerBuyer": {
-  "plan": 1.1233,
+  "plan": 1.129,
   "actual": 1.2979
  },
  "untracked": {
@@ -3416,7 +3428,7 @@
   },
   "privateRoomShare": 0.1899,
   "paidBudget": 2066.19,
-  "unitsPerBuyer": 1.1233,
-  "buyers": 102.4
+  "unitsPerBuyer": 1.129,
+  "buyers": 101.9
  }
 }

@@ -1,9 +1,9 @@
 {
  "benchmarks": {
-  "_comment": "Benchmark values v2, transcribed from the 2026-08-28 LAUNCH PERFORMANCE OVERVIEW (recomputed panel; quartiles over the historical release panel; Low=P25, Medium=median, High=P75). Cannibalisation 0.2 - the LE standard per the workbook's spend rules (per-release tabs can show 0 via a broken template cell reference; do not transcribe those). See docs/DATA_MODEL.md #4 for provenance and the recomputation policy. Currency GBP.",
+  "_comment": "Benchmark constants v3. The reference numbers the build still reads, after the quartile-lever model was retired on 2026-09-23 (docs/DATA_MODEL.md #3): the basket of comparable launches is the benchmark for every volume and rate. What stays: order_split (the medians split a display group's target across its raw channels, since the panel is grouped), cost_per_purchase (the Median is the default price of a paid unit; a release can type its own), the entry-to-order rates, cannibalisation 0.2 (the LE standard per the workbook's spend rules), the framing defaults, the budget sense check, the spend rules and the cost-curve priors. Transcribed from the 2026-08-28 LAUNCH PERFORMANCE OVERVIEW (recomputed panel; quartiles over the historical release panel). See docs/DATA_MODEL.md #4 for provenance. Currency GBP.",
   "as_of": "2026-08-28",
   "order_split": {
-   "_meaning": "channel share of unadjusted draw+preorder units; renormalise over non-N/A channels at use",
+   "_meaning": "channel share of unadjusted draw+preorder units, Low=P25 / Medium=median / High=P75; the build reads the Medium column only, renormalised inside each display group, to split a group's basket target across its channels",
    "AA Email Auto": {
     "Low": 0.0125,
     "Medium": 0.02302503882,
@@ -65,90 +65,12 @@
     "High": 0.375
    }
   },
-  "session_to_eligible_entry": {
-   "_meaning": "unique eligible entries / unadjusted sessions",
-   "AA Email Auto": {
-    "Low": 0.003828814077,
-    "Medium": 0.04744255004,
-    "High": 0.3039215686
-   },
-   "AA Email Man": {
-    "Low": 0.006864350592,
-    "Medium": 0.01099830795,
-    "High": 0.01738003584
-   },
-   "AA Meta": {
-    "Low": 0.009101349214,
-    "Medium": 0.01472964409,
-    "High": 0.02702089385
-   },
-   "AA Other": {
-    "Low": 0.03956043956,
-    "Medium": 0.07142857143,
-    "High": 0.1607142857
-   },
-   "AA X": {
-    "Low": 0.01123595506,
-    "Medium": 0.02302631579,
-    "High": 0.0303030303
-   },
-   "Direct": {
-    "Low": 0.009006248878,
-    "Medium": 0.01830791493,
-    "High": 0.03014514627
-   },
-   "Organic Search": {
-    "Low": 0.01777777778,
-    "Medium": 0.03278688525,
-    "High": 0.06349206349
-   },
-   "Other": {
-    "Low": 0.009708737864,
-    "Medium": 0.02127659574,
-    "High": 0.03684210526
-   },
-   "Referral Artist": {
-    "Low": 0.006396588486,
-    "Medium": 0.01342281879,
-    "High": 0.02200671391
-   },
-   "Referral Meta": {
-    "Low": 0.008055447429,
-    "Medium": 0.01612903226,
-    "High": 0.03005497615
-   },
-   "Referral Other": {
-    "Low": 0.0177789548,
-    "Medium": 0.03342519384,
-    "High": 0.06610576923
-   },
-   "Referral X": {
-    "Low": 0.008410720104,
-    "Medium": 0.02393939394,
-    "High": 0.150862069
-   }
-  },
-  "paid_share_of_units": {
-   "Low": 0.07825814536,
-   "Medium": 0.2464953271,
-   "High": 0.3647751136
-  },
-  "paid_session_to_eligible_entry": {
-   "Low": 0.001546790664,
-   "Medium": 0.004143253907,
-   "High": 0.00978063652
-  },
-  "pv_other_share_of_units": {
-   "Low": 0.2464788732,
-   "Medium": 0.4610655738,
-   "High": 0.7105263158
-  },
   "cost_per_purchase": {
+   "_meaning": "GBP per paid unit, quartiles over the paid campaigns on file; Median is the default the paid budget is priced at when a release has no cost_per_purchase of its own",
    "Low": 128.75,
    "Median": 177,
    "High": 291
   },
-  "email_session_to_purchase": 0.01072708223,
   "eligible_entry_to_order": 0.8,
   "preorder_entry_to_order": 0.95,
   "target_buffer": 0.75,
@@ -164,16 +86,16 @@
    "ignore_change_below": 0.1,
    "forced_decrease_after_days_below_target": 3,
    "cpe_daily_drift_by_third": [
-    0.005,
-    0.005,
-    0.005
+    0.025,
+    0.025,
+    0.025
    ],
    "cpe_daily_drift_by_third_workbook": [
     0.05,
     0.07,
     0.1
    ],
-   "cpe_daily_drift_note": "Pure time drift in cost per entry, per day, by third of the window. The workbook's 5/7/10% a day (kept in cpe_daily_drift_by_third_workbook) is the cost rise along its own spend path, which ramps 6-10% a day - at spend elasticity 0.38 that ramp alone raises CPE 3.5-5% a day, so applying the tiers on top of the elasticity counted the same effect twice and drove ROI at close under 1 on every campaign. Net of spend, within-campaign drift measures 0.36% a day +/- 1.12 (13 campaigns, 170 campaign-days, etl/analysis/cpe_elasticity.py); 0.5% a day used.",
+   "cpe_daily_drift_note": "Prior for the pure time drift in cost per entry, per day, net of spend, the same in every third of the window. Fixed-effect fit on 29 campaigns / 433 campaign-days (etl/analysis/cpe_elasticity.py, 2026-09-23): 2.6% a day +/- 0.5 on calendar days, 2.6-4.0% across day filters and weightings, 1.4% +/- 0.7 on the 2026 campaigns alone, 3.8% before 2026; per-campaign fits spread with a between-campaign sd of 3.4 points a day (cpe_daily_drift_sd). The 2026-09-07 fit on 13 campaigns / 170 days read 0.36% +/- 1.12 and set 0.5%; the wider panel says that was low. The workbook's 5/7/10% a day (kept in cpe_daily_drift_by_third_workbook) is the cost rise along its own ramping spend path, which the elasticity already prices, so it is not applied on top. A campaign with cpe_fit_min_days of history gets its own drift fitted and shrunk to this prior by precision; for most campaigns the prior dominates, because a campaign that ramps spend and ages at the same time cannot tell the two apart from its own days.",
    "_source": "The cumulative-ROI bands (0.9 / 1.3), the 30% cap and the 10% dead band are the TL template's 'ROI / SPEND RULES - DO NOT CHANGE' block (LAUNCH PERFORMANCE OVERVIEW, TL_Template rows 416-428), applied to LE for want of a fuller LE block. The LE template's own SPEND RULES (rows 284-299) are: decrease/increase steps of 10%, max increase per day 2.0, target ROI AA 1.1, a 30% decrease on a zero-conversion day, a 100% decrease (pause) after 3 days of zero conversion, and 'Expected Increase in Spend (%)' 5/7/10 by third - a typed constant with no derivation, read by row 206 as the daily growth of the forecast cost per unit. Neither tab derives its drift from data; the TL tab labels its 2.16%/day '(assumed)'.",
    "zero_conversion_decrease": 0.3,
    "zero_conversion_days_to_pause": 3,
@@ -189,28 +111,17 @@
      0.07,
      0.1
     ]
-   }
+   },
+   "cpe_daily_drift_sd": 0.035
   },
   "frame_conversion": 0.35,
   "frame_profit_per_unit": 94,
   "budget_sense_check_max_pct_of_launch_value": 0.06,
   "cpe_spend_elasticity": 0.38,
-  "cpe_spend_elasticity_note": "Within-campaign elasticity of cost per entry to daily spend, fitted on 13 campaigns / 170 campaign-days with a campaign fixed effect and a day-drift term: 0.384 +/- 0.062 (etl/analysis/cpe_elasticity.py, 2026-09-07). Doubling daily spend raises CPE ~31%, 10x ~2.4x. Set to 0 to price entries flat as before.",
-  "cpe_growth_factor_note": "Superseded: the forward cost per entry now follows spend_rules.cpe_daily_drift_by_third compounded day by day (the path the ROI chart draws), for the budget and the ROI floor alike. Kept for reference only."
- },
- "channel_quality_default": {
-  "AA Email Auto": "High",
-  "AA Email Man": "High",
-  "AA Meta": "Medium",
-  "AA Other": "Medium",
-  "AA X": "Low",
-  "Direct": "Medium",
-  "Organic Search": "Medium",
-  "Other": "Medium",
-  "Referral Artist": "Medium",
-  "Referral Meta": "Medium",
-  "Referral Other": "N/A",
-  "Referral X": "N/A"
+  "cpe_spend_elasticity_note": "Prior for the within-campaign elasticity of cost per entry to daily spend. Fixed-effect fit with a calendar-day drift term on 29 campaigns / 433 campaign-days (etl/analysis/cpe_elasticity.py, 2026-09-23): 0.35-0.45 depending on the day filter (0.377 +/- 0.038 on every day with an entry); the 2026-09-07 fit on 13 campaigns gave 0.384 +/- 0.062. Per-campaign fits spread with a between-campaign sd of 0.19 (cpe_spend_elasticity_sd), which is the prior's width. A campaign with cpe_fit_min_days of history gets its own elasticity fitted and shrunk to this prior by precision (etl/build.py campaign_cost_terms); the prior alone prices a campaign without history. Doubling daily spend raises CPE ~30% at 0.38. Set to 0 to price entries flat.",
+  "cpe_growth_factor_note": "Superseded: the forward cost per entry now follows spend_rules.cpe_daily_drift_by_third compounded day by day (the path the ROI chart draws), for the budget and the ROI floor alike. Kept for reference only.",
+  "cpe_spend_elasticity_sd": 0.19,
+  "cpe_fit_min_days": 8
  },
  "releases": {
   "glennligon_le_26": {
@@ -228,12 +139,7 @@
    "aa_group_profit": 190745.0,
    "artist_profit_share": 0.5,
    "aa_budget_share": 1.0,
-   "framing_available": true,
-   "paid_channel_size": "Medium",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {}
+   "framing_available": true
   },
   "dali_le_26": {
    "id": "dali_le_26",
@@ -250,13 +156,9 @@
    "aa_group_profit": 335178,
    "artist_profit_share": 0,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {
-    "Referral Artist": "N/A"
-   }
+   "channels_off": [
+    "referral_artist"
+   ]
   },
   "abdulnasser_le_26": {
    "id": "abdulnasser_le_26",
@@ -273,11 +175,7 @@
    "aa_group_profit": 85820,
    "artist_profit_share": 0.5,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "High",
-   "channel_quality_overrides": {}
+   "cost_per_purchase": 291
   },
   "zengfanzhi_le_26": {
    "id": "zengfanzhi_le_26",
@@ -293,12 +191,7 @@
    "artist_profit": 80605,
    "aa_group_profit": 117936,
    "artist_profit_share": 0.5,
-   "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {}
+   "framing_available": true
   },
   "mondrian_le_26": {
    "id": "mondrian_le_26",
@@ -315,11 +208,6 @@
    "aa_group_profit": 221529,
    "artist_profit_share": 0,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {},
    "draw_entries_file": "draw_mondrian_entries.csv",
    "products": [
     {
@@ -351,12 +239,7 @@
    "artist_profit": 254165,
    "aa_group_profit": 335957,
    "artist_profit_share": 0.5,
-   "framing_available": true,
-   "paid_channel_size": "Medium",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {}
+   "framing_available": true
   },
   "parra_le_26": {
    "id": "parra_le_26",
@@ -373,13 +256,7 @@
    "aa_group_profit": 46652,
    "artist_profit_share": 0.5,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {
-    "Referral Artist": "High"
-   }
+   "artist_posting_tier": "High"
   },
   "jamesjean_blossom_26": {
    "id": "jamesjean_blossom_26",
@@ -396,13 +273,7 @@
    "aa_group_profit": 132117,
    "artist_profit_share": 0.5,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Medium",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {
-    "Referral Artist": "High"
-   },
+   "artist_posting_tier": "High",
    "draw_entries_file": "draw_jamesjean_blossom_entries.csv",
    "products": [
     {
@@ -432,16 +303,7 @@
    "aa_group_profit": 1973248.0,
    "artist_profit_share": 0.5,
    "framing_available": true,
-   "paid_channel_size": "High",
-   "reference_point": "Low",
-   "paid_conv_quality": "Medium",
-   "cpp_pick": "Median",
-   "channel_quality_overrides": {
-    "AA Email Auto": "Low",
-    "Referral Artist": "Low",
-    "Referral Other": "Medium"
-   },
-   "paid_share_override": 0.66,
+   "artist_posting_tier": "Low",
    "products": [
     {
      "key": "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8",
@@ -4705,33 +4567,38 @@
  "meta_campaigns": [
   {
    "name": "AndyWarhol_TL_26 \u00b7 Enter draw",
-   "spend": 158898.99,
-   "last": "2026-09-21"
+   "spend": 209132.57,
+   "last": "2026-09-23"
   },
   {
    "name": "SalvadorDali_LE_26 \u00b7 Enter draw",
    "spend": 76156.15,
-   "last": "2026-09-21"
+   "last": "2026-09-23"
   },
   {
    "name": "RobertLongo_LE_26 \u00b7 Enter draw",
-   "spend": 17571.53,
-   "last": "2026-09-21"
-  },
-  {
-   "name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
-   "spend": 12530.76,
-   "last": "2026-09-21"
+   "spend": 26474.67,
+   "last": "2026-09-23"
   },
   {
    "name": "BisaButler_TL_26 \u00b7 Sign-ups",
-   "spend": 11322.75,
-   "last": "2026-09-21"
+   "spend": 19329.07,
+   "last": "2026-09-23"
+  },
+  {
+   "name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
+   "spend": 17319.52,
+   "last": "2026-09-23"
+  },
+  {
+   "name": "MaurizioCatt_HorseLE_26 \u00b7 Enter draw",
+   "spend": 1804.85,
+   "last": "2026-09-23"
   },
   {
    "name": "GlennLigon_LE_26 \u00b7 Enter draw",
    "spend": 4086.95,
-   "last": "2026-09-21"
+   "last": "2026-09-22"
   },
   {
    "name": "Abdulnasser_LE_26 \u00b7 Enter draw",

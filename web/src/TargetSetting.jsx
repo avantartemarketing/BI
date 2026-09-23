@@ -10,8 +10,9 @@
  * §4). So the basket is the first-class input, the sellout is the only lever
  * and what is left over is the stretch, stated rather than dialled in. The
  * quartile levers that used to sit here asked a different question - "what
- * shape of launch is this?" - and are gone from the page; the build keeps
- * that model only as the fallback for a basket with no median units.
+ * shape of launch is this?" - and are gone: from the page, and since
+ * 2026-09-23 from the build too (docs/DATA_MODEL.md §3). A release that
+ * cannot be benchmarked shows its actuals.
  *
  * Two things a basket cannot know are asked here instead: which channels
  * this release will not run (paid; the artist's own channels), which take
@@ -24,7 +25,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, GROUP_DOTS, C, fmt, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
-import { computeTargets } from "../../shared/targetModel.mjs";
+import { computeEconomics } from "../../shared/economics.mjs";
 import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf } from "../../shared/benchmarkModel.mjs";
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -164,9 +165,8 @@ function ChannelRow({ label, bmSessions, bmUnits, conv, k, head, total, off }) {
 }
 
 export default function TargetSetting({ snap, onSaved }) {
-  const [meta, setMeta] = useState(null);       // {inputs, channel_quality_default, benchmarks}
+  const [meta, setMeta] = useState(null);       // {inputs, benchmarks, ...}
   const [inp, setInp] = useState(null);         // editable inputs
-  const [qual, setQual] = useState(null);       // full channel->quality map
   const [pick, setPick] = useState(null);       // a basket chosen in the picker, not yet saved
   const [picking, setPicking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -195,19 +195,24 @@ export default function TargetSetting({ snap, onSaved }) {
   };
 
   useEffect(() => {
-    setMeta(null); setInp(null); setQual(null); setError(null); setPick(null); setPicking(false);
+    setMeta(null); setInp(null); setError(null); setPick(null); setPicking(false);
     setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null); setSlackNote(null);
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
       // a release nobody has set targets for comes back with inputs: null and
       // the defaults the ETL could derive - the form starts from those
-      const start = d.inputs || d.defaults;
+      const raw = d.inputs || d.defaults;
+      // inputs saved under the retired levers carried two of today's choices
+      // as the Referral Artist row of the channel-quality grid: N/A was an
+      // artist with no channels of their own, Low / High the posting tier
+      const legacy = (raw.channel_quality_overrides || {})["Referral Artist"];
+      const start = {
+        ...raw,
+        channels_off: raw.channels_off || (legacy === "N/A" ? ["referral_artist"] : []),
+        artist_posting_tier: raw.artist_posting_tier || (["Low", "Medium", "High"].includes(legacy) ? legacy : "Medium"),
+      };
       setMeta({ ...d, inputs: start, creating: !d.inputs });
-      // an estate marked Referral Artist N/A under the old levers is an artist
-      // with no channels of their own: the same choice, under its new name
-      const artistNA = ((start.channel_quality_overrides || {})["Referral Artist"]) === "N/A";
-      setInp({ ...start, channels_off: start.channels_off || (artistNA ? ["referral_artist"] : []) });
-      setQual({ ...d.channel_quality_default, ...(start.channel_quality_overrides || {}) });
+      setInp({ ...start });
     }).catch((e) => setError(String(e)));
   }, [snap.id]);
 
@@ -220,17 +225,16 @@ export default function TargetSetting({ snap, onSaved }) {
     return req.filter(([k]) => inp[k] === null || inp[k] === undefined || inp[k] === "").map(([, l]) => l);
   }, [inp]);
 
+  // the per-unit economics the form prints, live as the figures are typed
+  // (shared/economics.mjs mirrors the build's frame_terms and aa_profit_per_unit)
   const derived = useMemo(() => {
-    if (!meta || !inp || !qual) return null;
-    // the model divides by edition size and price - feed it placeholders while
-    // the economics are still blank so the rail can render at all
+    if (!meta || !inp) return null;
+    // the economics divide by the edition size - feed a placeholder while it
+    // is still blank so the form can render at all
     const safe = { ...inp, edition_size: Number(inp.edition_size) || 1, unit_price: Number(inp.unit_price) || 0,
       artist_profit: Number(inp.artist_profit) || 0, aa_group_profit: Number(inp.aa_group_profit) || 0 };
-    return computeTargets(
-      { ...safe, channel_quality_default: meta.channel_quality_default, channel_quality_overrides: qual },
-      meta.benchmarks
-    );
-  }, [meta, inp, qual]);
+    return computeEconomics(safe, meta.benchmarks);
+  }, [meta, inp]);
 
   if (error && !meta) return <div style={{ color: C.muted, padding: 24 }}>Failed to load inputs: {error}</div>;
   if (!derived) return <div style={{ color: C.muted, padding: 24 }}>Loading…</div>;
@@ -280,7 +284,10 @@ export default function TargetSetting({ snap, onSaved }) {
   const stretchUnits = bmUnits !== null && editionSize > 0 ? editionSize - bmUnits : null;
   const stretchPct = bmUnits ? stretchUnits / bmUnits : null;
   const paidShare = profile ? profile.share_sessions.paid : null;
-  const cpp = (b.cost_per_purchase || {})[inp.cpp_pick || "Median"] ?? 0;
+  // what a paid unit costs to buy: the release's own figure, else the panel's
+  // median (the same reading as etl/build.py cost_per_purchase_for)
+  const cppDefault = Number((b.cost_per_purchase || {}).Median) || 0;
+  const cpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : cppDefault;
 
   const onPick = (chosen) => {
     setPick(chosen);
@@ -301,15 +308,11 @@ export default function TargetSetting({ snap, onSaved }) {
     try {
       const res = await fetch(`/api/inputs/${snap.id}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        // benchmark_basket rides inside `inputs` with everything else (§6).
-        // The even uplift is the only stretch there is, so every save says so:
-        // a release that once opted for the levers comes back to the basket.
+        // benchmark_basket rides inside `inputs` with everything else (§6)
         body: JSON.stringify({ inputs: {
           ...inp,
           campaign_name: (inp.campaign_name || "").trim() || null,
-          channel_quality_overrides: qual,
           channels_off: off,
-          stretch_mode: "even",
         } }),
       });
       const d = await res.json();
@@ -324,7 +327,6 @@ export default function TargetSetting({ snap, onSaved }) {
   };
   const discard = () => {
     setInp({ ...meta.inputs });
-    setQual({ ...meta.channel_quality_default, ...(meta.inputs.channel_quality_overrides || {}) });
     setPick(null);
   };
 
@@ -334,7 +336,7 @@ export default function TargetSetting({ snap, onSaved }) {
    * = target on every row. Without a basket, or before the sellout is typed,
    * there is nothing to lift and the rows are dashes. */
   const T = profile ? benchmarkTargets(profile, {
-    edition_size: editionSize, unit_price: Number(inp.unit_price) || 0, cpp_pick: inp.cpp_pick || "Median",
+    edition_size: editionSize, unit_price: Number(inp.unit_price) || 0, cost_per_purchase: cpp,
     units_per_buyer: (snap.targets || {}).units_per_buyer || 0,
   }, b) : null;
   const BM = T ? T.benchmark : null;
@@ -348,18 +350,14 @@ export default function TargetSetting({ snap, onSaved }) {
   const railRows = [
     railRow("Paid units", T ? T.paid_units : null, BM ? BM.paid_units : null, (v) => fmt(v, 0),
       isOff("paid") ? "Paid is not in plan for this release." : "The basket's median paid units, lifted by K."),
-    railRow("Draw / pre-order units", T ? T.draw_units : null, BM ? BM.draw_units : null, (v) => fmt(v, 0),
-      "The organic target less the private room's share of it."),
-    railRow("Private room units", T ? T.pr_units : null, BM ? BM.pr_units : null, (v) => fmt(v, 0),
-      "The email group's target at the basket's private-room share."),
     railRow("Buyers", T ? T.buyers : null, BM ? BM.buyers : null, (v) => fmt(v, 0),
       T ? `People, not pieces: the target divided by ${fmt(T.units_per_buyer, 3)} units per buyer.` : "People, not pieces."),
     railRow("Eligible entries", T ? T.entries_target : null, BM ? BM.entries : null, (v) => fmt(v, 0),
-      "Draw + paid units ÷ 0.8 eligible-entry → order rate. The benchmark is the basket's own median entries."),
+      "Target units ÷ 0.8 eligible-entry → order rate: every unit is asked for as an entry. The benchmark is the basket's median units asked for the same way."),
     railRow("Sessions", T ? T.total_sessions : null, BM ? BM.sessions : null, (v) => fmt(v, 0),
       "The basket's median sessions, lifted by the same K as every other volume."),
     railRow("Paid budget", T ? T.paid.budget : null, BM ? BM.paid_budget : null, (v) => fmtMoney(v, 0),
-      isOff("paid") ? "Paid is not in plan for this release." : `Paid units × ${fmtMoney(cpp)} per unit, the cost per purchase picked under Economics.`),
+      isOff("paid") ? "Paid is not in plan for this release." : `Paid units × ${fmtMoney(cpp)} per unit, the cost per purchase under Economics.`),
     railRow("% of launch value", T ? (T.paid.budget_pct_of_launch_value ?? 0) : null, BM ? (BM.budget_pct_of_launch_value ?? 0) : null, (v) => fmtPct(v, 1),
       "Sense check: paid budget should stay under 6% of launch value."),
   ];
@@ -499,17 +497,42 @@ export default function TargetSetting({ snap, onSaved }) {
                 })}
               </div>
             </Field>
+            {inp.framing_available !== false && (
+              <>
+                <Field label="Frame take-up (% of buyers)"
+                  tip={`Share of buyers expected to take a frame. Blank = the benchmark default, ${Math.round(b.frame_conversion * 100)}% (the workbook's constant for every release).`}>
+                  <input className="control num" value={inp.frame_conversion === null || inp.frame_conversion === undefined ? "" : Math.round(Number(inp.frame_conversion) * 100)}
+                    placeholder={`${Math.round(b.frame_conversion * 100)} (default)`}
+                    onChange={(e) => {
+                      const raw = String(e.target.value).replace(/[^0-9]/g, "");
+                      setInp({ ...inp, frame_conversion: raw === "" ? null : clamp((parseInt(raw, 10) || 0) / 100, 0, 1) });
+                    }} />
+                </Field>
+                <Field label="Frame profit (£ per frame)"
+                  tip={`AA's profit on each frame sold. Blank = the benchmark default, £${b.frame_profit_per_unit} (the workbook's constant for every release).`}>
+                  <input className="control num" value={inp.frame_profit_per_unit ?? ""} placeholder={`${b.frame_profit_per_unit} (default)`}
+                    onChange={(e) => {
+                      const raw = String(e.target.value).replace(/[^0-9.]/g, "");
+                      setInp({ ...inp, frame_profit_per_unit: raw === "" ? null : Math.max(parseFloat(raw) || 0, 0) });
+                    }} />
+                </Field>
+              </>
+            )}
             <Field label="Artist profit / unit" tip="Artist total profit ÷ edition size - derived.">
               <input className="control ro num" value={fmtMoney(derived.ppu_artist, 2)} readOnly />
             </Field>
-            <Field label="AA profit / unit" tip={`Includes framing: ${b.frame_conversion} conversion × £${b.frame_profit_per_unit} per frame when available - derived.`}>
+            <Field label="AA profit / unit" tip={inp.framing_available !== false
+              ? `AA Group profit ÷ edition size, plus framing: ${Math.round(derived.frame_conversion * 100)}% take-up × £${fmt(derived.frame_profit_per_unit, 2)} per frame = £${fmt(derived.frame_uplift_per_unit, 2)} per unit - derived.`
+              : "AA Group profit ÷ edition size, no framing - derived."}>
               <input className="control ro num" value={fmtMoney(derived.ppu_aa, 2)} readOnly />
             </Field>
-            <Field label="Cost per purchase" tip="What a paid unit costs to buy: the low, median or high quartile of the panel's cost per purchase. Paid units × this is the paid budget.">
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <Seg options={["Low", "Median", "High"]} value={inp.cpp_pick || "Median"} onChange={(v) => setInp({ ...inp, cpp_pick: v })} />
-                <span className="num" style={{ fontSize: 12, color: C.muted }}>{fmtMoney(cpp)} / unit</span>
-              </div>
+            <Field label="Cost per purchase (£ per paid unit)"
+              tip={`What a paid unit costs to buy: paid units × this is the paid budget. Blank = the panel's median, £${fmt(cppDefault, 0)}.`}>
+              <input className="control num" value={inp.cost_per_purchase ?? ""} placeholder={`${fmt(cppDefault, 0)} (default)`}
+                onChange={(e) => {
+                  const raw = String(e.target.value).replace(/[^0-9.]/g, "");
+                  setInp({ ...inp, cost_per_purchase: raw === "" ? null : Math.max(parseFloat(raw) || 0, 0) });
+                }} />
             </Field>
           </div>
         </Card>
@@ -579,7 +602,7 @@ export default function TargetSetting({ snap, onSaved }) {
               <Switch id="ch-paid" on={!isOff("paid")} onChange={(on) => setOff("paid", on)} label="Running paid"
                 sub={isOff("paid") ? "off: benchmarked on what the basket did without paid, and the other channels carry the whole target" : "paid units, spend and the paid benchmark are in"}
                 why="The basket keeps every launch, paid or not; with paid off each counts on its other channels only." />
-              <Switch id="ch-artist" on={!isOff("referral_artist")} onChange={(on) => { setOff("referral_artist", on); if (on && qual["Referral Artist"] === "N/A") setQual({ ...qual, "Referral Artist": "Medium" }); }}
+              <Switch id="ch-artist" on={!isOff("referral_artist")} onChange={(on) => setOff("referral_artist", on)}
                 label="Artist's own channels"
                 sub={isOff("referral_artist") ? "off: no artist target and no posting benchmark - an estate, or an artist who will not post" : "the artist posts on channels of their own"}
                 why="Off for an estate, or a living artist with no channels of their own. The artist group leaves the benchmark and the funnel expects no posts." />
@@ -587,8 +610,8 @@ export default function TargetSetting({ snap, onSaved }) {
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: C.muted }}
                   title="How much the artist will post, against the tiers past campaigns were labelled with: the funnel's posting benchmark is the median of completed campaigns in the same tier.">
                   posting
-                  <Seg small options={["Low", "Medium", "High"]} value={["Low", "Medium", "High"].includes(qual["Referral Artist"]) ? qual["Referral Artist"] : "Medium"}
-                    onChange={(v) => setQual({ ...qual, "Referral Artist": v })} />
+                  <Seg small options={["Low", "Medium", "High"]} value={inp.artist_posting_tier || "Medium"}
+                    onChange={(v) => setInp({ ...inp, artist_posting_tier: v })} />
                 </span>
               )}
             </div>

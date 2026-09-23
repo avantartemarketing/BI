@@ -27,7 +27,11 @@
   "launchValue": 420000.0,
   "artistProfitPerUnit": 185.74,
   "aaProfitPerUnit": 253.09,
-  "artistProfitShare": 0.5
+  "artistProfitShare": 0.5,
+  "framingAvailable": true,
+  "frameConversion": 0.35,
+  "frameProfitPerUnit": 94.0,
+  "frameUpliftPerUnit": 32.9
  },
  "currency": "units",
  "hero": {
@@ -49,29 +53,26 @@
   "paid_pct": 0.2833230827547782,
   "paid_units": 169.9938496528669,
   "organic_units": 430.0061503471331,
-  "pr_other_pct": 0.13643098741000154,
-  "pr_units": 58.66616368423294,
-  "draw_units": 371.3399866629002,
   "per_channel": {
    "AA Email Auto": {
     "quality": "benchmark",
-    "order_split": 0.0355492311391284,
-    "purchases": 13.200851017080295,
-    "eligible_entries": 16.501063771350367,
+    "order_split": 0.039768874020248826,
+    "purchases": 17.10086042108731,
+    "eligible_entries": 21.376075526359138,
     "sessions": 607.6749131207554,
     "session_to_entry": 0.02252493511206455
    },
    "AA Email Man": {
     "quality": "benchmark",
-    "order_split": 0.4992025596421906,
-    "purchases": 185.3738718396167,
-    "eligible_entries": 231.71733979952086,
+    "order_split": 0.5584571893355098,
+    "purchases": 240.14002611984262,
+    "eligible_entries": 300.17503264980326,
     "sessions": 8533.317383799387,
     "session_to_entry": 0.02252493511206455
    },
    "AA Meta": {
     "quality": "benchmark",
-    "order_split": 0.02499790782122604,
+    "order_split": 0.02158741857399197,
     "purchases": 9.282722756934485,
     "eligible_entries": 11.603403446168105,
     "sessions": 328.311893510313,
@@ -79,7 +80,7 @@
    },
    "AA X": {
     "quality": "benchmark",
-    "order_split": 0.02842899320743362,
+    "order_split": 0.024550397593071226,
     "purchases": 10.55682195848808,
     "eligible_entries": 13.1960274481101,
     "sessions": 373.3743102532405,
@@ -87,7 +88,7 @@
    },
    "Referral Artist": {
     "quality": "benchmark",
-    "order_split": 0.008713780091597538,
+    "order_split": 0.007524950469627272,
     "purchases": 3.2357749829972744,
     "eligible_entries": 4.044718728746592,
     "sessions": 267.4393686843987,
@@ -95,7 +96,7 @@
    },
    "Direct": {
     "quality": "benchmark",
-    "order_split": 0.11380358023792278,
+    "order_split": 0.09827724541526964,
     "purchases": 42.25981996774053,
     "eligible_entries": 52.824774959675665,
     "sessions": 746.7261024251277,
@@ -103,7 +104,7 @@
    },
    "Organic Search": {
     "quality": "benchmark",
-    "order_split": 0.051407830437616715,
+    "order_split": 0.04439420937040674,
     "purchases": 19.089783069073224,
     "eligible_entries": 23.86222883634153,
     "sessions": 337.31424597151187,
@@ -111,7 +112,7 @@
    },
    "Other": {
     "quality": "benchmark",
-    "order_split": 0.012699257743287224,
+    "order_split": 0.01096668546999644,
     "purchases": 4.715742201021009,
     "eligible_entries": 5.894677751276261,
     "sessions": 83.32661607404346,
@@ -119,7 +120,7 @@
    },
    "AA Other": {
     "quality": "benchmark",
-    "order_split": 0.0055560038961029136,
+    "order_split": 0.004797992798503778,
     "purchases": 2.0631664126778775,
     "eligible_entries": 2.5789580158473466,
     "sessions": 36.45591048824704,
@@ -127,7 +128,7 @@
    },
    "Referral Meta": {
     "quality": "benchmark",
-    "order_split": 0.01900738174792502,
+    "order_split": 0.01641418588797677,
     "purchases": 7.0582008847711295,
     "eligible_entries": 8.822751105963912,
     "sessions": 124.71758849995233,
@@ -135,7 +136,7 @@
    },
    "Referral Other": {
     "quality": "benchmark",
-    "order_split": 0.020063347405001458,
+    "order_split": 0.017326085107787218,
     "purchases": 7.450323157786374,
     "eligible_entries": 9.312903947232968,
     "sessions": 131.64634344557854,
@@ -143,44 +144,43 @@
    },
    "Referral X": {
     "quality": "benchmark",
-    "order_split": 0.18057012663056748,
+    "order_split": 0.15593476595761016,
     "purchases": 67.05290841471313,
     "eligible_entries": 83.8161355183914,
     "sessions": 1184.8170909154214,
     "session_to_entry": 0.04877408616605845
    }
   },
-  "pr_sessions": 5468.976784774114,
   "paid": {
    "units": 169.9938496528669,
    "eligible_entries": 212.49231206608363,
    "sessions": 18525.635330603818,
    "session_to_entry": 0.00611999185482205,
-   "cost_per_purchase": 177,
+   "cost_per_purchase": 177.0,
    "budget": 30088.911388557444,
    "budget_pct_of_launch_value": 0.07164026521085105,
    "sense_check_breached": true
   },
   "launch_value": 420000.0,
-  "units_per_buyer": 1.1233275402179312,
+  "units_per_buyer": 1.1289756989564663,
   "units_per_buyer_source": "products",
-  "buyers": 534.1273836156433,
+  "buyers": 531.455194788153,
   "buyers_by_group": {
-   "aa_email": 228.99900281179245,
-   "aa_social": 17.661406851623696,
-   "referral_artist": 2.8805267093954785,
-   "search_direct_other": 133.25583033310363,
-   "paid": 151.33061690972806
+   "aa_email": 227.85334244014513,
+   "aa_social": 17.57304850207195,
+   "referral_artist": 2.8661157064657483,
+   "search_direct_other": 132.58916400604951,
+   "paid": 150.57352413342065
   },
-  "organic_sessions_draw": 12755.121767187979,
+  "organic_sessions": 12755.121767187979,
   "total_sessions": 31280.757097791797,
-  "entries_target": 676.6672953947087,
+  "entries_target": 749.9999999999999,
   "buffer": 0.75
  },
  "groupTargets": {
   "aa_email": {
-   "entries": 248.21840357087123,
-   "purchases": 198.57472285669698,
+   "entries": 321.5511081761624,
+   "purchases": 257.2408865409299,
    "units": 257.2408865409299,
    "sessions": 9140.992296920143
   },
@@ -1170,16 +1170,16 @@
    "contrib_traffic": -86.4,
    "contrib_conversion": 2.7,
    "bps_actual": 0.024829219446280585,
-   "bps_expected": 0.02505187570160721,
-   "contrib_buyers": -1.5,
-   "contrib_per_buyer": 4.2,
+   "bps_expected": 0.024926543534766494,
+   "contrib_buyers": -0.7,
+   "contrib_per_buyer": 3.4,
    "sessions_benchmark": 7244.2,
    "conv_benchmark": 0.02814146190973179,
    "conv_benchmark_today": 0.02814146190973179,
    "contrib_traffic_bm": -33.0,
    "contrib_conversion_bm": 2.7,
-   "contrib_buyers_bm": -1.5,
-   "contrib_per_buyer_bm": 4.2
+   "contrib_buyers_bm": -0.7,
+   "contrib_per_buyer_bm": 3.4
   },
   "aa_social": {
    "sessions_actual": 626.0,
@@ -1189,16 +1189,16 @@
    "contrib_traffic": -2.1,
    "contrib_conversion": 15.0,
    "bps_actual": 0.04538646697706878,
-   "bps_expected": 0.02516995026679339,
-   "contrib_buyers": 14.2,
-   "contrib_per_buyer": 0.8,
+   "bps_expected": 0.025044027384060582,
+   "contrib_buyers": 14.4,
+   "contrib_per_buyer": 0.6,
    "sessions_benchmark": 556.1,
    "conv_benchmark": 0.028274098320604686,
    "conv_benchmark_today": 0.028274098320604686,
    "contrib_traffic_bm": 2.0,
    "contrib_conversion_bm": 15.0,
-   "contrib_buyers_bm": 14.2,
-   "contrib_per_buyer_bm": 0.8
+   "contrib_buyers_bm": 14.4,
+   "contrib_per_buyer_bm": 0.6
   },
   "referral_artist": {
    "sessions_actual": 2659.0,
@@ -1208,16 +1208,16 @@
    "contrib_traffic": 28.9,
    "contrib_conversion": 37.7,
    "bps_actual": 0.022830576046064175,
-   "bps_expected": 0.010770765439529385,
-   "contrib_buyers": 36.0,
-   "contrib_per_buyer": 1.7,
+   "bps_expected": 0.010716880317826393,
+   "contrib_buyers": 36.4,
+   "contrib_per_buyer": 1.4,
    "sessions_benchmark": 211.9,
    "conv_benchmark": 0.012099097447450849,
    "conv_benchmark_today": 0.012099097447450849,
    "contrib_traffic_bm": 29.6,
    "contrib_conversion_bm": 37.7,
-   "contrib_buyers_bm": 36.0,
-   "contrib_per_buyer_bm": 1.7
+   "contrib_buyers_bm": 36.4,
+   "contrib_per_buyer_bm": 1.4
   },
   "search_direct_other": {
    "sessions_actual": 2556.0,
@@ -1227,16 +1227,16 @@
    "contrib_traffic": -5.0,
    "contrib_conversion": -24.2,
    "bps_actual": 0.04092889914382007,
-   "bps_expected": 0.050380201875293414,
-   "contrib_buyers": -27.1,
-   "contrib_per_buyer": 2.9,
+   "bps_expected": 0.05012815448602355,
+   "contrib_buyers": -26.5,
+   "contrib_per_buyer": 2.3,
    "sessions_benchmark": 2096.2,
    "conv_benchmark": 0.056593468248256146,
    "conv_benchmark_today": 0.056593468248256146,
    "contrib_traffic_bm": 26.0,
    "contrib_conversion_bm": -24.2,
-   "contrib_buyers_bm": -27.1,
-   "contrib_per_buyer_bm": 2.9
+   "contrib_buyers_bm": -26.5,
+   "contrib_per_buyer_bm": 2.3
   },
   "paid": {
    "sessions_actual": 36585.0,
@@ -1246,16 +1246,16 @@
    "contrib_traffic": 165.7,
    "contrib_conversion": -139.1,
    "bps_actual": 0.004667437698267767,
-   "bps_expected": 0.00816871401218474,
-   "contrib_buyers": -143.9,
-   "contrib_per_buyer": 4.8,
+   "bps_expected": 0.008127846707890093,
+   "contrib_buyers": -142.9,
+   "contrib_per_buyer": 3.8,
    "sessions_benchmark": 14681.6,
    "conv_benchmark": 0.009176141418051231,
    "conv_benchmark_today": 0.009176141418051231,
    "contrib_traffic_bm": 201.0,
    "contrib_conversion_bm": -139.1,
-   "contrib_buyers_bm": -143.9,
-   "contrib_per_buyer_bm": 4.8
+   "contrib_buyers_bm": -142.9,
+   "contrib_per_buyer_bm": 3.8
   }
  },
  "paid": {
@@ -1414,7 +1414,7 @@
   "cumCpe": 159.74,
   "roiDeclineModel": {
    "start": 1.9,
-   "dailyFactor": 0.995
+   "dailyFactor": 1.0
   },
   "roiPath": [],
   "roiTarget": 1.1,
@@ -1432,7 +1432,19 @@
    "cpeAtClose": 213.17,
    "driftToClose": 1.0,
    "paced": false,
-   "elasticity": 0.38,
+   "elasticity": 0.5581,
+   "driftPerDay": 0.0,
+   "costTerms": {
+    "elasticity": 0.5581,
+    "driftPerDay": 0.0,
+    "elasticityPrior": 0.38,
+    "driftPrior": 0.025000000000000005,
+    "elasticityOwn": 0.8187,
+    "elasticitySe": 0.2298,
+    "driftOwn": -0.02793,
+    "driftSe": 0.03563,
+    "fitDays": 21
+   },
    "band": "increase",
    "forcedDecrease": false,
    "zeroConversionDays": 0,
@@ -1454,7 +1466,7 @@
   "benchmarkBudget": 23845.46
  },
  "unitsPerBuyer": {
-  "plan": 1.1233,
+  "plan": 1.129,
   "actual": 1.1513
  },
  "untracked": {
@@ -2059,7 +2071,7 @@
   },
   "privateRoomShare": 0.2281,
   "paidBudget": 23845.46,
-  "unitsPerBuyer": 1.1233,
-  "buyers": 423.3
+  "unitsPerBuyer": 1.129,
+  "buyers": 421.2
  }
 }

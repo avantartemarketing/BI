@@ -27,14 +27,18 @@
   "launchValue": 2440000.0,
   "artistProfitPerUnit": 506.51,
   "aaProfitPerUnit": 841.61,
-  "artistProfitShare": 0.5
+  "artistProfitShare": 0.5,
+  "framingAvailable": true,
+  "frameConversion": 0.35,
+  "frameProfitPerUnit": 94.0,
+  "frameUpliftPerUnit": 32.9
  },
  "currency": "units",
  "hero": {
   "now": 705.0,
   "expectedToday": 1438.0,
   "delta": -733.0,
-  "projected": 1293.0,
+  "projected": 1429.0,
   "target": 2440.0,
   "oversubscribedUnits": 0,
   "statusPct": -0.5096,
@@ -49,29 +53,26 @@
   "paid_pct": 0.25408753321798533,
   "paid_units": 619.9735810518841,
   "organic_units": 1820.0264189481159,
-  "pr_other_pct": 0.05774694340809895,
-  "pr_units": 105.10096261624184,
-  "draw_units": 1714.925456331874,
   "per_channel": {
    "AA Email Auto": {
     "quality": "benchmark",
-    "order_split": 0.03131502602425238,
-    "purchases": 53.702935294685524,
-    "eligible_entries": 67.1286691183569,
+    "order_split": 0.03334558046436106,
+    "purchases": 60.68983740029732,
+    "eligible_entries": 75.86229675037164,
     "sessions": 2166.946085449711,
     "session_to_entry": 0.03307827928038575
    },
    "AA Email Man": {
     "quality": "benchmark",
-    "order_split": 0.4397434387649004,
-    "purchases": 754.1272173928444,
-    "eligible_entries": 942.6590217410554,
+    "order_split": 0.46825764122480557,
+    "purchases": 852.2412779034745,
+    "eligible_entries": 1065.301597379343,
     "sessions": 30429.49165987625,
     "session_to_entry": 0.03307827928038575
    },
    "AA Meta": {
     "quality": "benchmark",
-    "order_split": 0.02178951699553008,
+    "order_split": 0.020531238990699398,
     "purchases": 37.36739737681055,
     "eligible_entries": 46.70924672101319,
     "sessions": 1067.2209579759271,
@@ -79,7 +80,7 @@
    },
    "AA X": {
     "quality": "benchmark",
-    "order_split": 0.02478023501363574,
+    "order_split": 0.023349252184663924,
     "purchases": 42.49625583877035,
     "eligible_entries": 53.12031979846294,
     "sessions": 1213.7022658898816,
@@ -87,7 +88,7 @@
    },
    "Referral Artist": {
     "quality": "benchmark",
-    "order_split": 0.0024803818780238817,
+    "order_split": 0.0023371474060831627,
     "purchases": 4.253670024047416,
     "eligible_entries": 5.31708753005927,
     "sessions": 124.96672288553495,
@@ -95,7 +96,7 @@
    },
    "Direct": {
     "quality": "benchmark",
-    "order_split": 0.13548087244525872,
+    "order_split": 0.1276572661712825,
     "purchases": 232.33959700242573,
     "eligible_entries": 290.42449625303215,
     "sessions": 4757.513153328295,
@@ -103,7 +104,7 @@
    },
    "Organic Search": {
     "quality": "benchmark",
-    "order_split": 0.06119998776528267,
+    "order_split": 0.057665875535224544,
     "purchases": 104.9534169458825,
     "eligible_entries": 131.1917711823531,
     "sessions": 2149.0837896287285,
@@ -111,7 +112,7 @@
    },
    "Other": {
     "quality": "benchmark",
-    "order_split": 0.015118210823163855,
+    "order_split": 0.014245180358326903,
     "purchases": 25.92660459483575,
     "eligible_entries": 32.408255743544686,
     "sessions": 530.8873905801993,
@@ -119,7 +120,7 @@
    },
    "AA Other": {
     "quality": "benchmark",
-    "order_split": 0.006614310846632277,
+    "order_split": 0.006232354612488228,
     "purchases": 11.343050046981723,
     "eligible_entries": 14.178812558727154,
     "sessions": 232.26652061728961,
@@ -127,7 +128,7 @@
    },
    "Referral Meta": {
     "quality": "benchmark",
-    "order_split": 0.022627905525689735,
+    "order_split": 0.02132121314585392,
     "purchases": 38.805171209478004,
     "eligible_entries": 48.506464011847505,
     "sessions": 794.5959915060049,
@@ -135,7 +136,7 @@
    },
    "Referral Other": {
     "quality": "benchmark",
-    "order_split": 0.023885011393482754,
+    "order_split": 0.02250572499224151,
     "purchases": 40.961014063460425,
     "eligible_entries": 51.20126757932553,
     "sessions": 838.7402134408612,
@@ -143,20 +144,19 @@
    },
    "Referral X": {
     "quality": "benchmark",
-    "order_split": 0.2149651025241476,
+    "order_split": 0.20255152491396947,
     "purchases": 368.6491265416519,
     "eligible_entries": 460.8114081770649,
     "sessions": 7548.661920363858,
     "session_to_entry": 0.05479853972093435
    }
   },
-  "pr_sessions": 9797.721352625618,
   "paid": {
    "units": 619.9735810518841,
    "eligible_entries": 774.9669763148552,
    "sessions": 61302.24859226876,
    "session_to_entry": 0.0060300749990578,
-   "cost_per_purchase": 177,
+   "cost_per_purchase": 177.0,
    "budget": 109735.3238461835,
    "budget_pct_of_launch_value": 0.0449734933795834,
    "sense_check_breached": false
@@ -172,15 +172,15 @@
    "search_direct_other": 822.9779804047162,
    "paid": 619.9735810518841
   },
-  "organic_sessions_draw": 51854.07667154254,
+  "organic_sessions": 51854.07667154254,
   "total_sessions": 113156.3252638113,
-  "entries_target": 2918.6237967296984,
+  "entries_target": 3050.000000000001,
   "buffer": 0.75
  },
  "groupTargets": {
   "aa_email": {
-   "entries": 1009.7876908594124,
-   "purchases": 807.8301526875299,
+   "entries": 1141.1638941297147,
+   "purchases": 912.9311153037718,
    "units": 912.9311153037718,
    "sessions": 32596.437745325962
   },
@@ -1142,7 +1142,7 @@
    "name": "Paid",
    "now": 284.7,
    "exp": 313.7,
-   "proj": 412.5,
+   "proj": 548.2,
    "target": 620.0,
    "parts": [
     {
@@ -1302,63 +1302,63 @@
      "date": "2026-09-22",
      "actual": null,
      "plan": 345.46,
-     "proj": 299.18,
+     "proj": 317.39,
      "bm": 114.05
     },
     {
      "date": "2026-09-23",
      "actual": null,
      "plan": 366.68,
-     "proj": 313.59,
+     "proj": 349.18,
      "bm": 121.05
     },
     {
      "date": "2026-09-24",
      "actual": null,
      "plan": 396.71,
-     "proj": 327.93,
+     "proj": 380.08,
      "bm": 130.96
     },
     {
      "date": "2026-09-25",
      "actual": null,
      "plan": 424.97,
-     "proj": 342.19,
+     "proj": 410.12,
      "bm": 140.29
     },
     {
      "date": "2026-09-26",
      "actual": null,
      "plan": 448.08,
-     "proj": 356.38,
+     "proj": 439.32,
      "bm": 147.92
     },
     {
      "date": "2026-09-27",
      "actual": null,
      "plan": 508.2,
-     "proj": 370.51,
+     "proj": 467.71,
      "bm": 167.77
     },
     {
      "date": "2026-09-28",
      "actual": null,
      "plan": 549.09,
-     "proj": 384.56,
+     "proj": 495.31,
      "bm": 181.27
     },
     {
      "date": "2026-09-29",
      "actual": null,
      "plan": 583.19,
-     "proj": 398.55,
+     "proj": 522.15,
      "bm": 192.52
     },
     {
      "date": "2026-09-30",
      "actual": null,
      "plan": 619.97,
-     "proj": 412.46,
+     "proj": 548.24,
      "bm": 204.67
     }
    ],
@@ -1374,17 +1374,17 @@
    "conv_expected": 0.02341464303557607,
    "contrib_traffic": -426.2,
    "contrib_conversion": -49.5,
-   "bps_actual": 0.014108831054669547,
+   "bps_actual": 0.014342565703408547,
    "bps_expected": 0.02341464303557607,
-   "contrib_buyers": -97.3,
-   "contrib_per_buyer": 47.7,
+   "contrib_buyers": -94.8,
+   "contrib_per_buyer": 45.3,
    "sessions_benchmark": 9458.8,
    "conv_benchmark": 0.02800708232097165,
    "conv_benchmark_today": 0.023414643035576072,
    "contrib_traffic_bm": 23.3,
    "contrib_conversion_bm": -49.5,
-   "contrib_buyers_bm": -97.3,
-   "contrib_per_buyer_bm": 47.7
+   "contrib_buyers_bm": -94.8,
+   "contrib_per_buyer_bm": 45.3
   },
   "aa_social": {
    "sessions_actual": 641.0,
@@ -1393,16 +1393,16 @@
    "conv_expected": 0.02253818284136733,
    "contrib_traffic": -26.7,
    "contrib_conversion": -12.6,
-   "bps_actual": 0.002168554864465321,
+   "bps_actual": 0.002204480336076188,
    "bps_expected": 0.02253818284136733,
-   "contrib_buyers": -13.1,
+   "contrib_buyers": -13.0,
    "contrib_per_buyer": 0.4,
    "sessions_benchmark": 603.1,
    "conv_benchmark": 0.035013740217097036,
    "conv_benchmark_today": 0.02253818284136733,
    "contrib_traffic_bm": 0.9,
    "contrib_conversion_bm": -12.6,
-   "contrib_buyers_bm": -13.1,
+   "contrib_buyers_bm": -13.0,
    "contrib_per_buyer_bm": 0.4
   },
   "referral_artist": {
@@ -1431,17 +1431,17 @@
    "conv_expected": 0.035700943754231225,
    "contrib_traffic": -41.4,
    "contrib_conversion": -145.9,
-   "bps_actual": 0.016316910866550117,
+   "bps_actual": 0.01658722577889974,
    "bps_expected": 0.035700943754231225,
-   "contrib_buyers": -200.5,
-   "contrib_per_buyer": 54.6,
+   "contrib_buyers": -197.8,
+   "contrib_per_buyer": 51.8,
    "sessions_benchmark": 3798.1,
    "conv_benchmark": 0.048836354102328436,
    "conv_benchmark_today": 0.03570094375423121,
    "contrib_traffic_bm": 233.8,
    "contrib_conversion_bm": -145.9,
-   "contrib_buyers_bm": -200.5,
-   "contrib_per_buyer_bm": 54.6
+   "contrib_buyers_bm": -197.8,
+   "contrib_per_buyer_bm": 51.8
   },
   "paid": {
    "sessions_actual": 135964.0,
@@ -1450,17 +1450,17 @@
    "conv_expected": 0.012180360870484628,
    "contrib_traffic": 1342.4,
    "contrib_conversion": -1371.4,
-   "bps_actual": 0.0015818822578131714,
+   "bps_actual": 0.0016080885886171714,
    "bps_expected": 0.012180360870484628,
-   "contrib_buyers": -1441.0,
-   "contrib_per_buyer": 69.6,
+   "contrib_buyers": -1437.4,
+   "contrib_per_buyer": 66.1,
    "sessions_benchmark": 8502.4,
    "conv_benchmark": 0.010113390540947844,
    "conv_benchmark_today": 0.012180360870484627,
    "contrib_traffic_bm": 1552.5,
    "contrib_conversion_bm": -1371.4,
-   "contrib_buyers_bm": -1441.0,
-   "contrib_per_buyer_bm": 69.6
+   "contrib_buyers_bm": -1437.4,
+   "contrib_per_buyer_bm": 66.1
   }
  },
  "paid": {
@@ -1575,102 +1575,114 @@
    },
    {
     "date": "2026-09-19",
-    "spend": 23125.72,
+    "spend": 23126.0,
     "entries": 43.58904109589041,
     "roi": 1.818
    },
    {
     "date": "2026-09-20",
-    "spend": 24708.85,
+    "spend": 24730.9,
     "entries": 55.0,
-    "roi": 1.936
+    "roi": 1.935
    },
    {
     "date": "2026-09-21",
-    "spend": 9619.56,
+    "spend": 30199.43,
     "entries": 10.058823529411764,
-    "roi": 2.037
+    "roi": 1.499
    }
   ],
-  "spendToDate": 158898.99,
+  "spendToDate": 179501.19,
   "entriesToDate": 320.5745515553934,
   "unitsToDate": 256.5,
-  "cumRoi": 2.173,
-  "l3dRoi": 2.037,
-  "l3dCpe": 661.01,
-  "cumCpe": 619.59,
+  "cumRoi": 1.924,
+  "l3dRoi": 1.499,
+  "l3dCpe": 898.04,
+  "cumCpe": 699.92,
   "roiDeclineModel": {
-   "start": 2.037,
-   "dailyFactor": 0.995
+   "start": 1.499,
+   "dailyFactor": 0.9722
   },
   "roiPath": [
    {
     "date": "2026-09-22",
-    "roi": 2.027
+    "roi": 1.458
    },
    {
     "date": "2026-09-23",
-    "roi": 2.017
+    "roi": 1.417
    },
    {
     "date": "2026-09-24",
-    "roi": 2.007
+    "roi": 1.378
    },
    {
     "date": "2026-09-25",
-    "roi": 1.997
+    "roi": 1.339
    },
    {
     "date": "2026-09-26",
-    "roi": 1.987
+    "roi": 1.302
    },
    {
     "date": "2026-09-27",
-    "roi": 1.977
+    "roi": 1.266
    },
    {
     "date": "2026-09-28",
-    "roi": 1.967
+    "roi": 1.231
    },
    {
     "date": "2026-09-29",
-    "roi": 1.957
+    "roi": 1.197
    },
    {
     "date": "2026-09-30",
-    "roi": 1.948
+    "roi": 1.163
    }
   ],
   "roiTarget": 1.1,
   "budget": {
-   "current": 9619.56,
-   "recommended": 12505.43,
+   "current": 30199.43,
+   "recommended": 39259.26,
    "cap": "pacing",
-   "finalDayRoi": 1.763,
+   "finalDayRoi": 1.06,
    "floor": 1.0,
-   "budgetToSellOut": 3538039.46,
-   "supplySpend": 393115.5,
-   "roiSpend": 55598.61,
-   "cpeAtRecommended": 763.84,
-   "cpeNow": 661.01,
-   "cpeAtClose": 691.36,
-   "driftToClose": 1.046,
+   "budgetToSellOut": 3122356.19,
+   "supplySpend": 346928.47,
+   "roiSpend": 46277.29,
+   "cpeAtRecommended": 1270.35,
+   "cpeNow": 898.04,
+   "cpeAtClose": 1157.59,
+   "driftToClose": 1.289,
    "paced": false,
-   "elasticity": 0.38,
+   "elasticity": 0.3543,
+   "driftPerDay": 0.02861,
+   "costTerms": {
+    "elasticity": 0.3543,
+    "driftPerDay": 0.02861,
+    "elasticityPrior": 0.38,
+    "driftPrior": 0.025000000000000005,
+    "elasticityOwn": -0.0613,
+    "elasticitySe": 0.7635,
+    "driftOwn": 0.09882,
+    "driftSe": 0.15446,
+    "fitDays": 16
+   },
    "band": "increase",
    "forcedDecrease": false,
    "zeroConversionDays": 0,
-   "cumRoi": 2.173,
+   "cumRoi": 1.924,
    "entriesNeeded": 1529.8,
    "selloutGap": 1274.8,
    "organicFuture": 460.0,
    "daysLeft": 9
   },
   "unitTarget": 619.9735810518841,
-  "entriesProjected": 480.3,
-  "unitProjected": 384.2,
+  "entriesProjected": 650.0,
+  "unitProjected": 520.0,
   "spendBudget": 109735.32,
-  "spendProjectedTotal": 245475.03,
+  "spendProjectedTotal": 451296.06,
   "profitPerUnitAA": 841.61,
   "profitPerUnitArtist": 506.51,
   "aaBudgetShare": 0.5,
@@ -1679,7 +1691,7 @@
  },
  "unitsPerBuyer": {
   "plan": 1.0,
-  "actual": 1.3237
+  "actual": 1.3021
  },
  "untracked": {
   "entries": {
@@ -1734,9 +1746,9 @@
   "conversion": 0.8,
   "preorderConversion": 0.95,
   "inHandUnits": 309.0,
-  "soldPredicted": 266.4,
-  "futureEntriesPredicted": 587.6,
-  "pct": 0.2189,
+  "soldPredicted": 209.5,
+  "futureEntriesPredicted": 723.5,
+  "pct": 0.2318,
   "benchmarkUnits": 805.5,
   "drafts": 20.0,
   "unitsPaidOrders": 461.0,
@@ -1749,27 +1761,27 @@
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
     "edition": 1000.0,
-    "entrants": 219,
+    "entrants": 263,
     "inHand": {
-     "open": 122,
-     "won": 5
+     "open": 90,
+     "won": 14
     },
     "sold": 124.0,
     "soldAssumed": 0.0,
     "drafts": 1.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
-    "allocated": 41,
-    "pinned": 2,
-    "fixed": 41,
+    "allocated": 33,
+    "pinned": 12,
+    "fixed": 33,
     "flexible": 0,
-    "predicted": 35.9,
-    "shown": 35.9,
+    "predicted": 27.6,
+    "shown": 27.6,
     "room": 875.0,
     "oversubscribed": 0.0,
-    "futurePredicted": 92.1,
-    "pct": 0.1609,
-    "pctClose": 0.2531,
+    "futurePredicted": 113.3,
+    "pct": 0.1526,
+    "pctClose": 0.2659,
     "expectedToday": 235.8,
     "benchmarkToday": 77.8,
     "benchmarkClose": 132.0
@@ -1781,27 +1793,27 @@
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
     ],
     "edition": 1000.0,
-    "entrants": 131,
+    "entrants": 168,
     "inHand": {
-     "open": 90,
-     "won": 3
+     "open": 69,
+     "won": 7
     },
     "sold": 23.0,
     "soldAssumed": 0.0,
     "drafts": 4.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
-    "allocated": 56,
-    "pinned": 3,
-    "fixed": 15,
-    "flexible": 41,
-    "predicted": 50.1,
-    "shown": 50.1,
+    "allocated": 45,
+    "pinned": 7,
+    "fixed": 11,
+    "flexible": 34,
+    "predicted": 38.0,
+    "shown": 38.0,
     "room": 973.0,
     "oversubscribed": 0.0,
-    "futurePredicted": 101.3,
-    "pct": 0.0771,
-    "pctClose": 0.1784,
+    "futurePredicted": 125.1,
+    "pct": 0.065,
+    "pctClose": 0.19,
     "expectedToday": 235.8,
     "benchmarkToday": 77.8,
     "benchmarkClose": 132.0
@@ -1813,27 +1825,27 @@
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
     "edition": 1000.0,
-    "entrants": 116,
+    "entrants": 148,
     "inHand": {
-     "open": 77,
-     "won": 2
+     "open": 63,
+     "won": 7
     },
     "sold": 38.0,
     "soldAssumed": 0.0,
     "drafts": 2.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
-    "allocated": 42,
-    "pinned": 2,
-    "fixed": 10,
-    "flexible": 32,
-    "predicted": 37.4,
-    "shown": 37.4,
+    "allocated": 28,
+    "pinned": 7,
+    "fixed": 11,
+    "flexible": 17,
+    "predicted": 24.4,
+    "shown": 24.4,
     "room": 960.0,
     "oversubscribed": 0.0,
-    "futurePredicted": 101.3,
-    "pct": 0.0774,
-    "pctClose": 0.1787,
+    "futurePredicted": 125.1,
+    "pct": 0.0643,
+    "pctClose": 0.1895,
     "expectedToday": 235.8,
     "benchmarkToday": 77.8,
     "benchmarkClose": 132.0
@@ -1845,27 +1857,27 @@
      "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
     "edition": 1000.0,
-    "entrants": 196,
+    "entrants": 241,
     "inHand": {
-     "open": 120,
-     "won": 3
+     "open": 99,
+     "won": 14
     },
     "sold": 74.0,
     "soldAssumed": 0.0,
     "drafts": 3.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
-    "allocated": 46,
-    "pinned": 3,
-    "fixed": 32,
-    "flexible": 14,
-    "predicted": 39.4,
-    "shown": 39.4,
+    "allocated": 42,
+    "pinned": 13,
+    "fixed": 25,
+    "flexible": 17,
+    "predicted": 35.1,
+    "shown": 35.1,
     "room": 923.0,
     "oversubscribed": 0.0,
-    "futurePredicted": 97.0,
-    "pct": 0.1164,
-    "pctClose": 0.2134,
+    "futurePredicted": 118.8,
+    "pct": 0.1121,
+    "pctClose": 0.2309,
     "expectedToday": 235.8,
     "benchmarkToday": 77.8,
     "benchmarkClose": 132.0
@@ -1877,27 +1889,27 @@
      "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
     ],
     "edition": 100.0,
-    "entrants": 63,
+    "entrants": 67,
     "inHand": {
-     "open": 19,
-     "won": 11
+     "open": 21,
+     "won": 6
     },
     "sold": 70.0,
     "soldAssumed": 0.0,
     "drafts": 4.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 4.0,
-    "allocated": 19,
-    "pinned": 11,
-    "fixed": 10,
-    "flexible": 9,
-    "predicted": 15.2,
-    "shown": 15.2,
+    "allocated": 21,
+    "pinned": 6,
+    "fixed": 14,
+    "flexible": 7,
+    "predicted": 16.8,
+    "shown": 16.8,
     "room": 26.0,
     "oversubscribed": 0.0,
     "futurePredicted": 1.2,
-    "pct": 0.892,
-    "pctClose": 0.9039,
+    "pct": 0.908,
+    "pctClose": 0.9203,
     "expectedToday": 23.6,
     "benchmarkToday": 7.8,
     "benchmarkClose": 13.2
@@ -1909,27 +1921,27 @@
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
     ],
     "edition": 1000.0,
-    "entrants": 234,
+    "entrants": 292,
     "inHand": {
-     "open": 141,
-     "won": 6
+     "open": 116,
+     "won": 14
     },
     "sold": 96.0,
     "soldAssumed": 0.0,
     "drafts": 4.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
-    "allocated": 57,
-    "pinned": 5,
-    "fixed": 48,
-    "flexible": 9,
-    "predicted": 49.9,
-    "shown": 49.9,
+    "allocated": 48,
+    "pinned": 13,
+    "fixed": 40,
+    "flexible": 8,
+    "predicted": 40.5,
+    "shown": 40.5,
     "room": 900.0,
     "oversubscribed": 0.0,
-    "futurePredicted": 93.3,
-    "pct": 0.15,
-    "pctClose": 0.2433,
+    "futurePredicted": 115.0,
+    "pct": 0.1405,
+    "pctClose": 0.2555,
     "expectedToday": 235.8,
     "benchmarkToday": 77.8,
     "benchmarkClose": 132.0
@@ -1941,27 +1953,27 @@
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
     ],
     "edition": 1000.0,
-    "entrants": 110,
+    "entrants": 139,
     "inHand": {
-     "open": 71,
-     "won": 1
+     "open": 54,
+     "won": 4
     },
     "sold": 36.0,
     "soldAssumed": 0.0,
     "drafts": 2.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
-    "allocated": 43,
-    "pinned": 1,
+    "allocated": 32,
+    "pinned": 4,
     "fixed": 11,
-    "flexible": 32,
-    "predicted": 38.5,
-    "shown": 38.5,
+    "flexible": 21,
+    "predicted": 27.1,
+    "shown": 27.1,
     "room": 962.0,
     "oversubscribed": 0.0,
-    "futurePredicted": 101.4,
-    "pct": 0.0765,
-    "pctClose": 0.1779,
+    "futurePredicted": 125.0,
+    "pct": 0.0651,
+    "pctClose": 0.1901,
     "expectedToday": 235.8,
     "benchmarkToday": 77.8,
     "benchmarkClose": 132.0
@@ -1970,12 +1982,12 @@
   "attributedSold": 461.0,
   "unattributedSold": 0.0,
   "allocation": {
-   "entrants": 503,
-   "flexibleEntrants": 113,
-   "surplusEntries": 336,
+   "entrants": 602,
+   "flexibleEntrants": 88,
+   "surplusEntries": 263,
    "uncapped": 0,
-   "unpaidWinners": 27,
-   "flexibleUnits": 137
+   "unpaidWinners": 48,
+   "flexibleUnits": 104
   },
   "measure": "fill",
   "editionSum": 6100.0,
@@ -1987,85 +1999,85 @@
    {
     "id": "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
     "first": "2026-09-01",
-    "last": "2026-09-21",
-    "entrants": 259,
-    "eligible": 219,
-    "winners": 83,
-    "sold": 78,
-    "open": 122,
-    "wonUnpaid": 5,
+    "last": "2026-09-23",
+    "entrants": 307,
+    "eligible": 263,
+    "winners": 135,
+    "sold": 121,
+    "open": 90,
+    "wonUnpaid": 14,
     "purchaseUnits": 0.0
    },
    {
     "id": "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
     "first": "2026-09-01",
-    "last": "2026-09-21",
-    "entrants": 172,
-    "eligible": 131,
-    "winners": 22,
-    "sold": 19,
-    "open": 90,
-    "wonUnpaid": 3,
+    "last": "2026-09-23",
+    "entrants": 212,
+    "eligible": 168,
+    "winners": 47,
+    "sold": 40,
+    "open": 69,
+    "wonUnpaid": 7,
     "purchaseUnits": 0.0
    },
    {
     "id": "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
     "first": "2026-09-01",
-    "last": "2026-09-21",
-    "entrants": 153,
-    "eligible": 116,
-    "winners": 28,
-    "sold": 26,
-    "open": 77,
-    "wonUnpaid": 2,
+    "last": "2026-09-23",
+    "entrants": 187,
+    "eligible": 148,
+    "winners": 41,
+    "sold": 34,
+    "open": 63,
+    "wonUnpaid": 7,
     "purchaseUnits": 0.0
    },
    {
     "id": "draw_3I8C9sXW9TfHkJDRhk873qrZxVP",
     "first": "2026-09-01",
-    "last": "2026-09-21",
-    "entrants": 235,
-    "eligible": 196,
-    "winners": 61,
-    "sold": 58,
-    "open": 120,
-    "wonUnpaid": 3,
+    "last": "2026-09-23",
+    "entrants": 283,
+    "eligible": 241,
+    "winners": 102,
+    "sold": 88,
+    "open": 99,
+    "wonUnpaid": 14,
     "purchaseUnits": 0.0
    },
    {
     "id": "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8",
     "first": "2026-09-01",
-    "last": "2026-09-21",
-    "entrants": 70,
-    "eligible": 63,
-    "winners": 43,
-    "sold": 32,
-    "open": 19,
-    "wonUnpaid": 11,
+    "last": "2026-09-23",
+    "entrants": 82,
+    "eligible": 67,
+    "winners": 42,
+    "sold": 36,
+    "open": 21,
+    "wonUnpaid": 6,
     "purchaseUnits": 0.0
    },
    {
     "id": "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
     "first": "2026-09-02",
-    "last": "2026-09-21",
-    "entrants": 288,
-    "eligible": 234,
-    "winners": 78,
-    "sold": 72,
-    "open": 141,
-    "wonUnpaid": 6,
+    "last": "2026-09-23",
+    "entrants": 348,
+    "eligible": 292,
+    "winners": 126,
+    "sold": 112,
+    "open": 116,
+    "wonUnpaid": 14,
     "purchaseUnits": 0.0
    },
    {
     "id": "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
     "first": "2026-09-03",
-    "last": "2026-09-21",
-    "entrants": 139,
-    "eligible": 110,
-    "winners": 28,
-    "sold": 27,
-    "open": 71,
-    "wonUnpaid": 1,
+    "last": "2026-09-23",
+    "entrants": 169,
+    "eligible": 139,
+    "winners": 41,
+    "sold": 37,
+    "open": 54,
+    "wonUnpaid": 4,
     "purchaseUnits": 0.0
    }
   ],
@@ -2079,7 +2091,7 @@
     "bought": 1,
     "max": 1,
     "pre": [],
-    "n": 35
+    "n": 54
    },
    {
     "open": [],
@@ -2090,7 +2102,18 @@
     "bought": 1,
     "max": 1,
     "pre": [],
-    "n": 35
+    "n": 48
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "bought": 1,
+    "max": 1,
+    "pre": [],
+    "n": 30
    },
    {
     "open": [],
@@ -2101,7 +2124,7 @@
     "bought": 1,
     "max": 1,
     "pre": [],
-    "n": 23
+    "n": 25
    },
    {
     "open": [
@@ -2111,92 +2134,43 @@
     "sold": [],
     "bought": 0,
     "max": 1,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
+    "pre": [],
+    "n": 22
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
-    "n": 21
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 18
+   },
+   {
+    "open": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 18
    },
    {
     "open": [],
     "won": [],
     "sold": [
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "bought": 1,
-    "max": 1,
-    "pre": [],
-    "n": 21
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "n": 19
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 16
-   },
-   {
-    "open": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
-    ],
-    "n": 15
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 14
-   },
-   {
-    "open": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
+    "bought": 2,
     "max": 1,
     "pre": [],
     "n": 13
@@ -2213,23 +2187,55 @@
     "n": 12
    },
    {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "bought": 3,
+    "max": 1,
+    "pre": [],
+    "n": 12
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
+    ],
+    "bought": 6,
+    "max": 1,
+    "pre": [],
+    "n": 11
+   },
+   {
     "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
      "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
     "won": [],
     "sold": [],
     "bought": 0,
     "max": 1,
-    "pre": [
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "n": 9
+    "pre": [],
+    "n": 10
    },
    {
     "open": [],
     "won": [],
     "sold": [
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
+    ],
+    "bought": 2,
+    "max": 1,
+    "pre": [],
+    "n": 10
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
     "bought": 3,
     "max": 1,
@@ -2240,19 +2246,77 @@
     "open": [],
     "won": [],
     "sold": [
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
+    ],
+    "bought": 1,
+    "max": 1,
+    "pre": [],
+    "n": 9
+   },
+   {
+    "open": [
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+    ],
+    "n": 8
+   },
+   {
+    "open": [],
+    "won": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 8
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
-    "bought": 2,
+    "bought": 6,
+    "max": 1,
+    "pre": [],
+    "n": 8
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "bought": 6,
     "max": 1,
     "pre": [],
     "n": 8
    },
    {
     "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
     ],
     "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
+    ],
+    "n": 7
+   },
+   {
+    "open": [],
+    "won": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+    ],
     "sold": [],
     "bought": 0,
     "max": 1,
@@ -2260,6 +2324,45 @@
     "n": 7
    },
    {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
+    ],
+    "bought": 3,
+    "max": 1,
+    "pre": [],
+    "n": 7
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "bought": 2,
+    "max": 1,
+    "pre": [],
+    "n": 7
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "n": 6
+   },
+   {
     "open": [
      "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
     ],
@@ -2272,23 +2375,14 @@
    },
    {
     "open": [],
-    "won": [
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
-    ],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 6
-   },
-   {
-    "open": [],
     "won": [],
     "sold": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
-    "bought": 2,
-    "max": 1,
+    "bought": 3,
+    "max": 3,
     "pre": [],
     "n": 6
    },
@@ -2306,18 +2400,14 @@
    },
    {
     "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
     "won": [],
     "sold": [],
     "bought": 0,
     "max": 1,
     "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
     "n": 5
    },
@@ -2329,18 +2419,16 @@
     "sold": [],
     "bought": 0,
     "max": 1,
-    "pre": [
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
-    ],
+    "pre": [],
     "n": 5
    },
    {
     "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
+    "won": [
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
     ],
-    "bought": 6,
+    "sold": [],
+    "bought": 0,
     "max": 1,
     "pre": [],
     "n": 5
@@ -2349,7 +2437,7 @@
     "open": [],
     "won": [],
     "sold": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
     ],
     "bought": 3,
     "max": 1,
@@ -2357,23 +2445,15 @@
     "n": 5
    },
    {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
-    ],
+    "open": [],
     "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
+    "sold": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
-    "n": 4
+    "bought": 1,
+    "max": 1,
+    "pre": [],
+    "n": 5
    },
    {
     "open": [
@@ -2387,7 +2467,7 @@
     "won": [],
     "sold": [],
     "bought": 0,
-    "max": 2,
+    "max": 1,
     "pre": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
@@ -2400,47 +2480,24 @@
    },
    {
     "open": [
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
     "won": [],
     "sold": [],
     "bought": 0,
     "max": 1,
-    "pre": [
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
-    ],
+    "pre": [],
     "n": 4
    },
    {
     "open": [],
     "won": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
     "sold": [],
     "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 4
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "bought": 2,
-    "max": 2,
-    "pre": [],
-    "n": 4
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5"
-    ],
-    "bought": 3,
     "max": 1,
     "pre": [],
     "n": 4
@@ -2462,181 +2519,34 @@
     "sold": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "bought": 3,
-    "max": 3,
-    "pre": [],
-    "n": 4
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
-    ],
-    "bought": 6,
-    "max": 1,
-    "pre": [],
-    "n": 4
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
-    ],
-    "bought": 1,
-    "max": 1,
-    "pre": [],
-    "n": 4
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "bought": 1,
-    "max": 1,
-    "pre": [],
-    "n": 4
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "bought": 2,
-    "max": 1,
-    "pre": [],
-    "n": 4
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "bought": 6,
-    "max": 1,
-    "pre": [],
-    "n": 4
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
-    ],
-    "n": 3
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 3
-   },
-   {
-    "open": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "n": 3
-   },
-   {
-    "open": [
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 3
-   },
-   {
-    "open": [
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 3
-   },
-   {
-    "open": [],
-    "won": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
-    ],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 3
-   },
-   {
-    "open": [],
-    "won": [
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
-    ],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 3
-   },
-   {
-    "open": [],
-    "won": [
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 3
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
     "bought": 3,
     "max": 3,
     "pre": [],
-    "n": 3
+    "n": 4
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+    ],
+    "bought": 4,
+    "max": 1,
+    "pre": [],
+    "n": 4
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
+    ],
+    "bought": 6,
+    "max": 1,
+    "pre": [],
+    "n": 4
    },
    {
     "open": [],
@@ -2647,330 +2557,7 @@
     "bought": 1,
     "max": 1,
     "pre": [],
-    "n": 3
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "bought": 2,
-    "max": 1,
-    "pre": [],
-    "n": 3
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 2,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 3,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 6,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
-    ],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 3,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 2,
-    "pre": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 2,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [],
-    "won": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
-    ],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [],
-    "won": [
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "bought": 6,
-    "max": 6,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "bought": 3,
-    "max": 3,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "bought": 6,
-    "max": 3,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
-    ],
-    "bought": 3,
-    "max": 1,
-    "pre": [],
-    "n": 2
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
-    ],
-    "bought": 2,
-    "max": 1,
-    "pre": [],
-    "n": 2
+    "n": 4
    },
    {
     "open": [],
@@ -2981,6 +2568,117 @@
     "bought": 4,
     "max": 1,
     "pre": [],
+    "n": 4
+   },
+   {
+    "open": [
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 3
+   },
+   {
+    "open": [
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 3
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "bought": 6,
+    "max": 6,
+    "pre": [],
+    "n": 3
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "bought": 3,
+    "max": 3,
+    "pre": [],
+    "n": 3
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "bought": 2,
+    "max": 2,
+    "pre": [],
+    "n": 3
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "bought": 6,
+    "max": 3,
+    "pre": [],
+    "n": 3
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
+    ],
+    "bought": 2,
+    "max": 1,
+    "pre": [],
+    "n": 3
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "won": [
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
     "n": 2
    },
    {
@@ -2992,6 +2690,218 @@
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
      "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 2,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 6,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 3,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 2,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
+    ],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "n": 2
+   },
+   {
+    "open": [],
+    "won": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [],
+    "won": [
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [],
+    "won": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [],
     "won": [
      "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
     ],
@@ -2999,42 +2909,159 @@
     "bought": 0,
     "max": 1,
     "pre": [],
-    "n": 1
+    "n": 2
    },
    {
-    "open": [
+    "open": [],
+    "won": [],
+    "sold": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP",
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+    ],
+    "bought": 7,
+    "max": 6,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "bought": 3,
+    "max": 3,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
      "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "bought": 6,
+    "max": 2,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+    ],
+    "bought": 5,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
+    ],
+    "bought": 2,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "bought": 2,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "bought": 6,
+    "max": 1,
+    "pre": [],
+    "n": 2
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
     "won": [],
     "sold": [],
     "bought": 0,
-    "max": 2,
+    "max": 1,
     "pre": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
     "n": 1
    },
    {
     "open": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
     "won": [],
     "sold": [],
     "bought": 0,
     "max": 2,
     "pre": [],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
+    ],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
+    ],
+    "won": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP",
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 2,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
+    ],
     "n": 1
    },
    {
@@ -3067,7 +3094,9 @@
     "sold": [],
     "bought": 0,
     "max": 1,
-    "pre": [],
+    "pre": [
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+    ],
     "n": 1
    },
    {
@@ -3083,16 +3112,8 @@
     "won": [],
     "sold": [],
     "bought": 0,
-    "max": 2,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP",
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
-    ],
+    "max": 1,
+    "pre": [],
     "n": 1
    },
    {
@@ -3146,25 +3167,6 @@
     "bought": 0,
     "max": 2,
     "pre": [],
-    "n": 1
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
     "n": 1
    },
    {
@@ -3190,6 +3192,25 @@
     "won": [],
     "sold": [],
     "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
     "max": 2,
     "pre": [],
     "n": 1
@@ -3203,27 +3224,26 @@
     "won": [],
     "sold": [],
     "bought": 0,
-    "max": 1,
+    "max": 2,
     "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
     ],
     "n": 1
    },
    {
     "open": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
     ],
-    "won": [],
+    "won": [
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
     "sold": [],
     "bought": 0,
     "max": 1,
     "pre": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
     ],
     "n": 1
    },
@@ -3264,14 +3284,15 @@
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
-    "won": [],
+    "won": [
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
     "sold": [],
     "bought": 0,
     "max": 1,
     "pre": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
     ],
     "n": 1
    },
@@ -3280,6 +3301,40 @@
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 3,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
     "won": [],
     "sold": [],
@@ -3288,6 +3343,21 @@
     "pre": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
     "n": 1
@@ -3295,7 +3365,93 @@
    {
     "open": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 2,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 2,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 2,
+    "pre": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 2,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
      "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
@@ -3303,101 +3459,7 @@
     "sold": [],
     "bought": 0,
     "max": 1,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "n": 1
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 2,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "n": 1
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 3,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "n": 1
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 2,
     "pre": [],
-    "n": 1
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "n": 1
-   },
-   {
-    "open": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 2,
-    "pre": [],
-    "n": 1
-   },
-   {
-    "open": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
-    "won": [],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
-    ],
     "n": 1
    },
    {
@@ -3421,28 +3483,39 @@
     "won": [],
     "sold": [],
     "bought": 0,
-    "max": 3,
-    "pre": [
+    "max": 1,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
+    "won": [],
+    "sold": [],
+    "bought": 0,
+    "max": 3,
+    "pre": [],
     "n": 1
    },
    {
     "open": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
     ],
     "won": [],
     "sold": [],
     "bought": 0,
-    "max": 1,
+    "max": 3,
     "pre": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
     ],
     "n": 1
    },
@@ -3452,7 +3525,11 @@
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
      "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
-    "won": [],
+    "won": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
     "sold": [],
     "bought": 0,
     "max": 3,
@@ -3494,8 +3571,7 @@
    {
     "open": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
     "won": [],
     "sold": [],
@@ -3503,15 +3579,14 @@
     "max": 2,
     "pre": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
     "n": 1
    },
    {
     "open": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
     "won": [],
     "sold": [],
@@ -3519,7 +3594,7 @@
     "max": 1,
     "pre": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
     "n": 1
    },
@@ -3537,22 +3612,37 @@
    },
    {
     "open": [
-     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP",
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
-    "won": [],
+    "won": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
     "sold": [],
     "bought": 0,
     "max": 1,
     "pre": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+    ],
+    "n": 1
+   },
+   {
+    "open": [
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP",
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "won": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 3,
+    "pre": [
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
     "n": 1
    },
@@ -3600,14 +3690,31 @@
    },
    {
     "open": [
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
+    ],
+    "won": [
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
+    ],
+    "n": 1
+   },
+   {
+    "open": [
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
     "won": [],
     "sold": [],
     "bought": 0,
     "max": 1,
     "pre": [
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
     ],
     "n": 1
    },
@@ -3627,59 +3734,87 @@
     "n": 1
    },
    {
-    "open": [],
+    "open": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
     "won": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
     "sold": [],
     "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 1
-   },
-   {
-    "open": [],
-    "won": [
-     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ"
-    ],
-    "sold": [],
-    "bought": 0,
-    "max": 1,
-    "pre": [],
-    "n": 1
-   },
-   {
-    "open": [],
-    "won": [],
-    "sold": [
-     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
-    ],
-    "bought": 2,
     "max": 2,
-    "pre": [],
+    "pre": [
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
     "n": 1
    },
    {
     "open": [],
-    "won": [],
-    "sold": [
+    "won": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
-     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP",
-     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
-    "bought": 7,
+    "sold": [],
+    "bought": 0,
     "max": 6,
     "pre": [],
     "n": 1
    },
    {
     "open": [],
+    "won": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 2,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [],
+    "won": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
+    ],
+    "sold": [],
+    "bought": 0,
+    "max": 1,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+    ],
+    "bought": 2,
+    "max": 2,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+    ],
+    "bought": 3,
+    "max": 1,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [],
     "won": [],
     "sold": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
@@ -3767,9 +3902,9 @@
     "sold": [
      "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8",
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
-    "bought": 3,
+    "bought": 6,
     "max": 3,
     "pre": [],
     "n": 1
@@ -3790,6 +3925,30 @@
     "open": [],
     "won": [],
     "sold": [
+     "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "bought": 3,
+    "max": 2,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
+    ],
+    "bought": 3,
+    "max": 1,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
      "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
@@ -3808,8 +3967,33 @@
      "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
      "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
+    "bought": 3,
+    "max": 1,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C171MsHRx09W1MeJnHrK1rZJ",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
     "bought": 6,
     "max": 3,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+    ],
+    "bought": 2,
+    "max": 2,
     "pre": [],
     "n": 1
    },
@@ -3842,6 +4026,18 @@
     "won": [],
     "sold": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
+    ],
+    "bought": 6,
+    "max": 2,
+    "pre": [],
+    "n": 1
+   },
+   {
+    "open": [],
+    "won": [],
+    "sold": [
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
      "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
     ],
     "bought": 2,
@@ -3853,9 +4049,10 @@
     "open": [],
     "won": [],
     "sold": [
-     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
+     "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
+     "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8"
     ],
-    "bought": 4,
+    "bought": 3,
     "max": 1,
     "pre": [],
     "n": 1
@@ -3866,8 +4063,8 @@
     "sold": [
      "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE"
     ],
-    "bought": 5,
-    "max": 1,
+    "bought": 6,
+    "max": 2,
     "pre": [],
     "n": 1
    },
@@ -3901,7 +4098,7 @@
     "sold": [
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
     ],
-    "bought": 2,
+    "bought": 4,
     "max": 1,
     "pre": [],
     "n": 1
@@ -3912,7 +4109,7 @@
     "sold": [
      "draw_3I8BvP60hl7wQHvUIAep2MZakI8"
     ],
-    "bought": 6,
+    "bought": 5,
     "max": 1,
     "pre": [],
     "n": 1
@@ -3969,10 +4166,11 @@
     "open": [],
     "won": [],
     "sold": [
-     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC"
+     "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
+     "draw_3I8C9sXW9TfHkJDRhk873qrZxVP"
     ],
     "bought": 6,
-    "max": 1,
+    "max": 2,
     "pre": [],
     "n": 1
    },
@@ -4150,27 +4348,27 @@
  "geo": null,
  "waterfall": {
   "target": 2440.0,
-  "projection": 1293.0,
+  "projection": 1429.0,
   "steps": [
    {
     "key": "organic_traffic",
     "label": "Organic traffic",
-    "value": -776.0
+    "value": -684.0
    },
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": -326.0
+    "value": -287.0
    },
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": 914.0
+    "value": 966.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -959.0
+    "value": -1006.0
    }
   ],
   "benchmark": 806.0,
@@ -4194,12 +4392,12 @@
     {
      "key": "paid_spend",
      "label": "Paid spend",
-     "value": 584.0
+     "value": 700.0
     },
     {
      "key": "paid_efficiency",
      "label": "Paid efficiency",
-     "value": -613.0
+     "value": -729.0
     }
    ],
    "stepsBm": [
@@ -4216,12 +4414,12 @@
     {
      "key": "paid_spend",
      "label": "Paid spend",
-     "value": 793.0
+     "value": 909.0
     },
     {
      "key": "paid_efficiency",
      "label": "Paid efficiency",
-     "value": -613.0
+     "value": -729.0
     }
    ]
   },
@@ -4229,22 +4427,22 @@
    {
     "key": "organic_traffic",
     "label": "Organic traffic",
-    "value": 544.0
+    "value": 696.0
    },
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": -440.0
+    "value": -562.0
    },
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": 1679.0
+    "value": 2461.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -1296.0
+    "value": -1972.0
    }
   ]
  },
