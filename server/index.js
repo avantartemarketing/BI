@@ -571,7 +571,7 @@ app.get("/api/emails/content/status", (req, res) => {
 const FEATURES = path.join(DATA, "release_features.csv");
 let featuresBuild = null;
 app.get("/api/funnel/releases.csv", async (_req, res) => {
-  const src = path.join(ROOT, "sources", "across_time.csv");
+  const src = require("./bigquery").ACROSS_TIME;
   const stale = !fs.existsSync(FEATURES) || (fs.existsSync(src) && fs.statSync(src).mtimeMs > fs.statSync(FEATURES).mtimeMs);
   if (stale) {
     featuresBuild = featuresBuild || new Promise((resolve, reject) => {

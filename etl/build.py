@@ -71,9 +71,20 @@ import pricing
 from sellthrough import attach_orders, products_from_draws, sell_through_products
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SOURCES = ROOT / "sources"
+# the pulled feeds live in the repo's sources/ (gitignored) unless SOURCES_PATH
+# puts them on a disk that survives a deploy (README, "Keeping state across
+# deploys"); a file that is also checked in (the HubSpot sends) is read from
+# the repo when the disk has no copy yet
+REPO_SOURCES = ROOT / "sources"
+SOURCES = pathlib.Path(os.environ.get("SOURCES_PATH") or REPO_SOURCES)
 DATA = ROOT / "data"
 APP = DATA / "app"
+
+
+def source_file(name: str) -> pathlib.Path:
+    """A feed file by name: the SOURCES copy, else the checked-in one."""
+    p = SOURCES / name
+    return p if p.exists() or SOURCES == REPO_SOURCES else REPO_SOURCES / name
 # actuals-only pages for every release the funnel data mentions but nobody has
 # set targets for. Regenerated on every refresh and not committed (the
 # targeted ones under APP/releases are - they are the boot-time fallback).
@@ -159,10 +170,10 @@ FUNNEL_COLS = FUNNEL_LABELS + [
 # export and says so, rather than serving a frozen copy while the export
 # keeps moving.
 def funnel_file() -> pathlib.Path:
-    export = SOURCES / "across_time.csv"
+    export = source_file("across_time.csv")
     if os.environ.get("FUNNEL_SOURCE") == "export":
         return export
-    rebuilt = SOURCES / "across_time.rebuilt.csv"
+    rebuilt = source_file("across_time.rebuilt.csv")
     if not rebuilt.exists():
         print("funnel: across_time.rebuilt.csv is missing (run etl/aggregate_events.py) - reading the export")
         return export
@@ -222,7 +233,7 @@ def load_spend() -> pd.DataFrame:
 
 def load_emails() -> pd.DataFrame:
     # the HubSpot pull writes this file on every refresh; run without it if absent
-    if not (SOURCES / "all_sent_emails.csv").exists():
+    if not source_file("all_sent_emails.csv").exists():
         print("warning: sources/all_sent_emails.csv missing - email panels will be empty")
         return pd.DataFrame({
             "name": pd.Series(dtype=str), "sent_at": pd.Series(dtype="datetime64[ns]"),
@@ -230,7 +241,7 @@ def load_emails() -> pd.DataFrame:
             "opened": pd.Series(dtype=float), "clicked": pd.Series(dtype=float),
             "unsubscribed": pd.Series(dtype=float), "email_type": pd.Series(dtype=str),
         })
-    df = pd.read_csv(SOURCES / "all_sent_emails.csv")
+    df = pd.read_csv(source_file("all_sent_emails.csv"))
     df = df.rename(columns={
         "Email Name": "name", "Send Date (Your time zone)": "sent_at",
         "Campaign": "campaign", "Delivered": "delivered", "Opened": "opened",
@@ -1213,13 +1224,13 @@ def basket_curves(at: pd.DataFrame, basket: dict, pooled: dict) -> dict:
 
 def load_draw(release: dict) -> dict | None:
     fname = release.get("draw_entries_file")
-    if not fname or not (SOURCES / fname).exists():
+    if not fname or not source_file(fname).exists():
         return None
     products = [p["name"] for p in draw_products_typed(release) if p.get("name")]
     per_product = defaultdict(int)
     tiers = defaultdict(int)
     total = eligible = framed = preorder = wanted_units = surplus = 0
-    with (SOURCES / fname).open() as f:
+    with source_file(fname).open() as f:
         for row in csv.DictReader(f):
             total += 1
             ok = not (row.get("Exclusion") or row.get("Removal") or row.get("Processing Error"))

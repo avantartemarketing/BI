@@ -12,16 +12,19 @@ Served by GET /api/funnel/releases.csv for analysis outside the dashboard -
 the basket-of-comparables work needs the whole history, and this is the
 whole history in a few hundred rows.
 """
-import json, pathlib, re, sys
+import json, os, pathlib, re, sys
 from collections import Counter
 from datetime import timedelta
 import pandas as pd, numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SRC = ROOT / "sources" / "across_time.csv"
+# the pulled feeds' directory (SOURCES_PATH on a persistent disk, else the repo's
+# sources/); the HubSpot sends fall back to the checked-in copy
+SOURCES = pathlib.Path(os.environ.get("SOURCES_PATH") or (ROOT / "sources"))
+SRC = SOURCES / "across_time.csv"
 OUT = ROOT / "data" / "app" / "release_features.csv"
 INPUTS = ROOT / "data" / "app" / "inputs.json"
-EMAILS = ROOT / "sources" / "all_sent_emails.csv"
+EMAILS = SOURCES / "all_sent_emails.csv" if (SOURCES / "all_sent_emails.csv").exists() else ROOT / "sources" / "all_sent_emails.csv"
 PR_LEAD_DAYS = 14
 
 GROUPS = {"AA Email Auto": "aa_email", "AA Email Man": "aa_email", "AA Meta": "aa_social", "AA X": "aa_social",

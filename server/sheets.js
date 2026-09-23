@@ -25,7 +25,9 @@ const ROOT = path.resolve(__dirname, "..");
 const SHEET_ID = process.env.SHEET_ID || "147xGRf0fKfsdgh_AqHqsRiajdd7bQANrhbipCbzby_o";
 const FUNNEL_TAB = process.env.SHEET_FUNNEL_TAB || "Metabase LE Funnel Import by Day";
 const SPEND_TAB = process.env.SHEET_SPEND_TAB || "meta_ads_insights_Extract";
-const ACROSS_TIME = path.join(ROOT, "sources", "across_time.csv");
+// the pulled feeds' directory, on the persistent disk when SOURCES_PATH says so (server/bigquery.js)
+const SOURCES = process.env.SOURCES_PATH || path.join(ROOT, "sources");
+const ACROSS_TIME = path.join(SOURCES, "across_time.csv");
 const SPEND_DAILY = path.join(ROOT, "data", "spend_daily.csv");
 
 // ---------------------------------------------------------------- auth
