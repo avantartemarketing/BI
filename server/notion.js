@@ -38,14 +38,24 @@ const CAMPAIGNS_DB_ID = process.env.NOTION_CAMPAIGNS_DB || "";
 const DB_ID = process.env.NOTION_ARTIST_POSTS_DB || "1b6e65265ca280a898d1e74c0661344c";
 const NOTION_VERSION = "2022-06-28";
 
+/* The releases a row can belong to: the configured ones and the discovered
+ * ones alike (an upcoming launch has a page before it has a code), each with
+ * its code, its name, its artist and its window, so a row can be placed by
+ * artist and date when its words carry no code. `key` names the release in
+ * the dates file: the code where there is one, else the release name. */
 function knownReleases() {
   try {
     const doc = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "app", "inputs.json"), "utf8"));
-    return Object.values(doc.releases || {}).map((r) => ({
-      code: r.campaign_code,
-      name: r.release_name || "",
-      artist: String(r.release_name || "").split("·")[0].trim(),
-    })).filter((r) => r.code);
+    const out = [];
+    const seen = new Set();
+    for (const r of [...Object.values(doc.releases || {}), ...Object.values(doc.discovered || {})]) {
+      const name = String(r.release_name || "");
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      const code = r.campaign_code ? String(r.campaign_code) : "";
+      out.push({ code, name, artist: name.split("·")[0].trim(), announce: r.announce_date || "", close: r.launch_end || "", key: code || `name:${name}` });
+    }
+    return out.filter((r) => r.code || (r.announce && r.close));
   } catch {
     return [];
   }
@@ -53,19 +63,34 @@ function knownReleases() {
 
 const norm = (s) => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
 
-function matchRelease(texts, releases) {
+const DAY_MS = 86400000;
+const WINDOW_BEFORE_DAYS = 45, WINDOW_AFTER_DAYS = 30;   // how far around a campaign a row may fall (the pricing join's window)
+function inWindow(r, date) {
+  if (!date || !r.announce || !r.close) return false;
+  const t = Date.parse(date);
+  return Number.isFinite(t) && t >= Date.parse(r.announce) - WINDOW_BEFORE_DAYS * DAY_MS && t <= Date.parse(r.close) + WINDOW_AFTER_DAYS * DAY_MS;
+}
+
+/* The release a row belongs to: by its campaign code, else by its full name,
+ * else by the artist's name - and an artist has many launches, so the row's
+ * date picks the one whose window holds it, or the one announced nearest.
+ * Returns the release record (code, name, key, window), or null. */
+function matchRelease(texts, releases, date) {
   const hay = norm(texts.join(" | "));
   if (!hay) return null;
   for (const r of releases) {
-    if (hay.includes(norm(r.code))) return r.code;
+    if (r.code && hay.includes(norm(r.code))) return r;
   }
   for (const r of releases) {
-    if (r.name && hay.includes(norm(r.name))) return r.code;
+    if (r.name && hay.includes(norm(r.name))) return r;
   }
-  for (const r of releases) {
-    if (r.artist && r.artist.length >= 4 && hay.includes(norm(r.artist))) return r.code;
-  }
-  return null;
+  const byArtist = releases.filter((r) => r.artist && r.artist.length >= 4 && hay.includes(norm(r.artist)));
+  if (!byArtist.length) return null;
+  const inside = byArtist.filter((r) => inWindow(r, date));
+  const cands = inside.length ? inside : byArtist;
+  if (!date) return cands[0];
+  const dist = (r) => (r.announce ? Math.abs(Date.parse(date) - Date.parse(r.announce)) : Infinity);
+  return cands.slice().sort((a, b) => dist(a) - dist(b))[0];
 }
 
 /* Pull the text out of one Notion property value (relations resolved by caller). */
@@ -158,10 +183,18 @@ function rowChannel(props, propName) {
  * calls the launch date too. Read by shape, like the channel, so a stage
  * spelled a new way still lands; a row naming none is no evidence. */
 const STAGE_RE = {
-  early_access: /early[\s-]?access|private[\s-]?room|pre[\s-]?launch access|collector preview|priority access/,
+  early_access: /early[\s\/-]*(?:exclusive|excl\.?|vip)?[\s\/-]*access|exclusive[\s-]?access|private[\s-]?room|pre[\s-]?launch access|collector preview|priority access/,
   announce: /announc/,
   launch: /\blaunch\b|draw clos|closing|last chance|final (day|hours|call)|ends? (today|tonight)|go(es)? live/,
 };
+
+/* An email row: the channel column reads "AA Email" or the like. The private
+ * room opens on the day the early-access email is scheduled for, so among the
+ * early-access rows the email's date is the one that counts. */
+const EMAIL_RE = /\bemail\b|\be-?mail\b|newsletter/;
+function isEmailRow(texts) {
+  return EMAIL_RE.test(norm(texts.join(" | ")));
+}
 
 function stageOf(texts) {
   const t = norm(texts.join(" | "));
@@ -177,13 +210,16 @@ function stageOf(texts) {
  * launch is the last launch row. */
 function campaignDates(stageDates) {
   const out = {};
-  for (const [code, stages] of stageDates.entries()) {
-    const ea = stages.early_access || [], an = stages.announce || [], la = stages.launch || [];
-    out[code] = {
-      private_room_open: ea.length ? ea.slice().sort()[0] : "",
+  for (const [key, st] of stageDates.entries()) {
+    const ea = st.early_access || [], em = st.early_access_email || [], an = st.announce || [], la = st.launch || [];
+    out[key] = {
+      code: st.code || "", name: st.name || "",
+      // the early-access email's day; another early-access row (a story, a
+      // post) stands in only when no email row is on file
+      private_room_open: em.length ? em.slice().sort()[0] : ea.length ? ea.slice().sort()[0] : "",
       announce_date: an.length ? an.slice().sort()[0] : "",
       launch_end: la.length ? la.slice().sort().slice(-1)[0] : "",
-      rows: { early_access: ea.length, announce: an.length, launch: la.length },
+      rows: { early_access: ea.length, early_access_email: em.length, announce: an.length, launch: la.length },
     };
   }
   return out;
@@ -208,12 +244,14 @@ function campaignRowDates(props) {
   return out;
 }
 
+const csvField = (v) => (/[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
 function datesCsv(dates) {
-  const lines = ["campaign_code,private_room_open,announce_date,launch_end,early_access_rows,announce_rows,launch_rows,source"];
-  for (const code of Object.keys(dates).sort()) {
-    const d = dates[code];
-    lines.push([code, d.private_room_open || "", d.announce_date || "", d.launch_end || "",
-      d.rows ? d.rows.early_access : "", d.rows ? d.rows.announce : "", d.rows ? d.rows.launch : "", d.source || "posts"].join(","));
+  const lines = ["campaign_code,release_name,private_room_open,announce_date,launch_end,early_access_rows,early_access_email_rows,announce_rows,launch_rows,source"];
+  for (const key of Object.keys(dates).sort()) {
+    const d = dates[key];
+    const code = d.code !== undefined ? d.code : (key.startsWith("name:") ? "" : key);
+    lines.push([csvField(code || ""), csvField(d.name || (key.startsWith("name:") ? key.slice(5) : "")), d.private_room_open || "", d.announce_date || "", d.launch_end || "",
+      d.rows ? d.rows.early_access : "", d.rows ? (d.rows.early_access_email || 0) : "", d.rows ? d.rows.announce : "", d.rows ? d.rows.launch : "", d.source || "posts"].join(","));
   }
   return lines.join("\n") + "\n";
 }
@@ -289,21 +327,26 @@ async function fetchPostsCsv() {
         texts.push(...await relationTitles(p, token));
       }
       if (chanProp === null) chanProp = channelProp(props) || "";
-      const code = matchRelease(texts, releases);
-      if (!code) { unmatched++; continue; }
       const date = propDate(props) || String(row.created_time || "").slice(0, 10);
+      const rel = matchRelease(texts, releases, date || null);
+      if (!rel) { unmatched++; continue; }
       if (!date) { unmatched++; continue; }
       matched++;
       const { channel, value } = rowChannel(props, chanProp || null);
       if (channel === "other" && value) unnamed.set(value, (unnamed.get(value) || 0) + 1);
       byChannel.set(channel, (byChannel.get(channel) || 0) + 1);
-      const key = `${code}|${date}|${channel}`;
-      counts.set(key, (counts.get(key) || 0) + 1);
+      // the posts file is by campaign code: a launch without one yet has no
+      // posts row, and its dates below still find it by name
+      if (rel.code) {
+        const key = `${rel.code}|${date}|${channel}`;
+        counts.set(key, (counts.get(key) || 0) + 1);
+      }
       const stage = stageOf(texts);
       if (stage) {
-        if (!stageDates.has(code)) stageDates.set(code, {});
-        const st = stageDates.get(code);
+        if (!stageDates.has(rel.key)) stageDates.set(rel.key, { code: rel.code, name: rel.name });
+        const st = stageDates.get(rel.key);
         (st[stage] = st[stage] || []).push(date);
+        if (stage === "early_access" && isEmailRow(texts)) (st.early_access_email = st.early_access_email || []).push(date);
       }
     }
     cursor = res.has_more ? res.next_cursor : null;
@@ -335,12 +378,12 @@ async function fetchPostsCsv() {
           texts.push(...propText(p));
           texts.push(...await relationTitles(p, token));
         }
-        const code = matchRelease(texts, releases);
-        if (!code) continue;
         const got = campaignRowDates(props);
         if (!Object.keys(got).length) continue;
+        const rel = matchRelease(texts, releases, got.announce_date || got.private_room_open || got.launch_end || null);
+        if (!rel) continue;
         fromDb++;
-        dates[code] = { ...(dates[code] || { rows: null }), ...got, source: "campaigns db" };
+        dates[rel.key] = { ...(dates[rel.key] || { rows: null }), code: rel.code, name: rel.name, ...got, source: "campaigns db" };
       }
       dcursor = res.has_more ? res.next_cursor : null;
       if (!dcursor) break;
@@ -377,4 +420,4 @@ async function refreshArtistPosts() {
 }
 
 module.exports = { refreshArtistPosts, fetchPostsCsv, matchRelease, propText, propDate, noteSchema, summariseSchema, channelOf, channelProp, rowChannel,
-  stageOf, campaignDates, campaignRowDates, datesCsv };
+  stageOf, isEmailRow, campaignDates, campaignRowDates, datesCsv, inWindow, knownReleases };

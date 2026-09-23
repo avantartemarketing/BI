@@ -1878,6 +1878,15 @@ def _num(v):
     return None if math.isnan(f) else f
 
 
+def notion_dates_for(notion: dict | None, code: str | None, release_name: str | None) -> dict:
+    """The Notion log's dates for a release: by its campaign code, else by its
+    name - an upcoming launch has a page and a log before it has a code."""
+    n = notion or {}
+    by_code = n.get(str(code)) if code else None
+    by_name = n.get("name:" + str(release_name)) if release_name else None
+    return dict(by_code or by_name or {})
+
+
 def load_notion_campaigns() -> dict:
     """Campaign dates from the Notion log (server/notion.js writes
     data/notion_campaigns.csv on every refresh): per campaign code, the day
@@ -1894,9 +1903,14 @@ def load_notion_campaigns() -> dict:
     out = {}
     for r in df.to_dict("records"):
         code = str(r.get("campaign_code") or "").strip()
-        if not code:
-            continue
-        out[code] = {k: (str(r.get(k) or "")[:10] or None) for k in ("private_room_open", "announce_date", "launch_end")}
+        name = str(r.get("release_name") or "").strip()
+        vals = {k: (str(r.get(k) or "")[:10] or None) for k in ("private_room_open", "announce_date", "launch_end")}
+        # keyed by the campaign code and by the release name, so a launch
+        # without a code yet (notion_dates_for) is still found
+        if code:
+            out[code] = vals
+        if name:
+            out["name:" + name] = vals
     return out
 
 
@@ -2083,7 +2097,7 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
     # dates: the Notion log, then what was typed, then the funnel's campaign
     # clock (measured: exact for the announce), then Airtable's planned dates
     code = r.get("campaign_code") or None
-    nd = (notion or {}).get(code or "", {}) if code else {}
+    nd = notion_dates_for(notion, code, r.get("release_name"))
     clock = r.get("clock_dates") or {}
     for key, at_key in (("private_room_open", "private_room_date"), ("announce_date", "announce_date"), ("launch_end", "launch_date")):
         for src_name, v in (("notion", nd.get(key)), ("typed", r.get(key)), ("clock", clock.get(key)), ("airtable", at.get(at_key))):
@@ -2155,7 +2169,7 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
     the marketing lead and the Meta campaigns named for the code."""
     at = pricing.release_products(rec)
     code = rec.get("campaign_code")
-    nd = (notion or {}).get(code or "", {}) if code else {}
+    nd = notion_dates_for(notion, code, rec.get("release_name"))
     # the product fields the tab reads (shared/economics.mjs PRODUCT_KEYS and
     # the identity); the record's other columns stay in the pricing file
     keep = ("airtable_id", "name", "project_code", "edition", "target_sellthrough", "unit_price", "currency",

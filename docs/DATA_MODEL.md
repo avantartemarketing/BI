@@ -219,9 +219,17 @@ them at the top level are read the same way. The snapshot's `economics` block pu
 products in force, `mode` (`products` or `release`) and `deal`.
 
 **Dates.** The Notion log first: `server/notion.js` reads each matched row's words for the
-stage it records (early access / private room → `private_room_open`; announce; launch, draw
-close, last chance → `launch_end`) and writes `data/notion_campaigns.csv`; a campaigns database
-named by `NOTION_CAMPAIGNS_DB` supplies date columns by name over that. Then what was typed,
+stage it records (early access, exclusive access, private room → `private_room_open`; announce;
+launch, draw close, last chance → `launch_end`) and writes `data/notion_campaigns.csv`. The
+private room opens on the day the early-access email is scheduled for: among a release's
+early-access rows the one whose channel is an email (`isEmailRow`) sets the date, and a story
+or post on that stage stands in only when no email row is on file. A row belongs to a release
+by its campaign code, else by its full name, else by the artist's name with the row's Live
+Date placing it in the launch whose window holds it (`matchRelease`; an artist has many
+launches), so an upcoming launch that has no code yet gets its dates too: the file carries
+`campaign_code` and `release_name`, and the ETL looks a release up by either
+(`notion_dates_for`). A campaigns database named by `NOTION_CAMPAIGNS_DB` supplies date
+columns by name over that. Then what was typed,
 then the funnel export's campaign clock (measured, exact for the announce), then Airtable's
 planned dates. The private room defaults to two weeks before the announce when nothing has it.
 `inputSources` on the snapshot names the source of each.

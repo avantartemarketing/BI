@@ -469,11 +469,13 @@ app.post("/api/inputs/:id", route(async (req, res) => {
    * only the build can do. The answer does not wait for it: the build runs
    * behind the response and the tab polls GET /api/inputs/:id/build, so a
    * slow build neither holds the browser nor outruns Render's proxy. One
-   * release, not the catalogue - except a first save: promotion moves the
-   * release out of the derived set, and only the full build clears the
-   * actuals-only page it leaves behind. On a failed rebuild the inputs
-   * still stand and the page catches up on the next data refresh. */
-  const build = startBuild(id, creating);
+   * release, not the catalogue, a first save included: the saved inputs put
+   * the release among the configured ones, the one-release build writes its
+   * page and patches its row into the index, and the actuals-only or
+   * upcoming page it leaves behind is removed here, since the page is read
+   * from the built set first. On a failed rebuild the inputs still stand and
+   * the page catches up on the next data refresh. */
+  const build = startBuild(id, false, creating);
   res.json({ queued: true, created: creating, build: publicBuild(build), storage: storageInfo() });
 }));
 
@@ -484,12 +486,18 @@ function publicBuild(rec) {
   return { status: rec.status, startedAt: rec.startedAt, finishedAt: rec.finishedAt || null, seconds: rec.seconds || null,
     full: !!rec.full, error: rec.error || null, message: rec.message || null };
 }
-function startBuild(id, full) {
+function startBuild(id, full, promote) {
   const started = Date.now();
   const rec = { status: "running", startedAt: new Date(started).toISOString(), full: !!full };
   builds.set(id, rec);
   (full ? sheets.runEtl() : sheets.runEtl(id))
-    .then((message) => { rec.status = "done"; rec.message = String(message || "").slice(0, 300); })
+    .then((message) => {
+      rec.status = "done"; rec.message = String(message || "").slice(0, 300);
+      // a first save: the built page now stands, so the derived page goes
+      if (promote && fs.existsSync(path.join(DATA, "releases", `${id}.json`))) {
+        fs.rmSync(path.join(DATA, "derived", `${id}.json`), { force: true });
+      }
+    })
     .catch((e) => { rec.status = "failed"; rec.error = String((e && e.message) || e).slice(0, 300); console.error(`build ${id}: ${rec.error}`); })
     .finally(() => {
       rec.finishedAt = new Date().toISOString();

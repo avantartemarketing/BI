@@ -82,6 +82,22 @@ for (let i = 0; i < 120; i++) {
 }
 check(st && ["done", "failed"].includes(st.status) && typeof st.seconds === "number", `the build reported an outcome: ${JSON.stringify(st).slice(0, 200)}`);
 check((await get(`/api/inputs/unknown_release_x/build`)).body.status === "idle", "no build on record reads idle");
+
+// a first save of a launch the funnel has not seen (an upcoming page from
+// Airtable): queued the same way, as a one-release build, not the catalogue
+const inputsDoc = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "app", "inputs.json"), "utf8"));
+const upcomingId = Object.keys(inputsDoc.discovered || {}).find((id) => (inputsDoc.discovered[id].source === "airtable") && ((inputsDoc.sourced || {})[id] || {}).airtable && (inputsDoc.sourced[id].airtable.products || []).some((p) => p.edition && p.unit_price));
+if (upcomingId) {
+  const first = await post(`/api/inputs/${upcomingId}`, { inputs: { cannibalisation: 0.25 } });
+  check(first.status === 200 && first.body.queued === true && first.body.created === true && first.body.build.full === false,
+    `a first save is queued as a one-release build: ${first.status} ${JSON.stringify(first.body).slice(0, 160)}`);
+  const savedUp = JSON.parse(fs.readFileSync(path.join(tmp, "inputs.saved.json"), "utf8")).releases[upcomingId];
+  check(savedUp && savedUp.cannibalisation === 0.25 && savedUp.release_name, "the new release's inputs are on disk with its name");
+  for (let i = 0; i < 120; i++) { const b = (await get(`/api/inputs/${upcomingId}/build`)).body; if (b.status !== "running") break; await sleep(500); }
+  console.log(`first save of ${upcomingId}: queued, one-release build`);
+} else {
+  console.log("no upcoming launch with a priced product in inputs.json - first-save check skipped");
+}
 console.log(`save answered in ${answered}ms; build ${st && st.status} in ${st && st.seconds}s${st && st.error ? " (" + st.error.slice(0, 80) + ")" : ""}`);
 
 app.kill();
