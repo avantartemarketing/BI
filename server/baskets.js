@@ -30,7 +30,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
-const DATA = path.join(ROOT, "data", "app");
+const DATA = process.env.APP_DATA_PATH || path.join(ROOT, "data", "app");   // the build's output, relocatable (server/index.js)
 const INPUTS_PATH = path.join(DATA, "inputs.json");
 // same file the dashboard's own saves go to (server/index.js), so a release set
 // up from the dashboard can be benchmarked before the next ETL run
@@ -195,7 +195,7 @@ function readyBaskets(releaseId, opts = {}) {
  * started when there is no file yet - a fresh checkout before its first
  * build. That is what made opening the picker take seconds on a shared box,
  * and it no longer happens on the picker's path at all. */
-const CANDIDATES_PATH = path.join(ROOT, "data", "app", "basket_candidates.json");
+const CANDIDATES_PATH = path.join(DATA, "basket_candidates.json");
 function candidates() {
   try {
     const doc = JSON.parse(fs.readFileSync(CANDIDATES_PATH, "utf8"));

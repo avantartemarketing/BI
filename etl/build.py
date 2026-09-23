@@ -79,7 +79,11 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPO_SOURCES = ROOT / "sources"
 SOURCES = pathlib.Path(os.environ.get("SOURCES_PATH") or REPO_SOURCES)
 DATA = ROOT / "data"
-APP = DATA / "app"
+# The build's output: the pages, the index, the inputs document, the caches.
+# APP_DATA_PATH relocates it (a persistent disk on Render, README "Render's
+# disk resets"), so the pages of the last run serve straight after a deploy;
+# the repo's data/app is the seed the server copies in when the disk is empty.
+APP = pathlib.Path(os.environ.get("APP_DATA_PATH") or (DATA / "app"))
 
 
 def source_file(name: str) -> pathlib.Path:
@@ -3756,7 +3760,7 @@ def sort_index(index: list[dict]) -> list[dict]:
     return live + upcoming + closed + catalogue
 
 
-def patch_index(snap: dict, as_of: date) -> None:
+def patch_index(snap: dict, as_of: date | None, status: str | None = None) -> None:
     """Replace one release's row in the index written by the last full build.
 
     A save cannot add or remove releases, so every other row still stands; only
@@ -3768,13 +3772,53 @@ def patch_index(snap: dict, as_of: date) -> None:
         print("index: none on disk - run a full build to create it")
         return
     doc = json.loads(path.read_text())
-    status = "closed" if snap["complete"] else "live"
+    status = status or ("closed" if snap["complete"] else "live")
     row = index_row(snap, status)
     rows = [r for r in doc.get("releases", []) if r.get("id") != snap["id"]]
     rows.append(row)
     doc["releases"] = sort_index(rows)
-    doc["asOf"] = as_of.isoformat()
+    if as_of is not None:
+        doc["asOf"] = as_of.isoformat()
     path.write_text(json.dumps(doc, indent=1))
+
+
+def build_upcoming_pages() -> int:
+    """The upcoming pages alone, from Airtable's launches and the releases on
+    file, with no funnel export needed (§1.7). The server runs this at boot
+    when the index lists an upcoming launch whose page is not on disk - a
+    deploy without a persistent disk loses every page that is not in the
+    repo - so those pages are back within seconds while the full refresh
+    pulls the feeds. The index's own as-of is left as the last build set it;
+    the pages count their days from today."""
+    launch_frame = load_launches()
+    if launch_frame is None or not len(launch_frame):
+        print("upcoming: no Airtable launches on file - nothing to build")
+        return 0
+    as_of = date.today()
+    existing: list[dict] = []
+    try:
+        doc = json.loads((APP / "inputs.json").read_text())
+        # the releases the funnel had at the last build; the upcoming ones are
+        # rebuilt here, so they are not "on file"
+        existing = [r for r in (doc.get("discovered") or {}).values() if r.get("source") != "airtable"]
+    except (OSError, ValueError):
+        existing = []
+    spend = load_spend() if (DATA / "spend_daily.csv").exists() else None
+    emails = load_emails()
+    in_use = {str(r.get("campaign_code")) for r in existing + INPUTS["releases"] if r.get("campaign_code")}
+    activity = {c: w for c, w in code_activity(spend, emails).items() if c not in in_use}
+    upcoming = upcoming_releases(launch_frame, existing + INPUTS["releases"], as_of, activity)
+    DERIVED.mkdir(parents=True, exist_ok=True)
+    n = 0
+    for rec in upcoming:
+        rec["campaign_name"] = match_campaign(rec["campaign_code"], spend) if (rec.get("campaign_code") and spend is not None) else None
+        snap = build_upcoming(rec, as_of, None, as_of)
+        check_snapshot(snap)
+        (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
+        patch_index(snap, None, status="upcoming")
+        n += 1
+    print(f"upcoming: wrote {n} page(s) from Airtable -> {DERIVED}")
+    return n
 
 
 def main(only: str | None = None):
@@ -4046,6 +4090,10 @@ if __name__ == "__main__":
     # else a save cannot change is left as the last full build wrote it
     args = sys.argv[1:]
     one = None
+    if "--upcoming" in args:
+        # the upcoming pages alone, from Airtable, no funnel export needed
+        build_upcoming_pages()
+        sys.exit(0)
     if "--release" in args:
         i = args.index("--release")
         if i + 1 >= len(args):

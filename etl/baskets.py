@@ -39,6 +39,7 @@ from __future__ import annotations
 import json
 import math
 import numpy as np
+import os
 import pathlib
 import re
 from datetime import date
@@ -55,15 +56,16 @@ except ImportError:  # pragma: no cover - the shim's import path
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
+APP = pathlib.Path(os.environ.get("APP_DATA_PATH") or (DATA / "app"))   # the build's output, relocatable (etl/build.py)
 PANEL_PATH = DATA / "release_clusters.csv"
 BASKETS_PATH = DATA / "release_cluster_baskets.json"
-SAVED_PATH = DATA / "app" / "baskets.json"
+SAVED_PATH = APP / "baskets.json"
 # Distinct buyers and the draw's product count, written per release by
 # etl/aggregate_events.py. The panel counts units, not people, and units per
 # buyer is the difference between them: on a multi-product release the median
 # buyer takes more than one piece, so a target in units needs fewer people than
 # it has units (BENCHMARK_SPEC §4.2).
-PEOPLE_PATH = DATA / "app" / "release_people.csv"
+PEOPLE_PATH = APP / "release_people.csv"
 
 # The five display groups (docs/DATA_MODEL.md §1.3). Order matters: it is the
 # order the profile dicts and the per-channel table are written in.

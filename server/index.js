@@ -8,7 +8,29 @@ const path = require("path");
 
 const app = express();
 const ROOT = path.resolve(__dirname, "..");
-const DATA = path.join(ROOT, "data", "app");
+/* The build's output: the pages, the index, the inputs document. APP_DATA_PATH
+ * relocates it onto a persistent disk (README, "Render's disk resets"), so
+ * the pages of the last run serve straight after a deploy instead of every
+ * page not in the repo reading "not built yet" until the boot refresh has
+ * pulled the feeds and built the catalogue. The repo's data/app is the seed:
+ * whatever the disk does not hold yet is copied in at start. */
+const REPO_DATA = path.join(ROOT, "data", "app");
+const DATA = process.env.APP_DATA_PATH || REPO_DATA;
+function seedAppData() {
+  if (DATA === REPO_DATA) return;
+  let copied = 0;
+  const walk = (from, to) => {
+    fs.mkdirSync(to, { recursive: true });
+    for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+      const src = path.join(from, entry.name), dst = path.join(to, entry.name);
+      if (entry.isDirectory()) walk(src, dst);
+      else if (!fs.existsSync(dst)) { fs.copyFileSync(src, dst); copied++; }
+    }
+  };
+  try { walk(REPO_DATA, DATA); } catch (e) { console.error(`app data: seeding ${DATA} failed - ${e.message}`); return; }
+  console.log(`app data: ${DATA}${copied ? ` (${copied} file(s) seeded from the repo)` : ""}`);
+}
+seedAppData();
 const DIST = path.join(ROOT, "web", "dist");
 const DECISIONS_PATH = process.env.DECISIONS_PATH || path.join(ROOT, "data", "decisions.log.jsonl");
 
@@ -113,7 +135,7 @@ app.get("/api/releases/:id", (req, res) => {
     listed = JSON.parse(fs.readFileSync(path.join(DATA, "index.json"), "utf8")).releases.some((r) => r.id === id);
   } catch {}
   if (listed) {
-    return res.status(404).json({ error: "This page has not been built yet - the first data refresh after a deploy takes a few minutes.", pending: true });
+    return res.status(404).json({ error: "This page has not been built yet - the data refresh builds it, and the first one after a deploy takes a few minutes (a persistent disk with APP_DATA_PATH keeps the pages across deploys, README).", pending: true });
   }
   res.status(404).json({ error: "unknown release" });
 });
@@ -724,7 +746,21 @@ app.use(express.static(DIST));
 app.get(/.*/, (_req, res) => res.sendFile(path.join(DIST, "index.html")));
 
 const port = process.env.PORT || 10000;
+/* A deploy without a persistent disk loses every page not in the repo. The
+ * upcoming pages need only Airtable, so they are rebuilt at once when the
+ * index lists one whose page is missing, seconds instead of the minutes the
+ * boot refresh takes to pull the feeds and build the catalogue. */
+function upcomingPagesMissing() {
+  try {
+    const rows = JSON.parse(fs.readFileSync(path.join(DATA, "index.json"), "utf8")).releases || [];
+    return rows.some((r) => r.status === "upcoming" && !readSnapshot(r.id));
+  } catch { return false; }
+}
 app.listen(port, () => {
   console.log(`launch-bi listening on :${port}`);
+  if (upcomingPagesMissing()) {
+    sheets.buildUpcoming().then((out) => console.log(`upcoming pages: ${out}`))
+      .catch((e) => console.error(`upcoming pages: ${String((e && e.message) || e).slice(0, 300)}`));
+  }
   sheets.startScheduler();
 });
