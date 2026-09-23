@@ -45,7 +45,7 @@ const NOTION_VERSION = "2022-06-28";
  * the dates file: the code where there is one, else the release name. */
 function knownReleases() {
   try {
-    const doc = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "app", "inputs.json"), "utf8"));
+    const doc = JSON.parse(fs.readFileSync(path.join(process.env.APP_DATA_PATH || path.join(ROOT, "data", "app"), "inputs.json"), "utf8"));
     const out = [];
     const seen = new Set();
     for (const r of [...Object.values(doc.releases || {}), ...Object.values(doc.discovered || {})]) {

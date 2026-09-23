@@ -58,9 +58,10 @@ BROWSING = SOURCES / "le_browsing.csv"
 EVENTS = SOURCES / "le_events.csv"
 EXPORT = SOURCES / "across_time.csv"
 REBUILT = SOURCES / "across_time.rebuilt.csv"
-PEOPLE = ROOT / "data" / "app" / "release_people.csv"
-PRODUCTS = ROOT / "data" / "app" / "release_products.json"
-RECON = ROOT / "data" / "app" / "reconciliation.json"
+APP = pathlib.Path(os.environ.get("APP_DATA_PATH") or (ROOT / "data" / "app"))   # the build's output, relocatable
+PEOPLE = APP / "release_people.csv"
+PRODUCTS = APP / "release_products.json"
+RECON = APP / "reconciliation.json"
 SINCE = os.environ.get("BQ_SINCE", "2023-01-01")
 
 CH = "AA_session_custom_channel_group_split_touch"
@@ -81,7 +82,7 @@ ROUTES = [("purchase_with_preorder_app", "Preorder_App"), ("purchase_with_presal
           ("pr_order", "Private_Room"), ("purchase_with_draw_entry", "Draw")]
 CUSTOMER_COL = {"Draw": "Customer_Draw", "Preorder_App": "Customer_Preorder_App", "Private_Room": "Customer_Private_Room",
                 "Presale_Offered": "Customers_Presale_Offered", "Other": "Customer_Other"}
-WINDOWS = ROOT / "data" / "app" / "release_windows.csv"
+WINDOWS = APP / "release_windows.csv"
 EA_LEAD_DAYS = 45        # rows earlier than this before an inferred announce are outside the campaign window
 MIN_INFER_ENTRANTS = 10  # a release needs this many entrants to get an inferred clock
 SETTLED_DAYS = 7         # a close inferred from the last entry needs the campaign over for this long

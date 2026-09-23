@@ -13,7 +13,7 @@ services:
     # it the service's own disk is reset on every deploy and all of it is lost
     # (README, "Render's disk resets"). A service created in the dashboard
     # ignores this file: add the disk there (Disks -> Add disk, mount path
-    # /var/data, 1 GB) and set the seven *_PATH variables below to the paths
+    # /var/data, 1 GB) and set the eight *_PATH variables below to the paths
     # shown, then deploy.
     disk:
       name: state
@@ -28,6 +28,8 @@ services:
         generateValue: true
       - key: SOURCES_PATH        # the pulled feeds and their bookmarks; without it every deploy starts with a full pull
         value: /var/data/sources
+      - key: APP_DATA_PATH       # the built pages and the index; without it every page not in the repo reads "not built yet" after a deploy until the refresh has run
+        value: /var/data/app
       - key: USERS_PATH
         value: /var/data/users.json
       - key: SAVED_INPUTS_PATH

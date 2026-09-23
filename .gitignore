@@ -24,3 +24,4 @@ data/slack.json
 data/app/funnel.cache.pkl
 data/app/funnel.cache.json
 data/app/untracked_norms.json
+.venv

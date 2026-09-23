@@ -273,6 +273,16 @@ function runEtl(release) {
   etlLock = p.catch(() => {});
   return p;
 }
+/* The upcoming pages alone, from Airtable (build.py --upcoming): seconds,
+ * no funnel export needed. Run at boot when a deploy has lost them. */
+function buildUpcoming() {
+  const p = etlLock.then(async () => {
+    const out = await runPy("build.py", 2 * 60 * 1000, ["--upcoming"]);
+    return out.split("\n").filter(Boolean).slice(-1)[0] || "done";
+  });
+  etlLock = p.catch(() => {});
+  return p;
+}
 
 let running = null;
 let runningSince = null;
@@ -440,6 +450,6 @@ function startScheduler() {
 }
 
 module.exports = {
-  refresh, status, startScheduler, runEtl, writeAtomic,
+  refresh, status, startScheduler, runEtl, buildUpcoming, writeAtomic,
   convertAcrossTime, convertSpend, acrossTimeWriter, spendWriter, normDate, parseCsv,
 };
