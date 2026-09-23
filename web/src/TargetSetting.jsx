@@ -662,6 +662,7 @@ export default function TargetSetting({ snap, onSaved }) {
   const T = profile ? benchmarkTargets(profile, {
     edition_size: editionSize, unit_price: econ.unit_price || 0, cost_per_purchase: cpp,
     units_per_buyer: (snap.targets || {}).units_per_buyer || 0,
+    entry_conversion_rate: inp.entry_conversion_rate,
   }, b) : null;
   const BM = T ? T.benchmark : null;
   const railRow = (label, target, bmv, format, tip) => {
@@ -675,7 +676,7 @@ export default function TargetSetting({ snap, onSaved }) {
     railRow("Buyers", T ? T.buyers : null, BM ? BM.buyers : null, (v) => fmt(v, 0),
       T ? `People, not pieces: the target divided by ${fmt(T.units_per_buyer, 3)} units per buyer.` : "People, not pieces."),
     railRow("Eligible entries", T ? T.entries_target : null, BM ? BM.entries : null, (v) => fmt(v, 0),
-      "Target units ÷ 0.8 eligible-entry → order rate: every unit is asked for as an entry. The benchmark is the basket's median units asked for the same way."),
+      `Target units ÷ the ${T && T.entry_rate ? Math.round(T.entry_rate * 100) + "%" : "80%"} eligible-entry → order rate (the release's own where typed, else the panel's): every unit is asked for as an entry. The benchmark is the basket's median units asked for the same way.`),
     railRow("Sessions", T ? T.total_sessions : null, BM ? BM.sessions : null, (v) => fmt(v, 0),
       "The basket's median sessions, lifted by the same K as every other volume."),
     railRow("Paid budget", T ? T.paid.budget : null, BM ? BM.paid_budget : null, (v) => fmtMoney(v, 0),

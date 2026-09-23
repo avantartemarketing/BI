@@ -1081,19 +1081,31 @@ campaign-date records with launch timestamps ~1 day apart); metrics are split ac
 - Conversion actual = projected purchases ÷ sessions, compared to the target conversion.
 
 ### 6.3½ Secured units - the unified page currency
-The hero, trajectory, and channels modules run on one unified metric of sales plus
-entries:
+The hero, trajectory, channels, funnel and waterfall modules run on one metric of sales plus
+entries: the sell-through's own count (§6.3).
 ```
-secured units = units sold (all routes, incl. private room)
-              + 0.8 × eligible entry units NOT yet converted
+secured units = units paid (all routes, incl. private room)
+              + draft orders raised and not yet paid (they take room like a sale)
+              + the winners the eligible entries still in the draw imply, allocated across
+                the products by the maximum-quantity rule, × the release's entry → order
+                rate (`entry_conversion_rate` on the Target setting tab, else the panel's 0.8)
 ```
-Only *unconverted* entries carry the 0.8 discount (a converted entry is already a sale -
-counting all entries would double-count). Group unit targets sum exactly to the edition
-size, so the hero target = sellout (private-room units ride with the AA Email group, the
-workbook's own convention). The hero is **capped at edition size**; entries beyond the
-units left to sell are shown as an oversubscription signal, not as bar overshoot.
-Funnel diagnostics and the paid module stay denominated in entries/spend - the things
-marketing moves directly.
+Only *unconverted* entries carry the rate (a converted entry is already a sale - counting all
+entries would double-count). The funnel export attributes sales and entries to channels, so
+the channel columns are the funnel's secured units (units + rate × unconverted entries, per
+channel) scaled in proportion to the sell-through's count (`adopt_sellthrough`): drafts and
+the allocation rule have no channel of their own, and the scaling is what keeps the channels,
+the trajectory, the funnel's conversion steps and the waterfalls summing to the hero. The
+projection's further units follow the funnel's shape and are capped at the room left, as the
+sell-through caps them. Group unit targets sum exactly to the edition size, so the hero target
+= sellout (private-room units ride with the AA Email group, the workbook's own convention).
+The hero, the trajectory's all-channels line and the waterfall are **capped at the whole
+edition**: the hero names the surplus as oversubscribed, the trajectory flattens at the
+sellout, and every waterfall walk carries the surplus as a last step, `Beyond sellout`, so its
+steps still close on the figure printed. A single channel's demand is its own and is not
+capped. The same entry → order rate prices the paid model's converting entries (§7) and the
+targets' eligible entries (`benchmark_targets`), so one rate runs through the page.
+(2026-09-23.)
 
 ### 6.3 Sell-through prediction, per product (LE)
 
@@ -1239,14 +1251,14 @@ unattributed sales in the paid key's, and the editions are checked on the Target
 name (draws sharing a name merge), an edition. A single product with no edition takes the
 release's; with several products the card runs on units and says so until every product has
 one, and it flags editions that do not add up to the release's. `entry_conversion_rate`
-(optional, per release) is the rate the prediction converts entries in hand at; the
-secured-units currency the rest of the page runs on keeps the panel's 0.8.
+(optional, per release) is the rate the prediction converts entries in hand at, and the rate
+the whole page runs on: the secured-units currency, the paid model's converting entries and
+the targets' eligible entries (§6.3½).
 
 **Headline.** With the draw feed present the release's `soldPredicted`, `futureEntriesPredicted`
 and `pct` are the per-product figures summed (each capped at the release's inventory left), so
 the card's rows and its headline are one sum; without it they are the release-level figures
-as before (`inHandUnits × rate`, capped). The hero's secured units stay on the funnel export
-and can differ from the card by the entries the rule does not count.
+as before (`inHandUnits × rate`, capped). The hero adopts the headline (§6.3½), and the funnel's channels are scaled to it.
 
 ### 6.4 Framing take-up (the Framing card)
 

@@ -351,14 +351,14 @@ function groupWaterfall(g, snap, vsBm = false) {
     if (finite(spendE) && spendE > 0 && spendA > 0 && exp > 0) {
       steps = chainSteps([
         { label: "Spend", a: spendA, e: spendE, show: (v) => fmtVal(v, "eur"), note: `spend to date vs the ${REF}'s share of budget by today` },
-        { label: "Cost per unit", a: now / spendA, e: exp / spendE, show: (v) => (v > 0 ? fmtVal(1 / v, "eur") + " per unit" : "–"),
+        { label: "Cost per secured unit", a: now / spendA, e: exp / spendE, show: (v) => (v > 0 ? fmtVal(1 / v, "eur") + " per unit" : "–"),
           note: `secured units per euro, actual vs ${REF} - the cost side of the ledger` },
       ]);
       rows.push(...steps);
       return { name: g.name, rows, now, exp };
     }
     info("Spend", spendA, spendE, "eur", "no plan or no spend yet");
-    rows.push({ label: "Cost per unit", value: now - exp, note: snap.campaignName ? `residual: paid units vs ${REF}` : "no campaign matched - the whole paid gap",
+    rows.push({ label: "Cost per secured unit", value: now - exp, note: snap.campaignName ? `residual: paid units vs ${REF}` : "no campaign matched - the whole paid gap",
       tipRows: [{ label: "Secured", value: fmtVal(now, "count") }, { label: "Expected", value: fmtVal(exp, "count") }] });
     return { name: g.name, rows, now, exp };
   }
@@ -644,9 +644,9 @@ function rungModel(snap) {
       rungs: [
         { label: "Spend", kind: "vol", unit: "eur", v: paid.spendToDate ?? null, plan: spendPlan, bm: spendBm,
           note: "Spend to date against the budget's share of the days paid runs, the day after the announce to the close. The benchmark budget is the basket's paid spend on the same clock." },
-        { label: "Cost per unit", kind: "rate", unit: "eur", inv: true,
+        { label: "Cost per secured unit", kind: "rate", unit: "eur", inv: true,
           v: costPerUnit, plan: cpp ?? null, bm: cpp ?? null,
-          note: "Spend to date over paid secured units to date, against the plan's cost per unit (the target's cost per purchase). Lower is better, so cheap sits right." },
+          note: "Spend to date over paid secured units to date, against the plan's cost per unit (the target's cost per purchase). The paid cards price a converting entry instead, which is a different quantity. Lower is better, so cheap sits right." },
       ],
     },
   ];

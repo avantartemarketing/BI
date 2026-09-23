@@ -145,7 +145,8 @@ def test_js_agrees() -> None:
         "cases": [{
             "name": c["name"], "off": c["off"], "profile": c["profile"],
             "inp": {"edition_size": c["release"]["edition_size"], "unit_price": c["release"]["unit_price"],
-                    "cost_per_purchase": c["release"].get("cost_per_purchase"), "units_per_buyer": 1.25},
+                    "cost_per_purchase": c["release"].get("cost_per_purchase"), "units_per_buyer": 1.25,
+                    "entry_conversion_rate": c["release"].get("entry_conversion_rate")},
         } for c in cases],
     }
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:

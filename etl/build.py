@@ -886,7 +886,7 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
     b = BENCH
     size = float(release["edition_size"])
     k = size / profile["units"]
-    e2o = b["eligible_entry_to_order"]
+    e2o = entry_rate(release)     # the release's own entry -> order rate, else the panel's
     units = {g: profile["units_by_group"][g] * k for g in baskets.GROUPS}
     sessions = {g: profile["sessions_by_group"][g] * k for g in baskets.GROUPS}
 
@@ -949,6 +949,7 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
         # every unit of the edition is asked for as an entry that converts at
         # e2o, so the whole edition divided by that rate
         "entries_target": sum(pc["eligible_entries"] for pc in per_channel.values()) + paid_units / e2o,
+        "entry_rate": e2o,
         "buffer": b["target_buffer"],
     }
     # the partition the whole page rests on: what the five groups are asked to
@@ -1580,10 +1581,10 @@ def load_orders_feed() -> dict:
 
 
 def entry_rate(release: dict) -> float:
-    """The entry -> order rate the sell-through prediction converts entries in
-    hand at: the release's own (Target setting) when one is typed, else the
-    panel's 0.8. Only the sell-through model reads it; the secured-units
-    currency the rest of the page runs on keeps the panel constant."""
+    """The entry -> order rate of the release: its own (Target setting) when
+    one is typed, else the panel's 0.8. One rate runs through the page: the
+    sell-through prediction, the secured-units currency, the paid model's
+    converting entries and the targets' eligible entries all read it."""
     v = release.get("entry_conversion_rate")
     try:
         v = float(v)
@@ -1760,6 +1761,69 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     else:
         st["soldPredicted"] = pp["soldPredicted"]
     return st
+
+
+def spoken_for(st: dict) -> float:
+    """The sell-through's own count of what is spoken for today (docs 6.3):
+    units paid, the drafts raised and not yet paid, and the winners the
+    entries in hand imply at the release's entry rate - the figure its card
+    prints, and the one the hero adopts."""
+    return (float(st.get("sold") or 0) + float(st.get("drafts") or 0) + float(st.get("soldPredicted") or 0))
+
+
+def adopt_sellthrough(st: dict, channels_out: list, funnel_by_group: dict, hero_now: float, hero_proj: float,
+                      complete: bool, upb_plan: float = 1.0, upb_actual: float = 1.0) -> tuple[float, float]:
+    """The hero adopts the sell-through's count (docs 6.3½) and the funnel's
+    channels are scaled to it, so the channels, the trajectory, the funnel
+    and the waterfalls still sum to the hero.
+
+    The funnel export attributes sales and entries to channels; drafts and
+    the per-product allocation have no channel of their own, so the
+    difference between the sell-through's count and the funnel's secured
+    units is spread over the channels in proportion to their secured units
+    (one factor f on every actual). The units still to come keep the
+    funnel's shape and are capped at the room left, as the sell-through
+    caps them (one factor g on every remaining projection). The funnel
+    decomposition is re-priced by the same factor, so each group's traffic
+    and conversion steps still sum to its now minus its expected.
+    Returns the hero's (now, projected) before the sellout cap."""
+    sell_today = spoken_for(st)
+    if not (hero_now > 0) or not (sell_today > 0):
+        return hero_now, hero_proj
+    f = sell_today / hero_now
+    future_funnel = max(hero_proj - hero_now, 0.0)
+    fut = st.get("futureEntriesPredicted")
+    future_all = 0.0 if complete else (float(fut) if fut is not None else future_funnel)
+    g = (future_all / future_funnel) if future_funnel > 0 else 0.0
+    ratio = (upb_plan / upb_actual) if upb_actual else 1.0
+    for c in channels_out:
+        now0 = float(c.get("now") or 0)
+        proj0 = float(c["proj"]) if c.get("proj") is not None else now0
+        now1 = now0 * f
+        proj1 = now1 + max(proj0 - now0, 0.0) * g
+        for r in c.get("daily") or []:
+            if r.get("actual") is not None:
+                r["actual"] = round(r["actual"] * f, 2)
+            if r.get("proj") is not None:
+                r["proj"] = round(now1 + max(r["proj"] - now0, 0.0) * g, 2)
+        for p in c.get("parts") or []:
+            p["value"] = round(p["value"] * f, 1)
+        c["now"] = round(now1, 1)
+        if c.get("proj") is not None:
+            c["proj"] = round(proj1, 1)
+        fb = funnel_by_group.get(c.get("key"))
+        if fb:
+            for k in ("conv_actual", "bps_actual"):
+                if fb.get(k) is not None:
+                    fb[k] = fb[k] * f
+            for k, add in (("contrib_conversion", (f - 1) * now0), ("contrib_buyers", (f - 1) * now0 * ratio),
+                           ("contrib_conversion_bm", (f - 1) * now0), ("contrib_buyers_bm", (f - 1) * now0 * ratio)):
+                if fb.get(k) is not None:
+                    fb[k] = round(fb[k] + add, 1)
+            for k in ("contrib_per_buyer", "contrib_per_buyer_bm"):
+                if fb.get(k) is not None:
+                    fb[k] = round(fb[k] * f, 1)
+    return sell_today, sell_today + future_all
 
 
 # ---------------------------------------------------------------- per-release snapshot
@@ -2511,7 +2575,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     happened without pretending to know what should have. Setting targets in
     the dashboard promotes the release to build_release on the next rebuild."""
     b = BENCH
-    e2o = b["eligible_entry_to_order"]
+    e2o = entry_rate(rec)
     name = rec["release_name"]
     full_through = full_through or as_of
     seen = 1.0 if full_through >= as_of else seen
@@ -2589,6 +2653,11 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     units_sold = float(upto["Total_Product_Units"].sum())
     unconverted = float(upto["Draw_Entries_Total_Units_No_Conv"].sum())
     code = rec.get("campaign_code")
+    # the sell-through's count, adopted by the hero as in build_release; no
+    # edition here, so nothing is capped and nothing is projected
+    sellthrough = sellthrough_block({"edition_size": None, "entry_conversion_rate": rec.get("entry_conversion_rate")},
+                                    rec["release_name"], units_sold, unconverted, None)
+    hero_now, _ = adopt_sellthrough(sellthrough, channels_out, funnel_by_group, hero_now, hero_now, True)
 
     # ---- paid actuals: spend, entries, cost per entry. ROI and the budget
     # recommendation need the profit split, so they stay None.
@@ -2598,7 +2667,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     spend_day = psp.groupby("spend_date")["spend"].sum()
     paid_entries_day = (win[win["channel"] == "Paid Social"]
                         .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
-    drop = b["paid_drop_off"]
+    drop = round(1 - entry_rate(rec), 4)
     paid_daily, win3 = [], []
     cum_spend = cum_pentries = 0.0
     for d in days:
@@ -2697,7 +2766,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "channels": channels_out,
         "funnelByGroup": funnel_by_group, "paid": paid_out,
         "email": email_out, "social": social_out,
-        "sellthrough": sellthrough_block({"edition_size": None}, rec["release_name"], units_sold, unconverted, None),
+        "sellthrough": sellthrough,
         "framing": framing_block(rec, load_orders_feed().get(rec["release_name"]), None, b),
         "draw": None, "geo": None, "waterfall": None,
         "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
@@ -2881,7 +2950,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     paid_entries_day = (win[win["channel"] == "Paid Social"]
                         .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
     spend_day = psp.groupby("spend_date")["spend"].sum()
-    drop, cann = b["paid_drop_off"], cannibalisation_for(release, b)
+    # a converting entry is one that becomes an order: the release's own
+    # entry -> order rate (Target setting), else the panel's, the same rate
+    # the secured units and the targets' eligible entries are read at
+    drop, cann = round(1 - entry_rate(release), 4), cannibalisation_for(release, b)
     ppu_aa = aa_profit_per_unit(release, b)
     frame_conv, frame_profit = frame_terms(release, b)
     ppu_artist = (release["artist_profit"] / release["edition_size"]) if release["edition_size"] else 0
@@ -2973,7 +3045,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # fill. Net off what is already secured (banked entries count at 0.8) plus
     # the same shape-following organic projection the channel loop below runs
     # (docs §5.4), then price only the residual entries.
-    secured_now = units_sold + b["eligible_entry_to_order"] * entries_banked
+    # what is spoken for today by the sell-through's own count (docs 6.3):
+    # units paid, drafts raised and the winners the entries in hand imply -
+    # the figure the hero adopts once the channels are built, so paid is
+    # sized against the same count the page prints
+    secured_now = spoken_for(sellthrough_block(release, name, units_sold, entries_banked, inventory_left))
     organic_future = 0.0
     if not complete:
         pdsa_now = pdsa_today
@@ -2983,13 +3059,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 continue
             sub_g = obs[obs["group"] == og]
             now_g = (float(sub_g["units"].sum())
-                     + b["eligible_entry_to_order"] * float(sub_g["entries_no_conv"].sum()))
+                     + entry_rate(release) * float(sub_g["entries_no_conv"].sum()))
             tgt_g = gtargets[og]["units"]
             w_g = curve_value(rcurves, og, "units", pdsa_now)
             r_perf = min(max((now_g / (tgt_g * w_g)) if tgt_g * w_g > 0 else 1.0, 0.25), 2.5)
             organic_future += tgt_g * (1 - w_g) * (1 + w_g * (r_perf - 1))
     sellout_gap = max(release["edition_size"] - secured_now - organic_future, 0.0)
-    entries_needed = sellout_gap * (1 + drop)
+    entries_needed = sellout_gap / (1 - drop)      # every unit is asked for as an entry at the rate
     days_left = max((launch_end - full_through).days, 0)
     past_spend = spend_day[spend_day.index <= full_through]
     current_daily = float(past_spend.get(full_through, past_spend.iloc[-1] if len(past_spend) else 0.0))
@@ -3127,7 +3203,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     hero_now = hero_exp = hero_target = hero_proj = 0.0
     hero_bm = hero_bm_today = 0.0        # benchmark at close, benchmark by today
     funnel_by_group = {}
-    e2o = b["eligible_entry_to_order"]
+    e2o = entry_rate(release)
     # Paid follows spend, and spend is planned evenly over the days paid runs:
     # from the day after the announce (PAID_START_DAYS) to the close. So the
     # paid plan by any day is the even share of the target over those days -
@@ -3276,6 +3352,22 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         channels_out.append(channel)
         hero_now += now; hero_exp += exp; hero_target += tgt; hero_proj += proj
         hero_bm += bm_tgt; hero_bm_today += bm_exp
+
+    # ---- sell-through: the release-level prediction, and per product where
+    # the event feed has the draws (docs §6.3, sellthrough_block)
+    unconverted = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
+    # units still to come = the shaped secured-units projection beyond today (docs §5.4/§6.4)
+    future_entries = 0.0 if complete else max(hero_proj - hero_now, 0.0)
+    sellthrough = sellthrough_block(release, name, units_sold, unconverted, inventory_left, future_entries,
+                                    expected_today=hero_exp, bm_today=hero_bm_today if bench else None,
+                                    bm_close=hero_bm if bench else None)
+    # the hero adopts the sell-through's count (docs 6.3½): what the orders
+    # and draw feeds say is spoken for - units paid, drafts raised, the
+    # winners the entries in hand imply by the per-product rule - and the
+    # funnel's channels are scaled to it in proportion, so they still sum to
+    # the hero and every card reads one figure
+    hero_now, hero_proj = adopt_sellthrough(sellthrough, channels_out, funnel_by_group, hero_now, hero_proj,
+                                            complete, upb_plan, upb_actual)
 
     # ---- paid block output (docs §7; inputs computed above, before the channel loop)
     # the part day so far rides at the end of the series, marked, so the ROI
@@ -3444,15 +3536,6 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     pb = posts_bench or {}
     social_out["artistPostsTarget"] = None if tier == "N/A" else pb.get(tier, pb.get("_all"))
 
-    # ---- sell-through: the release-level prediction, and per product where
-    # the event feed has the draws (docs §6.3, sellthrough_block)
-    unconverted = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
-    # units still to come = the shaped secured-units projection beyond today (docs §5.4/§6.4)
-    future_entries = 0.0 if complete else max(hero_proj - hero_now, 0.0)
-    sellthrough = sellthrough_block(release, name, units_sold, unconverted, inventory_left, future_entries,
-                                    expected_today=hero_exp, bm_today=hero_bm_today if bench else None,
-                                    bm_close=hero_bm if bench else None)
-
     # ---- waterfall (docs §9): contributors to projection - target, in secured units
     organic_groups = [g for g in DISPLAY_GROUPS if g != "paid"]
     wf_traffic = sum(funnel_by_group[g]["contrib_traffic"] for g in organic_groups)
@@ -3468,8 +3551,16 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # scale contributor gaps (to-date) to close: same blend factor as projections
     scale = ((hero_proj - hero_target) / (wf_traffic + wf_conv + wf_paid_spend + wf_paid_eff)
              if (wf_traffic + wf_conv + wf_paid_spend + wf_paid_eff) else 0.0)
+    # the projection and the actual the card prints are the hero's, capped at
+    # the whole edition; demand beyond it is the last step of every walk, so
+    # the steps still close on the figure printed (docs 6.3½)
+    total = float(edition_total(release))
+    proj_shown, now_shown = round(min(hero_proj, total), 0), round(min(hero_now, total), 0)
+    over_close, over_today = round(hero_proj, 0) - proj_shown, round(hero_now, 0) - now_shown
+    def beyond(over: float) -> list[dict]:
+        return [{"key": "oversubscribed", "label": "Beyond sellout", "value": -over}] if over > 0 else []
     waterfall = {
-        "target": round(hero_target, 0), "projection": round(hero_proj, 0),
+        "target": round(hero_target, 0), "projection": proj_shown,
         "steps": [
             {"key": "organic_traffic", "label": "Organic traffic", "value": round(wf_traffic * scale, 0)},
             {"key": "organic_conversion", "label": "Organic conversion", "value": round(wf_conv * scale, 0)},
@@ -3477,11 +3568,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             {"key": "paid_efficiency", "label": "Paid efficiency", "value": round(wf_paid_eff * scale, 0)},
         ],
     }
-    # force exact reconciliation (rounding residual goes to the largest step)
-    resid = round(hero_proj - hero_target, 0) - sum(s["value"] for s in waterfall["steps"])
+    # force exact reconciliation (rounding residual goes to the largest step),
+    # measured against the rounded pair the card prints
+    resid = (round(hero_proj, 0) - round(hero_target, 0)) - sum(s["value"] for s in waterfall["steps"])
     if waterfall["steps"]:
         biggest = max(waterfall["steps"], key=lambda s: abs(s["value"]))
         biggest["value"] += resid
+    waterfall["steps"] += beyond(over_close)
     if bench:
         # The same four contributors, measured to date and left unscaled: this
         # is the Today horizon (§2), where the question is why the launch is
@@ -3498,9 +3591,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # the gap the bars have to span is the one the card prints, so the
         # residual is measured against the rounded pair rather than the raw
         # difference - rounding each end separately can move it by a unit
-        actual_today, target_today = round(hero_now, 0), round(hero_exp, 0)
-        resid_today = (actual_today - target_today) - sum(s["value"] for s in today_steps)
+        actual_today, target_today = now_shown, round(hero_exp, 0)
+        resid_today = (round(hero_now, 0) - target_today) - sum(s["value"] for s in today_steps)
         max(today_steps, key=lambda s: abs(s["value"]))["value"] += resid_today
+        today_steps += beyond(over_today)
         waterfall["benchmark"] = round(hero_bm, 0)
         waterfall["stretch"] = round(hero_target - hero_bm, 0)
         waterfall["today"] = {
@@ -3534,10 +3628,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         close_bm = steps_bm(((hero_proj - hero_bm) / tot_bm) if tot_bm else 0.0)
         resid_bm = round(hero_proj, 0) - round(hero_bm, 0) - sum(s["value"] for s in close_bm)
         max(close_bm, key=lambda s: abs(s["value"]))["value"] += resid_bm
-        waterfall["stepsBm"] = close_bm
+        waterfall["stepsBm"] = close_bm + beyond(over_close)
         today_bm = steps_bm(1.0)
         bm_today = round(hero_bm_today, 0)
-        max(today_bm, key=lambda s: abs(s["value"]))["value"] += (actual_today - bm_today) - sum(s["value"] for s in today_bm)
+        max(today_bm, key=lambda s: abs(s["value"]))["value"] += (round(hero_now, 0) - bm_today) - sum(s["value"] for s in today_bm)
+        today_bm += beyond(over_today)
         waterfall["today"]["stepsBm"] = today_bm
         assert abs(sum(s["value"] for s in today_bm) - (actual_today - bm_today)) < 0.5, (
             f"{release['id']}: today waterfall steps do not reconcile to actual - benchmark")
@@ -3623,7 +3718,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "geo": None,  # country dim not in any feed yet (docs §12)
         "waterfall": waterfall,
         "benchmarks": {
-            "chargeDropOff": 1 - b["eligible_entry_to_order"],
+            "chargeDropOff": round(1 - entry_rate(release), 4),
             "cannibalisation": b["cannibalisation"],
             "targetBuffer": b["target_buffer"],
             **email_refs(email_bench),
