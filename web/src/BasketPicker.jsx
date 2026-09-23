@@ -483,7 +483,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                     )}
                     <div className="btn-row" style={{ marginTop: 14 }}>
                       <button className="btn primary" disabled={members.length < MIN_MEMBERS} onClick={use}
-                        title={members.length < MIN_MEMBERS ? `Tick at least ${MIN_MEMBERS} launches.` : "Uses these launches as the benchmark basket for this release."}>Use this basket</button>
+                        title={members.length < MIN_MEMBERS ? `Tick at least ${MIN_MEMBERS} launch${MIN_MEMBERS === 1 ? "" : "es"}.` : "Uses these launches as the benchmark basket for this release."}>Use this basket</button>
                       <button className="btn secondary" disabled={!seed || untouched} onClick={() => seed && setTicked(new Set(seed.members))}>Back to suggested</button>
                     </div>
                   </div>

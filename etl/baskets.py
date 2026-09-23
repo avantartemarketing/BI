@@ -72,7 +72,8 @@ PEOPLE_PATH = APP / "release_people.csv"
 GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"]
 
 READY_WINDOW_DAYS = 365   # "last 12 months" for the all_12m basket
-MIN_MEMBERS = 3           # below this a basket cannot be used at all (§3.2)
+MIN_MEMBERS = 1           # an empty basket cannot be used; one launch can (§3.2) - its own
+                          # figures are the medians, and THIN_MEMBERS below flags it
 # Below this a basket is usable but flagged as thin. It was ten, which the
 # rule now never reaches: the measure is how far the median moves when one
 # member is dropped, and over the draw panel that is 2.8% at eight, 3.3% at

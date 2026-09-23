@@ -22,7 +22,7 @@ export const SIMILAR_N = 8;
 export const OWN_MAX = 3.0;
 export const NEAR = 4.0;
 export const RECENT_MONTHS = 18;
-export const MIN_MEMBERS = 3;
+export const MIN_MEMBERS = 1;   // one launch is a basket (its own figures are the medians); THIN_MEMBERS flags it
 export const THIN_MEMBERS = 6;
 export const SCALE_MISMATCH_FACTOR = 4.0;
 
