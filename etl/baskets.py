@@ -278,6 +278,50 @@ def _num_or_none(value: object) -> float | None:
     return None if math.isnan(v) or math.isinf(v) else v
 
 
+PAID_COST_MIN_UNITS = 5     # a launch's cost per paid unit is a reading from this many paid units
+PAID_COST_MIN_MEMBERS = 3   # and a basket's median needs this many members with one
+
+
+def attach_paid_costs(panel: pd.DataFrame, spend: pd.DataFrame | None, codes: dict) -> pd.DataFrame:
+    """Two columns on the panel, per launch: `paid_spend_eur`, Meta's spend under
+    the launch's campaign code inside its window (the campaign names are
+    "code · objective"; the window is the same one the live page sums spend
+    over), and `cost_per_paid_unit`, that over the paid units the funnel
+    attributed to the launch. A reading needs some spend and at least
+    PAID_COST_MIN_UNITS paid units; otherwise NaN, and so is a launch whose
+    code has no spend on file. `codes` maps release name to campaign code
+    (the orders feed's, docs 2.4). The basket's median of the column is the
+    price a paid unit is planned at (basket_profile, cost_per_purchase)."""
+    out = panel.copy()
+    out["paid_spend_eur"] = float("nan")
+    out["cost_per_paid_unit"] = float("nan")
+    if spend is None or not len(spend) or not codes or not len(out):
+        return out
+    if not {"campaign_name", "spend_date", "spend"} <= set(spend.columns):
+        return out
+    sp = spend[["campaign_name", "spend_date", "spend"]].copy()
+    sp["code"] = sp["campaign_name"].astype(str).str.split(" · ").str[0].str.strip()
+    sp["spend_date"] = pd.to_datetime(sp["spend_date"], errors="coerce")
+    sp["spend"] = pd.to_numeric(sp["spend"], errors="coerce").fillna(0.0)
+    by_code = {c: g for c, g in sp.groupby("code")}
+    starts = pd.to_datetime(out.get("window_start"), errors="coerce")
+    ends = pd.to_datetime(out.get("window_end"), errors="coerce")
+    units = pd.to_numeric(out.get("units_paid"), errors="coerce")
+    spends, costs = [], []
+    for name, s0, s1, u in zip(out["release_name"], starts, ends, units):
+        g = by_code.get(codes.get(str(name)) or "")
+        if g is None or pd.isna(s0) or pd.isna(s1):
+            spends.append(float("nan")); costs.append(float("nan"))
+            continue
+        total = float(g.loc[(g["spend_date"] >= s0) & (g["spend_date"] <= s1), "spend"].sum())
+        spends.append(total)
+        ok = total > 0 and not pd.isna(u) and float(u) >= PAID_COST_MIN_UNITS
+        costs.append(total / float(u) if ok else float("nan"))
+    out["paid_spend_eur"] = spends
+    out["cost_per_paid_unit"] = costs
+    return out
+
+
 def _median(rows: pd.DataFrame, col: str, positive: bool = False) -> float:
     """Median of one column over the basket, 0.0 when nothing qualifies.
 
@@ -329,6 +373,8 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
     # member without one is skipped, and n_priced says how many had one
     priced = pd.to_numeric(rows.get("unit_price_eur"), errors="coerce") if "unit_price_eur" in rows.columns else pd.Series(dtype=float)
     priced = priced[priced > 0]
+    costed = pd.to_numeric(rows.get("cost_per_paid_unit"), errors="coerce") if "cost_per_paid_unit" in rows.columns else pd.Series(dtype=float)
+    n_costed = int((costed > 0).sum())
     return {
         "n": len(used),
         "members": used,
@@ -354,6 +400,11 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
         if "products_known" in rows.columns else 0.0,
         "units_by_group": {g: _num(share_units[g] * units) for g in GROUPS},
         "sessions_by_group": {g: _num(share_sessions[g] * sessions) for g in GROUPS},
+        # what a paid unit cost the basket's launches (attach_paid_costs): the
+        # median over the members with a reading, once PAID_COST_MIN_MEMBERS
+        # have one; 0 says the panel constant stands in (build.cost_per_purchase_for)
+        "cost_per_purchase": _median(rows, "cost_per_paid_unit", positive=True) if n_costed >= PAID_COST_MIN_MEMBERS else 0.0,
+        "n_costed": n_costed,
     }
 
 
@@ -478,6 +529,8 @@ def candidate_rows(panel: pd.DataFrame) -> list[dict]:
             "entries": _num(r.get("tot_draw_entries_eligible_units")),
             "units_per_buyer": _num(r.get("units_per_buyer")),
             "private_room_share": _num(r.get("private_room_share")),
+            # what a paid unit cost this launch, or null (attach_paid_costs)
+            "cost_per_paid_unit": _num_or_none(r.get("cost_per_paid_unit")),
             # the edition's unit price in euros and its size, from Airtable
             # via the panel (etl/pricing.py); 0 where Airtable has no match
             "price": _num(r.get("unit_price_eur")),

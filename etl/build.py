@@ -752,17 +752,31 @@ def artist_posts_benchmarks(ap: pd.DataFrame, as_of: date) -> dict:
 
 # ---------------------------------------------------------------- target model (docs §3)
 
-def cost_per_purchase_for(release: dict, b: dict = BENCH) -> float:
+def cost_per_purchase_for(release: dict, b: dict = BENCH, profile: dict | None = None) -> float:
     """What a paid unit costs to buy, the price the paid budget is set at:
-    the release's own figure (cost_per_purchase on the Target setting tab)
-    or the panel's median. A release saved while the figure was still a
-    quartile pick (cpp_pick, retired) is read at that quartile."""
+    the release's own figure (cost_per_purchase on the Target setting tab),
+    else the basket's median cost per paid unit (its launches' Meta spend
+    over their paid units, baskets.attach_paid_costs; on the profile as
+    cost_per_purchase, 0 when too few members have a reading), else the
+    panel's constant. A release saved while the figure was still a quartile
+    pick (cpp_pick, retired) is read at that quartile."""
     own = release.get("cost_per_purchase")
     if own not in (None, "") and float(own) > 0:
         return float(own)
+    basket = float((profile or {}).get("cost_per_purchase") or 0)
+    if basket > 0:
+        return basket
     pick = release.get("cpp_pick")
     table = b["cost_per_purchase"]
     return float(table[pick] if pick in table else table["Median"])
+
+
+def cost_per_purchase_source(release: dict, b: dict = BENCH, profile: dict | None = None) -> str:
+    """Where cost_per_purchase_for's figure came from: release, basket or panel."""
+    own = release.get("cost_per_purchase")
+    if own not in (None, "") and float(own) > 0:
+        return "release"
+    return "basket" if float((profile or {}).get("cost_per_purchase") or 0) > 0 else "panel"
 
 
 def _group_channel_split(group: str) -> dict[str, float]:
@@ -920,7 +934,7 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
                 "session_to_entry": conv,
             }
 
-    cpp = cost_per_purchase_for(release, b)
+    cpp = cost_per_purchase_for(release, b, profile)
     budget = profile["units_by_group"]["paid"] * cpp * k
     launch_value = size * release["unit_price"]
     organic_sessions = sum(pc["sessions"] for pc in per_channel.values())
@@ -933,7 +947,7 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
         "paid": {
             "units": paid_units, "eligible_entries": paid_units / e2o,
             "sessions": sessions["paid"], "session_to_entry": profile["conv"]["paid"],
-            "cost_per_purchase": cpp, "budget": budget,
+            "cost_per_purchase": cpp, "cost_per_purchase_source": cost_per_purchase_source(release, b, profile), "budget": budget,
             "budget_pct_of_launch_value": budget / launch_value if launch_value else None,
             "sense_check_breached": (budget / launch_value) > b["budget_sense_check_max_pct_of_launch_value"] if launch_value else False,
         },
@@ -1533,8 +1547,11 @@ def load_orders_feed() -> dict:
             editions = product_editions()
             for r in df.itertuples(index=False):
                 rel = feed.setdefault(r.release, {"products": {}, "draws": {}, "drafts": 0.0, "unitsPaid": 0.0, "asOf": None,
+                                                  "campaignCode": None,
                                                   "framing": {"prints": 0.0, "frames": 0.0, "notOffered": 0.0,
                                                               "entrantPrints": 0.0, "entrantFrames": 0.0}})
+                if not rel["campaignCode"] and str(getattr(r, "campaign_code", "") or "").strip():
+                    rel["campaignCode"] = str(r.campaign_code).strip()
                 paid, drafts = num(r.units_paid), num(r.units_draft_pending)
                 price = num(r.list_price_eur)
                 # framing (docs 6.4): the paid prints a frame was on offer for
@@ -1578,6 +1595,12 @@ def load_orders_feed() -> dict:
             print(f"warning: ignoring {p2.name}: {e}")
     _ORDERS_FEED = feed
     return feed
+
+
+def orders_campaign_codes() -> dict:
+    """Release name -> campaign code, from the orders feed (the code Meta's
+    campaign names start with), for the panel's cost per paid unit."""
+    return {name: f["campaignCode"] for name, f in load_orders_feed().items() if f.get("campaignCode")}
 
 
 def entry_rate(release: dict) -> float:
@@ -3762,6 +3785,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "convByGroupAll": {g: round(v, 6) for g, v in (profile.get("conv_all") or profile["conv"]).items()},
             "privateRoomShare": round(profile["private_room_share"], 4),
             "paidBudget": round(bm_units["paid"] * targets["paid"]["cost_per_purchase"], 2),
+            # what a paid unit cost the basket's launches, and how many had a
+            # reading (0 members: the panel constant prices the budget)
+            "costPerPurchase": round(float(profile.get("cost_per_purchase") or 0), 2),
+            "costPerPurchaseN": int(profile.get("n_costed") or 0),
             # the people behind the basket's units, at the rate the target
             # holds. The rate is held at the benchmark, so the whole uplift
             # falls on the buyer count and benchmark x K is the target (§4.2)
@@ -4022,7 +4049,9 @@ def main(only: str | None = None):
     # is not there - a checkout without the clustering output - is not a reason
     # to fail the build; those releases get their actuals-only pages until it is.
     try:
-        panel = baskets.load_panel()
+        # each launch's cost per paid unit from the spend feed and the orders
+        # feed's campaign codes, so a basket can price the paid budget
+        panel = baskets.attach_paid_costs(baskets.load_panel(), spend, orders_campaign_codes())
         print(f"baskets: {len(panel)} draw launches in the panel")
     except (OSError, ValueError, KeyError) as e:
         panel = None

@@ -241,7 +241,7 @@ units[g]     = profile["units_by_group"][g]    * K       # sums to edition_size 
 sessions[g]  = profile["sessions_by_group"][g] * K
 entries[g]   = units[g] / e2o                            # e2o = eligible_entry_to_order (0.8)
 entries      = edition_size / e2o                        # every unit asked for as an entry
-paid_budget  = profile["units_by_group"]["paid"] * cost_per_purchase * K   # the release's figure, else the panel median
+paid_budget  = profile["units_by_group"]["paid"] * cost_per_purchase * K   # the release's figure, else the basket's median cost per paid unit, else the panel constant
 ```
 
 `compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
@@ -481,7 +481,7 @@ carry `null` and fall back to a −10% band on `statusPct`.
   and pre-order rate), `legacy_economics: null` to clear the release-level figures a release
   still carries, `marketing_lead` and the three dates (typed fallbacks, read after the feeds),
   `benchmark_basket: {kind: "ready"|"bespoke"|"saved", id?: string, members?: string[]}`,
-  `channels_off` (§4.3), `cost_per_purchase` (€ per paid unit; empty means the panel median)
+  `channels_off` (§4.3), `cost_per_purchase` (€ per paid unit; empty means the basket's median cost per paid unit, or the panel constant when fewer than three of its launches have spend on file)
   and `artist_posting_tier` (Low / Medium / High). A release is set up only once a product
   has an edition and a price and the dates resolve. Validation: `kind` in the three values; `id` must
   resolve; `members` must be known release names, at least 1 (a single launch is a basket:
