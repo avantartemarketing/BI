@@ -1176,8 +1176,21 @@ nothing extra is needed to secure sell-out, whatever the current ROI.
 - Daily direction: cum-ROI < 0.9 → Decrease; 0.9–1.3 → Maintain; > 1.3 → Increase.
 - Daily spend change capped at **±30%**; changes ≤ 10% are ignored (0%).
 - Downside protection: forecast ROI < 1.1 for **3 consecutive days → forced Decrease**.
-- Spend-per-unit is expected to deteriorate 5% / 7% / 10% per day across the first/second/final
-  third of the window (feeds the forecast when no fresh actuals).
+- Cost per entry is not flat: it rises with the **daily spend level** and with **time**. The
+  build prices every future pound on `cpe = cpe_now × (spend / spend_now)^eps × (1 + drift)^days`,
+  and both terms are fitted from the campaign's own days once it has `cpe_fit_min_days` (8) with
+  spend and an entry, by the regression the panel priors come from (`log cpe = a + eps × log
+  spend + drift × day`), then shrunk to the panel's priors by precision (`campaign_cost_terms` in
+  `etl/build.py`; published as `budget.elasticity`, `budget.driftPerDay` and `budget.costTerms`).
+  The priors are `cpe_spend_elasticity` 0.38 ± 0.19 and `cpe_daily_drift_by_third` 2.5% a day
+  ± 3.5 (the between-campaign spread), from the 2026-09-23 fit on 29 campaigns and 433
+  campaign-days (`etl/analysis/cpe_elasticity.py`: elasticity 0.35 to 0.45 across day filters, drift
+  2.6 to 4.0% a day, 1.4% on the 2026 campaigns alone). A campaign that ramps spend and ages at
+  the same time cannot separate the two from its own days - Warhol's 17 days from £1k to £30k a
+  day give 0.42 ± 0.53 and −3.5% ± 10 - so for most campaigns the priors carry the drift and the
+  campaign's own days move the elasticity only when they are tight. The workbook's 5 / 7 / 10% a
+  day by third was the cost rise along its own ramping spend path, which the elasticity already
+  prices; it is kept in `cpe_daily_drift_by_third_workbook` and not applied on top.
 
 This maps 1:1 onto the design's Paid module contract:
 `roiDeclineModel = { start: today's actual ROI, dailyFactor }` (dailyFactor ≈ 1/(1+tier drift));

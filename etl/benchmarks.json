@@ -163,16 +163,16 @@
   "ignore_change_below": 0.1,
   "forced_decrease_after_days_below_target": 3,
   "cpe_daily_drift_by_third": [
-   0.005,
-   0.005,
-   0.005
+   0.025,
+   0.025,
+   0.025
   ],
   "cpe_daily_drift_by_third_workbook": [
    0.05,
    0.07,
    0.1
   ],
-  "cpe_daily_drift_note": "Pure time drift in cost per entry, per day, by third of the window. The workbook's 5/7/10% a day (kept in cpe_daily_drift_by_third_workbook) is the cost rise along its own spend path, which ramps 6-10% a day - at spend elasticity 0.38 that ramp alone raises CPE 3.5-5% a day, so applying the tiers on top of the elasticity counted the same effect twice and drove ROI at close under 1 on every campaign. Net of spend, within-campaign drift measures 0.36% a day +/- 1.12 (13 campaigns, 170 campaign-days, etl/analysis/cpe_elasticity.py); 0.5% a day used.",
+  "cpe_daily_drift_note": "Prior for the pure time drift in cost per entry, per day, net of spend, the same in every third of the window. Fixed-effect fit on 29 campaigns / 433 campaign-days (etl/analysis/cpe_elasticity.py, 2026-09-23): 2.6% a day +/- 0.5 on calendar days, 2.6-4.0% across day filters and weightings, 1.4% +/- 0.7 on the 2026 campaigns alone, 3.8% before 2026; per-campaign fits spread with a between-campaign sd of 3.4 points a day (cpe_daily_drift_sd). The 2026-09-07 fit on 13 campaigns / 170 days read 0.36% +/- 1.12 and set 0.5%; the wider panel says that was low. The workbook's 5/7/10% a day (kept in cpe_daily_drift_by_third_workbook) is the cost rise along its own ramping spend path, which the elasticity already prices, so it is not applied on top. A campaign with cpe_fit_min_days of history gets its own drift fitted and shrunk to this prior by precision; for most campaigns the prior dominates, because a campaign that ramps spend and ages at the same time cannot tell the two apart from its own days.",
   "_source": "The cumulative-ROI bands (0.9 / 1.3), the 30% cap and the 10% dead band are the TL template's 'ROI / SPEND RULES - DO NOT CHANGE' block (LAUNCH PERFORMANCE OVERVIEW, TL_Template rows 416-428), applied to LE for want of a fuller LE block. The LE template's own SPEND RULES (rows 284-299) are: decrease/increase steps of 10%, max increase per day 2.0, target ROI AA 1.1, a 30% decrease on a zero-conversion day, a 100% decrease (pause) after 3 days of zero conversion, and 'Expected Increase in Spend (%)' 5/7/10 by third - a typed constant with no derivation, read by row 206 as the daily growth of the forecast cost per unit. Neither tab derives its drift from data; the TL tab labels its 2.16%/day '(assumed)'.",
   "zero_conversion_decrease": 0.3,
   "zero_conversion_days_to_pause": 3,
@@ -188,12 +188,15 @@
     0.07,
     0.1
    ]
-  }
+  },
+  "cpe_daily_drift_sd": 0.035
  },
  "frame_conversion": 0.35,
  "frame_profit_per_unit": 94,
  "budget_sense_check_max_pct_of_launch_value": 0.06,
  "cpe_spend_elasticity": 0.38,
- "cpe_spend_elasticity_note": "Within-campaign elasticity of cost per entry to daily spend, fitted on 13 campaigns / 170 campaign-days with a campaign fixed effect and a day-drift term: 0.384 +/- 0.062 (etl/analysis/cpe_elasticity.py, 2026-09-07). Doubling daily spend raises CPE ~31%, 10x ~2.4x. Set to 0 to price entries flat as before.",
- "cpe_growth_factor_note": "Superseded: the forward cost per entry now follows spend_rules.cpe_daily_drift_by_third compounded day by day (the path the ROI chart draws), for the budget and the ROI floor alike. Kept for reference only."
+ "cpe_spend_elasticity_note": "Prior for the within-campaign elasticity of cost per entry to daily spend. Fixed-effect fit with a calendar-day drift term on 29 campaigns / 433 campaign-days (etl/analysis/cpe_elasticity.py, 2026-09-23): 0.35-0.45 depending on the day filter (0.377 +/- 0.038 on every day with an entry); the 2026-09-07 fit on 13 campaigns gave 0.384 +/- 0.062. Per-campaign fits spread with a between-campaign sd of 0.19 (cpe_spend_elasticity_sd), which is the prior's width. A campaign with cpe_fit_min_days of history gets its own elasticity fitted and shrunk to this prior by precision (etl/build.py campaign_cost_terms); the prior alone prices a campaign without history. Doubling daily spend raises CPE ~30% at 0.38. Set to 0 to price entries flat.",
+ "cpe_growth_factor_note": "Superseded: the forward cost per entry now follows spend_rules.cpe_daily_drift_by_third compounded day by day (the path the ROI chart draws), for the budget and the ROI floor alike. Kept for reference only.",
+ "cpe_spend_elasticity_sd": 0.19,
+ "cpe_fit_min_days": 8
 }
