@@ -482,10 +482,10 @@ The picture is the card's own rows, drawn on a canvas in the browser that is sho
 model the card builds out of what it has just rendered, so only the drawing is written
 twice and never the figures. It carries the release, the campaign day and the rate along
 the top, which the card on the page does not need, so it stands on its own in a channel.
-It is drawn wide, 1720 CSS pixels at two times that, because Slack fits an inline picture
-to a fixed height and lets the width follow: a wider shape is a bigger picture, and the
-extra width is the bars'. A browser that cannot give us a PNG posts the figures alone
-rather than nothing.
+Slack fits an inline picture to a fixed height, so how big it reads is its type divided
+by its height: the frame keeps the card's proportions, 1180 CSS pixels by the rows'
+height at two times that, and the type and the bars are set large inside it. A browser
+that cannot give us a PNG posts the figures alone rather than nothing.
 
 Slack attaches a file only to a channel it knows by ID, and `chat.postMessage` is the one
 call that hands an ID back, so the **first** post to a channel is the figures and then the
