@@ -2263,7 +2263,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         print(f"{release['id']}: no benchmark basket - the page shows actuals only")
         rat = at[at["simple_release_name"] == name]
         return build_actuals(actuals_rec(release, rat), rat, spend, emails, content, as_of,
-                             email_bench, artist_posts, full_through=full_through, seen=seen)
+                             email_bench, artist_posts, full_through=full_through, seen=seen,
+                             untracked_norms=untracked_norms)
     # every targeted release is benchmarked; the flag survives as the guard on
     # the benchmark block below
     bench = True
