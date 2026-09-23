@@ -16,7 +16,7 @@
  "asOf": "2026-09-23",
  "complete": false,
  "completeThrough": "2026-09-22",
- "asOfFraction": 0.5243,
+ "asOfFraction": 0.5424,
  "targetingMode": "benchmark",
  "edition": {
   "target": 2440.0,
@@ -36,17 +36,17 @@
  "currency": "units",
  "hero": {
   "now": 819.0,
-  "expectedToday": 1515.0,
-  "delta": -696.0,
-  "projected": 1491.0,
+  "expectedToday": 1517.0,
+  "delta": -697.0,
+  "projected": 1475.0,
   "target": 2440.0,
   "oversubscribedUnits": 0,
-  "statusPct": -0.4594,
+  "statusPct": -0.4598,
   "ok": false,
   "benchmark": 806.0,
-  "benchmarkToday": 500.0,
+  "benchmarkToday": 501.0,
   "stretch": 1634.0,
-  "benchmarkPct": 0.6376
+  "benchmarkPct": 0.6362
  },
  "targets": {
   "edition_size": 2440,
@@ -218,8 +218,8 @@
    "key": "aa_email",
    "name": "AA Email",
    "now": 201.8,
-   "exp": 677.8,
-   "proj": 314.4,
+   "exp": 677.9,
+   "proj": 314.3,
    "target": 912.9,
    "parts": [
     {
@@ -390,56 +390,56 @@
      "date": "2026-09-23",
      "actual": 201.81,
      "plan": 680.47,
-     "proj": 203.09,
+     "proj": 203.04,
      "bm": 224.64
     },
     {
      "date": "2026-09-24",
      "actual": null,
      "plan": 683.44,
-     "proj": 204.51,
+     "proj": 204.46,
      "bm": 225.62
     },
     {
      "date": "2026-09-25",
      "actual": null,
      "plan": 688.92,
-     "proj": 207.13,
+     "proj": 207.08,
      "bm": 227.43
     },
     {
      "date": "2026-09-26",
      "actual": null,
      "plan": 698.94,
-     "proj": 211.93,
+     "proj": 211.88,
      "bm": 230.74
     },
     {
      "date": "2026-09-27",
      "actual": null,
      "plan": 698.94,
-     "proj": 211.93,
+     "proj": 211.88,
      "bm": 230.74
     },
     {
      "date": "2026-09-28",
      "actual": null,
      "plan": 703.39,
-     "proj": 214.06,
+     "proj": 214.01,
      "bm": 232.21
     },
     {
      "date": "2026-09-29",
      "actual": null,
      "plan": 760.78,
-     "proj": 241.53,
+     "proj": 241.47,
      "bm": 251.15
     },
     {
      "date": "2026-09-30",
      "actual": null,
      "plan": 912.93,
-     "proj": 314.35,
+     "proj": 314.28,
      "bm": 301.38
     }
    ],
@@ -450,8 +450,8 @@
    "key": "aa_social",
    "name": "AA Meta",
    "now": 2.9,
-   "exp": 43.8,
-   "proj": 24.1,
+   "exp": 43.9,
+   "proj": 24.0,
    "target": 79.9,
    "parts": [
     {
@@ -618,61 +618,61 @@
      "date": "2026-09-23",
      "actual": 2.85,
      "plan": 46.23,
-     "proj": 4.3,
+     "proj": 4.24,
      "bm": 15.26
     },
     {
      "date": "2026-09-24",
      "actual": null,
      "plan": 48.45,
-     "proj": 5.61,
+     "proj": 5.55,
      "bm": 15.99
     },
     {
      "date": "2026-09-25",
      "actual": null,
      "plan": 49.19,
-     "proj": 6.04,
+     "proj": 5.98,
      "bm": 16.24
     },
     {
      "date": "2026-09-26",
      "actual": null,
      "plan": 49.25,
-     "proj": 6.08,
+     "proj": 6.02,
      "bm": 16.26
     },
     {
      "date": "2026-09-27",
      "actual": null,
      "plan": 50.54,
-     "proj": 6.84,
+     "proj": 6.78,
      "bm": 16.69
     },
     {
      "date": "2026-09-28",
      "actual": null,
      "plan": 52.18,
-     "proj": 7.81,
+     "proj": 7.74,
      "bm": 17.23
     },
     {
      "date": "2026-09-29",
      "actual": null,
      "plan": 60.22,
-     "proj": 12.54,
+     "proj": 12.47,
      "bm": 19.88
     },
     {
      "date": "2026-09-30",
      "actual": null,
      "plan": 79.86,
-     "proj": 24.11,
+     "proj": 24.02,
      "bm": 26.36
     }
    ],
    "bm": 26.4,
-   "bmExp": 14.4
+   "bmExp": 14.5
   },
   {
    "key": "referral_artist",
@@ -901,8 +901,8 @@
    "key": "search_direct_other",
    "name": "Direct etc.",
    "now": 243.2,
-   "exp": 442.1,
-   "proj": 532.0,
+   "exp": 442.7,
+   "proj": 531.3,
    "target": 823.0,
    "parts": [
     {
@@ -1085,68 +1085,68 @@
      "date": "2026-09-23",
      "actual": 243.18,
      "plan": 458.01,
-     "proj": 255.25,
+     "proj": 254.78,
      "bm": 151.2
     },
     {
      "date": "2026-09-24",
      "actual": null,
      "plan": 493.72,
-     "proj": 282.33,
+     "proj": 281.83,
      "bm": 162.99
     },
     {
      "date": "2026-09-25",
      "actual": null,
      "plan": 516.3,
-     "proj": 299.45,
+     "proj": 298.94,
      "bm": 170.44
     },
     {
      "date": "2026-09-26",
      "actual": null,
      "plan": 518.39,
-     "proj": 301.04,
+     "proj": 300.52,
      "bm": 171.13
     },
     {
      "date": "2026-09-27",
      "actual": null,
      "plan": 526.62,
-     "proj": 307.28,
+     "proj": 306.76,
      "bm": 173.85
     },
     {
      "date": "2026-09-28",
      "actual": null,
      "plan": 553.46,
-     "proj": 327.63,
+     "proj": 327.09,
      "bm": 182.71
     },
     {
      "date": "2026-09-29",
      "actual": null,
      "plan": 640.09,
-     "proj": 393.32,
+     "proj": 392.72,
      "bm": 211.31
     },
     {
      "date": "2026-09-30",
      "actual": null,
      "plan": 822.98,
-     "proj": 532.0,
+     "proj": 531.26,
      "bm": 271.68
     }
    ],
    "bm": 271.7,
-   "bmExp": 145.9
+   "bmExp": 146.1
   },
   {
    "key": "paid",
    "name": "Paid",
    "now": 371.4,
-   "exp": 350.1,
-   "proj": 619.1,
+   "exp": 350.5,
+   "proj": 603.3,
    "target": 620.0,
    "parts": [
     {
@@ -1313,116 +1313,116 @@
      "date": "2026-09-23",
      "actual": 371.36,
      "plan": 360.82,
-     "proj": 387.42,
+     "proj": 386.6,
      "bm": 119.11
     },
     {
      "date": "2026-09-24",
      "actual": null,
      "plan": 390.23,
-     "proj": 421.01,
+     "proj": 419.3,
      "bm": 128.82
     },
     {
      "date": "2026-09-25",
      "actual": null,
      "plan": 418.3,
-     "proj": 454.43,
+     "proj": 451.4,
      "bm": 138.09
     },
     {
      "date": "2026-09-26",
      "actual": null,
      "plan": 442.97,
-     "proj": 487.68,
+     "proj": 482.92,
      "bm": 146.23
     },
     {
      "date": "2026-09-27",
      "actual": null,
      "plan": 506.21,
-     "proj": 520.77,
+     "proj": 513.86,
      "bm": 167.11
     },
     {
      "date": "2026-09-28",
      "actual": null,
      "plan": 547.75,
-     "proj": 553.7,
+     "proj": 544.23,
      "bm": 180.82
     },
     {
      "date": "2026-09-29",
      "actual": null,
      "plan": 581.99,
-     "proj": 586.46,
+     "proj": 574.05,
      "bm": 192.13
     },
     {
      "date": "2026-09-30",
      "actual": null,
      "plan": 619.97,
-     "proj": 619.06,
+     "proj": 603.33,
      "bm": 204.67
     }
    ],
    "bm": 204.7,
-   "bmExp": 115.6
+   "bmExp": 115.7
   }
  ],
  "funnelByGroup": {
   "aa_email": {
    "sessions_actual": 10592.0,
-   "sessions_expected": 28736.4,
+   "sessions_expected": 28738.4,
    "conv_actual": 0.019053058912386706,
-   "conv_expected": 0.023586636140244,
+   "conv_expected": 0.023588557113283892,
    "contrib_traffic": -428.0,
    "contrib_conversion": -48.0,
    "bps_actual": 0.014632251125525736,
-   "bps_expected": 0.023586636140244,
-   "contrib_buyers": -94.8,
+   "bps_expected": 0.023588557113283892,
+   "contrib_buyers": -94.9,
    "contrib_per_buyer": 46.8,
-   "sessions_benchmark": 9486.5,
+   "sessions_benchmark": 9487.2,
    "conv_benchmark": 0.02800708232097165,
-   "conv_benchmark_today": 0.023586636140244,
+   "conv_benchmark_today": 0.023588557113283892,
    "contrib_traffic_bm": 26.1,
    "contrib_conversion_bm": -48.0,
-   "contrib_buyers_bm": -94.8,
+   "contrib_buyers_bm": -94.9,
    "contrib_per_buyer_bm": 46.8
   },
   "aa_social": {
    "sessions_actual": 679.0,
-   "sessions_expected": 1893.9,
+   "sessions_expected": 1894.2,
    "conv_actual": 0.004197349042709867,
-   "conv_expected": 0.023111408520831715,
+   "conv_expected": 0.023157551217748932,
    "contrib_traffic": -28.1,
-   "contrib_conversion": -12.8,
+   "contrib_conversion": -12.9,
    "bps_actual": 0.0032234543301856823,
-   "bps_expected": 0.023111408520831715,
+   "bps_expected": 0.023157551217748932,
    "contrib_buyers": -13.5,
    "contrib_per_buyer": 0.7,
-   "sessions_benchmark": 625.2,
+   "sessions_benchmark": 625.3,
    "conv_benchmark": 0.035013740217097036,
-   "conv_benchmark_today": 0.02311140852083171,
+   "conv_benchmark_today": 0.023157551217748932,
    "contrib_traffic_bm": 1.2,
-   "contrib_conversion_bm": -12.8,
+   "contrib_conversion_bm": -12.9,
    "contrib_buyers_bm": -13.5,
    "contrib_per_buyer_bm": 0.7
   },
   "referral_artist": {
    "sessions_actual": 0.0,
-   "sessions_expected": 93.8,
+   "sessions_expected": 93.9,
    "conv_actual": 0.0,
-   "conv_expected": 0.017462066752486773,
+   "conv_expected": 0.01746523293661674,
    "contrib_traffic": -1.6,
    "contrib_conversion": -0.0,
    "bps_actual": 0.0,
-   "bps_expected": 0.017462066752486773,
+   "bps_expected": 0.01746523293661674,
    "contrib_buyers": -0.0,
    "contrib_per_buyer": 0.0,
    "sessions_benchmark": 31.0,
    "conv_benchmark": 0.03403842179604586,
-   "conv_benchmark_today": 0.017462066752486773,
+   "conv_benchmark_today": 0.01746523293661674,
    "contrib_traffic_bm": -0.5,
    "contrib_conversion_bm": -0.0,
    "contrib_buyers_bm": -0.0,
@@ -1430,40 +1430,40 @@
   },
   "search_direct_other": {
    "sessions_actual": 10765.0,
-   "sessions_expected": 12039.9,
+   "sessions_expected": 12045.3,
    "conv_actual": 0.02258987459359034,
-   "conv_expected": 0.03671908238772116,
-   "contrib_traffic": -46.8,
-   "contrib_conversion": -152.1,
+   "conv_expected": 0.03675304976013648,
+   "contrib_traffic": -47.1,
+   "contrib_conversion": -152.5,
    "bps_actual": 0.017348433102920686,
-   "bps_expected": 0.03671908238772116,
-   "contrib_buyers": -208.5,
+   "bps_expected": 0.03675304976013648,
+   "contrib_buyers": -208.9,
    "contrib_per_buyer": 56.4,
-   "sessions_benchmark": 3974.6,
+   "sessions_benchmark": 3976.4,
    "conv_benchmark": 0.048836354102328436,
-   "conv_benchmark_today": 0.036719082387721154,
-   "contrib_traffic_bm": 249.3,
-   "contrib_conversion_bm": -152.1,
-   "contrib_buyers_bm": -208.5,
+   "conv_benchmark_today": 0.03675304976013647,
+   "contrib_traffic_bm": 249.5,
+   "contrib_conversion_bm": -152.5,
+   "contrib_buyers_bm": -208.9,
    "contrib_per_buyer_bm": 56.4
   },
   "paid": {
    "sessions_actual": 175309.0,
-   "sessions_expected": 31525.6,
+   "sessions_expected": 31625.9,
    "conv_actual": 0.0021183168006206187,
-   "conv_expected": 0.0111043038412624,
-   "contrib_traffic": 1596.6,
-   "contrib_conversion": -1575.3,
+   "conv_expected": 0.011081999202140206,
+   "contrib_traffic": 1592.3,
+   "contrib_conversion": -1571.4,
    "bps_actual": 0.0016268119220452463,
-   "bps_expected": 0.0111043038412624,
-   "contrib_buyers": -1661.5,
+   "bps_expected": 0.011081999202140206,
+   "contrib_buyers": -1657.6,
    "contrib_per_buyer": 86.2,
-   "sessions_benchmark": 10407.3,
+   "sessions_benchmark": 10440.4,
    "conv_benchmark": 0.010113390540947844,
-   "conv_benchmark_today": 0.011104303841262401,
-   "contrib_traffic_bm": 1831.1,
-   "contrib_conversion_bm": -1575.3,
-   "contrib_buyers_bm": -1661.5,
+   "conv_benchmark_today": 0.011081999202140206,
+   "contrib_traffic_bm": 1827.1,
+   "contrib_conversion_bm": -1571.4,
+   "contrib_buyers_bm": -1657.6,
    "contrib_per_buyer_bm": 86.2
   }
  },
@@ -1611,40 +1611,40 @@
   "cumCpe": 610.08,
   "roiDeclineModel": {
    "start": 2.182,
-   "dailyFactor": 0.995
+   "dailyFactor": 0.9817
   },
   "roiPath": [
    {
     "date": "2026-09-23",
-    "roi": 2.171
+    "roi": 2.142
    },
    {
     "date": "2026-09-24",
-    "roi": 2.16
+    "roi": 2.103
    },
    {
     "date": "2026-09-25",
-    "roi": 2.149
+    "roi": 2.064
    },
    {
     "date": "2026-09-26",
-    "roi": 2.138
+    "roi": 2.027
    },
    {
     "date": "2026-09-27",
-    "roi": 2.128
+    "roi": 1.99
    },
    {
     "date": "2026-09-28",
-    "roi": 2.117
+    "roi": 1.953
    },
    {
     "date": "2026-09-29",
-    "roi": 2.107
+    "roi": 1.918
    },
    {
     "date": "2026-09-30",
-    "roi": 2.096
+    "roi": 1.883
    }
   ],
   "roiTarget": 1.1,
@@ -1652,29 +1652,41 @@
    "current": 20940.47,
    "recommended": 27222.61,
    "cap": "pacing",
-   "finalDayRoi": 1.897,
+   "finalDayRoi": 1.702,
    "floor": 1.0,
-   "budgetToSellOut": 1900346.25,
-   "supplySpend": 237543.28,
-   "roiSpend": 146853.35,
-   "cpeAtRecommended": 709.72,
+   "budgetToSellOut": 2130220.4,
+   "supplySpend": 266277.55,
+   "roiSpend": 108732.17,
+   "cpeAtRecommended": 791.08,
    "cpeNow": 617.25,
-   "cpeAtClose": 642.38,
-   "driftToClose": 1.041,
+   "cpeAtClose": 715.25,
+   "driftToClose": 1.159,
    "paced": false,
-   "elasticity": 0.38,
+   "elasticity": 0.3841,
+   "driftPerDay": 0.01859,
+   "costTerms": {
+    "elasticity": 0.3841,
+    "driftPerDay": 0.01859,
+    "elasticityPrior": 0.38,
+    "driftPrior": 0.025000000000000005,
+    "elasticityOwn": 0.4156,
+    "elasticitySe": 0.5275,
+    "driftOwn": -0.03468,
+    "driftSe": 0.10086,
+    "fitDays": 17
+   },
    "band": "increase",
    "forcedDecrease": false,
    "zeroConversionDays": 0,
    "cumRoi": 2.207,
-   "entriesNeeded": 1435.6,
-   "selloutGap": 1196.3,
-   "organicFuture": 424.5,
+   "entriesNeeded": 1436.7,
+   "selloutGap": 1197.2,
+   "organicFuture": 423.6,
    "daysLeft": 8
   },
   "unitTarget": 619.9735810518841,
-  "entriesProjected": 720.3,
-  "unitProjected": 576.3,
+  "entriesProjected": 700.7,
+  "unitProjected": 560.5,
   "spendBudget": 109735.32,
   "spendProjectedTotal": 367965.42,
   "profitPerUnitAA": 841.61,
@@ -1696,8 +1708,8 @@
   "clickRate": null,
   "sequence": [],
   "feedThrough": "2026-08-14",
-  "deliveredTarget": 575119.1,
-  "deliveredBenchmark": 189859.1
+  "deliveredTarget": 575159.1,
+  "deliveredBenchmark": 189873.1
  },
  "social": {
   "posts": 0,
@@ -1715,8 +1727,8 @@
   "preorderConversion": 0.95,
   "inHandUnits": 259.0,
   "soldPredicted": 209.5,
-  "futureEntriesPredicted": 672.2,
-  "pct": 0.2481,
+  "futureEntriesPredicted": 655.7,
+  "pct": 0.2454,
   "benchmarkUnits": 805.5,
   "drafts": 20.0,
   "unitsPaidOrders": 461.0,
@@ -1747,11 +1759,11 @@
     "shown": 27.6,
     "room": 850.2459016393443,
     "oversubscribed": 0.0,
-    "futurePredicted": 105.2,
+    "futurePredicted": 102.6,
     "pct": 0.1774,
-    "pctClose": 0.2825,
-    "expectedToday": 248.4,
-    "benchmarkToday": 82.0,
+    "pctClose": 0.2799,
+    "expectedToday": 248.6,
+    "benchmarkToday": 82.1,
     "benchmarkClose": 132.0
    },
    {
@@ -1779,11 +1791,11 @@
     "shown": 38.0,
     "room": 948.2459016393443,
     "oversubscribed": 0.0,
-    "futurePredicted": 116.4,
+    "futurePredicted": 113.5,
     "pct": 0.0897,
-    "pctClose": 0.2061,
-    "expectedToday": 248.4,
-    "benchmarkToday": 82.0,
+    "pctClose": 0.2032,
+    "expectedToday": 248.6,
+    "benchmarkToday": 82.1,
     "benchmarkClose": 132.0
    },
    {
@@ -1811,11 +1823,11 @@
     "shown": 24.4,
     "room": 935.2459016393443,
     "oversubscribed": 0.0,
-    "futurePredicted": 116.4,
+    "futurePredicted": 113.6,
     "pct": 0.0891,
-    "pctClose": 0.2055,
-    "expectedToday": 248.4,
-    "benchmarkToday": 82.0,
+    "pctClose": 0.2027,
+    "expectedToday": 248.6,
+    "benchmarkToday": 82.1,
     "benchmarkClose": 132.0
    },
    {
@@ -1843,11 +1855,11 @@
     "shown": 35.1,
     "room": 898.2459016393443,
     "oversubscribed": 0.0,
-    "futurePredicted": 110.3,
+    "futurePredicted": 107.6,
     "pct": 0.1369,
-    "pctClose": 0.2472,
-    "expectedToday": 248.4,
-    "benchmarkToday": 82.0,
+    "pctClose": 0.2445,
+    "expectedToday": 248.6,
+    "benchmarkToday": 82.1,
     "benchmarkClose": 132.0
    },
    {
@@ -1875,10 +1887,10 @@
     "shown": 16.8,
     "room": 23.52459016393442,
     "oversubscribed": 0.0,
-    "futurePredicted": 0.9,
+    "futurePredicted": 0.8,
     "pct": 0.9328,
-    "pctClose": 0.9413,
-    "expectedToday": 24.8,
+    "pctClose": 0.9411,
+    "expectedToday": 24.9,
     "benchmarkToday": 8.2,
     "benchmarkClose": 13.2
    },
@@ -1907,11 +1919,11 @@
     "shown": 40.5,
     "room": 875.2459016393443,
     "oversubscribed": 0.0,
-    "futurePredicted": 106.7,
+    "futurePredicted": 104.1,
     "pct": 0.1653,
-    "pctClose": 0.272,
-    "expectedToday": 248.4,
-    "benchmarkToday": 82.0,
+    "pctClose": 0.2693,
+    "expectedToday": 248.6,
+    "benchmarkToday": 82.1,
     "benchmarkClose": 132.0
    },
    {
@@ -1939,11 +1951,11 @@
     "shown": 27.1,
     "room": 937.2459016393443,
     "oversubscribed": 0.0,
-    "futurePredicted": 116.3,
+    "futurePredicted": 113.5,
     "pct": 0.0899,
-    "pctClose": 0.2062,
-    "expectedToday": 248.4,
-    "benchmarkToday": 82.0,
+    "pctClose": 0.2033,
+    "expectedToday": 248.6,
+    "benchmarkToday": 82.1,
     "benchmarkClose": 132.0
    }
   ],
@@ -4316,35 +4328,35 @@
  "geo": null,
  "waterfall": {
   "target": 2440.0,
-  "projection": 1491.0,
+  "projection": 1475.0,
   "steps": [
    {
     "key": "organic_traffic",
     "label": "Organic traffic",
-    "value": -688.0
+    "value": -699.0
    },
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": -290.0
+    "value": -295.0
    },
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": 1066.0
+    "value": 1083.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -1037.0
+    "value": -1054.0
    }
   ],
   "benchmark": 806.0,
   "stretch": 1634.0,
   "today": {
-   "benchmark": 500.0,
-   "stretch": 1015.0,
-   "target": 1515.0,
+   "benchmark": 501.0,
+   "stretch": 1016.0,
+   "target": 1517.0,
    "actual": 819.0,
    "steps": [
     {
@@ -4360,7 +4372,7 @@
     {
      "key": "paid_spend",
      "label": "Paid spend",
-     "value": 783.0
+     "value": 781.0
     },
     {
      "key": "paid_efficiency",
@@ -4382,7 +4394,7 @@
     {
      "key": "paid_spend",
      "label": "Paid spend",
-     "value": 1017.0
+     "value": 1016.0
     },
     {
      "key": "paid_efficiency",
@@ -4395,22 +4407,22 @@
    {
     "key": "organic_traffic",
     "label": "Organic traffic",
-    "value": 594.0
+    "value": 580.0
    },
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": -458.0
+    "value": -448.0
    },
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": 2185.0
+    "value": 2136.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -1636.0
+    "value": -1599.0
    }
   ]
  },

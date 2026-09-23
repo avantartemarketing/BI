@@ -1418,7 +1418,7 @@
   "cumCpe": 153.53,
   "roiDeclineModel": {
    "start": 2.026,
-   "dailyFactor": 0.995
+   "dailyFactor": 1.0
   },
   "roiPath": [],
   "roiTarget": 1.1,
@@ -1436,7 +1436,19 @@
    "cpeAtClose": 199.85,
    "driftToClose": 1.0,
    "paced": false,
-   "elasticity": 0.38,
+   "elasticity": 0.5742,
+   "driftPerDay": 0.0,
+   "costTerms": {
+    "elasticity": 0.5742,
+    "driftPerDay": 0.0,
+    "elasticityPrior": 0.38,
+    "driftPrior": 0.025000000000000005,
+    "elasticityOwn": 0.8496,
+    "elasticitySe": 0.2262,
+    "driftOwn": -0.03703,
+    "driftSe": 0.03508,
+    "fitDays": 21
+   },
    "band": "increase",
    "forcedDecrease": false,
    "zeroConversionDays": 0,
