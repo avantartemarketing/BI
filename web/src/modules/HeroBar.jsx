@@ -17,7 +17,7 @@
 import React from "react";
 import {
   Card, TrackBar, HATCH, GROUP_DOTS, HorizonBadge, C, fmt, fmtSigned, useTip, useWidth,
-  labelPx, axisLabelLeft, BADGE_WORDS,
+  labelPx, axisLabelLeft, BADGE_WORDS, dayLabel,
 } from "../ui.jsx";
 
 /* The legend's outline swatch: the same dotted silhouette the bar carries. */
@@ -85,7 +85,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
   ];
   const targetTip = {
     // at close the target IS the sellout, so it is named as that
-    head: close ? (partial ? `Target · ${Math.round((100 * sellout) / editionTotal)}% of the ${fmt(editionTotal)} edition` : "Sellout") : `Target by day ${day}`,
+    head: close ? (partial ? `Target · ${Math.round((100 * sellout) / editionTotal)}% of the ${fmt(editionTotal)} edition` : "Sellout") : `Target by ${dayLabel(snap, day)}`,
     rows: refRows,
   };
   const stretchTip = bm === null ? null : {

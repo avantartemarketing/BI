@@ -598,3 +598,27 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const fmtDay = (d, weekday = false) =>
   `${weekday ? WEEKDAYS[d.getUTCDay()] + " " : ""}${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+
+/* The calendar day a day of the window is. The ETL counts days from the
+ * announce (snap.windowStart): day 0 is the announce day, snap.day is the
+ * as-of day, snap.of is the close, and the daily arrays are indexed the same
+ * way, so day N is windowStart + N days. Null on a snapshot without a window. */
+export const windowDate = (snap, day) => {
+  if (!snap || !snap.windowStart || !(day >= 0)) return null;
+  const t = Date.parse(snap.windowStart + "T00:00:00Z");
+  return Number.isFinite(t) ? new Date(t + day * 86400000) : null;
+};
+
+/* A day of the window named by its date, with the day number after it: a day
+ * number alone only reads against the campaign clock, a date reads on its
+ * own. "Mon 21 Sep · day 18"; "day 18" when the window has no start. */
+export const dayLabel = (snap, day, weekday = false) => {
+  const d = windowDate(snap, day);
+  return d ? `${fmtDay(d, weekday)} · day ${day}` : `day ${day}`;
+};
+
+/* The date alone for an axis end, falling back to the day number. */
+export const dayAxisLabel = (snap, day) => {
+  const d = windowDate(snap, day);
+  return d ? fmtDay(d) : `day ${day}`;
+};

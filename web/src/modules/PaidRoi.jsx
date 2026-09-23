@@ -20,7 +20,7 @@
  * roiArtist), and stays put when the artist carries none of the spend or has
  * no profit per unit recorded. The ? popup shows the working. */
 import React, { useState } from "react";
-import { Card, QBadge, GROUP_DOTS, C, fmt } from "../ui.jsx";
+import { Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel } from "../ui.jsx";
 
 const W = 480, H = 200, BAND_TOP = 132;
 const DAY_MS = 86400000;
@@ -150,7 +150,7 @@ export default function PaidRoi({ snap }) {
       x: Math.min(Math.max(x(p.d) - bw / 2, 0), W - bw).toFixed(1),
       y: (H - h).toFixed(1),
       h: h.toFixed(1),
-      tip: "Day " + p.d + " spend £" + fmt(p.spend),
+      tip: dayLabel(snap, p.d) + ": spend £" + fmt(p.spend),
     };
   });
 
@@ -287,7 +287,7 @@ export default function PaidRoi({ snap }) {
                     <div style={{ position: "absolute", left: leftPct(hover), top: topPct(markV), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: roiV !== null ? C.blue : C.blueLight, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
                   )}
                   <div className="chart-tip" style={{ left: leftPct(hover), top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
-                    <div className="t-head">Day {hover}</div>
+                    <div className="t-head">{dayLabel(snap, hover, true)}</div>
                     {p && <div className="t-row"><span>{view.label} ROI (3d)</span><span className="v">{roiV !== null ? fmt(roiV, 2) : "–"}</span></div>}
                     {roiV === null && projV !== undefined && <div className="t-row"><span>ROI projected</span><span className="v">{fmt(projV, 2)}</span></div>}
                     {p && <div className="t-row"><span>Spend</span><span className="v">£{fmt(p.spend, 2)}</span></div>}
@@ -362,13 +362,13 @@ export default function PaidRoi({ snap }) {
             {roiPts.length > 0 && <div style={{ ...axisLabel, top: "100%" }}>{lo.toFixed(2)}</div>}
 
             {/* x axis */}
-            <div style={{ ...xLabel, left: 0 }}>day 1</div>
+            <div style={{ ...xLabel, left: 0 }} title="announced">{dayAxisLabel(snap, 0)}</div>
             {showTodayLabel && (
               <div style={{ ...xLabel, left: leftPct(today), transform: "translateX(-50%)", color: C.ink }}>
                 today
               </div>
             )}
-            <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }}>day {of}</div>
+            <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }} title={`close · day ${of}`}>{dayAxisLabel(snap, of)}</div>
 
             {/* spend band caption */}
             <div
