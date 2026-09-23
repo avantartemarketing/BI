@@ -488,17 +488,22 @@ allocate to. The logic is `shared/drawAudit.mjs`, tested by `tests/draw_audit.mj
 
 ## Posting sell-through to Slack
 
-The sell-through card has a **Post to Slack** button. It sends the card as a Slack message
-to the channel set for that release: the release as a header, the card's headline with the
-campaign day and the framing take-up under it, a table of the products (name, units of the
-edition, share sold) and the release's totals (paid, drafts, draw winners, at close the
-units still to come) in a line under it. The message is composed on the server
-(`server/slack.js`) from the same snapshot the card reads, by the card's own rules, at the
-horizon the page is on; the browser sends only `{horizon}`. It replaced a picture of the
-card, which Slack fits to a fixed height whatever the file's size, and then a table with
-bars drawn in text, which wrapped on a phone: figures only, three columns, and the name
-column may wrap so the figures never do. The table is Slack's `table` block, which needs a
-current Slack workspace; the notification text is the headline alone.
+The sell-through card has a **Post to Slack** button. It sends the card as a Block Kit
+message to the channel set for that release: the artist as the header; the works' shared
+title and the campaign day on one line ("Brillo Box Collectable, day 20 of 27"); Slack's
+`data_table`, one row per work with its units today (at close, the projection), its target,
+how far along the target it is, its edition and its sell-through, and a bold **Total** row
+adding them up; then, in small type, the day the figures run to, the totals (paid, awaiting
+payment, expected from the draw, at close the units still to come) and the framing take-up
+in plain sentences. The figures in the table are numbers with their words, so a column
+sorts as numbers on a tap; the header row is plain text, as Slack requires. A work's target
+is the one typed for it on the Target setting tab when targets are set per product, else
+the release's target split by edition share, the rule the card's references follow. The
+message is composed on the server (`server/slack.js`) from the same snapshot the card
+reads, by the card's own rules, at the horizon the page is on. It replaced a picture of
+the card, which Slack fits to a fixed height whatever the file's size, then a table with
+bars drawn in text, which wrapped on a phone, then a plain `table` block; the data table
+was the one that read on a phone. The notification text is the headline alone.
 
 The framing line is the Framing card's own figure (docs 6.4): frames per print on the prints
 sold that a frame was on offer for, with the count behind it and the plan's rate beside it.

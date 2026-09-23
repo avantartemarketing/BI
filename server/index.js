@@ -718,18 +718,16 @@ app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
     res.status(400).json({ error: String(e.message || e) });
   }
 }));
-/* The card to Slack, as a message: the release, the headline, the framing
- * take-up and a table of the products with bars drawn in text, composed
- * from the snapshot on disk by the card's own rules (server/slack.js). The
- * body says which horizon the page is on ({horizon: "today" | "close"});
- * {dryRun: true} returns the message instead of posting it. */
+/* The card to Slack, as a Block Kit message composed from the snapshot on
+ * disk by the card's own rules (server/slack.js). The body says which
+ * horizon the page is on ({horizon: "today" | "close"}); {dryRun: true}
+ * returns the message instead of posting it. */
 app.post("/api/releases/:id/slack", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   const snap = readSnapshot(id);
   if (!snap) return res.status(404).json({ error: "unknown release" });
   const st = slack.stateFor(id);
   if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
-  // the message, by the card's rules, at the horizon the page is on
   const horizon = req.body && req.body.horizon === "close" ? "close" : "today";
   const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon });
   if (req.body && req.body.dryRun) return res.json({ channel: st.channel, text, blocks });

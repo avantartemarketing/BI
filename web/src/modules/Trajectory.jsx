@@ -21,7 +21,7 @@
  * as levels for the second question only took the first one away, so the card
  * no longer follows the page toggle and carries no horizon badge. */
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, fmtSigned, dayLabel, dayAxisLabel, labelPx, dayElapsed } from "../ui.jsx";
+import { Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, labelPx, dayElapsed } from "../ui.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
 const LABEL_TODAY_PX = 38; // rendered width of "today" at 12px
@@ -367,8 +367,9 @@ export default function Trajectory({ snap }) {
       ...it, y0: box.y0 + k * (H + 2), x0: box.side === "right" ? box.x0 : box.x1 - it.w, knock: box.knock,
     }));
     const item = (key, text, color, weight) => ({ key, text, color, weight, w: textWidth(text, font(weight)) });
-    // the gap between the two figures as printed, which is how the hero reads it
-    const nowItem = item("now", `${fmt(nowVal)} ${fmtSigned(Math.round(nowVal) - Math.round(planToday))}`, C.ink, 600);
+    // the reading is the secured units alone: the gap to the target is on the
+    // hero card and in the hover, and beside the number it read as a second figure
+    const nowItem = item("now", fmt(nowVal), C.ink, 600);
     const tItem = item("target", `target ${fmt(planToday)}`, C.ink, 500);
     const bItem = hasBm && has(bmToday) ? item("bm", `benchmark ${fmt(bmToday)}`, C.muted, 500) : null;
     const ayT = py(planToday), ayB = bItem ? py(bmToday) : null;

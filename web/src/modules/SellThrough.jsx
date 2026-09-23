@@ -38,10 +38,10 @@
  * a product for in the paid key's, and the editions are checked where they
  * are typed, on the Target setting tab.
  *
- * "Post to Slack" sends the card as a Slack message: a table of the rows,
- * figures only so it reads on a phone, composed on the server from the same
- * snapshot by the same rules (server/slack.js), at the horizon this page is
- * on.
+ * "Post to Slack" sends the card as a Block Kit message composed on the
+ * server from the same snapshot by the same rules (server/slack.js), at the
+ * horizon this page is on: Slack's data table, one row per work with its
+ * units, target, edition and sell-through, and a bold Total row.
  *
  * No target and no benchmark on this card, by decision: both are on the hero
  * and the channels, and here they only crowded the reading. Each row is the
@@ -276,7 +276,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
     : post.state === "done"
       ? `Posted to #${post.channel}${post.warning ? `, but ${post.warning}` : ""}`
       : channel
-        ? `Post this card, as a message with a table of the products, to #${channel}`
+        ? `Post this card, as a message with a table of the works, to #${channel}`
         : "Set a Slack channel for this release on the Target setting tab, then this posts the card there";
   const slackButton = snap && snap.id ? (
     <button
