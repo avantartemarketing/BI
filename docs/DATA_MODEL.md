@@ -1186,13 +1186,20 @@ is the unpaid wins, tracked but not counted),
 the rest; and for the release `allocation.{entrants, flexibleEntrants, surplusEntries,
 uncapped, unpaidWinners, flexibleUnits}`.
 
-**The card's colours are one ramp, and the picture posted to Slack is the same drawing.**
+**The card's colours are one ramp, and the message posted to Slack is the same rows.**
 Paid, drafts, the draw winners the entries imply and (at close) the units still to come are
 four tints of the page's blue, deepest to palest as the units get less certain; nothing on
 the card is hatched, and demand past a product's edition is the winners' own tint carrying on
-where the paler room behind the bar stops. `Post to Slack` draws those rows onto a canvas in
-the browser (`web/src/modules/sellThroughImage.mjs`) and posts the picture, and nothing else,
-to the release's channel (`server/slack.js`); the drawing is written twice, the figures once.
+where the paler room behind the bar stops. `Post to Slack` sends those rows as a Slack message
+composed on the server from the same snapshot (`server/slack.js`): the release as a header;
+the headline with the campaign day, and under it the framing take-up (`framing.rate`, the
+Framing card's frames per print, §6.4, with the count behind it and the plan beside it; the
+entrants' rate before a sale; the plan alone on a snapshot without the block; nothing where
+no print has a frame on offer); a `table` block of the products, three columns - the name,
+its units of the edition, its share - with no bar, because a bar drawn in text wrapped on a
+phone; and the release's totals (paid, drafts, draw winners, at close the units still to
+come) as a context line. The figures are computed once, on the server, at the horizon the
+page is on.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
 pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven
@@ -1266,7 +1273,8 @@ The snapshot's `framing` block (`framing_block`): `prints`, `frames`, `rate`; `e
 prints on offer: `name`, `prints`, `frames`, `rate`, sorted by rate, the card's hover);
 `notOffered` (`units` paid with no framing option, and the `works`); `asOf`. Null when
 nothing on the release has been offered a frame, and the card stays off the page. A feed
-pulled before the four columns existed reads as no framing.
+pulled before the four columns existed reads as no framing. The sell-through update posted
+to Slack carries `rate` as its framing line (§6.3), so the channel reads the card's figure.
 
 ---
 

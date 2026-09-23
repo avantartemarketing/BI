@@ -483,41 +483,38 @@ allocate to. The logic is `shared/drawAudit.mjs`, tested by `tests/draw_audit.mj
 
 ## Posting sell-through to Slack
 
-The sell-through card has a **Post to Slack** button. It sends the card itself, as a
-picture and nothing else, to the channel set for that release. No text goes with it, by
-decision: the picture carries the figures.
+The sell-through card has a **Post to Slack** button. It sends the card as a Slack message
+to the channel set for that release: the release as a header, the card's headline with the
+campaign day and the framing take-up under it, a table of the products (name, units of the
+edition, share sold) and the release's totals (paid, drafts, draw winners, at close the
+units still to come) in a line under it. The message is composed on the server
+(`server/slack.js`) from the same snapshot the card reads, by the card's own rules, at the
+horizon the page is on; the browser sends only `{horizon}`. It replaced a picture of the
+card, which Slack fits to a fixed height whatever the file's size, and then a table with
+bars drawn in text, which wrapped on a phone: figures only, three columns, and the name
+column may wrap so the figures never do. The table is Slack's `table` block, which needs a
+current Slack workspace; the notification text is the headline alone.
 
-The picture is the card's own rows, drawn on a canvas in the browser that is showing them
-(`web/src/modules/sellThroughImage.mjs`) - the one place with the page's typeface - from a
-model the card builds out of what it has just rendered, so only the drawing is written
-twice and never the figures. It carries the release and the campaign day along the top,
-which the card on the page does not need, so it stands on its own in a channel. Slack
-fits an inline picture to a fixed height, so how big it reads is its type divided by its
-height: the frame keeps the card's proportions, 1180 CSS pixels by the rows' height, with
-the type and the bars set large inside it, and the file is drawn at 3.2 times that, 3776
-pixels wide. A browser that cannot draw the picture posts nothing and the button says so.
+The framing line is the Framing card's own figure (docs 6.4): frames per print on the prints
+sold that a frame was on offer for, with the count behind it and the plan's rate beside it.
+Before a print is sold it is the rate the entrants' pre-authorised prints ask for; a snapshot
+from before the framing block says the plan's rate, marked "(plan)". A release where no print
+has a frame on offer gets no line.
 
-Slack attaches a file only to a channel it knows by ID. A channel typed as an ID on the
-Target setting tab is its own; one typed by name is looked up once (`conversations.list`,
-which is why the app needs `channels:read`) and the ID kept beside the name, so every post
-after the first is the upload alone. A public channel nobody invited the bot to refuses
-the picture at first because the bot is not a member; the bot then joins the channel
-(`channels:join`) and sends it again. A private channel cannot be joined that way, so the
-button's hover asks for an invite. The button itself only ever reads Post to Slack,
-Posting, Done or Failed, so the card's head never reflows; what happened is on its hover.
+The button itself only ever reads Post to Slack, Posting, Done or Failed, so the card's head
+never reflows; what happened is on its hover.
 
 Setup, once:
 
 1. Create a Slack app (api.slack.com/apps → Create New App → From scratch) in the
-   workspace, add the bot scopes `files:write`, `channels:read` and `channels:join` under
-   OAuth & Permissions (`groups:read` as well if the channel is private), install it to
-   the workspace, and copy the **Bot User OAuth Token** (`xoxb-…`) into `SLACK_BOT_TOKEN`
-   on Render. The token lives only in the environment. Without `channels:read` the
-   channel has to be typed as its ID; without `channels:join` the picture only reaches
-   channels the bot has been invited to. An app installed before a scope existed needs
+   workspace, add the bot scopes `chat:write` and `chat:write.public` under OAuth &
+   Permissions, install it to the workspace, and copy the **Bot User OAuth Token**
+   (`xoxb-…`) into `SLACK_BOT_TOKEN` on Render. The token lives only in the environment.
+   `chat:write.public` lets the bot post in a public channel nobody invited it to; without
+   it, invite the bot to each channel. An app installed before a scope was added needs
    the scope added and the app reinstalled.
-2. For a private channel, invite the app to it (`/invite @<app name>`); public channels
-   need nothing, the bot joins one by itself the first time it posts there.
+2. For a private channel, invite the app to it (`/invite @<app name>`); a public channel
+   needs nothing.
 3. On the release's **Target setting** tab, type the channel name (without the `#`), or
    its ID, in **Slack channel** and press its own **Save**. It is stored in
    `data/slack.json` (`SLACK_STATE_PATH` on the disk), separately from the targets, so a
@@ -527,8 +524,8 @@ Setup, once:
    resets on the next deploy, so mount the disk or unset the variable.
 
 Slack's refusals come back on the button's hover in words (a channel name Slack cannot
-find, the bot not invited, the token revoked, a missing scope). The address bar follows
-the sidebar (`?release=<id>`), so a release can be linked to directly.
+find, the bot not invited to a private channel, the token revoked, a missing scope). The
+address bar follows the sidebar (`?release=<id>`), so a release can be linked to directly.
 
 ## Deploying on Render
 
@@ -570,8 +567,8 @@ whichever has the most room. Products come from the event feed's draws
 order rate can also be set per release; a product nobody has named takes its Shopify title
 and, where the title matches an Airtable record, its edition. Until the feed has run once after
 a deploy the card shows the release as one row and says so. **Post to Slack** in the card's
-header sends the card as a picture, with these figures under it, to the release's channel
-(see "Posting sell-through to Slack").
+head sends the card as a message, these rows as a table of figures with the framing take-up
+above them, to the release's channel (see "Posting sell-through to Slack").
 
 **Framing** (docs §6.4) is frames per print on the prints a frame was on offer for: the
 headline is the prints sold that went out framed, against the plan's frame conversion, and
