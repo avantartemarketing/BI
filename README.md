@@ -141,8 +141,10 @@ on every refresh and needs nothing.
 ## Refreshing data
 
 **Live (production):** on boot and every hour the server rewrites
-`sources/across_time.csv` and `data/spend_daily.csv` and reruns the ETL in place - no
-redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
+`sources/across_time.csv` and `data/spend_daily.csv`, pulls Airtable's Pipeline table to
+`data/release_pricing.csv` when `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID` and `AIRTABLE_TABLE`
+are set (the launches ahead of the funnel appear in the sidebar as Upcoming, docs
+`DATA_MODEL.md` 1.6), and reruns the ETL in place - no redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
 (signed-in session required): both **start** the refresh and return at once with
 `running: true`; poll `GET /api/refresh/status` for the outcome, or hover the header's
 source-freshness line, which shows the same thing. A refresh is a multi-year BigQuery pull

@@ -378,7 +378,15 @@ export default function TargetSetting({ snap, onSaved }) {
     <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
 
-        {creating && (
+        {creating && snap.upcoming && (
+          <div style={{ padding: "12px 16px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a", fontSize: 12.5, lineHeight: 1.5 }}>
+            <b>Upcoming launch.</b> The dates, edition size and unit price below come from Airtable
+            {snap.airtable && snap.airtable.currency_native && snap.airtable.currency_native !== "GBP" ? ` (the price converted from ${snap.airtable.currency_native})` : ""}
+            {dv.dates_note ? `; ${dv.dates_note}` : ""}. Check them, add the profit split and save: the page then carries the plan,
+            and the funnel's actuals attach to it once the report picks the launch up.
+          </div>
+        )}
+        {creating && !snap.upcoming && (
           <div style={{ padding: "12px 16px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a", fontSize: 12.5, lineHeight: 1.5 }}>
             <b>No targets yet.</b> The page currently shows actuals only.
             {dv.announce_date

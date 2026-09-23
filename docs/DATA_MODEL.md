@@ -170,6 +170,40 @@ and `data/app/release_windows.csv` say where every release's dates came from.
 
 ---
 
+### 1.6 Upcoming launches (from Airtable)
+
+The funnel report only carries a release once it has traffic under a release name, and a
+campaign can be spending on Meta for days before that. Airtable's Pipeline table knows the
+launch earlier: its works, its edition and price, its private-room, announce and launch
+dates. So the build lists **upcoming launches** from Airtable (`etl/build.py
+upcoming_releases`) beside the releases the funnel mentions:
+
+- a draw (`launch_type` Draw, or blank - a project Airtable has not typed yet) closing after
+  the build date and within 120 days (60 for a blank type), not at the pitching stage;
+- whose Airtable records no release on file already matched - the same matcher the panel's
+  pricing uses (`etl/pricing.py match`), run over every discovered and configured release,
+  so the artist's earlier launch does not stand for the new one and a launch the funnel
+  already carries under its own title is not listed twice;
+- named the way the funnel will name it, `Artist · Title · YYYY Qn` with the title `Multiple`
+  when the launch has several works, so the page keeps its id when the funnel catches up.
+
+Its page (`build_upcoming`, status `upcoming`, `upcoming: true`) has the dates, the edition,
+the price in sterling at the panel's fixed rates, the works and the project's Airtable status,
+and no actuals; the sidebar lists it under Upcoming with the days until it opens. The
+announce date is Airtable's, else assumed 24 days before the close and said so; the campaign
+code is guessed from the feeds' codes and Meta's campaign names, never from a code a release
+on file already carries. `inputs.json` `discovered` carries the edition, the price and the
+Airtable record ids as the defaults the Set up targets tab starts from, and a save keeps the
+ids on the inputs (`airtable_release`, `airtable_ids`).
+
+**When the funnel catches up.** A configured release the funnel does not mention, whose
+inputs carry Airtable ids, is checked on every build against the funnel's releases matched
+to those ids (`adopt_funnel_names`). One match and the input takes the funnel's release
+name - written back to the saved inputs with `adopted_from` - so the actuals attach to the
+targets that were set, under the page's existing id, rather than opening a second, untargeted
+page beside them. The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when
+`AIRTABLE_TOKEN` is set; without it the checked-in file stands.
+
 ## 2. Source feeds
 
 All funnel data originates in BigQuery `avantarte-data-production.AA_company_tables`:
@@ -1272,6 +1306,7 @@ actuals-only page omits it.
 | Field | What it holds |
 |---|---|
 | `targetingMode` | always `"benchmark"` since 2026-09-23 (§3); kept so older readers of the field still resolve |
+| `upcoming`, `airtable` | `true` on a launch listed from Airtable before the funnel carries it (§1.6), with `airtable` holding its release code, record ids, works, edition, price and project status |
 | `untracked` | `{entries: {share, count, total}, units: {...}, normal: {recentMonths, entries: {median, p90, n}, units: {...}}, high: [...]}` - the untracked share of the window against what is normal (§1.3); the Target setting tab warns when `high` names a metric |
 | `benchmark.basket` | `{id, kind, name, n, thin, suggestedId}`; `kind` is `ready`, `bespoke` or `saved` |
 | `benchmark.units`, `unitsP25`, `unitsP75` | the basket's median units and its middle half |

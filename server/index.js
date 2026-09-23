@@ -199,7 +199,12 @@ function defaultsFor(id, disc) {
     id, release_name: disc.release_name, campaign_code: disc.campaign_code || "",
     campaign_name: disc.campaign_name || null, marketing_lead: null, budget_file: null,
     private_room_open: disc.private_room_open, announce_date: disc.announce_date, launch_end: disc.launch_end,
-    edition_size: null, edition_total: null, unit_price: null, artist_profit: null, aa_group_profit: null,
+    // an upcoming launch (docs 1.6) brings Airtable's edition and price, in
+    // sterling, and the record ids the build uses to attach the funnel's
+    // actuals to these targets once it carries the release
+    edition_size: disc.edition_size ?? null, edition_total: null, unit_price: disc.unit_price ?? null,
+    artist_profit: null, aa_group_profit: null,
+    airtable_release: disc.airtable_release || null, airtable_ids: disc.airtable_ids || null,
     preorder_conversion_rate: null,
     prefer_recent: true,
     artist_profit_share: 0.5, framing_available: true, frame_conversion: null, frame_profit_per_unit: null,
@@ -319,7 +324,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       else next[f] = body[f];
     }
   }
-  for (const f of ["marketing_lead", "budget_file", "campaign_name", "campaign_code"]) {
+  for (const f of ["marketing_lead", "budget_file", "campaign_name", "campaign_code", "airtable_release", "airtable_ids"]) {
     if (body[f] !== undefined) next[f] = body[f] === null ? null : String(body[f]).slice(0, 200);
   }
   /* The benchmark basket (BENCHMARK_SPEC §6). An unresolvable basket is

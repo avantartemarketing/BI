@@ -365,6 +365,21 @@ async function refresh({ full = false } = {}) {
       console.error("sheets: " + out.emails);
     }
 
+    // Airtable's Pipeline table: the launches ahead of the funnel (docs 1.6)
+    // and every launch's price. A failed pull leaves the last file in place.
+    try {
+      if (process.env.AIRTABLE_TOKEN) {
+        const said = await runPy("pull_airtable.py", 3 * 60 * 1000);
+        out.airtable = said.split("\n").filter(Boolean).slice(0, 1).join("") || "airtable pulled";
+        updated = true;
+      } else {
+        out.airtable = "airtable off (no AIRTABLE_TOKEN) - launches from the checked-in file";
+      }
+    } catch (e) {
+      out.airtable = "airtable failed: " + String((e && e.message) || e).slice(0, 300);
+      console.error("sheets: " + out.airtable);
+    }
+
     try {
       out.notion = await require("./notion").refreshArtistPosts();
       if (!out.notion.startsWith("notion off")) updated = true;
