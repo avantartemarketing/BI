@@ -23,10 +23,13 @@
  * points somewhere the service cannot write (the disk not mounted there), the
  * save lands in data/slack.json instead and the response says so, because
  * that copy does not survive a deploy. Posting needs a Slack app
- * bot token in SLACK_BOT_TOKEN (scopes chat:write and chat:write.public; for
- * a private channel invite the bot first). README "Posting sell-through to
- * Slack" has the setup. The token stays in the environment: nothing here
- * logs it or writes it anywhere. */
+ * bot token in SLACK_BOT_TOKEN (scopes chat:write, chat:write.public,
+ * files:write and channels:join). A public channel needs no invitation:
+ * the figures post to it as they are, and when the picture is refused
+ * because the bot is not a member, the bot joins the channel and tries
+ * again. A private channel cannot be joined that way; invite the bot first.
+ * README "Posting sell-through to Slack" has the setup. The token stays in
+ * the environment: nothing here logs it or writes it anywhere. */
 const fs = require("fs");
 const path = require("path");
 
@@ -257,15 +260,29 @@ function composeSellThrough(snap, { link, today } = {}) {
 
 const HINTS = {
   channel_not_found: (c) => `Slack cannot find #${c} - check the name; for a private channel invite the bot first`,
-  not_in_channel: (c) => `the bot is not in #${c} - invite it to the channel, then post again`,
+  not_in_channel: (c) => `the bot is not in #${c} - a public channel needs the chat:write.public and channels:join scopes; a private one needs the bot invited (/invite it), then post again`,
   is_archived: (c) => `#${c} is archived`,
   invalid_auth: () => "the Slack token is not valid - replace SLACK_BOT_TOKEN",
   token_revoked: () => "the Slack token was revoked - replace SLACK_BOT_TOKEN",
   account_inactive: () => "the Slack app is no longer installed - reinstall it and replace SLACK_BOT_TOKEN",
-  missing_scope: () => "the Slack app needs the chat:write scope (and chat:write.public for channels the bot is not in; files:write to post the card as a picture)",
+  missing_scope: () => "the Slack app needs the chat:write scope (chat:write.public to post to public channels it has not joined, channels:join to join one for the picture, files:write to post the card as a picture)",
   msg_too_long: () => "the update is too long for one Slack message",
   ratelimited: () => "Slack is rate limiting the app - try again in a minute",
 };
+/* conversations.join's own refusals */
+const JOIN_HINTS = {
+  method_not_supported_for_channel_type: (c) => `${c} is a private channel, which the bot cannot join by itself - invite it (/invite the app), then post again`,
+  missing_scope: () => "the Slack app needs the channels:join scope to join a public channel by itself - add it and reinstall the app, or invite the bot to the channel",
+  is_archived: (c) => `${c} is archived`,
+  channel_not_found: (c) => `Slack cannot find the channel ${c}`,
+};
+/* An Error carrying Slack's own code, so a caller can act on one refusal
+ * (not_in_channel) and pass the rest on with their hints. */
+function refusal(code, hint) {
+  const e = new Error(hint);
+  e.code = code;
+  return e;
+}
 
 async function postMessage(channel, text) {
   const token = process.env.SLACK_BOT_TOKEN;
@@ -280,15 +297,39 @@ async function postMessage(channel, text) {
   if (!res.ok || !json.ok) {
     const code = json.error || `HTTP ${res.status}`;
     const hint = HINTS[code];
-    throw new Error(hint ? hint(channel) : `Slack refused the message (${code})`);
+    throw refusal(code, hint ? hint(channel) : `Slack refused the message (${code})`);
   }
   return { ts: json.ts, channel: json.channel };
+}
+
+/* Joins a public channel by id (scope channels:join), so a picture can be
+ * attached to a channel nobody invited the bot to. Slack lets no app join a
+ * private channel this way; the refusal says to invite the bot. */
+async function joinChannel(channelId) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  if (!token) throw new Error("Slack is not connected - set SLACK_BOT_TOKEN to the app's bot token");
+  const res = await fetch(`${SLACK_API_BASE}/conversations.join`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify({ channel: channelId }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.ok) {
+    const code = json.error || `HTTP ${res.status}`;
+    const hint = JOIN_HINTS[code];
+    throw refusal(code, hint ? hint(channelId) : `the bot could not join the channel (${code})`);
+  }
+  return (json.channel && json.channel.id) || channelId;
 }
 
 /* Slack's external upload, in its three steps: ask for a URL, put the bytes
  * there, then tell Slack the file is done and which channel it belongs to.
  * `comment` rides with the file as the message above it, so one post carries
- * both the picture and the figures. Needs the files:write scope. */
+ * both the picture and the figures. Needs the files:write scope. A file can
+ * only be attached to a channel the bot is in, and chat:write.public does not
+ * cover that the way it covers a message, so when the last step is refused
+ * for that reason the bot joins the channel (channels:join) and asks once
+ * more. */
 async function uploadImage({ channelId, png, filename = "card.png", title, comment = null }) {
   const token = process.env.SLACK_BOT_TOKEN;
   if (!token) throw new Error("Slack is not connected - set SLACK_BOT_TOKEN to the app's bot token");
@@ -300,7 +341,7 @@ async function uploadImage({ channelId, png, filename = "card.png", title, comme
     if (!res.ok || !json.ok) {
       const code = json.error || `HTTP ${res.status}`;
       const hint = HINTS[code];
-      throw new Error(hint ? hint(channelId) : `Slack refused the picture (${code})`);
+      throw refusal(code, hint ? hint(channelId) : `Slack refused the picture (${code})`);
     }
     return json;
   };
@@ -321,15 +362,23 @@ async function uploadImage({ channelId, png, filename = "card.png", title, comme
   });
   if (!put.ok) throw new Error(`Slack would not take the picture (HTTP ${put.status})`);
 
-  const done = await call("files.completeUploadExternal", JSON.stringify({
+  const finish = () => call("files.completeUploadExternal", JSON.stringify({
     files: [{ id: ask.file_id, title: title || filename }],
     channel_id: channelId,
     ...(comment ? { initial_comment: comment } : {}),
   }), { "Content-Type": "application/json; charset=utf-8" });
+  let done;
+  try {
+    done = await finish();
+  } catch (e) {
+    if (e.code !== "not_in_channel") throw e;
+    await joinChannel(channelId);   // a public channel nobody invited the bot to
+    done = await finish();
+  }
   return { fileId: ask.file_id, files: done.files };
 }
 
 module.exports = {
   stateFor, setChannel, recordPost, stateWarning, composeSellThrough, shortNames, entrants,
-  postMessage, uploadImage, channelIdFor, rememberChannelId, STATE_PATH,
+  postMessage, uploadImage, joinChannel, channelIdFor, rememberChannelId, STATE_PATH,
 };

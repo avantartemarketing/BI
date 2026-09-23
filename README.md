@@ -481,13 +481,19 @@ The picture is the card's own rows, drawn on a canvas in the browser that is sho
 model the card builds out of what it has just rendered, so only the drawing is written
 twice and never the figures. It carries the release, the campaign day and the rate along
 the top, which the card on the page does not need, so it stands on its own in a channel.
-A browser that cannot give us a PNG posts the figures alone rather than nothing.
+It is composed 500 CSS pixels wide (drawn at two times that), because Slack shows a
+picture inline about 400 pixels wide whatever the file's size: at the page's width it
+arrived at a third of its size, unreadable. A browser that cannot give us a PNG posts the
+figures alone rather than nothing.
 
 Slack attaches a file only to a channel it knows by ID, and `chat.postMessage` is the one
 call that hands an ID back, so the **first** post to a channel is the figures and then the
 picture, and every post after that is one: the picture with the figures as its comment. A
 picture Slack will not take (`files:write` missing, say) never costs the figures - they go
-as text and the button says why in amber.
+as text and the button says why in amber. A public channel nobody invited the bot to takes
+the figures as they are (`chat:write.public`), and when it refuses the picture because the
+bot is not a member, the bot joins the channel (`channels:join`) and sends it again; a
+private channel cannot be joined that way, so the button asks for an invite.
 
 The message is composed on the server from the same snapshot the card is drawn from
 (`server/slack.js`), so what lands in Slack is what the page says at that moment. The
@@ -500,14 +506,15 @@ release's own edition size stands in only when a product has no edition.
 Setup, once:
 
 1. Create a Slack app (api.slack.com/apps → Create New App → From scratch) in the
-   workspace, add the bot scopes `chat:write`, `chat:write.public` and `files:write`
-   under OAuth & Permissions, install it to the workspace, and copy the **Bot User OAuth
-   Token** (`xoxb-…`) into `SLACK_BOT_TOKEN` on Render. The token lives only in the
-   environment. Without `files:write` the figures still post; only the picture does not,
-   and the button says so. An app installed before the picture existed needs the scope
-   added and the app reinstalled.
+   workspace, add the bot scopes `chat:write`, `chat:write.public`, `files:write` and
+   `channels:join` under OAuth & Permissions, install it to the workspace, and copy the
+   **Bot User OAuth Token** (`xoxb-…`) into `SLACK_BOT_TOKEN` on Render. The token lives
+   only in the environment. Without `files:write` the figures still post; only the picture
+   does not, and the button says so. Without `channels:join` the picture only reaches
+   channels the bot has been invited to. An app installed before a scope existed needs
+   the scope added and the app reinstalled.
 2. For a private channel, invite the app to it (`/invite @<app name>`); public channels
-   need nothing.
+   need nothing, the bot joins one by itself the first time it posts a picture there.
 3. On the release's **Target setting** tab, type the channel name (without the `#`) in
    **Slack channel** and press its own **Save**. It is stored in `data/slack.json`
    (`SLACK_STATE_PATH` on the disk), separately from the targets, so a release without

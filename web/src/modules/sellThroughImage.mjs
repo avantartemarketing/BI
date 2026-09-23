@@ -8,7 +8,9 @@
  *
  * It is drawn to stand alone in a channel, which the card on the page does
  * not have to: the release and the campaign day are along the top, the rate
- * and the horizon are named, and the key carries the release's totals.
+ * and the horizon are named, and the key carries the release's totals. And
+ * it is drawn at the width Slack shows a picture inline, about 400 CSS
+ * pixels, not the page's, so the type survives the fit.
  *
  * No library. The card is rectangles and text, which the 2D context draws
  * directly, and a dependency loaded from a CDN would be blocked on a page
@@ -27,17 +29,23 @@ const REF_TRACK = "#f3f6fc";
 const BORDER = "#e5e4df";
 const AMBER = "#8a5f00";
 
-// layout, in CSS pixels; the canvas is drawn at `scale` times this
-const W = 1180;
-const PAD = 36;
-const NAME_W = 300;
-const FIG_W = 168;   // the units column and, at the right edge, the percentage's
-const PCT_W = 60;
-const GAP = 20;
+// Layout, in CSS pixels; the canvas is drawn at `scale` times this. The
+// width is Slack's, not the page's: Slack shows an inline picture about 400
+// CSS pixels wide whatever size the file is, so a card drawn at the page's
+// 1180 arrived at a third of its size with type too small to read. Composed
+// for that box, it arrives at four fifths, and clicking it opens the full
+// two-times file.
+const W = 500;
+const PAD = 22;
+const NAME_W = 132;
+const UNITS_W = 86;   // "1,000 of 1,000"
+const PCT_W = 44;
+const GAP = 12;
 const BAR_X = PAD + NAME_W + GAP;
-const BAR_W = W - PAD - FIG_W - GAP - BAR_X;
-const BAR_H = 26;
-const ROW_H = 46;
+const BAR_W = W - PAD - PCT_W - 8 - UNITS_W - GAP - BAR_X;
+const BAR_H = 16;
+const ROW_H = 34;
+const KEY_LINE = 18;
 
 function roundRect(ctx, x, y, w, h, r) {
   const rad = Math.max(0, Math.min(r, w / 2, h / 2));
@@ -93,18 +101,36 @@ function ellipsis(ctx, text, maxW) {
   return cut + "…";
 }
 
-const height = (model) => {
-  const rows = (model.rows || []).length;
-  return 150 + rows * ROW_H + 30 + (model.note ? 26 : 0) + PAD;
-};
+/* The key's items in lines, measured in the fonts they are drawn in, so a
+ * key with four items and a long label wraps instead of running off. */
+function keyLines(ctx, legend) {
+  const lines = [[]];
+  let x = PAD;
+  for (const item of legend || []) {
+    ctx.font = `400 13px ${FONT}`;
+    let w = 16 + ctx.measureText(String(item.label ?? "")).width + 7;
+    if (item.value !== null && item.value !== undefined) {
+      ctx.font = `600 13px ${FONT}`;
+      w += ctx.measureText(String(item.value)).width;
+    }
+    if (x + w > W - PAD && lines[lines.length - 1].length) { lines.push([]); x = PAD; }
+    lines[lines.length - 1].push({ ...item, w });
+    x += w + 20;
+  }
+  return lines;
+}
 
 /* Draws the card onto a canvas sized for it. `model` is what SellThrough.jsx
  * is showing: see imageModel there. */
 export function drawSellThrough(canvas, model, scale = 2) {
-  const H = height(model);
+  const rows = model.rows || [];
+  // the key is measured first, because the height depends on how it wraps;
+  // sizing the canvas resets the context, so the fonts are set again after
+  const ctx = canvas.getContext("2d");
+  const key = keyLines(ctx, model.legend);
+  const H = PAD + 15 + 11 + 19 + 38 + 16 + rows.length * ROW_H + 8 + 20 + (key.length - 1) * KEY_LINE + (model.note ? 20 : 0) + PAD - 6;
   canvas.width = Math.round(W * scale);
   canvas.height = Math.round(H * scale);
-  const ctx = canvas.getContext("2d");
   ctx.scale(scale, scale);
   ctx.textBaseline = "alphabetic";
 
@@ -115,76 +141,61 @@ export function drawSellThrough(canvas, model, scale = 2) {
   roundRect(ctx, 0.5, 0.5, W - 1, H - 1, 12);
   ctx.stroke();
 
-  let y = PAD + 18;
-  // release and campaign day
-  ctx.font = `600 22px ${FONT}`;
-  ctx.fillStyle = INK;
-  ctx.textAlign = "left";
-  ctx.fillText(ellipsis(ctx, model.releaseName || "", W - PAD * 2 - 260), PAD, y);
+  // the release, and the campaign day at the right
+  let y = PAD + 15;
+  let dayW = 0;
   if (model.dayLine) {
-    ctx.font = `400 14px ${FONT}`;
+    ctx.font = `400 12px ${FONT}`;
     ctx.fillStyle = MUTED;
     ctx.textAlign = "right";
     ctx.fillText(model.dayLine, W - PAD, y);
+    dayW = ctx.measureText(model.dayLine).width + 12;
   }
+  ctx.font = `600 17px ${FONT}`;
+  ctx.fillStyle = INK;
+  ctx.textAlign = "left";
+  ctx.fillText(ellipsis(ctx, model.releaseName || "", W - PAD * 2 - dayW), PAD, y);
 
-  y += 16;
+  y += 11;
   ctx.fillStyle = HAIRLINE;
   ctx.fillRect(PAD, y, W - PAD * 2, 1);
 
-  // the card's own title, the horizon, and the rate it counts at
-  y += 30;
+  // the card's own title, the horizon and the rate it counts at, one line
+  y += 19;
+  ctx.font = `400 12px ${FONT}`;
+  ctx.fillStyle = MUTED;
   ctx.textAlign = "left";
-  ctx.font = `600 16px ${FONT}`;
-  ctx.fillStyle = INK;
-  ctx.fillText(model.title || "Sell-through by product", PAD, y);
-  const titleW = ctx.measureText(model.title || "Sell-through by product").width;
-  if (model.horizon) {
-    ctx.font = `500 12px ${FONT}`;
-    const w = ctx.measureText(model.horizon).width + 16;
-    fill(ctx, PAD + titleW + 10, y - 13, w, 20, 5, "#faf9f5");
-    ctx.strokeStyle = BORDER;
-    roundRect(ctx, PAD + titleW + 10.5, y - 12.5, w - 1, 19, 5);
-    ctx.stroke();
-    ctx.fillStyle = MUTED;
-    ctx.fillText(model.horizon, PAD + titleW + 18, y + 2);
-  }
-  if (model.rateLine) {
-    ctx.font = `400 13px ${FONT}`;
-    ctx.fillStyle = MUTED;
-    ctx.textAlign = "right";
-    ctx.fillText(model.rateLine, W - PAD, y);
-  }
+  ctx.fillText(ellipsis(ctx, [model.title || "Sell-through by product", model.horizon, model.rateLine].filter(Boolean).join(" · "), W - PAD * 2), PAD, y);
 
   // the headline
-  y += 46;
-  ctx.textAlign = "left";
-  ctx.font = `600 40px ${FONT}`;
+  y += 38;
+  ctx.font = `600 34px ${FONT}`;
   ctx.fillStyle = INK;
   ctx.fillText(model.headline.text, PAD, y);
   const headW = ctx.measureText(model.headline.text).width;
   if (model.headline.sub) {
-    ctx.font = `400 15px ${FONT}`;
+    ctx.font = `400 13px ${FONT}`;
     ctx.fillStyle = MUTED;
-    ctx.fillText(model.headline.sub, PAD + headW + 12, y);
+    ctx.fillText(model.headline.sub, PAD + headW + 10, y);
   }
 
   // the products, named by what tells them apart
-  y += 22;
-  const names = shortNames((model.rows || []).map((r) => String(r.name || "")));
-  for (const [i, row] of (model.rows || []).entries()) {
+  y += 16;
+  const names = shortNames(rows.map((r) => String(r.name || "")));
+  for (const [i, row] of rows.entries()) {
     const top = y + (ROW_H - BAR_H) / 2;
+    const base = top + BAR_H / 2 + 5;
     ctx.textAlign = "left";
-    ctx.font = `400 15px ${FONT}`;
+    ctx.font = `400 14px ${FONT}`;
     ctx.fillStyle = INK;
-    ctx.fillText(ellipsis(ctx, names[i], NAME_W), PAD, top + BAR_H / 2 + 5);
+    ctx.fillText(ellipsis(ctx, names[i], NAME_W), PAD, base);
 
     // track, then the room out to the sellout, then the segments
-    fill(ctx, BAR_X, top, BAR_W, BAR_H, 7, TRACK);
+    fill(ctx, BAR_X, top, BAR_W, BAR_H, 5, TRACK);
     const maxV = row.maxV > 0 ? row.maxV : 1;
     const px = (v) => Math.max(0, Math.min((v / maxV) * BAR_W, BAR_W));
-    if (row.edition > 0) fill(ctx, BAR_X, top, px(row.edition), BAR_H, 7, REF_TRACK);
-    const inset = 5;
+    if (row.edition > 0) fill(ctx, BAR_X, top, px(row.edition), BAR_H, 5, REF_TRACK);
+    const inset = 3;
     const segs = (row.segs || []).filter((s) => s.v > 0);
     let at = 0;
     segs.forEach((s, k) => {
@@ -200,14 +211,14 @@ export function drawSellThrough(canvas, model, scale = 2) {
     // muted text, then the percentage in ink, each in a column of its own
     ctx.textAlign = "right";
     if (row.unitsText) {
-      ctx.font = `400 13.5px ${FONT}`;
+      ctx.font = `400 13px ${FONT}`;
       ctx.fillStyle = MUTED;
-      ctx.fillText(String(row.unitsText), W - PAD - PCT_W, top + BAR_H / 2 + 5);
+      ctx.fillText(String(row.unitsText), W - PAD - PCT_W - 8, base);
     }
     if (row.pctText) {
       ctx.font = `600 15px ${FONT}`;
       ctx.fillStyle = INK;
-      ctx.fillText(String(row.pctText), W - PAD, top + BAR_H / 2 + 5);
+      ctx.fillText(String(row.pctText), W - PAD, base);
     }
     y += ROW_H;
   }
@@ -216,27 +227,30 @@ export function drawSellThrough(canvas, model, scale = 2) {
   y += 8;
   ctx.fillStyle = HAIRLINE;
   ctx.fillRect(PAD, y, W - PAD * 2, 1);
-  y += 24;
+  y += 20;
   ctx.textAlign = "left";
-  let x = PAD;
-  for (const item of model.legend || []) {
-    fill(ctx, x, y - 9, 10, 10, 2, item.color);
-    x += 16;
-    ctx.font = `400 13.5px ${FONT}`;
-    ctx.fillStyle = MUTED;
-    ctx.fillText(item.label, x, y);
-    x += ctx.measureText(item.label).width + 7;
-    if (item.value !== null && item.value !== undefined) {
-      ctx.font = `600 13.5px ${FONT}`;
-      ctx.fillStyle = INK;
-      ctx.fillText(item.value, x, y);
-      x += ctx.measureText(item.value).width;
+  for (const line of key) {
+    let x = PAD;
+    for (const item of line) {
+      fill(ctx, x, y - 9, 10, 10, 2, item.color);
+      x += 16;
+      ctx.font = `400 13px ${FONT}`;
+      ctx.fillStyle = MUTED;
+      ctx.fillText(String(item.label ?? ""), x, y);
+      x += ctx.measureText(String(item.label ?? "")).width + 7;
+      if (item.value !== null && item.value !== undefined) {
+        ctx.font = `600 13px ${FONT}`;
+        ctx.fillStyle = INK;
+        ctx.fillText(String(item.value), x, y);
+        x += ctx.measureText(String(item.value)).width;
+      }
+      x += 20;
     }
-    x += 22;
+    y += KEY_LINE;
   }
 
   if (model.note) {
-    y += 26;
+    y += 2;
     ctx.font = `600 12px ${FONT}`;
     ctx.fillStyle = AMBER;
     ctx.fillText(model.note, PAD, y);
