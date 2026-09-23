@@ -2961,7 +2961,7 @@
   ],
   "spendToDate": 17998.68,
   "entriesToDate": 39.0,
-  "unitsToDate": 31.2,
+  "unitsToDate": 31.5,
   "cumRoi": 1.955,
   "l3dRoi": 0.913,
   "l3dCpe": 1234.55,
@@ -3019,7 +3019,7 @@
   },
   "unitTarget": 134.36584590074256,
   "entriesProjected": 42.1,
-  "unitProjected": 33.7,
+  "unitProjected": 33.9,
   "spendBudget": 24713.82,
   "spendProjectedTotal": 21204.36,
   "profitPerUnitAA": 704.81,
@@ -3666,12 +3666,12 @@
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": -28.0
+    "value": -30.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -82.0
+    "value": -80.0
    }
   ],
   "benchmark": 482.0,
@@ -3695,19 +3695,19 @@
     {
      "key": "paid_spend",
      "label": "Paid spend",
-     "value": -23.0
+     "value": -25.0
     },
     {
      "key": "paid_efficiency",
      "label": "Paid efficiency",
-     "value": -68.0
+     "value": -66.0
     }
    ],
    "stepsBm": [
     {
      "key": "organic_traffic",
      "label": "Organic traffic",
-     "value": -127.0
+     "value": -128.0
     },
     {
      "key": "organic_conversion",
@@ -3717,12 +3717,12 @@
     {
      "key": "paid_spend",
      "label": "Paid spend",
-     "value": -19.0
+     "value": -20.0
     },
     {
      "key": "paid_efficiency",
      "label": "Paid efficiency",
-     "value": -68.0
+     "value": -66.0
     }
    ]
   },
@@ -3740,12 +3740,12 @@
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": -22.0
+    "value": -24.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -82.0
+    "value": -80.0
    }
   ]
  },
@@ -6681,7 +6681,7 @@
     ],
     "spendToDate": 17998.68,
     "entriesToDate": 45.01813186813187,
-    "unitsToDate": 36.0,
+    "unitsToDate": 42.3,
     "cumRoi": 2.256,
     "l3dRoi": 1.127,
     "l3dCpe": 1000.98,
@@ -6739,7 +6739,7 @@
     },
     "unitTarget": 174.98089719626168,
     "entriesProjected": 48.8,
-    "unitProjected": 39.1,
+    "unitProjected": 45.4,
     "spendBudget": 32184.12,
     "spendProjectedTotal": 21204.36,
     "profitPerUnitAA": 704.81,
@@ -7289,7 +7289,7 @@
      {
       "key": "organic_traffic",
       "label": "Organic traffic",
-      "value": -131.0
+      "value": -130.0
      },
      {
       "key": "organic_conversion",
@@ -7299,12 +7299,12 @@
      {
       "key": "paid_spend",
       "label": "Paid spend",
-      "value": -70.0
+      "value": -73.0
      },
      {
       "key": "paid_efficiency",
       "label": "Paid efficiency",
-      "value": -68.0
+      "value": -66.0
      }
     ],
     "benchmark": 482.0,
@@ -7328,12 +7328,12 @@
       {
        "key": "paid_spend",
        "label": "Paid spend",
-       "value": -60.0
+       "value": -62.0
       },
       {
        "key": "paid_efficiency",
        "label": "Paid efficiency",
-       "value": -58.0
+       "value": -56.0
       }
      ],
      "stepsBm": [
@@ -7350,12 +7350,12 @@
       {
        "key": "paid_spend",
        "label": "Paid spend",
-       "value": -54.0
+       "value": -56.0
       },
       {
        "key": "paid_efficiency",
        "label": "Paid efficiency",
-       "value": -58.0
+       "value": -56.0
       }
      ]
     },
@@ -7373,12 +7373,12 @@
      {
       "key": "paid_spend",
       "label": "Paid spend",
-      "value": -63.0
+      "value": -66.0
      },
      {
       "key": "paid_efficiency",
       "label": "Paid efficiency",
-      "value": -68.0
+      "value": -65.0
      }
     ]
    },
