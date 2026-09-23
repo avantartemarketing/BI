@@ -460,7 +460,7 @@ them; `BQ_ORDERS_TABLE` renames the table; both take `BQ_SINCE`):
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft` |
+| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft`; and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts) |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
@@ -504,9 +504,11 @@ such orders on 26 and 27 August). An advisor draft is a Draft line a named perso
 two are never the same line. The funnel's `Preorder_App` counts are another thing again (the
 pre-order requests, allocated like a draw).
 
-Only product lines count (`shopify_product_type = 'Product'`): frames are lines of their own
-(`Frame`) and are left out of units. Two Shopify products with one title (a private-room
-variant at a different price) are one product here. Test orders are dropped.
+Only product lines count as units (`shopify_product_type = 'Product'`): a frame is a line of
+its own (`Frame`) with no release on it, left out of units and counted in the four framing
+columns by joining it to the prints through the order (§6.4). Two Shopify products with one
+title (a private-room variant at a different price) are one product here. Test orders are
+dropped.
 
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down
@@ -1205,6 +1207,46 @@ the card's rows and its headline are one sum; without it they are the release-le
 as before (`inHandUnits × rate`, capped). The hero's secured units stay on the funnel export
 and can differ from the card by the entries the rule does not count.
 
+### 6.4 Framing take-up (the Framing card)
+
+**The measure is frames per print, on the prints a frame was on offer for.** A frame is a
+Shopify line of its own (`shopify_product_type = 'Frame'`, no release name), so it is joined
+to the prints through the order. Per order the frames count a frame per print at most
+(`LEAST(frames, prints on offer)`), and go to the order's prints pro rata when it holds
+several, so a release's total is exact and a product's is exact whenever the order held one
+print, which is nearly every order. A print a frame was on offer for is a product line whose
+`framing_offered` is `Optional framing on order` or `Frame included`; `No framing` and blank
+are the prints that could not be framed (the Lifesize Brillo Box), left out of the rate and
+counted apart. The rate is read on prints rather than orders because the economics are per
+print: 71% of the Warhol buyers took a frame but 67% of the prints went out framed, a few
+multi-print orders having framed only some.
+
+Two populations, on the same scale (the feed's four columns, §2.4):
+
+| Bar | Numerator / denominator | What it says |
+|---|---|---|
+| Buyers | `frames_paid` / `prints_offered_paid` (paid orders: not cancelled, not pending, not refunded in full) | what has gone out framed |
+| Entrants | `frames_entry_drafts` / `prints_offered_entry_drafts` (the app's pre-authorisation drafts, §2.4) | the frames the people still in the draw have asked for: what allocation brings if they win at this rate |
+
+**References.** The plan is the release's frame conversion (`frame_terms`: the product's
+Airtable figure or the typed one, weighted over the products that frame, else the panel
+default `frame_conversion` in `etl/benchmarks.json`), drawn as the pale fill; a release whose
+products have no framing option has no plan mark. The benchmark is the basket's median
+frames per print, read from the same feed over the members with at least 30 prints on offer
+(`framing_benchmark`; none when fewer than three members qualify, since the feed starts at
+`BQ_SINCE`), drawn as the dotted outline. On the September 2026 panel the draw launches run
+at 0.54 frames per print, the timed launches at 0.35 (which is where the plan default came
+from), and the estate draws higher still (Mondrian 0.67, Warhol 0.67, Dali 0.58,
+Murakami 0.55).
+
+The snapshot's `framing` block (`framing_block`): `prints`, `frames`, `rate`; `entrants`
+(`prints`, `frames`, `rate`, or null without entry drafts); `plan`; `benchmark`
+(`rate`, `n` members rated, `of` members in the basket, or null); `works[]` (per product with
+prints on offer: `name`, `prints`, `frames`, `rate`, sorted by rate, the card's hover);
+`notOffered` (`units` paid with no framing option, and the `works`); `asOf`. Null when
+nothing on the release has been offered a frame, and the card stays off the page. A feed
+pulled before the four columns existed reads as no framing.
+
 ---
 
 ## 7. Paid: in-flight model (the Paid Calculator, reproduced exactly)
@@ -1317,6 +1359,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), `cap` recorded; Implement → append-only decision log |
 | Sell-through by product | rows | §6.3: per product sold / entries in hand allocated by the maximum-quantity rule × the entry → order rate / (at close) units still to come, against the product's edition; no target or benchmark drawn |
 | Entries by country | top 5 | geo split of entries (requires country dim in the daily feed - **currently missing; needs adding to the BigQuery export**) |
+| Framing | buyers, entrants | §6.4: frames per print on the prints a frame was on offer for, paid orders and the app's pre-authorisation drafts, against the plan's frame conversion and the basket's median |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
 
 LE benchmark fields carried on the release document: `chargeDropOff = 0.2`,
@@ -1384,6 +1427,7 @@ actuals-only page omits it.
 | `sellthrough.products[]` | per product: `key`, `name`, `draws`, `edition`, `sold`, `drafts`, `entrants`, `inHand.{open, won}`, `allocated`, `pinned`, `fixed`, `flexible`, `predicted`, `shown`, `room`, `oversubscribed`, `futurePredicted`, `pct`, `pctClose`, `expectedToday`, `benchmarkToday`, `benchmarkClose` (§6.3) |
 | `sellthrough.attributedSold`, `unattributedSold`, `soldSource` | sold units the draw feed named a product for, the rest, and whether products' sales came from tagged purchases or from winners who bought |
 | `sellthrough.drafts`, `unitsPaidOrders`, `ordersAsOf`, `incomplete` | orders awaiting payment and units paid across the release from the orders feed, the last order or draft day they run to (absent without the feed), and what the card is still waiting on: the list behind its Incomplete data stamp (§6.3) |
+| `framing` | `{prints, frames, rate, entrants: {prints, frames, rate} or null, plan, benchmark: {rate, n, of} or null, works: [...], notOffered: {units, works}, asOf}` - frames per print for the Framing card (§6.4); null when nothing on the release has been offered a frame |
 | `slack` | added by the server when it serves the snapshot, not by the ETL: `{channel, updatedAt, updatedBy, lastPostAt, lastPostBy}` from `data/slack.json`, or null. The sell-through card's Post to Slack button posts to `channel`; the Target setting tab sets it (`server/slack.js`) |
 | `sellthrough.ordersByProduct`, `drawProducts`, `soldSource` | the orders feed for the release (per product title: units paid, drafts, list price, edition) and the product each draw sold, carried so a save re-runs the rule on the server; which rule the sold figures came from (§6.3) |
 | `sellthrough.allocation`, `measure`, `editionSum`, `editionMismatch`, `allocationStarted` | the rule's bookkeeping, whether fill is over editions or in units, the typed editions' sum against the release's, and whether winners have been drawn |

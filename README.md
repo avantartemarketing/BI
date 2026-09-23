@@ -38,7 +38,8 @@ data/
   release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
                           dates, medium - no personal data (etl/pull_airtable.py)
   orders_by_product.csv   per release x Shopify product: units paid, awaiting payment (draft orders),
-                          list price - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
+                          list price, prints with a frame on offer and the frames bought with them
+                          (docs 6.4) - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
   draw_products.csv       the product each draw's winners bought: the draw to product map
   release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
@@ -225,7 +226,9 @@ it leaves the server with an identifier column.
 **Orders and drafts by product.** The pull also reads `Order_Line_Concept`, the Shopify order
 lines, into two aggregate files: `data/orders_by_product.csv` (per release and product: units
 paid, orders awaiting payment, list price; the draw's own pre-authorisation drafts, one per
-live entry, are counted apart and never shown as drafts) and `data/draw_products.csv` (the product each
+live entry, are counted apart and never shown as drafts; and the framing, the prints a frame
+was on offer for and the frames bought with them, joined to the prints through the order,
+docs 6.4) and `data/draw_products.csv` (the product each
 draw's winners bought, joined inside BigQuery on the pseudonymous account id). That table
 carries email addresses too; nothing selects them, and only counts per release and product
 leave (docs/DATA_MODEL.md 2.4). `BQ_ORDERS=off` skips the pair, `BQ_ORDERS_TABLE` renames
@@ -565,6 +568,15 @@ and, where the title matches an Airtable record, its edition. Until the feed has
 a deploy the card shows the release as one row and says so. **Post to Slack** in the card's
 header sends the card as a picture, with these figures under it, to the release's channel
 (see "Posting sell-through to Slack").
+
+**Framing** (docs §6.4) is frames per print on the prints a frame was on offer for: the
+headline is the prints sold that went out framed, against the plan's frame conversion, and
+two bars on one 0 to 100% scale carry the buyers (prints sold) and the entrants (the frames
+on the app's pre-authorisation drafts, which is what allocation brings), each with the plan
+as the pale fill and the basket's median as the dotted outline. Prints with no framing option
+(the Lifesize Brillo Box) are left out of the rate and counted in the key. Hover the buyers'
+bar for the rate by work. The card is off the page on a release nothing has been offered a
+frame on, and reads from the same orders feed as sell-through.
 
 Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
 own blue (darker to whichever of target and benchmark is lower, lighter from the benchmark up

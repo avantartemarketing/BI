@@ -3253,6 +3253,10 @@
   ],
   "ordersByProduct": {
    "Ephemerality (13)": {
+    "printsOffered": 34.0,
+    "frames": 15.0,
+    "entrantPrints": 0.0,
+    "entrantFrames": 0.0,
     "unitsPaid": 34.0,
     "drafts": 2.0,
     "draftCustomers": 2.0,
@@ -3269,6 +3273,10 @@
     "lastDraft": "2026-08-26"
    },
    "Ephemerality (15)": {
+    "printsOffered": 27.0,
+    "frames": 14.0,
+    "entrantPrints": 0.0,
+    "entrantFrames": 0.0,
     "unitsPaid": 27.0,
     "drafts": 2.0,
     "draftCustomers": 2.0,
@@ -3289,6 +3297,37 @@
    "draw_3E1uzi1KNUPhbeTljOlErS9HJ42": "Ephemerality (13)",
    "draw_3E1v6GkU5zrteJhRT6bhPG8ck70": "Ephemerality (15)"
   }
+ },
+ "framing": {
+  "prints": 61,
+  "frames": 29.0,
+  "rate": 0.4754,
+  "entrants": null,
+  "plan": 0.35,
+  "benchmark": {
+   "rate": 0.5302,
+   "n": 5,
+   "of": 8
+  },
+  "works": [
+   {
+    "name": "Ephemerality (15)",
+    "prints": 27,
+    "frames": 14.0,
+    "rate": 0.5185
+   },
+   {
+    "name": "Ephemerality (13)",
+    "prints": 34,
+    "frames": 15.0,
+    "rate": 0.4412
+   }
+  ],
+  "notOffered": {
+   "units": 0,
+   "works": []
+  },
+  "asOf": "2026-09-15"
  },
  "draw": null,
  "geo": null,

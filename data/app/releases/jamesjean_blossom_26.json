@@ -1896,6 +1896,10 @@
   ],
   "ordersByProduct": {
    "Blossom Kannyu": {
+    "printsOffered": 295.0,
+    "frames": 139.0,
+    "entrantPrints": 1.0,
+    "entrantFrames": 0.0,
     "unitsPaid": 295.0,
     "drafts": 2.0,
     "draftCustomers": 0.0,
@@ -1912,6 +1916,10 @@
     "lastDraft": "2026-08-20"
    },
    "Blossom Vessel": {
+    "printsOffered": 0.0,
+    "frames": 0.0,
+    "entrantPrints": 0.0,
+    "entrantFrames": 0.0,
     "unitsPaid": 291.0,
     "drafts": 1.0,
     "draftCustomers": 1.0,
@@ -1932,6 +1940,37 @@
    "draw_3GGP9Zj9nf2N7kAZs9PGpDhXUKh": "Blossom Vessel",
    "draw_3GGPHrLwPfoBOTMquNWLfPYZw2J": "Blossom Kannyu"
   }
+ },
+ "framing": {
+  "prints": 295,
+  "frames": 139.0,
+  "rate": 0.4712,
+  "entrants": {
+   "prints": 1,
+   "frames": 0.0,
+   "rate": 0.0
+  },
+  "plan": 0.35,
+  "benchmark": {
+   "rate": 0.4798,
+   "n": 8,
+   "of": 8
+  },
+  "works": [
+   {
+    "name": "Blossom Kannyu",
+    "prints": 295,
+    "frames": 139.0,
+    "rate": 0.4712
+   }
+  ],
+  "notOffered": {
+   "units": 291,
+   "works": [
+    "Blossom Vessel"
+   ]
+  },
+  "asOf": "2026-08-20"
  },
  "draw": null,
  "geo": null,

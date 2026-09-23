@@ -3228,9 +3228,9 @@
   "inHandUnits": 0.0,
   "soldPredicted": 0.0,
   "futureEntriesPredicted": 0.0,
-  "pct": 0.55,
+  "pct": 0.525,
   "benchmarkUnits": 41.0,
-  "drafts": 2.0,
+  "drafts": 1.0,
   "unitsPaidOrders": 20.0,
   "ordersAsOf": "2026-08-27",
   "products": [
@@ -3248,7 +3248,7 @@
     },
     "sold": 20.0,
     "soldAssumed": 0.0,
-    "drafts": 2.0,
+    "drafts": 1.0,
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
     "allocated": 0,
@@ -3257,11 +3257,11 @@
     "flexible": 0,
     "predicted": 0.0,
     "shown": 0.0,
-    "room": 18.0,
+    "room": 19.0,
     "oversubscribed": 0.0,
     "futurePredicted": 0.0,
-    "pct": 0.55,
-    "pctClose": 0.55,
+    "pct": 0.525,
+    "pctClose": 0.525,
     "expectedToday": 40.0,
     "benchmarkToday": 41.0,
     "benchmarkClose": 41.0
@@ -3323,9 +3323,13 @@
   ],
   "ordersByProduct": {
    "Hemisphere": {
+    "printsOffered": 20.0,
+    "frames": 10.0,
+    "entrantPrints": 3.0,
+    "entrantFrames": 2.0,
     "unitsPaid": 20.0,
-    "drafts": 2.0,
-    "draftCustomers": 2.0,
+    "drafts": 1.0,
+    "draftCustomers": 1.0,
     "entryDrafts": 3.0,
     "entrantDrafts": 0.0,
     "winnerDrafts": 0.0,
@@ -3342,6 +3346,35 @@
   "drawProducts": {
    "draw_3GB2uyuNNHNieh5S3bI9aR3iXSG": "Hemisphere"
   }
+ },
+ "framing": {
+  "prints": 20,
+  "frames": 10.0,
+  "rate": 0.5,
+  "entrants": {
+   "prints": 3,
+   "frames": 2.0,
+   "rate": 0.6667
+  },
+  "plan": 0.35,
+  "benchmark": {
+   "rate": 0.4492,
+   "n": 6,
+   "of": 8
+  },
+  "works": [
+   {
+    "name": "Hemisphere",
+    "prints": 20,
+    "frames": 10.0,
+    "rate": 0.5
+   }
+  ],
+  "notOffered": {
+   "units": 0,
+   "works": []
+  },
+  "asOf": "2026-08-27"
  },
  "draw": null,
  "geo": null,

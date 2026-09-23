@@ -407,7 +407,7 @@ export function BmOutline({ pct, column = false, inset = "0px", radius = 4 }) {
  * outline -> projected fill -> to-date fill -> over-target hatch. The actual is
  * inset top and bottom so the tints still show on both sides of it. */
 export function TrackBar({
-  now, proj, target, bm, full, hatchFrom, height = 20, radius = 4, tips = {}, projColor = C.blueLight,
+  now, proj, target, bm, full, max, hatchFrom, height = 20, radius = 4, tips = {}, projColor = C.blueLight,
 }) {
   const t = useTip();
   const tp = (x) => t.props(typeof x === "string" ? { head: x } : x);
@@ -416,7 +416,10 @@ export function TrackBar({
   const lo = hasBm ? Math.min(tgt, bm) : tgt;
   const refMax = hasBm ? Math.max(tgt, bm) : tgt;
   const maxData = Math.max(now ?? 0, proj ?? 0);
-  const maxV = full > 0
+  // `max` is a hard ceiling for a bar on a bounded scale (a rate: the track
+  // is exactly 0 to 100%, with no room drawn past it); `full` is a sellout,
+  // which a reference or a projection can run past and the bar should show
+  const maxV = max > 0 ? max : full > 0
     ? Math.max(full, refMax, maxData) * 1.02
     : Math.max(refMax > 0 ? refMax * 1.2 : 0, maxData * 1.04);
   const scale = maxV > 0 ? 100 / maxV : 0;

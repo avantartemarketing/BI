@@ -1966,6 +1966,10 @@
   ],
   "ordersByProduct": {
    "il senso di colpa": {
+    "printsOffered": 148.0,
+    "frames": 59.0,
+    "entrantPrints": 3.0,
+    "entrantFrames": 2.0,
     "unitsPaid": 148.0,
     "drafts": 1.0,
     "draftCustomers": 1.0,
@@ -1982,6 +1986,10 @@
     "lastDraft": "2026-08-21"
    },
    "in your detached world": {
+    "printsOffered": 149.0,
+    "frames": 64.0,
+    "entrantPrints": 2.0,
+    "entrantFrames": 2.0,
     "unitsPaid": 149.0,
     "drafts": 3.0,
     "draftCustomers": 3.0,
@@ -2002,6 +2010,41 @@
    "draw_3GXfw6SiKLy9sUEEWPQ6Ofx1eRh": "in your detached world",
    "draw_3GXg1nIv2Yb544b76bltvXvH5il": "il senso di colpa"
   }
+ },
+ "framing": {
+  "prints": 297,
+  "frames": 123.0,
+  "rate": 0.4141,
+  "entrants": {
+   "prints": 5,
+   "frames": 4.0,
+   "rate": 0.8
+  },
+  "plan": 0.35,
+  "benchmark": {
+   "rate": 0.4286,
+   "n": 7,
+   "of": 8
+  },
+  "works": [
+   {
+    "name": "in your detached world",
+    "prints": 149,
+    "frames": 64.0,
+    "rate": 0.4295
+   },
+   {
+    "name": "il senso di colpa",
+    "prints": 148,
+    "frames": 59.0,
+    "rate": 0.3986
+   }
+  ],
+  "notOffered": {
+   "units": 0,
+   "works": []
+  },
+  "asOf": "2026-08-21"
  },
  "draw": null,
  "geo": null,
