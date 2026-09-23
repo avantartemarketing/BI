@@ -100,5 +100,29 @@ check(art["cumRoi"] is None and art["l3dRoi"] is None and art["finalDayRoi"] is 
 check(all(r["roiArtist"] is None for r in paid["daily"]) and any(r["roi"] is not None for r in paid["daily"]), "AA's days still read, the artist's do not")
 print(f"revenue share: AA {paid['cumRoi']} artist {art['cumRoi']}")
 
+# the cannibalisation typed on the tab replaces the standard in every reading
+cfg = copy.deepcopy(base)
+cfg["cannibalisation"] = 0.35
+T = run(cfg)
+paid = T["paid"]
+check(paid["cannibalisation"] == 0.35, f"the release's own cannibalisation is in force: {paid['cannibalisation']}")
+check(close(paid["l3dRoi"], 0.65 * paid["profitPerUnitAA"] / (paid["l3dCpe"] * paid["aaBudgetShare"])), "the L3D reads net of it")
+check(close(paid["l3dRoi"] / S["paid"]["l3dRoi"], 0.65 / 0.8), f"against the standard: {paid['l3dRoi']} vs {S['paid']['l3dRoi']}")
+check(build.cannibalisation_for({"cannibalisation": None}) == build.BENCH["cannibalisation"] and build.cannibalisation_for({"cannibalisation": "junk"}) == build.BENCH["cannibalisation"], "blank or nonsense falls back to the standard")
+print(f"cannibalisation 35%: AA L3D {paid['l3dRoi']} (standard {S['paid']['l3dRoi']})")
+
+# the spend feed is in euros; the loader reads it in sterling
+import tempfile
+with tempfile.TemporaryDirectory() as tmp:
+    pathlib.Path(tmp, "spend_daily.csv").write_text("campaign_name,spend_date,impressions,reach,link_clicks,spend\nX,2026-09-01,10,8,1,100.0\n")
+    data_was = build.DATA
+    try:
+        build.DATA = pathlib.Path(tmp)
+        sp = build.load_spend()
+    finally:
+        build.DATA = data_was
+check(build.SPEND_CURRENCY == "EUR" and close(float(sp["spend"].iloc[0]), 100.0 * build.pricing.RATES_TO_GBP["EUR"]), f"spend read in sterling: {sp['spend'].iloc[0]}")
+check(paid["spendCurrency"] == "EUR" and paid["spendRate"] == build.pricing.RATES_TO_GBP["EUR"], "the paid block says which currency the spend came in")
+
 print("FAILED" if failed else "ok: party ROI", failed if failed else "")
 sys.exit(1 if failed else 0)

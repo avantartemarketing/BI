@@ -279,6 +279,12 @@ per unit over the artist's share of the spend. On a revenue-share deal the
 artist carries no spend, so there is no artist ROI to show. The ? popup on the
 card sets out the working with the release's figures.
 
+The spend is Meta's, billed in euros and read in sterling at the same fixed
+rate the product prices use, so every paid figure on the page is sterling. The
+cannibalisation is the release's own from the Target setting tab where one is
+typed, else the 20% standard. Framing profit is Avant Arte's alone: it sits in
+AA's profit per unit and never in the artist's.
+
 **Budget to sell out** (the sizing decision). Paid is sized to top up only the
 gap organic is *not* on course to fill - not to buy the whole remaining edition
 by itself:

@@ -205,12 +205,26 @@ function ChannelRow({ label, bmSessions, bmUnits, conv, k, head, total, off }) {
   );
 }
 
+/* A number input that shows what is being typed while it is typed - "5." on
+ * the way to "5.5" - and the model's figure once it is left, so a decimal can
+ * be typed in one go. */
+function NumInput({ value, onCommit, className = "control num", ...rest }) {
+  const [draft, setDraft] = useState(null);
+  return (
+    <input className={className} inputMode="decimal" value={draft !== null ? draft : value}
+      onChange={(e) => { setDraft(e.target.value); onCommit(e.target.value); }}
+      onBlur={() => setDraft(null)} {...rest} />
+  );
+}
+
 /* The products and their economics: a row per work, Airtable's figures as
  * the placeholders, a typed figure over any of them (blank = Airtable's), the
  * totals the release runs on underneath. Two tables share the rows - the
  * edition and price first, the per-unit economics second - so the whole
- * thing fits beside the rail on a laptop without scrolling sideways.
- * Percentages are typed as whole numbers and kept as fractions. */
+ * thing fits beside the rail on a laptop without scrolling sideways. An All
+ * products row at the top of each sets every product at once, since the
+ * works of a launch mostly share a price and a deal. Percentages are typed
+ * as whole numbers and kept as fractions. */
 const PCT = new Set(["target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion"]);
 // key -> label, tip, column width (the input plus its cell padding)
 const COLS = {
@@ -222,7 +236,7 @@ const COLS = {
   aa_revenue_share: ["AA rev. %", "Avant Arte's share of revenue on a royalty deal. Blank on a profit-share deal.", 62],
   aa_profit_share: ["AA profit %", "Avant Arte's share of profit on a profit-share deal, which is also its share of the paid budget. Blank on a royalty deal, where Avant Arte carries the ads outright.", 66],
   frame_conversion: ["Frame %", "The share of buyers expected to take a frame. Blank = the benchmark default.", 60],
-  frame_profit_per_unit: ["Frame £", "Avant Arte's profit on each frame sold. Blank = the benchmark default.", 62],
+  frame_profit_per_unit: ["Frame £", "Avant Arte's profit on each frame sold, which is Avant Arte's alone. Blank = the benchmark default.", 62],
 };
 const num = (key) => ({ kind: "num", key, label: COLS[key][0], tip: COLS[key][1], width: COLS[key][2] });
 const EDITION_TABLE = [num("edition"), num("target_sellthrough"), num("unit_price"),
@@ -253,11 +267,12 @@ function shortNames(products) {
   return names.map((n) => (n.startsWith(pre) && n.slice(pre.length).trim() ? "…" + n.slice(pre.length).trim() : n));
 }
 
-function ProductsTable({ products, econ, onField, onName, onAdd, onRemove, airtableNote }) {
+function ProductsTable({ products, econ, onField, onFieldAll, onName, onAdd, onRemove, airtableNote }) {
   const short = shortNames(products);
   const th = { fontSize: 11, color: C.muted, fontWeight: 500, textAlign: "right", padding: "4px 4px", borderBottom: `1px solid ${C.border}`, lineHeight: 1.25, verticalAlign: "bottom" };
   const td = { padding: "4px 4px", borderBottom: `1px solid ${C.hairline}`, verticalAlign: "middle" };
   const foot = { ...td, borderBottom: "none", textAlign: "right", fontWeight: 600, fontSize: 12.5, fontVariantNumeric: "tabular-nums" };
+  const cellInput = { width: "100%", minWidth: 0, padding: "4px 6px", fontSize: 12, textAlign: "right" };
   const show = (key, v) => (v === null || v === undefined ? "" : PCT.has(key) ? String(Math.round(v * 1000) / 10) : String(Math.round(v * 100) / 100));
   // rows are keyed by the Airtable id, else the row's place in the list: a
   // manual product's name is typed in place, so it cannot be the key
@@ -268,11 +283,11 @@ function ProductsTable({ products, econ, onField, onName, onAdd, onRemove, airta
     return (
       <td key={key} style={td}>
         <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-          <input className="control num" style={{ width: "100%", minWidth: 0, padding: "4px 6px", fontSize: 12, textAlign: "right", fontWeight: typedHere ? 600 : 400 }}
+          <NumInput style={{ ...cellInput, fontWeight: typedHere ? 600 : 400 }}
             value={typedHere ? show(key, p[key]) : ""}
             placeholder={src ? show(key, p[key]) || "–" : "–"}
             title={src === "airtable" ? "Airtable's figure - type over it to override" : src === "default" ? "The benchmark default - type over it to override" : typedHere ? "Typed here; clear to go back to Airtable's" : "Airtable holds none - type it"}
-            onChange={(e) => onField(p, key, e.target.value)} />
+            onCommit={(raw) => onField(p, key, raw)} />
           {key === "unit_price" && <span style={{ fontSize: 10.5, color: C.muted, flex: "0 0 26px" }}>{p.currency}</span>}
         </div>
       </td>
@@ -303,6 +318,38 @@ function ProductsTable({ products, econ, onField, onName, onAdd, onRemove, airta
       </td>
     );
   };
+  // one row that writes to every product: shown with the figure when every
+  // product carries the same typed one, "varies" when some do, "all" when none
+  const allRow = (cols) => (
+    <tr key="all" style={{ background: "#faf9f6" }}>
+      <td style={{ ...td, fontSize: 12, color: C.muted }} title="Type here to set every product at once; a product can still be typed over on its own row.">All products</td>
+      {cols.map((c, j) => {
+        if (c.kind === "num" && c.key !== "edition") {
+          const vals = products.map((p) => (p.sources[c.key] === "typed" ? p[c.key] : undefined));
+          const same = vals.every((v) => v !== undefined && v === vals[0]);
+          return (
+            <td key={j} style={td}>
+              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                <NumInput style={{ ...cellInput, fontWeight: same ? 600 : 400 }} value={same ? show(c.key, vals[0]) : ""}
+                  placeholder={vals.some((v) => v !== undefined) ? "varies" : "all"} title="Every product at once"
+                  onCommit={(raw) => onFieldAll(c.key, raw)} />
+                {c.key === "unit_price" && <span style={{ flex: "0 0 26px" }} />}
+              </div>
+            </td>
+          );
+        }
+        if (c.kind === "frame") {
+          return (
+            <td key={j} style={{ ...td, textAlign: "center" }}>
+              <input type="checkbox" checked={products.every((p) => p.framing_available)} title="Every product at once"
+                onChange={(e) => onFieldAll("framing_available", e.target.checked)} style={{ accentColor: C.ink, margin: 0 }} />
+            </td>
+          );
+        }
+        return <td key={j} style={td} />;
+      })}
+    </tr>
+  );
   const table = (caption, cols, editable, footer) => (
     <div style={{ marginTop: caption ? 14 : 0 }}>
       {caption && <div style={{ fontSize: 11.5, fontWeight: 600, color: C.muted, marginBottom: 2 }}>{caption}</div>}
@@ -318,6 +365,7 @@ function ProductsTable({ products, econ, onField, onName, onAdd, onRemove, airta
           </tr>
         </thead>
         <tbody>
+          {products.length > 1 && allRow(cols)}
           {products.map((p, i) => (
             <tr key={rowKey(p, i)}>
               {nameCell(p, i, editable)}
@@ -353,12 +401,12 @@ function ProductsTable({ products, econ, onField, onName, onAdd, onRemove, airta
           <td style={foot}>{econ.ppu_artist > 0 ? fmtMoney(econ.ppu_artist, 2) : "–"}</td>
           <td style={foot} title="Before framing.">{aaBeforeFraming > 0 ? fmtMoney(aaBeforeFraming, 2) : "–"}</td>
           <td style={foot} colSpan={3} />
-          <td style={foot} colSpan={2} title="The framing uplift over every target unit.">{econ.frame_uplift_per_unit > 0 ? `+${fmtMoney(econ.frame_uplift_per_unit, 2)}` : "–"}</td>
+          <td style={foot} colSpan={2} title="The framing uplift over every target unit - Avant Arte's alone.">{econ.frame_uplift_per_unit > 0 ? `+${fmtMoney(econ.frame_uplift_per_unit, 2)}` : "–"}</td>
         </>
       ))}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
         <button className="btn secondary" onClick={onAdd} style={{ fontSize: 12 }}>Add a product</button>
-        <span style={{ fontSize: 11.5, color: C.muted }}>Grey figures are Airtable's; a typed figure overrides it, blank goes back to it.</span>
+        <span style={{ fontSize: 11.5, color: C.muted }}>Grey figures are Airtable's; a typed figure overrides it, blank goes back to it. Framing profit is Avant Arte's, never split.</span>
       </div>
     </div>
   );
@@ -372,6 +420,7 @@ export default function TargetSetting({ snap, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [error, setError] = useState(null);
+  const [buildSecs, setBuildSecs] = useState(null);   // how long the background rebuild has run
   // the Slack channel the sell-through card posts to: its own small document
   // on the server (server/slack.js), saved on its own so a release without
   // targets can have one too
@@ -484,22 +533,42 @@ export default function TargetSetting({ snap, onSaved }) {
   /* ---- the products: a typed figure lands on the entry for that product
    * (by Airtable id, or by name for one added by hand), blank clears it */
   const typedEntry = (p) => (inp.products || []).find((t) => (p.airtable_id ? String(t.airtable_id) === String(p.airtable_id) : (t.manual && norm(t.name) === norm(p.name))));
-  const withEntry = (p, patch) => {
-    const list = [...(inp.products || [])];
-    let i = list.findIndex((t) => (p.airtable_id ? String(t.airtable_id) === String(p.airtable_id) : (t.manual && norm(t.name) === norm(p.name))));
-    if (i < 0) { list.push(p.airtable_id ? { airtable_id: p.airtable_id } : { manual: true, name: p.name }); i = list.length - 1; }
-    list[i] = { ...list[i], ...patch };
-    setInp({ ...inp, products: list });
+  const applyEntry = (list, p, patch) => {
+    const out = [...list];
+    let i = out.findIndex((t) => (p.airtable_id ? String(t.airtable_id) === String(p.airtable_id) : (t.manual && norm(t.name) === norm(p.name))));
+    if (i < 0) { out.push(p.airtable_id ? { airtable_id: p.airtable_id } : { manual: true, name: p.name }); i = out.length - 1; }
+    out[i] = { ...out[i], ...patch };
+    return out;
   };
-  const onField = (p, key, raw) => {
-    if (key === "framing_available") { withEntry(p, { framing_available: !!raw }); return; }
+  // what a typed figure means: a fraction for the percentages, a whole
+  // number for an edition, null for a cleared box, undefined for nonsense
+  const parseField = (key, raw) => {
+    if (key === "framing_available") return !!raw;
     const clean = String(raw).replace(/[^0-9.]/g, "");
-    if (clean === "") { withEntry(p, { [key]: null }); return; }
+    if (clean === "") return null;
     let v = parseFloat(clean);
-    if (!Number.isFinite(v)) return;
+    if (!Number.isFinite(v)) return undefined;
     if (PCT.has(key)) v = clamp(v, 0, 100) / 100;
     if (key === "edition") v = Math.round(v);
-    withEntry(p, { [key]: v });
+    return v;
+  };
+  // the deal is one or the other: a revenue share typed clears a profit
+  // share, and the other way round, so the two never travel together
+  const patchFor = (key, v) => {
+    const patch = { [key]: v };
+    if (key === "aa_revenue_share" && v !== null) patch.aa_profit_share = null;
+    if (key === "aa_profit_share" && v !== null) patch.aa_revenue_share = null;
+    return patch;
+  };
+  const onField = (p, key, raw) => {
+    const v = parseField(key, raw);
+    if (v === undefined) return;
+    setInp((prev) => ({ ...prev, products: applyEntry(prev.products || [], p, patchFor(key, v)) }));
+  };
+  const onFieldAll = (key, raw) => {
+    const v = parseField(key, raw);
+    if (v === undefined) return;
+    setInp((prev) => ({ ...prev, products: products.reduce((list, p) => applyEntry(list, p, patchFor(key, v)), prev.products || []) }));
   };
   const onName = (p, name) => {
     const list = (inp.products || []).map((t) => (t.manual && norm(t.name) === norm(p.name) ? { ...t, name } : t));
@@ -544,7 +613,7 @@ export default function TargetSetting({ snap, onSaved }) {
   if (!closes) missing.push("the draw close");
 
   const save = async () => {
-    setSaving(true); setError(null);
+    setSaving(true); setError(null); setBuildSecs(null);
     try {
       // legacy_economics rides only as a clearing (null): the figures
       // themselves are never re-sent, the server keeps or drops the block
@@ -557,12 +626,32 @@ export default function TargetSetting({ snap, onSaved }) {
       const d = await res.json();
       if (!res.ok) { setError(d.error || `save failed (${res.status})`); return; }
       if (d.warning) setError(d.warning);
-      if (d.created) setMeta({ ...meta, creating: false, inputs: { ...inp } });
-      else setMeta({ ...meta, inputs: { ...inp } });
+      // the inputs are saved at this point, whatever the rebuild does next
+      setMeta({ ...meta, creating: false, inputs: { ...inp }, storage: d.storage || meta.storage });
       setPick(null);
-      onSaved(d.snapshot);
+      // the page is rebuilt behind the answer; the tab follows the build so
+      // the new figures land here too, and the browser is never held on it
+      let snapshot = d.snapshot || null;
+      if (d.queued) {
+        const started = Date.now();
+        for (;;) {
+          await new Promise((r) => setTimeout(r, 1500));
+          setBuildSecs(Math.round((Date.now() - started) / 1000));
+          let st = null;
+          try { st = await (await fetch(`/api/inputs/${snap.id}/build`)).json(); } catch { st = null; }
+          if (st && st.status === "running") continue;
+          if (st && st.status === "failed") {
+            setError("Inputs saved, but the rebuild failed (" + (st.error || "no detail") + ") - the page will update on the next data refresh.");
+            break;
+          }
+          // done, or the service restarted under it: read the page as it is
+          try { const r = await fetch(`/api/releases/${snap.id}`); if (r.ok) snapshot = await r.json(); } catch { /* the page stays as it was */ }
+          break;
+        }
+      }
+      if (snapshot) onSaved(snapshot);
       setSavedFlash(true); setTimeout(() => setSavedFlash(false), 2500);
-    } catch (e) { setError(String(e)); } finally { setSaving(false); }
+    } catch (e) { setError(String(e)); } finally { setSaving(false); setBuildSecs(null); }
   };
   const discard = () => {
     setInp({ ...meta.inputs });
@@ -626,6 +715,13 @@ export default function TargetSetting({ snap, onSaved }) {
             {atProducts.length ? ` the ${atProducts.length} work${atProducts.length === 1 ? "" : "s"} with their editions and prices` : " the works"} below
             come from Airtable with their source shown. Check them, tick the Meta campaign, set the channels in plan, choose the basket
             and save: the page then carries the plan, and the funnel's actuals attach to it once the report picks the launch up.
+          </div>
+        )}
+        {meta.storage && meta.storage.durable === false && (
+          <div style={{ padding: "12px 16px", borderRadius: 10, background: "#fbe9e6", color: "#7a2e1d", fontSize: 12.5, lineHeight: 1.5 }}
+            title={`Saves are written to ${meta.storage.path}`}>
+            <b>Targets saved here do not survive a deploy.</b> The service keeps them on its own disk, which Render resets on
+            every deploy. Point SAVED_INPUTS_PATH at a file on a persistent disk (README, "Render's disk resets") and they stay.
           </div>
         )}
         {creating && !snap.upcoming && (
@@ -699,7 +795,7 @@ export default function TargetSetting({ snap, onSaved }) {
           <div className="spacer-8" />
           <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginBottom: 10 }}>
             {airtableMatch !== "none"
-              ? <>Airtable holds {atProducts.length} product{atProducts.length === 1 ? "" : "s"} for this launch (matched by {airtableMatch}). Their edition, target, price and economics are read from there as they are filled in; type over a figure only where Airtable has none or is wrong.</>
+              ? <>Airtable holds {atProducts.length} product{atProducts.length === 1 ? "" : "s"} for this launch (matched by {airtableMatch}). Their edition, target, price and economics are read from there as they are filled in; type over a figure only where Airtable has none or is wrong. The All products row sets every product at once.</>
               : <>Airtable has no record matched to this release{(sourced.airtable || {}).note ? ` - ${(sourced.airtable || {}).note}` : ""}. Add the works by hand until it does.</>}
           </div>
           {legacy && (
@@ -711,7 +807,7 @@ export default function TargetSetting({ snap, onSaved }) {
                 onClick={() => setInp({ ...inp, legacy_economics: null })} title="Drop the release-level figures: the products' figures carry the totals from the next save.">Use the products' figures</button>
             </div>
           )}
-          <ProductsTable products={products} econ={econ} onField={onField} onName={onName} onAdd={onAdd} onRemove={onRemove}
+          <ProductsTable products={products} econ={econ} onField={onField} onFieldAll={onFieldAll} onName={onName} onAdd={onAdd} onRemove={onRemove}
             airtableNote={(sourced.airtable || {}).note} />
           <div style={{ marginTop: 14, fontSize: 12.5, lineHeight: 1.7 }}>
             <span style={{ color: C.muted }}>Target </span><b>{fmt(econ.edition_size)}</b>
@@ -827,6 +923,25 @@ export default function TargetSetting({ snap, onSaved }) {
           )}
         </Card>
 
+        <Card dot="#c96a3a" title="Paid assumptions">
+          <div className="spacer-16" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "16px 20px" }}>
+            <Field label="Cost per paid unit (£)" tip="What a paid unit costs to buy: paid units × this is the paid budget. Blank = the panel's median.">
+              <NumInput value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)}
+                placeholder={`${fmt(Number((b.cost_per_purchase || {}).Median) || 0)} · panel median`}
+                onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); setInp((prev) => ({ ...prev, cost_per_purchase: c === "" ? null : c })); }} />
+            </Field>
+            <Field label="Paid cannibalisation (%)" tip="The share of paid entries that would have come anyway. The ROI and the budget floor read profit net of it. Blank = the LE standard.">
+              <NumInput value={inp.cannibalisation === null || inp.cannibalisation === undefined ? "" : String(Math.round(Number(inp.cannibalisation) * 1000) / 10)}
+                placeholder={`${Math.round(100 * (Number(b.cannibalisation) || 0.2))} · standard`}
+                onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); const v = c === "" ? null : clamp(parseFloat(c), 0, 95) / 100; setInp((prev) => ({ ...prev, cannibalisation: v === null || Number.isNaN(v) ? null : v })); }} />
+            </Field>
+          </div>
+          <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginTop: 12 }}>
+            Spend is Meta's, billed in euros and read in sterling at a fixed rate, so every paid figure on the page is sterling.
+          </div>
+        </Card>
+
         <Card dot="#4f80d6" title="Stretch">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
@@ -878,7 +993,7 @@ export default function TargetSetting({ snap, onSaved }) {
           <div className="btn-row" style={{ marginTop: 16 }}>
             <button className="btn primary" disabled={saving || missing.length > 0} onClick={save}
               title={missing.length ? `Still needed: ${missing.join(", ")}` : creating ? "Saves the inputs and rebuilds this release with the full target model." : "Saves the inputs and recomputes this release's targets, plan curves and projections."}>
-              {saving ? (creating ? "Building…" : "Saving…") : savedFlash ? "✓ Saved" : creating ? "Set targets" : "Save targets"}
+              {saving ? (buildSecs !== null ? `Rebuilding the page… ${buildSecs}s` : "Saving…") : savedFlash ? "✓ Saved" : creating ? "Set targets" : "Save targets"}
             </button>
             <button className="btn secondary" onClick={discard}>Discard</button>
           </div>

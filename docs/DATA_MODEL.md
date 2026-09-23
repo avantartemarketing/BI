@@ -1222,6 +1222,11 @@ adjCPE(day)     = spend(day) / (entries(day) × (1 − drop_off))          # cos
 ROI_party(day)  = (1 − cannibalisation) × profit_per_unit_party / (adjCPE × budget_share_party)
 cum versions    = same on Σ spend / Σ entries
 ```
+Spend is Meta's, billed in euros: `load_spend` converts it once to sterling at the fixed
+`RATES_TO_GBP` rate (`SPEND_CURRENCY`, `spendCurrency` and `spendRate` on the paid block), so every
+spend, cost per entry, budget and ROI figure on the page is sterling. `cannibalisation` is the
+release's own where the Target setting tab has one (`cannibalisation`, a fraction), else the
+0.2 standard; the paid block publishes the figure in force.
 `budget_share` = who pays for ads (AA/artist), e.g. 100/0 (Glenn Ligon), 33/66 (Jaume Plensa);
 distinct from `profit_share`. `profit_per_unit_party` and `budget_share_party` are the
 release's own, from the Target setting tab (§1.6): the products' figures weighted by their
@@ -1343,7 +1348,7 @@ data), `reOfferRecovery`.
 ```
 dim_release(release_name PK, campaign_code, type LE|TL, artist, announce_date,
             private_room_open, launch_end, campaign_length_days, edition_size, unit_price,
-            economics…, benchmark_basket, channels_off, artist_posting_tier, cost_per_purchase)
+            economics…, benchmark_basket, channels_off, artist_posting_tier, cost_per_purchase, cannibalisation)
 dim_product(release_name FK, product_name, edition)
 fact_funnel_daily(release_name, channel, event_date, sessions, page_views, draw_entries,
             eligible_entry_units, eligible_units_no_conv, units_total, units_by_route…,

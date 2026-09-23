@@ -20,3 +20,7 @@ data/email_content.csv
 data/app/release_features.csv
 \ndata/app/bigquery_schema.json\n
 data/slack.json
+# the single-release build's caches (etl/build.py load_across_time, untracked norms)
+data/app/funnel.cache.pkl
+data/app/funnel.cache.json
+data/app/untracked_norms.json

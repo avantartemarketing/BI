@@ -43,6 +43,7 @@ import json
 import math
 import collections
 import os
+import time
 import pathlib
 import re
 import sys
@@ -176,6 +177,33 @@ FUNNEL_FILE = funnel_file()
 
 
 def load_across_time() -> pd.DataFrame:
+    """The funnel frame, parsed once per export. The parse and the fan-out
+    groupby are the single-release build's largest fixed cost, so the frame
+    is kept beside the app data keyed on the export's size and mtime, and a
+    build that finds the same export reads it back instead of parsing."""
+    cache, meta = APP / "funnel.cache.pkl", APP / "funnel.cache.json"
+    key = None
+    try:
+        st = FUNNEL_FILE.stat()
+        key = {"path": str(FUNNEL_FILE), "mtime_ns": st.st_mtime_ns, "size": st.st_size, "cols": FUNNEL_COLS, "v": 1}
+        if cache.exists() and meta.exists() and json.loads(meta.read_text()) == key:
+            df = pd.read_pickle(cache)
+            print(f"funnel: {len(df)} rows from the cached parse of {FUNNEL_FILE.name}")
+            return df
+    except (OSError, ValueError):
+        key = None
+    df = _parse_across_time()
+    if key is not None:
+        try:
+            APP.mkdir(parents=True, exist_ok=True)
+            df.to_pickle(cache)
+            meta.write_text(json.dumps(key))
+        except OSError:
+            pass
+    return df
+
+
+def _parse_across_time() -> pd.DataFrame:
     df = pd.read_csv(FUNNEL_FILE, usecols=lambda c: c in FUNNEL_COLS,
                      dtype={c: "category" for c in FUNNEL_LABELS})
     missing = [c for c in FUNNEL_COLS if c not in df.columns]
@@ -214,10 +242,30 @@ def load_across_time() -> pd.DataFrame:
     return df
 
 
+# Meta bills the ad account in euros; the page runs in sterling. The spend is
+# converted once, here, at the fixed rate the product prices use
+# (pricing.RATES_TO_GBP), so every spend, cost per entry, budget and ROI
+# figure downstream is sterling while the file keeps Meta's own figures.
+SPEND_CURRENCY = "EUR"
+
+
+def spend_rate() -> float:
+    return float(pricing.RATES_TO_GBP.get(SPEND_CURRENCY, 1.0))
+
+
+def convert_spend(df: pd.DataFrame) -> pd.DataFrame:
+    """The spend column in sterling."""
+    rate = spend_rate()
+    if rate != 1.0 and "spend" in df.columns:
+        df = df.copy()
+        df["spend"] = df["spend"].astype(float) * rate
+    return df
+
+
 def load_spend() -> pd.DataFrame:
     df = pd.read_csv(DATA / "spend_daily.csv")
     df["spend_date"] = pd.to_datetime(df["spend_date"]).dt.date
-    return df
+    return convert_spend(df)
 
 
 def load_emails() -> pd.DataFrame:
@@ -803,6 +851,18 @@ def frame_terms(release: dict, b: dict = BENCH) -> tuple[float, float]:
     conv = float(b["frame_conversion"]) if conv is None or conv == "" else float(conv)
     profit = float(b["frame_profit_per_unit"]) if profit is None or profit == "" else float(profit)
     return min(max(conv, 0.0), 1.0), max(profit, 0.0)
+
+
+def cannibalisation_for(release: dict, b: dict = BENCH) -> float:
+    """The share of paid entries that would have come anyway (docs 7): the
+    release's own figure from the Target setting tab, else the LE standard
+    in the benchmarks. The ROI and the budget floor read profit net of it."""
+    v = release.get("cannibalisation")
+    try:
+        v = float(v) if v not in (None, "") else None
+    except (TypeError, ValueError):
+        v = None
+    return min(max(v, 0.0), 0.95) if v is not None else float(b["cannibalisation"])
 
 
 def aa_profit_per_unit(release: dict, b: dict = BENCH) -> float:
@@ -2348,6 +2408,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "cumCpe": round(cum_cpe, 2) if cum_cpe else None,
         "roiDeclineModel": {"start": None, "dailyFactor": None}, "roiTarget": None,
         "artist": None,
+        "spendCurrency": SPEND_CURRENCY, "spendRate": spend_rate(),
         "budget": {"current": round(current_daily, 2), "recommended": None, "cap": None,
                    "finalDayRoi": None, "floor": None, "budgetToSellOut": None,
                    "entriesNeeded": None, "selloutGap": None, "organicFuture": None,
@@ -2579,7 +2640,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     paid_entries_day = (win[win["channel"] == "Paid Social"]
                         .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
     spend_day = psp.groupby("spend_date")["spend"].sum()
-    drop, cann = b["paid_drop_off"], b["cannibalisation"]
+    drop, cann = b["paid_drop_off"], cannibalisation_for(release, b)
     ppu_aa = aa_profit_per_unit(release, b)
     frame_conv, frame_profit = frame_terms(release, b)
     ppu_artist = (release["artist_profit"] / release["edition_size"]) if release["edition_size"] else 0
@@ -3013,6 +3074,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # the terms every ROI above is read with, so the card can show its working
         "cannibalisation": cann,
         "dropOff": drop,
+        # the spend feed's currency and the fixed rate it was converted at
+        "spendCurrency": SPEND_CURRENCY,
+        "spendRate": spend_rate(),
         # the artist's ROI (docs 7): the same days and the same forward path,
         # with the artist's profit per unit and share of the spend. Every
         # figure is None on a deal where the artist carries no spend.
@@ -3490,6 +3554,15 @@ def main(only: str | None = None):
     whole-catalogue artefacts - inputs.json, the reconciliation, the people and
     window exports - are left alone, because a save cannot change them.
     """
+    t_start = time.perf_counter()
+    marks: list[tuple[str, float]] = []
+    last = [t_start]
+
+    def mark(label: str) -> None:
+        now = time.perf_counter()
+        marks.append((label, now - last[0]))
+        last[0] = now
+
     at = load_across_time()
     # the newest day in the feed is the as-of day, part-observed while it is
     # today; the rules and completeness read the last full day (observation_clock)
@@ -3508,22 +3581,27 @@ def main(only: str | None = None):
     # funnel's name once it appears, and the launches the funnel has not seen
     # yet are listed as upcoming so targets can be set before they open (§1.7).
     # Before the inputs are resolved, so an adopted name is the one resolved.
+    mark("load")
     launch_frame = load_launches()
     adopt_funnel_names(INPUTS["releases"], discovered, launch_frame)
-    # the codes an upcoming launch can be guessed from: those moving on Meta
-    # or in the sends, less every code a release on file already carries
-    in_use = {str(r.get("campaign_code")) for r in discovered + INPUTS["releases"] if r.get("campaign_code")}
-    activity = {c: w for c, w in code_activity(spend, emails).items() if c not in in_use}
-    upcoming = upcoming_releases(launch_frame, discovered + INPUTS["releases"], as_of, activity)
-    for r in upcoming:
-        r["campaign_name"] = match_campaign(r["campaign_code"], spend)
-    if upcoming:
-        print("upcoming from Airtable: " + ", ".join(f"{r['release_name']} (closes {r['launch_end']})" for r in upcoming))
+    upcoming: list[dict] = []
+    if not only:
+        # the codes an upcoming launch can be guessed from: those moving on Meta
+        # or in the sends, less every code a release on file already carries.
+        # A single-release build writes no upcoming page, so it skips this.
+        in_use = {str(r.get("campaign_code")) for r in discovered + INPUTS["releases"] if r.get("campaign_code")}
+        activity = {c: w for c, w in code_activity(spend, emails).items() if c not in in_use}
+        upcoming = upcoming_releases(launch_frame, discovered + INPUTS["releases"], as_of, activity)
+        for r in upcoming:
+            r["campaign_name"] = match_campaign(r["campaign_code"], spend)
+        if upcoming:
+            print("upcoming from Airtable: " + ", ".join(f"{r['release_name']} (closes {r['launch_end']})" for r in upcoming))
     # the inputs in force for every configured release: Airtable's products,
     # the Notion dates, the typed figures, the funnel's clock (resolve_release)
     notion = load_notion_campaigns()
     raw_inputs = [dict(r) for r in INPUTS["releases"]]
     resolve_inputs(discovered, spend, notion)
+    mark("inputs")
     posts_bench = artist_posts_benchmarks(artist_posts, as_of)
     # The draw panel, loaded once and passed down: every basket a release could
     # be benchmarked against is cut from it (BENCHMARK_SPEC §3). A panel that
@@ -3564,11 +3642,29 @@ def main(only: str | None = None):
         print("email refs: none yet (fewer than 2 completed draw launches with sends on file) - UI defaults apply")
     by_name = {n: g for n, g in at.groupby("simple_release_name")}
     configured = {r["release_name"]: r for r in INPUTS["releases"]}
-    # what an untracked share normally is, once, for every page's warning (§1.3)
-    norms = untracked_norms(at, panel, as_of)
+    # what an untracked share normally is, once, for every page's warning
+    # (§1.3). A function of the export and the panel, not of any release's
+    # inputs, so a single-release build reads the full build's figure back
+    # while the export is the same day's.
+    norms_path = APP / "untracked_norms.json"
+    norms = None
+    if only and norms_path.exists():
+        try:
+            cached = json.loads(norms_path.read_text())
+            if cached.get("asOf") == as_of.isoformat():
+                norms = cached.get("norms")
+        except (OSError, ValueError):
+            norms = None
+    if norms is None:
+        norms = untracked_norms(at, panel, as_of)
+        try:
+            norms_path.write_text(json.dumps({"asOf": as_of.isoformat(), "norms": norms}, indent=1))
+        except OSError:
+            pass
     if norms:
         print("untracked norm: " + ", ".join(f"{k} median {v['median']:.1%} p90 {v['p90']:.1%} (n={v['n']})"
                                              for k, v in norms.items() if isinstance(v, dict) and v.get("median") is not None))
+    mark("benchmarks")
 
     if only:
         cfg = next((r for r in INPUTS["releases"] if r["id"] == only), None)
@@ -3586,6 +3682,9 @@ def main(only: str | None = None):
               + (f" benchmark={bmk['units']} (x{bmk['k']}, {bmk['basket']['id']} n={bmk['basket']['n']})"
                  if bmk else ""))
         patch_index(snap, as_of)
+        mark("release")
+        print("timing: " + " | ".join(f"{label} {secs:.1f}s" for label, secs in marks)
+              + f" | total {time.perf_counter() - t_start:.1f}s")
         print(f"wrote 1 release ({only}) -> {APP}")
         return
 
