@@ -13,8 +13,10 @@
  "campaignLengthDays": 31,
  "day": 31,
  "of": 31,
- "asOf": "2026-09-20",
+ "asOf": "2026-09-21",
  "complete": true,
+ "completeThrough": "2026-09-21",
+ "asOfFraction": 1.0,
  "targetingMode": "benchmark",
  "edition": {
   "target": 150.0,
@@ -2471,6 +2473,32 @@
  "unitsPerBuyer": {
   "plan": 1.1233,
   "actual": 1.3333
+ },
+ "untracked": {
+  "entries": {
+   "share": 0.0367,
+   "count": 4.0,
+   "total": 109.0
+  },
+  "units": {
+   "share": 0.0658,
+   "count": 10.0,
+   "total": 152.0
+  },
+  "normal": {
+   "recentMonths": 18,
+   "entries": {
+    "median": 0.0156,
+    "p90": 0.0405,
+    "n": 59
+   },
+   "units": {
+    "median": 0.0317,
+    "p90": 0.0799,
+    "n": 59
+   }
+  },
+  "high": []
  },
  "email": {
   "sends": 3,

@@ -365,6 +365,17 @@ export default function TargetSetting({ snap, onSaved }) {
   ];
   const railCell = { fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums" };
 
+  /* Untracked much higher than normal (DATA_MODEL 1.3): the build says which
+   * of entries and units has a share over twice the panel's median and past
+   * its 90th percentile; the sentence quotes the share, the count behind it
+   * and the norm it is read against. */
+  const ut = snap.untracked || null;
+  const untrackedHigh = ut && Array.isArray(ut.high) ? ut.high.filter((k) => ut[k] && ut[k].share !== null).map((k) => {
+    const v = ut[k], n = (ut.normal || {})[k] || {};
+    const months = (ut.normal || {}).recentMonths;
+    return { key: k, sentence: `${fmtPct(v.share, 0)} of this release's ${k} (${fmt(v.count, 0)} of ${fmt(v.total, 0)}) have no channel, against ${fmtPct(n.median, 0)} on a typical launch${months ? ` of the last ${months} months` : ""} and ${fmtPct(n.p90, 0)} at the 90th percentile.` };
+  }) : [];
+
   return (
     <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
@@ -377,6 +388,15 @@ export default function TargetSetting({ snap, onSaved }) {
               : <> No campaign dates were found in the funnel export - enter them.</>}
             {dv.campaign_code ? <> The campaign code is a guess from the email feed.</> : null}
             {" "}Fill in the economics and save: the page rebuilds with expected-today, projections, paid ROI and sell-through.
+          </div>
+        )}
+
+        {untrackedHigh.length > 0 && (
+          <div style={{ padding: "12px 16px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a", fontSize: 12.5, lineHeight: 1.5 }}
+            title="Untracked is the funnel export's channel for entries and units that could not be attributed. The build spreads it across the tracked channels in proportion to what they did that day.">
+            <b>Untracked is much higher than normal.</b> {untrackedHigh.map((u) => u.sentence).join(" ")} The build spreads
+            untracked across the tracked channels in proportion, so the channel split, the per-channel targets' progress and
+            the funnel read less certainly than usual. Worth checking the tracking before reading the channel figures.
           </div>
         )}
 
