@@ -1,6 +1,6 @@
 {
  "benchmarks": {
-  "_comment": "Benchmark constants v3. The reference numbers the build still reads, after the quartile-lever model was retired on 2026-09-23 (docs/DATA_MODEL.md #3): the basket of comparable launches is the benchmark for every volume and rate. What stays: order_split (the medians split a display group's target across its raw channels, since the panel is grouped), cost_per_purchase (the Median is the default price of a paid unit; a release can type its own), the entry-to-order rates, cannibalisation 0.2 (the LE standard per the workbook's spend rules), the framing defaults, the budget sense check, the spend rules and the cost-curve priors. Transcribed from the 2026-08-28 LAUNCH PERFORMANCE OVERVIEW (recomputed panel; quartiles over the historical release panel). See docs/DATA_MODEL.md #4 for provenance. Currency GBP.",
+  "_comment": "Benchmark constants v3. The reference numbers the build still reads, after the quartile-lever model was retired on 2026-09-23 (docs/DATA_MODEL.md #3): the basket of comparable launches is the benchmark for every volume and rate. What stays: order_split (the medians split a display group's target across its raw channels, since the panel is grouped), cost_per_purchase (the Median is the default price of a paid unit; a release can type its own), the entry-to-order rates, cannibalisation 0.2 (the LE standard per the workbook's spend rules), the framing defaults, the budget sense check, the spend rules and the cost-curve priors. Transcribed from the 2026-08-28 LAUNCH PERFORMANCE OVERVIEW (recomputed panel; quartiles over the historical release panel). See docs/DATA_MODEL.md #4 for provenance. Currency EUR: the spend and the prices these were computed from are Meta's and Shopify's euro figures.",
   "as_of": "2026-08-28",
   "order_split": {
    "_meaning": "channel share of unadjusted draw+preorder units, Low=P25 / Medium=median / High=P75; the build reads the Medium column only, renormalised inside each display group, to split a group's basket target across its channels",
@@ -66,7 +66,7 @@
    }
   },
   "cost_per_purchase": {
-   "_meaning": "GBP per paid unit, quartiles over the paid campaigns on file; Median is the default the paid budget is priced at when a release has no cost_per_purchase of its own",
+   "_meaning": "EUR per paid unit, quartiles over the paid campaigns on file; Median is the default the paid budget is priced at when a release has no cost_per_purchase of its own",
    "Low": 128.75,
    "Median": 177,
    "High": 291
@@ -22555,1032 +22555,1032 @@
  "meta_campaigns": [
   {
    "name": "AndyWarhol_TL_26 \u00b7 Enter draw",
-   "spend": 185348.81,
+   "spend": 218057.42,
    "last": "2026-09-23"
   },
   {
    "name": "SalvadorDali_LE_26 \u00b7 Enter draw",
-   "spend": 64732.73,
+   "spend": 76156.15,
    "last": "2026-09-23"
   },
   {
    "name": "RobertLongo_LE_26 \u00b7 Enter draw",
-   "spend": 22885.81,
+   "spend": 26924.48,
    "last": "2026-09-23"
   },
   {
    "name": "BisaButler_TL_26 \u00b7 Sign-ups",
-   "spend": 17878.3,
+   "spend": 21033.29,
    "last": "2026-09-23"
   },
   {
    "name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
-   "spend": 15298.88,
+   "spend": 17998.68,
    "last": "2026-09-23"
   },
   {
    "name": "MaurizioCatt_HorseLE_26 \u00b7 Enter draw",
-   "spend": 3088.81,
+   "spend": 3633.89,
    "last": "2026-09-23"
   },
   {
    "name": "GlennLigon_LE_26 \u00b7 Enter draw",
-   "spend": 3473.91,
+   "spend": 4086.95,
    "last": "2026-09-22"
   },
   {
    "name": "Abdulnasser_LE_26 \u00b7 Enter draw",
-   "spend": 6360.07,
+   "spend": 7482.43,
    "last": "2026-09-18"
   },
   {
    "name": "ZengFanzhi_LE_26 \u00b7 Enter draw",
-   "spend": 4578.93,
+   "spend": 5386.98,
    "last": "2026-09-18"
   },
   {
    "name": "Parra_LE_26 \u00b7 Enter draw",
-   "spend": 2781.74,
+   "spend": 3272.64,
    "last": "2026-09-18"
   },
   {
    "name": "JamesJean_Blossom_26 \u00b7 Enter draw",
-   "spend": 22045.71,
+   "spend": 25936.13,
    "last": "2026-09-17"
   },
   {
    "name": "Inventory_Test_26",
-   "spend": 1218.48,
+   "spend": 1433.5,
    "last": "2026-09-05"
   },
   {
    "name": "JaumePlen_LE_26 \u00b7 Enter draw",
-   "spend": 45876.3,
+   "spend": 53972.12,
    "last": "2026-09-02"
   },
   {
    "name": "PietMondrian_LE_26 \u00b7 Enter draw",
-   "spend": 4774.92,
+   "spend": 5617.55,
    "last": "2026-08-31"
   },
   {
    "name": "AhmedM_Salam_26 \u00b7 Enter draw",
-   "spend": 2489.3,
+   "spend": 2928.59,
    "last": "2026-08-21"
   },
   {
    "name": "YoonHyup_LE_26 \u00b7 Enter draw",
-   "spend": 7770.79,
+   "spend": 9142.11,
    "last": "2026-08-20"
   },
   {
    "name": "ZengFanzhi_TL_26 \u00b7 Enter draw",
-   "spend": 9565.02,
+   "spend": 11252.96,
    "last": "2026-08-18"
   },
   {
    "name": "Backside_LE_26 \u00b7 Enter draw",
-   "spend": 837.79,
+   "spend": 985.63,
    "last": "2026-08-08"
   },
   {
    "name": "LY_LE_26 \u00b7 Enter draw",
-   "spend": 589.4,
+   "spend": 693.41,
    "last": "2026-08-03"
   },
   {
    "name": "GregoryCrewd_TL_26 \u00b7 Purchases",
-   "spend": 8805.58,
+   "spend": 10359.5,
    "last": "2026-07-30"
   },
   {
    "name": "GregoryCrewd_TL_26 \u00b7 Sign-ups",
-   "spend": 37111.89,
+   "spend": 43661.05,
    "last": "2026-07-28"
   },
   {
    "name": "HankWillisT_LE_26 \u00b7 Enter draw",
-   "spend": 12138.71,
+   "spend": 14280.84,
    "last": "2026-07-28"
   },
   {
    "name": "FelipePantone_LE_26 \u00b7 Enter draw",
-   "spend": 14237.3,
+   "spend": 16749.76,
    "last": "2026-07-27"
   },
   {
    "name": "GiuseppePen_LE_26 \u00b7 Enter draw",
-   "spend": 1201.93,
+   "spend": 1414.04,
    "last": "2026-07-25"
   },
   {
    "name": "UrsFischer_LE_26 \u00b7 Enter draw",
-   "spend": 4499.1,
+   "spend": 5293.06,
    "last": "2026-07-23"
   },
   {
    "name": "JohnsonTs_Alliance_26 \u00b7 Enter draw",
-   "spend": 2422.86,
+   "spend": 2850.42,
    "last": "2026-07-14"
   },
   {
    "name": "CindySher_LE_26 \u00b7 Enter draw",
-   "spend": 7541.28,
+   "spend": 8872.1,
    "last": "2026-07-08"
   },
   {
    "name": "AiWeiwei_Guardian2_26 \u00b7 Purchases",
-   "spend": 14235.55,
+   "spend": 16747.71,
    "last": "2026-07-07"
   },
   {
    "name": "AliceB_AIB_25 \u00b7 Purchases",
-   "spend": 391.12,
+   "spend": 460.14,
    "last": "2026-06-28"
   },
   {
    "name": "AiWeiwei_Guardian2_26 \u00b7 Sign-ups",
-   "spend": 32977.55,
+   "spend": 38797.12,
    "last": "2026-06-27"
   },
   {
    "name": "Albers_LE_26 \u00b7 Enter draw",
-   "spend": 45310.25,
+   "spend": 53306.18,
    "last": "2026-06-25"
   },
   {
    "name": "JR: Boost - Impressions",
-   "spend": 29.47,
+   "spend": 34.67,
    "last": "2026-06-21"
   },
   {
    "name": "AntonyMic_LE_26 \u00b7 Enter draw",
-   "spend": 1587.33,
+   "spend": 1867.45,
    "last": "2026-06-16"
   },
   {
    "name": "JoelMesler_TL_26 \u00b7 Sign-ups",
-   "spend": 4483.85,
+   "spend": 5275.12,
    "last": "2026-06-09"
   },
   {
    "name": "EddieMart_LE_25 \u00b7 Enter draw",
-   "spend": 3429.36,
+   "spend": 4034.54,
    "last": "2026-06-09"
   },
   {
    "name": "GraysonPerry_TL_25 \u00b7 Purchases",
-   "spend": 1864.48,
+   "spend": 2193.51,
    "last": "2026-06-03"
   },
   {
    "name": "Maurizio_Therapy_26 \u00b7 Enter draw",
-   "spend": 5296.02,
+   "spend": 6230.61,
    "last": "2026-06-02"
   },
   {
    "name": "ShirinNeshat_TL_26 \u00b7 Purchases",
-   "spend": 1116.28,
+   "spend": 1313.27,
    "last": "2026-05-28"
   },
   {
    "name": "GraysonPerry_TL_25 \u00b7 Sign-ups",
-   "spend": 26359.26,
+   "spend": 31010.9,
    "last": "2026-05-27"
   },
   {
    "name": "ShirinNeshat_TL_26 \u00b7 Sign-ups",
-   "spend": 16894.91,
+   "spend": 19876.36,
    "last": "2026-05-26"
   },
   {
    "name": "Maurizio_NonaOra_26 \u00b7 Enter draw",
-   "spend": 93539.26,
+   "spend": 110046.19,
    "last": "2026-05-21"
   },
   {
    "name": "AiWeiwei_FingerSE_25 \u00b7 Enter draw",
-   "spend": 5589.9,
+   "spend": 6576.35,
    "last": "2026-05-15"
   },
   {
    "name": "Paulnsect_Repeat_25 \u00b7 Enter draw",
-   "spend": 893.15,
+   "spend": 1050.77,
    "last": "2026-05-15"
   },
   {
    "name": "LucianFreud_TL_26 \u00b7 Purchases",
-   "spend": 906.52,
+   "spend": 1066.49,
    "last": "2026-05-12"
   },
   {
    "name": "LucianFreud_TL_26 \u00b7 Sign-ups",
-   "spend": 8251.2,
+   "spend": 9707.3,
    "last": "2026-05-06"
   },
   {
    "name": "GrantRiven_LE_26 \u00b7 Enter draw",
-   "spend": 685.27,
+   "spend": 806.2,
    "last": "2026-04-25"
   },
   {
    "name": "JeffKoons_LE_25 \u00b7 Enter draw",
-   "spend": 60426.36,
+   "spend": 71089.83,
    "last": "2026-04-14"
   },
   {
    "name": "MickaleneT_TL_26 \u00b7 Purchases",
-   "spend": 4884.07,
+   "spend": 5745.97,
    "last": "2026-04-14"
   },
   {
    "name": "Collector_Report_26 \u00b7 Form Submissions",
-   "spend": 954.05,
+   "spend": 1122.41,
    "last": "2026-04-14"
   },
   {
    "name": "MickaleneT_TL_26 \u00b7 Sign-ups",
-   "spend": 35206.83,
+   "spend": 41419.8,
    "last": "2026-04-13"
   },
   {
    "name": "Drift_LE_25 \u00b7 Enter draw",
-   "spend": 1089.22,
+   "spend": 1281.43,
    "last": "2026-04-03"
   },
   {
    "name": "EmCooper_TL_25 \u00b7 Purchases",
-   "spend": 323.91,
+   "spend": 381.07,
    "last": "2026-04-03"
   },
   {
    "name": "LucTuymans_LE_26 \u00b7 Enter draw",
-   "spend": 264.41,
+   "spend": 311.07,
    "last": "2026-04-01"
   },
   {
    "name": "JeanMichel_LE_25 \u00b7 Enter draw",
-   "spend": 4906.85,
+   "spend": 5772.76,
    "last": "2026-03-24"
   },
   {
    "name": "EmCooper_TL_25 \u00b7 Sign-ups",
-   "spend": 4517.59,
+   "spend": 5314.81,
    "last": "2026-03-20"
   },
   {
    "name": "Katharina_TL_25 \u00b7 Purchases",
-   "spend": 1360.76,
+   "spend": 1600.89,
    "last": "2026-03-19"
   },
   {
    "name": "ManRay_TL_25 \u00b7 Purchases",
-   "spend": 1100.56,
+   "spend": 1294.78,
    "last": "2026-03-18"
   },
   {
    "name": "ManRay_TL_25 \u00b7 Sign-ups",
-   "spend": 20135.18,
+   "spend": 23688.45,
    "last": "2026-03-16"
   },
   {
    "name": "JoanaB_AIB_26 \u00b7 Purchases",
-   "spend": 536.04,
+   "spend": 630.64,
    "last": "2026-03-14"
   },
   {
    "name": "Katharina_TL_25 \u00b7 Sign-ups",
-   "spend": 13494.59,
+   "spend": 15875.99,
    "last": "2026-03-13"
   },
   {
    "name": "MaurizioC_LE_26 \u00b7 Enter draw",
-   "spend": 4097.32,
+   "spend": 4820.38,
    "last": "2026-03-11"
   },
   {
    "name": "MarinaAbr-1502 \u00b7 Purchases",
-   "spend": 3460.47,
+   "spend": 4071.14,
    "last": "2026-03-11"
   },
   {
    "name": "NiceAunties_AIB_25 \u00b7 Purchases",
-   "spend": 1238.92,
+   "spend": 1457.55,
    "last": "2026-03-11"
   },
   {
    "name": "MarinaAbr-1502 \u00b7 Sign-ups",
-   "spend": 55178.11,
+   "spend": 64915.42,
    "last": "2026-03-09"
   },
   {
    "name": "DenitzaZ_AIB_26 \u00b7 Purchases",
-   "spend": 56.31,
+   "spend": 66.25,
    "last": "2026-03-04"
   },
   {
    "name": "Pejac_Repeat_26 \u00b7 Sign-ups",
-   "spend": 7606.53,
+   "spend": 8948.86,
    "last": "2026-03-01"
   },
   {
    "name": "Vladsng_AIB_26 \u00b7 Purchases",
-   "spend": 194.52,
+   "spend": 228.85,
    "last": "2026-03-01"
   },
   {
    "name": "Solienne_AIB_26 \u00b7 Purchases",
-   "spend": 24.28,
+   "spend": 28.57,
    "last": "2026-02-26"
   },
   {
    "name": "FerrariSh_LE_26 \u00b7 Enter draw",
-   "spend": 7085.4,
+   "spend": 8335.77,
    "last": "2026-02-25"
   },
   {
    "name": "TomasSanchez_TL_26 \u00b7 Purchases",
-   "spend": 1633.54,
+   "spend": 1921.81,
    "last": "2026-02-25"
   },
   {
    "name": "AiWeiwei_SelfPortrait_26 \u00b7 Purchases",
-   "spend": 272.53,
+   "spend": 320.62,
    "last": "2026-02-25"
   },
   {
    "name": "AiWeiwei_SelfPortrait_26 \u00b7 Sign-ups",
-   "spend": 15330.57,
+   "spend": 18035.97,
    "last": "2026-02-24"
   },
   {
    "name": "LeeUfan_LE_26 \u00b7 Enter draw",
-   "spend": 11457.84,
+   "spend": 13479.81,
    "last": "2026-02-24"
   },
   {
    "name": "TomasSanchez_TL_26 \u00b7 Sign-ups",
-   "spend": 18862.97,
+   "spend": 22191.73,
    "last": "2026-02-23"
   },
   {
    "name": "JoakimOja_LE_25 \u00b7 Enter draw",
-   "spend": 2415.9,
+   "spend": 2842.23,
    "last": "2026-02-15"
   },
   {
    "name": "KeitaMor_TL_25 \u00b7 Purchases",
-   "spend": 1609.97,
+   "spend": 1894.08,
    "last": "2026-01-08"
   },
   {
    "name": "KeitaMor_TL_25 \u00b7 Sign-ups",
-   "spend": 4088.44,
+   "spend": 4809.93,
    "last": "2026-01-05"
   },
   {
    "name": "Saype_AIB_25 \u00b7 Purchases",
-   "spend": 841.77,
+   "spend": 990.32,
    "last": "2026-01-05"
   },
   {
    "name": "KenN_AIB_25 \u00b7 Purchases",
-   "spend": 148.9,
+   "spend": 175.18,
    "last": "2025-12-21"
   },
   {
    "name": "WilliamBl_LE_25 \u00b7 Enter draw",
-   "spend": 233.82,
+   "spend": 275.08,
    "last": "2025-12-18"
   },
   {
    "name": "CindySher_TL_25 \u00b7 Purchases",
-   "spend": 5099.36,
+   "spend": 5999.25,
    "last": "2025-12-16"
   },
   {
    "name": "LSeyah_AIB_25 \u00b7 Purchases",
-   "spend": 192.58,
+   "spend": 226.56,
    "last": "2025-12-16"
   },
   {
    "name": "MaurizioC_Rev_25 \u00b7 Enter draw",
-   "spend": 23152.88,
+   "spend": 27238.68,
    "last": "2025-12-13"
   },
   {
    "name": "WyneV_AIB_25 \u00b7 Purchases",
-   "spend": 78.82,
+   "spend": 92.73,
    "last": "2025-12-12"
   },
   {
    "name": "AiWeiwei_LE_25 \u00b7 Enter draw",
-   "spend": 5360.18,
+   "spend": 6306.1,
    "last": "2025-12-11"
   },
   {
    "name": "Judy_Triptych_25 \u00b7 Enter draw",
-   "spend": 3526.11,
+   "spend": 4148.37,
    "last": "2025-12-11"
   },
   {
    "name": "CindySher_TL_25\u00b7 Sign-ups",
-   "spend": 12947.4,
+   "spend": 15232.24,
    "last": "2025-12-09"
   },
   {
    "name": "JamesJean_Sun_25 \u00b7 Purchases",
-   "spend": 759.23,
+   "spend": 893.21,
    "last": "2025-11-30"
   },
   {
    "name": "JamesJean_Sun_25 \u00b7 Sign-ups",
-   "spend": 2409.38,
+   "spend": 2834.56,
    "last": "2025-11-27"
   },
   {
    "name": "HarmoniaR_Two_25 \u00b7 Purchases",
-   "spend": 1652.2,
+   "spend": 1943.77,
    "last": "2025-11-27"
   },
   {
    "name": "AlexKatz_H2_25 \u00b7 Enter draw",
-   "spend": 25506.46,
+   "spend": 30007.6,
    "last": "2025-11-25"
   },
   {
    "name": "HarmoniaR_Two_25 \u00b7 Sign-ups",
-   "spend": 5186.27,
+   "spend": 6101.5,
    "last": "2025-11-24"
   },
   {
    "name": "SirJoanC_TL_25 \u00b7 Sign-ups",
-   "spend": 10490.42,
+   "spend": 12341.67,
    "last": "2025-11-20"
   },
   {
    "name": "SirJoanC_TL_25 \u00b7 Purchases",
-   "spend": 910.43,
+   "spend": 1071.09,
    "last": "2025-11-20"
   },
   {
    "name": "MadeleineG_AIB_25 \u00b7 Purchases",
-   "spend": 57.34,
+   "spend": 67.46,
    "last": "2025-11-18"
   },
   {
    "name": "Ai Weiwei - TEST",
-   "spend": 3.75,
+   "spend": 4.41,
    "last": "2025-11-11"
   },
   {
    "name": "AhmedMat_Magnet_25 \u00b7 Enter draw",
-   "spend": 6492.26,
+   "spend": 7637.95,
    "last": "2025-11-10"
   },
   {
    "name": "RTanchum_AIB_25 \u00b7 Purchases",
-   "spend": 90.51,
+   "spend": 106.48,
    "last": "2025-11-08"
   },
   {
    "name": "Inventory_Test_25",
-   "spend": 4828.24,
+   "spend": 5680.28,
    "last": "2025-11-06"
   },
   {
    "name": "MGross_AIB_25 \u00b7 Purchases",
-   "spend": 56.61,
+   "spend": 66.6,
    "last": "2025-11-02"
   },
   {
    "name": "Art_Museums_Survey_25 \u00b7 Form Submissions",
-   "spend": 705.98,
+   "spend": 830.56,
    "last": "2025-10-25"
   },
   {
    "name": "CleonPeter_Timed_25 \u00b7 Purchases",
-   "spend": 1993.31,
+   "spend": 2345.07,
    "last": "2025-10-16"
   },
   {
    "name": "CleonPeter_Timed_25 \u00b7 Sign-ups",
-   "spend": 4542.01,
+   "spend": 5343.54,
    "last": "2025-10-14"
   },
   {
    "name": "JTsang_AIB_25 \u00b7 Purchases",
-   "spend": 370.02,
+   "spend": 435.32,
    "last": "2025-10-10"
   },
   {
    "name": "GlennBrow_Two_25 \u00b7 Sign-ups",
-   "spend": 913.88,
+   "spend": 1075.15,
    "last": "2025-10-06"
   },
   {
    "name": "AiWeiwei_NVase_25 \u00b7 Purchases",
-   "spend": 4084.24,
+   "spend": 4804.99,
    "last": "2025-10-02"
   },
   {
    "name": "YSodeaoka_AIB_25 \u00b7 Purchases",
-   "spend": 303.09,
+   "spend": 356.58,
    "last": "2025-10-02"
   },
   {
    "name": "AiWeiwei_NVase_25 \u00b7 Sign-ups",
-   "spend": 21347.75,
+   "spend": 25115.0,
    "last": "2025-09-24"
   },
   {
    "name": "Eniwamura_Neojomon_25 \u00b7 Enter draw",
-   "spend": 5012.37,
+   "spend": 5896.91,
    "last": "2025-09-24"
   },
   {
    "name": "Inventory_Test_Q4_24",
-   "spend": 5201.74,
+   "spend": 6119.69,
    "last": "2025-09-09"
   },
   {
    "name": "JohnsonTs_Rememb_25 \u00b7 Enter draw",
-   "spend": 2333.65,
+   "spend": 2745.47,
    "last": "2025-09-07"
   },
   {
    "name": "JustinO_AIB_25 \u00b7 Purchases",
-   "spend": 1030.42,
+   "spend": 1212.26,
    "last": "2025-08-31"
   },
   {
    "name": "TObata_AIB_25 \u00b7 Purchases",
-   "spend": 87.14,
+   "spend": 102.52,
    "last": "2025-08-30"
   },
   {
    "name": "PietParra_Dip_25 \u00b7 Purchases",
-   "spend": 770.23,
+   "spend": 906.15,
    "last": "2025-08-28"
   },
   {
    "name": "DavidC_AIB_25 \u00b7 Purchases",
-   "spend": 1299.96,
+   "spend": 1529.37,
    "last": "2025-08-26"
   },
   {
    "name": "SHong_AIB_25 \u00b7 Purchases",
-   "spend": 615.87,
+   "spend": 724.55,
    "last": "2025-08-26"
   },
   {
    "name": "PietParra_Dip_25 \u00b7 Sign-ups",
-   "spend": 14184.72,
+   "spend": 16687.9,
    "last": "2025-08-25"
   },
   {
    "name": "JamesJarv_HangInThe_25 \u00b7 Enter draw",
-   "spend": 3448.09,
+   "spend": 4056.58,
    "last": "2025-08-25"
   },
   {
    "name": "CarrieMae_TL_25 \u00b7 Purchases",
-   "spend": 5427.79,
+   "spend": 6385.64,
    "last": "2025-08-22"
   },
   {
    "name": "CarrieMae_TL_25 \u00b7 Sign-ups",
-   "spend": 38547.42,
+   "spend": 45349.9,
    "last": "2025-08-20"
   },
   {
    "name": "LucianFre_TL_25 \u00b7 Purchases",
-   "spend": 855.81,
+   "spend": 1006.83,
    "last": "2025-08-16"
   },
   {
    "name": "LucianFre_TL_25 \u00b7 Sign-ups",
-   "spend": 10168.57,
+   "spend": 11963.02,
    "last": "2025-08-14"
   },
   {
    "name": "GabrielleG_AIB_25 \u00b7 Purchases",
-   "spend": 1500.1,
+   "spend": 1764.82,
    "last": "2025-08-13"
   },
   {
    "name": "FelipePan_TL_25 \u00b7 Purchases",
-   "spend": 1980.6,
+   "spend": 2330.12,
    "last": "2025-08-01"
   },
   {
    "name": "LeeUfan_From_25 \u00b7 Enter draw",
-   "spend": 22646.58,
+   "spend": 26643.03,
    "last": "2025-07-24"
   },
   {
    "name": "FelipePan_TL_25 - sign ups",
-   "spend": 6377.69,
+   "spend": 7503.16,
    "last": "2025-07-24"
   },
   {
    "name": "GraysonPe_Large_25 \u00b7 Pre-order",
-   "spend": 506.9,
+   "spend": 596.35,
    "last": "2025-07-23"
   },
   {
    "name": "AliceN_AIB_25 \u00b7 Purchases",
-   "spend": 1.46,
+   "spend": 1.72,
    "last": "2025-07-16"
   },
   {
    "name": "ThomasL_AIB_25 \u00b7 Purchases",
-   "spend": 1499.78,
+   "spend": 1764.45,
    "last": "2025-07-08"
   },
   {
    "name": "AIB_Waitlist_25 \u00b7 Sign-ups",
-   "spend": 988.13,
+   "spend": 1162.51,
    "last": "2025-07-08"
   },
   {
    "name": "JenStark_TL_25 \u00b7 Purchases",
-   "spend": 443.5,
+   "spend": 521.76,
    "last": "2025-07-08"
   },
   {
    "name": "JudyChica_TL_25 \u00b7 Purchase",
-   "spend": 4378.66,
+   "spend": 5151.37,
    "last": "2025-07-02"
   },
   {
    "name": "MarkBradf_Broad_25 \u00b7 Purchases",
-   "spend": 5946.63,
+   "spend": 6996.03,
    "last": "2025-07-01"
   },
   {
    "name": "JenStark_TL_25 \u00b7 Sign-ups",
-   "spend": 2694.81,
+   "spend": 3170.37,
    "last": "2025-06-27"
   },
   {
    "name": "JudyChica_TL_25 \u00b7 Sign-ups",
-   "spend": 8141.8,
+   "spend": 9578.59,
    "last": "2025-06-24"
   },
   {
    "name": "MarkBradf_Broad_25 \u00b7 Sign-ups",
-   "spend": 11504.05,
+   "spend": 13534.18,
    "last": "2025-06-23"
   },
   {
    "name": "Friedrich_Storm_25 \u00b7 Purchases",
-   "spend": 4125.07,
+   "spend": 4853.02,
    "last": "2025-06-16"
   },
   {
    "name": "Friedrich_Storm_25 \u00b7 Sign-ups",
-   "spend": 19290.21,
+   "spend": 22694.37,
    "last": "2025-06-11"
   },
   {
    "name": "ThomasL_AIB_25 \u00b7 Sign-ups",
-   "spend": 588.5,
+   "spend": 692.35,
    "last": "2025-06-08"
   },
   {
    "name": "JonnyNies_2TL_25 \u00b7 Purchases",
-   "spend": 757.5,
+   "spend": 891.18,
    "last": "2025-06-06"
   },
   {
    "name": "Boosting for Views",
-   "spend": 148.3,
+   "spend": 174.47,
    "last": "2025-06-06"
   },
   {
    "name": "AliceB_AIB_25 \u00b7 Sign-ups",
-   "spend": 595.71,
+   "spend": 700.84,
    "last": "2025-06-02"
   },
   {
    "name": "RobertLon_MenIn_25 \u00b7 Purchases",
-   "spend": 11985.26,
+   "spend": 14100.3,
    "last": "2025-05-30"
   },
   {
    "name": "RobertLon_MenIn_25 \u00b7 Sign-ups",
-   "spend": 13521.82,
+   "spend": 15908.02,
    "last": "2025-05-28"
   },
   {
    "name": "GabrielleG_AIB_25 \u00b7 Sign ups",
-   "spend": 283.18,
+   "spend": 333.15,
    "last": "2025-05-28"
   },
   {
    "name": "JonnyNies_2TL_25 \u00b7 Sign-ups",
-   "spend": 1430.08,
+   "spend": 1682.45,
    "last": "2025-05-24"
   },
   {
    "name": "SayreGome_America_25 \u00b7 Draw",
-   "spend": 1694.3,
+   "spend": 1993.3,
    "last": "2025-05-21"
   },
   {
    "name": "Oscaryi_Cool_25 \u00b7 Draw",
-   "spend": 2549.07,
+   "spend": 2998.91,
    "last": "2025-05-07"
   },
   {
    "name": "HajimeSor_Untitled_25 \u00b7 Draw",
-   "spend": 13911.5,
+   "spend": 16366.47,
    "last": "2025-05-04"
   },
   {
    "name": "TomasSanc_Pair_25 \u00b7 Purchases",
-   "spend": 9379.68,
+   "spend": 11034.92,
    "last": "2025-04-30"
   },
   {
    "name": "TomasSanc_Pair_25 \u00b7 Sign-ups",
-   "spend": 12794.5,
+   "spend": 15052.35,
    "last": "2025-04-17"
   },
   {
    "name": "Mickalene_MultiTL_25 \u00b7 Purchases",
-   "spend": 7466.11,
+   "spend": 8783.66,
    "last": "2025-04-17"
   },
   {
    "name": "Mickalene_MultiTL_25 \u00b7 Sign-ups",
-   "spend": 40177.89,
+   "spend": 47268.1,
    "last": "2025-04-15"
   },
   {
    "name": "ShirinNes_TL_25 \u00b7 Purchases",
-   "spend": 5269.03,
+   "spend": 6198.86,
    "last": "2025-03-28"
   },
   {
    "name": "JamesJean_Maze_25 \u00b7 Purchases",
-   "spend": 2065.19,
+   "spend": 2429.63,
    "last": "2025-03-21"
   },
   {
    "name": "JamesJean_Maze_25 \u00b7 Sign-ups",
-   "spend": 29612.21,
+   "spend": 34837.89,
    "last": "2025-03-18"
   },
   {
    "name": "ShirinNes_TL_25 \u00b7 Sign-ups",
-   "spend": 9450.97,
+   "spend": 11118.79,
    "last": "2025-03-14"
   },
   {
    "name": "WillCotto_Unicorn_25 \u2027 Draw",
-   "spend": 4757.35,
+   "spend": 5596.88,
    "last": "2025-03-14"
   },
   {
    "name": "BarryMcge_TL2_25 \u00b7 Purchases",
-   "spend": 6798.61,
+   "spend": 7998.36,
    "last": "2025-03-07"
   },
   {
    "name": "BarryMcge_TL2_25 \u00b7 Sign-ups",
-   "spend": 18611.5,
+   "spend": 21895.88,
    "last": "2025-03-05"
   },
   {
    "name": "AiWeiwei_Snake_25 - Sign-ups",
-   "spend": 22849.01,
+   "spend": 26881.19,
    "last": "2025-02-24"
   },
   {
    "name": "DanielleM_Sand_25 \u00b7 Purchases",
-   "spend": 7430.91,
+   "spend": 8742.25,
    "last": "2025-02-21"
   },
   {
    "name": "DanielleM_Sand_25 \u00b7 Sign-ups",
-   "spend": 12807.06,
+   "spend": 15067.13,
    "last": "2025-02-20"
   },
   {
    "name": "Multiple_Amphorae_24 \u00b7 Draw",
-   "spend": 15861.71,
+   "spend": 18660.83,
    "last": "2025-02-19"
   },
   {
    "name": "GraysonPE_Magical_24 \u00b7 Purchases - UK \u2013 Insiders",
-   "spend": 16372.69,
+   "spend": 19261.99,
    "last": "2024-11-26"
   },
   {
    "name": "GraysonPE_Magical_24 \u00b7 Purchases",
-   "spend": 7441.35,
+   "spend": 8754.53,
    "last": "2024-11-25"
   },
   {
    "name": "GraysonPE_Magical_24 \u00b7 Purchases - UK \u2013 Copy",
-   "spend": 1232.82,
+   "spend": 1450.38,
    "last": "2024-11-25"
   },
   {
    "name": "GraysonPE_Magical_24 \u00b7 Purchases - UK",
-   "spend": 615.34,
+   "spend": 723.93,
    "last": "2024-11-21"
   },
   {
    "name": "GraysonPE_Magical_24 \u00b7 Sign-ups",
-   "spend": 3755.69,
+   "spend": 4418.46,
    "last": "2024-11-18"
   },
   {
    "name": "Beeple_Tree_24 \u00b7 Purchases",
-   "spend": 454.64,
+   "spend": 534.87,
    "last": "2024-11-06"
   },
   {
    "name": "Beeple_Tree_24 \u00b7 Sign-ups",
-   "spend": 3410.17,
+   "spend": 4011.96,
    "last": "2024-11-05"
   },
   {
    "name": "JohnsonTs_Moment_24 \u00b7 Draw",
-   "spend": 1564.25,
+   "spend": 1840.29,
    "last": "2024-11-03"
   },
   {
    "name": "TakuObata_BBoy_24 \u00b7 Draw",
-   "spend": 1640.45,
+   "spend": 1929.94,
    "last": "2024-10-29"
   },
   {
    "name": "Vhils_Timed_24 \u00b7 Purchases",
-   "spend": 4659.09,
+   "spend": 5481.28,
    "last": "2024-10-24"
   },
   {
    "name": "Vhils_Timed_24 \u00b7 Sign-ups",
-   "spend": 1473.35,
+   "spend": 1733.35,
    "last": "2024-10-22"
   },
   {
    "name": "Vhils_Timed_24 \u00b7 Sign-ups \u2013 Onboard",
-   "spend": 1421.69,
+   "spend": 1672.58,
    "last": "2024-10-20"
   },
   {
    "name": "AiWeiwei_Dragon_24 \u00b7 Purchases",
-   "spend": 9143.36,
+   "spend": 10756.89,
    "last": "2024-10-04"
   },
   {
    "name": "AiWeiwei_Dragon_24 \u00b7 Sign-ups",
-   "spend": 17022.54,
+   "spend": 20026.52,
    "last": "2024-10-03"
   },
   {
    "name": "CristinAd_Tentacula_24 \u00b7 Pre-orders",
-   "spend": 282.28,
+   "spend": 332.1,
    "last": "2024-09-30"
   },
   {
    "name": "HankWilli_onlybond_24 \u00b7 Purchases",
-   "spend": 3718.85,
+   "spend": 4375.12,
    "last": "2024-09-06"
   },
   {
    "name": "HankWilli_onlybond_24 \u00b7 Sign ups",
-   "spend": 5860.06,
+   "spend": 6894.19,
    "last": "2024-09-04"
   },
   {
    "name": "Magdalena_Mouse_24 \u00b7 Purchases",
-   "spend": 436.35,
+   "spend": 513.35,
    "last": "2024-09-03"
   },
   {
    "name": "GabrielMo_DoubleTL_24 \u00b7 Sign-ups",
-   "spend": 525.89,
+   "spend": 618.69,
    "last": "2024-07-31"
   },
   {
    "name": "Mickalene_MayaInter_24 \u00b7 Purchases",
-   "spend": 2769.99,
+   "spend": 3258.81,
    "last": "2024-07-24"
   },
   {
    "name": "Mickalene_MayaInter_24 \u00b7 Sign ups",
-   "spend": 7625.29,
+   "spend": 8970.93,
    "last": "2024-07-22"
   },
   {
    "name": "EddieMart_Scaffold_24 \u00b7 Purchases",
-   "spend": 1721.86,
+   "spend": 2025.72,
    "last": "2024-07-15"
   },
   {
    "name": "MIWAKOMAT_JUN24  \u00b7 Purchases",
-   "spend": 890.53,
+   "spend": 1047.68,
    "last": "2024-07-10"
   },
   {
    "name": "MIWAKOMAT_JUN24  \u00b7 Sign-ups",
-   "spend": 3580.07,
+   "spend": 4211.85,
    "last": "2024-07-09"
   },
   {
    "name": "JRMILANAPR \u00b7 Purchases",
-   "spend": 2468.08,
+   "spend": 2903.62,
    "last": "2024-05-29"
   },
   {
    "name": "JRMILANAPR \u00b7 Sign-ups",
-   "spend": 3930.65,
+   "spend": 4624.3,
    "last": "2024-05-26"
   },
   {
    "name": "RUSCHAACTU \u00b7 Purchases",
-   "spend": 8912.53,
+   "spend": 10485.33,
    "last": "2024-05-11"
   },
   {
    "name": "RUSCHAACTU \u00b7 Purchases \u2013 Replacement",
-   "spend": 363.28,
+   "spend": 427.39,
    "last": "2024-05-11"
   },
   {
    "name": "RUSCHAACTU \u00b7 Sign-ups",
-   "spend": 10398.85,
+   "spend": 12233.94,
    "last": "2024-05-09"
   },
   {
    "name": "Inventory Test",
-   "spend": 597.94,
+   "spend": 703.46,
    "last": "2024-04-03"
   },
   {
    "name": "BALDSATIRE \u00b7 Draw Entries",
-   "spend": 261.82,
+   "spend": 308.02,
    "last": "2024-03-20"
   },
   {
    "name": "WEIWEIGUAR \u00b7 Sign-ups",
-   "spend": 6062.15,
+   "spend": 7131.94,
    "last": "2024-03-15"
   },
   {
    "name": "WEIWEIGUAR \u00b7 Purchase",
-   "spend": 3976.27,
+   "spend": 4677.97,
    "last": "2024-03-15"
   },
   {
    "name": "MATTSIERRA \u00b7 Purchases",
-   "spend": 154.27,
+   "spend": 181.5,
    "last": "2024-03-07"
   },
   {
    "name": "MATTSIERRA \u00b7 Sign-ups",
-   "spend": 564.22,
+   "spend": 663.79,
    "last": "2024-03-05"
   },
   {
    "name": "TOMASTLE24 \u00b7 Purchases",
-   "spend": 858.3,
+   "spend": 1009.76,
    "last": "2024-02-16"
   },
   {
    "name": "TOMASTLE24 \u00b7 Sign-ups",
-   "spend": 2198.24,
+   "spend": 2586.17,
    "last": "2024-02-14"
   },
   {
    "name": "Test Boost Reach",
-   "spend": 7.79,
+   "spend": 9.17,
    "last": "2024-02-07"
   },
   {
    "name": "ANISHTLE23 \u00b7 Purchases",
-   "spend": 3912.38,
+   "spend": 4602.8,
    "last": "2024-01-15"
   },
   {
    "name": "ANISHTLE23 \u00b7 Sign-ups",
-   "spend": 623.95,
+   "spend": 734.06,
    "last": "2024-01-08"
   },
   {
    "name": "CREWDTWILI \u00b7 Purchase",
-   "spend": 130.68,
+   "spend": 153.74,
    "last": "2023-12-14"
   },
   {
    "name": "JJEANDES23 \u00b7 Purchase",
-   "spend": 1493.27,
+   "spend": 1756.79,
    "last": "2023-11-16"
   },
   {
