@@ -38,10 +38,11 @@
  * a product for in the paid key's, and the editions are checked where they
  * are typed, on the Target setting tab.
  *
- * "Post to Slack" sends the card as a Slack message: a table of the rows,
- * figures only so it reads on a phone, composed on the server from the same
- * snapshot by the same rules (server/slack.js), at the horizon this page is
- * on.
+ * "Post to Slack" sends the card as a Block Kit message composed on the
+ * server from the same snapshot by the same rules (server/slack.js), at the
+ * horizon this page is on: the headline in words and the works as a table,
+ * or as Slack's own chart, chart and data table, or cards (the layout the
+ * server defaults to, or one named in the address bar for a test).
  *
  * No target and no benchmark on this card, by decision: both are on the hero
  * and the channels, and here they only crowded the reading. Each row is the
@@ -256,8 +257,15 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const postToSlack = async () => {
     setPost({ state: "posting" });
     try {
+      // a layout named in the address bar rides along (?slackLayout=chart,
+      // or =test for the three candidates at once, to ?slackChannel=<name>),
+      // for trying layouts in a test channel; without one the server posts
+      // its default
+      const q = new URLSearchParams(window.location.search);
+      const layout = q.get("slackLayout"), testChannel = q.get("slackChannel");
       const r = await fetch(`/api/releases/${snap.id}/slack`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ horizon: close ? "close" : "today" }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ horizon: close ? "close" : "today", ...(layout ? { layout } : {}), ...(layout === "test" && testChannel ? { channel: testChannel } : {}) }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `Slack post failed (${r.status})`);

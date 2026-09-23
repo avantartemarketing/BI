@@ -1,15 +1,17 @@
 /* Sell-through updates to Slack, on demand.
  *
  * The sell-through card carries a "Post to Slack" button; pressing it sends
- * the card as a Slack message - a Block Kit table of the products, three
- * columns (the product, its units of the edition, its share), under the
- * release's headline and the framing take-up - to the channel set for that
- * release on its Target setting tab. The message is composed here from the
- * snapshot the page is showing, by the card's own rules (docs 6.3), so what
- * lands in Slack is what the card says, set in Slack's own type at Slack's
- * own size. It replaced a picture of the card, which Slack shrank to a
- * fixed height whatever its size, and then a table with bars drawn in text,
- * which a phone wrapped. Figures only, so it reads on a phone.
+ * the card as a Block Kit message to the channel set for that release on
+ * its Target setting tab: the artist as the header, the works and the
+ * campaign day under it, the headline in bold, the products in one of four
+ * layouts (a table, Slack's own bar chart, the chart with a sortable data
+ * table, or a carousel of cards), then the totals and the framing take-up
+ * in plain sentences. The message is composed here from the snapshot the
+ * page is showing, by the card's own rules (docs 6.3), so what lands in
+ * Slack is what the card says, set in Slack's own type at Slack's own
+ * size. It replaced a picture of the card, which Slack shrank to a fixed
+ * height whatever its size, and then a table with bars drawn in text,
+ * which a phone wrapped.
  *
  * Channel per release lives in a small document of its own (SLACK_STATE_PATH,
  * default data/slack.json; put it on the persistent disk like the layout), so
@@ -108,62 +110,106 @@ const daysBetween = (a, b) => { const x = dayOf(a), y = dayOf(b); return x === n
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 const fmt = (v) => Math.round(num(v)).toLocaleString("en-GB");
+const pct = (v) => `${Math.round(num(v) * 100)}%`;
 
-/* Product names without the part they all share: "Untitled (White on White)"
- * and "Untitled (Black on Black)" become "White on White" and "Black on
- * Black"; the three Schnabel prints become I, II and III. The card can
- * truncate and lean on its hover; a table in a channel cannot. */
-function shortNames(names) {
-  if (names.length < 2) return names.slice();
+/* The part of the names all the products share, back to the last space or
+ * opening bracket: "Brillo Box Collectable (" for the seven Brillo boxes;
+ * null when they share less than eight characters. */
+function sharedPrefix(names) {
+  if (names.length < 2) return null;
   let p = names[0];
   for (const n of names) {
     let i = 0;
     while (i < p.length && i < n.length && p[i] === n[i]) i++;
     p = p.slice(0, i);
   }
-  p = p.replace(/[^\s(]*$/, "");   // back to the last space or opening bracket
-  if (p.length < 8) return names.slice();
+  p = p.replace(/[^\s(]*$/, "");
+  return p.length < 8 ? null : p;
+}
+/* Product names without the part they all share: "Untitled (White on White)"
+ * and "Untitled (Black on Black)" become "White on White" and "Black on
+ * Black"; the three Schnabel prints become I, II and III. The card can
+ * truncate and lean on its hover; a message in a channel cannot. */
+function shortNames(names) {
+  const p = sharedPrefix(names);
+  if (p === null) return names.slice();
   return names.map((n) => n.slice(p.length).replace(/^[\s(]+|[\s)]+$/g, "") || n);
+}
+/* the shared part as words, for the line under the header */
+const prefixWords = (p) => p.replace(/[\s(,:-]+$/, "").trim();
+
+/* Slack's chart wants a label of at most 20 characters per bar, unique
+ * across the chart: the short names cut to fit, numbered when two collide. */
+const LABEL_MAX = 20;
+function chartLabels(names) {
+  const seen = new Map();
+  return names.map((n) => {
+    const chars = [...n];
+    let label = chars.length > LABEL_MAX ? chars.slice(0, LABEL_MAX - 1).join("").trimEnd() + "…" : n;
+    const c = seen.get(label) || 0;
+    seen.set(label, c + 1);
+    if (c) { const tag = ` ${c + 1}`; label = [...label].slice(0, LABEL_MAX - tag.length).join("").trimEnd() + tag; }
+    return label;
+  });
 }
 
 const bold = (t) => ({ type: "rich_text", elements: [{ type: "rich_text_section", elements: [{ type: "text", text: String(t), style: { bold: true } }] }] });
 const raw = (t) => ({ type: "raw_text", text: String(t) });
+const rawNum = (value, text) => ({ type: "raw_number", value: Number(value), ...(text !== undefined ? { text: String(text) } : {}) });
+const mrkdwn = (text) => ({ type: "mrkdwn", text });
+const section = (text) => ({ type: "section", text: mrkdwn(text) });
+const context = (text) => ({ type: "context", elements: [mrkdwn(text)] });
 
-/* The update as Block Kit: the release as a header, the card's headline,
- * the campaign day and the framing take-up as a section, the products as a
- * table (name, units of the edition, the share), the release's totals as a
- * context line, and a note while a feed is missing. `horizon` is the page's
- * toggle: "close" reads the projection, as the card does. The section
- * carries the day the update goes out (`today`, for the tests), with the
- * campaign day moved on from the snapshot's. Returns the blocks and the
- * one-line text Slack shows in notifications. */
-function composeSellThroughBlocks(snap, { horizon = "today", today } = {}) {
+/* Everything the layouts say, worked out once from the snapshot by the
+ * card's own rules: the release and its day, the headline, the totals, the
+ * framing take-up, and one row per product (or the release as one row
+ * without the draw feed). `horizon` is the page's toggle: "close" reads the
+ * projection, as the card does. The day is moved on to the day this goes out
+ * (`today`, for the tests). */
+function model(snap, { horizon = "today", today } = {}) {
   const st = (snap && snap.sellthrough) || {};
   const close = horizon === "close";
   const products = Array.isArray(st.products) ? st.products : [];
-  const names = shortNames(products.map((p) => String(p.name || "")));
+  const fullNames = products.map((p) => String(p.name || ""));
+  const names = shortNames(fullNames);
   const soldOf = (p) => num(p.sold) + num(p.soldAssumed);
   // the whole edition is the products' editions added up; the release's own
   // edition size stands in when a product has none
   const editionSum = products.length && products.every((p) => num(p.edition) > 0)
     ? products.reduce((n, p) => n + num(p.edition), 0) : null;
   const edition = editionSum || (num(st.edition) > 0 ? num(st.edition) : null);
+  const releaseName = String(snap.releaseName || snap.id || "Release");
+  const artist = String(snap.artist || releaseName);
 
-  // the campaign day, moved on to the day this goes out
+  // the works and the campaign day, moved on to the day this goes out
+  const prefix = sharedPrefix(fullNames);
+  const worksLine = products.length === 1 ? `${fullNames[0]}.`
+    : products.length ? `${prefix ? prefixWords(prefix) + ", " : ""}${products.length} works.` : null;
   const sent = today || new Date().toISOString().slice(0, 10);
   const lag = Math.max(0, daysBetween(snap.asOf, sent));
   const of = num(snap.of);
   const day = Math.min(num(snap.day) + lag, of > 0 ? of : Infinity);
   const through = snap.completeThrough || snap.asOf;
-  const dayLine = [of > 0 ? `day ${fmt(day)} of ${fmt(of)}` : null, through ? `data through ${fmtDay(through)}` : null].filter(Boolean).join(" · ");
+  const dayLine = of > 0 ? `Day ${fmt(day)} of ${fmt(of)}${through ? `, figures to ${fmtDay(through)}` : ""}.`
+    : through ? `Figures to ${fmtDay(through)}.` : null;
 
   // the headline, as the card computes it
   const sold = num(st.sold), drafts = finite(st.drafts) ? num(st.drafts) : null, inHand = num(st.soldPredicted);
   const future = close ? num(st.futureEntriesPredicted) : 0;
-  const headPct = edition ? (close ? num(st.pct) : Math.min((sold + (drafts || 0) + inHand) / edition, 1)) : null;
+  const units = sold + (drafts || 0) + inHand + future;
+  const headPct = edition ? (close ? num(st.pct) : Math.min(units / edition, 1)) : null;
+  const what = close ? "projected at close" : "sold through";
   const headline = headPct === null
-    ? `${fmt(sold + (drafts || 0) + inHand + future)} units`
-    : `${Math.round(headPct * 100)}% of ${fmt(edition)} units`;
+    ? { bold: `${fmt(units)} units ${close ? "projected at close" : "spoken for"}`, rest: "" }
+    : { bold: `${pct(headPct)} ${what}`, rest: `, ${fmt(units)} of ${fmt(edition)} units` };
+
+  // the totals, in words
+  const totals = [
+    `Paid ${fmt(sold)}`,
+    drafts !== null && drafts > 0 ? `awaiting payment ${fmt(drafts)}` : null,
+    `expected from the draw ${fmt(inHand)}`,
+    close && future > 0 ? `still to come ${fmt(future)}` : null,
+  ].filter(Boolean).join(", ") + ".";
 
   // framing: frames per print on the prints a frame was on offer for, from
   // the orders - the Framing card's own figure (docs 6.4); before any print
@@ -174,55 +220,126 @@ function composeSellThroughBlocks(snap, { horizon = "today", today } = {}) {
   const plan = fr && finite(fr.plan) ? num(fr.plan)
     : snap.economics && finite(snap.economics.frameConversion) ? num(snap.economics.frameConversion) : null;
   const framingOff = fr === null || !!(snap.economics && snap.economics.framingAvailable === false);
-  const pc = (v) => `*${Math.round(v * 100)}%*`;
-  const planNote = plan !== null ? ` · plan ${Math.round(plan * 100)}%` : "";
+  const planNote = plan !== null ? ` (plan ${pct(plan)})` : "";
   const framing = framingOff ? null
     : fr && finite(fr.rate) && num(fr.prints) > 0
-      ? `Framing conversion ${pc(fr.rate)} · ${fmt(fr.frames)} frames on ${fmt(fr.prints)} prints sold${planNote}`
+      ? `${pct(fr.rate)} of prints sold took a frame, ${fmt(fr.frames)} of ${fmt(fr.prints)}${planNote}.`
       : fr && fr.entrants && finite(fr.entrants.rate) && num(fr.entrants.prints) > 0
-        ? `Framing conversion ${pc(fr.entrants.rate)} of the prints entrants pre-authorised${planNote}`
-        : plan !== null ? `Framing conversion ${pc(plan)} (plan)` : null;
+        ? `Entrants asked for frames on ${pct(fr.entrants.rate)} of their pre-authorised prints${planNote}.`
+        : plan !== null ? `Framing plan ${pct(plan)}, no framed orders in the feed yet.` : null;
 
   // the rows: the products, or the release as one row without the draw feed
   const rowsIn = products.length ? products.map((p, i) => ({
     name: names[i], edition: num(p.edition) > 0 ? num(p.edition) : null,
     paid: soldOf(p), drafts: num(p.drafts), winners: num(p.shown), future: close ? num(p.futurePredicted) : 0,
     pct: close ? p.pctClose : p.pct,
-  })) : [{
-    name: String(snap.releaseName || snap.id || "Release"), edition,
-    paid: sold, drafts: drafts || 0, winners: inHand, future, pct: headPct,
-  }];
+  })) : [{ name: releaseName, edition, paid: sold, drafts: drafts || 0, winners: inHand, future, pct: headPct }];
   const rows = rowsIn.map((r) => {
-    const units = r.paid + r.drafts + r.winners + r.future;
-    const pct = r.edition ? (finite(r.pct) ? num(r.pct) : Math.min(units / r.edition, 1)) : null;
-    return [
-      raw(r.name),
-      raw(r.edition ? `${fmt(units)} of ${fmt(r.edition)}` : fmt(units)),
-      bold(pct === null ? "-" : `${Math.round(pct * 100)}%`),
-    ];
+    const u = r.paid + r.drafts + r.winners + r.future;
+    return { ...r, units: u, pct: r.edition ? (finite(r.pct) ? num(r.pct) : Math.min(u / r.edition, 1)) : null };
   });
 
-  // the release's totals, the parts the units column adds up
-  const key = [
-    `Paid *${fmt(sold)}*`,
-    drafts !== null && drafts > 0 ? `Drafts *${fmt(drafts)}*` : null,
-    `Draw winners (estimate) *${fmt(inHand)}*`,
-    close && future > 0 ? `Still to come *${fmt(future)}*` : null,
-  ].filter(Boolean).join(" · ");
-  const incomplete = Array.isArray(st.incomplete) ? st.incomplete : [];
-  const releaseName = String(snap.releaseName || snap.id || "Release");
+  return {
+    close, artist, releaseName, worksLine, dayLine, headline, totals, framing, rows,
+    hasProducts: products.length > 0, allEditions: rows.every((r) => r.edition),
+    incomplete: Array.isArray(st.incomplete) ? st.incomplete : [],
+  };
+}
 
+// ---- the products, four ways
+
+const unitsOf = (r) => (r.edition ? `${fmt(r.units)} of ${fmt(r.edition)}` : fmt(r.units));
+const shareOf = (r) => (r.pct === null ? "-" : pct(r.pct));
+
+/* a table block: the work, its units of the edition, its share */
+function tableBlock(m) {
+  return {
+    type: "table",
+    column_settings: [{ align: "left", is_wrapped: true }, { align: "right" }, { align: "right" }],
+    rows: [[bold("Work"), bold("Units"), bold("Sold")], ...m.rows.map((r) => [raw(r.name), raw(unitsOf(r)), bold(shareOf(r))])],
+  };
+}
+/* Slack's own bar chart: one bar per work, its share of the edition (its
+ * units, when an edition is missing). Slack allows 20 points, 20 characters
+ * a label and 50 a title. */
+function chartBlock(m) {
+  const rows = m.rows.slice(0, 20);
+  const labels = chartLabels(rows.map((r) => r.name));
+  const byShare = m.allEditions;
+  const data = rows.map((r, i) => ({ label: labels[i], value: byShare ? Math.round(num(r.pct) * 1000) / 10 : Math.round(r.units) }));
+  return {
+    type: "data_visualization",
+    title: (m.close ? "Projected at close by work" : "Sell-through by work").slice(0, 50),
+    chart: {
+      type: "bar",
+      series: [{ name: m.close ? "At close" : "Sold through", data }],
+      axis_config: { categories: labels, x_label: "Work", y_label: byShare ? "% of edition" : "Units" },
+    },
+  };
+}
+/* Slack's data table: sortable, its numbers sorting as numbers, paged past
+ * the rows it is told to show at once. The header row is plain text only. */
+function dataTableBlock(m) {
+  return {
+    type: "data_table",
+    caption: m.close ? "Projected at close by work" : "Sell-through by work",
+    page_size: Math.min(100, Math.max(5, m.rows.length)),
+    row_header_column_index: 0,
+    rows: [
+      [raw("Work"), raw("Sold"), raw("Units"), raw("Paid")],
+      ...m.rows.map((r) => [
+        raw(r.name),
+        r.pct === null ? raw("-") : rawNum(Math.round(r.pct * 1000) / 10, pct(r.pct)),
+        rawNum(Math.round(r.units), unitsOf(r)),
+        rawNum(Math.round(r.paid), fmt(r.paid)),
+      ]),
+    ],
+  };
+}
+/* a carousel of cards, one per work: Slack allows ten */
+function cardsBlocks(m) {
+  const cards = m.rows.slice(0, 10).map((r) => ({
+    type: "card",
+    title: mrkdwn(`*${r.name}*`.slice(0, 150)),
+    subtitle: mrkdwn(r.pct === null ? `${fmt(r.units)} units ${m.close ? "projected at close" : "spoken for"}` : `${pct(r.pct)} ${m.close ? "projected at close" : "sold through"}`),
+    body: mrkdwn(`${r.edition ? `${fmt(r.units)} of ${fmt(r.edition)} units ${m.close ? "projected" : "spoken for"}. ` : ""}${fmt(r.paid)} paid.`.slice(0, 200)),
+  }));
+  const blocks = [{ type: "carousel", elements: cards }];
+  if (m.rows.length > 10) blocks.push(context(`and ${m.rows.length - 10} more works.`));
+  return blocks;
+}
+
+const LAYOUTS = ["table", "chart", "chart_table", "cards"];
+
+/* The update as Block Kit. Every layout has the same top and bottom: the
+ * artist as the header, the works and the campaign day in small type under
+ * it, the headline in bold, and after the products the totals and the
+ * framing take-up in plain sentences. The layouts differ in the products:
+ *   table        a table block, the work, its units and its share
+ *   chart        Slack's own bar chart, one bar per work
+ *   chart_table  the chart, then Slack's sortable data table with the figures
+ *   cards        a carousel of cards, one per work
+ * Without the draw feed the products are the release as one table row,
+ * whatever the layout. `label` puts a line above the header naming the
+ * message, for a test that posts several layouts at once. Returns the
+ * blocks and the one-line text Slack shows in notifications. */
+function composeSellThroughBlocks(snap, { horizon = "today", today, layout = "table", label } = {}) {
+  const m = model(snap, { horizon, today });
+  const lay = m.hasProducts && LAYOUTS.includes(layout) ? layout : "table";
+  const products = lay === "chart" ? [chartBlock(m)]
+    : lay === "chart_table" ? [chartBlock(m), dataTableBlock(m)]
+      : lay === "cards" ? cardsBlocks(m)
+        : [tableBlock(m)];
   const blocks = [
-    { type: "header", text: { type: "plain_text", text: releaseName.slice(0, 150) } },
-    { type: "section", text: { type: "mrkdwn", text:
-      `*Sell-through by product · ${headline}*${close ? " · at close" : ""}${dayLine ? ` · ${dayLine}` : ""}${framing ? `\n${framing}` : ""}` } },
-    { type: "table",
-      column_settings: [{ align: "left", is_wrapped: true }, { align: "right" }, { align: "right" }],
-      rows: [[bold("Product"), bold("Units"), bold("Sold")], ...rows] },
-    { type: "context", elements: [{ type: "mrkdwn", text: key }] },
+    ...(label ? [context(`*${label}*`)] : []),
+    { type: "header", text: { type: "plain_text", text: m.artist.slice(0, 150) } },
+    ...([m.worksLine, m.dayLine].some(Boolean) ? [context([m.worksLine, m.dayLine].filter(Boolean).join(" "))] : []),
+    section(`*${m.headline.bold}*${m.headline.rest}`),
+    ...products,
+    section(`${m.totals}${m.framing ? `\n${m.framing}` : ""}`),
   ];
-  if (incomplete.length) blocks.push({ type: "context", elements: [{ type: "mrkdwn", text: `_Incomplete data: ${incomplete.join(", ")}_` }] });
-  return { text: `${releaseName}: sell-through ${headline}${close ? " at close" : ""}`, blocks };
+  if (m.incomplete.length) blocks.push(context(`_Incomplete data: ${m.incomplete.join(", ")}_`));
+  return { text: `${m.artist}: ${m.headline.bold}${m.headline.rest}`, blocks, layout: lay };
 }
 
 // ---------------------------------------------------------------- posting
@@ -260,7 +377,10 @@ async function postMessage(channel, text, blocks = null) {
   return { ts: json.ts, channel: json.channel };
 }
 
+/* a channel name Slack could take, as typed on the Target setting tab */
+const channelNameOk = (name) => CHANNEL_RE.test(String(name ?? "").trim().replace(/^#/, ""));
+
 module.exports = {
-  stateFor, setChannel, recordPost, stateWarning, composeSellThroughBlocks, shortNames,
+  stateFor, setChannel, recordPost, stateWarning, channelNameOk, composeSellThroughBlocks, LAYOUTS, shortNames, sharedPrefix, chartLabels,
   postMessage, STATE_PATH,
 };

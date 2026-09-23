@@ -93,10 +93,13 @@ print(f"profit share: AA {paid['cumRoi']} artist {art['cumRoi']} (ratio {ratio:.
 # plan the paid spend card reads, not the panel's historic paid shape
 ch = next(c for c in S["channels"] if c["key"] == "paid")
 L = (launch - announce).days
-frac = min(1.0, (TODAY - announce).days / L)
-check(close(ch["exp"], ch["target"] * frac, 0.02) and ch["exp"] > 0, f"paid expected by today is the even share: {ch['exp']} vs {ch['target']} x {frac:.3f}")
+# paid starts the day after the announce: the even share runs over L - 1 days
+frac = min(1.0, ((TODAY - announce).days - 1) / (L - 1))
+check(close(ch["exp"], ch["target"] * frac, 0.02) and ch["exp"] > 0, f"paid expected by today is the even share of its days: {ch['exp']} vs {ch['target']} x {frac:.3f}")
+check(S["paid"]["paidStartDays"] == 1 and S["paid"]["paidDays"] == L - 1, "the paid block says when paid starts")
 plan_at = lambda d: next(r["plan"] for r in ch["daily"] if r["date"] == d.isoformat())
-check(close(plan_at(announce + timedelta(days=6)), plan_at(announce + timedelta(days=12)) / 2, 0.02), "and the paid plan line is straight")
+check(plan_at(announce) == 0 and plan_at(announce + timedelta(days=1)) == 0, "nothing is expected of paid on the announce day or its first day")
+check(close(plan_at(announce + timedelta(days=7)), plan_at(announce + timedelta(days=13)) / 2, 0.02), "and the paid plan line is straight from the day after the announce")
 email = next(c for c in S["channels"] if c["key"] == "aa_email")
 check(not close(email["exp"], email["target"] * frac, 0.05), "the organic groups keep their historic shape")
 

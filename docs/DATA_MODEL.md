@@ -1021,13 +1021,15 @@ picker, the snapshot and the re-run all ask for the same ones. Entries curves di
 between baskets (0.03-0.14 from pooled, above), so in practice it is the sessions and units
 shapes that move.
 
-**Paid's plan by today is the even daily budget's share.** The paid group's plan line, its
-expected-by-today and its benchmark-by-today read `target × min(days elapsed / campaign days, 1)`
-rather than the panel's historic paid shape. Paid follows spend, and spend is planned evenly
-over the campaign; the historic shape starts near zero because paid campaigns used to begin
-after the announce, and it told the Channels vs targets card there was nothing to expect on
-days when the Paid spend card, reading the same even plan, showed the units bought. The organic
-groups keep their shape curves. (2026-09-23.)
+**Paid's plan by today is the even daily budget's share of the days paid runs.** Paid starts
+the day after the announce (`PAID_START_DAYS` = 1) and runs to the close, so the paid group's
+plan line, its expected-by-today and its benchmark-by-today read
+`target × clamp((days elapsed − 1) / (campaign days − 1))`, the plan's daily rate is the paid
+budget over those days, and the paid block publishes `paidStartDays` and `paidDays` for the
+cards (`paidDayFrac` in `web/src/ui.jsx`). Not the panel's historic paid shape, which starts
+near zero and told the Channels vs targets card there was nothing to expect on days when the
+Paid spend card, reading the even plan, showed the units bought. The organic groups keep their
+shape curves. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
@@ -1203,11 +1205,14 @@ composed on the server from the same snapshot (`server/slack.js`): the release a
 the headline with the campaign day, and under it the framing take-up (`framing.rate`, the
 Framing card's frames per print, §6.4, with the count behind it and the plan beside it; the
 entrants' rate before a sale; the plan alone on a snapshot without the block; nothing where
-no print has a frame on offer); a `table` block of the products, three columns - the name,
-its units of the edition, its share - with no bar, because a bar drawn in text wrapped on a
-phone; and the release's totals (paid, drafts, draw winners, at close the units still to
-come) as a context line. The figures are computed once, on the server, at the horizon the
-page is on.
+no print has a frame on offer); the works, as a `table` block (the name, its units of the
+edition, its share, with no bar, because a bar drawn in text wrapped on a phone) or, by the
+request's `layout`, as Slack's own bar chart (`data_visualization`, one bar per work at its
+share of the edition), the chart with a sortable `data_table` (work, share, units, paid), or
+a `carousel` of cards; and the release's totals (paid, awaiting payment, expected from the
+draw, at close the units still to come) with the framing line as plain sentences. The
+figures are computed once, on the server, at the horizon the page is on; `layout: "test"`
+posts the three non-table layouts to a named channel as a look, recording nothing.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
 pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven

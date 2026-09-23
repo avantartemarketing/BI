@@ -718,25 +718,50 @@ app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
     res.status(400).json({ error: String(e.message || e) });
   }
 }));
-/* The card to Slack, as a message: the release, the headline, the framing
- * take-up and a table of the products with bars drawn in text, composed
- * from the snapshot on disk by the card's own rules (server/slack.js). The
- * body says which horizon the page is on ({horizon: "today" | "close"});
- * {dryRun: true} returns the message instead of posting it. */
+/* The card to Slack, as a Block Kit message composed from the snapshot on
+ * disk by the card's own rules (server/slack.js). The body says which
+ * horizon the page is on ({horizon: "today" | "close"}) and may name a
+ * layout ({layout: "table" | "chart" | "chart_table" | "cards"}; the table
+ * unless told otherwise); {dryRun: true} returns the message instead of
+ * posting it. {layout: "test"} posts the chart, the chart with the data
+ * table and the cards as three messages, each named, to {channel} if given
+ * (a channel name, as typed on the Target setting tab) or the release's own,
+ * and records nothing: it is a look at the layouts, not an update. */
+const SLACK_TEST_LAYOUTS = [["chart", "Option A: Chart"], ["chart_table", "Option B: Chart and table"], ["cards", "Option C: Cards"]];
 app.post("/api/releases/:id/slack", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   const snap = readSnapshot(id);
   if (!snap) return res.status(404).json({ error: "unknown release" });
+  const body = req.body || {};
+  const horizon = body.horizon === "close" ? "close" : "today";
   const st = slack.stateFor(id);
-  if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
-  // the message, by the card's rules, at the horizon the page is on
-  const horizon = req.body && req.body.horizon === "close" ? "close" : "today";
-  const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon });
-  if (req.body && req.body.dryRun) return res.json({ channel: st.channel, text, blocks });
+  const test = body.layout === "test";
+  const named = test && typeof body.channel === "string" && body.channel.trim() ? body.channel.trim().replace(/^#/, "") : null;
+  if (named && !slack.channelNameOk(named)) {
+    return res.status(400).json({ error: "a Slack channel name is letters, digits, dots, dashes and underscores (no spaces, no #)" });
+  }
+  const channel = named || (st && st.channel) || null;
+  if (!channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
+  if (test) {
+    const posted = [], failed = [];
+    for (const [layout, label] of SLACK_TEST_LAYOUTS) {
+      const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon, layout, label });
+      if (body.dryRun) { posted.push({ layout, text, blocks }); continue; }
+      try { await slack.postMessage(channel, text, blocks); posted.push(layout); }
+      catch (e) { failed.push({ layout, error: String(e.message || e) }); }
+    }
+    if (body.dryRun) return res.json({ channel, test: posted });
+    if (!posted.length) return res.status(502).json({ error: `none of the layouts posted: ${failed.map((f) => `${f.layout}: ${f.error}`).join("; ")}` });
+    return res.json({ ok: true, channel, posted, failed,
+      warning: failed.length ? `${failed.map((f) => f.layout).join(" and ")} did not post: ${failed.map((f) => f.error).join("; ")}` : null });
+  }
+  const layout = slack.LAYOUTS.includes(body.layout) ? body.layout : "table";
+  const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon, layout });
+  if (body.dryRun) return res.json({ channel, layout, text, blocks });
   try {
-    await slack.postMessage(st.channel, text, blocks);
+    await slack.postMessage(channel, text, blocks);
     const s = auth.sessionFrom(req);
-    res.json({ ok: true, channel: st.channel, slack: slack.recordPost(id, s && s.email) });
+    res.json({ ok: true, channel, layout, slack: slack.recordPost(id, s && s.email) });
   } catch (e) {
     res.status(502).json({ error: String(e.message || e) });
   }

@@ -32,7 +32,7 @@
 import React from "react";
 import {
   Card, GROUP_DOTS, C, fmt, fmtSigned, fmtMoney, MINUS, useTip,
-  rungGeom, rungPos, RungTrack, RungKey, Tick, refWords, dayElapsed, dayLabel,
+  rungGeom, rungPos, RungTrack, RungKey, Tick, refWords, dayElapsed, paidDayFrac, dayLabel,
 } from "../ui.jsx";
 
 const RING = "0 0 0 1px rgba(20,20,19,.45)";
@@ -345,7 +345,8 @@ function groupWaterfall(g, snap, vsBm = false) {
     const day = dayElapsed(snap), of = snap.of ?? 0;
     const spendA = paid.spendToDate ?? 0;
     const budget = vsBm ? paid.benchmarkBudget : paid.spendBudget;
-    const spendE = of > 0 && budget ? (budget * day) / of : null;
+    // paid runs from the day after the announce: its budget's share by today
+    const spendE = of > 0 && budget ? budget * paidDayFrac(snap) : null;
     if (finite(spendE) && spendE > 0 && spendA > 0 && exp > 0) {
       steps = chainSteps([
         { label: "Spend", a: spendA, e: spendE, show: (v) => fmtVal(v, "eur"), note: `spend to date vs the ${REF}'s share of budget by today` },
