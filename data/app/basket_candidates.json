@@ -1,5 +1,5 @@
 {
- "asOf": "2026-09-20",
+ "asOf": "2026-09-23",
  "rows": [
   {
    "release_name": "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
@@ -234,7 +234,7 @@
     "paid": 0.0139532348612852
    },
    "entries": 841.0,
-   "units_per_buyer": 1.3634969325153374,
+   "units_per_buyer": 1.3671274961597542,
    "private_room_share": 0.2002262443438914,
    "price": 425.0,
    "edition_size": 900.0,
@@ -834,7 +834,7 @@
     "paid": 0.0524130773222625
    },
    "entries": 1177.0,
-   "units_per_buyer": 1.1783132530120481,
+   "units_per_buyer": 1.1795180722891567,
    "private_room_share": 0.0570824524312896,
    "price": 460.3113941967445,
    "edition_size": 1413.0,
@@ -874,7 +874,7 @@
     "paid": 0.3275862068965517
    },
    "entries": 1692.0,
-   "units_per_buyer": 1.2087591240875912,
+   "units_per_buyer": 1.2113702623906706,
    "private_room_share": 0.3026004728132387,
    "price": 595.0,
    "edition_size": 1200.0,
@@ -954,7 +954,7 @@
     "paid": 0.0037612838515546
    },
    "entries": 194.0,
-   "units_per_buyer": 1.0284810126582278,
+   "units_per_buyer": 1.028391167192429,
    "private_room_share": 0.3375394321766561,
    "price": 680.0,
    "edition_size": 327.0,
@@ -1034,7 +1034,7 @@
     "paid": 0.001235103898437
    },
    "entries": 483.0,
-   "units_per_buyer": 1.0124416796267497,
+   "units_per_buyer": 1.0124223602484472,
    "private_room_share": 0.146774193548387,
    "price": 1870.0,
    "edition_size": 666.0,
@@ -1354,7 +1354,7 @@
     "paid": 0.0
    },
    "entries": 131.0,
-   "units_per_buyer": 1.008695652173913,
+   "units_per_buyer": 1.0086206896551724,
    "private_room_share": 0.0,
    "price": 3293.75,
    "edition_size": 288.0,
@@ -1674,7 +1674,7 @@
     "paid": 0.0060300749990578
    },
    "entries": 1532.0,
-   "units_per_buyer": 1.0225409836065573,
+   "units_per_buyer": 1.0235655737704918,
    "private_room_share": 0.0770010131712259,
    "price": 1275.0,
    "edition_size": 1000.0,
@@ -1714,7 +1714,7 @@
     "paid": null
    },
    "entries": 182.0,
-   "units_per_buyer": 1.1304347826086956,
+   "units_per_buyer": 1.2608695652173914,
    "private_room_share": 0.1637931034482758,
    "price": 6800.0,
    "edition_size": 125.0,
@@ -2114,7 +2114,7 @@
     "paid": 0.0020661766876236
    },
    "entries": 452.0,
-   "units_per_buyer": 1.1280276816608996,
+   "units_per_buyer": 1.1453287197231834,
    "private_room_share": 0.2783505154639175,
    "price": 5100.0,
    "edition_size": 450.0,
@@ -3514,7 +3514,7 @@
     "paid": null
    },
    "entries": 607.0,
-   "units_per_buyer": 1.41635687732342,
+   "units_per_buyer": 1.4014869888475836,
    "private_room_share": 0.0,
    "price": 5100.0,
    "edition_size": 450.0,
