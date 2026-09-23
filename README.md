@@ -128,7 +128,7 @@ Render's disk resets on every deploy. Six things live on it and are lost without
 
 `SESSION_SECRET` is the one-line fix for re-logins and needs no disk. For the rest, add a
 persistent disk to the service (Render → the service → Disks → Add disk; 1 GB is plenty), mount it
-at `/var/data`, and set the six variables under Environment (`render.yaml` carries the same disk
+at `/var/data`, and set the seven variables under Environment (`render.yaml` carries the same disk
 and paths for a service created from the blueprint). Until this is done the Target setting tab
 shows a red warning on every release, since every save would be lost on the next deploy. Set
 
