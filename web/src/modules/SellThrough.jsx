@@ -2,13 +2,23 @@
  *
  * The question is "how much of each edition is spoken for", so the card is
  * one row per product. Each row is that product's edition, and on it one
- * ramp of the page's orange, darkest to palest as the units get less
- * certain: paid (rust), draft orders not yet paid (orange), the draw
- * winners the entries in hand imply at the entry → order rate (light
- * orange), and at close the units still to come (palest). No hatching
- * anywhere - the ramp is the whole key, and where a bar runs past its
- * edition the paler room behind it stops, which is what says the demand has
- * nowhere to go.
+ * ramp of the page's blue, deepest to palest as the units get less certain:
+ * paid (deep), draft orders not yet paid (the actual's own blue), the draw
+ * winners the entries in hand imply at the entry → order rate (light), and
+ * at close the units still to come (palest). No hatching anywhere - the
+ * ramp is the whole key, and where a bar runs past its edition the paler
+ * room behind it stops, which is what says the demand has nowhere to go.
+ *
+ * One row of the grid whatever the count. The rows have ROWS_H of the card;
+ * the pitch is that shared by the count, capped at PITCH_MAX, and the bar is
+ * half the pitch: seven products are 14px bars on 28, four are 24 on 49,
+ * three or fewer 30 on 60, the cap being what keeps one edition from
+ * filling the card. The rows start under the headline and never spread;
+ * past seven they scroll. The key sits on the headline's own line, which is
+ * what gives the rows their height. Each row carries one figure, its
+ * percentage, in ink: no units beside it and no RAG colour, which said "bad"
+ * about a product that was simply mid-campaign. The Units toggle shows units
+ * of edition instead, on one scale for the card.
  *
  * Until the feeds carry sales by product and draft orders, the snapshot says
  * what is missing (`sellthrough.incomplete`) and the card wears an
@@ -28,7 +38,7 @@
  * are typed, on the Target setting tab.
  *
  * "Post to Slack" sends the card as a picture: the same rows drawn on a
- * canvas (sellThroughImage.js) from the model built below, with the figures
+ * canvas (sellThroughImage.mjs) from the model built below, with the figures
  * the server composes as its comment. The drawing is repeated there, the
  * numbers are not.
  *
@@ -41,16 +51,22 @@
  * product editions the card runs on units and says what is missing. Without
  * the draw feed at all it is one row, the release, as before. */
 import React, { useState } from "react";
-import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, ragColor, useTip } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, useTip } from "../ui.jsx";
 import { sellThroughPng } from "./sellThroughImage.mjs";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
-/* One ramp of the page's orange, darkest to palest as the units get less
+/* One ramp of the page's blue, deepest to palest as the units get less
  * certain: money in the bank, then an order raised, then the winners the
  * entries imply, then the campaign's remaining days. Nothing is hatched -
  * four solid tints of one hue carry the whole reading, and the key is the
  * same four swatches. */
-const SEG = { paid: C.rust, drafts: C.orange, winners: C.orangeLight, future: C.refBase };
+const SEG = { paid: C.blueDeep, drafts: C.blue, winners: C.blueLight, future: C.refBase };
+
+/* The rows' geometry: the height they share, and the most one row may take.
+ * ROWS_H is seven rows at 28px - what a wide card has left under its head,
+ * the headline line and the gaps around them, less 12px to spare. */
+const ROWS_H = 196;
+const PITCH_MAX = 60;
 
 /* A row's segments, in the order they stack. The card's bars and the picture
  * posted to Slack both draw from this, so the two cannot drift apart. */
@@ -65,15 +81,16 @@ const swatch = (bg) => ({ width: 9, height: 9, borderRadius: 2, background: bg, 
 const legendItem = { display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" };
 
 /* One product's bar. Layers, bottom to top: track → the paler room out to the
- * sellout → the segments inset → the hatch for demand past the sellout.
- * `maxV` is the bar's scale in units; in the % view it is the product's own
- * edition (plus any overshoot), in the Units view the same for every row. */
-function ProductBar({ row, close, maxV, tips, height = 16, radius = 4 }) {
+ * sellout → the segments inset → the winners' tint carrying on past the
+ * sellout for demand with no room. `maxV` is the bar's scale in units; in
+ * the % view it is the product's own edition (plus any overshoot), in the
+ * Units view the same for every row. */
+function ProductBar({ row, close, maxV, tips, height = 14, radius = 4 }) {
   const t = useTip();
   const tp = (x) => t.props(x);
   const pct = (v) => (maxV > 0 ? Math.max(0, Math.min(((v ?? 0) / maxV) * 100, 100)) : 0);
   const edition = row.edition;
-  const inset = Math.max(3, Math.round(height * 0.2));
+  const inset = Math.max(2, Math.round(height * 0.14));
   const innerR = Math.max(2, radius - 2);
   const over = row.oversubscribed ?? 0;
   const segs = segmentsOf(row, close).map((x) => ({ ...x, tip: tips[x.key === "sold" ? "sold" : x.key === "drafts" ? "drafts" : x.key === "future" ? "future" : "inHand"] }));
@@ -108,23 +125,12 @@ function ProductBar({ row, close, maxV, tips, height = 16, radius = 4 }) {
   );
 }
 
-/* The card's place on the page: a release with more than four products gets
-   two rows of the grid instead of one, so the bars stay readable instead of
-   thinning to fit. web/src/App.jsx passes this to the layout as the slot's
-   span; four products still sit comfortably in a single row. */
-export const SELL_THROUGH_TWO_ROWS = 4;
-export function sellThroughSize(snap) {
-  const n = ((snap && snap.sellthrough && snap.sellthrough.products) || []).length;
-  return n > SELL_THROUGH_TWO_ROWS ? "big" : "wide";
-}
-
 export default function SellThrough({ snap, horizon = "today" }) {
   const t = useTip();
   const [scale, setScale] = useState("pct");   // pct | units
   const [post, setPost] = useState({ state: "idle" });   // the Post to Slack button: idle | posting | done | error
   const st = snap?.sellthrough;
   const close = horizon === "close";
-  const targeted = !snap || snap.targeted !== false;
 
   if (!st) {
     return (
@@ -164,12 +170,21 @@ export default function SellThrough({ snap, horizon = "today" }) {
   // one scale for the Units view: the biggest edition, or the biggest demand
   const soldOf = (r) => (r.sold ?? 0) + (r.soldAssumed ?? 0) + (finite(r.drafts) ? r.drafts : 0);
   const demandOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0) + (r.oversubscribed ?? 0);
+  const unitsOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0);
   const unitsMax = Math.max(...rows.map((r) => Math.max(r.edition ?? 0, demandOf(r))), 1) * 1.02;
   const maxFor = (r) => (byEdition ? Math.max(r.edition, demandOf(r)) * 1.02 : unitsMax);
 
   // the headline: what is spoken for today, or the prediction at close
   const headPct = edition ? (close ? st.pct ?? 0 : Math.min((sold + (draftsAll ?? 0) + inHandAll) / edition, 1)) : null;
   const headUnits = sold + (draftsAll ?? 0) + inHandAll + futureAll;
+  const headText = byEdition && headPct !== null ? `${Math.round(headPct * 100)}%` : fmt(headUnits);
+  /* The one figure a row carries: its percentage, or on the Units toggle (and
+     where an edition is missing) its units, of the edition where there is one. */
+  const figureOf = (r) => {
+    const pctRow = close ? r.pctClose : r.pct;
+    if (byEdition && pctRow !== null && pctRow !== undefined) return { main: `${Math.round(pctRow * 100)}%`, of: null };
+    return { main: fmt(unitsOf(r)), of: finite(r.edition) && r.edition > 0 ? `/${fmt(r.edition)}` : null };
+  };
   const stampTip = incomplete.length ? {
     head: "Incomplete data",
     rows: incomplete.map((m) => ({ label: "Not in the feed yet", value: m })),
@@ -189,8 +204,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
       (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };
   /* No copy under the rows. The allocation's account lives in the popup of
-     the "Draw conversions" row, the split sales in the striped segment's,
-     and the editions in Target setting, where they can be fixed. */
+     the draw-winners key, the split sales in the paid key's, and the
+     editions in Target setting, where they can be fixed. */
   const alloc = st.allocation || null;
   const moved = fromFeed ? st.products.filter((p) => (p.flexible ?? 0) > 0) : [];
   const inHandTip = {
@@ -216,20 +231,16 @@ export default function SellThrough({ snap, horizon = "today" }) {
       ))}
     </span>
   );
-  // Past four products the card takes two rows of the page grid (see
-  // sellThroughSize), so the bars have roughly three times the height to
-  // share and stay fat rather than thinning to fit.
-  const twoRows = rows.length > SELL_THROUGH_TWO_ROWS;
+  /* One rule for the rows: the pitch is the height they share divided by the
+     count, capped, and the bar is half of it. */
   const n = Math.max(rows.length, 1);
-  const barH = twoRows
-    ? Math.max(24, Math.min(44, Math.round(420 / n)))
-    : Math.max(24, Math.min(30, Math.round(120 / n)));
-  const rowH = Math.min(68, barH + (twoRows ? 18 : 16));
-  const barR = Math.max(4, Math.round(barH / 4));
+  const pitch = Math.min(PITCH_MAX, Math.floor(ROWS_H / n));
+  const barH = Math.floor(pitch / 2);
+  const barR = Math.max(4, Math.round(barH / 5));
 
-  /* One key at the foot of the card: swatch, what it is, and the release's
-     total. The totals used to sit in a column of their own beside the
-     headline; they are here so the product titles get that width. */
+  /* The key: swatch, what it is, and the release's total. It sits on the
+     headline's line, the release's figure on the left and its composition
+     on the right, which is what leaves the rows their height. */
   const legendChip = ({ key, sw, label, value, tip }) => (
     <span key={key} {...(tip ? t.props(tip) : {})} style={{ ...legendItem, cursor: tip ? "help" : "default" }}>
       {sw}
@@ -243,7 +254,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   /* The card as a picture, for Slack: the rows exactly as they are on screen,
      plus what the page around them supplies (the release, the campaign day,
      the horizon) so the image stands alone in a channel. Only the drawing is
-     repeated in sellThroughImage.js - every figure here is the one rendered
+     repeated in sellThroughImage.mjs - every figure here is the one rendered
      above. */
   const imageModel = () => ({
     title: "Sell-through by product",
@@ -255,21 +266,17 @@ export default function SellThrough({ snap, horizon = "today" }) {
     horizon: close ? "At close" : "Today",
     rateLine: `at ${rateText} entry → order${twoRates ? `, ${preRateText} pre-order` : ""}`,
     headline: {
-      text: headPct === null ? fmt(headUnits) : `${Math.round(headPct * 100)}%`,
+      text: headText,
       sub: edition ? `of ${fmt(edition)} units` : "units",
-      color: headPct === null ? C.ink : ragColor(headPct),
     },
     rows: rows.map((r) => {
-      const pctRow = close ? r.pctClose : r.pct;
-      const units = soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0);
+      const fig = figureOf(r);
       return {
         name: r.name,
         maxV: maxFor(r), edition: finite(r.edition) ? r.edition : 0,
         segs: segmentsOf(r, close).map(({ v, color }) => ({ v, color })),
         over: r.oversubscribed ?? 0, overColor: SEG.winners,
-        pctText: pctRow === null || pctRow === undefined ? fmt(units) : `${Math.round(pctRow * 100)}%`,
-        ratioText: pctRow === null || pctRow === undefined ? null : `${fmt(units)}/${fmt(r.edition)}`,
-        pctColor: pctRow === null || pctRow === undefined ? C.ink : ragColor(pctRow),
+        figText: fig.main + (fig.of || ""),
       };
     }),
     legend: [
@@ -336,29 +343,64 @@ export default function SellThrough({ snap, horizon = "today" }) {
         </>
       )}
     >
-      {/* a refused post says why, in a line of its own so the header keeps its shape */}
+      {/* a refused post says why, on a line of its own; it takes its height
+          from the rows, which scroll for the seconds it shows */}
       {post.state === "error"
-        ? <div style={{ color: C.red, fontSize: 12, margin: "2px 0 6px" }}>Not posted to Slack: {post.message}</div>
+        ? <div style={{ color: C.red, fontSize: 12, margin: "2px 0 4px" }}>Not posted to Slack: {post.message}</div>
         : post.state === "done" && post.warning
-          ? <div style={{ color: C.amber, fontSize: 12, margin: "2px 0 6px" }}>Posted to #{post.channel}, but {post.warning}</div>
-          : <div className="spacer-8" />}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-        {/* the release headline, on a line of its own so the bars below it
-            run the full width of the card */}
-        <div style={{ flex: "0 0 auto", display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-          <div className="lead" {...t.props(methodTip, 300)}>
-            {headPct === null ? <span style={{ color: C.ink }}>{fmt(headUnits)}</span>
-              : <span style={{ color: ragColor(headPct) }}>{Math.round(headPct * 100)}%</span>}
-            <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
-              {edition ? `of ${fmt(edition)} units` : "units"}
-            </span>
-          </div>
-          {edition === null && <div className="lead-caption" style={{ marginTop: 0 }}>no edition size set</div>}
-        </div>
-        <div className="spacer-8" />
+          ? <div style={{ color: C.amber, fontSize: 12, margin: "2px 0 4px" }}>Posted to #{post.channel}, but {post.warning}</div>
+          : null}
 
-        {/* the products, and the stamp over them while a feed is missing */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", position: "relative" }}>
+      {/* the headline line: the release's figure on the left, its key on the
+          right, one 36px line */}
+      <div style={{ marginTop: 4, height: 36, flex: "0 0 36px", display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <div className="lead" {...t.props(methodTip, 300)} style={{ lineHeight: "36px", whiteSpace: "nowrap", color: C.ink }}>
+          <span>{headText}</span>
+          <span style={{ fontSize: 12, fontWeight: 400, color: C.muted }}>
+            {edition ? `of ${fmt(edition)} units` : "units"}
+          </span>
+        </div>
+        {edition === null && <span className="lead-caption" style={{ marginTop: 0, whiteSpace: "nowrap" }}>no edition size set</span>}
+        <div style={{ marginLeft: "auto", minWidth: 0, overflow: "hidden", display: "flex", alignItems: "center", gap: 16, fontSize: 11.5, color: C.muted, whiteSpace: "nowrap" }}>
+          {legendChip({
+            key: "sold", sw: <span style={swatch(SEG.paid)} />, label: "Paid", value: fmt(sold),
+            tip: { head: "Paid", rows: [
+              { label: "Units", value: fmt(sold) },
+              ...(fromFeed && (st.unattributedSold ?? 0) > 0 ? [
+                { label: "Of which named by product", value: fmt(st.attributedSold ?? 0) },
+                { label: "Of which estimated", value: fmt(st.unattributedSold ?? 0) },
+              ] : []),
+            ],
+            body: fromFeed && (st.unattributedSold ?? 0) > 0
+              ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
+              : undefined },
+          })}
+          {draftsAll !== null && draftsAll > 0 && legendChip({
+            key: "drafts", sw: <span style={swatch(SEG.drafts)} />, label: "Drafts", value: fmt(draftsAll),
+            tip: { head: "Drafts", rows: [
+              { label: "Units", value: fmt(draftsAll) },
+              ...(winnerDraftsAll > 0 ? [{ label: "Of which winners' claims, under 72 hours old", value: fmt(winnerDraftsAll) }] : []),
+              ...(winnerDraftsLapsedAll > 0 ? [{ label: "Winners' claims unpaid after 72 hours (not counted)", value: fmt(winnerDraftsLapsedAll) }] : []),
+            ],
+            body: "Draft orders raised but not yet paid. They take room like a sale. The order an advisor sends a winner after a failed payment counts for 72 hours; unpaid after that, it is out." },
+          })}
+          {legendChip({
+            key: "inhand", sw: <span style={swatch(SEG.winners)} />, label: "Draw winners (estimate)", value: fmt(inHandAll), tip: inHandTip,
+          })}
+          {close && legendChip({
+            key: "future", sw: <span style={swatch(SEG.future)} />, label: "Still to come", value: fmt(futureAll),
+            tip: { head: "Still to come", rows: [{ label: "Units", value: fmt(futureAll) }],
+              body: "The projection's further units, spread over the products with room left." },
+          })}
+        </div>
+      </div>
+
+      {/* the products, and the stamp over them while a feed is missing. The
+          rows are one grid: the name column is as wide as the longest name
+          on the card, up to 260px, so a short name sits by its bar and the
+          bars still line up; the figure column is one number wide. */}
+      <div style={{ flex: 1, minHeight: 0, marginTop: 10, display: "flex", flexDirection: "column" }}>
+        <div style={{ position: "relative", flex: "0 1 auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
           {stampTip && (
             <div {...t.props(stampTip)} style={{
               position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%) rotate(-7deg)",
@@ -369,9 +411,11 @@ export default function SellThrough({ snap, horizon = "today" }) {
               Incomplete data
             </div>
           )}
-          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{
+            minHeight: 0, overflowY: "auto", display: "grid", gridTemplateColumns: "fit-content(260px) minmax(0, 1fr) 72px",
+            gridAutoRows: `${pitch}px`, columnGap: 14, alignItems: "center", alignContent: "start",
+          }}>
             {rows.map((r) => {
-              const pctRow = close ? r.pctClose : r.pct;
               const rowTip = { head: r.name, rows: [
                 { label: "Paid", value: fmt((r.sold ?? 0) + (r.soldAssumed ?? 0)) },
                 { label: "Drafts", value: fmt(r.drafts ?? 0) },
@@ -385,72 +429,26 @@ export default function SellThrough({ snap, horizon = "today" }) {
               };
               const nameTip = { head: r.name, rows: [
                 ...(finite(r.edition) ? [{ label: "Edition", value: fmt(r.edition) }] : [{ label: "Edition", value: "not set" }]),
+                { label: byEdition ? "Units of edition" : "Units", value: fmt(unitsOf(r)) },
                 ...(finite(r.entrants) ? [{ label: "Eligible entrants", value: fmt(r.entrants) }] : []),
                 ...(r.draws && r.draws.length > 1 ? [{ label: "Draws", value: fmt(r.draws.length) }] : []),
               ] };
+              const fig = figureOf(r);
               return (
-                <div key={r.key} style={{
-                  display: "grid", gridTemplateColumns: "minmax(0, 260px) 1fr 118px", gap: 14, alignItems: "center",
-                  // in a two-row card the rows grow into the height they have,
-                  // so the space between bars stays even instead of pooling
-                  // above and below the block
-                  ...(twoRows ? { flex: "1 1 auto", minHeight: rowH, maxHeight: Math.round(rowH * 1.8) } : { height: rowH }),
-                }}>
-                  <div {...t.props(nameTip)} style={{ fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <React.Fragment key={r.key}>
+                  <div {...t.props(nameTip)} style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {r.name}
                   </div>
                   <ProductBar row={r} close={close} maxV={maxFor(r)} tips={tips} height={barH} radius={barR} />
-                  <div className="num" style={{ textAlign: "right", whiteSpace: "nowrap", lineHeight: 1.15 }}>
-                    {pctRow !== null && pctRow !== undefined ? (
-                      <>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: ragColor(pctRow) }}>{Math.round(pctRow * 100)}%</span>
-                        <span style={{ fontSize: 13, color: C.muted, marginLeft: 6 }}>
-                          {fmt(soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0))}/{fmt(r.edition)}
-                        </span>
-                      </>
-                    ) : (
-                      <span style={{ fontSize: 14, fontWeight: 600 }}>{fmt(soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0))}</span>
-                    )}
+                  <div className="num" {...t.props(nameTip)} style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 13 }}>
+                    <span style={{ fontWeight: 600, color: C.ink }}>{fig.main}</span>
+                    {fig.of && <span style={{ color: C.muted }}>{fig.of}</span>}
                   </div>
-                </div>
+                </React.Fragment>
               );
             })}
           </div>
         </div>
-      </div>
-
-      {/* legend, no rule */}
-      <div style={{ flex: "0 0 auto", paddingTop: 10, display: "flex", alignItems: "center", flexWrap: "wrap", gap: "6px 18px", fontSize: 11.5, color: C.muted }}>
-        {legendChip({
-          key: "sold", sw: <span style={swatch(SEG.paid)} />, label: "Paid", value: fmt(sold),
-          tip: { head: "Paid", rows: [
-            { label: "Units", value: fmt(sold) },
-            ...(fromFeed && (st.unattributedSold ?? 0) > 0 ? [
-              { label: "Of which named by product", value: fmt(st.attributedSold ?? 0) },
-              { label: "Of which estimated", value: fmt(st.unattributedSold ?? 0) },
-            ] : []),
-          ],
-          body: fromFeed && (st.unattributedSold ?? 0) > 0
-            ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
-            : undefined },
-        })}
-        {draftsAll !== null && draftsAll > 0 && legendChip({
-          key: "drafts", sw: <span style={swatch(SEG.drafts)} />, label: "Drafts", value: fmt(draftsAll),
-          tip: { head: "Drafts", rows: [
-            { label: "Units", value: fmt(draftsAll) },
-            ...(winnerDraftsAll > 0 ? [{ label: "Of which winners' claims, under 72 hours old", value: fmt(winnerDraftsAll) }] : []),
-            ...(winnerDraftsLapsedAll > 0 ? [{ label: "Winners' claims unpaid after 72 hours (not counted)", value: fmt(winnerDraftsLapsedAll) }] : []),
-          ],
-          body: "Draft orders raised but not yet paid. They take room like a sale. The order an advisor sends a winner after a failed payment counts for 72 hours; unpaid after that, it is out." },
-        })}
-        {legendChip({
-          key: "inhand", sw: <span style={swatch(SEG.winners)} />, label: "Draw winners (estimate)", value: fmt(inHandAll), tip: inHandTip,
-        })}
-        {close && legendChip({
-          key: "future", sw: <span style={swatch(SEG.future)} />, label: "Still to come", value: fmt(futureAll),
-          tip: { head: "Still to come", rows: [{ label: "Units", value: fmt(futureAll) }],
-            body: "The projection's further units, spread over the products with room left." },
-        })}
       </div>
     </Card>
   );

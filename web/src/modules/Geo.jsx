@@ -52,7 +52,7 @@ export default function Geo({ snap }) {
                   title={tip}
                   style={{
                     position: "absolute", left: 0, top: 0, bottom: 0,
-                    width: `${(r.v / max) * 100}%`, background: C.orange, borderRadius: 4,
+                    width: `${(r.v / max) * 100}%`, background: C.blue, borderRadius: 4,
                   }}
                 />
               </div>

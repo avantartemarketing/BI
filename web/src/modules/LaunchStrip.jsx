@@ -1,5 +1,5 @@
 /* The campaign clock: a thin strip showing where the release sits between
- * announcement and launch. Orange fills to today, a knob marks the day (the
+ * announcement and launch. Blue fills to today, a knob marks the day (the
  * day of the window is in the strip's popup, not printed over the knob), a
  * tick marks the launch, and the days to go are the strip's only bold words.
  * It is a card of the Overview (Layout.jsx, size "strip": a full-width row of

@@ -534,18 +534,21 @@ One page per release (sidebar switches): entries vs targets, per-channel targets
 trajectory vs the across-time plan curve, funnel diagnostics with contribution
 decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), sell-through
 by product, projection-vs-target waterfall. Formulas for every module: docs §9. The
-Overview opens with the campaign clock, a thin strip from announcement to launch, orange to
+Overview opens with the campaign clock, a thin strip from announcement to launch, blue to
 today and the days to launch on the right (the day of the window is in the strip's popup);
 it is a card like the others and moves with them.
 
 **Sell-through by product** (docs §6.3) is one row per product, drawn in one ramp of the
-page's orange, darkest to palest as the units get less certain: units paid (rust), draft
-orders an advisor raised that are not yet paid (orange; the draw's own pre-authorisation
+page's blue, deepest to palest as the units get less certain: units paid (deep blue), draft
+orders an advisor raised that are not yet paid (blue; the draw's own pre-authorisation
 drafts are the entries, not drafts), the draw entries in hand counted on the product at the
 entry → order rate, or at the pre-order rate where the entrant's card is already authorised
-(light orange), and at close the units still to come (palest), against the product's
+(light blue), and at close the units still to come (palest), against the product's
 edition. Nothing is hatched: the four tints are the whole key, and demand a product has no
-room for simply carries on past the point where the paler room behind the bar stops. It is
+room for simply carries on past the point where the paler room behind the bar stops. The card
+is one row of the grid whatever the count: the rows share a fixed height, the bars growing
+from 14px for seven products to a 30px cap for three or fewer, each row carrying one figure,
+its percentage (units of edition on the Units toggle), with the key beside the headline. It is
 the one card with no target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
 orders per product come from the Shopify order lines in BigQuery (`data/orders_by_product.csv`),
 joined to the draws through the product each draw's winners bought (docs 2.4); until every draw
@@ -562,7 +565,7 @@ header sends the card as a picture, with these figures under it, to the release'
 (see "Posting sell-through to Slack").
 
 Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
-own orange (darker to whichever of target and benchmark is lower, lighter from the benchmark up
+own blue (darker to whichever of target and benchmark is lower, lighter from the benchmark up
 to the target), the benchmark as a dotted outline over it, and the actual in front. A single
 `Compare Today | At close` toggle in the page header drives all of them, and the percentages and
 headline deltas read against the target. Plan curves are built from the release's own basket

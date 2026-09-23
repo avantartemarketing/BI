@@ -23,7 +23,7 @@ const MUTED = "#6c6b68";
 const CARD = "#ffffff";
 const HAIRLINE = "#f2f0ea";
 const TRACK = "#ece9e1";
-const REF_TRACK = "#faf7f4";
+const REF_TRACK = "#f3f6fc";
 const BORDER = "#e5e4df";
 const AMBER = "#8a5f00";
 
@@ -31,7 +31,7 @@ const AMBER = "#8a5f00";
 const W = 1180;
 const PAD = 36;
 const NAME_W = 300;
-const FIG_W = 146;
+const FIG_W = 120;
 const GAP = 20;
 const BAR_X = PAD + NAME_W + GAP;
 const BAR_W = W - PAD - FIG_W - GAP - BAR_X;
@@ -159,7 +159,7 @@ export function drawSellThrough(canvas, model, scale = 2) {
   y += 46;
   ctx.textAlign = "left";
   ctx.font = `600 40px ${FONT}`;
-  ctx.fillStyle = model.headline.color || INK;
+  ctx.fillStyle = INK;
   ctx.fillText(model.headline.text, PAD, y);
   const headW = ctx.measureText(model.headline.text).width;
   if (model.headline.sub) {
@@ -195,18 +195,11 @@ export function drawSellThrough(canvas, model, scale = 2) {
       segment(ctx, BAR_X + x0, top + inset, px(row.edition + row.over) - x0, BAR_H - inset * 2, row.overColor, false, true);
     }
 
-    // the figures
+    // the one figure the row carries on the page, in ink like there
     ctx.textAlign = "right";
-    let right = W - PAD;
-    if (row.ratioText) {
-      ctx.font = `400 13.5px ${FONT}`;
-      ctx.fillStyle = MUTED;
-      ctx.fillText(row.ratioText, right, top + BAR_H / 2 + 5);
-      right -= ctx.measureText(row.ratioText).width + 7;
-    }
     ctx.font = `600 15px ${FONT}`;
-    ctx.fillStyle = row.pctColor || INK;
-    ctx.fillText(row.pctText, right, top + BAR_H / 2 + 5);
+    ctx.fillStyle = INK;
+    ctx.fillText(String(row.figText ?? ""), W - PAD, top + BAR_H / 2 + 5);
     y += ROW_H;
   }
 

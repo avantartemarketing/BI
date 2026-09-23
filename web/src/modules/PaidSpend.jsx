@@ -304,8 +304,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           <span {...tipApi.props(spendTip)} style={rightLabel}>{moneyK(spendFill)}</span>
         </div>
         <div style={{ height: 14, display: "flex", gap: 14, alignItems: "center" }}>
-          <div style={legendItem}><span style={sw(C.orange)} />To date</div>
-          {close && <div style={legendItem}><span style={sw(C.orangeLight)} />Projected</div>}
+          <div style={legendItem}><span style={sw(C.blue)} />To date</div>
+          {close && <div style={legendItem}><span style={sw(C.blueLight)} />Projected</div>}
           <div style={legendItem}><span style={sw(C.refBase)} />Target</div>
           {unitsBm !== null && (
             <div style={legendItem}>

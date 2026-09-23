@@ -28,7 +28,7 @@ import BasketPicker from "./BasketPicker.jsx";
 import { computeTargets } from "../../shared/targetModel.mjs";
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-const BLUE = "#28518f", BLUE_FILL = "#c3d5ee";
+const BLUE = "#2f5fb3", BLUE_FILL = "#c4d5f2";
 
 // the five display groups, in the order the profile dicts are written
 // (etl/baskets.py GROUPS), so the table reads the same way as the snapshot
@@ -683,7 +683,7 @@ export default function TargetSetting({ snap, onSaved }) {
                   return (
                     <button key={o} onClick={() => setInp({ ...inp, framing_available: o === "Yes" })}
                       style={{ fontFamily: "inherit", fontSize: 12, fontWeight: active ? 600 : 500, padding: "6px 16px",
-                        border: "none", cursor: "pointer", background: active ? "#eaf0fa" : "#fff",
+                        border: "none", cursor: "pointer", background: active ? "#e6eefa" : "#fff",
                         color: active ? BLUE : C.muted }}>{o}</button>
                   );
                 })}
@@ -771,7 +771,7 @@ export default function TargetSetting({ snap, onSaved }) {
           )}
         </Card>
 
-        <Card dot="#4f6fc0" title="Stretch">
+        <Card dot="#4f80d6" title="Stretch">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px 20px" }}>
             <Field label="Benchmark (units)" tip="The basket's median units at close - what launches like this one typically reach.">

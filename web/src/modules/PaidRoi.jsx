@@ -206,11 +206,11 @@ export default function PaidRoi({ snap }) {
                 </rect>
               ))}
               {declinePath && (
-                <path d={declinePath} fill="none" stroke={C.orangeLight} strokeWidth="2.6"
+                <path d={declinePath} fill="none" stroke={C.blueLight} strokeWidth="2.6"
                   strokeDasharray="6 5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               )}
               {actualPath && (
-                <path d={actualPath} fill="none" stroke={C.orange} strokeWidth="3"
+                <path d={actualPath} fill="none" stroke={C.blue} strokeWidth="3"
                   strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               )}
               {!complete && (
@@ -231,7 +231,7 @@ export default function PaidRoi({ snap }) {
                 <>
                   <div style={{ position: "absolute", left: leftPct(hover), top: 0, bottom: 0, width: 1, background: "#ddd9cf", pointerEvents: "none" }} />
                   {markV !== null && markV !== undefined && (
-                    <div style={{ position: "absolute", left: leftPct(hover), top: topPct(markV), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: roiV !== null ? C.orange : C.orangeLight, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", left: leftPct(hover), top: topPct(markV), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: roiV !== null ? C.blue : C.blueLight, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
                   )}
                   <div className="chart-tip" style={{ left: leftPct(hover), top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
                     <div className="t-head">Day {hover}</div>
@@ -251,7 +251,7 @@ export default function PaidRoi({ snap }) {
                 style={{
                   position: "absolute", left: leftPct(anchor.d), top: topPct(anchor.v),
                   width: 10, height: 10, margin: "-5px 0 0 -5px", borderRadius: "50%",
-                  background: C.orange, boxShadow: "0 0 0 2px #fff",
+                  background: C.blue, boxShadow: "0 0 0 2px #fff",
                 }}
               />
             )}
@@ -277,7 +277,7 @@ export default function PaidRoi({ snap }) {
                 style={{
                   position: "absolute", left: leftPct(lastRoiPt.d), top: topPct(lastRoiPt.roi),
                   width: 10, height: 10, margin: "-5px 0 0 -5px", borderRadius: "50%",
-                  background: C.orange, boxShadow: "0 0 0 2px #fff",
+                  background: C.blue, boxShadow: "0 0 0 2px #fff",
                 }}
               />
             )}
@@ -289,7 +289,7 @@ export default function PaidRoi({ snap }) {
                   style={{
                     position: "absolute", left: "100%", top: topPct(declineEnd),
                     width: 10, height: 10, margin: "-5px 0 0 -5px", borderRadius: "50%",
-                    background: "#fff", border: `2.2px solid ${C.orangeLight}`, boxSizing: "border-box",
+                    background: "#fff", border: `2.2px solid ${C.blueLight}`, boxSizing: "border-box",
                   }}
                 />
                 <div

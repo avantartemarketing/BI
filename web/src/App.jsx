@@ -23,7 +23,7 @@ import Trajectory from "./modules/Trajectory.jsx";
 import KeyDrivers from "./modules/KeyDrivers.jsx";
 import PaidRoi from "./modules/PaidRoi.jsx";
 import PaidSpend from "./modules/PaidSpend.jsx";
-import SellThrough, { sellThroughSize } from "./modules/SellThrough.jsx";
+import SellThrough from "./modules/SellThrough.jsx";
 import Geo from "./modules/Geo.jsx";
 import DrawAudit from "./modules/DrawAudit.jsx";
 import Waterfall from "./modules/Waterfall.jsx";
@@ -499,8 +499,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
             <LayoutBar items={draft} onChange={setDraft} saving={saving} error={saveError}
               updatedAt={layout.updatedAt} updatedBy={layout.updatedBy} onCancel={stopEdit} onSave={saveLayout} />
           )}
-          <PageLayout items={editing ? draft : layout.items} editing={editing} onChange={setDraft} render={renderCard}
-            sizes={{ sell_through: sellThroughSize(snap) }} />
+          <PageLayout items={editing ? draft : layout.items} editing={editing} onChange={setDraft} render={renderCard} />
         </>
       )}
     </>
