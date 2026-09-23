@@ -163,7 +163,10 @@ are set (the launches ahead of the funnel appear in the sidebar as Upcoming, doc
 `DATA_MODEL.md` 1.7), and reruns the ETL in place - no redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
 (signed-in session required): both **start** the refresh and return at once with
 `running: true`; poll `GET /api/refresh/status` for the outcome, or hover the header's
-source-freshness line, which shows the same thing. A refresh is a multi-year BigQuery pull
+source-freshness line, which shows the same thing. A page built from data older than the last full
+day also carries an amber banner under the header: how many days behind it is, and what the
+refresh is doing about it, with the time it started. The page reloads itself when that refresh
+lands. Data through yesterday is normal until the first refresh of the day and is not flagged. A refresh is a multi-year BigQuery pull
 plus the ETL and takes a few minutes - longer than Render's proxy will hold a request
 open, so an endpoint that waited for it came back as a 502.
 There are two paths to the same two files, and BigQuery wins whenever it is configured.
