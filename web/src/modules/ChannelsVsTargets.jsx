@@ -202,7 +202,8 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                   </div>
                   <div
                     className={offGroups.has(c.key) ? undefined : "num"}
-                    title={offGroups.has(c.key) ? "Not in plan for this release: no target and no benchmark. What it secures still counts." : undefined}
+                    title={offGroups.has(c.key) ? "Not in plan for this release: no target and no benchmark. What it secures still counts."
+                      : c.pctOfTarget === null && c.bar > 0 ? `${fmt(c.bar)} secured so far; the plan expects none by today, so there is no share to show yet` : undefined}
                     style={{
                       fontSize: offGroups.has(c.key) ? 9.5 : 11, fontWeight: 600,
                       color: c.pctOfTarget === null ? C.muted : c.pctOfTarget >= 100 ? C.green : C.red,

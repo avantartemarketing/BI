@@ -265,6 +265,8 @@ is shaped by the curve, not drawn straight.
 current daily spend run-rate, divided by a cost-per-entry that starts at the
 trailing-3-day CPE and deteriorates **5% / 7% / 10% per day** across the first /
 second / final third of the window. Projected entries convert to units at 0.8.
+Paid's plan by today is the even daily budget's share of its target, not the panel's
+historic paid shape, so every card reads the same paid plan.
 
 ## 7. Paid in-flight model
 
