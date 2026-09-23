@@ -47,9 +47,10 @@
  * and the channels, and here they only crowded the reading. Each row is the
  * product against its own edition and nothing else.
  *
- * One toggle, for the bars' scale: % puts every product on its own edition,
- * so the bars read as sell-through; Units keeps one scale, so they read as
- * size. Without product editions the card runs on units and says what is
+ * Nothing in the head but the title and the horizon: no toggle and no rate,
+ * by decision. Every bar is its product against its own edition; the rate
+ * the estimate runs at is in the headline's popup and in the Slack message.
+ * Without product editions the card runs on units and says what is
  * missing. Without the draw feed at all it is one row, the release, as
  * before. */
 import React, { useState } from "react";
@@ -129,7 +130,6 @@ function ProductBar({ row, close, maxV, tips, height = 14, radius = 4 }) {
 
 export default function SellThrough({ snap, horizon = "today" }) {
   const t = useTip();
-  const [scale, setScale] = useState("pct");   // pct | units
   const [post, setPost] = useState({ state: "idle" });   // the Post to Slack button: idle | posting | done | error
   const st = snap?.sellthrough;
   const close = horizon === "close";
@@ -168,8 +168,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
     pctClose: st.pct ?? null,
   }];
   const allEditions = rows.every((r) => finite(r.edition) && r.edition > 0);
-  const byEdition = allEditions && scale === "pct";
-  // one scale for the Units view: the biggest edition, or the biggest demand
+  const byEdition = allEditions;
+  // one scale when an edition is missing: the biggest edition, or the biggest demand
   const soldOf = (r) => (r.sold ?? 0) + (r.soldAssumed ?? 0) + (finite(r.drafts) ? r.drafts : 0);
   const demandOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0) + (r.oversubscribed ?? 0);
   const unitsOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0);
@@ -228,13 +228,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
       : undefined,
   };
 
-  const seg = (opts, value, set) => (
-    <span className="seg compact">
-      {opts.map(([v, label, tip]) => (
-        <button key={v} className={value === v ? "active" : ""} onClick={() => set(v)} title={tip}>{label}</button>
-      ))}
-    </span>
-  );
   /* One rule for the rows: the pitch is the height they share divided by the
      count, capped, and the bar is half of it. */
   const n = Math.max(rows.length, 1);
@@ -268,7 +261,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
       snap.asOf ? `data through ${fmtDay(new Date(snap.asOf + "T00:00:00Z"))}` : null,
     ].filter(Boolean).join(" · "),
     horizon: close ? "At close" : "Today",
-    rateLine: `at ${rateText} entry → order${twoRates ? `, ${preRateText} pre-order` : ""}`,
     headline: {
       text: headText,
       sub: edition ? `of ${fmt(edition)} units` : "units",
@@ -346,19 +338,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
       dot={GROUP_DOTS.outcome}
       title="Sell-through by product"
       badge={<HorizonBadge horizon={horizon} />}
-      right={(
-        <>
-          {slackButton}
-          <span className="hint-dotted" {...t.props(methodTip, 300)}>
-            at {rateText} entry → order{twoRates ? `, ${preRateText} pre-order` : ""}
-          </span>
-          {allEditions && rows.length > 1 && seg(
-            [["pct", "%", "Every product on its own edition, so the rows read as sell-through"],
-             ["units", "Units", "One scale for every product, so the rows read as size"]],
-            scale, setScale,
-          )}
-        </>
-      )}
+      right={slackButton}
     >
       {/* the headline line: the release's figure on the left, its key on the
           right, one line, spaced from the head as every card's lead is (an

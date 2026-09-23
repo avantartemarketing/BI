@@ -1110,7 +1110,9 @@ never spread; past seven they scroll. The key sits on the headline's own line, w
 gives the rows their height. Each row carries its units of the edition (198 of 1,000) in muted
 text and its percentage in ink, each in a column of its own so the two never read as one
 figure, and no RAG colour, which said "bad" about a product that was simply mid-campaign. The
-Units toggle puts the bars on one scale for the card.
+head carries the title and the horizon and nothing else: no scale toggle and no rate, by
+decision; every bar is its product against its own edition, and the rate the estimate runs at
+is in the headline's popup and in the Slack message.
 
 **No references on this card.** The snapshot still carries the release's pace applied to each
 product's edition (`expectedToday_p = edition_p × hero.expectedToday / edition`, likewise
