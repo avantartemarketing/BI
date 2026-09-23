@@ -1021,13 +1021,15 @@ picker, the snapshot and the re-run all ask for the same ones. Entries curves di
 between baskets (0.03-0.14 from pooled, above), so in practice it is the sessions and units
 shapes that move.
 
-**Paid's plan by today is the even daily budget's share.** The paid group's plan line, its
-expected-by-today and its benchmark-by-today read `target × min(days elapsed / campaign days, 1)`
-rather than the panel's historic paid shape. Paid follows spend, and spend is planned evenly
-over the campaign; the historic shape starts near zero because paid campaigns used to begin
-after the announce, and it told the Channels vs targets card there was nothing to expect on
-days when the Paid spend card, reading the same even plan, showed the units bought. The organic
-groups keep their shape curves. (2026-09-23.)
+**Paid's plan by today is the even daily budget's share of the days paid runs.** Paid starts
+the day after the announce (`PAID_START_DAYS` = 1) and runs to the close, so the paid group's
+plan line, its expected-by-today and its benchmark-by-today read
+`target × clamp((days elapsed − 1) / (campaign days − 1))`, the plan's daily rate is the paid
+budget over those days, and the paid block publishes `paidStartDays` and `paidDays` for the
+cards (`paidDayFrac` in `web/src/ui.jsx`). Not the panel's historic paid shape, which starts
+near zero and told the Channels vs targets card there was nothing to expect on days when the
+Paid spend card, reading the even plan, showed the units bought. The organic groups keep their
+shape curves. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the

@@ -144,6 +144,18 @@ export const MINUS = "−";
  * closed). The pro-rata references - the budget by today, the posts by today -
  * read this rather than `day`, which is the day in progress. */
 export const dayElapsed = (snap) => Math.max(0, (snap?.day ?? 0) - (1 - (snap?.asOfFraction ?? 1)));
+/* The share of the paid plan due by today: paid runs from the day after the
+ * announce (paid.paidStartDays, 1) to the close, and its budget is planned
+ * evenly over those days, so days elapsed less the first, over the paid
+ * days, is the share of it that should be spent and bought (docs 7). At
+ * close the whole of it. */
+export const paidDayFrac = (snap, close = false) => {
+  if (close) return 1;
+  const start = snap?.paid?.paidStartDays ?? 1;
+  const span = (snap?.of ?? 0) - start;
+  if (!(span > 0)) return 1;
+  return Math.min(1, Math.max(0, (dayElapsed(snap) - start) / span));
+};
 
 export function fmt(n, digits = 0) {
   if (n === null || n === undefined || Number.isNaN(n)) return "–";

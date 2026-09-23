@@ -19,7 +19,7 @@
  * card carries no row for it. */
 import React, { useState } from "react";
 import {
-  Card, HorizonBadge, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip, dayElapsed,
+  Card, HorizonBadge, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip, dayElapsed, paidDayFrac,
 } from "../ui.jsx";
 
 const money = (v) => "€" + fmt(Math.round(v ?? 0));
@@ -163,10 +163,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
 
   // ----- bars (120% track, target tick at 83.3%) -----
   // Today's references are the pro-rata share of the close figures: the paid plan
-  // is a flat daily budget, so days elapsed is the share of it that should be spent.
-  const dayFrac = close ? 1
-    : dayElapsed(snap) > 0 && snap.of > 0 ? Math.min(1, dayElapsed(snap) / snap.of)
-    : 1;
+  // is a flat daily budget over the days paid runs, the day after the announce to
+  // the close, so that share of the days is the share of it that should be spent.
+  const dayFrac = paidDayFrac(snap, close);
   const hasBm = !!snap.benchmark;
   // paid set aside for this release (BENCHMARK_SPEC 4.3): the target and the
   // budget are zero by choice, and the card says so above the bars
