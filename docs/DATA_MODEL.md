@@ -103,6 +103,20 @@ Normalisation rules:
   twice the median and past the 90th percentile on at least five rows. The Target setting tab
   shows a warning when `high` is not empty. Tracking has tightened: older launches ran ten to
   fifty per cent untracked, recent ones about three, which is why the norm is recent.
+- **Direct as a source (the dashboard's Direct switch)**: Direct traffic is mostly people who
+  saw something elsewhere and typed the address, so the Overview can read it the way Untracked
+  is read: `redistribute_channel(win, "Direct")` spreads Direct's sessions, entries and units
+  over the other channels in proportion to what they did that day (the rule above with Direct
+  in Untracked's place), and the benchmark's channel split is read the same way, with the
+  panel's median Direct share of the Search/direct/other group (`direct_share_norm`, the
+  cohort of the untracked norm) leaving the group and landing on every group pro rata
+  (`spread_profile`; the headline medians and K do not move). The ETL builds every page both
+  ways (`with_direct_spread`) and stores the blocks that differ under `variants.direct_spread`;
+  `directShare` carries Direct's share of the release's window as the funnel attributes it.
+  The switch in the page head lays the variant over the page, so every card reads one
+  attribution; it is a methodology choice and sticks per browser. Totals, what has been sold
+  and the spend do not move; the plan's pace and the projections shift a little with the
+  channel mix (each group has its own curve), and paid reads the entries it is given.
 - **Paid Search** has no benchmarks, no spend feed, and never appears in the daily export -
   every "Total Paid" benchmark is an alias of Paid Social. Model paid = Paid Social; keep Paid
   Search only as a raw actuals bucket.
@@ -1423,6 +1437,8 @@ actuals-only page omits it.
 | `targetingMode` | always `"benchmark"` since 2026-09-23 (§3); kept so older readers of the field still resolve |
 | `upcoming`, `airtable` | `true` on a launch listed from Airtable before the funnel carries it (§1.7), with `airtable` holding its release code, record ids, works, edition, price and project status |
 | `untracked` | `{entries: {share, count, total}, units: {...}, normal: {recentMonths, entries: {median, p90, n}, units: {...}}, high: [...]}` - the untracked share of the window against what is normal (§1.3); the Target setting tab warns when `high` names a metric |
+| `directShare` | `{sessions, entries, units}` - Direct's share of the window as the funnel attributes it (§1.3) |
+| `variants.direct_spread` | the top-level blocks that differ when Direct is spread over the other channels (`channels`, `funnelByGroup`, `paid`, `targets`, `groupTargets`, `waterfall`, `benchmark`, ...); the Overview's Direct switch lays them over the page (§1.3) |
 | `benchmark.basket` | `{id, kind, name, n, thin, suggestedId}`; `kind` is `ready`, `bespoke` or `saved` |
 | `benchmark.units`, `unitsP25`, `unitsP75` | the basket's median units and its middle half |
 | `benchmark.sessions`, `entries`, `campaignDays` | the other headline medians of the profile |

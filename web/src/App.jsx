@@ -429,9 +429,39 @@ function HorizonToggle({ horizon, onChange }) {
   );
 }
 
+/* Direct as a channel of its own, or spread over the others (docs §1.3).
+ * The ETL builds every page both ways and the blocks that differ ride under
+ * snap.variants.direct_spread; laying them over the snapshot here makes the
+ * switch instant and puts every card on the same attribution. It is a
+ * methodology choice, not a reading of one launch, so it sticks per browser. */
+const DIRECT_PREF = "directSpread";
+const readDirectPref = () => { try { return localStorage.getItem(DIRECT_PREF) === "1"; } catch { return false; } };
+function DirectToggle({ on, onChange, share, pushRight }) {
+  const pct = (x) => (x === null || x === undefined ? "–" : Math.round(100 * x) + "%");
+  const tip = `Direct is ${pct(share && share.entries)} of this release's entries and ${pct(share && share.units)} of its units as the funnel attributes them. `
+    + "Spread shares Direct out over the other channels in proportion to their own volumes, day by day, and reads the benchmark's channel split the same way. "
+    + "Totals and what has been sold do not move; the plan's pace and the projections can shift a little with the channel mix, and paid reads the entries it is given.";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: pushRight ? "auto" : 0 }} title={tip}>
+      <span style={{ fontSize: 12, color: "#6c6b68" }}>Direct</span>
+      <div className="seg" role="group" aria-label="Direct attribution">
+        <button className={on ? "" : "active"} onClick={() => onChange(false)}
+          title="Direct stays a channel of its own, as the funnel export attributes it">Channel</button>
+        <button className={on ? "active" : ""} onClick={() => onChange(true)}
+          title="Direct's sessions, entries and units are shared out over the other channels in proportion to their own">Spread</button>
+      </div>
+    </div>
+  );
+}
+
 function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   const [tab, setTab] = useState("overview");
   const [horizon, setHorizon] = useState("today");
+  const [directSpread, setDirectSpreadState] = useState(readDirectPref);
+  const setDirectSpread = (v) => { setDirectSpreadState(v); try { localStorage.setItem(DIRECT_PREF, v ? "1" : "0"); } catch { /* per-browser convenience only */ } };
+  const variant = snap.variants && snap.variants.direct_spread;
+  // the page the cards read: the snapshot, or the snapshot with Direct spread
+  const view = useMemo(() => (directSpread && variant ? { ...snap, ...variant } : snap), [snap, variant, directSpread]);
   // a new release is a new reading: start it on the tab and the horizon everyone shares
   useEffect(() => { setTab("overview"); setHorizon("today"); }, [snap.id]);
   const targeted = snap.targeted !== false;
@@ -459,21 +489,21 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   useEffect(() => { if (tab !== "overview") stopEdit(); }, [tab]);
   const renderCard = (key) => {
     switch (key) {
-      case "clock": return <LaunchStrip snap={snap} />;
-      case "hero": return <HeroBar snap={snap} horizon={horizon} />;
-      case "channels": return <ChannelsVsTargets snap={snap} horizon={horizon} />;
-      case "no_targets": return targeted ? null : <NoTargets snap={snap} onSetup={() => setTab("targets")} />;
-      case "funnel": return <FunnelByChannel snap={snap} />;
-      case "funnel_wide": return <FunnelByChannelWide snap={snap} />;
+      case "clock": return <LaunchStrip snap={view} />;
+      case "hero": return <HeroBar snap={view} horizon={horizon} />;
+      case "channels": return <ChannelsVsTargets snap={view} horizon={horizon} />;
+      case "no_targets": return targeted ? null : <NoTargets snap={view} onSetup={() => setTab("targets")} />;
+      case "funnel": return <FunnelByChannel snap={view} />;
+      case "funnel_wide": return <FunnelByChannelWide snap={view} />;
       // the trajectory draws one picture: both readings are already on it
-      case "trajectory": return <Trajectory snap={snap} />;
-      case "drivers": return <KeyDrivers snap={snap} />;
-      case "paid_roi": return <PaidRoi snap={snap} />;
-      case "paid_spend": return <PaidSpend snap={snap} horizon={horizon} />;
-      case "sell_through": return <SellThrough snap={snap} horizon={horizon} />;
-      case "framing": return <Framing snap={snap} />;
-      case "geo": return <Geo snap={snap} />;
-      case "waterfall": return <Waterfall snap={snap} horizon={horizon} />;
+      case "trajectory": return <Trajectory snap={view} />;
+      case "drivers": return <KeyDrivers snap={view} />;
+      case "paid_roi": return <PaidRoi snap={view} />;
+      case "paid_spend": return <PaidSpend snap={view} horizon={horizon} />;
+      case "sell_through": return <SellThrough snap={view} horizon={horizon} />;
+      case "framing": return <Framing snap={view} />;
+      case "geo": return <Geo snap={view} />;
+      case "waterfall": return <Waterfall snap={view} horizon={horizon} />;
       default: return null;
     }
   };
@@ -499,6 +529,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
             title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
         )}
         {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
+        {variant && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} pushRight={!showHorizon} />}
         <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough}
           partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} />
       </header>

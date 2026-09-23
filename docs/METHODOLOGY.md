@@ -64,6 +64,15 @@ already been charged. Sales the draw cannot name a product for
 (private room, pre-orders) are shown at release level rather than guessed onto
 a product.
 
+**Direct as a source.** The Overview has a Direct switch. As a channel, Direct
+is what the funnel export attributes to it. Spread, its sessions, entries and
+units are shared out over the other channels in proportion to what each did
+that day, the way the untracked rows always are, and the benchmark's channel
+split is read the same way (the panel's typical Direct share of the
+Search/direct/other group, spread over every group pro rata). Totals and what
+has been sold do not move; the channel cards, the funnel and paid do, and the
+plan's pace shifts a little with the channel mix.
+
 ## 2. The inputs (Target setting tab)
 
 Almost nothing on the **Target setting** tab is typed. The figures come from

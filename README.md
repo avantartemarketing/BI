@@ -579,6 +579,12 @@ headline deltas read against the target. Plan curves are built from the release'
 where it has enough members and fall back to the pooled panel curve per metric (docs §5.3).
 Paid ROI is the exception: no reference and no horizon.
 
+Beside it, a **Direct** switch (shown once the ETL has built the page both ways): *Channel*
+reads Direct as the funnel attributes it; *Spread* shares Direct's sessions, entries and units
+out over the other channels in proportion to their own, day by day, and reads the benchmark's
+channel split the same way (docs/DATA_MODEL.md 1.3). Totals and what has been sold do not
+move; the plan's pace shifts a little with the mix. The choice sticks per browser.
+
 ### Arranging the page
 
 **Edit layout**, at the right of the Overview / Target setting tabs, turns the page into a
