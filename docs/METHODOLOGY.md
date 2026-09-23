@@ -64,6 +64,15 @@ already been charged. Sales the draw cannot name a product for
 (private room, pre-orders) are shown at release level rather than guessed onto
 a product.
 
+**Direct as a source.** The Overview has a Direct switch. As a channel, Direct
+is what the funnel export attributes to it. Spread, its sessions, entries and
+units are shared out over the other channels in proportion to what each did
+that day, the way the untracked rows always are, and the benchmark's channel
+split is read the same way (the panel's typical Direct share of the
+Search/direct/other group, spread over every group pro rata). Totals and what
+has been sold do not move; the channel cards, the funnel and paid do, and the
+plan's pace shifts a little with the channel mix.
+
 ## 2. The inputs (Target setting tab)
 
 Almost nothing on the **Target setting** tab is typed. The figures come from
@@ -278,6 +287,12 @@ can be switched to the artist's reading of the same days - the artist's profit
 per unit over the artist's share of the spend. On a revenue-share deal the
 artist carries no spend, so there is no artist ROI to show. The ? popup on the
 card sets out the working with the release's figures.
+
+The spend is Meta's, billed in euros and read in sterling at the same fixed
+rate the product prices use, so every paid figure on the page is sterling. The
+cannibalisation is the release's own from the Target setting tab where one is
+typed, else the 20% standard. Framing profit is Avant Arte's alone: it sits in
+AA's profit per unit and never in the artist's.
 
 **Budget to sell out** (the sizing decision). Paid is sized to top up only the
 gap organic is *not* on course to fill - not to buy the whole remaining edition

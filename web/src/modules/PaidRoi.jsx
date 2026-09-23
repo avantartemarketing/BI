@@ -164,13 +164,16 @@ export default function PaidRoi({ snap }) {
   // order they are applied, so the basis is on the card and not in a doc
   const cpeUsed = complete ? paid.cumCpe : paid.l3dCpe;
   const dropOff = paid.dropOff ?? 0.2;
+  // the spend feed is Meta's, billed in euros; the build converts it once
+  const spendNote = paid.spendCurrency && paid.spendCurrency !== "GBP"
+    ? ` Spend is Meta's, billed in ${paid.spendCurrency === "EUR" ? "euros" : paid.spendCurrency}, converted to sterling at a fixed rate (${paid.spendRate}).` : "";
   const moreTip = !targeted ? {
     head: "Paid cost",
     rows: [
       { label: "£/entry L3D", value: fmt(paid.l3dCpe, 2) },
       { label: "£/entry total", value: fmt(paid.cumCpe, 2) },
     ],
-    body: "Cost per converting entry: spend over the entries that become orders (" + pct(1 - dropOff) + " of them). ROI needs the profit split from the Target setting tab.",
+    body: "Cost per converting entry: spend over the entries that become orders (" + pct(1 - dropOff) + " of them). ROI needs the profit split from the Target setting tab." + spendNote,
   } : {
     head: `${view.label} ROI - how it is read`,
     rows: [
@@ -183,8 +186,8 @@ export default function PaidRoi({ snap }) {
       { label: "£/entry L3D", value: fmt(paid.l3dCpe, 2) },
       { label: "£/entry total", value: fmt(paid.cumCpe, 2) },
     ],
-    body: "Profit per unit and the share of the spend are the Target setting tab's (products and economics; the AA figure includes the framing uplift). A converting entry is one that becomes an order, "
-      + pct(1 - dropOff) + " of entries.",
+    body: "Profit per unit, the share of the spend and the cannibalisation are the Target setting tab's (products and economics, paid assumptions; the AA figure includes the framing uplift, which is Avant Arte's alone). A converting entry is one that becomes an order, "
+      + pct(1 - dropOff) + " of entries." + spendNote,
   };
   const todayTip = `${view.label} ROI last 3 days ` + fmt(view.l3d, 2) + targetLine;
   const projTip = `Projected ${view.label} ROI at close ` + fmt(declineEnd, 2) + targetLine;

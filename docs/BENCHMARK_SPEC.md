@@ -526,6 +526,12 @@ Labels that are placed by value never print through one another. Two rules, both
 pixels off the real element rather than assumed from a fraction, because the same fraction
 buys different room on a one-column card and a two-column one:
 
+- `POST /api/inputs/:id` also takes `cannibalisation` (a fraction from 0 up to 1, the share of paid
+  entries that would have come anyway; empty = the 0.2 standard) beside `cost_per_purchase`. The
+  answer does not wait for the rebuild: `{queued, created, build, storage}` comes back at once, the
+  build runs behind it, and `GET /api/inputs/:id/build` reports `running`, `done` or `failed`
+  (with `seconds` and the error). `storage.durable` on both says whether saves land on a
+  persistent disk (`SAVED_INPUTS_PATH`); the tab warns when they do not.
 - **Readings stacked on one line** (the trajectory's today column) spread with `spreadLabels`:
   sorted, pushed to a minimum gap, squeezed back inside the plot. The ticks and dots stay on
   their true values - only the text moves, which is what keeps a moved label honest.

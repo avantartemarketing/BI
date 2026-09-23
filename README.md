@@ -30,7 +30,7 @@ etl/                    Python pipeline
                           tier_curve_probe.py, release_clusters.py - the baskets of comparables,
                           price_probe.py - whether price belongs in the basket; it does)
 data/
-  spend_daily.csv         extracted spend facts
+  spend_daily.csv         extracted spend facts: Meta's spend, in euros (the build reads it in sterling)
   content_posts.csv       extracted content facts (manual Emplifi export; see below)
   notion_posts.csv        posts by release, date and channel, from the Notion log (live)
   release_clusters.csv    every release's campaign window, features, basket and edition pricing
@@ -467,14 +467,7 @@ basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 
 The derived-targets rail recomputes live in the browser via
 `shared/benchmarkModel.mjs` (the per-unit economics via `shared/economics.mjs`);
-**Save** persists the inputs (`POST /api/inputs/:id`) and **re-runs the Python
-ETL for that release**, because the benchmark model needs the panel and the
-per-basket curves - plans, expected-today, projections and the rail all come
-back rebuilt, in a few seconds. Full daily-domain refreshes still come from
-`npm run etl`. Saved inputs live in `data/inputs.saved.json` (`SAVED_INPUTS_PATH`
-relocates it; on Render's free disk copy changes back into
-`etl/release_inputs.json` to make them permanent); custom baskets live in
-`data/app/baskets.json`.
+**Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue; a first save runs the full build so the release is promoted) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
 
 ## Auditing the allocator tool with an admin export
 
@@ -594,6 +587,12 @@ to the target), the benchmark as a dotted outline over it, and the actual in fro
 headline deltas read against the target. Plan curves are built from the release's own basket
 where it has enough members and fall back to the pooled panel curve per metric (docs §5.3).
 Paid ROI is the exception: no reference and no horizon.
+
+Beside it, a **Direct** switch (shown once the ETL has built the page both ways): *Channel*
+reads Direct as the funnel attributes it; *Spread* shares Direct's sessions, entries and units
+out over the other channels in proportion to their own, day by day, and reads the benchmark's
+channel split the same way (docs/DATA_MODEL.md 1.3). Totals and what has been sold do not
+move; the plan's pace shifts a little with the mix. The choice sticks per browser.
 
 ### Arranging the page
 
