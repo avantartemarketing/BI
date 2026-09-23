@@ -31,20 +31,21 @@ const AMBER = "#8a5f00";
 
 // Layout, in CSS pixels; the canvas is drawn at `scale` times this. Slack
 // fits an inline picture to a fixed height and lets the width follow, so the
-// type a reader gets is the type divided by the picture's height: a card
-// drawn tall arrived at a third of its size. This one is drawn wide and
-// short: the release and the day on one line, the headline and the key on
-// the next, and the rows in two columns past four products, so seven
-// products are four rows high, not seven.
-const W = 1100;
+// type a reader gets is the type divided by the picture's height. The card
+// keeps its own shape here, the rows one under another and the key at the
+// foot, but set compactly: bigger type in tighter rows, and no more height
+// than the rows need, which is what makes it arrive readable.
+const W = 1180;
 const PAD = 22;
-const GUTTER = 44;    // between the two columns of rows
-const UNITS_W = 86;   // "1,000 of 1,000"
-const PCT_W = 44;
-const GAP = 12;
-const BAR_H = 14;
-const ROW_H = 26;
-const MANY = 4;       // past this many products the rows go in two columns
+const NAME_W = 300;
+const FIG_W = 176;    // the units column and, at the right edge, the percentage's
+const PCT_W = 50;
+const GAP = 20;
+const BAR_X = PAD + NAME_W + GAP;
+const BAR_W = W - PAD - FIG_W - GAP - BAR_X;
+const BAR_H = 16;
+const ROW_H = 28;
+const KEY_LINE = 20;
 
 function roundRect(ctx, x, y, w, h, r) {
   const rad = Math.max(0, Math.min(r, w / 2, h / 2));
@@ -100,50 +101,43 @@ function ellipsis(ctx, text, maxW) {
   return cut + "…";
 }
 
-/* The key's items measured in the fonts they are drawn in: the width each
- * takes, so the key can sit beside the headline when it fits and drop under
- * it when it does not. */
-function keyItems(ctx, legend) {
-  return (legend || []).map((item) => {
-    ctx.font = `400 13px ${FONT}`;
-    let w = 16 + ctx.measureText(String(item.label ?? "")).width + 7;
+/* The key's items in lines, measured in the fonts they are drawn in, so a
+ * key with four items and a long label wraps instead of running off. */
+function keyLines(ctx, legend) {
+  const lines = [[]];
+  let x = PAD;
+  for (const item of legend || []) {
+    ctx.font = `400 14px ${FONT}`;
+    let w = 17 + ctx.measureText(String(item.label ?? "")).width + 7;
     if (item.value !== null && item.value !== undefined) {
-      ctx.font = `600 13px ${FONT}`;
+      ctx.font = `600 14px ${FONT}`;
       w += ctx.measureText(String(item.value)).width;
     }
-    return { ...item, w };
-  });
+    if (x + w > W - PAD && lines[lines.length - 1].length) { lines.push([]); x = PAD; }
+    lines[lines.length - 1].push({ ...item, w });
+    x += w + 24;
+  }
+  return lines;
 }
-const keyWidth = (items) => items.reduce((n, it) => n + it.w, 0) + Math.max(0, items.length - 1) * 20;
 
 /* Draws the card onto a canvas sized for it. `model` is what SellThrough.jsx
  * is showing: see imageModel there. */
 export function drawSellThrough(canvas, model, scale = 2) {
   const rows = model.rows || [];
-  const cols = rows.length > MANY ? 2 : 1;
-  const perCol = Math.max(1, Math.ceil(rows.length / cols));
-  const colW = (W - PAD * 2 - GUTTER * (cols - 1)) / cols;
-  const nameW = cols === 1 ? 220 : 130;
-  const barW = colW - nameW - GAP - GAP - UNITS_W - 8 - PCT_W;
-
-  // the headline line is measured first, because the height depends on
-  // whether the key fits beside it; sizing the canvas resets the context, so
-  // every font is set again after
+  // the key is measured first, because the height depends on how it wraps;
+  // sizing the canvas resets the context, so the fonts are set again after
   const ctx = canvas.getContext("2d");
-  const key = keyItems(ctx, model.legend);
-  ctx.font = `600 30px ${FONT}`;
-  const headW = ctx.measureText(model.headline.text).width;
-  ctx.font = `400 13px ${FONT}`;
-  const subW = model.headline.sub ? 10 + ctx.measureText(model.headline.sub).width : 0;
-  const keyBeside = key.length === 0 || PAD + headW + subW + 32 + keyWidth(key) <= W - PAD;
-
-  const headBase = PAD + 14;
-  const rule = headBase + 10;
-  const leadBase = rule + 34;
-  const keyBase = keyBeside ? leadBase : leadBase + 20;
-  const rowsTop = keyBase + 12;
-  const rowsEnd = rowsTop + perCol * ROW_H;
-  const H = rowsEnd + (model.note ? 20 : 0) + PAD - 6;
+  const key = keyLines(ctx, model.legend);
+  const headBase = PAD + 18;          // the release and the day
+  const rule = headBase + 12;
+  const titleBase = rule + 24;        // the card's title, the horizon, the rate
+  const leadBase = titleBase + 40;    // the headline
+  const rowsTop = leadBase + 14;
+  const rowsEnd = rowsTop + rows.length * ROW_H;
+  const keyRule = rowsEnd + 6;
+  const keyBase = keyRule + 22;
+  const noteBase = keyBase + (key.length - 1) * KEY_LINE + (model.note ? 24 : 0);
+  const H = (model.note ? noteBase : keyBase + (key.length - 1) * KEY_LINE) + PAD - 2;
   canvas.width = Math.round(W * scale);
   canvas.height = Math.round(H * scale);
   ctx.scale(scale, scale);
@@ -156,108 +150,130 @@ export function drawSellThrough(canvas, model, scale = 2) {
   roundRect(ctx, 0.5, 0.5, W - 1, H - 1, 12);
   ctx.stroke();
 
-  // the release and the card's title on the left; the day, the horizon and
-  // the rate on the right
-  const rightLine = [model.dayLine, model.horizon, model.rateLine].filter(Boolean).join(" · ");
-  let rightW = 0;
-  if (rightLine) {
-    ctx.font = `400 12px ${FONT}`;
+  // release and campaign day
+  let dayW = 0;
+  if (model.dayLine) {
+    ctx.font = `400 14px ${FONT}`;
     ctx.fillStyle = MUTED;
     ctx.textAlign = "right";
-    ctx.fillText(rightLine, W - PAD, headBase);
-    rightW = ctx.measureText(rightLine).width + 16;
+    ctx.fillText(model.dayLine, W - PAD, headBase);
+    dayW = ctx.measureText(model.dayLine).width + 16;
   }
-  ctx.textAlign = "left";
-  ctx.font = `600 16px ${FONT}`;
+  ctx.font = `600 22px ${FONT}`;
   ctx.fillStyle = INK;
-  const release = ellipsis(ctx, model.releaseName || "", W - PAD * 2 - rightW - 180);
-  ctx.fillText(release, PAD, headBase);
-  const releaseW = ctx.measureText(release).width;
-  ctx.font = `400 13px ${FONT}`;
-  ctx.fillStyle = MUTED;
-  ctx.fillText(` · ${model.title || "Sell-through by product"}`, PAD + releaseW + 2, headBase);
+  ctx.textAlign = "left";
+  ctx.fillText(ellipsis(ctx, model.releaseName || "", W - PAD * 2 - dayW), PAD, headBase);
 
   ctx.fillStyle = HAIRLINE;
   ctx.fillRect(PAD, rule, W - PAD * 2, 1);
 
-  // the headline, and the key beside it when it fits
-  ctx.font = `600 30px ${FONT}`;
+  // the card's own title, the horizon, and the rate it counts at
+  ctx.textAlign = "left";
+  ctx.font = `600 17px ${FONT}`;
+  ctx.fillStyle = INK;
+  const title = model.title || "Sell-through by product";
+  ctx.fillText(title, PAD, titleBase);
+  const titleW = ctx.measureText(title).width;
+  if (model.horizon) {
+    ctx.font = `500 13px ${FONT}`;
+    const w = ctx.measureText(model.horizon).width + 16;
+    fill(ctx, PAD + titleW + 10, titleBase - 14, w, 21, 5, "#faf9f5");
+    ctx.strokeStyle = BORDER;
+    roundRect(ctx, PAD + titleW + 10.5, titleBase - 13.5, w - 1, 20, 5);
+    ctx.stroke();
+    ctx.fillStyle = MUTED;
+    ctx.fillText(model.horizon, PAD + titleW + 18, titleBase + 1);
+  }
+  if (model.rateLine) {
+    ctx.font = `400 14px ${FONT}`;
+    ctx.fillStyle = MUTED;
+    ctx.textAlign = "right";
+    ctx.fillText(model.rateLine, W - PAD, titleBase);
+  }
+
+  // the headline
+  ctx.textAlign = "left";
+  ctx.font = `600 40px ${FONT}`;
   ctx.fillStyle = INK;
   ctx.fillText(model.headline.text, PAD, leadBase);
+  const headW = ctx.measureText(model.headline.text).width;
   if (model.headline.sub) {
-    ctx.font = `400 13px ${FONT}`;
+    ctx.font = `400 16px ${FONT}`;
     ctx.fillStyle = MUTED;
-    ctx.fillText(model.headline.sub, PAD + headW + 10, leadBase);
-  }
-  let x = keyBeside ? W - PAD - keyWidth(key) : PAD;
-  for (const item of key) {
-    fill(ctx, x, keyBase - 9, 10, 10, 2, item.color);
-    x += 16;
-    ctx.font = `400 13px ${FONT}`;
-    ctx.fillStyle = MUTED;
-    ctx.fillText(String(item.label ?? ""), x, keyBase);
-    x += ctx.measureText(String(item.label ?? "")).width + 7;
-    if (item.value !== null && item.value !== undefined) {
-      ctx.font = `600 13px ${FONT}`;
-      ctx.fillStyle = INK;
-      ctx.fillText(String(item.value), x, keyBase);
-      x += ctx.measureText(String(item.value)).width;
-    }
-    x += 20;
+    ctx.fillText(model.headline.sub, PAD + headW + 12, leadBase);
   }
 
-  // the products, named by what tells them apart, down the first column and
-  // then the second
+  // the products, named by what tells them apart
   const names = shortNames(rows.map((r) => String(r.name || "")));
   for (const [i, row] of rows.entries()) {
-    const c = Math.floor(i / perCol);
-    const x0 = PAD + c * (colW + GUTTER);
-    const top = rowsTop + (i % perCol) * ROW_H + (ROW_H - BAR_H) / 2;
-    const base = top + BAR_H / 2 + 5;
-    const barX = x0 + nameW + GAP;
+    const top = rowsTop + i * ROW_H + (ROW_H - BAR_H) / 2;
+    const base = top + BAR_H / 2 + 6;
     ctx.textAlign = "left";
-    ctx.font = `400 14px ${FONT}`;
+    ctx.font = `400 17px ${FONT}`;
     ctx.fillStyle = INK;
-    ctx.fillText(ellipsis(ctx, names[i], nameW), x0, base);
+    ctx.fillText(ellipsis(ctx, names[i], NAME_W), PAD, base);
 
     // track, then the room out to the sellout, then the segments
-    fill(ctx, barX, top, barW, BAR_H, 4, TRACK);
+    fill(ctx, BAR_X, top, BAR_W, BAR_H, 5, TRACK);
     const maxV = row.maxV > 0 ? row.maxV : 1;
-    const px = (v) => Math.max(0, Math.min((v / maxV) * barW, barW));
-    if (row.edition > 0) fill(ctx, barX, top, px(row.edition), BAR_H, 4, REF_TRACK);
-    const inset = 2;
+    const px = (v) => Math.max(0, Math.min((v / maxV) * BAR_W, BAR_W));
+    if (row.edition > 0) fill(ctx, BAR_X, top, px(row.edition), BAR_H, 5, REF_TRACK);
+    const inset = 3;
     const segs = (row.segs || []).filter((s) => s.v > 0);
     let at = 0;
     segs.forEach((s, k) => {
-      const sx = px(at); at += s.v;
-      segment(ctx, barX + sx, top + inset, px(at) - sx, BAR_H - inset * 2, s.color, k === 0, k === segs.length - 1 && !(row.over > 0));
+      const x0 = px(at); at += s.v;
+      segment(ctx, BAR_X + x0, top + inset, px(at) - x0, BAR_H - inset * 2, s.color, k === 0, k === segs.length - 1 && !(row.over > 0));
     });
     if (row.over > 0 && row.edition > 0) {
-      const sx = px(row.edition);
-      segment(ctx, barX + sx, top + inset, px(row.edition + row.over) - sx, BAR_H - inset * 2, row.overColor, false, true);
+      const x0 = px(row.edition);
+      segment(ctx, BAR_X + x0, top + inset, px(row.edition + row.over) - x0, BAR_H - inset * 2, row.overColor, false, true);
     }
 
     // the row's two figures as they are on the page: units of the edition in
     // muted text, then the percentage in ink, each in a column of its own
     ctx.textAlign = "right";
-    const right = x0 + colW;
     if (row.unitsText) {
-      ctx.font = `400 13px ${FONT}`;
+      ctx.font = `400 14px ${FONT}`;
       ctx.fillStyle = MUTED;
-      ctx.fillText(String(row.unitsText), right - PCT_W - 8, base);
+      ctx.fillText(String(row.unitsText), W - PAD - PCT_W - 10, base);
     }
     if (row.pctText) {
-      ctx.font = `600 15px ${FONT}`;
+      ctx.font = `600 17px ${FONT}`;
       ctx.fillStyle = INK;
-      ctx.fillText(String(row.pctText), right, base);
+      ctx.fillText(String(row.pctText), W - PAD, base);
     }
   }
 
+  // the key, with the release's totals
+  ctx.fillStyle = HAIRLINE;
+  ctx.fillRect(PAD, keyRule, W - PAD * 2, 1);
+  ctx.textAlign = "left";
+  let y = keyBase;
+  for (const line of key) {
+    let x = PAD;
+    for (const item of line) {
+      fill(ctx, x, y - 10, 11, 11, 2, item.color);
+      x += 17;
+      ctx.font = `400 14px ${FONT}`;
+      ctx.fillStyle = MUTED;
+      ctx.fillText(String(item.label ?? ""), x, y);
+      x += ctx.measureText(String(item.label ?? "")).width + 7;
+      if (item.value !== null && item.value !== undefined) {
+        ctx.font = `600 14px ${FONT}`;
+        ctx.fillStyle = INK;
+        ctx.fillText(String(item.value), x, y);
+        x += ctx.measureText(String(item.value)).width;
+      }
+      x += 24;
+    }
+    y += KEY_LINE;
+  }
+
   if (model.note) {
-    ctx.textAlign = "left";
-    ctx.font = `600 12px ${FONT}`;
+    ctx.font = `600 13px ${FONT}`;
     ctx.fillStyle = AMBER;
-    ctx.fillText(model.note, PAD, rowsEnd + 14);
+    ctx.fillText(model.note, PAD, noteBase);
   }
   return canvas;
 }

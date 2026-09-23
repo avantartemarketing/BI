@@ -483,11 +483,10 @@ model the card builds out of what it has just rendered, so only the drawing is w
 twice and never the figures. It carries the release, the campaign day and the rate along
 the top, which the card on the page does not need, so it stands on its own in a channel.
 Slack fits a picture inline to a fixed height and lets the width follow, so the type a
-reader gets is the type divided by the picture's height; a card drawn tall arrived at a
-third of its size. The picture is therefore drawn wide and short: the release and the day
-on one line, the headline and the key on the next, and past four products the rows in two
-columns, so seven products are four rows high. A browser that cannot give us a PNG posts
-the figures alone rather than nothing.
+reader gets is the type divided by the picture's height. The picture keeps the card's own
+shape, the rows one under another and the key at the foot, but is set compactly: bigger
+type in tighter rows and no more height than the rows need, which is what makes it arrive
+readable. A browser that cannot give us a PNG posts the figures alone rather than nothing.
 
 Slack attaches a file only to a channel it knows by ID, and `chat.postMessage` is the one
 call that hands an ID back, so the **first** post to a channel is the figures and then the
