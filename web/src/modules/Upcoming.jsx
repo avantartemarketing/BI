@@ -1,5 +1,5 @@
 /* The page for a launch Airtable knows and the funnel report does not yet
- * (docs/DATA_MODEL.md 1.6): what is known about it - the dates, the edition,
+ * (docs/DATA_MODEL.md 1.7): what is known about it - the dates, the edition,
  * the price, the works, where the project stands in Airtable - and the one
  * thing to do with it, which is to set its targets before it opens. There
  * are no actuals to draw, so this card stands in for the whole overview. */

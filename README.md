@@ -63,7 +63,10 @@ npm start              # serves on :10000
 
 Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :5173, proxies /api).
 
-Edition pricing (needs `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE` in the environment):
+Edition pricing and the per-product target economics (needs `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID`,
+`AIRTABLE_TABLE` in the environment; the live refresh runs this every cycle when the token is set;
+`AIRTABLE_FIELD_<column>` names a target field spelled another way, e.g.
+`AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner"`):
 
 ```bash
 python3 etl/pull_airtable.py --list-fields              # field names and types only
@@ -144,7 +147,7 @@ on every refresh and needs nothing.
 `sources/across_time.csv` and `data/spend_daily.csv`, pulls Airtable's Pipeline table to
 `data/release_pricing.csv` when `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID` and `AIRTABLE_TABLE`
 are set (the launches ahead of the funnel appear in the sidebar as Upcoming, docs
-`DATA_MODEL.md` 1.6), and reruns the ETL in place - no redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
+`DATA_MODEL.md` 1.7), and reruns the ETL in place - no redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
 (signed-in session required): both **start** the refresh and return at once with
 `running: true`; poll `GET /api/refresh/status` for the outcome, or hover the header's
 source-freshness line, which shows the same thing. A refresh is a multi-year BigQuery pull
@@ -329,6 +332,12 @@ and share the posts database page with that integration. Each refresh queries
 the database (`server/notion.js`), matches rows to releases by campaign code / release
 name / artist name found in any text column, and writes `data/notion_posts.csv`
 (`campaign_code,date,channel,posts`). `NOTION_ARTIST_POSTS_DB` overrides the database id.
+The same pass reads each row's words for the moment it records - an early-access email
+(which opens the private room), the announce, the launch or draw close - and writes
+`data/notion_campaigns.csv` (`campaign_code,private_room_open,announce_date,launch_end`),
+which the build reads before anything typed; `NOTION_CAMPAIGNS_DB` names a campaigns
+database whose date columns (matched by name: early access / private room, announce,
+launch / close) override those.
 
 The channel comes from the database's Channel column - values are written by hand
 ("AA IG Main", "Artist post", "Partner post") so they are read by shape, not from a
@@ -434,9 +443,15 @@ its own basket.
 
 The older quartile levers (docs/DATA_MODEL.md §3) are gone from the page and,
 since September 2026, from the build: a release that cannot be benchmarked
-shows its actuals. What the page asks instead is which channels are in plan -
-Running paid, the artist's own channels - how much the artist will post, and
-what a paid unit costs to buy (BENCHMARK_SPEC 4.3, 8).
+shows its actuals. Almost nothing on the tab is typed (docs/DATA_MODEL.md
+§1.6): the products and their economics come from Airtable per work (edition,
+target sell-through, price, profits per unit, the deal's revenue or profit
+share, framing), with a cell to type over any figure Airtable does not hold
+yet; the dates from the Notion log (the early-access email opens the private
+room), then the funnel's clock, then Airtable; the marketing lead from
+Airtable. What the page asks is which Meta campaigns are the release's, which
+channels are in plan - Running paid, the artist's own channels - and which
+basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 
 The derived-targets rail recomputes live in the browser via
 `shared/benchmarkModel.mjs` (the per-unit economics via `shared/economics.mjs`);
@@ -461,75 +476,52 @@ allocate to. The logic is `shared/drawAudit.mjs`, tested by `tests/draw_audit.mj
 
 ## Posting sell-through to Slack
 
-The sell-through card has a **Post to Slack** button. It sends the card itself as a
-picture, with the release's current figures under it in the sales team's own layout, to
-the channel set for that release:
-
-```
-*Julian Schnabel · Multiple · 2026 Q3* - sales update, 17 Sep (day 11 of 24)
-Paid = 94 units (16% of 600)
-• I: 46/200 ...
-Draw = 30 unique entrants (2 won and not yet paid: not counted, their orders are in Drafts)
-• I: 24 open + 1 to pay ...
-Drafts = 5
-• I: 2 · II: 1 · III: 2
-Estimated sell-through (entries at 80% entry → order, pre-orders at 95%, placed by maximum quantity for revenue)
-• I: ~62 units → 31% ...
-Total ~126 units → 21% of 600
-```
+The sell-through card has a **Post to Slack** button. It sends the card itself, as a
+picture and nothing else, to the channel set for that release. No text goes with it, by
+decision: the picture carries the figures.
 
 The picture is the card's own rows, drawn on a canvas in the browser that is showing them
 (`web/src/modules/sellThroughImage.mjs`) - the one place with the page's typeface - from a
 model the card builds out of what it has just rendered, so only the drawing is written
-twice and never the figures. It carries the release, the campaign day and the rate along
-the top, which the card on the page does not need, so it stands on its own in a channel.
-Slack fits an inline picture to a fixed height, so how big it reads is its type divided
-by its height: the frame keeps the card's proportions, 1180 CSS pixels by the rows'
-height at two times that, and the type and the bars are set large inside it. A browser
-that cannot give us a PNG posts the figures alone rather than nothing.
+twice and never the figures. It carries the release and the campaign day along the top,
+which the card on the page does not need, so it stands on its own in a channel. Slack
+fits an inline picture to a fixed height, so how big it reads is its type divided by its
+height: the frame keeps the card's proportions, 1180 CSS pixels by the rows' height, with
+the type and the bars set large inside it, and the file is drawn at 3.2 times that, 3776
+pixels wide. A browser that cannot draw the picture posts nothing and the button says so.
 
-Slack attaches a file only to a channel it knows by ID, and `chat.postMessage` is the one
-call that hands an ID back, so the **first** post to a channel is the figures and then the
-picture, and every post after that is one: the picture with the figures as its comment. A
-picture Slack will not take (`files:write` missing, say) never costs the figures - they go
-as text and the button's hover says why (the button itself only ever reads Post to Slack,
-Posting, Done or Failed, so the card's head never reflows). A public channel nobody invited the bot to takes
-the figures as they are (`chat:write.public`), and when it refuses the picture because the
-bot is not a member, the bot joins the channel (`channels:join`) and sends it again; a
-private channel cannot be joined that way, so the button's hover asks for an invite.
-
-The message is composed on the server from the same snapshot the card is drawn from
-(`server/slack.js`), so what lands in Slack is what the page says at that moment. The
-header carries the day it is sent, with the campaign day moved on to match; when the
-feeds' last complete day is earlier than that, a last line says "Complete data through"
-that day. The percentages are of the whole edition, the products' editions added up
-(Warhol: 6,100 with the Lifesize), not of the sellout target the page's targets use; the
-release's own edition size stands in only when a product has no edition.
+Slack attaches a file only to a channel it knows by ID. A channel typed as an ID on the
+Target setting tab is its own; one typed by name is looked up once (`conversations.list`,
+which is why the app needs `channels:read`) and the ID kept beside the name, so every post
+after the first is the upload alone. A public channel nobody invited the bot to refuses
+the picture at first because the bot is not a member; the bot then joins the channel
+(`channels:join`) and sends it again. A private channel cannot be joined that way, so the
+button's hover asks for an invite. The button itself only ever reads Post to Slack,
+Posting, Done or Failed, so the card's head never reflows; what happened is on its hover.
 
 Setup, once:
 
 1. Create a Slack app (api.slack.com/apps → Create New App → From scratch) in the
-   workspace, add the bot scopes `chat:write`, `chat:write.public`, `files:write` and
-   `channels:join` under OAuth & Permissions, install it to the workspace, and copy the
-   **Bot User OAuth Token** (`xoxb-…`) into `SLACK_BOT_TOKEN` on Render. The token lives
-   only in the environment. Without `files:write` the figures still post; only the picture
-   does not, and the button's hover says so. Without `channels:join` the picture only reaches
+   workspace, add the bot scopes `files:write`, `channels:read` and `channels:join` under
+   OAuth & Permissions (`groups:read` as well if the channel is private), install it to
+   the workspace, and copy the **Bot User OAuth Token** (`xoxb-…`) into `SLACK_BOT_TOKEN`
+   on Render. The token lives only in the environment. Without `channels:read` the
+   channel has to be typed as its ID; without `channels:join` the picture only reaches
    channels the bot has been invited to. An app installed before a scope existed needs
    the scope added and the app reinstalled.
 2. For a private channel, invite the app to it (`/invite @<app name>`); public channels
-   need nothing, the bot joins one by itself the first time it posts a picture there.
-3. On the release's **Target setting** tab, type the channel name (without the `#`) in
-   **Slack channel** and press its own **Save**. It is stored in `data/slack.json`
-   (`SLACK_STATE_PATH` on the disk), separately from the targets, so a release without
-   targets can have a channel too. If `SLACK_STATE_PATH` points somewhere the service
-   cannot write (an `EACCES` on `/var/data` means no disk is mounted there), the save
-   still lands in `data/slack.json` and the field says so in amber: that copy resets
-   on the next deploy, so mount the disk or unset the variable.
+   need nothing, the bot joins one by itself the first time it posts there.
+3. On the release's **Target setting** tab, type the channel name (without the `#`), or
+   its ID, in **Slack channel** and press its own **Save**. It is stored in
+   `data/slack.json` (`SLACK_STATE_PATH` on the disk), separately from the targets, so a
+   release without targets can have a channel too. If `SLACK_STATE_PATH` points somewhere
+   the service cannot write (an `EACCES` on `/var/data` means no disk is mounted there),
+   the save still lands in `data/slack.json` and the field says so in amber: that copy
+   resets on the next deploy, so mount the disk or unset the variable.
 
-`PUBLIC_URL` (or Render's own `RENDER_EXTERNAL_URL`) puts an "Open in Launch Performance"
-link at the end of each message that opens the release itself (`?release=<id>`; the address
-bar follows the sidebar for the same reason). Slack's refusals come back on the button in
-words (wrong channel name, bot not invited, token revoked, missing scope).
+Slack's refusals come back on the button's hover in words (a channel name Slack cannot
+find, the bot not invited, the token revoked, a missing scope). The address bar follows
+the sidebar (`?release=<id>`), so a release can be linked to directly.
 
 ## Deploying on Render
 

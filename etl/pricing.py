@@ -497,3 +497,120 @@ def report() -> None:
 
 if __name__ == "__main__":
     report()
+
+
+# ---------------------------------------------------------------- one release's products
+
+# the per-product target economics the dashboard reads off a record, when the
+# pull found the field (etl/pull_airtable.py OPTIONAL_FIELDS); blank otherwise
+PRODUCT_NUMERIC = ("edition_size", "units_target", "unit_price", "target_sellthrough", "expected_sellthrough",
+                   "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share",
+                   "frame_conversion", "frame_profit_per_unit")
+PRODUCT_TEXT = ("airtable_id", "project_code", "title", "release", "currency", "framing", "launch_type",
+                "edition_type", "product_type", "price_status", "launch_date", "announce_date",
+                "private_room_date", "marketing_lead")
+_RECORDS: tuple[float, pd.DataFrame, pd.DataFrame] | None = None   # (mtime, records, launches)
+
+
+def _num_or_none(v) -> float | None:
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return None if np.isnan(f) else f
+
+
+def _text(v) -> str:
+    if v is None or (isinstance(v, float) and np.isnan(v)) or v is pd.NaT:
+        return ""
+    if isinstance(v, pd.Timestamp):
+        return v.date().isoformat()
+    return str(v).strip()
+
+
+def records_and_launches(path: pathlib.Path | str | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """The pricing file and its launches, read once per file version."""
+    global _RECORDS
+    p = pathlib.Path(path) if path else PRICING_PATH
+    if not p.exists():
+        return pd.DataFrame(), pd.DataFrame()
+    mtime = p.stat().st_mtime
+    if path is None and _RECORDS is not None and _RECORDS[0] == mtime:
+        return _RECORDS[1], _RECORDS[2]
+    records = load_pricing(p)
+    lf = launches(records)
+    if path is None:
+        _RECORDS = (mtime, records, lf)
+    return records, lf
+
+
+def _release_row(release: dict) -> pd.DataFrame:
+    """A one-row frame in the shape match() reads, from a release's inputs or
+    a discovered record: the name's artist, title and quarter, and the window."""
+    name = str(release.get("release_name") or "")
+    parts = [x.strip() for x in name.split(" · ")]
+    qm = re.match(r"^(\d{4}) Q([1-4])$", parts[-1]) if len(parts) >= 2 else None
+    artist = release.get("artist") or parts[0]
+    title = release.get("title") or (" · ".join(parts[1:-1]) if qm and len(parts) >= 3 else " · ".join(parts[1:]))
+    quarter = release.get("quarter") or (parts[-1] if qm else "")
+    return pd.DataFrame([{
+        "release_name": name, "artist": artist, "title": title, "quarter": quarter or "",
+        "announce": release.get("announce_date"), "close": release.get("launch_end"), "panel": "",
+    }])
+
+
+def release_products(release: dict, pricing_path: pathlib.Path | str | None = None) -> dict:
+    """The Airtable products of one release: the sized, non-bundle records of
+    the launch `match` picks for it, by the same rules as the panel's pricing,
+    each as a product dict the target model reads, with the launch-level
+    figures Airtable holds beside them (dates, the marketing lead).
+
+    Returns {"match": how it matched ("none" when it did not), "note": the
+    matcher's note, "products": [...], "launch_date", "announce_date",
+    "private_room_date" (the earliest announce and private-room dates and the
+    latest launch date across the products), "marketing_lead"}. A record's
+    numbers are None where Airtable has none, never zero; the currency is the
+    pull's (EUR) and a price is not converted here."""
+    records, lf = records_and_launches(pricing_path)
+    out = {"match": "none", "note": "no Airtable pull on file" if records.empty else "", "products": [],
+           "launch_date": None, "announce_date": None, "private_room_date": None, "marketing_lead": None}
+    if records.empty or not release.get("release_name"):
+        return out
+    res = match(_release_row(release), lf).iloc[0]
+    out["match"] = str(res.get("price_match") or "none")
+    out["note"] = _text(res.get("price_note"))
+    if out["match"] == "none":
+        return out
+    ids = {s for s in _text(res.get("airtable_ids")).split("|") if s}
+    got = records[records["airtable_id"].astype(str).str.replace(r"\.0$", "", regex=True).isin(ids)]
+    got = got.sort_values(["bundle", "title"], kind="stable")
+    for r in got.itertuples(index=False):
+        if bool(r.bundle):
+            continue     # a set or an unsized record carries its parts' price, not an edition of its own
+        p = {col: _text(getattr(r, col, "")) or None for col in PRODUCT_TEXT if col != "airtable_id"}
+        p["airtable_id"] = _text(r.airtable_id).replace(".0", "")
+        p["name"] = _text(r.title)
+        for col in PRODUCT_NUMERIC:
+            p[col] = _num_or_none(getattr(r, col, None))
+        p["edition"] = int(round(p["edition_size"])) if p["edition_size"] and p["edition_size"] > 0 else None
+        # the target as a share of the edition: the field when it exists, else
+        # the units target Airtable already holds, else the expected sell-through
+        share = p["target_sellthrough"]
+        if share is None and p["units_target"] and p["edition"]:
+            share = p["units_target"] / p["edition"]
+        if share is None:
+            share = p["expected_sellthrough"]
+        p["target_sellthrough"] = min(max(share, 0.0), 1.0) if share is not None else None
+        # "Framed on order" is a framing option; "No framing option" is not
+        fr = (p.get("framing") or "").lower()
+        p["framing_available"] = (not fr.startswith("no framing")) if fr else None
+        out["products"].append(p)
+    dates = [d for d in (p.get("announce_date") for p in out["products"]) if d]
+    out["announce_date"] = min(dates) if dates else None
+    dates = [d for d in (p.get("private_room_date") for p in out["products"]) if d]
+    out["private_room_date"] = min(dates) if dates else None
+    dates = [d for d in (p.get("launch_date") for p in out["products"]) if d]
+    out["launch_date"] = max(dates) if dates else None
+    leads = [p.get("marketing_lead") for p in out["products"] if p.get("marketing_lead")]
+    out["marketing_lead"] = max(set(leads), key=leads.count) if leads else None
+    return out

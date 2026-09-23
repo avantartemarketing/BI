@@ -170,7 +170,55 @@ and `data/app/release_windows.csv` say where every release's dates came from.
 
 ---
 
-### 1.6 Upcoming launches (from Airtable)
+### 1.6 Release inputs: what comes from where
+
+The Target setting tab asks for three decisions - the Meta campaigns, the channels in plan,
+the basket - and reads everything else off the feeds, per product. `resolve_release` in
+`etl/build.py` (mirrored by `shared/economics.mjs` for the tab) resolves every configured
+release before the build, and `inputs.json` carries what the feeds hold for every release
+under `sourced`, beside the inputs as saved under `releases`.
+
+**Products and economics.** Airtable's Pipeline table has one record per work;
+`etl/pricing.py release_products` picks the launch for a release by the same match the panel's
+pricing uses (§4a.2½) and hands back its sized, non-bundle records as products: edition, target
+sell-through (the `Target sell-through %` field when the table has it, else the units target
+over the edition, else the expected sell-through, else 100%), unit price and currency, the
+artist's and Avant Arte's profit per unit, the deal's revenue share or profit share, the framing
+option and the framing take-up and profit. The figures typed on the tab lay over them per
+product (`products[]` entries with `airtable_id`, or `manual: true` for a work Airtable has no
+record for); blank means Airtable's. The release's figures follow:
+
+```
+target units        = Σ round(edition × target sell-through)          # edition_size
+edition             = Σ edition                                        # edition_total
+launch value        = Σ target units × unit price in sterling          # EUR converted at RATES_TO_GBP
+profit per unit     = Σ target units × profit per unit / Σ target units, for the products that have one
+framing uplift      = Σ over framed products of target units × take-up × profit per frame / Σ target units
+AA budget share     = per product: its AA profit share on a profit-share deal, 1 on a revenue-share deal;
+                      weighted by target units; 0.5 where no deal is recorded
+```
+
+A release set up before this carries `legacy_economics` (the release-level `edition_size`,
+`edition_total`, `unit_price`, `artist_profit`, `aa_group_profit`, `artist_profit_share`,
+framing terms); those stand in for the totals until cleared on the tab, and inputs saved with
+them at the top level are read the same way. The snapshot's `economics` block publishes the
+products in force, `mode` (`products` or `release`) and `deal`.
+
+**Dates.** The Notion log first: `server/notion.js` reads each matched row's words for the
+stage it records (early access / private room → `private_room_open`; announce; launch, draw
+close, last chance → `launch_end`) and writes `data/notion_campaigns.csv`; a campaigns database
+named by `NOTION_CAMPAIGNS_DB` supplies date columns by name over that. Then what was typed,
+then the funnel export's campaign clock (measured, exact for the announce), then Airtable's
+planned dates. The private room defaults to two weeks before the announce when nothing has it.
+`inputSources` on the snapshot names the source of each.
+
+**The marketing lead** comes from Airtable's `Marketing lead` field (a colleague's display
+name; the pull never takes an email), else what was typed. **The campaign code** is what was
+saved, else the prefix of the first Meta campaign's name, else the guess from the email and
+content feeds. **The Meta campaigns** (`campaign_names`) are the list saved, else the draw
+campaign the spend feed names for the code; paid spend is summed over the list.
+
+### 1.7 Upcoming launches (from Airtable)
 
 The funnel report only carries a release once it has traffic under a release name, and a
 campaign can be spending on Meta for days before that. Airtable's Pipeline table knows the
@@ -738,10 +786,16 @@ The funnel export carries no price and no edition size, and the targets workbook
 the releases with targets set. Airtable's Pipeline table holds every edition's retail price,
 units, launch type, launch date and medium, one record per product (a colourway, a hand-finished
 variant, a bundle). `etl/pull_airtable.py` pulls exactly the fields needed - identity, price,
-size, type, dates, medium, artist tier and genre bucket - and nothing about people: it refuses
-to run if a wanted field turns out to hold a collaborator, email or phone, blanks any cell that
-looks like one, strips links out of rich text, and keeps only records with an artist, a title
-and a launch date that has passed or comes within 120 days. The result is committed as
+size, type, dates, medium, artist tier and genre bucket, and the per-product target economics
+of §1.6 (`Target sell-through %`, `Artist profit per unit`, `AA profit per unit`, `AA revenue
+share`, `AA profit share`, `Framing conversion`, `Framing profit per unit`) plus the
+`Marketing lead`, each pulled when the table has the field and left blank when it does not
+yet, with `AIRTABLE_FIELD_<column>` naming a field spelled another way - and nothing about
+people: it refuses to run if a wanted field turns out to hold a collaborator, email or phone
+(the marketing lead excepted, read for its display name only), blanks any cell that looks like
+one, strips links out of rich text, and keeps only records with an artist, a title and a launch
+date that has passed or comes within 120 days. The live refresh runs the pull every cycle when
+`AIRTABLE_TOKEN` is set. The result is committed as
 `data/release_pricing.csv` (one row per product record, 44 columns, all prices in EUR because
 that is the field's currency in Airtable). Credentials are `AIRTABLE_TOKEN` (read-only),
 `AIRTABLE_BASE_ID` and `AIRTABLE_TABLE`, environment only.
@@ -1114,8 +1168,8 @@ Paid, drafts, the draw winners the entries imply and (at close) the units still 
 four tints of the page's blue, deepest to palest as the units get less certain; nothing on
 the card is hatched, and demand past a product's edition is the winners' own tint carrying on
 where the paler room behind the bar stops. `Post to Slack` draws those rows onto a canvas in
-the browser (`web/src/modules/sellThroughImage.mjs`) and posts the picture with the composed
-figures as its comment (`server/slack.js`); the drawing is written twice, the figures once.
+the browser (`web/src/modules/sellThroughImage.mjs`) and posts the picture, and nothing else,
+to the release's channel (`server/slack.js`); the drawing is written twice, the figures once.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
 pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven
@@ -1306,7 +1360,7 @@ actuals-only page omits it.
 | Field | What it holds |
 |---|---|
 | `targetingMode` | always `"benchmark"` since 2026-09-23 (§3); kept so older readers of the field still resolve |
-| `upcoming`, `airtable` | `true` on a launch listed from Airtable before the funnel carries it (§1.6), with `airtable` holding its release code, record ids, works, edition, price and project status |
+| `upcoming`, `airtable` | `true` on a launch listed from Airtable before the funnel carries it (§1.7), with `airtable` holding its release code, record ids, works, edition, price and project status |
 | `untracked` | `{entries: {share, count, total}, units: {...}, normal: {recentMonths, entries: {median, p90, n}, units: {...}}, high: [...]}` - the untracked share of the window against what is normal (§1.3); the Target setting tab warns when `high` names a metric |
 | `benchmark.basket` | `{id, kind, name, n, thin, suggestedId}`; `kind` is `ready`, `bespoke` or `saved` |
 | `benchmark.units`, `unitsP25`, `unitsP75` | the basket's median units and its middle half |

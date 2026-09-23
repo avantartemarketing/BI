@@ -1,90 +1,102 @@
 {
- "_comment": "Hand-entered launch inputs transcribed from the LAUNCH PERFORMANCE OVERVIEW per-release tabs (LAUNCH INPUT + TARGET SETTING blocks), as the dashboard's Target setting tab edits them. These are the human decisions of the model; everything else is derived from the benchmark basket. Optional per release: benchmark_basket, channels_off (display groups not in plan), artist_posting_tier (Low / Medium / High, the artist-posts benchmark cohort), cost_per_purchase (GBP per paid unit, else the panel median), frame_conversion and frame_profit_per_unit. Dates ISO. Currency GBP.",
+ "_comment": "Launch inputs per release as the dashboard's Target setting tab edits them (the repo defaults; saves land in data/inputs.saved.json). The economics are per product and come from Airtable (etl/pull_airtable.py, etl/pricing.py release_products) with typed overrides under products[] (airtable_id or manual: true); legacy_economics holds the release-level figures a release was set up with before that, and stands in for its totals until it is cleared on the tab. Dates come from the Notion log, else what is typed here, else the funnel's campaign clock, else Airtable; the marketing lead from Airtable, else typed. Optional per release: benchmark_basket, channels_off, artist_posting_tier, campaign_names (the Meta campaigns whose spend is the release's), cost_per_purchase. Dates ISO. Currency GBP.",
  "releases": [
   {
    "id": "glennligon_le_26",
    "release_name": "Glenn Ligon · Multiple · 2026 Q3",
    "campaign_code": "GlennLigon_LE_26",
-   "campaign_name": "GlennLigon_LE_26 · Enter draw",
+   "campaign_names": [
+    "GlennLigon_LE_26 · Enter draw"
+   ],
    "marketing_lead": "Maria",
    "private_room_open": "2026-07-31",
    "announce_date": "2026-08-17",
    "launch_end": "2026-09-17",
-   "edition_size": 150,
-   "unit_price": 3000,
-   "artist_profit": 176879.0,
-   "aa_group_profit": 190745.0,
-   "artist_profit_share": 0.5,
-   "aa_budget_share": 1.0,
-   "framing_available": true
+   "legacy_economics": {
+    "edition_size": 150,
+    "unit_price": 3000,
+    "artist_profit": 176879.0,
+    "aa_group_profit": 190745.0,
+    "artist_profit_share": 0.5,
+    "aa_budget_share": 1.0,
+    "framing_available": true
+   }
   },
   {
    "id": "dali_le_26",
    "release_name": "Salvador Dali Estate · Multiple · 2026 Q3",
    "campaign_code": "SalvadorDali_LE_26",
-   "campaign_name": "SalvadorDali_LE_26 · Enter draw",
+   "campaign_names": [
+    "SalvadorDali_LE_26 · Enter draw"
+   ],
    "marketing_lead": "Clare",
    "private_room_open": "2026-08-19",
    "announce_date": "2026-08-21",
    "launch_end": "2026-09-11",
-   "edition_size": 1200,
-   "unit_price": 500,
-   "artist_profit": 0,
-   "aa_group_profit": 335178,
-   "artist_profit_share": 0,
-   "framing_available": true,
    "channels_off": [
     "referral_artist"
-   ]
+   ],
+   "legacy_economics": {
+    "edition_size": 1200,
+    "unit_price": 500,
+    "artist_profit": 0,
+    "aa_group_profit": 335178,
+    "artist_profit_share": 0,
+    "framing_available": true
+   }
   },
   {
    "id": "abdulnasser_le_26",
    "release_name": "Abdulnasser Gharem · Hemisphere · 2026 Q3",
    "campaign_code": "Abdulnasser_LE_26",
-   "campaign_name": "Abdulnasser_LE_26 · Enter draw",
+   "campaign_names": [
+    "Abdulnasser_LE_26 · Enter draw"
+   ],
    "marketing_lead": "Maria",
    "private_room_open": "2026-06-23",
    "announce_date": "2026-07-27",
    "launch_end": "2026-08-25",
-   "edition_size": 40,
-   "unit_price": 4000,
-   "artist_profit": 43904,
-   "aa_group_profit": 85820,
-   "artist_profit_share": 0.5,
-   "framing_available": true,
-   "cost_per_purchase": 291
+   "cost_per_purchase": 291,
+   "legacy_economics": {
+    "edition_size": 40,
+    "unit_price": 4000,
+    "artist_profit": 43904,
+    "aa_group_profit": 85820,
+    "artist_profit_share": 0.5,
+    "framing_available": true
+   }
   },
   {
    "id": "zengfanzhi_le_26",
    "release_name": "Zeng Fanzhi · Multiple · 2026 Q3",
    "campaign_code": "ZengFanzhi_LE_26",
-   "campaign_name": "ZengFanzhi_LE_26 · Enter draw",
+   "campaign_names": [
+    "ZengFanzhi_LE_26 · Enter draw"
+   ],
    "marketing_lead": "Maria",
    "private_room_open": "2026-06-29",
    "announce_date": "2026-07-29",
    "launch_end": "2026-08-26",
-   "edition_size": 100,
-   "unit_price": 2500,
-   "artist_profit": 80605,
-   "aa_group_profit": 117936,
-   "artist_profit_share": 0.5,
-   "framing_available": true
+   "legacy_economics": {
+    "edition_size": 100,
+    "unit_price": 2500,
+    "artist_profit": 80605,
+    "aa_group_profit": 117936,
+    "artist_profit_share": 0.5,
+    "framing_available": true
+   }
   },
   {
    "id": "mondrian_le_26",
    "release_name": "Piet Mondrian Estate · Multiple · 2026 Q3",
    "campaign_code": "PietMondrian_LE_26",
-   "campaign_name": "PietMondrian_LE_26 · Enter draw",
+   "campaign_names": [
+    "PietMondrian_LE_26 · Enter draw"
+   ],
    "marketing_lead": "Clare",
    "private_room_open": "2026-06-23",
    "announce_date": "2026-07-24",
    "launch_end": "2026-08-18",
-   "edition_size": 900,
-   "unit_price": 500,
-   "artist_profit": 0,
-   "aa_group_profit": 221529,
-   "artist_profit_share": 0,
-   "framing_available": true,
    "draw_entries_file": "draw_mondrian_entries.csv",
    "products": [
     {
@@ -99,57 +111,69 @@
      "name": "Tableau no.1",
      "edition": null
     }
-   ]
+   ],
+   "legacy_economics": {
+    "edition_size": 900,
+    "unit_price": 500,
+    "artist_profit": 0,
+    "aa_group_profit": 221529,
+    "artist_profit_share": 0,
+    "framing_available": true
+   }
   },
   {
    "id": "julianschnabel_le_26",
    "release_name": "Julian Schnabel · Multiple · 2026 Q3",
    "campaign_code": "JulianSchnabel_LE_26",
-   "campaign_name": "JulianSchnabel_LE_26 · Enter draw",
+   "campaign_names": [
+    "JulianSchnabel_LE_26 · Enter draw"
+   ],
    "_campaign_note": "Campaign Name cell is empty on the source tab -> paid spend actuals structurally zero in the sheet; fix when the Meta campaign exists.",
    "marketing_lead": "Maria",
    "private_room_open": "2026-07-30",
    "announce_date": "2026-09-01",
    "launch_end": "2026-09-25",
-   "edition_size": 500,
-   "unit_price": 1500,
-   "artist_profit": 254165,
-   "aa_group_profit": 335957,
-   "artist_profit_share": 0.5,
-   "framing_available": true
+   "legacy_economics": {
+    "edition_size": 500,
+    "unit_price": 1500,
+    "artist_profit": 254165,
+    "aa_group_profit": 335957,
+    "artist_profit_share": 0.5,
+    "framing_available": true
+   }
   },
   {
    "id": "parra_le_26",
    "release_name": "Parra · Multiple · 2026 Q3",
    "campaign_code": "Parra_LE_26",
-   "campaign_name": "Parra_LE_26 · Enter draw",
+   "campaign_names": [
+    "Parra_LE_26 · Enter draw"
+   ],
    "marketing_lead": "Clare",
    "private_room_open": "2026-07-29",
    "announce_date": "2026-07-31",
    "launch_end": "2026-08-21",
-   "edition_size": 300,
-   "unit_price": 650,
-   "artist_profit": 26925,
-   "aa_group_profit": 46652,
-   "artist_profit_share": 0.5,
-   "framing_available": true,
-   "artist_posting_tier": "High"
+   "artist_posting_tier": "High",
+   "legacy_economics": {
+    "edition_size": 300,
+    "unit_price": 650,
+    "artist_profit": 26925,
+    "aa_group_profit": 46652,
+    "artist_profit_share": 0.5,
+    "framing_available": true
+   }
   },
   {
    "id": "jamesjean_blossom_26",
    "release_name": "James Jean · Multiple · 2026 Q3",
    "campaign_code": "JamesJean_Blossom_26",
-   "campaign_name": "JamesJean_Blossom_26 · Enter draw",
+   "campaign_names": [
+    "JamesJean_Blossom_26 · Enter draw"
+   ],
    "marketing_lead": "Clare",
    "private_room_open": "2026-07-28",
    "announce_date": "2026-07-30",
    "launch_end": "2026-08-20",
-   "edition_size": 600,
-   "unit_price": 700,
-   "artist_profit": 111445,
-   "aa_group_profit": 132117,
-   "artist_profit_share": 0.5,
-   "framing_available": true,
    "artist_posting_tier": "High",
    "draw_entries_file": "draw_jamesjean_blossom_entries.csv",
    "products": [
@@ -161,25 +185,27 @@
      "name": "Blossom Vase",
      "edition": null
     }
-   ]
+   ],
+   "legacy_economics": {
+    "edition_size": 600,
+    "unit_price": 700,
+    "artist_profit": 111445,
+    "aa_group_profit": 132117,
+    "artist_profit_share": 0.5,
+    "framing_available": true
+   }
   },
   {
    "id": "warhol_le_26",
    "release_name": "Andy Warhol Estate · Multiple · 2026 Q3",
    "campaign_code": "AndyWarhol_TL_26",
-   "campaign_name": "AndyWarhol_TL_26 · Enter draw",
+   "campaign_names": [
+    "AndyWarhol_TL_26 · Enter draw"
+   ],
    "marketing_lead": "Clare",
-   "budget_file": "ANDYWARHO-2383 STANDARD & XL Project Budget July 2026",
    "private_room_open": "2026-09-01",
    "announce_date": "2026-09-03",
    "launch_end": "2026-09-30",
-   "edition_size": 2440,
-   "edition_total": 6100,
-   "unit_price": 1000,
-   "artist_profit": 1235875.0,
-   "aa_group_profit": 1973248.0,
-   "artist_profit_share": 0.5,
-   "framing_available": true,
    "artist_posting_tier": "Low",
    "products": [
     {
@@ -188,7 +214,16 @@
      "edition": null,
      "preorderRate": 0.8
     }
-   ]
+   ],
+   "legacy_economics": {
+    "edition_size": 2440,
+    "edition_total": 6100,
+    "unit_price": 1000,
+    "artist_profit": 1235875.0,
+    "aa_group_profit": 1973248.0,
+    "artist_profit_share": 0.5,
+    "framing_available": true
+   }
   }
  ]
 }

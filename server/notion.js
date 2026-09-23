@@ -28,6 +28,13 @@ const ROOT = path.resolve(__dirname, "..");
  * the old name too, so a box that has not refreshed since the rename keeps
  * working off the file it already has. */
 const OUT = path.join(ROOT, "data", "notion_posts.csv");
+/* The campaign dates the same log yields (data/notion_campaigns.csv): per
+ * release, the day of the early-access email (the private room opening), the
+ * announce and the launch - read off the rows' own words (stageOf), or off a
+ * campaigns database's date columns when NOTION_CAMPAIGNS_DB names one. The
+ * ETL reads them first, before anything typed (etl/build.py resolve_release). */
+const DATES_OUT = path.join(ROOT, "data", "notion_campaigns.csv");
+const CAMPAIGNS_DB_ID = process.env.NOTION_CAMPAIGNS_DB || "";
 const DB_ID = process.env.NOTION_ARTIST_POSTS_DB || "1b6e65265ca280a898d1e74c0661344c";
 const NOTION_VERSION = "2022-06-28";
 
@@ -145,6 +152,72 @@ function rowChannel(props, propName) {
   return { channel: "other", value: vals[0] || null };
 }
 
+/* Which moment of the campaign a row records, from its own words: the
+ * early-access email (which opens the private room), the announce, or the
+ * launch - the day the draw closes and sales open, which is what Airtable
+ * calls the launch date too. Read by shape, like the channel, so a stage
+ * spelled a new way still lands; a row naming none is no evidence. */
+const STAGE_RE = {
+  early_access: /early[\s-]?access|private[\s-]?room|pre[\s-]?launch access|collector preview|priority access/,
+  announce: /announc/,
+  launch: /\blaunch\b|draw clos|closing|last chance|final (day|hours|call)|ends? (today|tonight)|go(es)? live/,
+};
+
+function stageOf(texts) {
+  const t = norm(texts.join(" | "));
+  if (!t) return null;
+  if (STAGE_RE.early_access.test(t)) return "early_access";
+  if (STAGE_RE.announce.test(t)) return "announce";
+  if (STAGE_RE.launch.test(t)) return "launch";
+  return null;
+}
+
+/* The campaign dates from the classified rows: the private room opens with
+ * the first early-access row, the announce is the first announce row, the
+ * launch is the last launch row. */
+function campaignDates(stageDates) {
+  const out = {};
+  for (const [code, stages] of stageDates.entries()) {
+    const ea = stages.early_access || [], an = stages.announce || [], la = stages.launch || [];
+    out[code] = {
+      private_room_open: ea.length ? ea.slice().sort()[0] : "",
+      announce_date: an.length ? an.slice().sort()[0] : "",
+      launch_end: la.length ? la.slice().sort().slice(-1)[0] : "",
+      rows: { early_access: ea.length, announce: an.length, launch: la.length },
+    };
+  }
+  return out;
+}
+
+/* A campaigns database's date columns by name: which stage each records. */
+const DATE_PROP_RE = {
+  private_room_open: /early[\s-]?access|private[\s-]?room|preview|priority/i,
+  announce_date: /announc/i,
+  launch_end: /\blaunch|\bclos(e|es|ing)?\b|\bend(s|ing)?\b|draw date/i,
+};
+
+function campaignRowDates(props) {
+  const out = {};
+  for (const [name, p] of Object.entries(props)) {
+    if (!p || p.type !== "date" || !p.date || !p.date.start) continue;
+    // the first stage whose words the column carries claims it, in the order
+    // above: an "Early access send" is the private room, not a launch
+    const key = Object.keys(DATE_PROP_RE).find((k) => DATE_PROP_RE[k].test(name));
+    if (key && !out[key]) out[key] = p.date.start.slice(0, 10);
+  }
+  return out;
+}
+
+function datesCsv(dates) {
+  const lines = ["campaign_code,private_room_open,announce_date,launch_end,early_access_rows,announce_rows,launch_rows,source"];
+  for (const code of Object.keys(dates).sort()) {
+    const d = dates[code];
+    lines.push([code, d.private_room_open || "", d.announce_date || "", d.launch_end || "",
+      d.rows ? d.rows.early_access : "", d.rows ? d.rows.announce : "", d.rows ? d.rows.launch : "", d.source || "posts"].join(","));
+  }
+  return lines.join("\n") + "\n";
+}
+
 function propDate(props) {
   const entries = Object.entries(props).filter(([, p]) => p && p.type === "date" && p.date && p.date.start);
   if (!entries.length) return null;
@@ -199,6 +272,7 @@ async function fetchPostsCsv() {
   const schema = new Map();  // property name -> {type, values}
   const byChannel = new Map();   // channel -> n, for the status line
   const unnamed = new Map();     // an unclassified channel value -> n
+  const stageDates = new Map();  // code -> {early_access: [dates], announce: [...], launch: [...]}
   let matched = 0, unmatched = 0, cursor = undefined, propNames = null, chanProp = null;
   for (let page = 0; page < 40; page++) {
     const body = { page_size: 100, ...(cursor ? { start_cursor: cursor } : {}) };
@@ -225,6 +299,12 @@ async function fetchPostsCsv() {
       byChannel.set(channel, (byChannel.get(channel) || 0) + 1);
       const key = `${code}|${date}|${channel}`;
       counts.set(key, (counts.get(key) || 0) + 1);
+      const stage = stageOf(texts);
+      if (stage) {
+        if (!stageDates.has(code)) stageDates.set(code, {});
+        const st = stageDates.get(code);
+        (st[stage] = st[stage] || []).push(date);
+      }
     }
     cursor = res.has_more ? res.next_cursor : null;
     if (!cursor) break;
@@ -239,12 +319,42 @@ async function fetchPostsCsv() {
     const [code, date, channel] = key.split("|");
     lines.push(`${code},${date},${channel},${n}`);
   }
+  // the campaign dates: the rows' own words first, a campaigns database's
+  // date columns over them where one is named
+  const dates = campaignDates(stageDates);
+  let fromDb = 0;
+  if (CAMPAIGNS_DB_ID) {
+    let dcursor = undefined;
+    for (let page = 0; page < 10; page++) {
+      const body = { page_size: 100, ...(dcursor ? { start_cursor: dcursor } : {}) };
+      const res = await notionFetch(`https://api.notion.com/v1/databases/${CAMPAIGNS_DB_ID}/query`, token, body);
+      for (const row of res.results || []) {
+        const props = row.properties || {};
+        const texts = [];
+        for (const p of Object.values(props)) {
+          texts.push(...propText(p));
+          texts.push(...await relationTitles(p, token));
+        }
+        const code = matchRelease(texts, releases);
+        if (!code) continue;
+        const got = campaignRowDates(props);
+        if (!Object.keys(got).length) continue;
+        fromDb++;
+        dates[code] = { ...(dates[code] || { rows: null }), ...got, source: "campaigns db" };
+      }
+      dcursor = res.has_more ? res.next_cursor : null;
+      if (!dcursor) break;
+    }
+  }
   const split = [...byChannel.entries()].sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`).join(", ");
   const strays = [...unnamed.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4)
     .map(([v, n]) => `"${v}" ${n}`).join(", ");
+  const dated = Object.values(dates);
   return {
     csv: lines.join("\n") + "\n", matched, unmatched,
     schema: summariseSchema(schema), split, strays, chanProp,
+    datesCsv: datesCsv(dates), datesFor: dated.length, fromDb,
+    datesSplit: `private room ${dated.filter((d) => d.private_room_open).length}, announce ${dated.filter((d) => d.announce_date).length}, launch ${dated.filter((d) => d.launch_end).length}`,
   };
 }
 
@@ -256,11 +366,15 @@ async function refreshArtistPosts() {
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(tmp, out.csv);
   fs.renameSync(tmp, OUT);
+  fs.writeFileSync(DATES_OUT + ".tmp", out.datesCsv);
+  fs.renameSync(DATES_OUT + ".tmp", DATES_OUT);
   return `notion ${out.matched} posts` + (out.unmatched ? ` (${out.unmatched} unmatched)` : "")
+    + `; campaign dates for ${out.datesFor} releases (${out.datesSplit}` + (CAMPAIGNS_DB_ID ? `; ${out.fromDb} from the campaigns database` : "") + ")"
     + `; by channel: ${out.split || "none"}`
     + (out.chanProp ? ` (from "${out.chanProp}")` : " (no channel column found)")
     + (out.strays ? `; unrecognised channels: ${out.strays}` : "")
     + (out.schema ? `; columns: ${out.schema}` : "");
 }
 
-module.exports = { refreshArtistPosts, fetchPostsCsv, matchRelease, propText, propDate, noteSchema, summariseSchema, channelOf, channelProp, rowChannel };
+module.exports = { refreshArtistPosts, fetchPostsCsv, matchRelease, propText, propDate, noteSchema, summariseSchema, channelOf, channelProp, rowChannel,
+  stageOf, campaignDates, campaignRowDates, datesCsv };

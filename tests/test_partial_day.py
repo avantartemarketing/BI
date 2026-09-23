@@ -13,6 +13,7 @@ import build, baskets
 
 cfg = dict(next((r for r in build.INPUTS["releases"] if r["id"] == "julianschnabel_le_26"), build.INPUTS["releases"][0]))
 cfg["campaign_name"] = "Synthetic · Enter draw"
+cfg["campaign_names"] = [cfg["campaign_name"]]      # the list is what the build reads; the name is kept for the frames
 announce, launch = date.fromisoformat(cfg["announce_date"]), date.fromisoformat(cfg["launch_end"])
 pr_open = date.fromisoformat(cfg["private_room_open"])
 L = (launch - announce).days

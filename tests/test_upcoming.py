@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upcoming launches from Airtable (docs/DATA_MODEL.md 1.6).
+"""Upcoming launches from Airtable (docs/DATA_MODEL.md 1.7).
 
 A draw Airtable knows and the funnel report does not yet is listed as an
 upcoming release, named the way the funnel will name it, with Airtable's

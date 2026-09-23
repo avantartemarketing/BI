@@ -48,6 +48,11 @@ const server = http.createServer(async (req, res) => {
       // a channel the bot is not in refuses the file until the bot has joined
       if (outsider) return json({ ok: false, error: "not_in_channel" });
       return json({ ok: true, files: [{ id: "F123" }] });
+    case "/api/conversations.list": {
+      // two pages, the wanted channel on the second
+      if (!url.searchParams.get("cursor")) return json({ ok: true, channels: [{ id: "C0GENERAL01", name: "general" }], response_metadata: { next_cursor: "page2" } });
+      return json({ ok: true, channels: [{ id: "C0SELLTHRU", name: "sales-updates" }, { id: "C0PRIV0001", name: "sales-private" }], response_metadata: { next_cursor: "" } });
+    }
     case "/api/conversations.join": {
       if (outsider === "private") return json({ ok: false, error: "method_not_supported_for_channel_type" });
       outsider = null;   // joined: the next completion goes through
@@ -85,12 +90,19 @@ check(shortNames(NAMES[1]).join("|") === "White Portrait|Green Landscape|Lifesiz
   `the shared part goes: ${shortNames(NAMES[1]).join("|")}`);
 check(shortNames(NAMES[2]).join("|") === "Etching|Lithograph", "names with nothing in common are left alone");
 
-// ---- a channel id is not known until a message has been sent, then it is
+// ---- a channel named on the tab is looked up by name, over the pages, then kept
 slack.setChannel("rel", "sales-updates", "tester");
-check(slack.channelIdFor("rel") === null, "no channel id before the first message");
-const msg = await slack.postMessage("sales-updates", "figures");
-check(msg.channel === "C0SELLTHRU", `postMessage hands back the channel id: ${msg.channel}`);
-slack.rememberChannelId("rel", msg.channel);
+check(slack.channelIdFor("rel") === null, "no channel id before the lookup");
+seen.length = 0;
+const found = await slack.lookupChannelId("#Sales-Updates");
+check(found === "C0SELLTHRU", `the lookup finds the channel by name, whatever its case or #: ${found}`);
+check(seen.length === 2 && seen[1].path === "/api/conversations.list", "it turned the page to find it");
+check(await slack.lookupChannelId("nowhere") === null, "a name no channel has is null, not an error");
+refuse = "missing_scope";
+let caught = null;
+try { await slack.lookupChannelId("sales-updates"); } catch (e) { caught = String(e.message); }
+check(caught && /channels:read/.test(caught), `a missing scope names channels:read: ${caught}`);
+slack.rememberChannelId("rel", found);
 check(slack.channelIdFor("rel") === "C0SELLTHRU", "the id is kept for next time");
 check(JSON.parse(fs.readFileSync(state, "utf8")).rel.channel === "sales-updates", "the channel name is kept beside it");
 
@@ -99,7 +111,6 @@ slack.setChannel("rel2", "C0TYPEDIN", "tester");
 check(slack.channelIdFor("rel2") === "C0TYPEDIN", "an id typed into the field needs no message first");
 
 // ---- the upload: three steps, the bytes, and the comment
-let caught = null;
 seen.length = 0;
 await slack.uploadImage({ channelId: "C0SELLTHRU", png: PNG, filename: "card.png", title: "A release - sell-through", comment: "the figures" });
 check(seen.map((s) => s.path).join(" ") ===

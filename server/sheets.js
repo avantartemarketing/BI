@@ -365,21 +365,6 @@ async function refresh({ full = false } = {}) {
       console.error("sheets: " + out.emails);
     }
 
-    // Airtable's Pipeline table: the launches ahead of the funnel (docs 1.6)
-    // and every launch's price. A failed pull leaves the last file in place.
-    try {
-      if (process.env.AIRTABLE_TOKEN) {
-        const said = await runPy("pull_airtable.py", 3 * 60 * 1000);
-        out.airtable = said.split("\n").filter(Boolean).slice(0, 1).join("") || "airtable pulled";
-        updated = true;
-      } else {
-        out.airtable = "airtable off (no AIRTABLE_TOKEN) - launches from the checked-in file";
-      }
-    } catch (e) {
-      out.airtable = "airtable failed: " + String((e && e.message) || e).slice(0, 300);
-      console.error("sheets: " + out.airtable);
-    }
-
     try {
       out.notion = await require("./notion").refreshArtistPosts();
       if (!out.notion.startsWith("notion off")) updated = true;
@@ -387,6 +372,24 @@ async function refresh({ full = false } = {}) {
       out.notion = "notion failed: " + String((e && e.message) || e).slice(0, 300);
       out.ok = false;
       console.error("sheets: " + out.notion);
+    }
+
+    // Airtable's Pipeline table: every product's edition, price, target
+    // economics and dates, which the Target setting tab reads per release
+    // (etl/pull_airtable.py). Off without a token; a failed pull leaves the
+    // previous file in place.
+    if (process.env.AIRTABLE_TOKEN) {
+      try {
+        const pulled = await runPy("pull_airtable.py", 5 * 60 * 1000);
+        out.airtable = "airtable " + pulled.split("\n").filter(Boolean).slice(0, 2).join(" | ").slice(0, 300);
+        updated = true;
+      } catch (e) {
+        out.airtable = "airtable failed: " + String((e && e.message) || e).slice(0, 300);
+        out.ok = false;
+        console.error("sheets: " + out.airtable);
+      }
+    } else {
+      out.airtable = "airtable off (no AIRTABLE_TOKEN)";
     }
 
     if (updated) {

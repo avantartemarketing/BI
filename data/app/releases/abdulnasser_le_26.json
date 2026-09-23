@@ -6,7 +6,19 @@
  "type": "LE",
  "campaignCode": "Abdulnasser_LE_26",
  "campaignName": "Abdulnasser_LE_26 \u00b7 Enter draw",
+ "campaignNames": [
+  "Abdulnasser_LE_26 \u00b7 Enter draw"
+ ],
  "marketingLead": "Maria",
+ "inputSources": {
+  "economics": "typed release-level figures",
+  "private_room_open": "typed",
+  "announce_date": "typed",
+  "launch_end": "typed",
+  "marketing_lead": "typed",
+  "campaigns": "saved",
+  "campaign_code": "typed"
+ },
  "privateRoomOpen": "2026-06-23",
  "windowStart": "2026-07-27",
  "windowEnd": "2026-08-25",
@@ -28,6 +40,50 @@
   "artistProfitPerUnit": 1097.6,
   "aaProfitPerUnit": 2178.4,
   "artistProfitShare": 0.5,
+  "aaBudgetShare": 0.5,
+  "mode": "release",
+  "products": [
+   {
+    "airtable_id": "2718",
+    "name": "Hemisphere",
+    "project_code": "ABDULNASSE-2718",
+    "edition": 40,
+    "target_sellthrough": 1.0,
+    "target_units": 40,
+    "unit_price": 4000.0,
+    "currency": "EUR",
+    "unit_price_gbp": 3400.0,
+    "artist_profit_per_unit": null,
+    "aa_profit_per_unit": null,
+    "aa_revenue_share": null,
+    "aa_profit_share": null,
+    "framing_available": true,
+    "frame_conversion": 0.35,
+    "frame_profit_per_unit": 94.0,
+    "frame_uplift_per_unit": 32.9,
+    "aa_budget_share": null,
+    "deal": null,
+    "sources": {
+     "edition": "airtable",
+     "target_sellthrough": "default",
+     "unit_price": "airtable",
+     "currency": "airtable",
+     "artist_profit_per_unit": null,
+     "aa_profit_per_unit": null,
+     "aa_revenue_share": null,
+     "aa_profit_share": null,
+     "framing_available": "airtable",
+     "frame_conversion": null,
+     "frame_profit_per_unit": null
+    }
+   }
+  ],
+  "deal": [],
+  "launchCurrencies": [],
+  "airtableMatch": {
+   "how": "exact",
+   "note": ""
+  },
   "framingAvailable": true,
   "frameConversion": 0.35,
   "frameProfitPerUnit": 94.0,

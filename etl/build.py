@@ -79,7 +79,7 @@ APP = DATA / "app"
 # targeted ones under APP/releases are - they are the boot-time fallback).
 DERIVED = APP / "derived"
 PR_LEAD_DAYS = 14        # default private-room lead before announce for a derived release
-UPCOMING_DAYS = 120      # an Airtable launch this far ahead is listed before the funnel sees it (§1.6)
+UPCOMING_DAYS = 120      # an Airtable launch this far ahead is listed before the funnel sees it (§1.7)
 UPCOMING_UNTYPED_DAYS = 60   # ... but one Airtable has not typed as a draw only this far ahead
 UPCOMING_TYPES = {"Draw", ""}   # the LE draw path; blank is a project Airtable has not typed yet
 ASSUMED_CAMPAIGN_DAYS = 24      # announce to close, when Airtable has no announce date yet
@@ -683,8 +683,12 @@ def units_per_buyer_for(release: dict, profile: dict | None, slope: float) -> tu
     # the release's own product list, which the lead already curates for the
     # sell-through card, is a better count than anything derived from the feed
     n = release.get("product_count")
-    if n in (None, "") and isinstance(release.get("products"), list):
-        n = len(release["products"])
+    if n in (None, ""):
+        sized = [x for x in (release.get("economics_products") or []) if isinstance(x, dict) and x.get("edition")]
+        if sized:
+            n = len(sized)
+        elif isinstance(release.get("products"), list):
+            n = len(release["products"])
     if n not in (None, "") and float(n) >= 1:
         return max(1.0, 1.0 + slope * math.log(float(n))), "products"
     if profile and profile.get("units_per_buyer", 0) > 0:
@@ -805,6 +809,10 @@ def aa_profit_per_unit(release: dict, b: dict = BENCH) -> float:
     """AA's profit per unit sold: the group profit spread over the edition,
     plus the framing uplift (take-up x profit per frame) when framing is
     offered. The figure every paid ROI on the page divides by (docs §7)."""
+    if release.get("aa_ppu_resolved") is not None:
+        # resolved per product (resolve_release): each product's profit and
+        # framing uplift, weighted by its target units
+        return float(release["aa_ppu_resolved"])
     size = float(release.get("edition_size") or 0)
     base = (float(release.get("aa_group_profit") or 0) / size) if size else 0.0
     if release.get("framing_available") is False:
@@ -1207,7 +1215,7 @@ def load_draw(release: dict) -> dict | None:
     fname = release.get("draw_entries_file")
     if not fname or not (SOURCES / fname).exists():
         return None
-    products = [p["name"] for p in release.get("products", [])]
+    products = [p["name"] for p in draw_products_typed(release) if p.get("name")]
     per_product = defaultdict(int)
     tiers = defaultdict(int)
     total = eligible = framed = preorder = wanted_units = surplus = 0
@@ -1457,7 +1465,7 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     if not feed or not feed.get("draws"):
         st["incomplete"] = ["products"]
         return st
-    products, source = products_from_draws(feed["draws"], release.get("products"), edition)
+    products, source = products_from_draws(feed["draws"], draw_products_typed(release), edition)
     if of:
         products, source = attach_orders(products, of["products"], of["draws"], source)
     pp = sell_through_products(products, feed.get("patterns") or [], rate=rate, edition=edition,
@@ -1590,6 +1598,324 @@ def guess_code(artist: str, title: str, year: int, codes: set[str], siblings: in
     return None
 
 
+# ---------------------------------------------------------------- release inputs (docs §1.6)
+
+# the release-level economics as they were typed before the model went per
+# product (edition, price, profits, framing): read as the fallback for a
+# release that still carries them, under legacy_economics or at the top level
+# of inputs saved before the block existed
+LEGACY_KEYS = ("edition_size", "edition_total", "unit_price", "artist_profit", "aa_group_profit",
+               "artist_profit_share", "framing_available", "frame_conversion", "frame_profit_per_unit",
+               "aa_budget_share")
+# a product's figures, typed on the Target setting tab over what Airtable holds
+PRODUCT_KEYS = ("edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
+                "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "framing_available",
+                "frame_conversion", "frame_profit_per_unit")
+
+
+def _num(v):
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return None if math.isnan(f) else f
+
+
+def load_notion_campaigns() -> dict:
+    """Campaign dates from the Notion log (server/notion.js writes
+    data/notion_campaigns.csv on every refresh): per campaign code, the day
+    of the early-access email (the private room opening), the announce and
+    the launch. Empty until a NOTION_TOKEN is configured."""
+    p = DATA / "notion_campaigns.csv"
+    if not p.exists():
+        return {}
+    try:
+        df = pd.read_csv(p, dtype=str).fillna("")
+    except Exception as e:  # noqa: BLE001 - a broken feed must not stop the build
+        print(f"warning: ignoring {p.name}: {e}")
+        return {}
+    out = {}
+    for r in df.to_dict("records"):
+        code = str(r.get("campaign_code") or "").strip()
+        if not code:
+            continue
+        out[code] = {k: (str(r.get(k) or "")[:10] or None) for k in ("private_room_open", "announce_date", "launch_end")}
+    return out
+
+
+def match_campaigns(code: str | None, spend: pd.DataFrame) -> list[str]:
+    """Every Meta campaign in the spend feed named for a code, the draw
+    campaign first (the one match_campaign picks), then the rest by spend."""
+    if not code:
+        return []
+    first = match_campaign(code, spend)
+    by = spend.groupby("campaign_name")["spend"].sum()
+    names = [n for n in by.index if str(n).startswith(f"{code} · ")]
+    names.sort(key=lambda n: (n != first, -float(by[n])))
+    return names
+
+
+def _merge_products(airtable: list[dict], typed: list) -> list[dict]:
+    """Airtable's products with the typed figures laid over them, matched by
+    Airtable id, then by name; a typed product Airtable has no record for is
+    kept as a product of its own. Draw-keyed entries (the sell-through card's
+    names and rates, keyed by a draw id) are not products here."""
+    out = [dict(p, source="airtable", typed={}) for p in airtable]
+    by_id = {p["airtable_id"]: p for p in out if p.get("airtable_id")}
+    by_name = {_norm(p["name"]): p for p in out if p.get("name")}
+    for t in typed or []:
+        if not isinstance(t, dict) or not (t.get("airtable_id") or t.get("manual")):
+            continue     # a draw's name or rate (the sell-through card's), not a product here
+        keys = {k: t[k] for k in PRODUCT_KEYS if k in t and t[k] not in (None, "")}
+        if t.get("name"):
+            keys["name"] = str(t["name"]).strip()
+        target = by_id.get(str(t.get("airtable_id") or "")) if t.get("airtable_id") else None
+        if target is None and t.get("manual"):
+            target = by_name.get(_norm(t.get("name") or ""))
+        if target is None:
+            if t.get("airtable_id") and not t.get("manual"):
+                continue     # typed against a record Airtable no longer lists for this release
+            target = {"airtable_id": None, "name": keys.get("name") or "Product", "source": "typed", "typed": {}}
+            out.append(target)
+            if keys.get("name"):
+                by_name[_norm(keys["name"])] = target
+        target["typed"].update(keys)
+    return out
+
+
+def draw_products_typed(release: dict) -> list:
+    """The typed product entries the sell-through card reads - a draw's name,
+    edition and pre-order rate, keyed by its draw id - without the economics
+    products (Airtable-matched or added by hand) that live in the same list."""
+    typed = release.get("products") if isinstance(release.get("products"), list) else []
+    return [t for t in typed if isinstance(t, dict) and not t.get("airtable_id") and not t.get("manual")]
+
+
+def _effective_product(p: dict, b: dict) -> dict:
+    """One product's figures in force: typed over Airtable over the defaults,
+    with where each came from."""
+    typed = p.get("typed") or {}
+    src: dict = {}
+
+    def pick(key, at_key=None, default=None, kind="default"):
+        if key in typed:
+            src[key] = "typed"
+            return typed[key]
+        v = p.get(at_key or key)
+        if v not in (None, ""):
+            src[key] = "airtable"
+            return v
+        src[key] = kind if default is not None else None
+        return default
+
+    e: dict = {"airtable_id": p.get("airtable_id"), "name": typed.get("name") or p.get("name") or "Product",
+               "project_code": p.get("project_code")}
+    edition = _num(pick("edition"))
+    e["edition"] = int(round(edition)) if edition and edition > 0 else None
+    share = _num(pick("target_sellthrough", default=1.0, kind="default"))
+    e["target_sellthrough"] = min(max(share, 0.0), 1.0) if share is not None else 1.0
+    e["target_units"] = int(round(e["edition"] * e["target_sellthrough"])) if e["edition"] else 0
+    price = _num(pick("unit_price"))
+    e["unit_price"] = price if price and price > 0 else None
+    e["currency"] = str(pick("currency", default="GBP") or "GBP").upper()
+    rate = pricing.RATES_TO_GBP.get(e["currency"], 1.0)
+    e["unit_price_gbp"] = round(e["unit_price"] * rate, 2) if e["unit_price"] else None
+    e["artist_profit_per_unit"] = _num(pick("artist_profit_per_unit"))
+    e["aa_profit_per_unit"] = _num(pick("aa_profit_per_unit"))
+    e["aa_revenue_share"] = _num(pick("aa_revenue_share"))
+    e["aa_profit_share"] = _num(pick("aa_profit_share"))
+    fa = pick("framing_available", default=True)
+    e["framing_available"] = fa is not False
+    conv, profit = frame_terms({"frame_conversion": pick("frame_conversion"), "frame_profit_per_unit": pick("frame_profit_per_unit")}, b)
+    e["frame_conversion"], e["frame_profit_per_unit"] = conv, profit
+    e["frame_uplift_per_unit"] = round(conv * profit, 2) if e["framing_available"] else 0.0
+    # who funds the ads: on a profit-share deal Avant Arte carries its share of
+    # the profit; on a revenue-share (royalty) deal the artist is paid on
+    # revenue whatever the ads cost, so Avant Arte carries them all
+    if e["aa_profit_share"] is not None:
+        e["aa_budget_share"], e["deal"] = min(max(e["aa_profit_share"], 0.0), 1.0), "profit share"
+    elif e["aa_revenue_share"] is not None:
+        e["aa_budget_share"], e["deal"] = 1.0, "revenue share"
+    else:
+        e["aa_budget_share"], e["deal"] = None, None
+    e["sources"] = src
+    return e
+
+
+def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: dict | None = None) -> dict:
+    """The release's inputs in force, from where each comes (docs §1.6):
+
+    - products: Airtable's records for the launch (etl/pricing.py
+      release_products) with the figures typed on the Target setting tab laid
+      over them; the targets, launch value, profits per unit, framing and the
+      paid-budget split follow from them, weighted by each product's target
+      units. A release still carrying release-level figures (legacy_economics,
+      or the top-level keys of inputs saved before the model went per
+      product) keeps them for its totals until they are cleared.
+    - dates: the Notion log first (the early-access email opens the private
+      room; the announce; the launch), then what was typed, then the funnel's
+      campaign clock, then Airtable's planned dates.
+    - the marketing lead: Airtable, else what was typed.
+    - the Meta campaigns: the list saved, else the draw campaign named for
+      the code; the code itself is what was saved, else the campaigns' prefix.
+    Returns a new dict; the input is not changed."""
+    b = BENCH
+    r = dict(release)
+    sources: dict = {}
+    legacy = r.get("legacy_economics")
+    if legacy is None and any(k in r and r[k] not in (None, "") for k in LEGACY_KEYS):
+        legacy = {k: r[k] for k in LEGACY_KEYS if k in r}
+    at = pricing.release_products(r)
+    typed = r.get("products") if isinstance(r.get("products"), list) else []
+    products = [_effective_product(p, b) for p in _merge_products(at["products"], typed)]
+    r["economics_products"] = products
+    r["airtable_match"] = {"how": at["match"], "note": at["note"]}
+
+    sized = [p for p in products if p["edition"]]
+    targets = sum(p["target_units"] for p in sized)
+    if legacy and _num(legacy.get("edition_size")):
+        # the release-level figures as typed: the totals stay theirs, the
+        # products are read for what Airtable says beside them
+        for k in LEGACY_KEYS:
+            r[k] = legacy.get(k)
+        if r.get("aa_budget_share") is None:
+            # commission / revenue-share deals (artist profit share 0) are AA-funded, else 50/50
+            r["aa_budget_share"] = 1.0 if (_num(r.get("artist_profit_share")) or 0) == 0 else 0.5
+        r["legacy_economics"] = {k: legacy[k] for k in LEGACY_KEYS if k in legacy}
+        r["economics_mode"] = "release"
+        r["launch_value"] = round(float(r["edition_size"]) * float(r.get("unit_price") or 0), 2)
+        sources["economics"] = "typed release-level figures"
+    elif sized and targets > 0:
+        r["economics_mode"] = "products"
+        r["edition_total"] = sum(p["edition"] for p in sized)
+        r["edition_size"] = targets
+        priced = [p for p in sized if p["unit_price_gbp"]]
+        value = sum(p["target_units"] * p["unit_price_gbp"] for p in priced)
+        r["unit_price"] = round(value / sum(p["target_units"] for p in priced), 2) if priced and sum(p["target_units"] for p in priced) else None
+        r["currency"] = "GBP"
+        r["launch_value"] = round(value, 2)
+        r["launch_currencies"] = sorted({p["currency"] for p in priced})
+
+        def weighted(key, of=None):
+            rows = [p for p in (of or sized) if p.get(key) is not None and p["target_units"] > 0]
+            tot = sum(p["target_units"] for p in rows)
+            return (sum(p["target_units"] * p[key] for p in rows) / tot) if tot else None
+        ppu_artist = weighted("artist_profit_per_unit")
+        ppu_aa = weighted("aa_profit_per_unit")
+        r["artist_profit"] = round(ppu_artist * targets, 2) if ppu_artist is not None else 0.0
+        r["aa_group_profit"] = round(ppu_aa * targets, 2) if ppu_aa is not None else 0.0
+        framed = [p for p in sized if p["framing_available"]]
+        r["framing_available"] = bool(framed)
+        r["frame_conversion"] = weighted("frame_conversion", framed) if framed else None
+        r["frame_profit_per_unit"] = weighted("frame_profit_per_unit", framed) if framed else None
+        # the framing uplift over every target unit: the products that frame,
+        # each at its own take-up and profit, spread over the whole target
+        uplift = sum(p["target_units"] * p["frame_uplift_per_unit"] for p in framed) / targets
+        r["frame_uplift_per_unit"] = round(uplift, 4)
+        r["aa_ppu_resolved"] = round((ppu_aa or 0.0) + uplift, 4)
+        share = weighted("aa_budget_share")
+        r["aa_budget_share"] = share if share is not None else 0.5
+        r["artist_profit_share"] = round(1.0 - r["aa_budget_share"], 4)
+        r["deal"] = sorted({p["deal"] for p in sized if p["deal"]})
+        r["legacy_economics"] = None
+        sources["economics"] = "products"
+    else:
+        r["economics_mode"] = "none"
+        sources["economics"] = None
+
+    # dates: the Notion log, then what was typed, then the funnel's campaign
+    # clock (measured: exact for the announce), then Airtable's planned dates
+    code = r.get("campaign_code") or None
+    nd = (notion or {}).get(code or "", {}) if code else {}
+    clock = r.get("clock_dates") or {}
+    for key, at_key in (("private_room_open", "private_room_date"), ("announce_date", "announce_date"), ("launch_end", "launch_date")):
+        for src_name, v in (("notion", nd.get(key)), ("typed", r.get(key)), ("clock", clock.get(key)), ("airtable", at.get(at_key))):
+            if v:
+                r[key], sources[key] = str(v)[:10], src_name
+                break
+        else:
+            r[key], sources[key] = None, None
+    if not r.get("private_room_open") and r.get("announce_date"):
+        r["private_room_open"] = (date.fromisoformat(r["announce_date"]) - timedelta(days=PR_LEAD_DAYS)).isoformat()
+        sources["private_room_open"] = "default"
+    if at.get("marketing_lead"):
+        r["marketing_lead"], sources["marketing_lead"] = at["marketing_lead"], "airtable"
+    else:
+        r["marketing_lead"] = r.get("marketing_lead") or None
+        sources["marketing_lead"] = "typed" if r["marketing_lead"] else None
+
+    # the Meta campaigns: the list saved, else the draw campaign for the code
+    names = [str(n).strip() for n in (r.get("campaign_names") or []) if str(n).strip()]
+    if not names and r.get("campaign_name"):
+        names = [str(r["campaign_name"]).strip()]
+    if not names and spend is not None and len(spend) and code:
+        first = match_campaign(code, spend)
+        names = [first] if first else []
+        sources["campaigns"] = "matched"
+    else:
+        sources["campaigns"] = "saved" if names else None
+    r["campaign_names"] = names
+    r["campaign_name"] = names[0] if names else None
+    if not code and names:
+        r["campaign_code"] = names[0].split(" · ")[0].strip() or None
+        sources["campaign_code"] = "campaigns"
+    else:
+        sources["campaign_code"] = "typed" if code else None
+    r["input_sources"] = sources
+    return r
+
+
+def resolve_inputs(discovered: list[dict], spend: pd.DataFrame | None, notion: dict | None) -> None:
+    """INPUTS["releases"] resolved in place (resolve_release), each configured
+    release first given the funnel's campaign clock for its name, so the
+    build, the artist-posts benchmark and the single-release path all read
+    one set of inputs. The discovered records get their clock the same way,
+    for the sourced block of inputs.json."""
+    clocks = {}
+    for rec in discovered:
+        ann = rec.get("announce_date")
+        rec["clock_dates"] = {
+            "announce_date": ann, "launch_end": rec.get("launch_end"),
+            "private_room_open": (date.fromisoformat(ann) - timedelta(days=PR_LEAD_DAYS)).isoformat() if ann else None,
+        }
+        clocks[rec["release_name"]] = rec["clock_dates"]
+    resolved = []
+    for r in INPUTS["releases"]:
+        rr = resolve_release(dict(r, clock_dates=clocks.get(r["release_name"])), spend, notion)
+        src = rr.get("input_sources") or {}
+        n = len([p for p in rr.get("economics_products") or [] if p.get("edition")])
+        print(f"{rr['id']}: inputs - economics from {src.get('economics') or 'nothing'} ({n} sized products, "
+              f"target {rr.get('edition_size')} of {rr.get('edition_total')}), dates "
+              f"{src.get('private_room_open')}/{src.get('announce_date')}/{src.get('launch_end')}, "
+              f"lead {src.get('marketing_lead') or '-'}, campaigns {len(rr.get('campaign_names') or [])} ({src.get('campaigns') or '-'})")
+        resolved.append(rr)
+    INPUTS["releases"] = resolved
+
+
+def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -> dict:
+    """What the feeds hold for a release, for the Target setting tab to show
+    beside what is typed: the Airtable products and dates, the Notion dates,
+    the marketing lead and the Meta campaigns named for the code."""
+    at = pricing.release_products(rec)
+    code = rec.get("campaign_code")
+    nd = (notion or {}).get(code or "", {}) if code else {}
+    # the product fields the tab reads (shared/economics.mjs PRODUCT_KEYS and
+    # the identity); the record's other columns stay in the pricing file
+    keep = ("airtable_id", "name", "project_code", "edition", "target_sellthrough", "unit_price", "currency",
+            "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share",
+            "framing_available", "frame_conversion", "frame_profit_per_unit")
+    products = [{k: p.get(k) for k in keep} for p in at["products"]]
+    return {
+        "airtable": {"match": at["match"], "note": at["note"], "products": products,
+                     "announce_date": at["announce_date"], "launch_end": at["launch_date"],
+                     "private_room_open": at["private_room_date"], "marketing_lead": at["marketing_lead"]},
+        "notion": {k: nd.get(k) for k in ("private_room_open", "announce_date", "launch_end")},
+        "clock": {k: rec.get("clock_dates", {}).get(k) if rec.get("clock_dates") else None
+                  for k in ("private_room_open", "announce_date", "launch_end")},
+        "campaigns": match_campaigns(code, spend) if spend is not None and len(spend) else [],
+    }
+
+
 def match_campaign(code: str | None, spend: pd.DataFrame) -> str | None:
     """The Meta campaign for a code. The spend feed names campaigns
     "<code> · Enter draw" (the draw campaign), "<code> · Purchases",
@@ -1695,7 +2021,7 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
     return out
 
 
-# ---------------------------------------------------------------- upcoming launches (docs §1.6)
+# ---------------------------------------------------------------- upcoming launches (docs §1.7)
 
 def _frame_of_releases(records: list[dict]) -> pd.DataFrame:
     """Releases on file as the frame etl/pricing.py matches Airtable launches to."""
@@ -1739,7 +2065,7 @@ def load_launches() -> pd.DataFrame | None:
 
 def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], as_of: date,
                       activity: dict[str, tuple[date, date]] | None = None) -> list[dict]:
-    """The launches Airtable knows and the funnel does not yet (§1.6), as the
+    """The launches Airtable knows and the funnel does not yet (§1.7), as the
     records build_upcoming reads: draws closing after today and within
     UPCOMING_DAYS, whose Airtable records no release on file matched.
 
@@ -1817,7 +2143,7 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
 
 def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_frame: pd.DataFrame | None) -> list[tuple[str, str, str]]:
     """A release set up before the funnel saw it carries the Airtable ids it
-    was set up from (§1.6). When a funnel release now matches that launch, the
+    was set up from (§1.7). When a funnel release now matches that launch, the
     input takes the funnel's name, so the actuals attach to the targets
     instead of opening a second, untargeted page beside them. The rename is
     written back to the saved inputs so it holds; the id, and so the page's
@@ -1858,7 +2184,7 @@ def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_fr
 
 
 def build_upcoming(rec: dict, as_of: date, email_bench: dict | None = None, full_through: date | None = None) -> dict:
-    """The page for a launch Airtable knows and the funnel does not yet (§1.6):
+    """The page for a launch Airtable knows and the funnel does not yet (§1.7):
     its dates, edition and price, and no actuals. Same top-level keys as
     build_actuals so the app has one contract. Setting targets promotes it to
     build_release, which draws the plan against an empty window until the
@@ -2118,6 +2444,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   full_through: date | None = None, seen: float = 1.0,
                   untracked_norms: dict | None = None) -> dict:
     b = BENCH
+    # a release handed in unresolved (a test, a script) is resolved here the way
+    # main() resolves every configured release: its products, dates and
+    # campaigns from the feeds and the typed inputs (resolve_release)
+    if "economics_mode" not in release:
+        release = resolve_release(release, spend, load_notion_campaigns())
     # one fit per build, over every release whose product count is recorded (§4.2)
     upb_slope = units_per_buyer_curve(people)
     name = release["release_name"]
@@ -2164,7 +2495,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         print(f"{release['id']}: no benchmark basket - the page shows actuals only")
         rat = at[at["simple_release_name"] == name]
         return build_actuals(actuals_rec(release, rat), rat, spend, emails, content, as_of,
-                             email_bench, artist_posts, full_through=full_through, seen=seen)
+                             email_bench, artist_posts, full_through=full_through, seen=seen,
+                             untracked_norms=untracked_norms)
     # every targeted release is benchmarked; the flag survives as the guard on
     # the benchmark block below
     bench = True
@@ -2240,7 +2572,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # ---- paid actuals + forward model, computed first: the paid channel's projection
     # is projected spend ÷ projected cost-per-entry, not a trajectory curve (docs §5.4)
     camp = release.get("campaign_name")
-    psp = spend[spend["campaign_name"] == camp] if camp else spend.iloc[0:0]
+    camps = [c for c in (release.get("campaign_names") or ([camp] if camp else [])) if c]
+    psp = spend[spend["campaign_name"].isin(camps)] if camps else spend.iloc[0:0]
     psp = psp[(psp["spend_date"] >= window_start) & (psp["spend_date"] <= min(as_of, launch_end))]
     paid_entries_day = (win[win["channel"] == "Paid Social"]
                         .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
@@ -2849,7 +3182,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "artist": name.split(" · ")[0], "title": name.split(" · ")[1],
         "type": "LE",
         "campaignCode": release["campaign_code"], "campaignName": camp,
-        "marketingLead": release["marketing_lead"],
+        "campaignNames": camps,
+        "marketingLead": release.get("marketing_lead"),
+        # where each input came from (docs §1.6): notion / typed / airtable /
+        # clock for the dates, airtable or typed for the lead, products or
+        # typed release-level figures for the economics
+        "inputSources": release.get("input_sources") or {},
         "privateRoomOpen": release["private_room_open"],
         "windowStart": release["announce_date"], "windowEnd": release["launch_end"],
         "campaignLengthDays": L, "day": day_n, "of": L,
@@ -2866,11 +3204,21 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "unitPrice": release["unit_price"], "launchValue": targets["launch_value"],
             "artistProfitPerUnit": round(ppu_artist, 2), "aaProfitPerUnit": round(ppu_aa, 2),
             "artistProfitShare": release["artist_profit_share"],
+            "aaBudgetShare": aa_budget_share,
+            # per product, the figures in force and where each came from
+            # (resolve_release): "products" when the totals are theirs,
+            # "release" while typed release-level figures still stand
+            "mode": release.get("economics_mode"),
+            "products": release.get("economics_products") or [],
+            "deal": release.get("deal") or [],
+            "launchCurrencies": release.get("launch_currencies") or [],
+            "airtableMatch": release.get("airtable_match"),
             # the framing uplift inside aaProfitPerUnit: the terms in force for
             # this release (its own inputs, else the benchmark defaults)
             "framingAvailable": release.get("framing_available") is not False,
             "frameConversion": frame_conv, "frameProfitPerUnit": frame_profit,
-            "frameUpliftPerUnit": round(frame_conv * frame_profit, 2) if release.get("framing_available") is not False else 0.0,
+            "frameUpliftPerUnit": (round(float(release["frame_uplift_per_unit"]), 2) if release.get("frame_uplift_per_unit") is not None
+                                   else round(frame_conv * frame_profit, 2) if release.get("framing_available") is not False else 0.0),
         },
         "currency": "units",
         "hero": {
@@ -3117,6 +3465,29 @@ def main(only: str | None = None):
     people = load_people()
     content = load_content()
     artist_posts = load_artist_posts()
+    # Every release the funnel data mentions. The configured ones (target
+    # inputs on file) get the full build; the rest get an actuals-only page.
+    discovered = discover_releases(at, as_of, known_codes(emails, content, artist_posts))
+    # Airtable's launches: a release set up before the funnel saw it takes the
+    # funnel's name once it appears, and the launches the funnel has not seen
+    # yet are listed as upcoming so targets can be set before they open (§1.7).
+    # Before the inputs are resolved, so an adopted name is the one resolved.
+    launch_frame = load_launches()
+    adopt_funnel_names(INPUTS["releases"], discovered, launch_frame)
+    # the codes an upcoming launch can be guessed from: those moving on Meta
+    # or in the sends, less every code a release on file already carries
+    in_use = {str(r.get("campaign_code")) for r in discovered + INPUTS["releases"] if r.get("campaign_code")}
+    activity = {c: w for c, w in code_activity(spend, emails).items() if c not in in_use}
+    upcoming = upcoming_releases(launch_frame, discovered + INPUTS["releases"], as_of, activity)
+    for r in upcoming:
+        r["campaign_name"] = match_campaign(r["campaign_code"], spend)
+    if upcoming:
+        print("upcoming from Airtable: " + ", ".join(f"{r['release_name']} (closes {r['launch_end']})" for r in upcoming))
+    # the inputs in force for every configured release: Airtable's products,
+    # the Notion dates, the typed figures, the funnel's clock (resolve_release)
+    notion = load_notion_campaigns()
+    raw_inputs = [dict(r) for r in INPUTS["releases"]]
+    resolve_inputs(discovered, spend, notion)
     posts_bench = artist_posts_benchmarks(artist_posts, as_of)
     # The draw panel, loaded once and passed down: every basket a release could
     # be benchmarked against is cut from it (BENCHMARK_SPEC §3). A panel that
@@ -3144,24 +3515,6 @@ def main(only: str | None = None):
         curves_path.write_text(json.dumps(curves, indent=1))
         print(f"curves: n={curves['n_releases']} clean releases")
 
-    # Every release the funnel data mentions. The configured ones (target
-    # inputs on file) get the full build; the rest get an actuals-only page.
-    discovered = discover_releases(at, as_of, known_codes(emails, content, artist_posts))
-    # Airtable's launches: a release set up before the funnel saw it takes the
-    # funnel's name once it appears, and the launches the funnel has not seen
-    # yet are listed as upcoming so targets can be set before they open (§1.6)
-    launch_frame = load_launches()
-    adopt_funnel_names(INPUTS["releases"], discovered, launch_frame)
-    # the codes an upcoming launch can be guessed from: the feeds' and Meta's,
-    # less every code a release on file already carries - a code in use
-    # belongs to that release, whatever the artist's name says
-    in_use = {str(r.get("campaign_code")) for r in discovered + INPUTS["releases"] if r.get("campaign_code")}
-    activity = {c: w for c, w in code_activity(spend, emails).items() if c not in in_use}
-    upcoming = upcoming_releases(launch_frame, discovered + INPUTS["releases"], as_of, activity)
-    for r in upcoming:
-        r["campaign_name"] = match_campaign(r["campaign_code"], spend)
-    if upcoming:
-        print("upcoming from Airtable: " + ", ".join(f"{r['release_name']} (closes {r['launch_end']})" for r in upcoming))
     email_bench = email_delivered_benchmark(emails, as_of, discovered, spend, at)
     if email_bench and email_bench["open_rate"] is not None:
         c = email_bench["cohort"]
@@ -3231,7 +3584,7 @@ def main(only: str | None = None):
             add(snap, "catalogue" if snap["catalogue"] else ("closed" if snap["complete"] else "live"))
             n_actuals += 1
     # the launches Airtable knows and the funnel does not yet: a page each,
-    # with the dates, edition and price to set targets from (§1.6)
+    # with the dates, edition and price to set targets from (§1.7)
     n_upcoming = 0
     for rec in upcoming:
         snap = build_upcoming(rec, as_of, email_bench, full_through)
@@ -3274,7 +3627,18 @@ def main(only: str | None = None):
                  .sort_values(["last", "spend"], ascending=False))
     (APP / "inputs.json").write_text(json.dumps({
         "benchmarks": BENCH,
-        "releases": {r["id"]: r for r in INPUTS["releases"]},
+        # the inputs as saved (the tab edits these), and beside them what the
+        # feeds hold for each release - Airtable's products and dates, the
+        # Notion dates, the campaigns named for the code (docs §1.6)
+        "releases": {r["id"]: r for r in raw_inputs},
+        "sourced": {
+            **{r["id"]: sourced_inputs(r, spend, notion) for r in INPUTS["releases"]},
+            **{r["id"]: sourced_inputs(r, spend, notion) for r in discovered
+               if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}},
+            # an upcoming launch's Airtable products, so the Set up targets tab
+            # starts from them before the funnel has a row (§1.7)
+            **{r["id"]: sourced_inputs(r, spend, notion) for r in upcoming},
+        },
         "discovered": {
             r["id"]: {
                 "release_name": r["release_name"], "artist": r["artist"], "title": r["title"],
@@ -3287,8 +3651,7 @@ def main(only: str | None = None):
                 "dates_note": r["dates_note"],
                 # an upcoming launch brings Airtable's edition, price and
                 # record ids, the defaults the Set up targets tab starts from
-                **{k: r[k] for k in ("source", "edition_size", "unit_price", "unit_price_native", "currency_native",
-                                     "airtable_release", "airtable_ids", "titles", "n_products",
+                **{k: r[k] for k in ("source", "airtable_release", "airtable_ids", "titles", "n_products",
                                      "launch_type", "project_status") if k in r},
             }
             for r in discovered + upcoming if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}
