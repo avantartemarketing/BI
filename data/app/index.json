@@ -35,9 +35,9 @@
    "of": 24,
    "complete": false,
    "windowEnd": "2026-09-25",
-   "statusPct": -0.6578,
+   "statusPct": -0.6597,
    "ok": false,
-   "benchmarkPct": -0.6447,
+   "benchmarkPct": -0.6467,
    "lastSeen": null,
    "sessions": null
   },
@@ -75,9 +75,9 @@
    "of": 27,
    "complete": false,
    "windowEnd": "2026-09-30",
-   "statusPct": -0.4477,
+   "statusPct": -0.4809,
    "ok": false,
-   "benchmarkPct": 0.6729,
+   "benchmarkPct": 0.5725,
    "lastSeen": null,
    "sessions": null
   },
