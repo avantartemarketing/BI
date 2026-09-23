@@ -15,10 +15,11 @@
  * three or fewer 30 on 60, the cap being what keeps one edition from
  * filling the card. The rows start under the headline and never spread;
  * past seven they scroll. The key sits on the headline's own line, which is
- * what gives the rows their height. Each row carries one figure, its
- * percentage, in ink: no units beside it and no RAG colour, which said "bad"
- * about a product that was simply mid-campaign. The Units toggle shows units
- * of edition instead, on one scale for the card.
+ * what gives the rows their height. Each row carries its units of the
+ * edition (198 of 1,000) in muted text and its percentage in ink, each in a
+ * column of its own so the two never read as one figure, and no RAG colour,
+ * which said "bad" about a product that was simply mid-campaign. The Units
+ * toggle puts the bars on one scale for the card.
  *
  * Until the feeds carry sales by product and draft orders, the snapshot says
  * what is missing (`sellthrough.incomplete`) and the card wears an
@@ -46,10 +47,11 @@
  * and the channels, and here they only crowded the reading. Each row is the
  * product against its own edition and nothing else.
  *
- * One toggle: % puts every product on its own edition, so the rows read as
- * sell-through; Units keeps one scale, so the rows read as size. Without
- * product editions the card runs on units and says what is missing. Without
- * the draw feed at all it is one row, the release, as before. */
+ * One toggle, for the bars' scale: % puts every product on its own edition,
+ * so the bars read as sell-through; Units keeps one scale, so they read as
+ * size. Without product editions the card runs on units and says what is
+ * missing. Without the draw feed at all it is one row, the release, as
+ * before. */
 import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, useTip } from "../ui.jsx";
 import { sellThroughPng } from "./sellThroughImage.mjs";
@@ -177,13 +179,15 @@ export default function SellThrough({ snap, horizon = "today" }) {
   // the headline: what is spoken for today, or the prediction at close
   const headPct = edition ? (close ? st.pct ?? 0 : Math.min((sold + (draftsAll ?? 0) + inHandAll) / edition, 1)) : null;
   const headUnits = sold + (draftsAll ?? 0) + inHandAll + futureAll;
-  const headText = byEdition && headPct !== null ? `${Math.round(headPct * 100)}%` : fmt(headUnits);
-  /* The one figure a row carries: its percentage, or on the Units toggle (and
-     where an edition is missing) its units, of the edition where there is one. */
+  const headText = headPct !== null ? `${Math.round(headPct * 100)}%` : fmt(headUnits);
+  /* The two figures a row carries, each in a column of its own: its units, of
+     the edition where there is one, and its percentage where there is one. */
   const figureOf = (r) => {
     const pctRow = close ? r.pctClose : r.pct;
-    if (byEdition && pctRow !== null && pctRow !== undefined) return { main: `${Math.round(pctRow * 100)}%`, of: null };
-    return { main: fmt(unitsOf(r)), of: finite(r.edition) && r.edition > 0 ? `/${fmt(r.edition)}` : null };
+    return {
+      units: finite(r.edition) && r.edition > 0 ? `${fmt(unitsOf(r))} of ${fmt(r.edition)}` : fmt(unitsOf(r)),
+      pct: pctRow !== null && pctRow !== undefined ? `${Math.round(pctRow * 100)}%` : null,
+    };
   };
   const stampTip = incomplete.length ? {
     head: "Incomplete data",
@@ -276,7 +280,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
         maxV: maxFor(r), edition: finite(r.edition) ? r.edition : 0,
         segs: segmentsOf(r, close).map(({ v, color }) => ({ v, color })),
         over: r.oversubscribed ?? 0, overColor: SEG.winners,
-        figText: fig.main + (fig.of || ""),
+        unitsText: fig.units, pctText: fig.pct,
       };
     }),
     legend: [
@@ -398,7 +402,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
       {/* the products, and the stamp over them while a feed is missing. The
           rows are one grid: the name column is as wide as the longest name
           on the card, up to 260px, so a short name sits by its bar and the
-          bars still line up; the figure column is one number wide. */}
+          bars still line up; the two figure columns, units and percentage,
+          are one number wide each. */}
       <div style={{ flex: 1, minHeight: 0, marginTop: 10, display: "flex", flexDirection: "column" }}>
         <div style={{ position: "relative", flex: "0 1 auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
           {stampTip && (
@@ -412,7 +417,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
             </div>
           )}
           <div style={{
-            minHeight: 0, overflowY: "auto", display: "grid", gridTemplateColumns: "fit-content(260px) minmax(0, 1fr) 72px",
+            minHeight: 0, overflowY: "auto", display: "grid", gridTemplateColumns: "fit-content(260px) minmax(0, 1fr) 92px 56px",
             gridAutoRows: `${pitch}px`, columnGap: 14, alignItems: "center", alignContent: "start",
           }}>
             {rows.map((r) => {
@@ -429,7 +434,6 @@ export default function SellThrough({ snap, horizon = "today" }) {
               };
               const nameTip = { head: r.name, rows: [
                 ...(finite(r.edition) ? [{ label: "Edition", value: fmt(r.edition) }] : [{ label: "Edition", value: "not set" }]),
-                { label: byEdition ? "Units of edition" : "Units", value: fmt(unitsOf(r)) },
                 ...(finite(r.entrants) ? [{ label: "Eligible entrants", value: fmt(r.entrants) }] : []),
                 ...(r.draws && r.draws.length > 1 ? [{ label: "Draws", value: fmt(r.draws.length) }] : []),
               ] };
@@ -440,9 +444,11 @@ export default function SellThrough({ snap, horizon = "today" }) {
                     {r.name}
                   </div>
                   <ProductBar row={r} close={close} maxV={maxFor(r)} tips={tips} height={barH} radius={barR} />
-                  <div className="num" {...t.props(nameTip)} style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 13 }}>
-                    <span style={{ fontWeight: 600, color: C.ink }}>{fig.main}</span>
-                    {fig.of && <span style={{ color: C.muted }}>{fig.of}</span>}
+                  <div className="num" {...t.props(nameTip)} style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 12.5, color: C.muted }}>
+                    {fig.units}
+                  </div>
+                  <div className="num" style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 13, fontWeight: 600, color: C.ink }}>
+                    {fig.pct}
                   </div>
                 </React.Fragment>
               );

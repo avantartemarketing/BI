@@ -547,8 +547,8 @@ entry → order rate, or at the pre-order rate where the entrant's card is alrea
 edition. Nothing is hatched: the four tints are the whole key, and demand a product has no
 room for simply carries on past the point where the paler room behind the bar stops. The card
 is one row of the grid whatever the count: the rows share a fixed height, the bars growing
-from 14px for seven products to a 30px cap for three or fewer, each row carrying one figure,
-its percentage (units of edition on the Units toggle), with the key beside the headline. It is
+from 14px for seven products to a 30px cap for three or fewer, each row carrying its units of
+the edition and its percentage in columns of their own, with the key beside the headline. It is
 the one card with no target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
 orders per product come from the Shopify order lines in BigQuery (`data/orders_by_product.csv`),
 joined to the draws through the product each draw's winners bought (docs 2.4); until every draw

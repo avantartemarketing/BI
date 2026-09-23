@@ -1094,9 +1094,10 @@ pitch is that shared by the count, capped at 60px, and the bar is half the pitch
 products, 14px bars on 28; five, 19 on 39; four, 24 on 49; three or fewer, 30 on 60, the cap
 being what keeps one edition from filling the card). The rows start under the headline and
 never spread; past seven they scroll. The key sits on the headline's own line, which is what
-gives the rows their height. Each row carries one figure, its percentage, in ink: no units
-beside it and no RAG colour, which said "bad" about a product that was simply mid-campaign.
-The Units toggle shows units of edition instead, on one scale for the card.
+gives the rows their height. Each row carries its units of the edition (198 of 1,000) in muted
+text and its percentage in ink, each in a column of its own so the two never read as one
+figure, and no RAG colour, which said "bad" about a product that was simply mid-campaign. The
+Units toggle puts the bars on one scale for the card.
 
 **No references on this card.** The snapshot still carries the release's pace applied to each
 product's edition (`expectedToday_p = edition_p × hero.expectedToday / edition`, likewise
