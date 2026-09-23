@@ -24,6 +24,7 @@ const check = (cond, msg) => { if (!cond) { failed += 1; console.error("FAIL", m
 // ---- the stand-in Slack
 const seen = [];
 let refuse = null;                       // an error code to answer with, once
+let outsider = null;                     // "public" | "private": the bot is not in the channel
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
 const body = (req) => new Promise((resolve) => {
@@ -43,7 +44,15 @@ const server = http.createServer(async (req, res) => {
     case "/api/files.getUploadURLExternal":
       return json({ ok: true, file_id: "F123", upload_url: `http://127.0.0.1:${server.address().port}/upload` });
     case "/upload": { res.writeHead(200); return res.end("OK"); }
-    case "/api/files.completeUploadExternal": return json({ ok: true, files: [{ id: "F123" }] });
+    case "/api/files.completeUploadExternal":
+      // a channel the bot is not in refuses the file until the bot has joined
+      if (outsider) return json({ ok: false, error: "not_in_channel" });
+      return json({ ok: true, files: [{ id: "F123" }] });
+    case "/api/conversations.join": {
+      if (outsider === "private") return json({ ok: false, error: "method_not_supported_for_channel_type" });
+      outsider = null;   // joined: the next completion goes through
+      return json({ ok: true, channel: { id: JSON.parse(raw.toString()).channel } });
+    }
     default: { res.writeHead(404); return res.end("no"); }
   }
 });
@@ -90,6 +99,7 @@ slack.setChannel("rel2", "C0TYPEDIN", "tester");
 check(slack.channelIdFor("rel2") === "C0TYPEDIN", "an id typed into the field needs no message first");
 
 // ---- the upload: three steps, the bytes, and the comment
+let caught = null;
 seen.length = 0;
 await slack.uploadImage({ channelId: "C0SELLTHRU", png: PNG, filename: "card.png", title: "A release - sell-through", comment: "the figures" });
 check(seen.map((s) => s.path).join(" ") ===
@@ -116,9 +126,28 @@ seen.length = 0;
 await slack.uploadImage({ channelId: "C0SELLTHRU", png: PNG, filename: "card.png", title: "t" });
 check(JSON.parse(seen[2].raw.toString()).initial_comment === undefined, "no comment when the figures were posted already");
 
+// ---- a public channel nobody invited the bot to: it joins, then asks again
+seen.length = 0;
+outsider = "public";
+await slack.uploadImage({ channelId: "C0PUBLIC", png: PNG, filename: "card.png", title: "t", comment: "the figures" });
+check(seen.map((s) => s.path).join(" ") ===
+  "/api/files.getUploadURLExternal /upload /api/files.completeUploadExternal /api/conversations.join /api/files.completeUploadExternal",
+  `refused, joins, asks again: ${seen.map((s) => s.path).join(" ")}`);
+check(JSON.parse(seen[3].raw.toString()).channel === "C0PUBLIC", "it joins the channel the file is for");
+check(JSON.parse(seen[4].raw.toString()).initial_comment === "the figures", "the second ask still carries the figures");
+
+// ---- a private channel cannot be joined: the refusal says to invite the bot
+seen.length = 0;
+outsider = "private";
+caught = null;
+try { await slack.uploadImage({ channelId: "C0PRIVATE", png: PNG }); } catch (e) { caught = String(e.message); }
+check(caught && /private channel/.test(caught) && /invite/.test(caught), `a private channel says invite the bot: ${caught}`);
+check(seen.filter((s) => s.path === "/api/files.completeUploadExternal").length === 1, "no second ask after a join that failed");
+outsider = null;
+
 // ---- a refusal comes back as the sentence the card shows
 refuse = "missing_scope";
-let caught = null;
+caught = null;
 try { await slack.uploadImage({ channelId: "C0SELLTHRU", png: PNG }); } catch (e) { caught = String(e.message); }
 check(caught && /files:write/.test(caught), `a missing scope names the scope: ${caught}`);
 caught = null;

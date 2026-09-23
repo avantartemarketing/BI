@@ -124,7 +124,8 @@ export function PageLayout({ items, render, editing = false, onChange, sizes = n
   useEffect(() => { if (!editing) { setDrag(null); setOver(null); } }, [editing]);
 
   // a card can ask for a different span on this release than the registry's
-  // default: the sell-through card grows to two rows when it has many products
+  // default; none does today (the sell-through card did, before it fixed
+  // its rows' geometry)
   const size = (card) => (sizes && sizes[card.key]) || card.size;
 
   const move = (from, to) => {

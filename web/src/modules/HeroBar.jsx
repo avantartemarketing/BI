@@ -6,7 +6,7 @@
  * target - darker from zero to whichever of target and benchmark is lower,
  * lighter from the benchmark up to the target when the target is the higher -
  * the benchmark is the dotted outline over it, and the actual is the narrower
- * orange bar in front, on a track whose right edge is the sellout. The two
+ * blue bar in front, on a track whose right edge is the sellout. The two
  * references are named above the bar on two rows of their own, the benchmark
  * above the target, so neither ever prints through the other however close
  * they sit. The headline delta reads against the target: it is what the
@@ -160,7 +160,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
         <TrackBar
           now={close ? null : now}
           proj={close ? proj : null}
-          projColor={C.orange}
+          projColor={C.blue}
           target={target}
           bm={bm}
           full={sellout}
@@ -190,7 +190,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
 
       <div className="legend-rows">
         <div className="legend-row">
-          <span className="swatch" style={{ background: C.orange }} />
+          <span className="swatch" style={{ background: C.blue }} />
           <span style={{ color: C.muted }}>{close ? "Projected demand" : "To date"}</span>
           <span className="val">{fmt(fill)}</span>
         </div>
@@ -242,12 +242,12 @@ function HeroActuals({ snap }) {
       <div className="lead-caption" style={{ color: C.muted }}>no target set - actuals only</div>
       <div className="legend-rows" style={{ marginTop: 20 }}>
         <div className="legend-row">
-          <span className="swatch" style={{ background: C.rust }} />
+          <span className="swatch" style={{ background: C.blueDeep }} />
           <span style={{ color: C.muted }}>Units sold</span>
           <span className="val">{fmt(sold)}</span>
         </div>
         <div className="legend-row">
-          <span className="swatch" style={{ background: C.orange }} />
+          <span className="swatch" style={{ background: C.blue }} />
           <span style={{ color: C.muted }}>Draw conversions (entries × 0.8)</span>
           <span className="val">{fmt(banked)}</span>
         </div>

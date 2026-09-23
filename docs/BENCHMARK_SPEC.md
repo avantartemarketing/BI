@@ -487,26 +487,28 @@ Tokens, in `tokens.css` and `C` in `ui.jsx`:
 
 | token | value | where |
 |---|---|---|
-| `--ref-base` / `C.refBase` | `#f8ccba` | the fill from zero to whichever of target and benchmark is lower - the ground both agree on |
-| `--ref-stretch` / `C.refStretch` | `#f8ddd0` | the fill from the benchmark up to the target, when the target is the higher |
-| `--ref-line` / `C.refLine` | `#ea8f66` | the benchmark's dotted outline; also the target's solid centre line on a rung and its solid edge on the trajectory, where there is no fill to be |
-| `--ref-track` / `C.refTrack` | `#faf7f4` | a bar's remaining room out to the sellout |
-| `--orange-light` / `C.orangeLight` | `#f2a07f` | the projection |
+| `--ref-base` / `C.refBase` | `#d9e4f7` | the fill from zero to whichever of target and benchmark is lower - the ground both agree on |
+| `--ref-stretch` / `C.refStretch` | `#e6eefa` | the fill from the benchmark up to the target, when the target is the higher |
+| `--ref-line` / `C.refLine` | `#7fa2e0` | the benchmark's dotted outline; also the target's solid centre line on a rung and its solid edge on the trajectory, where there is no fill to be |
+| `--ref-track` / `C.refTrack` | `#f3f6fc` | a bar's remaining room out to the sellout |
+| `--blue-light` / `C.blueLight` | `#a3bfeb` | the projection |
 
-All five are one hue - the actual's own orange at five strengths. Two reference colours meant
-two systems on every card; one hue means the reading is which mark ends where. The line tone
-is a step darker than either tint so it reads on both. `C.ink` stays the colour of values and
-body text; a reference never uses it.
+All five are one hue - the actual's own blue (`--blue` / `C.blue`, `#4f80d6`) at five
+strengths. Two reference colours meant two systems on every card; one hue means the reading
+is which mark ends where. The line tone is a step darker than either tint so it reads on
+both. `C.ink` stays the colour of values and body text; a reference never uses it.
 
-`orangeLight` was the much paler `#f7c4ad` while the reference was a blue mark. With the
-reference now a tint of the same orange sitting directly behind it, two pale oranges one in
-front of the other told the reader nothing, so the projection was deepened until it reads as
-orange against the reference tints without ever passing for the solid.
+The projection was once the much paler `#f7c4ad` while the reference was a mark in a second
+hue. With the reference a tint of the same hue sitting directly behind it, two pale tints one
+in front of the other told the reader nothing, so the projection was deepened until it reads
+as the hue against the reference tints without ever passing for the solid. The hue itself was
+an orange (`#eb6834`, with `#f2a07f` and the tints `#f8ccba` / `#f8ddd0` / `#ea8f66` /
+`#faf7f4`) until September 2026, when the dashboard went blue; every token kept its role.
 
 **Three layers, always in this order.** The target's fill takes the whole height of its
 track; the benchmark's dotted outline is drawn over it with the same inset, so the two share a
 silhouette; the actual sits inside both, inset top and bottom (about a fifth of the bar's
-height), so the tints show on both sides of the orange and the three never read as one bar. In
+height), so the tints show on both sides of the actual and the three never read as one bar. In
 the column form the inset is horizontal: fill and outline are inset 6% of the column, the
 actual 27%. The outline takes no hover of its own (it would sit on top of every fill beneath
 it and steal theirs); the figure it names goes in the fills' popups.
@@ -529,10 +531,10 @@ rather than as one mark per channel.
 
 | container | Today | At close |
 |---|---|---|
-| **Units vs sellout** (hero) | fill = target today in two tints, outline = benchmark today, orange = to date, track = out to the sellout; two label rows above the bar, the benchmark on the upper and the target on the lower, so the two never print through each other; legend rows To date / Target today / Benchmark today | fill = projected; orange hatch = demand over the sellout, which takes the third legend row when there is any (the label above the bar still names the benchmark) |
+| **Units vs sellout** (hero) | fill = target today in two tints, outline = benchmark today, blue = to date, track = out to the sellout; two label rows above the bar, the benchmark on the upper and the target on the lower, so the two never print through each other; legend rows To date / Target today / Benchmark today | fill = projected; blue hatch = demand over the sellout, which takes the third legend row when there is any (the label above the bar still names the benchmark) |
 | **Unit trajectory** | two columns wide. The target's pace as a solid 1.5px line, the benchmark's pace as a dotted 1.5px line, the actual in front, no area under any of them; three readings on the today line (benchmark, target, actual), each set where no curve, dot or other label runs; ahead of today the references drop back | both run the full width, plus a solid 2px level at the target and a dotted one at the benchmark, named together at the left |
 | **Channels vs targets** | fill and outline per column, actual inside them, foot = % vs target with its own green/red; in the % view every target is 100% and, the uplift being one multiple, every outline sits at the same height too | same with the projected fill |
-| **Funnel by channel** / **Organic funnel** | always Today. **The target runs down the centre of every rung**, the benchmark is a **dotted tick** wherever the basket's figure lands on the same log scale, orange/red dot = actual; ×4 either way fills the rung (`›` marks beyond). Pale bar spans centre→dot. The % and its RAG colour are vs target. Volume rungs carry the uplift, so the tick sits 1/K off the centre; rate rungs are held at the benchmark, so the tick sits on the centre line. The conversion rung reads the basket's conversion **by today** (`conv_benchmark_today`, the figure the waterfall walks against), never its conversion at close: a basket's sessions come earlier than its units, so the at-close rate would put every release behind for most of the campaign while the walk beside it said otherwise. | - |
+| **Funnel by channel** / **Organic funnel** | always Today. **The target runs down the centre of every rung**, the benchmark is a **dotted tick** wherever the basket's figure lands on the same log scale, blue/red dot = actual; ×4 either way fills the rung (`›` marks beyond). Pale bar spans centre→dot. The % and its RAG colour are vs target. Volume rungs carry the uplift, so the tick sits 1/K off the centre; rate rungs are held at the benchmark, so the tick sits on the centre line. The conversion rung reads the basket's conversion **by today** (`conv_benchmark_today`, the figure the waterfall walks against), never its conversion at close: a basket's sessions come earlier than its units, so the at-close rate would put every release behind for most of the campaign while the walk beside it said otherwise. | - |
 | **Actual / Projection vs target** (waterfall) | Target today → Stretch (a bar in the stretch tint from the target down, or up, to the benchmark: the part of the gap that is ambition beyond the basket, its popup naming the uplift) → Benchmark today (dotted tick) → the steps, each read against the basket (`waterfall.today.stepsBm`, summing to actual − benchmark) → Actual today; with the stretch they sum to the gap the header prints. Without a basket the list opens at the target and the steps read against it. A `Drivers | Channels` toggle in the card's header picks the steps: the four stored contributors, or each channel's units against its own benchmark in the page's order (they add up to the release before the sellout cap, so on a sold-out release the last drop is the cap and the outcome's popup says so) | the same, ending at Projection (`waterfall.stepsBm`) |
 | **Funnel by channel**, waterfall view | opens at the benchmark's dotted tick, with the stretch beneath it as the band up to the target and the target's solid tick at its end (two rows, not three); then the per-stage rows, every reference read off the basket's pace by today (sessions, implied sends, the benchmark budget) so the rows sum to actual − benchmark, off the same snapshot figures. The channels are blocks of rows rather than rows of their own, and grey 1px drops carry the running level from each row to the next as on the outcome waterfall. The tall card prints no channel column and no figure column: its row labels carry the channel where the label alone would not say it (Email sessions, Paid spend), a row's figures are in its popup, on the bar or on its name, and the levels print theirs beside the label. Pointing at a name lights its bar and a bar its name | - |
 | **Funnel by channel**, 2 × 2 | the waterfall view with two columns by two rows of room: the channel names in a column to the left of their rows (a name lights all of its rows), the bars across the card on a unit axis (gridlines behind the rows, the figures at the foot), and the figures in a column of their own. Not on the page by default; added from the layout editor | - |
@@ -669,7 +671,7 @@ export function BmOutline({ pct, column = false, inset, radius })
 // Horizontal track bar: target fill (two tints) behind, benchmark outline over
 // it, actual inset in front. `bm` may be null (no basket). `full` fixes the
 // right edge (the hero's sellout) instead of the default 120%-of-the-higher-
-// reference track. `hatchFrom` starts the orange over-sellout hatch.
+// reference track. `hatchFrom` starts the blue over-sellout hatch.
 // tips: { target, base, stretch, now, proj, overshoot }
 export function TrackBar({ now, proj, target, bm, full, hatchFrom, height, radius, tips })
 

@@ -119,7 +119,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const rows = [
     ...waterfallOpening({ hasBm, bm: benchmark, target, words, k }),
     ...stepRows,
-    { kind: "level", key: "outcome", label: outcomeLabel, value: outcome, color: C.orange,
+    { kind: "level", key: "outcome", label: outcomeLabel, value: outcome, color: C.blue,
       tip: {
         head: isToday ? "Secured to date" : closeWord + " demand at close",
         rows: [{ label: "Units", value: fmt(outcome) }],

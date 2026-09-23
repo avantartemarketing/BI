@@ -1087,19 +1087,29 @@ uncapped, unpaidWinners, flexibleUnits}`.
 
 **The card's colours are one ramp, and the picture posted to Slack is the same drawing.**
 Paid, drafts, the draw winners the entries imply and (at close) the units still to come are
-four tints of the page's orange, darkest to palest as the units get less certain; nothing on
+four tints of the page's blue, deepest to palest as the units get less certain; nothing on
 the card is hatched, and demand past a product's edition is the winners' own tint carrying on
 where the paler room behind the bar stops. `Post to Slack` draws those rows onto a canvas in
 the browser (`web/src/modules/sellThroughImage.mjs`) and posts the picture with the composed
 figures as its comment (`server/slack.js`); the drawing is written twice, the figures once.
+
+**One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
+pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven
+products, 14px bars on 28; five, 19 on 39; four, 24 on 49; three or fewer, 30 on 60, the cap
+being what keeps one edition from filling the card). The rows start under the headline and
+never spread; past seven they scroll. The key sits on the headline's own line, which is what
+gives the rows their height. Each row carries its units of the edition (198 of 1,000) in muted
+text and its percentage in ink, each in a column of its own so the two never read as one
+figure, and no RAG colour, which said "bad" about a product that was simply mid-campaign. The
+Units toggle puts the bars on one scale for the card.
 
 **No references on this card.** The snapshot still carries the release's pace applied to each
 product's edition (`expectedToday_p = edition_p × hero.expectedToday / edition`, likewise
 `benchmarkToday_p` and `benchmarkClose_p`), but the card draws neither the target fill nor the
 benchmark outline, by decision: both are on the hero and the channels, and on this card they
 crowded the one reading it is for, each product against its own edition. The card carries no
-prose either; the allocation's account is in the in-hand row's popup, the split of unattributed
-sales in the striped segment's, and the editions are checked on the Target setting tab.
+prose either; the allocation's account is in the draw-winners key's popup, the split of
+unattributed sales in the paid key's, and the editions are checked on the Target setting tab.
 
 **Products and editions** are typed on the Target setting tab (`products:
 [{key: draw_id, name, edition}]`; `productsFromDraws`): one row per draw the feed found, a
@@ -1261,6 +1271,7 @@ guard every benchmark mark on the page is written against.
 | `benchmark.sessions`, `entries`, `campaignDays` | the other headline medians of the profile |
 | `benchmark.k` | the even uplift K |
 | `benchmark.stretchUnits`, `stretchPct` | `target − benchmark` in units, and `K − 1` |
+| `asOf`, `completeThrough`, `asOfFraction` | the newest day in the feed (today, part-observed, while the feed is live), the last full day, and the share of the as-of day seen (1 on a full day and once the window has closed). The actuals run through `asOf`; the paid pacing rules, the run rates and `complete` read `completeThrough`; every reference by today is read at the share, so the page compares the day so far with the same share of the basket's day |
 | `benchmark.unitsByGroup`, `sessionsByGroup`, `convByGroup` | the per-group medians (conversion is held, so `convByGroup` is both benchmark and target) |
 | `benchmark.paidBudget` | benchmark paid units × median cost per purchase × K |
 | `benchmark.channelsOff` | the display groups this release set aside (BENCHMARK_SPEC §4.3); their medians are zero above and the other channels carry the target |

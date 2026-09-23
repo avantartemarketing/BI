@@ -32,7 +32,7 @@
 import React from "react";
 import {
   Card, GROUP_DOTS, C, fmt, fmtSigned, fmtMoney, MINUS, useTip,
-  rungGeom, rungPos, RungTrack, RungKey, Tick, refWords,
+  rungGeom, rungPos, RungTrack, RungKey, Tick, refWords, dayElapsed,
 } from "../ui.jsx";
 
 const RING = "0 0 0 1px rgba(20,20,19,.45)";
@@ -342,7 +342,7 @@ function groupWaterfall(g, snap, vsBm = false) {
   }
   if (g.key === "paid") {
     const paid = snap.paid || {};
-    const day = snap.day ?? 0, of = snap.of ?? 0;
+    const day = dayElapsed(snap), of = snap.of ?? 0;
     const spendA = paid.spendToDate ?? 0;
     const budget = vsBm ? paid.benchmarkBudget : paid.spendBudget;
     const spendE = of > 0 && budget ? (budget * day) / of : null;
@@ -365,7 +365,7 @@ function groupWaterfall(g, snap, vsBm = false) {
     info("Posts", (social.posts ?? 0) + (social.stories ?? 0), null, "count", "no reference - context only");
   }
   if (g.key === "referral_artist") {
-    const of = snap.of ?? 0, day = snap.day ?? 0;
+    const of = snap.of ?? 0, day = dayElapsed(snap);
     const postsA = social.artistPosts ?? null;
     const postsE = of > 0 && social.artistPostsTarget ? (social.artistPostsTarget * day) / of : null;
     if (finite(postsA) && finite(postsE) && postsA > 0 && postsE > 0 && sessE > 0) {
@@ -511,7 +511,7 @@ function rungModel(snap) {
   const email = snap?.email || {};
   const social = snap?.social || {};
   const paid = snap?.paid || {};
-  const day = snap?.day ?? 0;
+  const day = dayElapsed(snap);
   const of = snap?.of ?? 0;
   const bench = !!snap?.benchmark;
   const k = snap?.benchmark?.k ?? 1;
@@ -771,7 +771,7 @@ function walkBlocks(wf) {
     const step = r.to !== undefined;
     g.rows.push({ id: `${g.name}:${g.rows.length}`, group: g.name, kind: step ? "step" : "info", base: 24, r, level: step ? r.to : r.level, full: withChannel(r) });
   }
-  const close = [{ id: "actual", kind: "level", base: 26, label: "Actual today", value: nowTotal, level: nowTotal, tip: actualTip(wf), color: C.orange }];
+  const close = [{ id: "actual", kind: "level", base: 26, label: "Actual today", value: nowTotal, level: nowTotal, tip: actualTip(wf), color: C.blue }];
   const all = [...open, ...groups.flatMap((g) => g.rows), ...close];
   let lvl = null;
   for (const row of all) { row.entry = lvl; lvl = row.level; row.exit = lvl; }

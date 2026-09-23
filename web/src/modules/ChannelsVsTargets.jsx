@@ -5,7 +5,7 @@
  * the fill, darker from the baseline to whichever of target and benchmark is
  * lower and lighter from the benchmark up to the target when the target is the
  * higher; the benchmark as a dotted outline of the column it would make, over
- * the fill; the actual as the narrower orange column in front. Nothing about the
+ * the fill; the actual as the narrower blue column in front. Nothing about the
  * drawing changes between a release whose targets sit above the basket and one
  * whose targets sit below it - only where the outline lands - so the legend has
  * the same shape either way and a benchmark above its target needs no special
@@ -24,7 +24,7 @@ import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, BmOutline, BADGE_WORDS, C, fmt, useTip } from "../ui.jsx";
 
 /* The fill nearly fills the slot and the actual sits well inside it, so the
- * tints and the outline read on both sides of the orange at every card width. */
+ * tints and the outline read on both sides of the blue at every card width. */
 const REF_INSET = "6%";
 const BAR_INSET = "27%";
 
@@ -79,10 +79,10 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
     bmH: r.bm === null ? null : h(val(r.bm, r.target)),
   }));
 
-  // one orange across both horizons: a column is either today's actual or the
+  // one blue across both horizons: a column is either today's actual or the
   // projection at close, never both, so a change of tint would read as a
   // change of meaning rather than a change of horizon
-  const fillColor = C.orange;
+  const fillColor = C.blue;
   const fillLabel = today ? "To date" : "Projected";
   const unit = (v) => fmt(v, v < 10 && v > 0 ? 1 : 0);
   const k = snap?.benchmark?.k ?? null;

@@ -10,7 +10,7 @@
  * lines, since a pace is a line: the target's pace is a solid line, the
  * benchmark's pace (daily[].bm, summed across groups for "all" exactly as the
  * plan is, so the two are always built the same way) is a dotted one, and the
- * actual is the orange line in front. No area under any of them: a fill said
+ * actual is the blue line in front. No area under any of them: a fill said
  * nothing the lines did not, and hid the actual where it ran below the target.
  * The second reference is one more line, not a second system.
  *
@@ -430,11 +430,11 @@ export default function Trajectory({ snap }) {
                 );
               })}
               {projPath && (
-                <path d={projPath} fill="none" stroke={C.orangeLight} strokeWidth="2.4"
+                <path d={projPath} fill="none" stroke={C.blueLight} strokeWidth="2.4"
                   strokeDasharray="6 5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               )}
               {actPath && (
-                <path d={actPath} fill="none" stroke={C.orange} strokeWidth="3"
+                <path d={actPath} fill="none" stroke={C.blue} strokeWidth="3"
                   strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               )}
             </svg>
@@ -442,7 +442,7 @@ export default function Trajectory({ snap }) {
             {/* hover: guide line + a marker on every line the guide crosses +
                 light popup. The popup reads three figures off one day, so each
                 one is marked where it was read: the actual (or, ahead of today,
-                the projection) in its orange, the target as a solid reference
+                the projection) in its blue, the target as a solid reference
                 dot and the benchmark as a hollow one, the same solid-and-outline
                 grammar the references wear everywhere else. */}
             {hover && s.pts[hover.i] && (() => {
@@ -462,7 +462,7 @@ export default function Trajectory({ snap }) {
                   {targeted && has(hp.plan) && <div style={mark(hp.plan, { background: C.refLine })} />}
                   {hasBm && has(hp.bm) && <div style={mark(hp.bm, { background: "#fff", border: `2px solid ${C.refLine}` })} />}
                   {has(val) && (
-                    <div style={mark(val, { background: ahead ? C.orangeLight : C.orange })} />
+                    <div style={mark(val, { background: ahead ? C.blueLight : C.blue })} />
                   )}
                   <div className="chart-tip" style={{ left: `${(hover.i / N) * 100}%`, top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
                     <div className="t-head">Day {hover.i}</div>
@@ -488,7 +488,7 @@ export default function Trajectory({ snap }) {
               title={nowTip}
               style={{
                 position: "absolute", left: `${(todayFrac * 100).toFixed(2)}%`, top: pctTop(y(nowVal)),
-                width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: "50%", background: C.orange,
+                width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: "50%", background: C.blue,
               }}
             />
 
@@ -516,7 +516,7 @@ export default function Trajectory({ snap }) {
                 style={{
                   position: "absolute", left: "100%", top: pctTop(y(s.proj)),
                   width: 10, height: 10, margin: "-5px 0 0 -5px", borderRadius: "50%",
-                  background: "#fff", border: `2.2px solid ${C.orangeLight}`, boxSizing: "border-box",
+                  background: "#fff", border: `2.2px solid ${C.blueLight}`, boxSizing: "border-box",
                 }}
               />
             )}

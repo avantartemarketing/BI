@@ -112,7 +112,7 @@ function Switch({ id, on, onChange, label, sub, off, why }) {
  * past NEAR. */
 function Bar({ v, under, on, prefix, hint }) {
   const w = v === null ? 0 : Math.min(Math.log(v) / Math.log(8), 1) * 50;
-  const tone = on ? C.orange : FIELD;
+  const tone = on ? C.blue : FIELD;
   return (
     <div title={hint} style={{ display: "grid", gridTemplateColumns: "44px 1fr 40px", gap: "0 8px", alignItems: "center", fontSize: 11, color: C.muted }}>
       <span className="num" style={{ textAlign: "right" }}>{prefix}</span>
@@ -173,9 +173,9 @@ function Scatter({ rows, L, ticked, isOwn, reach, hover, setHover }) {
           if (!(r.units > 0 && r.price > 0)) return null;
           const on = ticked.has(r.release_name), own = isOwn(r), cx = sx(r.units), cy = sy(r.price), h = hover === r.release_name;
           const common = { style: { cursor: "pointer" }, onMouseEnter: () => setHover(r.release_name), onMouseLeave: () => setHover(null) };
-          if (on && own) return <rect key={r.release_name} {...common} x={cx - 6.5} y={cy - 6.5} width="13" height="13" transform={`rotate(45 ${cx} ${cy})`} fill={C.rust} stroke={C.white} strokeWidth={h ? 3 : 2} />;
-          if (on) return <circle key={r.release_name} {...common} cx={cx} cy={cy} r={h ? 7.5 : 6} fill={C.orange} stroke={C.white} strokeWidth="2" />;
-          return <circle key={r.release_name} {...common} cx={cx} cy={cy} r={h ? 6 : 4.5} fill={own ? C.rust : FIELD} fillOpacity={own ? 0.6 : 1} stroke={C.white} strokeWidth="1" />;
+          if (on && own) return <rect key={r.release_name} {...common} x={cx - 6.5} y={cy - 6.5} width="13" height="13" transform={`rotate(45 ${cx} ${cy})`} fill={C.blueDeep} stroke={C.white} strokeWidth={h ? 3 : 2} />;
+          if (on) return <circle key={r.release_name} {...common} cx={cx} cy={cy} r={h ? 7.5 : 6} fill={C.blue} stroke={C.white} strokeWidth="2" />;
+          return <circle key={r.release_name} {...common} cx={cx} cy={cy} r={h ? 6 : 4.5} fill={own ? C.blueDeep : FIELD} fillOpacity={own ? 0.6 : 1} stroke={C.white} strokeWidth="1" />;
         })}
         <line x1={tx} y1={m.t} x2={tx} y2={H - m.b} stroke={C.ink} strokeOpacity="0.18" strokeWidth="1" />
         <line x1={m.l} y1={ty} x2={W - m.r} y2={ty} stroke={C.ink} strokeOpacity="0.18" strokeWidth="1" />
@@ -202,8 +202,8 @@ const Legend = () => {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 18px", fontSize: 12, color: C.muted, marginTop: 8 }}>
       <span style={item}><i style={{ width: 12, height: 12, borderRadius: "50%", border: `2px solid ${C.ink}`, boxSizing: "border-box" }} />this launch</span>
-      <span style={item}><i style={{ width: 10, height: 10, borderRadius: "50%", background: C.orange }} />in the basket</span>
-      <span style={item}><i style={{ width: 9, height: 9, borderRadius: 2, background: C.rust, transform: "rotate(45deg)" }} />the artist's own</span>
+      <span style={item}><i style={{ width: 10, height: 10, borderRadius: "50%", background: C.blue }} />in the basket</span>
+      <span style={item}><i style={{ width: 9, height: 9, borderRadius: 2, background: C.blueDeep, transform: "rotate(45deg)" }} />the artist's own</span>
       <span style={item}><i style={{ width: 8, height: 8, borderRadius: "50%", background: FIELD }} />other launches on file</span>
       <span style={item}><i style={{ width: 14, height: 10, borderRadius: 2, background: C.refBase, border: `1px dashed ${C.refLine}`, boxSizing: "border-box" }} />the basket's reach</span>
     </div>
@@ -454,7 +454,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                           <input type="checkbox" checked={on} tabIndex={-1} readOnly aria-hidden="true" style={{ accentColor: C.ink, width: 15, height: 15, margin: 0, cursor: "pointer" }} />
                           <div style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: on ? C.ink : C.muted }} title={`${r.artist} · ${r.title}`}>
                             {r.artist} · {r.title} <span style={{ color: C.muted, fontSize: 11.5 }}>{String(r.window_end || "").slice(0, 4)}</span>
-                            {own && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 600, letterSpacing: ".03em", padding: "1px 6px", borderRadius: 4, background: C.rust, color: C.white, verticalAlign: 1 }}>own</span>}
+                            {own && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 600, letterSpacing: ".03em", padding: "1px 6px", borderRadius: 4, background: C.blueDeep, color: C.white, verticalAlign: 1 }}>own</span>}
                           </div>
                           <Bar v={r.du} under={r.units < L.target} on={on} prefix={fmt(r.units)} hint={unitsHint(r)} />
                           <Bar v={r.dp} under={r.price > 0 && r.price < priceUsed} on={on} prefix={r.price > 0 ? fmtMoney(r.price) : "–"} hint={priceHint(r)} />
