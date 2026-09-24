@@ -383,7 +383,7 @@ double-counted across channel-days nor missing where the channel feed does not r
 release's own distinct one. Where plan and actual rates are equal the second step is zero and
 the card reads exactly as it did.
 
-**Visible** as a Buyers row on the Derived targets rail, with its own benchmark and stretch.
+**Visible** as the Buyers figure in the Target setting header, with its own benchmark and stretch.
 
 ## 5. Snapshot additions
 
@@ -558,7 +558,7 @@ rather than as one mark per channel.
 | container | Today | At close |
 |---|---|---|
 | **Units vs sellout** (hero) | fill = target today in two tints, outline = benchmark today, blue = to date, track = out to the sellout; two label rows above the bar, the benchmark on the upper and the target on the lower, so the two never print through each other; legend rows To date / Target today / Benchmark today | fill = projected; blue hatch = demand over the sellout, which takes the third legend row when there is any (the label above the bar still names the benchmark) |
-| **Unit trajectory** | two columns wide. The target's pace as a solid 1.5px line, the benchmark's pace as a dotted 1.5px line, the actual in front, no area under any of them; three readings on the today line (benchmark, target, actual), each set where no curve, dot or other label runs; ahead of today the references drop back | both run the full width, plus a solid 2px level at the target and a dotted one at the benchmark, named together at the left |
+| **Unit trajectory** | two columns wide. The target's pace as a solid 1.5px line, the benchmark's pace as a dotted 1.5px line, the actual in front, no area under any of them; each line named once (secured, projected, target, benchmark) by a word set in clear space with a thin leader to a point on the line, the secured line at its dot, the names placed one after another so two never overlap; the figures live in the hover and in the names' tooltips; ahead of today the references drop back | both run the full width, plus a solid 2px level at the target and a dotted one at the benchmark, named together at the left |
 | **Channels vs targets** | fill and outline per column, actual inside them, foot = % vs target with its own green/red; in the % view every target is 100% and, the uplift being one multiple, every outline sits at the same height too | same with the projected fill |
 | **Funnel by channel** / **Organic funnel** | always Today. **The target runs down the centre of every rung**, the benchmark is a **dotted tick** wherever the basket's figure lands on the same log scale, blue/red dot = actual; ×4 either way fills the rung (`›` marks beyond). Pale bar spans centre→dot. The % and its RAG colour are vs target. Volume rungs carry the uplift, so the tick sits 1/K off the centre; rate rungs are held at the benchmark, so the tick sits on the centre line. The conversion rung reads the basket's conversion **by today** (`conv_benchmark_today`, the figure the waterfall walks against), never its conversion at close: a basket's sessions come earlier than its units, so the at-close rate would put every release behind for most of the campaign while the walk beside it said otherwise. | - |
 | **Actual / Projection vs target** (waterfall) | Target today → Stretch (a bar in the stretch tint from the target down, or up, to the benchmark: the part of the gap that is ambition beyond the basket, its popup naming the uplift) → Benchmark today (dotted tick) → the steps, each read against the basket (`waterfall.today.stepsBm`, summing to actual − benchmark) → Actual today; with the stretch they sum to the gap the header prints. Without a basket the list opens at the target and the steps read against it. A `Drivers | Channels` toggle in the card's header picks the steps: the four stored contributors, or each channel's units against its own benchmark in the page's order (they add up to the release's demand; on a sold-out release the last step, Beyond sellout, drops to the capped figure) | the same, ending at Projection (`waterfall.stepsBm`) |
@@ -599,19 +599,46 @@ sent nothing", which is a third thing entirely.
 The quartile levers are gone from the page and, since 2026-09-23, from the build (DATA_MODEL
 §3). In their place:
 
-1. **Benchmark basket** card — the chosen basket, its profile chips, a `Change basket`
-   button opening the picker, the **Channels in plan** switches (§4.3: Running paid; Artist's
-   own channels, with a posting tier beside it while on), and the per-channel table
-   `benchmark sessions | target sessions | benchmark units | target units | stretch | conv (held)`,
-   where a group set aside reads `not in plan`. The table and the chips follow the switches
-   and the launches ticked in the picker live, through the same model the build runs.
-2. **Stretch** card — benchmark (read-only), sellout (the edition size input), the stretch
-   that falls out, and one sentence on how it is spread: evenly, conversion held.
-3. **Derived targets** rail — three columns: Benchmark, Target, Stretch, computed in the
-   browser from the basket's medians (`shared/benchmarkModel.mjs`) as the sellout, the cost
-   per purchase and the switches change; dashes until there is a basket and a sellout.
-4. **Economics** - gains **Cost per purchase**, € per paid unit, blank meaning the panel's
-   median: paid units × it is the paid budget.
+The tab is the target in a header that stays put, then one column of cards, all in one form
+language (`web/src/tokens.css`, the `.ts-` rules: a label above, the source or unit as a
+caption beside it, a 44px box with a 6px radius, a helper under; a figure that does not
+apply is a disabled box, never a dash):
+
+1. **Header** — the secured-units target as the big figure, with "of N in the edition" when
+   the target is part of it and the uplift over the basket's median (`×K`); beside it the
+   state ("Unsaved changes", or the input still needed) and the `Discard` and `Save targets`
+   buttons; under it six figures, each with its benchmark and the stretch between them:
+   Paid units, Buyers, Eligible entries, Sessions, Paid budget, Of launch value (red past the
+   6% sense check). They are computed in the browser from the basket's medians
+   (`shared/benchmarkModel.mjs`) as the products, the assumptions and the switches change,
+   and read "choose a basket" until there is one. The header compacts to one line as the page
+   scrolls and never leaves.
+2. **Release & timeline** card — the release name and campaign code (read-only where a feed
+   holds them), the marketing lead, the Slack channel (saved on its own), the Meta campaigns
+   as tick rows with an add box, and the three dates with their source under each.
+3. **Benchmark basket** card — the chosen basket with a `Change basket` button opening the
+   picker, its profile as chips, the **Channels in plan** switches (§4.3: Running paid; Artist's
+   own channels, with the posting tier beside them, disabled while the artist is off), and the
+   per-channel table `benchmark units | target units | benchmark sessions | target sessions |
+   session → unit (held)`, where a group set aside reads `not in plan`. The table and the chips
+   follow the switches and the launches ticked in the picker live, through the same model the
+   build runs.
+4. **Products & economics** card — one grid drawn the way Airtable draws one: the cell is the
+   input, a glyph on every header carries the unit (`#` a count, `%` and `€`, `ƒ` computed, a
+   tick), headers never wrap and the grid scrolls sideways inside the card with the row number
+   and the product staying put. The figures are locked to Airtable's until the `Edit figures`
+   switch is on; a typed figure gets an amber corner mark and a `Reset` beside the product,
+   the card's head counts them and offers `Reset all`. While editing a `Set all` row at the top
+   fills a column for every product and an `Add a product` row adds a work Airtable has no
+   record for. Revenue share and profit share are two cells that close each other (fill one
+   and the other is greyed and not typeable); unticking framing closes the two frame cells.
+   Target units and the last row, `Total · per target unit`, are computed cells: edition and
+   target units summed, sell-through and price weighted by target units, the profits and the
+   share per target unit, the framing uplift per target unit.
+5. **Assumptions** card — the entry → order rate and the pre-order → order rate that price
+   every entry, the **cost per paid unit** (€, blank meaning the basket's median, else the
+   panel's: paid units × it is the paid budget) and the paid cannibalisation (blank meaning
+   the standard).
 
 The paid-share overwrite, the paid channel size, private room share, paid conversion and the
 per-channel quality rows are gone: a save drops them from a release that still carries them.
@@ -619,14 +646,14 @@ The paid share is the basket's, and a release that will not run paid says so wit
 rather than with a zero. The Referral Artist tier lives on as the posting tier beside the
 artist switch (`artist_posting_tier`).
 
-The rail's Benchmark column takes the basket's own median wherever the basket has one
+The header's benchmark figures take the basket's own median wherever the basket has one
 (`unitsByGroup.paid`, `sessions`, `paidBudget`, and `paidBudget ÷ basket launch value` for
-the percentage row), so the rail and the per-channel table above it quote the same figures;
+the percentage figure), so the header and the basket card's channel table quote the same figures;
 the entries row shows the basket's median units asked for as entries at 0.8, the way the
 target is, so that row keeps the K ratio too (the measured median entries stay on the
 snapshot as `benchmark.entries`). The draw / private-room rows it used to carry went with
 the split. The
-percentage row is why a plain `target ÷ K` cannot be applied everywhere — K is in both the
+percentage figure is why a plain `target ÷ K` cannot be applied everywhere - K is in both the
 budget and the launch value and cancels, so dividing again would print a benchmark share 1/K
 of the real one.
 

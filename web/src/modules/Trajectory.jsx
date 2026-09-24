@@ -15,26 +15,38 @@
  * The second reference is one more line, not a second system.
  *
  * One picture, whichever horizon the page is on. The chart already answers both
- * questions at once: the readings on the today line say where the release should
- * be by now, and the dashed projection running on to the last day, with its
- * percentage of target at the end, says where it lands. Redrawing the references
- * as levels for the second question only took the first one away, so the card
- * no longer follows the page toggle and carries no horizon badge. */
+ * questions at once: where the lines stand at the today line says where the
+ * release should be by now, and the dashed projection running on to the last
+ * day, with its percentage of target at the end, says where it lands. Redrawing
+ * the references as levels for the second question only took the first one
+ * away, so the card no longer follows the page toggle and carries no horizon
+ * badge.
+ *
+ * Each line is named once, in a word set in clear space with a thin leader
+ * to a point on the line (the secured line at its dot): secured, projected,
+ * target, benchmark, the hover's own words. The figures are not on the plot:
+ * a figure beside a line read as the line's total when it was the reading by
+ * today, so they live in the hover and in the names' tooltips. */
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, labelPx, dayElapsed } from "../ui.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
 const LABEL_TODAY_PX = 38; // rendered width of "today" at 12px
 
-/* ---- placing the readings ----------------------------------------------------
- * The readings on the today line are set where nothing else is drawn. Each has
- * places it would rather be - beside the line, just above or just below its
- * own mark, the roomier side first - and takes the first that no curve, no dot,
- * no other label and no edge of the plot runs through. All of it is in real
- * pixels off the measured plot, with the text measured in the page's own font,
- * so it holds whatever width the card is given. Only when every place is taken
- * does a reading go to its first choice on a card-white patch, so it stays
- * legible whatever the chart does. */
+/* ---- naming the lines --------------------------------------------------------
+ * A name is a word in clear space with a leader to a point on its line. It
+ * may sit anywhere no curve, no dot, no figure and no other name runs
+ * through, its leader may cross no name, no dot and no other leader, and
+ * among those places it takes the one with the shortest leader, the fewest
+ * curves under the leader, and an anchor near the middle of its line, spread
+ * from the other names' anchors. The names are set one after another, each
+ * treating the ones already set as walls, so two never overlap. Only when a
+ * name has nowhere that clear does it settle for a place across a curve or a
+ * leader, and only when it has nowhere at all does it go on a card-white
+ * patch where it runs into the least. Another name is the one wall that
+ * holds in every tier, so two names never overlap. All of
+ * it is in real pixels off the measured plot, with the text measured in the
+ * page's own font, so it holds whatever width the card is given. */
 function segHitsBox(x0, y0, x1, y1, b) {
   // Liang-Barsky: does the segment cross the box, edges included
   let t0 = 0, t1 = 1;
@@ -49,23 +61,79 @@ function segHitsBox(x0, y0, x1, y1, b) {
   return clip(-dx, x0 - b.x0) && clip(dx, b.x1 - x0) && clip(-dy, y0 - b.y0) && clip(dy, b.y1 - y0);
 }
 const boxesTouch = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
-function readingPlacer({ curves, blocks, bounds }) {
-  const taken = blocks.slice();
-  // what a box would run into: each crossing segment and each touched box
-  // counts one, and leaving the plot is worse than any of them
-  const clashes = (b) => {
-    const p = { x0: b.x0 - 2, y0: b.y0 - 2, x1: b.x1 + 2, y1: b.y1 + 2 };
-    if (p.x0 < bounds.x0 || p.x1 > bounds.x1 || p.y0 < bounds.y0 || p.y1 > bounds.y1) return 1000;
-    let n = taken.filter((t) => boxesTouch(p, t)).length;
-    for (const c of curves) for (let i = 1; i < c.length; i++) if (segHitsBox(c[i - 1].x, c[i - 1].y, c[i].x, c[i].y, p)) n += 1;
-    return n;
-  };
-  return {
-    find: (candidates) => candidates.find((b) => clashes(b) === 0) || null,
-    // when nothing is clear, the place that runs into the least
-    least: (candidates) => candidates.reduce((best, b) => (clashes(b) < clashes(best) ? b : best)),
-    commit: (box) => { taken.push(box); return box; },
-  };
+// do two segments cross (touching counts)
+function segsCross(a, b, c, d) {
+  const o = (p, q, r) => Math.sign((q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x));
+  const on = (p, q, r) => Math.min(p.x, q.x) <= r.x && r.x <= Math.max(p.x, q.x) && Math.min(p.y, q.y) <= r.y && r.y <= Math.max(p.y, q.y);
+  const o1 = o(a, b, c), o2 = o(a, b, d), o3 = o(c, d, a), o4 = o(c, d, b);
+  if (o1 !== o2 && o3 !== o4) return true;
+  return (o1 === 0 && on(a, b, c)) || (o2 === 0 && on(a, b, d)) || (o3 === 0 && on(c, d, a)) || (o4 === 0 && on(c, d, b));
+}
+// where a leader leaves its name: the point where the line from the box's
+// centre to the anchor crosses the box's edge, a step clear of the text
+function leaderStart(box, anchor) {
+  const cx = (box.x0 + box.x1) / 2, cy = (box.y0 + box.y1) / 2;
+  const dx = anchor.x - cx, dy = anchor.y - cy;
+  const len = Math.hypot(dx, dy) || 1;
+  const tx = dx !== 0 ? ((dx > 0 ? box.x1 : box.x0) - cx) / dx : Infinity;
+  const ty = dy !== 0 ? ((dy > 0 ? box.y1 : box.y0) - cy) / dy : Infinity;
+  const t = Math.min(tx, ty);
+  return { x: cx + dx * t + (dx / len) * 3, y: cy + dy * t + (dy / len) * 3 };
+}
+// the eight ways a name can sit off its anchor, at four distances
+const DIRS = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
+  .map(([dx, dy]) => { const n = Math.hypot(dx, dy); return [dx / n, dy / n]; });
+const DISTS = [18, 30, 44, 60];
+function nameLines({ labels, curves, blocks, bounds }) {
+  const names = [];                      // each name's box as it is set: nothing may ever touch these
+  const leaders = [];                    // each leader as it is set
+  const anchorsSet = [];
+  const segs = curves.flatMap((c) => c.pts.slice(1).map((p, i) => ({ a: c.pts[i], b: p })));
+  const near = (s, pt) => Math.hypot(s.a.x - pt.x, s.a.y - pt.y) < 7 || Math.hypot(s.b.x - pt.x, s.b.y - pt.y) < 7;
+  const inside = (pt, b) => pt.x >= b.x0 && pt.x <= b.x1 && pt.y >= b.y0 && pt.y <= b.y1;
+  const out = [];
+  for (const lb of labels) {
+    const candidates = [];
+    for (const anchor of lb.anchors) {
+      // the leader may run into the mark it points at (the today dot), not into any other
+      const marks = blocks.filter((b) => !inside(anchor, b));
+      for (const [ux, uy] of DIRS) for (const d of DISTS) {
+        const ax = anchor.x + ux * d, ay = anchor.y + uy * d;
+        const x0 = ux < 0 ? ax - lb.w : ux > 0 ? ax : ax - lb.w / 2;
+        const y0 = uy < 0 ? ay - lb.h : uy > 0 ? ay : ay - lb.h / 2;
+        const box = { x0, y0, x1: x0 + lb.w, y1: y0 + lb.h };
+        const pad = { x0: x0 - 2, y0: y0 - 2, x1: box.x1 + 2, y1: box.y1 + 2 };
+        if (pad.x0 < bounds.x0 || pad.x1 > bounds.x1 || pad.y0 < bounds.y0 || pad.y1 > bounds.y1) continue;
+        const start = leaderStart(box, anchor);
+        const onName = names.some((n) => boxesTouch(pad, n) || segHitsBox(start.x, start.y, anchor.x, anchor.y, n));
+        if (onName) continue;            // never on another name, never a leader through one
+        const onMark = blocks.filter((b) => boxesTouch(pad, b)).length + marks.filter((b) => segHitsBox(start.x, start.y, anchor.x, anchor.y, b)).length;
+        const onLeader = leaders.filter((l) => segHitsBox(l.a.x, l.a.y, l.b.x, l.b.y, pad) || segsCross(start, anchor, l.a, l.b)).length;
+        const underBox = segs.filter((s) => segHitsBox(s.a.x, s.a.y, s.b.x, s.b.y, pad)).length;
+        const underLeader = segs.filter((s) => !near(s, anchor) && segsCross(start, anchor, s.a, s.b)).length;
+        const len = Math.hypot(start.x - anchor.x, start.y - anchor.y);
+        const crowd = anchorsSet.filter((p) => Math.abs(p.x - anchor.x) < 48).length;
+        candidates.push({
+          box, start, anchor, underBox,
+          cost: underBox * 10 + underLeader * 3 + len * 0.04 + (anchor.cost || 0) + crowd * 4,
+          // the tiers, worst first: on a dot or the figure; across a leader or under a curve; clear
+          hard: onMark, soft: onLeader + underBox,
+        });
+      }
+    }
+    if (!candidates.length) continue;
+    const pick = (list) => list.reduce((best, c) => (c.cost < best.cost ? c : best));
+    const clear = candidates.filter((c) => c.hard === 0 && c.soft === 0);
+    const clearish = candidates.filter((c) => c.hard === 0);
+    const best = clear.length ? pick(clear) : clearish.length ? pick(clearish)
+      : pick(candidates.map((c) => ({ ...c, cost: c.cost + c.hard * 100 })));
+    const knock = best.hard > 0 || best.underBox > 0;
+    names.push({ x0: best.box.x0 - 2, y0: best.box.y0 - 2, x1: best.box.x1 + 2, y1: best.box.y1 + 2 });
+    leaders.push({ a: best.start, b: best.anchor });
+    anchorsSet.push(best.anchor);
+    out.push({ ...lb, x0: best.box.x0, y0: best.box.y0, start: best.start, anchor: best.anchor, knock });
+  }
+  return out;
 }
 let ctx2d = null, fontFamily = null;
 function pageFont() {
@@ -307,25 +375,13 @@ export default function Trajectory({ snap }) {
 
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const xLabel = { position: "absolute", top: "100%", paddingTop: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
-  // a reading on the today line: a 12x2 mark, label alongside; the benchmark's
-  // is dotted, as its mark is everywhere else on the page
-  const readTick = (v, color, dotted = false) => ({
-    position: "absolute", left: `${(todayFrac * 100).toFixed(2)}%`, top: pctTop(y(v)),
-    width: 12, margin: "-1px 0 0 -6px",
-    ...(dotted ? { height: 0, borderTop: `2px dotted ${color}` } : { height: 2, background: color }),
-  });
-
-  /* The readings on the today line, set clear of everything drawn (the placer
-   * at the top of the file). The target and the benchmark go as one pair when
-   * they are within a few pixels of each other, higher value first, so two
-   * figures that are almost the same read as the two references rather than
-   * as a clash; a pair that fits nowhere splits into two. The actual is placed
-   * first so it gets the best spot, unless placing the references first leaves
-   * fewer readings on a patch, which is what matters in the first days when
-   * everything crowds the left edge. The today line already says "today", so
-   * the readings are the word and the figure. Nothing is placed until the plot
-   * has been measured. */
-  let readings = [];
+  /* The names, set clear of everything drawn (the placer at the top of the
+   * file): secured at its dot, projected, target and benchmark each anchored
+   * somewhere along their line, in that order, so the one that matters most
+   * gets the best place. An anchor is a day's point on the line, away from
+   * the ends and from the today dot. Nothing is placed until the plot has
+   * been measured. */
+  let names = [];
   if (showToday && plotW > 0 && plotH > 0) {
     const px = (i) => (i / N) * plotW;
     const py = (v) => (y(v) / Y0) * plotH;
@@ -333,75 +389,56 @@ export default function Trajectory({ snap }) {
       const out = []; let run = [];
       for (let i = from; i <= to; i++) {
         const v = has(s.pts[i]) ? get(s.pts[i]) : null;
-        if (has(v)) run.push({ x: px(i), y: py(v) }); else if (run.length) { out.push(run); run = []; }
+        if (has(v)) run.push({ x: px(i), y: py(v), i }); else if (run.length) { out.push(run); run = []; }
       }
       if (run.length) out.push(run);
       return out;
     };
-    const curves = [...polylines((p) => p.actual, 0, lastA), ...polylines(planAt, 0, N), ...(hasBm ? polylines(bmAt, 0, N) : [])];
+    const targetRuns = polylines(planAt, 0, N), bmRuns = hasBm ? polylines(bmAt, 0, N) : [];
+    const projRun = [];
     if (showProjSeg) {
-      const pr = [{ x: px(todayPos), y: py(nowVal) }];
-      s.pts.forEach((p, i) => { if (i > todayIdx && has(p.proj)) pr.push({ x: px(i), y: py(p.proj) }); });
-      if (pr.length === 1) pr.push({ x: plotW, y: py(s.proj) });
-      curves.push(pr);
+      projRun.push({ x: px(todayPos), y: py(nowVal), i: todayPos });
+      s.pts.forEach((p, i) => { if (i > todayIdx && has(p.proj)) projRun.push({ x: px(i), y: py(p.proj), i }); });
+      if (projRun.length === 1) projRun.push({ x: plotW, y: py(s.proj), i: N });
     }
+    const curves = [
+      ...polylines((p) => p.actual, 0, lastA).map((pts) => ({ pts })),
+      ...targetRuns.map((pts) => ({ pts })), ...bmRuns.map((pts) => ({ pts })),
+      ...(projRun.length > 1 ? [{ pts: projRun }] : []),
+    ];
     const ax = px(todayPos), ayNow = py(nowVal), ayEnd = py(complete ? nowVal : s.proj);
     const font = (weight) => `${weight} 12px ${pageFont()}`;
     const blocks = [
-      { x0: ax - 5, y0: ayNow - 5, x1: ax + 5, y1: ayNow + 5 },   // the today dot
-      ...(targeted && !complete ? [{ x0: plotW - 5, y0: ayEnd - 5, x1: plotW + 5, y1: ayEnd + 5 }] : []),   // the projection's dot
-      ...(projPct !== null ? [{ x0: plotW + 10, y0: ayEnd - 8, x1: plotW + 10 + textWidth(`${projPct}%`, font(600)), y1: ayEnd + 8 }] : []),
+      { x0: ax - 6, y0: ayNow - 6, x1: ax + 6, y1: ayNow + 6 },   // the today dot
+      ...(targeted && !complete ? [{ x0: plotW - 6, y0: ayEnd - 6, x1: plotW + 6, y1: ayEnd + 6 }] : []),   // the projection's dot
+      ...(projPct !== null ? [{ x0: plotW + 8, y0: ayEnd - 8, x1: plotW + 12 + textWidth(`${projPct}%`, font(600)), y1: ayEnd + 8 }] : []),
     ];
-    const H = 14, GAP = 10, LIFT = 5;
-    const sides = (1 - todayFrac) * plotW > 120 ? ["right", "left"] : ["left", "right"];
-    // the places a box of w x h would rather be, nearest first: beside the line,
-    // clear above the higher mark or clear below the lower one, the roomier side
-    // first; then the same a row further out and a row beyond that; then the
-    // same three rows a step along the line, out of the crowd at the today mark
-    const spots = (w, h, ayAbove, ayBelow = ayAbove) => [0, 48].flatMap((along) => [0, 1, 2].flatMap((k) =>
-      sides.flatMap((side) => ["above", "below"].map((vert) => {
-        const x0 = side === "right" ? ax + GAP + along : ax - GAP - along - w;
-        const off = LIFT + k * (H + 2);
-        const y0 = vert === "above" ? ayAbove - off - h : ayBelow + off;
-        // how far from its mark a reading has strayed, for choosing between arrangements
-        return { x0, y0, x1: x0 + w, y1: y0 + h, side, cost: k + (along ? 2 : 0) };
-      }))));
-    // a placed box, written out one line per item, ranged against the today line
-    const lines = (box, items) => items.map((it, k) => ({
-      ...it, y0: box.y0 + k * (H + 2), x0: box.side === "right" ? box.x0 : box.x1 - it.w, knock: box.knock,
-    }));
-    const item = (key, text, color, weight) => ({ key, text, color, weight, w: textWidth(text, font(weight)) });
-    // the reading is the secured units alone: the gap to the target is on the
-    // hero card and in the hover, and beside the number it read as a second figure
-    const nowItem = item("now", fmt(nowVal), C.ink, 600);
-    const tItem = item("target", `target ${fmt(planToday)}`, C.ink, 500);
-    const bItem = hasBm && has(bmToday) ? item("bm", `benchmark ${fmt(bmToday)}`, C.muted, 500) : null;
-    const ayT = py(planToday), ayB = bItem ? py(bmToday) : null;
-    const arrange = (referencesFirst) => {
-      const { find, least, commit } = readingPlacer({ curves, blocks, bounds: { x0: 0, y0: 0, x1: plotW + 44, y1: plotH } });
-      const out = [];
-      let knocks = 0, cost = 0;
-      const settle = (candidates, items) => {
-        const b = find(candidates);
-        if (b) cost += b.cost; else knocks += 1;
-        out.push(...lines(commit(b ? { ...b, knock: false } : { ...least(candidates), knock: true }), items));
-      };
-      const actual = () => settle(spots(nowItem.w, H, ayNow), [nowItem]);
-      const references = () => {
-        if (bItem && Math.abs(ayB - ayT) < 20) {
-          const pair = planToday >= bmToday ? [tItem, bItem] : [bItem, tItem];
-          const b = find(spots(Math.max(tItem.w, bItem.w), 2 * H + 2, Math.min(ayT, ayB), Math.max(ayT, ayB)));
-          if (b) { cost += b.cost; out.push(...lines(commit({ ...b, knock: false }), pair)); return; }
-        }
-        settle(spots(tItem.w, H, ayT), [tItem]);
-        if (bItem) settle(spots(bItem.w, H, ayB), [bItem]);
-      };
-      if (referencesFirst) { references(); actual(); } else { actual(); references(); }
-      return { out, knocks, cost };
+    // the anchors a line offers: its points a day in from either end and a day
+    // clear of the today dot, each costing a little for its distance from the
+    // middle of the line, so a name settles near the middle when it can
+    const anchorsOn = (runs, skipToday) => {
+      const pts = runs.flat().filter((p) => p.i > 0 && p.i < N && (!skipToday || Math.abs(p.i - todayIdx) > 1));
+      if (!pts.length) return runs.flat();
+      const xs = pts.map((p) => p.x), mid = (Math.min(...xs) + Math.max(...xs)) / 2;
+      return pts.map((p) => ({ x: p.x, y: p.y, cost: Math.abs(p.x - mid) * 0.02 }));
     };
-    // the arrangement with fewer readings on a patch, then with readings nearer their marks
-    const a = arrange(false), b = arrange(true);
-    readings = (b.knocks < a.knocks || (b.knocks === a.knocks && b.cost < a.cost)) ? b.out : a.out;
+    const projAnchors = () => {
+      const inner = projRun.slice(1, -1).filter((p) => p.i - todayIdx > 1);
+      if (inner.length) return anchorsOn([inner], false);
+      const a = projRun[0], b = projRun[projRun.length - 1];
+      return [{ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, cost: 0 }];
+    };
+    const H = 14;
+    const label = (key, text, color, weight, title, anchors) => ({ key, text, color, weight, title, anchors, w: textWidth(text, font(weight)), h: H });
+    const labels = [
+      label("now", "secured", C.ink, 600, nowTip, [{ x: ax, y: ayNow, cost: 0 }]),
+      ...(showProjSeg && projRun.length > 1 ? [label("proj", "projected", C.muted, 500, projTip, projAnchors())] : []),
+      label("target", "target", C.ink, 500,
+        `${fmt(planToday)} target by day ${day} · ${fmt(s.target)} at close`, anchorsOn(targetRuns, true)),
+      ...(hasBm && has(bmToday) ? [label("bm", "benchmark", C.muted, 500,
+        `${fmt(bmToday)} benchmark by day ${day} · ${fmt(s.bm)} at close`, anchorsOn(bmRuns, true))] : []),
+    ].filter((lb) => lb.anchors.length);
+    names = nameLines({ labels, curves, blocks, bounds: { x0: 0, y0: -10, x1: plotW + 44, y1: plotH } });
   }
 
   return (
@@ -514,18 +551,29 @@ export default function Trajectory({ snap }) {
               }}
             />
 
-            {/* The three numbers are one reading taken at one x, so they are
-                stacked on the today line rather than spread across the chart. */}
-            {showToday && (
+            {/* the names and their leaders: a leader runs from the name's edge to
+                a grey point on its line, or up to the edge of the today dot */}
+            {showToday && names.length > 0 && (
               <>
-                {hasBm && has(bmToday) && <div style={readTick(bmToday, C.refLine, true)} />}
-                <div style={readTick(planToday, C.refLine)} />
-                {readings.map((r) => (
-                  <div key={r.key} style={{
-                    position: "absolute", left: r.x0, top: r.y0, height: 14, lineHeight: "14px",
-                    fontSize: 12, fontWeight: r.weight, color: r.color, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
-                    ...(r.knock ? { background: "#fff", padding: "0 3px", margin: "0 -3px", borderRadius: 2 } : {}),
-                  }}>{r.text}</div>
+                <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none" }} aria-hidden="true">
+                  {names.map((n) => {
+                    const toDot = n.key === "now";
+                    const dx = n.anchor.x - n.start.x, dy = n.anchor.y - n.start.y, len = Math.hypot(dx, dy) || 1;
+                    const end = toDot ? { x: n.anchor.x - (dx / len) * 6.5, y: n.anchor.y - (dy / len) * 6.5 } : n.anchor;
+                    return (
+                      <g key={n.key}>
+                        <line x1={n.start.x.toFixed(1)} y1={n.start.y.toFixed(1)} x2={end.x.toFixed(1)} y2={end.y.toFixed(1)} stroke={C.targetLine} strokeWidth="1" />
+                        {!toDot && <circle cx={n.anchor.x.toFixed(1)} cy={n.anchor.y.toFixed(1)} r="2.4" fill={C.targetLine} />}
+                      </g>
+                    );
+                  })}
+                </svg>
+                {names.map((n) => (
+                  <div key={n.key} title={n.title} style={{
+                    position: "absolute", left: n.x0, top: n.y0, height: n.h, lineHeight: `${n.h}px`,
+                    fontSize: 12, fontWeight: n.weight, color: n.color, whiteSpace: "nowrap",
+                    ...(n.knock ? { background: "#fff", padding: "0 3px", margin: "0 -3px", borderRadius: 2 } : {}),
+                  }}>{n.text}</div>
                 ))}
               </>
             )}
