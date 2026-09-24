@@ -492,12 +492,15 @@ allocate to. The logic is `shared/drawAudit.mjs`, tested by `tests/draw_audit.mj
 
 The sell-through card has a **Post to Slack** button. It sends the card as a Block Kit
 message to the channel set for that release: the artist as the header; the works' shared
-title and the campaign day on one line ("Brillo Box Collectable, day 20 of 27"); Slack's
-`data_table`, one row per work with its units today (at close, the projection), its target,
-how far along the target it is, its edition and its sell-through, and a bold **Total** row
-adding them up; then, in small type, the day the figures run to, the totals (paid, awaiting
-payment, expected from the draw, at close the units still to come) and the framing take-up
-in plain sentences. The figures in the table are numbers with their words, so a column
+title and the campaign day on one line ("Brillo Box Collectable, day 20 of 27"); the table's
+title; Slack's `table` block, one row per work with its units sold (at close, the projection),
+its target, how far along the target it is, its edition and its sell-through, and a bold
+**Total** row adding them up, the Work column wrapping rather than cropping and the figures
+right-aligned (Slack's `data_table` block takes no column settings and cut the names off);
+then, in small type, the day the figures run to, the totals (paid, awaiting payment, expected
+from the draw, at close the units still to come) and the framing take-up in plain sentences,
+and last the footnote the units column's asterisk points to: paid units, drafts and the
+forecast conversions from draw entries. The figures in the table are numbers with their words, so a column
 sorts as numbers on a tap; the header row is plain text, as Slack requires. A work's target
 is the one typed for it on the Target setting tab when targets are set per product, else
 the release's target split by edition share, the rule the card's references follow. The

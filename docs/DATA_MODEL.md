@@ -1221,8 +1221,10 @@ four tints of the page's blue, deepest to palest as the units get less certain; 
 the card is hatched, and demand past a product's edition is the winners' own tint carrying on
 where the paler room behind the bar stops. `Post to Slack` sends those rows as a Slack message
 composed on the server from the same snapshot (`server/slack.js`): the artist as a header;
-the works' shared title and the campaign day on one line; Slack's `data_table`, one row per
-work with its units (today, or projected at close), its target (typed per product on the
+the works' shared title and the campaign day on one line; the table's title; Slack's `table`
+block (the Work column wrapping, the figures right-aligned), one row per work with its units
+sold (today, or projected at close; the column's asterisk points to a footnote at the bottom:
+paid units, drafts and the forecast conversions from draw entries), its target (typed per product on the
 Target setting tab when targets are set that way, else the release's target split by edition
 share, the rule the references follow), how far along the target it is, its edition and its
 sell-through, and a bold Total row adding them up; then, in small type, the day the figures

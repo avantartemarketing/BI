@@ -19,7 +19,7 @@ const parts = (blocks) => ({
   header: blocks.find((b) => b.type === "header"),
   sections: blocks.filter((b) => b.type === "section").map((b) => b.text.text),
   contexts: blocks.filter((b) => b.type === "context").map((b) => b.elements.map((e) => e.text).join(" ")),
-  table: blocks.find((b) => b.type === "data_table"),
+  table: blocks.find((b) => b.type === "table"),
 });
 const rowsOf = (blocks) => parts(blocks).table.rows.map((r) => r.map(cellText).join("|"));
 const asText = ({ blocks }) => { const p = parts(blocks); return [p.header.text.text, ...p.sections, ...rowsOf(blocks), ...p.contexts].join("\n"); };
@@ -59,12 +59,14 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
 {
   const m = at({});
   const p = parts(m.blocks);
-  check(p.types === "header section data_table context", `the blocks: ${p.types}`);
+  check(p.types === "header section section table context context", `the blocks: ${p.types}`);
   check(p.header.text.type === "plain_text" && p.header.text.text === "Test Artist", `the artist as the header: ${p.header.text.text}`);
   check(p.sections[0] === "Castles Burning (For Neil Young), day 11 of 24", `the works and the day above the table: ${p.sections[0]}`);
   const t = p.table;
-  check(t.caption === "Sell-through by work" && t.page_size === 5 && t.row_header_column_index === 0, `the table: ${t.caption} ${t.page_size}`);
-  check(t.rows[0].every((c) => c.type === "raw_text") && rowsOf(m.blocks)[0] === "Work|Units today|Target|% target|Edition|Sell-through", `the header row, plain text: ${rowsOf(m.blocks)[0]}`);
+  check(p.sections[1] === "*Sell-through by work*", `the table's title above it: ${p.sections[1]}`);
+  check(t.column_settings.length === 6 && t.column_settings[0].is_wrapped === true && t.column_settings[0].align === "left"
+    && t.column_settings.slice(1).every((c) => c.align === "right" && !c.is_wrapped), `the Work column wraps, the figures sit right: ${JSON.stringify(t.column_settings)}`);
+  check(t.rows[0].every((c) => c.type === "raw_text") && rowsOf(m.blocks)[0] === "Work|Units sold *|Target|% target|Edition|Sell-through", `the header row, plain text: ${rowsOf(m.blocks)[0]}`);
   check(rowsOf(m.blocks)[1] === "I|62|120|52%|200|31%", `the first work: ${rowsOf(m.blocks)[1]}`);
   check(rowsOf(m.blocks)[2] === "II|40|100|40%|200|20%", `the second: ${rowsOf(m.blocks)[2]}`);
   check(rowsOf(m.blocks)[3] === "III|24|133|18%|200|12%", `the third, its target the release's split by edition: ${rowsOf(m.blocks)[3]}`);
@@ -74,6 +76,7 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
   check(r[0].type === "raw_text" && r[1].type === "raw_number" && r[1].value === 62 && r[1].text === "62", `units as a number with its words: ${JSON.stringify(r[1])}`);
   check(r[3].value === 52 && r[3].text === "52%" && r[5].value === 31.2 && r[5].text === "31%", `shares as numbers that show as shares: ${JSON.stringify(r[3])} ${JSON.stringify(r[5])}`);
   check(p.contexts[0] === "Figures to 17 Sep. Paid 94, awaiting payment 5, expected from the draw 27. 43% of prints sold took a frame, 40 of 94 (plan 35%).", `the small type: ${p.contexts[0]}`);
+  check(p.contexts[1] === "* Includes paid units, drafts and forecast conversions from draw entries.", `the footnote last: ${p.contexts[1]}`);
   check(m.text === "Test Artist: 21% sold through, 126 of 600 units", `notification text: ${m.text}`);
   check(!JSON.stringify(m).includes("\u2014") && !JSON.stringify(m).includes("\u00b7"), "no em dash, no middle dot");
 }
@@ -82,7 +85,7 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
 {
   const m = at({ horizon: "close" });
   const p = parts(m.blocks);
-  check(p.table.caption === "Projected at close by work" && rowsOf(m.blocks)[0] === "Work|Units at close|Target|% target|Edition|Sell-through", `close header: ${rowsOf(m.blocks)[0]}`);
+  check(p.sections[1] === "*Projected at close by work*" && rowsOf(m.blocks)[0] === "Work|Units at close *|Target|% target|Edition|Sell-through", `close header: ${rowsOf(m.blocks)[0]}`);
   check(rowsOf(m.blocks)[1] === "I|82|120|69%|200|41%", `close row: ${rowsOf(m.blocks)[1]}`);
   check(rowsOf(m.blocks)[4] === "Total|186|353|53%|600|31%", `close total: ${rowsOf(m.blocks)[4]}`);
   check(p.contexts[0].includes("expected from the draw 27, still to come 60."), `close totals: ${p.contexts[0]}`);
@@ -139,7 +142,7 @@ check(composeSellThroughBlocks({ ...snap, sellthrough: { ...snap.sellthrough, ed
     sellthrough: { edition: 100, sold: 12, drafts: 2, soldPredicted: 8, conversion: 0.8, incomplete: ["products"] } };
   const m = composeSellThroughBlocks(bare, { today: "2026-09-17" });
   const p = parts(m.blocks);
-  check(p.types === "header section data_table context context", `bare blocks: ${p.types}`);
+  check(p.types === "header section section table context context context", `bare blocks: ${p.types}`);
   check(p.sections[0] === "Day 3 of 20" && p.contexts[1] === "_Incomplete data: products_", `bare lines: ${p.sections[0]} / ${p.contexts[1]}`);
   check(rowsOf(m.blocks).length === 2 && rowsOf(m.blocks)[1] === "X · Y · 2026 Q1|22|80|28%|100|22%", `bare row, no Total: ${rowsOf(m.blocks).join(" / ")}`);
   // and without an edition at all: units, dashes for the rest

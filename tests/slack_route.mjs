@@ -113,8 +113,8 @@ check(seen[0].authorized, "the call carries the bot token");
 check(msg.channel === "#sales-updates", `to the channel by name: ${msg.channel}`);
 check(/^Julian Schnabel: \d+% sold through, [\d,]+ of [\d,]+ units$/.test(msg.text || ""), `the notification text: ${msg.text}`);
 const types = (msg.blocks || []).map((b) => b.type);
-check(types.join(" ") === "header section data_table context", `the blocks: ${types.join(" ")}`);
-const table = (msg.blocks || []).find((b) => b.type === "data_table");
+check(types.join(" ") === "header section section table context context", `the blocks: ${types.join(" ")}`);
+const table = (msg.blocks || []).find((b) => b.type === "table");
 check(table && table.rows.length === 5 && table.rows.every((r) => r.length === 6), "three works and a Total row, six cells each");
 check(msg.unfurl_links === false && msg.unfurl_media === false, "no unfurling");
 check(!/at close/.test(msg.text), "today's horizon says nothing about close");
@@ -124,7 +124,7 @@ seen.length = 0;
 r = await post(RELEASE, { horizon: "close", dryRun: true });
 d = await r.json().catch(() => ({}));
 check(r.ok && Array.isArray(d.blocks) && d.channel === "sales-updates", `dry run returns the message (${r.status})`);
-check(/: \d+% projected at close, /.test(d.text || "") && d.blocks.find((b) => b.type === "data_table").rows[0][1].text === "Units at close", `at close: ${d.text}`);
+check(/: \d+% projected at close, /.test(d.text || "") && d.blocks.find((b) => b.type === "table").rows[0][1].text === "Units at close *", `at close: ${d.text}`);
 check(seen.length === 0, "a dry run calls nothing");
 
 // ---- a refusal from Slack is a failed post, said in words

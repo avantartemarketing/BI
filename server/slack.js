@@ -270,12 +270,24 @@ const round1 = (v) => Math.round(v * 10) / 10;
 /* a number Slack can sort, shown as words; a dash where there is nothing */
 const cell = (v, text) => (v === null ? raw("-") : rawNum(v, text));
 
-/* Slack's data table: one row per work with its units, its target, how far
+/* The table's title, and the footnote the units column's asterisk points
+ * to: what "units sold" counts, since the figure is more than the paid ones. */
+const tableCaption = (m) => (m.close ? "Projected at close by work" : "Sell-through by work");
+const unitsHeader = (m) => (m.close ? "Units at close *" : "Units sold *");
+const unitsFootnote = (m) => (m.close
+  ? "* Includes paid units, drafts, forecast conversions from draw entries and the entries still to come."
+  : "* Includes paid units, drafts and forecast conversions from draw entries.");
+
+/* Slack's table block: one row per work with its units, its target, how far
  * along the target it is, its edition and its sell-through, and a bold
  * Total row adding them up (when there is more than one work). The header
  * row is plain text only, as Slack requires; the figures are numbers with
- * their words, so a column of works sorts as numbers on a tap. */
-function dataTableBlock(m) {
+ * their words. It is the plain table rather than Slack's data table because
+ * only the plain one takes column settings: the data table splits the
+ * width evenly over the six columns and cuts a work's name off at a dozen
+ * characters, with nothing to be done about it, while here the Work column
+ * wraps and the figures sit right-aligned. */
+function tableBlock(m) {
   const rows = m.rows.map((r) => [
     raw(r.name),
     rawNum(Math.round(r.units), fmt(r.units)),
@@ -290,18 +302,17 @@ function dataTableBlock(m) {
       bold(t.pctTarget === null ? "-" : pct(t.pctTarget)), bold(t.edition === null ? "-" : fmt(t.edition)), bold(t.pct === null ? "-" : pct(t.pct))]);
   }
   return {
-    type: "data_table",
-    caption: m.close ? "Projected at close by work" : "Sell-through by work",
-    page_size: Math.min(100, Math.max(5, rows.length)),
-    row_header_column_index: 0,
-    rows: [[raw("Work"), raw(m.close ? "Units at close" : "Units today"), raw("Target"), raw("% target"), raw("Edition"), raw("Sell-through")], ...rows],
+    type: "table",
+    column_settings: [{ is_wrapped: true, align: "left" }, ...Array.from({ length: 5 }, () => ({ align: "right" }))],
+    rows: [[raw("Work"), raw(unitsHeader(m)), raw("Target"), raw("% target"), raw("Edition"), raw("Sell-through")], ...rows],
   };
 }
 
 /* The update as Block Kit: the artist as the header; the works' shared
- * title and the campaign day on one line; the data table; then, in small
- * type, the day the figures run to, the totals and the framing take-up in
- * plain sentences, and a note while a feed is missing. `horizon` is the
+ * title and the campaign day on one line; the table's title, then the
+ * table; then, in small type, the day the figures run to, the totals and
+ * the framing take-up in plain sentences, a note while a feed is missing,
+ * and last the footnote the units column points to. `horizon` is the
  * page's toggle: "close" reads the projection, as the card does. Returns
  * the blocks and the one-line text Slack shows in notifications. */
 function composeSellThroughBlocks(snap, { horizon = "today", today } = {}) {
@@ -312,10 +323,12 @@ function composeSellThroughBlocks(snap, { horizon = "today", today } = {}) {
   const blocks = [
     { type: "header", text: { type: "plain_text", text: m.artist.slice(0, 150) } },
     ...(above ? [section(above)] : []),
-    dataTableBlock(m),
+    section(`*${tableCaption(m)}*`),
+    tableBlock(m),
     context(below),
   ];
   if (m.incomplete.length) blocks.push(context(`_Incomplete data: ${m.incomplete.join(", ")}_`));
+  blocks.push(context(unitsFootnote(m)));
   return { text: `${m.artist}: ${m.headline.bold}${m.headline.rest}`, blocks };
 }
 
