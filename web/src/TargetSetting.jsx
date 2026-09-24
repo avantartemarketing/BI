@@ -635,23 +635,7 @@ export default function TargetSetting({ snap, onSaved }) {
       // the page is rebuilt behind the answer; the tab follows the build so
       // the new figures land here too, and the browser is never held on it
       let snapshot = d.snapshot || null;
-      if (d.queued) {
-        const started = Date.now();
-        for (;;) {
-          await new Promise((r) => setTimeout(r, 1500));
-          setBuildSecs(Math.round((Date.now() - started) / 1000));
-          let st = null;
-          try { st = await (await fetch(`/api/inputs/${snap.id}/build`)).json(); } catch { st = null; }
-          if (st && st.status === "running") continue;
-          if (st && st.status === "failed") {
-            setError("Inputs saved, but the rebuild failed (" + (st.error || "no detail") + ") - the page will update on the next data refresh.");
-            break;
-          }
-          // done, or the service restarted under it: read the page as it is
-          try { const r = await fetch(`/api/releases/${snap.id}`); if (r.ok) snapshot = await r.json(); } catch { /* the page stays as it was */ }
-          break;
-        }
-      }
+      if (d.queued) snapshot = await followBuild(Date.now());
       if (snapshot) onSaved(snapshot);
       setSavedFlash(true); setTimeout(() => setSavedFlash(false), 2500);
     } catch (e) { setError(String(e)); } finally { setSaving(false); setBuildSecs(null); }
@@ -660,6 +644,47 @@ export default function TargetSetting({ snap, onSaved }) {
     setInp({ ...meta.inputs });
     setPick(null);
   };
+
+  /* Follow the rebuild running behind a save until it lands, counting the
+   * seconds, then read the page as rebuilt (null when it failed, or when the
+   * service restarted under it and the page is read as it is). Shared by a
+   * save made here and one made before the reader left the tab. */
+  async function followBuild(startedAt) {
+    let snapshot = null;
+    for (;;) {
+      await new Promise((r) => setTimeout(r, 1500));
+      setBuildSecs(Math.round((Date.now() - startedAt) / 1000));
+      let st = null;
+      try { st = await (await fetch(`/api/inputs/${snap.id}/build`)).json(); } catch { st = null; }
+      if (st && st.status === "running") continue;
+      if (st && st.status === "failed") {
+        setError("Inputs saved, but the rebuild failed (" + (st.error || "no detail") + ") - the page will update on the next data refresh.");
+        break;
+      }
+      try { const r = await fetch(`/api/releases/${snap.id}`); if (r.ok) snapshot = await r.json(); } catch { /* the page stays as it was */ }
+      break;
+    }
+    return snapshot;
+  }
+
+  // a rebuild still running from a save made before the reader left the
+  // tab: pick it up again, counter and all, so coming back shows where it
+  // is and the page lands when it finishes
+  useEffect(() => {
+    let live = true;
+    fetch(`/api/inputs/${snap.id}/build`).then((r) => r.json()).then(async (st) => {
+      if (!live || !st || st.status !== "running") return;
+      setSaving(true);
+      const startedAt = st.startedAt ? Date.parse(st.startedAt) : NaN;
+      try {
+        const snapshot = await followBuild(Number.isFinite(startedAt) ? startedAt : Date.now());
+        if (live && snapshot) onSaved(snapshot);
+      } finally {
+        if (live) { setSaving(false); setBuildSecs(null); }
+      }
+    }).catch(() => { /* no build record: nothing to follow */ });
+    return () => { live = false; };
+  }, [snap.id]);
 
   /* The rail's three columns (§8.3), from the same model the build runs. */
   const T = profile ? benchmarkTargets(profile, {

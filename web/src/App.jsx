@@ -95,7 +95,11 @@ export default function App() {
 
   // a save that sets targets promotes the release: swap the page in and
   // refresh the index so the sidebar's dot and status follow
-  const onSaved = (s) => { setSnap(s); loadIndex().catch(() => {}); };
+  // a save's rebuild lands whenever it lands, and the reader may have moved
+  // to another release by then: only the page on screen is swapped
+  const onScreen = React.useRef(releaseId);
+  useEffect(() => { onScreen.current = releaseId; }, [releaseId]);
+  const onSaved = (s) => { if (s && s.id === onScreen.current) setSnap(s); loadIndex().catch(() => {}); };
   // a refresh landed: pull the current page and the index again
   const onRefreshed = () => {
     loadIndex().catch(() => {});
