@@ -94,6 +94,27 @@ check(st["soldSource"] == "orders" and st["incomplete"] == [], f"stamp clears {s
 check(st["drafts"] == 8.0 and st["unitsPaidOrders"] == 63.0 and st["ordersAsOf"] == "2026-08-20", f"release-level orders {st['drafts']}")
 check(st["attributedSold"] == 63 and st["unattributedSold"] == 0, f"the orders exceed the funnel's 40: nothing unattributed {st['unattributedSold']}")
 check(st["ordersByProduct"]["Red print"]["unitsPaid"] == 41 and st["drawProducts"]["d2"] == "Blue print", "the feed rides on the snapshot")
+# the card's Paid is what its rows add up to (63, not the funnel's 40), so
+# the close headline and the hero's projection are one sum
+check(st["sold"] == 63, f"Paid is the rows' paid units: {st['sold']}")
+parts = build.spoken_for(st) + st["futureEntriesPredicted"]
+check(abs(st["pct"] * 300 - min(parts, 300)) < 0.5, f"the close headline is the hero's sum: {st['pct']} x 300 vs {parts}")
+# 6b. the Cattelan screenshot: the rows over their editions at close, and a
+#     hero that stopped 23 short of the card's 100% because it added the
+#     funnel's paid units to a room worked out from the orders'
+st = build.sellthrough_block(release, NAME, units_sold=40, unconverted=100, inventory_left=260, future_entries=5000)
+parts = build.spoken_for(st) + st["futureEntriesPredicted"]
+check(st["pct"] == 1.0 and abs(parts - 300) < 0.5, f"at close both read the whole edition: pct {st['pct']}, parts {parts}")
+snap = {"id": "t", "hero": {"now": round(build.spoken_for(st)), "projected": round(min(parts, 300))}, "sellthrough": st}
+try:
+    build.check_snapshot(snap)
+except AssertionError as e:
+    check(False, f"check_snapshot on the agreeing pair: {e}")
+try:
+    build.check_snapshot({**snap, "hero": {**snap["hero"], "projected": 277}})
+    check(False, "check_snapshot lets a hero 23 short of the card's close through")
+except AssertionError:
+    pass
 
 # 7. one draw unnamed: the stamp stays for sales by product and drafts
 build._ORDERS_FEED[NAME]["draws"] = {"d1": "Red print"}

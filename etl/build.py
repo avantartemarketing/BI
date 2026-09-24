@@ -1997,16 +1997,6 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     # be re-read at another rate without the funnel
     st: dict = {"edition": edition, "sold": round(units_sold, 0), "conversion": rate,
                 "preorderConversion": pre_rate, "inHandUnits": round(unconverted, 1)}
-    if edition:
-        st["soldPredicted"] = round(min(sold_predicted, inventory_left), 1)
-        st["futureEntriesPredicted"] = round(min(future_entries, max(inventory_left - sold_predicted, 0)), 1)
-        st["pct"] = round(min((st["sold"] + st["soldPredicted"] + st["futureEntriesPredicted"]) / edition, 1.0), 4)
-    else:
-        st["soldPredicted"] = round(sold_predicted, 1)
-        st["futureEntriesPredicted"] = None
-        st["pct"] = None
-    if bm_close is not None:
-        st["benchmarkUnits"] = round(bm_close, 1)
     feed = load_products_feed().get(name)
     of = load_orders_feed().get(name) if orders is ... else orders
     if of:
@@ -2015,6 +2005,17 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
         st["drafts"] = round(of["drafts"], 1)
         st["unitsPaidOrders"] = round(of["unitsPaid"], 1)
         st["ordersAsOf"] = of["asOf"]
+    if edition:
+        # drafts take their room before the prediction does, as per product
+        room = max(inventory_left - float(st.get("drafts") or 0), 0)
+        st["soldPredicted"] = round(min(sold_predicted, room), 1)
+        st["futureEntriesPredicted"] = round(min(future_entries, max(room - sold_predicted, 0)), 1)
+    else:
+        st["soldPredicted"] = round(sold_predicted, 1)
+        st["futureEntriesPredicted"] = None
+    close_headline(st)
+    if bm_close is not None:
+        st["benchmarkUnits"] = round(bm_close, 1)
     if not feed or not feed.get("draws"):
         st["incomplete"] = ["products"]
         return st
@@ -2046,13 +2047,31 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     if of:
         st["ordersByProduct"] = of["products"]
         st["drawProducts"] = of["draws"]
+    # Paid is what the rows add up to: the page's units sold, or the products'
+    # own paid units where those are more (a page on the funnel's units whose
+    # products read the orders feed). One figure, so the card's Paid key, its
+    # close percentage and the hero cannot part (docs 6.3)
+    st["sold"] = round(max(float(units_sold), float(pp.get("attributedSold") or 0)), 0)
     if edition:
         st["soldPredicted"] = pp["soldPredicted"]
         st["futureEntriesPredicted"] = pp["futureEntriesPredicted"]
-        st["pct"] = pp["pct"]
     else:
         st["soldPredicted"] = pp["soldPredicted"]
+    close_headline(st)
     return st
+
+
+def close_headline(st: dict) -> None:
+    """The sell-through's percentage of the edition at close, from the very
+    parts the hero adds up (spoken_for plus the units still to come, docs
+    6.3½): the card's headline and the hero's projection are one sum, capped
+    at the edition alike. None without an edition."""
+    ed = st.get("edition")
+    if not ed:
+        st["pct"] = None
+        return
+    parts = spoken_for(st) + float(st.get("futureEntriesPredicted") or 0)
+    st["pct"] = round(min(parts / float(ed), 1.0), 4)
 
 
 def spoken_for(st: dict) -> float:
@@ -2095,8 +2114,8 @@ def adopt_sellthrough(st: dict, channels_out: list, funnel_by_group: dict, hero_
     g = (future_all / future_funnel) if future_funnel > 0 else 0.0
     ratio = (upb_plan / upb_actual) if upb_actual else 1.0
     if not (hero_now > 0):
-        if not (sell_today > 0) or not channels_out:
-            return hero_now, hero_proj
+        if not channels_out:
+            return sell_today, sell_today + future_all
         sess = {c.get("key"): float((funnel_by_group.get(c.get("key")) or {}).get("sessions_actual") or 0.0)
                 for c in channels_out}
         if sum(sess.values()) <= 0:
@@ -2937,6 +2956,12 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     # opened by the first paid order when it came earlier, shut two days
     # after the close; the units in it are the orders table's
     urows = units_rows(name)
+    if (urows is None and not dated and window_start >= ORDERS_SINCE and load_units_feed() is not None
+            and name not in (UNITS_FEED_INFO.get("outOfStep") or [])):
+        # a catalogue page's 90 days are all in the orders feed: a release
+        # with no row there sold nothing in them, whatever the funnel's
+        # purchase events counted (an order with no product line on it)
+        urows = pd.DataFrame(columns=_UNITS_COLS)
     window_start, window_end, first_paid = sales_window(
         urows, window_start, date.fromisoformat(rec["announce_date"]) if dated else None, launch_end, as_of)
     closed = dated and as_of > launch_end + timedelta(days=UNITS_GRACE_DAYS)
@@ -4251,6 +4276,18 @@ def check_snapshot(snap: dict) -> None:
                 problems.append(f"the products' paid rows add to {paid_rows:.1f} but sellthrough.sold is {sold}")
             if float(sell.get("attributedSold") or 0) > float(sold) + 0.51:
                 problems.append(f"attributedSold {sell.get('attributedSold')} is more than sellthrough.sold {sold}")
+    # the card's close percentage and the hero's projection are the same
+    # parts summed and capped at the edition (docs 6.3): the hero at 1,957
+    # beside a card at 100% was two different paid figures
+    ed_st = sell.get("edition")
+    if ed_st and sell.get("pct") is not None:
+        parts = (float(sell.get("sold") or 0) + float(sell.get("drafts") or 0)
+                 + float(sell.get("soldPredicted") or 0) + float(sell.get("futureEntriesPredicted") or 0))
+        at_close = min(parts, float(ed_st))
+        if abs(float(sell["pct"]) * float(ed_st) - at_close) > 1.0:
+            problems.append(f"sellthrough.pct {sell['pct']} of {ed_st} but its parts add to {parts:.1f}")
+        if hero.get("projected") is not None and abs(float(hero["projected"]) - at_close) > 1.0:
+            problems.append(f"hero.projected {hero['projected']} but the sell-through's count at close is {at_close:.1f}")
     # the Direct switch's view of the page holds to the same rules
     alt = (snap.get("variants") or {}).get("direct_spread")
     if alt:

@@ -1162,6 +1162,17 @@ table (§2.4), cut to one window of days.
   as Other (`keep_units`), so no unit is lost. With drafts out and nothing yet on any channel,
   the count is added on the channels' sessions (Search / direct / other when there are none)
   as a part named Not yet paid.
+- **One sum at close.** The card's Paid is what its rows add up to (the page's units sold,
+  or the products' own paid units where those are more, which only a page on the funnel's
+  units can have), and its percentage at close is the same parts the hero adds up (paid,
+  drafts, the draw's winners, the units still to come) capped at the edition
+  (`close_headline`). Before, the room left was worked out from the orders' paid units while
+  Paid and the hero read the funnel's, so a card could reach 100% with the hero short by the
+  difference (Maurizio Cattelan, September 2026: 100% against 1,957 of 2,000, 43 = 252 paid
+  in the orders less 209 in the funnel). `check_snapshot` fails a build where the two part.
+- **Catalogue pages.** A catalogue page's 90 days are all in the orders feed, so a release it
+  has no row for sold nothing in them (the funnel's purchase event there was an order with no
+  product line on it), rather than falling back to the funnel's count.
 - **Product rows.** A draw the orders feed does not name yet takes no sales of its own on an
   orders-sourced page (not the event feed's winners who bought, counted over all time on
   another basis); its units stay at release level with the rest no product is named for, so

@@ -15,6 +15,9 @@ For each snapshot in data/app/releases/ (targeted pages) and data/app/derived/
   waterfall waterfall.today.actual
   paid      paid.unitsToDate against the paid channel's now
   framing   framing.prints + notOffered.units (every paid unit, offered a frame or not)
+  close     the sell-through's count at close (sold + drafts + soldPredicted +
+            futureEntriesPredicted, capped at the edition) against its
+            percentage x the edition and the hero's projection
 and flags any pair more than a unit apart. Only release names and counts are
 read or written: the units feed holds no identifier.
 
@@ -100,6 +103,13 @@ def main() -> int:
         fr = s.get("framing") or {}
         r["framing"] = None if not fr or fr.get("prints") is None else round(
             float(fr["prints"]) + float((fr.get("notOffered") or {}).get("units") or 0), 2)
+        ed = st.get("edition")
+        if ed and st.get("pct") is not None:
+            parts = sum(float(st.get(k) or 0) for k in ("sold", "drafts", "soldPredicted", "futureEntriesPredicted"))
+            r["close"], r["close_pct_units"] = round(min(parts, float(ed)), 1), round(float(st["pct"]) * float(ed), 1)
+            r["hero_projected"] = hero.get("projected")
+        else:
+            r["close"] = r["close_pct_units"] = r["hero_projected"] = None
         r["no_event"] = ((s.get("untracked") or {}).get("noEvent") or {}).get("count")
         r["no_event_high"] = ((s.get("untracked") or {}).get("noEvent") or {}).get("high")
 
@@ -125,6 +135,10 @@ def main() -> int:
                 why.append(f"{k} {r[k]} vs hero {r['hero']}")
         if r["waterfall"] is not None and hero.get("now") is not None and not near(r["waterfall"], hero["now"]):
             why.append(f"waterfall {r['waterfall']} vs hero {hero['now']}")
+        if r["close"] is not None and not near(r["close"], r["close_pct_units"]):
+            why.append(f"close {r['close']} vs the card's pct x edition {r['close_pct_units']}")
+        if r["close"] is not None and r["hero_projected"] is not None and not near(r["close"], r["hero_projected"]):
+            why.append(f"close {r['close']} vs hero.projected {r['hero_projected']}")
         if not near(r["paid_units"], r["paid_channel"]):
             why.append(f"paid card {r['paid_units']} vs paid channel {r['paid_channel']}")
         r["disagreement"] = "; ".join(why)
