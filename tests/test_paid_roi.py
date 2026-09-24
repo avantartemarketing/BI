@@ -12,6 +12,7 @@ import pandas as pd
 import build, baskets
 
 base = dict(next(r for r in build.INPUTS["releases"] if r["id"] == "julianschnabel_le_26"))
+base["release_name"] = "Synthetic Artist · Synthetic Work · 2026 Q3"   # no draw or orders feed answers to this name
 base["campaign_name"] = "Synthetic · Enter draw"
 base["campaign_names"] = [base["campaign_name"]]
 announce, launch = date.fromisoformat(base["announce_date"]), date.fromisoformat(base["launch_end"])
@@ -83,7 +84,7 @@ check(all(r["roiArtist"] is None for r in paid["daily"] if r["roi"] is None), "n
 check(len(art["roiPath"]) == len(paid["roiPath"]) > 0
       and all(a["date"] == b["date"] and close(a["roi"], b["roi"] * ratio) for a, b in zip(art["roiPath"], paid["roiPath"])),
       "the artist's forward path is AA's path in the party ratio")
-check(paid["cannibalisation"] == build.BENCH["cannibalisation"] and paid["dropOff"] == build.BENCH["paid_drop_off"], "the terms travel with the block")
+check(paid["cannibalisation"] == build.BENCH["cannibalisation"] and paid["dropOff"] == round(1 - build.BENCH["eligible_entry_to_order"], 4), "the terms travel with the block")
 # the working the card shows: profit per unit net of cannibalisation over the cost of a converting entry and the share
 check(close(paid["l3dRoi"], (1 - paid["cannibalisation"]) * ppu_aa / (paid["l3dCpe"] * share_aa)), "AA's L3D is the published working")
 check(close(art["l3dRoi"], (1 - paid["cannibalisation"]) * ppu_artist / (paid["l3dCpe"] * art["budgetShare"])), "the artist's L3D is the same working")

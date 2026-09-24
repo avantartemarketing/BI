@@ -102,7 +102,11 @@ function seriesFor(snap, sel) {
     }
   }
   // 'all' = element-wise sum of every group's daily series (and summed targets),
-  // so this view cannot diverge from the channels module.
+  // so this view cannot diverge from the channels module. The release cannot
+  // sell more than its edition, so the line flattens at the sellout, where the
+  // hero caps; a single channel's demand is its own and is not capped.
+  const cap = snap.edition && snap.edition.total > 0 ? snap.edition.total : null;
+  const clamp = (v) => (v !== null && v !== undefined && cap !== null ? Math.min(v, cap) : v);
   const sliced = channels.map((c) => slicePts(c.daily, snap.windowStart, of));
   const n = sliced.reduce((m, s) => Math.max(m, s.length), 0);
   const pts = [];
@@ -118,12 +122,12 @@ function seriesFor(snap, sel) {
       if (d.proj !== null && d.proj !== undefined) pr = (pr ?? 0) + d.proj;
       if (d.bm !== null && d.bm !== undefined) b = (b ?? 0) + d.bm;
     }
-    pts.push({ date: dt, actual: a, plan: p, proj: pr, bm: b });
+    pts.push({ date: dt, actual: clamp(a), plan: p, proj: clamp(pr), bm: b });
   }
   const sum = (f) => channels.reduce((t, c) => t + (c[f] ?? 0), 0);
   const has = (f) => channels.some((c) => c[f] !== null && c[f] !== undefined);
   return {
-    now: sum("now"), exp: sum("exp"), proj: sum("proj"), target: sum("target"),
+    now: clamp(sum("now")), exp: sum("exp"), proj: clamp(sum("proj")), target: sum("target"),
     bm: has("bm") ? sum("bm") : null, bmExp: has("bmExp") ? sum("bmExp") : null,
     pts,
   };

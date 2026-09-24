@@ -12,6 +12,7 @@ import pandas as pd
 import build, baskets
 
 cfg = dict(next((r for r in build.INPUTS["releases"] if r["id"] == "julianschnabel_le_26"), build.INPUTS["releases"][0]))
+cfg["release_name"] = "Synthetic Artist · Synthetic Work · 2026 Q3"   # no draw or orders feed answers to this name
 cfg["campaign_name"] = "Synthetic · Enter draw"
 cfg["campaign_names"] = [cfg["campaign_name"]]      # the list is what the build reads; the name is kept for the frames
 announce, launch = date.fromisoformat(cfg["announce_date"]), date.fromisoformat(cfg["launch_end"])

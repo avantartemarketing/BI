@@ -12,19 +12,26 @@ repository (`docs/DATA_MODEL.md`).
 
 ## 1. The currency: secured units
 
-Everything on the Overview tab is measured in one unified metric:
+Everything on the Overview tab is measured in one unified metric, the sell-through's
+own count of what is spoken for:
 
 ```
-secured units = units sold (all routes, incl. private room)
-              + 0.8 × eligible entry units not yet converted
+secured units = units paid (all routes, incl. private room)
+              + draft orders raised and not yet paid
+              + rate × eligible entry units still in the draw
 ```
 
-An eligible draw entry is worth 0.8 of a sale because historically 80% of eligible
-entries convert to orders. Only *unconverted* entries carry the discount - a
-converted entry is already a sale, so counting both would double-count. The hero
-target equals the edition size (sellout); demand beyond it shows as
-**oversubscribed**, not as bar overshoot. Funnel and paid modules stay denominated
-in sessions, entries and spend - the things marketing moves directly.
+The rate is the release's entry → order rate from the Target setting tab, 0.8 unless
+typed, because historically 80% of eligible entries convert to orders; the entries in
+hand are allocated across the products by the maximum-quantity rule before the rate
+is applied (the sell-through card's own count, below). Only *unconverted* entries
+carry the rate - a converted entry is already a sale, so counting both would
+double-count. The funnel export gives the channel split, scaled in proportion to
+this count so the channels always sum to the hero. The hero target equals the
+edition size (sellout); demand beyond it shows as **oversubscribed** on the hero,
+flattens the trajectory at the sellout and is the last step of the waterfall,
+"Beyond sellout". Funnel and paid modules stay denominated in sessions, entries and
+spend - the things marketing moves directly - and price entries at the same rate.
 
 ### Sell-through, per product
 
@@ -275,9 +282,13 @@ Daily, per release, with spend read from the matched Meta campaign and entries
 from the Paid Social channel:
 
 ```
-adjusted CPE = spend / (entries × 0.8)                cost per expected-converting unit
-ROI          = (1 − 0.2 cannibalisation) × profit per unit / (adjusted CPE × budget share)
+adjusted CPE = spend / (entries × rate)               cost per expected-converting unit
+ROI          = (1 − cannibalisation) × profit per unit / (adjusted CPE × budget share)
 ```
+
+The rate is the release's entry → order rate and the cannibalisation the release's
+own, both from the Target setting tab (0.8 and 20% unless typed): the same rate the
+secured units and the targets' eligible entries are read at.
 
 The headline and the chart line are the **trailing-3-calendar-day** rolling
 version of this: a window with spend but no entries reads as ROI 0 (money out,

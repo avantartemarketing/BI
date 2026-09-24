@@ -107,7 +107,10 @@ export function benchmarkTargets(profile, inp, b) {
   const median = num(profile.units);
   if (!(median > 0) || !(size > 0)) return null;
   const k = size / median;
-  const e2o = num(b.eligible_entry_to_order) || 0.8;
+  // the release's own entry -> order rate (Target setting), else the panel's:
+  // the rate the whole page runs on (etl/build.py entry_rate)
+  const ownRate = num(inp.entry_conversion_rate);
+  const e2o = ownRate > 0 && ownRate <= 1 ? ownRate : (num(b.eligible_entry_to_order) || 0.8);
   // what a paid unit costs to buy: the release's own figure, else the basket's
   // median cost per paid unit, else the panel's constant (etl/build.py
   // cost_per_purchase_for), and where it came from
@@ -132,6 +135,7 @@ export function benchmarkTargets(profile, inp, b) {
     // every unit of the edition is asked for as an entry at the eligible-entry
     // rate (etl/build.py benchmark_targets): the whole edition over that rate
     entries_target: size / e2o,
+    entry_rate: e2o,
     total_sessions: bmSessions * k,
     paid: {
       units: paidUnits, budget, cost_per_purchase: cpp, cost_per_purchase_source: cppSource,
