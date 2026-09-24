@@ -433,7 +433,7 @@ function Freshness({ asOf, st, emailThrough, partial }) {
  * paid ROI, geo - ignore it and are not given it. */
 function HorizonToggle({ horizon, onChange }) {
   return (
-    <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <span style={{ fontSize: 12, color: "#6c6b68" }}>Compare</span>
       <div className="seg" role="group" aria-label="Comparison horizon">
         <button
@@ -456,13 +456,13 @@ function HorizonToggle({ horizon, onChange }) {
  * methodology choice, not a reading of one launch, so it sticks per browser. */
 const DIRECT_PREF = "directSpread";
 const readDirectPref = () => { try { return localStorage.getItem(DIRECT_PREF) === "1"; } catch { return false; } };
-function DirectToggle({ on, onChange, share, pushRight }) {
+function DirectToggle({ on, onChange, share }) {
   const pct = (x) => (x === null || x === undefined ? "–" : Math.round(100 * x) + "%");
   const tip = `Direct is ${pct(share && share.entries)} of this release's entries and ${pct(share && share.units)} of its units as the funnel attributes them. `
     + "Spread shares Direct out over the other channels in proportion to their own volumes, day by day, and reads the benchmark's channel split the same way. "
     + "Totals and what has been sold do not move; the plan's pace and the projections can shift a little with the channel mix, and paid reads the entries it is given.";
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: pushRight ? "auto" : 0 }} title={tip}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }} title={tip}>
       <span style={{ fontSize: 12, color: "#6c6b68" }}>Direct</span>
       <div className="seg" role="group" aria-label="Direct attribution">
         <button className={on ? "" : "active"} onClick={() => onChange(false)}
@@ -529,29 +529,40 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   };
   return (
     <>
+      {/* Two groups: what the release is, and the page's controls. When the row
+          runs out of room the controls drop to a line of their own, whole; no
+          name, chip, button or note ever breaks inside itself. */}
       <header className="page-header" style={{ marginBottom: 0 }}>
-        <span className="name">{snap.artist} - {snap.title}</span>
-        <span className={`badge ${String(snap.type || "LE").toLowerCase()}`}>{snap.type || "LE"}</span>
-        {catalogue && (
-          <span className="chip" title="No campaign dates in the funnel export - showing the last 90 days of traffic">Catalogue · last 90 days</span>
-        )}
-        {upcoming && (
-          <span className="chip" title="Known to Airtable; the funnel report has no rows for it yet">Upcoming · from Airtable</span>
-        )}
-        {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
-        {snap.edition && snap.edition.total > snap.edition.target && (
-          <span className="chip" title="The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target">
-            Target {Number(snap.edition.target).toLocaleString("en-GB")} · {Math.round((100 * snap.edition.target) / snap.edition.total)}% of {Number(snap.edition.total).toLocaleString("en-GB")} edition
-          </span>
-        )}
-        {!targeted && (
-          <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
-            title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
-        )}
-        {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
-        {variant && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} pushRight={!showHorizon} />}
-        <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough}
-          partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} />
+        <div className="page-identity">
+          <span className="name">{snap.artist} - {snap.title}</span>
+          <span className={`badge ${String(snap.type || "LE").toLowerCase()}`}>{snap.type || "LE"}</span>
+          {catalogue && (
+            <span className="chip" title="No campaign dates in the funnel export - showing the last 90 days of traffic">Catalogue · last 90 days</span>
+          )}
+          {upcoming && (
+            <span className="chip" title="Known to Airtable; the funnel report has no rows for it yet">Upcoming · from Airtable</span>
+          )}
+          {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
+          {snap.edition && snap.edition.total > snap.edition.target && (
+            <span className="chip" title="The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target">
+              Target {Number(snap.edition.target).toLocaleString("en-GB")} · {Math.round((100 * snap.edition.target) / snap.edition.total)}% of {Number(snap.edition.total).toLocaleString("en-GB")} edition
+            </span>
+          )}
+          {!targeted && (
+            <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
+              title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
+          )}
+        </div>
+        <div className="page-controls">
+          {(showHorizon || variant) && (
+            <div className="page-toggles">
+              {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
+              {variant && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} />}
+            </div>
+          )}
+          <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough}
+            partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} />
+        </div>
       </header>
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
       <nav className="tabs" style={{ marginTop: 20 }}>

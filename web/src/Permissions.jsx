@@ -35,9 +35,11 @@ export default function Permissions({ me }) {
   return (
     <>
       <header className="page-header" style={{ marginBottom: 24 }}>
-        <span className="name">Permissions</span>
-        {rows && <span className="chip">{rows.length} {rows.length === 1 ? "person" : "people"}</span>}
-        {rows && <span className="chip">{adminCount} admin</span>}
+        <div className="page-identity">
+          <span className="name">Permissions</span>
+          {rows && <span className="chip">{rows.length} {rows.length === 1 ? "person" : "people"}</span>}
+          {rows && <span className="chip">{adminCount} admin</span>}
+        </div>
       </header>
 
       {error ? <div style={{ color: C.red, fontSize: 13 }}>{error}</div> :
