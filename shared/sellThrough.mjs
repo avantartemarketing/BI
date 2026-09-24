@@ -380,7 +380,9 @@ const draftCount = (r) => Number(r.drafts) || 0;
 const capDrafts = (drafts, edition, sold) =>
   (finite(edition) && Number(edition) > 0 ? Math.max(Math.min(drafts, Number(edition) - sold), 0) : drafts);
 export function attachOrders(products, orders, drawProducts, source, ordersOnly = false) {
-  if (!orders || typeof orders !== "object" || !Object.keys(orders).length) return { products, source };
+  if (!orders || typeof orders !== "object" || !Object.keys(orders).length) {
+    return { products: ordersOnly ? products.map((p) => ({ ...p, sold: 0 })) : products, source };
+  }
   const dp = drawProducts && typeof drawProducts === "object" ? drawProducts : {};
   const used = new Set();
   let allNamed = true;

@@ -346,6 +346,38 @@
     ],
     "source": "winners"
    }
+  },
+  {
+   "name": "units from the orders' window and nothing paid in it: the draws' own figures do not stand in",
+   "ordersOnly": true,
+   "products": [
+    {
+     "key": "d1",
+     "name": "Draw 1",
+     "edition": null,
+     "draws": [
+      "d1"
+     ],
+     "sold": 12,
+     "entrants": 40,
+     "drafts": null
+    }
+   ],
+   "orders": {},
+   "drawProducts": {},
+   "source": "purchases",
+   "expect": {
+    "names": [
+     "Draw 1"
+    ],
+    "sold": [
+     0
+    ],
+    "drafts": [
+     null
+    ],
+    "source": "purchases"
+   }
   }
  ]
 }

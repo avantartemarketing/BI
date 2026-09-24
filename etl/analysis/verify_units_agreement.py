@@ -122,12 +122,12 @@ def main() -> int:
                 why.append(f"outside before {r['outside_before']} vs feed {r['feed_before']}")
             if r["feed_after"] is not None and not near((r["outside_after"] or 0) + (r["pending"] or 0), r["feed_after"], 0.51):
                 why.append(f"outside after {r['outside_after']} + pending {r['pending']} vs feed {r['feed_after']}")
-            if r["rows"] is not None and not near(r["rows"], r["sold"], 0.51 + 0.05 * len(prows)):
-                why.append(f"product rows {r['rows']} vs sold {r['sold']}")
             if r["framing"] is not None and not near(r["framing"], r["sold"]):
                 why.append(f"framing {r['framing']} vs sold {r['sold']}")
             if sw.get("closed") and not near(r["count"], r["sold"], 0.51):
                 why.append(f"closed window but count {r['count']} is not sold {r['sold']}")
+        if r["rows"] is not None and not near(r["rows"], r["sold"], 0.51 + 0.05 * len(prows)):
+            why.append(f"product rows {r['rows']} vs sold {r['sold']}")
         if r["sold"] is not None and not near(r["hero"], r["count"]):
             why.append(f"hero {r['hero']} vs sell-through count {r['count']}")
         for k in ("channels", "channels_direct_spread", "trail"):

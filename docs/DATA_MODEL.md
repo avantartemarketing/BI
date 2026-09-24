@@ -1175,9 +1175,11 @@ table (§2.4), cut to one window of days.
   product line on it), rather than falling back to the funnel's count.
 - **Product rows.** A draw the orders feed does not name yet takes no sales of its own on an
   orders-sourced page (not the event feed's winners who bought, counted over all time on
-  another basis); its units stay at release level with the rest no product is named for, so
-  the rows add up to the Paid figure. `check_snapshot` fails a build where they do not, or
-  where the Direct switch's view breaks any of its rules.
+  another basis), and nor does any draw when nothing at all was paid in the window; its units
+  stay at release level with the rest no product is named for, so the rows add up to the Paid
+  figure. `check_snapshot` fails a build where they do not, on any page, or where the Direct
+  switch's view breaks any of its rules. (Before, two old catalogue pages printed their
+  draw's 2024 winners as paid rows under a Paid of nothing: Jake Fried 17, Dawnia Darkstone 5.)
 - **Why.** The reconciliation (`etl/analysis/feeds_reconciliation.js`, output in
   `data/reconciliation/`) matched the two feeds order by order from January 2025: 14,580
   orders agreed to the unit, none had a purchase event without a paid line, and one paid order

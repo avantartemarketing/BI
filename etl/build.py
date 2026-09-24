@@ -4442,15 +4442,15 @@ def check_snapshot(snap: dict) -> None:
     if snap.get("unitsSource") == "orders" and sold is not None and sell.get("unitsPaidOrders") is not None:
         if abs(float(sell["unitsPaidOrders"]) - float(sold)) > 0.51:
             problems.append(f"sellthrough.sold {sold} but the products' units paid in the window add to {sell['unitsPaidOrders']}")
-        # and the card's rows are the same units: paid per product plus the
-        # share of what no product is named for, never more than the headline
-        rows = sell.get("products") or []
-        if rows:
-            paid_rows = sum(float(r.get("sold") or 0) + float(r.get("soldAssumed") or 0) for r in rows)
-            if abs(paid_rows - float(sold)) > 0.51 + 0.05 * len(rows):
-                problems.append(f"the products' paid rows add to {paid_rows:.1f} but sellthrough.sold is {sold}")
-            if float(sell.get("attributedSold") or 0) > float(sold) + 0.51:
-                problems.append(f"attributedSold {sell.get('attributedSold')} is more than sellthrough.sold {sold}")
+    # the card's rows are its Paid: paid per product plus the share of what
+    # no product is named for, on whichever units the page reads
+    rows = sell.get("products") or []
+    if rows and sold is not None:
+        paid_rows = sum(float(r.get("sold") or 0) + float(r.get("soldAssumed") or 0) for r in rows)
+        if abs(paid_rows - float(sold)) > 0.51 + 0.05 * len(rows):
+            problems.append(f"the products' paid rows add to {paid_rows:.1f} but sellthrough.sold is {sold}")
+        if float(sell.get("attributedSold") or 0) > float(sold) + 0.51:
+            problems.append(f"attributedSold {sell.get('attributedSold')} is more than sellthrough.sold {sold}")
     # the card's close percentage and the hero's projection are the same
     # parts summed and capped at the edition (docs 6.3): the hero at 1,957
     # beside a card at 100% was two different paid figures
@@ -4471,7 +4471,18 @@ def check_snapshot(snap: dict) -> None:
         except AssertionError as e:
             problems.append(str(e))
     if problems:
-        raise AssertionError(f"{rid}: " + "; ".join(problems))
+        msg = f"{rid}: " + "; ".join(problems)
+        if os.environ.get("CHECK_SNAPSHOT") == "warn":
+            # a verification run lists every page's problem in one pass;
+            # the refresh itself never runs this way
+            CHECK_WARNINGS.append(msg)
+            print(f"check_snapshot: {msg}")
+            return
+        raise AssertionError(msg)
+
+
+# problems check_snapshot found with CHECK_SNAPSHOT=warn (a verification run)
+CHECK_WARNINGS: list[str] = []
 
 
 def funnel_coverage(at: pd.DataFrame, curves: dict) -> str:
@@ -4865,6 +4876,8 @@ def main(only: str | None = None):
     }, indent=1))
     print(funnel_coverage(at, curves))
     print(units_coverage())
+    if os.environ.get("CHECK_SNAPSHOT") == "warn":
+        print(f"check_snapshot: {len(CHECK_WARNINGS)} page(s) with problems (warn mode: nothing stopped)")
     print(f"wrote {n_full} targeted + {n_actuals} actuals-only + {n_upcoming} upcoming releases "
           f"({sum(1 for e in index if e['status'] == 'live')} live) -> {APP}")
 

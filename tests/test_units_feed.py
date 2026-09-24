@@ -260,6 +260,53 @@ try:
     build._ORDERS_FEED[name] = orders_record(2.0, live[:-2])
     check(build.units_rows(name) is None and name in build.UNITS_FEED_INFO.get("outOfStep", []),
           f"a release whose two files disagree falls back: {build.UNITS_FEED_INFO.get('outOfStep')}")
+    # 10. a catalogue page (no campaign clock) whose release has no row in
+    #     the orders feed, with a draw in the event feed that counted
+    #     purchases: its 90 days are all in the orders feed, so it sold
+    #     nothing in them, on every card, and the draw's own count does not
+    #     stand in for sales
+    import numpy as np
+    old, other = "Synthetic Old Artist · Old Work · 2024 Q1", "Synthetic Other · Work · 2026 Q3"
+    cat_day = date(2026, 9, 20)
+    crow, d = [], cat_day - timedelta(days=200)
+    while d <= cat_day:
+        for ch in ("Direct", "AA Email Man"):
+            crow.append({"channel": ch, "event_date": d, "simple_release_name": old, "campaign_stage": None,
+                         "Sessions_Total": 5.0, "Total_Product_Units": 1.0 if (d == cat_day - timedelta(days=10) and ch == "Direct") else 0.0,
+                         "Product_Units_Private_Room": 0.0, "Draw_Entries_Total_Units_No_Conv": 0.0, "Draw_Entries_Eligible_Units": 0.0,
+                         "days_since_announcement": np.nan, "days_until_launch": np.nan,
+                         "pct_days_since_announcement": np.nan, "pct_days_until_launch": np.nan})
+        d += timedelta(days=1)
+    cat = pd.DataFrame(crow)
+    crec = build.discover_releases(cat, cat_day, set())[0]
+    crec["campaign_name"] = None
+    (tmp / "units_paid.csv").write_text(
+        "release,product_title,order_date,channel,purchase_event,units_paid,units_private_room,prints_offered_paid,frames_paid\n"
+        f"{other},W,{(cat_day - timedelta(days=3)).isoformat()},Direct,true,2,0,2,0\n")
+    build.UNITS_FILE = tmp / "units_paid.csv"
+    build._UNITS_FEED = None
+    build._ORDERS_FEED[other] = {"products": {"W": {"unitsPaid": 2.0, "drafts": 0.0}}, "draws": {}, "drafts": 0.0,
+                                 "unitsPaid": 2.0, "asOf": None, "campaignCode": None,
+                                 "framing": {"prints": 2.0, "frames": 0.0, "notOffered": 0.0, "entrantPrints": 0.0, "entrantFrames": 0.0}}
+    build.load_products_feed()
+    build._PRODUCTS_FEED[old] = {
+        "draws": [{"id": "d1", "first": "2024-01-10", "last": "2024-01-20", "entrants": 40, "eligible": 38, "winners": 12,
+                   "sold": 12, "open": 0, "wonUnpaid": 0, "purchaseUnits": 12.0}],
+        "entrants": 40, "eligible": 38, "allocated": True, "patterns": []}
+    no_spend = pd.DataFrame(columns=["campaign_name", "spend_date", "spend", "impressions", "reach", "link_clicks"])
+    K = build.with_direct_spread(build.build_actuals, crec, cat, no_spend, emails, content, cat_day)
+    try:
+        build.check_snapshot(K)
+        ok = True
+    except AssertionError as e:
+        ok = False
+        check(False, f"the catalogue page passes the build's checks: {e}")
+    kst = K["sellthrough"]
+    check(ok and K["unitsSource"] == "orders" and kst["sold"] == 0 and K["hero"]["now"] == 0
+          and all(p["sold"] == 0 for p in kst.get("products") or []),
+          f"a catalogue page with no orders row sold nothing: {K['unitsSource']} sold {kst['sold']} hero {K['hero']['now']}")
+    build._ORDERS_FEED.pop(other, None)
+    build._PRODUCTS_FEED.pop(old, None)
 finally:
     build.UNITS_FILE = real_units
     build._UNITS_FEED = None

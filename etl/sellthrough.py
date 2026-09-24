@@ -368,7 +368,9 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
     for, so the rows add up to the page's units sold.
     """
     if not orders:
-        return products, source
+        # nothing paid on any title in the window: with the orders as the
+        # page's units, no product has sales of its own to show
+        return ([{**p, "sold": 0.0} for p in products] if orders_only else products), source
     dp = {str(k): v for k, v in (draw_products or {}).items()}
     used: set[str] = set()
     all_named = True
