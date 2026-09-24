@@ -5,7 +5,7 @@ each card's units figure side by side.
 
 For each snapshot in data/app/releases/ (targeted pages) and data/app/derived/
 (actuals-only pages) it reads:
-  feed      sources/units_paid.csv summed over the page's salesWindow
+  feed      data/units_paid.csv summed over the page's salesWindow
   sold      sellthrough.sold (the Paid segment) and unitsPaidOrders
   products  the products' unitsPaid added up (ordersByProduct)
   hero      hero.now + oversubscribedUnits (the count before the sellout cap)
@@ -24,14 +24,14 @@ import csv, json, os, pathlib, sys
 from datetime import date
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SOURCES = pathlib.Path(os.environ.get("SOURCES_PATH") or ROOT / "sources")
+UNITS = pathlib.Path(os.environ.get("UNITS_FILE") or ROOT / "data" / "units_paid.csv")
 TOL = 1.0
 
 
 def feed_units() -> dict[str, list[tuple[date, float]]]:
     """release -> [(order day, units paid)] from the units feed."""
     out: dict[str, list[tuple[date, float]]] = {}
-    path = SOURCES / "units_paid.csv"
+    path = UNITS
     if not path.exists():
         sys.exit(f"{path} is missing: pull it first (node server/bigquery.js --write --orders)")
     with path.open(newline="") as fh:
@@ -71,12 +71,16 @@ def main() -> int:
             r["feed_after"] = round(sum(u for d, u in feed[name] if d > b), 2)
         else:
             r["feed"] = r["feed_before"] = r["feed_after"] = None
+        # the products' rows as the card draws them: paid plus the share of
+        # what no product is named for
+        prows = st.get("products") or []
+        r["rows"] = round(sum(float(p.get("sold") or 0) + float(p.get("soldAssumed") or 0) for p in prows), 2) if prows else None
         r["sold"] = st.get("sold")
         r["units_paid_orders"] = st.get("unitsPaidOrders")
         obp = st.get("ordersByProduct")
         r["products"] = round(sum(float(p.get("unitsPaid") or 0) for p in obp.values()), 2) if obp else None
         out_w = st.get("unitsOutsideWindow") or {}
-        r["outside_before"], r["outside_after"] = out_w.get("before"), out_w.get("after")
+        r["outside_before"], r["outside_after"], r["pending"] = out_w.get("before"), out_w.get("after"), out_w.get("pending")
         r["hero"] = None if hero.get("now") is None else round(float(hero["now"]) + float(hero.get("oversubscribedUnits") or 0), 2)
         r["count"] = None if st.get("sold") is None else round(
             float(st.get("sold") or 0) + float(st.get("drafts") or 0) + float(st.get("soldPredicted") or 0), 2)
@@ -106,8 +110,10 @@ def main() -> int:
                     why.append(f"{k} {r[k]} vs feed {r['feed']}")
             if r["feed_before"] is not None and not near(r["outside_before"], r["feed_before"], 0.51):
                 why.append(f"outside before {r['outside_before']} vs feed {r['feed_before']}")
-            if r["feed_after"] is not None and not near(r["outside_after"], r["feed_after"], 0.51):
-                why.append(f"outside after {r['outside_after']} vs feed {r['feed_after']}")
+            if r["feed_after"] is not None and not near((r["outside_after"] or 0) + (r["pending"] or 0), r["feed_after"], 0.51):
+                why.append(f"outside after {r['outside_after']} + pending {r['pending']} vs feed {r['feed_after']}")
+            if r["rows"] is not None and not near(r["rows"], r["sold"], 0.51 + 0.05 * len(prows)):
+                why.append(f"product rows {r['rows']} vs sold {r['sold']}")
             if r["framing"] is not None and not near(r["framing"], r["sold"]):
                 why.append(f"framing {r['framing']} vs sold {r['sold']}")
             if sw.get("closed") and not near(r["count"], r["sold"], 0.51):

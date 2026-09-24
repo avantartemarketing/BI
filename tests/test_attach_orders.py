@@ -31,7 +31,8 @@ def norm(v):
 failed = 0
 py = []
 for c in fixtures["cases"]:
-    products, source = attach_orders(c["products"], c["orders"], c["drawProducts"], c["source"])
+    products, source = attach_orders(c["products"], c["orders"], c["drawProducts"], c["source"],
+                                     orders_only=bool(c.get("ordersOnly")))
     py.append({"products": products, "source": source})
     got = {"names": [p["name"] for p in products], "sold": [p["sold"] for p in products],
            "drafts": [p["drafts"] for p in products], "editions": [p["edition"] for p in products], "source": source}

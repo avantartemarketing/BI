@@ -36,6 +36,6 @@ check(/GROUP BY l\.release, l\.product_title, l\.order_date, channel, purchase_e
 check(!/order_id,|customer_id,|aa_account_id/.test(units.slice(units.lastIndexOf("SELECT l.release"))), "no id in the select list");
 check(!/user_email|customer_email/.test(units), "no address column is named in the units query");
 check(bq.UNITS_PAID_HEADER.join(",") === "release,product_title,order_date,channel,purchase_event,units_paid,units_private_room,prints_offered_paid,frames_paid", "the units file's columns");
-check(bq.UNITS_PAID.endsWith(path.join("sources", "units_paid.csv")) || bq.UNITS_PAID.startsWith(bq.SOURCES), "the units file lives under sources/");
+check(path.dirname(bq.UNITS_PAID) === path.dirname(bq.ORDERS_BY_PRODUCT), "the units file lives beside orders_by_product.csv, from the same pull");
 console.log(failed ? `${failed} failure(s)` : "ok: orders sql");
 process.exit(failed ? 1 : 0);

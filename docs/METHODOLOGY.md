@@ -38,7 +38,7 @@ first - but never more than 45 days before the announce - and shuts two days
 after the close, when the last winners have paid. What is paid outside it counts
 on no card, and the sell-through's Paid popup says how much that is. Once the
 window has shut, drafts and entries in hand no longer count: the page is the
-units paid. A paid order the funnel has no purchase event for still counts, on
+units paid, each channel its own. A paid order the funnel has no purchase event for still counts, on
 Untracked; when such orders are more than 5% of the window the page says so
 above the tabs, because the channel split is then short of evidence. (Why: the
 two feeds were matched order by order and agree, except that the funnel

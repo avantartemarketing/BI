@@ -369,7 +369,9 @@ export function productsFromDraws(draws, configured, editionSize) {
  * added as products of their own only once every draw is named, because
  * before that they are ambiguous and stay at release level. Returns the
  * products and the sold source: "orders" once every product has its sales
- * from the feed. */
+ * from the feed. `ordersOnly` when the page's units sold are the orders
+ * feed's over its window (docs 6.3): a product none of whose draws the feed
+ * names takes no sales of its own, and its units stay at release level. */
 const DEFAULT_NAME = /^Draw \d+$/;
 // a product's drafts as the card counts them: the draft lines a person raised
 // that are not the payment step of a live entry, the way the sales team counts
@@ -377,7 +379,7 @@ const DEFAULT_NAME = /^Draw \d+$/;
 const draftCount = (r) => Number(r.drafts) || 0;
 const capDrafts = (drafts, edition, sold) =>
   (finite(edition) && Number(edition) > 0 ? Math.max(Math.min(drafts, Number(edition) - sold), 0) : drafts);
-export function attachOrders(products, orders, drawProducts, source) {
+export function attachOrders(products, orders, drawProducts, source, ordersOnly = false) {
   if (!orders || typeof orders !== "object" || !Object.keys(orders).length) return { products, source };
   const dp = drawProducts && typeof drawProducts === "object" ? drawProducts : {};
   const used = new Set();
@@ -388,7 +390,7 @@ export function attachOrders(products, orders, drawProducts, source) {
       const t = dp[String(d)];
       if (t && orders[t] && !titles.includes(t) && !used.has(t)) titles.push(t);
     }
-    if (!titles.length) { allNamed = false; return { ...p }; }
+    if (!titles.length) { allNamed = false; return ordersOnly ? { ...p, sold: 0 } : { ...p }; }
     titles.forEach((t) => used.add(t));
     const rows = titles.map((t) => orders[t]);
     const q = { ...p };

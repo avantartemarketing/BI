@@ -203,6 +203,10 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const salesWindow = snap.unitsSource === "orders" ? snap.salesWindow || null : null;
   const outside = salesWindow ? st.unitsOutsideWindow || null : null;
   const dayText = (iso) => fmtDay(new Date(iso + "T00:00:00Z"));
+  const windowText = !salesWindow ? null : snap.catalogue
+    ? "Units paid from the orders table over the last 90 days, the days every card on the page counts."
+    : "Units paid from the orders table, over the days every card on the page counts: from the first paid order or the campaign start, whichever is earlier (never more than 45 days before the announce), " +
+      (salesWindow.closed ? "to two days after the close." : "to the data's last day; the window shuts two days after the close.");
 
   const rateText = `${Math.round(rate * 100)}%`;
   const preRate = finite(st.preorderConversion) ? st.preorderConversion : null;
@@ -328,15 +332,14 @@ export default function SellThrough({ snap, horizon = "today" }) {
               ] : []),
               ...(salesWindow ? [{ label: "Counted", value: `${dayText(salesWindow.start)} to ${dayText(salesWindow.end)}` }] : []),
               ...(outside && outside.before > 0 ? [{ label: "Paid earlier (not counted)", value: fmt(outside.before) }] : []),
-              ...(outside && outside.after > 0 ? [{ label: "Paid after the window (not counted)", value: fmt(outside.after) }] : []),
+              ...(outside && outside.after > 0 ? [{ label: "Paid after the window shut (not counted)", value: fmt(outside.after) }] : []),
+              ...(outside && outside.pending > 0 ? [{ label: `Paid since ${dayText(salesWindow.end)} (counts on the next refresh)`, value: fmt(outside.pending) }] : []),
             ],
             body: [
               fromFeed && (st.unattributedSold ?? 0) > 0
                 ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
                 : null,
-              salesWindow
-                ? "Units paid from the orders table, over the days every card on the page counts: from the first paid order or the campaign start, whichever is earlier (never more than 45 days before the announce), to two days after the close."
-                : null,
+              salesWindow ? windowText : null,
             ].filter(Boolean).join(" ") || undefined },
           })}
           {draftsAll !== null && draftsAll > 0 && legendChip({

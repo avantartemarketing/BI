@@ -11,7 +11,7 @@
  * under the personal-data rule set out at the events section below.
  * And three aggregates of the orders table, pulled in full on every refresh:
  *   Order_Line_Concept -> data/orders_by_product.csv, data/draw_products.csv,
- *                         sources/units_paid.csv (the units a page counts, per
+ *                         data/units_paid.csv (the units a page counts, per
  *                         product, CET day and the channel of each order's
  *                         purchase event)
  *
@@ -68,9 +68,10 @@ const LE_EVENTS = path.join(SOURCES, "le_events.csv");
 // only, written from Order_Line_Concept on every refresh (docs/DATA_MODEL.md 2.4)
 const ORDERS_BY_PRODUCT = path.join(ROOT, "data", "orders_by_product.csv");
 const DRAW_PRODUCTS = path.join(ROOT, "data", "draw_products.csv");
-// units paid per release x product x CET day x channel (unitsPaidSql): under
-// sources/, beside the funnel it is read with, so the two travel together
-const UNITS_PAID = path.join(SOURCES, "units_paid.csv");
+// units paid per release x product x CET day x channel (unitsPaidSql): beside
+// the other two, written in the same commit, so a deploy's committed copy
+// resets all three together (etl/build.py checks they are from one pull)
+const UNITS_PAID = path.join(ROOT, "data", "units_paid.csv");
 // what the local funnel file is: window, columns, last date, when it was last
 // pulled in full. Absent = never pulled from BigQuery (or it came from the sheet)
 const META = path.join(SOURCES, "across_time.meta.json");
@@ -572,9 +573,10 @@ const ordersSql = () =>
  * purchase_event false, and an event with no channel is Untracked with
  * purchase_event true, so the share of paid units the funnel never saw can
  * be read apart. Aggregates only: no order id, customer or address leaves
- * BigQuery. Pulled in full with the orders pair; it lives under sources/ so
- * a deploy's committed copy of data/ never pairs a stale count with a fresh
- * funnel. */
+ * BigQuery. Pulled in full with the orders pair and written beside it:
+ * paid units from one pull and drafts from another would count a draft paid
+ * in between twice, so the ETL reads a release whose units here do not add
+ * up to its units_paid in orders_by_product.csv as out of step. */
 const UNITS_PAID_HEADER = ["release", "product_title", "order_date", "channel", "purchase_event",
   "units_paid", "units_private_room", "prints_offered_paid", "frames_paid"];
 const unitsPaidSql = () => {

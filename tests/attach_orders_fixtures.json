@@ -285,6 +285,67 @@
     ],
     "source": "orders"
    }
+  },
+  {
+   "name": "partly named, units from the orders' window: the unnamed draw takes no sales of its own",
+   "ordersOnly": true,
+   "products": [
+    {
+     "key": "d1",
+     "name": "Draw 1",
+     "edition": 100,
+     "draws": [
+      "d1"
+     ],
+     "sold": 3,
+     "entrants": 40,
+     "drafts": null
+    },
+    {
+     "key": "d2",
+     "name": "Draw 2",
+     "edition": 100,
+     "draws": [
+      "d2"
+     ],
+     "sold": 25,
+     "entrants": 30,
+     "drafts": null
+    }
+   ],
+   "orders": {
+    "Red print": {
+     "unitsPaid": 40,
+     "drafts": 2,
+     "listPrice": 500,
+     "edition": 100
+    },
+    "Blue print": {
+     "unitsPaid": 10,
+     "drafts": 0,
+     "listPrice": 500,
+     "edition": 100
+    }
+   },
+   "drawProducts": {
+    "d1": "Red print"
+   },
+   "source": "winners",
+   "expect": {
+    "names": [
+     "Red print",
+     "Draw 2"
+    ],
+    "sold": [
+     40,
+     0
+    ],
+    "drafts": [
+     2,
+     null
+    ],
+    "source": "winners"
+   }
   }
  ]
 }
