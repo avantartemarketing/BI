@@ -1109,7 +1109,11 @@ The hero, the trajectory's all-channels line and the waterfall are **capped at t
 edition**: the hero names the surplus as oversubscribed, the trajectory flattens at the
 sellout, and every waterfall walk carries the surplus as a last step, `Beyond sellout`, so its
 steps still close on the figure printed. A single channel's demand is its own and is not
-capped. The same entry → order rate prices the paid model's converting entries (§7) and the
+capped. The trajectory's **By channel** view stacks the five channel groups under that
+all-channels line, each band a group's units (secured to today, projected after), so the bands
+add up to the line; where the line is held at the edition every band is scaled by the same
+factor, each group keeping its share. The same entry → order rate prices the paid model's
+converting entries (§7) and the
 targets' eligible entries (`benchmark_targets`), so one rate runs through the page.
 (2026-09-23.)
 

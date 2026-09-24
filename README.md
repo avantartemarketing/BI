@@ -560,7 +560,8 @@ set `DECISIONS_PATH` if the log must survive deploys.
 ## What the dashboard shows
 
 One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
-trajectory vs the across-time plan curve, funnel diagnostics with contribution
+trajectory vs the across-time plan curve (or, switched to By channel, the projection alone with
+each channel group shaded under it by the units it contributes), funnel diagnostics with contribution
 decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), sell-through
 by product, projection-vs-target waterfall. Formulas for every module: docs §9. The
 Overview opens with the campaign clock, a thin strip from announcement to launch, blue to
