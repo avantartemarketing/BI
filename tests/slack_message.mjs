@@ -1,5 +1,6 @@
 /* The Slack sell-through update as Block Kit - the artist, the day, Slack's
- * data table of the works with a bold Total row, the totals and the framing
+ * table of the works (units, target, share of target, framed units and the
+ * framing conversion) with a bold Total row, the totals and the framing
  * under it - composed from a synthetic snapshot and the real ones on disk,
  * checked block by block.  node tests/slack_message.mjs [--print] */
 import fs from "node:fs";
@@ -43,7 +44,11 @@ const snap = {
     { name: "Castles Burning (For Neil Young) I", edition: 200, target_units: 120 },
     { name: "Castles Burning (For Neil Young) II", edition: 200, target_units: 100 },
   ] },
-  framing: { prints: 94, frames: 40, rate: 0.4255, entrants: { prints: 30, frames: 20, rate: 0.6667 }, plan: 0.35, benchmark: null, works: [], notOffered: { units: 0, works: [] } },
+  framing: { prints: 94, frames: 40, rate: 0.4255, entrants: { prints: 30, frames: 20, rate: 0.6667 }, plan: 0.35, benchmark: null, works: [
+    { name: "Castles Burning (For Neil Young) I", prints: 46, frames: 20.5, rate: 0.4457 },
+    { name: "Castles Burning (For Neil Young) II", prints: 32, frames: 12, rate: 0.375 },
+    { name: "Castles Burning (For Neil Young) III", prints: 16, frames: 7.5, rate: 0.4688 },
+  ], notOffered: { units: 0, works: [] } },
   sellthrough: {
     edition: 600, sold: 94, drafts: 5, soldPredicted: 27.2, futureEntriesPredicted: 60, pct: 0.31, conversion: 0.8, incomplete: [],
     products: [
@@ -66,15 +71,16 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
   check(p.sections[1] === "*Sell-through by work*", `the table's title above it: ${p.sections[1]}`);
   check(t.column_settings.length === 6 && t.column_settings[0].is_wrapped === true && t.column_settings[0].align === "left"
     && t.column_settings.slice(1).every((c) => c.align === "right" && !c.is_wrapped), `the Work column wraps, the figures sit right: ${JSON.stringify(t.column_settings)}`);
-  check(t.rows[0].every((c) => c.type === "raw_text") && rowsOf(m.blocks)[0] === "Work|Units sold *|Target|% target|Edition|Sell-through", `the header row, plain text: ${rowsOf(m.blocks)[0]}`);
-  check(rowsOf(m.blocks)[1] === "I|62|120|52%|200|31%", `the first work: ${rowsOf(m.blocks)[1]}`);
-  check(rowsOf(m.blocks)[2] === "II|40|100|40%|200|20%", `the second: ${rowsOf(m.blocks)[2]}`);
-  check(rowsOf(m.blocks)[3] === "III|24|133|18%|200|12%", `the third, its target the release's split by edition: ${rowsOf(m.blocks)[3]}`);
-  check(rowsOf(m.blocks)[4] === "Total|126|353|36%|600|21%", `the Total row adds the rows up: ${rowsOf(m.blocks)[4]}`);
+  check(t.rows[0].every((c) => c.type === "raw_text") && rowsOf(m.blocks)[0] === "Work|Units sold *|Target|% target|Framed units|Framing conversion", `the header row, plain text: ${rowsOf(m.blocks)[0]}`);
+  check(rowsOf(m.blocks)[1] === "I|62|120|52%|21|45%", `the first work: ${rowsOf(m.blocks)[1]}`);
+  check(rowsOf(m.blocks)[2] === "II|40|100|40%|12|38%", `the second: ${rowsOf(m.blocks)[2]}`);
+  check(rowsOf(m.blocks)[3] === "III|24|133|18%|8|47%", `the third, its target the release's split by edition: ${rowsOf(m.blocks)[3]}`);
+  check(rowsOf(m.blocks)[4] === "Total|126|353|36%|40|43%", `the Total row adds the rows up, the frames before rounding: ${rowsOf(m.blocks)[4]}`);
   check(t.rows[4].every((c) => c.type === "rich_text" && c.elements[0].elements[0].style.bold === true), "the Total row is bold");
   const r = t.rows[1];
   check(r[0].type === "raw_text" && r[1].type === "raw_number" && r[1].value === 62 && r[1].text === "62", `units as a number with its words: ${JSON.stringify(r[1])}`);
-  check(r[3].value === 52 && r[3].text === "52%" && r[5].value === 31.2 && r[5].text === "31%", `shares as numbers that show as shares: ${JSON.stringify(r[3])} ${JSON.stringify(r[5])}`);
+  check(r[3].value === 52 && r[3].text === "52%" && r[5].value === 44.6 && r[5].text === "45%", `shares as numbers that show as shares: ${JSON.stringify(r[3])} ${JSON.stringify(r[5])}`);
+  check(r[4].type === "raw_number" && r[4].value === 21 && r[4].text === "21", `half a frame rounds up in the row: ${JSON.stringify(r[4])}`);
   check(p.contexts[0] === "Figures to 17 Sep. Paid 94, awaiting payment 5, expected from the draw 27. 43% of prints sold took a frame, 40 of 94.", `the small type: ${p.contexts[0]}`);
   check(p.contexts[1] === "* Includes paid units, drafts and forecast conversions from draw entries.", `the footnote last: ${p.contexts[1]}`);
   check(m.text === "Test Artist: 21% sold through, 126 of 600 units", `notification text: ${m.text}`);
@@ -85,9 +91,9 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
 {
   const m = at({ horizon: "close" });
   const p = parts(m.blocks);
-  check(p.sections[1] === "*Projected at close by work*" && rowsOf(m.blocks)[0] === "Work|Units at close *|Target|% target|Edition|Sell-through", `close header: ${rowsOf(m.blocks)[0]}`);
-  check(rowsOf(m.blocks)[1] === "I|82|120|69%|200|41%", `close row: ${rowsOf(m.blocks)[1]}`);
-  check(rowsOf(m.blocks)[4] === "Total|186|353|53%|600|31%", `close total: ${rowsOf(m.blocks)[4]}`);
+  check(p.sections[1] === "*Projected at close by work*" && rowsOf(m.blocks)[0] === "Work|Units at close *|Target|% target|Framed units|Framing conversion", `close header: ${rowsOf(m.blocks)[0]}`);
+  check(rowsOf(m.blocks)[1] === "I|82|120|69%|21|45%", `close row: ${rowsOf(m.blocks)[1]}`);
+  check(rowsOf(m.blocks)[4] === "Total|186|353|53%|40|43%", `close total: ${rowsOf(m.blocks)[4]}`);
   check(p.contexts[0].includes("expected from the draw 27, still to come 60."), `close totals: ${p.contexts[0]}`);
   check(m.text === "Test Artist: 31% projected at close, 186 of 600 units", `close text: ${m.text}`);
 }
@@ -112,6 +118,41 @@ check(parts(at({ today: "2026-10-30" }).blocks).sections[0].endsWith("day 24 of 
   check(framing({ ...snap, framing: { ...snap.framing, frames: 0, rate: 0 } }) === "0% of prints sold took a frame, 0 of 94.", "an observed nought is still observed");
 }
 
+// the table's framing columns: a work's frames and its conversion from the card's per-work
+// rows, found through the draw's pairing with the orders feed's product when the snapshot
+// has it (the sold column's own pairing), else by name; a dash for a work with no frame on
+// offer; the columns left out where the sentence is
+{
+  const at = (s) => rowsOf(composeSellThroughBlocks(s, { today: "2026-09-17" }).blocks);
+  const noFrameOnII = { ...snap, framing: { ...snap.framing, works: snap.framing.works.filter((w) => !w.name.endsWith(" II")), notOffered: { units: 32, works: ["Castles Burning (For Neil Young) II"] } } };
+  check(at(noFrameOnII)[2] === "II|40|100|40%|-|-", `no frame on offer, a dash: ${at(noFrameOnII)[2]}`);
+  check(at(noFrameOnII)[4] === "Total|126|353|36%|28|45%", `the Total reads on the works with one: ${at(noFrameOnII)[4]}`);
+  // the draw feed's titles differ from the orders feed's: the pairing decides, not the name
+  const paired = { ...snap,
+    sellthrough: { ...snap.sellthrough, drawProducts: { d1: "Blossom Vessel", d2: "Blossom Kannyu" },
+      products: snap.sellthrough.products.slice(0, 2).map((q, i) => ({ ...q, key: ["d1", "d2"][i], draws: [["d1", "d2"][i]], name: ["Blossom Print", "Blossom Vase"][i] })) },
+    framing: { ...snap.framing, prints: 46, frames: 20.5, works: [{ name: "Blossom Kannyu", prints: 46, frames: 20.5, rate: 0.4457 }], notOffered: { units: 32, works: ["Blossom Vessel"] } } };
+  check(at(paired)[1] === "Print|62|200|31%|-|-" && at(paired)[2] === "Vase|40|200|20%|21|45%", `paired through the draw, whatever the names: ${at(paired).slice(1, 3).join(" / ")}`);
+  // without the pairing, the short title against the long one, as targets are matched
+  const byPrefix = { ...snap, framing: { ...snap.framing, works: snap.framing.works.map((w) => ({ ...w, name: w.name.replace("Castles Burning (For Neil Young)", "Castles Burning (For Neil Young), 2026,") })) } };
+  check(at(byPrefix)[1] === "I|62|120|52%|-|-", `a title neither starting the other is not guessed: ${at(byPrefix)[1]}`);
+  // (I starts "I, 2026" alone; both I and II start "II, 2026", so II and III are left blank, never guessed)
+  const longer = { ...snap, sellthrough: { ...snap.sellthrough, products: snap.sellthrough.products.map((q) => ({ ...q, name: `${q.name}, 2026` })) } };
+  check(at(longer)[1] === "I, 2026|62|120|52%|21|45%" && at(longer)[2] === "II, 2026|40|133|30%|-|-" && at(longer)[3] === "III, 2026|24|133|18%|-|-", `the short title starting the long one, once: ${at(longer).slice(1, 4).join(" / ")}`);
+  for (const [label, s] of [
+    ["no framing option", { ...snap, economics: { ...snap.economics, framingAvailable: false } }],
+    ["no print with a frame on offer", { ...snap, framing: null }],
+    ["a snapshot without the block", (({ framing: _f, ...rest }) => rest)(snap)],
+  ]) {
+    const p = parts(composeSellThroughBlocks(s, { today: "2026-09-17" }).blocks);
+    check(p.table.column_settings.length === 4 && p.table.rows.every((r) => r.length === 4) && at(s)[0] === "Work|Units sold *|Target|% target" && at(s)[4] === "Total|126|353|36%",
+      `${label}: four columns: ${at(s)[0]} / ${at(s)[4]}`);
+  }
+  // nothing sold yet: the columns are there, dashes in them
+  const unsold = { ...snap, framing: { ...snap.framing, prints: 0, frames: 0, rate: null, works: [] } };
+  check(at(unsold)[1] === "I|62|120|52%|-|-" && at(unsold)[4] === "Total|126|353|36%|-|-", `before a sale: ${at(unsold)[4]}`);
+}
+
 // targets: a work's own from the tab, matched by name or by the short title starting the
 // long one; without any, the release's target split by edition share; without that, none
 {
@@ -125,11 +166,11 @@ check(parts(at({ today: "2026-10-30" }).blocks).sections[0].endsWith("day 24 of 
   check(bp[1].startsWith("Composition with Red, Yellow|62|150|") && bp[2].startsWith("Composition with Large Red Plane|40|100|") && bp[3].startsWith("Tableau no.1|24|90|"), `matched where the short title starts the long: ${bp.slice(1, 4).join(" / ")}`);
   // a short title that starts two long ones is left to the split, never guessed
   const twice = { ...byPrefix, sellthrough: { ...byPrefix.sellthrough, products: byPrefix.sellthrough.products.map((q, i) => (i === 0 ? { ...q, name: "Composition with" } : q)) } };
-  check(rowsOf(composeSellThroughBlocks(twice, { today: "2026-09-17" }).blocks)[1] === "Composition with|62|133|47%|200|31%", `an ambiguous title takes the split: ${rowsOf(composeSellThroughBlocks(twice, { today: "2026-09-17" }).blocks)[1]}`);
+  check(rowsOf(composeSellThroughBlocks(twice, { today: "2026-09-17" }).blocks)[1] === "Composition with|62|133|47%|-|-", `an ambiguous title takes the split: ${rowsOf(composeSellThroughBlocks(twice, { today: "2026-09-17" }).blocks)[1]}`);
   const split = { ...snap, economics: { ...snap.economics, products: [] } };
-  check(rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[1] === "I|62|133|47%|200|31%" && rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[4] === "Total|126|399|32%|600|21%", `the release's target split by edition: ${rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[4]}`);
+  check(rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[1] === "I|62|133|47%|21|45%" && rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[4] === "Total|126|399|32%|40|43%", `the release's target split by edition: ${rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[4]}`);
   const none = { ...split, edition: { total: 600 } };
-  check(rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[1] === "I|62|-|-|200|31%" && rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[4] === "Total|126|-|-|600|21%", `no target at all: ${rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[4]}`);
+  check(rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[1] === "I|62|-|-|21|45%" && rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[4] === "Total|126|-|-|40|43%", `no target at all: ${rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[4]}`);
 }
 
 // the whole edition is the products' editions added up, not the page's sellout target
@@ -143,14 +184,18 @@ check(composeSellThroughBlocks({ ...snap, sellthrough: { ...snap.sellthrough, ed
   const p = parts(m.blocks);
   check(p.types === "header section section table context context context", `bare blocks: ${p.types}`);
   check(p.sections[0] === "Day 3 of 20" && p.contexts[1] === "_Incomplete data: products_", `bare lines: ${p.sections[0]} / ${p.contexts[1]}`);
-  check(rowsOf(m.blocks).length === 2 && rowsOf(m.blocks)[1] === "X · Y · 2026 Q1|22|80|28%|100|22%", `bare row, no Total: ${rowsOf(m.blocks).join(" / ")}`);
+  check(rowsOf(m.blocks).length === 2 && rowsOf(m.blocks)[1] === "X · Y · 2026 Q1|22|80|28%", `bare row, no Total, no framing block so no framing columns: ${rowsOf(m.blocks).join(" / ")}`);
+  // with the framing block, the release's own figures in the one row
+  const framed = composeSellThroughBlocks({ ...bare, framing: { prints: 12, frames: 6, rate: 0.5, entrants: null, plan: 0.35, benchmark: null, works: [], notOffered: { units: 0, works: [] } } }, { today: "2026-09-17" });
+  check(rowsOf(framed.blocks)[0] === "Work|Units sold *|Target|% target|Framed units|Framing conversion" && rowsOf(framed.blocks)[1] === "X · Y · 2026 Q1|22|80|28%|6|50%", `bare row with framing: ${rowsOf(framed.blocks)[1]}`);
   // and without an edition at all: units, dashes for the rest
   const units = composeSellThroughBlocks({ id: "x", releaseName: "X", asOf: "2026-09-17", day: 3, of: 20,
     sellthrough: { sold: 12, drafts: 0, soldPredicted: 8, incomplete: ["products"] } }, { today: "2026-09-17" });
-  check(rowsOf(units.blocks)[1] === "X|20|-|-|-|-" && units.text === "X: 20 units spoken for", `units only: ${rowsOf(units.blocks)[1]} ${units.text}`);
+  check(rowsOf(units.blocks)[1] === "X|20|-|-" && units.text === "X: 20 units spoken for", `units only: ${rowsOf(units.blocks)[1]} ${units.text}`);
 }
 
-// the real snapshots on disk, if any: both horizons compose, six cells a row, a bold Total that adds up
+// the real snapshots on disk, if any: both horizons compose, every row as wide as the header
+// (six cells with the framing columns, four without), a bold Total that adds up
 const dir = path.join(here, "..", "data", "app", "releases");
 if (fs.existsSync(dir)) {
   for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".json"))) {
@@ -158,14 +203,21 @@ if (fs.existsSync(dir)) {
     for (const horizon of ["today", "close"]) {
       const m = composeSellThroughBlocks(s, { horizon });
       const p = parts(m.blocks);
-      check(p.table && p.table.rows.every((r) => r.length === 6) && p.table.rows[0].every((c) => c.type === "raw_text"), `${f} composes at ${horizon}`);
+      const width = p.table ? p.table.rows[0].length : 0;
+      check(p.table && (width === 6 || width === 4) && p.table.rows.every((r) => r.length === width) && p.table.rows[0].every((c) => c.type === "raw_text"), `${f} composes at ${horizon} (${width} columns)`);
       check(!JSON.stringify(m.blocks).includes("\u00b7"), `${f}: no middle dots`);
       const works = p.table.rows.slice(1).filter((r) => r[0].type === "raw_text");
       const total = p.table.rows.slice(1).find((r) => r[0].type === "rich_text");
       if (works.length > 1) {
         check(total && cellText(total[0]) === "Total", `${f}: a Total row under ${works.length} works`);
-        const editions = works.reduce((n, r) => n + (r[4].type === "raw_number" ? r[4].value : 0), 0);
-        check(total && cellText(total[4]) === editions.toLocaleString("en-GB"), `${f}: the Total edition is the editions added up (${total && cellText(total[4])} vs ${editions})`);
+        if (width === 6) {
+          // the Total's framed units are the card's own frames (the works' rows before rounding)
+          const frames = (s.framing.works || []).reduce((n, w) => n + Number(w.frames || 0), 0);
+          const want = frames > 0 ? Math.round(frames).toLocaleString("en-GB") : "-";
+          check(total && cellText(total[4]) === want, `${f}: the Total framed units are the card's (${total && cellText(total[4])} vs ${want})`);
+          const rowFrames = works.reduce((n, r) => n + (r[4].type === "raw_number" ? r[4].value : 0), 0);
+          check(Math.abs(rowFrames - frames) <= works.length / 2, `${f}: the rows' framed units add up to the Total within rounding (${rowFrames} vs ${frames})`);
+        }
       } else check(!total, `${f}: no Total row for one work`);
     }
     if (print && /schnabel|warhol/.test(f)) console.log("\n" + asText(composeSellThroughBlocks(s)));

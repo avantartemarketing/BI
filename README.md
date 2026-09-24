@@ -496,8 +496,11 @@ The sell-through card has a **Post to Slack** button. It sends the card as a Blo
 message to the channel set for that release: the artist as the header; the works' shared
 title and the campaign day on one line ("Brillo Box Collectable, day 20 of 27"); the table's
 title; Slack's `table` block, one row per work with its units sold (at close, the projection),
-its target, how far along the target it is, its edition and its sell-through, and a bold
-**Total** row adding them up, the Work column wrapping rather than cropping and the figures
+its target, how far along the target it is, the frames bought with its prints and its framing
+conversion (the Framing card's frames per print on the prints a frame was on offer for; a dash
+for a work with no frame on offer; the two columns are left out on a release without a framing
+option), and a bold **Total** row adding them up (the framed units before rounding, so the
+Total is the card's own figure), the Work column wrapping rather than cropping and the figures
 right-aligned (Slack's `data_table` block takes no column settings and cut the names off);
 then, in small type, the day the figures run to, the totals (paid, awaiting payment, expected
 from the draw, at close the units still to come) and the framing take-up in plain sentences,

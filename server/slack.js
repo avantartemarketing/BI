@@ -3,10 +3,11 @@
  * The sell-through card carries a "Post to Slack" button; pressing it sends
  * the card as a Block Kit message to the channel set for that release on
  * its Target setting tab: the artist as the header, the campaign day under
- * it, then Slack's data table, one row per work - its units, its target,
- * how far along the target it is, its edition, its sell-through - with a
- * bold Total row, and under the table the day the figures run to, the
- * totals and the framing take-up in plain sentences. The message is
+ * it, then Slack's table, one row per work - its units, its target, how
+ * far along the target it is, the frames bought with its prints and its
+ * framing conversion - with a bold Total row, and under the table the day
+ * the figures run to, the totals and the framing take-up in plain
+ * sentences. The message is
  * composed here from the snapshot the page is showing, by the card's own
  * rules (docs 6.3), so what lands in Slack is what the card says, set in
  * Slack's own type at Slack's own size. It replaced a picture of the card,
@@ -212,28 +213,43 @@ function model(snap, { horizon = "today", today } = {}) {
         ? `Entrants asked for frames on ${pct(fr.entrants.rate)} of their pre-authorised prints.`
         : null;
 
-  // the rows: the products, or the release as one row without the draw feed
+  // the rows: the products, or the release as one row without the draw feed.
+  // Each carries its framing figures for the table's last two columns: the
+  // frames bought with its paid prints and the share of those prints, the
+  // Framing card's per-work figures (docs 6.4). Null for a work with no frame
+  // on offer, or none sold yet: a dash in the table. The columns are left out
+  // altogether where the framing sentence is: no framing option on the
+  // release, or a snapshot without the block.
   const releaseTarget = snap.edition && finite(snap.edition.target) && num(snap.edition.target) > 0 ? num(snap.edition.target) : null;
   const targets = targetsFor(snap, products, editionSum, releaseTarget);
+  const framingCols = !framingOff && !!fr && typeof fr === "object";
+  const workFraming = framingFor(st, fr, products, framingCols);
   const rowsIn = products.length ? products.map((p, i) => ({
-    name: names[i], edition: num(p.edition) > 0 ? num(p.edition) : null, target: targets[i],
+    name: names[i], target: targets[i],
     paid: soldOf(p), drafts: num(p.drafts), winners: num(p.shown), future: close ? num(p.futurePredicted) : 0,
-    pct: close ? p.pctClose : p.pct,
-  })) : [{ name: releaseName, edition, target: releaseTarget, paid: sold, drafts: drafts || 0, winners: inHand, future, pct: headPct }];
-  const rows = rowsIn.map((r) => {
-    const u = r.paid + r.drafts + r.winners + r.future;
-    return { ...r, units: u, pct: r.edition ? (finite(r.pct) ? num(r.pct) : Math.min(u / r.edition, 1)) : null };
-  });
-  // the table's last row: every column added up as the rows show it, the
-  // shares read on the sums
+    framing: workFraming[i],
+  })) : [{ name: releaseName, target: releaseTarget, paid: sold, drafts: drafts || 0, winners: inHand, future,
+    framing: framingCols && num(fr.prints) > 0 ? { prints: num(fr.prints), frames: num(fr.frames) } : null }];
+  const rows = rowsIn.map((r) => ({
+    ...r, units: r.paid + r.drafts + r.winners + r.future,
+    framed: r.framing ? r.framing.frames : null, framingRate: r.framing ? r.framing.frames / r.framing.prints : null,
+  }));
+  // the table's last row: the units and the targets added up as the rows
+  // show them, the share read on the sums; the framed units added up before
+  // rounding (a frame on an order of two prints is half a frame on each), so
+  // the Total is the card's own figure, and the conversion on the prints of
+  // the works a frame was on offer for
   const sum = (key) => (rows.every((r) => r[key] !== null) ? rows.reduce((n, r) => n + Math.round(r[key]), 0) : null);
-  const total = { units: rows.reduce((n, r) => n + Math.round(r.units), 0), target: sum("target"), edition: sum("edition") };
+  const framed = rows.filter((r) => r.framing);
+  const framedPrints = framed.reduce((n, r) => n + r.framing.prints, 0);
+  const total = { units: rows.reduce((n, r) => n + Math.round(r.units), 0), target: sum("target"),
+    framed: framed.length ? framed.reduce((n, r) => n + r.framing.frames, 0) : null };
   total.pctTarget = total.target ? total.units / total.target : null;
-  total.pct = total.edition ? Math.min(total.units / total.edition, 1) : null;
+  total.framingRate = framedPrints > 0 ? total.framed / framedPrints : null;
 
   return {
     close, artist, releaseName, prefix: prefix ? prefixWords(prefix) : null, day: of > 0 ? { day, of } : null, through,
-    worksLine, dayLine, headline, totals, framing, rows, total,
+    worksLine, dayLine, headline, totals, framing, framingCols, rows, total,
     hasProducts: products.length > 0,
     incomplete: Array.isArray(st.incomplete) ? st.incomplete : [],
   };
@@ -250,15 +266,43 @@ function model(snap, { horizon = "today", today } = {}) {
 function targetsFor(snap, products, editionSum, releaseTarget) {
   const ec = snap.economics || {};
   const typed = (Array.isArray(ec.products) ? ec.products : [])
-    .filter((p) => p && p.name).map((p) => ({ name: String(p.name).toLowerCase(), units: num(p.target_units) }));
+    .filter((p) => p && p.name).map((p) => ({ name: String(p.name), units: num(p.target_units) }));
   return products.map((p) => {
-    const name = String(p.name || "").toLowerCase();
-    const exact = typed.filter((t) => t.name === name);
-    const near = exact.length ? exact
-      : name.length >= 4 ? typed.filter((t) => t.name.length >= 4 && (t.name.startsWith(name) || name.startsWith(t.name))) : [];
-    if (near.length === 1 && near[0].units > 0) return near[0].units;
+    const own = byName(p.name, typed);
+    if (own && own.units > 0) return own.units;
     if (releaseTarget === null || !editionSum || !(num(p.edition) > 0)) return null;
     return releaseTarget * num(p.edition) / editionSum;
+  });
+}
+
+/* The one of `items` (each with a `name`) for a product's name: the same
+ * name (case aside), else the one name that starts the other where both
+ * are four characters or more (the draw feed's short titles against
+ * Airtable's or the orders feed's long ones). Null when none or several. */
+function byName(name, items) {
+  const n = String(name || "").toLowerCase();
+  const named = items.map((it) => ({ it, name: String(it.name || "").toLowerCase() }));
+  const exact = named.filter((x) => x.name === n);
+  const near = exact.length ? exact
+    : n.length >= 4 ? named.filter((x) => x.name.length >= 4 && (x.name.startsWith(n) || n.startsWith(x.name))) : [];
+  return near.length === 1 ? near[0].it : null;
+}
+
+/* The framing figures for each product: the Framing card's per-work row
+ * (`framing.works`, named by the orders feed's product title, docs 6.4) for
+ * the product the draw is paired with (`sellthrough.drawProducts`, the
+ * pairing the sold column follows); without a pairing, the row of the same
+ * name, else the one whose name starts the product's or the other way
+ * round, as targets are matched. Null without a row: no frame on offer for
+ * the work, or no print sold yet. All null when the columns are off. */
+function framingFor(st, fr, products, on) {
+  const works = on && Array.isArray(fr.works) ? fr.works.filter((w) => w && num(w.prints) > 0) : [];
+  const paired = st.drawProducts && typeof st.drawProducts === "object" ? st.drawProducts : {};
+  return products.map((p) => {
+    if (!works.length) return null;
+    const title = [p.key, ...(Array.isArray(p.draws) ? p.draws : [])].map((d) => paired[d]).find(Boolean);
+    const w = title ? works.find((x) => String(x.name) === String(title)) : byName(p.name, works);
+    return w ? { prints: num(w.prints), frames: num(w.frames) } : null;
   });
 }
 
@@ -277,32 +321,40 @@ const unitsFootnote = (m) => (m.close
   : "* Includes paid units, drafts and forecast conversions from draw entries.");
 
 /* Slack's table block: one row per work with its units, its target, how far
- * along the target it is, its edition and its sell-through, and a bold
- * Total row adding them up (when there is more than one work). The header
- * row is plain text only, as Slack requires; the figures are numbers with
- * their words. It is the plain table rather than Slack's data table because
- * only the plain one takes column settings: the data table splits the
- * width evenly over the six columns and cuts a work's name off at a dozen
- * characters, with nothing to be done about it, while here the Work column
- * wraps and the figures sit right-aligned. */
+ * along the target it is, the frames bought with its prints and its framing
+ * conversion (frames per print on the prints a frame was on offer for, the
+ * Framing card's figure; a dash for a work with no frame on offer), and a
+ * bold Total row adding them up (when there is more than one work). The
+ * two framing columns are left out where the release has no framing option
+ * or the snapshot no framing block. The header row is plain text only, as
+ * Slack requires; the figures are numbers with their words. It is the plain
+ * table rather than Slack's data table because only the plain one takes
+ * column settings: the data table splits the width evenly over the columns
+ * and cuts a work's name off at a dozen characters, with nothing to be done
+ * about it, while here the Work column wraps and the figures sit
+ * right-aligned. */
 function tableBlock(m) {
+  const framing = (r) => (m.framingCols ? [
+    cell(r.framed === null ? null : Math.round(r.framed), r.framed === null ? null : fmt(r.framed)),
+    cell(r.framingRate === null ? null : round1(r.framingRate * 100), r.framingRate === null ? null : pct(r.framingRate)),
+  ] : []);
   const rows = m.rows.map((r) => [
     raw(r.name),
     rawNum(Math.round(r.units), fmt(r.units)),
     cell(r.target === null ? null : Math.round(r.target), fmt(r.target)),
     cell(r.target ? round1((r.units / r.target) * 100) : null, r.target ? pct(r.units / r.target) : null),
-    cell(r.edition, fmt(r.edition)),
-    cell(r.pct === null ? null : round1(r.pct * 100), r.pct === null ? null : pct(r.pct)),
+    ...framing(r),
   ]);
   if (m.rows.length > 1) {
     const t = m.total;
-    rows.push([bold("Total"), bold(fmt(t.units)), bold(t.target === null ? "-" : fmt(t.target)),
-      bold(t.pctTarget === null ? "-" : pct(t.pctTarget)), bold(t.edition === null ? "-" : fmt(t.edition)), bold(t.pct === null ? "-" : pct(t.pct))]);
+    rows.push([bold("Total"), bold(fmt(t.units)), bold(t.target === null ? "-" : fmt(t.target)), bold(t.pctTarget === null ? "-" : pct(t.pctTarget)),
+      ...(m.framingCols ? [bold(t.framed === null ? "-" : fmt(t.framed)), bold(t.framingRate === null ? "-" : pct(t.framingRate))] : [])]);
   }
+  const header = [raw("Work"), raw(unitsHeader(m)), raw("Target"), raw("% target"), ...(m.framingCols ? [raw("Framed units"), raw("Framing conversion")] : [])];
   return {
     type: "table",
-    column_settings: [{ is_wrapped: true, align: "left" }, ...Array.from({ length: 5 }, () => ({ align: "right" }))],
-    rows: [[raw("Work"), raw(unitsHeader(m)), raw("Target"), raw("% target"), raw("Edition"), raw("Sell-through")], ...rows],
+    column_settings: [{ is_wrapped: true, align: "left" }, ...Array.from({ length: header.length - 1 }, () => ({ align: "right" }))],
+    rows: [header, ...rows],
   };
 }
 

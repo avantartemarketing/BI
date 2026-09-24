@@ -1226,8 +1226,12 @@ block (the Work column wrapping, the figures right-aligned), one row per work wi
 sold (today, or projected at close; the column's asterisk points to a footnote at the bottom:
 paid units, drafts and the forecast conversions from draw entries), its target (typed per product on the
 Target setting tab when targets are set that way, else the release's target split by edition
-share, the rule the references follow), how far along the target it is, its edition and its
-sell-through, and a bold Total row adding them up; then, in small type, the day the figures
+share, the rule the references follow), how far along the target it is, the frames bought
+with its prints and its framing conversion (the work's row of `framing.works`, §6.4, found
+through `sellthrough.drawProducts`, the pairing the sold column follows, else by name; a dash
+for a work with no frame on offer; the columns left out where the framing sentence is), and a
+bold Total row adding them up (the frames before rounding, the conversion on the prints of
+the works with a frame on offer); then, in small type, the day the figures
 run to, the totals (paid, awaiting payment, expected from the draw, at close the units still
 to come) and the framing take-up (`framing.rate`, the Framing card's frames per print, §6.4,
 with the count behind it; the entrants' rate before a sale; nothing on a snapshot without the
