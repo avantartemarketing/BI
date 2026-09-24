@@ -1230,8 +1230,8 @@ share, the rule the references follow), how far along the target it is, its edit
 sell-through, and a bold Total row adding them up; then, in small type, the day the figures
 run to, the totals (paid, awaiting payment, expected from the draw, at close the units still
 to come) and the framing take-up (`framing.rate`, the Framing card's frames per print, §6.4,
-with the count behind it and the plan beside it; the entrants' rate before a sale; the plan
-alone on a snapshot without the block; nothing where no print has a frame on offer) as plain
+with the count behind it; the entrants' rate before a sale; nothing on a snapshot without the
+block or where no print has a frame on offer; the plan's rate is not repeated) as plain
 sentences. The figures are computed once, on the server, at the horizon the page is on.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the

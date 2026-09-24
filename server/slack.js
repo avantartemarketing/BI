@@ -200,19 +200,17 @@ function model(snap, { horizon = "today", today } = {}) {
   // framing: frames per print on the prints a frame was on offer for, from
   // the orders - the Framing card's own figure (docs 6.4); before any print
   // is sold, the rate the entrants' pre-authorised prints ask for; with no
-  // framing block at all (a snapshot from before it), the plan's rate, said
-  // to be the plan. Nothing on a release where no print has a frame on offer.
+  // framing block at all (a snapshot from before it), nothing: the update
+  // reports what was observed and does not repeat the plan's rate. Nothing
+  // either on a release where no print has a frame on offer.
   const fr = snap.framing;
-  const plan = fr && finite(fr.plan) ? num(fr.plan)
-    : snap.economics && finite(snap.economics.frameConversion) ? num(snap.economics.frameConversion) : null;
   const framingOff = fr === null || !!(snap.economics && snap.economics.framingAvailable === false);
-  const planNote = plan !== null ? ` (plan ${pct(plan)})` : "";
   const framing = framingOff ? null
     : fr && finite(fr.rate) && num(fr.prints) > 0
-      ? `${pct(fr.rate)} of prints sold took a frame, ${fmt(fr.frames)} of ${fmt(fr.prints)}${planNote}.`
+      ? `${pct(fr.rate)} of prints sold took a frame, ${fmt(fr.frames)} of ${fmt(fr.prints)}.`
       : fr && fr.entrants && finite(fr.entrants.rate) && num(fr.entrants.prints) > 0
-        ? `Entrants asked for frames on ${pct(fr.entrants.rate)} of their pre-authorised prints${planNote}.`
-        : plan !== null ? `Framing plan ${pct(plan)}, no framed orders in the feed yet.` : null;
+        ? `Entrants asked for frames on ${pct(fr.entrants.rate)} of their pre-authorised prints.`
+        : null;
 
   // the rows: the products, or the release as one row without the draw feed
   const releaseTarget = snap.edition && finite(snap.edition.target) && num(snap.edition.target) > 0 ? num(snap.edition.target) : null;

@@ -75,7 +75,7 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
   const r = t.rows[1];
   check(r[0].type === "raw_text" && r[1].type === "raw_number" && r[1].value === 62 && r[1].text === "62", `units as a number with its words: ${JSON.stringify(r[1])}`);
   check(r[3].value === 52 && r[3].text === "52%" && r[5].value === 31.2 && r[5].text === "31%", `shares as numbers that show as shares: ${JSON.stringify(r[3])} ${JSON.stringify(r[5])}`);
-  check(p.contexts[0] === "Figures to 17 Sep. Paid 94, awaiting payment 5, expected from the draw 27. 43% of prints sold took a frame, 40 of 94 (plan 35%).", `the small type: ${p.contexts[0]}`);
+  check(p.contexts[0] === "Figures to 17 Sep. Paid 94, awaiting payment 5, expected from the draw 27. 43% of prints sold took a frame, 40 of 94.", `the small type: ${p.contexts[0]}`);
   check(p.contexts[1] === "* Includes paid units, drafts and forecast conversions from draw entries.", `the footnote last: ${p.contexts[1]}`);
   check(m.text === "Test Artist: 21% sold through, 126 of 600 units", `notification text: ${m.text}`);
   check(!JSON.stringify(m).includes("\u2014") && !JSON.stringify(m).includes("\u00b7"), "no em dash, no middle dot");
@@ -104,13 +104,12 @@ check(parts(at({ today: "2026-10-30" }).blocks).sections[0].endsWith("day 24 of 
     return c.includes("draw 27. ") ? c.split("draw 27. ")[1] : null;
   };
   const unsold = { ...snap, framing: { ...snap.framing, prints: 0, frames: 0, rate: null, entrants: { prints: 30, frames: 15, rate: 0.5 } } };
-  check(framing(unsold) === "Entrants asked for frames on 50% of their pre-authorised prints (plan 35%).", `before a sale: ${framing(unsold)}`);
+  check(framing(unsold) === "Entrants asked for frames on 50% of their pre-authorised prints.", `before a sale: ${framing(unsold)}`);
   const { framing: _omit, ...older } = snap;
-  check(framing(older) === "Framing plan 35%, no framed orders in the feed yet.", `a snapshot without the block: ${framing(older)}`);
-  check(framing({ ...older, economics: { ...older.economics, frameConversion: null } }) === null, "no block and no plan, no line");
+  check(framing(older) === null, `a snapshot without the block says nothing of the plan: ${framing(older)}`);
   check(framing({ ...snap, framing: null }) === null, "no print with a frame on offer, no line");
   check(framing({ ...snap, economics: { ...snap.economics, framingAvailable: false } }) === null, "no framing option on the release, no line");
-  check(framing({ ...snap, framing: { ...snap.framing, frames: 0, rate: 0 } }) === "0% of prints sold took a frame, 0 of 94 (plan 35%).", "an observed nought is still observed");
+  check(framing({ ...snap, framing: { ...snap.framing, frames: 0, rate: 0 } }) === "0% of prints sold took a frame, 0 of 94.", "an observed nought is still observed");
 }
 
 // targets: a work's own from the tab, matched by name or by the short title starting the

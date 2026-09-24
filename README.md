@@ -513,10 +513,10 @@ bars drawn in text, which wrapped on a phone, then a plain `table` block; the da
 was the one that read on a phone. The notification text is the headline alone.
 
 The framing line is the Framing card's own figure (docs 6.4): frames per print on the prints
-sold that a frame was on offer for, with the count behind it and the plan's rate beside it.
-Before a print is sold it is the rate the entrants' pre-authorised prints ask for; a snapshot
-from before the framing block says the plan's rate, marked "(plan)". A release where no print
-has a frame on offer gets no line.
+sold that a frame was on offer for, with the count behind it. Before a print is sold it is the
+rate the entrants' pre-authorised prints ask for. The plan's rate is not repeated in the update,
+and a snapshot from before the framing block, or a release where no print has a frame on offer,
+gets no line.
 
 The button itself only ever reads Post to Slack, Posting, Done or Failed, so the card's head
 never reflows; what happened is on its hover.
