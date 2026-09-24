@@ -371,3 +371,196 @@ select.native {
   background: none; border: none; cursor: pointer; padding: 8px 2px 10px;
 }
 .tabs .edit-link:hover { color: var(--ink); }
+
+/* ---------- Target setting: the form language (docs/BENCHMARK_SPEC.md §8) ----------
+   One field: a label above, the source or unit as a caption beside it, a
+   44px box with a 6px radius, a helper under. In a standalone field the unit
+   sits inside the box; in a table it sits in the header, once. Sources are
+   captions, never chips; a figure that does not apply is a disabled box,
+   never a dash. Every number is right-aligned with tabular figures. */
+.ts { font-size: 14px; line-height: 1.45; color: var(--ink); display: grid; gap: 24px; align-content: start; }
+.ts > * { min-width: 0; }
+.ts-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 26px 28px 28px; display: grid; gap: 22px; align-content: start; min-width: 0; }
+.ts-card > * { min-width: 0; }
+.ts-card-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ts-card-head .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.ts-card-head .t { font-size: 15px; font-weight: 600; }
+.ts-card-head .d { font-size: 13px; color: var(--muted); }
+.ts-card-head .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.ts-state { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.ts-grid { display: grid; gap: 20px 24px; }
+.ts-grid > * { min-width: 0; }
+.ts-grid.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ts-grid.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ts-grid.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ts-field { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.ts-label { font-size: 13px; font-weight: 500; color: var(--ink); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: nowrap; min-width: 0; }
+.ts-label > span:first-child { white-space: nowrap; flex: 0 0 auto; }
+.ts-label .src { font-size: 12px; font-weight: 400; color: #8f8d85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 0; }
+.ts-help { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.ts-help.err { color: var(--red); }
+.ts-help.warn { color: var(--amber); }
+.ts-box {
+  height: 44px; border: 1px solid var(--border); border-radius: 6px; background: var(--card);
+  padding: 0 12px; display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap;
+  min-width: 0; color: var(--ink); overflow: hidden;
+}
+.ts-box.ro { background: #f7f6f2; color: #4a4946; }
+.ts-box.ro .txt { overflow: hidden; text-overflow: ellipsis; }
+.ts-box.dis { background: #f7f6f2; border-color: #ecebe6; color: #b9b7ae; }
+.ts-box.num { justify-content: flex-end; font-variant-numeric: tabular-nums; }
+.ts-box .unit { color: #8f8d85; font-size: 13px; flex: 0 0 auto; }
+.ts-box.num .unit { flex: 0 0 30px; width: 30px; text-align: left; margin-left: 2px; }
+.ts-box:focus-within { outline: 2px solid var(--blue); outline-offset: -1px; }
+.ts-box input, .ts-box select {
+  flex: 1; min-width: 0; height: 100%; border: none; background: transparent;
+  font: inherit; color: inherit; padding: 0; outline: none;
+}
+.ts-box select { cursor: pointer; }
+.ts-box.num input { text-align: right; font-variant-numeric: tabular-nums; }
+.ts-box input::placeholder { color: #a29f96; }
+.ts-row { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.ts-row .ts-box { flex: 1; }
+.ts-btn {
+  height: 44px; padding: 0 16px; border-radius: 6px; font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
+}
+.ts-btn.primary { background: var(--ink); color: #fff; border: 1px solid var(--ink); }
+.ts-btn.primary:hover { background: #2e2d2b; }
+.ts-btn.secondary { background: var(--card); color: var(--ink); border: 1px solid var(--border); }
+.ts-btn.secondary:hover { background: var(--bg); }
+.ts-btn:disabled { opacity: 0.6; cursor: default; }
+.ts-btn.sm { height: 36px; padding: 0 12px; font-size: 13px; }
+.ts-switch {
+  display: inline-flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; cursor: pointer;
+  user-select: none; background: none; border: none; padding: 0; font-family: inherit; color: var(--ink);
+}
+.ts-switch .tr { width: 36px; height: 20px; border-radius: 999px; background: #d6d4cc; position: relative; transition: background 120ms ease; flex: 0 0 36px; }
+.ts-switch .tr::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 120ms ease; }
+.ts-switch.on .tr { background: var(--ink); }
+.ts-switch.on .tr::after { transform: translateX(16px); }
+.ts-switches { display: flex; gap: 28px; align-items: center; height: 44px; flex-wrap: wrap; }
+.ts-check-row {
+  display: flex; align-items: center; gap: 12px; height: 44px; border: 1px solid var(--border); border-radius: 6px;
+  padding: 0 12px; font-size: 14px; cursor: pointer; min-width: 0;
+}
+.ts-check-row input { accent-color: var(--ink); width: 15px; height: 15px; margin: 0; flex: 0 0 15px; cursor: pointer; }
+.ts-check-row .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-check-row .meta { margin-left: auto; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ts-check-row .meta.warn { color: var(--amber); }
+.ts-stack { display: grid; gap: 8px; }
+.ts-chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; min-height: 44px; }
+.ts-chip { font-size: 12.5px; padding: 6px 10px; border-radius: 6px; background: #f3f2ed; color: #4a4946; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ts-caption { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+.ts-caption b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ts-link { color: var(--blue-deep); background: none; border: none; padding: 0; font: inherit; cursor: pointer; text-decoration: none; }
+.ts-link:hover { text-decoration: underline; }
+.ts-notice {
+  display: flex; gap: 10px; align-items: baseline; font-size: 13px; color: #5a3f0a; background: #fbf1e6;
+  border-left: 3px solid var(--amber); border-radius: 6px; padding: 10px 14px; line-height: 1.5; flex-wrap: wrap;
+}
+.ts-notice > span { flex: 1 1 320px; min-width: 0; }
+.ts-notice b { font-weight: 600; }
+.ts-notice.red { color: #7a2e1d; background: #fbe9e6; border-left-color: var(--red); }
+.ts-notice .why { color: inherit; background: none; border: none; font: inherit; text-decoration: underline; cursor: pointer; white-space: nowrap; padding: 0; }
+.ts-notice .ts-btn { height: 32px; padding: 0 12px; font-size: 12.5px; }
+.ts-tblwrap { overflow-x: auto; min-width: 0; max-width: 100%; }
+
+/* the target header: stays put, compacts to one line as the page scrolls */
+.ts-head {
+  position: sticky; top: 0; z-index: 3; background: var(--card); border-bottom: 1px solid var(--border);
+  margin: 0 -48px; padding: 18px 48px 16px; display: grid; gap: 12px;
+}
+.ts-head-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.ts-eyebrow { font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ts-lead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.ts-big { font-size: 36px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; font-variant-numeric: tabular-nums; transition: font-size 160ms ease; }
+.ts-lead-cap { font-size: 14px; color: var(--muted); }
+.ts-actions { display: flex; gap: 10px; align-items: center; flex: 0 0 auto; margin-left: auto; }
+.ts-actions .ts-state { margin-right: 4px; }
+.ts-actions .ts-state.warn { color: var(--amber); }
+.ts-figures {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 4px 16px;
+  overflow: hidden; max-height: 260px; transition: max-height 160ms ease, opacity 160ms ease;
+}
+.ts-fig { display: grid; gap: 2px; padding: 8px 0 2px; align-content: start; }
+.ts-fig-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.ts-fig-val { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ts-fig-val.red { color: var(--red); }
+.ts-fig-sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.35; white-space: nowrap; display: grid; }
+.ts-fig-sub .red { color: var(--red); }
+.ts-head.compact { padding: 12px 48px; }
+.ts-head.compact .ts-figures { max-height: 0; opacity: 0; }
+.ts-head.compact .ts-big { font-size: 24px; }
+.ts-head .err { font-size: 12.5px; color: var(--red); line-height: 1.5; }
+
+/* the basket's channel table: nobody types into it, 40px rows, benchmark
+   figures in the muted weight, targets in ink */
+.ts-table { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+.ts-table th { font-size: 12.5px; font-weight: 500; color: var(--muted); text-align: right; padding: 0 10px 8px 6px; white-space: nowrap; vertical-align: bottom; border-bottom: 1px solid var(--border); }
+.ts-table th.l { text-align: left; padding-left: 0; }
+.ts-table td { height: 40px; padding: 0 10px 0 6px; text-align: right; border-bottom: 1px solid var(--hairline); vertical-align: middle; white-space: nowrap; font-size: 13px; }
+.ts-table td.l { text-align: left; padding-left: 0; font-size: 14px; }
+.ts-table td.bm, .ts-table th.bm { color: var(--muted); }
+.ts-table td.tg { color: var(--ink); font-weight: 600; }
+.ts-table td.off { color: var(--muted); font-style: italic; text-align: left; }
+.ts-table tr.foot td { height: 42px; font-weight: 600; border-top: 1px solid var(--border); border-bottom: none; }
+.ts-table tr.foot td.bm { font-weight: 500; }
+
+/* the products grid, as Airtable draws one: the cell is the input and the
+   grid is the border. Headers never wrap, so the grid is as wide as they
+   need and scrolls sideways inside the card; the row number and the
+   product stay put. A glyph carries the unit. White means you can type,
+   tinted means the model did (calc), greyed means locked or closed. */
+.sheet { border-collapse: collapse; table-layout: auto; width: max-content; min-width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+.sheet th, .sheet td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--hairline); height: 40px; padding: 0 10px; text-align: right; white-space: nowrap; vertical-align: middle; }
+.sheet th:last-child, .sheet td:last-child { border-right: none; }
+.sheet th { background: var(--card); font-size: 12px; font-weight: 600; color: var(--ink); }
+.sheet th.l, .sheet td.l { text-align: left; }
+.sheet th.gut, .sheet td.gut { text-align: center; color: #9a988f; font-size: 11px; padding: 0; width: 32px; min-width: 32px; }
+.sheet th.gut, .sheet td.gut, .sheet th.primary, .sheet td.primary { position: sticky; z-index: 2; background: var(--card); }
+.sheet th.gut, .sheet td.gut { left: 0; }
+.sheet th.primary, .sheet td.primary { left: 32px; box-shadow: 1px 0 0 var(--border); min-width: 230px; }
+.sheet td.primary { overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
+.sheet .glyph { display: inline-block; min-width: 12px; color: #9a988f; margin-right: 6px; font-size: 11px; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.sheet th.calc { color: var(--blue-deep); }
+.sheet td.edit { background: var(--card); color: var(--ink); padding: 0; }
+.sheet td.lock { background: #fbfaf7; color: var(--muted); }
+.sheet td.lock.typed { color: var(--ink); }
+.sheet td.calc { background: #f3f5f9; color: var(--ink); font-weight: 600; }
+.sheet td.closed { background: #f3f2ed; }
+.sheet td.typed { position: relative; }
+.sheet td.typed::after { content: ""; position: absolute; top: 0; right: 0; border-top: 7px solid #c9962f; border-left: 7px solid transparent; pointer-events: none; }
+.sheet td:focus-within { outline: 2px solid var(--blue); outline-offset: -2px; }
+.sheet td.check { text-align: center; }
+.sheet td .src { color: #9a988f; font-size: 12px; margin-left: 8px; }
+.sheet td .ts-link { margin-left: 8px; font-size: 12px; }
+.sheet tr.setall td { background: #fbfaf6; }
+.sheet tr.setall td.gut, .sheet tr.setall td.primary { background: #fbfaf6; color: #8f8d85; }
+.sheet tr.setall td.edit { background: #fbfaf6; }
+.sheet tr.add td { color: var(--muted); text-align: left; height: 38px; }
+.sheet tr.add td.primary { padding: 0; }
+.sheet tr.add .ts-link { margin: 0; padding: 0 10px; height: 38px; display: inline-flex; align-items: center; color: var(--ink); font-size: 13px; }
+.sheet tr.sum td { background: #fafaf8; font-weight: 600; }
+.sheet tr.sum td .src { font-weight: 400; }
+.sheet tr.empty td { text-align: left; color: var(--muted); white-space: normal; height: 48px; }
+.sheet input.cell {
+  width: 100%; min-width: 72px; height: 39px; border: none; background: transparent; font: inherit; color: inherit;
+  text-align: right; padding: 0 10px; outline: none; font-variant-numeric: tabular-nums; display: block;
+}
+.sheet input.cell::placeholder { color: #b3b1a8; }
+.sheet input.cell.name { text-align: left; min-width: 160px; }
+.sheet td.edit.typed input.cell { color: var(--ink); font-weight: 500; }
+.sheet input.tick { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; border: 1px solid #c8c5bc; border-radius: 3px; background: var(--card); margin: 0; vertical-align: middle; position: relative; cursor: pointer; }
+.sheet input.tick:checked { background: var(--ink); border-color: var(--ink); }
+.sheet input.tick:checked::after { content: "\2713"; color: #fff; font-size: 10px; line-height: 1; position: absolute; left: 2px; top: 1px; }
+.sheet input.tick:disabled { cursor: default; }
+.sheet input.tick:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) { .ts-big, .ts-figures, .ts-switch .tr, .ts-switch .tr::after { transition: none; } }
+/* the product cell: the name gives way first, then its Airtable code; the
+   Reset or Remove link at its end always stays in view */
+.sheet td.primary .pc { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sheet td.primary .pc .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet td.primary .pc .src { flex: 0 10 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; margin-left: 0; }
+.sheet td.primary .pc .ts-link { flex: 0 0 auto; margin-left: 0; }
+.sheet input.cell.name { flex: 1 1 auto; padding: 0; width: auto; min-width: 80px; height: 38px; text-align: left; }
