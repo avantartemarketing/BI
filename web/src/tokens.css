@@ -112,19 +112,28 @@ html, body {
 
 /* ---------- page ---------- */
 .content { flex: 1; padding: 28px 48px 64px; max-width: 1344px; }
-.page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-.page-header .name { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+/* the page head: what the release is on the left, the page's controls on the
+   right. Nothing breaks inside itself. Short of room, first the freshness
+   note drops under the toggles (which stay together), then the controls
+   take a line of their own, and only then do the identity's chips drop
+   under the name */
+.page-header { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px 24px; margin-bottom: 24px; }
+.page-header .name { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+.page-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; flex: 0 0 auto; max-width: 100%; min-height: 26px; }
+.page-controls { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px 16px; flex: 1 1 0; min-width: min-content; margin-left: auto; padding-top: 1px; }
+.page-toggles { display: flex; align-items: center; gap: 16px; flex: 0 0 auto; }
+.page-controls .freshness { margin-left: 0; }
 .badge {
   font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
-  padding: 2px 7px; border-radius: 5px;
+  padding: 2px 7px; border-radius: 5px; white-space: nowrap;
 }
 .badge.le { background: var(--badge-le-bg); color: var(--badge-le-fg); }
 .badge.tl { background: var(--badge-tl-bg); color: var(--badge-tl-fg); }
 .chip {
   font-size: 12px; font-weight: 500; color: var(--muted);
-  background: var(--track); padding: 3px 9px; border-radius: 5px;
+  background: var(--track); padding: 3px 9px; border-radius: 5px; white-space: nowrap;
 }
-.freshness { margin-left: auto; font-size: 12px; color: var(--muted); }
+.freshness { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
 
 /* ---------- launch strip (the campaign clock card) ---------- */
 .launch-strip {
@@ -208,7 +217,7 @@ button[title], select[title] { cursor: pointer; }
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 .seg button {
   font-family: inherit; font-size: 12px; font-weight: 500; padding: 3px 10px;
-  background: var(--card); color: var(--muted); border: none; cursor: pointer;
+  background: var(--card); color: var(--muted); border: none; cursor: pointer; white-space: nowrap;
 }
 .seg button.active { background: var(--ink); color: #fff; }
 /* two segs in one card header (channels vs targets) need to fit 352px */

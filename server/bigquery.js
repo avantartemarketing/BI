@@ -389,7 +389,11 @@ const spendSql = () =>
  *                          order day, last draft day; and the framing
  *                          (docs/DATA_MODEL.md 6.4): the paid prints a frame
  *                          was on offer for and the frames bought with them,
- *                          and the same for the app's entry drafts
+ *                          each frame going to the work its SKU names, and
+ *                          the same for the app's entry drafts. An order
+ *                          tagged upsell_order_merged (an upsell folded
+ *                          into the order it followed, its lines now there
+ *                          too) is left out of everything
  *   draw_products.csv      per draw: the product its winners bought most, and
  *                          the share of their orders it took
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
@@ -403,6 +407,10 @@ const ordersSql = () =>
   "WITH lines AS (\n" +
   "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
   "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_order_id AS order_id,\n" +
+  // the work a SKU names: its first two segments (WARHO-BRIW1 for the
+  // White Portrait print WARHO-BRIW1-PE-DRAW and its frame
+  // WARHO-BRIW1-FR-REDRAMINW alike), null for a SKU of another shape
+  "    REGEXP_EXTRACT(UPPER(COALESCE(sku, '')), r'^([^-]+-[^-]+)-') AS work_code,\n" +
   // a frame was on offer for the print: the line's framing_offered says so
   // ("Optional framing on order", "Frame included"; "No framing" and blank
   // are the prints that could not be framed, the Lifesize Brillo Box)
@@ -421,26 +429,44 @@ const ordersSql = () =>
   "  WHERE is_test_order = 0 AND shopify_product_type = 'Product'\n" +
   "    AND simple_release_name IS NOT NULL AND simple_release_name != '' AND product_title IS NOT NULL AND product_title != ''\n" +
   "    AND (DATE(launch_date) >= @since OR shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)\n" +
+  // an upsell bought after the order is merged into it, and the upsell's
+  // own order stays in the table tagged upsell_order_merged: its lines
+  // exist twice, so that order is left out, as the data team's own
+  // Metabase questions leave it out
+  "    AND NOT REGEXP_CONTAINS(COALESCE(shopify_order_tags, ''), r'upsell_order_merged')\n" +
   // the table holds some order lines twice (a copy of the same line id, or
   // one row per refund on the order): one row per line id, or every unit of
   // those lines is counted twice
   "  QUALIFY order_lineitem_id IS NULL OR ROW_NUMBER() OVER (PARTITION BY order_source_type, order_lineitem_id ORDER BY refund_processed_at DESC) = 1),\n" +
   // a frame is a line of its own (shopify_product_type = 'Frame') with no
   // release on it, so it is joined to the prints through the order, on an
-  // order or a draft alike; one row per line id, as for the prints
-  "frames AS (\n" +
-  "  SELECT order_source_type, order_id, SUM(quantity) AS frame_units FROM (\n" +
-  "    SELECT order_source_type, shopify_order_id AS order_id, quantity\n" +
-  `    FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
-  "    WHERE is_test_order = 0 AND shopify_product_type = 'Frame' AND shopify_order_id IS NOT NULL\n" +
-  "      AND (shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)\n" +
-  "    QUALIFY order_lineitem_id IS NULL OR ROW_NUMBER() OVER (PARTITION BY order_source_type, order_lineitem_id ORDER BY refund_processed_at DESC) = 1)\n" +
-  "  GROUP BY 1, 2),\n" +
-  // the frames an order holds go to the prints in it a frame was on offer
-  // for, a frame per print at most, and pro rata across those prints when
-  // the order holds several: the release's total is exact, a product's is
-  // exact whenever the order held one print, which is nearly every order
+  // order or a draft alike; one row per line id, as for the prints, and the
+  // same upsell orders left out
+  "frame_lines AS (\n" +
+  "  SELECT order_source_type, shopify_order_id AS order_id, quantity,\n" +
+  "    REGEXP_EXTRACT(UPPER(COALESCE(sku, '')), r'^([^-]+-[^-]+)-') AS work_code\n" +
+  `  FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
+  "  WHERE is_test_order = 0 AND shopify_product_type = 'Frame' AND shopify_order_id IS NOT NULL\n" +
+  "    AND (shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)\n" +
+  "    AND NOT REGEXP_CONTAINS(COALESCE(shopify_order_tags, ''), r'upsell_order_merged')\n" +
+  "  QUALIFY order_lineitem_id IS NULL OR ROW_NUMBER() OVER (PARTITION BY order_source_type, order_lineitem_id ORDER BY refund_processed_at DESC) = 1),\n" +
+  // the frames an order holds go to its prints a frame was on offer for, a
+  // frame per print at most. A frame whose SKU names a work on the order
+  // (WARHO-BRIW1-FR-... on an order with a WARHO-BRIW1-PE-... print) goes to
+  // that work's prints; the rest are shared pro rata across all the order's
+  // prints, which is exact whenever the order held one print. The release's
+  // total is exact either way; a product's is exact wherever the frame names
+  // its work, which the frame SKUs do
   "order_prints AS (SELECT order_source_type, order_id, SUM(IF(offered, quantity, 0)) AS offered_units FROM lines GROUP BY 1, 2),\n" +
+  "code_prints AS (SELECT order_source_type, order_id, work_code, SUM(IF(offered, quantity, 0)) AS offered_units FROM lines WHERE work_code IS NOT NULL GROUP BY 1, 2, 3),\n" +
+  "frames_named AS (\n" +
+  "  SELECT f.order_source_type, f.order_id, f.work_code, SUM(f.quantity) AS frame_units\n" +
+  "  FROM frame_lines f JOIN code_prints c ON c.order_source_type = f.order_source_type AND c.order_id = f.order_id AND c.work_code = f.work_code AND c.offered_units > 0\n" +
+  "  GROUP BY 1, 2, 3),\n" +
+  "frames_pool AS (\n" +
+  "  SELECT f.order_source_type, f.order_id, SUM(f.quantity) AS frame_units\n" +
+  "  FROM frame_lines f LEFT JOIN code_prints c ON c.order_source_type = f.order_source_type AND c.order_id = f.order_id AND c.work_code = f.work_code AND c.offered_units > 0\n" +
+  "  WHERE c.order_id IS NULL GROUP BY 1, 2),\n" +
   // the app that pre-authorises a draw entry writes its drafts under one
   // facilitator account: any account whose drafts are nearly all on the DRAW
   // SKU is the app, and every draft it writes (some land on the base SKU) is
@@ -481,10 +507,16 @@ const ordersSql = () =>
   "    l.cancelled_order = 0 AND ((l.order_source_type = 'Draft' AND NOT (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku))\n" +
   "        AND ((uw.customer_id IS NOT NULL AND NOT (l.draft_age_hours IS NOT NULL AND l.draft_age_hours >= 72)) OR (uw.customer_id IS NULL AND oe.customer_id IS NULL)))\n" +
   "      OR (l.order_source_type = 'Order' AND l.order_financial_status = 'pending')) AS awaiting,\n" +
-  "    IF(l.offered AND op.offered_units > 0, l.quantity / op.offered_units * LEAST(COALESCE(f.frame_units, 0), op.offered_units), 0) AS frames_line\n" +
+  // the frames that name this line's work, then a share of the order's
+  // unnamed frames, and never more than a frame per print
+  "    LEAST(l.quantity,\n" +
+  "      IF(l.offered AND cp.offered_units > 0, l.quantity / cp.offered_units * LEAST(COALESCE(fn.frame_units, 0), cp.offered_units), 0)\n" +
+  "      + IF(l.offered AND op.offered_units > 0, l.quantity / op.offered_units * LEAST(COALESCE(fp.frame_units, 0), op.offered_units), 0)) AS frames_line\n" +
   "  FROM lines l LEFT JOIN app_facilitators a ON a.facilitator = l.facilitator\n" +
   "  LEFT JOIN order_prints op ON op.order_source_type = l.order_source_type AND op.order_id = l.order_id\n" +
-  "  LEFT JOIN frames f ON f.order_source_type = l.order_source_type AND f.order_id = l.order_id\n" +
+  "  LEFT JOIN code_prints cp ON cp.order_source_type = l.order_source_type AND cp.order_id = l.order_id AND cp.work_code = l.work_code\n" +
+  "  LEFT JOIN frames_named fn ON fn.order_source_type = l.order_source_type AND fn.order_id = l.order_id AND fn.work_code = l.work_code\n" +
+  "  LEFT JOIN frames_pool fp ON fp.order_source_type = l.order_source_type AND fp.order_id = l.order_id\n" +
   "  LEFT JOIN open_entrants oe ON oe.release = l.release AND oe.customer_id = l.customer_id\n" +
   "  LEFT JOIN unpaid_winners uw ON uw.release = l.release AND uw.customer_id = l.customer_id),\n" +
   "paid_customers AS (SELECT DISTINCT release, customer_id FROM typed WHERE paid AND customer_id IS NOT NULL)\n" +
@@ -529,6 +561,7 @@ const drawProductsSql = () =>
   "  JOIN buys b ON b.release = w.release AND b.aa_account_id = w.aa_account_id\n" +
   `  JOIN \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\` o ON o.shopify_order_id = b.shopify_order_id AND o.simple_release_name = w.release\n` +
   "    AND o.shopify_product_type = 'Product' AND o.is_test_order = 0 AND o.product_title IS NOT NULL AND o.product_title != ''\n" +
+  "    AND NOT REGEXP_CONTAINS(COALESCE(o.shopify_order_tags, ''), r'upsell_order_merged')\n" +
   "  GROUP BY 1, 2, 3)\n" +
   "SELECT release, draw_id, product_title, orders,\n" +
   "  ROUND(orders / SUM(orders) OVER (PARTITION BY release, draw_id), 3) AS share\n" +

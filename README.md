@@ -249,8 +249,10 @@ was on offer for and the frames bought with them, joined to the prints through t
 docs 6.4) and `data/draw_products.csv` (the product each
 draw's winners bought, joined inside BigQuery on the pseudonymous account id). That table
 carries email addresses too; nothing selects them, and only counts per release and product
-leave (docs/DATA_MODEL.md 2.4). `BQ_ORDERS=off` skips the pair, `BQ_ORDERS_TABLE` renames
-the table.
+leave (docs/DATA_MODEL.md 2.4). An order tagged `upsell_order_merged` (an upsell folded into the order it followed, its
+lines now there too) is left out of everything, as the data team's Metabase questions leave it
+out; a frame goes to the work its SKU names, else it is shared across the order's prints (docs
+6.4). `BQ_ORDERS=off` skips the pair, `BQ_ORDERS_TABLE` renames the table.
 
 **The export, rebuilt here.** The pull also counts sessions and page views per channel-day
 inside BigQuery (`sources/le_browsing.csv`, `--browsing` pulls it alone, `BQ_BROWSING=off`
