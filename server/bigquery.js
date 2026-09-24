@@ -9,6 +9,11 @@
  * BigQuery-only feed takes the conversion events of the event-level table:
  *   LE_Funnel_Report                    -> sources/le_events.csv
  * under the personal-data rule set out at the events section below.
+ * And three aggregates of the orders table, pulled in full on every refresh:
+ *   Order_Line_Concept -> data/orders_by_product.csv, data/draw_products.csv,
+ *                         sources/units_paid.csv (the units a page counts, per
+ *                         product, CET day and the channel of each order's
+ *                         purchase event)
  *
  * Why bother: the sheet tabs are query exports capped at 50,000 rows, cut mid
  * date. That cap does not error - it silently shortens the history window as
@@ -63,6 +68,9 @@ const LE_EVENTS = path.join(SOURCES, "le_events.csv");
 // only, written from Order_Line_Concept on every refresh (docs/DATA_MODEL.md 2.4)
 const ORDERS_BY_PRODUCT = path.join(ROOT, "data", "orders_by_product.csv");
 const DRAW_PRODUCTS = path.join(ROOT, "data", "draw_products.csv");
+// units paid per release x product x CET day x channel (unitsPaidSql): under
+// sources/, beside the funnel it is read with, so the two travel together
+const UNITS_PAID = path.join(SOURCES, "units_paid.csv");
 // what the local funnel file is: window, columns, last date, when it was last
 // pulled in full. Absent = never pulled from BigQuery (or it came from the sheet)
 const META = path.join(SOURCES, "across_time.meta.json");
@@ -403,8 +411,13 @@ const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids
   "prints_offered_paid", "frames_paid", "prints_offered_entry_drafts", "frames_entry_drafts"];
 const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
 
-const ordersSql = () =>
-  "WITH lines AS (\n" +
+// The order lines, typed: every rule the orders feed counts a unit by (paid
+// or refunded, a draft and whose, the frames a print took), as one CTE chain
+// ending in `typed`. ordersSql and unitsPaidSql both read it, so the units a
+// page counts by day and channel can never be counted differently from the
+// units the sell-through reads by product.
+const orderLinesCtes = () =>
+  "lines AS (\n" +
   "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
   "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_order_id AS order_id,\n" +
   // the work a SKU names: its first two segments (WARHO-BRIW1 for the
@@ -518,7 +531,10 @@ const ordersSql = () =>
   "  LEFT JOIN frames_named fn ON fn.order_source_type = l.order_source_type AND fn.order_id = l.order_id AND fn.work_code = l.work_code\n" +
   "  LEFT JOIN frames_pool fp ON fp.order_source_type = l.order_source_type AND fp.order_id = l.order_id\n" +
   "  LEFT JOIN open_entrants oe ON oe.release = l.release AND oe.customer_id = l.customer_id\n" +
-  "  LEFT JOIN unpaid_winners uw ON uw.release = l.release AND uw.customer_id = l.customer_id),\n" +
+  "  LEFT JOIN unpaid_winners uw ON uw.release = l.release AND uw.customer_id = l.customer_id)";
+
+const ordersSql = () =>
+  "WITH " + orderLinesCtes() + ",\n" +
   "paid_customers AS (SELECT DISTINCT release, customer_id FROM typed WHERE paid AND customer_id IS NOT NULL)\n" +
   "SELECT l.release, ANY_VALUE(l.release_name) AS campaign_code, l.product_title,\n" +
   "  STRING_AGG(DISTINCT CAST(l.shopify_product_id AS STRING), '|') AS product_ids,\n" +
@@ -545,6 +561,45 @@ const ordersSql = () =>
   "  ROUND(SUM(IF(l.entry_draft, l.frames_line, 0)), 2) AS frames_entry_drafts\n" +
   "FROM typed l LEFT JOIN paid_customers p ON p.release = l.release AND p.customer_id = l.customer_id\n" +
   "GROUP BY l.release, l.product_title\nORDER BY l.release, l.product_title";
+
+/* units_paid.csv: the units a page counts (docs/DATA_MODEL.md 2.4), per
+ * release x product x CET order day x channel. The paid order lines are the
+ * orders feed's own (orderLinesCtes, `paid`), so a product's units summed
+ * over every day and channel equal its units_paid in orders_by_product.csv.
+ * Each order takes the channel of its own purchase event in the funnel,
+ * matched on the Shopify order id inside BigQuery (the earliest event's
+ * split-touch channel); an order with no purchase event is Untracked with
+ * purchase_event false, and an event with no channel is Untracked with
+ * purchase_event true, so the share of paid units the funnel never saw can
+ * be read apart. Aggregates only: no order id, customer or address leaves
+ * BigQuery. Pulled in full with the orders pair; it lives under sources/ so
+ * a deploy's committed copy of data/ never pairs a stale count with a fresh
+ * funnel. */
+const UNITS_PAID_HEADER = ["release", "product_title", "order_date", "channel", "purchase_event",
+  "units_paid", "units_private_room", "prints_offered_paid", "frames_paid"];
+const unitsPaidSql = () => {
+  const sql = "WITH " + orderLinesCtes() + ",\n" +
+    "purchase_channel AS (\n" +
+    "  SELECT shopify_order_id AS order_id,\n" +
+    "    ARRAY_AGG(NULLIF(AA_session_custom_channel_group_split_touch, '') IGNORE NULLS ORDER BY event_timestamp LIMIT 1)[SAFE_OFFSET(0)] AS channel\n" +
+    `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+    "  WHERE event_name = 'purchase' AND shopify_order_id IS NOT NULL\n" +
+    "  GROUP BY shopify_order_id)\n" +
+    "SELECT l.release, l.product_title, l.order_date,\n" +
+    "  COALESCE(pc.channel, 'Untracked') AS channel, pc.order_id IS NOT NULL AS purchase_event,\n" +
+    "  SUM(l.quantity) AS units_paid,\n" +
+    "  SUM(IF(l.is_private_room = 1, l.quantity, 0)) AS units_private_room,\n" +
+    "  SUM(IF(l.offered, l.quantity, 0)) AS prints_offered_paid,\n" +
+    "  ROUND(SUM(l.frames_line), 2) AS frames_paid\n" +
+    "FROM typed l LEFT JOIN purchase_channel pc ON pc.order_id = l.order_id\n" +
+    "WHERE l.paid AND l.order_date IS NOT NULL\n" +
+    "GROUP BY l.release, l.product_title, l.order_date, channel, purchase_event\n" +
+    "ORDER BY l.release, l.product_title, l.order_date, channel";
+  for (const f of FORBIDDEN_COLUMNS) {
+    if (sql.toLowerCase().includes(f)) throw new Error(`units query must not mention ${f}`);
+  }
+  return sql;
+};
 
 const drawProductsSql = () =>
   "WITH wins AS (\n" +
@@ -1048,17 +1103,22 @@ async function pull({ write = true, full = false, events = true, only = null } =
   } else if (process.env.BQ_ORDERS === "off") {
     ordersNote = "orders skipped (BQ_ORDERS=off)";
   } else {
-    const t1 = new Tmp(ORDERS_BY_PRODUCT, write), t2 = new Tmp(DRAW_PRODUCTS, write);
+    const t1 = new Tmp(ORDERS_BY_PRODUCT, write), t2 = new Tmp(DRAW_PRODUCTS, write), t3 = new Tmp(UNITS_PAID, write);
     try {
       const a = await streamTable(token, ordersSql(), SINCE, passthroughWriter(ORDERS_HEADER, "orders"), t1);
       if (a.rows < 10) throw new Error(`orders query returned ${a.rows} rows - not overwriting`);
       guardShrink("orders query", a.rows, ORDERS_BY_PRODUCT);
       const b = await streamTable(token, drawProductsSql(), SINCE, passthroughWriter(DRAW_PRODUCTS_HEADER, "draw products"), t2);
-      if (write) { t1.commit(ORDERS_BY_PRODUCT); t2.commit(DRAW_PRODUCTS); } else { t1.discard(); t2.discard(); }
-      orders = { rows: a.rows, draws: b.rows, bytes: a.bytes + b.bytes, cached: a.cached && b.cached };
-      ordersNote = `orders ${a.rows} products, ${b.rows} draws named`;
+      // the units a page counts, by day and channel: the same paid lines, so
+      // the three files are written together or not at all
+      const c = await streamTable(token, unitsPaidSql(), SINCE, passthroughWriter(UNITS_PAID_HEADER, "units paid"), t3);
+      if (c.rows < 10) throw new Error(`units paid query returned ${c.rows} rows - not overwriting`);
+      guardShrink("units paid query", c.rows, UNITS_PAID);
+      if (write) { t1.commit(ORDERS_BY_PRODUCT); t2.commit(DRAW_PRODUCTS); t3.commit(UNITS_PAID); } else { t1.discard(); t2.discard(); t3.discard(); }
+      orders = { rows: a.rows, draws: b.rows, units: c.rows, bytes: a.bytes + b.bytes + c.bytes, cached: a.cached && b.cached && c.cached };
+      ordersNote = `orders ${a.rows} products, ${b.rows} draws named, ${c.rows} unit rows by day and channel`;
     } catch (e) {
-      t1.discard(); t2.discard();
+      t1.discard(); t2.discard(); t3.discard();
       ordersNote = `orders unavailable, keeping the last files (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`;
     }
   }
@@ -1118,6 +1178,7 @@ async function pull({ write = true, full = false, events = true, only = null } =
 module.exports = {
   pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
   SOURCES, ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
+  UNITS_PAID, UNITS_PAID_HEADER, unitsPaidSql, orderLinesCtes,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
   LE_BROWSING, BROWSING_META, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
   PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
@@ -1126,7 +1187,8 @@ module.exports = {
 
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;
 // --write replaces the CSVs, --full forces a full pull, --events or --browsing
-// pulls that one feed alone (--orders the orders-by-product pair), --schema
+// pulls that one feed alone (--orders the orders-by-product pair and the units
+// paid by day and channel), --schema
 // lists what the account can see (names only, no rows). Handy from a Render shell.
 if (require.main === module) {
   (async () => {
@@ -1151,7 +1213,7 @@ if (require.main === module) {
     const out = await pull({ write, full, only });
     console.log(out.summary);
     const wrote = [out.funnelRows !== null && ACROSS_TIME, out.spendRows !== null && SPEND_DAILY,
-                   out.ordersRows !== null && `${ORDERS_BY_PRODUCT} + ${DRAW_PRODUCTS}`,
+                   out.ordersRows !== null && `${ORDERS_BY_PRODUCT} + ${DRAW_PRODUCTS} + ${UNITS_PAID}`,
                    out.eventsRows !== null && LE_EVENTS, out.browsingRows !== null && LE_BROWSING].filter(Boolean);
     console.log(write ? `wrote ${wrote.join(", ")}` : "dry run - pass --write to replace the CSVs");
   })().catch((e) => { console.error(String(e.message || e)); process.exit(1); });

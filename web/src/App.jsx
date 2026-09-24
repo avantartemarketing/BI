@@ -14,7 +14,7 @@
  * is a target worth holding, the second is a launch in trouble. */
 import React, { useEffect, useMemo, useState } from "react";
 import { initial as watchInitial, step as watchStep } from "../../shared/refreshWatch.mjs";
-import { C, fmtSigned, fmtPct, fmtDay, TipProvider, useTip } from "./ui.jsx";
+import { C, fmt, fmtSigned, fmtPct, fmtDay, TipProvider, useTip } from "./ui.jsx";
 import HeroBar from "./modules/HeroBar.jsx";
 import LaunchStrip from "./modules/LaunchStrip.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
@@ -366,6 +366,25 @@ function StaleBanner({ asOf, st, onRefreshed }) {
   );
 }
 
+/* Every card counts units paid from the orders table, each order on the
+ * channel of its purchase event (docs 6.3). An order the funnel never saw
+ * still counts, on Untracked, but nothing says where it came from. When that
+ * is more than a sliver of the window, the channel split is short of
+ * evidence and the purchase tag is the thing to check: say so, with the
+ * count. The threshold is the build's (NO_EVENT_WARN_SHARE, _MIN). */
+function CoverageBanner({ noEvent }) {
+  if (!noEvent || !noEvent.high) return null;
+  const pct = Math.round((noEvent.share || 0) * 100);
+  return (
+    <div role="status" style={{ margin: "14px 0 0", padding: "10px 14px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a",
+                                borderLeft: "3px solid #8a5f00", fontSize: 13, lineHeight: 1.5 }}>
+      <b>{fmt(noEvent.count)} of {fmt(noEvent.total)} units paid ({pct}%) have no purchase event.</b> They count in
+      every total, on Untracked and shared out over the tracked channels, but their own channel is unknown - the
+      purchase tag may be missing on part of checkout.
+    </div>
+  );
+}
+
 /* The header used to assert "Sources fresh" as a literal, so a broken hourly
  * ingestion - expired token, un-shared sheet, an ETL exception - looked
  * identical to a healthy one while the page served frozen numbers. This reads
@@ -569,6 +588,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         </div>
       </header>
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
+      <CoverageBanner noEvent={snap.untracked && snap.untracked.noEvent} />
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>

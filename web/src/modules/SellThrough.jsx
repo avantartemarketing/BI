@@ -54,7 +54,7 @@
  * missing. Without the draw feed at all it is one row, the release, as
  * before. */
 import React, { useState } from "react";
-import { Card, HorizonBadge, GROUP_DOTS, C, fmt, useTip } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, useTip } from "../ui.jsx";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 /* One ramp of the page's blue, deepest to palest as the units get less
@@ -198,6 +198,12 @@ export default function SellThrough({ snap, horizon = "today" }) {
       : "Sales the draw cannot name a product for are split by edition size inside the sold segment until the sales feed carries the product; draft orders are not drawn until a feed carries them.",
   } : null;
 
+  // the days the page counts sales over, when its units are the orders
+  // table's (docs 6.3), and what was paid outside them
+  const salesWindow = snap.unitsSource === "orders" ? snap.salesWindow || null : null;
+  const outside = salesWindow ? st.unitsOutsideWindow || null : null;
+  const dayText = (iso) => fmtDay(new Date(iso + "T00:00:00Z"));
+
   const rateText = `${Math.round(rate * 100)}%`;
   const preRate = finite(st.preorderConversion) ? st.preorderConversion : null;
   const preRateText = preRate === null ? null : `${Math.round(preRate * 100)}%`;
@@ -320,10 +326,18 @@ export default function SellThrough({ snap, horizon = "today" }) {
                 { label: "Of which named by product", value: fmt(st.attributedSold ?? 0) },
                 { label: "Of which estimated", value: fmt(st.unattributedSold ?? 0) },
               ] : []),
+              ...(salesWindow ? [{ label: "Counted", value: `${dayText(salesWindow.start)} to ${dayText(salesWindow.end)}` }] : []),
+              ...(outside && outside.before > 0 ? [{ label: "Paid earlier (not counted)", value: fmt(outside.before) }] : []),
+              ...(outside && outside.after > 0 ? [{ label: "Paid after the window (not counted)", value: fmt(outside.after) }] : []),
             ],
-            body: fromFeed && (st.unattributedSold ?? 0) > 0
-              ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
-              : undefined },
+            body: [
+              fromFeed && (st.unattributedSold ?? 0) > 0
+                ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
+                : null,
+              salesWindow
+                ? "Units paid from the orders table, over the days every card on the page counts: from the first paid order or the campaign start, whichever is earlier (never more than 45 days before the announce), to two days after the close."
+                : null,
+            ].filter(Boolean).join(" ") || undefined },
           })}
           {draftsAll !== null && draftsAll > 0 && legendChip({
             key: "drafts", sw: <span style={swatch(SEG.drafts)} />, label: "Drafts", value: fmt(draftsAll),

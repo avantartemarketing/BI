@@ -26,8 +26,25 @@ typed, because historically 80% of eligible entries convert to orders; the entri
 hand are allocated across the products by the maximum-quantity rule before the rate
 is applied (the sell-through card's own count, below). Only *unconverted* entries
 carry the rate - a converted entry is already a sale, so counting both would
-double-count. The funnel export gives the channel split, scaled in proportion to
-this count so the channels always sum to the hero. The hero target equals the
+double-count. Each channel's share is its units paid (every order on the channel
+of its own purchase event) and its entries in hand, scaled in proportion to this
+count so the channels always sum to the hero.
+
+**One count of units sold, over one window.** Every card counts the same units
+sold: the units paid in the Shopify orders table, never the funnel's own
+purchase count, over the same days. The window opens at the campaign start (the
+private room, else the announce), or at the first paid order where that came
+first - but never more than 45 days before the announce - and shuts two days
+after the close, when the last winners have paid. What is paid outside it counts
+on no card, and the sell-through's Paid popup says how much that is. Once the
+window has shut, drafts and entries in hand no longer count: the page is the
+units paid. A paid order the funnel has no purchase event for still counts, on
+Untracked; when such orders are more than 5% of the window the page says so
+above the tabs, because the channel split is then short of evidence. (Why: the
+two feeds were matched order by order and agree, except that the funnel
+undercounts orders of several units and counts some test and refunded orders;
+the cards disagreed mostly because they counted different days. DATA_MODEL
+§6.3.) The hero target equals the
 edition size (sellout); demand beyond it shows as **oversubscribed** on the hero,
 flattens the trajectory at the sellout and is the last step of the waterfall,
 "Beyond sellout". Funnel and paid modules stay denominated in sessions, entries and
@@ -394,6 +411,9 @@ recommendation is the ROI at that spend level's cost per entry.
 
 ## 8. Where the numbers come from
 
+- **Units sold** come from the Shopify orders table in BigQuery, per product, day
+  and channel (the channel of each order's purchase event), pulled on every
+  refresh with the other orders figures.
 - **Daily funnel** (sessions, entries, units by channel × day) and **Meta spend**
   are pulled live from the *LE Paid Calculator* Google Sheet on boot and every
   hour. The header's "data through" day is the newest day in the feed, which while the

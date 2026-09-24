@@ -51,7 +51,8 @@ tests/                  the sell-through rule on fixtures, in both languages, an
 server/index.js         Express service: serves the SPA + /api/* + the spend decision log
 web/                    React (Vite) SPA - the dashboard per the design handoff
 render.yaml             Render deployment (single web service)
-sources/                NOT in git: raw exports (workbooks, CSVs, draw entries with PII)
+sources/                NOT in git: raw exports (workbooks, CSVs, draw entries with PII) and
+                        units_paid.csv, the units sold per product, day and channel
 ```
 
 ## Running locally
@@ -242,17 +243,22 @@ personal data: it stays under `sources/`, is served by no endpoint, and nothing 
 it leaves the server with an identifier column.
 
 **Orders and drafts by product.** The pull also reads `Order_Line_Concept`, the Shopify order
-lines, into two aggregate files: `data/orders_by_product.csv` (per release and product: units
+lines, into three aggregate files, written together or not at all: `data/orders_by_product.csv` (per release and product: units
 paid, orders awaiting payment, list price; the draw's own pre-authorisation drafts, one per
 live entry, are counted apart and never shown as drafts; and the framing, the prints a frame
 was on offer for and the frames bought with them, joined to the prints through the order,
 docs 6.4) and `data/draw_products.csv` (the product each
-draw's winners bought, joined inside BigQuery on the pseudonymous account id). That table
+draw's winners bought, joined inside BigQuery on the pseudonymous account id) and
+`sources/units_paid.csv` (the same paid units per product, order day and channel, each order
+on the channel of its own purchase event, `Untracked` where the event feed never saw it: the
+units sold every card counts, over one window, docs/DATA_MODEL.md 6.3). That table
 carries email addresses too; nothing selects them, and only counts per release and product
 leave (docs/DATA_MODEL.md 2.4). An order tagged `upsell_order_merged` (an upsell folded into the order it followed, its
 lines now there too) is left out of everything, as the data team's Metabase questions leave it
 out; a frame goes to the work its SKU names, else it is shared across the order's prints (docs
-6.4). `BQ_ORDERS=off` skips the pair, `BQ_ORDERS_TABLE` renames the table.
+6.4). `BQ_ORDERS=off` skips the three, `BQ_ORDERS_TABLE` renames the table. Without
+`units_paid.csv` a page counts the funnel's own units, as before, and its snapshot says so
+(`unitsSource: "funnel"`).
 
 **The export, rebuilt here.** The pull also counts sessions and page views per channel-day
 inside BigQuery (`sources/le_browsing.csv`, `--browsing` pulls it alone, `BQ_BROWSING=off`
@@ -579,7 +585,8 @@ is one row of the grid whatever the count: the rows share a fixed height, the ba
 from 14px for seven products to a 30px cap for three or fewer, each row carrying its units of
 the edition and its percentage in columns of their own, with the key beside the headline. It is
 the one card with no target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
-orders per product come from the Shopify order lines in BigQuery (`data/orders_by_product.csv`),
+orders per product come from the Shopify order lines in BigQuery (`sources/units_paid.csv` over
+the page's window, and `data/orders_by_product.csv` for the drafts),
 joined to the draws through the product each draw's winners bought (docs 2.4); until every draw
 of a release is named that way the card wears an **Incomplete data** stamp, and the sales the
 draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an
