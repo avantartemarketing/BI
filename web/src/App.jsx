@@ -347,7 +347,11 @@ function StaleBanner({ asOf, st, onRefreshed }) {
   if (st === undefined) what = "Checking whether a refresh is running…";
   else if (st && st.running) what = `A refresh started at ${clock(st.runningSince)} is running now; this page reloads itself when it lands. ` +
     "The first refresh after a deploy takes several minutes.";
-  else if (st && st.at && st.ok === false) what = `The last refresh, at ${clock(st.at)}, failed: ${String(st.etl || st.bigquery || st.sheet || "").slice(0, 160)}`;
+  else if (st && st.at && st.ok === false) {
+    const failing = [st.etl, st.bigquery, st.sheet, st.airtable, st.notion, st.emails].map((v) => String(v || ""))
+      .find((v) => /failed|misconfigured|stale/i.test(v)) || String(st.etl || st.bigquery || st.sheet || "");
+    what = `The last refresh, at ${clock(st.at)}, failed: ${failing.slice(0, 160)}`;
+  }
   else if (st && st.at) what = `The last refresh, at ${clock(st.at)}, succeeded but did not move this page - the source feed may not have newer rows for it.`;
   else what = "No refresh has completed since the app started - the first one after a deploy takes several minutes.";
   return (
@@ -372,9 +376,15 @@ function Freshness({ asOf, st, emailThrough, partial }) {
   const emailBehind = emailLag !== null && emailLag > 7;
 
   const feeds = st && [["BigQuery", st.bigquery], ["Sheet", st.sheet], ["Email", st.emails],
-    ["Notion", st.notion], ["ETL", st.etl]]
+    ["Notion", st.notion], ["Airtable", st.airtable], ["ETL", st.etl]]
     .filter(([, v]) => v !== undefined && v !== null);
-  const stale = st && st.ok === false;
+  // which feeds the last refresh reported failing: the funnel's own (BigQuery,
+  // the sheet, the ETL) make the page stale; a side feed (email, Notion,
+  // Airtable) leaves the figures current and is named for what it is
+  const failed = (feeds || []).filter(([, v]) => /failed|misconfigured|stale/i.test(String(v))).map(([k]) => k);
+  const coreFailed = failed.some((k) => k === "BigQuery" || k === "Sheet" || k === "ETL");
+  const stale = st && st.ok === false && (coreFailed || !failed.length);
+  const sideFailed = st && st.ok === false && !stale ? failed : [];
   const running = st && st.running;
   /* A feed with no token does not fail, so `ok` stays true and the header read
    * "Sources fresh" while a whole feed was dormant and its panels sat empty.
@@ -388,10 +398,11 @@ function Freshness({ asOf, st, emailThrough, partial }) {
     : running && !st.at ? "Refreshing sources…"
     : st === null || !st.at ? "Source status unknown"
     : stale ? "Sources stale"
+    : sideFailed.length ? `${sideFailed.join(" and ")} failed`
     : dormant.length ? `Sources fresh · ${dormant.join(" and ")} off`
     : "Sources fresh";
   const color = st === undefined ? "#6c6b68" : stale ? "#b8461d"
-    : dormant.length || emailBehind ? "#8a5f00"
+    : sideFailed.length || dormant.length || emailBehind ? "#8a5f00"
     : st && st.at ? "#6c6b68" : "#8a5f00";
   const tip = {
     head: running ? `${label} (refresh in progress)` : label,

@@ -65,7 +65,9 @@ npm start              # serves on :10000
 Dev mode: `npm start` in one shell (API), `npm run dev` in another (Vite on :5173, proxies /api).
 
 Edition pricing and the per-product target economics (needs `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID`,
-`AIRTABLE_TABLE` in the environment; the live refresh runs this every cycle when the token is set;
+`AIRTABLE_TABLE` in the environment; the live refresh runs this every cycle when the token is set; like every script the refresh runs, it uses pandas and the standard library only, since
+that is all Render's Python has (a `requests` import there failed the Airtable step on every refresh
+until 24 September, and the header showed it only as "Sources stale");
 `AIRTABLE_FIELD_<column>` names a target field spelled another way, e.g.
 `AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner"`):
 

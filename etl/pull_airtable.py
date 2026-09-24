@@ -48,14 +48,16 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import os
 import pathlib
 import re
 import sys
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import date, datetime, timedelta
-
-import requests
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT_PATH = ROOT / "data" / "release_pricing.csv"
@@ -174,17 +176,29 @@ def credentials() -> tuple[str, str, str]:
 
 
 def get(url: str, tok: str, params: dict | None = None) -> dict:
-    """One GET with the bearer token, retried once on the rate limit."""
+    """One GET with the bearer token, retried once on the rate limit. On the
+    standard library alone: the live refresh runs this in Render's Python,
+    which has pandas installed and nothing else, and an import it cannot
+    satisfy fails the Airtable step on every refresh."""
+    query = urllib.parse.urlencode(params or {}, doseq=True)
+    full = f"{url}?{query}" if query else url
     for attempt in (1, 2):
-        r = requests.get(url, headers={"Authorization": f"Bearer {tok}"}, params=params, timeout=TIMEOUT_S)
-        if r.status_code == 429 and attempt == 1:
-            time.sleep(RETRY_429_S)
-            continue
-        if not r.ok:
+        req = urllib.request.Request(full, headers={"Authorization": f"Bearer {tok}"})
+        try:
+            with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt == 1:
+                time.sleep(RETRY_429_S)
+                continue
             # the body can echo the request, so only the status and the error code go to the terminal
-            code = (r.json().get("error") or {}).get("type", "") if r.headers.get("content-type", "").startswith("application/json") else ""
-            sys.exit(f"Airtable {r.status_code} {code} on {url.split('/v0/')[-1].split('/')[0][:3]}...")
-        return r.json()
+            code = ""
+            if (e.headers.get("content-type") or "").startswith("application/json"):
+                try:
+                    code = (json.loads(e.read().decode("utf-8")).get("error") or {}).get("type", "")
+                except Exception:  # noqa: BLE001
+                    code = ""
+            sys.exit(f"Airtable {e.code} {code} on {url.split('/v0/')[-1].split('/')[0][:3]}...")
     raise RuntimeError("unreachable")
 
 
@@ -272,7 +286,7 @@ def list_fields(fields: dict) -> None:
 def records(tok: str, base: str, table: str, names: list[str]):
     """Every record, paginated with the offset the API hands back."""
     params: dict = {"pageSize": PAGE_SIZE, "fields[]": names}
-    url = f"{API}/{base}/{requests.utils.quote(table, safe='')}"
+    url = f"{API}/{base}/{urllib.parse.quote(table, safe='')}"
     offset = None
     while True:
         if offset:
