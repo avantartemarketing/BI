@@ -1,5 +1,5 @@
 {
- "asOf": "2026-09-23",
+ "asOf": "2026-09-24",
  "releases": [
   {
    "id": "ai_weiwei_multiple_2026_q3",
@@ -11,15 +11,15 @@
    "type": "LE",
    "status": "live",
    "targeted": false,
-   "day": 26,
+   "day": 27,
    "of": 27,
    "complete": false,
    "windowEnd": "2026-09-24",
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 4211
+   "lastSeen": "2026-09-24",
+   "sessions": 4316
   },
   {
    "id": "julianschnabel_le_26",
@@ -31,13 +31,13 @@
    "type": "LE",
    "status": "live",
    "targeted": true,
-   "day": 22,
+   "day": 23,
    "of": 24,
    "complete": false,
    "windowEnd": "2026-09-25",
-   "statusPct": -0.6355,
+   "statusPct": -0.6353,
    "ok": false,
-   "benchmarkPct": -0.6215,
+   "benchmarkPct": -0.6213,
    "lastSeen": null,
    "sessions": null
   },
@@ -51,15 +51,15 @@
    "type": "LE",
    "status": "live",
    "targeted": false,
-   "day": 16,
+   "day": 17,
    "of": 22,
    "complete": false,
    "windowEnd": "2026-09-29",
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 19885
+   "lastSeen": "2026-09-24",
+   "sessions": 19979
   },
   {
    "id": "warhol_le_26",
@@ -71,13 +71,13 @@
    "type": "LE",
    "status": "live",
    "targeted": true,
-   "day": 20,
+   "day": 21,
    "of": 27,
    "complete": false,
    "windowEnd": "2026-09-30",
-   "statusPct": -0.4593,
+   "statusPct": -0.4701,
    "ok": false,
-   "benchmarkPct": 0.638,
+   "benchmarkPct": 0.6051,
    "lastSeen": null,
    "sessions": null
   },
@@ -91,15 +91,15 @@
    "type": "LE",
    "status": "live",
    "targeted": false,
-   "day": 2,
+   "day": 3,
    "of": 24,
    "complete": false,
    "windowEnd": "2026-10-15",
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 17455
+   "lastSeen": "2026-09-24",
+   "sessions": 30935
   },
   {
    "id": "loie_hollowell_mother_s_milk_2026_q4",
@@ -118,7 +118,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 2
   },
   {
@@ -138,8 +138,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 68
+   "lastSeen": "2026-09-24",
+   "sessions": 171
   },
   {
    "id": "cai_guo_qiang_multiple_2026_q4",
@@ -154,11 +154,11 @@
    "day": 0,
    "of": 35,
    "complete": false,
-   "windowEnd": "2026-10-30",
+   "windowEnd": "2026-10-29",
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 13
   },
   {
@@ -171,7 +171,7 @@
    "type": "LE",
    "status": "upcoming",
    "targeted": false,
-   "day": 15,
+   "day": 16,
    "of": 30,
    "complete": false,
    "windowEnd": "2026-10-08",
@@ -275,9 +275,9 @@
    "of": 21,
    "complete": true,
    "windowEnd": "2026-09-11",
-   "statusPct": -0.0917,
+   "statusPct": -0.0908,
    "ok": true,
-   "benchmarkPct": 0.527,
+   "benchmarkPct": 0.5284,
    "lastSeen": null,
    "sessions": null
   },
@@ -298,7 +298,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 2257
   },
   {
@@ -375,9 +375,9 @@
    "of": 21,
    "complete": true,
    "windowEnd": "2026-08-20",
-   "statusPct": -0.0133,
+   "statusPct": -0.015,
    "ok": true,
-   "benchmarkPct": 0.245,
+   "benchmarkPct": 0.2429,
    "lastSeen": null,
    "sessions": null
   },
@@ -418,7 +418,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 7892
   },
   {
@@ -438,7 +438,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 43685
   },
   {
@@ -458,7 +458,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 7823
   },
   {
@@ -478,7 +478,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 18844
   },
   {
@@ -498,7 +498,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 16992
   },
   {
@@ -518,7 +518,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 8315
   },
   {
@@ -558,7 +558,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 20070
   },
   {
@@ -578,7 +578,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 10696
   },
   {
@@ -598,7 +598,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 4245
   },
   {
@@ -618,7 +618,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 17009
   },
   {
@@ -638,7 +638,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 7012
   },
   {
@@ -658,7 +658,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 30321
   },
   {
@@ -698,7 +698,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 19594
   },
   {
@@ -718,7 +718,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 22069
   },
   {
@@ -758,7 +758,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 13961
   },
   {
@@ -778,7 +778,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 7386
   },
   {
@@ -798,7 +798,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 151398
   },
   {
@@ -818,7 +818,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 16399
   },
   {
@@ -838,7 +838,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 4366
   },
   {
@@ -858,7 +858,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 5785
   },
   {
@@ -878,7 +878,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 7830
   },
   {
@@ -898,7 +898,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 149958
   },
   {
@@ -918,7 +918,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 17310
   },
   {
@@ -938,7 +938,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 24726
   },
   {
@@ -958,7 +958,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 23189
   },
   {
@@ -978,7 +978,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 41347
   },
   {
@@ -998,7 +998,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 11610
   },
   {
@@ -1018,7 +1018,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 6089
   },
   {
@@ -1038,7 +1038,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-20",
+   "lastSeen": "2026-09-24",
    "sessions": 5306
   },
   {
@@ -1058,7 +1058,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 2158
   },
   {
@@ -1098,7 +1098,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 23525
   },
   {
@@ -1118,7 +1118,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 43072
   },
   {
@@ -1138,7 +1138,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 99633
   },
   {
@@ -1158,7 +1158,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 7135
   },
   {
@@ -1218,7 +1218,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 16347
   },
   {
@@ -1258,7 +1258,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 2467
   },
   {
@@ -1298,7 +1298,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 12508
   },
   {
@@ -1358,7 +1358,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 84553
   },
   {
@@ -1458,7 +1458,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 2231
   },
   {
@@ -1478,7 +1478,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 2021
   },
   {
@@ -1498,7 +1498,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 7238
   },
   {
@@ -1518,7 +1518,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 35810
   },
   {
@@ -1578,7 +1578,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
+   "lastSeen": "2026-09-24",
    "sessions": 4779
   },
   {
@@ -1618,7 +1618,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 8439
   },
   {
@@ -1658,7 +1658,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 13280
   },
   {
@@ -1678,7 +1678,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 348
   },
   {
@@ -1698,7 +1698,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 689
   },
   {
@@ -1718,7 +1718,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 3008
   },
   {
@@ -1738,7 +1738,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
+   "lastSeen": "2026-09-24",
    "sessions": 544
   },
   {
@@ -1758,7 +1758,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 5072
   },
   {
@@ -1778,7 +1778,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 5008
   },
   {
@@ -1798,7 +1798,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
+   "lastSeen": "2026-09-24",
    "sessions": 6465
   },
   {
@@ -1818,7 +1818,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-20",
+   "lastSeen": "2026-09-24",
    "sessions": 1891
   },
   {
@@ -1838,7 +1838,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 8624
   },
   {
@@ -1858,7 +1858,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 5172
   },
   {
@@ -1878,7 +1878,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-18",
+   "lastSeen": "2026-09-24",
    "sessions": 3508
   },
   {
@@ -1918,7 +1918,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 7773
   },
   {
@@ -1938,7 +1938,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-20",
+   "lastSeen": "2026-09-24",
    "sessions": 3638
   },
   {
@@ -1958,7 +1958,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 1147
   },
   {
@@ -1998,7 +1998,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
+   "lastSeen": "2026-09-24",
    "sessions": 9611
   },
   {
@@ -2038,7 +2038,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 17141
   },
   {
@@ -2058,7 +2058,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 4773
   },
   {
@@ -2098,7 +2098,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 993
   },
   {
@@ -2138,7 +2138,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-08",
+   "lastSeen": "2026-09-24",
    "sessions": 3494
   },
   {
@@ -2198,7 +2198,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 4590
   },
   {
@@ -2258,7 +2258,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-23",
    "sessions": 4115
   },
   {
@@ -2358,7 +2358,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 3362
   },
   {
@@ -2398,8 +2398,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 818
+   "lastSeen": "2026-09-24",
+   "sessions": 872
   },
   {
    "id": "taylor_lee_multiple_2023_q4",
@@ -2418,8 +2418,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 745
+   "lastSeen": "2026-09-24",
+   "sessions": 747
   },
   {
    "id": "kwesi_botchway_lady_with_a_tampi_2022_q2",
@@ -2438,8 +2438,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 340
+   "lastSeen": "2026-09-24",
+   "sessions": 365
   },
   {
    "id": "deekay_love_ripples_2024_q1",
@@ -2458,8 +2458,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 306
+   "lastSeen": "2026-09-24",
+   "sessions": 325
   },
   {
    "id": "laura_el_park_ave_2024_q1",
@@ -2478,8 +2478,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 287
+   "lastSeen": "2026-09-24",
+   "sessions": 288
   },
   {
    "id": "amani_lewis_two_queens_ode_to_romare_bearden_2021_q3",
@@ -2498,8 +2498,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 235
+   "lastSeen": "2026-09-24",
+   "sessions": 247
   },
   {
    "id": "george_condo_multiple_2024_q1",
@@ -2518,8 +2518,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 217
+   "lastSeen": "2026-09-24",
+   "sessions": 212
   },
   {
    "id": "robert_nava_death_carrier_bunny_2024_q1",
@@ -2538,8 +2538,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 181
+   "lastSeen": "2026-09-24",
+   "sessions": 191
   },
   {
    "id": "nicolas_holiber_multiple_2022_q2",
@@ -2558,8 +2558,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 153
+   "lastSeen": "2026-09-24",
+   "sessions": 161
   },
   {
    "id": "pejac_multiple_2024_q3",
@@ -2578,7 +2578,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 147
   },
   {
@@ -2598,8 +2598,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 144
+   "lastSeen": "2026-09-24",
+   "sessions": 145
   },
   {
    "id": "bony_ramirez_toro_2023_q4",
@@ -2618,8 +2618,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 126
+   "lastSeen": "2026-09-24",
+   "sessions": 127
   },
   {
    "id": "moe_nakamura_inside_us_2023_q4",
@@ -2638,8 +2638,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 120
+   "lastSeen": "2026-09-24",
+   "sessions": 121
   },
   {
    "id": "ai_weiwei_glass_vase_2023_q3",
@@ -2659,107 +2659,7 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-22",
-   "sessions": 116
-  },
-  {
-   "id": "slawn_ugly_bastard_2024_q3",
-   "name": "Slawn - Ugly Bastard",
-   "releaseName": "Slawn \u00b7 Ugly Bastard \u00b7 2024 Q3",
-   "artist": "Slawn",
-   "title": "Ugly Bastard",
-   "quarter": "2024 Q3",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 110
-  },
-  {
-   "id": "ly_multiple_2023_q2",
-   "name": "LY - Multiple",
-   "releaseName": "LY \u00b7 Multiple \u00b7 2023 Q2",
-   "artist": "LY",
-   "title": "Multiple",
-   "quarter": "2023 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 99
-  },
-  {
-   "id": "takahiro_komuro_sphinx_kira_2023_q4",
-   "name": "Takahiro Komuro - Sphinx - Kira",
-   "releaseName": "Takahiro Komuro \u00b7 Sphinx - Kira \u00b7 2023 Q4",
-   "artist": "Takahiro Komuro",
-   "title": "Sphinx - Kira",
-   "quarter": "2023 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 98
-  },
-  {
-   "id": "eddie_martinez_scaffold_2024_q2",
-   "name": "Eddie Martinez - Scaffold",
-   "releaseName": "Eddie Martinez \u00b7 Scaffold \u00b7 2024 Q2",
-   "artist": "Eddie Martinez",
-   "title": "Scaffold",
-   "quarter": "2024 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 97
-  },
-  {
-   "id": "patrick_quarm_multiple_2022_q1",
-   "name": "Patrick Quarm - Multiple",
-   "releaseName": "Patrick Quarm \u00b7 Multiple \u00b7 2022 Q1",
-   "artist": "Patrick Quarm",
-   "title": "Multiple",
-   "quarter": "2022 Q1",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 97
+   "sessions": 115
   },
   {
    "id": "shigeki_matsuyama_multiple_2023_q2",
@@ -2778,8 +2678,108 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 97
+   "lastSeen": "2026-09-24",
+   "sessions": 115
+  },
+  {
+   "id": "slawn_ugly_bastard_2024_q3",
+   "name": "Slawn - Ugly Bastard",
+   "releaseName": "Slawn \u00b7 Ugly Bastard \u00b7 2024 Q3",
+   "artist": "Slawn",
+   "title": "Ugly Bastard",
+   "quarter": "2024 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 111
+  },
+  {
+   "id": "patrick_quarm_multiple_2022_q1",
+   "name": "Patrick Quarm - Multiple",
+   "releaseName": "Patrick Quarm \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Patrick Quarm",
+   "title": "Multiple",
+   "quarter": "2022 Q1",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 105
+  },
+  {
+   "id": "eddie_martinez_scaffold_2024_q2",
+   "name": "Eddie Martinez - Scaffold",
+   "releaseName": "Eddie Martinez \u00b7 Scaffold \u00b7 2024 Q2",
+   "artist": "Eddie Martinez",
+   "title": "Scaffold",
+   "quarter": "2024 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 99
+  },
+  {
+   "id": "ly_multiple_2023_q2",
+   "name": "LY - Multiple",
+   "releaseName": "LY \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "LY",
+   "title": "Multiple",
+   "quarter": "2023 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 98
+  },
+  {
+   "id": "takahiro_komuro_sphinx_kira_2023_q4",
+   "name": "Takahiro Komuro - Sphinx - Kira",
+   "releaseName": "Takahiro Komuro \u00b7 Sphinx - Kira \u00b7 2023 Q4",
+   "artist": "Takahiro Komuro",
+   "title": "Sphinx - Kira",
+   "quarter": "2023 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 98
   },
   {
    "id": "super_future_kid_multiple_2022_q1",
@@ -2798,8 +2798,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 84
+   "lastSeen": "2026-09-24",
+   "sessions": 95
   },
   {
    "id": "devan_shimoyama_le_mat_2023_q4",
@@ -2818,8 +2818,28 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 83
+   "lastSeen": "2026-09-24",
+   "sessions": 82
+  },
+  {
+   "id": "aaron_johnson_suburban_dreams_2023_q2",
+   "name": "Aaron Johnson - Suburban Dreams",
+   "releaseName": "Aaron Johnson \u00b7 Suburban Dreams \u00b7 2023 Q2",
+   "artist": "Aaron Johnson",
+   "title": "Suburban Dreams",
+   "quarter": "2023 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 76
   },
   {
    "id": "ai_weiwei_multiple_2023_q2",
@@ -2839,27 +2859,7 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
-   "sessions": 72
-  },
-  {
-   "id": "cai_guo_qiang_snow_lotus_no_1_2024_q1",
-   "name": "Cai Guo-Qiang - Snow Lotus No. 1",
-   "releaseName": "Cai Guo-Qiang \u00b7 Snow Lotus No. 1 \u00b7 2024 Q1",
-   "artist": "Cai Guo-Qiang",
-   "title": "Snow Lotus No. 1",
-   "quarter": "2024 Q1",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 72
+   "sessions": 71
   },
   {
    "id": "maxwell_mustardo_multiple_2023_q2",
@@ -2878,28 +2878,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 71
-  },
-  {
-   "id": "aaron_johnson_suburban_dreams_2023_q2",
-   "name": "Aaron Johnson - Suburban Dreams",
-   "releaseName": "Aaron Johnson \u00b7 Suburban Dreams \u00b7 2023 Q2",
-   "artist": "Aaron Johnson",
-   "title": "Suburban Dreams",
-   "quarter": "2023 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 70
   },
   {
    "id": "b_st_sunday_afternoon_2022_q4",
@@ -2918,8 +2898,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 68
+   "lastSeen": "2026-09-24",
+   "sessions": 70
   },
   {
    "id": "peter_halley_rising_high_ii_2024_q2",
@@ -2938,8 +2918,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 67
+   "lastSeen": "2026-09-24",
+   "sessions": 70
   },
   {
    "id": "che_lovelace_emerald_and_sun_dancers_2022_q3",
@@ -2958,8 +2938,68 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 69
+  },
+  {
+   "id": "cai_guo_qiang_snow_lotus_no_1_2024_q1",
+   "name": "Cai Guo-Qiang - Snow Lotus No. 1",
+   "releaseName": "Cai Guo-Qiang \u00b7 Snow Lotus No. 1 \u00b7 2024 Q1",
+   "artist": "Cai Guo-Qiang",
+   "title": "Snow Lotus No. 1",
+   "quarter": "2024 Q1",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
    "lastSeen": "2026-09-23",
-   "sessions": 66
+   "sessions": 64
+  },
+  {
+   "id": "hideaki_kawashima_multiple_2023_q4",
+   "name": "Hideaki Kawashima - Multiple",
+   "releaseName": "Hideaki Kawashima \u00b7 Multiple \u00b7 2023 Q4",
+   "artist": "Hideaki Kawashima",
+   "title": "Multiple",
+   "quarter": "2023 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 63
+  },
+  {
+   "id": "javier_calleja_multiple_2024_q2",
+   "name": "Javier Calleja - Multiple",
+   "releaseName": "Javier Calleja \u00b7 Multiple \u00b7 2024 Q2",
+   "artist": "Javier Calleja",
+   "title": "Multiple",
+   "quarter": "2024 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 62
   },
   {
    "id": "johnson_tsang_multiple_2022_q1",
@@ -2979,7 +3019,7 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
-   "sessions": 64
+   "sessions": 62
   },
   {
    "id": "michaela_yearwood_dan_multiple_2023_q4",
@@ -2988,26 +3028,6 @@
    "artist": "Michaela Yearwood-Dan",
    "title": "Multiple",
    "quarter": "2023 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 63
-  },
-  {
-   "id": "nigel_howlett_multiple_2022_q1",
-   "name": "Nigel Howlett - Multiple",
-   "releaseName": "Nigel Howlett \u00b7 Multiple \u00b7 2022 Q1",
-   "artist": "Nigel Howlett",
-   "title": "Multiple",
-   "quarter": "2022 Q1",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -3058,26 +3078,6 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 61
-  },
-  {
-   "id": "hideaki_kawashima_multiple_2023_q4",
-   "name": "Hideaki Kawashima - Multiple",
-   "releaseName": "Hideaki Kawashima \u00b7 Multiple \u00b7 2023 Q4",
-   "artist": "Hideaki Kawashima",
-   "title": "Multiple",
-   "quarter": "2023 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
    "lastSeen": "2026-09-23",
    "sessions": 61
   },
@@ -3098,28 +3098,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 60
-  },
-  {
-   "id": "javier_calleja_multiple_2024_q2",
-   "name": "Javier Calleja - Multiple",
-   "releaseName": "Javier Calleja \u00b7 Multiple \u00b7 2024 Q2",
-   "artist": "Javier Calleja",
-   "title": "Multiple",
-   "quarter": "2024 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 59
   },
   {
    "id": "joakim_ojanen_multiple_2022_q3",
@@ -3138,7 +3118,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 58
   },
   {
@@ -3159,7 +3139,27 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
-   "sessions": 57
+   "sessions": 56
+  },
+  {
+   "id": "nigel_howlett_multiple_2022_q1",
+   "name": "Nigel Howlett - Multiple",
+   "releaseName": "Nigel Howlett \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Nigel Howlett",
+   "title": "Multiple",
+   "quarter": "2022 Q1",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 56
   },
   {
    "id": "yoon_hyup_night_in_paris_golden_light_2022_q4",
@@ -3199,27 +3199,7 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
-   "sessions": 55
-  },
-  {
-   "id": "camilla_engstr_m_yellow_moon_2022_q3",
-   "name": "Camilla Engstr\u00f6m - Yellow Moon",
-   "releaseName": "Camilla Engstr\u00f6m \u00b7 Yellow Moon \u00b7 2022 Q3",
-   "artist": "Camilla Engstr\u00f6m",
-   "title": "Yellow Moon",
-   "quarter": "2022 Q3",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 53
+   "sessions": 54
   },
   {
    "id": "hassan_hajjaj_yazid_rania_2021_q3",
@@ -3238,7 +3218,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 53
   },
   {
@@ -3278,8 +3258,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 51
+   "lastSeen": "2026-09-24",
+   "sessions": 52
   },
   {
    "id": "jen_stark_dichroic_mandala_2022_q4",
@@ -3299,6 +3279,26 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
+   "sessions": 52
+  },
+  {
+   "id": "camilla_engstr_m_yellow_moon_2022_q3",
+   "name": "Camilla Engstr\u00f6m - Yellow Moon",
+   "releaseName": "Camilla Engstr\u00f6m \u00b7 Yellow Moon \u00b7 2022 Q3",
+   "artist": "Camilla Engstr\u00f6m",
+   "title": "Yellow Moon",
+   "quarter": "2022 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-22",
    "sessions": 51
   },
   {
@@ -3322,26 +3322,6 @@
    "sessions": 51
   },
   {
-   "id": "gisela_mcdaniel_are_you_watching_2022_q1",
-   "name": "Gisela McDaniel - Are you watching?",
-   "releaseName": "Gisela McDaniel \u00b7 Are you watching? \u00b7 2022 Q1",
-   "artist": "Gisela McDaniel",
-   "title": "Are you watching?",
-   "quarter": "2022 Q1",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 46
-  },
-  {
    "id": "paul_mccarthy_santa_with_butt_plug_bronze_11_4_inches_2022_q4",
    "name": "Paul McCarthy - Santa with Butt Plug Bronze 11.4 inches",
    "releaseName": "Paul McCarthy \u00b7 Santa with Butt Plug Bronze 11.4 inches \u00b7 2022 Q4",
@@ -3358,28 +3338,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 46
-  },
-  {
-   "id": "rafa_macarr_n_multiple_2022_q2",
-   "name": "Rafa Macarr\u00f3n - Multiple",
-   "releaseName": "Rafa Macarr\u00f3n \u00b7 Multiple \u00b7 2022 Q2",
-   "artist": "Rafa Macarr\u00f3n",
-   "title": "Multiple",
-   "quarter": "2022 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 46
+   "lastSeen": "2026-09-24",
+   "sessions": 50
   },
   {
    "id": "danielle_mckinney_dream_catcher_2023_q1",
@@ -3398,8 +3358,28 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 44
+   "lastSeen": "2026-09-24",
+   "sessions": 45
+  },
+  {
+   "id": "rafa_macarr_n_multiple_2022_q2",
+   "name": "Rafa Macarr\u00f3n - Multiple",
+   "releaseName": "Rafa Macarr\u00f3n \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Rafa Macarr\u00f3n",
+   "title": "Multiple",
+   "quarter": "2022 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 45
   },
   {
    "id": "marcela_fl_rido_bloom_2023_q3",
@@ -3438,16 +3418,16 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 44
   },
   {
-   "id": "cleon_peterson_multiple_2022_q2",
-   "name": "Cleon Peterson - Multiple",
-   "releaseName": "Cleon Peterson \u00b7 Multiple \u00b7 2022 Q2",
-   "artist": "Cleon Peterson",
-   "title": "Multiple",
-   "quarter": "2022 Q2",
+   "id": "gisela_mcdaniel_are_you_watching_2022_q1",
+   "name": "Gisela McDaniel - Are you watching?",
+   "releaseName": "Gisela McDaniel \u00b7 Are you watching? \u00b7 2022 Q1",
+   "artist": "Gisela McDaniel",
+   "title": "Are you watching?",
+   "quarter": "2022 Q1",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -3458,15 +3438,15 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 43
   },
   {
-   "id": "angel_otero_broken_record_2022_q2",
-   "name": "Angel Otero - Broken Record",
-   "releaseName": "Angel Otero \u00b7 Broken Record \u00b7 2022 Q2",
-   "artist": "Angel Otero",
-   "title": "Broken Record",
+   "id": "cleon_peterson_multiple_2022_q2",
+   "name": "Cleon Peterson - Multiple",
+   "releaseName": "Cleon Peterson \u00b7 Multiple \u00b7 2022 Q2",
+   "artist": "Cleon Peterson",
+   "title": "Multiple",
    "quarter": "2022 Q2",
    "type": "LE",
    "status": "catalogue",
@@ -3498,8 +3478,28 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 40
+  },
+  {
+   "id": "angel_otero_broken_record_2022_q2",
+   "name": "Angel Otero - Broken Record",
+   "releaseName": "Angel Otero \u00b7 Broken Record \u00b7 2022 Q2",
+   "artist": "Angel Otero",
+   "title": "Broken Record",
+   "quarter": "2022 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-23",
+   "sessions": 39
   },
   {
    "id": "deborah_brown_march_snowstorm_2023_q2",
@@ -3518,8 +3518,48 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 39
+  },
+  {
+   "id": "cui_jie_shanghai_federation_of_industry_commerce_building_2023_q4",
+   "name": "Cui Jie - Shanghai Federation of Industry & Commerce Building",
+   "releaseName": "Cui Jie \u00b7 Shanghai Federation of Industry & Commerce Building \u00b7 2023 Q4",
+   "artist": "Cui Jie",
+   "title": "Shanghai Federation of Industry & Commerce Building",
+   "quarter": "2023 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 38
+  },
+  {
+   "id": "roby_dwi_antono_kira_2021_q3",
+   "name": "Roby Dwi Antono - KIRA",
+   "releaseName": "Roby Dwi Antono \u00b7 KIRA \u00b7 2021 Q3",
+   "artist": "Roby Dwi Antono",
+   "title": "KIRA",
+   "quarter": "2021 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-23",
+   "sessions": 37
   },
   {
    "id": "tschabalala_self_seated_bronze_2022_q4",
@@ -3539,7 +3579,7 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
-   "sessions": 38
+   "sessions": 37
   },
   {
    "id": "alfie_caine_multiple_2022_q3",
@@ -3598,16 +3638,16 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 36
   },
   {
-   "id": "cui_jie_shanghai_federation_of_industry_commerce_building_2023_q4",
-   "name": "Cui Jie - Shanghai Federation of Industry & Commerce Building",
-   "releaseName": "Cui Jie \u00b7 Shanghai Federation of Industry & Commerce Building \u00b7 2023 Q4",
-   "artist": "Cui Jie",
-   "title": "Shanghai Federation of Industry & Commerce Building",
-   "quarter": "2023 Q4",
+   "id": "chen_wei_ting_poetic_fragments_2023_q2",
+   "name": "Chen Wei Ting - Poetic fragments",
+   "releaseName": "Chen Wei Ting \u00b7 Poetic fragments \u00b7 2023 Q2",
+   "artist": "Chen Wei Ting",
+   "title": "Poetic fragments",
+   "quarter": "2023 Q2",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -3618,16 +3658,16 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-22",
    "sessions": 36
   },
   {
-   "id": "roby_dwi_antono_kira_2021_q3",
-   "name": "Roby Dwi Antono - KIRA",
-   "releaseName": "Roby Dwi Antono \u00b7 KIRA \u00b7 2021 Q3",
-   "artist": "Roby Dwi Antono",
-   "title": "KIRA",
-   "quarter": "2021 Q3",
+   "id": "jordi_ribes_multiple_2022_q3",
+   "name": "Jordi Ribes - Multiple",
+   "releaseName": "Jordi Ribes \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Jordi Ribes",
+   "title": "Multiple",
+   "quarter": "2022 Q3",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -3638,7 +3678,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 36
   },
   {
@@ -3682,12 +3722,12 @@
    "sessions": 35
   },
   {
-   "id": "jordi_ribes_multiple_2022_q3",
-   "name": "Jordi Ribes - Multiple",
-   "releaseName": "Jordi Ribes \u00b7 Multiple \u00b7 2022 Q3",
-   "artist": "Jordi Ribes",
-   "title": "Multiple",
-   "quarter": "2022 Q3",
+   "id": "liang_fu_anonyme_2023_q1",
+   "name": "Liang Fu - Anonyme",
+   "releaseName": "Liang Fu \u00b7 Anonyme \u00b7 2023 Q1",
+   "artist": "Liang Fu",
+   "title": "Anonyme",
+   "quarter": "2023 Q1",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -3698,7 +3738,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-22",
    "sessions": 35
   },
   {
@@ -3742,26 +3782,6 @@
    "sessions": 34
   },
   {
-   "id": "liang_fu_anonyme_2023_q1",
-   "name": "Liang Fu - Anonyme",
-   "releaseName": "Liang Fu \u00b7 Anonyme \u00b7 2023 Q1",
-   "artist": "Liang Fu",
-   "title": "Anonyme",
-   "quarter": "2023 Q1",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 34
-  },
-  {
    "id": "so_youn_lee_ready_2023_q4",
    "name": "So Youn Lee - Ready?",
    "releaseName": "So Youn Lee \u00b7 Ready? \u00b7 2023 Q4",
@@ -3782,26 +3802,6 @@
    "sessions": 34
   },
   {
-   "id": "hideaki_kawashima_multiple_2022_q1",
-   "name": "Hideaki Kawashima - Multiple",
-   "releaseName": "Hideaki Kawashima \u00b7 Multiple \u00b7 2022 Q1",
-   "artist": "Hideaki Kawashima",
-   "title": "Multiple",
-   "quarter": "2022 Q1",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
-   "sessions": 33
-  },
-  {
    "id": "emily_xie_guardian_lion_2024_q1",
    "name": "Emily Xie - Guardian Lion",
    "releaseName": "Emily Xie \u00b7 Guardian Lion \u00b7 2024 Q1",
@@ -3818,16 +3818,16 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 32
+   "lastSeen": "2026-09-24",
+   "sessions": 33
   },
   {
-   "id": "seth_little_sower_2023_q4",
-   "name": "SETH - Little Sower",
-   "releaseName": "SETH \u00b7 Little Sower \u00b7 2023 Q4",
-   "artist": "SETH",
-   "title": "Little Sower",
-   "quarter": "2023 Q4",
+   "id": "hideaki_kawashima_multiple_2022_q1",
+   "name": "Hideaki Kawashima - Multiple",
+   "releaseName": "Hideaki Kawashima \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "Hideaki Kawashima",
+   "title": "Multiple",
+   "quarter": "2022 Q1",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -3838,8 +3838,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 32
+   "lastSeen": "2026-09-24",
+   "sessions": 33
   },
   {
    "id": "takahiro_komuro_ground_dragon_2022_q2",
@@ -3848,6 +3848,26 @@
    "artist": "Takahiro Komuro",
    "title": "Ground Dragon",
    "quarter": "2022 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 33
+  },
+  {
+   "id": "seth_little_sower_2023_q4",
+   "name": "SETH - Little Sower",
+   "releaseName": "SETH \u00b7 Little Sower \u00b7 2023 Q4",
+   "artist": "SETH",
+   "title": "Little Sower",
+   "quarter": "2023 Q4",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -3882,26 +3902,6 @@
    "sessions": 31
   },
   {
-   "id": "linda_dounia_faux_letters_2024_q2",
-   "name": "Linda Dounia - Faux Letters",
-   "releaseName": "Linda Dounia \u00b7 Faux Letters \u00b7 2024 Q2",
-   "artist": "Linda Dounia",
-   "title": "Faux Letters",
-   "quarter": "2024 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 31
-  },
-  {
    "id": "zhang_ruyi_forced_separation_2024_q3",
    "name": "Zhang Ruyi - Forced Separation",
    "releaseName": "Zhang Ruyi \u00b7 Forced Separation \u00b7 2024 Q3",
@@ -3922,6 +3922,26 @@
    "sessions": 31
   },
   {
+   "id": "clayton_schiff_visitor_2022_q3",
+   "name": "Clayton Schiff - Visitor",
+   "releaseName": "Clayton Schiff \u00b7 Visitor \u00b7 2022 Q3",
+   "artist": "Clayton Schiff",
+   "title": "Visitor",
+   "quarter": "2022 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 30
+  },
+  {
    "id": "danielle_orchard_a_warm_garden_2023_q2",
    "name": "Danielle Orchard - A Warm Garden",
    "releaseName": "Danielle Orchard \u00b7 A Warm Garden \u00b7 2023 Q2",
@@ -3938,7 +3958,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 30
   },
   {
@@ -3958,7 +3978,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 30
   },
   {
@@ -3978,8 +3998,48 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 30
+  },
+  {
+   "id": "anna_weyant_loose_screw_2022_q2",
+   "name": "Anna Weyant - Loose Screw",
+   "releaseName": "Anna Weyant \u00b7 Loose Screw \u00b7 2022 Q2",
+   "artist": "Anna Weyant",
+   "title": "Loose Screw",
+   "quarter": "2022 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-23",
+   "sessions": 29
+  },
+  {
+   "id": "caleb_hahne_quintana_ourselves_scattered_parts_of_earth_2023_q1",
+   "name": "Caleb Hahne Quintana - Ourselves Scattered Parts Of Earth",
+   "releaseName": "Caleb Hahne Quintana \u00b7 Ourselves Scattered Parts Of Earth \u00b7 2023 Q1",
+   "artist": "Caleb Hahne Quintana",
+   "title": "Ourselves Scattered Parts Of Earth",
+   "quarter": "2023 Q1",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 29
   },
   {
    "id": "felix_treadwell_silent_commuter_2022_q1",
@@ -4000,46 +4060,6 @@
    "benchmarkPct": null,
    "lastSeen": "2026-09-20",
    "sessions": 29
-  },
-  {
-   "id": "anna_weyant_loose_screw_2022_q2",
-   "name": "Anna Weyant - Loose Screw",
-   "releaseName": "Anna Weyant \u00b7 Loose Screw \u00b7 2022 Q2",
-   "artist": "Anna Weyant",
-   "title": "Loose Screw",
-   "quarter": "2022 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 28
-  },
-  {
-   "id": "caleb_hahne_quintana_ourselves_scattered_parts_of_earth_2023_q1",
-   "name": "Caleb Hahne Quintana - Ourselves Scattered Parts Of Earth",
-   "releaseName": "Caleb Hahne Quintana \u00b7 Ourselves Scattered Parts Of Earth \u00b7 2023 Q1",
-   "artist": "Caleb Hahne Quintana",
-   "title": "Ourselves Scattered Parts Of Earth",
-   "quarter": "2023 Q1",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 28
   },
   {
    "id": "dada_khanyisa_i_can_t_change_even_if_i_tried_2023_q1",
@@ -4098,16 +4118,16 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-23",
    "sessions": 28
   },
   {
-   "id": "marcus_jansen_afro_painter_2023_q4",
-   "name": "Marcus Jansen - Afro Painter",
-   "releaseName": "Marcus Jansen \u00b7 Afro Painter \u00b7 2023 Q4",
-   "artist": "Marcus Jansen",
-   "title": "Afro Painter",
-   "quarter": "2023 Q4",
+   "id": "linda_dounia_faux_letters_2024_q2",
+   "name": "Linda Dounia - Faux Letters",
+   "releaseName": "Linda Dounia \u00b7 Faux Letters \u00b7 2024 Q2",
+   "artist": "Linda Dounia",
+   "title": "Faux Letters",
+   "quarter": "2024 Q2",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -4118,7 +4138,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-21",
    "sessions": 28
   },
   {
@@ -4139,6 +4159,26 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-21",
+   "sessions": 27
+  },
+  {
+   "id": "marcus_jansen_afro_painter_2023_q4",
+   "name": "Marcus Jansen - Afro Painter",
+   "releaseName": "Marcus Jansen \u00b7 Afro Painter \u00b7 2023 Q4",
+   "artist": "Marcus Jansen",
+   "title": "Afro Painter",
+   "quarter": "2023 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
    "sessions": 27
   },
   {
@@ -4178,48 +4218,8 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 27
-  },
-  {
-   "id": "chen_wei_ting_poetic_fragments_2023_q2",
-   "name": "Chen Wei Ting - Poetic fragments",
-   "releaseName": "Chen Wei Ting \u00b7 Poetic fragments \u00b7 2023 Q2",
-   "artist": "Chen Wei Ting",
-   "title": "Poetic fragments",
-   "quarter": "2023 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-19",
-   "sessions": 26
-  },
-  {
-   "id": "clayton_schiff_visitor_2022_q3",
-   "name": "Clayton Schiff - Visitor",
-   "releaseName": "Clayton Schiff \u00b7 Visitor \u00b7 2022 Q3",
-   "artist": "Clayton Schiff",
-   "title": "Visitor",
-   "quarter": "2022 Q3",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 26
   },
   {
    "id": "sarah_morris_industry_spiderweb_2023_q2",
@@ -4240,6 +4240,46 @@
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
    "sessions": 26
+  },
+  {
+   "id": "shaina_mccoy_tiff_2023_q2",
+   "name": "Shaina McCoy - Tiff",
+   "releaseName": "Shaina McCoy \u00b7 Tiff \u00b7 2023 Q2",
+   "artist": "Shaina McCoy",
+   "title": "Tiff",
+   "quarter": "2023 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-23",
+   "sessions": 26
+  },
+  {
+   "id": "grant_levy_lucero_de_la_rosa_dulcer_a_la_moderna_2023_q2",
+   "name": "Grant Levy-Lucero - de la Rosa, Dulcer\u00eda La Moderna",
+   "releaseName": "Grant Levy-Lucero \u00b7 de la Rosa, Dulcer\u00eda La Moderna \u00b7 2023 Q2",
+   "artist": "Grant Levy-Lucero",
+   "title": "de la Rosa, Dulcer\u00eda La Moderna",
+   "quarter": "2023 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 25
   },
   {
    "id": "james_jean_bath_saxum_2022_q4",
@@ -4278,27 +4318,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 25
-  },
-  {
-   "id": "paul_insect_multiple_2024_q3",
-   "name": "Paul Insect - Multiple",
-   "releaseName": "Paul Insect \u00b7 Multiple \u00b7 2024 Q3",
-   "artist": "Paul Insect",
-   "title": "Multiple",
-   "quarter": "2024 Q3",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-19",
+   "lastSeen": "2026-09-24",
    "sessions": 25
   },
   {
@@ -4308,26 +4328,6 @@
    "artist": "Scott Kahn",
    "title": "INGERSOLL'S BRANCH",
    "quarter": "2022 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 25
-  },
-  {
-   "id": "shaina_mccoy_tiff_2023_q2",
-   "name": "Shaina McCoy - Tiff",
-   "releaseName": "Shaina McCoy \u00b7 Tiff \u00b7 2023 Q2",
-   "artist": "Shaina McCoy",
-   "title": "Tiff",
-   "quarter": "2023 Q2",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -4362,12 +4362,12 @@
    "sessions": 25
   },
   {
-   "id": "roby_dwi_antono_hayu_2023_q1",
-   "name": "Roby Dwi Antono - HAYU",
-   "releaseName": "Roby Dwi Antono \u00b7 HAYU \u00b7 2023 Q1",
-   "artist": "Roby Dwi Antono",
-   "title": "HAYU",
-   "quarter": "2023 Q1",
+   "id": "nikki_maloof_oranges_2022_q2",
+   "name": "Nikki Maloof - Oranges",
+   "releaseName": "Nikki Maloof \u00b7 Oranges \u00b7 2022 Q2",
+   "artist": "Nikki Maloof",
+   "title": "Oranges",
+   "quarter": "2022 Q2",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -4378,7 +4378,27 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-17",
+   "lastSeen": "2026-09-24",
+   "sessions": 24
+  },
+  {
+   "id": "paul_insect_multiple_2024_q3",
+   "name": "Paul Insect - Multiple",
+   "releaseName": "Paul Insect \u00b7 Multiple \u00b7 2024 Q3",
+   "artist": "Paul Insect",
+   "title": "Multiple",
+   "quarter": "2024 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-19",
    "sessions": 24
   },
   {
@@ -4402,26 +4422,6 @@
    "sessions": 23
   },
   {
-   "id": "nikki_maloof_oranges_2022_q2",
-   "name": "Nikki Maloof - Oranges",
-   "releaseName": "Nikki Maloof \u00b7 Oranges \u00b7 2022 Q2",
-   "artist": "Nikki Maloof",
-   "title": "Oranges",
-   "quarter": "2022 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 23
-  },
-  {
    "id": "shaina_mccoy_hoops_2022_q2",
    "name": "Shaina McCoy - Hoops",
    "releaseName": "Shaina McCoy \u00b7 Hoops \u00b7 2022 Q2",
@@ -4442,12 +4442,12 @@
    "sessions": 23
   },
   {
-   "id": "amanda_baldwin_bell_bay_2023_q3",
-   "name": "Amanda Baldwin - Bell Bay",
-   "releaseName": "Amanda Baldwin \u00b7 Bell Bay \u00b7 2023 Q3",
-   "artist": "Amanda Baldwin",
-   "title": "Bell Bay",
-   "quarter": "2023 Q3",
+   "id": "giorgiko_unacquainted_friends_2023_q4",
+   "name": "Giorgiko - Unacquainted Friends",
+   "releaseName": "Giorgiko \u00b7 Unacquainted Friends \u00b7 2023 Q4",
+   "artist": "Giorgiko",
+   "title": "Unacquainted Friends",
+   "quarter": "2023 Q4",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -4459,46 +4459,6 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
-   "sessions": 22
-  },
-  {
-   "id": "george_rouy_tearing_of_the_savage_breast_2022_q4",
-   "name": "George Rouy - Tearing of the Savage Breast",
-   "releaseName": "George Rouy \u00b7 Tearing of the Savage Breast \u00b7 2022 Q4",
-   "artist": "George Rouy",
-   "title": "Tearing of the Savage Breast",
-   "quarter": "2022 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-20",
-   "sessions": 22
-  },
-  {
-   "id": "johnson_tsang_searching_for_spring_2022_q2",
-   "name": "Johnson Tsang - Searching for Spring",
-   "releaseName": "Johnson Tsang \u00b7 Searching for Spring \u00b7 2022 Q2",
-   "artist": "Johnson Tsang",
-   "title": "Searching for Spring",
-   "quarter": "2022 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
    "sessions": 22
   },
   {
@@ -4518,16 +4478,16 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 22
   },
   {
-   "id": "giorgiko_unacquainted_friends_2023_q4",
-   "name": "Giorgiko - Unacquainted Friends",
-   "releaseName": "Giorgiko \u00b7 Unacquainted Friends \u00b7 2023 Q4",
-   "artist": "Giorgiko",
-   "title": "Unacquainted Friends",
-   "quarter": "2023 Q4",
+   "id": "roby_dwi_antono_hayu_2023_q1",
+   "name": "Roby Dwi Antono - HAYU",
+   "releaseName": "Roby Dwi Antono \u00b7 HAYU \u00b7 2023 Q1",
+   "artist": "Roby Dwi Antono",
+   "title": "HAYU",
+   "quarter": "2023 Q1",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -4538,16 +4498,36 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-17",
+   "sessions": 22
+  },
+  {
+   "id": "amanda_baldwin_bell_bay_2023_q3",
+   "name": "Amanda Baldwin - Bell Bay",
+   "releaseName": "Amanda Baldwin \u00b7 Bell Bay \u00b7 2023 Q3",
+   "artist": "Amanda Baldwin",
+   "title": "Bell Bay",
+   "quarter": "2023 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
    "sessions": 21
   },
   {
-   "id": "grant_riven_yun_fall_2023_q2",
-   "name": "Grant Riven Yun - Fall",
-   "releaseName": "Grant Riven Yun \u00b7 Fall \u00b7 2023 Q2",
-   "artist": "Grant Riven Yun",
-   "title": "Fall",
-   "quarter": "2023 Q2",
+   "id": "johnson_tsang_searching_for_spring_2022_q2",
+   "name": "Johnson Tsang - Searching for Spring",
+   "releaseName": "Johnson Tsang \u00b7 Searching for Spring \u00b7 2022 Q2",
+   "artist": "Johnson Tsang",
+   "title": "Searching for Spring",
+   "quarter": "2022 Q2",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -4558,27 +4538,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 21
-  },
-  {
-   "id": "ly_luv_somewhere_new_2023_q4",
-   "name": "LY - LUV Somewhere New",
-   "releaseName": "LY \u00b7 LUV Somewhere New \u00b7 2023 Q4",
-   "artist": "LY",
-   "title": "LUV Somewhere New",
-   "quarter": "2023 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-19",
+   "lastSeen": "2026-09-22",
    "sessions": 21
   },
   {
@@ -4598,15 +4558,35 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-16",
+   "lastSeen": "2026-09-12",
    "sessions": 21
   },
   {
-   "id": "grant_levy_lucero_de_la_rosa_dulcer_a_la_moderna_2023_q2",
-   "name": "Grant Levy-Lucero - de la Rosa, Dulcer\u00eda La Moderna",
-   "releaseName": "Grant Levy-Lucero \u00b7 de la Rosa, Dulcer\u00eda La Moderna \u00b7 2023 Q2",
-   "artist": "Grant Levy-Lucero",
-   "title": "de la Rosa, Dulcer\u00eda La Moderna",
+   "id": "george_rouy_tearing_of_the_savage_breast_2022_q4",
+   "name": "George Rouy - Tearing of the Savage Breast",
+   "releaseName": "George Rouy \u00b7 Tearing of the Savage Breast \u00b7 2022 Q4",
+   "artist": "George Rouy",
+   "title": "Tearing of the Savage Breast",
+   "quarter": "2022 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-20",
+   "sessions": 20
+  },
+  {
+   "id": "grant_riven_yun_fall_2023_q2",
+   "name": "Grant Riven Yun - Fall",
+   "releaseName": "Grant Riven Yun \u00b7 Fall \u00b7 2023 Q2",
+   "artist": "Grant Riven Yun",
+   "title": "Fall",
    "quarter": "2023 Q2",
    "type": "LE",
    "status": "catalogue",
@@ -4618,7 +4598,87 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 20
+  },
+  {
+   "id": "kudzanai_violet_hwami_multiple_2022_q3",
+   "name": "Kudzanai-Violet Hwami - Multiple",
+   "releaseName": "Kudzanai-Violet Hwami \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Kudzanai-Violet Hwami",
+   "title": "Multiple",
+   "quarter": "2022 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
    "lastSeen": "2026-09-23",
+   "sessions": 20
+  },
+  {
+   "id": "ly_luv_somewhere_new_2023_q4",
+   "name": "LY - LUV Somewhere New",
+   "releaseName": "LY \u00b7 LUV Somewhere New \u00b7 2023 Q4",
+   "artist": "LY",
+   "title": "LUV Somewhere New",
+   "quarter": "2023 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-19",
+   "sessions": 20
+  },
+  {
+   "id": "michael_kozlowski_mecha_2024_q2",
+   "name": "Michael Kozlowski - Mecha",
+   "releaseName": "Michael Kozlowski \u00b7 Mecha \u00b7 2024 Q2",
+   "artist": "Michael Kozlowski",
+   "title": "Mecha",
+   "quarter": "2024 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-21",
+   "sessions": 20
+  },
+  {
+   "id": "tide_multiple_2022_q1",
+   "name": "TIDE - Multiple",
+   "releaseName": "TIDE \u00b7 Multiple \u00b7 2022 Q1",
+   "artist": "TIDE",
+   "title": "Multiple",
+   "quarter": "2022 Q1",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
    "sessions": 20
   },
   {
@@ -4682,12 +4742,12 @@
    "sessions": 19
   },
   {
-   "id": "tide_multiple_2022_q1",
-   "name": "TIDE - Multiple",
-   "releaseName": "TIDE \u00b7 Multiple \u00b7 2022 Q1",
-   "artist": "TIDE",
-   "title": "Multiple",
-   "quarter": "2022 Q1",
+   "id": "jaime_mu_oz_self_portrait_2022_q3",
+   "name": "Jaime Mu\u00f1oz - Self Portrait",
+   "releaseName": "Jaime Mu\u00f1oz \u00b7 Self Portrait \u00b7 2022 Q3",
+   "artist": "Jaime Mu\u00f1oz",
+   "title": "Self Portrait",
+   "quarter": "2022 Q3",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -4698,7 +4758,27 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
+   "sessions": 19
+  },
+  {
+   "id": "yutaka_hashimoto_study_for_null_portrait_of_someone_166_2024_q1",
+   "name": "Yutaka Hashimoto - Study_for_Null_Portrait of someone#166",
+   "releaseName": "Yutaka Hashimoto \u00b7 Study_for_Null_Portrait of someone#166 \u00b7 2024 Q1",
+   "artist": "Yutaka Hashimoto",
+   "title": "Study_for_Null_Portrait of someone#166",
+   "quarter": "2024 Q1",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
    "sessions": 19
   },
   {
@@ -4708,26 +4788,6 @@
    "artist": "Antony Micallef",
    "title": "The Union of Animals",
    "quarter": "2022 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 18
-  },
-  {
-   "id": "jaime_mu_oz_self_portrait_2022_q3",
-   "name": "Jaime Mu\u00f1oz - Self Portrait",
-   "releaseName": "Jaime Mu\u00f1oz \u00b7 Self Portrait \u00b7 2022 Q3",
-   "artist": "Jaime Mu\u00f1oz",
-   "title": "Self Portrait",
-   "quarter": "2022 Q3",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -4802,6 +4862,26 @@
    "sessions": 18
   },
   {
+   "id": "zhang_huan_amitabha_2021_q3",
+   "name": "Zhang Huan - Amitabha",
+   "releaseName": "Zhang Huan \u00b7 Amitabha \u00b7 2021 Q3",
+   "artist": "Zhang Huan",
+   "title": "Amitabha",
+   "quarter": "2021 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-20",
+   "sessions": 18
+  },
+  {
    "id": "christian_rex_van_minnen_the_expert_2021_q4",
    "name": "Christian Rex van Minnen - The Expert",
    "releaseName": "Christian Rex van Minnen \u00b7 The Expert \u00b7 2021 Q4",
@@ -4822,6 +4902,26 @@
    "sessions": 17
   },
   {
+   "id": "jean_michel_othoniel_lotus_of_hope_2021_q4",
+   "name": "Jean-Michel Othoniel - Lotus of Hope",
+   "releaseName": "Jean-Michel Othoniel \u00b7 Lotus of Hope \u00b7 2021 Q4",
+   "artist": "Jean-Michel Othoniel",
+   "title": "Lotus of Hope",
+   "quarter": "2021 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-23",
+   "sessions": 17
+  },
+  {
    "id": "katie_hector_multiple_2023_q2",
    "name": "Katie Hector - Multiple",
    "releaseName": "Katie Hector \u00b7 Multiple \u00b7 2023 Q2",
@@ -4838,27 +4938,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 17
-  },
-  {
-   "id": "michael_kozlowski_mecha_2024_q2",
-   "name": "Michael Kozlowski - Mecha",
-   "releaseName": "Michael Kozlowski \u00b7 Mecha \u00b7 2024 Q2",
-   "artist": "Michael Kozlowski",
-   "title": "Mecha",
-   "quarter": "2024 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
+   "lastSeen": "2026-09-24",
    "sessions": 17
   },
   {
@@ -4878,7 +4958,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 17
   },
   {
@@ -4900,46 +4980,6 @@
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
    "sessions": 17
-  },
-  {
-   "id": "yutaka_hashimoto_study_for_null_portrait_of_someone_166_2024_q1",
-   "name": "Yutaka Hashimoto - Study_for_Null_Portrait of someone#166",
-   "releaseName": "Yutaka Hashimoto \u00b7 Study_for_Null_Portrait of someone#166 \u00b7 2024 Q1",
-   "artist": "Yutaka Hashimoto",
-   "title": "Study_for_Null_Portrait of someone#166",
-   "quarter": "2024 Q1",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 17
-  },
-  {
-   "id": "lin_yen_liang_multiple_2022_q3",
-   "name": "Lin Yen-Liang - Multiple",
-   "releaseName": "Lin Yen-Liang \u00b7 Multiple \u00b7 2022 Q3",
-   "artist": "Lin Yen-Liang",
-   "title": "Multiple",
-   "quarter": "2022 Q3",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-12",
-   "sessions": 16
   },
   {
    "id": "anna_ridler_price_per_stem_2025_q1",
@@ -4982,26 +5022,6 @@
    "sessions": 15
   },
   {
-   "id": "drift_sine_2022_q3",
-   "name": "DRIFT - Sine",
-   "releaseName": "DRIFT \u00b7 Sine \u00b7 2022 Q3",
-   "artist": "DRIFT",
-   "title": "Sine",
-   "quarter": "2022 Q3",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 15
-  },
-  {
    "id": "dennis_osadebe_the_people_s_promise_2022_q4",
    "name": "Dennis Osadebe - The People's Promise",
    "releaseName": "Dennis Osadebe \u00b7 The People's Promise \u00b7 2022 Q4",
@@ -5038,27 +5058,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-20",
-   "sessions": 15
-  },
-  {
-   "id": "jean_michel_othoniel_lotus_of_hope_2021_q4",
-   "name": "Jean-Michel Othoniel - Lotus of Hope",
-   "releaseName": "Jean-Michel Othoniel \u00b7 Lotus of Hope \u00b7 2021 Q4",
-   "artist": "Jean-Michel Othoniel",
-   "title": "Lotus of Hope",
-   "quarter": "2021 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
+   "lastSeen": "2026-09-24",
    "sessions": 15
   },
   {
@@ -5082,26 +5082,6 @@
    "sessions": 15
   },
   {
-   "id": "kudzanai_violet_hwami_multiple_2022_q3",
-   "name": "Kudzanai-Violet Hwami - Multiple",
-   "releaseName": "Kudzanai-Violet Hwami \u00b7 Multiple \u00b7 2022 Q3",
-   "artist": "Kudzanai-Violet Hwami",
-   "title": "Multiple",
-   "quarter": "2022 Q3",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 15
-  },
-  {
    "id": "makiko_kudo_nanohana_ramen_2022_q3",
    "name": "Makiko Kudo - Nanohana Ramen",
    "releaseName": "Makiko Kudo \u00b7 Nanohana Ramen \u00b7 2022 Q3",
@@ -5118,7 +5098,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 15
   },
   {
@@ -5138,7 +5118,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 15
   },
   {
@@ -5158,7 +5138,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-23",
    "sessions": 15
   },
   {
@@ -5198,27 +5178,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-18",
-   "sessions": 15
-  },
-  {
-   "id": "zhang_huan_amitabha_2021_q3",
-   "name": "Zhang Huan - Amitabha",
-   "releaseName": "Zhang Huan \u00b7 Amitabha \u00b7 2021 Q3",
-   "artist": "Zhang Huan",
-   "title": "Amitabha",
-   "quarter": "2021 Q3",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
+   "lastSeen": "2026-09-24",
    "sessions": 15
   },
   {
@@ -5242,12 +5202,12 @@
    "sessions": 14
   },
   {
-   "id": "christian_rex_van_minnen_multiple_2023_q2",
-   "name": "Christian Rex van Minnen - Multiple",
-   "releaseName": "Christian Rex van Minnen \u00b7 Multiple \u00b7 2023 Q2",
-   "artist": "Christian Rex van Minnen",
-   "title": "Multiple",
-   "quarter": "2023 Q2",
+   "id": "drift_sine_2022_q3",
+   "name": "DRIFT - Sine",
+   "releaseName": "DRIFT \u00b7 Sine \u00b7 2022 Q3",
+   "artist": "DRIFT",
+   "title": "Sine",
+   "quarter": "2022 Q3",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -5258,7 +5218,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-19",
+   "lastSeen": "2026-09-22",
    "sessions": 14
   },
   {
@@ -5279,6 +5239,26 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-20",
+   "sessions": 14
+  },
+  {
+   "id": "jen_stark_in_between_space_2021_q3",
+   "name": "Jen Stark - In Between Space",
+   "releaseName": "Jen Stark \u00b7 In Between Space \u00b7 2021 Q3",
+   "artist": "Jen Stark",
+   "title": "In Between Space",
+   "quarter": "2021 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
    "sessions": 14
   },
   {
@@ -5318,7 +5298,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
+   "lastSeen": "2026-09-23",
    "sessions": 14
   },
   {
@@ -5339,6 +5319,26 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-22",
+   "sessions": 14
+  },
+  {
+   "id": "lin_yen_liang_multiple_2022_q3",
+   "name": "Lin Yen-Liang - Multiple",
+   "releaseName": "Lin Yen-Liang \u00b7 Multiple \u00b7 2022 Q3",
+   "artist": "Lin Yen-Liang",
+   "title": "Multiple",
+   "quarter": "2022 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-12",
    "sessions": 14
   },
   {
@@ -5382,6 +5382,26 @@
    "sessions": 14
   },
   {
+   "id": "tschabalala_self_lady_in_yellow_on_spiral_seat_2_teal_background_2022_q4",
+   "name": "Tschabalala Self - Lady in Yellow on Spiral Seat #2 Teal Background",
+   "releaseName": "Tschabalala Self \u00b7 Lady in Yellow on Spiral Seat #2 Teal Background \u00b7 2022 Q4",
+   "artist": "Tschabalala Self",
+   "title": "Lady in Yellow on Spiral Seat #2 Teal Background",
+   "quarter": "2022 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 14
+  },
+  {
    "id": "william_mapan_centrifuge_2024_q1",
    "name": "William Mapan - Centrifuge",
    "releaseName": "William Mapan \u00b7 Centrifuge \u00b7 2024 Q1",
@@ -5398,7 +5418,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-09",
+   "lastSeen": "2026-09-24",
    "sessions": 14
   },
   {
@@ -5442,26 +5462,6 @@
    "sessions": 13
   },
   {
-   "id": "jr_giants_high_jump_in_rio_2023_q3",
-   "name": "JR - GIANTS, High jump in Rio",
-   "releaseName": "JR \u00b7 GIANTS, High jump in Rio \u00b7 2023 Q3",
-   "artist": "JR",
-   "title": "GIANTS, High jump in Rio",
-   "quarter": "2023 Q3",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-17",
-   "sessions": 13
-  },
-  {
    "id": "jake_fried_open_eyes_signal_2024_q1",
    "name": "Jake Fried - Open Eyes (Signal)",
    "releaseName": "Jake Fried \u00b7 Open Eyes (Signal) \u00b7 2024 Q1",
@@ -5479,26 +5479,6 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-22",
-   "sessions": 13
-  },
-  {
-   "id": "kara_joslyn_good_thing_you_are_not_alone_2022_q4",
-   "name": "Kara Joslyn - GOOD THING YOU ARE NOT ALONE",
-   "releaseName": "Kara Joslyn \u00b7 GOOD THING YOU ARE NOT ALONE \u00b7 2022 Q4",
-   "artist": "Kara Joslyn",
-   "title": "GOOD THING YOU ARE NOT ALONE",
-   "quarter": "2022 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
    "sessions": 13
   },
   {
@@ -5522,6 +5502,26 @@
    "sessions": 13
   },
   {
+   "id": "nicasio_fernandez_d_i_y_hand_finished_2022_q4",
+   "name": "Nicasio Fernandez - D.I.Y (Hand-finished)",
+   "releaseName": "Nicasio Fernandez \u00b7 D.I.Y (Hand-finished) \u00b7 2022 Q4",
+   "artist": "Nicasio Fernandez",
+   "title": "D.I.Y (Hand-finished)",
+   "quarter": "2022 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 13
+  },
+  {
    "id": "roby_dwi_antono_bias_ii_2022_q4",
    "name": "Roby Dwi Antono - BIAS II",
    "releaseName": "Roby Dwi Antono \u00b7 BIAS II \u00b7 2022 Q4",
@@ -5538,16 +5538,16 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
    "sessions": 13
   },
   {
-   "id": "jen_stark_in_between_space_2021_q3",
-   "name": "Jen Stark - In Between Space",
-   "releaseName": "Jen Stark \u00b7 In Between Space \u00b7 2021 Q3",
-   "artist": "Jen Stark",
-   "title": "In Between Space",
-   "quarter": "2021 Q3",
+   "id": "christian_rex_van_minnen_multiple_2023_q2",
+   "name": "Christian Rex van Minnen - Multiple",
+   "releaseName": "Christian Rex van Minnen \u00b7 Multiple \u00b7 2023 Q2",
+   "artist": "Christian Rex van Minnen",
+   "title": "Multiple",
+   "quarter": "2023 Q2",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -5558,7 +5558,27 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-19",
+   "sessions": 12
+  },
+  {
+   "id": "jr_giants_high_jump_in_rio_2023_q3",
+   "name": "JR - GIANTS, High jump in Rio",
+   "releaseName": "JR \u00b7 GIANTS, High jump in Rio \u00b7 2023 Q3",
+   "artist": "JR",
+   "title": "GIANTS, High jump in Rio",
+   "quarter": "2023 Q3",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-17",
    "sessions": 12
   },
   {
@@ -5578,7 +5598,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
+   "lastSeen": "2026-09-22",
    "sessions": 12
   },
   {
@@ -5602,12 +5622,12 @@
    "sessions": 12
   },
   {
-   "id": "paul_insect_christmas_tree_baubles_2022_q4",
-   "name": "Paul Insect - Christmas Tree Baubles",
-   "releaseName": "Paul Insect \u00b7 Christmas Tree Baubles \u00b7 2022 Q4",
+   "id": "paul_insect_multiple_2021_q4",
+   "name": "Paul Insect - Multiple",
+   "releaseName": "Paul Insect \u00b7 Multiple \u00b7 2021 Q4",
    "artist": "Paul Insect",
-   "title": "Christmas Tree Baubles",
-   "quarter": "2022 Q4",
+   "title": "Multiple",
+   "quarter": "2021 Q4",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -5618,7 +5638,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-18",
    "sessions": 12
   },
   {
@@ -5718,7 +5738,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-21",
+   "lastSeen": "2026-09-23",
    "sessions": 11
   },
   {
@@ -5742,12 +5762,12 @@
    "sessions": 11
   },
   {
-   "id": "khari_turner_rest_and_wellness_2022_q1",
-   "name": "Khari Turner - Rest and Wellness",
-   "releaseName": "Khari Turner \u00b7 Rest and Wellness \u00b7 2022 Q1",
-   "artist": "Khari Turner",
-   "title": "Rest and Wellness",
-   "quarter": "2022 Q1",
+   "id": "jake_fried_open_eyes_flower_2023_q3",
+   "name": "Jake Fried - Open Eyes (Flower)",
+   "releaseName": "Jake Fried \u00b7 Open Eyes (Flower) \u00b7 2023 Q3",
+   "artist": "Jake Fried",
+   "title": "Open Eyes (Flower)",
+   "quarter": "2023 Q3",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -5758,15 +5778,15 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-15",
+   "lastSeen": "2026-09-19",
    "sessions": 11
   },
   {
-   "id": "nicasio_fernandez_d_i_y_hand_finished_2022_q4",
-   "name": "Nicasio Fernandez - D.I.Y (Hand-finished)",
-   "releaseName": "Nicasio Fernandez \u00b7 D.I.Y (Hand-finished) \u00b7 2022 Q4",
-   "artist": "Nicasio Fernandez",
-   "title": "D.I.Y (Hand-finished)",
+   "id": "paul_insect_christmas_tree_baubles_2022_q4",
+   "name": "Paul Insect - Christmas Tree Baubles",
+   "releaseName": "Paul Insect \u00b7 Christmas Tree Baubles \u00b7 2022 Q4",
+   "artist": "Paul Insect",
+   "title": "Christmas Tree Baubles",
    "quarter": "2022 Q4",
    "type": "LE",
    "status": "catalogue",
@@ -5778,27 +5798,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 11
-  },
-  {
-   "id": "paul_insect_multiple_2021_q4",
-   "name": "Paul Insect - Multiple",
-   "releaseName": "Paul Insect \u00b7 Multiple \u00b7 2021 Q4",
-   "artist": "Paul Insect",
-   "title": "Multiple",
-   "quarter": "2021 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-18",
+   "lastSeen": "2026-09-24",
    "sessions": 11
   },
   {
@@ -5838,27 +5838,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
-   "sessions": 11
-  },
-  {
-   "id": "tschabalala_self_lady_in_yellow_on_spiral_seat_2_teal_background_2022_q4",
-   "name": "Tschabalala Self - Lady in Yellow on Spiral Seat #2 Teal Background",
-   "releaseName": "Tschabalala Self \u00b7 Lady in Yellow on Spiral Seat #2 Teal Background \u00b7 2022 Q4",
-   "artist": "Tschabalala Self",
-   "title": "Lady in Yellow on Spiral Seat #2 Teal Background",
-   "quarter": "2022 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 11
   },
   {
@@ -5942,12 +5922,12 @@
    "sessions": 10
   },
   {
-   "id": "katherina_olschbaur_humility_and_the_other_one_in_me_2023_q3",
-   "name": "Katherina Olschbaur - Humility and the Other One in Me",
-   "releaseName": "Katherina Olschbaur \u00b7 Humility and the Other One in Me \u00b7 2023 Q3",
-   "artist": "Katherina Olschbaur",
-   "title": "Humility and the Other One in Me",
-   "quarter": "2023 Q3",
+   "id": "kara_joslyn_good_thing_you_are_not_alone_2022_q4",
+   "name": "Kara Joslyn - GOOD THING YOU ARE NOT ALONE",
+   "releaseName": "Kara Joslyn \u00b7 GOOD THING YOU ARE NOT ALONE \u00b7 2022 Q4",
+   "artist": "Kara Joslyn",
+   "title": "GOOD THING YOU ARE NOT ALONE",
+   "quarter": "2022 Q4",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -5958,7 +5938,27 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
+   "lastSeen": "2026-09-24",
+   "sessions": 10
+  },
+  {
+   "id": "khari_turner_rest_and_wellness_2022_q1",
+   "name": "Khari Turner - Rest and Wellness",
+   "releaseName": "Khari Turner \u00b7 Rest and Wellness \u00b7 2022 Q1",
+   "artist": "Khari Turner",
+   "title": "Rest and Wellness",
+   "quarter": "2022 Q1",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-23",
    "sessions": 10
   },
   {
@@ -6022,12 +6022,12 @@
    "sessions": 9
   },
   {
-   "id": "ly_standing_with_luv_medium_2022_q4",
-   "name": "LY - Standing with LUV (Medium)",
-   "releaseName": "LY \u00b7 Standing with LUV (Medium) \u00b7 2022 Q4",
-   "artist": "LY",
-   "title": "Standing with LUV (Medium)",
-   "quarter": "2022 Q4",
+   "id": "katherina_olschbaur_humility_and_the_other_one_in_me_2023_q3",
+   "name": "Katherina Olschbaur - Humility and the Other One in Me",
+   "releaseName": "Katherina Olschbaur \u00b7 Humility and the Other One in Me \u00b7 2023 Q3",
+   "artist": "Katherina Olschbaur",
+   "title": "Humility and the Other One in Me",
+   "quarter": "2023 Q3",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -6038,7 +6038,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-17",
+   "lastSeen": "2026-09-24",
    "sessions": 9
   },
   {
@@ -6059,26 +6059,6 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-21",
-   "sessions": 9
-  },
-  {
-   "id": "lina_iris_viktor_ekstasis_2021_q4",
-   "name": "Lina Iris Viktor - Ekstasis",
-   "releaseName": "Lina Iris Viktor \u00b7 Ekstasis \u00b7 2021 Q4",
-   "artist": "Lina Iris Viktor",
-   "title": "Ekstasis",
-   "quarter": "2021 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
    "sessions": 9
   },
   {
@@ -6162,52 +6142,12 @@
    "sessions": 9
   },
   {
-   "id": "jake_fried_open_eyes_flower_2023_q3",
-   "name": "Jake Fried - Open Eyes (Flower)",
-   "releaseName": "Jake Fried \u00b7 Open Eyes (Flower) \u00b7 2023 Q3",
-   "artist": "Jake Fried",
-   "title": "Open Eyes (Flower)",
-   "quarter": "2023 Q3",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 8
-  },
-  {
    "id": "julian_schnabel_the_swedish_house_05_2022_q2",
    "name": "Julian Schnabel - The Swedish House 05",
    "releaseName": "Julian Schnabel \u00b7 The Swedish House 05 \u00b7 2022 Q2",
    "artist": "Julian Schnabel",
    "title": "The Swedish House 05",
    "quarter": "2022 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 8
-  },
-  {
-   "id": "ka_content_hand_finished_2024_q2",
-   "name": "Ka\u00ef - Content (Hand-finished)",
-   "releaseName": "Ka\u00ef \u00b7 Content (Hand-finished) \u00b7 2024 Q2",
-   "artist": "Ka\u00ef",
-   "title": "Content (Hand-finished)",
-   "quarter": "2024 Q2",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -6259,6 +6199,66 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
+   "sessions": 8
+  },
+  {
+   "id": "ly_standing_with_luv_medium_2022_q4",
+   "name": "LY - Standing with LUV (Medium)",
+   "releaseName": "LY \u00b7 Standing with LUV (Medium) \u00b7 2022 Q4",
+   "artist": "LY",
+   "title": "Standing with LUV (Medium)",
+   "quarter": "2022 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-17",
+   "sessions": 8
+  },
+  {
+   "id": "lina_iris_viktor_ekstasis_2021_q4",
+   "name": "Lina Iris Viktor - Ekstasis",
+   "releaseName": "Lina Iris Viktor \u00b7 Ekstasis \u00b7 2021 Q4",
+   "artist": "Lina Iris Viktor",
+   "title": "Ekstasis",
+   "quarter": "2021 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
+   "sessions": 8
+  },
+  {
+   "id": "molly_greene_bur_2022_q4",
+   "name": "Molly Greene - Bur",
+   "releaseName": "Molly Greene \u00b7 Bur \u00b7 2022 Q4",
+   "artist": "Molly Greene",
+   "title": "Bur",
+   "quarter": "2022 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-21",
    "sessions": 8
   },
   {
@@ -6322,12 +6322,12 @@
    "sessions": 7
   },
   {
-   "id": "mark_whalen_lucky_charm_2022_q1",
-   "name": "Mark Whalen - Lucky Charm",
-   "releaseName": "Mark Whalen \u00b7 Lucky Charm \u00b7 2022 Q1",
-   "artist": "Mark Whalen",
-   "title": "Lucky Charm",
-   "quarter": "2022 Q1",
+   "id": "prune_nourry_mater_earth_2023_q1",
+   "name": "Prune Nourry - Mater Earth",
+   "releaseName": "Prune Nourry \u00b7 Mater Earth \u00b7 2023 Q1",
+   "artist": "Prune Nourry",
+   "title": "Mater Earth",
+   "quarter": "2023 Q1",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -6338,7 +6338,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-04",
    "sessions": 7
   },
   {
@@ -6382,31 +6382,11 @@
    "sessions": 6
   },
   {
-   "id": "jonny_niesche_moon_moth_lust_in_warm_copper_2022_q4",
-   "name": "Jonny Niesche - moon moth lust in warm copper",
-   "releaseName": "Jonny Niesche \u00b7 moon moth lust in warm copper \u00b7 2022 Q4",
-   "artist": "Jonny Niesche",
-   "title": "moon moth lust in warm copper",
-   "quarter": "2022 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
-   "sessions": 6
-  },
-  {
-   "id": "maiko_kobayashi_moving_colours_2023_q1",
-   "name": "Maiko Kobayashi - Moving Colours",
-   "releaseName": "Maiko Kobayashi \u00b7 Moving Colours \u00b7 2023 Q1",
-   "artist": "Maiko Kobayashi",
-   "title": "Moving Colours",
+   "id": "chris_huen_sin_kan_joel_tess_and_haze_2023_q1",
+   "name": "Chris Huen Sin Kan - Joel, Tess and Haze",
+   "releaseName": "Chris Huen Sin Kan \u00b7 Joel, Tess and Haze \u00b7 2023 Q1",
+   "artist": "Chris Huen Sin Kan",
+   "title": "Joel, Tess and Haze",
    "quarter": "2023 Q1",
    "type": "LE",
    "status": "catalogue",
@@ -6418,7 +6398,27 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-16",
+   "lastSeen": "2026-09-23",
+   "sessions": 6
+  },
+  {
+   "id": "mark_whalen_lucky_charm_2022_q1",
+   "name": "Mark Whalen - Lucky Charm",
+   "releaseName": "Mark Whalen \u00b7 Lucky Charm \u00b7 2022 Q1",
+   "artist": "Mark Whalen",
+   "title": "Lucky Charm",
+   "quarter": "2022 Q1",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-24",
    "sessions": 6
   },
   {
@@ -6439,26 +6439,6 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
-   "sessions": 6
-  },
-  {
-   "id": "molly_greene_bur_2022_q4",
-   "name": "Molly Greene - Bur",
-   "releaseName": "Molly Greene \u00b7 Bur \u00b7 2022 Q4",
-   "artist": "Molly Greene",
-   "title": "Bur",
-   "quarter": "2022 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-18",
    "sessions": 6
   },
   {
@@ -6499,26 +6479,6 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-18",
-   "sessions": 5
-  },
-  {
-   "id": "chris_huen_sin_kan_joel_tess_and_haze_2023_q1",
-   "name": "Chris Huen Sin Kan - Joel, Tess and Haze",
-   "releaseName": "Chris Huen Sin Kan \u00b7 Joel, Tess and Haze \u00b7 2023 Q1",
-   "artist": "Chris Huen Sin Kan",
-   "title": "Joel, Tess and Haze",
-   "quarter": "2023 Q1",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-22",
    "sessions": 5
   },
   {
@@ -6602,6 +6562,86 @@
    "sessions": 5
   },
   {
+   "id": "jonny_niesche_moon_moth_lust_in_warm_copper_2022_q4",
+   "name": "Jonny Niesche - moon moth lust in warm copper",
+   "releaseName": "Jonny Niesche \u00b7 moon moth lust in warm copper \u00b7 2022 Q4",
+   "artist": "Jonny Niesche",
+   "title": "moon moth lust in warm copper",
+   "quarter": "2022 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-19",
+   "sessions": 5
+  },
+  {
+   "id": "ka_content_hand_finished_2024_q2",
+   "name": "Ka\u00ef - Content (Hand-finished)",
+   "releaseName": "Ka\u00ef \u00b7 Content (Hand-finished) \u00b7 2024 Q2",
+   "artist": "Ka\u00ef",
+   "title": "Content (Hand-finished)",
+   "quarter": "2024 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-22",
+   "sessions": 5
+  },
+  {
+   "id": "ly_confused_luv_medium_2022_q4",
+   "name": "LY - Confused LUV (Medium)",
+   "releaseName": "LY \u00b7 Confused LUV (Medium) \u00b7 2022 Q4",
+   "artist": "LY",
+   "title": "Confused LUV (Medium)",
+   "quarter": "2022 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-21",
+   "sessions": 5
+  },
+  {
+   "id": "maiko_kobayashi_moving_colours_2023_q1",
+   "name": "Maiko Kobayashi - Moving Colours",
+   "releaseName": "Maiko Kobayashi \u00b7 Moving Colours \u00b7 2023 Q1",
+   "artist": "Maiko Kobayashi",
+   "title": "Moving Colours",
+   "quarter": "2023 Q1",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-16",
+   "sessions": 5
+  },
+  {
    "id": "minhee_kim_multiple_2023_q2",
    "name": "Minhee Kim - Multiple",
    "releaseName": "Minhee Kim \u00b7 Multiple \u00b7 2023 Q2",
@@ -6642,6 +6682,26 @@
    "sessions": 5
   },
   {
+   "id": "rooo_lou_earnest_2023_q2",
+   "name": "Rooo Lou - Earnest",
+   "releaseName": "Rooo Lou \u00b7 Earnest \u00b7 2023 Q2",
+   "artist": "Rooo Lou",
+   "title": "Earnest",
+   "quarter": "2023 Q2",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-17",
+   "sessions": 5
+  },
+  {
    "id": "b_wing_multiple_2022_q3",
    "name": "b.wing - Multiple",
    "releaseName": "b.wing \u00b7 Multiple \u00b7 2022 Q3",
@@ -6658,7 +6718,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-24",
    "sessions": 5
   },
   {
@@ -6762,12 +6822,12 @@
    "sessions": 4
   },
   {
-   "id": "jang_koal_umma_2022_q4",
-   "name": "Jang Koal - Umma",
-   "releaseName": "Jang Koal \u00b7 Umma \u00b7 2022 Q4",
-   "artist": "Jang Koal",
-   "title": "Umma",
-   "quarter": "2022 Q4",
+   "id": "darren_romanelli_cactus_man_vessel_2022_q1",
+   "name": "Darren Romanelli - Cactus Man Vessel",
+   "releaseName": "Darren Romanelli \u00b7 Cactus Man Vessel \u00b7 2022 Q1",
+   "artist": "Darren Romanelli",
+   "title": "Cactus Man Vessel",
+   "quarter": "2022 Q1",
    "type": "LE",
    "status": "catalogue",
    "targeted": false,
@@ -6778,7 +6838,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-23",
+   "lastSeen": "2026-09-12",
    "sessions": 4
   },
   {
@@ -6842,26 +6902,6 @@
    "sessions": 4
   },
   {
-   "id": "prune_nourry_mater_earth_2023_q1",
-   "name": "Prune Nourry - Mater Earth",
-   "releaseName": "Prune Nourry \u00b7 Mater Earth \u00b7 2023 Q1",
-   "artist": "Prune Nourry",
-   "title": "Mater Earth",
-   "quarter": "2023 Q1",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-04",
-   "sessions": 4
-  },
-  {
    "id": "satoru_koizumi_studio_2021_2021_q2",
    "name": "Satoru Koizumi - Studio 2021",
    "releaseName": "Satoru Koizumi \u00b7 Studio 2021 \u00b7 2021 Q2",
@@ -6922,31 +6962,11 @@
    "sessions": 3
   },
   {
-   "id": "darren_romanelli_cactus_man_vessel_2022_q1",
-   "name": "Darren Romanelli - Cactus Man Vessel",
-   "releaseName": "Darren Romanelli \u00b7 Cactus Man Vessel \u00b7 2022 Q1",
-   "artist": "Darren Romanelli",
-   "title": "Cactus Man Vessel",
-   "quarter": "2022 Q1",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-12",
-   "sessions": 3
-  },
-  {
-   "id": "felix_treadwell_kindred_spirit_2022_q4",
-   "name": "Felix Treadwell - Kindred Spirit",
-   "releaseName": "Felix Treadwell \u00b7 Kindred Spirit \u00b7 2022 Q4",
-   "artist": "Felix Treadwell",
-   "title": "Kindred Spirit",
+   "id": "jang_koal_umma_2022_q4",
+   "name": "Jang Koal - Umma",
+   "releaseName": "Jang Koal \u00b7 Umma \u00b7 2022 Q4",
+   "artist": "Jang Koal",
+   "title": "Umma",
    "quarter": "2022 Q4",
    "type": "LE",
    "status": "catalogue",
@@ -6958,7 +6978,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-17",
+   "lastSeen": "2026-09-13",
    "sessions": 3
   },
   {
@@ -6979,26 +6999,6 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-23",
-   "sessions": 3
-  },
-  {
-   "id": "ly_confused_luv_medium_2022_q4",
-   "name": "LY - Confused LUV (Medium)",
-   "releaseName": "LY \u00b7 Confused LUV (Medium) \u00b7 2022 Q4",
-   "artist": "LY",
-   "title": "Confused LUV (Medium)",
-   "quarter": "2022 Q4",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-18",
    "sessions": 3
   },
   {
@@ -7082,6 +7082,26 @@
    "sessions": 2
   },
   {
+   "id": "felix_treadwell_kindred_spirit_2022_q4",
+   "name": "Felix Treadwell - Kindred Spirit",
+   "releaseName": "Felix Treadwell \u00b7 Kindred Spirit \u00b7 2022 Q4",
+   "artist": "Felix Treadwell",
+   "title": "Kindred Spirit",
+   "quarter": "2022 Q4",
+   "type": "LE",
+   "status": "catalogue",
+   "targeted": false,
+   "day": 90,
+   "of": 90,
+   "complete": false,
+   "windowEnd": null,
+   "statusPct": null,
+   "ok": null,
+   "benchmarkPct": null,
+   "lastSeen": "2026-09-17",
+   "sessions": 2
+  },
+  {
    "id": "julian_schnabel_the_swedish_house_01_2022_q2",
    "name": "Julian Schnabel - The Swedish House 01",
    "releaseName": "Julian Schnabel \u00b7 The Swedish House 01 \u00b7 2022 Q2",
@@ -7098,7 +7118,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-09-20",
+   "lastSeen": "2026-09-24",
    "sessions": 2
   },
   {
@@ -7139,26 +7159,6 @@
    "ok": null,
    "benchmarkPct": null,
    "lastSeen": "2026-09-22",
-   "sessions": 2
-  },
-  {
-   "id": "rooo_lou_earnest_2023_q2",
-   "name": "Rooo Lou - Earnest",
-   "releaseName": "Rooo Lou \u00b7 Earnest \u00b7 2023 Q2",
-   "artist": "Rooo Lou",
-   "title": "Earnest",
-   "quarter": "2023 Q2",
-   "type": "LE",
-   "status": "catalogue",
-   "targeted": false,
-   "day": 90,
-   "of": 90,
-   "complete": false,
-   "windowEnd": null,
-   "statusPct": null,
-   "ok": null,
-   "benchmarkPct": null,
-   "lastSeen": "2026-09-12",
    "sessions": 2
   },
   {
@@ -7218,7 +7218,7 @@
    "statusPct": null,
    "ok": null,
    "benchmarkPct": null,
-   "lastSeen": "2026-08-24",
+   "lastSeen": "2026-08-25",
    "sessions": 1
   },
   {

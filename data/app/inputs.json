@@ -3130,9 +3130,9 @@
     "launch_end": null
    },
    "clock": {
-    "private_room_open": "2026-09-11",
-    "announce_date": "2026-09-25",
-    "launch_end": "2026-10-30"
+    "private_room_open": "2026-09-10",
+    "announce_date": "2026-09-24",
+    "launch_end": "2026-10-29"
    },
    "campaigns": []
   },
@@ -18714,9 +18714,9 @@
    "type": "LE",
    "campaign_code": null,
    "campaign_name": null,
-   "announce_date": "2026-09-25",
-   "launch_end": "2026-10-30",
-   "private_room_open": "2026-09-11",
+   "announce_date": "2026-09-24",
+   "launch_end": "2026-10-29",
+   "private_room_open": "2026-09-10",
    "dates_note": null
   },
   "cai_guo_qiang_snow_lotus_no_1_2024_q1": {
@@ -22555,33 +22555,33 @@
  "meta_campaigns": [
   {
    "name": "AndyWarhol_TL_26 \u00b7 Enter draw",
-   "spend": 218057.42,
-   "last": "2026-09-23"
+   "spend": 228047.94,
+   "last": "2026-09-24"
   },
   {
    "name": "SalvadorDali_LE_26 \u00b7 Enter draw",
    "spend": 76156.15,
-   "last": "2026-09-23"
+   "last": "2026-09-24"
   },
   {
    "name": "RobertLongo_LE_26 \u00b7 Enter draw",
-   "spend": 26924.48,
-   "last": "2026-09-23"
+   "spend": 26934.54,
+   "last": "2026-09-24"
   },
   {
    "name": "BisaButler_TL_26 \u00b7 Sign-ups",
-   "spend": 21033.29,
-   "last": "2026-09-23"
+   "spend": 23949.08,
+   "last": "2026-09-24"
   },
   {
    "name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
-   "spend": 17998.68,
-   "last": "2026-09-23"
+   "spend": 19271.69,
+   "last": "2026-09-24"
   },
   {
    "name": "MaurizioCatt_HorseLE_26 \u00b7 Enter draw",
-   "spend": 3633.89,
-   "last": "2026-09-23"
+   "spend": 10564.16,
+   "last": "2026-09-24"
   },
   {
    "name": "GlennLigon_LE_26 \u00b7 Enter draw",

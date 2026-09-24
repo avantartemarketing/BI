@@ -1,5 +1,5 @@
 {
- "asOf": "2026-09-23",
+ "asOf": "2026-09-24",
  "rows": [
   {
    "release_name": "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
@@ -198,7 +198,7 @@
     "paid": 0.0047846889952153
    },
    "entries": 519.0,
-   "units_per_buyer": 1.1512770137524557,
+   "units_per_buyer": 1.1532416502946954,
    "private_room_share": 0.0834752981260647,
    "cost_per_paid_unit": 140.1952972972973,
    "price": 700.0,
@@ -239,7 +239,7 @@
     "paid": 0.0139532348612852
    },
    "entries": 841.0,
-   "units_per_buyer": 1.3671274961597542,
+   "units_per_buyer": 1.3676923076923078,
    "private_room_share": 0.2002262443438914,
    "cost_per_paid_unit": 24.53078602620087,
    "price": 500.0,
@@ -362,7 +362,7 @@
     "paid": 0.0002056343820686
    },
    "entries": 20.0,
-   "units_per_buyer": 1.2142857142857142,
+   "units_per_buyer": 1.25,
    "private_room_share": 0.21875,
    "cost_per_paid_unit": null,
    "price": 4000.0,
@@ -895,7 +895,7 @@
     "paid": 0.3275862068965517
    },
    "entries": 1692.0,
-   "units_per_buyer": 1.2131386861313869,
+   "units_per_buyer": 1.2040816326530612,
    "private_room_share": 0.3026004728132387,
    "cost_per_paid_unit": null,
    "price": 700.0,
@@ -977,7 +977,7 @@
     "paid": 0.0037612838515546
    },
    "entries": 194.0,
-   "units_per_buyer": 1.028391167192429,
+   "units_per_buyer": 1.028301886792453,
    "private_room_share": 0.3375394321766561,
    "cost_per_paid_unit": 207.68699999999998,
    "price": 800.0,
@@ -1264,7 +1264,7 @@
     "paid": 0.0008694167145363
    },
    "entries": 337.0,
-   "units_per_buyer": 1.0872340425531914,
+   "units_per_buyer": 1.072494669509595,
    "private_room_share": 0.0277777777777777,
    "cost_per_paid_unit": 664.3909345794393,
    "price": 3000.0,
@@ -1756,7 +1756,7 @@
     "paid": null
    },
    "entries": 182.0,
-   "units_per_buyer": 1.1956521739130435,
+   "units_per_buyer": 1.1304347826086956,
    "private_room_share": 0.1637931034482758,
    "cost_per_paid_unit": null,
    "price": 8000.0,
@@ -1797,7 +1797,7 @@
     "paid": null
    },
    "entries": 199.0,
-   "units_per_buyer": 1.382608695652174,
+   "units_per_buyer": 1.3478260869565217,
    "private_room_share": 0.3798882681564245,
    "cost_per_paid_unit": null,
    "price": 1500.0,
@@ -3601,7 +3601,7 @@
     "paid": null
    },
    "entries": 607.0,
-   "units_per_buyer": 1.3977695167286246,
+   "units_per_buyer": 1.4312267657992566,
    "private_room_share": 0.0,
    "cost_per_paid_unit": null,
    "price": 6000.0,

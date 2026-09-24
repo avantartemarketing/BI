@@ -25,7 +25,7 @@
  "campaignLengthDays": 31,
  "day": 31,
  "of": 31,
- "asOf": "2026-09-23",
+ "asOf": "2026-09-24",
  "complete": true,
  "completeThrough": "2026-09-23",
  "asOfFraction": 1.0,
@@ -253,15 +253,15 @@
    "sense_check_breached": false
   },
   "launch_value": 450000.0,
-  "units_per_buyer": 1.1232151526762095,
+  "units_per_buyer": 1.119902279463242,
   "units_per_buyer_source": "products",
-  "buyers": 133.54520693796292,
+  "buyers": 133.94025778025338,
   "buyers_by_group": {
-   "aa_email": 61.77285780582977,
-   "aa_social": 4.178405123818467,
-   "referral_artist": 0.526346374319055,
-   "search_direct_other": 42.31779220798551,
-   "paid": 24.749805426010084
+   "aa_email": 61.95559307627807,
+   "aa_social": 4.190765600854249,
+   "referral_artist": 0.5279034019599487,
+   "search_direct_other": 42.44297588053322,
+   "paid": 24.823019820627874
   },
   "organic_sessions": 10381.769674095305,
   "total_sessions": 23141.320754716988,
@@ -2129,26 +2129,26 @@
    "contrib_traffic": -20.0,
    "contrib_conversion": 37.3,
    "bps_actual": 0.012954451011255138,
-   "bps_expected": 0.00875577564732573,
-   "contrib_buyers": 23.7,
-   "contrib_per_buyer": 13.6,
+   "bps_expected": 0.00878167681310841,
+   "contrib_buyers": 23.4,
+   "contrib_per_buyer": 13.9,
    "sessions_benchmark": 6232.0,
    "conv_benchmark": 0.009834619880509607,
    "conv_benchmark_today": 0.009834619880509607,
    "contrib_traffic_bm": -11.9,
    "contrib_conversion_bm": 37.3,
-   "contrib_buyers_bm": 23.7,
-   "contrib_per_buyer_bm": 13.6
+   "contrib_buyers_bm": 23.4,
+   "contrib_per_buyer_bm": 13.9
   },
   "aa_social": {
-   "sessions_actual": 503.0,
+   "sessions_actual": 504.0,
    "sessions_expected": 647.6,
-   "conv_actual": 0.003650372131181977,
+   "conv_actual": 0.0036431293293343937,
    "conv_expected": 0.007247650015547803,
    "contrib_traffic": -1.0,
    "contrib_conversion": -1.8,
-   "bps_actual": 0.0027377790983864826,
-   "bps_expected": 0.0064525928076017425,
+   "bps_actual": 0.002732346997000795,
+   "bps_expected": 0.006471680742556868,
    "contrib_buyers": -2.1,
    "contrib_per_buyer": 0.3,
    "sessions_benchmark": 572.0,
@@ -2167,7 +2167,7 @@
    "contrib_traffic": -0.3,
    "contrib_conversion": 0.9,
    "bps_actual": 0.003487808070464502,
-   "bps_expected": 0.0009475622999299174,
+   "bps_expected": 0.0009503653603563684,
    "contrib_buyers": 0.7,
    "contrib_per_buyer": 0.2,
    "sessions_benchmark": 490.7,
@@ -2179,33 +2179,33 @@
    "contrib_per_buyer_bm": 0.2
   },
   "search_direct_other": {
-   "sessions_actual": 980.0,
+   "sessions_actual": 978.0,
    "sessions_expected": 2123.6,
-   "conv_actual": 0.050514691444135645,
+   "conv_actual": 0.050617993471628764,
    "conv_expected": 0.02238228851895926,
    "contrib_traffic": -25.6,
-   "contrib_conversion": 27.6,
-   "bps_actual": 0.037886018583101734,
-   "bps_expected": 0.019926982346730706,
-   "contrib_buyers": 19.8,
-   "contrib_per_buyer": 7.8,
+   "contrib_conversion": 27.7,
+   "bps_actual": 0.03796349510372157,
+   "bps_expected": 0.019985929959609395,
+   "contrib_buyers": 19.7,
+   "contrib_per_buyer": 7.9,
    "sessions_benchmark": 1875.9,
    "conv_benchmark": 0.022382288518959265,
    "conv_benchmark_today": 0.022382288518959265,
    "contrib_traffic_bm": -20.1,
-   "contrib_conversion_bm": 27.6,
-   "contrib_buyers_bm": 19.8,
-   "contrib_per_buyer_bm": 7.8
+   "contrib_conversion_bm": 27.7,
+   "contrib_buyers_bm": 19.7,
+   "contrib_per_buyer_bm": 7.9
   },
   "paid": {
-   "sessions_actual": 3120.0,
+   "sessions_actual": 3121.0,
    "sessions_expected": 12759.6,
-   "conv_actual": 0.003808144858702676,
+   "conv_actual": 0.0038069246905326343,
    "conv_expected": 0.0021787096038591927,
    "contrib_traffic": -21.0,
    "contrib_conversion": 5.1,
-   "bps_actual": 0.0028561086440270075,
-   "bps_expected": 0.0019397081660340206,
+   "bps_actual": 0.0028551935178994757,
+   "bps_expected": 0.0019454461731280932,
    "contrib_buyers": 3.2,
    "contrib_per_buyer": 1.9,
    "sessions_benchmark": 11270.9,
@@ -2642,7 +2642,7 @@
   "benchmarkBudget": 5767.48
  },
  "unitsPerBuyer": {
-  "plan": 1.1232,
+  "plan": 1.1199,
   "actual": 1.3333
  },
  "untracked": {
@@ -2672,7 +2672,7 @@
   "high": []
  },
  "directShare": {
-  "sessions": 0.0827,
+  "sessions": 0.0826,
   "entries": 0.1932,
   "units": 0.1971
  },
@@ -3141,22 +3141,22 @@
    {
     "key": "organic_traffic",
     "label": "Organic traffic",
-    "value": -39.0
+    "value": -36.0
    },
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": 54.0
+    "value": 49.0
    },
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": -9.0
+    "value": -8.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -5.0
+    "value": -4.0
    },
    {
     "key": "oversubscribed",
@@ -3382,8 +3382,8 @@
   "paidBudget": 5767.48,
   "costPerPurchase": 234.87,
   "costPerPurchaseN": 5,
-  "unitsPerBuyer": 1.1232,
-  "buyers": 118.0
+  "unitsPerBuyer": 1.1199,
+  "buyers": 118.3
  },
  "variants": {
   "direct_spread": {
@@ -3516,15 +3516,15 @@
      "sense_check_breached": false
     },
     "launch_value": 450000.0,
-    "units_per_buyer": 1.1232151526762095,
+    "units_per_buyer": 1.119902279463242,
     "units_per_buyer_source": "products",
-    "buyers": 133.54520693796292,
+    "buyers": 133.94025778025338,
     "buyers_by_group": {
-     "aa_email": 80.27315005120636,
-     "aa_social": 5.429791891402663,
-     "referral_artist": 0.6839812580671387,
-     "search_direct_other": 14.996183355633656,
-     "paid": 32.162100381653076
+     "aa_email": 80.51061252753297,
+     "aa_social": 5.445854196515246,
+     "referral_artist": 0.6860045981652663,
+     "search_direct_other": 15.040544774524095,
+     "paid": 32.25724168351579
     },
     "organic_sessions": 9534.412240754717,
     "total_sessions": 23141.32075471698,
@@ -5381,52 +5381,52 @@
    ],
    "funnelByGroup": {
     "aa_email": {
-     "sessions_actual": 5433.0,
+     "sessions_actual": 5432.1,
      "sessions_expected": 7523.6,
-     "conv_actual": 0.019727361234758527,
+     "conv_actual": 0.019730945617126343,
      "conv_expected": 0.011984119218042042,
      "contrib_traffic": -25.1,
      "contrib_conversion": 42.0,
-     "bps_actual": 0.014795520926068896,
-     "bps_expected": 0.010669477872950951,
-     "contrib_buyers": 25.2,
-     "contrib_per_buyer": 16.8,
+     "bps_actual": 0.014798209212844759,
+     "bps_expected": 0.01070104011555893,
+     "contrib_buyers": 24.9,
+     "contrib_per_buyer": 17.1,
      "sessions_benchmark": 6645.9,
      "conv_benchmark": 0.011984119218042042,
      "conv_benchmark_today": 0.011984119218042042,
      "contrib_traffic_bm": -14.5,
      "contrib_conversion_bm": 42.0,
-     "contrib_buyers_bm": 25.2,
-     "contrib_per_buyer_bm": 16.8
+     "contrib_buyers_bm": 24.9,
+     "contrib_per_buyer_bm": 17.1
     },
     "aa_social": {
-     "sessions_actual": 559.1,
+     "sessions_actual": 560.2,
      "sessions_expected": 690.6,
-     "conv_actual": 0.003523367048928036,
+     "conv_actual": 0.0035164348639953225,
      "conv_expected": 0.008831729976047238,
      "contrib_traffic": -1.2,
      "contrib_conversion": -2.9,
-     "bps_actual": 0.0026425252866960273,
-     "bps_expected": 0.00786290138180959,
+     "bps_actual": 0.002637326147996492,
+     "bps_expected": 0.007886161264249054,
      "contrib_buyers": -3.3,
-     "contrib_per_buyer": 0.3,
+     "contrib_per_buyer": 0.4,
      "sessions_benchmark": 610.0,
      "conv_benchmark": 0.008831729976047241,
      "conv_benchmark_today": 0.008831729976047241,
      "contrib_traffic_bm": -0.4,
      "contrib_conversion_bm": -2.9,
      "contrib_buyers_bm": -3.3,
-     "contrib_per_buyer_bm": 0.3
+     "contrib_per_buyer_bm": 0.4
     },
     "referral_artist": {
      "sessions_actual": 277.8,
      "sessions_expected": 592.4,
-     "conv_actual": 0.004909336579942748,
+     "conv_actual": 0.004909736227177621,
      "conv_expected": 0.0012969380245130778,
      "contrib_traffic": -0.4,
      "contrib_conversion": 1.0,
-     "bps_actual": 0.003682002434957061,
-     "bps_expected": 0.0011546657124620785,
+     "bps_actual": 0.0036823021703832164,
+     "bps_expected": 0.001158081422188628,
      "contrib_buyers": 0.8,
      "contrib_per_buyer": 0.2,
      "sessions_benchmark": 523.3,
@@ -5438,33 +5438,33 @@
      "contrib_per_buyer_bm": 0.2
     },
     "search_direct_other": {
-     "sessions_actual": 202.4,
+     "sessions_actual": 201.3,
      "sessions_expected": 727.9,
-     "conv_actual": 0.11950475185887416,
+     "conv_actual": 0.12015015883184117,
      "conv_expected": 0.023141541639097638,
      "contrib_traffic": -12.2,
      "contrib_conversion": 19.6,
-     "bps_actual": 0.08962856389415563,
-     "bps_expected": 0.020602946447045196,
-     "contrib_buyers": 15.7,
+     "bps_actual": 0.09011261912388087,
+     "bps_expected": 0.020663893683821367,
+     "contrib_buyers": 15.6,
      "contrib_per_buyer": 3.8,
      "sessions_benchmark": 642.9,
      "conv_benchmark": 0.02314154163909764,
      "conv_benchmark_today": 0.02314154163909764,
      "contrib_traffic_bm": -10.2,
      "contrib_conversion_bm": 19.6,
-     "contrib_buyers_bm": 15.7,
+     "contrib_buyers_bm": 15.6,
      "contrib_per_buyer_bm": 3.8
     },
     "paid": {
-     "sessions_actual": 3380.6,
+     "sessions_actual": 3381.6,
      "sessions_expected": 13606.9,
-     "conv_actual": 0.0048199802393824745,
+     "conv_actual": 0.004818562290902021,
      "conv_expected": 0.002654898315329867,
      "contrib_traffic": -27.1,
      "contrib_conversion": 7.3,
-     "bps_actual": 0.0036149851795368565,
-     "bps_expected": 0.0023636596327998413,
+     "bps_actual": 0.0036139217181765165,
+     "bps_expected": 0.0023706517649042854,
      "contrib_buyers": 4.7,
      "contrib_per_buyer": 2.6,
      "sessions_benchmark": 12019.4,
@@ -6149,8 +6149,8 @@
     "paidBudget": 7494.78,
     "costPerPurchase": 234.87,
     "costPerPurchaseN": 5,
-    "unitsPerBuyer": 1.1232,
-    "buyers": 118.0
+    "unitsPerBuyer": 1.1199,
+    "buyers": 118.3
    }
   }
  }

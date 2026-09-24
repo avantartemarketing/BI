@@ -25,7 +25,7 @@
  "campaignLengthDays": 28,
  "day": 28,
  "of": 28,
- "asOf": "2026-09-23",
+ "asOf": "2026-09-24",
  "complete": true,
  "completeThrough": "2026-09-23",
  "asOfFraction": 1.0,
@@ -253,15 +253,15 @@
    "sense_check_breached": false
   },
   "launch_value": 250000.0,
-  "units_per_buyer": 1.1232151526762095,
+  "units_per_buyer": 1.119902279463242,
   "units_per_buyer_source": "products",
-  "buyers": 89.03013795864193,
+  "buyers": 89.29350518683559,
   "buyers_by_group": {
-   "aa_email": 48.23861883627575,
-   "aa_social": 2.8764428751543174,
-   "referral_artist": 0.3547681926960496,
-   "search_direct_other": 28.523055145837418,
-   "paid": 9.037252908678393
+   "aa_email": 48.38131738337563,
+   "aa_social": 2.884951912705609,
+   "referral_artist": 0.35581766108623714,
+   "search_direct_other": 28.607431494629143,
+   "paid": 9.06398673503896
   },
   "organic_sessions": 7368.865279974646,
   "total_sessions": 15021.304347826088,
@@ -2469,16 +2469,16 @@
    "contrib_traffic": -25.4,
    "contrib_conversion": 2.1,
    "bps_actual": 0.008851815908801543,
-   "bps_expected": 0.009547871990134554,
-   "contrib_buyers": -2.1,
-   "contrib_per_buyer": 4.2,
+   "bps_expected": 0.009576116319963152,
+   "contrib_buyers": -2.2,
+   "contrib_per_buyer": 4.3,
    "sessions_benchmark": 5810.1,
    "conv_benchmark": 0.010724314495131889,
    "conv_benchmark_today": 0.010724314495131889,
    "contrib_traffic_bm": -33.5,
    "contrib_conversion_bm": 2.1,
-   "contrib_buyers_bm": -2.1,
-   "contrib_per_buyer_bm": 4.2
+   "contrib_buyers_bm": -2.2,
+   "contrib_per_buyer_bm": 4.3
   },
   "aa_social": {
    "sessions_actual": 316.0,
@@ -2488,7 +2488,7 @@
    "contrib_traffic": -1.2,
    "contrib_conversion": -2.0,
    "bps_actual": 0.0,
-   "bps_expected": 0.005664148748037464,
+   "bps_expected": 0.0056809043230601625,
    "contrib_buyers": -2.0,
    "contrib_per_buyer": 0.0,
    "sessions_benchmark": 584.0,
@@ -2507,7 +2507,7 @@
    "contrib_traffic": -0.4,
    "contrib_conversion": 0.0,
    "bps_actual": 0.0,
-   "bps_expected": 0.0009683921645713626,
+   "bps_expected": 0.0009712568434995935,
    "contrib_buyers": 0.0,
    "contrib_per_buyer": 0.0,
    "sessions_benchmark": 421.3,
@@ -2526,7 +2526,7 @@
    "contrib_traffic": -16.3,
    "contrib_conversion": 3.2,
    "bps_actual": 0.020571650813237394,
-   "bps_expected": 0.019774796834218122,
+   "bps_expected": 0.019833294254863923,
    "contrib_buyers": 0.6,
    "contrib_per_buyer": 2.6,
    "sessions_benchmark": 1658.8,
@@ -2545,16 +2545,16 @@
    "contrib_traffic": -0.9,
    "contrib_conversion": 5.9,
    "bps_actual": 0.0016826807410429566,
-   "bps_expected": 0.0011809637200046027,
+   "bps_expected": 0.001184457223987258,
    "contrib_buyers": 3.9,
-   "contrib_per_buyer": 2.0,
+   "contrib_per_buyer": 2.1,
    "sessions_benchmark": 8800.3,
    "conv_benchmark": 0.0013264763450700342,
    "conv_benchmark_today": 0.0013264763450700342,
    "contrib_traffic_bm": -2.5,
    "contrib_conversion_bm": 5.9,
    "contrib_buyers_bm": 3.9,
-   "contrib_per_buyer_bm": 2.0
+   "contrib_per_buyer_bm": 2.1
   }
  },
  "paid": {
@@ -3052,7 +3052,7 @@
   "benchmarkBudget": 2728.69
  },
  "unitsPerBuyer": {
-  "plan": 1.1232,
+  "plan": 1.1199,
   "actual": 1.2979
  },
  "untracked": {
@@ -3664,8 +3664,8 @@
   "paidBudget": 2728.69,
   "costPerPurchase": 233.75,
   "costPerPurchaseN": 4,
-  "unitsPerBuyer": 1.1232,
-  "buyers": 102.4
+  "unitsPerBuyer": 1.1199,
+  "buyers": 102.7
  },
  "variants": {
   "direct_spread": {
@@ -3784,15 +3784,15 @@
      "sense_check_breached": false
     },
     "launch_value": 250000.0,
-    "units_per_buyer": 1.1232151526762095,
+    "units_per_buyer": 1.119902279463242,
     "units_per_buyer_source": "products",
-    "buyers": 89.03013795864193,
+    "buyers": 89.29350518683559,
     "buyers_by_group": {
-     "aa_email": 62.89332578306428,
-     "aa_social": 3.750295467093368,
-     "referral_artist": 0.46254563040010294,
-     "search_direct_other": 10.141235664491633,
-     "paid": 11.782735413592551
+     "aa_email": 63.07937560016172,
+     "aa_social": 3.7613895184418498,
+     "referral_artist": 0.46391392391716063,
+     "search_direct_other": 10.171235271238917,
+     "paid": 11.817590873075929
     },
     "organic_sessions": 6835.464739130434,
     "total_sessions": 15021.304348695652,
@@ -5996,16 +5996,16 @@
      "contrib_traffic": -33.3,
      "contrib_conversion": -0.1,
      "bps_actual": 0.010055464302842664,
-     "bps_expected": 0.011637318833649789,
-     "contrib_buyers": -5.1,
-     "contrib_per_buyer": 5.0,
+     "bps_expected": 0.01167174412462539,
+     "contrib_buyers": -5.2,
+     "contrib_per_buyer": 5.1,
      "sessions_benchmark": 6215.1,
      "conv_benchmark": 0.013071212850479678,
      "conv_benchmark_today": 0.013071212850479678,
      "contrib_traffic_bm": -43.9,
      "contrib_conversion_bm": -0.1,
-     "contrib_buyers_bm": -5.1,
-     "contrib_per_buyer_bm": 5.0
+     "contrib_buyers_bm": -5.2,
+     "contrib_per_buyer_bm": 5.1
     },
     "aa_social": {
      "sessions_actual": 355.0,
@@ -6015,7 +6015,7 @@
      "contrib_traffic": -1.5,
      "contrib_conversion": -2.8,
      "bps_actual": 0.0,
-     "bps_expected": 0.006903686007450335,
+     "bps_expected": 0.006924108357564473,
      "contrib_buyers": -2.8,
      "contrib_per_buyer": 0.0,
      "sessions_benchmark": 624.7,
@@ -6034,7 +6034,7 @@
      "contrib_traffic": -0.5,
      "contrib_conversion": 0.0,
      "bps_actual": 0.0,
-     "bps_expected": 0.0011803147195122146,
+     "bps_expected": 0.0011838063036341947,
      "contrib_buyers": 0.0,
      "contrib_per_buyer": 0.0,
      "sessions_benchmark": 450.7,
@@ -6053,16 +6053,16 @@
      "contrib_traffic": -7.0,
      "contrib_conversion": 3.0,
      "bps_actual": 0.02962777133919382,
-     "bps_expected": 0.02045020379380333,
+     "bps_expected": 0.02051069919022371,
      "contrib_buyers": 2.0,
-     "contrib_per_buyer": 1.0,
+     "contrib_per_buyer": 1.1,
      "sessions_benchmark": 570.3,
      "conv_benchmark": 0.022969978776516402,
      "conv_benchmark_today": 0.022969978776516402,
      "contrib_traffic_bm": -8.7,
      "contrib_conversion_bm": 3.0,
      "contrib_buyers_bm": 2.0,
-     "contrib_per_buyer_bm": 1.0
+     "contrib_per_buyer_bm": 1.1
     },
     "paid": {
      "sessions_actual": 7248.3,
@@ -6072,15 +6072,15 @@
      "contrib_traffic": -1.5,
      "contrib_conversion": 8.5,
      "bps_actual": 0.002156648705518418,
-     "bps_expected": 0.0014394046274525502,
-     "contrib_buyers": 5.9,
+     "bps_expected": 0.0014436626463175484,
+     "contrib_buyers": 5.8,
      "contrib_per_buyer": 2.8,
      "sessions_benchmark": 9413.7,
      "conv_benchmark": 0.001616761088386959,
      "conv_benchmark_today": 0.001616761088386959,
      "contrib_traffic_bm": -3.5,
      "contrib_conversion_bm": 8.5,
-     "contrib_buyers_bm": 5.9,
+     "contrib_buyers_bm": 5.8,
      "contrib_per_buyer_bm": 2.8
     }
    },
@@ -6800,8 +6800,8 @@
     "paidBudget": 3557.65,
     "costPerPurchase": 233.75,
     "costPerPurchaseN": 4,
-    "unitsPerBuyer": 1.1232,
-    "buyers": 102.4
+    "unitsPerBuyer": 1.1199,
+    "buyers": 102.7
    }
   }
  }
