@@ -527,7 +527,10 @@ export default function TargetSetting({ snap, onSaved }) {
   const stretchUnits = bmUnits !== null && editionSize > 0 ? editionSize - bmUnits : null;
   const stretchPct = bmUnits ? stretchUnits / bmUnits : null;
   const paidShare = profile ? profile.share_sessions.paid : null;
-  const cpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : (Number((b.cost_per_purchase || {}).Median) || 0);
+  // the price of a paid unit: the release's own, else the basket's median cost
+  // per paid unit, else the panel's constant (shared/benchmarkModel.mjs)
+  const basketCpp = profile && Number(profile.cost_per_purchase) > 0 ? Number(profile.cost_per_purchase) : 0;
+  const cpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : basketCpp > 0 ? basketCpp : (Number((b.cost_per_purchase || {}).Median) || 0);
   const partialEdition = econ.edition_total > econ.edition_size && econ.edition_size > 0;
 
   /* ---- the products: a typed figure lands on the entry for that product
@@ -662,6 +665,7 @@ export default function TargetSetting({ snap, onSaved }) {
   const T = profile ? benchmarkTargets(profile, {
     edition_size: editionSize, unit_price: econ.unit_price || 0, cost_per_purchase: cpp,
     units_per_buyer: (snap.targets || {}).units_per_buyer || 0,
+    entry_conversion_rate: inp.entry_conversion_rate,
   }, b) : null;
   const BM = T ? T.benchmark : null;
   const railRow = (label, target, bmv, format, tip) => {
@@ -675,7 +679,7 @@ export default function TargetSetting({ snap, onSaved }) {
     railRow("Buyers", T ? T.buyers : null, BM ? BM.buyers : null, (v) => fmt(v, 0),
       T ? `People, not pieces: the target divided by ${fmt(T.units_per_buyer, 3)} units per buyer.` : "People, not pieces."),
     railRow("Eligible entries", T ? T.entries_target : null, BM ? BM.entries : null, (v) => fmt(v, 0),
-      "Target units ÷ 0.8 eligible-entry → order rate: every unit is asked for as an entry. The benchmark is the basket's median units asked for the same way."),
+      `Target units ÷ the ${T && T.entry_rate ? Math.round(T.entry_rate * 100) + "%" : "80%"} eligible-entry → order rate (the release's own where typed, else the panel's): every unit is asked for as an entry. The benchmark is the basket's median units asked for the same way.`),
     railRow("Sessions", T ? T.total_sessions : null, BM ? BM.sessions : null, (v) => fmt(v, 0),
       "The basket's median sessions, lifted by the same K as every other volume."),
     railRow("Paid budget", T ? T.paid.budget : null, BM ? BM.paid_budget : null, (v) => fmtMoney(v, 0),
@@ -926,9 +930,12 @@ export default function TargetSetting({ snap, onSaved }) {
         <Card dot="#c96a3a" title="Paid assumptions">
           <div className="spacer-16" />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "16px 20px" }}>
-            <Field label="Cost per paid unit (€)" tip="What a paid unit costs to buy: paid units × this is the paid budget. Blank = the panel's median.">
+            <Field label="Cost per paid unit (€)" tip={"What a paid unit costs to buy: paid units × this is the paid budget. Blank = the basket's median cost per paid unit "
+              + "(each launch's Meta spend over the paid units it sold), or the panel's median when fewer than three of the basket's launches have spend on file."}>
               <NumInput value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)}
-                placeholder={`${fmt(Number((b.cost_per_purchase || {}).Median) || 0)} · panel median`}
+                placeholder={basketCpp > 0
+                  ? `${fmt(basketCpp)} · basket median, ${profile.n_costed || 0} launches`
+                  : `${fmt(Number((b.cost_per_purchase || {}).Median) || 0)} · panel median`}
                 onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); setInp((prev) => ({ ...prev, cost_per_purchase: c === "" ? null : c })); }} />
             </Field>
             <Field label="Paid cannibalisation (%)" tip="The share of paid entries that would have come anyway. The ROI and the budget floor read profit net of it. Blank = the LE standard.">

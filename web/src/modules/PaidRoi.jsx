@@ -5,7 +5,9 @@
  * back to roiDeclineModel.start at today when there are no daily ROI points).
  * The line is the trailing-3-calendar-day rolling ROI, matching the headline:
  * a window with spend but no entries is a genuine 0, a window with no spend is
- * null (the line skips it). Points are mapped to campaign day via
+ * null (the line skips it). The as-of day so far is the last row of paid.daily,
+ * marked partial: it is a bar, so the bars sum to the paid card's spend to date,
+ * and never a point on the line. Points are mapped to campaign day via
  * date − windowStart and clipped to day 1..of;
  * the y-domain (series ∪ target ± 12%, snapped to 0.25) is clamped at 0 since a
  * negative ROI axis is meaningless; complete releases draw actuals only.
@@ -85,6 +87,7 @@ export default function PaidRoi({ snap }) {
       spend: d.spend ?? 0,
       entries: d.entries ?? null,
       roi: d[view.key] ?? null,
+      partial: !!d.partial,   // the as-of day so far: a bar, never a point on the line
     }))
     .filter((p) => p.d >= 1 && p.d <= of);
 
@@ -150,7 +153,7 @@ export default function PaidRoi({ snap }) {
       x: Math.min(Math.max(x(p.d) - bw / 2, 0), W - bw).toFixed(1),
       y: (H - h).toFixed(1),
       h: h.toFixed(1),
-      tip: dayLabel(snap, p.d) + ": spend €" + fmt(p.spend),
+      tip: dayLabel(snap, p.d) + ": spend €" + fmt(p.spend) + (p.partial ? " so far today" : ""),
     };
   });
 
@@ -296,7 +299,7 @@ export default function PaidRoi({ snap }) {
                     <div style={{ position: "absolute", left: leftPct(hover), top: topPct(markV), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: roiV !== null ? C.blue : C.blueLight, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
                   )}
                   <div className="chart-tip" style={{ left: leftPct(hover), top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
-                    <div className="t-head">{dayLabel(snap, hover, true)}</div>
+                    <div className="t-head">{dayLabel(snap, hover, true)}{p && p.partial ? " · so far today" : ""}</div>
                     {p && <div className="t-row"><span>{view.label} ROI (3d)</span><span className="v">{roiV !== null ? fmt(roiV, 2) : "–"}</span></div>}
                     {roiV === null && projV !== undefined && <div className="t-row"><span>ROI projected</span><span className="v">{fmt(projV, 2)}</span></div>}
                     {p && <div className="t-row"><span>Spend</span><span className="v">€{fmt(p.spend, 2)}</span></div>}

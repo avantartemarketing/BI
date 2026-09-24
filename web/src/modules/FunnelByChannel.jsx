@@ -13,8 +13,9 @@
  *   Referral artist - Posts (artist accounts; no feed yet, renders neutral) ·
  *               Sessions · Session → entry
  *   Search-direct-other - Sessions · Session → entry
- *   Paid      - Spend vs pro-rata budget (un-inverted per artboard) · Cost per
- *               entry vs cost-per-purchase target × 0.8 (inverted)
+ *   Paid      - Spend vs the budget's share of the days paid runs · Cost per
+ *               unit (spend over paid secured units) vs the plan's cost per
+ *               purchase (inverted)
  *
  * The target runs down the centre of every rung, the dot is the actual, and the
  * benchmark is a dotted tick wherever the basket's own figure lands on the same
@@ -23,7 +24,7 @@
  * RAG are against the target. Volume rungs (delivered emails, posts, sessions,
  * spend) carry the even uplift, so their target is the benchmark × K and the
  * tick sits 1/K off the centre; rate rungs (open, click, sessions per click,
- * session → sale, cost per entry) are held at the benchmark, so their tick sits
+ * session → sale, cost per unit) are held at the benchmark, so their tick sits
  * on the centre line. Without a basket the plan is the centre, the line goes to
  * the neutral plan grey and there is no tick.
  * Inverted metrics (cost per entry) are placed by their judged direction, so
@@ -350,14 +351,14 @@ function groupWaterfall(g, snap, vsBm = false) {
     if (finite(spendE) && spendE > 0 && spendA > 0 && exp > 0) {
       steps = chainSteps([
         { label: "Spend", a: spendA, e: spendE, show: (v) => fmtVal(v, "eur"), note: `spend to date vs the ${REF}'s share of budget by today` },
-        { label: "Cost per entry", a: now / spendA, e: exp / spendE, show: (v) => (v > 0 ? fmtVal(1 / v, "eur") + " per unit" : "–"),
-          note: `secured units per pound, actual vs ${REF} - the cost-per-entry side of the ledger` },
+        { label: "Cost per secured unit", a: now / spendA, e: exp / spendE, show: (v) => (v > 0 ? fmtVal(1 / v, "eur") + " per unit" : "–"),
+          note: `secured units per euro, actual vs ${REF} - the cost side of the ledger` },
       ]);
       rows.push(...steps);
       return { name: g.name, rows, now, exp };
     }
     info("Spend", spendA, spendE, "eur", "no plan or no spend yet");
-    rows.push({ label: "Cost per entry", value: now - exp, note: snap.campaignName ? `residual: paid units vs ${REF}` : "no campaign matched - the whole paid gap",
+    rows.push({ label: "Cost per secured unit", value: now - exp, note: snap.campaignName ? `residual: paid units vs ${REF}` : "no campaign matched - the whole paid gap",
       tipRows: [{ label: "Secured", value: fmtVal(now, "count") }, { label: "Expected", value: fmtVal(exp, "count") }] });
     return { name: g.name, rows, now, exp };
   }
@@ -561,11 +562,18 @@ function rungModel(snap) {
     };
   };
 
-  const clock = of > 0 ? day / of : null;
-  const spendPlan = clock !== null && paid.spendBudget ? paid.spendBudget * clock : null;
-  const spendBm = clock !== null && paid.benchmarkBudget ? paid.benchmarkBudget * clock : null;
+  // paid runs from the day after the announce: its budget's share by today is
+  // the share of those days (paidDayFrac), the figure the tall card, the paid
+  // card and the waterfall read
+  const paidFrac = of > 0 ? paidDayFrac(snap) : null;
+  const spendPlan = paidFrac !== null && paid.spendBudget ? paid.spendBudget * paidFrac : null;
+  const spendBm = paidFrac !== null && paid.benchmarkBudget ? paid.benchmarkBudget * paidFrac : null;
+  // cost per unit to date: spend over the paid group's secured units (its
+  // column on the channels card), against the plan's cost per unit - the
+  // target's cost per purchase, which the benchmark budget is priced at too
   const cpp = snap?.targets?.paid?.cost_per_purchase;
-  const cpeRef = cpp ? cpp * 0.8 : null;
+  const paidNow = ((snap?.channels || []).find((c) => c.key === "paid") || {}).now ?? null;
+  const costPerUnit = (paid.spendToDate ?? 0) > 0 && paidNow > 0 ? paid.spendToDate / paidNow : null;
   const postsBm = of > 0 && social.artistPostsTarget ? (social.artistPostsTarget * day) / of : null;
   const cohort = snap?.benchmarks?.emailRefCohort;
   const REF_NOTE = cohort
@@ -635,10 +643,10 @@ function rungModel(snap) {
       key: "paid", name: "Paid", short: "Paid",
       rungs: [
         { label: "Spend", kind: "vol", unit: "eur", v: paid.spendToDate ?? null, plan: spendPlan, bm: spendBm,
-          note: "Budget × share of days elapsed. The benchmark budget is the basket's paid spend on the same clock." },
-        { label: "Cost per entry", kind: "rate", unit: "eur", inv: true,
-          v: paid.l3dCpe ?? null, plan: cpeRef, bm: cpeRef,
-          note: "Last 3 days; reference = paid cost-per-purchase target × 0.8. Lower is better, so cheap sits right." },
+          note: "Spend to date against the budget's share of the days paid runs, the day after the announce to the close. The benchmark budget is the basket's paid spend on the same clock." },
+        { label: "Cost per secured unit", kind: "rate", unit: "eur", inv: true,
+          v: costPerUnit, plan: cpp ?? null, bm: cpp ?? null,
+          note: "Spend to date over paid secured units to date, against the plan's cost per unit (the target's cost per purchase). The paid cards price a converting entry instead, which is a different quantity. Lower is better, so cheap sits right." },
       ],
     },
   ];

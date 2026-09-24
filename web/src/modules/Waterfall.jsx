@@ -17,7 +17,19 @@
  * re-derived here; on a complete release the projection equals the actual
  * close. */
 import React, { useState } from "react";
-import { Card, HorizonBadge, GROUP_DOTS, BADGE_WORDS, C, QBadge, fmt, fmtSigned, useTip, LevelWaterfall, waterfallOpening, waterfallScale } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, BADGE_WORDS, C, QBadge, fmt, fmtSigned, useTip, LevelWaterfall, waterfallOpening, waterfallScale, HATCH } from "../ui.jsx";
+
+/* Demand the edition cannot hold: the last step of a walk on a sold-out
+ * release, in the hero's over-sellout hatch, dropping to the capped figure
+ * the hero prints. */
+const beyondStep = (value, from, to) => ({
+  kind: "step", key: "oversubscribed", label: "Beyond sellout", value, from, to, fill: HATCH,
+  tip: {
+    head: "Beyond sellout",
+    rows: [{ label: "Units the edition cannot hold", value: fmt(Math.abs(value)) }, { label: "Running total", value: fmt(to) }],
+    body: "Demand past the sellout cannot convert, so the walk drops back to the capped figure the hero prints.",
+  },
+});
 
 export default function Waterfall({ snap, horizon = "today" }) {
   const tipApi = useTip();
@@ -78,9 +90,9 @@ export default function Waterfall({ snap, horizon = "today" }) {
   };
   /* By channel: each channel steps from its target to its actual (today) or
    * from its target to its projection (at close), in the order the page lists
-   * them. The channels add up to the hero's figure before the sellout cap, so
-   * on a sold-out release the last drop is the cap, and the outcome's popup
-   * says so rather than the card hiding it. */
+   * them. The channels add up to the release's demand, so on a sold-out
+   * release the walk ends with a Beyond sellout step down to the capped
+   * figure, the same step the drivers view carries. */
   const channels = (snap?.channels || []).map((c) => {
     const a = isToday ? c.now ?? 0 : c.proj ?? 0;
     const e = hasBm ? (isToday ? c.bmExp ?? 0 : c.bm ?? 0) : (isToday ? c.exp ?? 0 : c.target ?? 0);
@@ -89,7 +101,6 @@ export default function Waterfall({ snap, horizon = "today" }) {
   let run = start;
   const chanPath = channels.map((c) => { const from = run; run += c.value; return { ...c, from, to: run }; });
   const residual = outcome - run;
-  const capped = by === "channels" && Math.abs(residual) > 0.5;
   const stepRows = by === "channels"
     ? chanPath.map((c) => ({
         kind: "step", key: c.key, label: c.label, value: c.value, from: c.from, to: c.to,
@@ -105,6 +116,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
       }))
     : path.map((p) => {
         const v = p.value ?? 0;
+        if (p.key === "oversubscribed") return beyondStep(v, p.from, p.to);
         return {
           kind: "step", key: p.key, label: p.label, value: v, from: p.from, to: p.to,
           tip: {
@@ -116,14 +128,15 @@ export default function Waterfall({ snap, horizon = "today" }) {
           },
         };
       });
+  // the channels add up to the demand; the cap is its own step down to the outcome
+  if (by === "channels" && Math.abs(residual) > 0.5) stepRows.push(beyondStep(residual, run, outcome));
   const rows = [
     ...waterfallOpening({ hasBm, bm: benchmark, target, words, k }),
     ...stepRows,
     { kind: "level", key: "outcome", label: outcomeLabel, value: outcome, color: C.blue,
       tip: {
-        head: isToday ? "Secured to date" : closeWord + " demand at close",
+        head: isToday ? "Secured to date" : closeWord + " at close",
         rows: [{ label: "Units", value: fmt(outcome) }],
-        body: capped ? `The channels add up to ${fmt(run)} - the sellout caps the ${isToday ? "actual" : "projection"}.` : undefined,
       } },
   ];
   const X = waterfallScale([outcome, target, ...path.map((p) => p.to), ...(by === "channels" ? chanPath.map((c) => c.to) : []), ...(hasBm ? [benchmark] : [])]);
@@ -166,10 +179,10 @@ export default function Waterfall({ snap, horizon = "today" }) {
         <QBadge content={{
           head: title,
           body: by === "channels"
-            ? "The list opens at the target; the stretch is the part of the gap that is ambition beyond the basket, and from the benchmark each channel steps by its own units against its own benchmark, in the page's order. They add up to the release before the sellout cap, so on a sold-out release the last drop is the cap. Without a basket the channels read against their targets."
+            ? "The list opens at the target; the stretch is the part of the gap that is ambition beyond the basket, and from the benchmark each channel steps by its own units against its own benchmark, in the page's order. They add up to the release's demand, so on a sold-out release the last step, Beyond sellout, drops to the capped figure the hero prints. Without a basket the channels read against their targets."
             : isToday
             ? "The list opens at the target; the stretch is the part of the gap that is ambition beyond the basket, what launches like this one typically have by now. From the benchmark the contributors read against the basket and sum exactly to the gap between it and what is secured to date, so with the stretch they sum to the gap the header prints. Without a basket they read against the target."
-            : "The list opens at the target; the stretch is the part of the gap that is ambition beyond the basket. From the benchmark the contributors read against the basket and sum exactly to the gap between it and projected demand at close. Demand here is unconstrained - the hero caps at the sellout.",
+            : "The list opens at the target; the stretch is the part of the gap that is ambition beyond the basket. From the benchmark the contributors read against the basket and sum exactly to the gap between it and the projection at close. Demand beyond the sellout is the last step, so the walk lands on the capped figure the hero prints.",
         }} />
         <span style={{
           fontSize: 12, color: C.muted, whiteSpace: "nowrap",

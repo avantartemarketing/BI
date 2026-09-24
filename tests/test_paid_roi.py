@@ -12,6 +12,7 @@ import pandas as pd
 import build, baskets
 
 base = dict(next(r for r in build.INPUTS["releases"] if r["id"] == "julianschnabel_le_26"))
+base["release_name"] = "Synthetic Artist · Synthetic Work · 2026 Q3"   # no draw or orders feed answers to this name
 base["campaign_name"] = "Synthetic · Enter draw"
 base["campaign_names"] = [base["campaign_name"]]
 announce, launch = date.fromisoformat(base["announce_date"]), date.fromisoformat(base["launch_end"])
@@ -83,7 +84,7 @@ check(all(r["roiArtist"] is None for r in paid["daily"] if r["roi"] is None), "n
 check(len(art["roiPath"]) == len(paid["roiPath"]) > 0
       and all(a["date"] == b["date"] and close(a["roi"], b["roi"] * ratio) for a, b in zip(art["roiPath"], paid["roiPath"])),
       "the artist's forward path is AA's path in the party ratio")
-check(paid["cannibalisation"] == build.BENCH["cannibalisation"] and paid["dropOff"] == build.BENCH["paid_drop_off"], "the terms travel with the block")
+check(paid["cannibalisation"] == build.BENCH["cannibalisation"] and paid["dropOff"] == round(1 - build.BENCH["eligible_entry_to_order"], 4), "the terms travel with the block")
 # the working the card shows: profit per unit net of cannibalisation over the cost of a converting entry and the share
 check(close(paid["l3dRoi"], (1 - paid["cannibalisation"]) * ppu_aa / (paid["l3dCpe"] * share_aa)), "AA's L3D is the published working")
 check(close(art["l3dRoi"], (1 - paid["cannibalisation"]) * ppu_artist / (paid["l3dCpe"] * art["budgetShare"])), "the artist's L3D is the same working")
@@ -102,6 +103,23 @@ check(plan_at(announce) == 0 and plan_at(announce + timedelta(days=1)) == 0, "no
 check(close(plan_at(announce + timedelta(days=7)), plan_at(announce + timedelta(days=13)) / 2, 0.02), "and the paid plan line is straight from the day after the announce")
 email = next(c for c in S["channels"] if c["key"] == "aa_email")
 check(not close(email["exp"], email["target"] * frac, 0.05), "the organic groups keep their historic shape")
+
+# the paid card's units are the paid group's secured units - the channels
+# card's own column - and its projection the channel's; a full-day reading
+# carries no part day
+check(S["paid"]["unitsToDate"] == ch["now"] and S["paid"]["unitProjected"] == ch["proj"],
+      f"paid units to date / projected are the channel's: {S['paid']['unitsToDate']} vs {ch['now']}, {S['paid']['unitProjected']} vs {ch['proj']}")
+check(all(not r.get("partial") for r in S["paid"]["daily"]), "no part day on a full-day reading")
+# the waterfall's Paid spend step measures spend to date against the same even
+# share of the budget the paid card and the funnel rung read
+wf_today = (S.get("waterfall") or {}).get("today") or {}
+step = next((s["value"] for s in wf_today.get("steps") or [] if s["key"] == "paid_spend"), None)
+cpp = S["targets"]["paid"]["cost_per_purchase"]
+if step is not None and cpp:
+    want = (S["paid"]["spendToDate"] - S["paid"]["spendBudget"] * frac) / cpp
+    check(abs(step - want) <= 2.5, f"the waterfall's paid spend step is on the even paid plan: {step} vs {want:.1f}")
+else:
+    print("(no today waterfall on this build: paid spend step not checked)")
 
 # a revenue-share deal: AA carries the ads, the artist has no ROI to read
 cfg = copy.deepcopy(base)

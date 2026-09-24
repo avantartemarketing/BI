@@ -89,6 +89,8 @@ export function profileOf(bm) {
     share_units: shares(unitsByGroup), share_sessions: shares(sessByGroup),
     conv: byGroup(bm.convByGroupAll || bm.convByGroup, (_g, v) => v),
     units_per_buyer: num(bm.unitsPerBuyer),
+    // what a paid unit cost the basket's launches (0: none read), and how many had a reading
+    cost_per_purchase: num(bm.costPerPurchase), n_costed: num(bm.costPerPurchaseN),
   };
 }
 
@@ -105,10 +107,16 @@ export function benchmarkTargets(profile, inp, b) {
   const median = num(profile.units);
   if (!(median > 0) || !(size > 0)) return null;
   const k = size / median;
-  const e2o = num(b.eligible_entry_to_order) || 0.8;
-  // what a paid unit costs to buy: the release's own figure, else the panel's
-  // median (etl/build.py cost_per_purchase_for)
-  const cpp = num(inp.cost_per_purchase) > 0 ? num(inp.cost_per_purchase) : num((b.cost_per_purchase || {}).Median);
+  // the release's own entry -> order rate (Target setting), else the panel's:
+  // the rate the whole page runs on (etl/build.py entry_rate)
+  const ownRate = num(inp.entry_conversion_rate);
+  const e2o = ownRate > 0 && ownRate <= 1 ? ownRate : (num(b.eligible_entry_to_order) || 0.8);
+  // what a paid unit costs to buy: the release's own figure, else the basket's
+  // median cost per paid unit, else the panel's constant (etl/build.py
+  // cost_per_purchase_for), and where it came from
+  const own = num(inp.cost_per_purchase), basket = num(profile.cost_per_purchase);
+  const cpp = own > 0 ? own : basket > 0 ? basket : num((b.cost_per_purchase || {}).Median);
+  const cppSource = own > 0 ? "release" : basket > 0 ? "basket" : "panel";
   const upb = num(inp.units_per_buyer) > 0 ? num(inp.units_per_buyer) : (num(profile.units_per_buyer) > 0 ? num(profile.units_per_buyer) : 1);
   const price = num(inp.unit_price);
   const maxPct = num(b.budget_sense_check_max_pct_of_launch_value);
@@ -120,16 +128,17 @@ export function benchmarkTargets(profile, inp, b) {
   const paidUnits = bmPaid * k;
   const budget = bmBudget * k, launchValue = size * price;
   return {
-    k, edition_size: size, cost_per_purchase: cpp, units_per_buyer: upb,
+    k, edition_size: size, cost_per_purchase: cpp, cost_per_purchase_source: cppSource, units_per_buyer: upb,
     units_by_group: byGroup(ug, (_g, v) => v * k), sessions_by_group: byGroup(sg, (_g, v) => v * k),
     paid_units: paidUnits, organic_units: size - paidUnits,
     buyers: size / upb,
     // every unit of the edition is asked for as an entry at the eligible-entry
     // rate (etl/build.py benchmark_targets): the whole edition over that rate
     entries_target: size / e2o,
+    entry_rate: e2o,
     total_sessions: bmSessions * k,
     paid: {
-      units: paidUnits, budget,
+      units: paidUnits, budget, cost_per_purchase: cpp, cost_per_purchase_source: cppSource,
       budget_pct_of_launch_value: launchValue > 0 ? budget / launchValue : null,
       sense_check_breached: launchValue > 0 ? budget / launchValue > maxPct : false,
     },

@@ -696,9 +696,15 @@ them (§4a.2). Their last values are in the repository history.
 Keep 0.8 as the planning constant; surface the per-channel table as diagnostics.
 
 **E. Cost per purchase (paid)**: quartiles over 22 hand-curated historical paid campaigns
-(mixing LE + TL): **Low €128.75 / Median €177 / High €291**. The Median is the default price of
-a paid unit; a release sets its own `cost_per_purchase` on the Target setting tab (Abdulnasser
-Gharem carries €291, the quartile it was planned at). Companion stats (static): ROI
+(mixing LE + TL): **Low €128.75 / Median €177 / High €291**. Since 2026-09-23 the price of a
+paid unit comes from the basket first: each panel launch's cost per paid unit is Meta's spend
+under its campaign code inside its window over the paid units the funnel attributed
+(`baskets.attach_paid_costs`, a reading from 5 paid units and some spend; the campaign code is
+the orders feed's, §2.4), and the basket's median over the members with a reading prices the
+paid budget once three have one (`profile.cost_per_purchase`, `n_costed`). The release's own
+`cost_per_purchase` on the Target setting tab comes before it (Abdulnasser Gharem carries
+€291, the quartile it was planned at), and the Median constant stands in when the basket has
+too few readings. `targets.paid.cost_per_purchase_source` says which of the three priced it. Companion stats (static): ROI
 2.2/3.4/6.9, paid % of units .11/.21/.31.
 
 Recomputation policy for the rebuild: recompute quartiles nightly from BigQuery over a
@@ -872,7 +878,7 @@ K            = edition_size / profile["units"]
 units[g]     = profile["units_by_group"][g]    × K        # sums to edition_size exactly
 sessions[g]  = profile["sessions_by_group"][g] × K
 entries[g]   = units[g] / 0.8                             # the eligible-entry → order rate, §4 D
-paid_budget  = profile["units_by_group"]["paid"] × cost_per_purchase × K    # the release's figure, else the panel median (§4 E)
+paid_budget  = profile["units_by_group"]["paid"] × cost_per_purchase × K    # the release's figure, else the basket's median cost per paid unit, else the panel constant (§4 E)
 ```
 
 `compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
@@ -1029,7 +1035,8 @@ budget over those days, and the paid block publishes `paidStartDays` and `paidDa
 cards (`paidDayFrac` in `web/src/ui.jsx`). Not the panel's historic paid shape, which starts
 near zero and told the Channels vs targets card there was nothing to expect on days when the
 Paid spend card, reading the even plan, showed the units bought. The organic groups keep their
-shape curves. (2026-09-23.)
+shape curves. The waterfall's Paid spend step (§9) measures spend to date against the same even
+share of the budget. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
@@ -1080,19 +1087,31 @@ campaign-date records with launch timestamps ~1 day apart); metrics are split ac
 - Conversion actual = projected purchases ÷ sessions, compared to the target conversion.
 
 ### 6.3½ Secured units - the unified page currency
-The hero, trajectory, and channels modules run on one unified metric of sales plus
-entries:
+The hero, trajectory, channels, funnel and waterfall modules run on one metric of sales plus
+entries: the sell-through's own count (§6.3).
 ```
-secured units = units sold (all routes, incl. private room)
-              + 0.8 × eligible entry units NOT yet converted
+secured units = units paid (all routes, incl. private room)
+              + draft orders raised and not yet paid (they take room like a sale)
+              + the winners the eligible entries still in the draw imply, allocated across
+                the products by the maximum-quantity rule, × the release's entry → order
+                rate (`entry_conversion_rate` on the Target setting tab, else the panel's 0.8)
 ```
-Only *unconverted* entries carry the 0.8 discount (a converted entry is already a sale -
-counting all entries would double-count). Group unit targets sum exactly to the edition
-size, so the hero target = sellout (private-room units ride with the AA Email group, the
-workbook's own convention). The hero is **capped at edition size**; entries beyond the
-units left to sell are shown as an oversubscription signal, not as bar overshoot.
-Funnel diagnostics and the paid module stay denominated in entries/spend - the things
-marketing moves directly.
+Only *unconverted* entries carry the rate (a converted entry is already a sale - counting all
+entries would double-count). The funnel export attributes sales and entries to channels, so
+the channel columns are the funnel's secured units (units + rate × unconverted entries, per
+channel) scaled in proportion to the sell-through's count (`adopt_sellthrough`): drafts and
+the allocation rule have no channel of their own, and the scaling is what keeps the channels,
+the trajectory, the funnel's conversion steps and the waterfalls summing to the hero. The
+projection's further units follow the funnel's shape and are capped at the room left, as the
+sell-through caps them. Group unit targets sum exactly to the edition size, so the hero target
+= sellout (private-room units ride with the AA Email group, the workbook's own convention).
+The hero, the trajectory's all-channels line and the waterfall are **capped at the whole
+edition**: the hero names the surplus as oversubscribed, the trajectory flattens at the
+sellout, and every waterfall walk carries the surplus as a last step, `Beyond sellout`, so its
+steps still close on the figure printed. A single channel's demand is its own and is not
+capped. The same entry → order rate prices the paid model's converting entries (§7) and the
+targets' eligible entries (`benchmark_targets`), so one rate runs through the page.
+(2026-09-23.)
 
 ### 6.3 Sell-through prediction, per product (LE)
 
@@ -1238,14 +1257,14 @@ unattributed sales in the paid key's, and the editions are checked on the Target
 name (draws sharing a name merge), an edition. A single product with no edition takes the
 release's; with several products the card runs on units and says so until every product has
 one, and it flags editions that do not add up to the release's. `entry_conversion_rate`
-(optional, per release) is the rate the prediction converts entries in hand at; the
-secured-units currency the rest of the page runs on keeps the panel's 0.8.
+(optional, per release) is the rate the prediction converts entries in hand at, and the rate
+the whole page runs on: the secured-units currency, the paid model's converting entries and
+the targets' eligible entries (§6.3½).
 
 **Headline.** With the draw feed present the release's `soldPredicted`, `futureEntriesPredicted`
 and `pct` are the per-product figures summed (each capped at the release's inventory left), so
 the card's rows and its headline are one sum; without it they are the release-level figures
-as before (`inHandUnits × rate`, capped). The hero's secured units stay on the funnel export
-and can differ from the card by the entries the rule does not count.
+as before (`inHandUnits × rate`, capped). The hero adopts the headline (§6.3½), and the funnel's channels are scaled to it.
 
 ### 6.4 Framing take-up (the Framing card)
 
@@ -1330,6 +1349,15 @@ spend (`1 − aa_budget_share`). On a deal where the artist carries no spend (a 
 figures are read with sit on the block as `cannibalisation` and `dropOff`, so the Paid ROI card
 can show its working in the ? popup. The card reads AA by default and has an AA / Artist switch
 (kept per browser); the spend recommendation, its ROI floor and the pacing rules stay AA's.
+
+**What the paid block publishes in units and days.** `unitsToDate` and `unitProjected` are the
+paid group's secured units (§6.3½: units sold + 0.8 × unconverted entries, every paid channel),
+the paid column of the channels card, so the Paid spend card's bar and that column are one
+figure; `entriesToDate` and `entriesProjected` stay the paid campaign's draw entries, the
+quantity the CPE and the ROI are priced on. `daily[]` runs over the full days the rules read;
+on a live day the as-of day so far rides at the end as one more row marked `partial: true`
+(its spend and entries, no ROI point), so the Paid ROI chart's bars sum to `spendToDate` and
+the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip that row.
 
 **Budget to sell out** (the sizing decision). The workbook nets off a manual
 `organic_topup` estimate; the dashboard automates it with the shape-following
@@ -1478,7 +1506,9 @@ actuals-only page omits it.
 | `benchmark.stretchUnits`, `stretchPct` | `target − benchmark` in units, and `K − 1` |
 | `asOf`, `completeThrough`, `asOfFraction` | the newest day in the feed (today, part-observed, while the feed is live), the last full day, and the share of the as-of day seen (1 on a full day and once the window has closed). The actuals run through `asOf`; the paid pacing rules, the run rates and `complete` read `completeThrough`; every reference by today is read at the share, so the page compares the day so far with the same share of the basket's day |
 | `benchmark.unitsByGroup`, `sessionsByGroup`, `convByGroup` | the per-group medians (conversion is held, so `convByGroup` is both benchmark and target) |
-| `benchmark.paidBudget` | benchmark paid units × median cost per purchase × K |
+| `benchmark.paidBudget` | benchmark paid units × the cost per purchase in force × K |
+| `benchmark.costPerPurchase`, `costPerPurchaseN` | the basket's median cost per paid unit (0 when fewer than three members have a reading, and the panel constant prices the budget) and the members with one (§4 E) |
+| `targets.paid.cost_per_purchase`, `cost_per_purchase_source` | the price a paid unit is planned at and where it came from: `release`, `basket` or `panel` |
 | `benchmark.channelsOff` | the display groups this release set aside (BENCHMARK_SPEC §4.3); their medians are zero above and the other channels carry the target |
 | `benchmark.unitsAll`, `sessionsAll`, `entriesAll`, `unitsP25All`, `unitsP75All`, `unitsByGroupAll`, `sessionsByGroupAll`, `convByGroupAll` | the basket's full medians before any channel was set aside, so the page can say what left and the browser can re-read the basket as the switches move |
 | `benchmark.privateRoomShare` | the basket's median private-room share of email units - descriptive; nothing derives a target from it since the split went (§3) |

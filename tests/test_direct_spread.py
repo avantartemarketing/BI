@@ -112,7 +112,9 @@ paid = lambda chans: next(c for c in chans if c["key"] == "paid")
 check(sdo(var["channels"])["now"] < sdo(snap["channels"])["now"], f"Search/direct/other loses Direct: {sdo(var['channels'])['now']} < {sdo(snap['channels'])['now']}")
 check(paid(var["channels"])["now"] > paid(snap["channels"])["now"], f"paid gains its share: {paid(var['channels'])['now']} > {paid(snap['channels'])['now']}")
 check(var["paid"]["entriesToDate"] > snap["paid"]["entriesToDate"] and var["paid"]["cumRoi"] > snap["paid"]["cumRoi"], "paid ROI reads the entries it is given")
-check(close(sum(c["now"] for c in var["channels"]), sum(c["now"] for c in snap["channels"]), 1e-3), "the channels still add up to the same secured units")
+# each channel is published to a tenth of a unit, so two builds of the same
+# total can differ by a few tenths once every channel carries a fraction
+check(close(sum(c["now"] for c in var["channels"]), sum(c["now"] for c in snap["channels"]), 0.3), "the channels still add up to the same secured units")
 ds = snap["directShare"]
 check(ds and 0 < ds["entries"] < 1 and 0 < ds["units"] < 1, f"Direct's share of the window is published: {ds}")
 print(f"direct share of entries {ds['entries']:.1%}; sdo {sdo(snap['channels'])['now']:.0f} -> {sdo(var['channels'])['now']:.0f}, paid {paid(snap['channels'])['now']:.0f} -> {paid(var['channels'])['now']:.0f}; variant blocks {sorted(var)}")
