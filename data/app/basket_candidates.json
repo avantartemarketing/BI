@@ -239,7 +239,7 @@
     "paid": 0.0139532348612852
    },
    "entries": 841.0,
-   "units_per_buyer": 1.3676923076923078,
+   "units_per_buyer": 1.3692307692307693,
    "private_room_share": 0.2002262443438914,
    "cost_per_paid_unit": 24.53078602620087,
    "price": 500.0,
@@ -362,7 +362,7 @@
     "paid": 0.0002056343820686
    },
    "entries": 20.0,
-   "units_per_buyer": 1.25,
+   "units_per_buyer": 1.2142857142857142,
    "private_room_share": 0.21875,
    "cost_per_paid_unit": null,
    "price": 4000.0,
@@ -854,7 +854,7 @@
     "paid": 0.0524130773222625
    },
    "entries": 1177.0,
-   "units_per_buyer": 1.1795180722891567,
+   "units_per_buyer": 1.1783132530120481,
    "private_room_share": 0.0570824524312896,
    "cost_per_paid_unit": 165.034613003096,
    "price": 541.5428167020524,
@@ -895,7 +895,7 @@
     "paid": 0.3275862068965517
    },
    "entries": 1692.0,
-   "units_per_buyer": 1.2040816326530612,
+   "units_per_buyer": 1.2116788321167884,
    "private_room_share": 0.3026004728132387,
    "cost_per_paid_unit": null,
    "price": 700.0,
@@ -1264,7 +1264,7 @@
     "paid": 0.0008694167145363
    },
    "entries": 337.0,
-   "units_per_buyer": 1.072494669509595,
+   "units_per_buyer": 1.0874200426439233,
    "private_room_share": 0.0277777777777777,
    "cost_per_paid_unit": 664.3909345794393,
    "price": 3000.0,
@@ -1756,7 +1756,7 @@
     "paid": null
    },
    "entries": 182.0,
-   "units_per_buyer": 1.1304347826086956,
+   "units_per_buyer": 1.2608695652173914,
    "private_room_share": 0.1637931034482758,
    "cost_per_paid_unit": null,
    "price": 8000.0,
