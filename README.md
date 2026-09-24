@@ -247,8 +247,8 @@ it leaves the server with an identifier column.
 lines, into three aggregate files, written together or not at all: `data/orders_by_product.csv` (per release and product: units
 paid, orders awaiting payment, list price; the draw's own pre-authorisation drafts, one per
 live entry, are counted apart and never shown as drafts; and the framing, the prints a frame
-was on offer for and the frames bought with them, joined to the prints through the order,
-docs 6.4) and `data/draw_products.csv` (the product each
+was on offer for and the frames bought with them, on the paid orders, the pre-authorisation
+drafts and the orders awaiting payment, joined to the prints through the order, docs 6.4) and `data/draw_products.csv` (the product each
 draw's winners bought, joined inside BigQuery on the pseudonymous account id) and
 `data/units_paid.csv` (the same paid units per product, order day and channel, each order
 on the channel of its own purchase event, `Untracked` where the event feed never saw it: the
@@ -506,16 +506,18 @@ The sell-through card has a **Post to Slack** button. It sends the card as a Blo
 message to the channel set for that release: the artist as the header; the works' shared
 title and the campaign day on one line ("Brillo Box Collectable, day 20 of 27"); the table's
 title; Slack's `table` block, one row per work with its units sold (at close, the projection),
-its target, how far along the target it is, the frames bought with its prints and its framing
-conversion (the Framing card's frames per print on the prints a frame was on offer for; a dash
-for a work with no frame on offer; the two columns are left out on a release without a framing
-option), and a bold **Total** row adding them up (the framed units before rounding, so the
-Total is the card's own figure), the Work column wrapping rather than cropping and the figures
-right-aligned (Slack's `data_table` block takes no column settings and cut the names off);
-then, in small type, the day the figures run to, the totals (paid, awaiting payment, expected
-from the draw, at close the units still to come) and the framing take-up in plain sentences,
-and last the footnote the units column's asterisk points to: paid units, drafts and the
-forecast conversions from draw entries. The figures in the table are numbers with their words, so a column
+its target, how far along the target it is, its framed units and its framing conversion
+(frames per print on the same units as the units column: the paid prints and their frames,
+the drafts and theirs, the draw's forecast conversions at the rate the entrants ask for; the
+Framing card's headline; a dash for a work with no frame on offer; the two columns are left
+out on a release without a framing option), and a bold **Total** row adding them up (the
+framed units before rounding, so the Total is the card's own figure), the Work column
+wrapping rather than cropping and the figures right-aligned (Slack's `data_table` block takes
+no column settings and cut the names off); then, in small type, the day the figures run to,
+the totals (paid, awaiting payment, expected from the draw, at close the units still to come)
+and the two framing readings behind the table's figure in plain sentences, and last the
+footnote both asterisked columns point to: paid units, drafts and the forecast conversions
+from draw entries. The figures in the table are numbers with their words, so a column
 sorts as numbers on a tap; the header row is plain text, as Slack requires. A work's target
 is the one typed for it on the Target setting tab when targets are set per product, else
 the release's target split by edition share, the rule the card's references follow. The
@@ -525,11 +527,12 @@ the card, which Slack fits to a fixed height whatever the file's size, then a ta
 bars drawn in text, which wrapped on a phone, then a plain `table` block; the data table
 was the one that read on a phone. The notification text is the headline alone.
 
-The framing line is the Framing card's own figure (docs 6.4): frames per print on the prints
-sold that a frame was on offer for, with the count behind it. Before a print is sold it is the
-rate the entrants' pre-authorised prints ask for. The plan's rate is not repeated in the update,
-and a snapshot from before the framing block, or a release where no print has a frame on offer,
-gets no line.
+The framing line gives the Framing card's two bars (docs 6.4): the frames bought with the
+paid prints, with the count behind it, and the rate the entrants ask for on their
+pre-authorised prints; the table's conversion sits between them, weighted by the units each
+brings. Either alone where only one has anything to say. The plan's rate is not repeated in
+the update, and a snapshot from before the framing block, or a release where no print has a
+frame on offer, gets no line.
 
 The button itself only ever reads Post to Slack, Posting, Done or Failed, so the card's head
 never reflows; what happened is on its hover.
@@ -601,14 +604,18 @@ a deploy the card shows the release as one row and says so. **Post to Slack** in
 head sends the card as a message, these rows as a table of figures with the framing take-up
 above them, to the release's channel (see "Posting sell-through to Slack").
 
-**Framing** (docs §6.4) is frames per print on the prints a frame was on offer for: the
-headline is the prints sold that went out framed, against the plan's frame conversion, and
-two bars on one 0 to 100% scale carry the buyers (prints sold) and the entrants (the frames
-on the app's pre-authorisation drafts, which is what allocation brings), each with the plan
-as the pale fill and the basket's median as the dotted outline. Prints with no framing option
-(the Lifesize Brillo Box) are left out of the rate and counted in the key. Hover the buyers'
-bar for the rate by work. The card is off the page on a release nothing has been offered a
-frame on, and reads from the same orders feed as sell-through.
+**Framing** (docs §6.4) is frames per print on the prints a frame was on offer for. The
+headline counts the same units as the sell-through card, at the page's Today or At close:
+the paid prints and the frames bought with them, the drafts and the frames on them, and the
+draw's forecast conversions (at close the entries still to come) at the rate the entrants ask
+for, against the plan's frame conversion. Below it, two bars on one 0 to 100% scale carry its
+two parts, the buyers (paid prints) and the entrants (the frames on the app's
+pre-authorisation drafts, which is what allocation brings), each with the plan as the pale
+fill and the basket's median as the dotted outline; the headline sits between them. Prints
+with no framing option (the Lifesize Brillo Box) are left out and counted in the key. Hover
+the headline for the forecast by work and the buyers' bar for the paid rate by work. The card
+is off the page on a release nothing has been offered a frame on, and reads from the same
+orders feed as sell-through.
 
 Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
 own blue (darker to whichever of target and benchmark is lower, lighter from the benchmark up

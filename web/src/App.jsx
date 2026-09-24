@@ -544,7 +544,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       case "paid_roi": return <PaidRoi snap={view} />;
       case "paid_spend": return <PaidSpend snap={view} horizon={horizon} />;
       case "sell_through": return <SellThrough snap={view} horizon={horizon} />;
-      case "framing": return <Framing snap={view} />;
+      case "framing": return <Framing snap={view} horizon={horizon} />;
       case "geo": return <Geo snap={view} />;
       case "waterfall": return <Waterfall snap={view} horizon={horizon} />;
       default: return null;

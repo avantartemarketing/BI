@@ -556,6 +556,15 @@ select.native {
 .sheet input.tick:checked::after { content: "\2713"; color: #fff; font-size: 10px; line-height: 1; position: absolute; left: 2px; top: 1px; }
 .sheet input.tick:disabled { cursor: default; }
 .sheet input.tick:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+/* A grid cell's hover note says where its figure came from, so the cells
+   keep the ordinary cursors that [title] would otherwise turn into help:
+   the arrow on a locked cell, the text cursor in a box being typed in, the
+   hand on a tick box or a link. Only the column heads, whose notes explain
+   a term, keep the help cursor. */
+.sheet td, .sheet td [title] { cursor: default; }
+.sheet td input.cell { cursor: text; }
+.sheet td input.tick, .sheet td button, .sheet td button[title] { cursor: pointer; }
+.sheet td input.tick:disabled { cursor: default; }
 @media (prefers-reduced-motion: reduce) { .ts-big, .ts-figures, .ts-switch .tr, .ts-switch .tr::after { transition: none; } }
 /* the product cell: the name gives way first, then its Airtable code; the
    Reset or Remove link at its end always stays in view */

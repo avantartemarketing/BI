@@ -409,7 +409,8 @@ const spendSql = () =>
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
   "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts", "units_winner_drafts_lapsed", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft",
-  "prints_offered_paid", "frames_paid", "prints_offered_entry_drafts", "frames_entry_drafts"];
+  "prints_offered_paid", "frames_paid", "prints_offered_entry_drafts", "frames_entry_drafts",
+  "prints_offered_awaiting", "frames_awaiting"];
 const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
 
 // The order lines, typed: every rule the orders feed counts a unit by (paid
@@ -555,11 +556,14 @@ const ordersSql = () =>
   "  MAX(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS last_order,\n" +
   "  MAX(l.draft_date) AS last_draft,\n" +
   // framing (docs/DATA_MODEL.md 6.4): the paid prints a frame was on offer
-  // for and the frames bought with them; the same on the app's entry drafts
+  // for and the frames bought with them; the same on the app's entry drafts,
+  // and on the orders awaiting payment (the drafts the sell-through counts)
   "  SUM(IF(l.paid AND l.offered, l.quantity, 0)) AS prints_offered_paid,\n" +
   "  ROUND(SUM(IF(l.paid, l.frames_line, 0)), 2) AS frames_paid,\n" +
   "  SUM(IF(l.entry_draft AND l.offered, l.quantity, 0)) AS prints_offered_entry_drafts,\n" +
-  "  ROUND(SUM(IF(l.entry_draft, l.frames_line, 0)), 2) AS frames_entry_drafts\n" +
+  "  ROUND(SUM(IF(l.entry_draft, l.frames_line, 0)), 2) AS frames_entry_drafts,\n" +
+  "  SUM(IF(l.awaiting AND l.offered, l.quantity, 0)) AS prints_offered_awaiting,\n" +
+  "  ROUND(SUM(IF(l.awaiting, l.frames_line, 0)), 2) AS frames_awaiting\n" +
   "FROM typed l LEFT JOIN paid_customers p ON p.release = l.release AND p.customer_id = l.customer_id\n" +
   "GROUP BY l.release, l.product_title\nORDER BY l.release, l.product_title";
 

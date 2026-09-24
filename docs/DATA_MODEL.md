@@ -491,7 +491,7 @@ them alone; `BQ_ORDERS=off` skips them; `BQ_ORDERS_TABLE` renames the table; all
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), and no line of an order tagged `upsell_order_merged` (an upsell bought after an order is folded into it, and the upsell's own order stays in the table with the same lines: counting it counts them twice; the data team's Metabase questions leave it out too), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft`; and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, each to the work its SKU names, else shared across the order's prints, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts) |
+| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), and no line of an order tagged `upsell_order_merged` (an upsell bought after an order is folded into it, and the upsell's own order stays in the table with the same lines: counting it counts them twice; the data team's Metabase questions leave it out too), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft`; and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, each to the work its SKU names, else shared across the order's prints, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts), `prints_offered_awaiting` and `frames_awaiting` (the same on the orders awaiting payment, the lines `units_draft_pending` counts, for the Framing forecast) |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
 | `sources/units_paid.csv` | release × product title × order day (CET) × channel × `purchase_event` | `units_paid`, `units_private_room`, `prints_offered_paid`, `frames_paid`: the paid lines of `orders_by_product.csv` by the same rule (one set of CTEs, `orderLinesCtes`), each order on the channel of its earliest purchase event in the event feed (`AA_session_custom_channel_group_split_touch`, joined on the Shopify order id alone), `Untracked` with `purchase_event` false where the event feed has no purchase for the order. Summed over its days and channels it is `units_paid` per product. The units every card counts (§6.3); written beside the other two in the same commit, so a deploy resets all three to one committed copy, and `etl/build.py` reads a release whose units here do not add up to its `units_paid` in `orders_by_product.csv` as out of step (two pulls), counting the funnel's units for it until the next pull |
 
@@ -1310,17 +1310,18 @@ block (the Work column wrapping, the figures right-aligned), one row per work wi
 sold (today, or projected at close; the column's asterisk points to a footnote at the bottom:
 paid units, drafts and the forecast conversions from draw entries), its target (typed per product on the
 Target setting tab when targets are set that way, else the release's target split by edition
-share, the rule the references follow), how far along the target it is, the frames bought
-with its prints and its framing conversion (the work's row of `framing.works`, §6.4, found
-through `sellthrough.drawProducts`, the pairing the sold column follows, else by name; a dash
-for a work with no frame on offer; the columns left out where the framing sentence is), and a
-bold Total row adding them up (the frames before rounding, the conversion on the prints of
-the works with a frame on offer); then, in small type, the day the figures
+share, the rule the references follow), how far along the target it is, its framed units
+and its framing conversion (the row's `framing.forecast`, §6.4, at the horizon: frames per
+print on the same units as the units column, so the asterisk's footnote covers both; a dash
+for a work with no frame on offer; the columns left out where the release has no framing
+option or the snapshot no forecast), and a bold Total row adding them up (the forecast's own
+totals, the rows' frames before rounding); then, in small type, the day the figures
 run to, the totals (paid, awaiting payment, expected from the draw, at close the units still
-to come) and the framing take-up (`framing.rate`, the Framing card's frames per print, §6.4,
-with the count behind it; the entrants' rate before a sale; nothing on a snapshot without the
-block or where no print has a frame on offer; the plan's rate is not repeated) as plain
-sentences. The figures are computed once, on the server, at the horizon the page is on.
+to come) and the two framing readings behind the table's figure (`framing.rate` on the paid
+prints with the count behind it, and the entrants' rate on their pre-authorised prints, the
+Framing card's two bars, §6.4; either alone where only one has anything to say; nothing on a
+snapshot without the block or where no print has a frame on offer; the plan's rate is not
+repeated) as plain sentences. The figures are computed once, on the server, at the horizon the page is on.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
 pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven
@@ -1375,12 +1376,35 @@ counted apart. The rate is read on prints rather than orders because the economi
 print: 71% of the Warhol buyers took a frame but 67% of the prints went out framed, a few
 multi-print orders having framed only some.
 
-Two populations, on the same scale (the feed's four columns, §2.4):
+Two populations, on the same scale (the feed's framing columns, §2.4), drawn as the card's
+two bars:
 
 | Bar | Numerator / denominator | What it says |
 |---|---|---|
 | Buyers | `frames_paid` / `prints_offered_paid` (paid orders: not cancelled, not pending, not refunded in full) | what has gone out framed |
 | Entrants | `frames_entry_drafts` / `prints_offered_entry_drafts` (the app's pre-authorisation drafts, §2.4) | the frames the people still in the draw have asked for: what allocation brings if they win at this rate |
+
+**The headline is the forecast, on the sell-through's own units.** The card's big number and
+the Slack table's framing columns count the same units the sell-through counts (§6.3), at the
+page's horizon, so a framing figure never sits beside a units figure on another base:
+
+| Units the sell-through counts | Prints on offer | Frames |
+|---|---|---|
+| paid | the work's `prints_offered_paid` | its `frames_paid` |
+| drafts awaiting payment (the sell-through's `drafts`) | their share on offer, `prints_offered_awaiting / units_draft_pending` | at their own rate, `frames_awaiting / prints_offered_awaiting`; a feed pulled before those columns: the work's buyers' rate |
+| the draw winners the entries imply (`shown`) | the share of the work's pre-authorised prints on offer (else of its paid ones) | at the entrants' rate, the work's own, else the release's |
+| at close, the entries still to come (`futurePredicted`) | as the winners | as the winners |
+
+Per sell-through row, found through the draw's pairing with the orders feed's product
+(`sellthrough.drawProducts`, the pairing the sold column follows), else by name (the same
+name, or the one name starting the other); a work paired with two rows shares its paid prints
+by their sold units, and a row neither can place takes the release's shares and rates. The
+units of rows with no frame on offer are counted apart (the card's key). The forecast sits
+between its two parts whenever the entrants ask for more than the buyers took, which is the
+point: on the Warhol launch on 24 September, 67% of paid prints had gone out framed and the
+entrants had asked for frames on 73%, so the 68.5% headline is the two weighted by the units
+each brings. A snapshot built before the forecast heads the card with the buyers' rate, says
+"of paid prints", and the Slack table leaves its framing columns out.
 
 **References.** The plan is the release's frame conversion (`frame_terms`: the product's
 Airtable figure or the typed one, weighted over the products that frame, else the panel
@@ -1393,14 +1417,21 @@ at 0.54 frames per print, the timed launches at 0.35 (which is where the plan de
 from), and the estate draws higher still (Mondrian 0.67, Warhol 0.67, Dali 0.58,
 Murakami 0.55).
 
-The snapshot's `framing` block (`framing_block`): `prints`, `frames`, `rate`; `entrants`
-(`prints`, `frames`, `rate`, or null without entry drafts); `plan`; `benchmark`
-(`rate`, `n` members rated, `of` members in the basket, or null); `works[]` (per product with
-prints on offer: `name`, `prints`, `frames`, `rate`, sorted by rate, the card's hover);
-`notOffered` (`units` paid with no framing option, and the `works`); `asOf`. Null when
-nothing on the release has been offered a frame, and the card stays off the page. A feed
-pulled before the four columns existed reads as no framing. The sell-through update posted
-to Slack carries `rate` as its framing line (§6.3), so the channel reads the card's figure.
+The snapshot's `framing` block (`framing_block`): `prints`, `frames`, `rate` (the paid
+prints, the Buyers bar); `entrants` (`prints`, `frames`, `rate`, or null without entry
+drafts); `plan`; `benchmark` (`rate`, `n` members rated, `of` members in the basket, or
+null); `works[]` (per product with paid prints on offer: `name`, `prints`, `frames`, `rate`,
+sorted by rate, the Buyers bar's hover); `notOffered` (`units` paid with no framing option,
+and the `works`); `forecast` (`framing_forecast`: `today` and `close`, each `prints`,
+`frames`, `rate` and `notOffered`, the units counted with no frame on offer; and
+`products[]`, per sell-through row with a frame on offer, `key` (the row's draw), `name`,
+`today` and `close` as `prints`, `frames`, `rate`; null without the sell-through); `asOf`.
+Null when nothing on the release has been offered a frame, and the card stays off the page.
+A feed pulled before the framing columns existed reads as no framing. The forecast differs
+between the Direct views at close (the entries still to come do), so it rides in
+`variants.direct_spread` like the sell-through. The sell-through update posted to Slack
+reads the forecast for its framing columns and the two bars' rates for its framing sentence
+(§6.3), so the channel reads the card's figures.
 
 ---
 
