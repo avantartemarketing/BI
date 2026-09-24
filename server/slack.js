@@ -4,9 +4,10 @@
  * the card as a Block Kit message to the channel set for that release on
  * its Target setting tab: the artist as the header, the campaign day under
  * it, then Slack's table, one row per work - its units, its target, how
- * far along the target it is, the frames bought with its prints and its
- * framing conversion - with a bold Total row, and under the table the day
- * the figures run to, the totals and the framing take-up in plain
+ * far along the target it is, its framed units and its framing conversion,
+ * both on the same units as the units column - with a bold Total row, and
+ * under the table the day the figures run to, the totals and the two
+ * framing readings behind the table's (paid prints, entrants) in plain
  * sentences. The message is
  * composed here from the snapshot the page is showing, by the card's own
  * rules (docs 6.3), so what lands in Slack is what the card says, set in
@@ -198,54 +199,61 @@ function model(snap, { horizon = "today", today } = {}) {
     close && future > 0 ? `still to come ${fmt(future)}` : null,
   ].filter(Boolean).join(", ") + ".";
 
-  // framing: frames per print on the prints a frame was on offer for, from
-  // the orders - the Framing card's own figure (docs 6.4); before any print
-  // is sold, the rate the entrants' pre-authorised prints ask for; with no
-  // framing block at all (a snapshot from before it), nothing: the update
-  // reports what was observed and does not repeat the plan's rate. Nothing
-  // either on a release where no print has a frame on offer.
+  // framing in words: the two readings the table's framing figure is made
+  // of, the Framing card's two bars (docs 6.4) - the frames bought with the
+  // paid prints, and the frames the entrants still in the draw ask for on
+  // their pre-authorisations; either alone where only one has anything to
+  // say; nothing on a snapshot without the block, or where no print has a
+  // frame on offer. The plan's rate is not repeated.
   const fr = snap.framing;
   const framingOff = fr === null || !!(snap.economics && snap.economics.framingAvailable === false);
+  const paidWords = fr && finite(fr.rate) && num(fr.prints) > 0
+    ? `${pct(fr.rate)} of paid prints took a frame, ${fmt(fr.frames)} of ${fmt(fr.prints)}` : null;
+  const entrantWords = fr && fr.entrants && finite(fr.entrants.rate) && num(fr.entrants.prints) > 0
+    ? `entrants asked for frames on ${pct(fr.entrants.rate)} of their pre-authorised prints` : null;
   const framing = framingOff ? null
-    : fr && finite(fr.rate) && num(fr.prints) > 0
-      ? `${pct(fr.rate)} of prints sold took a frame, ${fmt(fr.frames)} of ${fmt(fr.prints)}.`
-      : fr && fr.entrants && finite(fr.entrants.rate) && num(fr.entrants.prints) > 0
-        ? `Entrants asked for frames on ${pct(fr.entrants.rate)} of their pre-authorised prints.`
-        : null;
+    : paidWords && entrantWords ? `${paidWords}; ${entrantWords}.`
+      : paidWords ? `${paidWords}.`
+        : entrantWords ? `${entrantWords[0].toUpperCase()}${entrantWords.slice(1)}.` : null;
 
   // the rows: the products, or the release as one row without the draw feed.
-  // Each carries its framing figures for the table's last two columns: the
-  // frames bought with its paid prints and the share of those prints, the
-  // Framing card's per-work figures (docs 6.4). Null for a work with no frame
-  // on offer, or none sold yet: a dash in the table. The columns are left out
-  // altogether where the framing sentence is: no framing option on the
-  // release, or a snapshot without the block.
+  // Each carries its framing for the table's last two columns, on the same
+  // units as its units column: the snapshot's framing forecast at this
+  // horizon (docs 6.4) - the paid prints and their frames, the drafts and
+  // theirs, the draw's forecast conversions (at close the entries still to
+  // come too) at the entrants' rate - for the row of the same draw. Null for
+  // a work with no frame on offer: a dash in the table. The columns are left
+  // out altogether where the release has no framing option, or the snapshot
+  // no forecast (one built before it): a paid-only figure beside units that
+  // count drafts and the draw's forecast would not be the same thing.
   const releaseTarget = snap.edition && finite(snap.edition.target) && num(snap.edition.target) > 0 ? num(snap.edition.target) : null;
   const targets = targetsFor(snap, products, editionSum, releaseTarget);
-  const framingCols = !framingOff && !!fr && typeof fr === "object";
-  const workFraming = framingFor(st, fr, products, framingCols);
+  const at = close ? "close" : "today";
+  const fc = !framingOff && fr && typeof fr === "object" && fr.forecast && typeof fr.forecast === "object"
+    && fr.forecast[at] && typeof fr.forecast[at] === "object" ? fr.forecast : null;
+  const framingCols = !!fc;
+  const onOffer = (x) => (x && num(x.prints) > 0 ? { prints: num(x.prints), frames: num(x.frames) } : null);
+  const fcRows = new Map((fc && Array.isArray(fc.products) ? fc.products : []).map((r) => [r.key, r[at]]));
   const rowsIn = products.length ? products.map((p, i) => ({
     name: names[i], target: targets[i],
     paid: soldOf(p), drafts: num(p.drafts), winners: num(p.shown), future: close ? num(p.futurePredicted) : 0,
-    framing: workFraming[i],
+    framing: fc ? onOffer(fcRows.get(p.key)) : null,
   })) : [{ name: releaseName, target: releaseTarget, paid: sold, drafts: drafts || 0, winners: inHand, future,
-    framing: framingCols && num(fr.prints) > 0 ? { prints: num(fr.prints), frames: num(fr.frames) } : null }];
+    framing: fc ? onOffer(fc[at]) : null }];
   const rows = rowsIn.map((r) => ({
     ...r, units: r.paid + r.drafts + r.winners + r.future,
     framed: r.framing ? r.framing.frames : null, framingRate: r.framing ? r.framing.frames / r.framing.prints : null,
   }));
   // the table's last row: the units and the targets added up as the rows
-  // show them, the share read on the sums; the framed units added up before
-  // rounding (a frame on an order of two prints is half a frame on each), so
-  // the Total is the card's own figure, and the conversion on the prints of
-  // the works a frame was on offer for
+  // show them, the share read on the sums; the framed units and the
+  // conversion the forecast's own totals, the rows' figures before rounding
+  // (a frame on an order of two prints is half a frame on each)
   const sum = (key) => (rows.every((r) => r[key] !== null) ? rows.reduce((n, r) => n + Math.round(r[key]), 0) : null);
-  const framed = rows.filter((r) => r.framing);
-  const framedPrints = framed.reduce((n, r) => n + r.framing.prints, 0);
+  const fcTotal = fc ? onOffer(fc[at]) : null;
   const total = { units: rows.reduce((n, r) => n + Math.round(r.units), 0), target: sum("target"),
-    framed: framed.length ? framed.reduce((n, r) => n + r.framing.frames, 0) : null };
+    framed: fcTotal ? fcTotal.frames : null };
   total.pctTarget = total.target ? total.units / total.target : null;
-  total.framingRate = framedPrints > 0 ? total.framed / framedPrints : null;
+  total.framingRate = fcTotal ? fcTotal.frames / fcTotal.prints : null;
 
   return {
     close, artist, releaseName, prefix: prefix ? prefixWords(prefix) : null, day: of > 0 ? { day, of } : null, through,
@@ -278,7 +286,8 @@ function targetsFor(snap, products, editionSum, releaseTarget) {
 /* The one of `items` (each with a `name`) for a product's name: the same
  * name (case aside), else the one name that starts the other where both
  * are four characters or more (the draw feed's short titles against
- * Airtable's or the orders feed's long ones). Null when none or several. */
+ * Airtable's long ones). Null when none or several. The ETL places a draw's
+ * framing the same way when the draw is not paired (etl/build.py _by_name). */
 function byName(name, items) {
   const n = String(name || "").toLowerCase();
   const named = items.map((it) => ({ it, name: String(it.name || "").toLowerCase() }));
@@ -286,24 +295,6 @@ function byName(name, items) {
   const near = exact.length ? exact
     : n.length >= 4 ? named.filter((x) => x.name.length >= 4 && (x.name.startsWith(n) || n.startsWith(x.name))) : [];
   return near.length === 1 ? near[0].it : null;
-}
-
-/* The framing figures for each product: the Framing card's per-work row
- * (`framing.works`, named by the orders feed's product title, docs 6.4) for
- * the product the draw is paired with (`sellthrough.drawProducts`, the
- * pairing the sold column follows); without a pairing, the row of the same
- * name, else the one whose name starts the product's or the other way
- * round, as targets are matched. Null without a row: no frame on offer for
- * the work, or no print sold yet. All null when the columns are off. */
-function framingFor(st, fr, products, on) {
-  const works = on && Array.isArray(fr.works) ? fr.works.filter((w) => w && num(w.prints) > 0) : [];
-  const paired = st.drawProducts && typeof st.drawProducts === "object" ? st.drawProducts : {};
-  return products.map((p) => {
-    if (!works.length) return null;
-    const title = [p.key, ...(Array.isArray(p.draws) ? p.draws : [])].map((d) => paired[d]).find(Boolean);
-    const w = title ? works.find((x) => String(x.name) === String(title)) : byName(p.name, works);
-    return w ? { prints: num(w.prints), frames: num(w.frames) } : null;
-  });
 }
 
 // ---- the table
@@ -321,12 +312,13 @@ const unitsFootnote = (m) => (m.close
   : "* Includes paid units, drafts and forecast conversions from draw entries.");
 
 /* Slack's table block: one row per work with its units, its target, how far
- * along the target it is, the frames bought with its prints and its framing
- * conversion (frames per print on the prints a frame was on offer for, the
- * Framing card's figure; a dash for a work with no frame on offer), and a
- * bold Total row adding them up (when there is more than one work). The
- * two framing columns are left out where the release has no framing option
- * or the snapshot no framing block. The header row is plain text only, as
+ * along the target it is, its framed units and its framing conversion
+ * (frames per print on the prints a frame is on offer for, counted on the
+ * same units as the units column, so the footnote's asterisk covers both;
+ * the Framing card's headline figure; a dash for a work with no frame on
+ * offer), and a bold Total row adding them up (when there is more than one
+ * work). The two framing columns are left out where the release has no
+ * framing option or the snapshot no forecast. The header row is plain text only, as
  * Slack requires; the figures are numbers with their words. It is the plain
  * table rather than Slack's data table because only the plain one takes
  * column settings: the data table splits the width evenly over the columns
@@ -350,7 +342,7 @@ function tableBlock(m) {
     rows.push([bold("Total"), bold(fmt(t.units)), bold(t.target === null ? "-" : fmt(t.target)), bold(t.pctTarget === null ? "-" : pct(t.pctTarget)),
       ...(m.framingCols ? [bold(t.framed === null ? "-" : fmt(t.framed)), bold(t.framingRate === null ? "-" : pct(t.framingRate))] : [])]);
   }
-  const header = [raw("Work"), raw(unitsHeader(m)), raw("Target"), raw("% target"), ...(m.framingCols ? [raw("Framed units"), raw("Framing conversion")] : [])];
+  const header = [raw("Work"), raw(unitsHeader(m)), raw("Target"), raw("% target"), ...(m.framingCols ? [raw("Framed units *"), raw("Framing conversion")] : [])];
   return {
     type: "table",
     column_settings: [{ is_wrapped: true, align: "left" }, ...Array.from({ length: header.length - 1 }, () => ({ align: "right" }))],

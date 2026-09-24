@@ -1555,13 +1555,20 @@ def load_orders_feed() -> dict:
                 paid, drafts = num(r.units_paid), num(r.units_draft_pending)
                 price = num(r.list_price_eur)
                 # framing (docs 6.4): the paid prints a frame was on offer for
-                # and the frames bought with them, and the same on the app's
-                # entry drafts; a feed pulled before the columns existed reads
-                # as no framing, and the card stays off the page
+                # and the frames bought with them, the same on the app's entry
+                # drafts, and on the orders awaiting payment (the drafts the
+                # sell-through counts); a feed pulled before the columns
+                # existed reads as no framing, and the card stays off the page,
+                # and one pulled before the drafts' pair reads them as None,
+                # so the forecast takes the buyers' rate for them instead
                 offered, frames = num(getattr(r, "prints_offered_paid", "")), num(getattr(r, "frames_paid", ""))
                 e_prints, e_frames = num(getattr(r, "prints_offered_entry_drafts", "")), num(getattr(r, "frames_entry_drafts", ""))
+                has_draft_frames = "prints_offered_awaiting" in df.columns
+                d_prints = num(getattr(r, "prints_offered_awaiting", "")) if has_draft_frames else None
+                d_frames = num(getattr(r, "frames_awaiting", "")) if has_draft_frames else None
                 rel["products"][r.product_title] = {
                     "printsOffered": offered, "frames": frames, "entrantPrints": e_prints, "entrantFrames": e_frames,
+                    "draftPrints": d_prints, "draftFrames": d_frames,
                     "unitsPaid": paid, "drafts": drafts,
                     "draftCustomers": num(getattr(r, "draft_customers", "")) if str(getattr(r, "draft_customers", "")).strip() else None,
                     "entryDrafts": num(getattr(r, "units_entry_drafts", 0)),
@@ -1656,13 +1663,16 @@ def framing_benchmark(basket: dict | None, feed: dict | None = None) -> dict | N
     return {"rate": round(float(np.median(rates)), 4), "n": len(rates), "of": len(members)}
 
 
-def framing_block(release: dict, of: dict | None, basket: dict | None, b: dict = BENCH) -> dict | None:
+def framing_block(release: dict, of: dict | None, basket: dict | None, b: dict = BENCH,
+                  st: dict | None = None) -> dict | None:
     """The Framing card's figures (docs/DATA_MODEL.md 6.4): frames per print,
     on the prints a frame was on offer for. Buyers: the paid prints and the
     frames bought with them, a frame per print at most (the feed caps an
     order's frames at its prints). Entrants: the same on the app's
     pre-authorisation drafts, the frames the people still in the draw have
-    asked for, which is what allocation will bring. Against the plan's rate
+    asked for, which is what allocation will bring. The forecast: the two
+    together on the units the sell-through counts (framing_forecast), the
+    card's headline and the Slack table's figure. Against the plan's rate
     (frame_terms: the release's own frame_conversion, else the benchmark
     default) and the basket's median. Per work, for the hover, with the
     works a frame was never on offer for named apart so their absence from
@@ -1693,8 +1703,166 @@ def framing_block(release: dict, of: dict | None, basket: dict | None, b: dict =
         "benchmark": framing_benchmark(basket),
         "works": works,
         "notOffered": {"units": int(round(float(f.get("notOffered") or 0))), "works": not_offered},
+        "forecast": framing_forecast(of, st),
         "asOf": (of or {}).get("asOf"),
     }
+
+
+def _by_name(name: str, names) -> str | None:
+    """The one of `names` for a product's name: the same name (case aside),
+    else the one name that starts the other where both are four characters or
+    more (the draw feed's short titles against the orders feed's long ones);
+    None when none or several. server/slack.js matches targets the same way."""
+    n = str(name or "").lower()
+    exact = [x for x in names if str(x).lower() == n]
+    if exact:
+        return exact[0] if len(exact) == 1 else None
+    if len(n) < 4:
+        return None
+    near = [x for x in names if len(str(x)) >= 4 and (str(x).lower().startswith(n) or n.startswith(str(x).lower()))]
+    return near[0] if len(near) == 1 else None
+
+
+def framing_forecast(of: dict | None, st: dict | None) -> dict | None:
+    """Frames per print on the units the sell-through counts (docs 6.4), so
+    the Framing card's headline and the Slack table's framing columns sit on
+    the same units as the sell-through beside them: the paid prints and the
+    frames bought with them; the drafts awaiting payment and the frames on
+    them (a feed without those columns: at the work's buyers' rate); and the
+    draw's forecast conversions - at close the entries still to come as well
+    - at the rate the entrants ask for on their pre-authorisations, the
+    work's own, else the release's. Only the prints a frame is on offer for
+    count: the paid and the drafts' own flags, and for the forecast the share
+    of the work's pre-authorised prints on offer (else of its paid ones). Per
+    sell-through row, through the draw's pairing with the orders feed's
+    product (the pairing the sold column follows), else by name; a work
+    paired with several rows shares its paid prints by their sold units. A
+    row neither can place takes the release's shares and rates. The units of
+    the rows left over (no frame on offer) are counted apart, for the card's
+    key. Without product rows the release is read as one. Today and at close,
+    the page's two horizons. None without the sell-through."""
+    if not st or not of:
+        return None
+    feed = of.get("products") or {}
+    f = of.get("framing") or {}
+    pairs = of.get("draws") or {}
+
+    def num(v) -> float:
+        try:
+            return float(v) if v is not None else 0.0
+        except (TypeError, ValueError):
+            return 0.0
+
+    def ratio(a, b):
+        return a / b if b and b > 0 else None
+
+    def first(*xs):
+        return next((x for x in xs if x is not None), None)
+
+    def clamp(x):
+        return min(max(x, 0.0), 1.0)
+
+    rel_draft_p = sum(num(p.get("draftPrints")) for p in feed.values()) if any(p.get("draftPrints") is not None for p in feed.values()) else None
+    rel_draft_f = sum(num(p.get("draftFrames")) for p in feed.values())
+    rel_drafts = sum(num(p.get("drafts")) for p in feed.values())
+    rel_entry = sum(num(p.get("entryDrafts")) for p in feed.values())
+    rel_paid = sum(num(p.get("unitsPaid")) for p in feed.values())
+    rel = {
+        "buy": ratio(num(f.get("frames")), num(f.get("prints"))),
+        "ent": ratio(num(f.get("entrantFrames")), num(f.get("entrantPrints"))),
+        "draft": ratio(rel_draft_f, rel_draft_p) if rel_draft_p is not None else None,
+        "qPaid": ratio(num(f.get("prints")), rel_paid),
+        "qPred": first(ratio(num(f.get("entrantPrints")), rel_entry), ratio(num(f.get("prints")), rel_paid)),
+        "qDraft": ratio(rel_draft_p, rel_drafts) if rel_draft_p is not None else None,
+    }
+
+    def terms(p: dict | None) -> dict:
+        """a work's shares on offer and its rates; the release's where the
+        work cannot say (no row of the feed, or nothing of that kind yet)"""
+        if p is None:
+            q_paid, q_pred = first(rel["qPaid"], rel["qPred"], 0.0), first(rel["qPred"], rel["qPaid"], 0.0)
+            q_draft = first(rel["qDraft"], q_pred)
+            return {"qPaid": clamp(q_paid), "qPred": clamp(q_pred), "qDraft": clamp(q_draft),
+                    "buy": first(rel["buy"], rel["ent"]), "draft": first(rel["draft"], rel["buy"], rel["ent"]),
+                    "pred": first(rel["ent"], rel["buy"])}
+        po, paid = num(p.get("printsOffered")), num(p.get("unitsPaid"))
+        ep, ed = num(p.get("entrantPrints")), num(p.get("entryDrafts"))
+        dp = p.get("draftPrints")
+        buy, ent = ratio(num(p.get("frames")), po), ratio(num(p.get("entrantFrames")), ep)
+        draft = ratio(num(p.get("draftFrames")), num(dp)) if dp is not None else None
+        offered = po > 0 or ep > 0 or num(dp) > 0
+        q_pred = first(ratio(ep, ed), ratio(po, paid), 1.0 if offered else 0.0)
+        q_draft = first(ratio(num(dp), num(p.get("drafts"))) if dp is not None else None, q_pred)
+        return {"qPaid": clamp(first(ratio(po, paid), q_pred)), "qPred": clamp(q_pred), "qDraft": clamp(q_draft),
+                "buy": first(buy, rel["buy"], ent, rel["ent"]),
+                "draft": first(draft, buy, rel["draft"], rel["buy"], ent, rel["ent"]),
+                "pred": first(ent, rel["ent"], buy, rel["buy"])}
+
+    def part(units, q, rate):
+        """prints on offer and their frames for `units` of one kind"""
+        prints = max(num(units), 0.0) * q
+        return prints, prints * (rate or 0.0)
+
+    rows = st.get("products") or []
+    out_rows, totals = [], {"today": [0.0, 0.0, 0.0], "close": [0.0, 0.0, 0.0]}   # prints, frames, units
+
+    def add(h, prints, frames, units):
+        t = totals[h]
+        t[0] += prints
+        t[1] += frames
+        t[2] += units
+
+    if rows:
+        titles = []
+        for r in rows:
+            title = next((pairs[d] for d in [r.get("key"), *(r.get("draws") or [])] if d in pairs and pairs[d] in feed), None)
+            titles.append(title if title is not None else _by_name(r.get("name"), list(feed)))
+        sold_by_title: dict = {}
+        for r, t in zip(rows, titles):
+            if t is not None:
+                sold_by_title[t] = sold_by_title.get(t, 0.0) + num(r.get("sold"))
+        rows_by_title = {t: titles.count(t) for t in set(titles) if t is not None}
+        for r, t in zip(rows, titles):
+            p = feed.get(t) if t is not None else None
+            k = terms(p)
+            if p is not None:
+                share = ratio(num(r.get("sold")), sold_by_title[t]) if sold_by_title[t] > 0 else 1.0 / rows_by_title[t]
+                paid = (num(p.get("printsOffered")) * share, num(p.get("frames")) * share)
+            else:
+                paid = part(r.get("sold"), k["qPaid"], k["buy"])
+            assumed = part(r.get("soldAssumed"), k["qPaid"], k["buy"])
+            drafts = part(r.get("drafts"), k["qDraft"], k["draft"])
+            pred = part(r.get("shown"), k["qPred"], k["pred"])
+            future = part(r.get("futurePredicted"), k["qPred"], k["pred"])
+            units_today = num(r.get("sold")) + num(r.get("soldAssumed")) + num(r.get("drafts")) + num(r.get("shown"))
+            today = [paid[0] + assumed[0] + drafts[0] + pred[0], paid[1] + assumed[1] + drafts[1] + pred[1]]
+            close = [today[0] + future[0], today[1] + future[1]]
+            add("today", *today, units_today)
+            add("close", *close, units_today + num(r.get("futurePredicted")))
+            if close[0] > 0:
+                out_rows.append({"key": r.get("key"), "name": r.get("name"),
+                                 "today": {"prints": round(today[0], 1), "frames": round(today[1], 1),
+                                           "rate": round(today[1] / today[0], 4) if today[0] > 0 else None},
+                                 "close": {"prints": round(close[0], 1), "frames": round(close[1], 1),
+                                           "rate": round(close[1] / close[0], 4) if close[0] > 0 else None}})
+    else:
+        k = terms(None)
+        paid = (num(f.get("prints")), num(f.get("frames")))
+        unpaid_paid = part(max(num(st.get("sold")) - rel_paid, 0.0), k["qPaid"], k["buy"])   # sold the orders do not carry
+        drafts = part(st.get("drafts"), k["qDraft"], k["draft"])
+        pred = part(st.get("soldPredicted"), k["qPred"], k["pred"])
+        future = part(st.get("futureEntriesPredicted"), k["qPred"], k["pred"])
+        units_today = num(st.get("sold")) + num(st.get("drafts")) + num(st.get("soldPredicted"))
+        today = [paid[0] + unpaid_paid[0] + drafts[0] + pred[0], paid[1] + unpaid_paid[1] + drafts[1] + pred[1]]
+        add("today", *today, units_today)
+        add("close", today[0] + future[0], today[1] + future[1], units_today + num(st.get("futureEntriesPredicted")))
+
+    def horizon(h):
+        prints, frames, units = totals[h]
+        return {"prints": round(prints, 1), "frames": round(frames, 1),
+                "rate": round(frames / prints, 4) if prints > 0 else None,
+                "notOffered": round(max(units - prints, 0.0), 1)}
+    return {"today": horizon("today"), "close": horizon("close"), "products": out_rows}
 
 
 def edition_total(release: dict):
@@ -2790,7 +2958,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "funnelByGroup": funnel_by_group, "paid": paid_out,
         "email": email_out, "social": social_out,
         "sellthrough": sellthrough,
-        "framing": framing_block(rec, load_orders_feed().get(rec["release_name"]), None, b),
+        "framing": framing_block(rec, load_orders_feed().get(rec["release_name"]), None, b, st=sellthrough),
         "draw": None, "geo": None, "waterfall": None,
         "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
                    "entries": round(float(upto["Draw_Entries_Eligible_Units"].sum()))},
@@ -3736,7 +3904,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "social": social_out,
         "sellthrough": sellthrough,
         # frames per print, against the plan's rate and the basket's (§6.4)
-        "framing": framing_block(release, load_orders_feed().get(name), basket, b),
+        "framing": framing_block(release, load_orders_feed().get(name), basket, b, st=sellthrough),
         "draw": draw,
         "geo": None,  # country dim not in any feed yet (docs §12)
         "waterfall": waterfall,
