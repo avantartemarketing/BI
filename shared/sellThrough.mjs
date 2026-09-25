@@ -77,6 +77,26 @@ function productSets(products) {
   return toSet;
 }
 
+/* Who is still in the draw: the people with at least one entry in hand
+ * (eligible, not won, not bought), the entries they hold, and how many of
+ * those were made as pre-orders. The allocation's `entrants` counts everyone
+ * in the patterns, buyers and unpaid winners included, so it is not this. */
+export function inDraw({ products, patterns }) {
+  const toSet = productSets(products || []);
+  let people = 0, entries = 0, preEntries = 0;
+  for (const pat of patterns || []) {
+    const n = Number(pat.n) || 0;
+    if (n <= 0) continue;
+    const won = new Set(toSet(pat.won)), sold = new Set(toSet(pat.sold)), pre = new Set(toSet(pat.pre));
+    const open = toSet(pat.open).filter((i) => !won.has(i) && !sold.has(i));
+    if (!open.length) continue;
+    people += n;
+    entries += n * open.length;
+    preEntries += n * open.filter((i) => pre.has(i)).length;
+  }
+  return { people, entries, preEntries };
+}
+
 export function allocateEntries({ products, patterns, rate = 0.8, preorderRate = null }) {
   const P = products.length;
   const r = finite(rate) ? Number(rate) : 0.8;

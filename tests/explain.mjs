@@ -7,6 +7,8 @@ import assert from "node:assert";
 import { readdirSync, readFileSync } from "node:fs";
 import { EXPLAIN, explain, asText, roundParts } from "../web/src/explain/explanations.mjs";
 import { SOURCES, sourceRow } from "../web/src/explain/sources.mjs";
+import { preorderUnits } from "../web/src/explain/explanations.mjs";
+import { inDraw } from "../shared/sellThrough.mjs";
 import { fmt, fmtPct, fmtSigned } from "../web/src/format.mjs";
 
 const root = new URL("../data/app/", import.meta.url);
@@ -157,6 +159,38 @@ for (const f of files) {
 }
 assert.ok(shown > 300, `explanations shown: ${shown} of ${checked}`);
 
+/* ---- who is still in the draw, and the pre-order units among them ---- */
+{
+  const products = [{ key: "a", draws: ["dA"] }, { key: "b", draws: ["dB"] }];
+  const patterns = [
+    { open: ["dA", "dB"], won: [], sold: [], bought: 0, max: 1, pre: ["dA"], n: 3 },   // 3 people, 6 entries, 3 pre-orders
+    { open: [], won: [], sold: ["dA"], bought: 1, max: 1, pre: [], n: 5 },            // bought: not in the draw
+    { open: ["dB"], won: ["dA"], sold: [], bought: 0, max: 2, pre: [], n: 2 },         // an unpaid win, one entry open
+    { open: ["dA"], won: ["dA"], sold: [], bought: 0, max: 1, pre: [], n: 4 },         // the open entry is the win: none open
+  ];
+  assert.deepStrictEqual(inDraw({ products, patterns }), { people: 5, entries: 8, preEntries: 3 });
+}
+for (const f of files) {
+  const s = JSON.parse(readFileSync(f, "utf8"));
+  const st = s.sellthrough;
+  if (!st || !Array.isArray(st.products) || !st.products.length || !Array.isArray(st.patterns)) continue;
+  const who = inDraw({ products: st.products, patterns: st.patterns });
+  const a = st.allocation || {};
+  assert.ok(who.people <= Math.max((a.entrants || 0) - (a.unpaidWinners || 0), 0), `${s.id}: in the draw is a subset of the entrants`);
+  assert.ok(who.preEntries <= who.entries, `${s.id}: pre-order entries are some of the entries`);
+  const ex = explain("st.draw", {}, { snap: s, st: null });
+  const first = ex.steps[0].map((x) => (typeof x === "string" ? x : x.d)).join("");
+  assert.ok(first.includes(`the ${fmt(who.people)} people still in the draw`), `${s.id}: the draw's working counts the people holding an entry: ${first}`);
+  const pre = preorderUnits(st);
+  if (pre !== null) {
+    const allocated = st.products.reduce((t, p) => t + (p.allocated ?? 0), 0);
+    const predicted = st.products.reduce((t, p) => t + (p.predicted ?? 0), 0);
+    assert.ok(pre >= 0 && pre <= allocated, `${s.id}: pre-order units ${pre} of ${allocated}`);
+    const back = pre * st.preorderConversion + (allocated - pre) * st.conversion;
+    assert.ok(Math.abs(back - predicted) <= 0.05 * st.products.length + 1e-9, `${s.id}: the split prices back to the expected orders: ${back} vs ${predicted}`);
+  }
+}
+
 /* ---- a feed the last refresh reported failing turns its sources amber ---- */
 const w = JSON.parse(readFileSync(new URL("releases/warhol_le_26.json", root), "utf8"));
 const ok = sourceRow({ key: "orders", gave: "x" }, w, { bigquery: "ok: 12 rows" });
@@ -184,6 +218,8 @@ assert.ok(segText(cpe.steps[0]).includes("21 Sep to 23 Sep"), "the last three fu
 assert.strictEqual(explain("paid.rec", {}, wctx).value, "€28,281");
 assert.ok(segText(explain("paid.rec", {}, wctx).steps.at(-1)).includes("× 1.3"), "held by the pacing rule");
 assert.strictEqual(explain("launch.days", {}, wctx).value, "6 days");
+const drawEx = explain("st.draw", {}, wctx);
+assert.ok(drawEx.steps.map(segText).some((t) => / of those units were entered as pre-orders: they count at 95%/.test(t)), "the draw's working splits the pre-orders out");
 assert.strictEqual(explain("nonsense", {}, wctx), null, "an unknown figure explains nothing");
 
 console.log(`explain: ${shown} explanations of ${checked} figures across ${files.length} snapshots ok`);

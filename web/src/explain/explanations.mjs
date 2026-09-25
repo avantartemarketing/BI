@@ -19,6 +19,7 @@
  * or null when the figure is not on this page. Plain JavaScript (no JSX), so
  * tests/explain.mjs runs every builder against every snapshot on file. */
 import { fmt, fmtSigned, fmtPct, fmtDay, MINUS, paidDayFrac } from "../format.mjs";
+import { inDraw } from "../../../shared/sellThrough.mjs";
 
 /* ---- formatting ---- */
 const n = (v, d = 0) => fmt(v, d);
@@ -159,6 +160,19 @@ EXPLAIN["hero.secured"] = (a, { snap: s }) => {
 };
 
 /* The draw's expected orders: entries in hand, allocated, at the rate. */
+/* The units counted from entries made as a pre-order, on each product: a
+ * unit converts at the pre-order rate or the entry rate, so the product's
+ * expected orders less its units at the entry rate, over the difference in
+ * rate, is its pre-order units. Whole units, so the rounding of the
+ * published figures cannot move it while the rates sit 10 points or more
+ * apart; null where they do not. */
+export function preorderUnits(st) {
+  const r = st.conversion, pr = st.preorderConversion;
+  const products = Array.isArray(st.products) ? st.products : [];
+  if (!products.length || !finite(r) || !finite(pr) || Math.abs(pr - r) < 0.1) return null;
+  return sum(products.map((p) => Math.max(Math.round(((p.predicted ?? 0) - r * (p.allocated ?? 0)) / (pr - r)), 0)));
+}
+
 EXPLAIN["st.draw"] = (a, { snap: s }) => {
   if (!s.sellthrough) return null;
   const st = s.sellthrough;
@@ -167,25 +181,38 @@ EXPLAIN["st.draw"] = (a, { snap: s }) => {
   const products = Array.isArray(st.products) && st.products.length ? st.products : null;
   const alloc = st.allocation || null;
   const allocated = products ? sum(products.map((p) => p.allocated)) : null;
+  const predicted = products ? sum(products.map((p) => p.predicted)) : null;
+  const who = products && Array.isArray(st.patterns) ? inDraw({ products, patterns: st.patterns }) : null;
+  const preU = products ? preorderUnits(st) : null;
   const steps = [];
   const notes = [];
-  if (products && alloc) {
-    const people = Math.max((alloc.entrants || 0) - (alloc.unpaidWinners || 0), 0);
-    steps.push(seg`Start with the ${n(people)} people still in the draw: eligible, and not yet won or bought.`);
-    steps.push(alloc.flexibleEntrants > 0
+  if (products && who) {
+    steps.push(who.preEntries > 0
+      ? seg`Start with the ${n(who.people)} people still in the draw: eligible, and not yet won or bought. They hold ${n(who.entries)} entries, ${n(who.preEntries)} of them made as pre-orders with the card already authorised.`
+      : seg`Start with the ${n(who.people)} people still in the draw: eligible, and not yet won or bought. They hold ${n(who.entries)} entries.`);
+    steps.push(alloc && alloc.flexibleEntrants > 0
       ? seg`Count each of them on the number of works they want at most, placed on the works with room, the priciest first (${n(alloc.flexibleEntrants)} entered more works than they want): ${n(allocated)} units.`
       : seg`Count each of them on the works they entered, placed on the works with room: ${n(allocated)} units.`);
   } else if (finite(st.inHandUnits)) {
     steps.push(seg`Start with the ${n(st.inHandUnits)} units entered by people still in the draw, as the funnel counts them.`);
   }
-  steps.push(finite(pre) && pre !== rate
-    ? seg`Multiply by the ${pct(rate)} of entries that usually become orders, or ${pct(pre)} for an entry made as a pre-order, with the card already authorised.`
-    : seg`Multiply by the ${pct(rate)} of entries that usually become orders.`);
-  const base = products ? allocated * rate : finite(st.inHandUnits) ? st.inHandUnits * rate : null;
-  if (base !== null && draw - base >= 0.5 && finite(pre) && pre > rate) {
-    notes.push(`${n(products ? allocated : st.inHandUnits)} × ${pct(rate)} is ${n(base)}; the pre-order entries, at ${pct(pre)}, add the other ${n(draw - base)}.`);
-  } else if (base !== null && base - draw >= 0.5) {
-    notes.push(`${n(products ? allocated : st.inHandUnits)} × ${pct(rate)} is ${n(base)}, held to ${n(draw)} by the room left in the works.`);
+  if (preU !== null && preU > 0 && preU <= allocated) {
+    const plain = allocated - preU;
+    steps.push(seg`${n(preU)} of those units were entered as pre-orders: they count at ${pct(pre)}, ${n(preU * pre, 1)} orders.`);
+    steps.push(seg`The other ${n(plain)} count at the ${pct(rate)} of entries that usually become orders: ${n(plain * rate, 1)} orders.`);
+  } else {
+    steps.push(finite(pre) && pre !== rate
+      ? seg`Multiply by the ${pct(rate)} of entries that usually become orders, or ${pct(pre)} for an entry made as a pre-order, with the card already authorised.`
+      : seg`Multiply by the ${pct(rate)} of entries that usually become orders.`);
+    const base = products ? allocated * rate : finite(st.inHandUnits) ? st.inHandUnits * rate : null;
+    if (base !== null && draw - base >= 0.5 && finite(pre) && pre > rate) {
+      notes.push(`${n(products ? allocated : st.inHandUnits)} × ${pct(rate)} is ${n(base)}; the pre-order entries, at ${pct(pre)}, add the other ${n(draw - base)}.`);
+    }
+  }
+  if (predicted !== null && predicted - draw >= 0.5) {
+    notes.push(`That is ${n(predicted, 1)} orders, held to ${n(draw)} by the room left in the works.`);
+  } else if (!products && finite(st.inHandUnits) && st.inHandUnits * rate - draw >= 0.5) {
+    notes.push(`${n(st.inHandUnits)} × ${pct(rate)} is ${n(st.inHandUnits * rate)}, held to ${n(draw)} by the room left in the edition.`);
   }
   if (alloc && alloc.unpaidWinners > 0) {
     notes.push(`${n(alloc.unpaidWinners)} people who won and have not paid are not counted. The order sent after a failed payment is in the drafts for 72 hours; after that it is out.`);

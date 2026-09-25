@@ -56,6 +56,7 @@
 import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, useTip } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import { inDraw } from "../../../shared/sellThrough.mjs";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 /* One ramp of the page's blue, deepest to palest as the units get less
@@ -227,7 +228,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const inHandTip = {
     head: "Draw winners (estimate)",
     rows: [
-      ...(alloc ? [{ label: "People still in the draw", value: fmt(Math.max((alloc.entrants || 0) - (alloc.unpaidWinners || 0), 0)) }] : []),
+      ...(fromFeed && Array.isArray(st.patterns) ? [{ label: "People still in the draw", value: fmt(inDraw({ products: st.products, patterns: st.patterns }).people) }] : []),
       ...(alloc && alloc.unpaidWinners > 0 ? [{ label: "Won, not yet paid (not counted)", value: fmt(alloc.unpaidWinners) }] : []),
       ...(alloc && alloc.flexibleEntrants > 0 ? [
         { label: "Entered more products than they want", value: fmt(alloc.flexibleEntrants) },
