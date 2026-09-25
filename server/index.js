@@ -435,9 +435,8 @@ app.post("/api/inputs/:id", route(async (req, res) => {
         } else {
           entry.edition = numField("edition", 0, null, true);
         }
-        // a product can convert its pre-orders at its own rate, where its
-        // draw has already been run; empty means the release's
-        entry.preorderRate = numField("preorderRate", 0.000001, 1, false);
+        // every product converts at the release's two rates (the Target
+        // setting tab's); a per-product pre-order rate is no longer kept
         list.push(entry);
       }
       next.products = list;

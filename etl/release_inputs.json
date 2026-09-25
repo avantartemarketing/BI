@@ -207,14 +207,7 @@
    "announce_date": "2026-09-03",
    "launch_end": "2026-09-30",
    "artist_posting_tier": "Low",
-   "products": [
-    {
-     "key": "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8",
-     "name": "",
-     "edition": null,
-     "preorderRate": 0.8
-    }
-   ],
+   "products": [],
    "legacy_economics": {
     "edition_size": 2440,
     "edition_total": 6100,

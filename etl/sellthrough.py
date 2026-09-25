@@ -17,12 +17,17 @@ module counts the entries in hand the same way before close:
   otherwise. The appetite left goes to
   the open entries. An entrant whose appetite covers every open entry counts
   once on each; one whose appetite is smaller is FLEXIBLE and is placed one
-  unit at a time for revenue: on the priciest product that still has room
-  at the rate (one more counted unit fits the edition), the lowest fill
-  (sold + counted so far at the rate, over the edition) among equal prices,
-  and only once every product is full on the lowest fill, so oversubscription
-  spreads evenly; taken from the flexible entrant with the fewest other
-  options. Prices are the list prices the orders feed carries: a product
+  unit at a time for revenue: on the priciest product whose expected orders
+  (sold, drafts, and the entries counted so far at their rates) are still
+  short of its edition, so the editions that drive the most revenue are
+  filled to sell-out first and over-allocated for the payments expected to
+  fail - the last entrant may take a product past its edition, where the
+  card caps it; the lowest fill (expected orders over the edition) among
+  equal prices; and only once every product is full, on the lowest fill, so
+  oversubscription spreads evenly; taken from the flexible entrant with the
+  fewest other options. Every entry converts at the release's rates, the
+  two the Target setting tab shows: a pre-order's card is already
+  authorised, so it has a rate of its own. Prices are the list prices the orders feed carries: a product
   without one takes the median of the others, with none at all the rule is
   fill alone, and when editions are not all known there is no room to judge,
   so the rule is plain units.
@@ -62,12 +67,12 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
     n_products = len(products)
     r = float(rate) if _finite(rate) else 0.8
     # a pre-order entry has the card already authorised, so it converts at its
-    # own rate: the product's when one is typed, else the release's, else the
-    # plain entry rate
+    # own rate: the release's, else the plain entry rate - one rate for every
+    # product, the one the Target setting tab shows
     def _rate(v, fallback: float) -> float:
         return float(v) if _finite(v) and 0 < float(v) <= 1 else fallback
     pre_default = _rate(preorder_rate, r)
-    pre_rates = [_rate(p.get("preorderRate"), pre_default) for p in products]
+    pre_rates = [pre_default] * n_products
     # sold and drafts both take room out of the edition
     sold = [float(p.get("sold") or 0) + (float(p["drafts"]) if _finite(p.get("drafts")) else 0.0) for p in products]
     editions = [float(p["edition"]) if _finite(p.get("edition")) and float(p["edition"]) > 0 else None
@@ -105,8 +110,12 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
     prices = [price_of(p) if price_of(p) is not None else median_price for p in products]
 
     def has_room(i: int) -> bool:
-        # one more counted unit, at the larger of the two rates, still fits
-        return sold[i] + pred[i] + max(r, pre_rates[i]) <= editions[i] + 1e-9
+        # the orders expected so far (sold, drafts, the entries counted at
+        # their rates) are still short of the edition: another entrant is the
+        # over-allocation that covers the payments expected to fail, and the
+        # last one may take the product past its edition, where the card caps
+        # the shown figure
+        return sold[i] + pred[i] < editions[i] - 1e-9
 
     def better(i: int, best: int) -> bool:
         # where the next flexible unit goes: revenue first, then fill
@@ -432,14 +441,10 @@ def products_from_draws(draws: list[dict], configured, edition_size=None) -> tup
         g = groups.get(name)
         if g is None:
             g = {"key": str(d.get("id")), "name": name, "edition": edition, "draws": [], "sold": 0,
-                 "entrants": 0, "drafts": None, "preorderRate": None}
+                 "entrants": 0, "drafts": None}
             groups[name] = g
         if g["edition"] is None and edition is not None:
             g["edition"] = edition
-        # a product can convert its pre-orders at its own rate (a draw already
-        # run, say), typed on the Target setting tab; else the release's
-        if g.get("preorderRate") is None and c is not None and _finite(c.get("preorderRate")):
-            g["preorderRate"] = float(c["preorderRate"])
         g["draws"].append(str(d.get("id")))
         g["sold"] += float(d.get("purchaseUnits") or 0) if tagged else float(d.get("sold") or 0)
         g["entrants"] += int(d.get("eligible") or 0)

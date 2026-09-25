@@ -587,10 +587,11 @@ joined to the draws through the product each draw's winners bought (docs 2.4); u
 of a release is named that way the card wears an **Incomplete data** stamp, and the sales the
 draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an
 entrant who entered more products than their maximum quantity is counted on that many
-products only, placed for revenue: on the priciest of them that still has room, then on
-whichever has the most room. Products come from the event feed's draws
-(one draw per product) and are named and sized on the Target setting tab, where the entry →
-order rate can also be set per release; a product nobody has named takes its Shopify title
+products only, placed for revenue: on the priciest of them until its expected orders reach
+its edition, over-allocating for the payments expected to fail so the most valuable editions
+show sold out first, then on whichever has the most room. Products come from the event feed's
+draws (one draw per product) and are named and sized on the Target setting tab, where the
+entry → order and pre-order rates are set per release and apply to every product; a product nobody has named takes its Shopify title
 and, where the title matches an Airtable record, its edition. Until the feed has run once after
 a deploy the card shows the release as one row and says so. **Post to Slack** in the card's
 head sends the card as a message, these rows as a table of figures with the framing take-up

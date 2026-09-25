@@ -415,7 +415,7 @@
       "_why": "A is nearly full once its 25 drafts are counted (45 of 50), so the 6 flexible entrants go to B; A's 10 entries show as the 5 units of room it has left"
     },
     {
-      "name": "flexible entrants go to the priciest product with room, then by fill",
+      "name": "flexible entrants over-allocate the priciest product to sell-out, then go by fill",
       "rate": 0.8,
       "edition": 410,
       "soldTotal": 0,
@@ -479,17 +479,27 @@
       ],
       "expect": {
         "allocated": [
-          12,
+          13,
           19,
-          19
+          18
+        ],
+        "shown": [
+          10.0,
+          15.2,
+          14.4
+        ],
+        "oversubscribed": [
+          0.4,
+          0.0,
+          0.0
         ],
         "flexibleEntrants": 50,
         "surplusEntries": 70
       },
-      "_why": "A is the priciest and takes flexible units while one more at 80% still fits its edition of 10 (12 units = 9.6); the other 8 of its entrants and the 30 B/C entrants then split B and C evenly by fill"
+      "_why": "A is the priciest and takes flexible entrants while its expected orders are short of its edition of 10: 13 at 80% expect 10.4, so it is shown sold out (capped at 10, 0.4 over-allocated for the payments expected to fail, where one fewer would leave it at 9.6); the other 7 of its entrants and the 30 B/C entrants then split B and C evenly by fill"
     },
     {
-      "name": "pre-order entries convert at their own rate, a product can set its own",
+      "name": "pre-order entries convert at the release pre-order rate, the same on every product",
       "rate": 0.8,
       "preorderRate": 0.95,
       "edition": 200,
@@ -562,10 +572,10 @@
         ],
         "shown": [
           13.5,
-          5.0
+          9.5
         ]
       },
-      "_why": "A: 10 pre-orders at 0.95 and 5 plain at 0.8 = 13.5; B's own 0.5 beats the release's 0.95, so its 10 pre-orders are 5"
+      "_why": "A: 10 pre-orders at 0.95 and 5 plain at 0.8 = 13.5; B: 10 pre-orders at the release's 0.95 = 9.5. B carries a preorderRate of its own (0.5), which is no longer read: every product converts at the release's two rates, the ones the Target setting tab shows"
     }
   ]
 }

@@ -1184,8 +1184,13 @@ them at close for revenue: the priciest of them with a unit left. The prediction
 same way before close. Each entry converts at its own rate: `pre` on a pattern is the open
 entries that person made as a pre-order, whose card is already authorised, and those count at
 `preorder_conversion_rate` (0.95) against `entry_conversion_rate` (0.8) for a plain entry, so a
-product's prediction is the sum over its entries and not a head count times one rate. A product
-can set its own pre-order rate where its draw has already been run:
+product's prediction is the sum over its entries and not a head count times one rate. The two
+rates are the release's, the ones the Target setting tab shows, and every product converts at
+them: a per-product pre-order rate (the Warhol Lifesize carried 80% from 21 to 25 September,
+set because its draw had already been run) was invisible on the tab and is no longer read or
+saved. Flexible entrants are over-allocated for the payments expected to fail, the priciest
+editions first, so the editions that drive the most revenue are counted to sell-out before a
+cheaper one takes a unit:
 
 ```
 appetite = max quantity − pieces already bought        (no cap: everything entered)
@@ -1194,18 +1199,25 @@ draft when an advisor has an order out for them, and nowhere otherwise); the app
 goes to the open entries
 appetite ≥ open entries  → counted once on each (nothing to choose)
 appetite < open entries  → FLEXIBLE: placed one unit at a time, for revenue: on the
-                           priciest product that still has room at the rate, the lowest
-                           fill among equal prices, and only once every product is full
-                           on the lowest fill; taken from the flexible entrant with the
-                           fewest other options left
-room(p)  = sold_p + rate × (counted_p + 1) ≤ edition_p  (one more counted unit still fits)
-fill(p)  = (sold_p + rate × counted_p) / edition_p       (plain units, and no price rule,
+                           priciest product that still has room, the lowest fill among
+                           equal prices, and only once every product is full on the
+                           lowest fill; taken from the flexible entrant with the fewest
+                           other options left
+room(p)  = sold_p + Σ rate_e over counted_p < edition_p   (expected orders still short of the
+                                                          edition: the next entrant is the
+                                                          over-allocation that covers the
+                                                          payments expected to fail; the last
+                                                          may pass the edition, and `shown`
+                                                          caps it there)
+fill(p)  = (sold_p + Σ rate_e over counted_p) / edition_p (plain units, and no price rule,
                                                           until every product has an edition)
 price(p) = the list price the orders feed carries       (missing: the median of the others;
                                                           none at all: fill alone)
 ```
 
-So the expensive product is spoken for before a cheap one gets a unit it could also have sold,
+So the expensive product is spoken for, to its whole edition once the expected failures are
+covered, before a cheap one gets a unit it could also have sold (with 13 flexible entrants at
+80% a 10-unit edition shows sold out, where stopping at 12 left it at 9.6),
 a product short of demand is topped up before one already spoken for among equal prices, and an
 entrant with one alternative is placed before one with five. Ties break on product order, then pattern
 order, so the same input gives the same answer on either side. The snapshot records, per

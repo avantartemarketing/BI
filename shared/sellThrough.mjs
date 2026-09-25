@@ -37,10 +37,15 @@
  *   covers every open entry counts once on each; one whose appetite is
  *   smaller is FLEXIBLE and is counted where it earns the most.
  * The flexible entrants are placed one unit at a time, for revenue: take the
- * priciest product that still has room at the rate (one more counted unit
- * fits the edition), the lowest fill (sold plus the units counted so far at
- * the rate, over the edition) among equal prices, and only once every product
- * is full the lowest fill, so oversubscription spreads evenly; give the unit
+ * priciest product whose expected orders (sold, drafts, and the entries
+ * counted so far at their rates) are still short of its edition, so the
+ * editions that drive the most revenue are filled to sell-out first and
+ * over-allocated for the payments expected to fail - the last entrant may
+ * take a product past its edition, where the card caps it; the lowest fill
+ * (expected orders over the edition) among equal prices; and only once every
+ * product is full, the lowest fill, so oversubscription spreads evenly. Every
+ * entry converts at the release's rates, the two the Target setting tab
+ * shows (a pre-order's card is already authorised, so it has its own). Give the unit
  * to the flexible entrant who entered it and has the fewest other options
  * left. Prices are the list prices the orders feed carries: a product without
  * one takes the median of the others, with none at all the rule is fill
@@ -76,11 +81,11 @@ export function allocateEntries({ products, patterns, rate = 0.8, preorderRate =
   const P = products.length;
   const r = finite(rate) ? Number(rate) : 0.8;
   // a pre-order entry has the card already authorised, so it converts at its
-  // own rate: the product's when one is typed, else the release's, else the
-  // plain entry rate
+  // own rate: the release's, else the plain entry rate - one rate for every
+  // product, the one the Target setting tab shows
   const asRate = (v, fallback) => (finite(v) && Number(v) > 0 && Number(v) <= 1 ? Number(v) : fallback);
   const preDefault = asRate(preorderRate, r);
-  const preRates = products.map((p) => asRate(p.preorderRate, preDefault));
+  const preRates = products.map(() => preDefault);
   // sold and drafts both take room out of the edition
   const sold = products.map((p) => (Number(p.sold) || 0) + (finite(p.drafts) ? Number(p.drafts) : 0));
   const editions = products.map((p) => (finite(p.edition) && Number(p.edition) > 0 ? Number(p.edition) : null));
@@ -110,8 +115,12 @@ export function allocateEntries({ products, patterns, rate = 0.8, preorderRate =
   const known = products.map(priceOf).filter((v) => v !== null).sort((a, b) => a - b);
   const medianPrice = known.length ? known[Math.floor(known.length / 2)] : 0;
   const prices = products.map((p) => (priceOf(p) !== null ? priceOf(p) : medianPrice));
-  // one more counted unit, at the larger of the two rates, still fits
-  const hasRoom = (i) => sold[i] + pred[i] + Math.max(r, preRates[i]) <= editions[i] + 1e-9;
+  // the orders expected so far (sold, drafts, the entries counted at their
+  // rates) are still short of the edition: another entrant is the
+  // over-allocation that covers the payments expected to fail, and the last
+  // one may take the product past its edition, where the card caps the shown
+  // figure
+  const hasRoom = (i) => sold[i] + pred[i] < editions[i] - 1e-9;
   // where the next flexible unit goes: revenue first, then fill
   const better = (i, best) => {
     if (byFill) {
@@ -343,11 +352,8 @@ export function productsFromDraws(draws, configured, editionSize) {
     const name = (c && typeof c.name === "string" && c.name.trim()) || `Draw ${i + 1}`;
     const edition = c && finite(c.edition) && Number(c.edition) > 0 ? Math.round(Number(c.edition)) : null;
     let g = groups.get(name);
-    if (!g) { g = { key: String(d.id), name, edition, draws: [], sold: 0, entrants: 0, drafts: null, preorderRate: null }; groups.set(name, g); }
+    if (!g) { g = { key: String(d.id), name, edition, draws: [], sold: 0, entrants: 0, drafts: null }; groups.set(name, g); }
     if (g.edition === null && edition !== null) g.edition = edition;
-    // a product can convert its pre-orders at its own rate (a draw already
-    // run, say), typed on the Target setting tab; else the release's
-    if (g.preorderRate === null && c && finite(c.preorderRate)) g.preorderRate = Number(c.preorderRate);
     g.draws.push(String(d.id));
     g.sold += tagged ? (Number(d.purchaseUnits) || 0) : (Number(d.sold) || 0);
     g.entrants += Number(d.eligible) || 0;
