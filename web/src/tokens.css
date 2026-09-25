@@ -582,3 +582,94 @@ select.native {
 .sheet td.primary .pc .src { flex: 0 10 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; margin-left: 0; }
 .sheet td.primary .pc .ts-link { flex: 0 0 auto; margin-left: 0; }
 .sheet input.cell.name { flex: 1 1 auto; padding: 0; width: auto; min-width: 80px; height: 38px; text-align: left; }
+
+/* ---------- the explainer: shift-click a number (web/src/explain) ----------
+   Holding Shift underlines every figure that can explain itself; the one
+   asked about keeps a tint while its panel is open. The panel is a column
+   at the right, and the page narrows beside it rather than going under it:
+   the grid drops to two columns where three would be too narrow to read,
+   and on a small screen the panel covers the page instead. */
+.x { border-radius: 4px; }
+body.x-shift .x { cursor: help; text-decoration: underline dotted 2px var(--blue-light); text-underline-offset: 5px; }
+.x[data-x-on] { background: var(--blue-tint); box-shadow: 0 0 0 3px var(--blue-tint); }
+.x:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.tabs .x-hint {
+  margin-left: auto; align-self: center; font-size: 12px; color: var(--muted); white-space: nowrap;
+  transition: color 160ms;
+}
+.tabs .x-hint + .edit-link { margin-left: 16px; }
+.x-hint kbd {
+  font: inherit; font-size: 11.5px; color: var(--ink); background: var(--card); border: 1px solid var(--border);
+  border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; margin-right: 2px;
+}
+.x-hint.nudge { color: var(--blue-deep); }
+.x-hint.nudge kbd { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-tint); }
+
+body.x-open .content { margin-right: 404px; padding-left: 32px; padding-right: 32px; container-type: inline-size; }
+@container (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (max-width: 600px) { .grid { grid-template-columns: minmax(0, 1fr); } .slot.wide, .slot.big { grid-column: auto; } }
+
+.xp {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 404px; z-index: 30;
+  display: flex; flex-direction: column;
+  background: var(--card); border-left: 1px solid var(--border); box-shadow: -10px 0 28px rgba(20, 20, 19, .07);
+  color: var(--ink); font-size: 13px; line-height: 1.5; outline: none;
+}
+.xp-top { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px 18px; border-bottom: 1px solid var(--hairline); flex: 0 0 auto; }
+.xp-top .ttl { font-size: 12.5px; font-weight: 600; }
+.xp-x {
+  margin-left: auto; width: 26px; height: 26px; border: none; border-radius: 6px; background: none;
+  color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; flex: 0 0 26px;
+}
+.xp-x:hover { background: var(--hairline); color: var(--ink); }
+.xp-scroll { flex: 1; overflow: auto; padding: 16px 18px 18px; display: grid; gap: 16px; align-content: start; }
+.xp .kick { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; min-width: 0; }
+.xp .kick .when { font-size: 11px; font-weight: 500; line-height: 16px; padding: 0 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); }
+.xp .kick .nm { color: var(--ink); font-weight: 500; }
+.xp .crumb { color: var(--blue-deep); background: none; border: none; font: inherit; padding: 0; cursor: pointer; }
+.xp .crumb:hover { text-decoration: underline; }
+.xp .fig { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.xp .fig b { font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.xp .fig span { color: var(--muted); font-size: 13px; }
+.xp .say { font-size: 13.5px; line-height: 1.55; margin: 0; }
+.xp .lab { font-size: 11.5px; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
+.xp .steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.xp .steps li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 13px; line-height: 1.5; }
+.xp .steps li .k {
+  width: 20px; height: 20px; border-radius: 50%; background: var(--hairline); color: var(--muted);
+  font-size: 11px; font-weight: 600; display: grid; place-items: center; margin-top: 1px;
+}
+.xp .steps li.eq { font-weight: 600; }
+.xp .steps li.eq .k { background: var(--ink); color: var(--card); }
+.xp .drill {
+  font: inherit; font-weight: 600; color: var(--blue-deep); background: none; border: none; padding: 0; cursor: pointer;
+  text-decoration: underline dotted 1.5px; text-underline-offset: 3px; font-variant-numeric: tabular-nums;
+}
+.xp .cmp { display: grid; grid-template-columns: max-content max-content 1fr; column-gap: 10px; row-gap: 6px; font-size: 12.5px; align-items: baseline; }
+.xp .cmp .v { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.xp .cmp .n { color: var(--muted); }
+.xp .src { display: grid; gap: 8px; }
+.xp .src .s { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; border: 1px solid var(--hairline); border-radius: 9px; padding: 9px 11px; background: #fdfcfa; }
+.xp .src .s .n { font-weight: 500; }
+.xp .src .s .f { font-size: 11.5px; color: var(--muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+.xp .src .s .f i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.xp .src .s .f i.set { background: var(--dotted); }
+.xp .src .s .f i.warn { background: var(--amber); }
+.xp .src .s .d { grid-column: 1 / -1; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.xp .src .s .d em { font-style: normal; color: #8f8d85; }
+.xp .notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; font-size: 12.5px; color: #3d3d3a; }
+.xp .notes li { padding-left: 12px; position: relative; }
+.xp .notes li::before { content: ""; position: absolute; left: 0; top: .62em; width: 5px; height: 5px; border-radius: 50%; background: var(--dotted); }
+.xp-bottom { display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--hairline); padding: 10px 18px; font-size: 11.5px; color: var(--muted); flex: 0 0 auto; }
+.xp .copy {
+  margin-left: auto; font: inherit; font-size: 12px; font-weight: 500; color: var(--ink); background: var(--card);
+  border: 1px solid var(--border); border-radius: 7px; padding: 4px 10px; cursor: pointer; white-space: nowrap;
+}
+.xp .copy:hover { border-color: #c8c5bc; }
+.xp .drill:focus-visible, .xp .crumb:focus-visible, .xp-x:focus-visible, .xp .copy:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 3px; }
+/* a small screen: the panel covers the page rather than squeezing it */
+@media (max-width: 1100px) {
+  body.x-open .content { margin-right: 0; container-type: normal; }
+  .xp { width: min(404px, 100vw); box-shadow: -16px 0 40px rgba(20, 20, 19, .16); }
+}

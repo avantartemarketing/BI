@@ -13,6 +13,7 @@
  * been offered a frame. */
 import React from "react";
 import { Card, TrackBar, HorizonBadge, GROUP_DOTS, C, fmt, fmtPct, fmtSigned, useTip } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 /* The legend's outline swatch: the same dotted silhouette the bar carries. */
 const OUTLINE_SWATCH = (
@@ -23,14 +24,14 @@ const OUTLINE_SWATCH = (
 
 const pts = (x) => Math.round(x * 100);
 
-function Row({ label, sub, value, tip, children }) {
+function Row({ label, sub, value, tip, x, children }) {
   const t = useTip();
   return (
     <div style={{ marginBottom: 10 }} {...t.props(tip, 300)}>
       <div style={{ display: "flex", alignItems: "baseline", fontSize: 12.5, marginBottom: 4 }}>
         <span>{label}</span>
         <span style={{ color: C.muted, marginLeft: 6 }}>{sub}</span>
-        <span className="num" style={{ marginLeft: "auto", fontWeight: 600 }}>{value}</span>
+        <span className="num" style={{ marginLeft: "auto", fontWeight: 600 }}>{x ? <Ex k={x}>{value}</Ex> : value}</span>
       </div>
       {children}
     </div>
@@ -97,7 +98,7 @@ export default function Framing({ snap, horizon = "today" }) {
     <Card dot={GROUP_DOTS.outcome} title="Framing" badge={head ? <HorizonBadge horizon={horizon} /> : null}>
       <div className="spacer-8" />
       <div className="lead" {...t.props(leadTip, 300)}>
-        <span>{headRate !== null ? fmtPct(headRate) : "–"}</span>
+        <span>{headRate !== null ? <Ex k="framing.head" arg={{ close }} focus>{fmtPct(headRate)}</Ex> : "–"}</span>
         {delta !== null && (
           <span className="delta" style={{ color: delta >= 0 ? C.green : C.red }}>{fmtSigned(delta)} pts vs plan</span>
         )}
@@ -111,12 +112,12 @@ export default function Framing({ snap, horizon = "today" }) {
       </div>
       <div style={{ marginTop: 14 }}>
         {rate !== null && (
-          <Row label="Buyers" sub="paid prints" value={fmtPct(rate)} tip={worksTip}>
+          <Row label="Buyers" sub="paid prints" value={fmtPct(rate)} tip={worksTip} x="framing.buyers">
             <TrackBar now={rate} target={plan} bm={bm} max={1} />
           </Row>
         )}
         {ent && (
-          <Row label="Entrants" sub="pre-authorised" value={fmtPct(ent.rate)} tip={entTip}>
+          <Row label="Entrants" sub="pre-authorised" value={fmtPct(ent.rate)} tip={entTip} x="framing.entrants">
             <TrackBar now={0} proj={ent.rate} target={plan} bm={bm} max={1} />
           </Row>
         )}
@@ -126,13 +127,13 @@ export default function Framing({ snap, horizon = "today" }) {
           <div className="legend-row" {...t.props(planTip)}>
             <span className="swatch" style={{ background: C.refBase }} />
             <span style={{ color: C.muted }}>Plan</span>
-            <span className="val">{fmtPct(plan)}</span>
+            <span className="val"><Ex k="framing.plan">{fmtPct(plan)}</Ex></span>
           </div>
         )}
         <div className="legend-row" {...t.props(bmTip)}>
           {OUTLINE_SWATCH}
           <span style={{ color: C.muted }}>Benchmark{bench ? ` · ${bench.n} launches` : ""}</span>
-          <span className="val">{bm !== null ? fmtPct(bm) : "–"}</span>
+          <span className="val">{bm !== null ? <Ex k="framing.bm">{fmtPct(bm)}</Ex> : "–"}</span>
         </div>
         {Math.round(leftOut) > 0 && (
           <div className="legend-row" title={notOffered.works.length ? notOffered.works.join(", ") : undefined}>

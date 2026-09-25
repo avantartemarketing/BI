@@ -37,6 +37,7 @@
  * group's units and share at close; the hover reads them on any day. */
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, labelPx, dayElapsed } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
 
@@ -766,7 +767,7 @@ export default function Trajectory({ snap }) {
                   color: C.ink, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
                 }}
               >
-                {fmt(endVal)}
+                <Ex k="hero.fill" arg={{ close: showProjSeg, where: "Unit trajectory" }}>{fmt(endVal)}</Ex>
               </div>
             )}
             {!byChannel && projPct !== null && (
@@ -778,7 +779,7 @@ export default function Trajectory({ snap }) {
                   color: pctColor, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
                 }}
               >
-                {projPct}%
+                <Ex k="traj.end" arg={{ sel }}>{projPct}%</Ex>
               </div>
             )}
 
@@ -813,7 +814,7 @@ export default function Trajectory({ snap }) {
                 <span className="it" key={g.key}>
                   <span className="sw" style={{ background: g.color }} />
                   <span className="nm">{g.name}</span>
-                  <span className="v">{fmt(v)}{stack.last.total > 0 ? ` · ${shareOf(v, stack.last.total)}` : ""}</span>
+                  <span className="v"><Ex k="traj.group" arg={{ key: g.key, value: v, total: stack.last.total, ahead: showProjSeg }}>{fmt(v)}</Ex>{stack.last.total > 0 ? ` · ${shareOf(v, stack.last.total)}` : ""}</span>
                 </span>
               ))}
             </div>

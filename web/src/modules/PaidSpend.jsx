@@ -21,6 +21,7 @@ import React, { useState } from "react";
 import {
   Card, HorizonBadge, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip, dayElapsed, paidDayFrac,
 } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 const money = (v) => "€" + fmt(Math.round(v ?? 0));
 const moneyK = (v) => "€" + fmtK(v ?? 0);
@@ -256,7 +257,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           <div className="lead" title="Campaign closed" style={{ color: C.muted }}>-</div>
         ) : (
           <>
-            <div className="lead" style={rec === null ? { color: C.muted } : undefined}>{rec === null ? "–" : money(rec)}</div>
+            <div className="lead" style={rec === null ? { color: C.muted } : undefined}>{rec === null ? "–" : <Ex k="paid.rec" focus>{money(rec)}</Ex>}</div>
             {loz}
           </>
         )}
@@ -299,7 +300,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
             {...tipApi.props(unitsTip)}
             style={{ ...rightLabel, color: unitsPct !== null && unitsFill >= unitsTarget ? C.green : C.red }}
           >
-            {unitsPct !== null ? unitsPct + "%" : "–"}
+            {unitsPct !== null ? <Ex k="paid.units" arg={{ close }}>{unitsPct + "%"}</Ex> : "–"}
           </span>
         </div>
         <div style={rowGrid}>
@@ -320,7 +321,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
               ], body: spendBm === null ? undefined : bmBody },
             }}
           />
-          <span {...tipApi.props(spendTip)} style={rightLabel}>{moneyK(spendFill)}</span>
+          <span {...tipApi.props(spendTip)} style={rightLabel}><Ex k="paid.spend" arg={{ close }}>{moneyK(spendFill)}</Ex></span>
         </div>
         <div style={{ height: 14, display: "flex", gap: 14, alignItems: "center" }}>
           <div style={legendItem}><span style={sw(C.blue)} />To date</div>
@@ -378,16 +379,16 @@ function PaidSpendActuals({ snap }) {
     <Card dot={GROUP_DOTS.paid} title="Paid spend / day">
       <div className="spacer-8" />
       <div className="lead" title={noCampaign ? "No Meta campaign matched" : "Latest day's spend on the matched campaign"}>
-        {noCampaign ? "–" : money(cur)}
+        {noCampaign ? "–" : <Ex k="paid.current" focus>{money(cur)}</Ex>}
       </div>
       <div className="lead-caption" style={{ color: C.muted }}>
         {noCampaign ? "no Meta campaign matched - set one in Target setting" : "current daily spend - recommendation needs targets"}
       </div>
       <div style={{ marginTop: 16 }}>
         <div style={row}><span style={{ color: C.muted }}>Campaign</span><span style={{ fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }} title={snap.campaignName || ""}>{snap.campaignName || "–"}</span></div>
-        <div style={row}><span style={{ color: C.muted }}>Spend to date</span><span className="num">{money(spend)}</span></div>
+        <div style={row}><span style={{ color: C.muted }}>Spend to date</span><span className="num"><Ex k="paid.spend" arg={{ close: false }}>{money(spend)}</Ex></span></div>
         <div style={row}><span style={{ color: C.muted }}>Paid entries to date</span><span className="num">{fmt(entries)}</span></div>
-        <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }}>€ per entry, whole campaign</span><span className="num">{paid.cumCpe ? "€" + fmt(paid.cumCpe, 2) : "–"}</span></div>
+        <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }}>€ per entry, whole campaign</span><span className="num">{paid.cumCpe ? <Ex k="paid.cpe" arg={{ whole: true }}>{"€" + fmt(paid.cumCpe, 2)}</Ex> : "–"}</span></div>
       </div>
     </Card>
   );

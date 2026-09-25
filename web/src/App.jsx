@@ -33,6 +33,7 @@ import Upcoming from "./modules/Upcoming.jsx";
 import TargetSetting from "./TargetSetting.jsx";
 import Permissions from "./Permissions.jsx";
 import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
+import { ExplainProvider, ExplainHint, Ex } from "./explain/Explain.jsx";
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -551,7 +552,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
     }
   };
   return (
-    <>
+    <ExplainProvider snap={view} st={st} resetKey={`${snap.id}|${tab}`}>
       {/* Two groups: what the release is, and the page's controls. When the row
           runs out of room the controls drop to a line of their own, whole; no
           name, chip, button or note ever breaks inside itself. */}
@@ -568,7 +569,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
           {snap.edition && snap.edition.total > snap.edition.target && (
             <span className="chip" title="The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target">
-              Target {Number(snap.edition.target).toLocaleString("en-GB")} · {Math.round((100 * snap.edition.target) / snap.edition.total)}% of {Number(snap.edition.total).toLocaleString("en-GB")} edition
+              Target <Ex k="release.target">{Number(snap.edition.target).toLocaleString("en-GB")}</Ex> · {Math.round((100 * snap.edition.target) / snap.edition.total)}% of {Number(snap.edition.total).toLocaleString("en-GB")} edition
             </span>
           )}
           {!targeted && (
@@ -593,6 +594,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
         {!upcoming && <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>}
+        {tab === "overview" && !editing && !upcoming && <ExplainHint />}
         {tab === "overview" && !editing && (
           <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
         )}
@@ -608,6 +610,6 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           <PageLayout items={editing ? draft : layout.items} editing={editing} onChange={setDraft} render={renderCard} />
         </>
       )}
-    </>
+    </ExplainProvider>
   );
 }

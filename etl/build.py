@@ -2005,7 +2005,9 @@ def framing_forecast(of: dict | None, st: dict | None) -> dict | None:
     row neither can place takes the release's shares and rates. The units of
     the rows left over (no frame on offer) are counted apart, for the card's
     key. Without product rows the release is read as one. Today and at close,
-    the page's two horizons. None without the sell-through."""
+    the page's two horizons, each with its parts (paid, drafts, draw, and at
+    close future: prints and frames apiece) for the explainer's working.
+    None without the sell-through."""
     if not st or not of:
         return None
     feed = of.get("products") or {}
@@ -2070,12 +2072,23 @@ def framing_forecast(of: dict | None, st: dict | None) -> dict | None:
 
     rows = st.get("products") or []
     out_rows, totals = [], {"today": [0.0, 0.0, 0.0], "close": [0.0, 0.0, 0.0]}   # prints, frames, units
+    # the same totals by kind of unit, so the explainer can show the working:
+    # paid (with the sales no work is named for), drafts, the draw's forecast
+    # wins, and at close the entries still to come
+    kinds = {"today": ("paid", "drafts", "draw"), "close": ("paid", "drafts", "draw", "future")}
+    parts = {h: {k: [0.0, 0.0] for k in ks} for h, ks in kinds.items()}
 
     def add(h, prints, frames, units):
         t = totals[h]
         t[0] += prints
         t[1] += frames
         t[2] += units
+
+    def add_parts(**by_kind):
+        for h, ks in kinds.items():
+            for k in ks:
+                parts[h][k][0] += by_kind[k][0]
+                parts[h][k][1] += by_kind[k][1]
 
     if rows:
         titles = []
@@ -2104,6 +2117,7 @@ def framing_forecast(of: dict | None, st: dict | None) -> dict | None:
             close = [today[0] + future[0], today[1] + future[1]]
             add("today", *today, units_today)
             add("close", *close, units_today + num(r.get("futurePredicted")))
+            add_parts(paid=(paid[0] + assumed[0], paid[1] + assumed[1]), drafts=drafts, draw=pred, future=future)
             if close[0] > 0:
                 out_rows.append({"key": r.get("key"), "name": r.get("name"),
                                  "today": {"prints": round(today[0], 1), "frames": round(today[1], 1),
@@ -2121,12 +2135,14 @@ def framing_forecast(of: dict | None, st: dict | None) -> dict | None:
         today = [paid[0] + unpaid_paid[0] + drafts[0] + pred[0], paid[1] + unpaid_paid[1] + drafts[1] + pred[1]]
         add("today", *today, units_today)
         add("close", today[0] + future[0], today[1] + future[1], units_today + num(st.get("futureEntriesPredicted")))
+        add_parts(paid=(paid[0] + unpaid_paid[0], paid[1] + unpaid_paid[1]), drafts=drafts, draw=pred, future=future)
 
     def horizon(h):
         prints, frames, units = totals[h]
         return {"prints": round(prints, 1), "frames": round(frames, 1),
                 "rate": round(frames / prints, 4) if prints > 0 else None,
-                "notOffered": round(max(units - prints, 0.0), 1)}
+                "notOffered": round(max(units - prints, 0.0), 1),
+                "parts": {k: {"prints": round(p, 1), "frames": round(f, 1)} for k, (p, f) in parts[h].items()}}
     return {"today": horizon("today"), "close": horizon("close"), "products": out_rows}
 
 

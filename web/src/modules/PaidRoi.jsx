@@ -23,6 +23,7 @@
  * no profit per unit recorded. The ? popup shows the working. */
 import React, { useState } from "react";
 import { Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 const W = 480, H = 200, BAND_TOP = 132;
 const DAY_MS = 86400000;
@@ -220,13 +221,13 @@ export default function PaidRoi({ snap }) {
         title={"Cost per converting entry, whole campaign: spend ÷ the entries that become orders (" + pct(1 - dropOff) + " of entries)"}
         style={statRow}
       >
-        €/entry total <span className="num" style={statVal}>{fmt(paid.cumCpe, 2)}</span>
+        €/entry total <span className="num" style={statVal}><Ex k="paid.cpe" arg={{ whole: true }}>{fmt(paid.cumCpe, 2)}</Ex></span>
       </span>
       <span
         title={`Cumulative ${view.label} ROI: ${view.label} profit on the paid entries that convert, net of cannibalisation, ÷ ${view.label}'s share of the spend, whole campaign`}
         style={statRow}
       >
-        ROI total <span className="num" style={statVal}>{fmt(targeted ? view.cum : null, 2)}</span>
+        ROI total <span className="num" style={statVal}>{targeted ? <Ex k="paid.roi" arg={{ party, whole: true }}>{fmt(view.cum, 2)}</Ex> : fmt(null, 2)}</span>
       </span>
     </div>
   );
@@ -245,7 +246,7 @@ export default function PaidRoi({ snap }) {
       <div className="spacer-8" />
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flex: "0 0 auto" }}>
         <div className="lead">
-          <span>{fmt(leadVal, 2)}</span>
+          <span><Ex k="paid.roi" arg={{ party, whole: complete }} focus>{fmt(leadVal, 2)}</Ex></span>
           <span style={{ fontSize: 12, fontWeight: 400, letterSpacing: 0, color: C.muted, whiteSpace: "nowrap" }}>{leadCaption}</span>
           <QBadge content={moreTip} />
           {splitAssumed && (

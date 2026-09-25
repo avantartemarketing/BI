@@ -20,6 +20,10 @@
  * the same way; these signatures are fixed because the modules are written
  * against them in parallel. */
 import React, { createContext, useContext, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  MINUS, dayElapsed, paidDayFrac, fmt, fmtSigned, fmtMoney, fmtK, fmtPct, fmtDay, windowDate, dayLabel, dayAxisLabel,
+} from "./format.mjs";
+import { Ex } from "./explain/Explain.jsx";
 
 /* ---- the popup system (agreed on the Dashboard Popups canvas) ----
  * One chrome, three tiers: chart readouts (inline, .chart-tip), element details
@@ -137,54 +141,11 @@ export const GROUP_DOTS = {
   volume: "#b8862d", funnel: "#4f80d6", paid: "#eb6834", outcome: "#8a7a52",
 };
 
-export const MINUS = "−";
-
-/* Days of the window seen so far, with the part day counted for the share of
- * it observed (snapshot asOfFraction; 1 on a full day and once the window has
- * closed). The pro-rata references - the budget by today, the posts by today -
- * read this rather than `day`, which is the day in progress. */
-export const dayElapsed = (snap) => Math.max(0, (snap?.day ?? 0) - (1 - (snap?.asOfFraction ?? 1)));
-/* The share of the paid plan due by today: paid runs from the day after the
- * announce (paid.paidStartDays, 1) to the close, and its budget is planned
- * evenly over those days, so days elapsed less the first, over the paid
- * days, is the share of it that should be spent and bought (docs 7). At
- * close the whole of it. */
-export const paidDayFrac = (snap, close = false) => {
-  if (close) return 1;
-  const start = snap?.paid?.paidStartDays ?? 1;
-  const span = (snap?.of ?? 0) - start;
-  if (!(span > 0)) return 1;
-  return Math.min(1, Math.max(0, (dayElapsed(snap) - start) / span));
+/* The formatters and the day arithmetic live in format.mjs (plain JS, for the
+ * explainer and the tests); re-exported so every card imports them from here. */
+export {
+  MINUS, dayElapsed, paidDayFrac, fmt, fmtSigned, fmtMoney, fmtK, fmtPct, fmtDay, windowDate, dayLabel, dayAxisLabel,
 };
-
-export function fmt(n, digits = 0) {
-  if (n === null || n === undefined || Number.isNaN(n)) return "–";
-  const v = Number(n);
-  const s = Math.abs(v).toLocaleString("en-US", {
-    minimumFractionDigits: digits, maximumFractionDigits: digits,
-  });
-  return v < 0 ? MINUS + s : s;
-}
-
-export function fmtSigned(n, digits = 0) {
-  if (n === null || n === undefined) return "–";
-  return (n >= 0 ? "+" : MINUS) + fmt(Math.abs(n), digits);
-}
-
-export function fmtMoney(n, digits = 0) {
-  if (n === null || n === undefined) return "–";
-  return (n < 0 ? MINUS : "") + "€" + fmt(Math.abs(n), digits);
-}
-
-export function fmtK(n) {
-  if (n === null || n === undefined) return "–";
-  return Math.abs(n) >= 10000 ? fmt(n / 1000, 1) + "k" : fmt(n);
-}
-
-export function fmtPct(x, digits = 0) {
-  if (x === null || x === undefined || Number.isNaN(x)) return "–";
-  return fmt(x * 100, digits) + "%";
-}
 
 export function ragColor(pct) {
   // sell-through style: ≥90 ink, ≥70 amber, else red
@@ -298,7 +259,8 @@ export function Tick({ pct, color, vertical = true, tip, inset = "0px", dotted =
  * rows: { kind: "level", key, label, value, tip, dotted, color } for a level -
  * dotted is the benchmark's mark - and { kind: "step", key, label, value, from,
  * to, tip, fill } for a step; a step with its own fill (the stretch) is a
- * planning quantity, so its figure is in ink rather than the step colours. */
+ * planning quantity, so its figure is in ink rather than the step colours.
+ * A row's `x`, { k, arg }, makes its figure one the explainer can open. */
 export function LevelWaterfall({ rows, X, labelW = 116, valueW = 48, gap = 12 }) {
   const tipApi = useTip();
   const n = rows.length;
@@ -342,7 +304,9 @@ export function LevelWaterfall({ rows, X, labelW = 116, valueW = 48, gap = 12 })
               fontSize: 12.5, fontWeight: 600, textAlign: "right",
               color: level || r.fill ? C.ink : (up ? C.green : C.red),
             }}>
-              {level ? fmt(r.value) : fmtSigned(r.value)}
+              {r.x
+                ? <Ex k={r.x.k} arg={r.x.arg}>{level ? fmt(r.value) : fmtSigned(r.value)}</Ex>
+                : level ? fmt(r.value) : fmtSigned(r.value)}
             </div>
           </div>
         );
@@ -357,16 +321,18 @@ export function LevelWaterfall({ rows, X, labelW = 116, valueW = 48, gap = 12 })
  * close on the outcome: the stretch is the part of the gap to target that is
  * ambition, the steps are the part that is performance. Without a basket the
  * target opens alone and the steps read against it. */
-export function waterfallOpening({ hasBm, bm, target, words, k, targetHead, unitWord = "Units" }) {
+export function waterfallOpening({ hasBm, bm, target, words, k, targetHead, unitWord = "Units", xArg }) {
+  // xArg: the horizon the explainer reads these rows at, when it should
+  const ex = (key) => (xArg ? { x: { k: key, arg: xArg } } : {});
   const targetRow = {
-    kind: "level", key: "target", label: words.target, value: target,
+    kind: "level", key: "target", label: words.target, value: target, ...ex("hero.target"),
     tip: { head: targetHead || words.target, rows: [{ label: unitWord, value: fmt(target) }] },
   };
   if (!hasBm) return [targetRow];
   const stretch = target - bm;
   return [
     targetRow,
-    { kind: "step", key: "stretch", label: "Stretch", value: bm - target, from: target, to: bm, fill: C.refStretch,
+    { kind: "step", key: "stretch", label: "Stretch", value: bm - target, from: target, to: bm, fill: C.refStretch, ...ex("wf.stretch"),
       tip: {
         head: "Stretch",
         rows: [
@@ -377,7 +343,7 @@ export function waterfallOpening({ hasBm, bm, target, words, k, targetHead, unit
         ],
         body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.",
       } },
-    { kind: "level", key: "bm", label: words.bm, value: bm, dotted: true,
+    { kind: "level", key: "bm", label: words.bm, value: bm, dotted: true, ...ex("hero.bm"),
       tip: { head: words.bm, rows: [{ label: unitWord, value: fmt(bm) }],
              body: "The median of the matched basket - what launches like this one typically reach. The steps walk from here." } },
   ];
@@ -602,35 +568,3 @@ export async function postDecision(payload) {
     return false;
   }
 }
-
-/* "17 Sep" or "Mon 17 Sep". Dates in the snapshots are ISO days read as UTC
- * midnight, so the browser's zone never moves them across a day boundary; the
- * names are spelt here because en-GB locales write "Sept". */
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-export const fmtDay = (d, weekday = false) =>
-  `${weekday ? WEEKDAYS[d.getUTCDay()] + " " : ""}${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
-
-/* The calendar day a day of the window is. The ETL counts days from the
- * announce (snap.windowStart): day 0 is the announce day, snap.day is the
- * as-of day, snap.of is the close, and the daily arrays are indexed the same
- * way, so day N is windowStart + N days. Null on a snapshot without a window. */
-export const windowDate = (snap, day) => {
-  if (!snap || !snap.windowStart || !(day >= 0)) return null;
-  const t = Date.parse(snap.windowStart + "T00:00:00Z");
-  return Number.isFinite(t) ? new Date(t + day * 86400000) : null;
-};
-
-/* A day of the window named by its date, with the day number after it: a day
- * number alone only reads against the campaign clock, a date reads on its
- * own. "Mon 21 Sep · day 18"; "day 18" when the window has no start. */
-export const dayLabel = (snap, day, weekday = false) => {
-  const d = windowDate(snap, day);
-  return d ? `${fmtDay(d, weekday)} · day ${day}` : `day ${day}`;
-};
-
-/* The date alone for an axis end, falling back to the day number. */
-export const dayAxisLabel = (snap, day) => {
-  const d = windowDate(snap, day);
-  return d ? fmtDay(d) : `day ${day}`;
-};

@@ -18,12 +18,14 @@
  * close. */
 import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, BADGE_WORDS, C, QBadge, fmt, fmtSigned, useTip, LevelWaterfall, waterfallOpening, waterfallScale, HATCH } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 /* Demand the edition cannot hold: the last step of a walk on a sold-out
  * release, in the hero's over-sellout hatch, dropping to the capped figure
  * the hero prints. */
-const beyondStep = (value, from, to) => ({
+const beyondStep = (value, from, to, xArg) => ({
   kind: "step", key: "oversubscribed", label: "Beyond sellout", value, from, to, fill: HATCH,
+  x: { k: "wf.step", arg: { key: "oversubscribed", ...xArg } },
   tip: {
     head: "Beyond sellout",
     rows: [{ label: "Units the edition cannot hold", value: fmt(Math.abs(value)) }, { label: "Running total", value: fmt(to) }],
@@ -101,9 +103,12 @@ export default function Waterfall({ snap, horizon = "today" }) {
   let run = start;
   const chanPath = channels.map((c) => { const from = run; run += c.value; return { ...c, from, to: run }; });
   const residual = outcome - run;
+  const xClose = { close: !isToday };
+  const xHere = { ...xClose, where: title };   // the figures this card shows that the hero owns
   const stepRows = by === "channels"
     ? chanPath.map((c) => ({
         kind: "step", key: c.key, label: c.label, value: c.value, from: c.from, to: c.to,
+        x: { k: "wf.channel", arg: { key: c.key, ...xClose } },
         tip: {
           head: c.label,
           rows: [
@@ -116,9 +121,10 @@ export default function Waterfall({ snap, horizon = "today" }) {
       }))
     : path.map((p) => {
         const v = p.value ?? 0;
-        if (p.key === "oversubscribed") return beyondStep(v, p.from, p.to);
+        if (p.key === "oversubscribed") return beyondStep(v, p.from, p.to, xClose);
         return {
           kind: "step", key: p.key, label: p.label, value: v, from: p.from, to: p.to,
+          x: { k: "wf.step", arg: { key: p.key, ...xClose } },
           tip: {
             head: p.label,
             rows: [
@@ -129,11 +135,11 @@ export default function Waterfall({ snap, horizon = "today" }) {
         };
       });
   // the channels add up to the demand; the cap is its own step down to the outcome
-  if (by === "channels" && Math.abs(residual) > 0.5) stepRows.push(beyondStep(residual, run, outcome));
+  if (by === "channels" && Math.abs(residual) > 0.5) stepRows.push(beyondStep(residual, run, outcome, xClose));
   const rows = [
-    ...waterfallOpening({ hasBm, bm: benchmark, target, words, k }),
+    ...waterfallOpening({ hasBm, bm: benchmark, target, words, k, xArg: xHere }),
     ...stepRows,
-    { kind: "level", key: "outcome", label: outcomeLabel, value: outcome, color: C.blue,
+    { kind: "level", key: "outcome", label: outcomeLabel, value: outcome, color: C.blue, x: { k: "hero.fill", arg: xHere },
       tip: {
         head: isToday ? "Secured to date" : closeWord + " at close",
         rows: [{ label: "Units", value: fmt(outcome) }],
@@ -162,7 +168,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
             {...tipApi.props(netTip)}
             style={{ fontSize: 13.5, fontWeight: 600, color: netC, whiteSpace: "nowrap" }}
           >
-            {fmtSigned(net)}
+            <Ex k="wf.net" arg={xHere} focus>{fmtSigned(net)}</Ex>
           </span>
         </span>
       }

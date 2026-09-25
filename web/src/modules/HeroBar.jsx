@@ -19,6 +19,7 @@ import {
   Card, TrackBar, HATCH, GROUP_DOTS, HorizonBadge, C, fmt, fmtSigned, useTip, useWidth,
   labelPx, axisLabelLeft, BADGE_WORDS, dayLabel,
 } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 /* The legend's outline swatch: the same dotted silhouette the bar carries. */
 const OUTLINE_SWATCH = (
@@ -136,9 +137,9 @@ export default function HeroBar({ snap, horizon = "today" }) {
     >
       <div className="spacer-8" />
       <div className="lead" {...t.props({ head: close ? "Projected demand" : "Secured units", body: unitsTip }, 300)}>
-        {fmt(fill)}
+        <Ex k="hero.fill" arg={{ close }} focus>{fmt(fill)}</Ex>
         <span className="delta" style={{ color: delta >= 0 ? C.green : C.red }}>
-          {fmtSigned(delta)}
+          <Ex k="hero.delta" arg={{ close }}>{fmtSigned(delta)}</Ex>
         </span>
         <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
           {close && !partial ? "vs sellout" : "vs target"}
@@ -148,12 +149,12 @@ export default function HeroBar({ snap, horizon = "today" }) {
       <div style={{ marginTop: 14 }}>
         <div ref={labRef} style={{ position: "relative", height: 17 }}>
           {bm !== null && bm > 0 && (
-            <div {...t.props(bmTip)} style={{ ...labelAt(bmText, bm), color: C.muted }}>{bmText}</div>
+            <div {...t.props(bmTip)} style={{ ...labelAt(bmText, bm), color: C.muted }}><Ex k="hero.bm" arg={{ close }}>{bmText}</Ex></div>
           )}
         </div>
         <div style={{ position: "relative", height: 19, marginBottom: 6 }}>
           {target > 0 && (
-            <div {...t.props(targetTip)} style={{ ...labelAt(targetText, target), color: C.ink }}>{targetText}</div>
+            <div {...t.props(targetTip)} style={{ ...labelAt(targetText, target), color: C.ink }}><Ex k="hero.target" arg={{ close }}>{targetText}</Ex></div>
           )}
         </div>
 
@@ -183,7 +184,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
         <div style={{ position: "relative", height: 20, marginTop: 8 }}>
           <div style={{ ...axisLabel, left: 0, color: C.muted }}>0</div>
           <div style={{ ...axisLabel, right: 0, color: C.muted }}>
-            {`sellout ${fmt(sellout)}`}
+            sellout <Ex k="release.target">{fmt(sellout)}</Ex>
           </div>
         </div>
       </div>
@@ -192,12 +193,12 @@ export default function HeroBar({ snap, horizon = "today" }) {
         <div className="legend-row">
           <span className="swatch" style={{ background: C.blue }} />
           <span style={{ color: C.muted }}>{close ? "Projected demand" : "To date"}</span>
-          <span className="val">{fmt(fill)}</span>
+          <span className="val"><Ex k="hero.fill" arg={{ close }}>{fmt(fill)}</Ex></span>
         </div>
         <div className="legend-row" {...t.props(stretchTip || targetTip)}>
           <span className="swatch" style={{ background: C.refBase }} />
           <span style={{ color: C.muted }}>{words.target}</span>
-          <span className="val">{fmt(target)}</span>
+          <span className="val"><Ex k="hero.target" arg={{ close }}>{fmt(target)}</Ex></span>
         </div>
         {/* Third row, and only a third: demand past the sellout when there is
             any, because that is the more urgent fact and the hatch drawing it
@@ -207,13 +208,13 @@ export default function HeroBar({ snap, horizon = "today" }) {
           <div className="legend-row">
             <span className="swatch" style={{ background: HATCH }} />
             <span style={{ color: C.muted }}>Over sellout</span>
-            <span className="val">{oversub > 0 ? "+" + fmt(oversub) : fmtSigned(over)}</span>
+            <span className="val"><Ex k="hero.over">{oversub > 0 ? "+" + fmt(oversub) : fmtSigned(over)}</Ex></span>
           </div>
         ) : bm !== null ? (
           <div className="legend-row" {...t.props(bmTip)}>
             {OUTLINE_SWATCH}
             <span style={{ color: C.muted }}>{words.bm}</span>
-            <span className="val">{fmt(bm)}</span>
+            <span className="val"><Ex k="hero.bm" arg={{ close }}>{fmt(bm)}</Ex></span>
           </div>
         ) : null}
       </div>
@@ -234,7 +235,7 @@ function HeroActuals({ snap }) {
     <Card dot={GROUP_DOTS.volume} title="Secured units">
       <div className="spacer-8" />
       <div className="lead" {...t.props({ head: "Secured units", body: unitsTip }, 300)}>
-        {fmt(now)}
+        <Ex k="hero.secured" focus>{fmt(now)}</Ex>
         <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
           {snap.catalogue ? "last 90 days" : "to date"}
         </span>
@@ -244,12 +245,12 @@ function HeroActuals({ snap }) {
         <div className="legend-row">
           <span className="swatch" style={{ background: C.blueDeep }} />
           <span style={{ color: C.muted }}>Units sold</span>
-          <span className="val">{fmt(sold)}</span>
+          <span className="val"><Ex k="st.paid">{fmt(sold)}</Ex></span>
         </div>
         <div className="legend-row">
           <span className="swatch" style={{ background: C.blue }} />
           <span style={{ color: C.muted }}>Draw conversions (entries × 0.8)</span>
-          <span className="val">{fmt(banked)}</span>
+          <span className="val"><Ex k="st.draw">{fmt(banked)}</Ex></span>
         </div>
       </div>
     </Card>

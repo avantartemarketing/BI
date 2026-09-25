@@ -1436,7 +1436,10 @@ drafts); `plan`; `benchmark` (`rate`, `n` members rated, `of` members in the bas
 null); `works[]` (per product with paid prints on offer: `name`, `prints`, `frames`, `rate`,
 sorted by rate, the Buyers bar's hover); `notOffered` (`units` paid with no framing option,
 and the `works`); `forecast` (`framing_forecast`: `today` and `close`, each `prints`,
-`frames`, `rate` and `notOffered`, the units counted with no frame on offer; and
+`frames`, `rate` and `notOffered`, the units counted with no frame on offer, and `parts`,
+the same prints and frames by kind of unit - `paid` (with the sales no work is named for),
+`drafts`, `draw` and, at close, `future` - which add up to the totals and are the explainer's
+working for the headline; and
 `products[]`, per sell-through row with a frame on offer, `key` (the row's draw), `name`,
 `today` and `close` as `prints`, `frames`, `rate`; null without the sell-through); `asOf`.
 Null when nothing on the release has been offered a frame, and the card stays off the page.
@@ -1587,6 +1590,12 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Entries by country | top 5 | geo split of entries (requires country dim in the daily feed - **currently missing; needs adding to the BigQuery export**) |
 | Framing | buyers, entrants | §6.4: frames per print on the prints a frame was on offer for, paid orders and the app's pre-authorisation drafts, against the plan's frame conversion and the basket's median |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
+
+Every figure in the table can explain itself: shift-click it on the page and the explainer
+panel gives the working in plain words, with the page's own numbers, and the sources behind it
+(`web/src/explain/explanations.mjs`; README "How a number is worked out"). The builders read the
+same snapshot fields as the cards, and `tests/explain.mjs` holds them to the figures printed.
+The Framing headline's working reads `framing.forecast.{today,close}.parts` (§6.4).
 
 LE benchmark fields carried on the release document: `chargeDropOff = 0.2`,
 `signupToOrderRate` (TL), `firstChoiceWinRate` / `steeredBackupWinRate` (from draw allocation

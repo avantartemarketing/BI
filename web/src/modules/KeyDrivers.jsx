@@ -25,6 +25,7 @@ import {
   Card, GROUP_DOTS, C, fmt, fmtSigned, MINUS, useTip, rungGeom, rungPos, RungTrack, RungKey,
   refWords,
 } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 const GROUPS = [
   { key: "aa_email", name: "AA Email", short: "Email" },
@@ -41,7 +42,7 @@ const NOTE =
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const usable = (v) => finite(v) && v !== 0;
 
-function FunnelRung({ tier, metric, r, bench, tip }) {
+function FunnelRung({ tier, metric, r, bench, tip, x }) {
   const tipApi = useTip();
   return (
     <div
@@ -69,7 +70,7 @@ function FunnelRung({ tier, metric, r, bench, tip }) {
         )}
       </div>
       <div className="num" style={{ fontSize: 13.5, fontWeight: 600, textAlign: "right", color: r.rag }}>
-        {r.delta}
+        {x && !r.neutral ? <Ex k="funnel.rung" arg={x}>{r.delta}</Ex> : r.delta}
       </div>
     </div>
   );
@@ -168,6 +169,9 @@ function FunnelView({ snap }) {
       />
       <FunnelRung
         tier="Mid funnel" metric="Sessions" r={midR} bench={bench}
+        x={{ card: "Organic funnel", group: "Organic channels", label: "Sessions", kind: "vol", unit: "count",
+             v: sessA, target: midR.target, bm: midR.bm, k,
+             note: "The four organic channels together: AA Email, AA Meta, Artist and Direct etc." }}
         tip={{
           head: "Mid funnel · Sessions",
           body: bench
@@ -182,6 +186,10 @@ function FunnelView({ snap }) {
       />
       <FunnelRung
         tier="Low funnel" metric="Session → entry" r={lowR} bench={bench}
+        x={{ card: "Organic funnel", group: "Organic channels", label: "Session → entry", kind: "rate", unit: "%",
+             v: convA === null ? null : convA * 100, target: lowR.target === null ? null : lowR.target * 100,
+             bm: lowR.bm === null || lowR.bm === undefined ? null : lowR.bm * 100, k,
+             note: "Units secured per session on the four organic channels together, each channel weighted by its sessions." }}
         tip={{
           head: "Low funnel · Session → entry",
           body: bench
@@ -289,7 +297,7 @@ export default function KeyDrivers({ snap, horizon }) {
                   color: r.v > 0 ? C.green : C.red,
                 }}
               >
-                {fmtSigned(r.v, 1)}
+                <Ex k="drivers.step" arg={{ key: r.key, step: r.step }}>{fmtSigned(r.v, 1)}</Ex>
               </div>
             </div>
           ))

@@ -578,6 +578,21 @@ Overview opens with the campaign clock, a thin strip from announcement to launch
 today and the days to launch on the right (the day of the window is in the strip's popup);
 it is a card like the others and moves with them.
 
+**How a number is worked out.** Hold Shift and click any figure (or Tab to a headline figure
+and press Shift+Enter): a panel opens at the right with the figure, what it is in one sentence,
+the working as numbered steps with the page's own numbers, what it reads against, the data
+sources it comes from (each with how fresh it is on this page: green for a feed pulled on
+every refresh, grey for an input somebody set, amber where the last refresh reported that feed
+failing), and anything worth knowing. A figure inside a step that has working of its own is a
+link down to it, with a crumb back; **Copy as text** puts the whole explanation on the
+clipboard. The page narrows beside the panel (to two columns, or one on a laptop) and
+shift-clicking another number swaps it; Esc or × closes it, and so does a new release or
+another tab. Holding Shift underlines every figure that can explain itself. The explanations
+live in `web/src/explain/explanations.mjs`, one builder per kind of figure reading the same
+snapshot fields the card reads, and the source catalogue in `web/src/explain/sources.mjs`;
+a card marks a figure with `<Ex k="…" arg={…}>`. `tests/explain.mjs` runs every builder
+against every snapshot on file and checks each lands on the figure its card prints.
+
 **Sell-through by product** (docs §6.3) is one row per product, drawn in one ramp of the
 page's blue, deepest to palest as the units get less certain: units paid (deep blue), draft
 orders an advisor raised that are not yet paid (blue; the draw's own pre-authorisation

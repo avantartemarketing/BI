@@ -22,6 +22,7 @@
  * rather than drawn on five bars. */
 import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, BmOutline, BADGE_WORDS, C, fmt, useTip } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 /* The fill nearly fills the slot and the actual sits well inside it, so the
  * tints and the outline read on both sides of the blue at every card width. */
@@ -209,7 +210,8 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                       color: c.pctOfTarget === null ? C.muted : c.pctOfTarget >= 100 ? C.green : C.red,
                     }}
                   >
-                    {offGroups.has(c.key) ? "not in plan" : c.pctOfTarget === null ? "–" : (capped ? "›999%" : c.pctOfTarget + "%")}
+                    {offGroups.has(c.key) ? "not in plan" : c.pctOfTarget === null ? "–"
+                      : <Ex k="channel.pct" arg={{ key: c.key, close: !today }}>{capped ? "›999%" : c.pctOfTarget + "%"}</Ex>}
                   </div>
                 </div>
               );
@@ -232,7 +234,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
             {hasBm && <span style={legendItem} title="The median of the matched basket, per channel">{OUTLINE_SWATCH}Benchmark</span>}
             <span style={{ marginLeft: "auto", whiteSpace: "nowrap" }} title={stretchNote}>
               {/* the stretch said once, in words, rather than drawn on five bars */}
-              {hasBm && k > 0 ? "target is ×" + fmt(k, 2) + " the benchmark"
+              {hasBm && k > 0 ? <>target is <Ex k="k">{"×" + fmt(k, 2)}</Ex> the benchmark</>
                 : !targeted ? "secured units · no targets"
                 : pct ? "target = 100%" : "secured units"}
             </span>
