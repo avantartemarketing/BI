@@ -630,8 +630,9 @@ apply is a disabled box, never a dash):
    switch is on; a typed figure gets an amber corner mark and a `Reset` beside the product,
    the card's head counts them and offers `Reset all`. While editing a `Set all` row at the top
    fills a column for every product and an `Add a product` row adds a work Airtable has no
-   record for. Revenue share and profit share are two cells that close each other (fill one
-   and the other is greyed and not typeable); unticking framing closes the two frame cells.
+   record for. `AA revenue share` and `AA profit share` (Avant Arte's own share, not the
+   artist's) are two cells that close each other (fill one and the other is greyed and not
+   typeable); unticking framing closes the two frame cells.
    Target units and the last row, `Total · per target unit`, are computed cells: edition and
    target units summed, sell-through and price weighted by target units, the profits and the
    share per target unit, the framing uplift per target unit.

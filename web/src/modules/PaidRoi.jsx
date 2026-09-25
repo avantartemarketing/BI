@@ -249,7 +249,7 @@ export default function PaidRoi({ snap }) {
           <span style={{ fontSize: 12, fontWeight: 400, letterSpacing: 0, color: C.muted, whiteSpace: "nowrap" }}>{leadCaption}</span>
           <QBadge content={moreTip} />
           {splitAssumed && (
-            <span title="No product records its deal, so Avant Arte is assumed to carry half the paid spend. Type each product's profit share (or revenue share) on the Target setting tab: the spend divides as the profit does."
+            <span title="No product records its deal, so Avant Arte is assumed to carry half the paid spend. Type each product's AA profit share (or AA revenue share) on the Target setting tab: the spend divides as the profit does."
               style={{ fontSize: 11.5, fontWeight: 500, letterSpacing: 0, color: C.amber, whiteSpace: "nowrap" }}>50/50 split assumed</span>
           )}
         </div>
