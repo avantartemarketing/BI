@@ -1002,7 +1002,7 @@ export default function TargetSetting({ snap, onSaved }) {
             Launch value <b>{fmtMoney(econ.launch_value, 0)}</b>
             {(econ.launch_currencies || []).some((c) => c !== "EUR") ? ` (from ${(econ.launch_currencies || []).join(", ")} at a fixed rate)` : ""}
             {" · "}artist <b>{fmtMoney(econ.ppu_artist, 2)}</b> and AA <b>{fmtMoney(econ.ppu_aa, 2)}</b> per unit{econ.frame_uplift_per_unit > 0 ? ` (incl. ${fmtMoney(econ.frame_uplift_per_unit, 2)} framing)` : ""}
-            {" · "}AA carries <b>{fmtPct(econ.aa_budget_share, 0)}</b> of paid spend ({econ.deal && econ.deal.length ? econ.deal.join(" and ") : legacy ? "as set up" : "no deal recorded, 50/50 assumed"})
+            {" · "}AA carries <b>{fmtPct(econ.aa_budget_share, 0)}</b> of paid spend ({econ.aa_budget_share_assumed ? "no deal recorded, 50/50 assumed" : econ.deal && econ.deal.length ? econ.deal.join(" and ") : "as set up"})
           </div>
         </section>
 

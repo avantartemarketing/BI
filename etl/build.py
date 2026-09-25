@@ -2617,6 +2617,22 @@ def _effective_product(p: dict, b: dict) -> dict:
     return e
 
 
+def legacy_budget_share(artist_profit_share) -> tuple[float, bool]:
+    """Avant Arte's share of the paid spend on a release carrying
+    release-level figures (docs 7), and whether it is assumed. The ads are
+    divided as the profit is: on a profit split each side carries its share
+    of the profit (the artist on 70% carries 70% of the spend, Avant Arte
+    30%); on a commission or revenue-share deal the artist takes no profit
+    share and Avant Arte carries them all. With nothing typed, half, said to
+    be assumed (shared/economics.mjs releaseEconomics is the same rule)."""
+    aps = _num(artist_profit_share)
+    if aps is None:
+        return 0.5, True
+    if aps <= 0:
+        return 1.0, False
+    return round(min(max(1.0 - aps, 0.0), 1.0), 4), False
+
+
 def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: dict | None = None) -> dict:
     """The release's inputs in force, from where each comes (docs §1.6):
 
@@ -2654,8 +2670,11 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         for k in LEGACY_KEYS:
             r[k] = legacy.get(k)
         if r.get("aa_budget_share") is None:
-            # commission / revenue-share deals (artist profit share 0) are AA-funded, else 50/50
-            r["aa_budget_share"] = 1.0 if (_num(r.get("artist_profit_share")) or 0) == 0 else 0.5
+            # the ads divide as the profit does: AA's share of the profit, all
+            # of it when the artist takes none (legacy_budget_share)
+            r["aa_budget_share"], r["aa_budget_share_assumed"] = legacy_budget_share(r.get("artist_profit_share"))
+        else:
+            r["aa_budget_share_assumed"] = False
         r["legacy_economics"] = {k: legacy[k] for k in LEGACY_KEYS if k in legacy}
         r["economics_mode"] = "release"
         r["launch_value"] = round(float(r["edition_size"]) * float(r.get("unit_price") or 0), 2)
@@ -2690,6 +2709,8 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         r["aa_ppu_resolved"] = round((ppu_aa or 0.0) + uplift, 4)
         share = weighted("aa_budget_share")
         r["aa_budget_share"] = share if share is not None else 0.5
+        # no product records its deal: half, and the page says it is assumed
+        r["aa_budget_share_assumed"] = share is None
         r["artist_profit_share"] = round(1.0 - r["aa_budget_share"], 4)
         r["deal"] = sorted({p["deal"] for p in sized if p["deal"]})
         r["legacy_economics"] = None
@@ -3540,12 +3561,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     ppu_aa = aa_profit_per_unit(release, b)
     frame_conv, frame_profit = frame_terms(release, b)
     ppu_artist = (release["artist_profit"] / release["edition_size"]) if release["edition_size"] else 0
-    # Who funds the ads. Explicit per-release override (the workbook's "AA budget
-    # share (%)" row - e.g. Glenn Ligon 100% AA); default: commission/rev-share
-    # deals (artist profit share 0) are AA-funded, otherwise split 50/50.
+    # Who funds the ads: as the profit divides (resolve_release). Each
+    # product's deal - its profit share, or all of it on a revenue share -
+    # else the release's typed share or its profit split (legacy_budget_share,
+    # e.g. Glenn Ligon's 100% AA); half, flagged as assumed, when nothing says.
     aa_budget_share = release.get("aa_budget_share")
+    budget_assumed = bool(release.get("aa_budget_share_assumed"))
     if aa_budget_share is None:
-        aa_budget_share = 1.0 if release["artist_profit_share"] == 0 else 0.5
+        aa_budget_share, budget_assumed = legacy_budget_share(release.get("artist_profit_share"))
     artist_budget_share = max(0.0, 1.0 - float(aa_budget_share))
 
     def party_roi(ppu: float, share: float, adj_cpe: float | None) -> float | None:
@@ -4014,6 +4037,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "profitPerUnitAA": round(ppu_aa, 2),
         "profitPerUnitArtist": round(ppu_artist, 2),
         "aaBudgetShare": aa_budget_share,
+        # no deal recorded anywhere: the half is an assumption, and the card says so
+        "aaBudgetShareAssumed": budget_assumed,
         # the terms every ROI above is read with, so the card can show its working
         "cannibalisation": cann,
         "dropOff": drop,
@@ -4263,6 +4288,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "artistProfitPerUnit": round(ppu_artist, 2), "aaProfitPerUnit": round(ppu_aa, 2),
             "artistProfitShare": release["artist_profit_share"],
             "aaBudgetShare": aa_budget_share,
+            "aaBudgetShareAssumed": budget_assumed,
             # per product, the figures in force and where each came from
             # (resolve_release): "products" when the totals are theirs,
             # "release" while typed release-level figures still stand

@@ -66,11 +66,17 @@ per-release cannibalisation cells reading 0 via the broken template reference
 (issue 14, §11) - those cells are display artefacts, not the constant. The TL
 historical panel still shows 0.10.)
 
-Paid budget share (who funds the ads; distinct from profit share): the workbook's
-"Artist budget share (%) / AA budget share (%)" rows where present - Glenn Ligon
-is overridden to 100% AA ("he's not sharing paid budget"). Model input
-`aa_budget_share` (optional per release); default 100% AA when
-`artist_profit_share = 0` (commission / rev-share deals), else 50/50.
+Paid budget share (who funds the ads): the ads divide as the profit does. On a
+profit split each side carries its share of the profit (an artist on 70% of the
+profit carries 70% of the spend, Avant Arte 30%); on a revenue-share or
+commission deal Avant Arte carries it all. Per product that is its `aa_profit_share`
+or 1 for an `aa_revenue_share` (§1.6); on a release still carrying release-level
+figures, the typed `aa_budget_share` (the workbook's "AA budget share (%)" row -
+Glenn Ligon is overridden to 100% AA, "he's not sharing paid budget"), else
+`1 − artist_profit_share`, 100% when that is 0 (`legacy_budget_share`, 2026-09-25:
+it used to take a half for any share but 0). Where nothing records the deal the
+split is an assumed half, `aaBudgetShareAssumed` on the snapshot, and the Paid ROI
+card says "50/50 split assumed".
 
 ### 1.2 Campaign code (cross-system join key)
 `campaign_code` (e.g. `GlennLigon_LE_26`) joins the release to:
@@ -217,7 +223,8 @@ launch value        = Σ target units × unit price in euros          # EUR conv
 profit per unit     = Σ target units × profit per unit / Σ target units, for the products that have one
 framing uplift      = Σ over framed products of target units × take-up × profit per frame / Σ target units
 AA budget share     = per product: its AA profit share on a profit-share deal, 1 on a revenue-share deal;
-                      weighted by target units; 0.5 where no deal is recorded
+                      weighted by target units; 0.5 where no deal is recorded, flagged as assumed
+                      (aaBudgetShareAssumed: the Paid ROI card and the Target setting tab say so)
 ```
 
 A release set up before this carries `legacy_economics` (the release-level `edition_size`,

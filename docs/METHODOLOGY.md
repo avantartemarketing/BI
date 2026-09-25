@@ -321,9 +321,14 @@ The profit per unit and the budget share are the release's own, from the Target
 setting tab (§2): the products' figures weighted by their target units (AA's
 includes the framing uplift). The card shows Avant Arte's ROI by default and
 can be switched to the artist's reading of the same days - the artist's profit
-per unit over the artist's share of the spend. On a revenue-share deal the
-artist carries no spend, so there is no artist ROI to show. The ? popup on the
-card sets out the working with the release's figures.
+per unit over the artist's share of the spend. The spend divides as the profit
+does: on a profit split each side carries its share of the profit, so on a deal
+where Avant Arte takes 30% of the profit it carries 30% of the ads; on a
+revenue-share deal Avant Arte carries them all and the artist none, so there is
+no artist ROI to show. Where no product records its deal, half is assumed and
+the card says "50/50 split assumed" until the profit share (or revenue share)
+is typed on the Target setting tab. The ? popup on the card sets out the working
+with the release's figures.
 
 The spend is Meta's, billed in euros, and the page runs in euros, so every
 figure on it is euros (a product priced in another currency is converted at a
