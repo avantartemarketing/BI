@@ -217,8 +217,8 @@ const GRID = [
   { key: "target_units", label: "Target units", glyph: "ƒ", calc: true, tip: "Computed: edition × sell-through." },
   { key: "artist_profit_per_unit", label: "Artist profit", glyph: "€", tip: "The artist's profit on one unit sold." },
   { key: "aa_profit_per_unit", label: "AA profit", glyph: "€", tip: "Avant Arte's profit on one unit sold, before framing." },
-  { key: "aa_revenue_share", label: "Revenue share", glyph: "%", tip: "Avant Arte's share of revenue on a royalty deal, where Avant Arte carries the ads outright. Closed while the product has a profit share." },
-  { key: "aa_profit_share", label: "Profit share", glyph: "%", tip: "Avant Arte's share of profit on a profit-share deal, which is also its share of the paid budget. Closed while the product has a revenue share." },
+  { key: "aa_revenue_share", label: "AA revenue share", glyph: "%", tip: "Avant Arte's own share of revenue on a royalty deal (not the artist's), where Avant Arte carries the ads outright. Closed while the product has an AA profit share." },
+  { key: "aa_profit_share", label: "AA profit share", glyph: "%", tip: "Avant Arte's own share of the profit on a profit-share deal (not the artist's), which is also its share of the paid budget. Closed while the product has an AA revenue share." },
   { key: "framing_available", label: "Framing", glyph: "✓", check: true, tip: "Whether a frame is offered on this work. Unticked closes the two frame cells." },
   { key: "frame_conversion", label: "Frames per print", glyph: "%", tip: "The share of buyers expected to take a frame. Blank = the benchmark default." },
   { key: "frame_profit_per_unit", label: "Frame profit", glyph: "€", tip: "Avant Arte's profit on each frame sold, which is Avant Arte's alone. Blank = the benchmark default." },
@@ -286,7 +286,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
       );
     }
     if (closedFor(p, c.key)) {
-      const why = c.key === "aa_revenue_share" ? "Closed: this product has a profit share." : c.key === "aa_profit_share" ? "Closed: this product has a revenue share." : "Closed: no frame is offered on this product.";
+      const why = c.key === "aa_revenue_share" ? "Closed: this product has an AA profit share." : c.key === "aa_profit_share" ? "Closed: this product has an AA revenue share." : "Closed: no frame is offered on this product.";
       return <td key={c.key} className="closed" title={why} />;
     }
     const src = p.sources[c.key];
@@ -1002,7 +1002,7 @@ export default function TargetSetting({ snap, onSaved }) {
             Launch value <b>{fmtMoney(econ.launch_value, 0)}</b>
             {(econ.launch_currencies || []).some((c) => c !== "EUR") ? ` (from ${(econ.launch_currencies || []).join(", ")} at a fixed rate)` : ""}
             {" · "}artist <b>{fmtMoney(econ.ppu_artist, 2)}</b> and AA <b>{fmtMoney(econ.ppu_aa, 2)}</b> per unit{econ.frame_uplift_per_unit > 0 ? ` (incl. ${fmtMoney(econ.frame_uplift_per_unit, 2)} framing)` : ""}
-            {" · "}AA carries <b>{fmtPct(econ.aa_budget_share, 0)}</b> of paid spend ({econ.deal && econ.deal.length ? econ.deal.join(" and ") : legacy ? "as set up" : "no deal recorded, 50/50 assumed"})
+            {" · "}AA carries <b>{fmtPct(econ.aa_budget_share, 0)}</b> of paid spend ({econ.aa_budget_share_assumed ? "no deal recorded, 50/50 assumed" : econ.deal && econ.deal.length ? econ.deal.join(" and ") : "as set up"})
           </div>
         </section>
 

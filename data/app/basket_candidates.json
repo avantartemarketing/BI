@@ -1,5 +1,5 @@
 {
- "asOf": "2026-09-25",
+ "asOf": "2026-09-24",
  "rows": [
   {
    "release_name": "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
@@ -895,7 +895,7 @@
     "paid": 0.3275862068965517
    },
    "entries": 1692.0,
-   "units_per_buyer": 1.2072992700729928,
+   "units_per_buyer": 1.2116788321167884,
    "private_room_share": 0.3026004728132387,
    "cost_per_paid_unit": null,
    "price": 700.0,
@@ -1756,7 +1756,7 @@
     "paid": null
    },
    "entries": 182.0,
-   "units_per_buyer": 1.1827956989247312,
+   "units_per_buyer": 1.2608695652173914,
    "private_room_share": 0.1637931034482758,
    "cost_per_paid_unit": null,
    "price": 8000.0,
@@ -1797,7 +1797,7 @@
     "paid": null
    },
    "entries": 199.0,
-   "units_per_buyer": 1.3391304347826087,
+   "units_per_buyer": 1.3478260869565217,
    "private_room_share": 0.3798882681564245,
    "cost_per_paid_unit": null,
    "price": 1500.0,
@@ -2166,7 +2166,7 @@
     "paid": 0.0020661766876236
    },
    "entries": 452.0,
-   "units_per_buyer": 1.1280276816608996,
+   "units_per_buyer": 1.1314878892733564,
    "private_room_share": 0.2783505154639175,
    "cost_per_paid_unit": 986.7788888888889,
    "price": 6000.0,
@@ -3355,7 +3355,7 @@
     "paid": null
    },
    "entries": 1934.0,
-   "units_per_buyer": 1.1723625557206538,
+   "units_per_buyer": 1.1708766716196137,
    "private_room_share": 0.0143790849673202,
    "cost_per_paid_unit": null,
    "price": 1414.2857142857142,
@@ -3601,7 +3601,7 @@
     "paid": null
    },
    "entries": 607.0,
-   "units_per_buyer": 1.453531598513011,
+   "units_per_buyer": 1.4312267657992566,
    "private_room_share": 0.0,
    "cost_per_paid_unit": null,
    "price": 6000.0,

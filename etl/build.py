@@ -1610,6 +1610,271 @@ def orders_campaign_codes() -> dict:
     return {name: f["campaignCode"] for name, f in load_orders_feed().items() if f.get("campaignCode")}
 
 
+# ---------------------------------------------------------------- units paid, by day and channel
+
+# The units a page counts come from the orders table, not the funnel's
+# purchase events (docs 6.3): every paid order line, counted the way the
+# orders feed counts it, on its CET order day and the channel of its own
+# purchase event (server/bigquery.js unitsPaidSql). The funnel keeps
+# sessions and entries; for units it would miss orders of several units,
+# count test and refunded orders, and cut a different window than the
+# sell-through, which is how the two cards used to disagree.
+ORDERS_SINCE = date.fromisoformat(os.environ.get("BQ_SINCE") or "2025-01-01")   # server/bigquery.js SINCE
+EARLY_SALES_DAYS = 45   # a first sale opens the window, but never earlier than this before the announce
+UNITS_GRACE_DAYS = 2    # sales count to two days after the close, on both cards, and not after
+NO_EVENT_WARN_SHARE = 0.05   # paid units the funnel has no purchase event for: warn above this share...
+NO_EVENT_WARN_MIN = 5        # ... on at least this many units
+# beside the other two orders files, from the same pull (server/bigquery.js
+# writes the three together): a deploy resets all three to one committed copy
+UNITS_FILE = DATA / "units_paid.csv"
+_UNITS_FEED: dict | None = None
+UNITS_FEED_INFO: dict = {}
+_UNITS_COLS = ["product_title", "event_date", "channel", "purchase_event", "units", "private_room", "prints_offered", "frames"]
+
+
+def load_units_feed() -> dict | None:
+    """data/units_paid.csv, per release: a frame of units paid per product
+    x CET order day x channel, with purchase_event False where the funnel has
+    no purchase event for the order (its channel is then Untracked). None when
+    the file is missing or unreadable: every page then reads the funnel's
+    units, as before the feed existed, and says so (unitsSource 'funnel') -
+    an absent feed is never read as no sales.
+
+    The file and data/orders_by_product.csv come from one query's paid lines,
+    so a release's units add up to its units paid there. Where they do not,
+    the two files are from different pulls (a deploy's committed copy beside
+    a fresh one, a pull that failed half way), and pairing them would count a
+    draft paid in between twice or a new release as selling nothing: that
+    release is left out of the feed and its page reads the funnel's units
+    until the next pull puts the two back in step (UNITS_FEED_INFO names it)."""
+    global _UNITS_FEED
+    if _UNITS_FEED is not None:
+        return _UNITS_FEED or None
+    feed: dict = {}
+    p = UNITS_FILE
+    UNITS_FEED_INFO.clear()
+    UNITS_FEED_INFO["path"] = str(p)
+    if p.exists():
+        try:
+            df = pd.read_csv(p, dtype={"release": str, "product_title": str, "channel": str, "purchase_event": str})
+            df = df[df["release"].notna() & df["order_date"].notna()].copy()
+            df["event_date"] = pd.to_datetime(df["order_date"]).dt.date
+            ch = df["channel"].fillna("").astype(str).str.strip()
+            ch = ch.where(ch.str.lower() != "untracked", "Untracked").replace("", "Untracked")
+            unknown = ~ch.isin(list(GROUP_OF) + ["Untracked"])
+            UNITS_FEED_INFO["unknownChannels"] = sorted(set(ch[unknown]))
+            df["channel"] = ch.where(~unknown, "Untracked")
+            df["purchase_event"] = df["purchase_event"].fillna("").astype(str).str.lower().isin(["true", "1"])
+            for src, dst in (("units_paid", "units"), ("units_private_room", "private_room"),
+                             ("prints_offered_paid", "prints_offered"), ("frames_paid", "frames")):
+                df[dst] = pd.to_numeric(df[src], errors="coerce").fillna(0.0) if src in df.columns else 0.0
+            df["product_title"] = df["product_title"].fillna("").astype(str)
+            feed = {name: g[_UNITS_COLS].reset_index(drop=True) for name, g in df.groupby("release")}
+            orders = load_orders_feed()
+            apart = sorted(n for n, g in feed.items()
+                           if abs(float(g["units"].sum()) - float((orders.get(n) or {}).get("unitsPaid") or 0.0)) > 0.5)
+            apart += sorted(n for n, o in orders.items() if n not in feed and float(o.get("unitsPaid") or 0.0) > 0.5)
+            for n in apart:
+                feed.pop(n, None)
+            UNITS_FEED_INFO["outOfStep"] = apart
+            UNITS_FEED_INFO.update(rows=int(len(df)), releases=len(feed),
+                                   first=str(df["event_date"].min()) if len(df) else None,
+                                   last=str(df["event_date"].max()) if len(df) else None,
+                                   units=float(df["units"].sum()),
+                                   noEvent=float(df.loc[~df["purchase_event"], "units"].sum()),
+                                   pulled=datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc).isoformat(timespec="minutes"))
+        except Exception as e:  # noqa: BLE001
+            print(f"warning: ignoring {p.name}: {e} - pages read the funnel's units")
+            feed = {}
+    _UNITS_FEED = feed
+    return feed or None
+
+
+def units_rows(name: str) -> pd.DataFrame | None:
+    """The release's rows in the units feed; an empty frame for a release the
+    orders feed knows (by its products or drafts) with nothing paid, which is
+    a real zero; None when neither feed knows it, the two files disagree on
+    it (load_units_feed) or there is no feed, and the page reads the funnel's
+    units."""
+    feed = load_units_feed()
+    if feed is None:
+        return None
+    if name in feed:
+        return feed[name]
+    if name in (UNITS_FEED_INFO.get("outOfStep") or []):
+        return None
+    o = load_orders_feed().get(name)
+    return pd.DataFrame(columns=_UNITS_COLS) if o is not None and not float(o.get("unitsPaid") or 0.0) > 0.5 else None
+
+
+def sales_window(rows: pd.DataFrame | None, campaign_start: date, announce: date | None,
+                 launch_end: date, as_of: date) -> tuple[date, date, date | None]:
+    """[start, end] the page counts sales over, the same days on every card
+    (docs 6.3): from the campaign start (the private room, else the announce)
+    or the release's first paid order, whichever is earlier - but never more
+    than EARLY_SALES_DAYS before the announce - to two days after the close,
+    or the as-of day. A release with no announce (a catalogue page) keeps its
+    rolling window. Returns (start, end, the first paid day inside the floor)."""
+    end = min(as_of, launch_end + timedelta(days=UNITS_GRACE_DAYS))
+    first = None
+    if rows is not None and len(rows) and announce is not None:
+        floor = announce - timedelta(days=EARLY_SALES_DAYS)
+        paid = rows[(rows["units"] > 0) & (rows["event_date"] >= floor) & (rows["event_date"] <= end)]
+        first = min(paid["event_date"]) if len(paid) else None
+    start = min(campaign_start, first) if first is not None else campaign_start
+    return start, end, first
+
+
+def swap_units(win: pd.DataFrame, name: str, rows: pd.DataFrame | None,
+               start: date, end: date, shut: date) -> tuple[pd.DataFrame, dict]:
+    """The window's units from the orders table in place of the funnel's
+    (docs 6.3): the funnel rows keep their sessions and entries with their
+    units zeroed, and each channel x day of paid units is added as a row of
+    its own, so the Untracked fold, the Direct spread and the close fold all
+    run on it unchanged. Returns the frame and what it counted: the source,
+    the total, the units with no purchase event, and the paid units outside
+    the window: before it opened, after it shut (`shut`, two days after the
+    close), and, while it is open, paid after the as-of day (the orders pull
+    ran ahead of the funnel, or a CET day began before London's), which
+    count on the next build (`pending`). The funnel's units stand
+    when the orders feed does not cover the window: no feed, a release it
+    does not know, or a window opening before the feed's first day."""
+    info = {"source": "funnel", "total": float(win["Total_Product_Units"].sum()),
+            "noEvent": None, "before": None, "after": None, "pending": None}
+    if rows is None or start < ORDERS_SINCE:
+        return win, info
+    inside = rows[(rows["event_date"] >= start) & (rows["event_date"] <= end)]
+    by = (inside.groupby(["channel", "event_date"], as_index=False)
+                .agg(Total_Product_Units=("units", "sum"), Product_Units_Private_Room=("private_room", "sum")))
+    base = win.copy()
+    base["Total_Product_Units"] = 0.0
+    if "Product_Units_Private_Room" in base.columns:
+        base["Product_Units_Private_Room"] = 0.0
+    add = pd.DataFrame(index=range(len(by)), columns=base.columns)
+    for c in base.columns:
+        if c in _CLOCK_COLS:
+            add[c] = np.nan
+        elif pd.api.types.is_numeric_dtype(base[c]) and c != "event_date":
+            add[c] = 0.0
+    add["channel"] = by["channel"].to_numpy()
+    add["event_date"] = by["event_date"].to_numpy()
+    add["simple_release_name"] = name
+    if "campaign_stage" in add.columns:
+        add["campaign_stage"] = None
+    if "group" in base.columns:
+        add["group"] = add["channel"].map(GROUP_OF)
+    add["Total_Product_Units"] = by["Total_Product_Units"].to_numpy(dtype=float)
+    if "Product_Units_Private_Room" in add.columns:
+        add["Product_Units_Private_Room"] = by["Product_Units_Private_Room"].to_numpy(dtype=float)
+    out = pd.concat([base, add], ignore_index=True) if len(add) else base
+    for c in out.columns:
+        if c not in ("channel", "simple_release_name", "campaign_stage", "group", "event_date") and out[c].dtype == object:
+            out[c] = pd.to_numeric(out[c], errors="coerce")
+    total = float(inside["units"].sum())
+    no_event = float(inside.loc[~inside["purchase_event"].astype(bool), "units"].sum())
+    share = no_event / total if total > 0 else None
+    info = {
+        "source": "orders", "total": total,
+        "noEvent": {"share": round(share, 4) if share is not None else None, "count": round(no_event, 1),
+                    "total": round(total, 1),
+                    "high": bool(share is not None and share > NO_EVENT_WARN_SHARE and no_event >= NO_EVENT_WARN_MIN)},
+        "before": round(float(rows.loc[rows["event_date"] < start, "units"].sum()), 1),
+        "after": round(float(rows.loc[rows["event_date"] > max(end, shut), "units"].sum()), 1),
+        "pending": round(float(rows.loc[(rows["event_date"] > end) & (rows["event_date"] <= shut), "units"].sum()), 1),
+    }
+    return out, info
+
+
+def keep_units(win: pd.DataFrame, total: float, pre: pd.DataFrame | None = None) -> pd.DataFrame:
+    """The Untracked fold and the Direct spread move units between channels
+    and never lose them - except on a window where every unit is on the
+    channel being spread, which has nothing to spread over. Any units that
+    went missing that way go back on the window's sessions (or evenly), so
+    the channels still add up to the units paid. When the fold left nothing
+    at all (every row was Untracked, or Direct with the switch on), the
+    window's rows from before it (`pre`) come back as they were, Untracked
+    as Other: its units have no channel, and Other is where the page counts
+    what has none."""
+    got = float(win["Total_Product_Units"].sum())
+    lost = total - got
+    if abs(lost) < 1e-6:
+        return win
+    if win.empty:
+        if pre is None or pre.empty:
+            return win
+        back = pre.copy()
+        back["channel"] = back["channel"].where(back["channel"].isin(list(GROUP_OF)), "Other")
+        if "group" in back.columns:
+            back["group"] = back["channel"].map(GROUP_OF)
+        return back
+    w = win["Sessions_Total"].clip(lower=0).fillna(0.0).to_numpy(dtype=float) if "Sessions_Total" in win.columns else np.zeros(len(win))
+    if w.sum() <= 0:
+        w = np.ones(len(win))
+    win = win.copy()
+    win["Total_Product_Units"] = win["Total_Product_Units"].to_numpy(dtype=float) + lost * w / w.sum()
+    return win
+
+
+def _no_draft_frames(p: dict) -> dict:
+    """A shut window's drafts count for nothing, and so do the prints and
+    frames on them (docs 6.4); a feed pulled before those columns keeps its
+    None, which the framing forecast reads as not known."""
+    return {k: 0.0 for k in ("draftPrints", "draftFrames") if p.get(k) is not None}
+
+
+def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: date, closed: bool,
+                     source: str) -> dict | None:
+    """The orders feed as the sell-through and framing cards read it, cut to
+    the window the page counts: each product's paid units, prints and frames
+    summed over [start, end] from the units feed, every title kept (a title
+    names its draw even at nothing paid), marked `windowed` so a draw the
+    feed does not name takes no sales from anywhere else (attach_orders).
+    Once the window has closed, drafts and entry drafts no longer count:
+    whatever they become is paid after the close. The all-time record when
+    the page reads the funnel's units, less its drafts once the window has
+    closed, the same rule."""
+    of = load_orders_feed().get(name)
+    if source != "orders" or rows is None:
+        if not (closed and of):
+            return of
+        shut = {"drafts": 0.0, "winnerDrafts": 0.0, "entrantPrints": 0.0, "entrantFrames": 0.0}
+        return {**of, "products": {t: {**p, **shut, **_no_draft_frames(p)} for t, p in of["products"].items()}, "drafts": 0.0,
+                "framing": {**(of.get("framing") or {}), "entrantPrints": 0.0, "entrantFrames": 0.0}}
+    inside = rows[(rows["event_date"] >= start) & (rows["event_date"] <= end)]
+    per = inside.groupby("product_title").agg(units=("units", "sum"), private_room=("private_room", "sum"),
+                                               prints=("prints_offered", "sum"), frames=("frames", "sum"))
+    base = of or {"products": {}, "draws": {}, "drafts": 0.0, "unitsPaid": 0.0, "asOf": None, "campaignCode": None,
+                  "framing": {"prints": 0.0, "frames": 0.0, "notOffered": 0.0, "entrantPrints": 0.0, "entrantFrames": 0.0}}
+    out = {**base, "products": {}, "drafts": 0.0, "unitsPaid": 0.0, "windowed": True,
+           "framing": {"prints": 0.0, "frames": 0.0, "notOffered": 0.0, "entrantPrints": 0.0, "entrantFrames": 0.0}}
+    titles = list(base["products"]) + [t for t in per.index if t not in base["products"]]
+    for t in titles:
+        p = dict(base["products"].get(t) or {"drafts": 0.0, "draftCustomers": None, "entryDrafts": 0.0, "entrantDrafts": 0.0,
+                                             "winnerDrafts": 0.0, "winnerDraftsLapsed": 0.0, "refunded": 0.0, "fromDrafts": 0.0,
+                                             "listPrice": None, "edition": product_editions()(name, t),
+                                             "lastOrder": None, "lastDraft": None, "entrantPrints": 0.0, "entrantFrames": 0.0})
+        r = per.loc[t] if t in per.index else None
+        paid = float(r["units"]) if r is not None else 0.0
+        p.update(unitsPaid=paid, privateRoom=float(r["private_room"]) if r is not None else 0.0,
+                 printsOffered=float(r["prints"]) if r is not None else 0.0,
+                 frames=float(r["frames"]) if r is not None else 0.0)
+        if closed:
+            p.update(drafts=0.0, winnerDrafts=0.0, entrantPrints=0.0, entrantFrames=0.0, **_no_draft_frames(p))
+        out["products"][t] = p
+        out["unitsPaid"] += paid
+        out["drafts"] += float(p.get("drafts") or 0.0)
+        fr = out["framing"]
+        fr["prints"] += p["printsOffered"]
+        fr["frames"] += p["frames"]
+        fr["notOffered"] += max(paid - p["printsOffered"], 0.0)
+        fr["entrantPrints"] += float(p.get("entrantPrints") or 0.0)
+        fr["entrantFrames"] += float(p.get("entrantFrames") or 0.0)
+    out["draws"] = {d: t for d, t in (base.get("draws") or {}).items() if t in out["products"]}
+    if base.get("asOf"):
+        out["asOf"] = min(base["asOf"], end.isoformat())
+    return out
+
+
 def entry_rate(release: dict) -> float:
     """The entry -> order rate of the release: its own (Target setting) when
     one is typed, else the panel's 0.8. One rate runs through the page: the
@@ -1740,7 +2005,9 @@ def framing_forecast(of: dict | None, st: dict | None) -> dict | None:
     row neither can place takes the release's shares and rates. The units of
     the rows left over (no frame on offer) are counted apart, for the card's
     key. Without product rows the release is read as one. Today and at close,
-    the page's two horizons. None without the sell-through."""
+    the page's two horizons, each with its parts (paid, drafts, draw, and at
+    close future: prints and frames apiece) for the explainer's working.
+    None without the sell-through."""
     if not st or not of:
         return None
     feed = of.get("products") or {}
@@ -1805,12 +2072,23 @@ def framing_forecast(of: dict | None, st: dict | None) -> dict | None:
 
     rows = st.get("products") or []
     out_rows, totals = [], {"today": [0.0, 0.0, 0.0], "close": [0.0, 0.0, 0.0]}   # prints, frames, units
+    # the same totals by kind of unit, so the explainer can show the working:
+    # paid (with the sales no work is named for), drafts, the draw's forecast
+    # wins, and at close the entries still to come
+    kinds = {"today": ("paid", "drafts", "draw"), "close": ("paid", "drafts", "draw", "future")}
+    parts = {h: {k: [0.0, 0.0] for k in ks} for h, ks in kinds.items()}
 
     def add(h, prints, frames, units):
         t = totals[h]
         t[0] += prints
         t[1] += frames
         t[2] += units
+
+    def add_parts(**by_kind):
+        for h, ks in kinds.items():
+            for k in ks:
+                parts[h][k][0] += by_kind[k][0]
+                parts[h][k][1] += by_kind[k][1]
 
     if rows:
         titles = []
@@ -1839,6 +2117,7 @@ def framing_forecast(of: dict | None, st: dict | None) -> dict | None:
             close = [today[0] + future[0], today[1] + future[1]]
             add("today", *today, units_today)
             add("close", *close, units_today + num(r.get("futurePredicted")))
+            add_parts(paid=(paid[0] + assumed[0], paid[1] + assumed[1]), drafts=drafts, draw=pred, future=future)
             if close[0] > 0:
                 out_rows.append({"key": r.get("key"), "name": r.get("name"),
                                  "today": {"prints": round(today[0], 1), "frames": round(today[1], 1),
@@ -1856,12 +2135,14 @@ def framing_forecast(of: dict | None, st: dict | None) -> dict | None:
         today = [paid[0] + unpaid_paid[0] + drafts[0] + pred[0], paid[1] + unpaid_paid[1] + drafts[1] + pred[1]]
         add("today", *today, units_today)
         add("close", today[0] + future[0], today[1] + future[1], units_today + num(st.get("futureEntriesPredicted")))
+        add_parts(paid=(paid[0] + unpaid_paid[0], paid[1] + unpaid_paid[1]), drafts=drafts, draw=pred, future=future)
 
     def horizon(h):
         prints, frames, units = totals[h]
         return {"prints": round(prints, 1), "frames": round(frames, 1),
                 "rate": round(frames / prints, 4) if prints > 0 else None,
-                "notOffered": round(max(units - prints, 0.0), 1)}
+                "notOffered": round(max(units - prints, 0.0), 1),
+                "parts": {k: {"prints": round(p, 1), "frames": round(f, 1)} for k, (p, f) in parts[h].items()}}
     return {"today": horizon("today"), "close": horizon("close"), "products": out_rows}
 
 
@@ -1883,14 +2164,22 @@ def edition_total(release: dict):
 
 
 def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: float, inventory_left,
-                      future_entries: float = 0.0, expected_today=None, bm_today=None, bm_close=None) -> dict:
+                      future_entries: float = 0.0, expected_today=None, bm_today=None, bm_close=None,
+                      orders=..., closed: bool = False) -> dict:
     """The snapshot's `sellthrough`: the release-level prediction as before,
     and - where the event feed has the release's draws - the per-product
     block: products from the draws and what was typed for them, the entries
     in hand allocated by the max-quantity rule, sold units the feed can
     attribute, and the shares. With products the headline figures
     (soldPredicted, futureEntriesPredicted, pct) are the per-product
-    calculation summed, so the card's rows and its headline are one sum."""
+    calculation summed, so the card's rows and its headline are one sum.
+
+    `orders` is the orders record the page reads (orders_in_window: cut to
+    the days the page counts), the all-time record when left out. `closed`
+    says the window has shut (two days past the close): nothing in hand and
+    nothing still to come counts any more, only what was paid in it."""
+    if closed:
+        unconverted, future_entries = 0.0, 0.0
     rate = entry_rate(release)
     pre_rate = preorder_rate(release)
     edition = edition_total(release)   # the whole edition: room and shares read against it
@@ -1899,31 +2188,35 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     # be re-read at another rate without the funnel
     st: dict = {"edition": edition, "sold": round(units_sold, 0), "conversion": rate,
                 "preorderConversion": pre_rate, "inHandUnits": round(unconverted, 1)}
-    if edition:
-        st["soldPredicted"] = round(min(sold_predicted, inventory_left), 1)
-        st["futureEntriesPredicted"] = round(min(future_entries, max(inventory_left - sold_predicted, 0)), 1)
-        st["pct"] = round(min((st["sold"] + st["soldPredicted"] + st["futureEntriesPredicted"]) / edition, 1.0), 4)
-    else:
-        st["soldPredicted"] = round(sold_predicted, 1)
-        st["futureEntriesPredicted"] = None
-        st["pct"] = None
-    if bm_close is not None:
-        st["benchmarkUnits"] = round(bm_close, 1)
     feed = load_products_feed().get(name)
-    of = load_orders_feed().get(name)
+    of = load_orders_feed().get(name) if orders is ... else orders
     if of:
         # what the orders say for the whole release, draws or no draws: the
         # draft orders awaiting payment, the units paid, and the day they run to
         st["drafts"] = round(of["drafts"], 1)
         st["unitsPaidOrders"] = round(of["unitsPaid"], 1)
         st["ordersAsOf"] = of["asOf"]
+    if edition:
+        # drafts take their room before the prediction does, as per product
+        room = max(inventory_left - float(st.get("drafts") or 0), 0)
+        st["soldPredicted"] = round(min(sold_predicted, room), 1)
+        st["futureEntriesPredicted"] = round(min(future_entries, max(room - sold_predicted, 0)), 1)
+    else:
+        st["soldPredicted"] = round(sold_predicted, 1)
+        st["futureEntriesPredicted"] = None
+    close_headline(st)
+    if bm_close is not None:
+        st["benchmarkUnits"] = round(bm_close, 1)
     if not feed or not feed.get("draws"):
         st["incomplete"] = ["products"]
         return st
     products, source = products_from_draws(feed["draws"], draw_products_typed(release), edition)
     if of:
-        products, source = attach_orders(products, of["products"], of["draws"], source)
-    pp = sell_through_products(products, feed.get("patterns") or [], rate=rate, edition=edition,
+        products, source = attach_orders(products, of["products"], of["draws"], source,
+                                         orders_only=bool(of.get("windowed")))
+    # once the window has shut, no entry is still in hand: only what was paid counts
+    patterns = [] if closed else (feed.get("patterns") or [])
+    pp = sell_through_products(products, patterns, rate=rate, edition=edition,
                                sold_total=units_sold, future_units=future_entries, expected_today=expected_today,
                                benchmark_today=bm_today, benchmark_close=bm_close, preorder_rate=pre_rate)
     st.update({k: pp[k] for k in ("products", "attributedSold", "unattributedSold", "allocation", "measure",
@@ -1941,17 +2234,35 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     # the draws, patterns and orders ride along so the rule can be re-run
     # without the feeds (shared/sellThrough.mjs, tests/sellthrough_parity.mjs)
     st["draws"] = feed["draws"]
-    st["patterns"] = feed.get("patterns") or []
+    st["patterns"] = patterns
     if of:
         st["ordersByProduct"] = of["products"]
         st["drawProducts"] = of["draws"]
+    # Paid is what the rows add up to: the page's units sold, or the products'
+    # own paid units where those are more (a page on the funnel's units whose
+    # products read the orders feed). One figure, so the card's Paid key, its
+    # close percentage and the hero cannot part (docs 6.3)
+    st["sold"] = round(max(float(units_sold), float(pp.get("attributedSold") or 0)), 0)
     if edition:
         st["soldPredicted"] = pp["soldPredicted"]
         st["futureEntriesPredicted"] = pp["futureEntriesPredicted"]
-        st["pct"] = pp["pct"]
     else:
         st["soldPredicted"] = pp["soldPredicted"]
+    close_headline(st)
     return st
+
+
+def close_headline(st: dict) -> None:
+    """The sell-through's percentage of the edition at close, from the very
+    parts the hero adds up (spoken_for plus the units still to come, docs
+    6.3½): the card's headline and the hero's projection are one sum, capped
+    at the edition alike. None without an edition."""
+    ed = st.get("edition")
+    if not ed:
+        st["pct"] = None
+        return
+    parts = spoken_for(st) + float(st.get("futureEntriesPredicted") or 0)
+    st["pct"] = round(min(parts / float(ed), 1.0), 4)
 
 
 def spoken_for(st: dict) -> float:
@@ -1968,25 +2279,73 @@ def adopt_sellthrough(st: dict, channels_out: list, funnel_by_group: dict, hero_
     channels are scaled to it, so the channels, the trajectory, the funnel
     and the waterfalls still sum to the hero.
 
-    The funnel export attributes sales and entries to channels; drafts and
-    the per-product allocation have no channel of their own, so the
-    difference between the sell-through's count and the funnel's secured
-    units is spread over the channels in proportion to their secured units
-    (one factor f on every actual). The units still to come keep the
+    Each paid unit is already on its own order's channel (swap_units), and
+    the funnel puts entries on channels; drafts and the per-product
+    allocation have no channel of their own, so the difference between the
+    sell-through's count and the channels' secured units is spread over the
+    channels in proportion to their secured units (one factor f on every
+    actual). Once the window has shut the count is the units paid alone and
+    the build has already taken the entries off every channel, so f is 1
+    and each channel reads its own units paid; a count of nothing takes
+    every channel to nothing rather than leaving the funnel's figure
+    standing. The units still to come keep the
     funnel's shape and are capped at the room left, as the sell-through
     caps them (one factor g on every remaining projection). The funnel
     decomposition is re-priced by the same factor, so each group's traffic
     and conversion steps still sum to its now minus its expected.
+    With nothing on the channels to scale (no units paid and no entries
+    yet, but drafts out or the draw's patterns counted), the count is added
+    instead, on the channels' sessions to date, or on Search / direct /
+    other when there are none.
     Returns the hero's (now, projected) before the sellout cap."""
     sell_today = spoken_for(st)
-    if not (hero_now > 0) or not (sell_today > 0):
-        return hero_now, hero_proj
-    f = sell_today / hero_now
     future_funnel = max(hero_proj - hero_now, 0.0)
     fut = st.get("futureEntriesPredicted")
     future_all = 0.0 if complete else (float(fut) if fut is not None else future_funnel)
     g = (future_all / future_funnel) if future_funnel > 0 else 0.0
     ratio = (upb_plan / upb_actual) if upb_actual else 1.0
+    if not (hero_now > 0):
+        if not channels_out:
+            return sell_today, sell_today + future_all
+        sess = {c.get("key"): float((funnel_by_group.get(c.get("key")) or {}).get("sessions_actual") or 0.0)
+                for c in channels_out}
+        if sum(sess.values()) <= 0:
+            sess = {k: (1.0 if k == "search_direct_other" else 0.0) for k in sess}
+            if sum(sess.values()) <= 0:
+                sess = {k: 1.0 for k in sess}
+        tot = sum(sess.values())
+        for c in channels_out:
+            now0 = float(c.get("now") or 0)
+            proj0 = float(c["proj"]) if c.get("proj") is not None else now0
+            now1 = now0 + sell_today * sess[c.get("key")] / tot
+            delta = now1 - now0
+            acts = [r for r in (c.get("daily") or []) if r.get("actual") is not None]
+            if acts:
+                acts[-1]["actual"] = round(acts[-1]["actual"] + delta, 2)
+            for r in c.get("daily") or []:
+                if r.get("proj") is not None:
+                    r["proj"] = round(now1 + max(r["proj"] - now0, 0.0) * g, 2)
+            if delta > 0.05:
+                c.setdefault("parts", []).append({"name": "Not yet paid", "value": round(delta, 1)})
+            c["now"] = round(now1, 1)
+            if c.get("proj") is not None:
+                c["proj"] = round(now1 + max(proj0 - now0, 0.0) * g, 1)
+            fb = funnel_by_group.get(c.get("key"))
+            if fb:
+                s_act = float(fb.get("sessions_actual") or 0.0)
+                if fb.get("conv_actual") is not None:
+                    fb["conv_actual"] = (now1 / s_act) if s_act else 0.0
+                if fb.get("bps_actual") is not None:
+                    fb["bps_actual"] = (fb["conv_actual"] / upb_actual) if upb_actual else 0.0
+                for k, add in (("contrib_conversion", delta), ("contrib_buyers", delta * ratio),
+                               ("contrib_conversion_bm", delta), ("contrib_buyers_bm", delta * ratio)):
+                    if fb.get(k) is not None:
+                        fb[k] = round(fb[k] + add, 1)
+                for k in ("contrib_per_buyer", "contrib_per_buyer_bm"):
+                    if fb.get(k) is not None:
+                        fb[k] = round(now1 * (1.0 - ratio), 1)
+        return sell_today, sell_today + future_all
+    f = sell_today / hero_now
     for c in channels_out:
         now0 = float(c.get("now") or 0)
         proj0 = float(c["proj"]) if c.get("proj") is not None else now0
@@ -2274,6 +2633,22 @@ def _effective_product(p: dict, b: dict) -> dict:
     return e
 
 
+def legacy_budget_share(artist_profit_share) -> tuple[float, bool]:
+    """Avant Arte's share of the paid spend on a release carrying
+    release-level figures (docs 7), and whether it is assumed. The ads are
+    divided as the profit is: on a profit split each side carries its share
+    of the profit (the artist on 70% carries 70% of the spend, Avant Arte
+    30%); on a commission or revenue-share deal the artist takes no profit
+    share and Avant Arte carries them all. With nothing typed, half, said to
+    be assumed (shared/economics.mjs releaseEconomics is the same rule)."""
+    aps = _num(artist_profit_share)
+    if aps is None:
+        return 0.5, True
+    if aps <= 0:
+        return 1.0, False
+    return round(min(max(1.0 - aps, 0.0), 1.0), 4), False
+
+
 def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: dict | None = None) -> dict:
     """The release's inputs in force, from where each comes (docs §1.6):
 
@@ -2311,8 +2686,11 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         for k in LEGACY_KEYS:
             r[k] = legacy.get(k)
         if r.get("aa_budget_share") is None:
-            # commission / revenue-share deals (artist profit share 0) are AA-funded, else 50/50
-            r["aa_budget_share"] = 1.0 if (_num(r.get("artist_profit_share")) or 0) == 0 else 0.5
+            # the ads divide as the profit does: AA's share of the profit, all
+            # of it when the artist takes none (legacy_budget_share)
+            r["aa_budget_share"], r["aa_budget_share_assumed"] = legacy_budget_share(r.get("artist_profit_share"))
+        else:
+            r["aa_budget_share_assumed"] = False
         r["legacy_economics"] = {k: legacy[k] for k in LEGACY_KEYS if k in legacy}
         r["economics_mode"] = "release"
         r["launch_value"] = round(float(r["edition_size"]) * float(r.get("unit_price") or 0), 2)
@@ -2347,6 +2725,8 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         r["aa_ppu_resolved"] = round((ppu_aa or 0.0) + uplift, 4)
         share = weighted("aa_budget_share")
         r["aa_budget_share"] = share if share is not None else 0.5
+        # no product records its deal: half, and the page says it is assumed
+        r["aa_budget_share_assumed"] = share is None
         r["artist_profit_share"] = round(1.0 - r["aa_budget_share"], 4)
         r["deal"] = sorted({p["deal"] for p in sized if p["deal"]})
         r["legacy_economics"] = None
@@ -2784,16 +3164,40 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         L = CATALOGUE_DAYS
         complete = False
         day_n = CATALOGUE_DAYS
+    # the days the page counts sales over, on every card alike (docs 6.3):
+    # opened by the first paid order when it came earlier, shut two days
+    # after the close; the units in it are the orders table's
+    urows = units_rows(name)
+    if (urows is None and not dated and window_start >= ORDERS_SINCE and load_units_feed() is not None
+            and name not in (UNITS_FEED_INFO.get("outOfStep") or [])):
+        # a catalogue page's 90 days are all in the orders feed: a release
+        # with no row there sold nothing in them, whatever the funnel's
+        # purchase events counted (an order with no product line on it)
+        urows = pd.DataFrame(columns=_UNITS_COLS)
+    window_start, window_end, first_paid = sales_window(
+        urows, window_start, date.fromisoformat(rec["announce_date"]) if dated else None, launch_end, as_of)
+    closed = dated and as_of > launch_end + timedelta(days=UNITS_GRACE_DAYS)
     rat = rat.copy()
     rat["group"] = rat["channel"].map(GROUP_OF)
-    win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= min(as_of, launch_end + timedelta(days=2)))]
+    win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= window_end)]
+    win, uinfo = swap_units(win, name, urows, window_start, window_end,
+                            launch_end + timedelta(days=UNITS_GRACE_DAYS))
     untracked = untracked_block(win, untracked_norms)
+    untracked["noEvent"] = uinfo["noEvent"]
+    pre = win
     win = redistribute_untracked(win)
     # Direct's share of the window as the funnel attributes it, read before
     # the Direct switch's spread (below) moves it: the switch's tooltip
     direct_share = channel_share(win, "Direct")
     if direct_spread:
         win = redistribute_channel(win, "Direct")
+    if uinfo["source"] == "orders":
+        win = keep_units(win, uinfo["total"], pre)
+    # once the window has shut, nothing in hand counts (docs 6.3): the
+    # entries left unconverted are the draw's losers, so every channel, day
+    # and part reads its own units paid rather than a share weighted by them
+    if closed:
+        win = win.assign(Draw_Entries_Total_Units_No_Conv=0.0)
     # Orders from draw winners land in the two days after close. win keeps
     # them (that is what the grace is for) but the daily series ends at close,
     # so the hero, the channels and sell-through disagreed by exactly those
@@ -2846,8 +3250,11 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     code = rec.get("campaign_code")
     # the sell-through's count, adopted by the hero as in build_release; no
     # edition here, so nothing is capped and nothing is projected
+    of_win = orders_in_window(name, urows, window_start, window_end, closed, uinfo["source"])
     sellthrough = sellthrough_block({"edition_size": None, "entry_conversion_rate": rec.get("entry_conversion_rate")},
-                                    rec["release_name"], units_sold, unconverted, None)
+                                    rec["release_name"], units_sold, unconverted, None, orders=of_win, closed=closed)
+    if uinfo["source"] == "orders":
+        sellthrough["unitsOutsideWindow"] = {"before": uinfo["before"], "after": uinfo["after"], "pending": uinfo["pending"]}
     hero_now, _ = adopt_sellthrough(sellthrough, channels_out, funnel_by_group, hero_now, hero_now, True)
 
     # ---- paid actuals: spend, entries, cost per entry. ROI and the budget
@@ -2938,6 +3345,11 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "windowEnd": rec["launch_end"] if dated else None,
         "campaignLengthDays": L if dated else None, "day": day_n, "of": L,
         "asOf": as_of.isoformat(), "complete": complete,
+        # where the units came from and the days they were counted over, the
+        # same on every card (docs 6.3)
+        "unitsSource": uinfo["source"],
+        "salesWindow": {"start": window_start.isoformat(), "end": window_end.isoformat(), "closed": closed,
+                        "firstPaid": first_paid.isoformat() if first_paid else None},
         "completeThrough": full_through.isoformat(),
         "asOfFraction": 1.0 if (complete or as_of > launch_end) else round(seen, 4),
         "targeted": False, "catalogue": not dated,
@@ -2958,7 +3370,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "funnelByGroup": funnel_by_group, "paid": paid_out,
         "email": email_out, "social": social_out,
         "sellthrough": sellthrough,
-        "framing": framing_block(rec, load_orders_feed().get(rec["release_name"]), None, b, st=sellthrough),
+        "framing": framing_block(rec, of_win, None, b, st=sellthrough),
         "draw": None, "geo": None, "waterfall": None,
         "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
                    "entries": round(float(upto["Draw_Entries_Eligible_Units"].sum()))},
@@ -3093,10 +3505,20 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
 
     rat = at[at["simple_release_name"] == name].copy()
     rat["group"] = rat["channel"].map(GROUP_OF)
-    window_start = min(pr_open, announce)
-    win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= min(as_of, launch_end + timedelta(days=2)))]
+    # the days the page counts sales over, on every card alike (docs 6.3): the
+    # private room or the announce, or the first paid order when it came
+    # earlier, to two days after the close; the units in it are the orders
+    # table's, each on its own purchase event's channel
+    urows = units_rows(name)
+    window_start, window_end, first_paid = sales_window(urows, min(pr_open, announce), announce, launch_end, as_of)
+    closed = as_of > launch_end + timedelta(days=UNITS_GRACE_DAYS)
+    win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= window_end)]
+    win, uinfo = swap_units(win, name, urows, window_start, window_end,
+                            launch_end + timedelta(days=UNITS_GRACE_DAYS))
     # how much of the window has no channel, read before the fold below hides it
     untracked = untracked_block(win, untracked_norms)
+    untracked["noEvent"] = uinfo["noEvent"]
+    pre = win
     # Fold Untracked into the tracked channels ONCE, here, so the group rollups
     # below and the release-level sums further down agree (docs §1.3).
     win = redistribute_untracked(win)
@@ -3105,6 +3527,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     direct_share = channel_share(win, "Direct")
     if direct_spread:
         win = redistribute_channel(win, "Direct")
+    if uinfo["source"] == "orders":
+        win = keep_units(win, uinfo["total"], pre)
+    # once the window has shut, nothing in hand counts (docs 6.3): the
+    # entries left unconverted are the draw's losers, so every channel, day
+    # and part reads its own units paid rather than a share weighted by them
+    if closed:
+        win = win.assign(Draw_Entries_Total_Units_No_Conv=0.0)
+    of_win = orders_in_window(name, urows, window_start, window_end, closed, uinfo["source"])
     # Orders from draw winners land in the two days after close. win keeps
     # them (that is what the grace is for) but the daily series ends at close,
     # so the hero, the channels and sell-through disagreed by exactly those
@@ -3128,8 +3558,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                     .agg(sessions=("Sessions_Total", "sum"),
                          entries=("Draw_Entries_Eligible_Units", "sum"),
                          entries_no_conv=("Draw_Entries_Total_Units_No_Conv", "sum"),
-                         units=("Total_Product_Units", "sum"),
-                         pr_units=("Product_Units_Private_Room", "sum"))
+                         units=("Total_Product_Units", "sum"))
                     .reset_index())
 
     # ---- paid actuals + forward model, computed first: the paid channel's projection
@@ -3148,12 +3577,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     ppu_aa = aa_profit_per_unit(release, b)
     frame_conv, frame_profit = frame_terms(release, b)
     ppu_artist = (release["artist_profit"] / release["edition_size"]) if release["edition_size"] else 0
-    # Who funds the ads. Explicit per-release override (the workbook's "AA budget
-    # share (%)" row - e.g. Glenn Ligon 100% AA); default: commission/rev-share
-    # deals (artist profit share 0) are AA-funded, otherwise split 50/50.
+    # Who funds the ads: as the profit divides (resolve_release). Each
+    # product's deal - its profit share, or all of it on a revenue share -
+    # else the release's typed share or its profit split (legacy_budget_share,
+    # e.g. Glenn Ligon's 100% AA); half, flagged as assumed, when nothing says.
     aa_budget_share = release.get("aa_budget_share")
+    budget_assumed = bool(release.get("aa_budget_share_assumed"))
     if aa_budget_share is None:
-        aa_budget_share = 1.0 if release["artist_profit_share"] == 0 else 0.5
+        aa_budget_share, budget_assumed = legacy_budget_share(release.get("artist_profit_share"))
     artist_budget_share = max(0.0, 1.0 - float(aa_budget_share))
 
     def party_roi(ppu: float, share: float, adj_cpe: float | None) -> float | None:
@@ -3240,7 +3671,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # units paid, drafts raised and the winners the entries in hand imply -
     # the figure the hero adopts once the channels are built, so paid is
     # sized against the same count the page prints
-    secured_now = spoken_for(sellthrough_block(release, name, units_sold, entries_banked, inventory_left))
+    secured_now = spoken_for(sellthrough_block(release, name, units_sold, entries_banked, inventory_left,
+                                               orders=of_win, closed=closed))
     organic_future = 0.0
     if not complete:
         pdsa_now = pdsa_today
@@ -3551,7 +3983,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     future_entries = 0.0 if complete else max(hero_proj - hero_now, 0.0)
     sellthrough = sellthrough_block(release, name, units_sold, unconverted, inventory_left, future_entries,
                                     expected_today=hero_exp, bm_today=hero_bm_today if bench else None,
-                                    bm_close=hero_bm if bench else None)
+                                    bm_close=hero_bm if bench else None, orders=of_win, closed=closed)
+    if uinfo["source"] == "orders":
+        sellthrough["unitsOutsideWindow"] = {"before": uinfo["before"], "after": uinfo["after"], "pending": uinfo["pending"]}
     # the hero adopts the sell-through's count (docs 6.3½): what the orders
     # and draw feeds say is spoken for - units paid, drafts raised, the
     # winners the entries in hand imply by the per-product rule - and the
@@ -3619,6 +4053,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "profitPerUnitAA": round(ppu_aa, 2),
         "profitPerUnitArtist": round(ppu_artist, 2),
         "aaBudgetShare": aa_budget_share,
+        # no deal recorded anywhere: the half is an assumption, and the card says so
+        "aaBudgetShareAssumed": budget_assumed,
         # the terms every ROI above is read with, so the card can show its working
         "cannibalisation": cann,
         "dropOff": drop,
@@ -3850,6 +4286,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "windowStart": release["announce_date"], "windowEnd": release["launch_end"],
         "campaignLengthDays": L, "day": day_n, "of": L,
         "asOf": as_of.isoformat(), "complete": complete,
+        # where the units came from and the days they were counted over, the
+        # same on every card (docs 6.3)
+        "unitsSource": uinfo["source"],
+        "salesWindow": {"start": window_start.isoformat(), "end": window_end.isoformat(), "closed": closed,
+                        "firstPaid": first_paid.isoformat() if first_paid else None},
         # the last full day, and the share of the as-of day seen (1 once the
         # window has closed): the page reads "so far today" off the second
         "completeThrough": full_through.isoformat(),
@@ -3863,6 +4304,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "artistProfitPerUnit": round(ppu_artist, 2), "aaProfitPerUnit": round(ppu_aa, 2),
             "artistProfitShare": release["artist_profit_share"],
             "aaBudgetShare": aa_budget_share,
+            "aaBudgetShareAssumed": budget_assumed,
             # per product, the figures in force and where each came from
             # (resolve_release): "products" when the totals are theirs,
             # "release" while typed release-level figures still stand
@@ -3904,7 +4346,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "social": social_out,
         "sellthrough": sellthrough,
         # frames per print, against the plan's rate and the basket's (§6.4)
-        "framing": framing_block(release, load_orders_feed().get(name), basket, b, st=sellthrough),
+        "framing": framing_block(release, of_win, basket, b, st=sellthrough),
         "draw": draw,
         "geo": None,  # country dim not in any feed yet (docs §12)
         "waterfall": waterfall,
@@ -4036,8 +4478,53 @@ def check_snapshot(snap: dict) -> None:
         gap = (wf_today.get("actual") or 0) - (wf_today.get("target") or 0)
         if abs(steps - gap) > 0.5:
             problems.append(f"today waterfall steps sum to {steps:.1f}, actual - target is {gap:.1f}")
+    # one count of units on every card (docs 6.3): the units the channels and
+    # the hero were built from are the orders paid in the window, the same
+    # units the sell-through's products add up to
+    if snap.get("unitsSource") == "orders" and sold is not None and sell.get("unitsPaidOrders") is not None:
+        if abs(float(sell["unitsPaidOrders"]) - float(sold)) > 0.51:
+            problems.append(f"sellthrough.sold {sold} but the products' units paid in the window add to {sell['unitsPaidOrders']}")
+    # the card's rows are its Paid: paid per product plus the share of what
+    # no product is named for, on whichever units the page reads
+    rows = sell.get("products") or []
+    if rows and sold is not None:
+        paid_rows = sum(float(r.get("sold") or 0) + float(r.get("soldAssumed") or 0) for r in rows)
+        if abs(paid_rows - float(sold)) > 0.51 + 0.05 * len(rows):
+            problems.append(f"the products' paid rows add to {paid_rows:.1f} but sellthrough.sold is {sold}")
+        if float(sell.get("attributedSold") or 0) > float(sold) + 0.51:
+            problems.append(f"attributedSold {sell.get('attributedSold')} is more than sellthrough.sold {sold}")
+    # the card's close percentage and the hero's projection are the same
+    # parts summed and capped at the edition (docs 6.3): the hero at 1,957
+    # beside a card at 100% was two different paid figures
+    ed_st = sell.get("edition")
+    if ed_st and sell.get("pct") is not None:
+        parts = (float(sell.get("sold") or 0) + float(sell.get("drafts") or 0)
+                 + float(sell.get("soldPredicted") or 0) + float(sell.get("futureEntriesPredicted") or 0))
+        at_close = min(parts, float(ed_st))
+        if abs(float(sell["pct"]) * float(ed_st) - at_close) > 1.0:
+            problems.append(f"sellthrough.pct {sell['pct']} of {ed_st} but its parts add to {parts:.1f}")
+        if hero.get("projected") is not None and abs(float(hero["projected"]) - at_close) > 1.0:
+            problems.append(f"hero.projected {hero['projected']} but the sell-through's count at close is {at_close:.1f}")
+    # the Direct switch's view of the page holds to the same rules
+    alt = (snap.get("variants") or {}).get("direct_spread")
+    if alt:
+        try:
+            check_snapshot({**snap, **alt, "variants": None, "id": f"{rid} with Direct spread"})
+        except AssertionError as e:
+            problems.append(str(e))
     if problems:
-        raise AssertionError(f"{rid}: " + "; ".join(problems))
+        msg = f"{rid}: " + "; ".join(problems)
+        if os.environ.get("CHECK_SNAPSHOT") == "warn":
+            # a verification run lists every page's problem in one pass;
+            # the refresh itself never runs this way
+            CHECK_WARNINGS.append(msg)
+            print(f"check_snapshot: {msg}")
+            return
+        raise AssertionError(msg)
+
+
+# problems check_snapshot found with CHECK_SNAPSHOT=warn (a verification run)
+CHECK_WARNINGS: list[str] = []
 
 
 def funnel_coverage(at: pd.DataFrame, curves: dict) -> str:
@@ -4055,6 +4542,23 @@ def funnel_coverage(at: pd.DataFrame, curves: dict) -> str:
             f"{len(span)} with announcement dates, "
             f"{complete} complete announce-to-launch, "
             f"{curves['n_releases']} in the curve panel")
+
+
+def units_coverage() -> str:
+    """One line for the refresh log: what the units feed holds, and how much
+    of it the funnel has no purchase event for. Says so when there is no feed
+    and the pages read the funnel's units instead."""
+    if load_units_feed() is None:
+        return (f"units paid: no feed at {UNITS_FEED_INFO.get('path')} - every page reads the funnel's units "
+                f"(unitsSource 'funnel') until the orders pull writes it")
+    i = UNITS_FEED_INFO
+    share = (i["noEvent"] / i["units"]) if i.get("units") else 0.0
+    unknown = f"; unknown channels read as Untracked: {', '.join(i['unknownChannels'])}" if i.get("unknownChannels") else ""
+    apart = i.get("outOfStep") or []
+    step = (f"; {len(apart)} release(s) out of step with orders_by_product.csv read the funnel's units: "
+            f"{', '.join(apart[:5])}{' ...' if len(apart) > 5 else ''}") if apart else ""
+    return (f"units paid (units_paid.csv, pulled {i.get('pulled')}) {i.get('first')}..{i.get('last')}: "
+            f"{i.get('releases')} releases, {i.get('units', 0):,.0f} units, {share:.1%} with no purchase event{unknown}{step}")
 
 
 def index_row(snap: dict, status: str) -> dict:
@@ -4413,6 +4917,9 @@ def main(only: str | None = None):
         ],
     }, indent=1))
     print(funnel_coverage(at, curves))
+    print(units_coverage())
+    if os.environ.get("CHECK_SNAPSHOT") == "warn":
+        print(f"check_snapshot: {len(CHECK_WARNINGS)} page(s) with problems (warn mode: nothing stopped)")
     print(f"wrote {n_full} targeted + {n_actuals} actuals-only + {n_upcoming} upcoming releases "
           f"({sum(1 for e in index if e['status'] == 'live')} live) -> {APP}")
 

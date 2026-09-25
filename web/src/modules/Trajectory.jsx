@@ -26,11 +26,58 @@
  * to a point on the line (the secured line at its dot): secured, projected,
  * target, benchmark, the hover's own words. The figures are not on the plot:
  * a figure beside a line read as the line's total when it was the reading by
- * today, so they live in the hover and in the names' tooltips. */
+ * today, so they live in the hover and in the names' tooltips.
+ *
+ * "By channel" in the head swaps the references out for the projection's
+ * make-up: the same total, secured to today and projected on to the close,
+ * with the five channel groups stacked under it, each band the units it
+ * contributes, so the bands add up to the line exactly (scaled by one factor
+ * where the total is held at the edition). The scale is units, the total's
+ * figure sits at the end of its line, and a legend under the plot gives each
+ * group's units and share at close; the hover reads them on any day. */
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, labelPx, dayElapsed } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
+
+/* By channel: the groups bottom to top, in a fixed order so a band keeps its
+ * place and colour from release to release. Paid sits on the baseline, where
+ * a share reads most exactly, then AA Email, Artist, AA Meta, and the
+ * catch-all Direct etc. on top, under the total's line. The four hues follow
+ * each group's colour elsewhere on the page (Paid's section orange, the
+ * email blue, the artist green, the Meta violet) and pass the categorical
+ * checks against their neighbours in this order: lightness band, chroma,
+ * colour-blind and normal-vision separation, 3:1 on the card. Direct etc. is
+ * a warm grey, as a catch-all is, light enough to stay clear of the violet
+ * below it; its figures are in the legend and the hover. Ahead of today the
+ * bands drop back to half strength, as the projection's line does. */
+const STACK = [
+  { key: "paid", color: "#dd7a50" },
+  { key: "aa_email", color: "#6390dc" },
+  { key: "referral_artist", color: "#46a283" },
+  { key: "aa_social", color: "#9a86d4" },
+  { key: "search_direct_other", color: "#b1ab9d" },
+];
+const STACK_OTHER = "#c8c5bc";
+const shareOf = (v, total) => {
+  if (!(total > 0)) return "";
+  const pc = (100 * v) / total;
+  return pc > 0 && pc < 0.5 ? "<1%" : `${Math.round(pc)}%`;
+};
+const AHEAD_STRENGTH = 0.5;
+
+/* round steps for a units axis: 1, 2, 2.5 or 5 times a power of ten, the
+ * two or three of them that fit under the top */
+function unitTicks(top) {
+  if (!(top > 0)) return [];
+  const raw = top / 3;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * p).find((st) => st >= raw);
+  const out = [];
+  for (let v = step; v <= top + 1e-9; v += step) out.push(v);
+  return out;
+}
 const LABEL_TODAY_PX = 38; // rendered width of "today" at 12px
 
 /* ---- naming the lines --------------------------------------------------------
@@ -206,6 +253,8 @@ function seriesFor(snap, sel) {
  * that starts a day in should not be given a day it did not have. */
 export default function Trajectory({ snap }) {
   const [sel, setSel] = useState("all");
+  const [view, setView] = useState("lines");   // "lines" (against target) | "channels"
+  const byChannel = view === "channels";
   const [hover, setHover] = useState(null);   // {i, frac}
   // the plot's real height, so label spacing can be set in pixels rather than
   // in a percentage guessed from a card size that is free to change
@@ -232,20 +281,34 @@ export default function Trajectory({ snap }) {
   const elapsed = complete ? day : Math.max(0, Math.min(dayElapsed(snap), of));
   const targeted = snap.targeted !== false;   // no targets: actual line only, unit axis
 
-  const s = useMemo(() => seriesFor(snap, sel), [snap, sel]);
+  const s = useMemo(() => seriesFor(snap, byChannel ? "all" : sel), [snap, sel, byChannel]);
 
   const right = (
-    <select
-      className="native"
-      value={sel}
-      onChange={(e) => setSel(e.target.value)}
-      title="Swap the trajectory (and its scale) to a single channel group"
-    >
-      <option value="all">All channels</option>
-      {channels.map((c) => (
-        <option key={c.key} value={c.key}>{c.name}</option>
-      ))}
-    </select>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      {!byChannel && (
+        <select
+          className="native"
+          value={sel}
+          onChange={(e) => setSel(e.target.value)}
+          title="Swap the trajectory (and its scale) to a single channel group"
+        >
+          <option value="all">All channels</option>
+          {channels.map((c) => (
+            <option key={c.key} value={c.key}>{c.name}</option>
+          ))}
+        </select>
+      )}
+      <span className="seg compact" role="group" aria-label="What the trajectory shows">
+        <button type="button" className={byChannel ? "" : "active"} onClick={() => setView("lines")}
+          title={targeted ? "The total against the target's pace and the benchmark's" : "The total secured, day by day"}>
+          {targeted ? "Against target" : "Total"}
+        </button>
+        <button type="button" className={byChannel ? "active" : ""} onClick={() => setView("channels")}
+          title="The total alone, with the channel groups shaded under it by the units each contributes">
+          By channel
+        </button>
+      </span>
+    </div>
   );
 
   if (!s.pts.length) {
@@ -262,7 +325,14 @@ export default function Trajectory({ snap }) {
   const has = (v) => v !== null && v !== undefined;
   const planAt = (p) => p.plan;
   const bmAt = (p) => (hasBm ? p.bm : null);
-  const yTopV = Math.max(s.target, s.proj, s.now, hasBm ? s.bm : 0, 1) * 1.02;
+  // the projection runs on from today while the release is live and targeted
+  const showProjSeg = targeted && !complete && day < of;
+  // the scale: against target, room for the target, the benchmark and the
+  // projection; by channel, the total alone, secured and (while it runs) projected
+  const maxActual = s.pts.reduce((m, p) => Math.max(m, p.actual ?? 0), 0);
+  const yTopV = byChannel
+    ? Math.max(maxActual, s.now, showProjSeg ? s.proj : 0, 1) * 1.04
+    : Math.max(s.target, s.proj, s.now, hasBm ? s.bm : 0, 1) * 1.02;
   const x = (i) => (i / N) * X1;
   const y = (v) => Y0 - (Math.max(0, v) / yTopV) * (Y0 - YTOP);
   const pctTop = (yy) => ((yy / Y0) * 100).toFixed(2) + "%";
@@ -317,7 +387,6 @@ export default function Trajectory({ snap }) {
 
   // Projection follows the historic channel shape (etl emits per-day `proj` values);
   // straight-line fallback only if no shaped path is present.
-  const showProjSeg = targeted && !complete && day < of;
   let projPath = "";
   if (showProjSeg) {
     const segs = ["M" + x(todayPos).toFixed(1) + "," + y(nowVal).toFixed(1)];
@@ -329,6 +398,52 @@ export default function Trajectory({ snap }) {
     if (segs.length === 1) segs.push("L" + X1 + "," + y(s.proj).toFixed(1));
     projPath = segs.join(" ");
   }
+
+  /* By channel: every group's units at each point the total's line passes
+   * through - its secured units to today, its projection after - so the
+   * bands stack to the line exactly. Where the total is held at the edition
+   * the groups are scaled by one factor, the share each carries unchanged. */
+  let stack = null;
+  if (byChannel) {
+    const cap = snap.edition && snap.edition.total > 0 ? snap.edition.total : null;
+    const rank = (k) => { const i = STACK.findIndex((b) => b.key === k); return i < 0 ? STACK.length : i; };
+    const groups = channels
+      .map((c) => ({
+        key: c.key, name: c.name || c.key, now: c.now ?? 0,
+        color: (STACK.find((b) => b.key === c.key) || { color: STACK_OTHER }).color,
+        pts: slicePts(c.daily, snap.windowStart, of),
+      }))
+      .sort((a, b) => rank(a.key) - rank(b.key));
+    const cols = [];
+    for (let i = 0; i <= lastA; i++) {
+      cols.push({ t: i === lastA && lastA === todayIdx && !complete ? todayPos : i, i, ahead: false,
+        vals: groups.map((g) => g.pts[i]?.actual ?? 0) });
+    }
+    if (showProjSeg) {
+      if (lastA < todayIdx) cols.push({ t: todayPos, i: todayIdx, ahead: false, vals: groups.map((g) => g.now) });
+      for (let i = todayIdx + 1; i < s.pts.length; i++) {
+        if (!has(s.pts[i]?.proj)) continue;
+        cols.push({ t: i, i, ahead: true, vals: groups.map((g) => g.pts[i]?.proj ?? 0) });
+      }
+    }
+    for (const col of cols) {
+      const tot = col.vals.reduce((a, b) => a + b, 0);
+      const f = cap !== null && tot > cap ? cap / tot : 1;
+      col.vals = col.vals.map((v) => v * f);
+      col.total = tot * f;
+    }
+    const X = (t) => x(t).toFixed(1), Yv = (v) => y(v).toFixed(1);
+    const bands = groups.map((g, k) => {
+      const top = cols.map((c) => c.vals.slice(0, k + 1).reduce((a, b) => a + b, 0));
+      const bot = cols.map((c) => c.vals.slice(0, k).reduce((a, b) => a + b, 0));
+      const edge = cols.map((c, j) => (j ? "L" : "M") + X(c.t) + "," + Yv(top[j])).join(" ");
+      const back = cols.map((c, j) => "L" + X(c.t) + "," + Yv(bot[j])).reverse().join(" ");
+      return { ...g, edge, area: edge + " " + back + " Z" };
+    });
+    stack = cols.length > 1 ? { groups, cols, bands, last: cols[cols.length - 1] } : null;
+  }
+  const clipBase = "traj-" + String(snap.id || "release").replace(/[^A-Za-z0-9_-]/g, "");
+  const ticks = byChannel ? unitTicks(yTopV / 1.04) : [];
 
   // the readings taken on the today line: the target and the benchmark by
   // today at the share of the day seen (exp, bmExp) - the hero's expectedToday
@@ -344,9 +459,12 @@ export default function Trajectory({ snap }) {
   const axisLabelTop = targeted ? "100%" : fmt(axisTop);
   const axisLabelMid = targeted ? "50%" : axisTop >= 2 ? fmt(axisTop / 2) : "";
   const pctColor = projPct !== null && projPct >= 100 ? C.ink : C.red;
-  const nowTip =
+  const nowTip = byChannel ? fmt(s.now) + " units secured to date" :
     fmt(s.now) + " units secured to date · " + fmt(planToday) + " target by day " + day +
     (bmToday !== null && bmToday !== undefined ? " · " + fmt(bmToday) + " benchmark" : "");
+  // by channel, the total's figure at the end of its line, in units
+  const endVal = showProjSeg ? s.proj : nowVal;
+  const endTip = (showProjSeg ? "Projected " : complete ? "" : "Secured to date: ") + fmt(endVal) + " units" + (showProjSeg || complete ? " at close" : "");
   const projTip = complete
     ? fmt(s.now) + " units at close" + (projPct !== null ? " · " + projPct + "% of target" : "")
     : "Projected " + fmt(s.proj) + " at close" + (projPct !== null ? " · " + projPct + "% of target" : "") +
@@ -382,7 +500,7 @@ export default function Trajectory({ snap }) {
    * the ends and from the today dot. Nothing is placed until the plot has
    * been measured. */
   let names = [];
-  if (showToday && plotW > 0 && plotH > 0) {
+  if (!byChannel && showToday && plotW > 0 && plotH > 0) {
     const px = (i) => (i / N) * plotW;
     const py = (v) => (y(v) / Y0) * plotH;
     const polylines = (get, from, to) => {
@@ -461,18 +579,39 @@ export default function Trajectory({ snap }) {
               preserveAspectRatio="none"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", overflow: "visible" }}
             >
-              <line x1="0" y1={y(axisTop / 2).toFixed(1)} x2={X1} y2={y(axisTop / 2).toFixed(1)}
-                stroke={C.hairline} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              {(byChannel ? ticks : [axisTop / 2]).map((v) => (
+                <line key={v} x1="0" y1={y(v).toFixed(1)} x2={X1} y2={y(v).toFixed(1)}
+                  stroke={C.hairline} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              ))}
               <line x1="0" y1={Y0} x2={X1} y2={Y0}
                 stroke={C.border} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              {/* by channel: the bands, full strength to today and half after,
+                  a 2px gap of the card between neighbours */}
+              {stack && (
+                <>
+                  <defs>
+                    <clipPath id={`${clipBase}-past`}><rect x="-2" y="-20" width={(x(todayPos) + 2).toFixed(1)} height={Y0 + 40} /></clipPath>
+                    <clipPath id={`${clipBase}-ahead`}><rect x={x(todayPos).toFixed(1)} y="-20" width={(X1 - x(todayPos) + 2).toFixed(1)} height={Y0 + 40} /></clipPath>
+                  </defs>
+                  {[["past", 1], ["ahead", AHEAD_STRENGTH]].map(([half, strength]) => (
+                    <g key={half} clipPath={`url(#${clipBase}-${half})`} opacity={strength}>
+                      {stack.bands.map((b) => <path key={b.key} d={b.area} fill={b.color} />)}
+                    </g>
+                  ))}
+                  {stack.bands.slice(0, -1).map((b) => (
+                    <path key={b.key} d={b.edge} fill="none" stroke={C.white} strokeWidth="2" strokeLinejoin="round"
+                      vectorEffect="non-scaling-stroke" />
+                  ))}
+                </>
+              )}
               {!complete && (
-                <line x1={x(todayIdx).toFixed(1)} y1="0" x2={x(todayIdx).toFixed(1)} y2={Y0}
+                <line x1={x(todayPos).toFixed(1)} y1="0" x2={x(todayPos).toFixed(1)} y2={Y0}
                   stroke={C.todayLine} strokeWidth="1" vectorEffect="non-scaling-stroke" />
               )}
               {/* the target's pace as a solid line, the benchmark's as a dotted
                   one - the bars' marks, with the actual in front. Ahead of
                   today both drop back, because it has not happened yet. */}
-              {(showToday ? ["future", "past"] : ["full"]).map((half) => {
+              {!byChannel && (showToday ? ["future", "past"] : ["full"]).map((half) => {
                 const d = draw[half];
                 const dim = half === "future" ? 0.4 : 1;
                 return (
@@ -504,7 +643,36 @@ export default function Trajectory({ snap }) {
                 the projection) in its blue, the target as a solid reference
                 dot and the benchmark as a hollow one, the same solid-and-outline
                 grammar the references wear everywhere else. */}
-            {hover && s.pts[hover.i] && (() => {
+            {byChannel && hover && stack && (() => {
+              const at = hover.frac * N;
+              const col = stack.cols.reduce((b, c) => (Math.abs(c.t - at) < Math.abs(b.t - at) ? c : b), stack.cols[0]);
+              if (at > stack.last.t + 0.5) return null;
+              const left = `${(col.t / N) * 100}%`;
+              const flip = col.t / N > 0.6;
+              const rows = stack.groups.map((g, k) => ({ g, v: col.vals[k] })).reverse();
+              return (
+                <>
+                  <div style={{ position: "absolute", left, top: 0, bottom: 0, width: 1, background: C.dotted ?? "#ddd9cf", pointerEvents: "none" }} />
+                  <div style={{
+                    position: "absolute", left, top: pctTop(y(col.total)), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px",
+                    borderRadius: "50%", boxShadow: "0 0 0 2px #fff", pointerEvents: "none", background: col.ahead ? C.blueLight : C.blue,
+                  }} />
+                  <div className="chart-tip" style={{ left, top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
+                    <div className="t-head">{dayLabel(snap, col.i, true)}</div>
+                    <div className="t-row"><span>{col.ahead ? "Projected" : "Secured"}</span><span className="v">{fmt(col.total)}</span></div>
+                    {rows.map(({ g, v }) => (
+                      <div className="t-row" key={g.key}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                          <span style={{ width: 9, height: 9, borderRadius: 2, background: g.color, flex: "0 0 9px" }} />{g.name}
+                        </span>
+                        <span className="v">{fmt(v)}<span style={{ color: C.muted, fontWeight: 400 }}>{col.total > 0 ? ` · ${shareOf(v, col.total)}` : ""}</span></span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
+            {!byChannel && hover && s.pts[hover.i] && (() => {
               const hp = s.pts[hover.i];
               const ahead = has(hp.actual) ? false : has(hp.proj);
               const val = hp.actual ?? hp.proj ?? hp.plan;
@@ -590,7 +758,19 @@ export default function Trajectory({ snap }) {
                 }}
               />
             )}
-            {projPct !== null && (
+            {byChannel && (
+              <div
+                title={endTip}
+                style={{
+                  position: "absolute", left: "100%", top: pctTop(y(endVal)),
+                  transform: "translateY(-50%)", paddingLeft: 10, fontSize: 12, fontWeight: 600,
+                  color: C.ink, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                <Ex k="hero.fill" arg={{ close: showProjSeg, where: "Unit trajectory" }}>{fmt(endVal)}</Ex>
+              </div>
+            )}
+            {!byChannel && projPct !== null && (
               <div
                 title={projTip}
                 style={{
@@ -599,13 +779,19 @@ export default function Trajectory({ snap }) {
                   color: pctColor, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
                 }}
               >
-                {projPct}%
+                <Ex k="traj.end" arg={{ sel }}>{projPct}%</Ex>
               </div>
             )}
 
             {/* y axis */}
-            <div style={{ ...axisLabel, top: pctTop(y(axisTop)) }}>{axisLabelTop}</div>
-            <div style={{ ...axisLabel, top: pctTop(y(axisTop / 2)) }}>{axisLabelMid}</div>
+            {byChannel ? ticks.map((v) => (
+              <div key={v} style={{ ...axisLabel, top: pctTop(y(v)) }}>{fmt(v)}</div>
+            )) : (
+              <>
+                <div style={{ ...axisLabel, top: pctTop(y(axisTop)) }}>{axisLabelTop}</div>
+                <div style={{ ...axisLabel, top: pctTop(y(axisTop / 2)) }}>{axisLabelMid}</div>
+              </>
+            )}
             <div style={{ ...axisLabel, top: "100%" }}>0</div>
 
             {/* x axis */}
@@ -620,6 +806,20 @@ export default function Trajectory({ snap }) {
             )}
           </div>
         </div>
+        {stack && (
+          <div className="traj-legend" aria-label="Units by channel group">
+            <div className="cap">{showProjSeg ? "Projected at close" : complete ? "At close" : "Secured to date"}</div>
+            <div className="its">
+              {stack.groups.map((g, k) => ({ g, v: stack.last.vals[k] })).reverse().map(({ g, v }) => (
+                <span className="it" key={g.key}>
+                  <span className="sw" style={{ background: g.color }} />
+                  <span className="nm">{g.name}</span>
+                  <span className="v"><Ex k="traj.group" arg={{ key: g.key, value: v, total: stack.last.total, ahead: showProjSeg }}>{fmt(v)}</Ex>{stack.last.total > 0 ? ` · ${shareOf(v, stack.last.total)}` : ""}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );

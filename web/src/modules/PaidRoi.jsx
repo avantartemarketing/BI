@@ -23,6 +23,7 @@
  * no profit per unit recorded. The ? popup shows the working. */
 import React, { useState } from "react";
 import { Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 const W = 480, H = 200, BAND_TOP = 132;
 const DAY_MS = 86400000;
@@ -78,6 +79,9 @@ export default function PaidRoi({ snap }) {
     : { label: "AA", key: "roi", cum: paid.cumRoi, l3d: paid.l3dRoi, path: paid.roiPath || [],
         start: (paid.roiDeclineModel || {}).start, target: paid.roiTarget ?? null, ppu: paid.profitPerUnitAA, share: paid.aaBudgetShare };
   const targetLine = view.target !== null && view.target !== undefined ? "\nTarget " + fmt(view.target, 2) : "";
+  // no product records its deal: the split of the spend is an assumed half,
+  // which moves every ROI on the card, so the card says so (docs 7)
+  const splitAssumed = targeted && paid.aaBudgetShareAssumed === true;
 
   // ----- series mapped onto campaign days 1..of -----
   const n = daily.length;
@@ -183,14 +187,16 @@ export default function PaidRoi({ snap }) {
       { label: `${view.label} profit per unit`, value: "€" + fmt(view.ppu, 2) },
       { label: "less cannibalisation", value: pct(paid.cannibalisation ?? 0.2) },
       { label: complete ? "÷ € per converting entry, whole campaign" : "÷ € per converting entry, last 3 days", value: fmt(cpeUsed, 2) },
-      { label: `÷ ${view.label} share of the spend`, value: pct(view.share) },
+      { label: `÷ ${view.label} share of the spend${splitAssumed ? " (assumed)" : ""}`, value: pct(view.share) },
       { label: complete ? "= ROI final" : "= ROI last 3 days", value: fmt(leadVal, 2) },
       { label: "ROI total", value: fmt(view.cum, 2) },
       { label: "€/entry L3D", value: fmt(paid.l3dCpe, 2) },
       { label: "€/entry total", value: fmt(paid.cumCpe, 2) },
     ],
-    body: "Profit per unit, the share of the spend and the cannibalisation are the Target setting tab's (products and economics, paid assumptions; the AA figure includes the framing uplift, which is Avant Arte's alone). A converting entry is one that becomes an order, "
-      + pct(1 - dropOff) + " of entries." + spendNote,
+    body: "Profit per unit, the share of the spend and the cannibalisation are the Target setting tab's (products and economics, paid assumptions; the AA figure includes the framing uplift, which is Avant Arte's alone). "
+      + "The spend divides as the profit does: on a profit share each side carries its share of the profit, on a revenue share Avant Arte carries it all"
+      + (splitAssumed ? "; no product records its deal yet, so half is assumed. " : ". ")
+      + "A converting entry is one that becomes an order, " + pct(1 - dropOff) + " of entries." + spendNote,
   };
   const todayTip = `${view.label} ROI last 3 days ` + fmt(view.l3d, 2) + targetLine;
   const projTip = `Projected ${view.label} ROI at close ` + fmt(declineEnd, 2) + targetLine;
@@ -215,13 +221,13 @@ export default function PaidRoi({ snap }) {
         title={"Cost per converting entry, whole campaign: spend ÷ the entries that become orders (" + pct(1 - dropOff) + " of entries)"}
         style={statRow}
       >
-        €/entry total <span className="num" style={statVal}>{fmt(paid.cumCpe, 2)}</span>
+        €/entry total <span className="num" style={statVal}><Ex k="paid.cpe" arg={{ whole: true }}>{fmt(paid.cumCpe, 2)}</Ex></span>
       </span>
       <span
         title={`Cumulative ${view.label} ROI: ${view.label} profit on the paid entries that convert, net of cannibalisation, ÷ ${view.label}'s share of the spend, whole campaign`}
         style={statRow}
       >
-        ROI total <span className="num" style={statVal}>{fmt(targeted ? view.cum : null, 2)}</span>
+        ROI total <span className="num" style={statVal}>{targeted ? <Ex k="paid.roi" arg={{ party, whole: true }}>{fmt(view.cum, 2)}</Ex> : fmt(null, 2)}</span>
       </span>
     </div>
   );
@@ -240,9 +246,13 @@ export default function PaidRoi({ snap }) {
       <div className="spacer-8" />
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flex: "0 0 auto" }}>
         <div className="lead">
-          <span>{fmt(leadVal, 2)}</span>
+          <span><Ex k="paid.roi" arg={{ party, whole: complete }} focus>{fmt(leadVal, 2)}</Ex></span>
           <span style={{ fontSize: 12, fontWeight: 400, letterSpacing: 0, color: C.muted, whiteSpace: "nowrap" }}>{leadCaption}</span>
           <QBadge content={moreTip} />
+          {splitAssumed && (
+            <span title="No product records its deal, so Avant Arte is assumed to carry half the paid spend. Type each product's AA profit share (or AA revenue share) on the Target setting tab: the spend divides as the profit does."
+              style={{ fontSize: 11.5, fontWeight: 500, letterSpacing: 0, color: C.amber, whiteSpace: "nowrap" }}>50/50 split assumed</span>
+          )}
         </div>
         {totals}
       </div>

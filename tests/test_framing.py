@@ -171,7 +171,16 @@ def test_forecast() -> None:
     assert g["name"] == "Vert" and g["today"]["prints"] == 60.0 and g["today"]["frames"] == 47.5, g
     # the Lifesize has no frame on offer: no row, its units counted apart
     assert [r["key"] for r in fc["products"]] == ["dW", "dG"]
-    assert fc["today"] == {"prints": 184.0, "frames": 115.5, "rate": round(115.5 / 184, 4), "notOffered": 27.0}, fc["today"]
+    assert {k: v for k, v in fc["today"].items() if k != "parts"} == {
+        "prints": 184.0, "frames": 115.5, "rate": round(115.5 / 184, 4), "notOffered": 27.0}, fc["today"]
+    # the parts the explainer shows add up to the totals, at both horizons
+    for h, kinds in (("today", ["paid", "drafts", "draw"]), ("close", ["paid", "drafts", "draw", "future"])):
+        pt = fc[h]["parts"]
+        assert sorted(pt) == sorted(kinds), pt
+        assert close_to(sum(v["prints"] for v in pt.values()), fc[h]["prints"]), (h, pt)
+        assert close_to(sum(v["frames"] for v in pt.values()), fc[h]["frames"]), (h, pt)
+    # White Portrait's 4 drafts at 3 of 4 are the only drafts on offer
+    assert fc["today"]["parts"]["drafts"]["frames"] == 3.0 and fc["close"]["parts"]["future"]["prints"] == 10.0, fc
     assert fc["close"]["prints"] == 194.0 and fc["close"]["frames"] == 123.0 and fc["close"]["notOffered"] == 28.0, fc["close"]
     # the forecast sits between the buyers' rate and the entrants' when the
     # entrants ask for more

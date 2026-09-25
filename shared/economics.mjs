@@ -105,7 +105,12 @@ export function releaseEconomics(products, legacy, b) {
     const conv = num(legacy.frame_conversion), profit = num(legacy.frame_profit_per_unit);
     const frameConv = Math.min(Math.max(conv === null ? Number(b.frame_conversion) : conv, 0), 1);
     const frameProfit = Math.max(profit === null ? Number(b.frame_profit_per_unit) : profit, 0);
-    const aaShare = lnum("aa_budget_share") ?? (lnum("artist_profit_share") === 0 ? 1.0 : 0.5);
+    // the ads divide as the profit does (etl/build.py legacy_budget_share):
+    // AA's share of the profit, all of it when the artist takes none, and
+    // half, flagged as assumed, when nothing is typed
+    const aps = lnum("artist_profit_share"), typedShare = lnum("aa_budget_share");
+    const aaShare = typedShare ?? (aps === null ? 0.5 : aps <= 0 ? 1.0 : Math.round(Math.min(Math.max(1 - aps, 0), 1) * 10000) / 10000);
+    const assumed = typedShare === null && aps === null;
     return {
       mode: "release", edition_size: size, edition_total: Math.max(lnum("edition_total") || 0, size),
       unit_price: lnum("unit_price") || 0, currency: PAGE_CURRENCY, launch_value: size * (lnum("unit_price") || 0),
@@ -113,13 +118,13 @@ export function releaseEconomics(products, legacy, b) {
       ppu_aa: (lnum("aa_group_profit") || 0) / size + (framing ? frameConv * frameProfit : 0),
       framing_available: framing, frame_conversion: frameConv, frame_profit_per_unit: frameProfit,
       frame_uplift_per_unit: framing ? frameConv * frameProfit : 0,
-      aa_budget_share: aaShare, artist_profit_share: 1 - aaShare, deal: [],
+      aa_budget_share: aaShare, aa_budget_share_assumed: assumed, artist_profit_share: 1 - aaShare, deal: [],
     };
   }
   if (!sized.length || targets <= 0) {
     return { mode: "none", edition_size: 0, edition_total: sized.reduce((s, p) => s + p.edition, 0), unit_price: 0, currency: PAGE_CURRENCY,
       launch_value: 0, ppu_artist: 0, ppu_aa: 0, framing_available: false, frame_conversion: 0, frame_profit_per_unit: 0,
-      frame_uplift_per_unit: 0, aa_budget_share: 0.5, artist_profit_share: 0.5, deal: [] };
+      frame_uplift_per_unit: 0, aa_budget_share: 0.5, aa_budget_share_assumed: true, artist_profit_share: 0.5, deal: [] };
   }
   const priced = sized.filter((p) => p.unit_price_eur);
   const pricedUnits = priced.reduce((s, p) => s + p.target_units, 0);
@@ -146,7 +151,8 @@ export function releaseEconomics(products, legacy, b) {
     ppu_aa: (ppuAA === null ? 0 : ppuAA) + uplift,
     framing_available: framed.length > 0, frame_conversion: frameConv, frame_profit_per_unit: frameProfit,
     frame_uplift_per_unit: uplift,
-    aa_budget_share: aaShare, artist_profit_share: Math.round((1 - aaShare) * 10000) / 10000,
+    aa_budget_share: aaShare, aa_budget_share_assumed: share === null,
+    artist_profit_share: Math.round((1 - aaShare) * 10000) / 10000,
     deal: [...new Set(sized.map((p) => p.deal).filter(Boolean))].sort(),
   };
 }

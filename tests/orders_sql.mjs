@@ -31,5 +31,17 @@ check(bq.ORDERS_HEADER.length === 25 && bq.ORDERS_HEADER.slice(-2).join(",") ===
 // every column the header names is one the query selects
 check(bq.ORDERS_HEADER.every((c) => new RegExp(`(AS ${c}\\b|\\bl\\.${c}\\b)`).test(orders)), "the header's columns are all selected");
 check(!/user_email|customer_email/.test(orders) && !/user_email|customer_email/.test(draws), "no address column is named");
+// the units feed counts the same paid lines as the orders feed, by day and
+// by the channel of each order's own purchase event, and nothing personal
+const units = bq.unitsPaidSql();
+check(units.startsWith("WITH " + bq.orderLinesCtes() + ",") && orders.startsWith("WITH " + bq.orderLinesCtes() + ","), "units and orders share one set of line rules");
+check(/WHERE l\.paid AND/.test(units) && /SUM\(l\.quantity\) AS units_paid/.test(units), "units counts the paid lines, as units_paid does");
+check(/pc\.order_id = l\.order_id/.test(units) && !/pc\.release/.test(units), "an order is matched to its purchase event on the order id alone");
+check(/COALESCE\(pc\.channel, 'Untracked'\)/.test(units) && /pc\.order_id IS NOT NULL AS purchase_event/.test(units), "an order with no event is Untracked, and says so apart");
+check(/GROUP BY l\.release, l\.product_title, l\.order_date, channel, purchase_event/.test(units), "grain: release, product, day, channel");
+check(!/order_id,|customer_id,|aa_account_id/.test(units.slice(units.lastIndexOf("SELECT l.release"))), "no id in the select list");
+check(!/user_email|customer_email/.test(units), "no address column is named in the units query");
+check(bq.UNITS_PAID_HEADER.join(",") === "release,product_title,order_date,channel,purchase_event,units_paid,units_private_room,prints_offered_paid,frames_paid", "the units file's columns");
+check(path.dirname(bq.UNITS_PAID) === path.dirname(bq.ORDERS_BY_PRODUCT), "the units file lives beside orders_by_product.csv, from the same pull");
 console.log(failed ? `${failed} failure(s)` : "ok: orders sql");
 process.exit(failed ? 1 : 0);

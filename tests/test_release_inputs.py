@@ -101,6 +101,14 @@ def test_products_and_totals() -> None:
         # ... and the old top-level shape reads the same way
         r6 = build.resolve_release(dict(base, edition_size=200, unit_price=900, artist_profit=20000, aa_group_profit=40000, artist_profit_share=0.5), None, {})
         assert r6["economics_mode"] == "release" and r6["aa_budget_share"] == 0.5 and r6["legacy_economics"]["edition_size"] == 200
+        # the ads divide as the profit does: an artist on 70% of the profit
+        # carries 70% of the spend, Avant Arte 30% (not an assumed half)
+        r6b = build.resolve_release(dict(base, edition_size=200, unit_price=900, artist_profit=20000, aa_group_profit=40000, artist_profit_share=0.7), None, {})
+        assert close(r6b["aa_budget_share"], 0.3) and r6b["aa_budget_share_assumed"] is False, r6b["aa_budget_share"]
+        # nothing says how the profit divides: half, and flagged as assumed
+        r6c = build.resolve_release(dict(base, edition_size=200, unit_price=900, artist_profit=20000, aa_group_profit=40000), None, {})
+        assert r6c["aa_budget_share"] == 0.5 and r6c["aa_budget_share_assumed"] is True
+        assert r5["aa_budget_share_assumed"] is False and r["aa_budget_share_assumed"] is False
 
         # nothing sized anywhere: no economics, no target
         pricing.release_products = lambda r, pricing_path=None: {"match": "none", "note": "artist not in the Airtable pull", "products": [],
@@ -168,6 +176,11 @@ def test_js_agrees() -> None:
         {"name": "legacy totals", "airtable": AT, "typed": [],
          "legacy": {"edition_size": 200, "edition_total": 300, "unit_price": 900, "artist_profit": 20000, "aa_group_profit": 40000, "artist_profit_share": 0}},
         {"name": "nothing sized", "airtable": [], "typed": [{"manual": True, "name": "x", "unit_price": 10}], "legacy": None},
+        {"name": "legacy profit split 30/70", "airtable": AT, "typed": [],
+         "legacy": {"edition_size": 200, "edition_total": 300, "unit_price": 900, "artist_profit": 20000, "aa_group_profit": 40000, "artist_profit_share": 0.7}},
+        {"name": "legacy, no split typed", "airtable": AT, "typed": [],
+         "legacy": {"edition_size": 200, "edition_total": 300, "unit_price": 900, "artist_profit": 20000, "aa_group_profit": 40000}},
+        {"name": "products, no deal recorded", "airtable": [dict(AT[0], aa_profit_share=None)], "typed": [], "legacy": None},
     ]
     payload = {"bench": {k: b[k] for k in ("frame_conversion", "frame_profit_per_unit")}, "cases": cases}
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
@@ -206,6 +219,8 @@ def test_js_agrees() -> None:
                             ("ppu_aa", build.aa_profit_per_unit(r)), ("aa_budget_share", r["aa_budget_share"])):
                 if not close(py, je[key]):
                     bad.append((c["name"], "-", key, py, je[key]))
+            if bool(r.get("aa_budget_share_assumed")) != bool(je.get("aa_budget_share_assumed")):
+                bad.append((c["name"], "-", "aa_budget_share_assumed", r.get("aa_budget_share_assumed"), je.get("aa_budget_share_assumed")))
     pricing.release_products = keep
     assert not bad, "\n".join(str(x) for x in bad[:12])
     print(f"js agrees: ok over {len(cases)} cases")

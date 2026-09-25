@@ -330,7 +330,14 @@
    "announce_date": "2026-09-03",
    "launch_end": "2026-09-30",
    "artist_posting_tier": "Low",
-   "products": [],
+   "products": [
+    {
+     "key": "draw_3IEOEIfPMNVKnBpmyhlLLOZe1X8",
+     "name": "",
+     "edition": null,
+     "preorderRate": 0.8
+    }
+   ],
    "legacy_economics": {
     "edition_size": 2440,
     "edition_total": 6100,
@@ -18167,45 +18174,6 @@
    },
    "campaigns": []
   },
-  "matt_deslauriers_multiple_2026_q4": {
-   "airtable": {
-    "match": "artist+window",
-    "note": "titles: V&A fundraiser [Digital only] / V&A fundraiser print",
-    "products": [
-     {
-      "airtable_id": "1818",
-      "name": "V&A fundraiser print",
-      "project_code": "MATTDESLA-1818",
-      "edition": 150,
-      "target_sellthrough": null,
-      "unit_price": 650.0,
-      "currency": "EUR",
-      "artist_profit_per_unit": null,
-      "aa_profit_per_unit": null,
-      "aa_revenue_share": null,
-      "aa_profit_share": null,
-      "framing_available": null,
-      "frame_conversion": null,
-      "frame_profit_per_unit": null
-     }
-    ],
-    "announce_date": "2026-11-04",
-    "launch_end": "2026-11-24",
-    "private_room_open": null,
-    "marketing_lead": null
-   },
-   "notion": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
-   },
-   "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
-   },
-   "campaigns": []
-  },
   "seth_armstrong_micheltorena_2026_q4": {
    "airtable": {
     "match": "exact",
@@ -22564,25 +22532,6 @@
    "launch_type": "",
    "project_status": "1.5. Agreed to edition"
   },
-  "matt_deslauriers_multiple_2026_q4": {
-   "release_name": "Matt Deslauriers \u00b7 Multiple \u00b7 2026 Q4",
-   "artist": "Matt Deslauriers",
-   "title": "Multiple",
-   "type": "LE",
-   "campaign_code": null,
-   "campaign_name": null,
-   "announce_date": "2026-09-23",
-   "launch_end": "2026-11-24",
-   "private_room_open": "2026-09-09",
-   "dates_note": null,
-   "source": "airtable",
-   "airtable_release": "MattDeslaH225",
-   "airtable_ids": "3059|1818",
-   "titles": "V&A fundraiser [Digital only] / V&A fundraiser print",
-   "n_products": 2,
-   "launch_type": "",
-   "project_status": "03. Proofing"
-  },
   "seth_armstrong_micheltorena_2026_q4": {
    "release_name": "Seth Armstrong \u00b7 Micheltorena \u00b7 2026 Q4",
    "artist": "Seth Armstrong",
@@ -22606,33 +22555,33 @@
  "meta_campaigns": [
   {
    "name": "AndyWarhol_TL_26 \u00b7 Enter draw",
-   "spend": 233464.13,
-   "last": "2026-09-25"
+   "spend": 229109.53,
+   "last": "2026-09-24"
   },
   {
    "name": "SalvadorDali_LE_26 \u00b7 Enter draw",
    "spend": 76156.15,
-   "last": "2026-09-25"
+   "last": "2026-09-24"
   },
   {
    "name": "RobertLongo_LE_26 \u00b7 Enter draw",
-   "spend": 28855.69,
-   "last": "2026-09-25"
+   "spend": 26934.58,
+   "last": "2026-09-24"
   },
   {
    "name": "BisaButler_TL_26 \u00b7 Sign-ups",
-   "spend": 27194.49,
-   "last": "2026-09-25"
+   "spend": 24672.71,
+   "last": "2026-09-24"
   },
   {
    "name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
-   "spend": 20455.13,
-   "last": "2026-09-25"
+   "spend": 19460.06,
+   "last": "2026-09-24"
   },
   {
    "name": "MaurizioCatt_HorseLE_26 \u00b7 Enter draw",
-   "spend": 18602.96,
-   "last": "2026-09-25"
+   "spend": 12346.14,
+   "last": "2026-09-24"
   },
   {
    "name": "GlennLigon_LE_26 \u00b7 Enter draw",

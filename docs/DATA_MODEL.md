@@ -66,11 +66,17 @@ per-release cannibalisation cells reading 0 via the broken template reference
 (issue 14, §11) - those cells are display artefacts, not the constant. The TL
 historical panel still shows 0.10.)
 
-Paid budget share (who funds the ads; distinct from profit share): the workbook's
-"Artist budget share (%) / AA budget share (%)" rows where present - Glenn Ligon
-is overridden to 100% AA ("he's not sharing paid budget"). Model input
-`aa_budget_share` (optional per release); default 100% AA when
-`artist_profit_share = 0` (commission / rev-share deals), else 50/50.
+Paid budget share (who funds the ads): the ads divide as the profit does. On a
+profit split each side carries its share of the profit (an artist on 70% of the
+profit carries 70% of the spend, Avant Arte 30%); on a revenue-share or
+commission deal Avant Arte carries it all. Per product that is its `aa_profit_share`
+or 1 for an `aa_revenue_share` (§1.6); on a release still carrying release-level
+figures, the typed `aa_budget_share` (the workbook's "AA budget share (%)" row -
+Glenn Ligon is overridden to 100% AA, "he's not sharing paid budget"), else
+`1 − artist_profit_share`, 100% when that is 0 (`legacy_budget_share`, 2026-09-25:
+it used to take a half for any share but 0). Where nothing records the deal the
+split is an assumed half, `aaBudgetShareAssumed` on the snapshot, and the Paid ROI
+card says "50/50 split assumed".
 
 ### 1.2 Campaign code (cross-system join key)
 `campaign_code` (e.g. `GlennLigon_LE_26`) joins the release to:
@@ -103,6 +109,14 @@ Normalisation rules:
   twice the median and past the 90th percentile on at least five rows. The Target setting tab
   shows a warning when `high` is not empty. Tracking has tightened: older launches ran ten to
   fifty per cent untracked, recent ones about three, which is why the norm is recent.
+- **Paid units with no purchase event**: units sold are the orders table's, each order on the
+  channel of its purchase event (§6.3), so an order the event feed never saw is counted on
+  `Untracked` and shared out like the rest. `untracked.noEvent` = `{count, total, share,
+  high}` counts those units in the window; `high` when they are over 5% of it and at least
+  five units (`NO_EVENT_WARN_SHARE`, `NO_EVENT_WARN_MIN` in `etl/build.py`), and the page
+  shows a banner above the tabs: the channel split is then short of evidence, and the
+  purchase tag is the thing to check. The reconciliation found one such order in 14,894
+  since January 2025.
 - **Direct as a source (the dashboard's Direct switch)**: Direct traffic is mostly people who
   saw something elsewhere and typed the address, so the Overview can read it the way Untracked
   is read: `redistribute_channel(win, "Direct")` spreads Direct's sessions, entries and units
@@ -209,7 +223,8 @@ launch value        = Σ target units × unit price in euros          # EUR conv
 profit per unit     = Σ target units × profit per unit / Σ target units, for the products that have one
 framing uplift      = Σ over framed products of target units × take-up × profit per frame / Σ target units
 AA budget share     = per product: its AA profit share on a profit-share deal, 1 on a revenue-share deal;
-                      weighted by target units; 0.5 where no deal is recorded
+                      weighted by target units; 0.5 where no deal is recorded, flagged as assumed
+                      (aaBudgetShareAssumed: the Paid ROI card and the Target setting tab say so)
 ```
 
 A release set up before this carries `legacy_economics` (the release-level `edition_size`,
@@ -476,14 +491,16 @@ a draft order that has no order yet: no price, no financial status, a
 refunded, partially_refunded), `order_originated_from_drafts`, `is_private_room`,
 `cancelled_order`, `order_has_frame`, `launch_type` and `launch_date`. It carries the
 customer's email on every row, so it is read under the same rule as the event feed (§2.1):
-nothing selects the address, and what leaves BigQuery is two aggregate files written by
-`server/bigquery.js` on every refresh (`--orders` pulls them alone; `BQ_ORDERS=off` skips
-them; `BQ_ORDERS_TABLE` renames the table; both take `BQ_SINCE`):
+nothing selects the address, and what leaves BigQuery is three aggregate files written by
+`server/bigquery.js` on every refresh, committed together or not at all (`--orders` pulls
+them alone; `BQ_ORDERS=off` skips them; `BQ_ORDERS_TABLE` renames the table; all take
+`BQ_SINCE`):
 
 | file | grain | columns |
 |---|---|---|
 | `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), and no line of an order tagged `upsell_order_merged` (an upsell bought after an order is folded into it, and the upsell's own order stays in the table with the same lines: counting it counts them twice; the data team's Metabase questions leave it out too), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft`; and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, each to the work its SKU names, else shared across the order's prints, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts), `prints_offered_awaiting` and `frames_awaiting` (the same on the orders awaiting payment, the lines `units_draft_pending` counts, for the Framing forecast) |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
+| `sources/units_paid.csv` | release × product title × order day (CET) × channel × `purchase_event` | `units_paid`, `units_private_room`, `prints_offered_paid`, `frames_paid`: the paid lines of `orders_by_product.csv` by the same rule (one set of CTEs, `orderLinesCtes`), each order on the channel of its earliest purchase event in the event feed (`AA_session_custom_channel_group_split_touch`, joined on the Shopify order id alone), `Untracked` with `purchase_event` false where the event feed has no purchase for the order. Summed over its days and channels it is `units_paid` per product. The units every card counts (§6.3); written beside the other two in the same commit, so a deploy resets all three to one committed copy, and `etl/build.py` reads a release whose units here do not add up to its `units_paid` in `orders_by_product.csv` as out of step (two pulls), counting the funnel's units for it until the next pull |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
 named by its winners: the draw entry rows give (release, account, draw) for winners, the
@@ -571,14 +588,17 @@ production model has to serve. Everything else in a table is never selected.
 | `le_funnel_report_split_touch_export` | `server/bigquery.js` (funnel feed, incremental) | all 34 (no personal data; §2.2) | `sources/across_time.csv`: sessions, entries, units by channel × day × release, the campaign clock |
 | `LE_Funnel_Report` | `server/bigquery.js` (events and browsing feeds) | the event columns named in `EVENT_COLUMNS`: event, date, release, pseudonymous account id, signup, draw entry, winner and purchase flags, order counts, channel groups, locales; never `user_email` | `sources/le_events.csv` and `sources/le_browsing.csv`: the rebuilt export, people per release, the draws and entry patterns behind the per-product sell-through |
 | `LE_Funnel_Report` | `server/bigquery.js` (draw map, §2.4) | event_name, winner, draw_id, aa_account_id, shopify_order_id, simple_release_name, event_date | `data/draw_products.csv` |
+| `LE_Funnel_Report` | `server/bigquery.js` (units feed, §2.4) | event_name, shopify_order_id, event_timestamp, AA_session_custom_channel_group_split_touch | `data/units_paid.csv`: the channel of each paid order's earliest purchase event, which sets the channel split of units sold on every card |
+| `LE_Funnel_Report` | `server/bigquery.js` (orders and units feeds: the live entries behind a person's draft, §2.4) | event_name, simple_release_name, aa_account_id, draw_id, draw_with_purchase, draw_entry_eligible, winner, event_date | `data/orders_by_product.csv`, `data/units_paid.csv` (only through which drafts count; aggregates only) |
+| `Collector_Concept` | `server/bigquery.js` (the same link, account to Shopify customer) | aa_account_id, shopify_customer_id | `data/orders_by_product.csv`, `data/units_paid.csv` (joined inside BigQuery; no column of it leaves) |
 | `meta_ads_insights_export` | `server/bigquery.js` (spend feed) | campaign_name, spend_date, impressions, reach, link_clicks, spend | `data/spend_daily.csv`: paid spend by campaign × day |
-| `Order_Line_Concept` | `server/bigquery.js` (orders feed, §2.4) | simple_release_name, release_name, product_title, shopify_product_id, sku, quantity, order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_product_variant_price, shopify_product_type, is_test_order, launch_date, shopify_order_created_date_CET, shopify_draft_order_created_at, shopify_order_id, order_lineitem_id, refund_processed_at | `data/orders_by_product.csv` |
+| `Order_Line_Concept` | `server/bigquery.js` (orders feed, §2.4) | simple_release_name, release_name, product_title, shopify_product_id, sku, quantity, order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_product_variant_price, shopify_product_type, is_test_order, launch_date, shopify_order_created_date_CET, shopify_draft_order_created_at, shopify_order_id, order_lineitem_id, refund_processed_at, customer_id, framing_offered, shopify_order_facilitator, shopify_order_tags (the last four joined and filtered on inside BigQuery; none leaves) | `data/orders_by_product.csv`, `data/draw_products.csv`, `data/units_paid.csv` |
 
 Granted and profiled, not yet read: `Order_Concept` (order level: basket size and items,
 first-time buyer, totals, country - units per buyer and buyer mix per release),
 `Marketing_Campaign_Concept` (spend by campaign × day across Meta and Google Ads for both
 accounts, 2022 to date - a cross-platform paid feed to replace the Meta-only one),
-`Collector_Concept` (364k contacts, one row each with the address, name, phone and survey
+`Collector_Concept` beyond the two id columns above (364k contacts, one row each with the address, name, phone and survey
 answers: only ever aggregates such as marketable contacts by tier and budget band, never a
 row), `TL_Funnel_Report_v2` (the timed-launch event feed, 81 launches: what a TL page would
 read). `tl_funnel_report_split_touch_export` was still denied when this was written.
@@ -1072,7 +1092,10 @@ From the daily funnel feed: sessions (`Sessions_Total`), page views, draw entrie
 `Draw_Entries_Eligible_Units` (AC - the "eligible entries" actual),
 `Draw_Entries_Total_Units_No_Conv` (AB - eligible entered units not yet converted),
 `Total_Product_Units` (U - units sold), customer/unit splits by route (Draw / Preorder App /
-Private Room / Presale Offered / Other).
+Private Room / Presale Offered / Other). Since 2026-09-24 the page's units sold are not the
+funnel's: `swap_units` zeroes `Total_Product_Units` and `Product_Units_Private_Room` over the
+window and adds the orders table's paid units per channel × day in their place (§6.3), so
+every reader downstream runs unchanged on the one count.
 
 ⚠ The raw daily export can contain **two sub-records per (channel, day, release)** (two
 campaign-date records with launch timestamps ~1 day apart); metrics are split across the pair -
@@ -1090,16 +1113,18 @@ campaign-date records with launch timestamps ~1 day apart); metrics are split ac
 The hero, trajectory, channels, funnel and waterfall modules run on one metric of sales plus
 entries: the sell-through's own count (§6.3).
 ```
-secured units = units paid (all routes, incl. private room)
+secured units = units paid (all routes, incl. private room), from the orders table over the
+                window (§6.3)
               + draft orders raised and not yet paid (they take room like a sale)
               + the winners the eligible entries still in the draw imply, allocated across
                 the products by the maximum-quantity rule, × the release's entry → order
                 rate (`entry_conversion_rate` on the Target setting tab, else the panel's 0.8)
 ```
 Only *unconverted* entries carry the rate (a converted entry is already a sale - counting all
-entries would double-count). The funnel export attributes sales and entries to channels, so
-the channel columns are the funnel's secured units (units + rate × unconverted entries, per
-channel) scaled in proportion to the sell-through's count (`adopt_sellthrough`): drafts and
+entries would double-count). Once the window has shut (close + 2 days) the drafts and the
+entries drop out and secured units are the units paid. Units paid sit on their orders'
+channels and entries on the funnel's, so the channel columns are each channel's secured units
+(units paid + rate × unconverted entries) scaled in proportion to the sell-through's count (`adopt_sellthrough`): drafts and
 the allocation rule have no channel of their own, and the scaling is what keeps the channels,
 the trajectory, the funnel's conversion steps and the waterfalls summing to the hero. The
 projection's further units follow the funnel's shape and are capped at the room left, as the
@@ -1109,16 +1134,85 @@ The hero, the trajectory's all-channels line and the waterfall are **capped at t
 edition**: the hero names the surplus as oversubscribed, the trajectory flattens at the
 sellout, and every waterfall walk carries the surplus as a last step, `Beyond sellout`, so its
 steps still close on the figure printed. A single channel's demand is its own and is not
-capped. The same entry → order rate prices the paid model's converting entries (§7) and the
+capped. The trajectory's **By channel** view stacks the five channel groups under that
+all-channels line, each band a group's units (secured to today, projected after), so the bands
+add up to the line; where the line is held at the edition every band is scaled by the same
+factor, each group keeping its share. The same entry → order rate prices the paid model's
+converting entries (§7) and the
 targets' eligible entries (`benchmark_targets`), so one rate runs through the page.
 (2026-09-23.)
 
 ### 6.3 Sell-through prediction, per product (LE)
 
+**Units sold: the orders table, over one window, on every card (2026-09-24).** The hero, the
+trajectory, the channels, the funnel's conversion steps, the waterfalls, the paid card, the
+sell-through and the framing all count one figure of units sold: the units paid in the orders
+table (§2.4), cut to one window of days.
+
+- **Source.** `data/units_paid.csv` (§2.4), per product, order day and channel. Each order
+  sits on the channel of its own purchase event, so the channel split is the funnel's
+  attribution, order by order; an order with no purchase event is `Untracked` (§1.3).
+- **Window** (`sales_window` in `etl/build.py`). From the campaign start (the private room
+  opening, else the announce), or the release's first paid order where that is earlier - an
+  early private-room sale opens the window - but never more than 45 days before the announce
+  (`EARLY_SALES_DAYS`); to two days after the close (`UNITS_GRACE_DAYS`, the winners paying
+  in the grace), or the as-of day while the launch is live. The funnel's sessions and entries
+  are cut to the same days. Units paid outside the window count on no card; the snapshot
+  says how many (`sellthrough.unitsOutsideWindow.{before, after, pending}`: before it
+  opened, after it shut, and, while it is open, paid after the as-of day, which count on
+  the next build) and the sell-through's Paid popup names them.
+- **After the window.** Once the as-of day is past the close plus two days, drafts and
+  entries in hand stop counting, on the orders' units and the funnel's alike: whatever they
+  become is paid after the window. The build takes the entries off every channel
+  (`Draw_Entries_Total_Units_No_Conv` read as nothing), so each channel, each day of the
+  trajectory, each part of a column, the funnel's rungs and the paid card read that
+  channel's own units paid, and the hero is their sum.
+- **Nowhere to fold.** When every unit in the window is Untracked (the funnel has no row for
+  the release yet, and no order had a purchase event) or Direct with the Direct switch on,
+  the fold has no channel to spread over; the window's rows come back as they were, Untracked
+  as Other (`keep_units`), so no unit is lost. With drafts out and nothing yet on any channel,
+  the count is added on the channels' sessions (Search / direct / other when there are none)
+  as a part named Not yet paid.
+- **One sum at close.** The card's Paid is what its rows add up to (the page's units sold,
+  or the products' own paid units where those are more, which only a page on the funnel's
+  units can have), and its percentage at close is the same parts the hero adds up (paid,
+  drafts, the draw's winners, the units still to come) capped at the edition
+  (`close_headline`). Before, the room left was worked out from the orders' paid units while
+  Paid and the hero read the funnel's, so a card could reach 100% with the hero short by the
+  difference (Maurizio Cattelan, September 2026: 100% against 1,957 of 2,000, 43 = 252 paid
+  in the orders less 209 in the funnel). `check_snapshot` fails a build where the two part.
+- **Catalogue pages.** A catalogue page's 90 days are all in the orders feed, so a release it
+  has no row for sold nothing in them (the funnel's purchase event there was an order with no
+  product line on it), rather than falling back to the funnel's count.
+- **Product rows.** A draw the orders feed does not name yet takes no sales of its own on an
+  orders-sourced page (not the event feed's winners who bought, counted over all time on
+  another basis), and nor does any draw when nothing at all was paid in the window; its units
+  stay at release level with the rest no product is named for, so the rows add up to the Paid
+  figure. `check_snapshot` fails a build where they do not, on any page, or where the Direct
+  switch's view breaks any of its rules. (Before, two old catalogue pages printed their
+  draw's 2024 winners as paid rows under a Paid of nothing: Jake Fried 17, Dawnia Darkstone 5.)
+- **Why.** The reconciliation (`etl/analysis/feeds_reconciliation.js`, output in
+  `data/reconciliation/`) matched the two feeds order by order from January 2025: 14,580
+  orders agreed to the unit, none had a purchase event without a paid line, and one paid order
+  had no purchase event. The 313 that differed were the funnel's: `order_pieces` short on
+  orders of several units (161 orders, 174 units), and pieces on test orders, refunded orders
+  and lines that are not a paid product. The rest of the gap between the cards was the
+  window: the funnel counted from the private room or the announce, the orders feed from the
+  first order ever, and neither stopped at the same day (Maurizio Cattelan, September 2026:
+  133 against 251 before this change).
+- **Fallback.** The funnel's units, as before, where there is no units feed, the orders feed
+  does not know the release, or the window opens before the feed's first day (`BQ_SINCE`,
+  2025-01-01): `unitsSource` says which (`orders` or `funnel`), `salesWindow` gives
+  `{start, end, closed, firstPaid}`, and `check_snapshot` fails a build where an
+  orders-sourced page's `sellthrough.sold` is not `unitsPaidOrders`.
+- **Not moved.** The benchmark panel (`etl/release_clusters.py`, `etl/baskets.py`) still reads
+  the funnel's units for past releases; the reconciliation puts the difference at about 0.1%
+  of units on the tracked releases, and moving it is a follow-up.
+
 Sell-through is three things added up, per product:
 
 ```
-sold          units paid for
+sold          units paid for in the window (above)
 drafts        orders awaiting payment: the draft orders a person raised, and orders still
               pending payment, capped at the product's room left (not the app's own
               pre-authorisation drafts, which are the entries, nor a person's draft for a
@@ -1155,11 +1249,14 @@ product title as its name where nobody typed one and its Airtable edition where 
 (`attach_orders` in `etl/sellthrough.py`, the same rule in `shared/sellThrough.mjs`). A title
 no draw names is added as a product of its own once every draw is named; before that it is
 ambiguous and its units stay at release level. Where a draw is not yet named (no winner has
-bought yet) sold per product falls back to the draw's winners who bought, or to the purchase
-rows tagged with a draw id (`purchaseUnits`) where the feed tags them, and drafts stay null.
-Sales no product can be named for - private room, pre-orders, re-offers, and the funnel's
-units where they run ahead of the orders - are the release's funnel units sold less the
-attributed sum (`unattributedSold`), split across the products by edition size (by eligible
+bought yet) sold per product falls back, on a funnel-sourced page, to the draw's winners who
+bought, or to the purchase rows tagged with a draw id (`purchaseUnits`) where the feed tags
+them; on an orders-sourced page it takes none of its own (§6.3, product rows); drafts stay null.
+Sales no product can be named for - private room, pre-orders and re-offers on titles no draw
+names yet - are the page's units sold less the attributed sum (`unattributedSold`): on an
+orders-sourced page the orders table's units over the window (above), nothing once every draw
+is named; on a funnel-sourced page the funnel's units, which can also run ahead of the orders.
+They are split across the products by edition size (by eligible
 entrants until every edition is typed), carried per product as `soldAssumed`, drawn inside the
 sold segment and named as an estimate in its popup. The snapshot lists what is still missing in
 `sellthrough.incomplete` (`sales by product` and `draft orders` until every draw is named;
@@ -1351,7 +1448,10 @@ drafts); `plan`; `benchmark` (`rate`, `n` members rated, `of` members in the bas
 null); `works[]` (per product with paid prints on offer: `name`, `prints`, `frames`, `rate`,
 sorted by rate, the Buyers bar's hover); `notOffered` (`units` paid with no framing option,
 and the `works`); `forecast` (`framing_forecast`: `today` and `close`, each `prints`,
-`frames`, `rate` and `notOffered`, the units counted with no frame on offer; and
+`frames`, `rate` and `notOffered`, the units counted with no frame on offer, and `parts`,
+the same prints and frames by kind of unit - `paid` (with the sales no work is named for),
+`drafts`, `draw` and, at close, `future` - which add up to the totals and are the explainer's
+working for the headline; and
 `products[]`, per sell-through row with a frame on offer, `key` (the row's draw), `name`,
 `today` and `close` as `prints`, `frames`, `rate`; null without the sell-through); `asOf`.
 Null when nothing on the release has been offered a frame, and the card stays off the page.
@@ -1503,6 +1603,12 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Framing | buyers, entrants | §6.4: frames per print on the prints a frame was on offer for, paid orders and the app's pre-authorisation drafts, against the plan's frame conversion and the basket's median |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
 
+Every figure in the table can explain itself: shift-click it on the page and the explainer
+panel gives the working in plain words, with the page's own numbers, and the sources behind it
+(`web/src/explain/explanations.mjs`; README "How a number is worked out"). The builders read the
+same snapshot fields as the cards, and `tests/explain.mjs` holds them to the figures printed.
+The Framing headline's working reads `framing.forecast.{today,close}.parts` (§6.4).
+
 LE benchmark fields carried on the release document: `chargeDropOff = 0.2`,
 `signupToOrderRate` (TL), `firstChoiceWinRate` / `steeredBackupWinRate` (from draw allocation
 data), `reOfferRecovery`.
@@ -1571,7 +1677,10 @@ actuals-only page omits it.
 | `sellthrough.conversion`, `inHandUnits` | the entry → order rate the prediction runs at, and the entries in hand before it (§6.3) |
 | `sellthrough.products[]` | per product: `key`, `name`, `draws`, `edition`, `sold`, `drafts`, `entrants`, `inHand.{open, won}`, `allocated`, `pinned`, `fixed`, `flexible`, `predicted`, `shown`, `room`, `oversubscribed`, `futurePredicted`, `pct`, `pctClose`, `expectedToday`, `benchmarkToday`, `benchmarkClose` (§6.3) |
 | `sellthrough.attributedSold`, `unattributedSold`, `soldSource` | sold units the draw feed named a product for, the rest, and whether products' sales came from tagged purchases or from winners who bought |
-| `sellthrough.drafts`, `unitsPaidOrders`, `ordersAsOf`, `incomplete` | orders awaiting payment and units paid across the release from the orders feed, the last order or draft day they run to (absent without the feed), and what the card is still waiting on: the list behind its Incomplete data stamp (§6.3) |
+| `sellthrough.drafts`, `unitsPaidOrders`, `ordersAsOf`, `incomplete` | orders awaiting payment and units paid across the release from the orders feed (over the window when `unitsSource` is `orders`, then equal to `sold`), the last order or draft day they run to (absent without the feed), and what the card is still waiting on: the list behind its Incomplete data stamp (§6.3) |
+| `unitsSource`, `salesWindow` | `orders` or `funnel`: where the page's units sold came from; `{start, end, closed, firstPaid}`: the days every card counts sales over, whether the window has shut (close + 2 days), and the first paid order inside the 45-day floor (§6.3) |
+| `sellthrough.unitsOutsideWindow` | `{before, after, pending}`: units paid before the window opened and after it shut, counted on no card, and units paid after the as-of day while it is open, which count on the next build (present when `unitsSource` is `orders`) |
+| `untracked.noEvent` | `{count, total, share, high}`: the window's paid units with no purchase event, which count on Untracked; `high` shows the banner (§1.3) |
 | `framing` | `{prints, frames, rate, entrants: {prints, frames, rate} or null, plan, benchmark: {rate, n, of} or null, works: [...], notOffered: {units, works}, asOf}` - frames per print for the Framing card (§6.4); null when nothing on the release has been offered a frame |
 | `slack` | added by the server when it serves the snapshot, not by the ETL: `{channel, updatedAt, updatedBy, lastPostAt, lastPostBy}` from `data/slack.json`, or null. The sell-through card's Post to Slack button posts to `channel`; the Target setting tab sets it (`server/slack.js`) |
 | `sellthrough.ordersByProduct`, `drawProducts`, `soldSource` | the orders feed for the release (per product title: units paid, drafts, list price, edition) and the product each draw sold, carried so a save re-runs the rule on the server; which rule the sold figures came from (§6.3) |

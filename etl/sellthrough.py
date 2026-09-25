@@ -354,7 +354,8 @@ def _cap_drafts(drafts: float, edition, sold: float) -> float:
     return drafts
 
 
-def attach_orders(products: list[dict], orders: dict | None, draw_products: dict | None, source: str) -> tuple[list[dict], str]:
+def attach_orders(products: list[dict], orders: dict | None, draw_products: dict | None, source: str,
+                  orders_only: bool = False) -> tuple[list[dict], str]:
     """Sales and draft orders per product from the orders feed (docs #6.3;
     shared/sellThrough.mjs attachOrders is the same rule).
 
@@ -367,9 +368,18 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
     own only once every draw is named, because before that they are
     ambiguous and stay at release level. Returns the products and the sold
     source: "orders" once every product has its sales from the feed.
+
+    `orders_only` when the page's units sold are the orders feed's over its
+    window (docs 6.3): a product none of whose draws the feed names then
+    takes no sales of its own rather than the event feed's winners who bought
+    or tagged purchases, which are counted over all time on another basis;
+    its units stay at release level with the rest of what no product is named
+    for, so the rows add up to the page's units sold.
     """
     if not orders:
-        return products, source
+        # nothing paid on any title in the window: with the orders as the
+        # page's units, no product has sales of its own to show
+        return ([{**p, "sold": 0.0} for p in products] if orders_only else products), source
     dp = {str(k): v for k, v in (draw_products or {}).items()}
     used: set[str] = set()
     all_named = True
@@ -382,7 +392,10 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
                 titles.append(t)
         if not titles:
             all_named = False
-            out.append(dict(p))
+            q = dict(p)
+            if orders_only:
+                q["sold"] = 0.0
+            out.append(q)
             continue
         used.update(titles)
         rows = [orders[t] for t in titles]

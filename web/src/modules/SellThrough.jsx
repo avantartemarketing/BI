@@ -54,7 +54,8 @@
  * missing. Without the draw feed at all it is one row, the release, as
  * before. */
 import React, { useState } from "react";
-import { Card, HorizonBadge, GROUP_DOTS, C, fmt, useTip } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, useTip } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 /* One ramp of the page's blue, deepest to palest as the units get less
@@ -198,6 +199,16 @@ export default function SellThrough({ snap, horizon = "today" }) {
       : "Sales the draw cannot name a product for are split by edition size inside the sold segment until the sales feed carries the product; draft orders are not drawn until a feed carries them.",
   } : null;
 
+  // the days the page counts sales over, when its units are the orders
+  // table's (docs 6.3), and what was paid outside them
+  const salesWindow = snap.unitsSource === "orders" ? snap.salesWindow || null : null;
+  const outside = salesWindow ? st.unitsOutsideWindow || null : null;
+  const dayText = (iso) => fmtDay(new Date(iso + "T00:00:00Z"));
+  const windowText = !salesWindow ? null : snap.catalogue
+    ? "Units paid from the orders table over the last 90 days, the days every card on the page counts."
+    : "Units paid from the orders table, over the days every card on the page counts: from the first paid order or the campaign start, whichever is earlier (never more than 45 days before the announce), " +
+      (salesWindow.closed ? "to two days after the close." : "to the data's last day; the window shuts two days after the close.");
+
   const rateText = `${Math.round(rate * 100)}%`;
   const preRate = finite(st.preorderConversion) ? st.preorderConversion : null;
   const preRateText = preRate === null ? null : `${Math.round(preRate * 100)}%`;
@@ -239,12 +250,12 @@ export default function SellThrough({ snap, horizon = "today" }) {
   /* The key: swatch, what it is, and the release's total. It sits on the
      headline's line, the release's figure on the left and its composition
      on the right, which is what leaves the rows their height. */
-  const legendChip = ({ key, sw, label, value, tip }) => (
+  const legendChip = ({ key, sw, label, value, tip, x }) => (
     <span key={key} {...(tip ? t.props(tip) : {})} style={{ ...legendItem, cursor: tip ? "help" : "default" }}>
       {sw}
       <span>{label}</span>
       {value !== null && value !== undefined && (
-        <span className="num" style={{ fontWeight: 600, color: C.ink }}>{value}</span>
+        <span className="num" style={{ fontWeight: 600, color: C.ink }}>{x ? <Ex k={x.k} arg={x.arg}>{value}</Ex> : value}</span>
       )}
     </span>
   );
@@ -305,7 +316,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
           8px spacer and the lead's own line) */}
       <div style={{ marginTop: 8, height: 39, flex: "0 0 39px", display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         <div className="lead" {...t.props(methodTip, 300)} style={{ lineHeight: "39px", whiteSpace: "nowrap", color: C.ink }}>
-          <span>{headText}</span>
+          <span><Ex k="st.head" arg={{ close }} focus>{headText}</Ex></span>
           <span style={{ fontSize: 12, fontWeight: 400, color: C.muted }}>
             {edition ? `of ${fmt(edition)} units` : "units"}
           </span>
@@ -313,20 +324,27 @@ export default function SellThrough({ snap, horizon = "today" }) {
         {edition === null && <span className="lead-caption" style={{ marginTop: 0, whiteSpace: "nowrap" }}>no edition size set</span>}
         <div style={{ marginLeft: "auto", minWidth: 0, overflow: "hidden", display: "flex", alignItems: "center", gap: 16, fontSize: 11.5, color: C.muted, whiteSpace: "nowrap" }}>
           {legendChip({
-            key: "sold", sw: <span style={swatch(SEG.paid)} />, label: "Paid", value: fmt(sold),
+            key: "sold", sw: <span style={swatch(SEG.paid)} />, label: "Paid", value: fmt(sold), x: { k: "st.paid" },
             tip: { head: "Paid", rows: [
               { label: "Units", value: fmt(sold) },
               ...(fromFeed && (st.unattributedSold ?? 0) > 0 ? [
                 { label: "Of which named by product", value: fmt(st.attributedSold ?? 0) },
                 { label: "Of which estimated", value: fmt(st.unattributedSold ?? 0) },
               ] : []),
+              ...(salesWindow ? [{ label: "Counted", value: `${dayText(salesWindow.start)} to ${dayText(salesWindow.end)}` }] : []),
+              ...(outside && outside.before > 0 ? [{ label: "Paid earlier (not counted)", value: fmt(outside.before) }] : []),
+              ...(outside && outside.after > 0 ? [{ label: "Paid after the window shut (not counted)", value: fmt(outside.after) }] : []),
+              ...(outside && outside.pending > 0 ? [{ label: `Paid since ${dayText(salesWindow.end)} (counts on the next refresh)`, value: fmt(outside.pending) }] : []),
             ],
-            body: fromFeed && (st.unattributedSold ?? 0) > 0
-              ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
-              : undefined },
+            body: [
+              fromFeed && (st.unattributedSold ?? 0) > 0
+                ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
+                : null,
+              salesWindow ? windowText : null,
+            ].filter(Boolean).join(" ") || undefined },
           })}
           {draftsAll !== null && draftsAll > 0 && legendChip({
-            key: "drafts", sw: <span style={swatch(SEG.drafts)} />, label: "Drafts", value: fmt(draftsAll),
+            key: "drafts", sw: <span style={swatch(SEG.drafts)} />, label: "Drafts", value: fmt(draftsAll), x: { k: "st.drafts" },
             tip: { head: "Drafts", rows: [
               { label: "Units", value: fmt(draftsAll) },
               ...(winnerDraftsAll > 0 ? [{ label: "Of which winners' claims, under 72 hours old", value: fmt(winnerDraftsAll) }] : []),
@@ -335,10 +353,10 @@ export default function SellThrough({ snap, horizon = "today" }) {
             body: "Draft orders raised but not yet paid. They take room like a sale. The order an advisor sends a winner after a failed payment counts for 72 hours; unpaid after that, it is out." },
           })}
           {legendChip({
-            key: "inhand", sw: <span style={swatch(SEG.winners)} />, label: "Draw winners (estimate)", value: fmt(inHandAll), tip: inHandTip,
+            key: "inhand", sw: <span style={swatch(SEG.winners)} />, label: "Draw winners (estimate)", value: fmt(inHandAll), tip: inHandTip, x: { k: "st.draw" },
           })}
           {close && legendChip({
-            key: "future", sw: <span style={swatch(SEG.future)} />, label: "Still to come", value: fmt(futureAll),
+            key: "future", sw: <span style={swatch(SEG.future)} />, label: "Still to come", value: fmt(futureAll), x: { k: "st.future" },
             tip: { head: "Still to come", rows: [{ label: "Units", value: fmt(futureAll) }],
               body: "The projection's further units, spread over the products with room left." },
           })}
@@ -384,6 +402,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
                 ...(r.draws && r.draws.length > 1 ? [{ label: "Draws", value: fmt(r.draws.length) }] : []),
               ] };
               const fig = figureOf(r);
+              // the release as one row is the headline itself
+              const rx = r.key === "release" ? { k: "st.head", arg: { close } } : { k: "st.row", arg: { key: r.key, close } };
               return (
                 <React.Fragment key={r.key}>
                   <div {...t.props(nameTip)} style={{ fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -391,10 +411,10 @@ export default function SellThrough({ snap, horizon = "today" }) {
                   </div>
                   <ProductBar row={r} close={close} maxV={maxFor(r)} tips={tips} height={barH} radius={barR} />
                   <div className="num" {...t.props(nameTip)} style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 12.5, color: C.muted }}>
-                    {fig.units}
+                    <Ex k={rx.k} arg={rx.arg}>{fig.units}</Ex>
                   </div>
                   <div className="num" style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 13, fontWeight: 600, color: C.ink }}>
-                    {fig.pct}
+                    {fig.pct !== null ? <Ex k={rx.k} arg={rx.arg}>{fig.pct}</Ex> : null}
                   </div>
                 </React.Fragment>
               );

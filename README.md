@@ -41,6 +41,8 @@ data/
                           list price, prints with a frame on offer and the frames bought with them
                           (docs 6.4) - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
   draw_products.csv       the product each draw's winners bought: the draw to product map
+  units_paid.csv          the same paid units per product, CET day and channel (each order on its
+                          purchase event's channel): the units sold every card counts (docs 6.3)
   release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
   app/release_products.json  per release, the draws (one per product) and the entry patterns
@@ -242,17 +244,22 @@ personal data: it stays under `sources/`, is served by no endpoint, and nothing 
 it leaves the server with an identifier column.
 
 **Orders and drafts by product.** The pull also reads `Order_Line_Concept`, the Shopify order
-lines, into two aggregate files: `data/orders_by_product.csv` (per release and product: units
+lines, into three aggregate files, written together or not at all: `data/orders_by_product.csv` (per release and product: units
 paid, orders awaiting payment, list price; the draw's own pre-authorisation drafts, one per
 live entry, are counted apart and never shown as drafts; and the framing, the prints a frame
 was on offer for and the frames bought with them, on the paid orders, the pre-authorisation
 drafts and the orders awaiting payment, joined to the prints through the order, docs 6.4) and `data/draw_products.csv` (the product each
-draw's winners bought, joined inside BigQuery on the pseudonymous account id). That table
+draw's winners bought, joined inside BigQuery on the pseudonymous account id) and
+`data/units_paid.csv` (the same paid units per product, order day and channel, each order
+on the channel of its own purchase event, `Untracked` where the event feed never saw it: the
+units sold every card counts, over one window, docs/DATA_MODEL.md 6.3). That table
 carries email addresses too; nothing selects them, and only counts per release and product
 leave (docs/DATA_MODEL.md 2.4). An order tagged `upsell_order_merged` (an upsell folded into the order it followed, its
 lines now there too) is left out of everything, as the data team's Metabase questions leave it
 out; a frame goes to the work its SKU names, else it is shared across the order's prints (docs
-6.4). `BQ_ORDERS=off` skips the pair, `BQ_ORDERS_TABLE` renames the table.
+6.4). `BQ_ORDERS=off` skips the three, `BQ_ORDERS_TABLE` renames the table. Without
+`units_paid.csv` a page counts the funnel's own units, as before, and its snapshot says so
+(`unitsSource: "funnel"`).
 
 **The export, rebuilt here.** The pull also counts sessions and page views per channel-day
 inside BigQuery (`sources/le_browsing.csv`, `--browsing` pulls it alone, `BQ_BROWSING=off`
@@ -563,12 +570,28 @@ set `DECISIONS_PATH` if the log must survive deploys.
 ## What the dashboard shows
 
 One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
-trajectory vs the across-time plan curve, funnel diagnostics with contribution
+trajectory vs the across-time plan curve (or, switched to By channel, the projection alone with
+each channel group shaded under it by the units it contributes), funnel diagnostics with contribution
 decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), sell-through
 by product, projection-vs-target waterfall. Formulas for every module: docs §9. The
 Overview opens with the campaign clock, a thin strip from announcement to launch, blue to
 today and the days to launch on the right (the day of the window is in the strip's popup);
 it is a card like the others and moves with them.
+
+**How a number is worked out.** Hold Shift and click any figure (or Tab to a headline figure
+and press Shift+Enter): a panel opens at the right with the figure, what it is in one sentence,
+the working as numbered steps with the page's own numbers, what it reads against, the data
+sources it comes from (each with how fresh it is on this page: green for a feed pulled on
+every refresh, grey for an input somebody set, amber where the last refresh reported that feed
+failing), and anything worth knowing. A figure inside a step that has working of its own is a
+link down to it, with a crumb back; **Copy as text** puts the whole explanation on the
+clipboard. The page narrows beside the panel (to two columns, or one on a laptop) and
+shift-clicking another number swaps it; Esc or × closes it, and so does a new release or
+another tab. Holding Shift underlines every figure that can explain itself. The explanations
+live in `web/src/explain/explanations.mjs`, one builder per kind of figure reading the same
+snapshot fields the card reads, and the source catalogue in `web/src/explain/sources.mjs`;
+a card marks a figure with `<Ex k="…" arg={…}>`. `tests/explain.mjs` runs every builder
+against every snapshot on file and checks each lands on the figure its card prints.
 
 **Sell-through by product** (docs §6.3) is one row per product, drawn in one ramp of the
 page's blue, deepest to palest as the units get less certain: units paid (deep blue), draft
@@ -582,7 +605,8 @@ is one row of the grid whatever the count: the rows share a fixed height, the ba
 from 14px for seven products to a 30px cap for three or fewer, each row carrying its units of
 the edition and its percentage in columns of their own, with the key beside the headline. It is
 the one card with no target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
-orders per product come from the Shopify order lines in BigQuery (`data/orders_by_product.csv`),
+orders per product come from the Shopify order lines in BigQuery (`data/units_paid.csv` over
+the page's window, and `data/orders_by_product.csv` for the drafts),
 joined to the draws through the product each draw's winners bought (docs 2.4); until every draw
 of a release is named that way the card wears an **Incomplete data** stamp, and the sales the
 draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an

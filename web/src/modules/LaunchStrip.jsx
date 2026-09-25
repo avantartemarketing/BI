@@ -8,6 +8,7 @@
  * distance or the dates. A catalogue release has no window and gets no strip. */
 import React from "react";
 import { fmtDay, useTip } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 const DAY_MS = 86400000;
 const iso = (s) => new Date(s + "T00:00:00Z");
@@ -35,7 +36,7 @@ export default function LaunchStrip({ snap }) {
   if (opened && !launched) rows.push({ label: "Days left", value: String(left) });
 
   const right = !launched
-    ? <><b>{days(left)} to launch</b> · {fmtDay(launch, true)}</>
+    ? <><b><Ex k="launch.days">{days(left)}</Ex> to launch</b> · {fmtDay(launch, true)}</>
     : left === 0
       ? <><b>Launch day</b> · {fmtDay(launch, true)}</>
       : <>Launched {fmtDay(launch, true)}</>;

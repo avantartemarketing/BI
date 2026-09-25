@@ -1,0 +1,674 @@
+release,match,cancelled,refunded,pending,test,upsell_merged,has_frames,private_room,from_draft,facilitated,event_says_cancelled,repeated_event,day_differs,event_without_order_id,orders_have_it_under_another_release,in_orders_table_but_not_an_order_since,not_in_orders_table,funnel_has_it_under_another_release,orders,paid_units,funnel_units
+Abdulnasser Gharem · Hemisphere · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,13,17,17.0
+Abdulnasser Gharem · Hemisphere · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,2,2,2.0
+Abdulnasser Gharem · Hemisphere · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,true,false,false,false,false,false,false,false,false,1,1,1.0
+Adam Pendleton · Multiple · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,8,8,8.0
+Ahmed Mater · Magnetism 25 · 2025 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,5,5,0.0
+Ahmed Mater · Magnetism 25 · 2025 Q4,orders only,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,31,31,0.0
+Ahmed Mater · Magnetism 25 · 2025 Q4,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,4,4,0.0
+Ahmed Mater · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,5,5,5.0
+Ahmed Mater · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Ahmed Mater · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,24,24,24.0
+Ahmed Mater · Multiple · 2026 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,4,3.0
+Ahmed Mater · Multiple · 2026 Q3,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,2,1.0
+Ai Weiwei · Arm · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,123,123,123.0
+Ai Weiwei · Arm · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,23,23,23.0
+Ai Weiwei · Combat fear with truth · 2025 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,103,109,0.0
+Ai Weiwei · Combat fear with truth · 2025 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,109,113,0.0
+Ai Weiwei · Combat fear with truth · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,13,16,0.0
+Ai Weiwei · Everyone is a dragon · 2024 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,2,2,0.0
+Ai Weiwei · Everyone is a dragon · 2024 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,1,1,0.0
+Ai Weiwei · Everyone is a dragon · 2024 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,3,0.0
+Ai Weiwei · Everyone is a dragon · 2024 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,0.0
+Ai Weiwei · Guar · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,30,46,0.0
+Ai Weiwei · Guar · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,548,685,0.0
+Ai Weiwei · Guar · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,2,2,0.0
+Ai Weiwei · Guar · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,255,334,0.0
+Ai Weiwei · Guardian · 2024 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,3,0.0
+Ai Weiwei · Middle Finger in Red · 2023 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Ai Weiwei · Multiple · 2024 Q4,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,5,5,5.0
+Ai Weiwei · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,154,161,0.0
+Ai Weiwei · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,19,26,0.0
+Ai Weiwei · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Ai Weiwei · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,239,297,0.0
+Ai Weiwei · Multiple · 2025 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,99,99,99.0
+Ai Weiwei · Multiple · 2025 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Ai Weiwei · Multiple · 2025 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,48,48,48.0
+Ai Weiwei · Multiple · 2025 Q4,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Ai Weiwei · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,63,71,0.0
+Ai Weiwei · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,38,41,0.0
+Ai Weiwei · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Ai Weiwei · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,16,26,0.0
+Ai Weiwei · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,6,6,6.0
+Ai Weiwei · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,12,12,12.0
+Ai Weiwei · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Ai Weiwei · To Be Looked At... · 2024 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+Alex Katz · Ada Ada · 2025 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,38,38,38.0
+Alex Katz · Ada Ada · 2025 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Alex Katz · Ada Ada · 2025 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,155,158,158.0
+Alex Katz · Ada Ada · 2025 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Alex Katz · Ada Ada · 2025 Q4,"both, units differ",false,true,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,0,2.0
+Ali Banisadr · Thinkpol · 2021 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,0.0
+Alpha Centauri Kid · Multiple · 2024 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,6,6,0.0
+Amanda Baldwin · Bell Bay · 2023 Q3,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,4,0,4.0
+Amani Lewis · TWO QUEENS: Ode to Romare Bearden · 2021 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Andy Warhol Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,96,113,113.0
+Andy Warhol Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,5,6,6.0
+Andy Warhol Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,56,58,58.0
+Andy Warhol Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,393,500,500.0
+Andy Warhol Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,1,4,4.0
+Andy Warhol Estate · Multiple · 2026 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,17,14.0
+Anish Kapoor · Out of the Dark · 2023 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Anna Weyant · Loose Screw · 2022 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+Anni and Josef Albers · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,882,898,898.0
+Anni and Josef Albers · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,2,2.0
+Anni and Josef Albers · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,50,53,53.0
+Anni and Josef Albers · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Anni and Josef Albers · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,5,6,6.0
+Anni and Josef Albers · Multiple · 2026 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,16,31,17.0
+Anni and Josef Albers · Multiple · 2026 Q2,"both, units differ",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,2,1.0
+Antony Micallef · Self Portrait with Blue Slash · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,49,49,49.0
+Antony Micallef · Self Portrait with Blue Slash · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,12,12,12.0
+Antony Micallef · Self Portrait with Blue Slash · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,2,2.0
+Antony Micallef · Self Portrait with Blue Slash · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,2,2,2.0
+Antony Micallef · Self Portrait with Yellow Lake and Magenta · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,26,26,26.0
+Antony Micallef · Self Portrait with Yellow Lake and Magenta · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,31,31,31.0
+Antony Micallef · Self Portrait with Yellow Lake and Magenta · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,4,4,4.0
+Artspace Amphora Project · Multiple · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,2.0
+Ayako Rokkaku · Untitled · 2025 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,23,23,0.0
+Backside works. · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,3,3.0
+Backside works. · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,18,20,20.0
+Backside works. · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,60,74,74.0
+Barry McGee · Fuzz Gathering · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,23,49,0.0
+Barry McGee · Fuzz Gathering · 2025 Q1,orders only,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,5,5,0.0
+Barry McGee · Fuzz Gathering · 2025 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,343,350,0.0
+Barry McGee · Fuzz Gathering · 2025 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,248,252,0.0
+Barry McGee · Fuzz Gathering · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,2,6,0.0
+Barry McGee · Multiple · 2023 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,0.0
+Beeple · Multiple · 2024 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,19,0.0
+Bisa Butler · Multiple · 2026 Q4,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,2,0.0
+Bisa Butler · Multiple · 2026 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,5,0.0
+Bony Ramirez · TORO! · 2023 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Bony Ramirez · TORO! · 2023 Q4,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,3,3,3.0
+Bony Ramirez · TORO! · 2023 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,2.0
+Brian Calvin · Multiple · 2023 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Brian Calvin · Multiple · 2023 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,21,23,0.0
+Caleb Hahne Quintana · Ourselves Scattered Parts Of Earth · 2023 Q1,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,3,0,3.0
+Caleb Hahne Quintana · Ourselves Scattered Parts Of Earth · 2023 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Carrie Mae Weems · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Carrie Mae Weems · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,563,741,0.0
+Carrie Mae Weems · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,52,66,0.0
+Carrie Mae Weems · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,291,313,0.0
+Carrie Mae Weems · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,2,2,0.0
+Che Lovelace · Emerald and Sun Dancers · 2022 Q3,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,0,1.0
+"Chris Huen Sin Kan · Joel, Tess and Haze · 2023 Q1","both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Chris Succo · Multiple · 2019 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,4,4,0.0
+Cindy Sherman · Untitled · 2025 Q4,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,384,389,0.0
+Cindy Sherman · Untitled · 2025 Q4,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,195,195,0.0
+Cindy Sherman · Untitled · 2025 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,35,46,0.0
+Cindy Sherman · Untitled · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,132,132,132.0
+Cindy Sherman · Untitled · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Cindy Sherman · Untitled · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,353,353,353.0
+Cindy Sherman · Untitled · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,7,7,7.0
+Cindy Sherman · Untitled · 2026 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,2.0
+Cindy Sherman · Untitled · 2026 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Claire Silver · daydreamer · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,23,23,0.0
+Claire Silver · daydreamer · 2025 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,11,11,0.0
+Cleon Peterson · Multiple · 2023 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,15,16,0.0
+Cleon Peterson · Multiple · 2023 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Cleon Peterson · Shame · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Cleon Peterson · Shame · 2025 Q3,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,137,138,0.0
+Cleon Peterson · Shame · 2025 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,124,125,0.0
+Cleon Peterson · Shame · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,14,14,0.0
+Cristina de Miguel · Tentacular Thinking · 2024 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+CryptoPunks · Multiple · 2023 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,4,4,0.0
+CryptoPunks · Multiple · 2023 Q4,orders only,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,1,1,0.0
+Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,2,2,2.0
+Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+DRIFT · Proto Nature I · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,18,18,18.0
+DRIFT · Proto Nature I · 2026 Q1,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,4,4,4.0
+DRIFT · Proto Nature I · 2026 Q1,"both, units differ",false,true,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+"Dada Khanyisa · I can't change, even if I tried · 2023 Q1","both, units differ",false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,1,0,1.0
+"Dada Khanyisa · I can't change, even if I tried · 2023 Q1","both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,2,0,2.0
+Danielle Mckinney · Sandman · 2025 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,33,33,0.0
+Danielle Mckinney · Sandman · 2025 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1037,1041,0.0
+Danielle Mckinney · Sandman · 2025 Q1,orders only,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,11,11,0.0
+Danielle Mckinney · Sandman · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,71,91,0.0
+Danielle Mckinney · Shelter · 2024 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+Danielle Orchard · A Warm Garden · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Danielle Orchard · A Warm Garden · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,2,0,2.0
+Deborah Brown · March Snowstorm · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,5,0,5.0
+Deborah Brown · March Snowstorm · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Deborah Segun · Multiple · 2023 Q2,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,4,0,4.0
+Deborah Segun · Multiple · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,5,0,5.0
+Deborah Segun · Multiple · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,0,2.0
+Deborah Segun · Multiple · 2023 Q2,"both, units differ",false,true,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,0,1.0
+Deborah Segun · Multiple · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,1,0,1.0
+DeeKay · Love Ripples · 2024 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+Derek Fordjour · Multiple · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,18,18,18.0
+Devan Shimoyama · Le Mat · 2023 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Dominique Fung · Handheld Fan · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,4,4,4.0
+Dominique Fung · Handheld Fan · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,30,30,30.0
+Dominique Fung · Handheld Fan · 2025 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Donna Huanca · Multiple · 2021 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Ed Ruscha · Actual Size · 2024 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Ed Ruscha · Actual Size · 2024 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,2,8,0.0
+Eddie Martinez · Olive Garden · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,72,72,72.0
+Eddie Martinez · Olive Garden · 2026 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Eddie Martinez · Olive Garden · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,26,26,26.0
+Eddie Martinez · Olive Garden · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Eddie Martinez · Olive Garden · 2026 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Eddie Martinez · Scaffold · 2024 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+Em Cooper · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Em Cooper · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,21,22,0.0
+Em Cooper · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,18,20,0.0
+En Iwamura · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,4,4,4.0
+En Iwamura · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+En Iwamura · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,28,28,28.0
+FUTURA · Multiple · 2022 Q4,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,2.0
+Felipe Pantone · Chromadynamica 19 P · 2025 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,176,181,0.0
+Felipe Pantone · Chromadynamica 19 P · 2025 Q3,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,96,97,0.0
+Felipe Pantone · Chromadynamica 19 P · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,9,9,0.0
+Felipe Pantone · Subtractive Variability Dimensional 13 AA · 2026 Q2,"both, same units",false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,1,1,1.0
+Felipe Pantone · Subtractive Variability Dimensional 13 AA · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Felipe Pantone · Subtractive Variability Dimensional 13 AA · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,12,12,12.0
+Felipe Pantone · Subtractive Variability Dimensional 13 AA · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,139,139,139.0
+Ferrari Sheppard · Iris · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,37,37,37.0
+Ferrari Sheppard · Iris · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,37,37,37.0
+Ferrari Sheppard · Iris · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Ferrari Sheppard · Iris · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Ferrari Sheppard · Put Some Red On It · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,84,84,84.0
+Ferrari Sheppard · Put Some Red On It · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Ferrari Sheppard · Put Some Red On It · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,16,16,16.0
+Friedrich Kunath · Storms Never Last · 2025 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,151,152,0.0
+Friedrich Kunath · Storms Never Last · 2025 Q2,orders only,false,false,false,false,false,false,true,false,true,false,false,false,false,false,false,false,false,1,1,0.0
+Friedrich Kunath · Storms Never Last · 2025 Q2,orders only,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,1,1,0.0
+Friedrich Kunath · Storms Never Last · 2025 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,120,122,0.0
+Friedrich Kunath · Storms Never Last · 2025 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,22,23,0.0
+Friedrich Kunath · Storms Never Last · 2025 Q2,orders only,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,2,2,0.0
+Friedrich Kunath · Storms Never Last · 2025 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Friedrich Kunath · This Is The Worst Time Of My Life · 2022 Q4,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,3,0,3.0
+Gabriel Moses · Multiple · 2024 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,4,0.0
+Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,0.0
+George Condo · Fashion Model AP · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,8,8,8.0
+George Condo · Fashion Model · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,140,144,144.0
+George Condo · Fashion Model · 2025 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,4,4,4.0
+George Condo · Fashion Model · 2025 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,4.0
+George Condo · Multiple · 2024 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,9,11,11.0
+George Condo · Multiple · 2024 Q1,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,1.0
+George Condo · Multiple · 2024 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,8,22,12.0
+Gisela McDaniel · Are you watching? · 2022 Q1,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Giuseppe Penone · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,18,18,18.0
+Giuseppe Penone · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,4,5,5.0
+Glenn Brown · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,16,16,0.0
+Glenn Brown · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,21,30,0.0
+Glenn Ligon · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,4,4.0
+Glenn Ligon · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,98,105,105.0
+Glenn Ligon · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Glenn Ligon · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Glenn Ligon · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,false,false,false,true,false,false,false,false,false,1,2,2.0
+Glenn Ligon · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,30,37,37.0
+Glenn Ligon · Multiple · 2026 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+"Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2","both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Grant Riven Yun · High Fly Over the Valley · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,17,17,17.0
+Grant Riven Yun · High Fly Over the Valley · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Grant Riven Yun · Multiple · 2024 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,6,0.0
+Grayson Perry · Magical Thinking (Large) · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,6,6,6.0
+Grayson Perry · Magical Thinking · 2024 Q4,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,2,2,0.0
+Grayson Perry · Magical Thinking · 2024 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,6,6,0.0
+Grayson Perry · The Changeling · 2026 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,198,202,0.0
+Grayson Perry · The Changeling · 2026 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,217,225,0.0
+Grayson Perry · The Changeling · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,12,17,0.0
+Grayson Perry · The Changeling · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,3,3,0.0
+Gregory Crewdson · Multiple · 2023 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,7,8,0.0
+Gregory Crewdson · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,53,118,0.0
+Gregory Crewdson · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,582,1085,0.0
+Gregory Crewdson · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,2,7,0.0
+Gregory Crewdson · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,0.0
+Gregory Crewdson · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1084,1726,0.0
+Hajime Sorayama · Untitled · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,55,55,55.0
+Hajime Sorayama · Untitled · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,2,2.0
+Hajime Sorayama · Untitled · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,1.0
+Hajime Sorayama · Untitled · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Hajime Sorayama · Untitled · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,403,407,407.0
+Hajime Sorayama · Untitled · 2025 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Hajime Sorayama · Untitled · 2025 Q2,"both, units differ",false,false,false,true,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,3,0.0
+Hank Willis Thomas · “Success is no accident.” · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,3,3,3.0
+Hank Willis Thomas · “Success is no accident.” · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,33,33,33.0
+Hank Willis Thomas · “Success is no accident.” · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,1.0
+Hank Willis Thomas · “Success is no accident.” · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,256,257,257.0
+Hank Willis Thomas · “Success is no accident.” · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,2,2.0
+Hank Willis Thomas · “Success is no accident.” · 2026 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Harland Miller · Multiple · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,17,17,17.0
+Harland Miller · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Harland Miller · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,20,20,20.0
+Harland Miller · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Harland Miller · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,66,66,66.0
+Harland Miller · Multiple · 2025 Q3,"both, units differ",false,true,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Harland Miller · Multiple · 2025 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,8,25,21.0
+Harland Miller · Multiple · 2025 Q3,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,5,8.0
+Harland Miller · York So Good They Named It Once · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,49,49,49.0
+Harland Miller · York So Good They Named It Once · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Harland Miller · York So Good They Named It Once · 2025 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Harland Miller · York So Good They Named It Once · 2025 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Harmonia · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,22,24,0.0
+Harmonia · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,191,216,0.0
+Harmonia · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,114,121,0.0
+Hassan Hajjaj · Yazid & Rania · 2021 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Hassan Hajjaj · Yazid & Rania · 2021 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,3,3,3.0
+Hassan Hajjaj · Yazid & Rania · 2021 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+Hebru Brantley · Free Advice · 2022 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+Hein Koh · Multiple · 2023 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,3,3,0.0
+Hein Koh · Multiple · 2023 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Hilary Pecis · Multiple · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,3,3.0
+Hilary Pecis · Multiple · 2025 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,4.0
+Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+JR · La Nascita · 2024 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,0.0
+Jaime Muñoz · Self Portrait · 2022 Q3,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,0,1.0
+James Jarvis · Hang in there! · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,99,100,100.0
+James Jarvis · Hang in there! · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,48,48,48.0
+James Jarvis · Hang in there! · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+James Jarvis · Hang in there! · 2025 Q3,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,2.0
+James Jean · Bath Saxum · 2022 Q4,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,0,2.0
+James Jean · Descendent - Lucid Dreamer,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,7,7,0.0
+James Jean · Maze (Print) · 2022 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+James Jean · Maze - Lucid · 2025 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,119,123,0.0
+James Jean · Maze - Lucid · 2025 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,211,216,0.0
+James Jean · Maze - Lucid · 2025 Q1,orders only,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,3,3,0.0
+James Jean · Maze - Lucid · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,18,19,0.0
+James Jean · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,6,6,0.0
+James Jean · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,119,120,0.0
+James Jean · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,5,10,0.0
+James Jean · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,0.0
+James Jean · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,true,false,true,false,false,false,false,false,false,false,false,132,132,0.0
+James Jean · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,37,49,49.0
+James Jean · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+James Jean · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,531,537,537.0
+Jammie Holmes · Fred · 2025 Q1,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Jammie Holmes · Fred · 2025 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Jammie Holmes · Fred · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,52,52,52.0
+Jammie Holmes · Fred · 2025 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,20,20,20.0
+Jammie Holmes · Fred · 2025 Q1,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,2.0
+Jaume Plensa · UTOPIA · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,204,204,204.0
+Jaume Plensa · UTOPIA · 2026 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Jaume Plensa · UTOPIA · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,12,12,12.0
+Jaume Plensa · UTOPIA · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,1.0
+Javier Calleja · Multiple · 2020 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Javier Calleja · Multiple · 2023 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Jean-Michel Othoniel · Multiple · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Jean-Michel Othoniel · Multiple · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,95,100,100.0
+Jean-Michel Othoniel · Multiple · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,20,20,20.0
+Jeff Koons · Multiple · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,2,2.0
+Jeff Koons · Multiple · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Jeff Koons · Multiple · 2026 Q1,"both, same units",false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,1,1,1.0
+Jeff Koons · Multiple · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,471,479,479.0
+Jeff Koons · Multiple · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,13,13,13.0
+Jeff Koons · Multiple · 2026 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,15,14.0
+Jen Stark · Dichroic Mandala · 2022 Q4,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,0,1.0
+Jen Stark · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,13,16,0.0
+Jen Stark · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,30,33,0.0
+Jen Stark · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,0.0
+Jen Stark · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,4,5,0.0
+Jenny Brosinski · Untitled 9 · 2020 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,0.0
+Jenny Holzer · Multiple · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,12,12,12.0
+Joakim Ojanen · The dance we dance when we are together · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,44,44,44.0
+Joakim Ojanen · The dance we dance when we are together · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,5,5,5.0
+Joakim Ojanen · The dance we dance when we are together · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Joan Cornellà · Work Hard and Then Die · 2025 Q4,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,292,292,0.0
+Joan Cornellà · Work Hard and Then Die · 2025 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,21,21,0.0
+Joan Cornellà · Work Hard and Then Die · 2025 Q4,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,171,173,0.0
+Joel Mesler · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,5,7,0.0
+Joel Mesler · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,42,59,0.0
+Joel Mesler · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Joel Mesler · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,19,22,0.0
+Johnson Tsang · Alliance · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,155,155,155.0
+Johnson Tsang · Alliance · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,44,44,44.0
+Johnson Tsang · Multiple · 2022 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,10,10.0
+Johnson Tsang · Multiple · 2023 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Johnson Tsang · Open the Right Mind · 2023 Q4,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,2,4.0
+Johnson Tsang · Remembrance · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,37,37,37.0
+Johnson Tsang · Remembrance · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,111,113,113.0
+Johnson Tsang · Remembrance · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Johnson Tsang · Remembrance · 2025 Q3,"both, units differ",false,true,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Johnson Tsang · Searching for Spring · 2022 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,3,3.0
+Johnson Tsang · The Moment · 2024 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,4,4.0
+Johnson Tsang · Work in Progress · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,109,109,109.0
+Johnson Tsang · Work in Progress · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,40,40,40.0
+Johnson Tsang · Work in Progress · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Jonny Niesche · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,10,12,0.0
+Jonny Niesche · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,75,90,0.0
+Jonny Niesche · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,56,60,0.0
+Jonny Niesche · Schein Blossom · 2020 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Jonny Niesche · moon moth lust in warm copper · 2022 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+Jordan Casteel · Multiple · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,11,11,11.0
+Jordan Casteel · Multiple · 2025 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Josh Smith · Multiple · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,5,5,5.0
+José Parlá · Multiple · 2024 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+José Parlá · Writers’ Bench 149th Street and Grand Concourse · 2020 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Judy Chicago · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,208,240,0.0
+Judy Chicago · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,83,86,0.0
+Judy Chicago · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,7,7,0.0
+Judy Chicago · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Judy Chicago · Reincarnation Triptych · 2025 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,36,39,39.0
+Judy Chicago · Reincarnation Triptych · 2025 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,3,3,3.0
+Judy Chicago · Reincarnation Triptych · 2025 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,6,6,6.0
+Judy Chicago · Reincarnation Triptych · 2025 Q4,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Julian Schnabel · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,13,13,13.0
+Julian Schnabel · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,4,4,4.0
+Julian Schnabel · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,77,77,77.0
+Julian Schnabel · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,1.0
+Julian Schnabel · Multiple · 2026 Q3,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,2,6,4.0
+Julian Schnabel · Multiple · 2026 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,3,1.0
+Julian Schnabel · Multiple · 2026 Q3,"both, units differ",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,3,2.0
+Julian Schnabel · Multiple · 2026 Q3,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,7,18,11.0
+Katharina Grosse · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,122,146,0.0
+Katharina Grosse · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Katharina Grosse · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,37,65,0.0
+Katharina Grosse · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,156,218,0.0
+Katherina Olschbaur · Humility and the Other One in Me · 2023 Q3,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,0,1.0
+Katherine Bradford · Swing Over Pool · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,104,106,106.0
+Katherine Bradford · Swing Over Pool · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,8,8,8.0
+Katherine Bradford · Swing Over Pool · 2025 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,43,43,43.0
+Katherine Bradford · Swing Over Pool · 2025 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,3,3,3.0
+Katherine Bradford · Swing Over Pool · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Katherine Bradford · Swing Over Pool · 2025 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,3,6.0
+Katherine Bradford · Swing Over Pool · 2025 Q3,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,3,3,6.0
+Katrin Fridriks · Multiple · 2019 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Kaï · Content (Hand-finished) · 2024 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Keita Morimoto · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,38,43,0.0
+Keita Morimoto · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,1,1,0.0
+Keita Morimoto · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,172,178,0.0
+Keita Morimoto · Multiple · 2025 Q4,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,259,267,0.0
+Kour Pour · Sacred Flames (Yoshitoshi) · 2020 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,0.0
+Kwesi Botchway · African Style · 2023 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+Kwesi Botchway · Lady with a Tampi · 2022 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+LY · LUV Blossoming · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,15,15,15.0
+LY · LUV Blossoming · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,24,24,24.0
+LY · LUV Blossoming · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+LY · LUV New Beginnings · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,16,16,16.0
+LY · LUV New Beginnings · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,16,16,16.0
+LY · LUV Somewhere New · 2023 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+LY · Multiple · 2022 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+LY · Multiple · 2023 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,7,7,7.0
+LY · Multiple · 2023 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,4,4,4.0
+LY · Multiple · 2023 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Lee Ufan · Dialogue · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,61,61,61.0
+Lee Ufan · Dialogue · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,69,91,91.0
+Lee Ufan · Dialogue · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,3,3,3.0
+Lee Ufan · Dialogue · 2026 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Lee Ufan · Multiple · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,4,8,8.0
+Lee Ufan · Multiple · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,true,false,false,false,false,false,false,false,false,8,8,8.0
+Lee Ufan · Multiple · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,6,6,6.0
+Lee Ufan · Multiple · 2025 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Lee Ufan · Multiple · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,202,206,206.0
+Lee Ufan · Multiple · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,81,81,81.0
+Lee Ufan · Multiple · 2025 Q2,"both, units differ",false,true,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Lee Ufan · Multiple · 2025 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,12,26,17.0
+Lee Ufan · Multiple · 2025 Q2,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,2.0
+Liang Fu · Anonyme · 2023 Q1,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,3,0,3.0
+Lu Yang · Gong Tau Alien · 2020 Q4,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,0.0
+Luc Tuymans · Bell Boy · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Luc Tuymans · Bell Boy · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,11,11,11.0
+Luc Tuymans · Bell Boy · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,79,89,89.0
+Luc Tuymans · Bell Boy · 2026 Q1,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,2.0
+Lucian Freud · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,16,20,0.0
+Lucian Freud · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,119,125,0.0
+Lucian Freud · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,186,254,0.0
+Lucian Freud · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Lucian Freud · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,54,58,0.0
+Lucian Freud · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,14,16,0.0
+Lucian Freud · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,100,130,0.0
+Lucian Freud · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Ludovic Nkoth · Multiple · 2021 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Magdalena Suarez Frimkess · Homage for Jasper Johns · 2024 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,2.0
+Makiko Kudo · Empathy AP · 2021 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Makiko Kudo · Nanohana Ramen · 2022 Q3,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,0,1.0
+Man Ray · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,18,24,0.0
+Man Ray · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Man Ray · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,212,242,0.0
+Man Ray · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,124,131,0.0
+Marc Quinn · Aragonitesphere · 2019 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Marcela Flórido · BLOOM · 2023 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Marcela Flórido · BLOOM · 2023 Q3,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,5,0,5.0
+Marcus Jansen · Afro Painter · 2023 Q4,"both, same units",false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,2,2,2.0
+Marcus Jansen · Afro Painter · 2023 Q4,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,11,11,11.0
+Marcus Jansen · Afro Painter · 2023 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Margo Wolowiec · -57° · 2020 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Marina Abramović · Maria/Marina · 2026 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,438,446,0.0
+Marina Abramović · Maria/Marina · 2026 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,536,536,0.0
+Marina Abramović · Maria/Marina · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,48,61,0.0
+Mark Bradford · Scorched Earth Edition · 2025 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,139,140,0.0
+Mark Bradford · Scorched Earth Edition · 2025 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,23,124,0.0
+Mark Bradford · Scorched Earth Edition · 2025 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,255,265,0.0
+Mark Whalen · Early Light · 2023 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,2,2,2.0
+Maurizio Cattelan · La Nona Ora · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,5,5,5.0
+Maurizio Cattelan · La Nona Ora · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,549,551,551.0
+Maurizio Cattelan · La Nona Ora · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,92,92,92.0
+Maurizio Cattelan · La Nona Ora · 2026 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,4.0
+Maurizio Cattelan · Multiple · 2027 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,85,85,85.0
+Maurizio Cattelan · Multiple · 2027 Q1,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,2,2,2.0
+Maurizio Cattelan · Multiple · 2027 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,6,6,6.0
+Maurizio Cattelan · Multiple · 2027 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,70,70,70.0
+Maurizio Cattelan · Multiple · 2027 Q1,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,39,77,40.0
+Maurizio Cattelan · Multiple · 2027 Q1,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,2,1.0
+Maurizio Cattelan · Multiple · 2027 Q1,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,2,1.0
+Maurizio Cattelan · Multiple · 2027 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,6,3.0
+Maurizio Cattelan · Multiple · 2027 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,2,1.0
+Maurizio Cattelan · THERAPY · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,12,12,12.0
+Maurizio Cattelan · THERAPY · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,95,95,95.0
+Maurizio Cattelan · THERAPY · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,212,216,216.0
+Maurizio Cattelan · THERAPY · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,2,2.0
+Maurizio Cattelan · THERAPY · 2026 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Maurizio Cattelan · We are the Revolution (Gold Rush) · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,10,10,0.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,897,911,911.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,2,2,2.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,4,4,4.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,69,69,69.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,2,2.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,"both, same units",false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,1,1,1.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,3,6.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,2.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,"both, units differ",false,true,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,0,1.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,"both, units differ",false,true,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Maurizio Cattelan · Window · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,2,2.0
+Maurizio Cattelan · Window · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,114,114,114.0
+Maurizio Cattelan · Window · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,165,180,180.0
+Maurizio Cattelan · Window · 2026 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,3,3,3.0
+Maurizio Cattelan · Window · 2026 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,4.0
+Maurizio Cattelan · Window · 2026 Q1,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,2.0
+Maxwell Mustardo · Multiple · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Michael Kagan · Critical Mass · 2021 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Mickalene Thomas · Multiple · 2024 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,6,6,0.0
+Mickalene Thomas · Multiple · 2024 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Mickalene Thomas · Multiple · 2024 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,0.0
+Mickalene Thomas · Multiple · 2024 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,5,5,0.0
+Mickalene Thomas · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,509,619,0.0
+Mickalene Thomas · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,2,3,0.0
+Mickalene Thomas · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1003,1292,0.0
+Mickalene Thomas · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,61,67,0.0
+Mickalene Thomas · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,1,1,0.0
+Mickalene Thomas · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,0.0
+Mickalene Thomas · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,487,563,0.0
+Mickalene Thomas · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,316,349,0.0
+Mickalene Thomas · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,51,94,0.0
+Mickalene Thomas · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,2,4,0.0
+Miwa Komatsu · Innocent Days and Wishes · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,14,14,14.0
+Miwa Komatsu · Innocent Days and Wishes · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Miwa Komatsu · Innocent Days and Wishes · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,10,10,10.0
+Miwa Komatsu · Multiple · 2023 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,2.0
+Miwa Komatsu · Three Guardians: Gatekeeping the Heat and Cold · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,26,26,26.0
+Miwa Komatsu · Three Guardians: Gatekeeping the Heat and Cold · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,22,22,22.0
+Moe Nakamura · Inside Us · 2023 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,2.0
+Mr. StarCity · Multiple · 2022 Q2,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,0,1.0
+Neo Image Matloga · Multiple · 2023 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,4,4,0.0
+Neo Image Matloga · Multiple · 2023 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Nigel Howlett · Multiple · 2022 Q1,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,6,6,6.0
+"Oscar yi Hou · Coolieisms, aka: Born In The USA (Go And Kill The Yellow Man) · 2025 Q2","both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,3,3,3.0
+"Oscar yi Hou · Coolieisms, aka: Born In The USA (Go And Kill The Yellow Man) · 2025 Q2","both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,2,2,2.0
+Other World · Dogs of War · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,7,7,7.0
+Other World · Dogs of War · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,true,false,false,false,false,false,false,false,false,1,1,1.0
+Other World · Dogs of War · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,18,18,18.0
+Paco Pomet · The Last Evening · 2019 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,2,2,0.0
+Parra · Multiple · 2022 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,4,4,0.0
+Parra · Multiple · 2024 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,2.0
+Parra · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Parra · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,8,9,0.0
+Parra · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,108,111,0.0
+Parra · Multiple · 2025 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,98,110,0.0
+Parra · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,2,3,3.0
+Parra · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,64,73,73.0
+Parra · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,215,219,219.0
+Parra · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,2,2.0
+Patrick Quarm · Multiple · 2022 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Patrick Quarm · Multiple · 2022 Q1,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Paul Insect · Christmas Tree Baubles · 2022 Q4,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,2,2,2.0
+Paul Insect · Prismatic Visions · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Paul Insect · Prismatic Visions · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,44,44,44.0
+Paul Insect · Prismatic Visions · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,4,4,4.0
+Paul Insect · Prismatic Visions · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Paul Insect · The Observer 1 AP · 2021 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Paul Insect · The Reflection (Blue) · 2021 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Paul Insect · The Reflection (Red) · 2021 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Paul McCarthy · Santa with Butt Plug Bronze 11.4 inches · 2022 Q4,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,0,2.0
+Pejac · Multiple · 2024 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,2.0
+Pejac · Multiple · 2026 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,115,115,115.0
+Pejac · Multiple · 2026 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Peter Halley · Rising High II · 2024 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Peter Halley · Rising High II · 2024 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,4,5,5.0
+Piet Mondrian Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,false,false,false,true,false,false,false,false,false,1,1,1.0
+Piet Mondrian Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,113,167,167.0
+Piet Mondrian Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,3,3,3.0
+Piet Mondrian Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,659,691,691.0
+Piet Mondrian Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,7,12,12.0
+Piet Mondrian Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,6,10,10.0
+Piet Mondrian Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,4,4.0
+Piet Mondrian Estate · Multiple · 2026 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Robert Longo · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,1,2,0.0
+Robert Longo · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,442,489,0.0
+Robert Longo · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,714,820,0.0
+Robert Longo · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,86,193,0.0
+Robert Longo · Multiple · 2025 Q2,orders only,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,3,3,0.0
+"Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3","both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,25,25,25.0
+"Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3","both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+"Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3","both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,32,32,32.0
+"Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3","both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,3,3,3.0
+"Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3","both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,1.0
+Robert Nava · Death Carrier Bunny · 2024 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Roby Dwi Antono · KIRA (Black) · 2021 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Roby Dwi Antono · KIRA (Burnished Gold) · 2021 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,0.0
+Salvador Dali Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,31,39,39.0
+Salvador Dali Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,2,2,2.0
+Salvador Dali Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1018,1041,1041.0
+Salvador Dali Estate · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,7,11,11.0
+Salvador Dali Estate · Multiple · 2026 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Sarah Morris · Industry (Spiderweb) · 2023 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Satoru Koizumi · White Rhino · 2022 Q4,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Sayre Gomez · America's Tire · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,8,8,8.0
+Sayre Gomez · America's Tire · 2025 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,3,3,3.0
+Sayre Gomez · America's Tire · 2025 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Sayre Gomez · America's Tire · 2025 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Sayre Gomez · America's Tire · 2025 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Shigeki Matsuyama · Multiple · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,6,0,6.0
+Shirin Neshat · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,2,2,0.0
+Shirin Neshat · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,26,30,0.0
+Shirin Neshat · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,317,326,0.0
+Shirin Neshat · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,97,106,0.0
+Shirin Neshat · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,2,3,0.0
+Shirin Neshat · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,85,114,0.0
+Shirin Neshat · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,12,27,0.0
+Shirin Neshat · Multiple · 2026 Q2,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,142,191,0.0
+Snowfro · Chromie Squiggle #8107 · 2023 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+So Youn Lee · Ready? · 2023 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+So Youn Lee · Ready? · 2023 Q4,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,8,8,8.0
+Sola Olulode · Laying in the Grass (Hand-finished) · 2021 Q4,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,0.0
+Super Future Kid · Multiple · 2022 Q1,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,2,0,2.0
+Susumu Kamijo · The Sinner at Dusk · 2021 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+TIDE · Multiple · 2024 Q4,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Takashi Murakami · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,14,14,14.0
+Takashi Murakami · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,467,493,493.0
+Takashi Murakami · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,3,3,3.0
+Takashi Murakami · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,3,3,3.0
+Takashi Murakami · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,247,247,247.0
+Takashi Murakami · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,4,4,4.0
+Takashi Murakami · Multiple · 2026 Q2,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,2,2,4.0
+Takashi Murakami · Multiple · 2026 Q2,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,36,99,50.0
+Takashi Murakami · Multiple · 2026 Q2,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,1,2,1.0
+Takeru Amano · Venus · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,true,false,false,false,false,false,1,0,1.0
+Takeru Amano · Venus · 2023 Q2,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,5,0,5.0
+Taku Obata · B BOY JUSHI · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,106,106,106.0
+Taku Obata · B BOY JUSHI · 2025 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,43,43,43.0
+Taku Obata · B BOY JUSHI · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Tom Sachs · Too Darn Hot · 2022 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,15,15,15.0
+Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,24,43,43.0
+Tomás Sánchez · Inner Love · 2024 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,2,2,0.0
+Tomás Sánchez · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,409,566,0.0
+Tomás Sánchez · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,34,41,0.0
+Tomás Sánchez · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,1,1,0.0
+Tomás Sánchez · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,163,205,0.0
+Tomás Sánchez · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,1,1,0.0
+Tomás Sánchez · Multiple · 2025 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,true,1,1,0.0
+Tomás Sánchez · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,378,414,0.0
+Tomás Sánchez · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,210,217,0.0
+Tomás Sánchez · Multiple · 2026 Q1,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,42,50,0.0
+Tomás Sánchez · Sonido de aguas en la noche · 2022 Q1,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Trudy Benson · Red Sky · 2019 Q4,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,0.0
+Trudy Benson · Red Sky · 2019 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Tschabalala Self · Multiple · 2023 Q3,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,5,5,0.0
+Tschabalala Self · Multiple · 2023 Q3,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,2,0.0
+Tschabalala Self · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,14,16,16.0
+Tschabalala Self · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,true,false,false,false,false,false,false,false,false,1,1,1.0
+Tschabalala Self · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,81,81,81.0
+Tschabalala Self · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,1.0
+Tschabalala Self · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,2,2,2.0
+Tschabalala Self · Seated Bronze · 2022 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,1.0
+Tunji Adeniyi-Jones · Violet Dance (Hand-finished) · 2021 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Urs Fischer · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,87,92,92.0
+Urs Fischer · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Urs Fischer · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,1.0
+Urs Fischer · Multiple · 2026 Q2,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,13,17,17.0
+Wang Yan Cheng · Between Two Poles · 2020 Q4,orders only,false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,0.0
+Wang Yan Cheng · Between Two Poles · 2020 Q4,orders only,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,0.0
+"Wang Zhibo · 15℃, Nationalistic Optimism by the Sea · 2024 Q3","both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Will Cotton · The Cowgirl · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,1.0
+Will Cotton · The Cowgirl · 2025 Q1,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,96,96,96.0
+Will Cotton · The Cowgirl · 2025 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,1,1,1.0
+Will Cotton · The Cowgirl · 2025 Q1,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,3,3,3.0
+William Blake · Multiple · 2025 Q4,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+William Blake · Multiple · 2025 Q4,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,6,6,6.0
+William Blake · Multiple · 2025 Q4,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,3,1.0
+Woo Kuk Won · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,64,73,73.0
+Woo Kuk Won · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,51,57,57.0
+Woo Kuk Won · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Woo Kuk Won · Multiple · 2025 Q3,"both, same units",false,false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,1,1,1.0
+Woo Kuk Won · Multiple · 2025 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,6,27,17.0
+Woo Kuk Won · Multiple · 2025 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,4,1.0
+Woo Kuk Won · Multiple · 2025 Q3,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,6,19,9.0
+Yoon Hyup · Ambre Roulette · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,154,154,154.0
+Yoon Hyup · Ambre Roulette · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,36,36,36.0
+Yoon Hyup · Ambre Roulette · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,4,4,4.0
+Yoon Hyup · Ambre Roulette · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Yoon Hyup · Ambre Roulette · 2026 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Yoon Hyup · Summer in San Sebastian · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,true,false,false,false,false,false,4,4,4.0
+Yoon Hyup · Summer in San Sebastian · 2025 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,72,72,72.0
+Yoon Hyup · Summer in San Sebastian · 2025 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,103,103,103.0
+Yoon Hyup · Summer in San Sebastian · 2025 Q3,"both, units differ",false,true,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Yoon Hyup · Summer in San Sebastian · 2025 Q3,"both, units differ",false,false,false,true,false,false,true,false,false,false,false,false,false,false,false,false,false,9,0,9.0
+Yoon Hyup · Summer in San Sebastian · 2025 Q3,"both, units differ",false,false,false,true,false,false,false,true,true,false,false,false,false,false,false,false,false,10,0,10.0
+Yoon Hyup · Summer in San Sebastian · 2025 Q3,"both, units differ",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,2,2,4.0
+Yoon Hyup · Summer in San Sebastian · 2025 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Yue Minjun · Multiple · 2023 Q1,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,0,1.0
+Yue Minjun · Multiple · 2023 Q1,"both, units differ",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,3,0,3.0
+Zeng Fanzhi · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,18,24,24.0
+Zeng Fanzhi · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,1,1,1.0
+Zeng Fanzhi · Multiple · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,36,36,36.0
+Zeng Fanzhi · Rainbow (Mask Series 1997 no.8) · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,true,false,false,false,false,false,1,1,1.0
+Zeng Fanzhi · Rainbow (Mask Series 1997 no.8) · 2026 Q3,"both, same units",false,false,false,false,false,false,true,false,false,false,false,false,false,false,false,false,false,27,27,27.0
+Zeng Fanzhi · Rainbow (Mask Series 1997 no.8) · 2026 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Zeng Fanzhi · Rainbow (Mask Series 1997 no.8) · 2026 Q3,"both, same units",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,152,156,156.0
+Zeng Fanzhi · Rainbow (Mask Series 1997 no.8) · 2026 Q3,"both, units differ",false,false,false,false,false,false,false,true,true,false,false,false,false,false,false,false,false,1,1,2.0
+Zhang Huan · Amitabha · 2021 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,1,1,1.0
+Zhang Ruyi · Forced Separation · 2024 Q3,"both, same units",false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,2,2,2.0

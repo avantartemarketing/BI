@@ -35,6 +35,7 @@ import {
   Card, GROUP_DOTS, C, fmt, fmtSigned, fmtMoney, MINUS, useTip,
   rungGeom, rungPos, RungTrack, RungKey, Tick, refWords, dayElapsed, paidDayFrac, dayLabel,
 } from "../ui.jsx";
+import { Ex } from "../explain/Explain.jsx";
 
 const RING = "0 0 0 1px rgba(20,20,19,.45)";
 const NEUTRAL_DOT = "#c8c5bc";
@@ -104,7 +105,7 @@ function buildRung(spec, bench, k) {
     bmPos: bmv !== null ? rungPos(inv ? ref / bmv : bmv / ref) : null,
     beyond: !!geom.beyond,
     delta: (relPct >= 0 ? "+" : MINUS) + Math.abs(Math.round(relPct)) + "%",
-    rag,
+    rag, target, bm: bmv,
     tip: {
       head: label,
       body: (note ? note + " " : "") + (bmv !== null
@@ -143,7 +144,7 @@ function RungMarks({ r, bench }) {
   );
 }
 
-function Rung({ r, bench }) {
+function Rung({ r, bench, x }) {
   const tipApi = useTip();
   return (
     <div
@@ -158,7 +159,7 @@ function Rung({ r, bench }) {
       </div>
       <RungMarks r={r} bench={bench} />
       <div className="num" style={{ fontSize: 13.5, fontWeight: 600, textAlign: "right", color: r.rag }}>
-        {r.delta}
+        {x && !r.neutral ? <Ex k="funnel.rung" arg={x}>{r.delta}</Ex> : r.delta}
       </div>
     </div>
   );
@@ -678,7 +679,8 @@ function RungStack({ m }) {
             </div>
             {g.rungs.map((raw) => {
               const r = buildRung(raw, bench, k);
-              return <Rung key={r.label} r={r} bench={bench} />;
+              const x = { group: g.name, label: r.label, kind: raw.kind, unit: raw.unit, v: raw.v, target: r.target, bm: r.bm, inv: !!raw.inv, note: raw.note, k };
+              return <Rung key={r.label} r={r} bench={bench} x={x} />;
             })}
           </div>
         ))}
@@ -765,13 +767,13 @@ const withChannel = (r) => (SELF_NAMED.has(r.label) || !r.short ? r.label : `${r
 function walkBlocks(wf) {
   const { flat, expTotal, bmTotal, nowTotal, hasBm, words } = wf;
   const open = hasBm ? [
-    { id: "bm", kind: "level", base: 26, label: words.bm, value: bmTotal, level: bmTotal, tip: bmTip(wf), color: C.refLine, dotted: true },
+    { id: "bm", kind: "level", base: 26, label: words.bm, value: bmTotal, level: bmTotal, tip: bmTip(wf), color: C.refLine, dotted: true, x: { k: "hero.bm", arg: { close: false, where: "Funnel by channel" } } },
     // the stretch: the band from the benchmark to the target, the target's tick
     // at its end; the walk goes on from the benchmark
     { id: "stretch", kind: "stretch", base: 24, label: "Stretch to target", from: bmTotal, to: expTotal, value: expTotal, level: bmTotal,
-      tip: wf.stretchTip, targetTip: targetTip(wf) },
+      tip: wf.stretchTip, targetTip: targetTip(wf), x: { k: "hero.target", arg: { close: false, where: "Funnel by channel" } } },
   ] : [
-    { id: "target", kind: "level", base: 26, label: words.target, value: expTotal, level: expTotal, tip: targetTip(wf), color: C.refLine },
+    { id: "target", kind: "level", base: 26, label: words.target, value: expTotal, level: expTotal, tip: targetTip(wf), color: C.refLine, x: { k: "hero.target", arg: { close: false, where: "Funnel by channel" } } },
   ];
   const groups = [];
   for (const r of flat) {
@@ -780,7 +782,7 @@ function walkBlocks(wf) {
     const step = r.to !== undefined;
     g.rows.push({ id: `${g.name}:${g.rows.length}`, group: g.name, kind: step ? "step" : "info", base: 24, r, level: step ? r.to : r.level, full: withChannel(r) });
   }
-  const close = [{ id: "actual", kind: "level", base: 26, label: "Actual today", value: nowTotal, level: nowTotal, tip: actualTip(wf), color: C.blue }];
+  const close = [{ id: "actual", kind: "level", base: 26, label: "Actual today", value: nowTotal, level: nowTotal, tip: actualTip(wf), color: C.blue, x: { k: "hero.secured", arg: { where: "Funnel by channel" } } }];
   const all = [...open, ...groups.flatMap((g) => g.rows), ...close];
   let lvl = null;
   for (const row of all) { row.entry = lvl; lvl = row.level; row.exit = lvl; }
@@ -850,7 +852,7 @@ function Walk({ wf, layout: L }) {
   // the label columns, and carries the figure where there is no column for it
   const levelRow = (row, gap = 0) => {
     const stretch = row.kind === "stretch";
-    const v = fmt(row.value);
+    const v = row.x ? <Ex k={row.x.k} arg={row.x.arg}>{fmt(row.value)}</Ex> : fmt(row.value);
     return (
       <div key={row.id} style={grid(row.base, gap)}>
         <div {...point({ row: row.id }, row.tip)} style={{
@@ -909,7 +911,13 @@ function Walk({ wf, layout: L }) {
               </div>
               {L.delta ? (
                 <div className="num" style={{ ...at, gridColumn: col(3), ...ROW_NUM, color: step ? (r.value >= 0 ? C.green : C.red) : C.muted }}>
-                  {step ? fmtSigned(r.value, 1) : (r.display ?? "–")}
+                  {step ? (
+                    <Ex k="funnel.step" arg={{
+                      group: g.name, label: r.label, full: row.full, value: r.value, vsBm: hasBm, note: r.note,
+                      aText: r.show ? r.show(r.a) : null, eText: r.show ? r.show(r.e) : null,
+                      chain: g.rows.filter((x) => x.kind === "step").map((x) => x.r.label),
+                    }}>{fmtSigned(r.value, 1)}</Ex>
+                  ) : (r.display ?? "–")}
                 </div>
               ) : null}
             </React.Fragment>

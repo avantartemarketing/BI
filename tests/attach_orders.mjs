@@ -11,7 +11,7 @@ const json = process.argv.includes("--json");
 let failed = 0;
 const results = [];
 for (const c of fixtures.cases) {
-  const { products, source } = attachOrders(c.products, c.orders, c.drawProducts, c.source);
+  const { products, source } = attachOrders(c.products, c.orders, c.drawProducts, c.source, !!c.ordersOnly);
   const got = {
     names: products.map((p) => p.name), sold: products.map((p) => p.sold), drafts: products.map((p) => p.drafts),
     editions: products.map((p) => p.edition), source,
