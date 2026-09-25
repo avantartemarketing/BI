@@ -31,6 +31,15 @@ check(bq.ORDERS_HEADER.length === 25 && bq.ORDERS_HEADER.slice(-2).join(",") ===
 // every column the header names is one the query selects
 check(bq.ORDERS_HEADER.every((c) => new RegExp(`(AS ${c}\\b|\\bl\\.${c}\\b)`).test(orders)), "the header's columns are all selected");
 check(!/user_email|customer_email/.test(orders) && !/user_email|customer_email/.test(draws), "no address column is named");
+// claims still landing: winners holding an open pre-authorisation draft on the draw's own product, no paid order for it
+const claims = bq.drawClaimsSql();
+check(/held_drafts AS \(/.test(claims) && /WHERE entry_draft AND customer_id IS NOT NULL/.test(claims), "claims read the app's pre-authorisation drafts only");
+check(/WHERE p\.won AND b\.customer_id IS NULL/.test(claims) && /paid_by AS \(SELECT DISTINCT release, customer_id, product_title FROM typed WHERE paid/.test(claims),
+  "a claim is a winner with no paid order for the product");
+check(/h\.product_title = dp\.product_title/.test(claims) && /ORDER BY source, n DESC, product_title/.test(claims),
+  "on the draw's own product: its winners' paid orders first, else its entrants' drafts");
+check(bq.DRAW_CLAIMS_HEADER.join(",") === "release,draw_id,product_title,claims,units", `the claims file's columns (${bq.DRAW_CLAIMS_HEADER})`);
+check(!/user_email|customer_email/.test(claims) && !/SELECT\s+\*/i.test(claims), "the claims query names no address column and takes no *");
 // the units feed counts the same paid lines as the orders feed, by day and
 // by the channel of each order's own purchase event, and nothing personal
 const units = bq.unitsPaidSql();

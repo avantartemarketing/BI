@@ -41,6 +41,9 @@ data/
                           list price, prints with a frame on offer and the frames bought with them
                           (docs 6.4) - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
   draw_products.csv       the product each draw's winners bought: the draw to product map
+  draw_claims.csv         per draw, the claims a draw round has made that the order table has not
+                          caught up with (winners still holding an open pre-authorisation draft on the
+                          draw's product, no paid order); written with the orders, never committed (docs 6.3)
   units_paid.csv          the same paid units per product, CET day and channel (each order on its
                           purchase event's channel): the units sold every card counts (docs 6.3)
   release_cluster_baskets.json  per-basket quartiles by channel and campaign stage
@@ -249,7 +252,11 @@ paid, orders awaiting payment, list price; the draw's own pre-authorisation draf
 live entry, are counted apart and never shown as drafts; and the framing, the prints a frame
 was on offer for and the frames bought with them, on the paid orders, the pre-authorisation
 drafts and the orders awaiting payment, joined to the prints through the order, docs 6.4) and `data/draw_products.csv` (the product each
-draw's winners bought, joined inside BigQuery on the pseudonymous account id) and
+draw's winners bought, joined inside BigQuery on the pseudonymous account id),
+`data/draw_claims.csv` (per draw, the winners whose claim the order table has not caught up
+with yet, so claiming pre-orders never dips the sell-through while the orders land; counted
+only above each draw's lowest count over the last six hours, from a day of pulls kept in
+`draw_claims_history.json` on the sources disk, docs/DATA_MODEL.md 6.3) and
 `data/units_paid.csv` (the same paid units per product, order day and channel, each order
 on the channel of its own purchase event, `Untracked` where the event feed never saw it: the
 units sold every card counts, over one window, docs/DATA_MODEL.md 6.3). That table

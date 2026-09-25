@@ -125,8 +125,13 @@ export function allocateEntries({ products, patterns, rate = 0.8, preorderRate =
   // an order out for them, and nowhere otherwise
   const total = (i) => fixed[i] + flexible[i];
   // the orders those entries are expected to become: each at its own rate, so
-  // a product's prediction is the sum and not a count times one rate
-  const pred = new Array(P).fill(0);
+  // a product's prediction is the sum and not a count times one rate. It
+  // starts from the claims still landing (a draw round's winners the order
+  // table has not caught up with, docs 6.3), at the pre-order rate: they are
+  // sales in all but the order table, and they take their room before any
+  // entrant is placed
+  const claims = products.map((p) => Math.max(Number(p.claimsInFlight) || 0, 0));
+  const pred = claims.map((c, i) => c * preRates[i]);
   const fill = (i) => (byFill ? (sold[i] + pred[i]) / editions[i] : sold[i] + pred[i]);
   const toSet = productSets(products);
   // list prices for the revenue rule: a product without one takes the median
@@ -248,7 +253,7 @@ export function allocateEntries({ products, patterns, rate = 0.8, preorderRate =
     const room = editions[i] === null ? null : Math.max(editions[i] - sold[i], 0);
     const shown = room === null ? predicted : Math.min(predicted, room);
     return {
-      key: p.key, allocated, pinned: pinned[i], fixed: fixed[i], flexible: flexible[i],
+      key: p.key, allocated, pinned: pinned[i], fixed: fixed[i], flexible: flexible[i], claims: claims[i],
       inHand: { open: openPeople[i], won: wonPeople[i] },
       predicted, shown, room, oversubscribed: room === null ? 0 : Math.max(predicted - room, 0),
     };
@@ -314,7 +319,7 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
       sold, soldAssumed: r1(assumed[i]), drafts: finite(p.drafts) ? Number(p.drafts) : null,
       winnerDrafts: finite(p.winnerDrafts) ? Number(p.winnerDrafts) : null,
       winnerDraftsLapsed: finite(p.winnerDraftsLapsed) ? Number(p.winnerDraftsLapsed) : null,
-      allocated: a.allocated, pinned: a.pinned, fixed: a.fixed, flexible: a.flexible,
+      allocated: a.allocated, pinned: a.pinned, fixed: a.fixed, flexible: a.flexible, claims: a.claims,
       predicted: r1(a.predicted), shown: r1(a.shown), room: a.room, oversubscribed: r1(a.oversubscribed),
       futurePredicted: r1(futureShare[i]),
       pct: e ? r4(Math.min(today / e, 1)) : null,

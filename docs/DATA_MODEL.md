@@ -500,6 +500,7 @@ them alone; `BQ_ORDERS=off` skips them; `BQ_ORDERS_TABLE` renames the table; all
 |---|---|---|
 | `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), and no line of an order tagged `upsell_order_merged` (an upsell bought after an order is folded into it, and the upsell's own order stays in the table with the same lines: counting it counts them twice; the data team's Metabase questions leave it out too), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft`; and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, each to the work its SKU names, else shared across the order's prints, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts), `prints_offered_awaiting` and `frames_awaiting` (the same on the orders awaiting payment, the lines `units_draft_pending` counts, for the Framing forecast) |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
+| `data/draw_claims.csv` | release × draw, only draws with any | claims a draw round has made that the order table has not caught up with: `claims` (winners the event feed flags who still hold an open pre-authorisation draft, the app's entry draft, on the draw's own product and have no paid order for it), `units` (on those drafts), and `product_title` (the draw's product: the one its winners have paid orders for most, else the one its entrants hold drafts for most). Written with the orders files, empty when its query fails, never committed: a claims file from another moment than the orders would count a sale twice (§6.3) |
 | `sources/units_paid.csv` | release × product title × order day (CET) × channel × `purchase_event` | `units_paid`, `units_private_room`, `prints_offered_paid`, `frames_paid`: the paid lines of `orders_by_product.csv` by the same rule (one set of CTEs, `orderLinesCtes`), each order on the channel of its earliest purchase event in the event feed (`AA_session_custom_channel_group_split_touch`, joined on the Shopify order id alone), `Untracked` with `purchase_event` false where the event feed has no purchase for the order. Summed over its days and channels it is `units_paid` per product. The units every card counts (§6.3); written beside the other two in the same commit, so a deploy resets all three to one committed copy, and `etl/build.py` reads a release whose units here do not add up to its `units_paid` in `orders_by_product.csv` as out of step (two pulls), counting the funnel's units for it until the next pull |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
@@ -1294,6 +1295,9 @@ appetite = max quantity − pieces already bought        (no cap: everything ent
 unpaid wins spend the appetite first but count no units (a winner who has not paid is a
 draft when an advisor has an order out for them, and nowhere otherwise); the appetite left
 goes to the open entries
+claims still landing     → counted first, at the pre-order rate, on their product: a draw
+                           round's winners whose orders the order table has not shown yet
+                           (see below)
 appetite ≥ open entries  → counted once on each (nothing to choose)
 appetite < open entries  → FLEXIBLE: placed one unit at a time, for revenue: on the
                            priciest product that still has room, the lowest fill among
@@ -1323,6 +1327,28 @@ is the unpaid wins, tracked but not counted),
 `predicted` = allocated × rate, `shown` = predicted capped at the room, `oversubscribed` =
 the rest; and for the release `allocation.{entrants, flexibleEntrants, surplusEntries,
 uncapped, unpaidWinners, flexibleUnits}`.
+
+**Claiming pre-orders never reads as sell-through going down.** A draw round claims its
+winners' pre-orders: the pre-authorised card is charged and the app's pre-authorisation
+draft becomes the paid order. The event feed flags the winners at once; the order table,
+which the page's units sold come from, shows the orders at its next sync, an hour or so
+later (on the Warhol Lifesize on 25 September, twelve claims at 10:00 UK time reached the
+order table at 11:16). In between, those people are neither entries in hand nor sales, and
+the sell-through would dip until the orders land. So the orders pull also counts, per draw,
+the winners who still hold an open pre-authorisation draft on the draw's own product and
+have no paid order for it (`data/draw_claims.csv`, `drawClaimsSql`): during a round those
+are exactly the claims the order table has not caught up with, since the sync that brings
+the order removes the draft, and a claim that fails removes it too. Outside a round a few
+stale drafts sit there for days (a draft left open after a failed charge; on 25 September,
+23 people across 19 draws, most on closed releases). A single pull cannot tell those from a
+round, but time can: each pull's counts are kept for a day (`draw_claims_history.json` on
+the sources disk) and a draw's claims are still landing only by how far they stand above
+their lowest count over the last six hours (`load_draw_claims`). A round shows as the rise
+and is gone at the next sync; a stale draft counts for at most six hours, then is part of
+the floor. A first pull, or one after a gap, has no floor but itself and counts none.
+Each product takes its draws' claims as `claimsInFlight`, counted at the pre-order rate
+before any entrant is placed, so they take their room first; the row carries them as
+`claims` and the release as `sellthrough.claimsInFlight`.
 
 **The card's colours are one ramp, and the message posted to Slack is the same rows.**
 Paid, drafts, the draw winners the entries imply and (at close) the units still to come are

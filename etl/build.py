@@ -1604,6 +1604,77 @@ def load_orders_feed() -> dict:
     return feed
 
 
+CLAIMS_WINDOW_HOURS = 6     # a draw's claims above its lowest count over this long are still landing
+CLAIMS_HISTORY_HOURS = 24   # how long the pulls' claim counts are kept
+CLAIMS_SAME_PULL_SECONDS = 600   # the claims file and the orders file must come from one pull
+
+
+_DRAW_CLAIMS: dict | None = None
+
+
+def draw_claims() -> dict:
+    """load_draw_claims once per build: it keeps the history as it reads."""
+    global _DRAW_CLAIMS
+    if _DRAW_CLAIMS is None:
+        _DRAW_CLAIMS = load_draw_claims()
+    return _DRAW_CLAIMS
+
+
+def load_draw_claims(now: float | None = None) -> dict:
+    """{draw id: claims still landing} (docs/DATA_MODEL.md 6.3). The pull
+    writes, per draw, the winners who still hold an open pre-authorisation
+    draft on the draw's product and have no paid order for it
+    (data/draw_claims.csv, server/bigquery.js drawClaimsSql). During a claim
+    round those are the claims the order table has not caught up with yet;
+    outside one a few stale drafts sit there for days. So each pull's counts
+    are kept for a day (SOURCES/draw_claims_history.json, on the persistent
+    disk with the other feeds) and a draw's claims are still landing only by
+    how far its count stands above its lowest over the last six hours: a round
+    shows as the rise, the stale ones as the floor. A first pull has no floor
+    to compare with and counts none. A claims file from another pull than the
+    orders file is not read: it would count a sale twice."""
+    path, orders = DATA / "draw_claims.csv", DATA / "orders_by_product.csv"
+    if not path.exists():
+        return {}
+    at = path.stat().st_mtime
+    if orders.exists() and abs(at - orders.stat().st_mtime) > CLAIMS_SAME_PULL_SECONDS:
+        return {}
+    counts: dict = {}
+    try:
+        with path.open(newline="") as fh:
+            for r in csv.DictReader(fh):
+                try:
+                    counts[str(r["draw_id"])] = counts.get(str(r["draw_id"]), 0) + int(float(r.get("claims") or 0))
+                except (KeyError, TypeError, ValueError):
+                    continue
+    except OSError:
+        return {}
+    hist_path = SOURCES / "draw_claims_history.json"
+    try:
+        pulls = json.loads(hist_path.read_text()).get("pulls", []) if hist_path.exists() else []
+    except (OSError, ValueError):
+        pulls = []
+    now = at if now is None else now
+    pulls = [q for q in pulls if isinstance(q, dict) and isinstance(q.get("at"), (int, float))
+             and 0 <= at - q["at"] <= CLAIMS_HISTORY_HOURS * 3600 and q["at"] != at]
+    pulls.append({"at": at, "claims": counts})
+    pulls.sort(key=lambda q: q["at"])
+    try:
+        SOURCES.mkdir(parents=True, exist_ok=True)
+        tmp = hist_path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps({"pulls": pulls}))
+        tmp.replace(hist_path)
+    except OSError as e:
+        print(f"warning: could not keep the claims history: {e}")
+    window = [q for q in pulls if at - q["at"] <= CLAIMS_WINDOW_HOURS * 3600]
+    out = {}
+    for d, n in counts.items():
+        floor = min(int((q.get("claims") or {}).get(d, 0)) for q in window)
+        if n - floor > 0:
+            out[d] = n - floor
+    return out
+
+
 def orders_campaign_codes() -> dict:
     """Release name -> campaign code, from the orders feed (the code Meta's
     campaign names start with), for the panel's cost per paid unit."""
@@ -2214,6 +2285,14 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     if of:
         products, source = attach_orders(products, of["products"], of["draws"], source,
                                          orders_only=bool(of.get("windowed")))
+    # claims a draw round has made that the order table has not caught up
+    # with: counted on their product at the pre-order rate until the orders
+    # land, so claiming pre-orders never reads as sell-through going down
+    claims = draw_claims()
+    for p in products:
+        n = sum(claims.get(str(d), 0) for d in (p.get("draws") or []))
+        if n > 0:
+            p["claimsInFlight"] = n
     # once the window has shut, no entry is still in hand: only what was paid counts
     patterns = [] if closed else (feed.get("patterns") or [])
     pp = sell_through_products(products, patterns, rate=rate, edition=edition,
@@ -2223,6 +2302,7 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
                                   "editionSum", "editionMismatch")})
     st["soldSource"] = source
     st["allocationStarted"] = bool(feed.get("allocated"))
+    st["claimsInFlight"] = sum(int(p.get("claimsInFlight") or 0) for p in products)
     if of and pp.get("drafts") is not None:
         st["drafts"] = pp["drafts"]   # the products' drafts, counted per collector and capped at their room
     # what the card is still waiting on, so it can say so: sales by product

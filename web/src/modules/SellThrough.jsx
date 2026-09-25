@@ -217,6 +217,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const methodTip = {
     head: "How the card counts",
     body: `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw winners (estimate) are the people still in the draw, counted at ${rateText}${twoRates ? `, or at ${preRateText} where they entered as a pre-order and their card is already authorised` : ""}. Winners who have not paid are not counted: the order sent after a failed payment is in Drafts for 72 hours, and after that it is out. ` +
+      "A draw round's winners whose claim the order feed has not caught up with yet still count, at the pre-order rate, until their orders land, so claiming pre-orders never reads as sell-through going down" +
+      (finite(st.claimsInFlight) && st.claimsInFlight > 0 ? ` (${fmt(st.claimsInFlight)} landing now). ` : ". ") +
       "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them." +
       (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };

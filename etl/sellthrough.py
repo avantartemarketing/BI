@@ -94,8 +94,13 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
         return fixed[i] + flexible[i]
 
     # the orders those entries are expected to become: each at its own rate,
-    # so a product's prediction is the sum and not a count times one rate
-    pred = [0.0] * n_products
+    # so a product's prediction is the sum and not a count times one rate.
+    # It starts from the claims still landing (a draw round's winners the
+    # order table has not caught up with, docs 6.3), at the pre-order rate:
+    # they are sales in all but the order table, and they take their room
+    # before any entrant is placed
+    claims = [max(float(p.get("claimsInFlight") or 0), 0.0) for p in products]
+    pred = [claims[i] * pre_rates[i] for i in range(n_products)]
 
     def fill(i: int) -> float:
         v = sold[i] + pred[i]
@@ -234,7 +239,7 @@ def allocate_entries(products: list[dict], patterns: list[dict], rate: float = 0
         room = None if editions[i] is None else max(editions[i] - sold[i], 0.0)
         shown = predicted if room is None else min(predicted, room)
         out.append({"key": p.get("key"), "allocated": allocated, "pinned": pinned[i], "fixed": fixed[i],
-                    "flexible": flexible[i], "inHand": {"open": open_people[i], "won": won_people[i]},
+                    "flexible": flexible[i], "claims": claims[i], "inHand": {"open": open_people[i], "won": won_people[i]},
                     "predicted": predicted, "shown": shown, "room": room,
                     "oversubscribed": 0.0 if room is None else max(predicted - room, 0.0)})
     return {"rate": r, "preorderRate": pre_default, "measure": "fill" if by_fill else "units", "products": out,
@@ -304,6 +309,7 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
             "winnerDrafts": float(p["winnerDrafts"]) if _finite(p.get("winnerDrafts")) else None,
             "winnerDraftsLapsed": float(p["winnerDraftsLapsed"]) if _finite(p.get("winnerDraftsLapsed")) else None,
             "allocated": a["allocated"], "pinned": a["pinned"], "fixed": a["fixed"], "flexible": a["flexible"],
+            "claims": a["claims"],
             "predicted": _r1(a["predicted"]), "shown": _r1(a["shown"]), "room": a["room"],
             "oversubscribed": _r1(a["oversubscribed"]),
             "futurePredicted": _r1(future_share[i]),

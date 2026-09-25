@@ -72,6 +72,10 @@ const DRAW_PRODUCTS = path.join(ROOT, "data", "draw_products.csv");
 // the other two, written in the same commit, so a deploy's committed copy
 // resets all three together (etl/build.py checks they are from one pull)
 const UNITS_PAID = path.join(ROOT, "data", "units_paid.csv");
+// claims a draw round has made that the order table has not caught up with
+// (drawClaimsSql); written with the orders files, never committed (a claims
+// file from another moment than the orders would count a sale twice)
+const DRAW_CLAIMS = path.join(ROOT, "data", "draw_claims.csv");
 // what the local funnel file is: window, columns, last date, when it was last
 // pulled in full. Absent = never pulled from BigQuery (or it came from the sheet)
 const META = path.join(SOURCES, "across_time.meta.json");
@@ -412,6 +416,7 @@ const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids
   "prints_offered_paid", "frames_paid", "prints_offered_entry_drafts", "frames_entry_drafts",
   "prints_offered_awaiting", "frames_awaiting"];
 const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
+const DRAW_CLAIMS_HEADER = ["release", "draw_id", "product_title", "claims", "units"];
 
 // The order lines, typed: every rule the orders feed counts a unit by (paid
 // or refunded, a draft and whose, the frames a print took), as one CTE chain
@@ -629,6 +634,49 @@ const drawProductsSql = () =>
   "FROM pairs\n" +
   "QUALIFY ROW_NUMBER() OVER (PARTITION BY release, draw_id ORDER BY orders DESC, product_title) = 1\n" +
   "ORDER BY release, draw_id";
+
+/* The claims a draw round has made that the order table has not caught up
+ * with (docs/DATA_MODEL.md 6.3). Claiming a pre-order turns the winner's
+ * pre-authorisation draft into the paid order, and the order table shows
+ * both changes at its next sync, an hour or so after the event feed has
+ * flagged the winner. In between, the winner is neither an entry in hand
+ * nor a sale, and the sell-through would dip until the orders land. So,
+ * per draw: the winners the event feed flags who still hold an open
+ * pre-authorisation draft (the app's entry draft) on the draw's own product
+ * and have no paid order for it. Settled winners hold no such draft, paid
+ * or failed, so outside a claim round this is empty. The draw's product is
+ * the one its winners have paid orders for most, else, on a draw's first
+ * round, the one its entrants hold pre-authorisations for most. Counts
+ * only: people and units per draw, joined inside BigQuery. */
+const drawClaimsSql = () =>
+  "WITH " + orderLinesCtes() + ",\n" +
+  "draw_people AS (\n" +
+  "  SELECT e.simple_release_name AS release, e.draw_id, c.shopify_customer_id AS customer_id, LOGICAL_OR(COALESCE(e.winner, FALSE)) AS won\n" +
+  `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\` e\n` +
+  `  JOIN \`${PROJECT}.${DATASET}.${COLLECTORS_TABLE}\` c ON c.aa_account_id = e.aa_account_id AND c.shopify_customer_id IS NOT NULL\n` +
+  "  WHERE e.event_name = 'draw entry intent' AND e.draw_id IS NOT NULL AND e.event_date >= @since\n" +
+  "  GROUP BY 1, 2, 3),\n" +
+  "held_drafts AS (\n" +
+  "  SELECT release, customer_id, product_title, SUM(quantity) AS units FROM typed\n" +
+  "  WHERE entry_draft AND customer_id IS NOT NULL GROUP BY 1, 2, 3),\n" +
+  "paid_by AS (SELECT DISTINCT release, customer_id, product_title FROM typed WHERE paid AND customer_id IS NOT NULL),\n" +
+  "draw_product AS (\n" +
+  "  SELECT release, draw_id, product_title FROM (\n" +
+  "    SELECT p.release, p.draw_id, b.product_title, 0 AS source, COUNT(DISTINCT p.customer_id) AS n\n" +
+  "    FROM draw_people p JOIN paid_by b ON b.release = p.release AND b.customer_id = p.customer_id\n" +
+  "    WHERE p.won GROUP BY 1, 2, 3\n" +
+  "    UNION ALL\n" +
+  "    SELECT p.release, p.draw_id, h.product_title, 1 AS source, COUNT(DISTINCT p.customer_id) AS n\n" +
+  "    FROM draw_people p JOIN held_drafts h ON h.release = p.release AND h.customer_id = p.customer_id\n" +
+  "    GROUP BY 1, 2, 3)\n" +
+  "  QUALIFY ROW_NUMBER() OVER (PARTITION BY release, draw_id ORDER BY source, n DESC, product_title) = 1)\n" +
+  "SELECT p.release, p.draw_id, dp.product_title, COUNT(DISTINCT p.customer_id) AS claims, SUM(h.units) AS units\n" +
+  "FROM draw_people p\n" +
+  "JOIN draw_product dp ON dp.release = p.release AND dp.draw_id = p.draw_id\n" +
+  "JOIN held_drafts h ON h.release = p.release AND h.customer_id = p.customer_id AND h.product_title = dp.product_title\n" +
+  "LEFT JOIN paid_by b ON b.release = p.release AND b.customer_id = p.customer_id AND b.product_title = dp.product_title\n" +
+  "WHERE p.won AND b.customer_id IS NULL\n" +
+  "GROUP BY 1, 2, 3\nORDER BY 1, 2";
 
 /* A writer that keeps the columns as they come, once they are the expected
  * ones: these files are read by name in etl/build.py, so a column added or
@@ -1120,9 +1168,24 @@ async function pull({ write = true, full = false, events = true, only = null } =
       const c = await streamTable(token, unitsPaidSql(), SINCE, passthroughWriter(UNITS_PAID_HEADER, "units paid"), t3);
       if (c.rows < 10) throw new Error(`units paid query returned ${c.rows} rows - not overwriting`);
       guardShrink("units paid query", c.rows, UNITS_PAID);
-      if (write) { t1.commit(ORDERS_BY_PRODUCT); t2.commit(DRAW_PRODUCTS); t3.commit(UNITS_PAID); } else { t1.discard(); t2.discard(); t3.discard(); }
-      orders = { rows: a.rows, draws: b.rows, units: c.rows, bytes: a.bytes + b.bytes + c.bytes, cached: a.cached && b.cached && c.cached };
-      ordersNote = `orders ${a.rows} products, ${b.rows} draws named, ${c.rows} unit rows by day and channel`;
+      // the claims still landing, from the same moment as the orders: a file
+      // from another moment would count a sale twice, so when its query fails
+      // the file is written empty (no claims) rather than kept
+      const t4 = new Tmp(DRAW_CLAIMS, write);
+      let claims = 0, claimsNote = "";
+      try {
+        const d = await streamTable(token, drawClaimsSql(), SINCE, passthroughWriter(DRAW_CLAIMS_HEADER, "draw claims"), t4);
+        claims = d.rows;
+      } catch (e) {
+        t4.discard();
+        claimsNote = ` (claims in flight unavailable, none counted: ${String(e.message || e).replace(/\s+/g, " ").slice(0, 100)})`;
+      }
+      if (write) {
+        t1.commit(ORDERS_BY_PRODUCT); t2.commit(DRAW_PRODUCTS); t3.commit(UNITS_PAID);
+        if (claimsNote) fs.writeFileSync(DRAW_CLAIMS, DRAW_CLAIMS_HEADER.join(",") + "\n"); else t4.commit(DRAW_CLAIMS);
+      } else { t1.discard(); t2.discard(); t3.discard(); t4.discard(); }
+      orders = { rows: a.rows, draws: b.rows, units: c.rows, claims, bytes: a.bytes + b.bytes + c.bytes, cached: a.cached && b.cached && c.cached };
+      ordersNote = `orders ${a.rows} products, ${b.rows} draws named, ${c.rows} unit rows by day and channel, ${claims} draw(s) with claims in flight${claimsNote}`;
     } catch (e) {
       t1.discard(); t2.discard(); t3.discard();
       ordersNote = `orders unavailable, keeping the last files (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`;
@@ -1184,6 +1247,7 @@ async function pull({ write = true, full = false, events = true, only = null } =
 module.exports = {
   pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
   SOURCES, ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
+  DRAW_CLAIMS, DRAW_CLAIMS_HEADER, drawClaimsSql,
   UNITS_PAID, UNITS_PAID_HEADER, unitsPaidSql, orderLinesCtes,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
   LE_BROWSING, BROWSING_META, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,

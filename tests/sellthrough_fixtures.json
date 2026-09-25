@@ -576,6 +576,71 @@
         ]
       },
       "_why": "A: 10 pre-orders at 0.95 and 5 plain at 0.8 = 13.5; B: 10 pre-orders at the release's 0.95 = 9.5. B carries a preorderRate of its own (0.5), which is no longer read: every product converts at the release's two rates, the ones the Target setting tab shows"
+    },
+    {
+      "name": "claims still landing count at the pre-order rate and take their room first",
+      "_why": "A has 10 sold of 20 and 5 claims a draw round has made that the order table has not caught up with: they count 5 x 0.95 = 4.75 on A before any entrant is placed, so A over-allocates 7 flexible entrants at 0.8 (4.75 + 5.6 = 10.35, shown at its 10 of room) and the other 3 go to B; without the claims A would have taken all 10 and read 8 short of sell-out while the orders landed",
+      "rate": 0.8,
+      "preorderRate": 0.95,
+      "edition": 120,
+      "soldTotal": 10,
+      "futureUnits": 0,
+      "products": [
+        {
+          "key": "A",
+          "name": "A",
+          "edition": 20,
+          "draws": [
+            "dA"
+          ],
+          "sold": 10,
+          "drafts": null,
+          "listPrice": 2500,
+          "claimsInFlight": 5
+        },
+        {
+          "key": "B",
+          "name": "B",
+          "edition": 100,
+          "draws": [
+            "dB"
+          ],
+          "sold": 0,
+          "drafts": null,
+          "listPrice": 750
+        }
+      ],
+      "patterns": [
+        {
+          "open": [
+            "dA",
+            "dB"
+          ],
+          "won": [],
+          "sold": [],
+          "bought": 0,
+          "max": 1,
+          "n": 10
+        }
+      ],
+      "expect": {
+        "allocated": [
+          7,
+          3
+        ],
+        "shown": [
+          10.0,
+          2.4
+        ],
+        "oversubscribed": [
+          0.4,
+          0.0
+        ],
+        "room": [
+          10.0,
+          100.0
+        ]
+      }
     }
   ]
 }

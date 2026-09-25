@@ -25,3 +25,4 @@ data/app/funnel.cache.pkl
 data/app/funnel.cache.json
 data/app/untracked_norms.json
 .venv
+data/draw_claims.csv
