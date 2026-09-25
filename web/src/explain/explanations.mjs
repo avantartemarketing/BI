@@ -612,7 +612,7 @@ EXPLAIN["paid.roi"] = (a, c) => {
   const Who = artist ? "The artist" : "Avant Arte";
   const net = ppu * (1 - cann);
   const notes = [];
-  if (!artist && p.aaBudgetShareAssumed) notes.push("No product records its deal yet, so half the spend is assumed to be Avant Arte's. Type each product's profit or revenue share on the Target setting tab.");
+  if (!artist && p.aaBudgetShareAssumed) notes.push("No product records its deal yet, so half the spend is assumed to be Avant Arte's. Type each product's AA profit share (or AA revenue share) on the Target setting tab: the spend divides as the profit does.");
   if (!artist) notes.push("Avant Arte's profit per unit includes the framing uplift, which is Avant Arte's alone.");
   notes.push(whole ? "The whole campaign's full days." : "The last three full days, so the figure moves with the latest spend rather than the campaign's average.");
   return {
