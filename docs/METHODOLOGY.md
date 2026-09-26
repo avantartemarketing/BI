@@ -152,7 +152,8 @@ Medium / High chosen per channel from the whole historical panel. That model was
 retired: it asked a question about the panel rather than about this launch, and
 nobody used it once baskets existed. What survives of it is a handful of
 constants (`etl/benchmarks.json`): the 0.8 eligible-entry → order rate (0.95 for
-pre-orders), the 20% cannibalisation, the framing defaults, the 6% budget sense
+pre-orders), the 20% cannibalisation, the 35% frame take-up (the profit per frame is
+always the product's own), the 6% budget sense
 check, the paid spend rules, and two tables read at the median only - the
 channel order split, which places a channel group's target on its individual
 channels, and the cost per purchase, the default price of a paid unit.

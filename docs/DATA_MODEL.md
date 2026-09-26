@@ -48,19 +48,28 @@ Derived economics:
 - `artist_profit_per_unit = artist_profit / edition_size` (1,218.60)
 - `aa_profit_per_unit_ex_framing = aa_group_profit / edition_size` (1,465.29)
 - `aa_profit_per_unit = aa_profit_per_unit_ex_framing + (framing_available ? frame_conversion × frame_profit : 0)`
-  = 1,465.29 + 0.35 × 94 = **1,498.19**
+  = 1,465.29 + 0.35 × 94 = **1,498.19** (the workbook's own worked example, with its €94)
 
 `frame_conversion` (the share of buyers taking a frame) and `frame_profit_per_unit` (AA's
-profit per frame, €) are **release-level inputs** on the Target setting tab, shown when framing
-is available; left blank they fall back to the benchmark constants below, which is what every
-release ran on before they were inputs (`frame_terms` in `etl/build.py`, mirrored in
-`shared/economics.mjs`). The snapshot's `economics` block publishes the terms in force
+profit per frame, €) are **per-product inputs**: Airtable's Framing profit per unit, or typed on
+the Target setting tab, shown when framing is available. The take-up left blank falls back to
+the benchmark constant below; the profit per frame has **no default** (the workbook's €94 was
+retired on 26 September 2026, since every framed product carries its own): a framed product
+without one adds no uplift and the tab shows the cell empty (`frame_terms` in
+`etl/build.py`, mirrored in `shared/economics.mjs`). Whether a frame is on offer is
+Airtable's Framing ("No framing option" is none; "Framed on order" and "Full Edition Framed"
+are one), typed over on the tab; where Airtable's Framing is blank, a **sculpture edition**
+(Edition type SE, or a "3D edition" product type) has none and a print has one
+(`pricing.is_sculpture`, carried to the tab as `framing_default`). Frame profit is Avant
+Arte's alone, so a framed product lifts AA's profit per unit and its paid ROI, never the
+artist's. The snapshot's `economics` block publishes the terms in force
 (`frameConversion`, `frameProfitPerUnit`, `frameUpliftPerUnit`). The draw export's per-entry
 "Framed" flag (`framed_share` in the draw block) is the observed take-up where the export exists;
 it is not fed into the calculation automatically.
 
 Global constants (from the workbook's "PROFIT CALC - DO NOT CHANGE" block):
-`frame_conversion = 0.35`, `frame_profit = €94/unit`, `cannibalisation = 0.2`
+`frame_conversion = 0.35`, `cannibalisation = 0.2` (the workbook's `frame_profit = €94/unit`
+is no longer used: the profit per frame is per product)
 (the LE standard per the spend rules. The 2026-08-28 tab revision left several
 per-release cannibalisation cells reading 0 via the broken template reference
 (issue 14, §11) - those cells are display artefacts, not the constant. The TL

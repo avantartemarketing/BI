@@ -76,12 +76,16 @@ export function effectiveProduct(p, b) {
   e.aa_profit_per_unit = num(pick("aa_profit_per_unit"));
   e.aa_revenue_share = num(pick("aa_revenue_share"));
   e.aa_profit_share = num(pick("aa_profit_share"));
-  const fa = pick("framing_available", null, true);
+  // a frame is on offer unless Airtable or the tab says not; with nothing
+  // said, a sculpture edition has none (etl/pricing.py framing_default)
+  const fa = pick("framing_available", null, p.framing_default !== false);
   e.framing_available = fa !== false;
+  // the take-up falls back to the benchmark default; the profit per frame is
+  // the product's own or nothing (etl/build.py frame_terms): no uplift without it
   const conv = num(pick("frame_conversion")), profit = num(pick("frame_profit_per_unit"));
   e.frame_conversion = Math.min(Math.max(conv === null ? Number(b.frame_conversion) : conv, 0), 1);
-  e.frame_profit_per_unit = Math.max(profit === null ? Number(b.frame_profit_per_unit) : profit, 0);
-  e.frame_uplift_per_unit = e.framing_available ? round2(e.frame_conversion * e.frame_profit_per_unit) : 0;
+  e.frame_profit_per_unit = profit === null ? null : Math.max(profit, 0);
+  e.frame_uplift_per_unit = e.framing_available && e.frame_profit_per_unit !== null ? round2(e.frame_conversion * e.frame_profit_per_unit) : 0;
   if (e.aa_profit_share !== null) { e.aa_budget_share = Math.min(Math.max(e.aa_profit_share, 0), 1); e.deal = "profit share"; }
   else if (e.aa_revenue_share !== null) { e.aa_budget_share = 1.0; e.deal = "revenue share"; }
   else { e.aa_budget_share = null; e.deal = null; }
@@ -104,7 +108,7 @@ export function releaseEconomics(products, legacy, b) {
     const framing = legacy.framing_available !== false;
     const conv = num(legacy.frame_conversion), profit = num(legacy.frame_profit_per_unit);
     const frameConv = Math.min(Math.max(conv === null ? Number(b.frame_conversion) : conv, 0), 1);
-    const frameProfit = Math.max(profit === null ? Number(b.frame_profit_per_unit) : profit, 0);
+    const frameProfit = profit === null ? null : Math.max(profit, 0);
     // the ads divide as the profit does (etl/build.py legacy_budget_share):
     // AA's share of the profit, all of it when the artist takes none, and
     // half, flagged as assumed, when nothing is typed
@@ -115,9 +119,9 @@ export function releaseEconomics(products, legacy, b) {
       mode: "release", edition_size: size, edition_total: Math.max(lnum("edition_total") || 0, size),
       unit_price: lnum("unit_price") || 0, currency: PAGE_CURRENCY, launch_value: size * (lnum("unit_price") || 0),
       ppu_artist: (lnum("artist_profit") || 0) / size,
-      ppu_aa: (lnum("aa_group_profit") || 0) / size + (framing ? frameConv * frameProfit : 0),
+      ppu_aa: (lnum("aa_group_profit") || 0) / size + (framing ? frameConv * (frameProfit || 0) : 0),
       framing_available: framing, frame_conversion: frameConv, frame_profit_per_unit: frameProfit,
-      frame_uplift_per_unit: framing ? frameConv * frameProfit : 0,
+      frame_uplift_per_unit: framing ? frameConv * (frameProfit || 0) : 0,
       aa_budget_share: aaShare, aa_budget_share_assumed: assumed, artist_profit_share: 1 - aaShare, deal: [],
     };
   }

@@ -515,6 +515,16 @@ PRODUCT_TEXT = ("airtable_id", "project_code", "title", "release", "currency", "
 _RECORDS: tuple[float, pd.DataFrame, pd.DataFrame] | None = None   # (mtime, records, launches)
 
 
+def is_sculpture(edition_type, product_type) -> bool:
+    """A sculpture edition, by Airtable's Edition type (SE) or Product type
+    (a "3D edition" at any cost, or named a sculpture): the works with no
+    frame to offer. On the Airtable pull of 25 September 2026 every such
+    record that fills Framing in says "No framing option"."""
+    et = str(edition_type or "").strip().upper()
+    pt = str(product_type or "").strip().lower()
+    return et == "SE" or "3d" in pt or "sculpture" in pt
+
+
 def _num_or_none(v) -> float | None:
     try:
         f = float(v)
@@ -607,6 +617,9 @@ def release_products(release: dict, pricing_path: pathlib.Path | str | None = No
         # "Framed on order" is a framing option; "No framing option" is not
         fr = (p.get("framing") or "").lower()
         p["framing_available"] = (not fr.startswith("no framing")) if fr else None
+        # and where Airtable says nothing: a sculpture edition has no frame to
+        # offer, a print has one (the default the Target setting tab shows)
+        p["framing_default"] = not is_sculpture(p.get("edition_type"), p.get("product_type"))
         out["products"].append(p)
     dates = [d for d in (p.get("announce_date") for p in out["products"]) if d]
     out["announce_date"] = min(dates) if dates else None

@@ -974,18 +974,20 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
     return out
 
 
-def frame_terms(release: dict, b: dict = BENCH) -> tuple[float, float]:
-    """The framing uplift's two terms for one release: the share of buyers
-    expected to take a frame and AA's profit per frame. Both are release-level
-    inputs (frame_conversion, frame_profit_per_unit on the Target setting tab)
-    with the workbook's constants in benchmarks.json (0.35 and 94) as the
-    defaults - the constants were the same for every release whatever its
-    price point, and a €500 print and a €4,000 one do not frame alike."""
+def frame_terms(release: dict, b: dict = BENCH) -> tuple[float, float | None]:
+    """The framing uplift's two terms for one release or product: the share of
+    buyers expected to take a frame, its own figure else the benchmark default
+    (benchmarks.json frame_conversion), and AA's profit per frame, its own
+    figure only. There is no default profit per frame: every framed product
+    carries its own (Airtable's Framing profit per unit, or typed on the
+    Target setting tab), so a product without one adds no uplift and the tab
+    shows the cell empty rather than a constant (the workbook's €94, retired
+    on 26 September 2026). The profit is None when there is none."""
     conv = release.get("frame_conversion")
     profit = release.get("frame_profit_per_unit")
     conv = float(b["frame_conversion"]) if conv is None or conv == "" else float(conv)
-    profit = float(b["frame_profit_per_unit"]) if profit is None or profit == "" else float(profit)
-    return min(max(conv, 0.0), 1.0), max(profit, 0.0)
+    profit = None if profit is None or profit == "" else max(float(profit), 0.0)
+    return min(max(conv, 0.0), 1.0), profit
 
 
 def cannibalisation_for(release: dict, b: dict = BENCH) -> float:
@@ -1013,7 +1015,7 @@ def aa_profit_per_unit(release: dict, b: dict = BENCH) -> float:
     if release.get("framing_available") is False:
         return base
     conv, profit = frame_terms(release, b)
-    return base + conv * profit
+    return base + conv * (profit or 0.0)
 
 
 def compute_targets(release: dict, profile: dict | None, upb_slope: float = UNITS_PER_BUYER_FALLBACK) -> dict | None:
@@ -2695,11 +2697,13 @@ def _effective_product(p: dict, b: dict) -> dict:
     e["aa_profit_per_unit"] = _num(pick("aa_profit_per_unit"))
     e["aa_revenue_share"] = _num(pick("aa_revenue_share"))
     e["aa_profit_share"] = _num(pick("aa_profit_share"))
-    fa = pick("framing_available", default=True)
+    # a frame is on offer unless Airtable or the tab says not; with nothing
+    # said, a sculpture edition has none (etl/pricing.py framing_default)
+    fa = pick("framing_available", default=p.get("framing_default") is not False)
     e["framing_available"] = fa is not False
     conv, profit = frame_terms({"frame_conversion": pick("frame_conversion"), "frame_profit_per_unit": pick("frame_profit_per_unit")}, b)
     e["frame_conversion"], e["frame_profit_per_unit"] = conv, profit
-    e["frame_uplift_per_unit"] = round(conv * profit, 2) if e["framing_available"] else 0.0
+    e["frame_uplift_per_unit"] = round(conv * profit, 2) if e["framing_available"] and profit is not None else 0.0
     # who funds the ads: on a profit-share deal Avant Arte carries its share of
     # the profit; on a revenue-share (royalty) deal the artist is paid on
     # revenue whatever the ads cost, so Avant Arte carries them all
@@ -2895,7 +2899,7 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
     # the identity); the record's other columns stay in the pricing file
     keep = ("airtable_id", "name", "project_code", "edition", "target_sellthrough", "unit_price", "currency",
             "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share",
-            "framing_available", "frame_conversion", "frame_profit_per_unit")
+            "framing_available", "framing_default", "frame_conversion", "frame_profit_per_unit")
     products = [{k: p.get(k) for k in keep} for p in at["products"]]
     return {
         "airtable": {"match": at["match"], "note": at["note"], "products": products,
@@ -4394,11 +4398,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "launchCurrencies": release.get("launch_currencies") or [],
             "airtableMatch": release.get("airtable_match"),
             # the framing uplift inside aaProfitPerUnit: the terms in force for
-            # this release (its own inputs, else the benchmark defaults)
+            # this release (its own inputs; the take-up else the benchmark
+            # default, the profit per frame only its own, None without one)
             "framingAvailable": release.get("framing_available") is not False,
             "frameConversion": frame_conv, "frameProfitPerUnit": frame_profit,
             "frameUpliftPerUnit": (round(float(release["frame_uplift_per_unit"]), 2) if release.get("frame_uplift_per_unit") is not None
-                                   else round(frame_conv * frame_profit, 2) if release.get("framing_available") is not False else 0.0),
+                                   else round(frame_conv * (frame_profit or 0.0), 2) if release.get("framing_available") is not False else 0.0),
         },
         "currency": "units",
         "hero": {

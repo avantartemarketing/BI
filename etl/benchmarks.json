@@ -114,7 +114,6 @@
   "cpe_daily_drift_sd": 0.035
  },
  "frame_conversion": 0.35,
- "frame_profit_per_unit": 94,
  "budget_sense_check_max_pct_of_launch_value": 0.06,
  "cpe_spend_elasticity": 0.38,
  "cpe_spend_elasticity_note": "Prior for the within-campaign elasticity of cost per entry to daily spend. Fixed-effect fit with a calendar-day drift term on 29 campaigns / 433 campaign-days (etl/analysis/cpe_elasticity.py, 2026-09-23): 0.35-0.45 depending on the day filter (0.377 +/- 0.038 on every day with an entry); the 2026-09-07 fit on 13 campaigns gave 0.384 +/- 0.062. Per-campaign fits spread with a between-campaign sd of 0.19 (cpe_spend_elasticity_sd), which is the prior's width. A campaign with cpe_fit_min_days of history gets its own elasticity fitted and shrunk to this prior by precision (etl/build.py campaign_cost_terms); the prior alone prices a campaign without history. Doubling daily spend raises CPE ~30% at 0.38. Set to 0 to price entries flat.",

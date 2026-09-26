@@ -66,6 +66,15 @@ def test_products_and_totals() -> None:
         assert red["frame_uplift_per_unit"] == 50.0 and blue["frame_uplift_per_unit"] == 0.0
         assert close(r["frame_uplift_per_unit"], 40 * 50 / 90)
         assert close(build.aa_profit_per_unit(r), 400.0 + 40 * 50 / 90)
+        # a blank Framing: a sculpture edition has no frame, a print has one, both as the default;
+        # a framed product without its own profit per frame adds no uplift and shows none
+        sculpt = build._effective_product(dict(AT[0], framing=None, framing_available=None, framing_default=False,
+                                               frame_profit_per_unit=None), build.BENCH)
+        assert sculpt["framing_available"] is False and sculpt["sources"]["framing_available"] == "default" and sculpt["frame_uplift_per_unit"] == 0.0
+        printed = build._effective_product(dict(AT[0], framing=None, framing_available=None, framing_default=True,
+                                                frame_profit_per_unit=None), build.BENCH)
+        assert printed["framing_available"] is True and printed["sources"]["framing_available"] == "default"
+        assert printed["frame_profit_per_unit"] is None and printed["frame_uplift_per_unit"] == 0.0, printed
         # dates: typed over Airtable, the private room from Airtable where nothing was typed
         assert r["announce_date"] == "2026-09-01" and r["input_sources"]["announce_date"] == "typed"
         assert r["private_room_open"] == "2026-08-20" and r["input_sources"]["private_room_open"] == "airtable"
@@ -96,7 +105,12 @@ def test_products_and_totals() -> None:
         r5 = build.resolve_release(dict(base, legacy_economics={"edition_size": 200, "edition_total": 300, "unit_price": 900,
                                                                "artist_profit": 20000, "aa_group_profit": 40000, "artist_profit_share": 0}), None, {})
         assert r5["economics_mode"] == "release" and r5["edition_size"] == 200 and r5["edition_total"] == 300
-        assert r5["aa_budget_share"] == 1.0 and close(build.aa_profit_per_unit(r5), 200.0 + 0.35 * 94)
+        # no profit per frame typed: no framing uplift (there is no default profit per frame)
+        assert r5["aa_budget_share"] == 1.0 and close(build.aa_profit_per_unit(r5), 200.0)
+        r5f = build.resolve_release(dict(base, legacy_economics={"edition_size": 200, "edition_total": 300, "unit_price": 900,
+                                                                "artist_profit": 20000, "aa_group_profit": 40000, "artist_profit_share": 0,
+                                                                "frame_profit_per_unit": 80}), None, {})
+        assert close(build.aa_profit_per_unit(r5f), 200.0 + 0.35 * 80), "with its own profit per frame, at the default take-up"
         assert len(r5["economics_products"]) == 2, "the products are still read beside the legacy totals"
         # ... and the old top-level shape reads the same way
         r6 = build.resolve_release(dict(base, edition_size=200, unit_price=900, artist_profit=20000, aa_group_profit=40000, artist_profit_share=0.5), None, {})
@@ -159,9 +173,17 @@ def test_airtable_products_join() -> None:
         p = got["products"][0]
         assert p["edition"] == 100 and p["target_sellthrough"] == 0.4 and p["unit_price"] == 1000.0 and p["currency"] == "EUR"
         assert p["artist_profit_per_unit"] == 300.0 and p["aa_profit_share"] == 0.5 and p["framing_available"] is True
+        assert p["framing_default"] is True, "a print frames by default"
         assert got["announce_date"] == "2026-09-02" and got["launch_date"] == "2026-09-30" and got["marketing_lead"] == "Clare"
         none = pricing.release_products({"release_name": "Nobody · Thing · 2026 Q3", "announce_date": "2026-09-01", "launch_end": "2026-09-28"}, path)
         assert none["match"] == "none" and none["products"] == []
+    assert pricing.is_sculpture("SE", "") and pricing.is_sculpture("CL", "Low cost 3D edition") and pricing.is_sculpture("TLC", "Mid cost 3D edition")
+    assert not pricing.is_sculpture("PE", "Silkscreen print") and not pricing.is_sculpture("", "") and not pricing.is_sculpture("OG", "Unique work")
+    with tempfile.TemporaryDirectory() as d:
+        path = pathlib.Path(d) / "pricing.csv"
+        pd.DataFrame([dict(rows[0], edition_type="SE", product_type="Mid cost 3D edition", framing="")]).to_csv(path, index=False)
+        sp = pricing.release_products({"release_name": "Test Artist · Multiple · 2026 Q3", "announce_date": "2026-09-01", "launch_end": "2026-09-28"}, path)["products"][0]
+        assert sp["framing_available"] is None and sp["framing_default"] is False, sp
     print("airtable products join: ok")
 
 
@@ -181,8 +203,12 @@ def test_js_agrees() -> None:
         {"name": "legacy, no split typed", "airtable": AT, "typed": [],
          "legacy": {"edition_size": 200, "edition_total": 300, "unit_price": 900, "artist_profit": 20000, "aa_group_profit": 40000}},
         {"name": "products, no deal recorded", "airtable": [dict(AT[0], aa_profit_share=None)], "typed": [], "legacy": None},
+        {"name": "blank framing: a sculpture has none, a print frames without a profit per frame", "airtable": [
+            dict(AT[0], framing=None, framing_available=None, framing_default=False),
+            dict(AT[1], airtable_id="13", name="Print", framing=None, framing_available=None, framing_default=True, frame_profit_per_unit=None)],
+         "typed": [], "legacy": None},
     ]
-    payload = {"bench": {k: b[k] for k in ("frame_conversion", "frame_profit_per_unit")}, "cases": cases}
+    payload = {"bench": {k: b[k] for k in ("frame_conversion",)}, "cases": cases}
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
         json.dump(payload, f)
         path = f.name

@@ -219,9 +219,9 @@ const GRID = [
   { key: "aa_profit_per_unit", label: "AA profit", glyph: "€", tip: "Avant Arte's profit on one unit sold, before framing." },
   { key: "aa_revenue_share", label: "AA revenue share", glyph: "%", tip: "Avant Arte's own share of revenue on a royalty deal (not the artist's), where Avant Arte carries the ads outright. Closed while the product has an AA profit share." },
   { key: "aa_profit_share", label: "AA profit share", glyph: "%", tip: "Avant Arte's own share of the profit on a profit-share deal (not the artist's), which is also its share of the paid budget. Closed while the product has an AA revenue share." },
-  { key: "framing_available", label: "Framing", glyph: "✓", check: true, tip: "Whether a frame is offered on this work. Unticked closes the two frame cells." },
+  { key: "framing_available", label: "Framing", glyph: "✓", check: true, tip: "Whether a frame is offered on this work. Unticked closes the two frame cells. Where Airtable's Framing is blank, a sculpture edition has no frame and a print has one." },
   { key: "frame_conversion", label: "Frames per print", glyph: "%", tip: "The share of buyers expected to take a frame. Blank = the benchmark default." },
-  { key: "frame_profit_per_unit", label: "Frame profit", glyph: "€", tip: "Avant Arte's profit on each frame sold, which is Avant Arte's alone. Blank = the benchmark default." },
+  { key: "frame_profit_per_unit", label: "Frame profit", glyph: "€", tip: "Avant Arte's profit on each frame sold, which is Avant Arte's alone. There is no default: blank counts no framing profit." },
 ];
 const cellText = (key, v, raw = false) => {
   if (v === null || v === undefined || v === "") return "";
@@ -281,7 +281,9 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
       return (
         <td key={c.key} className={`check${typed ? " typed" : ""}`}>
           <input type="checkbox" className="tick" checked={!!p.framing_available} disabled={!editing}
-            title={typed ? "Typed here" : "Airtable's framing option"} onChange={(e) => onField(p, c.key, e.target.checked)} />
+            title={typed ? "Typed here" : p.sources.framing_available === "default"
+              ? "Airtable's Framing is blank: a sculpture edition defaults to no frame, a print to one" : "Airtable's framing option"}
+            onChange={(e) => onField(p, c.key, e.target.checked)} />
         </td>
       );
     }
