@@ -1468,12 +1468,17 @@ print on the same units as the units column, so the asterisk's footnote covers b
 for a work with no frame on offer; the columns left out where the release has no framing
 option or the snapshot no forecast), and a bold Total row adding them up (the forecast's own
 totals, the rows' frames before rounding); then, in small type, the day the figures
-run to, the totals (paid, awaiting payment, expected from the draw, at close the units still
+run to (the page's `asOf`, "so far" while `asOfFraction` is under 1), the attribution when the
+page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still
 to come) and the two framing readings behind the table's figure (`framing.rate` on the paid
 prints with the count behind it, and the entrants' rate on their pre-authorised prints, the
 Framing card's two bars, §6.4; either alone where only one has anything to say; nothing on a
 snapshot without the block or where no print has a frame on offer; the plan's rate is not
-repeated) as plain sentences. The figures are computed once, on the server, at the horizon the page is on.
+repeated) as plain sentences. The figures are computed once, on the server, at the horizon the page is on
+and with its Direct switch (on Spread, from the snapshot with `variants.direct_spread` laid over
+it, as the cards read it). The notification's headline is the card's: the release's
+`sellthrough.edition` (the works' editions added up only when it has none) under both the
+percentage and the "of N units", at close the card's `sellthrough.pct`.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
 pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven

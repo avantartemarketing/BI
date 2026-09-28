@@ -545,8 +545,9 @@ Framing card's headline; a dash for a work with no frame on offer; the two colum
 out on a release without a framing option), and a bold **Total** row adding them up (the
 framed units before rounding, so the Total is the card's own figure), the Work column
 wrapping rather than cropping and the figures right-aligned (Slack's `data_table` block takes
-no column settings and cut the names off); then, in small type, the day the figures run to,
-the totals (paid, awaiting payment, expected from the draw, at close the units still to come)
+no column settings and cut the names off); then, in small type, the day the figures run to
+(the page's as-of day, "so far" while that day is only partly in), the attribution when the
+page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still to come)
 and the two framing readings behind the table's figure in plain sentences, and last the
 footnote both asterisked columns point to: paid units, drafts and the forecast conversions
 from draw entries. The figures in the table are numbers with their words, so a column
@@ -554,7 +555,10 @@ sorts as numbers on a tap; the header row is plain text, as Slack requires. A wo
 is the one typed for it on the Target setting tab when targets are set per product, else
 the release's target split by edition share, the rule the card's references follow. The
 message is composed on the server (`server/slack.js`) from the same snapshot the card
-reads, by the card's own rules, at the horizon the page is on. It replaced a picture of
+reads, by the card's own rules, at the horizon the page is on and with its Direct switch: on
+Spread the button sends `directSpread` and the message is composed from the snapshot with
+`variants.direct_spread` laid over it, as the cards are. The headline is the card's, on the
+release's edition (the works' editions added up stand in only when it has none). It replaced a picture of
 the card, which Slack fits to a fixed height whatever the file's size, then a table with
 bars drawn in text, which wrapped on a phone, then a plain `table` block; the data table
 was the one that read on a phone. The notification text is the headline alone.

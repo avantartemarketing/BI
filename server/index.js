@@ -722,16 +722,22 @@ app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
 }));
 /* The card to Slack, as a Block Kit message composed from the snapshot on
  * disk by the card's own rules (server/slack.js). The body says which
- * horizon the page is on ({horizon: "today" | "close"}); {dryRun: true}
- * returns the message instead of posting it. */
+ * horizon the page is on ({horizon: "today" | "close"}) and whether its
+ * Direct switch is on Spread ({directSpread: true}), in which case the
+ * message is composed from the snapshot with variants.direct_spread laid
+ * over it, as the page's cards are (web/src/App.jsx), and says so;
+ * {dryRun: true} returns the message instead of posting it. */
 app.post("/api/releases/:id/slack", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
-  const snap = readSnapshot(id);
-  if (!snap) return res.status(404).json({ error: "unknown release" });
+  const base = readSnapshot(id);
+  if (!base) return res.status(404).json({ error: "unknown release" });
   const st = slack.stateFor(id);
   if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
   const horizon = req.body && req.body.horizon === "close" ? "close" : "today";
-  const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon });
+  const variant = base.variants && base.variants.direct_spread;
+  const spread = !!(req.body && req.body.directSpread === true && variant && typeof variant === "object");
+  const snap = spread ? { ...base, ...variant } : base;
+  const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon, direct: spread });
   if (req.body && req.body.dryRun) return res.json({ channel: st.channel, text, blocks });
   try {
     await slack.postMessage(st.channel, text, blocks);

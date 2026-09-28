@@ -271,7 +271,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
     setPost({ state: "posting" });
     try {
       const r = await fetch(`/api/releases/${snap.id}/slack`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ horizon: close ? "close" : "today" }),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ horizon: close ? "close" : "today", directSpread: ((v) => !!v && Object.keys(v).length > 0 && Object.keys(v).every((k) => snap[k] === v[k]))(snap.variants && snap.variants.direct_spread) }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `Slack post failed (${r.status})`);
