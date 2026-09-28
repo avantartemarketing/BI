@@ -347,7 +347,10 @@ attempted as a fallback when a BigQuery pull fails - in that case the header rea
   overrides; `SHEETS_REFRESH=off` disables the scheduler.
 
 Whichever path ran, and whether it worked, is on `GET /api/refresh/status` and in the
-tooltip behind the header's source-freshness line.
+tooltip behind the header's source-freshness line. A Python step that failed is named by
+its error first (the exception, and the `etl/` line it came from), then the tail of its
+traceback; the status keeps 300 characters, which with the tail alone were pathlib's own
+frames while the error sat past the cut.
 
 Target inputs saved from the dashboard survive the rerun (`build.py` overlays
 `data/app/inputs.json` over the repo defaults). If a pull or the ETL fails, the previous

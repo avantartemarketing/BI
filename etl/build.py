@@ -2987,9 +2987,20 @@ _QUARTER_RE = re.compile(r"^(\d{4}) Q([1-4])$")
 _CODE_RE = re.compile(r"^([A-Za-z0-9]+)_([A-Za-z0-9]+)_(\d{2})$")
 
 
+ID_MAX_CHARS = 120   # an id names the page's file (data/app/derived/<id>.json) and a file name holds 255 bytes
+
+
 def slugify(name: str) -> str:
-    """Release name -> id the server will accept ([a-z0-9_])."""
-    return re.sub(r"_+", "_", re.sub(r"[^a-z0-9]+", "_", name.lower())).strip("_")
+    """Release name -> id the server will accept ([a-z0-9_]), at most
+    ID_MAX_CHARS long, cut at a word. The id names the page's file, and a
+    name long enough to overrun a file name (an upcoming launch titled with
+    its dozen works) stopped the whole build with "File name too long" rather
+    than that one page, so every refresh failed and the header read stale."""
+    slug = re.sub(r"_+", "_", re.sub(r"[^a-z0-9]+", "_", name.lower())).strip("_")
+    if len(slug) > ID_MAX_CHARS:
+        head = slug[:ID_MAX_CHARS]
+        slug = head.rsplit("_", 1)[0] if "_" in head else head
+    return slug.strip("_")
 
 
 def _norm(s: str) -> str:
@@ -3758,11 +3769,26 @@ def funnel_spellings(existing: list[dict], on_file: dict[str, set[str]], launch_
     return {a: spelt for a, (_, spelt) in latest.items() if spelt and spelt != a}
 
 
-def _works_title(titles: str) -> str:
+WORKS_TITLE_CHARS = 100   # a title made of a launch's works names the ones that fit in this, then counts the rest
+
+
+def _works_title(titles: str, limit: int = WORKS_TITLE_CHARS) -> str:
     """A launch's works as a release title, "Barbed Wire / Mind Trip": each
-    distinct title once, without Airtable's bracketed notes."""
+    distinct title once, without Airtable's bracketed notes. A launch of a
+    dozen works names the first that fit in `limit` characters and counts
+    the rest ("Brillo Box / Green Landscape and 10 more"): the title is the
+    page's name, and its id names a file."""
     names = [re.sub(r"\s*\[[^\]]*\]?", "", t).strip() for t in str(titles or "").split(" / ")]
-    return " / ".join(dict.fromkeys(n for n in names if n))
+    names = list(dict.fromkeys(n for n in names if n))
+    if len(" / ".join(names)) <= limit:
+        return " / ".join(names)
+    kept = names[:1]
+    for n in names[1:]:
+        if len(" / ".join(kept + [n])) > limit:
+            break
+        kept.append(n)
+    rest = len(names) - len(kept)
+    return " / ".join(kept) + (f" and {rest} more" if rest else "")
 
 
 def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], as_of: date,

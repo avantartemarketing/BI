@@ -313,6 +313,11 @@ upcoming_releases`) beside the releases the funnel mentions:
   funnel's "Woo Kuk Won"), so the page keeps its id when the funnel catches up. A second
   launch of the artist in the same quarter takes its works as its title ("Pejac · Barbed
   Wire / Mind Trip · 2026 Q4"), then its close date, so no two pages share a name or an id.
+  A title of many works names the ones that fit in 100 characters and counts the rest
+  ("Brillo Box Collectable (Green Landscape) / Brillo Box Collectable (Green Portrait) and 9
+  more"), and an id is at most 120 characters (`slugify`): the id names the page's file, and
+  one launch of twelve works made an id no file name holds, which stopped every refresh at
+  the build with "File name too long" (28 September 2026).
 
 Its page (`build_upcoming`, status `upcoming`, `upcoming: true`) has the dates, the edition,
 the price in euros at the panel's fixed rates, the works and the project's Airtable status,
