@@ -48,6 +48,7 @@ def clock_rows(name, announce, close, span, entrants, draw_units):
     return rows
 
 P, Q, N = "Placeholder Artist · Old Draw · 2024 Q2", "Placeholder Few · Tiny · 2024 Q1", "Normal Artist · Proper · 2026 Q1"
+E = "Early Artist · Opens Late · 2026 Q2"
 C = T("2024-06-17")
 rows = []
 # the 2024 draw (entries 25 May - 17 June, allocated on the 18th), and its
@@ -60,6 +61,10 @@ rows += clock_rows(Q, PH, T("2024-03-01"), days("2024-02-20", "2024-03-05") + da
 # a proper upstream clock, 1..25 March 2026
 rows += clock_rows(N, T("2026-03-01"), T("2026-03-25"), days("2026-02-20", "2026-04-05"),
                    {d: 8 for d in days("2026-03-01", "2026-03-25")}, {T("2026-03-26"): 60})
+# announced three days ago, its early-access entries three days before
+# that, the draw not open yet: a real announce the entries must not judge
+rows += clock_rows(E, T("2026-04-02"), T("2026-04-25"), days("2026-03-15", "2026-04-05"),
+                   {d: 6 for d in days("2026-03-28", "2026-03-30")}, {})
 out = pd.DataFrame(rows)
 as_of = out["event_date"].max()
 
@@ -73,17 +78,20 @@ check(pd.isna(q["announce"]) and pd.isna(q["close"]) and q["source"] == "none",
       f"too few entrants: no clock, and no placeholder left standing: {q.to_dict()}")
 check(n["announce"] == T("2026-03-01") and n["close"] == T("2026-03-25") and n["source"] == "upstream",
       f"a proper upstream clock is kept: {n.to_dict()}")
+e = w.loc[E]
+check(e["announce"] == T("2026-04-02") and e["close"] == T("2026-04-25") and e["source"] == "upstream",
+      f"an announce a few days after the early-access entries, the draw not open yet, is kept: {e.to_dict()}")
 
 # the rule before: the placeholder kept, no usable window
 real = agg.placeholder_announce
-agg.placeholder_announce = lambda a, c, l: False
+agg.placeholder_announce = lambda *args: False
 try:
     old = agg.infer_windows(out, as_of).set_index("release_name")
 finally:
     agg.placeholder_announce = real
 check(old.loc[P, "announce"] == PH and pd.isna(old.loc[P, "close"]) and old.loc[P, "source"] == "upstream"
       and old.loc[Q, "announce"] == PH, f"before, a lone 2025-04-17 announce: {old.loc[[P, Q], ['announce', 'close', 'source']]}")
-check(old.loc[N].equals(n), "and the proper clock was the same")
+check(old.loc[N].equals(n) and old.loc[E].equals(e), "and the proper clocks were the same")
 
 # an upstream close far from the draw's end is not kept: the close is inferred
 far = out.copy()
@@ -95,11 +103,16 @@ check(wf["close"] == T("2024-06-18") and wf["close_rule"] == "allocation day" an
       f"a close 20 days off the draw is inferred from the allocation: {wf['close']} ({wf['close_rule']}, {wf['source']})")
 
 # the rules on their own
-pa = agg.placeholder_announce
-check(pa(PH, C, T("2024-06-17")) and pa(PH, None, T("2024-06-17")) and pa(PH, C, None)
-      and pa(T("2026-03-25"), T("2026-03-25"), None), "on or after the close, or after the last entry: a placeholder")
+pa, NOW = agg.placeholder_announce, T("2026-09-28")
+check(pa(PH, C, T("2024-06-17")) and pa(PH, None, T("2024-06-17"), NOW) and pa(PH, C, None)
+      and pa(T("2026-03-25"), T("2026-03-25"), None),
+      "on or after the close, or long after the last entry once it has passed: a placeholder")
 check(not pa(T("2026-03-01"), T("2026-03-25"), T("2026-03-25")) and not pa(pd.NaT, C, C) and not pa(PH, None, None),
       "a real announce, none at all, or nothing to test it against: kept")
+check(not pa(T("2026-10-01"), T("2026-10-20"), T("2026-09-10"), NOW) and not pa(T("2026-10-01"), None, T("2026-09-10"), NOW),
+      "an announce still to come, after early-access entries: kept")
+check(not pa(T("2026-09-26"), None, T("2026-09-21"), NOW) and not pa(PH, None, T("2024-06-17")),
+      "an announce a few days after the last entry, or with no as-of day to judge by: kept")
 
 # fill_clock writes the inferred clock over the placeholder's
 filled = agg.fill_clock(out.copy(), agg.infer_windows(out, as_of))
@@ -116,21 +129,24 @@ def ev_row(name, day, kind, acct, ann, close=None, pieces=0.0, draw="d1"):
             "announcement_date": ann, "draw_entry_eligible": kind == "draw entry intent", "winner": False,
             "order_pieces": pieces, "draw_id": draw, "draw_entry_multiset_preference_max_quantity": 1,
             "days_until_launch": float((T(close) - T(day)).days) if close else float("nan")}
-OLD, Z = "Earlier Artist · First · 2023 Q4", "Placeholder Shop · Buy Now · 2024 Q1"
+OLD, Z, EA = "Earlier Artist · First · 2023 Q4", "Placeholder Shop · Buy Now · 2024 Q1", "Early Access · Soon · 2026 Q4"
 ev = pd.DataFrame(
     [ev_row(OLD, "2023-11-01", "purchase", "a1", "2023-10-20", pieces=1.0)]
     + [ev_row(P, f"2024-05-{d}", "draw entry intent", f"a{i}", "2025-04-17", close="2024-06-17")
        for i in range(1, 6) for d in (25, 26)]
     + [ev_row(P, "2024-06-18", "purchase", a, "2025-04-17", pieces=1.0) for a in ("a1", "a2")]
     # no draw at all: only its close says the placeholder is not its campaign's
-    + [ev_row(Z, "2024-02-10", "purchase", "b1", "2025-04-17", close="2024-02-12", pieces=1.0, draw=None)])
+    + [ev_row(Z, "2024-02-10", "purchase", "b1", "2025-04-17", close="2024-02-12", pieces=1.0, draw=None)]
+    # in its early access: entries before an announce still to come
+    + [ev_row(EA, "2026-09-20", "draw entry intent", "c1", "2026-10-01", close="2026-10-20")])
 ppl = agg.people_file(ev).set_index("release_name")
+check(ppl.loc[EA, "campaign_start"] == "2026-10-01", f"an announce still to come stays the start: {ppl.loc[EA, 'campaign_start']}")
 check(ppl.loc[P, "campaign_start"] == "2024-05-25" and ppl.loc[P, "share_buyers_returning"] == 0.5,
       f"from its first entry: one of its two buyers bought before: {ppl.loc[P, ['campaign_start', 'share_buyers_returning']].to_dict()}")
 check(ppl.loc[Z, "campaign_start"] == "2024-02-10" and ppl.loc[Z, "share_buyers_returning"] == 0.0,
       f"a release with no entries, by its close: {ppl.loc[Z, ['campaign_start', 'share_buyers_returning']].to_dict()}")
 check(ppl.loc[OLD, "campaign_start"] == "2023-10-20", "a real announcement stays the start")
-agg.placeholder_announce = lambda a, c, l: False
+agg.placeholder_announce = lambda *args: False
 try:
     before = agg.people_file(ev).set_index("release_name")
 finally:

@@ -197,9 +197,12 @@ Stage boundary rules (verified empirically):
 
 **The clock is filled in where upstream carries none** (`etl/aggregate_events.py`, §2.3; the
 upstream feed has dates for 2026 launches only). Upstream dates always take priority, field by
-field, with one exception: an upstream announce on or after the release's own close, or after
-its last entry day, is a placeholder and is treated as absent (`placeholder_announce`, the test
-the upcoming list puts Airtable's announce to, §1.7). Airtable's Announce Date reads 2025-04-17
+field, with one exception: an upstream announce on or after the release's own close, or once
+it has passed more than a week after the release's last entry day, is a placeholder and is
+treated as absent (`placeholder_announce`, the test the upcoming list puts Airtable's announce
+to, §1.7; the entries never judge an announce still to come, since a launch in early access has
+entries before it, nor one days after them, since a draw can open after its announce).
+Airtable's Announce Date reads 2025-04-17
 on 41 launches of 2023-24 (§11, #24), which gave 29 releases a clock of 2025-04-17..their 2024
 close, rejected by the build, so 17 closed draws (Pejac 2024 Q3, George Condo 2024 Q1) were
 catalogue pages. Their announce is now inferred, and the upstream close they came with is kept
