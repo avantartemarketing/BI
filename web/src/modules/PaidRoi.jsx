@@ -250,7 +250,9 @@ export default function PaidRoi({ snap }) {
    * end gives way to it where they would print into each other: measured in
    * pixels, as on the unit trajectory (timeAxis, labels.mjs). */
   const todayFrac = (today - 1) / DAYS;
-  const startText = dayAxisLabel(snap, 0), endText = dayAxisLabel(snap, of);
+  // the axis runs from day 1, the day after the announce, when paid starts
+  // (x above), so its left end is day 1's date, not the announce's
+  const startText = dayAxisLabel(snap, 1), endText = dayAxisLabel(snap, of);
   const xAxis = timeAxis({ rowW: plotW, frac: todayFrac, live: !complete, startText, endText });
 
   /* The words on the plot are set in clear space with a thin leader to what
@@ -433,7 +435,7 @@ export default function PaidRoi({ snap }) {
             <LineNames names={names} />
 
             {/* x axis */}
-            {xAxis.start && <div style={{ ...xLabel, left: 0 }} title="announced">{startText}</div>}
+            {xAxis.start && <div style={{ ...xLabel, left: 0 }} title="day 1, the day after the announce: paid's first day">{startText}</div>}
             {!complete && (
               <div style={{
                 ...xLabel, color: C.ink,
