@@ -137,10 +137,10 @@
    "announce_date": "2026-09-01",
    "launch_end": "2026-09-25",
    "legacy_economics": {
-    "edition_size": 500,
+    "edition_size": 600,
     "unit_price": 1500,
-    "artist_profit": 254165,
-    "aa_group_profit": 335957,
+    "artist_profit": 304998,
+    "aa_group_profit": 403148.4,
     "artist_profit_share": 0.5,
     "framing_available": true
    }
@@ -179,18 +179,6 @@
    "launch_end": "2026-08-20",
    "artist_posting_tier": "High",
    "draw_entries_file": "draw_jamesjean_blossom_entries.csv",
-   "products": [
-    {
-     "key": "draw_3GGPHrLwPfoBOTMquNWLfPYZw2J",
-     "name": "Blossom Print",
-     "edition": null
-    },
-    {
-     "key": "draw_3GGP9Zj9nf2N7kAZs9PGpDhXUKh",
-     "name": "Blossom Vase",
-     "edition": null
-    }
-   ],
    "legacy_economics": {
     "edition_size": 600,
     "unit_price": 700,
