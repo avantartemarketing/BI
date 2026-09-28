@@ -325,7 +325,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
           </span>
         </div>
         {edition === null && <span className="lead-caption" style={{ marginTop: 0, whiteSpace: "nowrap" }}>no edition size set</span>}
-        <div style={{ marginLeft: "auto", minWidth: 0, overflow: "hidden", display: "flex", alignItems: "center", gap: 16, fontSize: 11.5, color: C.muted, whiteSpace: "nowrap" }}>
+        {/* the key wraps to a second line on a narrow card rather than losing its last item */}
+        <div style={{ marginLeft: "auto", minWidth: 0, overflow: "hidden", display: "flex", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center", gap: "2px 16px", fontSize: 11.5, color: C.muted, whiteSpace: "nowrap" }}>
           {legendChip({
             key: "sold", sw: <span style={swatch(SEG.paid)} />, label: "Paid", value: fmt(sold), x: { k: "st.paid" },
             tip: { head: "Paid", rows: [

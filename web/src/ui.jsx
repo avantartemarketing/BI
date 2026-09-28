@@ -154,10 +154,13 @@ export function ragColor(pct) {
   return C.red;
 }
 
-export function Card({ tall, wide, dot, title, badge, right, children, style }) {
+/* `wrapHead`: the right slot holds a figure that must never be cut, so short
+   of room it takes a line of its own under the title rather than running
+   past the card's edge, where the card would clip it mid-number. */
+export function Card({ tall, wide, dot, title, badge, right, children, style, wrapHead }) {
   return (
     <div className={`card${tall ? " tall" : ""}${wide ? " wide" : ""}`} style={style}>
-      <div className="mod-head">
+      <div className={`mod-head${wrapHead ? " wrap" : ""}`}>
         <span className="gdot" style={{ background: dot }} />
         <span className="title">{title}</span>
         {badge || null}
@@ -524,8 +527,9 @@ export function RungKey({ bench = true }) {
     display: "flex", alignItems: "center", gap: 6,
     fontSize: 11.5, color: C.muted, whiteSpace: "nowrap",
   };
+  // on a narrow card the note takes a line of its own rather than running off it
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 18px", marginTop: 6 }}>
+    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "2px 12px", flex: "0 0 auto", minHeight: 18, marginTop: 6 }}>
       <span style={item}>
         <span style={{
           width: 10, height: 10, borderRadius: "50%", flex: "0 0 10px",

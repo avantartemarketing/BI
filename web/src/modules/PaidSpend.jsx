@@ -323,7 +323,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           />
           <span {...tipApi.props(spendTip)} style={rightLabel}><Ex k="paid.spend" arg={{ close }}>{moneyK(spendFill)}</Ex></span>
         </div>
-        <div style={{ height: 14, display: "flex", gap: 14, alignItems: "center" }}>
+        {/* the key wraps on a narrow card rather than running off its edge */}
+        <div style={{ minHeight: 14, display: "flex", flexWrap: "wrap", gap: "4px 14px", alignItems: "center" }}>
           <div style={legendItem}><span style={sw(C.blue)} />To date</div>
           {close && <div style={legendItem}><span style={sw(C.blueLight)} />Projected</div>}
           <div style={legendItem}><span style={sw(C.refBase)} />Target</div>
