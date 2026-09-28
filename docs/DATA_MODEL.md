@@ -1635,6 +1635,9 @@ adjCPE(day)     = spend(day) / (entries(day) × (1 − drop_off))          # cos
 ROI_party(day)  = (1 − cannibalisation) × profit_per_unit_party / (adjCPE × budget_share_party)
 cum versions    = same on Σ spend / Σ entries
 ```
+The paid block publishes the adjusted figures: `l3dCpe` (the last three full days) and
+`cumCpe` (every full day) are spend over the entries that become orders, entries × (1 −
+drop_off), so the cards label them per converting entry, 1.25× plain spend per entry at 0.2.
 Spend is Meta's, billed in euros: `load_spend` converts it once to euros at the fixed
 `RATES_TO_EUR` rate (`SPEND_CURRENCY`, `spendCurrency` and `spendRate` on the paid block), so every
 spend, cost per entry, budget and ROI figure on the page is euros. `cannibalisation` is the

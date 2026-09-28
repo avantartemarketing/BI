@@ -402,7 +402,7 @@ function PaidSpendActuals({ snap }) {
         <div style={row}><span style={{ color: C.muted }}>Campaign</span><span style={{ fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }} title={snap.campaignName || ""}>{snap.campaignName || "–"}</span></div>
         <div style={row}><span style={{ color: C.muted }}>Spend to date</span><span className="num"><Ex k="paid.spend" arg={{ close: false }}>{money(spend)}</Ex></span></div>
         <div style={row}><span style={{ color: C.muted }}>Paid entries to date</span><span className="num">{fmt(entries)}</span></div>
-        <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }}>€ per entry, whole campaign</span><span className="num">{paid.cumCpe ? <Ex k="paid.cpe" arg={{ whole: true }}>{"€" + fmt(paid.cumCpe, 2)}</Ex> : "–"}</span></div>
+        <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }} title="Spend over the entries that become orders, whole campaign, full days">€ per converting entry, whole campaign</span><span className="num">{paid.cumCpe ? <Ex k="paid.cpe" arg={{ whole: true }}>{"€" + fmt(paid.cumCpe, 2)}</Ex> : "–"}</span></div>
       </div>
     </Card>
   );

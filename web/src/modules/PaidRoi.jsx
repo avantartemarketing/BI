@@ -165,7 +165,7 @@ export default function PaidRoi({ snap }) {
   // ROI needs the profit split; without targets the lead is cost per entry
   const leadVal = !targeted ? (complete ? paid.cumCpe : paid.l3dCpe) : complete ? view.cum : view.l3d;
   const leadCaption = !targeted
-    ? (complete ? "€ per entry, whole campaign - ROI needs targets" : "€ per entry, last 3 days - ROI needs targets")
+    ? (complete ? "€ per converting entry, whole campaign - ROI needs targets" : "€ per converting entry, last 3 days - ROI needs targets")
     : complete ? `${view.label} ROI final` : `${view.label} ROI last 3 days`;
   // the working behind the headline: the figures it is read from, in the
   // order they are applied, so the basis is on the card and not in a doc
@@ -180,8 +180,8 @@ export default function PaidRoi({ snap }) {
   const moreTip = !targeted ? {
     head: "Paid cost",
     rows: [
-      { label: "€/entry L3D", value: fmt(paid.l3dCpe, 2) },
-      { label: "€/entry total", value: fmt(paid.cumCpe, 2) },
+      { label: "€/converting entry L3D", value: fmt(paid.l3dCpe, 2) },
+      { label: "€/converting entry total", value: fmt(paid.cumCpe, 2) },
     ],
     body: "Cost per converting entry: spend over the entries that become orders (" + pct(1 - dropOff) + " of them). ROI needs the profit split from the Target setting tab." + spendNote,
   } : {
@@ -193,8 +193,8 @@ export default function PaidRoi({ snap }) {
       { label: `÷ ${view.label} share of the spend${splitAssumed ? " (assumed)" : ""}`, value: pct(view.share) },
       { label: complete ? "= ROI final" : "= ROI last 3 days", value: fmt(leadVal, 2) },
       { label: "ROI total", value: fmt(view.cum, 2) },
-      { label: "€/entry L3D", value: fmt(paid.l3dCpe, 2) },
-      { label: "€/entry total", value: fmt(paid.cumCpe, 2) },
+      { label: "€/converting entry L3D", value: fmt(paid.l3dCpe, 2) },
+      { label: "€/converting entry total", value: fmt(paid.cumCpe, 2) },
     ],
     body: "Profit per unit, the share of the spend and the cannibalisation are the Target setting tab's (products and economics, paid assumptions"
       + (frameUplift ? "; the AA figure includes the framing uplift, which is Avant Arte's alone). " : "). ")
@@ -225,7 +225,7 @@ export default function PaidRoi({ snap }) {
         title={"Cost per converting entry, whole campaign: spend ÷ the entries that become orders (" + pct(1 - dropOff) + " of entries)"}
         style={statRow}
       >
-        €/entry total <span className="num" style={statVal}><Ex k="paid.cpe" arg={{ whole: true }}>{fmt(paid.cumCpe, 2)}</Ex></span>
+        €/converting entry total <span className="num" style={statVal}><Ex k="paid.cpe" arg={{ whole: true }}>{fmt(paid.cumCpe, 2)}</Ex></span>
       </span>
       <span
         title={`Cumulative ${view.label} ROI: ${view.label} profit on the paid entries that convert, net of cannibalisation, ÷ ${view.label}'s share of the spend, whole campaign`}
