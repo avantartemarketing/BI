@@ -2996,9 +2996,11 @@ def source_campaign_codes(records: list[dict], codes: set[str], launch_frame: pd
              "airtable": collections.Counter(_norm(c) for cs in at.values() for c in set(cs))}
     configured = {_norm(r["campaign_code"]): r["release_name"] for r in INPUTS["releases"] if r.get("campaign_code")}
 
-    def pick(name: str, cands: list[str], src: str) -> str | None:
-        if any(users[src][_norm(c)] > 1 for c in cands):
-            return None     # a group show's code
+    def pick(name: str, cands: list[str]) -> str | None:
+        # a group show's code, whichever feed proposes it: shared on the
+        # orders, or a launch several releases matched
+        if any(users["orders"][_norm(c)] > 1 or users["airtable"][_norm(c)] > 1 for c in cands):
+            return None
         hits = {f for f in (in_feeds(c) for c in cands) if f}
         if len(hits) != 1:
             return None
@@ -3010,9 +3012,9 @@ def source_campaign_codes(records: list[dict], codes: set[str], launch_frame: pd
         name, guess = r["release_name"], r.get("campaign_code")
         code = src = None
         if len(orders.get(name) or []) == 1:
-            code, src = pick(name, orders[name], "orders"), "orders"
+            code, src = pick(name, orders[name]), "orders"
         if code is None and at.get(name):
-            code, src = pick(name, at[name], "airtable"), "airtable"
+            code, src = pick(name, at[name]), "airtable"
         if code is None:
             r["code_source"] = "guess" if guess else None
             continue

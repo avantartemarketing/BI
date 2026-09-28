@@ -94,6 +94,13 @@ try:
     with contextlib.redirect_stdout(io.StringIO()):
         build.source_campaign_codes(exact, set(CODES) | {"CaseArt_LE_26"}, None, None, orders=ORDERS)
     check(exact[0]["campaign_code"] == "CaseArt_LE_26", f"the orders' own spelling, when a feed uses it: {exact[0]}")
+    # a group show with one member in the funnel: its Airtable launch
+    # proposes the group's code, which the orders give three releases
+    solo = [rec(AMPH[0])]
+    with contextlib.redirect_stdout(io.StringIO()):
+        build.source_campaign_codes(solo, set(CODES), pd.DataFrame({"x": [1]}), SPEND,
+                                    orders={a: ["Multiple_Amphorae_24"] for a in AMPH} | {AMPH[0]: []})
+    check(solo[0]["campaign_code"] is None, f"a code the orders share is nobody's, whichever feed proposes it: {solo[0]}")
     # no Airtable pull on file: the orders alone
     alone = [rec(RIDLER), rec(KOONS)]
     with contextlib.redirect_stdout(io.StringIO()):
