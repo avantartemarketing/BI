@@ -338,6 +338,26 @@ assert.ok(paidCases >= 30, `paid units cases: ${paidCases}`);
   assert.ok(!explain("st.draw", {}, wctx).steps.map(segText).some((t) => /claims/.test(t)), "and none outside a claim round");
 }
 
+/* ---- freshness: the day the page's data runs to, the release's last activity beside it ---- */
+for (const f of files) {
+  const s = JSON.parse(readFileSync(f, "utf8"));
+  if (!s.asOf) continue;
+  const day = (iso) => fmt(Number(iso.slice(8, 10))) + " " + ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(iso.slice(5, 7)) - 1];
+  const reach = `to ${day(s.asOf)}${typeof s.asOfFraction === "number" && s.asOfFraction < 1 ? ", so far" : ""}`;
+  const orders = sourceRow({ key: "orders", gave: "x" }, s, null).fresh;
+  const lastOrder = (s.sellthrough && s.sellthrough.ordersAsOf) || null;
+  assert.strictEqual(orders, lastOrder && lastOrder < s.asOf ? `${reach} · last order ${day(lastOrder)}` : reach, `${s.id}: orders ${orders}`);
+  const spendRows = ((s.paid && s.paid.daily) || []).filter((d) => (d.spend ?? 0) > 0);
+  const lastSpend = spendRows.length ? spendRows[spendRows.length - 1].date : null;
+  const meta = sourceRow({ key: "meta", gave: "x" }, s, null).fresh;
+  assert.strictEqual(meta, lastSpend && lastSpend < s.asOf ? `${reach} · last spend ${day(lastSpend)}` : reach, `${s.id}: meta ${meta}`);
+}
+{
+  const m = JSON.parse(readFileSync(new URL("releases/mondrian_le_26.json", root), "utf8"));
+  assert.strictEqual(sourceRow({ key: "meta", gave: "x" }, m, null).fresh, "to 24 Sep · last spend 4 Aug", "a closed campaign's spend names its last day");
+  assert.strictEqual(sourceRow({ key: "orders", gave: "x" }, w, null).fresh, "to 24 Sep, so far", "a live page's orders run to today so far");
+}
+
 /* ---- the framing uplift is named only where there is one ---- */
 {
   const framed = explain("paid.roi", { party: "aa" }, wctx);

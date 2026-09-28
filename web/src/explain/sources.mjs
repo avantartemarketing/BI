@@ -1,6 +1,9 @@
 /* The data sources an explanation names under "Where it comes from", each
  * with how fresh it is on this page. A feed pulled on every refresh reads
- * "to 24 Sep" off the snapshot's own dates and carries a green dot; an input
+ * "to 24 Sep", the day the page's data runs to (snap.asOf, ", so far" on a
+ * part day), and carries a green dot; where the release's own last order or
+ * last day of spend is earlier, that is named beside it ("last order 27
+ * Aug"), a fact about the release rather than about the feed. An input
  * somebody set (the Target setting tab, Airtable, the basket) reads as set,
  * with a grey dot. Where the last refresh reported the feed behind it failing
  * (the header's Freshness line reads the same status), the dot turns amber
@@ -22,13 +25,21 @@ function lastSpend(s) {
 
 const partialDay = (s) => typeof s.asOfFraction === "number" && s.asOfFraction < 1;
 
+/* A feed's reach: the day the page's data runs to, the part day said. */
+const reach = (s) => (s.asOf ? `to ${day(s.asOf)}${partialDay(s) ? ", so far" : ""}` : null);
+/* ...and the release's own last activity in it, named, where that is earlier. */
+const withLast = (s, word, iso) => {
+  const r = reach(s);
+  if (!r) return iso ? `${word} ${day(iso)}` : null;
+  return iso && String(iso).slice(0, 10) < String(s.asOf).slice(0, 10) ? `${r} · ${word} ${day(iso)}` : r;
+};
+
 export const SOURCES = {
   orders: {
     name: "Shopify orders", via: "BigQuery · Order_Line_Concept", feed: "bigquery",
-    fresh: (s) => {
-      const d = (s.sellthrough && s.sellthrough.ordersAsOf) || (s.framing && s.framing.asOf) || s.asOf;
-      return d ? `to ${day(d)}` : null;
-    },
+    // the orders table is pulled on every refresh; ordersAsOf is this
+    // release's last order or draft day, not how far the table reaches
+    fresh: (s) => withLast(s, "last order", (s.sellthrough && s.sellthrough.ordersAsOf) || (s.framing && s.framing.asOf) || null),
   },
   funnel: {
     name: "Funnel report", via: "BigQuery · LE Funnel Report", feed: "bigquery",
@@ -42,10 +53,11 @@ export const SOURCES = {
   },
   meta: {
     name: "Meta ads", via: "BigQuery · Meta ads insights", feed: "bigquery",
+    // the spend feed is pulled on every refresh; the last day with spend on
+    // it is this campaign's, named beside the feed's reach when earlier
     fresh: (s) => {
       const r = lastSpend(s);
-      if (!r) return s.asOf ? `to ${day(s.asOf)}` : null;
-      return r.partial ? `to ${day(r.date)}, so far` : `to ${day(r.date)}`;
+      return withLast(s, "last spend", r ? r.date : null);
     },
   },
   hubspot: {

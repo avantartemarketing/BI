@@ -618,8 +618,10 @@ it is a card like the others and moves with them.
 and press Shift+Enter): a panel opens at the right with the figure, what it is in one sentence,
 the working as numbered steps with the page's own numbers, what it reads against, the data
 sources it comes from (each with how fresh it is on this page: green for a feed pulled on
-every refresh, grey for an input somebody set, amber where the last refresh reported that feed
-failing), and anything worth knowing. A figure inside a step that has working of its own is a
+every refresh, reading to the day the page's data runs to, with the release's own last order
+or last day of spend named beside it where that is earlier, "to 24 Sep · last order 27 Aug";
+grey for an input somebody set; amber where the last refresh reported that feed failing), and
+anything worth knowing. A figure inside a step that has working of its own is a
 link down to it, with a crumb back; **Copy as text** puts the whole explanation on the
 clipboard. The page narrows beside the panel (to two columns, or one on a laptop) and
 shift-clicking another number swaps it; Esc or × closes it, and so does a new release or
