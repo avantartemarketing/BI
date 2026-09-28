@@ -2,7 +2,8 @@
  * Daily spend bars (own axis, bottom band) + actual ROI line + modelled decline
  * dotted to close, anchored at the line's last actual point so dot and line
  * always meet. The decline is the ETL's roiPath: ROI at today's spend as the
- * campaign's spend adds up (docs 7). roiDeclineModel.dailyFactor, the path's
+ * campaign's spend adds up, rising on the draw's last days as the deadline
+ * pulls people in (docs 7). roiDeclineModel.dailyFactor, the path's
  * average fall a day, draws it only for a snapshot without a path (falling
  * back to roiDeclineModel.start at today when there are no daily ROI points).
  * The line is the trailing-3-calendar-day rolling ROI, matching the headline:

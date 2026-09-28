@@ -167,8 +167,9 @@ def sizing_as_documented(snap, label):
           f"{label}: entries_needed = sellout_gap / (1 - drop_off): {b['entriesNeeded']} vs {b['selloutGap']}")
     # the cost path of DATA_MODEL 7, rebuilt from the figures the block publishes
     path = build.CostPath(cpe_now, b["spendAtWindow"], b["spentAtWindow"], b["spentSoFar"], days,
-                          b["elasticity"], b["wearout"], b["wearoutK"])
-    m = path.multipliers(s_now)
+                          b["elasticity"], b["wearout"], b["wearoutK"], lift=b["closeLift"], anchor_lift=b["liftAtWindow"])
+    # the floor, cpeAtClose and the fallback factor read the path underneath the close's lift
+    m = path.multipliers(s_now, lifted=False)
     check(len(m) == days > 0 and close(b["wearToClose"], m[-1], 0.002) and close(b["cpeAtClose"], cpe_now * m[-1], 0.002),
           f"{label}: cpe(close, s_now) = cpe_now x the path's rise to the close: {b['cpeAtClose']} vs {cpe_now * m[-1]:.2f}")
     check(close(p["roiDeclineModel"]["dailyFactor"], (1 / m[-1]) ** (1 / days), 0.001),

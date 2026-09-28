@@ -129,6 +129,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const own = (v, se, f) => (v === null || v === undefined ? "" : ` (own ${f(v)} ± ${f(se)} over ${fmt(ct.fitDays)} days)`);
   // an older snapshot still carries the drift a day it was built on
   const hasWear = typeof budget.wearout === "number";
+  // the draw's last days, close day first: what a euro buys on them, times
+  const lifts = Array.isArray(budget.closeLift) ? budget.closeLift : [];
   const costCurveRows = [
     { label: "Cost rises with the day's budget as", value: `budget^${fmt(budget.elasticity, 2)}` + own(ct.elasticityOwn, ct.elasticitySe, (v) => fmt(v, 2)) },
     hasWear
@@ -137,8 +139,11 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   ];
   const floorTip = {
     head: capLabel,
-    body: "The floor is on ROI at close, on the cost path the Paid ROI chart draws: cost per entry rises as the campaign's spend adds up, so a bigger budget wears it out faster. At today's spend that path ends at " +
-      "the chart's projected figure; the recommendation is the spend at which it ends on the floor" +
+    body: "The floor is on ROI at close, on the cost path the Paid ROI chart draws: cost per entry rises as the campaign's spend adds up, so a bigger budget wears it out faster. " +
+      (lifts.length
+        ? "The draw's last days buy more as the deadline pulls people in, which the chart's line shows as a rise at the end; the floor reads the price underneath that rush, the path's worst day. "
+        : "") +
+      "The recommendation is the spend at which that reading ends on the floor" +
       (budget.paced ? ", cut no faster than 30% a day" : "") + ".",
     rows: [
       { label: "Floor", value: floorF },
@@ -146,6 +151,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       // the day's budget and to its spend so far where it has enough days,
       // shrunk to the panel's
       ...costCurveRows,
+      ...(lifts.length ? [{ label: "The close's lift, last days", value: lifts.map((v) => "×" + fmt(v, 2)).join(", ") }] : []),
       { label: "Cost / unit at close, today's spend", value: budget.cpeAtClose ? "€" + fmt(budget.cpeAtClose) : "–" },
       { label: "Cost / unit at close, recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at close, recommended", value: fmt(budget.finalDayRoi, 2) },
