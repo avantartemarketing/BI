@@ -131,7 +131,7 @@ function Campaigns({ code, chosen, all, suggested, onChange }) {
           <label key={name} className="ts-check-row">
             <input type="checkbox" checked={chosen.includes(name)} onChange={(e) => toggle(name, e.target.checked)} />
             <span className="nm" title={name}>{name}</span>
-            <span className={`meta${hit ? "" : " warn"}`}>{hit ? `${fmtMoney(hit.spend)} · last ${hit.last}` : "no spend rows by this name"}</span>
+            <span className={`meta${hit ? "" : " warn"}`}>{!hit ? "no spend rows by this name" : hit.last ? `${fmtMoney(hit.spend)} · last ${hit.last}` : "no spend yet"}</span>
           </label>
         );
       })}

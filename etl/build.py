@@ -2768,7 +2768,10 @@ def code_activity(spend: pd.DataFrame | None, emails: pd.DataFrame | None) -> di
         hi[code] = max(hi.get(code, d), d)
 
     if spend is not None and {"campaign_name", "spend_date"} <= set(spend.columns):
-        for name, day in zip(spend["campaign_name"], spend["spend_date"]):
+        # the days it spent: the Meta export keeps sending a campaign's rows,
+        # at zero, for about four weeks after it stops
+        spent = spend[pd.to_numeric(spend["spend"], errors="coerce") > 0] if "spend" in spend.columns else spend
+        for name, day in zip(spent["campaign_name"], spent["spend_date"]):
             if isinstance(name, str):
                 take(name.split(" · ")[0].strip(), day)
     if emails is not None and {"campaign", "sent_at"} <= set(emails.columns):
@@ -3185,6 +3188,23 @@ def match_campaign(code: str | None, spend: pd.DataFrame) -> str | None:
     if draw in names:
         return draw
     return names[0] if len(names) == 1 else None
+
+
+def meta_campaigns(spend: pd.DataFrame) -> list[dict]:
+    """Every Meta campaign in the spend feed with its spend and the last day it
+    spent, most recently active first, for the Target setting tab's matcher.
+    The last day is the last with spend above zero: the export keeps sending
+    a campaign's rows, at zero, for about four weeks after it stops. A
+    campaign that never spent has no last day and lists at the end."""
+    spent = spend[pd.to_numeric(spend["spend"], errors="coerce") > 0]
+    last = spent.groupby("campaign_name")["spend_date"].max()
+    camp = spend.groupby("campaign_name").agg(spend=("spend", "sum")).reset_index()
+    camp["last"] = camp["campaign_name"].map(last)
+    camp["_day"] = pd.to_datetime(camp["last"], errors="coerce")
+    camp = camp.sort_values(["_day", "spend"], ascending=False, na_position="last")
+    return [{"name": r.campaign_name, "spend": round(float(r.spend), 2),
+             "last": r.last.isoformat() if pd.notna(r.last) else None}
+            for r in camp.itertuples()]
 
 
 def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[dict]:
@@ -5513,10 +5533,7 @@ def main(only: str | None = None):
     # meta_campaigns feeds the Meta-campaign matcher (most recently active first);
     # discovered carries the derived defaults a release starts from when someone
     # sets targets for it in the dashboard
-    camp = (spend.groupby("campaign_name")
-                 .agg(spend=("spend", "sum"), last=("spend_date", "max"))
-                 .reset_index()
-                 .sort_values(["last", "spend"], ascending=False))
+    camp = meta_campaigns(spend)
     (APP / "inputs.json").write_text(json.dumps({
         "benchmarks": BENCH,
         # the inputs as saved (the tab edits these), and beside them what the
@@ -5548,10 +5565,7 @@ def main(only: str | None = None):
             }
             for r in discovered + upcoming if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}
         },
-        "meta_campaigns": [
-            {"name": r.campaign_name, "spend": round(float(r.spend), 2), "last": r.last.isoformat()}
-            for r in camp.itertuples()
-        ],
+        "meta_campaigns": camp,
     }, indent=1))
     print(funnel_coverage(at, curves))
     print(units_coverage())

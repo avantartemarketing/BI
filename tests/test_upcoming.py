@@ -363,6 +363,26 @@ def test_dates_from_editions() -> None:
     print("dates from editions: ok")
 
 
+def test_spend_days() -> None:
+    """A campaign's activity is its days with spend: the Meta export's zero
+    rows after it stops do not keep it moving."""
+    days = [dt.date(2026, 9, 1) + dt.timedelta(days=i) for i in range(24)]
+    # SalvadorDali_LE_26 spent to its 11 Sep close, then 13 zero rows; Warhol still spending; a campaign that never spent
+    spend = pd.DataFrame(
+        [{"campaign_name": "SalvadorDali_LE_26 · Enter draw", "spend_date": d, "spend": 500.0 if d <= dt.date(2026, 9, 11) else 0.0} for d in days]
+        + [{"campaign_name": "AndyWarhol_TL_26 · Enter draw", "spend_date": d, "spend": 300.0 if d >= dt.date(2026, 9, 20) else 0.0} for d in days]
+        + [{"campaign_name": "Facebook_Test_2022", "spend_date": d, "spend": 0.0} for d in days[:5]])
+    act = build.code_activity(spend, None)
+    assert act["SalvadorDali_LE_26"] == (dt.date(2026, 9, 1), dt.date(2026, 9, 11)), act
+    assert act["AndyWarhol_TL_26"] == (dt.date(2026, 9, 20), dt.date(2026, 9, 24)), act
+    camps = build.meta_campaigns(spend)
+    assert [c["name"] for c in camps] == ["AndyWarhol_TL_26 · Enter draw", "SalvadorDali_LE_26 · Enter draw", "Facebook_Test_2022"], camps
+    assert camps[0]["last"] == "2026-09-24" and camps[1]["last"] == "2026-09-11" and camps[1]["spend"] == 5500.0
+    assert camps[2]["last"] is None and camps[2]["spend"] == 0.0
+    json.dumps(camps)   # written to inputs.json as it is
+    print("spend days: ok")
+
+
 if __name__ == "__main__":
     test_upcoming()
     test_page()
@@ -372,3 +392,4 @@ if __name__ == "__main__":
     test_funnel_spelling()
     test_stale_dates()
     test_dates_from_editions()
+    test_spend_days()

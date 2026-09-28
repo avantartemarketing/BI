@@ -270,7 +270,12 @@ planned dates. The private room defaults to two weeks before the announce when n
 name; the pull never takes an email), else what was typed. **The campaign code** is what was
 saved, else the prefix of the first Meta campaign's name, else the guess from the email and
 content feeds. **The Meta campaigns** (`campaign_names`) are the list saved, else the draw
-campaign the spend feed names for the code; paid spend is summed over the list.
+campaign the spend feed names for the code; paid spend is summed over the list. The tab
+offers every campaign in the feed (`meta_campaigns`) with its spend and the last day it
+spent, most recently active first: a day with spend above zero, since the export keeps a
+campaign's rows at zero for about four weeks after it stops ("no spend yet" when it never
+spent). A code's active days, which the upcoming launches' code guess reads (§1.7), are
+counted the same way.
 
 ### 1.7 Upcoming launches (from Airtable)
 
