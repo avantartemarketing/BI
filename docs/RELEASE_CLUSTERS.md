@@ -80,7 +80,12 @@ window (launch day to +21 days). Excluded: 170 names with fewer than 10 entries 
 private-room phase predates the export, 7 named for a quarter before 2023, 4 draws under 10
 eligible entry units in the window, 1 legacy launch under 300 sessions, and 6 in flight or not
 yet settled on 2026-09-10: Andy Warhol Estate, Salvador Dali Estate, Glenn Ligon, Julian
-Schnabel, Robert Longo and Ai Weiwei 2026 Q3. Re-run the script after they close.
+Schnabel, Robert Longo and Ai Weiwei 2026 Q3. Re-run the script after they close; the build
+warns once one has been closed for the 7 days settling takes. Since 2026-09-28 the script also
+leaves out a launch whose units in the window run past 1.5× its edition or the orders feed's
+units paid over the same window ("units over 1.5x the edition or the orders feed"): the funnel
+counts every unit twice for Johnson Tsang's Open the Right Mind (2023 Q4) and Kaï's Content
+(2024 Q2), and `etl/baskets.py` drops the two on read until the next run.
 
 ## 3. Features and distance
 
@@ -245,7 +250,9 @@ Each cell is Medium (Low–High) in the Target setting tab's sense: the median a
 75th percentile across the basket's releases, so the picks can be read straight into the
 model. Shares of sessions leave untracked out of the denominator; conversion rates use
 unadjusted denominators, as the benchmarks do, and a channel group with under 30 sessions in
-a release contributes no rate. Paid conversions in the organic baskets rest on one to three
+a release contributes no rate (from the 2026-09-28 script, under 100 sessions or more than
+0.25 entries or units per session, noted in `rates_dropped`: Albers 2026 Q2 read 44 AA Social
+entries on 57 sessions). Paid conversions in the organic baskets rest on one to three
 releases and are not benchmarks.
 
 **Scale and demand** - Medium (Low–High), i.e. median (p25–p75) across the basket's releases
@@ -404,7 +411,12 @@ Raw channels, share of sessions (median per basket):
    deterministic (seeded) and prints the same tables, and the cluster count should be
    re-read from the stability column, not assumed. Cluster names are attached by rank
    (paid share, then size), so a re-run that changes the ranking would need the names
-   checked.
+   checked. Each run writes the channel attribution it read, the export's last day and its
+   own date on every row (`attribution_basis`, `attribution_through`, `panel_built`), and
+   each launch's Direct share of its Search/direct/other group (`direct_in_group_sessions`,
+   `_entries`, `_units`), which the dashboard's Direct switch reads so its share and the split
+   it spreads come from one pull. What a re-run needs is in the README ("Re-running the
+   benchmark panel").
 
 **Caveats.** 81 of the 108 windows are inferred (validated above, but inferred). Oversubscription
 is measured against units *sold*, not the edition size, which the funnel does not carry, so an

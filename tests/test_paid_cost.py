@@ -2,11 +2,11 @@
 """The price of a paid unit comes from the basket (docs/DATA_MODEL.md 4 E, 4a.2).
 
 Each panel launch gets a cost per paid unit - Meta's spend under its campaign
-code inside its window over the paid units the funnel attributed - and a
-basket prices its paid budget at the median over the members with a reading,
-once three have one; the release's own figure comes first, the panel's
-constant stands in last. The browser's model reads the same figure the same
-way. Run:
+code from its window's start to the close, over its paid units with Untracked
+folded in, the basis the page prices its own paid units on - and a basket
+prices its paid budget at the median over the members with a reading, once
+three have one; the release's own figure comes first, the panel's constant
+stands in last. The browser's model reads the same figure the same way. Run:
   python3 tests/test_paid_cost.py
 """
 from __future__ import annotations
@@ -31,21 +31,24 @@ GROUPS = B.GROUPS
 
 def panel():
     rows = []
-    for name, start, end, units, paid in (
-        ("A · One · 2026 Q1", "2026-01-10", "2026-02-01", 400, 20),   # spend inside the window: 1000 / 20
-        ("B · Two · 2026 Q1", "2026-01-10", "2026-02-01", 300, 3),    # too few paid units
-        ("C · Three · 2026 Q1", "2026-01-10", "2026-02-01", 200, 12),  # no campaign code
-        ("D · Four · 2026 Q1", "2026-01-10", "2026-02-01", 250, 8),   # code with no spend on file
-        ("E · Five · 2026 Q2", "2026-04-01", "2026-04-20", 350, 10),  # 900 / 10
-        ("F · Six · 2026 Q2", "2026-04-01", "2026-04-20", 150, 25),   # 2500 / 25
+    # paid: the tracked paid units; folded: with the launch's Untracked units
+    # shared in (unit_share_paid x all units), the count the cost is over
+    for name, start, close, end, units, paid, folded in (
+        ("A · One · 2026 Q1", "2026-01-10", "2026-01-29", "2026-02-01", 400, 19, 20),   # 1000 to the close / 20 folded
+        ("B · Two · 2026 Q1", "2026-01-10", "2026-01-29", "2026-02-01", 300, 3, 3),     # too few paid units
+        ("C · Three · 2026 Q1", "2026-01-10", "2026-01-29", "2026-02-01", 200, 12, 12),  # no campaign code
+        ("D · Four · 2026 Q1", "2026-01-10", "2026-01-29", "2026-02-01", 250, 8, 8),     # code with no spend on file
+        ("E · Five · 2026 Q2", "2026-04-01", "2026-04-17", "2026-04-20", 350, 10, 10),   # 900 / 10
+        ("F · Six · 2026 Q2", "2026-04-01", "2026-04-17", "2026-04-20", 150, 25, 25),    # 2500 / 25
     ):
-        r = {"release_name": name, "artist": name.split(" · ")[0], "window_start": start, "window_end": end,
+        r = {"release_name": name, "artist": name.split(" · ")[0], "window_start": start, "close": close, "window_end": end,
              "tot_total_product_units": units, "tot_sessions_total": units * 100, "tot_draw_entries_eligible_units": units * 1.2,
              "campaign_days": 22, "units_paid": paid, "units_per_buyer": 1.2, "private_room_share": 0.1}
         for g in GROUPS:
             r[f"unit_share_{g}"] = 0.2
             r[f"sess_share_{g}"] = 0.2
             r[f"conv_sess_entry_{g}"] = 0.01
+        r["unit_share_paid"] = folded / units
         rows.append(r)
     return pd.DataFrame(rows)
 
@@ -53,11 +56,11 @@ def panel():
 def spend():
     d = dt.date
     return pd.DataFrame({
-        "campaign_name": ["A_LE_26 · Enter draw", "A_LE_26 · Enter draw", "A_LE_26 · Awareness", "B_LE_26 · Enter draw",
-                          "E_LE_26 · Enter draw", "F_LE_26", "F_LE_26", "Z_LE_26 · Enter draw"],
-        "spend_date": [d(2026, 1, 12), d(2026, 1, 20), d(2025, 12, 20), d(2026, 1, 15),
-                       d(2026, 4, 5), d(2026, 4, 2), d(2026, 4, 19), d(2026, 4, 2)],
-        "spend": [600.0, 400.0, 999.0, 300.0, 900.0, 1500.0, 1000.0, 50.0],
+        "campaign_name": ["A_LE_26 · Enter draw", "A_LE_26 · Enter draw", "A_LE_26 · Awareness", "A_LE_26 · Enter draw",
+                          "B_LE_26 · Enter draw", "E_LE_26 · Enter draw", "F_LE_26", "F_LE_26", "Z_LE_26 · Enter draw"],
+        "spend_date": [d(2026, 1, 12), d(2026, 1, 20), d(2025, 12, 20), d(2026, 1, 31),
+                       d(2026, 1, 15), d(2026, 4, 5), d(2026, 4, 2), d(2026, 4, 16), d(2026, 4, 2)],
+        "spend": [600.0, 400.0, 999.0, 700.0, 300.0, 900.0, 1500.0, 1000.0, 50.0],
     })
 
 
@@ -68,8 +71,17 @@ CODES = {"A · One · 2026 Q1": "A_LE_26", "B · Two · 2026 Q1": "B_LE_26", "D 
 def test_attach() -> None:
     p = B.attach_paid_costs(panel(), spend(), CODES)
     by = p.set_index("release_name")
-    assert by.loc["A · One · 2026 Q1", "paid_spend_eur"] == 1000.0     # December's awareness spend is outside the window
+    # December's awareness spend is before the window, and the 700 on 31
+    # January after the close: the page never counts spend past its close
+    assert by.loc["A · One · 2026 Q1", "paid_spend_eur"] == 1000.0
+    # over the 20 paid units with Untracked folded in, not the 19 tracked
     assert by.loc["A · One · 2026 Q1", "cost_per_paid_unit"] == 50.0
+    # a row without a close keeps its window's end
+    no_close = B.attach_paid_costs(panel().drop(columns=["close"]), spend(), CODES).set_index("release_name")
+    assert no_close.loc["A · One · 2026 Q1", "paid_spend_eur"] == 1700.0 and no_close.loc["A · One · 2026 Q1", "cost_per_paid_unit"] == 85.0
+    # and one without the shares divides by its tracked paid units, as before
+    unfolded = B.attach_paid_costs(panel().drop(columns=["unit_share_paid"]), spend(), CODES).set_index("release_name")
+    assert abs(unfolded.loc["A · One · 2026 Q1", "cost_per_paid_unit"] - 1000.0 / 19) < 1e-9
     assert by.loc["B · Two · 2026 Q1", "paid_spend_eur"] == 300.0 and pd.isna(by.loc["B · Two · 2026 Q1", "cost_per_paid_unit"])
     assert pd.isna(by.loc["C · Three · 2026 Q1", "paid_spend_eur"]) and pd.isna(by.loc["C · Three · 2026 Q1", "cost_per_paid_unit"])
     assert pd.isna(by.loc["D · Four · 2026 Q1", "cost_per_paid_unit"])

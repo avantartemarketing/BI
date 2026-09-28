@@ -133,13 +133,17 @@ Normalisation rules:
   in Untracked's place), and the benchmark's channel split is read the same way, with the
   panel's median Direct share of the Search/direct/other group (`direct_share_norm`, the
   cohort of the untracked norm) leaving the group and landing on every group pro rata
-  (`spread_profile`; the headline medians and K do not move). The ETL builds every page both
-  ways (`with_direct_spread`) and stores the blocks that differ under `variants.direct_spread`;
-  `directShare` carries Direct's share of the release's window as the funnel attributes it.
-  The switch in the page head lays the variant over the page, so every card reads one
-  attribution; it is a methodology choice and sticks per browser. Totals, what has been sold
-  and the spend do not move; the plan's pace and the projections shift a little with the
-  channel mix (each group has its own curve), and paid reads the entries it is given.
+  (`spread_profile`; the headline medians and K do not move). The share is the panel's own
+  (`direct_in_group_<metric>`, written by `release_clusters.py` from the same pull as the split
+  it is applied to); a panel written before those columns falls back to the share on today's
+  feed over the same windows, which mixes two attributions once the feed re-attributes (on 24
+  September 2026 it fell from 0.73 to 0.33 of the group's units in one refresh). The ETL builds
+  every page both ways (`with_direct_spread`) and stores the blocks that differ under
+  `variants.direct_spread`; `directShare` carries Direct's share of the release's window as the
+  funnel attributes it. The switch in the page head lays the variant over the page, so every
+  card reads one attribution; it is a methodology choice and sticks per browser. Totals, what
+  has been sold and the spend do not move; the plan's pace and the projections shift a little
+  with the channel mix (each group has its own curve), and paid reads the entries it is given.
 - **Paid Search** has no benchmarks, no spend feed, and never appears in the daily export -
   every "Total Paid" benchmark is an alias of Paid Social. Model paid = Paid Social; keep Paid
   Search only as a raw actuals bucket.
@@ -729,10 +733,17 @@ Keep 0.8 as the planning constant; surface the per-channel table as diagnostics.
 **E. Cost per purchase (paid)**: quartiles over 22 hand-curated historical paid campaigns
 (mixing LE + TL): **Low €128.75 / Median €177 / High €291**. Since 2026-09-23 the price of a
 paid unit comes from the basket first: each panel launch's cost per paid unit is Meta's spend
-under its campaign code inside its window over the paid units the funnel attributed
-(`baskets.attach_paid_costs`, a reading from 5 paid units and some spend; the campaign code is
-the orders feed's, §2.4), and the basket's median over the members with a reading prices the
-paid budget once three have one (`profile.cost_per_purchase`, `n_costed`). The release's own
+under its campaign code from its window's start to the close, over its paid units with the
+launch's Untracked units folded in (`unit_share_paid` × all units), the basis the page prices
+its own paid units on (`baskets.attach_paid_costs`, a reading from 5 tracked paid units and
+some spend; the campaign code is the orders feed's, §2.4), and the basket's median over the
+members with a reading prices the paid budget once three have one (`profile.cost_per_purchase`,
+`n_costed`). Until 2026-09-28 it was the spend over the whole panel window, to three days after
+the allocation, over the tracked paid units alone: a basis about 7% dearer per unit than the
+page's, and far dearer for a launch that spent after its close (Felipe Pantone spent 15,121 of
+its 16,750 there), so paid read cheaper against plan than it was. The one difference left is
+the window's start, 45 days before the announce where the page opens at the private room;
+no costed launch on file has spend that early. The release's own
 `cost_per_purchase` on the Target setting tab comes before it (Abdulnasser Gharem carries
 €291, the quartile it was planned at), and the Median constant stands in when the basket has
 too few readings. `targets.paid.cost_per_purchase_source` says which of the three priced it. Companion stats (static): ROI
@@ -829,9 +840,16 @@ over the `n_priced` members Airtable priced) with `price_p25` / `price_p75`, and
 (median units on offer); `sessions` (median
 `tot_sessions_total`); `entries` (median `tot_draw_entries_eligible_units`); `campaign_days`;
 `private_room_share`; `share_units` and `share_sessions` per display group; `conv` (median
-`conv_sess_entry_<group>`, 0 where there is no history); and the two products
+`conv_sess_entry_<group>`, 0 where there is no history; a group's rate counts only over 100 of
+its sessions and at no more than 0.25 entries or units per session, and `baskets.load_panel`
+empties the rest, as the panel script does from its next run); and the two products
 `units_by_group` = `share_units[g] × units` and `sessions_by_group` = `share_sessions[g] ×
-sessions`. Groups are the five display groups of §1.3.
+sessions`. Groups are the five display groups of §1.3. The volumes are the panel window's,
+45 days before the announce to three days after the allocation, where the page counts from
+the private room to two days after the close, so a session benchmark carries some traffic
+from before the private room that the page never counts: a few per cent of sessions on most
+launches, more on a channel that runs early (Parra's artist referrals, 2,173 on the panel
+against 1,398 on the page). The cost per paid unit is on the page's basis (§4 E).
 
 The suggested basket, `similar_size` ("Similar size and shape"), is the **`SIMILAR_N` = 8
 launches nearest this one on units and unit price** (`similar_members`): the artist's own
@@ -1272,9 +1290,19 @@ table (§2.4), cut to one window of days.
   2025-01-01): `unitsSource` says which (`orders` or `funnel`), `salesWindow` gives
   `{start, end, closed, firstPaid}`, and `check_snapshot` fails a build where an
   orders-sourced page's `sellthrough.sold` is not `unitsPaidOrders`.
-- **Not moved.** The benchmark panel (`etl/release_clusters.py`, `etl/baskets.py`) still reads
-  the funnel's units for past releases; the reconciliation puts the difference at about 0.1%
-  of units on the tracked releases, and moving it is a follow-up.
+- **Not moved.** The benchmark panel (`etl/analysis/release_clusters.py`, `etl/baskets.py`)
+  still reads the funnel's units for past releases, and moving it to the orders feed is a
+  follow-up. The reconciliation's 0.1% is the order-level match on orders both feeds know since
+  2025-01-01; over the draw panel's windows the gap is 0.8% of units on launches since 2025 and
+  2% overall, most of it two 2023-24 draws whose purchase events carry every unit twice
+  (Johnson Tsang's Open the Right Mind, 196 units on an edition of 100, 98 in the orders feed;
+  Kaï's Content, 162 against 81). `baskets.load_panel` leaves out any launch past 1.5× its
+  edition or the orders feed's units over its window. The panel's channel split is only as
+  current as its last run: the feed moved some 10 to 15% of each launch's units from AA Email
+  to Referral Other on 24 September 2026, and the panel, last run on 10 September, did not
+  follow. The build warns when a closed page's units split is more than 0.05 from its own
+  panel row on any group, and when a launch the panel has in flight closed a settle period
+  (7 days) ago (README, "Re-running the benchmark panel").
 
 Sell-through is three things added up, per product:
 

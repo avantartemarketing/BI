@@ -301,6 +301,31 @@ so there is no rush to reach for it. If the process is ever OOM-killed mid-refre
 symptom is the whole app going 502 for a moment and the header reading **Source status
 unknown** afterwards; shorten `BQ_SINCE`.
 
+### Re-running the benchmark panel
+
+The panel the baskets are cut from (`data/release_clusters.csv`, with
+`data/release_cluster_baskets.json`) is written by `etl/analysis/release_clusters.py`, by hand:
+the hourly refresh never runs it, and the pages read it as committed. Each run writes the channel
+attribution it read and the day it ran on every row (`attribution_basis`, `attribution_through`,
+`panel_built`), and each launch's Direct share of its group, which the Direct switch reads. The
+build warns in its log (`panel: ...`, never stopping the refresh) when a closed page's units split
+is more than 0.05 from its own panel row on any group - the feed's attribution has moved since the
+panel was read - and when a launch the panel has "in flight" closed at least 7 days ago. Either
+means a re-run is due. It needs:
+
+- BigQuery with a full pull reaching back to the panel's start:
+  `BQ_SINCE=2023-01-01 node server/bigquery.js --write --full` (the default `BQ_SINCE` of
+  2025-01-01 would leave out every launch before 2025, as "window starts before the export");
+- a local Python with scikit-learn and scipy besides pandas (Render's has pandas only), then
+  `python3 etl/analysis/release_clusters.py` from the repo root, which also re-attaches the
+  Airtable pricing;
+- a look at the cluster names, which are attached by rank (docs/RELEASE_CLUSTERS.md §8, item 4),
+  and at the launches it now settles or leaves out;
+- committing the two files; the next refresh rebuilds every page and the picker's candidates.
+
+A re-run lets a closed release's basket take in launches that closed after it (on the September
+2026 panel, James Jean, Mondrian and Zeng Fanzhi would move), so decide first whether it should.
+
 ### Google Sheet (fallback; `server/sheets.js`)
 
 Pulls two tabs of the *LE Paid Calculator* sheet. Used when BigQuery is unconfigured, and

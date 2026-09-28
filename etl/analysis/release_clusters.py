@@ -43,12 +43,15 @@ conversion. They are profiled as their own legacy basket and placed against
 the draw clusters on the features they share, not clustered with them.
 
 Outputs
-  data/release_clusters.csv        one row per release: window, features, cluster, pricing
+  data/release_clusters.csv        one row per release: window, features, cluster, pricing, and
+                                   the attribution it was read on (attribution_basis,
+                                   attribution_through, panel_built)
   data/release_cluster_baskets.json per-cluster quartiles by channel and stage
   stdout                           the analysis, recorded in docs/RELEASE_CLUSTERS.md
 
-Run from the repo root after a BigQuery pull:
-  node server/bigquery.js --write --full && python3 etl/analysis/release_clusters.py
+Run from the repo root after a full BigQuery pull reaching back to 2023 (the
+default BQ_SINCE of 2025-01-01 would leave out every earlier launch):
+  BQ_SINCE=2023-01-01 node server/bigquery.js --write --full && python3 etl/analysis/release_clusters.py
 
 After an Airtable pull alone, re-attach the pricing to the panel on file
 without touching the windows, features or clusters (no funnel export needed):
@@ -67,6 +70,7 @@ import pandas as pd
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "etl"))
+import baskets as B  # noqa: E402
 from build import DISPLAY_GROUPS, GROUP_OF, discover_releases  # noqa: E402
 from pricing import attach_pricing  # noqa: E402
 
@@ -79,10 +83,19 @@ ALLOC_TAIL_DAYS = 3      # units allocated within this many days after the draw 
 MIN_ENTRIES = 10         # eligible entry units inside the window: a draw with fewer is not a draw campaign
 MIN_UNITS = 10           # units sold inside the window (draw and legacy alike)
 MIN_SESSIONS = 300       # a legacy launch with fewer sessions in its window is catalogue trickle, not a launch
-MIN_GROUP_SESSIONS = 30  # a channel group with fewer sessions gets no conversion rate (a 1-in-3 is not a rate)
+# A channel group's conversion is a rate only over B.RATE_MIN_SESSIONS (100)
+# sessions and at no more than B.RATE_MAX_PER_SESSION (0.25) entries or units
+# per session; baskets.load_panel applies the same rule on read (it was a
+# 30-session floor, which let Albers 2026 Q2's 44 AA Social entries on 57
+# sessions through as a 77% rate).
 FIRST_QUARTER = "2023 Q1"  # releases named for an earlier quarter launched before the export
-SETTLE_DAYS = 7          # a close this close to the export edge is not settled
+SETTLE_DAYS = B.SETTLE_DAYS  # a close this close to the export edge is not settled
 SEED = 20260910
+# What the channel split is read from, written on every row with the export's
+# last day and the day the script ran, so a page can be told which attribution
+# its benchmark stands on (build.py warns when a closed page has moved off it).
+ATTRIBUTION = "funnel export, split-touch channel (AA_session_custom_channel_group_split_touch), Untracked out of the shares"
+UNITS_REASON = f"units over {B.UNITS_MAX_MULTIPLE:g}x the edition or the orders feed"
 
 METRICS = ["Page_Views_Total", "Sessions_Total", "Draw_Entries", "Preorder_App", "Draw_Entry_Eligible",
            "Unique_Customers", "Customer_Private_Room", "Draw_Entry_Eligible_No_Conv", "Total_Product_Units",
@@ -201,14 +214,27 @@ def campaign_features(df: pd.DataFrame, w: pd.Series) -> dict:
         denom = g.sum()
         for grp in GROUPS:
             f[f"{key}_share_{grp}"] = float(g.get(grp, 0) / denom) if denom else np.nan
-    # per group conversion (unadjusted denominators, the benchmark convention)
+    # per group conversion (unadjusted denominators, the benchmark convention),
+    # left empty where it cannot be a rate (B.implausible_rates) and noted
     gs = tracked.groupby("group")[["Sessions_Total", "Draw_Entries_Eligible_Units", "Total_Product_Units", "Product_Units_Draw"]].sum()
+    dropped = []
     for grp in GROUPS:
         s = gs["Sessions_Total"].get(grp, 0); e = gs["Draw_Entries_Eligible_Units"].get(grp, 0)
         u = gs["Total_Product_Units"].get(grp, 0)
-        f[f"conv_sess_entry_{grp}"] = float(e / s) if s >= MIN_GROUP_SESSIONS else np.nan
-        f[f"conv_sess_unit_{grp}"] = float(u / s) if s >= MIN_GROUP_SESSIONS else np.nan
+        ok = s >= B.RATE_MIN_SESSIONS and e <= B.RATE_MAX_PER_SESSION * s and u <= B.RATE_MAX_PER_SESSION * s
+        f[f"conv_sess_entry_{grp}"] = float(e / s) if ok else np.nan
+        f[f"conv_sess_unit_{grp}"] = float(u / s) if ok else np.nan
         f[f"sessions_{grp}"] = float(s); f[f"entries_{grp}"] = float(e); f[f"units_{grp}"] = float(u)
+        if not ok and s > 0 and (e > 0 or u > 0):
+            dropped.append(f"{grp} {e:.0f} entries, {u:.0f} units on {s:.0f} sessions")
+    f["rates_dropped"] = "; ".join(dropped) or None
+    # Direct's share of its own group, per metric: what the dashboard's Direct
+    # switch spreads, from the same pull as the split it spreads it over
+    # (build.direct_share_norm takes the median of these)
+    sdo = tracked[tracked["group"] == GROUP_OF.get("Direct")]
+    for metric, key in [("Sessions_Total", "sessions"), ("Draw_Entries_Eligible_Units", "entries"), ("Total_Product_Units", "units")]:
+        whole = float(sdo[metric].sum())
+        f[f"direct_in_group_{key}"] = float(sdo.loc[sdo["channel"] == "Direct", metric].sum() / whole) if whole > 0 else np.nan
     # raw channel session shares (for the baskets)
     ch = tracked.groupby("channel")["Sessions_Total"].sum(); chd = ch.sum()
     for c in sorted(GROUP_OF):
@@ -279,7 +305,7 @@ def build_panel(df: pd.DataFrame, as_of: date) -> pd.DataFrame:
         if not (3 <= L <= 90):
             r["exclude_reason"] = f"window {L} days"; rows.append(r); continue
         if pd.Timestamp(r["close"]) > pd.Timestamp(as_of) - pd.Timedelta(days=SETTLE_DAYS):
-            r["exclude_reason"] = "in flight / not settled"; rows.append(r); continue
+            r["exclude_reason"] = B.IN_FLIGHT; rows.append(r); continue
         if pd.Timestamp(r["announce"]) - pd.Timedelta(days=EA_LEAD_DAYS) < pd.Timestamp(df["event_date"].min()):
             r["exclude_reason"] = "window starts before the export"; rows.append(r); continue
         r.update(campaign_features(df, pd.Series(r)))
@@ -292,6 +318,26 @@ def build_panel(df: pd.DataFrame, as_of: date) -> pd.DataFrame:
         r["panel"] = "draw" if draw else "legacy"
         rows.append(r)
     return pd.DataFrame(rows)
+
+
+def flag_units(panel: pd.DataFrame) -> pd.DataFrame:
+    """Leave out of both panels a launch whose units cannot be true: over
+    B.UNITS_MAX_MULTIPLE times its edition (Airtable, via the pricing join) or
+    the orders feed's units paid over the same window (data/units_paid.csv),
+    B.units_out_of_line. The funnel's purchase events carry every unit twice
+    for Johnson Tsang's Open the Right Mind and Kai's Content (2023-24), and a
+    doubled launch is no comparable. baskets.load_panel drops the same rows on
+    read, so a panel written before this rule behaves the same."""
+    p = panel.copy()
+    inside = p["panel"].notna()
+    if not inside.any():
+        return p
+    priced = attach_pricing(p.loc[inside])
+    bad = B.units_out_of_line(priced, B.orders_in_window(priced))
+    hit = inside & p["release_name"].isin(set(priced.loc[bad, "release_name"]))
+    p.loc[hit, "panel"] = None
+    p.loc[hit, "exclude_reason"] = UNITS_REASON
+    return p
 
 
 # ---------------------------------------------------------------- clustering
@@ -608,7 +654,7 @@ def main() -> None:
     warnings.filterwarnings("ignore")
     df = load_daily()
     as_of = df["event_date"].max().date()
-    panel = derived(build_panel(df, as_of))
+    panel = derived(flag_units(build_panel(df, as_of)))
     draw = panel[panel["panel"] == "draw"].reset_index(drop=True)
     legacy = panel[panel["panel"] == "legacy"].reset_index(drop=True)
     print(f"export {df['event_date'].min().date()} .. {as_of}: {panel['release_name'].nunique()} releases; "
@@ -724,8 +770,11 @@ def main() -> None:
     keep = [c for c in out.columns if not c.startswith("org_share_")]
     out = attach_pricing(out[keep])
     print_pricing_coverage(out)
+    built = date.today().isoformat()
+    out = out.assign(attribution_basis=ATTRIBUTION, attribution_through=as_of.isoformat(), panel_built=built)
     out.sort_values(["panel", "cluster", "announce"]).to_csv(OUT_CSV, index=False)
     baskets = {"as_of": as_of.isoformat(), "export_from": df["event_date"].min().date().isoformat(),
+               "built": built, "attribution": ATTRIBUTION,
                "panel": {"draw": int(len(draw)), "legacy": int(len(legacy)), "clock": int((draw.dates_source == "clock").sum())},
                "features": FEATURE_BLOCKS, "k_chosen": 4, "k_robust": 2,
                "diagnostics": {int(k): {c: (None if pd.isna(v) else float(v)) for c, v in row.items()} for k, row in show.iterrows()},

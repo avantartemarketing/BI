@@ -553,7 +553,17 @@ def direct_share_norm(at: pd.DataFrame, panel: pd.DataFrame | None, as_of: date)
     median over the draw panel's launches closed in the last RECENT_MONTHS,
     each over its own window (the cohort untracked_norms reads). The Direct
     switch reads the benchmark's channel split with this much of the group
-    spread over the other channels, the same rule the actuals get."""
+    spread over the other channels, the same rule the actuals get.
+
+    The split it is applied to is the panel's, so the share is the panel's
+    too wherever the panel carries it (direct_in_group_<metric>, written by
+    etl/analysis/release_clusters.py from the same pull as the split): read
+    off today's feed instead, a re-attribution upstream moves the share and
+    not the split, and the Direct view mixes two attributions - on 24 Sep
+    2026 Direct's share of the group's units fell from 0.73 to 0.33 in one
+    refresh while the panel's split stayed on 10 Sep's. A panel written
+    before the columns existed falls back to today's feed over the same
+    windows. `source` says which was read: "panel" or "feed"."""
     if panel is None or not len(panel) or "window_end" not in panel.columns:
         return None
     ends = pd.to_datetime(panel["window_end"], errors="coerce")
@@ -561,6 +571,16 @@ def direct_share_norm(at: pd.DataFrame, panel: pd.DataFrame | None, as_of: date)
     recent = panel[ends >= cutoff]
     use_recent = len(recent) >= UNTRACKED_NORM_MIN
     pool = recent if use_recent else panel
+    cols = {k: f"direct_in_group_{k}" for k in DIRECT_METRICS}
+    if all(c in pool.columns for c in cols.values()) and pool[list(cols.values())].notna().any().all():
+        out: dict = {"recentMonths": baskets.RECENT_MONTHS if use_recent else None, "source": "panel"}
+        ns = []
+        for k, c in cols.items():
+            ser = pd.to_numeric(pool[c], errors="coerce").dropna()
+            out[k] = round(float(ser.median()), 4) if len(ser) else None
+            ns.append(len(ser))
+        out["n"] = max(ns)
+        return out
     shares: dict[str, list[float]] = {k: [] for k in DIRECT_METRICS}
     for r in pool.to_dict("records"):
         ws = pd.to_datetime(r.get("window_start"), errors="coerce")
@@ -574,7 +594,7 @@ def direct_share_norm(at: pd.DataFrame, panel: pd.DataFrame | None, as_of: date)
         for k, v in channel_share(sub, "Direct", within_group=True).items():
             if v is not None:
                 shares[k].append(v)
-    out: dict = {"recentMonths": baskets.RECENT_MONTHS if use_recent else None}
+    out: dict = {"recentMonths": baskets.RECENT_MONTHS if use_recent else None, "source": "feed"}
     for k, xs in shares.items():
         ser = pd.Series(xs, dtype=float)
         out[k] = round(float(ser.median()), 4) if len(ser) else None
@@ -4623,6 +4643,78 @@ def check_snapshot(snap: dict) -> None:
 # problems check_snapshot found with CHECK_SNAPSHOT=warn (a verification run)
 CHECK_WARNINGS: list[str] = []
 
+# ---- the benchmark panel against the feed (docs/DATA_MODEL.md 6.3) -----------
+# The panel (data/release_clusters.csv) is written by hand after a full pull;
+# the pages are rebuilt from the feed every hour. These say when the two have
+# come apart. Warnings for the refresh log only: the pages are right on their
+# own terms, and the fix is a re-run of etl/analysis/release_clusters.py.
+PANEL_DRIFT_TOL = 0.05   # a closed page's share of units per group against its own panel row
+PANEL_WARNINGS: list[str] = []
+
+
+def panel_drift(snap: dict, panel: pd.DataFrame | None) -> str | None:
+    """A closed targeted page set against its own row in the panel: the page's
+    share of units per display group (channels[].now, the Channel view) and
+    the row's unit_share_<g>. Both count the same launch, so on one channel
+    attribution they agree to a few points (0.025 at most on the five pages
+    that have a row, on 24 Sep 2026 before the feed moved); further apart
+    than PANEL_DRIFT_TOL on any group, the panel was read on an older
+    attribution than the page, and every basket cut from it sets the
+    per-channel targets on the older split. None when there is nothing to
+    say; never raises."""
+    try:
+        if panel is None or not len(panel) or not snap.get("complete") or not snap.get("benchmark"):
+            return None
+        hit = panel[panel["release_name"] == snap.get("releaseName")]
+        if not len(hit):
+            return None
+        row = hit.iloc[0]
+        now = {c.get("key"): float(c.get("now") or 0.0) for c in (snap.get("channels") or [])}
+        total = sum(now.get(g, 0.0) for g in baskets.GROUPS)
+        if total <= 0:
+            return None
+        apart = []
+        for g in baskets.GROUPS:
+            share = pd.to_numeric(row.get(f"unit_share_{g}"), errors="coerce")
+            if pd.isna(share):
+                continue
+            page = now.get(g, 0.0) / total
+            if abs(page - float(share)) > PANEL_DRIFT_TOL:
+                apart.append((abs(page - float(share)), g, page, float(share)))
+        if not apart:
+            return None
+        apart.sort(reverse=True)
+        return (f"panel: {snap.get('id')} has closed and its units split is up to {apart[0][0]:.2f} from its own panel row ("
+                + ", ".join(f"{g} {p:.2f} on the page, {s:.2f} in the panel" for _, g, p, s in apart)
+                + "): the panel's channel attribution is older than the feed's, so the baskets set per-channel targets "
+                  "on the older split - re-run etl/analysis/release_clusters.py after a full pull")
+    except Exception as e:  # noqa: BLE001 - a warning must never stop the refresh
+        return f"panel: the drift check for {snap.get('id')} could not run ({e})"
+
+
+def panel_unsettled(as_of: date) -> str | None:
+    """The launches the panel still has in flight although they closed at
+    least baskets.SETTLE_DAYS ago: a re-run would settle them, and until it
+    does no basket can hold them (Dali and Glenn Ligon from September 2026).
+    None when the panel owes nothing; never raises."""
+    try:
+        due = baskets.unsettled(as_of)
+    except Exception as e:  # noqa: BLE001 - a warning must never stop the refresh
+        return f"panel: the in-flight check could not run ({e})"
+    if not due:
+        return None
+    return (f"panel: {len(due)} launch(es) closed {baskets.SETTLE_DAYS} or more days before {as_of} are still "
+            f"'{baskets.IN_FLIGHT}' in data/release_clusters.csv, so no basket can hold them: "
+            + ", ".join(f"{r['release_name']} (closed {r['close']})" for r in due)
+            + " - re-run etl/analysis/release_clusters.py after a full pull")
+
+
+def warn_panel(msg: str | None) -> None:
+    """Print a panel warning and keep it for the run's summary."""
+    if msg:
+        PANEL_WARNINGS.append(msg)
+        print(msg)
+
 
 def funnel_coverage(at: pd.DataFrame, curves: dict) -> str:
     """One line for the refresh log: how much history the funnel export carries
@@ -4825,6 +4917,24 @@ def main(only: str | None = None):
     except (OSError, ValueError, KeyError) as e:
         panel = None
         print(f"baskets: no draw panel ({e}) - no release can be benchmarked, so none is targeted")
+    if panel is not None:
+        # what the panel's channel split was read from, and what reading it set aside
+        try:
+            basis = baskets.panel_basis()
+            print(f"baskets: channel split as the feed attributed it through {basis['through'] or 'an unrecorded day'}"
+                  + (f" ({basis['attribution']}; panel written {basis['built']})" if basis["attribution"] else ""))
+            if baskets.GUARDED.get("units"):
+                print(f"baskets: left out, units past {baskets.UNITS_MAX_MULTIPLE:g}x the edition or the orders feed: "
+                      + "; ".join(baskets.GUARDED["units"]))
+            if baskets.GUARDED.get("rates"):
+                print(f"baskets: {len(baskets.GUARDED['rates'])} conversion rates emptied (under {baskets.RATE_MIN_SESSIONS} "
+                      f"sessions, or over {baskets.RATE_MAX_PER_SESSION:g} entries or units per session): "
+                      + "; ".join(baskets.GUARDED["rates"]))
+            for note in baskets.GUARDED.get("skipped") or []:
+                print(f"baskets: a panel guard could not run, the panel is read without it - {note}")
+        except Exception as e:  # noqa: BLE001 - the log lines must never stop the refresh
+            print(f"baskets: could not describe the panel ({e})")
+        warn_panel(panel_unsettled(as_of))
 
     APP.mkdir(parents=True, exist_ok=True)
     (APP / "releases").mkdir(exist_ok=True)
@@ -4877,7 +4987,8 @@ def main(only: str | None = None):
         except OSError:
             pass
     if direct_norm and direct_norm.get("units") is not None:
-        print(f"direct norm: {direct_norm['units']:.1%} of its group's units, {direct_norm['sessions']:.1%} of its sessions (n={direct_norm['n']})")
+        print(f"direct norm: {direct_norm['units']:.1%} of its group's units, {direct_norm['sessions']:.1%} of its sessions (n={direct_norm['n']}, "
+              + ("read off the panel)" if direct_norm.get("source") == "panel" else "read off today's feed: the panel does not carry it yet)"))
     if norms:
         print("untracked norm: " + ", ".join(f"{k} median {v['median']:.1%} p90 {v['p90']:.1%} (n={v['n']})"
                                              for k, v in norms.items() if isinstance(v, dict) and v.get("median") is not None))
@@ -4891,6 +5002,7 @@ def main(only: str | None = None):
                              artist_posts, posts_bench, email_bench, panel, people,
                                  full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
         check_snapshot(snap)
+        warn_panel(panel_drift(snap, panel))
         (APP / "releases" / f"{only}.json").write_text(json.dumps(snap, indent=1))
         bmk = snap.get("benchmark")
         print(f"{snap['id']}: day {snap['day']}/{snap['of']} "
@@ -4916,6 +5028,7 @@ def main(only: str | None = None):
                                  artist_posts, posts_bench, email_bench, panel, people,
                                  full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
             check_snapshot(snap)
+            warn_panel(panel_drift(snap, panel))
             (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
             add(snap, "closed" if snap["complete"] else "live")
             n_full += 1
@@ -5017,6 +5130,8 @@ def main(only: str | None = None):
     print(units_coverage())
     if os.environ.get("CHECK_SNAPSHOT") == "warn":
         print(f"check_snapshot: {len(CHECK_WARNINGS)} page(s) with problems (warn mode: nothing stopped)")
+    if PANEL_WARNINGS:
+        print(f"panel: {len(PANEL_WARNINGS)} warning(s) above - the benchmark panel wants a re-run (README, 'Re-running the benchmark panel')")
     print(f"wrote {n_full} targeted + {n_actuals} actuals-only + {n_upcoming} upcoming releases "
           f"({sum(1 for e in index if e['status'] == 'live')} live) -> {APP}")
 

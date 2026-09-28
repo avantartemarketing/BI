@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Direct spread over the other channels (docs 1.3): the redistribution keeps
 every day's totals and hands Direct's volume out pro rata, the benchmark's
-split is spread the same way without moving its medians, and a page built
-both ways carries the differing blocks under variants.direct_spread with the
-totals untouched.
+split is spread the same way without moving its medians, the share it spreads
+is the panel's own where the panel carries it, and a page built both ways
+carries the differing blocks under variants.direct_spread with the totals
+untouched.
 python3 tests/test_direct_spread.py (needs pandas)"""
 import sys, json, pathlib, random, copy
 from datetime import date, timedelta
@@ -62,6 +63,19 @@ check(close(ug["search_direct_other"], 110.0 + 110.0 * 110.0 / rest) and close(u
 check(close(sum(sp["sessions_by_group"].values()), 40000.0) and sp["conv"] == profile["conv"], "sessions kept, conversion held")
 check(build.spread_profile(profile, None) is profile, "no norm, no change")
 
+# ---- the share spread is the panel's own where the panel carries it
+cohort = pd.DataFrame({"release_name": [f"L{i}" for i in range(10)],
+                       "window_start": [pd.Timestamp("2026-05-01")] * 10, "window_end": [pd.Timestamp("2026-06-01")] * 10,
+                       "direct_in_group_sessions": [0.6] * 5 + [0.7] * 5, "direct_in_group_entries": [0.5] * 10,
+                       "direct_in_group_units": [0.3, 0.4] * 5})
+from_panel = build.direct_share_norm(pd.DataFrame(columns=["simple_release_name", "event_date", "channel"]), cohort, date(2026, 9, 24))
+check(from_panel["source"] == "panel" and close(from_panel["sessions"], 0.65) and close(from_panel["units"], 0.35)
+      and from_panel["n"] == 10, f"the panel's median Direct share: {from_panel}")
+from_feed = build.direct_share_norm(pd.DataFrame(columns=["simple_release_name", "event_date", "channel"]),
+                                    cohort.drop(columns=["direct_in_group_sessions", "direct_in_group_entries", "direct_in_group_units"]),
+                                    date(2026, 9, 24))
+check(from_feed["source"] == "feed", f"a panel without the columns falls back to today's feed: {from_feed}")
+
 # ---- a page built both ways on the synthetic harness
 base = dict(next(r for r in build.INPUTS["releases"] if r["id"] == "julianschnabel_le_26"))
 base["campaign_name"] = "Synthetic · Enter draw"; base["campaign_names"] = [base["campaign_name"]]
@@ -90,9 +104,11 @@ emails, content, people = build.load_emails(), build.load_content(), build.load_
 panel = baskets.load_panel()
 curves = json.loads((ROOT / "data/app/curves.json").read_text())
 # the panel's launches have no rows in this synthetic frame, so the norm the
-# build would read is empty and the benchmark's split stays; a norm is set by
+# build would read off the feed is empty and the benchmark's split stays (a
+# panel that carries its own Direct shares is read above); a norm is set by
 # hand so the targets' spread is exercised too
-empty = build.direct_share_norm(at, panel, TODAY)
+feed_only = panel.drop(columns=[c for c in panel.columns if c.startswith("direct_in_group_")])
+empty = build.direct_share_norm(at, feed_only, TODAY)
 check(empty is not None and empty.get("units") is None, f"no panel rows, no norm: {empty}")
 check(build.spread_profile(profile, empty) == profile or build.spread_profile(profile, empty)["units_by_group"] == profile["units_by_group"], "an empty norm leaves the split alone")
 direct_norm = {"units": 0.5, "sessions": 0.5, "entries": 0.5, "n": 10, "recentMonths": 18}

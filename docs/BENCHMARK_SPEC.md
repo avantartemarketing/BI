@@ -50,7 +50,11 @@ funnel** are always Today; **Paid ROI** has no horizon and **no reference at all
 ### 3.1 Ready-made baskets (`etl/baskets.py`)
 
 Built from `data/release_clusters.csv` (rows with `panel == "draw"`, 108 of them) and
-`data/release_cluster_baskets.json`.
+`data/release_cluster_baskets.json`, read with two guards (`baskets.load_panel`; the panel
+script applies the same ones as it writes): a launch whose units run past 1.5× its edition or
+the orders feed's units paid over the same window is left out (two 2023-24 draws the funnel
+counts twice, Johnson Tsang's Open the Right Mind and Kaï's Content, so 106 are read), and a
+group's conversion rates are emptied where they cannot be rates (§3.2).
 
 | id | name | membership |
 |---|---|---|
@@ -214,7 +218,21 @@ Groups are the five display groups: `aa_email`, `aa_social`, `referral_artist`,
 
 Per-channel benchmarks are **median share × median total**, never the median of the
 per-channel column - so they sum exactly to the headline median. Medians over an empty or
-all-NaN column are `0.0`, never NaN. The price range is taken over the members Airtable priced
+all-NaN column are `0.0`, never NaN. A group's `conv_sess_entry_<g>` (and `conv_sess_unit_<g>`)
+counts only over at least 100 of the group's sessions and at no more than 0.25 entries or units
+per session; below or past that it is empty and the median skips it (Albers 2026 Q2 read 44 AA
+Meta entries on 57 sessions, 77%, and lifted four baskets' AA Meta conversion by up to half a
+point).
+
+The profile's volumes are the panel's, measured over the panel window: 45 days before the
+announce to three days after the allocation. The page's actuals start at the private room (or
+the first paid order) and stop two days after the close, so a session benchmark carries the
+pre-private-room traffic the page never counts: a few per cent of sessions on most launches,
+more on a channel that runs early (Parra's artist referrals, 2,173 on the panel against 1,398
+on the page). The **cost per paid unit** is on the page's basis instead (`attach_paid_costs`):
+spend to the close over the paid units with Untracked folded in, the Funnel card's cost per unit
+to date. The window's earlier start is the one difference left, and no costed launch on file
+has spend that early. The price range is taken over the members Airtable priced
 (`n_priced`), in euros, and the picker prints it next to the units range on every basket,
 ready-made or hand-picked, so a basket that matches on size but not price is visibly so.
 
