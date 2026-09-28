@@ -356,12 +356,12 @@ gap organic is *not* on course to fill - not to buy the whole remaining edition
 by itself:
 
 ```
-secured now     = units sold + 0.8 × entries banked        (all channels)
+secured now     = the sell-through's count (§1): units paid + drafts + rate × entries in hand
 organic to come = shape-following organic projection of further secured units (§6)
 sell-out gap    = max(edition size − secured now − organic to come, 0)
-entries needed  = sell-out gap × 1.2
-forecast CPE    = trailing-3-day adjusted CPE × 1.5   (assumed deterioration to close)
-budget          = entries needed × forecast CPE
+entries needed  = sell-out gap ÷ rate       (every unit asked for as an entry, as in the targets)
+supply spend    = the daily spend whose entries fill the gap by the close, at the price below
+budget          = supply spend × days left
 ```
 
 A launch pacing well ahead organically can therefore read a recommendation of
@@ -419,14 +419,14 @@ the paid team.
 
 **Pacing rules:** target ROI (AA) **1.1**, floor **1.0**. Cumulative ROI below
 0.9 → decrease; 0.9–1.3 → hold (never raise); above 1.3 → increase. Daily
-changes are capped at ±30% and changes under 10% are ignored. Forecast ROI
-below target for 3 consecutive days forces a decrease. The recommendation is
-the target above, paced by these rules from today's spend; the card's
+changes are capped at ±30% and changes under 10% are ignored. A rolling 3-day
+ROI below target on each of the last three full days forces a decrease. The
+recommendation is the target above, paced by these rules from today's spend; the card's
 "Capped by" names which one bound it in a word (Sellout, Floor, Pacing, Hold,
 Decrease, Forced, Plan, Zero, Pause, Steady), with the rule in full at the head
 of its tooltip and the unconstrained figures beneath. With no spend yet there is no price to anchor on: the
 first day starts at the plan's daily rate. ROI shown against the
-recommendation is the ROI at that spend level's cost per entry.
+recommendation is the ROI at the close at that spend level's cost per entry.
 
 ## 8. Where the numbers come from
 

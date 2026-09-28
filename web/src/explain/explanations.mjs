@@ -677,7 +677,7 @@ function capStep(b) {
     case "pacing": return seg`The pacing rule then holds the move to 30% of today's spend, ${eur(cur)} × ${b.recommended >= cur ? "1.3" : "0.7"}: a bigger jump in a day resets Meta's learning, and the price with it.`;
     case "roi_band_hold": return seg`Cumulative ROI is ${n(cum, 2)}, between 0.9 and 1.3, where the spend rules say hold: the budget stays where it is.`;
     case "roi_band_decrease": return seg`Cumulative ROI is ${n(cum, 2)}, below 0.9, where the spend rules say cut, by up to 30% a day.`;
-    case "forced_decrease": return seg`The forecast ROI has been below target three days running, which forces a cut.`;
+    case "forced_decrease": return seg`The rolling three-day ROI has been below target on each of the last three full days, which forces a cut.`;
     case "plan_rate": return seg`There is no spend yet to price from, so the first day runs at the plan's daily rate.`;
     case "zero_conversion": return seg`The last day spent and bought no entries, which cuts the budget by 30%.`;
     case "zero_conversion_pause": return seg`Three days of spend with no entries pause the campaign.`;

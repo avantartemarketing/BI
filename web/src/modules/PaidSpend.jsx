@@ -101,7 +101,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       : budget.cap === "roi_band_decrease"
       ? "Cumulative ROI is below 0.9: the rules say decrease, by up to 30% a day."
       : budget.cap === "forced_decrease"
-      ? "Forecast ROI has been below target for three days running: the rules force a decrease."
+      ? "The rolling three-day ROI has been below target on each of the last three full days: the rules force a decrease."
       : budget.cap === "plan_rate"
       ? "No spend yet to anchor a price on, so the first day starts at the plan's daily rate."
       : budget.cap === "zero_conversion"

@@ -1070,12 +1070,14 @@ def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH) -> dict:
     priors come from (etl/analysis/cpe_elasticity.py), then combines each
     estimate with its prior by precision: a campaign with a tight estimate
     keeps it, a noisy one leans on the panel. Below cpe_fit_min_days of
-    history the priors are used as they are. Warhol's 18 days scaling from
-    €1k to €30k a day gave an elasticity of 0.20 +/- 0.29 and a drift of
-    0.8% +/- 5.1 a day, which the priors (0.38 +/- 0.19; 2.5% +/- 3.5) pull
-    to 0.34 and 2.0%: the spend response is its own, the time decay is
-    mostly the panel's, because a campaign that ramps and ages at once
-    cannot separate the two from its own days.
+    history the priors are used as they are. On the 24 September 2026
+    build Warhol's 18 days, scaling from €1.2k to €30k a day, gave an
+    elasticity of 0.23 +/- 0.40 and a drift of 0.7% +/- 7.3 a day, which the
+    priors (0.38 +/- 0.19; 2.5% +/- 3.5) pull to 0.35 and 2.2%: a campaign
+    that ramps and ages at once separates the two poorly from its own days,
+    so a loose estimate leans on the panel. A day later its 19 days gave
+    -4.3% +/- 3.6 a day, tight enough to pull the drift below zero, where it
+    is held at 0 (the drift is clamped to 0-10% a day, the elasticity to 0-1).
 
     Returns the values used (elasticity, drift per day) and how they were
     reached (own estimates, standard errors, days), all JSON-ready."""
@@ -3823,7 +3825,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # the workbook's pacing rules, transcribed into the benchmarks but never
     # applied until now: cumulative ROI below 0.9 -> decrease, above 1.3 ->
     # increase, between -> hold; daily change capped at 30%; changes under 10%
-    # ignored; 3 days of forecast ROI below target force a decrease.
+    # ignored; the trailing 3-day ROI below target on each of the last 3 full
+    # days forces a decrease.
     band = "hold"
     if cum_roi is not None:
         if cum_roi < rules["decrease_below_cum_roi"]:
