@@ -244,7 +244,10 @@ export default function KeyDrivers({ snap, horizon }) {
       dot={GROUP_DOTS.funnel}
       title={view === "funnel" ? "Organic funnel" : "Funnel key drivers"}
       right={
-        <span className="seg">
+        /* three choices in a one-column card's head: the compact seg the
+           trajectory and channels heads use, which on a narrow page keeps
+           the toggle inside the card rather than cut by its edge */
+        <span className="seg compact">
           <button
             className={view === "funnel" ? "active" : ""}
             title="Organic funnel at a grouped level: target down the centre, benchmark as a dotted tick, actual as a dot"

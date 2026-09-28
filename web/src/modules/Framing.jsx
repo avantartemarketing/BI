@@ -27,7 +27,7 @@ const pts = (x) => Math.round(x * 100);
 function Row({ label, sub, value, tip, x, children }) {
   const t = useTip();
   return (
-    <div style={{ marginBottom: 10 }} {...t.props(tip, 300)}>
+    <div style={{ marginBottom: 6 }} {...t.props(tip, 300)}>
       <div style={{ display: "flex", alignItems: "baseline", fontSize: 12.5, marginBottom: 4 }}>
         <span>{label}</span>
         <span style={{ color: C.muted, marginLeft: 6 }}>{sub}</span>
@@ -110,7 +110,11 @@ export default function Framing({ snap, horizon = "today" }) {
             ? <>of paid prints went out framed · {fmt(f.frames)} of {fmt(f.prints)}</>
             : <>no prints sold yet - the entrants' frames below</>}
       </div>
-      <div style={{ marginTop: 14 }}>
+      {/* the card carries two bars and up to three key rows under a caption
+          that wraps on a narrow card, so its spacing is a step tighter than
+          the hero's: at the hero's, the last key row landed on the card's
+          bottom edge */}
+      <div style={{ marginTop: 10 }}>
         {rate !== null && (
           <Row label="Buyers" sub="paid prints" value={fmtPct(rate)} tip={worksTip} x="framing.buyers">
             <TrackBar now={rate} target={plan} bm={bm} max={1} />
@@ -122,7 +126,7 @@ export default function Framing({ snap, horizon = "today" }) {
           </Row>
         )}
       </div>
-      <div className="legend-rows">
+      <div className="legend-rows tight">
         {plan !== null && (
           <div className="legend-row" {...t.props(planTip)}>
             <span className="swatch" style={{ background: C.refBase }} />

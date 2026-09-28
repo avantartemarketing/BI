@@ -199,6 +199,8 @@ button[title], select[title] { cursor: pointer; }
   border-top: 1px solid var(--hairline); font-size: 12.5px;
 }
 .legend-row .val { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* a card with more above its key (framing) keeps the key rows a step shorter */
+.legend-rows.tight .legend-row { height: 28px; }
 .swatch { width: 10px; height: 10px; border-radius: 2px; flex: 0 0 10px; }
 
 .lozenge {

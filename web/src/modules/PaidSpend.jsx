@@ -336,7 +336,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           />
           <span {...tipApi.props(spendTip)} style={rightLabel}><Ex k="paid.spend" arg={{ close }}>{moneyK(spendFill)}</Ex></span>
         </div>
-        {/* the key wraps on a narrow card rather than running off its edge */}
+        {/* the key wraps rather than running off a narrow card: at close it
+            names four marks, more than a one-column card has room for on a line */}
         <div style={{ minHeight: 14, display: "flex", flexWrap: "wrap", gap: "4px 14px", alignItems: "center" }}>
           <div style={legendItem}><span style={sw(C.blue)} />To date</div>
           {close && <div style={legendItem}><span style={sw(C.blueLight)} />Projected</div>}

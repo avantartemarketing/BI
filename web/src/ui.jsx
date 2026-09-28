@@ -572,15 +572,24 @@ export function RungTrack({ dev, bmPos, up, neutral, guide, bench = true }) {
 }
 
 /* The rung grammar in three marks, so nobody has to guess what the centre or
- * the tick is. The tick is dropped with no basket, exactly as the rung drops it. */
+ * the tick is. The tick is dropped with no basket, exactly as the rung drops it.
+ * The scale note is the key's least part: on a row with no room for it beside
+ * the marks (a one-column card on a narrow page) it gives way, measured in
+ * pixels, and stays in the key's hover, rather than running off the card. */
+const RUNG_NOTE = "×4 fills the rung";
 export function RungKey({ bench = true }) {
+  const [ref, rowW] = useWidth();
   const item = {
     display: "flex", alignItems: "center", gap: 6,
     fontSize: 11.5, color: C.muted, whiteSpace: "nowrap",
   };
-  // on a narrow card the note takes a line of its own rather than running off it
+  // the marks and their words, the 12px gaps between, then the note
+  const tw = (s) => textPx(s, 11.5);
+  const marks = (10 + 6 + tw("Actual")) + 12 + (2 + 6 + tw("Target")) + (bench ? 12 + (2 + 6 + tw("Benchmark")) : 0);
+  const showNote = !rowW || marks + 12 + tw(RUNG_NOTE) <= rowW;
   return (
-    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "2px 12px", flex: "0 0 auto", minHeight: 18, marginTop: 6 }}>
+    <div ref={ref} title={showNote ? undefined : "×4 either way fills the rung: the dot is the actual against the target, on a log scale"}
+      style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 18px", marginTop: 6 }}>
       <span style={item}>
         <span style={{
           width: 10, height: 10, borderRadius: "50%", flex: "0 0 10px",
@@ -598,7 +607,7 @@ export function RungKey({ bench = true }) {
           Benchmark
         </span>
       )}
-      <span style={{ ...item, marginLeft: "auto" }}>×4 fills the rung</span>
+      {showNote && <span style={{ ...item, marginLeft: "auto" }}>{RUNG_NOTE}</span>}
     </div>
   );
 }
