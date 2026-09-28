@@ -679,13 +679,22 @@ EXPLAIN["paid.roi"] = (a, c) => {
 /* The rule that set the figure, as the last step (docs 7, 11a). */
 function capStep(b) {
   const cur = b.current, cum = b.cumRoi;
+  // a floor or a supply figure further than 30% from today's spend is paced
+  // to it: the rule reached one figure and the recommendation is another
+  const paced = b.paced && finite(cur) && finite(b.recommended)
+    ? seg` The pacing rule then holds the move to 30% of today's spend in a day, ${eur(cur)} × ${b.recommended >= cur ? "1.3" : "0.7"} = ${eur(b.recommended)}: a bigger jump in a day resets Meta's learning, and the price with it.`
+    : null;
   switch (b.cap) {
-    case "supply": return seg`The spend that reaches the target is the lower, so it is the figure: more would buy entries the target does not need.`;
-    case "roi_floor": return seg`The spend at the ROI floor is the lower, so it is the figure: more would take the ROI at the close under ${n(b.floor ?? 1, 1)}.`;
+    case "supply": return paced
+      ? [...seg`The spend that reaches the target is the lower, so it is where the budget is heading.`, ...paced]
+      : seg`The spend that reaches the target is the lower, so it is the figure: more would buy entries the target does not need.`;
+    case "roi_floor": return paced
+      ? [...seg`The spend at the ROI floor is the lower, so it is where the budget is heading.`, ...paced]
+      : seg`The spend at the ROI floor is the lower, so it is the figure: more would take the ROI at the close under ${n(b.floor ?? 1, 1)}.`;
     case "pacing": return seg`The pacing rule then holds the move to 30% of today's spend, ${eur(cur)} × ${b.recommended >= cur ? "1.3" : "0.7"}: a bigger jump in a day resets Meta's learning, and the price with it.`;
     case "roi_band_hold": return seg`Cumulative ROI is ${n(cum, 2)}, between 0.9 and 1.3, where the spend rules say hold: the budget stays where it is.`;
     case "roi_band_decrease": return seg`Cumulative ROI is ${n(cum, 2)}, below 0.9, where the spend rules say cut, by up to 30% a day.`;
-    case "forced_decrease": return seg`The rolling three-day ROI has been below target on each of the last three full days, which forces a cut.`;
+    case "forced_decrease": return seg`The trailing 3-day ROI has been below target on each of the last three full days, which forces a cut.`;
     case "plan_rate": return seg`There is no spend yet to price from, so the first day runs at the plan's daily rate.`;
     case "zero_conversion": return seg`The last day spent and bought no entries, which cuts the budget by 30%.`;
     case "zero_conversion_pause": return seg`Three days of spend with no entries pause the campaign.`;
@@ -745,6 +754,8 @@ EXPLAIN["paid.rec"] = (a, { snap: s }) => {
       { key: "rules", gave: "The ±30% a day pacing, the ROI bands and the floor" },
     ],
     notes: [
+      ...(b.paced && b.cap === "roi_floor" && finite(b.finalDayRoi) && b.finalDayRoi < (b.floor ?? 1)
+        ? [`At the paced spend the ROI at the close is ${n(b.finalDayRoi, 2)}, under the floor of ${n(b.floor ?? 1, 1)}, until the cuts reach the floor's spend.`] : []),
       cost.note,
       "Implement writes the figure to Meta and logs it; Ignore logs the decision and keeps the budget.",
     ],

@@ -273,4 +273,25 @@ for (const f of files) {
 }
 assert.ok(paidCases >= 30, `paid units cases: ${paidCases}`);
 
+/* ---- a floor or supply figure the pacing rule then limited ---- */
+{
+  // the 25 September build of Julian Schnabel: the floor's spend is under a 30% cut
+  const b = { current: 1502.95, recommended: 1052.07, cap: "roi_floor", paced: true, roiSpend: 638.66, supplySpend: 20326384.98,
+    finalDayRoi: 0.825, floor: 1, cumRoi: 1.759, elasticity: 0.3851, driftPerDay: 0.01 };
+  const at = (budget) => explain("paid.rec", {}, { snap: { ...w, paid: { ...w.paid, budget } }, st: null });
+  const floor = at(b);
+  assert.strictEqual(floor.value, "€1,052");
+  const texts = floor.steps.map(segText);
+  assert.ok(texts.some((t) => t.includes("is €639 a day")), "the floor's own spend is named");
+  assert.ok(/€1,503 × 0\.7 = €1,052/.test(texts.at(-1)), `the paced floor names the pacing step: ${texts.at(-1)}`);
+  assert.ok(!/more would take the ROI at the close under/.test(texts.at(-1)), "and does not say the figure sits on the floor");
+  assert.ok(floor.notes.some((x) => x.includes("0.83, under the floor")), "the ROI at the paced spend is said");
+  const supply = at({ ...b, cap: "supply", supplySpend: 600, roiSpend: 5000 });
+  assert.ok(/The spend that reaches the target is the lower/.test(segText(supply.steps.at(-1))) && /× 0\.7 = €1,052/.test(segText(supply.steps.at(-1))), "a paced supply cap too");
+  // unpaced, the floor is the figure, as before
+  assert.ok(/more would take the ROI at the close under 1\.0/.test(segText(at({ ...b, paced: false, recommended: 638.66 }).steps.at(-1))));
+  // the forced decrease reads what the build tests: the trailing 3-day ROI, day by day
+  assert.ok(/trailing 3-day ROI has been below target on each of the last three full days/.test(segText(at({ ...b, cap: "forced_decrease", paced: false }).steps.at(-1))));
+}
+
 console.log(`explain: ${shown} explanations of ${checked} figures across ${files.length} snapshots ok`);

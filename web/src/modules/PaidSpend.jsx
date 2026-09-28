@@ -25,6 +25,7 @@ import { Ex } from "../explain/Explain.jsx";
 import { paidUnits } from "../figures.mjs";
 
 const money = (v) => "€" + fmt(Math.round(v ?? 0));
+const hasNum = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const moneyK = (v) => "€" + fmtK(v ?? 0);
 
 export default function PaidSpend({ snap, horizon = "today" }) {
@@ -42,6 +43,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const d = cur !== null && rec !== null ? Math.round(rec) - Math.round(cur) : null;
   const floorF = fmt(budget.floor ?? 1, 1);
   const noPrice = !noCampaign && rec === null;   // spend exists but no cost-per-entry history yet
+  // the gap is measured to the target (edition_size, docs 7); where the target
+  // is only part of the edition (Warhol: 2,440 of 6,100) that is not a sellout
+  const partial = !!(snap.edition && snap.edition.total > snap.edition.target);
 
   // ----- lozenge (recommended vs current), voice per §6.3 / §4.7 -----
   const lozTip = noCampaign ? { head: "No paid campaign live yet" } : noPrice ? {
@@ -56,10 +60,10 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cost / unit at recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at recommended", value: fmt(budget.finalDayRoi, 2) },
       { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
-      { label: "Spend to sell out / day", value: budget.supplySpend !== null && budget.supplySpend !== undefined ? money(budget.supplySpend) : "–" },
+      { label: partial ? "Spend to reach target / day" : "Spend to sell out / day", value: budget.supplySpend !== null && budget.supplySpend !== undefined ? money(budget.supplySpend) : "–" },
       { label: "Spend at ROI floor / day", value: budget.roiSpend !== null && budget.roiSpend !== undefined ? money(budget.roiSpend) : "–" },
       ...(typeof budget.selloutGap === "number"
-        ? [{ label: "Sell-out gap (units)", value: fmt(budget.selloutGap) }]
+        ? [{ label: partial ? "Target gap (units)" : "Sell-out gap (units)", value: fmt(budget.selloutGap) }]
         : []),
       { label: "ROI floor", value: floorF },
     ],
@@ -78,7 +82,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   // One word on the chip, the rule in full at the head of its popup.
   const showCap = !complete && !noCampaign && rec !== null && !!budget.cap;
   const CAPS = {
-    supply: ["Sellout", "Supply - sell-out"],
+    supply: partial ? ["Target", "Supply - target"] : ["Sellout", "Supply - sell-out"],
     roi_floor: ["Floor", "ROI floor"],
     pacing: ["Pacing", "Pacing ±30% / day"],
     roi_band_hold: ["Hold", "ROI band - hold"],
@@ -93,6 +97,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const capLabel = capName + (budget.paced ? " · paced" : "");
   // a cap the pacing rule then limited says so in the popup rather than on the chip
   const pacedRow = budget.paced ? [{ label: "Pacing", value: "move limited to 30% / day" }] : [];
+  // a floor or a supply cap the pacing rule then limited is two figures: the
+  // spend the rule reached, and the paced recommendation beside it
+  const recPacedRow = budget.paced ? [{ label: "Recommended, paced", value: money(rec) + " / day" }] : [];
   const bandTip = {
     head: capLabel,
     body: budget.cap === "pacing"
@@ -102,7 +109,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       : budget.cap === "roi_band_decrease"
       ? "Cumulative ROI is below 0.9: the rules say decrease, by up to 30% a day."
       : budget.cap === "forced_decrease"
-      ? "The rolling three-day ROI has been below target on each of the last three full days: the rules force a decrease."
+      ? "The trailing 3-day ROI has been below target on each of the last three full days: the rules force a decrease."
       : budget.cap === "plan_rate"
       ? "No spend yet to anchor a price on, so the first day starts at the plan's daily rate."
       : budget.cap === "zero_conversion"
@@ -138,15 +145,19 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cost / unit at close, today's spend", value: budget.cpeAtClose ? "€" + fmt(budget.cpeAtClose) : "–" },
       { label: "Cost / unit at close, recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at close, recommended", value: fmt(budget.finalDayRoi, 2) },
-      { label: "Spend at the floor", value: money(rec) + " / day" },
+      { label: "Spend at the floor", value: hasNum(budget.roiSpend) ? money(budget.roiSpend) + " / day" : "–" },
+      ...recPacedRow,
       ...pacedRow,
     ],
   };
   const capTip = !["supply", "roi_floor"].includes(budget.cap) ? bandTip : budget.cap === "roi_floor" ? floorTip : budget.cap === "supply" ? {
     head: capLabel,
-    body: "The spend that sells the edition out by launch, at the cost per entry that spend implies - more would buy entries the edition cannot hold.",
+    body: partial
+      ? "The spend that reaches the target by launch, at the cost per entry that spend implies - more would buy entries the target does not need."
+      : "The spend that sells the edition out by launch, at the cost per entry that spend implies - more would buy entries the edition cannot hold.",
     rows: [
-      { label: "Spend cap", value: money(rec) + " / day" },
+      { label: "Spend cap", value: hasNum(budget.supplySpend) ? money(budget.supplySpend) + " / day" : "–" },
+      ...recPacedRow,
       { label: "Entries needed", value: fmt(budget.entriesNeeded) },
       ...(typeof budget.organicFuture === "number"
         ? [{ label: "Organic still to come", value: fmt(budget.organicFuture) }]

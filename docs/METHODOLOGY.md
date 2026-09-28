@@ -470,9 +470,9 @@ the paid team.
 
 **Pacing rules:** target ROI (AA) **1.1**, floor **1.0**. Cumulative ROI below
 0.9 → decrease; 0.9–1.3 → hold (never raise); above 1.3 → increase. Daily
-changes are capped at ±30% and changes under 10% are ignored. A rolling 3-day
-ROI below target on each of the last three full days forces a decrease. The
-recommendation is the target above, paced by these rules from today's spend; the card's
+changes are capped at ±30% and changes under 10% are ignored. The trailing
+3-day ROI below target on each of the last three full days forces a decrease. The recommendation is
+the target above, paced by these rules from today's spend; the card's
 "Capped by" names which one bound it in a word (Sellout, Floor, Pacing, Hold,
 Decrease, Forced, Plan, Zero, Pause, Steady), with the rule in full at the head
 of its tooltip and the unconstrained figures beneath. With no spend yet there is no price to anchor on: the
