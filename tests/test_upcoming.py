@@ -212,6 +212,14 @@ AIRTABLE = [
 ] + [(i, a, t, "PejacLE26", "2026-11-13", None, None, p, "EUR", s, "", e, "Digital print" if e == "PE" else None, None, "1.5. Agreed to edition")
      for i, a, t, p, s, e in PEJAC_SHOW] + PEJAC_PRINTS
 
+# the funnel's releases for Kukwon Woo, as inputs.json has them
+WOO_ON_FILE = [
+    {"release_name": "Woo Kuk Won · Multiple · 2024 Q4", "artist": "Woo Kuk Won", "title": "Multiple", "quarter": "2024 Q4",
+     "announce_date": "2024-10-24", "launch_end": "2024-11-19", "campaign_code": "Wookukwo_PairLE_24"},
+    {"release_name": "Woo Kuk Won · Multiple · 2025 Q3", "artist": "Woo Kuk Won", "title": "Multiple", "quarter": "2025 Q3",
+     "announce_date": "2025-09-02", "launch_end": "2025-09-30", "campaign_code": None},
+]
+
 
 def airtable_frame(rows=None):
     return pricing.launches(records(rows if rows is not None else AIRTABLE))
@@ -281,6 +289,30 @@ def test_second_launch_in_a_quarter() -> None:
     print("second launch in a quarter: ok")
 
 
+def test_funnel_spelling() -> None:
+    """The funnel's spelling of an artist the matcher already links, so the
+    upcoming page keeps its id when the funnel carries the launch."""
+    lf = airtable_frame()
+    day = dt.date(2026, 9, 24)
+    woo = [r for r in build.upcoming_releases(lf, WOO_ON_FILE, day, {}) if "Woo" in r["artist"]]
+    assert [(r["id"], r["release_name"], r["artist"]) for r in woo] == [
+        ("woo_kuk_won_multiple_2026_q4", "Woo Kuk Won · Multiple · 2026 Q4", "Woo Kuk Won")], woo
+    assert woo[0]["airtable_ids"] == "2617|2954"
+    assert build.funnel_spellings(WOO_ON_FILE, build.airtable_ids_on_file(WOO_ON_FILE, lf), lf) == {"Kukwon Woo": "Woo Kuk Won"}
+    # nothing on file for the artist: Airtable's own spelling
+    alone = [r for r in build.upcoming_releases(lf, [], day, {}) if "Woo" in r["artist"]]
+    assert [r["id"] for r in alone] == ["kukwon_woo_multiple_2026_q4"], alone
+    # the code is guessed on the funnel's spelling, as the feeds tag it
+    moving = {"Wookukwo_LE_26": (dt.date(2026, 9, 28), dt.date(2026, 9, 30))}
+    assert [r["campaign_code"] for r in build.upcoming_releases(lf, WOO_ON_FILE, day, moving) if "Woo" in r["artist"]] == ["Wookukwo_LE_26"]
+    # when the funnel carries it, under the name the page already has, it is no longer upcoming and the id is the same
+    funnel = {"release_name": "Woo Kuk Won · Multiple · 2026 Q4", "artist": "Woo Kuk Won", "title": "Multiple", "quarter": "2026 Q4",
+              "announce_date": "2026-10-01", "launch_end": "2026-10-29"}
+    assert not [r for r in build.upcoming_releases(lf, WOO_ON_FILE + [funnel], dt.date(2026, 10, 2), {}) if "Woo" in r["artist"]]
+    assert build.slugify(funnel["release_name"]) == woo[0]["id"]
+    print("funnel spelling: ok")
+
+
 def test_dates_from_editions() -> None:
     """The launch's announce is its editions' own, as the Set up targets tab
     reads it (pricing.release_products), so the two cannot disagree."""
@@ -310,4 +342,5 @@ if __name__ == "__main__":
     test_adoption()
     test_not_a_draw()
     test_second_launch_in_a_quarter()
+    test_funnel_spelling()
     test_dates_from_editions()

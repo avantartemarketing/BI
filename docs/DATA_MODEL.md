@@ -291,10 +291,11 @@ upcoming_releases`) beside the releases the funnel mentions:
   already carries under its own title is not listed twice - and whose ids no saved input
   carries (a release set up from an upcoming page keeps them, `airtable_ids`);
 - named the way the funnel will name it, `Artist · Title · YYYY Qn` with the title `Multiple`
-  when the launch has several works, so the page keeps its id when the funnel catches up. A
-  second launch of the artist in the same quarter takes its works as its title ("Pejac ·
-  Barbed Wire / Mind Trip · 2026 Q4"), then its close date, so no two pages share a name or
-  an id.
+  when the launch has several works, and the artist spelt as the funnel spells them where a
+  release on file already matched that Airtable artist (Airtable's "Kukwon Woo" is the
+  funnel's "Woo Kuk Won"), so the page keeps its id when the funnel catches up. A second
+  launch of the artist in the same quarter takes its works as its title ("Pejac · Barbed
+  Wire / Mind Trip · 2026 Q4"), then its close date, so no two pages share a name or an id.
 
 Its page (`build_upcoming`, status `upcoming`, `upcoming: true`) has the dates, the edition,
 the price in euros at the panel's fixed rates, the works and the project's Airtable status,

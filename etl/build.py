@@ -3319,6 +3319,25 @@ def load_launches() -> pd.DataFrame | None:
         return None
 
 
+def funnel_spellings(existing: list[dict], on_file: dict[str, set[str]], launch_frame: pd.DataFrame) -> dict[str, str]:
+    """Airtable's artist name -> the funnel's, where they differ: the releases
+    on file the matcher placed on an artist's Airtable launches say how the
+    funnel writes that artist ("Kukwon Woo" in Airtable is "Woo Kuk Won" in
+    the funnel). The latest such release decides."""
+    artist_of: dict[str, str] = {}
+    for ids, artist in zip(launch_frame["airtable_ids"], launch_frame["artist"]):
+        for i in str(ids or "").split("|"):
+            if i:
+                artist_of[i] = str(artist)
+    latest: dict[str, tuple[tuple[str, str], str]] = {}
+    for r in _frame_of_releases(existing).itertuples(index=False):
+        when = tuple(v if isinstance(v, str) else "" for v in (r.quarter, r.close))
+        for a in {artist_of[i] for i in on_file.get(r.release_name, ()) if i in artist_of}:
+            if a not in latest or when >= latest[a][0]:
+                latest[a] = (when, str(r.artist))
+    return {a: spelt for a, (_, spelt) in latest.items() if spelt and spelt != a}
+
+
 def _works_title(titles: str) -> str:
     """A launch's works as a release title, "Barbed Wire / Mind Trip": each
     distinct title once, without Airtable's bracketed notes."""
@@ -3335,9 +3354,11 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
     originals, NFTs or timed editions (UPCOMING_NOT_DRAW).
 
     Named the way the funnel will name them - "Artist · Title · YYYY Qn", the
-    title "Multiple" when the launch has several works - so the page keeps its
-    id when the funnel catches up; adopt_funnel_names covers the launches the
-    funnel names differently. A second launch of the artist in the quarter
+    title "Multiple" when the launch has several works, the artist spelt as
+    the funnel spells it where a release on file already matched that
+    Airtable artist (funnel_spellings) - so the page keeps its id when the
+    funnel catches up; adopt_funnel_names covers a launch set up before the
+    funnel named it differently. A second launch of the artist in the quarter
     takes its works as its title, then its close date, so no two pages share
     a name. The announce date is Airtable's, else assumed
     ASSUMED_CAMPAIGN_DAYS before the close and said so. The price is
@@ -3353,6 +3374,7 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
     # from (§1.7): that launch is represented whatever the matcher makes of it
     used |= {i for r in existing if r.get("airtable_ids") for i in str(r["airtable_ids"]).split("|") if i}
     names = {r["release_name"] for r in existing}
+    spelling = funnel_spellings(existing, on_file, launch_frame)
     horizon = as_of + timedelta(days=UPCOMING_DAYS)
     out, seen_ids, listed = [], {}, set()
     for l in launch_frame.sort_values("launch_date").itertuples():
@@ -3378,7 +3400,7 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
         ids = set(str(l.airtable_ids).split("|")) if l.airtable_ids else set()
         if ids & used:
             continue
-        artist = str(l.artist)
+        artist = spelling.get(str(l.artist), str(l.artist))
         title = "Multiple" if int(l.n_products) > 1 else str(l.titles)
         quarter = pricing.quarter_of(l.launch_date)
         name = f"{artist} · {title} · {quarter}"
@@ -3404,7 +3426,8 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
         # releases does not apply, and the page marks the code as guessed
         lo_w, hi_w = announce - timedelta(days=30), close + timedelta(days=2)
         moving = {c for c, (lo, hi) in (activity or {}).items() if hi >= lo_w and lo <= hi_w}
-        code = guess_code(artist, title, close.year, moving, 1)
+        spellings = list(dict.fromkeys([artist, str(l.artist)]))
+        code = next((c for c in (guess_code(a, title, close.year, moving, 1) for a in spellings) if c), None)
         rid = slugify(name) or "release"
         if rid in seen_ids:
             seen_ids[rid] += 1; rid = f"{rid}_{seen_ids[rid]}"
