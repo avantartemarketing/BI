@@ -151,24 +151,6 @@ const baskets = require("./baskets");
 const INPUTS_PATH = path.join(DATA, "inputs.json");
 const SAVED_INPUTS_PATH = process.env.SAVED_INPUTS_PATH || path.join(ROOT, "data", "inputs.saved.json");
 const TARGETS_LOG = process.env.TARGETS_LOG || path.join(ROOT, "data", "targets.log.jsonl");
-// the per-product sell-through rule, re-run on a save that changes product
-// editions or the entry -> order rate (docs/DATA_MODEL.md §6.3)
-// the draws the event feed found per release (etl/aggregate_events.py), so the
-// Target setting tab can list them for naming and sizing; counts only
-const PRODUCTS_FEED = path.join(DATA, "release_products.json");
-let productsFeedCache = { mtime: null, doc: {} };
-function productsFeed() {
-  try {
-    const mtime = fs.statSync(PRODUCTS_FEED).mtimeMs;
-    if (productsFeedCache.mtime !== mtime) productsFeedCache = { mtime, doc: JSON.parse(fs.readFileSync(PRODUCTS_FEED, "utf8")) };
-  } catch { productsFeedCache = { mtime: null, doc: {} }; }
-  return productsFeedCache.doc;
-}
-function drawsFor(releaseName) {
-  const rec = releaseName ? productsFeed()[releaseName] : null;
-  if (!rec) return null;
-  return { draws: rec.draws || [], entrants: rec.entrants ?? null, eligible: rec.eligible ?? null, allocated: !!rec.allocated };
-}
 
 // Express 4 does not catch a rejection from an async handler, and Node exits on
 // an unhandled one - which would take the SPA down with it, since the same
@@ -269,8 +251,6 @@ app.get("/api/inputs/:id", (req, res) => {
     sourced: sourcedFor(doc, id),
     benchmarks: doc.benchmarks,
     meta_campaigns: doc.meta_campaigns || [],
-    // the draws (one per product) the event feed found for this release
-    draws: drawsFor((inputs || disc || {}).release_name),
     storage: storageInfo(),
   });
 });
@@ -390,7 +370,9 @@ app.post("/api/inputs/:id", route(async (req, res) => {
    * artist's and Avant Arte's profit per unit, the deal's revenue or profit
    * share, the framing take-up and profit; empty means Airtable's, or the
    * default. A draw entry (key = the draw id) is the sell-through card's: the
-   * name typed for the draw, its edition and its pre-order rate. */
+   * name typed for the draw and its edition (docs §6.3). No page edits those
+   * today; the tab sends them back as they came, and a draw with none takes
+   * the Shopify title its winners bought. */
   if (body.products !== undefined) {
     if (body.products === null) next.products = null;
     else if (!Array.isArray(body.products) || body.products.length > 60) errors.push("products is a list of up to 60 entries");

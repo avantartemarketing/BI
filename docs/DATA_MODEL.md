@@ -1344,7 +1344,8 @@ uncapped demand is kept so an oversubscribed product stays visible as such.
 **Where the per-product data comes from.** A release runs **one draw per product**, so the
 event feed's `draw_id` is the product dimension (§2.2: exact against the multiset cap on 38 of
 38 releases with one or two draws; a re-run or a second wave adds a draw for the same product,
-which the Target setting tab merges by giving both draws the same name). Per draw entry
+and the two merge where both carry one name typed against their draw ids, `products: [{key:
+draw_id, name}]` in the release's inputs, which no page edits today). Per draw entry
 (entrant × draw) the flags fold with `any` as the export folds them:
 
 | state | definition | counts as |
@@ -1358,8 +1359,14 @@ which the Target setting tab merges by giving both draws the same name). Per dra
 release; empty means no cap. **Sold and drafts per product come from the orders feed** (§2.4):
 each draw is named with the Shopify product its winners bought, and a product whose draws are
 named takes that product's units paid as `sold`, its orders awaiting payment as `drafts`, the
-product title as its name where nobody typed one and its Airtable edition where none is typed
-(`attach_orders` in `etl/sellthrough.py`, the same rule in `shared/sellThrough.mjs`). A title
+product title as its name unless a name was typed against one of its draw ids, and its
+Airtable edition where none is typed (`attach_orders` in `etl/sellthrough.py`, the same rule in
+`shared/sellThrough.mjs`). A name typed with no draw id (the older hand-typed list) is handed
+out by position, which says nothing about which draw it meant, so it never stands over a title:
+it names only a draw the orders feed cannot place yet, and one that names a placed draw's
+product is left out (the names typed that way for Mondrian and James Jean, whose draws all
+opened on one day, had sat on each other's works). `check_snapshot` logs a warning, never a
+failure, for a row named for the product another draw sold. A title
 no draw names is added as a product of its own once every draw is named; before that it is
 ambiguous and its units stay at release level. Where a draw is not yet named (no winner has
 bought yet) sold per product falls back, on a funnel-sourced page, to the draw's winners who
@@ -1511,9 +1518,14 @@ crowded the one reading it is for, each product against its own edition. The car
 prose either; the allocation's account is in the draw-winners key's popup, the split of
 unattributed sales in the paid key's, and the editions are checked on the Target setting tab.
 
-**Products and editions** are typed on the Target setting tab (`products:
-[{key: draw_id, name, edition}]`; `productsFromDraws`): one row per draw the feed found, a
-name (draws sharing a name merge), an edition. A single product with no edition takes the
+**Products and editions.** One row per draw the feed found (`productsFromDraws`), named by
+the Shopify title its winners bought and sized by the Airtable record of that title (§2.4,
+`attach_orders`). A name or an edition typed against the draw id (`products: [{key: draw_id,
+name, edition}]` in the release's inputs) stands over those, and draws sharing a typed name
+merge. The Target setting tab no longer lists the draws: these are typed into the release's
+inputs, `etl/release_inputs.json`, or `data/inputs.saved.json` (`SAVED_INPUTS_PATH`) once the
+release has been saved on the tab, since that record then stands in for the repo's; the tab
+sends them back as they came. A single product with no edition takes the
 release's; with several products the card runs on units and says so until every product has
 one, and it flags editions that do not add up to the release's. `entry_conversion_rate`
 (optional, per release) is the rate the prediction converts entries in hand at, and the rate

@@ -650,9 +650,12 @@ entrant who entered more products than their maximum quantity is counted on that
 products only, placed for revenue: on the priciest of them until its expected orders reach
 its edition, over-allocating for the payments expected to fail so the most valuable editions
 show sold out first, then on whichever has the most room. Products come from the event feed's
-draws (one draw per product) and are named and sized on the Target setting tab, where the
-entry → order and pre-order rates are set per release and apply to every product; a product nobody has named takes its Shopify title
-and, where the title matches an Airtable record, its edition. Until the feed has run once after
+draws (one draw per product), each named by the Shopify title its winners bought and sized by
+the Airtable record of that title (docs 2.4, 6.3). A name or edition typed against the draw id
+(`products: [{key: draw_id, name, edition}]` in the release's inputs) stands over those; a
+name typed with no draw id only names a draw the orders feed cannot place yet. The Target
+setting tab no longer lists the draws: it sets the entry → order and pre-order rates per
+release, which apply to every product. Until the feed has run once after
 a deploy the card shows the release as one row and says so. **Post to Slack** in the card's
 head sends the card as a message, these rows as a table of figures with the framing take-up
 above them, to the release's channel (see "Posting sell-through to Slack").
