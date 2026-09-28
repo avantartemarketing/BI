@@ -14,6 +14,10 @@
  * Paid is live while there has been spend in the last three days, the window
  * the headline reads; switched off, the projection would be a path for spend
  * nobody is making, so the line ends where the spend did and says so.
+ * The words on the plot ("daily spend", "paid off") are set in clear space
+ * with a thin leader to what they name, as the unit trajectory names its
+ * lines, and "today" always shows on a live release, the axis end giving way
+ * to it where they would print into each other (labels.mjs).
  *
  * The ROI is a party's (docs §7): profit per unit net of cannibalisation over
  * the cost of a converting entry and that party's share of the spend, both
@@ -22,7 +26,9 @@
  * roiArtist), and stays put when the artist carries none of the spend or has
  * no profit per unit recorded. The ? popup shows the working. */
 import React, { useState } from "react";
-import { Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel } from "../ui.jsx";
+import {
+  Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, textPx, timeAxis, nameLines, useBoxSize, LineNames,
+} from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 
 const W = 480, H = 200, BAND_TOP = 132;
@@ -43,6 +49,9 @@ const pct = (x) => (x === null || x === undefined ? "–" : fmt(100 * x, 0) + "%
 export default function PaidRoi({ snap }) {
   const [hover, setHover] = useState(null);   // day number
   const [partyPref, setPartyPref] = useState(readParty);
+  // the plot's real size: where a word can go without landing on a bar or a
+  // line is a pixel question
+  const [plotRef, plotW, plotH] = useBoxSize();
   const paid = snap.paid || {};
   const daily = paid.daily || [];
   const complete = !!snap.complete;
@@ -157,6 +166,7 @@ export default function PaidRoi({ snap }) {
       x: Math.min(Math.max(x(p.d) - bw / 2, 0), W - bw).toFixed(1),
       y: (H - h).toFixed(1),
       h: h.toFixed(1),
+      partial: p.partial,
       tip: dayLabel(snap, p.d) + ": spend €" + fmt(p.spend) + (p.partial ? " so far today" : ""),
     };
   });
@@ -236,8 +246,52 @@ export default function PaidRoi({ snap }) {
     </div>
   );
 
+  /* "today" always shows on a live release, kept inside the plot, and an axis
+   * end gives way to it where they would print into each other: measured in
+   * pixels, as on the unit trajectory (timeAxis, labels.mjs). */
   const todayFrac = (today - 1) / DAYS;
-  const showTodayLabel = !complete && todayFrac >= 0.06 && todayFrac <= 0.94;
+  const startText = dayAxisLabel(snap, 0), endText = dayAxisLabel(snap, of);
+  const xAxis = timeAxis({ rowW: plotW, frac: todayFrac, live: !complete, startText, endText });
+
+  /* The words on the plot are set in clear space with a thin leader to what
+   * they name, as the unit trajectory sets its names (nameLines): "daily
+   * spend" to the top of a bar, and, once paid has stopped, "paid off" to the
+   * dot where the line ends. Neither sits on a bar, a dot, the ROI line, the
+   * projection or the today line where there is anywhere clear, whatever the
+   * card's width. Nothing is placed until the plot has been measured. */
+  const spendTitle = "Daily spend bars on their own axis: €0 to €" + fmt(spendHi);
+  let names = [];
+  if (plotW > 0 && plotH > 0) {
+    const sx = plotW / W, sy = plotH / H;
+    const px = (d) => x(d) * sx, py = (v) => y(v) * sy;
+    const curves = [
+      ...(roiPts.length >= 2 ? [{ pts: roiPts.map((p) => ({ x: px(p.d), y: py(p.roi) })) }] : []),
+      ...(decline.length >= 2 ? [{ pts: decline.map((p) => ({ x: px(p.d), y: py(p.v) })) }] : []),
+      ...(!complete ? [{ pts: [{ x: px(today), y: 0 }, { x: px(today), y: plotH }] }] : []),
+    ];
+    const dot = (d, v) => ({ x0: px(d) - 7, y0: py(v) - 7, x1: px(d) + 7, y1: py(v) + 7 });
+    const blocks = [
+      ...bars.map((b) => ({ x0: +b.x * sx, y0: +b.y * sy, x1: (+b.x + bw) * sx, y1: plotH })),
+      ...(!complete && anchor !== null ? [dot(anchor.d, anchor.v)] : []),
+      ...(complete && lastRoiPt ? [dot(lastRoiPt.d, lastRoiPt.roi)] : []),
+      ...(showModel && declineEnd !== null ? [dot(of, declineEnd),
+        { x0: plotW + 8, y0: py(declineEnd) - 8, x1: plotW + 12 + textPx("projected"), y1: py(declineEnd) + 8 }] : []),
+    ];
+    // the spend is named at a bar's top: the full days' bars that stand clear
+    // of the baseline (any bar, when none does), each costing a little for its
+    // distance from the middle of the run
+    const standing = bars.filter((b) => !b.partial && +b.h * sy >= 3);
+    const tops = (standing.length ? standing : bars).map((b) => ({ x: (+b.x + bw / 2) * sx, y: +b.y * sy }));
+    const mid = tops.length ? (Math.min(...tops.map((t) => t.x)) + Math.max(...tops.map((t) => t.x))) / 2 : 0;
+    const label = (key, text, title, anchors, extra) => ({ key, text, title, anchors, color: C.muted, weight: 400, w: textPx(text), h: 14, ...extra });
+    const labels = [
+      ...(paidOff ? [label("off", `paid off · last spend day ${lastSpendDay}`,
+        `No paid spend since day ${lastSpendDay}: the line ends where the spend did`,
+        [{ x: px(anchor.d), y: py(anchor.v), cost: 0 }], { dot: 7.5 })] : []),
+      ...(tops.length ? [label("spend", "daily spend", spendTitle, tops.map((t) => ({ ...t, cost: Math.abs(t.x - mid) * 0.02 })))] : []),
+    ];
+    names = nameLines({ labels, curves, blocks, bounds: { x0: 0, y0: 0, x1: plotW, y1: plotH } });
+  }
 
   const byDay = new Map(pts.map((p) => [p.d, p]));
   const declByDay = new Map(decline.map((p) => [p.d, p.v]));
@@ -264,6 +318,7 @@ export default function PaidRoi({ snap }) {
       <div className="body">
         <div style={{ position: "relative", flex: 1 }}>
           <div
+            ref={plotRef}
             style={{ position: "absolute", left: 48, right: 56, top: 0, bottom: 24 }}
             onMouseMove={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
@@ -334,21 +389,6 @@ export default function PaidRoi({ snap }) {
                 }}
               />
             )}
-            {/* paid switched off: the line ends where the spend did, and says so
-                instead of projecting spend nobody is making */}
-            {paidOff && (() => {
-              const flip = (anchor.d - 1) / DAYS > 0.6;
-              return (
-                <div style={{
-                  position: "absolute", left: leftPct(anchor.d), top: topPct(anchor.v),
-                  transform: flip ? "translate(-100%, -50%)" : "translateY(-50%)",
-                  [flip ? "paddingRight" : "paddingLeft"]: 12,
-                  fontSize: 12, color: C.muted, whiteSpace: "nowrap",
-                }}>
-                  paid off · last spend day {lastSpendDay}
-                </div>
-              );
-            })()}
             {/* complete: end dot on the last actual ROI point */}
             {complete && lastRoiPt && (
               <div
@@ -387,22 +427,22 @@ export default function PaidRoi({ snap }) {
             {roiPts.length > 0 && <div style={{ ...axisLabel, top: 0 }}>{hi.toFixed(2)}</div>}
             {roiPts.length > 0 && <div style={{ ...axisLabel, top: "100%" }}>{lo.toFixed(2)}</div>}
 
+            {/* the plot's words in clear space: the spend's name, and, once paid
+                has been switched off, the line ending where the spend did rather
+                than projecting spend nobody is making */}
+            <LineNames names={names} />
+
             {/* x axis */}
-            <div style={{ ...xLabel, left: 0 }} title="announced">{dayAxisLabel(snap, 0)}</div>
-            {showTodayLabel && (
-              <div style={{ ...xLabel, left: leftPct(today), transform: "translateX(-50%)", color: C.ink }}>
+            {xAxis.start && <div style={{ ...xLabel, left: 0 }} title="announced">{startText}</div>}
+            {!complete && (
+              <div style={{
+                ...xLabel, color: C.ink,
+                ...(xAxis.todayLeft === null ? { left: leftPct(today), transform: "translateX(-50%)" } : { left: xAxis.todayLeft }),
+              }}>
                 today
               </div>
             )}
-            <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }} title={`close · day ${of}`}>{dayAxisLabel(snap, of)}</div>
-
-            {/* spend band caption */}
-            <div
-              title={"Daily spend bars on their own axis: €0 to €" + fmt(spendHi)}
-              style={{ position: "absolute", right: "2%", top: "82%", fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}
-            >
-              daily spend
-            </div>
+            {xAxis.end && <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }} title={`close · day ${of}`}>{endText}</div>}
           </div>
         </div>
       </div>
