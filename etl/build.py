@@ -2129,8 +2129,20 @@ def _no_draft_frames(p: dict) -> dict:
     return {k: 0.0 for k in ("draftPrints", "draftFrames") if p.get(k) is not None}
 
 
+def _drafts_before(p: dict, since: date | None) -> bool:
+    """Every draft on the product was raised before `since`: its last draft
+    day (the orders feed's latest draft line) is earlier. A product with no
+    draft day on file keeps its drafts."""
+    if since is None:
+        return False
+    try:
+        return date.fromisoformat(str(p.get("lastDraft") or "")[:10]) < since
+    except ValueError:
+        return False
+
+
 def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: date, closed: bool,
-                     source: str) -> dict | None:
+                     source: str, drafts_since: date | None = None) -> dict | None:
     """The orders feed as the sell-through and framing cards read it, cut to
     the window the page counts: each product's paid units, prints and frames
     summed over [start, end] from the units feed, every title kept (a title
@@ -2139,14 +2151,21 @@ def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: dat
     Once the window has closed, drafts and entry drafts no longer count:
     whatever they become is paid after the close. The all-time record when
     the page reads the funnel's units, less its drafts once the window has
-    closed, the same rule."""
+    closed, the same rule. `drafts_since` (a catalogue page's first day)
+    drops the drafts of a product whose every draft was raised before it:
+    a draft left unpaid for months is not a sale in waiting in the last 90
+    days (the feed dates a product's latest draft, not each one)."""
     of = load_orders_feed().get(name)
     if source != "orders" or rows is None:
-        if not (closed and of):
+        if not of or not (closed or any(_drafts_before(p, drafts_since) for p in of["products"].values())):
             return of
         shut = {"drafts": 0.0, "winnerDrafts": 0.0, "entrantPrints": 0.0, "entrantFrames": 0.0}
-        return {**of, "products": {t: {**p, **shut, **_no_draft_frames(p)} for t, p in of["products"].items()}, "drafts": 0.0,
-                "framing": {**(of.get("framing") or {}), "entrantPrints": 0.0, "entrantFrames": 0.0}}
+        products = {t: ({**p, **shut, **_no_draft_frames(p)} if closed or _drafts_before(p, drafts_since) else p)
+                    for t, p in of["products"].items()}
+        return {**of, "products": products, "drafts": sum(float(p.get("drafts") or 0.0) for p in products.values()),
+                "framing": {**(of.get("framing") or {}),
+                            "entrantPrints": sum(float(p.get("entrantPrints") or 0.0) for p in products.values()),
+                            "entrantFrames": sum(float(p.get("entrantFrames") or 0.0) for p in products.values())}}
     inside = rows[(rows["event_date"] >= start) & (rows["event_date"] <= end)]
     per = inside.groupby("product_title").agg(units=("units", "sum"), private_room=("private_room", "sum"),
                                                prints=("prints_offered", "sum"), frames=("frames", "sum"))
@@ -2165,7 +2184,7 @@ def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: dat
         p.update(unitsPaid=paid, privateRoom=float(r["private_room"]) if r is not None else 0.0,
                  printsOffered=float(r["prints"]) if r is not None else 0.0,
                  frames=float(r["frames"]) if r is not None else 0.0)
-        if closed:
+        if closed or _drafts_before(p, drafts_since):
             p.update(drafts=0.0, winnerDrafts=0.0, entrantPrints=0.0, entrantFrames=0.0, **_no_draft_frames(p))
         out["products"][t] = p
         out["unitsPaid"] += paid
@@ -2470,9 +2489,35 @@ def edition_total(release: dict):
     return size
 
 
+def entries_in_hand(patterns: list, draws: list, since: date) -> list:
+    """The entry patterns less the draws that ended before `since` (docs
+    6.3). A catalogue page counts its last 90 days, and a draw whose last
+    entry came before them was allocated long ago: its losers are not in
+    hand, nor are its unpaid wins. Their ids leave every list of every
+    pattern (a purchase through one stays in the buyer's `bought`, their own
+    history), and a pattern left with no draw goes, so a page whose draws
+    all ended earlier reads no patterns, as a closed page does. A draw with
+    no readable last day stays."""
+    stale = set()
+    for d in draws or []:
+        try:
+            if date.fromisoformat(str(d.get("last"))[:10]) < since:
+                stale.add(str(d.get("id")))
+        except (AttributeError, TypeError, ValueError):
+            continue
+    if not stale:
+        return patterns
+    out = []
+    for p in patterns:
+        q = {**p, **{k: [x for x in (p.get(k) or []) if str(x) not in stale] for k in ("open", "won", "sold", "pre")}}
+        if q["open"] or q["won"] or q["sold"]:
+            out.append(q)
+    return out
+
+
 def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: float, inventory_left,
                       future_entries: float = 0.0, expected_today=None, bm_today=None, bm_close=None,
-                      orders=..., closed: bool = False) -> dict:
+                      orders=..., closed: bool = False, entries_since: date | None = None) -> dict:
     """The snapshot's `sellthrough`: the release-level prediction as before,
     and - where the event feed has the release's draws - the per-product
     block: products from the draws and what was typed for them, the entries
@@ -2484,7 +2529,9 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     `orders` is the orders record the page reads (orders_in_window: cut to
     the days the page counts), the all-time record when left out. `closed`
     says the window has shut (two days past the close): nothing in hand and
-    nothing still to come counts any more, only what was paid in it."""
+    nothing still to come counts any more, only what was paid in it.
+    `entries_since` (a catalogue page's first day) leaves out the entries of
+    draws that ended before it (entries_in_hand)."""
     if closed:
         unconverted, future_entries = 0.0, 0.0
     rate = entry_rate(release)
@@ -2534,6 +2581,8 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
             p["claimsInFlight"] = n
     # once the window has shut, no entry is still in hand: only what was paid counts
     patterns = [] if closed else (feed.get("patterns") or [])
+    if patterns and entries_since is not None:
+        patterns = entries_in_hand(patterns, feed["draws"], entries_since)
     pp = sell_through_products(products, patterns, rate=rate, edition=edition,
                                sold_total=units_sold, future_units=future_entries, expected_today=expected_today,
                                benchmark_today=bm_today, benchmark_close=bm_close, preorder_rate=pre_rate)
@@ -3756,10 +3805,14 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     unconverted = float(upto["Draw_Entries_Total_Units_No_Conv"].sum())
     code = rec.get("campaign_code")
     # the sell-through's count, adopted by the hero as in build_release; no
-    # edition here, so nothing is capped and nothing is projected
-    of_win = orders_in_window(name, urows, window_start, window_end, closed, uinfo["source"])
+    # edition here, so nothing is capped and nothing is projected. A
+    # catalogue page counts its 90 days: no entry in hand from a draw that
+    # ended before them, no draft raised before them (docs 6.3)
+    since = None if dated else window_start
+    of_win = orders_in_window(name, urows, window_start, window_end, closed, uinfo["source"], drafts_since=since)
     sellthrough = sellthrough_block({"edition_size": None, "entry_conversion_rate": rec.get("entry_conversion_rate")},
-                                    rec["release_name"], units_sold, unconverted, None, orders=of_win, closed=closed)
+                                    rec["release_name"], units_sold, unconverted, None, orders=of_win, closed=closed,
+                                    entries_since=since)
     if uinfo["source"] == "orders":
         sellthrough["unitsOutsideWindow"] = {"before": uinfo["before"], "after": uinfo["after"], "pending": uinfo["pending"]}
     hero_now, _ = adopt_sellthrough(sellthrough, channels_out, funnel_by_group, hero_now, hero_now, True)

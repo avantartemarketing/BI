@@ -1315,7 +1315,13 @@ table (§2.4), cut to one window of days.
   in the orders less 209 in the funnel). `check_snapshot` fails a build where the two part.
 - **Catalogue pages.** A catalogue page's 90 days are all in the orders feed, so a release it
   has no row for sold nothing in them (the funnel's purchase event there was an order with no
-  product line on it), rather than falling back to the funnel's count.
+  product line on it), rather than falling back to the funnel's count. A catalogue page is
+  never closed, so its secured units also keep only what belongs to its 90 days: the entries
+  of a draw whose last entry came before them leave the patterns (`entries_in_hand`: its
+  losers are not in hand, George Condo 2024 Q1 read 301 secured on nothing sold, Pejac 2024
+  Q3 471), and a product whose every draft was raised before them keeps no drafts
+  (`orders_in_window` `drafts_since`, on its last draft day: the feed dates a product's latest
+  draft, not each one, so a product with a draft inside the window keeps them all).
 - **Product rows.** A draw the orders feed does not name yet takes no sales of its own on an
   orders-sourced page (not the event feed's winners who bought, counted over all time on
   another basis), and nor does any draw when nothing at all was paid in the window; its units
