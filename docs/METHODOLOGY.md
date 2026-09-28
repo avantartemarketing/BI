@@ -454,10 +454,9 @@ alone lifts cost per entry 3.5–5% a day) and drive ROI at close under 1 on
 every campaign: a release five days in at a cumulative ROI of 3.5 was told to
 cut. Net of spend, the within-campaign time drift measures about 2.6% a day
 across 29 of our own campaigns (the first fit, on 13, read 0.36% ± 1.12 and set
-0.5%). The model takes 2.5% a day as the prior, fits each campaign's own drift
-once it has 8 days with spend and an entry, shrinks it to the prior by precision
-and holds it between 0 and 10% a day; the Paid spend card's floor popup shows
-the rate in force. The workbook's figures are kept beside it.
+0.5%). The model takes 2.5% a day as the prior for each campaign's own fit
+(above); the Paid spend card's floor popup shows the rate in force. The
+workbook's figures are kept beside it.
 
 The pacing rules themselves are the **TL template's** "ROI / SPEND RULES" block
 (cumulative ROI below 0.9 decrease, 0.9–1.3 maintain, above 1.3 increase;
