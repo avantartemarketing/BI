@@ -154,13 +154,16 @@ function Campaigns({ code, chosen, all, suggested, onChange }) {
 /* Nobody types into it: what the basket's median gives each channel and what
  * the target asks of it. Benchmark values are the basket's own medians; the
  * target is the benchmark lifted by K (§1). Conversion carries no uplift at
- * all - it is held at the benchmark (§4), which is why the column says so. */
+ * all - it is held at the benchmark (§4), which is why the column says so:
+ * the row's benchmark units over its benchmark sessions, the rate the funnel
+ * holds (funnelByGroup conv_benchmark), so target sessions at it give target
+ * units. The basket's median entries per session (profile.conv) is another
+ * quantity, entries rather than units, and no target is read from it. */
 function BasketTable({ profile, off, k }) {
-  const rows = GROUPS.map((g) => ({
-    ...g, off: off.includes(g.key),
-    bmS: profile.sessions_by_group[g.key] || 0, bmU: profile.units_by_group[g.key] || 0,
-    conv: profile.conv[g.key] > 0 ? profile.conv[g.key] : null,
-  }));
+  const rows = GROUPS.map((g) => {
+    const bmS = profile.sessions_by_group[g.key] || 0, bmU = profile.units_by_group[g.key] || 0;
+    return { ...g, off: off.includes(g.key), bmS, bmU, conv: bmS > 0 ? bmU / bmS : null };
+  });
   return (
     <div className="ts-tblwrap">
       <table className="ts-table">
@@ -171,7 +174,7 @@ function BasketTable({ profile, off, k }) {
             <th title="The benchmark lifted by the same K as every other volume.">Target units</th>
             <th className="bm" title="The basket's median sessions from this channel.">Benchmark sessions</th>
             <th title="The benchmark lifted by K.">Target sessions</th>
-            <th title="Conversion rates are held at the benchmark - the uplift is asked of traffic and spend only.">Session → unit (held)</th>
+            <th title="Benchmark units over benchmark sessions: the rate the target holds, so target sessions at it give target units. Conversion rates are held at the benchmark - the uplift is asked of traffic and spend only.">Session → unit (held)</th>
           </tr>
         </thead>
         <tbody>

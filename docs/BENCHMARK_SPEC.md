@@ -666,7 +666,10 @@ apply is a disabled box, never a dash):
    picker, its profile as chips, the **Channels in plan** switches (§4.3: Running paid; Artist's
    own channels, with the posting tier beside them, disabled while the artist is off), and the
    per-channel table `benchmark units | target units | benchmark sessions | target sessions |
-   session → unit (held)`, where a group set aside reads `not in plan`. The table and the chips
+   session → unit (held)`, where a group set aside reads `not in plan`. The held rate is the
+   row's own benchmark units over its benchmark sessions, the rate the funnel holds
+   (`funnelByGroup.conv_benchmark`), so a row's target sessions at it give its target units; the
+   basket's median entries per session (`convByGroup`) is not shown there. The table and the chips
    follow the switches and the launches ticked in the picker live, through the same model the
    build runs.
 4. **Products & economics** card — one grid drawn the way Airtable draws one: the cell is the
@@ -740,7 +743,9 @@ The rail puts this launch beside the basket, a row per statistic - units, unit p
 sessions, paid share, campaign days - so whether the basket resembles the launch is read
 across. A launch's own units and price are the target and price being set on the tab;
 sessions and paid share are to date and would be read against closed launches' totals, so
-those rows are the basket's alone. Under them, a thin-basket warning at fewer than 6 and
+those rows are the basket's alone. The paid share is the tab's figure: paid's median share
+of sessions renormalised with the other channels' (§3.2), over the channels in plan. Under
+them, a thin-basket warning at fewer than 6 and
 which basket the ticks are: "as suggested" until an edit, then "edited". Ticks still
 matching what the modal opened on pick that basket, with its id and the ETL's own profile,
 rather than a bespoke copy of it.

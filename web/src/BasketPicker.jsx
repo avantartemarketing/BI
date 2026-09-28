@@ -73,7 +73,7 @@ function liveProfile(rows) {
     n: rows.length, members: rows.map((r) => r.release_name),
     units: total, units_p25: quantile(units, 0.25), units_p75: quantile(units, 0.75),
     price: median(priced), price_p25: quantile(priced, 0.25), price_p75: quantile(priced, 0.75), n_priced: priced.length,
-    sessions, paid_share: median(rows.map((r) => r.paid_share)),
+    sessions,
     entries: median(rows.map((r) => r.entries)),
     campaign_days: median(rows.map((r) => r.campaign_days)),
     units_per_buyer: positive(rows.map((r) => r.units_per_buyer)),
@@ -490,7 +490,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                     {railRow("Units", fmt(L.target), members.length ? fmt(live.units) : "–", paidOff ? "This launch's target against the basket's median units without paid - the benchmark with paid out of plan." : "This launch's target against the basket's median units at close - the benchmark.")}
                     {railRow("Unit price", fmtMoney(priceUsed), members.length && live.price > 0 ? fmtMoney(live.price) : "–", "Unit price in euros, from Airtable. Launches Airtable could not price are left out of the median.")}
                     {railRow("Sessions", null, members.length ? fmtK(live.sessions) : "–", "The basket's median sessions. This launch's own are to date, so there is nothing to compare them with yet.")}
-                    {railRow("Paid share", null, paidOff ? "not run" : members.length ? fmtPct(liveAll.paid_share, 0) : "–", paidOff ? "Paid is not in plan for this release." : "Median share of sessions coming from paid.")}
+                    {railRow("Paid share", null, paidOff ? "not run" : members.length ? fmtPct(live.share_sessions.paid, 0) : "–", paidOff ? "Paid is not in plan for this release." : "Median share of sessions from paid.")}
                     {railRow("Uplift to target (K)", "", K === null ? "–" : "×" + fmt(K, 2), "The target over the basket's median units: how far past the benchmark this launch is being asked to go.")}
                     {thin && (
                       <div style={{ marginTop: 12, padding: "8px 10px", borderRadius: 8, fontSize: 11.5, lineHeight: 1.5, background: "#fbf1e6", color: "#5a3f0a" }}>
