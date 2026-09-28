@@ -5342,30 +5342,33 @@ def check_snapshot(snap: dict, soft: bool = True) -> list[str]:
             warnings += product_name_warnings(sell)
         except Exception as e:  # noqa: BLE001 - a soft check never stops the build
             warnings.append(f"product names not checked: {e}")
-    # the benchmark the hero prints is the basket's median as the page rounds it
-    if bm and hero.get("benchmark") is not None and bm.get("units") is not None:
-        if hero["benchmark"] != whole(bm["units"]):
-            warnings.append(f"hero.benchmark {hero['benchmark']} but benchmark.units {bm['units']} prints as {whole(bm['units']):.0f}")
-    # what is projected at close cannot be less than what is already in
-    paid = snap.get("paid") or {}
-    for proj_key, now_key, tol in (("entriesProjected", "entriesToDate", 0.05), ("spendProjectedTotal", "spendToDate", 0.01)):
-        pv, nv = paid.get(proj_key), paid.get(now_key)
-        if isinstance(pv, (int, float)) and isinstance(nv, (int, float)) and pv < nv - tol:
-            warnings.append(f"paid.{proj_key} {pv} is below paid.{now_key} {nv}")
-    # a closed release's walk at close is its walk to date
-    wf = snap.get("waterfall") or {}
-    if snap.get("complete") and wf.get("today"):
-        for key in ("steps", "stepsBm"):
-            close_v = [s.get("value") for s in wf.get(key) or []]
-            today_v = [s.get("value") for s in wf["today"].get(key) or []]
-            if close_v and today_v and close_v != today_v:
-                warnings.append(f"a closed release's waterfall {key} at close {close_v} differ from today's {today_v}")
-    # the Direct switch moves attribution, not the sends the plan asks for
     alt = (snap.get("variants") or {}).get("direct_spread")
-    if alt and isinstance(alt.get("email"), dict) and isinstance(snap.get("email"), dict):
-        a, b_ = alt["email"].get("deliveredTarget"), snap["email"].get("deliveredTarget")
-        if a is not None and b_ is not None and abs(a - b_) > 0.5:
-            warnings.append(f"the Direct view's email.deliveredTarget {a} differs from the page's {b_}")
+    try:
+        # the benchmark the hero prints is the basket's median as the page rounds it
+        if bm and hero.get("benchmark") is not None and bm.get("units") is not None:
+            if hero["benchmark"] != whole(bm["units"]):
+                warnings.append(f"hero.benchmark {hero['benchmark']} but benchmark.units {bm['units']} prints as {whole(bm['units']):.0f}")
+        # what is projected at close cannot be less than what is already in
+        paid = snap.get("paid") or {}
+        for proj_key, now_key, tol in (("entriesProjected", "entriesToDate", 0.05), ("spendProjectedTotal", "spendToDate", 0.01)):
+            pv, nv = paid.get(proj_key), paid.get(now_key)
+            if isinstance(pv, (int, float)) and isinstance(nv, (int, float)) and pv < nv - tol:
+                warnings.append(f"paid.{proj_key} {pv} is below paid.{now_key} {nv}")
+        # a closed release's walk at close is its walk to date
+        wf = snap.get("waterfall") or {}
+        if snap.get("complete") and wf.get("today"):
+            for key in ("steps", "stepsBm"):
+                close_v = [s.get("value") for s in wf.get(key) or []]
+                today_v = [s.get("value") for s in wf["today"].get(key) or []]
+                if close_v and today_v and close_v != today_v:
+                    warnings.append(f"a closed release's waterfall {key} at close {close_v} differ from today's {today_v}")
+        # the Direct switch moves attribution, not the sends the plan asks for
+        if alt and isinstance(alt.get("email"), dict) and isinstance(snap.get("email"), dict):
+            a, b_ = alt["email"].get("deliveredTarget"), snap["email"].get("deliveredTarget")
+            if a is not None and b_ is not None and abs(a - b_) > 0.5:
+                warnings.append(f"the Direct view's email.deliveredTarget {a} differs from the page's {b_}")
+    except Exception as e:  # noqa: BLE001 - a soft check never stops the build
+        warnings.append(f"the figures' soft checks could not run ({e})")
     for w in warnings:
         SNAPSHOT_WARNINGS.append(f"{rid}: {w}")
         print(f"check_snapshot warning: {rid}: {w}")
