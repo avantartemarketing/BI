@@ -103,9 +103,11 @@ The ETL builds a page for **every** release the funnel data mentions (`discover_
   **catalogue** - a work still drawing traffic - and is shown over its last 90 days.
 - **In flight** = has dates and today is before the close. The sidebar lists those, fewest
   days to launch first (a release whose window has not opened yet sits last, with its
-  opening date). Each row is the artist over the launch date with the days left on the
-  right; the row's tooltip carries the title, the day of the window and the pace the dot
-  means, so there is no key under the list. Every other release is reachable from the
+  opening date). Each row is the release's full name ("Ai Weiwei · Arm · Multiple · 2026
+  Q2", wrapping when long) over the launch date, with the days left on the right; a date
+  outside the page's year carries its year. The artist alone could not tell apart an
+  artist's many launches. The row's tooltip carries the day of the window and the pace the
+  dot means, so there is no key under the list. Every other release is reachable from the
   search box (artist, title, quarter, id), on the same row with the date it closed. A
   closed or catalogue release you pick stays pinned under **Viewing** while selected.
 - **Campaign codes** for unconfigured releases come from the release's own orders (the code

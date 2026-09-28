@@ -263,11 +263,18 @@ function releaseClock(r, asOf) {
   };
 }
 
-/* One release in the sidebar: the status dot, the artist over the launch date,
- * and the days left to it on the right. Every row is the same two lines - the
- * title, which wraps or crops at any width, lives in the tooltip with the
- * day-of-window and the pace, and the dot's meaning is the tooltip's Pace row
- * rather than a key under the list. */
+/* A release's name as a sidebar row sets it: where it wraps, the quarter
+ * stays whole ("2026 Q3", never "2026" over "Q3") and a line never starts
+ * with the separator, which ends the line before instead. */
+const rowName = (name) => String(name || "").replace(/ \u00b7 /g, "\u00a0\u00b7 ").replace(/(\d{4}) (Q\d)/g, "$1\u00a0$2");
+
+/* One release in the sidebar: the status dot, the release's full name
+ * ("Ai Weiwei · Arm · Multiple · 2026 Q2", wrapping when long) over its date,
+ * and the days left to it on the right. The artist alone told nobody which of
+ * an artist's launches a row was, and a date without its year put a launch
+ * of two Novembers ago beside this spring's: a date outside the page's year
+ * carries its year. The tooltip keeps the day-of-window and the pace, and
+ * the dot's meaning is its Pace row rather than a key under the list. */
 function ReleaseRow({ r, asOf, active, onClick }) {
   const t = useTip();
   const targeted = r.targeted !== false;
@@ -291,22 +298,25 @@ function ReleaseRow({ r, asOf, active, onClick }) {
     : clock && clock.opensIn > 0 ? "not set - opens soon" : "not set - announce passed, no funnel rows yet" });
   if (status === "catalogue" && r.lastSeen) rows.push({ label: "Last traffic", value: r.lastSeen });
   const content = { head: r.releaseName || r.name, rows };
+  // a day, with its year where that is not the page's own year
+  const thisYear = asOf ? Number(String(asOf).slice(0, 4)) : new Date().getUTCFullYear();
+  const on = (d) => (d.getUTCFullYear() === thisYear ? fmtDay(d) : `${fmtDay(d)} ${d.getUTCFullYear()}`);
 
   // the second line and the figure on the right
   let when, count = null;
   if (!clock) when = status === "closed" ? "Closed" : "Catalogue";
-  else if (status === "upcoming" && clock.opensIn > 0) { when = `Opens ${fmtDay(clock.announce)}`; count = clock.opensIn; }
-  else if (status === "upcoming") { when = `Closes ${fmtDay(clock.launch)}`; count = Math.max(clock.daysLeft, 0); }
-  else if (clock.opensIn > 0) when = `Opens ${fmtDay(clock.announce)}`;
-  else if (status === "closed") when = `Closed ${fmtDay(clock.launch)}`;
-  else { when = fmtDay(clock.launch); count = Math.max(clock.daysLeft, 0); }
+  else if (status === "upcoming" && clock.opensIn > 0) { when = `Opens ${on(clock.announce)}`; count = clock.opensIn; }
+  else if (status === "upcoming") { when = `Closes ${on(clock.launch)}`; count = Math.max(clock.daysLeft, 0); }
+  else if (clock.opensIn > 0) when = `Opens ${on(clock.announce)}`;
+  else if (status === "closed") when = `Closed ${on(clock.launch)}`;
+  else { when = on(clock.launch); count = Math.max(clock.daysLeft, 0); }
   return (
     <button className={`release-row${active ? " active" : ""}`} onClick={onClick} {...t.props(content)}>
       {state
         ? <span className="dot" style={{ background: STATE[state].color }} />
         : <span className="dot hollow" />}
       <span className="who">
-        <span className="nm">{r.artist || r.name}</span>
+        <span className="nm">{rowName(r.releaseName || r.name || r.artist)}</span>
         <span className="when">{when}</span>
       </span>
       {count !== null && <span className="left">{count}<small>d</small></span>}
