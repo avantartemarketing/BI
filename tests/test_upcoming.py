@@ -93,6 +93,7 @@ def test_upcoming() -> None:
     assert horse["source"] == "airtable" and horse["launch_type"] == ""
     # no announce date: assumed, and said; the private room date Airtable has is kept
     assert seth["announce_date"] == "2026-11-26" and "assumed" in seth["dates_note"]
+    assert seth["dates_assumed"] is True and horse["dates_assumed"] is False
     assert seth["private_room_open"] == "2026-11-10"
     # nothing to list without the file
     assert build.upcoming_releases(None, EXISTING, AS_OF, activity) == []
@@ -325,6 +326,8 @@ def test_stale_dates() -> None:
     snap = build.build_upcoming(wojn, day, None, day)
     build.check_snapshot(snap)
     assert snap["derived"]["dates_note"] == wojn["dates_note"] and snap["day"] == 16 and snap["of"] == 30
+    # a doubtful date is not a stand-in: the card marks only the latter "(assumed)"
+    assert wojn["dates_assumed"] is False and snap["derived"]["dates_assumed"] is False
     # a code for the artist moving in the window: the launch is under way, no note
     moving = {"DavidWojn_LE_26": (dt.date(2026, 9, 8), dt.date(2026, 9, 23))}
     live = next(r for r in build.upcoming_releases(lf, [], day, moving) if r["artist"] == "David Wojnarowicz Estate")

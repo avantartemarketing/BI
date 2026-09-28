@@ -11,6 +11,9 @@ const day = (s) => (s ? fmtDay(new Date(s + "T00:00:00Z"), true) : "–");
 export default function Upcoming({ snap, onSetup }) {
   const a = snap.airtable || {};
   const d = snap.derived || {};
+  // "(assumed)" only where the announce is a stand-in; a page built before
+  // the flag says so in its note's opening words
+  const assumed = d.dates_assumed ?? /^announce date assumed/.test(d.dates_note || "");
   const row = { display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, padding: "6px 0", borderBottom: `1px solid ${C.hairline}` };
   const works = String(a.titles || "").split(" / ").filter(Boolean);
   const native = a.unit_price_native && a.currency_native && a.currency_native !== "EUR"
@@ -30,7 +33,7 @@ export default function Upcoming({ snap, onSetup }) {
         <div style={row}><span style={{ color: C.muted }}>Private room opens</span><span className="num">{day(snap.privateRoomOpen)}</span></div>
         <div style={row}>
           <span style={{ color: C.muted }}>Announce</span>
-          <span className="num" title={d.dates_note || undefined}>{day(snap.windowStart)}{d.dates_note ? " (assumed)" : ""}</span>
+          <span className="num" title={d.dates_note || undefined}>{day(snap.windowStart)}{assumed ? " (assumed)" : ""}</span>
         </div>
         <div style={row}><span style={{ color: C.muted }}>Draw closes</span><span className="num">{day(snap.windowEnd)}</span></div>
         <div style={row}><span style={{ color: C.muted }}>Edition</span><span className="num">{a.edition_size ? `${fmt(a.edition_size)} units` : "–"}</span></div>

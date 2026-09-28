@@ -3720,6 +3720,7 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
             "type": "LE", "campaign_code": code, "campaign_name": None,
             "announce_date": announce.isoformat(), "launch_end": close.isoformat(),
             "private_room_open": pr_open.isoformat(),
+            "dates_assumed": bool(assumed),
             "dates_note": ("announce date assumed: Airtable has none for it yet" if assumed else
                            f"Airtable's announce date, {announce.isoformat()}, has passed with no spend, sends or "
                            f"traffic for this launch, so its dates may be out of date" if stale else None),
@@ -3800,6 +3801,8 @@ def build_upcoming(rec: dict, as_of: date, email_bench: dict | None = None, full
         "derived": {
             "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
             "dates_source": "airtable", "dates_note": rec["dates_note"],
+            # the announce is a stand-in (Airtable has none), not merely doubtful
+            "dates_assumed": bool(rec.get("dates_assumed")),
             "campaign_code": rec["campaign_code"], "first_seen": None, "last_seen": None,
         },
         "airtable": {k: rec.get(k) for k in (
