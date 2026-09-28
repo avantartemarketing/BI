@@ -358,13 +358,17 @@ HubSpot campaign name is the release's campaign code, when the code appears in t
 email or campaign name, or when an `Artist_Type_YY` token in either names the same
 artist and year as exactly one known code (so `AndyWarhol_LE_26` sends join the
 `AndyWarhol_TL_26` Meta code); known codes are every configured, saved and discovered
-release. The GEN/CUS/INS send-type filter still reads the name convention. The
+release. That join never folds a code some feed already uses (the sends' Campaign column,
+the Meta campaigns, the content feed's `campaign_code`) into a sibling: it is that campaign's
+own (`ZengFanzhi_TL_26`, the Rainbow launch, is not `ZengFanzhi_LE_26`). The GEN/CUS/INS
+send-type filter still reads the name convention. The
 `emails` field of `/api/refresh/status` says, per targeted release, how many sends in
 the last 60 days joined it and lists the recent sends that joined nothing - the first
 place to look when a release's email rows are blank. The email references are
 recomputed from that file at every refresh: open rate, click rate, clicks per open and
 sessions per click (AA Email sessions over tracked clicks) as the median pooled rate
-across completed draw launches of the last 24 months (configured and discovered). The
+across completed draw launches of the last 24 months (configured and discovered), each
+release's read without its own sends and without the launches that closed after it. The
 delivered target is the sends the release's own AA Email sessions plan implies by today
 at those rates, so a release sending to a small list is judged against a volume that fits
 it, and the benchmark's sends are the same at the basket's pace (the waterfall's walk from

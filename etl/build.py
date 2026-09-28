@@ -1226,6 +1226,52 @@ def observation_clock(newest: date, now: datetime | None = None) -> tuple[date, 
 
 EMAIL_REF_MONTHS = 24   # rate references: draw launches that closed within this span
 
+# Every launch on file, configured and discovered, with its artist and dates,
+# noted once a run by main() (note_launches), so an email window never reaches
+# back into an earlier launch by the same artist (email_window_start).
+LAUNCHES: list[dict] = []
+
+
+def _artist_key(release_name: str | None) -> str:
+    return str(release_name or "").split(" · ")[0].strip().casefold()
+
+
+def note_launches(releases) -> None:
+    """Record every launch's name, artist and close for email_window_start."""
+    out = []
+    for r in releases or []:
+        name = (r or {}).get("release_name")
+        try:
+            end = date.fromisoformat(str(r.get("launch_end"))[:10]) if name and r.get("launch_end") else None
+        except ValueError:
+            end = None
+        if end is not None:
+            out.append({"name": name, "artist": _artist_key(name), "close": end})
+    LAUNCHES[:] = out
+
+
+def email_window_start(release: dict, start: date, launches: list[dict] | None = None) -> date:
+    """Where a release's email window opens: `start` (its private room or its
+    announce), or the day after an earlier launch by the same artist closed,
+    when that is later. Sends join a release by campaign code alone, and an
+    artist's launches can carry one code between them: Zeng Fanzhi's July
+    Rainbow sends were tagged with the LE's code and fell inside a window
+    opened a month before the LE's announce, so the LE counted them as its
+    own. An earlier launch is one that closed before this one's announce, so
+    the window never starts after it."""
+    name = (release or {}).get("release_name")
+    artist = _artist_key(name)
+    try:
+        ann = date.fromisoformat(str(release.get("announce_date"))[:10])
+    except (AttributeError, TypeError, ValueError):
+        return start
+    if not artist:
+        return start
+    for w in (LAUNCHES if launches is None else launches):
+        if w["name"] != name and w["artist"] == artist and w["close"] < ann:
+            start = max(start, w["close"] + timedelta(days=1))
+    return start
+
 
 def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: list[dict] = (),
                               spend: pd.DataFrame | None = None,
@@ -1251,7 +1297,10 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
     reference and let it carry whatever a small-list release lost on sends.
 
     Each part is None until >= 2 launches qualify; the whole is None when
-    neither does."""
+    neither does. Every launch's own row rides on the result (rows), so a
+    release is read against the cohort without itself and without the
+    launches that closed after it (email_bench_for), and each launch's sends
+    are read from where its email window opens (email_window_start)."""
     if emails.empty:
         return None
 
@@ -1279,7 +1328,10 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         spc = sessions / clicked if sessions and clicked > 0 else None
         return (rid, end, opened / total, clicked / total, clicked / opened if opened > 0 else None, spc)
 
-    shares, totals, rates, seen = [], [], [], set()
+    # one row per launch with sends on file: the configured ones give a total
+    # and a delivery curve, and a rate row when they closed within the span;
+    # the discovered draw launches a rate row
+    rows, seen = [], set()
     recent = as_of - timedelta(days=EMAIL_REF_MONTHS * 30)
     for r in INPUTS["releases"]:
         seen.add(r["campaign_code"])
@@ -1287,7 +1339,8 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         if end >= as_of:
             continue
         ann = date.fromisoformat(r["announce_date"])
-        core = window_sends(r["campaign_code"], date.fromisoformat(r["private_room_open"]), end)
+        start = email_window_start(r, date.fromisoformat(r["private_room_open"]))
+        core = window_sends(r["campaign_code"], start, end)
         if core is None:
             continue
         total = float(core["delivered"].sum())
@@ -1298,11 +1351,10 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         for t in CURVE_GRID:
             sel = cum[c["pdsa"] <= t]
             row.append(float(sel.iloc[-1]) if len(sel) else 0.0)
-        shares.append(row)
-        totals.append(total)
-        if end >= recent:
-            rates.append(rate_row(r["id"], end, core,
-                                  email_sessions(r["release_name"], date.fromisoformat(r["private_room_open"]), end)))
+        rows.append({"id": r["id"], "name": r.get("release_name"), "code": r["campaign_code"], "end": end,
+                     "total": total, "shares": row,
+                     "rate": rate_row(r["id"], end, core, email_sessions(r["release_name"], start, end))
+                     if end >= recent else None})
     for r in discovered:
         code = r.get("campaign_code")
         if not code or code in seen or not r.get("announce_date") or not r.get("launch_end"):
@@ -1314,13 +1366,26 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         if not camp or not camp.lower().endswith("draw"):
             continue
         ann = date.fromisoformat(r["announce_date"])
-        core = window_sends(code, ann - timedelta(days=PR_LEAD_DAYS), end)
+        start = email_window_start(r, ann - timedelta(days=PR_LEAD_DAYS))
+        core = window_sends(code, start, end)
         if core is not None:
-            rates.append(rate_row(r["id"], end, core,
-                                  email_sessions(r["release_name"], ann - timedelta(days=PR_LEAD_DAYS), end)))
+            rows.append({"id": r["id"], "name": r.get("release_name"), "code": code, "end": end,
+                         "total": None, "shares": None,
+                         "rate": rate_row(r["id"], end, core, email_sessions(r["release_name"], start, end))})
+    return email_medians(rows)
 
+
+def email_medians(rows: list[dict]) -> dict | None:
+    """The email references from the launches' rows (email_delivered_benchmark):
+    the median delivered total and the pooled delivery-timing curve over the
+    configured launches, and the median open, click, clicks-per-open and
+    sessions-per-click rates over the rate cohort. Each part is None until two
+    launches qualify; the whole is None when neither does."""
+    shares = [r["shares"] for r in rows if r.get("total") is not None]
+    totals = [r["total"] for r in rows if r.get("total") is not None]
+    rates = [r["rate"] for r in rows if r.get("rate") is not None]
     out = {"total": None, "curve": None, "open_rate": None, "click_rate": None, "ctor_rate": None,
-           "spc_rate": None, "cohort": None}
+           "spc_rate": None, "cohort": None, "rows": rows}
     if len(totals) >= 2:
         med = pd.DataFrame(shares).median().tolist()
         for i in range(1, len(med)):
@@ -1339,6 +1404,29 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         out["cohort"] = {"n": len(rates), "releases": [x[0] for x in rates],
                          "from": rates[-1][1].isoformat(), "to": rates[0][1].isoformat()}
     return out if (out["total"] is not None or out["open_rate"] is not None) else None
+
+
+def email_bench_for(bench: dict | None, release: dict | None) -> dict | None:
+    """The email references one release is read against (docs 8): the run's
+    cohort without the release's own sends and without the launches that
+    closed after it, so a closed release is never graded against itself or
+    against launches that had not closed when it did. A live release's cohort
+    is the run's own (every launch in it closed before today). A launch is
+    left out by id, by name and by campaign code: a configured release's
+    discovered twin carries another id and the same code."""
+    if not bench or not release or not bench.get("rows"):
+        return bench
+    rid, name, code = release.get("id"), release.get("release_name"), release.get("campaign_code")
+    try:
+        end = date.fromisoformat(str(release.get("launch_end"))[:10])
+    except (TypeError, ValueError):
+        end = None
+
+    def own_or_later(r: dict) -> bool:
+        return bool(r["id"] == rid or (name and r.get("name") == name) or (code and r.get("code") == code)
+                    or (end is not None and r["end"] > end))
+    keep = [r for r in bench["rows"] if not own_or_later(r)]
+    return bench if len(keep) == len(bench["rows"]) else email_medians(keep)
 
 
 def email_refs(bench: dict | None) -> dict:
@@ -3570,8 +3658,9 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     feed_through = email_feed_through(emails)
     em = emails.iloc[0:0]
     if code:
+        # never reaching back into an earlier launch by the same artist
         em_all = emails[(emails["campaign"] == code)
-                        & (emails["sent_at"].dt.date >= window_start)
+                        & (emails["sent_at"].dt.date >= email_window_start(rec, window_start))
                         & (emails["sent_at"].dt.date <= min(as_of, launch_end))]
         em = em_all[em_all["email_type"].isin(["GEN", "CUS", "INS"])]
         if em.empty and not em_all.empty:
@@ -3630,7 +3719,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
                    "entries": round(float(upto["Draw_Entries_Eligible_Units"].sum()))},
         "benchmarks": {"chargeDropOff": 1 - e2o, "cannibalisation": b["cannibalisation"], "targetBuffer": b["target_buffer"],
-                       **email_refs(email_bench)},
+                       **email_refs(email_bench_for(email_bench, rec))},
     }
 
 
@@ -4361,10 +4450,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         paid_out["benchmarkUnits"] = round(bm_units["paid"], 1)
         paid_out["benchmarkBudget"] = round(bm_units["paid"] * targets["paid"]["cost_per_purchase"], 2)
 
-    # ---- email funnel (docs §8): launch-window customer sends for this campaign
+    # ---- email funnel (docs §8): launch-window customer sends for this campaign,
+    # from where the window opens or, when later, the day after an earlier
+    # launch by the same artist closed (email_window_start)
     feed_through = email_feed_through(emails)
+    email_start = email_window_start(release, window_start)
     em_all = emails[(emails["campaign"] == release["campaign_code"])
-                    & (emails["sent_at"].dt.date >= window_start)
+                    & (emails["sent_at"].dt.date >= email_start)
                     & (emails["sent_at"].dt.date <= min(as_of, launch_end))]
     em = em_all[em_all["email_type"].isin(["GEN", "CUS", "INS"])]
     if em.empty and not em_all.empty:
@@ -4393,6 +4485,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # be the target, and left sessions per click carrying whatever the sends
     # lost). Until two launches give a sessions-per-click median, the median
     # delivered total on the pooled delivery-timing curve stands in.
+    # The rates are the cohort's without this release's own sends and without
+    # the launches that closed after it (email_bench_for).
+    email_bench = email_bench_for(email_bench, release)
     # The sends are read on AA Email's sessions as the funnel attributes them.
     # The Direct switch spreads Direct's share of the basket onto AA Email as
     # well; that is traffic Direct brought, not sends, so it leaves the sends
@@ -5178,6 +5273,8 @@ def main(only: str | None = None):
         curves_path.write_text(json.dumps(curves, indent=1))
         print(f"curves: n={curves['n_releases']} clean releases")
 
+    # every launch's artist and close, for the email windows' same-artist clip
+    note_launches(list(INPUTS["releases"]) + list(discovered))
     email_bench = email_delivered_benchmark(emails, as_of, discovered, spend, at)
     if email_bench and email_bench["open_rate"] is not None:
         c = email_bench["cohort"]

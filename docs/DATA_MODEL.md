@@ -1754,6 +1754,16 @@ Reference rates for the funnel module: use the release's own campaign sends vs t
 median for the same send type. ⚠ Bundle sends (`FREQ_LE_Bundle`) promote 2–3 releases and cannot
 be attributed to one release.
 
+**Whose sends, and graded against whom.** A release's email block counts the sends carrying its
+campaign code from the day its window opens (§6.3), or from the day after an earlier launch by
+the same artist closed when that is later: sends join by code alone, and an artist's launches
+can carry one code between them (Zeng Fanzhi's July Rainbow sends were tagged with the LE's).
+The reference rates (open, clicks per open, sessions per click) and the delivered fallback are
+the medians of completed draw launches, read for each release **without its own sends and
+without the launches that closed after it** (left out by id, name and campaign code): the email
+form of "a release is never a member of its own benchmark" (§4a.2). A live release reads the
+whole cohort, every launch in it having closed before today.
+
 **The Direct switch leaves the email plan alone.** The sends the plan asks for are read on AA
 Email's sessions as the funnel attributes them, and the Spread view's
 `benchmarks.emailSessionsPerClickRef` carries the spread's share of the basket's email sessions,
