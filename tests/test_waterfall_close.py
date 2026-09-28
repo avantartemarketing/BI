@@ -142,7 +142,10 @@ for label, s in (("closed", run(launch, 1.0, launch, launch, 1.0)),
 check(len(build.SNAPSHOT_WARNINGS) == before, f"no soft rule fires on an honest build: {build.SNAPSHOT_WARNINGS[before:]}")
 
 # ---- the soft rules warn, they never stop the refresh
+# (a page this ETL built: it says where its units came from and the days it
+# counted, so the stale-build warning stays out of it)
 snap = {"id": "t", "complete": True, "hero": {"now": 106, "benchmark": 132.0, "target": 150},
+        "unitsSource": "orders", "salesWindow": {"start": "2026-08-01", "end": "2026-09-03", "closed": True, "firstPaid": None},
         "channels": [{"now": 106, "bm": 132.5}], "benchmark": {"units": 132.5, "k": 1.13},
         "paid": {"entriesProjected": 39.7, "entriesToDate": 42.0, "spendProjectedTotal": 10.0, "spendToDate": 12.0},
         "waterfall": {"steps": [{"value": -40}], "stepsBm": [],

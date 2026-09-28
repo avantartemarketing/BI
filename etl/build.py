@@ -4923,15 +4923,63 @@ def product_name_warnings(sell: dict) -> list[str]:
     return out
 
 
-def check_snapshot(snap: dict) -> None:
+def stale_build_warnings(snap: dict) -> list[str]:
+    """What a page this ETL builds always carries (docs 6.3, 10a), checked
+    softly: a targeted page says where its units came from and the days it
+    counted (`unitsSource`, `salesWindow`), and once its sales window has shut
+    nothing in hand still counts - no drafts, no draw winners predicted, no
+    entries in hand or still to come, no entry patterns. A page that breaks
+    one was built by an older ETL, as the committed fallback pages of 24 and
+    25 September 2026 were, and its figures are not this build's. Warnings,
+    not failures: a claim still landing (draw_claims) can put a predicted unit
+    on a shut window, and a failure would stop the whole refresh. A page
+    without `salesWindow` is taken as shut once its as-of day is past its
+    close plus the grace, the rule the older builds missed."""
+    out: list[str] = []
+    if snap.get("targeted", True) and not snap.get("upcoming"):
+        missing = [k for k in ("unitsSource", "salesWindow") if not snap.get(k)]
+        if missing:
+            out.append(f"no {' or '.join(missing)}: built by an ETL older than the orders sales window - "
+                       f"its figures are not this build's; rebuild it")
+    sw, sell = snap.get("salesWindow"), snap.get("sellthrough") or {}
+    if isinstance(sw, dict):
+        shut, end = bool(sw.get("closed")), sw.get("end")
+    else:
+        try:
+            end = (date.fromisoformat(str(snap.get("windowEnd"))[:10]) + timedelta(days=UNITS_GRACE_DAYS)).isoformat()
+            shut = str(snap.get("asOf") or "") > end
+        except ValueError:
+            shut, end = False, None
+    if shut and sell:
+        left = [f"{k} {sell[k]}" for k in ("drafts", "soldPredicted", "inHandUnits", "futureEntriesPredicted")
+                if abs(_num(sell.get(k)) or 0.0) > 0.05]
+        if sell.get("patterns"):
+            left.append(f"{len(sell['patterns'])} entry patterns")
+        if left:
+            out.append(f"its sales window shut on {end} but the sell-through still counts {', '.join(left)}")
+    return out
+
+
+# what check_snapshot warned of: the soft checks, which never stop the build
+SNAPSHOT_WARNINGS: list[str] = []
+
+
+def check_snapshot(snap: dict, soft: bool = True) -> list[str]:
     """Cross-check a snapshot's own arithmetic before it is written.
 
     These are relationships that must hold by definition, so a breach means a
     code path disagrees with another one - the class of bug where two cards
     print different answers for the same quantity. Cheap to run, and it fails
     the build rather than shipping a number that cannot be true.
+
+    The soft checks (stale_build_warnings) are printed and returned, never
+    raised: the signs of a page built by an older ETL. `soft` is off for the
+    Direct switch's view, which carries the same page's fields.
     """
     rid = snap.get("id", "?")
+    # the soft checks, logged below with the rest and never raised, start
+    # with the signs of a page an older ETL built
+    warnings = stale_build_warnings(snap) if soft else []
     hero, sell = snap.get("hero") or {}, snap.get("sellthrough") or {}
     now, sold = hero.get("now"), sell.get("sold")
     edition = (snap.get("sellthrough") or {}).get("edition")
@@ -5011,12 +5059,13 @@ def check_snapshot(snap: dict) -> None:
             problems.append(f"hero.projected {hero['projected']} but the sell-through's count at close is {at_close:.1f}")
     # soft checks: figures that should agree, and what a person typed, which
     # can be wrong without any figure being impossible; logged
-    # (SNAPSHOT_WARNINGS) and never stopping the build
-    warnings: list[str] = []
-    try:
-        warnings += product_name_warnings(sell)
-    except Exception as e:  # noqa: BLE001 - a soft check never stops the build
-        warnings.append(f"product names not checked: {e}")
+    # (SNAPSHOT_WARNINGS) and never stopping the build. The Direct switch's
+    # view carries the page's own names, so they are read once
+    if soft:
+        try:
+            warnings += product_name_warnings(sell)
+        except Exception as e:  # noqa: BLE001 - a soft check never stops the build
+            warnings.append(f"product names not checked: {e}")
     # the benchmark the hero prints is the basket's median as the page rounds it
     if bm and hero.get("benchmark") is not None and bm.get("units") is not None:
         if hero["benchmark"] != whole(bm["units"]):
@@ -5047,7 +5096,7 @@ def check_snapshot(snap: dict) -> None:
     # the Direct switch's view of the page holds to the same rules
     if alt:
         try:
-            check_snapshot({**snap, **alt, "variants": None, "id": f"{rid} with Direct spread"})
+            check_snapshot({**snap, **alt, "variants": None, "id": f"{rid} with Direct spread"}, soft=False)
         except AssertionError as e:
             problems.append(str(e))
     if problems:
@@ -5057,14 +5106,13 @@ def check_snapshot(snap: dict) -> None:
             # the refresh itself never runs this way
             CHECK_WARNINGS.append(msg)
             print(f"check_snapshot: {msg}")
-            return
+            return warnings
         raise AssertionError(msg)
+    return warnings
 
 
 # problems check_snapshot found with CHECK_SNAPSHOT=warn (a verification run)
 CHECK_WARNINGS: list[str] = []
-# what check_snapshot's soft rules found this run: logged, never fatal
-SNAPSHOT_WARNINGS: list[str] = []
 
 # ---- the benchmark panel against the feed (docs/DATA_MODEL.md 6.3) -----------
 # The panel (data/release_clusters.csv) is written by hand after a full pull;
@@ -5573,6 +5621,8 @@ def main(only: str | None = None):
         print(f"check_snapshot: {len(CHECK_WARNINGS)} page(s) with problems (warn mode: nothing stopped)")
     if PANEL_WARNINGS:
         print(f"panel: {len(PANEL_WARNINGS)} warning(s) above - the benchmark panel wants a re-run (README, 'Re-running the benchmark panel')")
+    if SNAPSHOT_WARNINGS:
+        print(f"check_snapshot: {len(SNAPSHOT_WARNINGS)} warning(s) from the soft checks (nothing stopped)")
     print(f"wrote {n_full} targeted + {n_actuals} actuals-only + {n_upcoming} upcoming releases "
           f"({sum(1 for e in index if e['status'] == 'live')} live) -> {APP}")
 
