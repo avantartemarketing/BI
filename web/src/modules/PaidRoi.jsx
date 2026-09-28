@@ -30,7 +30,7 @@
  * no profit per unit recorded. The ? popup shows the working. */
 import React, { useState } from "react";
 import {
-  Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, textPx, timeAxis, nameLines, useBoxSize, LineNames,
+  Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, textPx, timeAxis, nameLines, useBoxSize, LineNames, ChartTip,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 
@@ -364,7 +364,6 @@ export default function PaidRoi({ snap }) {
               const projV = declByDay.get(hover);
               const roiV = p && p.roi !== null && p.roi !== undefined ? p.roi : null;
               const markV = roiV ?? projV ?? null;
-              const flip = (hover - 1) / DAYS > 0.6;
               if (!p && projV === undefined) return null;
               return (
                 <>
@@ -372,13 +371,13 @@ export default function PaidRoi({ snap }) {
                   {markV !== null && markV !== undefined && (
                     <div style={{ position: "absolute", left: leftPct(hover), top: topPct(markV), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: roiV !== null ? C.blue : C.blueLight, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
                   )}
-                  <div className="chart-tip" style={{ left: leftPct(hover), top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
+                  <ChartTip left={leftPct(hover)}>
                     <div className="t-head">{dayLabel(snap, hover, true)}{p && p.partial ? " · so far today" : ""}</div>
                     {p && <div className="t-row"><span>{view.label} ROI (3d)</span><span className="v">{roiV !== null ? fmt(roiV, 2) : "–"}</span></div>}
                     {roiV === null && projV !== undefined && <div className="t-row"><span>ROI projected</span><span className="v">{fmt(projV, 2)}</span></div>}
                     {p && <div className="t-row"><span>Spend</span><span className="v">€{fmt(p.spend, 2)}</span></div>}
                     {p && <div className="t-row"><span>Entries</span><span className="v">{fmt(p.entries ?? 0)}</span></div>}
-                  </div>
+                  </ChartTip>
                 </>
               );
             })()}

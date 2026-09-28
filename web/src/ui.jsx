@@ -19,11 +19,12 @@
  * The drawing grammar lives here rather than in each module so every card says it
  * the same way; these signatures are fixed because the modules are written
  * against them in parallel. */
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   MINUS, dayElapsed, paidDayFrac, fmt, fmtSigned, fmtMoney, fmtK, fmtPct, fmtDay, windowDate, dayLabel, dayAxisLabel,
 } from "./format.mjs";
-import { labelPx, textPx, timeAxis, nameLines } from "./labels.mjs";
+import { labelPx, textPx, timeAxis, nameLines, placeTip, placeBeside } from "./labels.mjs";
 import { Ex } from "./explain/Explain.jsx";
 
 /* ---- the popup system (agreed on the Dashboard Popups canvas) ----
@@ -33,31 +34,36 @@ import { Ex } from "./explain/Explain.jsx";
  * Content: { head, rows?: [{ label, value, color? }], body? } */
 const TipCtx = createContext(null);
 
+/* The popup is measured once it has rendered, unseen, and then placed where
+ * nothing cuts it (placeTip, labels.mjs): above what it describes, else below,
+ * always inside the window. */
 export function TipProvider({ children }) {
-  const [tip, setTip] = useState(null);
+  const [tip, setTip] = useState(null);   // { anchor: the element's client rect, content }
+  const [pos, setPos] = useState(null);
+  const box = useRef(null);
   const timer = useRef(null);
   const api = useMemo(() => ({
     show(el, content, delay) {
       clearTimeout(timer.current);
       timer.current = setTimeout(() => {
         const r = el.getBoundingClientRect();
-        const below = r.top < 160;
-        setTip({
-          x: Math.min(Math.max(r.left + r.width / 2, 140), window.innerWidth - 140),
-          y: below ? r.bottom + 10 : r.top - 10,
-          below, content,
-        });
+        setPos(null);
+        setTip({ anchor: { left: r.left, right: r.right, top: r.top, bottom: r.bottom }, content });
       }, delay);
     },
     hide() { clearTimeout(timer.current); setTip(null); },
   }), []);
+  useLayoutEffect(() => {
+    if (!tip || !box.current) return;
+    const { width: w, height: h } = box.current.getBoundingClientRect();
+    setPos(placeTip({ anchor: tip.anchor, w, h, vw: window.innerWidth, vh: window.innerHeight }));
+  }, [tip]);
   return (
     <TipCtx.Provider value={api}>
       {children}
       {tip && (
-        <div className="sys-tip" style={{
-          left: tip.x, top: tip.y,
-          transform: `translate(-50%, ${tip.below ? "0" : "-100%"})`,
+        <div ref={box} className="sys-tip" style={{
+          left: pos ? pos.left : 0, top: pos ? pos.top : 0, visibility: pos ? "visible" : "hidden",
         }}>
           {tip.content.head && <div className="t-head">{tip.content.head}</div>}
           {(tip.content.rows || []).map((r, i) => (
@@ -70,6 +76,49 @@ export function TipProvider({ children }) {
         </div>
       )}
     </TipCtx.Provider>
+  );
+}
+
+/* A chart's hover readout (the chart-readout tier above), drawn in the
+ * page's popup layer over every card, so neither a card's edge nor the
+ * window's cuts it: beside the hover line on the side with room (placeBeside,
+ * labels.mjs), inside its own card where that holds. `left` is the hover
+ * line's place in the plot, as the line itself is placed; the readout's top
+ * is 4px under the plot's. A marker at that point, inside the plot, says
+ * where the plot is on the page. */
+export function ChartTip({ left, children }) {
+  const mark = useRef(null);
+  const box = useRef(null);
+  const [pos, setPos] = useState(null);
+  const [, bump] = useState(0);
+  // every render: the hover moves the line and the rows change the size
+  useLayoutEffect(() => {
+    const m = mark.current, b = box.current;
+    if (!m || !b) return;
+    const r = m.getBoundingClientRect();
+    const card = m.closest(".card");
+    const { width: w, height: h } = b.getBoundingClientRect();
+    const p = placeBeside({ x: r.left, top: r.top, w, h, vw: window.innerWidth, vh: window.innerHeight,
+      within: card ? card.getBoundingClientRect() : null });
+    setPos((q) => (q && q.left === p.left && q.top === p.top ? q : p));
+  });
+  // the page scrolled or resized under a readout that is still up
+  useEffect(() => {
+    const again = () => bump((n) => n + 1);
+    window.addEventListener("scroll", again, true);
+    window.addEventListener("resize", again);
+    return () => { window.removeEventListener("scroll", again, true); window.removeEventListener("resize", again); };
+  }, []);
+  return (
+    <>
+      <span ref={mark} aria-hidden="true" style={{ position: "absolute", left, top: 4, width: 0, height: 0, pointerEvents: "none" }} />
+      {createPortal(
+        <div ref={box} className="chart-tip" style={{ left: pos ? pos.left : 0, top: pos ? pos.top : 0, visibility: pos ? "visible" : "hidden" }}>
+          {children}
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 

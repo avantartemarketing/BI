@@ -162,3 +162,47 @@ export function nameLines({ labels, curves, blocks, bounds }) {
   }
   return out;
 }
+
+/* Popups that are never cut. Both rules take the popup's measured size and
+ * return its top-left corner in window pixels, inside the window with
+ * `margin` to spare on every side (a popup wider or taller than the window
+ * starts at the margin, and the page's CSS caps its size). The first
+ * centred the popup on what it describes and only kept that centre 140px from
+ * the window's edge, which holds a popup of 280px: the sidebar's, wider,
+ * ran off the left of the window.
+ *
+ * placeTip: above what it describes (`anchor`, a client rect), centred on it,
+ * `gap` clear of it; below where there is no room above; where neither side
+ * has room, the side with more, slid into the window. */
+export function placeTip({ anchor, w, h, vw, vh, gap = 10, margin = 8 }) {
+  const cx = (anchor.left + anchor.right) / 2;
+  const left = clampTo(cx - w / 2, margin, vw - margin - w);
+  const above = anchor.top - gap - h, below = anchor.bottom + gap;
+  let top;
+  if (above >= margin) top = above;
+  else if (below + h <= vh - margin) top = below;
+  else top = anchor.top - margin > vh - margin - anchor.bottom ? above : below;
+  return { left, top: clampTo(top, margin, vh - margin - h) };
+}
+
+/* placeBeside: a chart's hover readout, beside the hover line at `x` with
+ * its top at `top`: to the line's right where it stays inside `within` (the
+ * card, a client rect), else to its left inside the card, else whichever side
+ * stays inside the window, else slid into the window over the line. The old
+ * rule flipped sides at 60% of the plot whatever the popup's width, and a
+ * narrow card cut it. */
+export function placeBeside({ x, top, w, h, vw, vh, within = null, gap = 10, margin = 8 }) {
+  const lo = Math.max(margin, within ? within.left : margin);
+  const hi = Math.min(vw - margin, within ? within.right : vw - margin);
+  const right = x + gap, left = x - gap - w;
+  let l;
+  if (right + w <= hi) l = right;
+  else if (left >= lo) l = left;
+  else if (right + w <= vw - margin) l = right;
+  else if (left >= margin) l = left;
+  else l = x - w / 2;
+  return { left: clampTo(l, margin, vw - margin - w), top: clampTo(top, margin, vh - margin - h) };
+}
+
+// v kept between lo and hi; lo wins when the two cross (a popup bigger than the room)
+const clampTo = (v, lo, hi) => Math.max(lo, Math.min(v, hi));

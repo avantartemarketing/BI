@@ -78,8 +78,10 @@ html, body {
 /* "In flight" with the column head for the figures on the right */
 .sidebar .section-label.split { display: flex; justify-content: space-between; align-items: baseline; }
 .sidebar .section-label.split small { font-size: 11px; font-weight: 400; }
-/* a release row: dot, artist over the launch date, days left on the right -
- * two fixed lines, so nothing wraps and the figures line up down the column */
+/* a release row: dot, the release's full name over its date, days left on
+ * the right, level with the name's first line. The name wraps rather than
+ * crops: an artist with many launches (Ai Weiwei's seven, Julian Schnabel's
+ * eleven) is told apart only by the rest of it. */
 .release-row {
   display: flex; align-items: flex-start; gap: 8px;
   padding: 9px 12px; border-radius: 8px; cursor: pointer;
@@ -90,7 +92,7 @@ html, body {
 .release-row.active { background: var(--bg); }
 .release-row.active .nm { font-weight: 600; }
 .release-row .dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; margin-top: 5px; }
-.release-row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 16px; }
+.release-row .nm { flex: 1; line-height: 16px; overflow-wrap: anywhere; }
 .release-row .who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .release-row .who .nm { font-weight: 500; }
 .release-row .when { font-size: 11.5px; color: var(--muted); line-height: 15px; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -276,8 +278,9 @@ select.native {
 .mod-head .btn.small { padding: 2px 9px; font-size: 11.5px; font-weight: 500; border-radius: 6px; }
 
 /* ---------- chart hover popup ---------- */
+/* in the page's popup layer, over every card (ChartTip in ui.jsx) */
 .chart-tip {
-  position: absolute; z-index: 5; pointer-events: none;
+  position: fixed; z-index: 40; pointer-events: none; max-width: calc(100vw - 16px);
   background: var(--card); border: 1px solid var(--border); border-radius: 8px;
   box-shadow: 0 4px 16px rgba(20, 20, 19, 0.10);
   padding: 12px 14px; font-size: 12px; color: var(--ink); white-space: nowrap;
@@ -297,7 +300,7 @@ select.native {
 
 /* the element-detail / methodology popup layer (fixed, singleton) */
 .sys-tip {
-  position: fixed; z-index: 40; pointer-events: none;
+  position: fixed; z-index: 40; pointer-events: none; max-width: calc(100vw - 16px);
   background: var(--card); border: 1px solid var(--border); border-radius: 8px;
   box-shadow: 0 4px 16px rgba(20, 20, 19, 0.10);
   padding: 12px 14px; font-size: 12px; color: var(--ink); white-space: nowrap;

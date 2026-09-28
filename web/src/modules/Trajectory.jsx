@@ -37,7 +37,7 @@
  * group's units and share at close; the hover reads them on any day. */
 import React, { useMemo, useState } from "react";
 import {
-  Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, dayElapsed, textPx, timeAxis, nameLines, useBoxSize, LineNames,
+  Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, dayElapsed, textPx, timeAxis, nameLines, useBoxSize, LineNames, ChartTip,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 
@@ -533,7 +533,6 @@ export default function Trajectory({ snap }) {
               const col = stack.cols.reduce((b, c) => (Math.abs(c.t - at) < Math.abs(b.t - at) ? c : b), stack.cols[0]);
               if (at > stack.last.t + 0.5) return null;
               const left = `${(col.t / N) * 100}%`;
-              const flip = col.t / N > 0.6;
               const rows = stack.groups.map((g, k) => ({ g, v: col.vals[k] })).reverse();
               return (
                 <>
@@ -542,7 +541,7 @@ export default function Trajectory({ snap }) {
                     position: "absolute", left, top: pctTop(y(col.total)), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px",
                     borderRadius: "50%", boxShadow: "0 0 0 2px #fff", pointerEvents: "none", background: col.ahead ? C.blueLight : C.blue,
                   }} />
-                  <div className="chart-tip" style={{ left, top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
+                  <ChartTip left={left}>
                     <div className="t-head">{dayLabel(snap, col.i, true)}</div>
                     <div className="t-row"><span>{col.ahead ? "Projected" : "Secured"}</span><span className="v">{fmt(col.total)}</span></div>
                     {rows.map(({ g, v }) => (
@@ -553,7 +552,7 @@ export default function Trajectory({ snap }) {
                         <span className="v">{fmt(v)}<span style={{ color: C.muted, fontWeight: 400 }}>{col.total > 0 ? ` · ${shareOf(v, col.total)}` : ""}</span></span>
                       </div>
                     ))}
-                  </div>
+                  </ChartTip>
                 </>
               );
             })()}
@@ -561,7 +560,6 @@ export default function Trajectory({ snap }) {
               const hp = s.pts[hover.i];
               const ahead = has(hp.actual) ? false : has(hp.proj);
               const val = hp.actual ?? hp.proj ?? hp.plan;
-              const flip = hover.i / N > 0.6;
               const at = `${(hover.i / N) * 100}%`;
               const mark = (v, extra) => ({
                 position: "absolute", left: at, top: pctTop(y(v)),
@@ -576,7 +574,7 @@ export default function Trajectory({ snap }) {
                   {has(val) && (
                     <div style={mark(val, { background: ahead ? C.blueLight : C.blue })} />
                   )}
-                  <div className="chart-tip" style={{ left: `${(hover.i / N) * 100}%`, top: 4, transform: flip ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
+                  <ChartTip left={`${(hover.i / N) * 100}%`}>
                     <div className="t-head">{dayLabel(snap, hover.i, true)}</div>
                     {hp.actual !== null && hp.actual !== undefined && (
                       <div className="t-row"><span>Secured</span><span className="v">{fmt(hp.actual)}</span></div>
@@ -590,7 +588,7 @@ export default function Trajectory({ snap }) {
                     {hasBm && has(hp.bm) && (
                       <div className="t-row"><span>Benchmark</span><span className="v">{fmt(hp.bm)}</span></div>
                     )}
-                  </div>
+                  </ChartTip>
                 </>
               );
             })()}

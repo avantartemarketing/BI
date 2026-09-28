@@ -3,7 +3,7 @@
  * with a leader to what it names. In node there is no canvas, so widths are
  * the length estimate; the rules are the same whatever measures the words. */
 import assert from "node:assert";
-import { timeAxis, nameLines, textPx } from "../web/src/labels.mjs";
+import { timeAxis, nameLines, textPx, placeTip, placeBeside } from "../web/src/labels.mjs";
 
 let n = 0;
 const ok = (cond, msg) => { assert.ok(cond, msg); n++; };
@@ -118,6 +118,49 @@ for (const [W, Hh, todayX] of [[360, 150, 332], [480, 160, 440], [640, 170, 600]
   for (let i = 0; i < names.length; i++) {
     for (let j = i + 1; j < names.length; j++) ok(!touch(boxOf(names[i]), boxOf(names[j])), `${names[i].key} and ${names[j].key} overlap`);
   }
+}
+
+/* ---- popups are never cut ------------------------------------------------ */
+// every placement stays inside the window, margin to spare, over a sweep of
+// anchors, popup sizes and window sizes
+const inWindow = (p, w, h, vw, vh, m = 8) => p.left >= m - 1e-9 && p.top >= m - 1e-9 && p.left + w <= vw - m + 1e-9 && p.top + h <= vh - m + 1e-9;
+for (const [vw, vh] of [[1280, 800], [1440, 900], [900, 600]]) {
+  for (const w of [120, 280, 350, 560]) {
+    for (const h of [60, 180, 320]) {
+      for (let ax = 0; ax <= vw; ax += vw / 16) {
+        for (let ay = 0; ay <= vh; ay += vh / 8) {
+          const anchor = { left: ax - 20, right: ax + 20, top: ay - 8, bottom: ay + 8 };
+          ok(inWindow(placeTip({ anchor, w, h, vw, vh }), w, h, vw, vh), `placeTip ${w}x${h} at ${ax},${ay} in ${vw}x${vh}`);
+          const within = { left: Math.max(0, ax - 150), right: Math.min(vw, ax + 130) };
+          ok(inWindow(placeBeside({ x: ax, top: ay, w, h, vw, vh, within }), w, h, vw, vh), `placeBeside ${w}x${h} at ${ax},${ay} in ${vw}x${vh}`);
+        }
+      }
+    }
+  }
+}
+// the reported case: the sidebar's popup (about 350px) over a row whose middle
+// is 150px from the window's left edge ran 25px off it; now it starts at the margin
+{
+  const p = placeTip({ anchor: { left: 16, right: 284, top: 400, bottom: 440 }, w: 350, h: 150, vw: 1440, vh: 900 });
+  ok(p.left === 8 && p.top === 400 - 10 - 150, `the sidebar popup starts inside the window, above its row: ${JSON.stringify(p)}`);
+}
+// centred on what it describes and above it, where there is room
+{
+  const p = placeTip({ anchor: { left: 600, right: 700, top: 400, bottom: 420 }, w: 200, h: 100, vw: 1440, vh: 900 });
+  ok(p.left === 550 && p.top === 290, `centred above: ${JSON.stringify(p)}`);
+  const q = placeTip({ anchor: { left: 600, right: 700, top: 40, bottom: 60 }, w: 200, h: 100, vw: 1440, vh: 900 });
+  ok(q.top === 70, `below where there is no room above: ${JSON.stringify(q)}`);
+}
+// a chart readout: right of the line inside its card, left where the card
+// has no room on the right, and never past the window
+{
+  const card = { left: 300, right: 580 };
+  const r = placeBeside({ x: 350, top: 200, w: 180, h: 120, vw: 1280, vh: 800, within: card });
+  ok(r.left === 360, `right of the line inside the card: ${JSON.stringify(r)}`);
+  const l = placeBeside({ x: 540, top: 200, w: 180, h: 120, vw: 1280, vh: 800, within: card });
+  ok(l.left === 350, `left of the line where the card has no room on the right: ${JSON.stringify(l)}`);
+  const edge = placeBeside({ x: 1270, top: 780, w: 180, h: 120, vw: 1280, vh: 800, within: { left: 1000, right: 1280 } });
+  ok(edge.left === 1080 && edge.top === 800 - 8 - 120, `at the window's corner it turns left and up: ${JSON.stringify(edge)}`);
 }
 
 console.log(`labels: ${n} checks ok`);
