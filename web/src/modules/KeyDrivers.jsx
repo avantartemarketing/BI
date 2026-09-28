@@ -243,6 +243,10 @@ export default function KeyDrivers({ snap, horizon }) {
     <Card
       dot={GROUP_DOTS.funnel}
       title={view === "funnel" ? "Organic funnel" : "Funnel key drivers"}
+      // on a one-column card at 1280 the title and three choices do not fit
+      // on one line: the choices take a line of their own rather than the
+      // title breaking into three against the card's top edge
+      wrapHead
       right={
         /* three choices in a one-column card's head: the compact seg the
            trajectory and channels heads use, which on a narrow page keeps

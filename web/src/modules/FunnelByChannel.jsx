@@ -727,6 +727,8 @@ export default function FunnelByChannel({ snap, horizon, only }) {
       tall
       dot={GROUP_DOTS.funnel}
       title="Funnel by channel"
+      // a narrow card puts its switch under the title rather than break the title
+      wrapHead
       right={only ? null : targeted ? (
         <span className="seg">
           <button className={view === "funnel" ? "active" : ""} onClick={() => setView("funnel")}

@@ -155,9 +155,10 @@ export function ragColor(pct) {
   return C.red;
 }
 
-/* `wrapHead`: the right slot holds a figure that must never be cut, so short
-   of room it takes a line of its own under the title rather than running
-   past the card's edge, where the card would clip it mid-number. */
+/* `wrapHead`: short of room, the right slot takes a line of its own under
+   the title, for a head whose right slot holds a figure that must never be
+   cut (the card would clip it mid-number) or whose title would otherwise
+   break onto two or three lines against the card's top edge. */
 export function Card({ tall, wide, dot, title, badge, right, children, style, wrapHead }) {
   return (
     <div className={`card${tall ? " tall" : ""}${wide ? " wide" : ""}`} style={style}>

@@ -299,7 +299,10 @@ export default function SellThrough({ snap, horizon = "today" }) {
   /* The works' editions do not add up to the release's (docs 6.3): the card
      says so beside its title, with both figures in the popup, rather than
      reading one edition in the headline and another in the rows unremarked.
-     Which is right is for the Target setting tab, where the editions are set. */
+     Which is right is for the Target setting tab, where the editions are set.
+     On a narrow card the head then wraps (wrapHead), the note and the Slack
+     button taking a line of their own, rather than the title breaking into
+     the headline figure below it. */
   const mismatch = fromFeed && !!st.editionMismatch && finite(st.editionSum) && edition !== null;
   const mismatchFlag = mismatch ? (
     <span {...t.props({
@@ -334,6 +337,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
       title="Sell-through by product"
       badge={<HorizonBadge horizon={horizon} />}
       right={mismatchFlag ? <>{mismatchFlag}{slackButton}</> : slackButton}
+      wrapHead={!!mismatchFlag}
     >
       {/* the headline line: the release's figure on the left, its key on the
           right, one line, spaced from the head as every card's lead is (an

@@ -140,6 +140,9 @@ export default function HeroBar({ snap, horizon = "today" }) {
       dot={GROUP_DOTS.volume}
       title={partial ? "Units vs target" : "Units vs sellout"}
       badge={<HorizonBadge horizon={horizon} />}
+      // "oversubscribed +N" takes a line of its own on a narrow card rather
+      // than break the title, the horizon chip and itself each onto two
+      wrapHead
       right={oversub > 0 ? (
         <span
           className="hint-dotted"
