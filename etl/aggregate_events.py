@@ -448,12 +448,16 @@ def countdown_close(ev: pd.DataFrame) -> pd.Series:
     (the clock's exact side), the commonest. Empty without the clock."""
     if "days_until_launch" not in ev.columns or ev.empty:
         return pd.Series(dtype="datetime64[ns]")
-    dul = pd.to_numeric(ev["days_until_launch"], errors="coerce")
-    m = dul.notna() & (dul >= 0)
-    if not m.any():
+    try:
+        dul = pd.to_numeric(ev["days_until_launch"], errors="coerce")
+        m = dul.notna() & (dul >= 0)
+        if not m.any():
+            return pd.Series(dtype="datetime64[ns]")
+        day = ev.loc[m, "event_date"] + pd.to_timedelta(dul[m], unit="D")
+        return day.groupby(ev.loc[m, "simple_release_name"].astype(str)).agg(mode_or_none)
+    except (TypeError, ValueError, OverflowError) as e:
+        print(f"aggregate_events: no countdown close for the placeholder check ({e})")
         return pd.Series(dtype="datetime64[ns]")
-    day = ev.loc[m, "event_date"] + pd.to_timedelta(dul[m], unit="D")
-    return day.groupby(ev.loc[m, "simple_release_name"].astype(str)).agg(mode_or_none)
 
 
 def people_file(ev: pd.DataFrame) -> pd.DataFrame:

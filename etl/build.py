@@ -2021,8 +2021,11 @@ def late_paid_warning(rid: str, rows: pd.DataFrame | None, shut: date, info: dic
     first thing to check (docs 6.3). Printed and returned; None otherwise."""
     if info.get("source") != "orders" or rows is None or not len(rows):
         return None
-    late = float(rows.loc[(rows["event_date"] > shut) & (rows["event_date"] <= shut + timedelta(days=LATE_WARN_DAYS)),
-                          "units"].sum())
+    try:
+        late = float(rows.loc[(rows["event_date"] > shut) & (rows["event_date"] <= shut + timedelta(days=LATE_WARN_DAYS)),
+                              "units"].sum())
+    except (KeyError, TypeError, ValueError):
+        return None     # a warning, never a stop
     counted = float(info.get("total") or 0.0)
     if late < LATE_WARN_UNITS or late < LATE_WARN_SHARE * (late + counted):
         return None
@@ -2987,7 +2990,7 @@ def source_campaign_codes(records: list[dict], codes: set[str], launch_frame: pd
             for n, c in zip(frame["release_name"], pricing.match(frame, launch_frame)["airtable_release"]):
                 if isinstance(c, str) and c.strip():
                     at[n] = [x.strip() for x in c.split("+") if x.strip()]
-        except (KeyError, ValueError, TypeError) as e:
+        except Exception as e:  # noqa: BLE001 - the orders' codes still stand; the refresh must not stop here
             print(f"warning: campaign codes: the Airtable launches could not be matched ({e})")
     users = {"orders": collections.Counter(_norm(c) for cs in orders.values() for c in set(cs)),
              "airtable": collections.Counter(_norm(c) for cs in at.values() for c in set(cs))}
@@ -3031,7 +3034,7 @@ def unclaimed_draw_campaigns(spend: pd.DataFrame | None, records: list[dict],
     discovered page's matched campaign. Its spend is then on no page (EUR
     148k of it on 24 September 2026, before codes came from the orders
     feed). Printed and returned."""
-    if spend is None or spend.empty or "campaign_name" not in spend.columns:
+    if spend is None or spend.empty or not {"campaign_name", "spend"} <= set(spend.columns):
         return []
     orders = orders_codes() if orders is None else orders
     by_code: dict[str, set] = {}
@@ -5247,7 +5250,10 @@ def check_snapshot(snap: dict, soft: bool = True) -> list[str]:
     rid = snap.get("id", "?")
     # the soft checks, logged below with the rest and never raised, start
     # with the signs of a page an older ETL built
-    warnings = stale_build_warnings(snap) if soft else []
+    try:
+        warnings = stale_build_warnings(snap) if soft else []
+    except Exception as e:  # noqa: BLE001 - a soft check never stops the build
+        warnings = [f"the soft checks could not run ({e})"]
     hero, sell = snap.get("hero") or {}, snap.get("sellthrough") or {}
     now, sold = hero.get("now"), sell.get("sold")
     edition = (snap.get("sellthrough") or {}).get("edition")
@@ -5650,10 +5656,14 @@ def main(only: str | None = None):
     # each release's campaign code from its orders or its Airtable launch
     # before the guess discover_releases made (docs 11b), and before the
     # upcoming launches are guessed from the codes nobody carries
-    got = source_campaign_codes(discovered, known_codes(emails, content, artist_posts), launch_frame, spend)
+    try:
+        got = source_campaign_codes(discovered, known_codes(emails, content, artist_posts), launch_frame, spend)
+    except Exception as e:  # noqa: BLE001 - the guesses stand; the refresh goes on
+        got = []
+        print(f"warning: campaign codes from the orders and Airtable failed ({e}) - the guesses stand")
     if got:
         print(f"campaign codes: {len(got)} from the feeds where the guess found none - "
-              + ", ".join(f"{rid} {code} ({src})" for rid, code, src in got))
+              + ", ".join(f"{rid} {code} ({src})" for rid, code, src in got[:12]) + (" ..." if len(got) > 12 else ""))
     upcoming: list[dict] = []
     if not only:
         # the codes an upcoming launch can be guessed from: those moving on Meta
@@ -5819,7 +5829,10 @@ def main(only: str | None = None):
             add(snap, "catalogue" if snap["catalogue"] else ("closed" if snap["complete"] else "live"))
             n_actuals += 1
     # a draw campaign the orders tie to one release that no page claims
-    unclaimed_draw_campaigns(spend, discovered)
+    try:
+        unclaimed_draw_campaigns(spend, discovered)
+    except Exception as e:  # noqa: BLE001 - a warning, never a stop
+        print(f"warning: the unclaimed draw campaigns could not be listed ({e})")
     # the launches Airtable knows and the funnel does not yet: a page each,
     # with the dates, edition and price to set targets from (§1.7)
     n_upcoming = 0
