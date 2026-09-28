@@ -206,7 +206,10 @@ export default function HeroBar({ snap, horizon = "today" }) {
         </div>
       </div>
 
-      <div className="legend-rows">
+      {/* with the oversubscribed note the head can take a second line on a
+          narrow card, so the key's rows take the tighter step (as Framing's
+          do) rather than running into the card's bottom padding */}
+      <div className={"legend-rows" + (oversub > 0 ? " tight" : "")}>
         <div className="legend-row">
           <span className="swatch" style={{ background: C.blue }} />
           <span style={{ color: C.muted }}>{close ? "Projected demand" : "To date"}</span>
