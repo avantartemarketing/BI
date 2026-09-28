@@ -299,9 +299,12 @@ upcoming_releases`) beside the releases the funnel mentions:
 
 Its page (`build_upcoming`, status `upcoming`, `upcoming: true`) has the dates, the edition,
 the price in euros at the panel's fixed rates, the works and the project's Airtable status,
-and no actuals; the sidebar lists it under Upcoming with the days until it opens. The
+and no actuals; the sidebar lists it under Upcoming with the days until it opens, or until it
+closes once Airtable's announce date has passed and the funnel still has no rows for it. The
 announce date is Airtable's (the earliest over the launch's sized, non-bundle records, as the
-Set up targets tab reads them), else assumed 24 days before the close and said so; the campaign
+Set up targets tab reads them), else assumed 24 days before the close and said so; one that
+has passed while no code for the artist moves on Meta or in the sends in the launch's window
+is said to be possibly out of date (`dates_note`). The campaign
 code is guessed from the feeds' codes and Meta's campaign names, never from a code a release
 on file already carries. `inputs.json` `discovered` carries the edition, the price and the
 Airtable record ids as the defaults the Set up targets tab starts from, and a save keeps the

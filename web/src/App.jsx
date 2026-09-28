@@ -274,7 +274,9 @@ function ReleaseRow({ r, asOf, active, onClick }) {
   if (state) rows.push({ label: "Pace", value: STATE[state].word, color: STATE[state].color });
   rows.push({ label: "Status", value: STATUS_LABEL[status] || status });
   if (r.quarter) rows.push({ label: "Quarter", value: r.quarter });
-  if (!targeted) rows.push({ label: "Targets", value: status === "upcoming" ? "not set - opens soon" : "not set - actuals only" });
+  // an upcoming launch whose window Airtable says has opened, with nothing in the funnel yet, does not "open soon"
+  if (!targeted) rows.push({ label: "Targets", value: status !== "upcoming" ? "not set - actuals only"
+    : clock && clock.opensIn > 0 ? "not set - opens soon" : "not set - announce passed, no funnel rows yet" });
   if (status === "catalogue" && r.lastSeen) rows.push({ label: "Last traffic", value: r.lastSeen });
   const content = { head: r.releaseName || r.name, rows };
 

@@ -3361,11 +3361,13 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
     funnel named it differently. A second launch of the artist in the quarter
     takes its works as its title, then its close date, so no two pages share
     a name. The announce date is Airtable's, else assumed
-    ASSUMED_CAMPAIGN_DAYS before the close and said so. The price is
-    converted to euros, the page's currency, at the fixed table. The
-    campaign code is guessed only among codes active in the launch's own
-    window (`activity`, code_activity less the codes releases on file carry):
-    before a campaign spends or sends there is nothing to guess from."""
+    ASSUMED_CAMPAIGN_DAYS before the close and said so; one that has passed
+    with no code moving for the launch on Meta or in the sends is said to
+    be possibly out of date. The price is converted to euros, the page's
+    currency, at the fixed table. The campaign code is guessed only among
+    codes active in the launch's own window (`activity`, code_activity less
+    the codes releases on file carry): before a campaign spends or sends
+    there is nothing to guess from."""
     if launch_frame is None or not len(launch_frame):
         return []
     on_file = airtable_ids_on_file(existing, launch_frame)
@@ -3428,6 +3430,11 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
         moving = {c for c, (lo, hi) in (activity or {}).items() if hi >= lo_w and lo <= hi_w}
         spellings = list(dict.fromkeys([artist, str(l.artist)]))
         code = next((c for c in (guess_code(a, title, close.year, moving, 1) for a in spellings) if c), None)
+        # the announce has passed and no code for the artist moves in the
+        # window: no spend, no sends, and no funnel release has its records,
+        # so Airtable's dates have most likely slipped
+        stale = (activity is not None and not assumed and announce < as_of
+                 and not any(guess_code(a, title, close.year, {c}, 1) for c in moving for a in spellings))
         rid = slugify(name) or "release"
         if rid in seen_ids:
             seen_ids[rid] += 1; rid = f"{rid}_{seen_ids[rid]}"
@@ -3440,7 +3447,9 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
             "type": "LE", "campaign_code": code, "campaign_name": None,
             "announce_date": announce.isoformat(), "launch_end": close.isoformat(),
             "private_room_open": pr_open.isoformat(),
-            "dates_note": "announce date assumed: Airtable has none for it yet" if assumed else None,
+            "dates_note": ("announce date assumed: Airtable has none for it yet" if assumed else
+                           f"Airtable's announce date, {announce.isoformat()}, has passed with no spend, sends or "
+                           f"traffic for this launch, so its dates may be out of date" if stale else None),
             "first_seen": None, "last_seen": None, "sessions": 0.0, "entries": 0.0, "units": 0.0,
             "source": "airtable",
             "edition_size": int(l.edition_size) if pd.notna(l.edition_size) and l.edition_size > 0 else None,

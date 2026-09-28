@@ -313,6 +313,33 @@ def test_funnel_spelling() -> None:
     print("funnel spelling: ok")
 
 
+def test_stale_dates() -> None:
+    """An announce that has passed with nothing moving is flagged, not shown
+    as a launch in the middle of its window."""
+    lf = airtable_frame()
+    day = dt.date(2026, 9, 24)
+    wojn = next(r for r in build.upcoming_releases(lf, [], day, {}) if r["artist"] == "David Wojnarowicz Estate")
+    # the earlier of the two records' dates, and a note that it has slipped
+    assert wojn["announce_date"] == "2026-09-08" and wojn["launch_end"] == "2026-10-08"
+    assert wojn["dates_note"] and "has passed with no spend, sends or traffic" in wojn["dates_note"], wojn["dates_note"]
+    snap = build.build_upcoming(wojn, day, None, day)
+    build.check_snapshot(snap)
+    assert snap["derived"]["dates_note"] == wojn["dates_note"] and snap["day"] == 16 and snap["of"] == 30
+    # a code for the artist moving in the window: the launch is under way, no note
+    moving = {"DavidWojn_LE_26": (dt.date(2026, 9, 8), dt.date(2026, 9, 23))}
+    live = next(r for r in build.upcoming_releases(lf, [], day, moving) if r["artist"] == "David Wojnarowicz Estate")
+    assert live["dates_note"] is None and live["campaign_code"] == "DavidWojn_LE_26", live
+    # another artist's code moving is not this launch's activity
+    other = {"MaurizioCatt_HorseLE_26": (dt.date(2026, 9, 22), dt.date(2026, 9, 23))}
+    assert next(r for r in build.upcoming_releases(lf, [], day, other) if r["artist"] == "David Wojnarowicz Estate")["dates_note"]
+    # no feeds to read: nothing to say
+    assert next(r for r in build.upcoming_releases(lf, [], day, None) if r["artist"] == "David Wojnarowicz Estate")["dates_note"] is None
+    # an announce still ahead is not flagged
+    seth = next(r for r in build.upcoming_releases(lf, [], day, {}) if r["artist"] == "Seth Armstrong")
+    assert seth["announce_date"] == "2026-11-11" and seth["dates_note"] is None
+    print("stale dates: ok")
+
+
 def test_dates_from_editions() -> None:
     """The launch's announce is its editions' own, as the Set up targets tab
     reads it (pricing.release_products), so the two cannot disagree."""
@@ -343,4 +370,5 @@ if __name__ == "__main__":
     test_not_a_draw()
     test_second_launch_in_a_quarter()
     test_funnel_spelling()
+    test_stale_dates()
     test_dates_from_editions()
