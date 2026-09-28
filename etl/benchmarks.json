@@ -84,17 +84,12 @@
   "max_daily_change": 0.3,
   "ignore_change_below": 0.1,
   "forced_decrease_after_days_below_target": 3,
-  "cpe_daily_drift_by_third": [
-   0.025,
-   0.025,
-   0.025
-  ],
   "cpe_daily_drift_by_third_workbook": [
    0.05,
    0.07,
    0.1
   ],
-  "cpe_daily_drift_note": "Prior for the pure time drift in cost per entry, per day, net of spend, the same in every third of the window. Fixed-effect fit on 29 campaigns / 433 campaign-days (etl/analysis/cpe_elasticity.py, 2026-09-23): 2.6% a day +/- 0.5 on calendar days, 2.6-4.0% across day filters and weightings, 1.4% +/- 0.7 on the 2026 campaigns alone, 3.8% before 2026; per-campaign fits spread with a between-campaign sd of 3.4 points a day (cpe_daily_drift_sd). The 2026-09-07 fit on 13 campaigns / 170 days read 0.36% +/- 1.12 and set 0.5%; the wider panel says that was low. The workbook's 5/7/10% a day (kept in cpe_daily_drift_by_third_workbook) is the cost rise along its own ramping spend path, which the elasticity already prices, so it is not applied on top. A campaign with cpe_fit_min_days of history gets its own drift fitted and shrunk to this prior by precision; for most campaigns the prior dominates, because a campaign that ramps spend and ages at the same time cannot tell the two apart from its own days.",
+  "cpe_daily_drift_note": "Retired 2026-09-28: cost per entry no longer drifts with the calendar. It rises with the campaign's spend so far (cpe_wearout), which the 2026-09-28 fit on 47 campaigns / 783 campaign-days preferred to a straight drift a day (deviance 1375 against 1456; the straight drift read 3.6% a day). The workbook's 5/7/10% a day by third is kept in cpe_daily_drift_by_third_workbook for reference: it is the cost rise along the workbook's own ramping spend path, which the spend-so-far curve now prices.",
   "_source": "The cumulative-ROI bands (0.9 / 1.3), the 30% cap and the 10% dead band are the TL template's 'ROI / SPEND RULES - DO NOT CHANGE' block (LAUNCH PERFORMANCE OVERVIEW, TL_Template rows 416-428), applied to LE for want of a fuller LE block. The LE template's own SPEND RULES (rows 284-299) are: decrease/increase steps of 10%, max increase per day 2.0, target ROI AA 1.1, a 30% decrease on a zero-conversion day, a 100% decrease (pause) after 3 days of zero conversion, and 'Expected Increase in Spend (%)' 5/7/10 by third - a typed constant with no derivation, read by row 206 as the daily growth of the forecast cost per unit. Neither tab derives its drift from data; the TL tab labels its 2.16%/day '(assumed)'.",
   "zero_conversion_decrease": 0.3,
   "zero_conversion_days_to_pause": 3,
@@ -110,14 +105,17 @@
     0.07,
     0.1
    ]
-  },
-  "cpe_daily_drift_sd": 0.035
+  }
  },
  "frame_conversion": 0.35,
  "budget_sense_check_max_pct_of_launch_value": 0.06,
- "cpe_spend_elasticity": 0.38,
- "cpe_spend_elasticity_note": "Prior for the within-campaign elasticity of cost per entry to daily spend. Fixed-effect fit with a calendar-day drift term on 29 campaigns / 433 campaign-days (etl/analysis/cpe_elasticity.py, 2026-09-23): 0.35-0.45 depending on the day filter (0.377 +/- 0.038 on every day with an entry); the 2026-09-07 fit on 13 campaigns gave 0.384 +/- 0.062. Per-campaign fits spread with a between-campaign sd of 0.19 (cpe_spend_elasticity_sd), which is the prior's width. A campaign with cpe_fit_min_days of history gets its own elasticity fitted and shrunk to this prior by precision (etl/build.py campaign_cost_terms); the prior alone prices a campaign without history. Doubling daily spend raises CPE ~30% at 0.38. Set to 0 to price entries flat.",
- "cpe_growth_factor_note": "Superseded: the forward cost per entry now follows spend_rules.cpe_daily_drift_by_third compounded day by day (the path the ROI chart draws), for the budget and the ROI floor alike. Kept for reference only.",
- "cpe_spend_elasticity_sd": 0.19,
+ "cpe_spend_elasticity": 0.09,
+ "cpe_spend_elasticity_note": "Prior for the within-campaign elasticity of cost per entry to the day's budget, net of the wear-out on spend so far. Poisson fit with one level per campaign on every Meta draw campaign tied to a release, 47 campaigns / 783 campaign-days with spend over 20 (etl/analysis/cpe_elasticity.py, 2026-09-28): 0.094 +/- 0.037. Per-campaign fits spread with a between-campaign sd of 0.08 (cpe_spend_elasticity_sd), the prior's width. With a calendar-day drift in its place the same data read 0.38: most of what looked like the price of a bigger day is the spend adding up, which cpe_wearout now carries. A campaign with cpe_fit_min_days of history gets its own elasticity fitted and shrunk to this prior by precision (etl/build.py campaign_cost_terms). Doubling the day's budget makes an entry about 6% dearer at 0.09. Set to 0 to price the day's level flat.",
+ "cpe_wearout": 0.22,
+ "cpe_wearout_sd": 0.18,
+ "cpe_wearout_k": 100,
+ "cpe_wearout_note": "Prior for the wear-out w: each doubling of what a campaign has spent so far makes its next entry 2^w times dearer, read as (1 + spend so far / cpe_wearout_k)^w. Same fit (etl/analysis/cpe_elasticity.py, 2026-09-28, 47 campaigns / 783 campaign-days): 0.223 +/- 0.019, an entry 17% dearer (14% fewer entries a euro) with each doubling; between-campaign sd 0.18 (cpe_wearout_sd). K = EUR 100: the fit is flat below it and worsens above (deviance 1375 at 100, 1414 at 1,000). The exploratory fits on the sign-ups the draw campaigns bring and on link clicks across every campaign, sign-up campaigns included, wear out alike (17% and 14% fewer a euro per doubling). A campaign with cpe_fit_min_days of history gets its own wear-out fitted and shrunk to this prior by precision (etl/build.py campaign_cost_terms).",
+ "cpe_growth_factor_note": "Superseded: the forward cost per entry follows the campaign's spend so far (cpe_wearout) and the day's budget (cpe_spend_elasticity), one path for the paid projection, the ROI chart, the budget and the ROI floor (etl/build.py CostPath). Kept for reference only.",
+ "cpe_spend_elasticity_sd": 0.08,
  "cpe_fit_min_days": 8
 }

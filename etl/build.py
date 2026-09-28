@@ -1131,67 +1131,187 @@ CLEAN_EXCLUDE_STAGES = {"Missing campaign dates", "Outside campaign window"}
 UNIT_PLAN_CURVE = "entries"
 
 
-def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH) -> dict:
-    """How this campaign's cost per entry has responded to its own spend and
-    its own age, shrunk to the panel's priors (docs §7).
+def poisson_fit(y, X, offset=None, iters: int = 100):
+    """Poisson regression, log E[y] = X b + offset, by iteratively reweighted
+    least squares. Returns (b, cov) with the quasi-Poisson covariance - the
+    inverse information scaled by the Pearson dispersion, floored at 1, so a
+    series noisier than Poisson gets the wider intervals it has earned - or
+    None when the design cannot identify every column or the fit fails. The
+    panel priors (etl/analysis/cpe_elasticity.py) and each campaign's own cost
+    terms (campaign_cost_terms) are fitted with it."""
+    y = np.asarray(y, dtype=float)
+    X = np.asarray(X, dtype=float)
+    off = np.zeros(len(y)) if offset is None else np.asarray(offset, dtype=float)
+    n, k = X.shape
+    if n <= k or float(y.sum()) <= 0 or np.linalg.matrix_rank(X) < k:
+        return None
+    mu = np.maximum(y, 0.5)
+    eta = np.log(mu)
+    beta = np.zeros(k)
+    for _ in range(iters):
+        z = eta - off + (y - mu) / mu
+        xtw = X.T * mu
+        try:
+            new = np.linalg.solve(xtw @ X, xtw @ z)
+        except np.linalg.LinAlgError:
+            return None
+        eta = np.clip(X @ new + off, -30.0, 30.0)
+        mu = np.exp(eta)
+        done = float(np.max(np.abs(new - beta))) < 1e-10
+        beta = new
+        if done:
+            break
+    try:
+        inv = np.linalg.inv((X.T * mu) @ X)
+    except np.linalg.LinAlgError:
+        return None
+    phi = max(float(np.sum((y - mu) ** 2 / mu)) / max(n - k, 1), 1.0)
+    return beta, inv * phi
 
-    Fits log(cpe) = a + eps x log(spend) + drift x day on the campaign's days
-    with spend and at least one paid entry, the same regression the panel
-    priors come from (etl/analysis/cpe_elasticity.py), then combines each
-    estimate with its prior by precision: a campaign with a tight estimate
-    keeps it, a noisy one leans on the panel. Below cpe_fit_min_days of
-    history the priors are used as they are. On the 24 September 2026
-    build Warhol's 18 days, scaling from €1.2k to €30k a day, gave an
-    elasticity of 0.23 +/- 0.40 and a drift of 0.7% +/- 7.3 a day, which the
-    priors (0.38 +/- 0.19; 2.5% +/- 3.5) pull to 0.35 and 2.2%: a campaign
-    that ramps and ages at once separates the two poorly from its own days,
-    so a loose estimate leans on the panel. A day later its 19 days gave
-    -4.3% +/- 3.6 a day, tight enough to pull the drift below zero, where it
-    is held at 0 (the drift is clamped to 0-10% a day, the elasticity to 0-1).
 
-    Returns the values used (elasticity, drift per day) and how they were
+def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH, spent_before: float = 0.0) -> dict:
+    """How this campaign's cost per entry has responded to the day's budget
+    and to its own spend so far, shrunk to the panel's priors (docs §7).
+
+    Fits the campaign's paid entries day by day as Poisson with
+        log E[entries_d] = a + (1 - eps) x log(spend_d) - w x log(1 + C_d / K)
+    on its days with spend, C_d being what it had spent before day d (the
+    clock counts every day, and spent_before the spend ahead of the window)
+    and K the panel's scale: the regression the priors come from
+    (etl/analysis/cpe_elasticity.py). eps is how much dearer a bigger day
+    makes an entry; w is the wear-out, each doubling of the spend so far
+    making the next entry 2^w times dearer. Each estimate is combined with
+    its prior by precision: a campaign with a tight estimate keeps it, a
+    noisy one leans on the panel, and below cpe_fit_min_days of history the
+    priors are used as they are. The two are shrunk together, through their
+    joint covariance: a campaign that ramps its budget as it goes cannot tell
+    a bigger day from more spend so far (Warhol's own days put the two at
+    -0.8 correlation), and the pair then moves towards the panel along the
+    line its data cannot pin down, not each on its own. A campaign whose
+    daily budget never moved cannot tell its elasticity from its level, so
+    it keeps the prior elasticity and fits its wear-out alone.
+
+    Returns the values used (elasticity, wear-out, K) and how they were
     reached (own estimates, standard errors, days), all JSON-ready."""
     prior_eps = float(b.get("cpe_spend_elasticity", 0.0) or 0.0)
     prior_eps_sd = float(b.get("cpe_spend_elasticity_sd", 0.0) or 0.0)
-    tiers = b["spend_rules"]["cpe_daily_drift_by_third"]
-    prior_drift = float(sum(tiers) / len(tiers))
-    prior_drift_sd = float(b["spend_rules"].get("cpe_daily_drift_sd", 0.0) or 0.0)
-    out = {"elasticity": prior_eps, "driftPerDay": prior_drift, "elasticityPrior": prior_eps,
-           "driftPrior": prior_drift, "elasticityOwn": None, "elasticitySe": None,
-           "driftOwn": None, "driftSe": None, "fitDays": 0}
-    rows = [(x["date"], float(x["spend"]), float(x["entries"] or 0.0)) for x in (paid_daily or [])
-            if float(x.get("spend") or 0.0) > 20 and float(x.get("entries") or 0.0) >= 1
-            and not x.get("partial")]          # the part day is not a day's worth of anything
+    prior_w = float(b.get("cpe_wearout", 0.0) or 0.0)
+    prior_w_sd = float(b.get("cpe_wearout_sd", 0.0) or 0.0)
+    k = float(b.get("cpe_wearout_k", 1000.0) or 1000.0)
+    out = {"elasticity": prior_eps, "wearout": prior_w, "wearoutK": k,
+           "elasticityPrior": prior_eps, "wearoutPrior": prior_w, "elasticityOwn": None, "elasticitySe": None,
+           "wearoutOwn": None, "wearoutSe": None, "ownCorrelation": None, "fitDays": 0}
+    rows, spent = [], float(spent_before or 0.0)
+    for x in sorted(paid_daily or [], key=lambda r: r["date"]):
+        if x.get("partial"):          # the part day is not a day's worth of anything
+            continue
+        s = float(x.get("spend") or 0.0)
+        if s > 20:
+            rows.append((s, float(x.get("entries") or 0.0), spent))
+        spent += s
     if len(rows) < int(b.get("cpe_fit_min_days", 8) or 8):
         return out
-    first = date.fromisoformat(rows[0][0])
-    X = np.column_stack([np.ones(len(rows)), np.log([r[1] for r in rows]),
-                         [(date.fromisoformat(r[0]) - first).days for r in rows]])
-    y = np.log([r[1] / r[2] for r in rows])
-    beta, *_ = np.linalg.lstsq(X, y, rcond=None)
-    resid = y - X @ beta
-    dof = len(rows) - X.shape[1]
-    if dof <= 0:
-        return out
-    try:
-        cov = (float(resid @ resid) / dof) * np.linalg.inv(X.T @ X)
-    except np.linalg.LinAlgError:
-        return out
-    se = np.sqrt(np.clip(np.diag(cov), 0, None))
-    out.update({"elasticityOwn": round(float(beta[1]), 4), "elasticitySe": round(float(se[1]), 4),
-                "driftOwn": round(float(beta[2]), 5), "driftSe": round(float(se[2]), 5), "fitDays": len(rows)})
-
-    def shrink(own: float, own_se: float, prior: float, prior_sd: float) -> float:
-        if not (own_se > 0) or not np.isfinite(own_se):
-            return prior
-        if not (prior_sd > 0):
-            return prior
-        w_own, w_prior = 1 / own_se ** 2, 1 / prior_sd ** 2
-        return (own * w_own + prior * w_prior) / (w_own + w_prior)
-
-    out["elasticity"] = round(float(min(max(shrink(beta[1], se[1], prior_eps, prior_eps_sd), 0.0), 1.0)), 4)
-    out["driftPerDay"] = round(float(min(max(shrink(beta[2], se[2], prior_drift, prior_drift_sd), 0.0), 0.10)), 5)
+    y = np.array([r[1] for r in rows])
+    ls = np.log([r[0] for r in rows])
+    clock = np.log1p(np.array([r[2] for r in rows]) / k)
+    one = np.ones(len(rows))
+    fit = poisson_fit(y, np.column_stack([one, ls, clock])) if float(np.std(ls)) > 1e-6 else None
+    prior = np.array([prior_eps, prior_w])
+    # the prior's spread; a zero width holds that term at the prior
+    prior_var = np.array([max(prior_eps_sd, 1e-6) ** 2, max(prior_w_sd, 1e-6) ** 2])
+    if fit is not None:
+        beta, cov = fit
+        own = np.array([1.0 - float(beta[1]), -float(beta[2])])     # (eps, w) from the log-rate slopes
+        v = cov[1:, 1:]                                              # cov(1 - b1, -b2) = cov(b1, b2)
+        se = np.sqrt(np.clip(np.diag(v), 0.0, None))
+        out.update({"elasticityOwn": round(float(own[0]), 4), "elasticitySe": round(float(se[0]), 4),
+                    "wearoutOwn": round(float(own[1]), 4), "wearoutSe": round(float(se[1]), 4),
+                    "ownCorrelation": round(float(v[0, 1] / (se[0] * se[1])), 3) if se.all() else None,
+                    "fitDays": len(rows)})
+        try:
+            vi, pi = np.linalg.inv(v), np.diag(1 / prior_var)
+            eps, wear = np.linalg.solve(vi + pi, vi @ own + pi @ prior)
+        except np.linalg.LinAlgError:
+            eps, wear = prior
+    else:
+        # a flat budget: the day's level is the prior's, the wear-out the campaign's own
+        fit = poisson_fit(y, np.column_stack([one, clock]), offset=(1.0 - prior_eps) * ls)
+        if fit is None:
+            return out
+        beta, cov = fit
+        w_own, w_se = -float(beta[1]), float(np.sqrt(max(cov[1, 1], 0.0)))
+        out.update({"wearoutOwn": round(w_own, 4), "wearoutSe": round(w_se, 4), "fitDays": len(rows)})
+        eps = prior_eps
+        wear = ((w_own / w_se ** 2 + prior_w / prior_var[1]) / (1 / w_se ** 2 + 1 / prior_var[1])
+                if w_se > 0 and np.isfinite(w_se) else prior_w)
+    eps = min(max(float(eps), 0.0), 0.9)
+    wear = min(max(float(wear), 0.0), 0.9)
+    # together they stay under 1, so more spend always buys more entries
+    wear = min(wear, max(0.95 - eps, 0.0))
+    out["elasticity"], out["wearout"] = round(float(eps), 4), round(float(wear), 4)
     return out
+
+
+class CostPath:
+    """The forward price of a converting entry (docs §7): one path for the
+    paid projection, the Paid ROI chart and the budget recommendation.
+
+    The anchor is the trailing window's price (cpe_now, per converting unit),
+    paid at the window's daily spend (spend_ref) and at the window's place on
+    the campaign's spend so far (clock_ref, its spend-weighted spend so far).
+    On a future day at a flat daily spend s the price is
+        cpe_now x (s / spend_ref)^eps x ((K + C) / (K + clock_ref))^wear
+    with C what the campaign will have spent before that day. The budget
+    moves the price once, through the elasticity, and again as it adds up,
+    through the wear-out: a bigger budget wears the audience out faster. The
+    first future day is the day after the last full day (the part day, when
+    there is one), and each day adds a full day's spend to the clock."""
+
+    def __init__(self, cpe_now: float, spend_ref: float | None, clock_ref: float, spent: float,
+                 n_days: int, eps: float, wear: float, k: float):
+        self.cpe_now, self.spend_ref, self.clock_ref, self.spent = cpe_now, spend_ref, clock_ref, spent
+        self.n, self.eps, self.wear, self.k = max(int(n_days), 0), eps, wear, k
+
+    def multipliers(self, s: float) -> list[float]:
+        """The price on each future day over the anchor's, at a flat daily spend s."""
+        lvl = (s / self.spend_ref) ** self.eps if (self.eps and self.spend_ref and s > 0) else 1.0
+        base = self.k + self.clock_ref
+        return [lvl * ((self.k + self.spent + s * i) / base) ** self.wear for i in range(self.n)]
+
+    def cpe_close(self, s: float) -> float:
+        """The price of a converting entry on the last day, at a flat daily spend s."""
+        m = self.multipliers(s)
+        return self.cpe_now * (m[-1] if m else 1.0)
+
+    def units(self, s: float) -> float:
+        """Converting units a flat daily spend s buys from the first future day to the close."""
+        return sum(s / (self.cpe_now * m) for m in self.multipliers(s)) if s > 0 else 0.0
+
+    @staticmethod
+    def _solve(f, target: float, lo: float = 1.0, hi: float = 1e9, iters: int = 80) -> float:
+        """The daily spend at which an increasing f(spend) reaches target, by
+        bisection on the log of spend: 0 when even lo is past it, inf when hi
+        falls short."""
+        if f(lo) >= target:
+            return 0.0
+        if f(hi) < target:
+            return math.inf
+        a, z = math.log(lo), math.log(hi)
+        for _ in range(iters):
+            mid = (a + z) / 2
+            if f(math.exp(mid)) < target:
+                a = mid
+            else:
+                z = mid
+        return math.exp(z)
+
+    def spend_for_units(self, units: float) -> float:
+        """The flat daily spend that buys `units` converting units by the close."""
+        return self._solve(self.units, units)
+
+    def spend_for_cpe_close(self, cpe: float) -> float:
+        """The flat daily spend at which the last day's price reaches `cpe`."""
+        return self._solve(self.cpe_close, cpe)
 
 
 def pdsa_for(release: dict, d: date) -> float:
@@ -4323,15 +4443,22 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     paid_daily = []
     cum_spend = cum_pentries = 0.0
     win3: list[tuple[float, float]] = []
+    # the clock the cost path runs on (docs §7): what the release's campaigns
+    # had spent before each day, any spend ahead of the window included
+    spent_before_window = float(spend[spend["campaign_name"].isin(camps)
+                                      & (spend["spend_date"] < window_start)]["spend"].sum()) if camps else 0.0
+    clock3: list[tuple[float, float]] = []      # the window's days: (spend, spent before the day)
     for d in days:
         if d > min(full_through, launch_end):
             break
         s = float(spend_day.get(d, 0.0))
         e = float(paid_entries_day.get(d, 0.0))
+        clock3.append((s, spent_before_window + cum_spend))
         cum_spend += s; cum_pentries += e
         win3.append((s, e))
         if len(win3) > 3:
             win3.pop(0)
+            clock3.pop(0)
         s3 = sum(x for x, _ in win3); e3 = sum(y for _, y in win3)
         adj3 = (s3 / (e3 * (1 - drop))) if s3 > 0 and e3 > 0 else None
         roi3 = None if s3 <= 0 else 0.0 if e3 <= 0 else party_roi(ppu_aa, aa_budget_share, adj3)
@@ -4359,26 +4486,26 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     l3d_roi_artist = (party_roi(ppu_artist, artist_budget_share, l3d_cpe) if l3d_cpe
                       else (0.0 if s3 > 0 and artist_budget_share > 0 else None))
 
-    # ---- one forward cost path, shared by the ROI chart and the recommendation.
-    # Cost per entry drifts at the campaign's own daily rate (below; 0 to 10%
-    # a day), compounded day by day from today. The workbook's
-    # flat "forecast CPE = L3D x 1.5" described the same future for the budget;
-    # using one for the chart and the other for the decision put them on
-    # different paths, and the floor could pass while the line went under 1.
-    # The campaign's own cost curve, shrunk to the panel's priors: how fast
-    # its cost per entry rises with spend (eps) and with time (drift), from
-    # its own days where it has enough of them (docs §7, campaign_cost_terms)
-    cost_terms = campaign_cost_terms(paid_daily, b)
-    drift_rate = cost_terms["driftPerDay"]
-    drift_path = []                     # (day, cumulative drift factor) per future day
-    _cum = 1.0
-    for d in daterange(full_through + timedelta(days=1), launch_end):
-        _cum *= (1 + drift_rate)
-        drift_path.append((d, _cum))
-    drift_end = drift_path[-1][1] if drift_path else 1.0
-    inv_drift_sum = sum(1 / f for _, f in drift_path)     # entries per euro over the window, relative to today
-    forecast_cpe = l3d_cpe                                # today's price (per converting unit), the anchor
-    cpe_end = l3d_cpe * drift_end if l3d_cpe else None    # at close, at today's spend
+    # ---- one forward cost path (docs §7), read by the paid projection, the
+    # ROI chart and the recommendation alike. Cost per entry rises with the
+    # campaign's spend so far - each doubling of what it has spent makes the
+    # next entry 2^w times dearer - and, a little, with the day's budget. The
+    # fixed drift a day it replaces fitted the panel worse (47 campaigns,
+    # etl/analysis/cpe_elasticity.py) and could not say that a bigger budget
+    # wears the audience out faster. The campaign's own curve, shrunk to the
+    # panel's priors where it has the days for one (campaign_cost_terms).
+    cost_terms = campaign_cost_terms(paid_daily, b, spent_before=spent_before_window)
+    eps, wear, wear_k = cost_terms["elasticity"], cost_terms["wearout"], cost_terms["wearoutK"]
+    spent_so_far = spent_before_window + cum_spend        # through the last full day
+    # the anchor: the window's price, paid at its daily spend and at its
+    # spend-weighted place on the clock
+    w_spend = sum(x for x, _ in clock3)
+    spend_ref = w_spend / max(sum(1 for x, _ in clock3 if x > 0), 1) if w_spend > 0 else None
+    clock_ref = sum(x * c for x, c in clock3) / w_spend if w_spend > 0 else spent_so_far
+    future_days = list(daterange(full_through + timedelta(days=1), launch_end))
+    cost = (CostPath(l3d_cpe, spend_ref, clock_ref, spent_so_far, len(future_days), eps, wear, wear_k)
+            if l3d_cpe else None)
+    forecast_cpe = l3d_cpe                                # the window's price (per converting unit)
 
     units_sold = float(win["Total_Product_Units"].sum())
     entries_banked = float(win["Draw_Entries_Total_Units_No_Conv"].sum())
@@ -4414,45 +4541,27 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     current_daily = float(past_spend.get(full_through, past_spend.iloc[-1] if len(past_spend) else 0.0))
 
     # ---- the recommendation (docs §7).
-    # Price: cost per entry is not flat in spend. Within a campaign it rises as
-    # spend^eps (eps: this campaign's own response shrunk to the panel's,
-    # campaign_cost_terms above; the panel's from benchmarks
-    # cpe_spend_elasticity, etl/analysis/cpe_elasticity.py), so the entries a
-    # recommendation asks for are priced at the CPE that spend level implies,
-    # anchored on today's price at today's spend, and drifting along the same
-    # path the ROI chart draws. Units: sellout_gap is units, the price is euros
-    # per converting unit (raw CPE / (1 - drop-off)).
+    # Price: the entries a recommendation asks for are priced on the cost path
+    # at the spend it recommends - dearer for the bigger day (the elasticity)
+    # and for the faster climb in spend so far (the wear-out) - the path the
+    # ROI chart draws at today's spend. Units: sellout_gap is units, the price
+    # is euros per converting unit (raw CPE / (1 - drop-off)).
     rules = b["spend_rules"]
-    eps = float(cost_terms["elasticity"])
     s0 = current_daily if current_daily > 0 else 0.0
+    # at close at today's spend: where the chart's line ends
+    cpe_end = cost.cpe_close(s0) if cost else None
     # the plan's daily rate: the paid budget over the days paid runs, the day
     # after the announce to the close (PAID_START_DAYS)
     plan_rate = (targets["paid"]["budget"] / max(L - PAID_START_DAYS, 1)) if L else 0.0
     cpe_max = (1 - cann) * ppu_aa / (b["roi_floor"] * aa_budget_share)   # price at the ROI floor
 
-    def cpe_at(spend, drift=1.0):
-        """Cost per converting unit at a daily spend level, after `drift`."""
-        if not forecast_cpe:
-            return None
-        if eps <= 0 or s0 <= 0 or spend <= 0:
-            return forecast_cpe * drift
-        return forecast_cpe * (spend / s0) ** eps * drift
-
     supply_spend = roi_spend = None
-    if forecast_cpe and days_left and inv_drift_sum > 0:
-        if sellout_gap <= 0:
-            supply_spend = 0.0
-        elif eps > 0 and s0 > 0:
-            # sum_t s / (cpe(s) * D_t) = gap  ->  s^(1-eps) = gap * cpe0 / (s0^eps * sum_t 1/D_t)
-            supply_spend = (sellout_gap * forecast_cpe / (s0 ** eps * inv_drift_sum)) ** (1 / (1 - eps))
-        else:
-            supply_spend = sellout_gap * forecast_cpe / inv_drift_sum
-        # the ROI floor is a floor on ROI AT CLOSE, on the drifted path - the
-        # same point the chart's dashed line ends on
-        if eps > 0 and s0 > 0:
-            roi_spend = s0 * (cpe_max / cpe_end) ** (1 / eps)
-        else:
-            roi_spend = math.inf if cpe_end <= cpe_max else 0.0
+    if cost and days_left:
+        # the flat daily spend that buys the gap by the close, on the path
+        supply_spend = 0.0 if sellout_gap <= 0 else cost.spend_for_units(sellout_gap)
+        # the ROI floor is a floor on ROI AT CLOSE, on the same path - the
+        # point the chart's dotted line ends on at today's spend
+        roi_spend = cost.spend_for_cpe_close(cpe_max)
 
     # the workbook's pacing rules, transcribed into the benchmarks but never
     # applied until now: cumulative ROI below 0.9 -> decrease, above 1.3 ->
@@ -4483,12 +4592,18 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     if supply_spend is not None and days_left:
         unconstrained = min(supply_spend, roi_spend)
         base = "supply" if supply_spend <= roi_spend else "roi_floor"
-        if unconstrained <= 0:
-            recommended, cap = 0.0, base            # nothing needed, or the floor says stop
+        # nothing needed: the edition is secured without paid, so it stops. A
+        # floor no spend can meet (the cost path's price at the close is past
+        # it however small the day) is a cut like any other, held to 30% a
+        # day by the pacing rule below, unless nothing is running to cut
+        if unconstrained <= 0 and (base == "supply" or s0 <= 0):
+            recommended, cap = 0.0, base
         elif zero_pause and s0 > 0:
             recommended, cap = 0.0, "zero_conversion_pause"
         elif zero_cut and s0 > 0:
             recommended = min(unconstrained, s0 * (1 - rules.get("zero_conversion_decrease", 0.3)))
+            if recommended <= 0:                    # a floor no spend meets: still a paced cut
+                recommended, paced = s0 * (1 - rules["max_daily_change"]), True
             cap = "zero_conversion"
         elif s0 <= 0:
             recommended = min(unconstrained, plan_rate) if plan_rate else unconstrained
@@ -4507,35 +4622,36 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 recommended, paced = lo, True
             if abs(recommended - s0) < rules["ignore_change_below"] * s0:
                 recommended, cap = s0, "hold_small_change"
-    cpe_rec = cpe_at(recommended, drift_end) if recommended else None
+    cpe_rec = cost.cpe_close(recommended) if (cost and recommended) else None
     final_day_roi = party_roi(ppu_aa, aa_budget_share, cpe_rec)
     final_day_roi_artist = party_roi(ppu_artist, artist_budget_share, cpe_rec)
-    # the chart's line: ROI at today's spend along the drift path, each party
-    # on the same path
-    roi_path = ([{"date": d.isoformat(), "roi": round(l3d_roi / f, 3)} for d, f in drift_path]
+    # the chart's line: ROI at today's spend along the cost path, each party
+    # on the same path (a window that bought nothing reads 0 all the way)
+    path_now = cost.multipliers(s0) if cost else [1.0] * len(future_days)
+    roi_path = ([{"date": d.isoformat(), "roi": round(l3d_roi / f, 3)} for d, f in zip(future_days, path_now)]
                 if l3d_roi is not None and not complete else [])
-    roi_path_artist = ([{"date": d.isoformat(), "roi": round(l3d_roi_artist / f, 3)} for d, f in drift_path]
+    roi_path_artist = ([{"date": d.isoformat(), "roi": round(l3d_roi_artist / f, 3)} for d, f in zip(future_days, path_now)]
                        if l3d_roi_artist is not None and not complete else [])
-
-    daily_factor = round(1 / (1 + drift_rate), 4)
+    wear_end = path_now[-1] if path_now else 1.0
+    # the path's average fall a day, for a reader that draws the line from a factor
+    daily_factor = round((1 / wear_end) ** (1 / len(path_now)), 4) if path_now else 1.0
 
     # forward path: projected spend ÷ projected cost-per-entry per future day.
     # Projections describe the CURRENT trajectory (spend run-rate as-is); the
     # recommended budget is the intervention shown alongside, not the projection.
-    # Efficiency decays at the campaign's drift rate, the same path as above.
+    # The price follows the cost path at that spend, the path above.
     planned_spend = current_daily if current_daily > 0 else (
         recommended if (days_left and recommended) else 0.0)
     paid_future = {}          # date -> cumulative projected entries beyond today
     future_cum = 0.0
-    cpe_fwd = l3d_raw_cpe
+    path_plan = cost.multipliers(planned_spend) if (cost and planned_spend) else []
     if not complete:
         prev_curve = curve_value(rcurves, "paid", "entries", pdsa_today)
-        for d in daterange(full_through + timedelta(days=1), launch_end):
+        for i, d in enumerate(future_days):
             # the part day counts for what is left of it
             share = (1 - seen) if (d == as_of and as_of > full_through) else 1.0
-            if cpe_fwd and planned_spend:
-                cpe_fwd = cpe_fwd * (1 + drift_rate)
-                future_cum += share * planned_spend / cpe_fwd
+            if l3d_raw_cpe and planned_spend and path_plan:
+                future_cum += share * planned_spend / (l3d_raw_cpe * path_plan[i])
             else:
                 # no spend history yet: fall back to the paid target trajectory
                 cv = curve_value(rcurves, "paid", "entries", pdsa_for(release, d))
@@ -4764,11 +4880,18 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "cpeAtRecommended": round(cpe_rec, 2) if cpe_rec else None,
             "cpeNow": round(forecast_cpe, 2) if forecast_cpe else None,
             "cpeAtClose": round(cpe_end, 2) if cpe_end else None,
-            "driftToClose": round(drift_end, 3),
+            # the price at close over the window's, at today's spend
+            "wearToClose": round(wear_end, 3),
             "paced": paced,
             # the cost curve in force and where it came from (campaign_cost_terms)
             "elasticity": eps,
-            "driftPerDay": drift_rate,
+            "wearout": wear,
+            "wearoutK": wear_k,
+            "spentSoFar": round(spent_so_far, 2),
+            # the anchor: the daily spend and the spend so far the window's
+            # price was paid at, so the path can be rebuilt from the block
+            "spendAtWindow": round(spend_ref, 2) if spend_ref else None,
+            "spentAtWindow": round(clock_ref, 2),
             "costTerms": cost_terms,
             "band": band, "forcedDecrease": forced, "zeroConversionDays": zero_days,
             "cumRoi": round(cum_roi, 3) if cum_roi else None,

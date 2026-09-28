@@ -272,10 +272,15 @@ EXPLAIN["hero.proj"] = (a, { snap: s }) => {
   const [rNow, rPaid, rOrg] = roundParts([now, paidMore, orgMore], capped ? demand : h.projected);
   const steps = [seg`Start from the ${drill(n(rNow), "hero.secured")} units secured so far.`];
   if (paid) {
-    // the cost per entry follows the campaign's own fitted drift (docs 7),
-    // which can be 0: then it holds at today's
-    const drift = ((s.paid || {}).budget || {}).driftPerDay;
-    const costPath = !finite(drift) ? "at the campaign's projected cost per entry"
+    // the cost per entry follows the campaign's cost path (docs 7): rising
+    // as its spend adds up at its wear-out, which can be 0, then holding at
+    // today's; a snapshot built before the wear-out reads its drift a day
+    const bud = (s.paid || {}).budget || {};
+    const drift = bud.driftPerDay;
+    const costPath = finite(bud.wearout)
+      ? (bud.wearout > 0 ? `at a cost per entry that rises as the campaign's spend adds up, ${pct(2 ** bud.wearout - 1)} with each doubling of it`
+        : "at today's cost per entry, flat to the close")
+      : !finite(drift) ? "at the campaign's projected cost per entry"
       : drift > 0 ? `at a cost per entry that rises ${dailyRate(drift)} a day`
       : "at today's cost per entry, flat to the close";
     steps.push(rPaid > 0
@@ -715,11 +720,31 @@ function capStep(b) {
     default: return b.paced ? seg`The pacing rule then holds the move to 30% of today's spend in a day.` : null;
   }
 }
-/* How the paid model moves the cost per entry: with daily spend at the
- * campaign's elasticity and over time at its drift (docs 7), either of which
- * can be 0. A figure not on the snapshot is read as rising, the way the
- * model's priors have it. */
+/* How the paid model moves the cost per entry (docs 7): with the day's budget
+ * at the campaign's elasticity and as its spend adds up at its wear-out,
+ * either of which can be 0. A snapshot built before the wear-out carries a
+ * drift a day instead, read the way it was built. A figure not on the snapshot
+ * is read as rising, the way the model's priors have it. */
 function costMoves(b) {
+  if (finite(b.wearout)) {
+    const byDay = !finite(b.elasticity) || b.elasticity > 0;
+    const bySoFar = b.wearout > 0;
+    const power = finite(b.elasticity) ? ` (to the power ${n(b.elasticity, 2)})` : "";
+    const doubling = `each doubling of it makes an entry ${pct(2 ** b.wearout - 1)} dearer`;
+    if (byDay && bySoFar) {
+      return { step: "the cost per entry rises with the day's budget and as the campaign's spend adds up",
+        note: `Cost per entry rises with the day's budget${power} and with the campaign's spend so far: ${doubling}.` };
+    }
+    if (bySoFar) {
+      return { step: "the cost per entry rises as the campaign's spend adds up, not with the day's budget",
+        note: `Cost per entry rises with the campaign's spend so far, ${doubling}, and not with the day's budget.` };
+    }
+    if (byDay) {
+      return { step: "the cost per entry rises with the day's budget; this campaign's own days show no wear-out",
+        note: `Cost per entry rises with the day's budget${power}; this campaign's own days show no rise with its spend so far, so none is priced.` };
+    }
+    return { step: "the cost per entry holds at today's", note: "Cost per entry is priced flat, at today's, whatever the budget and the spend so far." };
+  }
   const bySpend = !finite(b.elasticity) || b.elasticity > 0;
   const byTime = !finite(b.driftPerDay) || b.driftPerDay > 0;
   const power = finite(b.elasticity) ? ` (spend to the power ${n(b.elasticity, 2)})` : "";

@@ -412,55 +412,70 @@ budget          = supply spend × days left
 A launch pacing well ahead organically can therefore read a recommendation of
 €0/day: nothing extra is needed to secure sell-out, whatever the current ROI.
 
-**Price is not flat in spend, or in time.** Within a campaign, cost per entry
-rises with daily spend as `spend^ε` and drifts by a daily rate as the campaign
-ages. Both are the campaign's own: fitted on its own days once it has eight
-with spend and an entry, then weighed against the panel's figures by
-precision, so a loose estimate leans on the panel and only a tight one moves
-far from it. The panel's figures are ε 0.38 ± 0.19 and a drift of 2.5% a day
-± 3.5 (29 campaigns, 433 campaign-days, fitted on 23 September 2026;
-`etl/analysis/cpe_elasticity.py`); ε is held between 0 and 1 and the drift
-between 0 and 10% a day. On the 24 September 2026 build the drift ran from 0
-to 9% a day across the targeted releases and ε from 0.15 to 0.67; a release's
-own figures are in the explainer on its Paid spend recommendation. At ε 0.38,
-doubling the daily budget raises the cost per entry by about 30% and a tenfold
-jump multiplies it by 2.4. So the entries a recommendation asks for are priced
-at the cost the recommended spend implies, anchored on today's price at
-today's spend:
+**Price rises as the spend adds up.** Within a campaign, what a euro buys falls
+as the campaign's total spend grows: each doubling of what it has spent makes
+the next entry about 17% dearer (14% fewer entries a euro). A bigger day costs
+a little more on top. On a future day, at a flat daily spend s:
 
 ```
-cpe(s, t)   = cpe_today × (s / spend_today)^ε × (1 + drift)^t      t = days from today
-sell-out s  : Σ over the days left of s ÷ cpe(s, t) = units still to secure
-ROI-floor s : cpe(s, days left) = (1 − cannibalisation) × AA profit/unit ÷ (floor × AA budget share)
+cpe(day, s) = cpe_window × (s / spend_window)^eps × ((K + spent before the day) / (K + spent at the window))^w
+```
+
+`cpe_window` is the trailing three days' price, paid at that window's daily
+spend (`spend_window`) and at its place on the clock (`spent at the window`,
+its spend-weighted spend so far). The wear-out `w` is 0.22 and `K` €100; the
+elasticity `eps` to the day's budget is 0.09 (doubling the day's budget makes
+an entry about 6% dearer). Both are measured on our own campaigns: 47 Meta draw
+campaigns tied to a release, 783 campaign-days, entries as Poisson with one
+level per campaign (`etl/analysis/cpe_elasticity.py`, 28 September 2026). A
+campaign with 8 days of its own has its pair fitted and shrunk to the panel's
+together: a campaign that ramps its budget as it goes cannot tell a bigger day
+from more spend so far, so the pair moves towards the panel along the line its
+data cannot pin down. A release's own figures are in the explainer on its Paid
+spend recommendation and in the card's floor popup.
+
+Why spend so far and not days: on the panel it fits better than a straight
+drift a day (deviance 1375 against 1456, where the straight drift read 3.6% a
+day), and a back-test that cut 32 past campaigns at 40, 60 and 80% of their run
+and predicted the rest from the spend they actually had missed by 46% against
+the old drift's 57% (median, either direction). It also says what a drift a day
+could not: a bigger budget wears the audience out faster, because the clock
+moves with the money. The sign-ups the draw campaigns bring and the link clicks
+of every campaign, the sign-up campaigns included, wear out alike (17% and 14%
+fewer a euro per doubling). Where it is weak is the final days: entries surge
+towards the close, which no clock of this kind sees, and in the last fifth of a
+campaign every version under-predicts by about a quarter.
+
+```
+sell-out s  : Σ over the days left of s / cpe(day, s) = units still to secure
+ROI-floor s : cpe(close, s) = (1 − cannibalisation) × AA profit/unit ÷ (floor × AA budget share)
 target      = min(sell-out s, ROI-floor s)
 ```
 
 A release that could only sell out by spending fifty times today's budget is
-told so by the ROI floor, which binds long before the supply figure does.
+told so by the ROI floor, which binds long before the supply figure does. A
+floor no daily spend can meet, because the spend already made has worn the
+price past it, is a cut like any other, held to 30% a day; only a gap already
+filled stops paid at once.
 
-**One forward path.** Cost per entry from today drifts by the campaign's own
-daily rate (above), compounded day by day, and that single path serves both the Paid
-ROI chart's dashed projection (at today's spend) and the recommendation's
-floor (at the recommended spend). The floor is on **ROI at close**: the
-recommended spend is the level at which the line the chart draws ends on the
-floor. The two cards therefore cannot disagree - a projection heading under 1
-and an "increase" recommendation could only coexist while they ran on
-different assumptions, which they did until this was unified.
+**One forward path.** That single path serves the paid projection on the
+trajectory and the Paid ROI chart's dotted line (both at today's spend) and the
+recommendation (at the recommended spend). The floor is on **ROI at close**:
+the recommended spend is the level at which the path ends on the floor. The
+cards therefore cannot disagree - a projection heading under 1 and an
+"increase" recommendation could only coexist while they ran on different
+assumptions, which they did until this was unified.
 
-**About the drift rate, and where the rules come from.** In the LE template
-the 5 / 7 / 10% figures are a typed constant in the SPEND RULES block, labelled
-"Expected Increase in Spend (%)" by third, which the daily forecast reads as
-the growth of cost per unit. There is no derivation behind them on either tab;
-the TL template labels its own 2.16% a day "(assumed)". Applied as a pure time
-drift on top of the spend elasticity they count the same effect twice (the
-workbook's own spend path ramps 6–10% a day, and at elasticity 0.38 that ramp
-alone lifts cost per entry 3.5–5% a day) and drive ROI at close under 1 on
-every campaign: a release five days in at a cumulative ROI of 3.5 was told to
-cut. Net of spend, the within-campaign time drift measures about 2.6% a day
-across 29 of our own campaigns (the first fit, on 13, read 0.36% ± 1.12 and set
-0.5%). The model takes 2.5% a day as the prior for each campaign's own fit
-(above); the Paid spend card's floor popup shows the rate in force. The
-workbook's figures are kept beside it.
+**Where the old drift came from.** In the LE template the 5 / 7 / 10% figures
+are a typed constant in the SPEND RULES block, labelled "Expected Increase in
+Spend (%)" by third, which the daily forecast reads as the growth of cost per
+unit; there is no derivation behind them, and the TL template labels its own
+2.16% a day "(assumed)". They are the cost rise along the workbook's own
+ramping spend path, so applied as a pure time drift on top of a spend
+elasticity they counted the same effect twice. The model then ran on a fitted
+drift a day (2.5%) until 28 September 2026, when the spend-so-far curve
+replaced it; the workbook's figures are kept in `etl/benchmarks.json` for
+reference.
 
 The pacing rules themselves are the **TL template's** "ROI / SPEND RULES" block
 (cumulative ROI below 0.9 decrease, 0.9–1.3 maintain, above 1.3 increase;
