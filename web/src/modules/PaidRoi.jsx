@@ -108,7 +108,7 @@ export default function PaidRoi({ snap }) {
     ? { d: lastRoiPt.d, v: lastRoiPt.roi }
     : view.start !== null && view.start !== undefined ? { d: today, v: view.start } : null;
   // The dotted line is the ETL's forward path (roiPath: today's spend, cost
-  // drifting by the spend rules' tiers) - the same path the budget
+  // drifting at the campaign's own daily rate) - the same path the budget
   // recommendation's ROI floor is judged on, so the two cards cannot
   // disagree. The geometric model is only a fallback for older snapshots.
   const pathPts = view.path

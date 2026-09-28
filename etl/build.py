@@ -3728,8 +3728,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                       else (0.0 if s3 > 0 and artist_budget_share > 0 else None))
 
     # ---- one forward cost path, shared by the ROI chart and the recommendation.
-    # Cost per entry drifts by the LE spend rules' daily tiers (5/7/10% a day
-    # by third of the window), compounded day by day from today. The workbook's
+    # Cost per entry drifts at the campaign's own daily rate (below; 0 to 10%
+    # a day), compounded day by day from today. The workbook's
     # flat "forecast CPE = L3D x 1.5" described the same future for the budget;
     # using one for the chart and the other for the decision put them on
     # different paths, and the floor could pass while the line went under 1.

@@ -1828,11 +1828,13 @@ Model bugs found in the sheet (the rebuild should implement the *intent*):
 
 ## 11a. Paid recommendation: elastic price and the pacing rules
 
-`cpe_spend_elasticity` (0.38) is the within-campaign elasticity of cost per entry to daily
-spend, fitted on the 13 campaigns where daily Meta spend joins to daily paid entries
-(`etl/analysis/cpe_elasticity.py`; 170 campaign-days; campaign fixed effects; a day-drift
-term absorbs the time trend, which came out at 0.4%/day ± 1.1 against the workbook's
-5/7/10% tiers). Before it, the recommendation priced every extra entry at today's cost per
+`cpe_spend_elasticity` (0.38 ± 0.19) is the panel's prior for the within-campaign elasticity
+of cost per entry to daily spend, fitted with campaign fixed effects and a calendar-day drift
+term on the 29 campaigns and 433 campaign-days where daily Meta spend joins to daily paid
+entries (`etl/analysis/cpe_elasticity.py`, 2026-09-23; the first fit, on 13 campaigns and 170
+days on 2026-09-07, gave 0.38 as well). Each campaign's own elasticity and drift are fitted from
+its days and shrunk to the priors by precision (§7, `campaign_cost_terms`). Before the
+elasticity was modelled, the recommendation priced every extra entry at today's cost per
 entry and the ROI floor could never bind (flat price → ROI independent of spend), so a
 release a long way from sell-out was told to multiply its daily budget fifty-fold. The
 workbook's pacing rules (`spend_rules`: ±30%/day, the 0.9/1.3 cumulative-ROI bands, the

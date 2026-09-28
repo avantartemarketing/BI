@@ -367,26 +367,34 @@ budget          = supply spend × days left
 A launch pacing well ahead organically can therefore read a recommendation of
 €0/day: nothing extra is needed to secure sell-out, whatever the current ROI.
 
-**Price is not flat in spend.** Within a campaign, cost per entry rises with
-daily spend as `spend^0.38` - measured on our own campaigns (13 campaigns, 170
-campaign-days, campaign fixed effects, net of the day drift; ±0.06;
-`etl/analysis/cpe_elasticity.py`). Doubling the daily budget raises the cost
-per entry by about a third; a tenfold jump multiplies it by 2.4. So the
-entries a recommendation asks for are priced at the cost the *recommended*
-spend implies, anchored on today's price at today's spend:
+**Price is not flat in spend, or in time.** Within a campaign, cost per entry
+rises with daily spend as `spend^ε` and drifts by a daily rate as the campaign
+ages. Both are the campaign's own: fitted on its own days once it has eight
+with spend and an entry, then weighed against the panel's figures by
+precision, so a loose estimate leans on the panel and only a tight one moves
+far from it. The panel's figures are ε 0.38 ± 0.19 and a drift of 2.5% a day
+± 3.5 (29 campaigns, 433 campaign-days, fitted on 23 September 2026;
+`etl/analysis/cpe_elasticity.py`); ε is held between 0 and 1 and the drift
+between 0 and 10% a day. On the 24 September 2026 build the drift ran from 0
+to 9% a day across the targeted releases and ε from 0.15 to 0.67; a release's
+own figures are in the explainer on its Paid spend recommendation. At ε 0.38,
+doubling the daily budget raises the cost per entry by about 30% and a tenfold
+jump multiplies it by 2.4. So the entries a recommendation asks for are priced
+at the cost the recommended spend implies, anchored on today's price at
+today's spend:
 
 ```
-cpe(s)      = cpe_today × (s / spend_today)^0.38
-sell-out s  : days_left × s / cpe(s) = units still to secure
-ROI-floor s : cpe(s) = (1 − cannibalisation) × AA profit/unit ÷ (floor × AA budget share)
+cpe(s, t)   = cpe_today × (s / spend_today)^ε × (1 + drift)^t      t = days from today
+sell-out s  : Σ over the days left of s ÷ cpe(s, t) = units still to secure
+ROI-floor s : cpe(s, days left) = (1 − cannibalisation) × AA profit/unit ÷ (floor × AA budget share)
 target      = min(sell-out s, ROI-floor s)
 ```
 
 A release that could only sell out by spending fifty times today's budget is
 told so by the ROI floor, which binds long before the supply figure does.
 
-**One forward path.** Cost per entry from today drifts by the spend rules'
-daily rate, compounded day by day, and that single path serves both the Paid
+**One forward path.** Cost per entry from today drifts by the campaign's own
+daily rate (above), compounded day by day, and that single path serves both the Paid
 ROI chart's dashed projection (at today's spend) and the recommendation's
 floor (at the recommended spend). The floor is on **ROI at close**: the
 recommended spend is the level at which the line the chart draws ends on the

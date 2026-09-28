@@ -222,4 +222,21 @@ const drawEx = explain("st.draw", {}, wctx);
 assert.ok(drawEx.steps.map(segText).some((t) => / of those units were entered as pre-orders: they count at 95%/.test(t)), "the draw's working splits the pre-orders out");
 assert.strictEqual(explain("nonsense", {}, wctx), null, "an unknown figure explains nothing");
 
+/* ---- paid's cost per entry moves at the campaign's own drift, which can be 0 (docs 7) ---- */
+const paidStep = (snap) => explain("hero.proj", {}, { snap, st: null }).steps.map(segText).find((t) => t.includes("that paid should bring"));
+const recWords = (snap) => { const ex = explain("paid.rec", {}, { snap, st: null }); return [...ex.steps.map(segText), ...ex.notes].join(" | "); };
+const driftW = w.paid.budget.driftPerDay;
+assert.ok(driftW > 0 && paidStep(w).includes(`rises ${fmtPct(driftW, 1)} a day`), `the projection names the campaign's drift: ${paidStep(w)}`);
+assert.ok(recWords(w).includes("rises with spend and with time") && recWords(w).includes(`and by ${fmtPct(driftW, 1)} a day`), `a drifting cost rises with time: ${recWords(w)}`);
+const flat = structuredClone(w);
+flat.paid.budget.driftPerDay = 0;          // as on a campaign whose own days show no rise (Warhol, 25 Sep)
+assert.ok(!/rise/.test(paidStep(flat)) && paidStep(flat).includes("today's cost per entry, flat to the close"), `no drift, no rise: ${paidStep(flat)}`);
+assert.ok(!/with time\b|0\.0%/.test(recWords(flat).replace("not with time", "")) && recWords(flat).includes("rises with spend, not with time")
+  && recWords(flat).includes("and not over time"), `no drift: the recommendation says the cost does not rise with time: ${recWords(flat)}`);
+flat.paid.budget.driftPerDay = 0.0003;     // a drift too small for one decimal is still named, never "0.0%"
+assert.ok(paidStep(flat).includes("rises 0.03% a day"), `a small drift keeps its figure: ${paidStep(flat)}`);
+flat.paid.budget.elasticity = 0;
+flat.paid.budget.driftPerDay = 0;
+assert.ok(recWords(flat).includes("holds at today's") && !/rises|0\.0%/.test(recWords(flat)), `flat in spend and in time: ${recWords(flat)}`);
+
 console.log(`explain: ${shown} explanations of ${checked} figures across ${files.length} snapshots ok`);

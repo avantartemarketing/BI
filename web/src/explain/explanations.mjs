@@ -25,6 +25,7 @@ import { inDraw } from "../../../shared/sellThrough.mjs";
 const n = (v, d = 0) => fmt(v, d);
 const u = (v) => fmt(v, v > 0 && v < 10 ? 1 : 0);            // the channels card's units
 const pct = (x, d = 0) => fmtPct(x, d);
+const dailyRate = (x) => pct(x, x > 0 && x < 0.0005 ? 2 : 1);   // a drift a day: never "0.0%" for one above 0
 const eur = (v, d = 0) => (v === null || v === undefined ? "–" : (v < 0 ? MINUS : "") + "€" + fmt(Math.abs(v), d));
 const signed = (v, d = 0) => fmtSigned(v, d);
 const dayOf = (iso) => (iso ? fmtDay(new Date(String(iso).slice(0, 10) + "T00:00:00Z")) : null);
@@ -257,8 +258,14 @@ EXPLAIN["hero.proj"] = (a, { snap: s }) => {
   const [rNow, rPaid, rOrg] = roundParts([now, paidMore, orgMore], capped ? demand : h.projected);
   const steps = [seg`Start from the ${drill(n(rNow), "hero.secured")} units secured so far.`];
   if (paid) {
+    // the cost per entry follows the campaign's own fitted drift (docs 7),
+    // which can be 0: then it holds at today's
+    const drift = ((s.paid || {}).budget || {}).driftPerDay;
+    const costPath = !finite(drift) ? "at the campaign's projected cost per entry"
+      : drift > 0 ? `at a cost per entry that rises ${dailyRate(drift)} a day`
+      : "at today's cost per entry, flat to the close";
     steps.push(rPaid > 0
-      ? seg`Add the ${n(rPaid)} more that paid should bring if today's daily spend carries on to the close, at a cost per entry that rises a little each day.`
+      ? seg`Add the ${n(rPaid)} more that paid should bring if today's daily spend carries on to the close, ${costPath}.`
       : seg`Add nothing more from paid: there has been no spend in the last three days, so none is projected.`);
   }
   steps.push(seg`Add the ${n(rOrg)} more the organic channels should bring, each following the shape its past launches took, scaled to how it is doing against plan so far.`);
@@ -685,10 +692,34 @@ function capStep(b) {
     default: return b.paced ? seg`The pacing rule then holds the move to 30% of today's spend in a day.` : null;
   }
 }
+/* How the paid model moves the cost per entry: with daily spend at the
+ * campaign's elasticity and over time at its drift (docs 7), either of which
+ * can be 0. A figure not on the snapshot is read as rising, the way the
+ * model's priors have it. */
+function costMoves(b) {
+  const bySpend = !finite(b.elasticity) || b.elasticity > 0;
+  const byTime = !finite(b.driftPerDay) || b.driftPerDay > 0;
+  const power = finite(b.elasticity) ? ` (spend to the power ${n(b.elasticity, 2)})` : "";
+  const perDay = finite(b.driftPerDay) ? ` by ${dailyRate(b.driftPerDay)} a day` : " over time";
+  if (bySpend && byTime) {
+    return { step: "the cost per entry rises with spend and with time",
+      note: `Cost per entry is priced to rise with daily spend${power} and${perDay}.` };
+  }
+  if (bySpend) {
+    return { step: "the cost per entry rises with spend, not with time",
+      note: `Cost per entry is priced to rise with daily spend${power}, and not over time.` };
+  }
+  if (byTime) {
+    return { step: "the cost per entry rises with time, not with spend",
+      note: `Cost per entry is priced flat in daily spend, rising${perDay}.` };
+  }
+  return { step: "the cost per entry holds at today's", note: "Cost per entry is priced flat, at today's, whatever the spend and the day." };
+}
 EXPLAIN["paid.rec"] = (a, { snap: s }) => {
   const b = (s.paid || {}).budget || {};
   const cur = b.current, rec = b.recommended;
   if (!finite(rec)) return null;
+  const cost = costMoves(b);
   const steps = [];
   if (finite(cur)) steps.push(seg`Today's daily spend is ${eur(cur)}: the last full day's spend on the campaign.`);
   if (finite(b.supplySpend)) {
@@ -696,7 +727,7 @@ EXPLAIN["paid.rec"] = (a, { snap: s }) => {
       ? seg`The spend that would reach the target by the close is ${eur(b.supplySpend)} a day: after units secured and what the organic channels are on course to bring, ${n(b.selloutGap)} units are still needed, ${n(b.entriesNeeded)} entries at the ${pct(rateOf(s))} rate, bought at the cost per entry that spend implies.`
       : seg`The spend that would reach the target by the close is ${eur(b.supplySpend)} a day.`);
   }
-  if (finite(b.roiSpend)) steps.push(seg`The spend at which the ROI at the close ends on the floor of ${n(b.floor ?? 1, 1)} is ${eur(b.roiSpend)} a day: the cost per entry rises with spend and with time.`);
+  if (finite(b.roiSpend)) steps.push(seg`The spend at which the ROI at the close ends on the floor of ${n(b.floor ?? 1, 1)} is ${eur(b.roiSpend)} a day: ${cost.step}.`);
   if (finite(b.supplySpend) && finite(b.roiSpend)) steps.push(seg`The lower of the two, ${eur(Math.min(b.supplySpend, b.roiSpend))} a day, is as far as it is worth going.`);
   const rule = capStep(b);
   if (rule) steps.push(rule);
@@ -713,7 +744,7 @@ EXPLAIN["paid.rec"] = (a, { snap: s }) => {
       { key: "rules", gave: "The ±30% a day pacing, the ROI bands and the floor" },
     ],
     notes: [
-      `Cost per entry is priced to rise with daily spend (spend to the power ${n(b.elasticity, 2)}) and by ${pct(b.driftPerDay, 1)} a day.`,
+      cost.note,
       "Implement writes the figure to Meta and logs it; Ignore logs the decision and keeps the budget.",
     ],
     method: "Data model 7",
