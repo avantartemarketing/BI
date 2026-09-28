@@ -108,9 +108,15 @@ The ETL builds a page for **every** release the funnel data mentions (`discover_
   means, so there is no key under the list. Every other release is reachable from the
   search box (artist, title, quarter, id), on the same row with the date it closed. A
   closed or catalogue release you pick stays pinned under **Viewing** while selected.
-- **Campaign codes** for unconfigured releases are guessed from the codes the email and
-  content feeds use (`AntonyMic_LE_26`), by artist and year; a guess is only taken when it
-  is unambiguous, is labelled as a guess, and can be corrected in Target setting. The code's
+- **Campaign codes** for unconfigured releases come from the release's own orders (the code
+  its order lines carry, `orders_by_product.csv`), else from the Airtable launch it matched,
+  when exactly one code the feeds use is that code, in the feeds' spelling
+  (`source_campaign_codes`); a code the orders give several releases (a group show such as
+  `Multiple_Amphorae_24`) is left off every page. Only where neither names one are they
+  guessed from the codes the email and content feeds use (`AntonyMic_LE_26`), by artist and
+  year; a guess is only taken when it is unambiguous. The page labels the code with where it
+  came from, and it can be corrected in Target setting. The build warns of a Meta draw
+  campaign the orders tie to one release that no page claims. The code's
   middle segment is not treated as a release type - every release in the LE export is an LE,
   whatever the feed tagged it (the content feed tags Warhol's 2026 LE `AndyWarhol_TL_26`).
 

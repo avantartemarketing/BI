@@ -2924,6 +2924,138 @@ def guess_code(artist: str, title: str, year: int, codes: set[str], siblings: in
     return None
 
 
+def orders_codes() -> dict[str, list[str]]:
+    """Release name -> the campaign codes its rows carry in the orders feed
+    (data/orders_by_product.csv campaign_code: the campaign its own order
+    lines were sold under), each once. Empty without the file."""
+    p = DATA / "orders_by_product.csv"
+    if not p.exists():
+        return {}
+    try:
+        df = pd.read_csv(p, usecols=["release", "campaign_code"], dtype=str).fillna("")
+    except (OSError, ValueError) as e:
+        print(f"warning: ignoring {p.name} for campaign codes: {e}")
+        return {}
+    out: dict[str, list[str]] = {}
+    for rel, code in zip(df["release"], df["campaign_code"].str.strip()):
+        if rel and code and code not in out.setdefault(rel, []):
+            out[rel].append(code)
+    return out
+
+
+def source_campaign_codes(records: list[dict], codes: set[str], launch_frame: pd.DataFrame | None,
+                          spend: pd.DataFrame | None, orders: dict[str, list[str]] | None = None) -> list[tuple]:
+    """Each funnel release's campaign code from its own feeds, before the
+    guess (docs 11b): the code the orders feed gives it, else the release
+    code of the Airtable launch it matched, taken when exactly one code the
+    feeds use (the sends, the posts, the release inputs, Meta's campaign
+    names) is that code - in the feed's spelling, so Kai_Content_24 on the
+    orders joins the sends tagged KAI_CONTENT_24. guess_code rejects a code
+    whose year is the planning year (JeffKoons_LE_25 on a 2026 Q1 launch), a
+    short stub (LY_LE_26) or one not in the artist's name (PietParra), so
+    30-odd pages had no code while their orders named it.
+
+    A code the orders feed gives several releases, or an Airtable launch
+    several releases matched, is a group show's (the eight Amphora releases
+    under Multiple_Amphorae_24) and nobody's: its sends and spend would count
+    on every page. So is a code a configured release carries. A guess that
+    names another code than the sourced one is kept and said: one release can
+    be tagged two ways (Eddie Martinez's Scaffold, EDDIE_SCAFFOLD_24 on its
+    sends and EddieMart_Scaffold_24 on its orders and Meta), and the guess is
+    the one joining sends today. Sets campaign_code and code_source
+    ('orders', 'airtable', 'guess' or None) on every record; returns
+    (id, code, source) for each code it set."""
+    orders = orders_codes() if orders is None else orders
+    feed = {c for c in codes if _CODE_RE.match(str(c))}
+    if spend is not None and "campaign_name" in spend.columns:
+        feed |= {p for p in (str(n).split(" · ")[0].strip() for n in spend["campaign_name"].dropna()) if _CODE_RE.match(p)}
+    spelt: dict[str, set] = {}
+    for c in feed:
+        spelt.setdefault(_norm(c), set()).add(c)
+
+    def in_feeds(cand: str) -> str | None:
+        if cand in feed:
+            return cand
+        got = spelt.get(_norm(cand)) or set()
+        return next(iter(got)) if len(got) == 1 else None
+
+    # the Airtable launch each release matched (etl/pricing.py), by its release code
+    at: dict[str, list[str]] = {}
+    if launch_frame is not None and len(launch_frame) and records:
+        try:
+            frame = _frame_of_releases(records)
+            for n, c in zip(frame["release_name"], pricing.match(frame, launch_frame)["airtable_release"]):
+                if isinstance(c, str) and c.strip():
+                    at[n] = [x.strip() for x in c.split("+") if x.strip()]
+        except (KeyError, ValueError, TypeError) as e:
+            print(f"warning: campaign codes: the Airtable launches could not be matched ({e})")
+    users = {"orders": collections.Counter(_norm(c) for cs in orders.values() for c in set(cs)),
+             "airtable": collections.Counter(_norm(c) for cs in at.values() for c in set(cs))}
+    configured = {_norm(r["campaign_code"]): r["release_name"] for r in INPUTS["releases"] if r.get("campaign_code")}
+
+    def pick(name: str, cands: list[str], src: str) -> str | None:
+        if any(users[src][_norm(c)] > 1 for c in cands):
+            return None     # a group show's code
+        hits = {f for f in (in_feeds(c) for c in cands) if f}
+        if len(hits) != 1:
+            return None
+        code = hits.pop()
+        return code if configured.get(_norm(code), name) == name else None
+
+    set_codes = []
+    for r in records:
+        name, guess = r["release_name"], r.get("campaign_code")
+        code = src = None
+        if len(orders.get(name) or []) == 1:
+            code, src = pick(name, orders[name], "orders"), "orders"
+        if code is None and at.get(name):
+            code, src = pick(name, at[name], "airtable"), "airtable"
+        if code is None:
+            r["code_source"] = "guess" if guess else None
+            continue
+        if guess and _norm(guess) != _norm(code):
+            print(f"{r['id']}: campaign code {guess} (guessed) kept - the {src} feed gives {code}; type the one it runs under")
+            r["code_source"] = "guess"
+            continue
+        r["campaign_code"], r["code_source"] = guess or code, src   # a guess spelt the feed's way keeps its spelling
+        if not guess:
+            set_codes.append((r["id"], code, src))
+    return set_codes
+
+
+def unclaimed_draw_campaigns(spend: pd.DataFrame | None, records: list[dict],
+                             orders: dict[str, list[str]] | None = None) -> list[str]:
+    """A build warning for each Meta draw campaign ("<code> · Enter draw",
+    "<code> · Draw ...") whose code the orders feed gives exactly one release
+    on file, when no page claims it: a configured release's campaigns, or a
+    discovered page's matched campaign. Its spend is then on no page (EUR
+    148k of it on 24 September 2026, before codes came from the orders
+    feed). Printed and returned."""
+    if spend is None or spend.empty or "campaign_name" not in spend.columns:
+        return []
+    orders = orders_codes() if orders is None else orders
+    by_code: dict[str, set] = {}
+    for rel, cs in orders.items():
+        for c in cs:
+            by_code.setdefault(c, set()).add(rel)
+    on_file = {r["release_name"] for r in records} | {r["release_name"] for r in INPUTS["releases"]}
+    claimed = {r.get("campaign_name") for r in records} | {r.get("campaign_name") for r in INPUTS["releases"]}
+    for r in INPUTS["releases"]:
+        claimed.update(r.get("campaign_names") or [])
+    out = []
+    for camp, total in spend.groupby("campaign_name")["spend"].sum().items():
+        parts = str(camp).split(" · ", 1)
+        rel = by_code.get(parts[0].strip()) or set()
+        if len(parts) < 2 or "draw" not in parts[1].lower() or len(rel) != 1 or camp in claimed:
+            continue
+        (release,) = rel
+        if release in on_file:
+            out.append(f"warning: Meta draw campaign {camp!r} (EUR {float(total):,.0f}) is the orders feed's code "
+                       f"for {release!r} alone, and no page claims it")
+            print(out[-1])
+    return out
+
+
 # ---------------------------------------------------------------- release inputs (docs §1.6)
 
 # the release-level economics as they were typed before the model went per
@@ -3392,6 +3524,7 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
         out.append({
             "id": rid, "release_name": str(name), "artist": artist, "title": title, "quarter": quarter,
             "type": "LE", "campaign_code": code,   # the LE export: everything in it is an LE
+            "code_source": "guess" if code else None,   # the orders feed or Airtable, once source_campaign_codes has run
             "announce_date": announce.isoformat() if announce else None,
             "launch_end": launch.isoformat() if launch else None,
             "dates_note": note,
@@ -3921,7 +4054,8 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "derived": {
             "announce_date": rec["announce_date"], "launch_end": launch_end.isoformat() if dated else rec["launch_end"],
             "dates_source": "campaign clock" if dated else None, "dates_note": dates_note,
-            "campaign_code": code, "first_seen": rec["first_seen"], "last_seen": rec["last_seen"],
+            "campaign_code": code, "campaign_code_source": rec.get("code_source") if code else None,
+            "first_seen": rec["first_seen"], "last_seen": rec["last_seen"],
         },
         "economics": None, "currency": "units",
         "hero": {"now": round(hero_now, 0), "expectedToday": None, "delta": None, "projected": None,
@@ -3954,6 +4088,7 @@ def actuals_rec(release: dict, rat: pd.DataFrame) -> dict:
         "quarter": parts[-1] if qm else None,
         "type": release.get("type", "LE"),
         "campaign_code": release.get("campaign_code"), "campaign_name": release.get("campaign_name"),
+        "code_source": "typed" if release.get("campaign_code") else None,
         "announce_date": release["announce_date"], "launch_end": release["launch_end"],
         "dates_note": None,
         "first_seen": (dates.min() if dates is not None else date.fromisoformat(release["announce_date"])).isoformat(),
@@ -5510,6 +5645,13 @@ def main(only: str | None = None):
     mark("load")
     launch_frame = load_launches()
     adopt_funnel_names(INPUTS["releases"], discovered, launch_frame)
+    # each release's campaign code from its orders or its Airtable launch
+    # before the guess discover_releases made (docs 11b), and before the
+    # upcoming launches are guessed from the codes nobody carries
+    got = source_campaign_codes(discovered, known_codes(emails, content, artist_posts), launch_frame, spend)
+    if got:
+        print(f"campaign codes: {len(got)} from the feeds where the guess found none - "
+              + ", ".join(f"{rid} {code} ({src})" for rid, code, src in got))
     upcoming: list[dict] = []
     if not only:
         # the codes an upcoming launch can be guessed from: those moving on Meta
@@ -5674,6 +5816,8 @@ def main(only: str | None = None):
             written.add(f"{rec['id']}.json")
             add(snap, "catalogue" if snap["catalogue"] else ("closed" if snap["complete"] else "live"))
             n_actuals += 1
+    # a draw campaign the orders tie to one release that no page claims
+    unclaimed_draw_campaigns(spend, discovered)
     # the launches Airtable knows and the funnel does not yet: a page each,
     # with the dates, edition and price to set targets from (§1.7)
     n_upcoming = 0
@@ -5731,6 +5875,7 @@ def main(only: str | None = None):
             r["id"]: {
                 "release_name": r["release_name"], "artist": r["artist"], "title": r["title"],
                 "type": r["type"], "campaign_code": r["campaign_code"],
+                "code_source": r.get("code_source"),
                 "campaign_name": r.get("campaign_name"),
                 "announce_date": r["announce_date"], "launch_end": r["launch_end"],
                 "private_room_open": r.get("private_room_open") or (

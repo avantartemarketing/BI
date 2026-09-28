@@ -9,7 +9,13 @@ export default function NoTargets({ snap, onSetup }) {
   const d = snap.derived || {};
   const t = snap.totals || {};
   const dated = !!snap.windowEnd;
-  const row = { display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, padding: "6px 0", borderBottom: `1px solid ${C.hairline}` };
+  // where the code came from (etl/build.py source_campaign_codes); an older page says nothing, and was guessed
+  const codeFrom = {
+    orders: ["from the orders", "The code the release's own orders carry"],
+    airtable: ["from Airtable", "The code of the Airtable launch this release matched"],
+    typed: ["as typed", "As typed in Target setting"],
+  }[d.campaign_code_source] || ["guessed", "Guessed from the email and content feeds by artist and year"];
+  const row ={ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, padding: "6px 0", borderBottom: `1px solid ${C.hairline}` };
   return (
     <Card dot={GROUP_DOTS.outcome} title="No targets set">
       <div className="spacer-8" />
@@ -24,8 +30,8 @@ export default function NoTargets({ snap, onSetup }) {
         <div style={row}><span style={{ color: C.muted }}>Units sold</span><span className="num">{fmt(t.units ?? 0)}</span></div>
         <div style={{ ...row, borderBottom: "none" }}>
           <span style={{ color: C.muted }}>Campaign code</span>
-          <span className="num" title={d.campaign_code ? "Guessed from the email and content feeds by artist and year - correct it in Target setting if it is wrong" : "None found in the email or content feeds"}>
-            {d.campaign_code ? `${d.campaign_code} (guessed)` : "none matched"}
+          <span className="num" title={d.campaign_code ? `${codeFrom[1]} - correct it in Target setting if it is wrong` : "None found in the orders, Airtable, email or content feeds"}>
+            {d.campaign_code ? `${d.campaign_code} (${codeFrom[0]})` : "none matched"}
           </span>
         </div>
       </div>

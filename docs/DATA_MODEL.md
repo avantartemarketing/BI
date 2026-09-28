@@ -2051,8 +2051,20 @@ The zero-conversion rules are now applied (`zero_conversion_decrease`,
 
 The build enumerates every `simple_release_name` in the funnel data and derives a record
 per release (`discover_releases`): id (slug of the name), artist / title / quarter (the name
-is always `Artist · Title · YYYY Qn`), dates from the campaign clock (§1.5), a campaign code
-guessed from the email and content feeds, and traffic totals. The name is the export's own
+is always `Artist · Title · YYYY Qn`), dates from the campaign clock (§1.5), a campaign code,
+and traffic totals. The code is the one the release's orders carry, else its matched Airtable
+launch's, taken when exactly one code the sends, posts, inputs or Meta names use is that code
+and in their spelling (`source_campaign_codes`, `code_source` `orders` or `airtable`, on the
+page as `derived.campaign_code_source`, which the No targets card prints); a code
+the orders give several releases, or a launch several releases matched, is a group show's and
+nobody's (`Multiple_Amphorae_24`). Only then is it guessed from the email and content feeds
+(`guess_code`, `code_source` `guess`), which rejects a code carrying the planning year
+(`JeffKoons_LE_25` on a 2026 Q1 launch) or a stub that is not the artist's name: 24 pages had
+no code while their orders named it (EUR 121,761 of draw spend and 1.38m emails delivered on
+no page, September 2026). A guess that names another code than the orders stays and the build
+says so (Eddie Martinez's Scaffold sends are `EDDIE_SCAFFOLD_24`, its orders and Meta
+`EddieMart_Scaffold_24`), and the build warns of a Meta draw campaign the orders tie to one
+release on file that no page claims (`unclaimed_draw_campaigns`). The name is the export's own
 and the join key, so its quarter stands even where the campaign closes in another; the build
 prints that and keeps it as the release's `dates_note` ("the name says 2027 Q1, but the
 campaign closes 2026-10-15 (2026 Q4)"), for the name to be corrected upstream, and the
