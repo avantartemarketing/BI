@@ -645,8 +645,9 @@ const unitsPaidSql = () => {
 };
 
 // the order lines are the orders feed's own (orderLinesCtes: product lines,
-// no test order, no upsell_order_merged copy), and a draw's product goes by
-// the name the orders feed gives it (product_names), so the ETL finds it
+// no test order, no upsell_order_merged copy), orders only, since a purchase
+// event names an order and a draft's id is not one; and a draw's product goes
+// by the name the orders feed gives it (product_names), so the ETL finds it
 const drawProductsSql = () =>
   "WITH " + orderLinesCtes() + ",\n" +
   "wins AS (\n" +
@@ -661,7 +662,7 @@ const drawProductsSql = () =>
   "  SELECT w.release, w.draw_id, COALESCE(n.product_title, o.product_title) AS product_title, COUNT(DISTINCT o.order_id) AS orders\n" +
   "  FROM wins w\n" +
   "  JOIN buys b ON b.release = w.release AND b.aa_account_id = w.aa_account_id\n" +
-  "  JOIN lines o ON o.order_id = b.shopify_order_id AND o.release = w.release\n" +
+  "  JOIN lines o ON o.order_id = b.shopify_order_id AND o.release = w.release AND o.order_source_type = 'Order'\n" +
   "  LEFT JOIN product_names n ON n.release = o.release AND n.shopify_product_id = o.shopify_product_id\n" +
   "  GROUP BY 1, 2, 3)\n" +
   "SELECT release, draw_id, product_title, orders,\n" +

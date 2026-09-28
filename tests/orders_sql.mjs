@@ -69,7 +69,7 @@ check(/typed AS \(\n\s+SELECT l\.\* EXCEPT \(product_title\), COALESCE\(pn\.prod
 check(/FROM typed l LEFT JOIN paid_customers/.test(orders) && /GROUP BY l\.release, l\.product_title\n/.test(orders) && /FROM typed l LEFT JOIN purchase_channel/.test(units),
   "orders and units group on that name");
 check(draws.startsWith("WITH " + ctes + ",") && /COALESCE\(n\.product_title, o\.product_title\) AS product_title, COUNT\(DISTINCT o\.order_id\) AS orders/.test(draws)
-  && /JOIN lines o ON o\.order_id = b\.shopify_order_id AND o\.release = w\.release\n/.test(draws)
+  && /JOIN lines o ON o\.order_id = b\.shopify_order_id AND o\.release = w\.release AND o\.order_source_type = 'Order'\n/.test(draws)
   && /LEFT JOIN product_names n ON n\.release = o\.release AND n\.shopify_product_id = o\.shopify_product_id\n/.test(draws)
   && !draws.slice(ctes.length).includes("JOIN `"), "the draw map reads the feed's own lines and names a draw's product the same way");
 check(/FROM typed\s+WHERE entry_draft/.test(claims) && /FROM typed WHERE paid AND customer_id IS NOT NULL/.test(claims), "the claims name products the same way");
