@@ -1517,6 +1517,10 @@ def load_products_feed() -> dict:
 _ORDERS_FEED: dict | None = None
 _PRODUCT_EDITIONS = None
 _ARTIST_STOP = {"the", "estate", "foundation", "studio", "of", "and"}
+# a work the orders feed tells apart from another of the same title by the
+# work its SKUs name (server/bigquery.js product_names): 'Problem Painting
+# (FISCH-PROB2)'
+_WORK_SUFFIX = re.compile(r"^(.+) \(([^()-]+-[^()-]+)\)$")
 
 
 def _artist_tokens(name) -> set[str]:
@@ -1528,7 +1532,9 @@ def product_editions():
     (data/release_pricing.csv, one row per product): a lookup by release name
     and Shopify product title. The title must match; among rows that share a
     title the release's year and then its artist decide, so a reissued title
-    finds its own row, and a title that stays ambiguous gets no edition."""
+    finds its own row, and a title that stays ambiguous gets no edition. A
+    work the orders feed names with its work code after a title it shares
+    with another work reads that title's rows."""
     global _PRODUCT_EDITIONS
     if _PRODUCT_EDITIONS is not None:
         return _PRODUCT_EDITIONS
@@ -1551,6 +1557,11 @@ def product_editions():
 
     def lookup(release_name: str, product_title: str):
         cands = by_title.get(_norm(product_title)) or []
+        if not cands:
+            # one of two works that share a title: Airtable's rows of that
+            # title, one per work, give its edition where they agree
+            m = _WORK_SUFFIX.match(str(product_title))
+            cands = (by_title.get(_norm(m.group(1))) or []) if m else []
         if not cands:
             return None
         parts = [x.strip() for x in str(release_name).split("·")]
@@ -1639,6 +1650,18 @@ def load_orders_feed() -> dict:
                 for d in (r.last_order, r.last_draft):
                     if d and (rel["asOf"] is None or d > rel["asOf"]):
                         rel["asOf"] = d
+            # the query names each Shopify product once (server/bigquery.js
+            # product_names); one under two titles is a file pulled before
+            # that, whose renamed works are split across rows until the next pull
+            names: dict = {}
+            for r in df.itertuples(index=False):
+                for pid in str(getattr(r, "product_ids", "") or "").split("|"):
+                    if pid.strip():
+                        names.setdefault((r.release, pid.strip()), set()).add(r.product_title)
+            split = sorted({rel for (rel, _), ts in names.items() if len(ts) > 1})
+            if split:
+                print(f"warning: {p1.name} names one Shopify product with two titles in {len(split)} release(s), "
+                      f"splitting a work across rows until the next pull: {', '.join(split[:5])}{' ...' if len(split) > 5 else ''}")
     if feed and p2.exists():
         try:
             dm = pd.read_csv(p2, dtype=str).fillna("")

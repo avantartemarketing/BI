@@ -383,7 +383,9 @@ const spendSql = () =>
  * aggregates per release and product, and the join that names the product a
  * draw sold runs inside BigQuery on the pseudonymous account id, so the rows
  * that travel are release, product, draw and counts (docs/DATA_MODEL.md 2.4).
- *   orders_by_product.csv  per release x Shopify product title: units paid
+ *   orders_by_product.csv  per release x product (one name per Shopify
+ *                          product, and one product per work: product_names
+ *                          in orderLinesCtes): units paid
  *                          (orders, not cancelled, not refunded), refunded,
  *                          awaiting payment (draft orders an advisor raised
  *                          that have no order yet - the PREORDER route is the
@@ -408,8 +410,8 @@ const spendSql = () =>
  *                          tagged upsell_order_merged (an upsell folded
  *                          into the order it followed, its lines now there
  *                          too) is left out of everything
- *   draw_products.csv      per draw: the product its winners bought most, and
- *                          the share of their orders it took
+ *   draw_products.csv      per draw: the product its winners bought most, by
+ *                          the same names, and the share of their orders it took
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
@@ -420,10 +422,11 @@ const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "
 const DRAW_CLAIMS_HEADER = ["release", "draw_id", "product_title", "claims", "units"];
 
 // The order lines, typed: every rule the orders feed counts a unit by (paid
-// or refunded, a draft and whose, the frames a print took), as one CTE chain
-// ending in `typed`. ordersSql and unitsPaidSql both read it, so the units a
-// page counts by day and channel can never be counted differently from the
-// units the sell-through reads by product.
+// or refunded, a draft and whose, the frames a print took) and the name each
+// product goes by, as one CTE chain ending in `typed`. ordersSql and
+// unitsPaidSql both read it, so the units a page counts by day and channel
+// can never be counted differently from the units the sell-through reads by
+// product, and drawProductsSql names a draw's product the same way.
 const orderLinesCtes = () =>
   "lines AS (\n" +
   "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
@@ -459,6 +462,28 @@ const orderLinesCtes = () =>
   // one row per refund on the order): one row per line id, or every unit of
   // those lines is counted twice
   "  QUALIFY order_lineitem_id IS NULL OR ROW_NUMBER() OVER (PARTITION BY order_source_type, order_lineitem_id ORDER BY refund_processed_at DESC) = 1),\n" +
+  // one name per product (docs/DATA_MODEL.md 2.4). A line carries the title
+  // its product had when the line was made, so a work renamed in Shopify
+  // part way through its sale, if only in its capitals ('Something
+  // forbidden (Blue)', then 'Something Forbidden (Blue)'), read as two
+  // products: each Shopify product is named by the title on its latest
+  // line. Two Shopify products under one title stay one product (a
+  // private-room variant at another price) unless their SKUs name different
+  // works (Urs Fischer's two Problem Paintings, FISCH-PROB1 and FISCH-PROB2):
+  // then each is named with its work as well, 'Problem Painting
+  // (FISCH-PROB2)', so no title adds two works' sales against one edition.
+  // Every query names products through `typed` or this, so the three files
+  // join on one name
+  "product_titles AS (\n" +
+  "  SELECT release, shopify_product_id,\n" +
+  "    ARRAY_AGG(product_title ORDER BY COALESCE(order_date, draft_date) DESC, product_title LIMIT 1)[OFFSET(0)] AS title,\n" +
+  "    MIN(work_code) AS work_code\n" +
+  "  FROM lines WHERE shopify_product_id IS NOT NULL GROUP BY 1, 2),\n" +
+  "product_names AS (\n" +
+  "  SELECT release, shopify_product_id,\n" +
+  "    IF(work_code IS NOT NULL AND MIN(work_code) OVER (PARTITION BY release, title) != MAX(work_code) OVER (PARTITION BY release, title),\n" +
+  "      CONCAT(title, ' (', work_code, ')'), title) AS product_title\n" +
+  "  FROM product_titles),\n" +
   // a frame is a line of its own (shopify_product_type = 'Frame') with no
   // release on it, so it is joined to the prints through the order, on an
   // order or a draft alike; one row per line id, as for the prints, and the
@@ -516,7 +541,7 @@ const orderLinesCtes = () =>
   // and before that account existed (September 2025) a draft with no
   // facilitator on the DRAW SKU; everything else a person raised
   "typed AS (\n" +
-  "  SELECT l.*,\n" +
+  "  SELECT l.* EXCEPT (product_title), COALESCE(pn.product_title, l.product_title) AS product_title,\n" +
   "    l.order_source_type = 'Draft' AND l.cancelled_order = 0 AND (a.facilitator IS NOT NULL OR (l.facilitator = '' AND l.draw_sku)) AS entry_draft,\n" +
   // a winner's draft (the order an advisor sends after a failed payment)
   // counts as a draft for 72 hours; unpaid after that it lapses and is out
@@ -534,6 +559,7 @@ const orderLinesCtes = () =>
   "      IF(l.offered AND cp.offered_units > 0, l.quantity / cp.offered_units * LEAST(COALESCE(fn.frame_units, 0), cp.offered_units), 0)\n" +
   "      + IF(l.offered AND op.offered_units > 0, l.quantity / op.offered_units * LEAST(COALESCE(fp.frame_units, 0), op.offered_units), 0)) AS frames_line\n" +
   "  FROM lines l LEFT JOIN app_facilitators a ON a.facilitator = l.facilitator\n" +
+  "  LEFT JOIN product_names pn ON pn.release = l.release AND pn.shopify_product_id = l.shopify_product_id\n" +
   "  LEFT JOIN order_prints op ON op.order_source_type = l.order_source_type AND op.order_id = l.order_id\n" +
   "  LEFT JOIN code_prints cp ON cp.order_source_type = l.order_source_type AND cp.order_id = l.order_id AND cp.work_code = l.work_code\n" +
   "  LEFT JOIN frames_named fn ON fn.order_source_type = l.order_source_type AND fn.order_id = l.order_id AND fn.work_code = l.work_code\n" +
@@ -618,8 +644,12 @@ const unitsPaidSql = () => {
   return sql;
 };
 
+// the order lines are the orders feed's own (orderLinesCtes: product lines,
+// no test order, no upsell_order_merged copy), and a draw's product goes by
+// the name the orders feed gives it (product_names), so the ETL finds it
 const drawProductsSql = () =>
-  "WITH wins AS (\n" +
+  "WITH " + orderLinesCtes() + ",\n" +
+  "wins AS (\n" +
   "  SELECT DISTINCT simple_release_name AS release, aa_account_id, draw_id\n" +
   `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
   "  WHERE event_name = 'draw entry intent' AND winner AND draw_id IS NOT NULL AND aa_account_id IS NOT NULL AND event_date >= @since),\n" +
@@ -628,12 +658,11 @@ const drawProductsSql = () =>
   `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
   "  WHERE event_name = 'purchase' AND shopify_order_id IS NOT NULL AND aa_account_id IS NOT NULL AND event_date >= @since),\n" +
   "pairs AS (\n" +
-  "  SELECT w.release, w.draw_id, o.product_title, COUNT(DISTINCT o.shopify_order_id) AS orders\n" +
+  "  SELECT w.release, w.draw_id, COALESCE(n.product_title, o.product_title) AS product_title, COUNT(DISTINCT o.order_id) AS orders\n" +
   "  FROM wins w\n" +
   "  JOIN buys b ON b.release = w.release AND b.aa_account_id = w.aa_account_id\n" +
-  `  JOIN \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\` o ON o.shopify_order_id = b.shopify_order_id AND o.simple_release_name = w.release\n` +
-  "    AND o.shopify_product_type = 'Product' AND o.is_test_order = 0 AND o.product_title IS NOT NULL AND o.product_title != ''\n" +
-  "    AND NOT REGEXP_CONTAINS(COALESCE(o.shopify_order_tags, ''), r'upsell_order_merged')\n" +
+  "  JOIN lines o ON o.order_id = b.shopify_order_id AND o.release = w.release\n" +
+  "  LEFT JOIN product_names n ON n.release = o.release AND n.shopify_product_id = o.shopify_product_id\n" +
   "  GROUP BY 1, 2, 3)\n" +
   "SELECT release, draw_id, product_title, orders,\n" +
   "  ROUND(orders / SUM(orders) OVER (PARTITION BY release, draw_id), 3) AS share\n" +
