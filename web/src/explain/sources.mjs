@@ -79,7 +79,7 @@ export const SOURCES = {
     set: "fitted",
   },
   rules: {
-    name: "Spend rules", via: "The LE Paid Calculator's rules",
+    name: "Spend rules", via: "The TL template's ROI / spend rules",
     set: "fixed",
   },
   dates: {

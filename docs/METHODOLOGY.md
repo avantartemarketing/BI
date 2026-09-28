@@ -479,8 +479,12 @@ recommendation is the ROI at the close at that spend level's cost per entry.
   and channel (the channel of each order's purchase event), pulled on every
   refresh with the other orders figures.
 - **Daily funnel** (sessions, entries, units by channel × day) and **Meta spend**
-  are pulled live from the *LE Paid Calculator* Google Sheet on boot and every
-  hour. The header's "data through" day is the newest day in the feed, which while the
+  are pulled live from BigQuery (the LE Funnel Report's daily export and the Meta
+  ads insights table) on boot and every hour. The *LE Paid Calculator* Google
+  Sheet stands in while BigQuery is not configured and is tried when a BigQuery
+  pull fails, in which case the header reads "Sources stale", since the sheet's
+  copy is cut at 50,000 rows a tab.
+  The header's "data through" day is the newest day in the feed, which while the
   feed is live is today, part-observed: the actuals run through it and the header says
   "today so far". The paid pacing rules, the run rates and whether a campaign is complete
   read only full days, and every reference "by today" is read at the share of today seen,
