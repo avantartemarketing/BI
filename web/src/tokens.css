@@ -504,7 +504,9 @@ select.native {
 .ts-fig-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .ts-fig-val { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ts-fig-val.red { color: var(--red); }
-.ts-fig-sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.35; white-space: nowrap; display: grid; }
+/* a sub-line wraps inside its column rather than being cut by the strip's
+   edge ("under the 6% sense check" is wider than a column at 1280px) */
+.ts-fig-sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.35; white-space: normal; display: grid; }
 .ts-fig-sub .red { color: var(--red); }
 .ts-head.compact { padding: 12px 48px; }
 .ts-head.compact .ts-figures { max-height: 0; opacity: 0; }
@@ -607,6 +609,11 @@ body.x-shift .x { cursor: help; text-decoration: underline dotted 2px var(--blue
   transition: color 160ms;
 }
 .tabs .x-hint + .edit-link { margin-left: 16px; }
+/* while the explainer is open the page narrows beside it and the tab row has
+   no room for the hint, which has done its job by then: it steps aside, so
+   "Edit layout" keeps its place at the end of the row, clear of the panel */
+body.x-open .tabs .x-hint { display: none; }
+body.x-open .tabs .x-hint + .edit-link { margin-left: auto; }
 .x-hint kbd {
   font: inherit; font-size: 11.5px; color: var(--ink); background: var(--card); border: 1px solid var(--border);
   border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; margin-right: 2px;
