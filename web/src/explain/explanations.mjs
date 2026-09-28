@@ -19,6 +19,7 @@
  * or null when the figure is not on this page. Plain JavaScript (no JSX), so
  * tests/explain.mjs runs every builder against every snapshot on file. */
 import { fmt, fmtSigned, fmtPct, fmtDay, MINUS, paidDayFrac } from "../format.mjs";
+import { channelWalk } from "../figures.mjs";
 import { inDraw } from "../../../shared/sellThrough.mjs";
 
 /* ---- formatting ---- */
@@ -1120,17 +1121,27 @@ EXPLAIN["wf.channel"] = (a, { snap: s }) => {
   const act = close ? ch.proj ?? 0 : ch.now ?? 0;
   const ref = hasBm ? (close ? ch.bm : ch.bmExp) ?? 0 : (close ? ch.target : ch.exp) ?? 0;
   const v = act - ref;
+  // the step as the card prints it: whole units that add up to the outcome
+  // (figures.mjs channelWalk)
+  const cw = channelWalk(s, { today: !close });
+  const step = cw && cw.steps.find((x) => x.key === ch.key);
+  const shown = step ? step.value : v;
+  const notes = [];
+  if (step && signed(v) !== signed(shown)) {
+    notes.push(`Worked out, it is ${signed(v, 1)}; the card prints ${signed(shown)} because the walk prints every channel in whole units that add up exactly to the figure printed, the rounding left over going where it moves a figure least.`);
+  }
+  notes.push("The channels add up to the release's demand, so on a release over its edition the last step, Beyond sellout, drops to the capped figure.");
   return {
     where: close ? "Projection vs target" : "Actual vs target", when: close ? "At close" : "Today",
-    name: ch.name, value: signed(v), unit: `units against its ${hasBm ? "benchmark" : "target"}`,
+    name: ch.name, value: signed(shown), unit: `units against its ${hasBm ? "benchmark" : "target"}`,
     say: `${ch.name}'s ${close ? "projection" : "units secured"} against what ${hasBm ? "the basket's launches" : "the plan"} had for it${close ? " at close" : " by now"}.`,
     steps: [
       seg`${ch.name} ${close ? "is projected to secure" : "has secured"} ${u(act)} units.`,
       seg`Its ${hasBm ? "benchmark" : "target"}${close ? "" : " by today"} is ${u(ref)}.`,
     ],
-    total: { v: signed(v), label: "units" },
+    total: { v: signed(shown), label: "units" },
     sources: [{ key: "orders", gave: "Units paid by channel" }, { key: "funnel", gave: "Entries by channel" }, ...(hasBm ? [{ key: "basket", gave: "The benchmark" }] : [])],
-    notes: ["The channels add up to the release's demand, so on a sold-out release the last step drops to the capped figure."],
+    notes,
     method: "Data model 9",
   };
 };

@@ -36,6 +36,7 @@ import {
   rungGeom, rungPos, RungTrack, RungKey, Tick, refWords, dayElapsed, paidDayFrac, dayLabel,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import { walkCap, closeWalk } from "../figures.mjs";
 
 const RING = "0 0 0 1px rgba(20,20,19,.45)";
 const NEUTRAL_DOT = "#c8c5bc";
@@ -176,8 +177,9 @@ function Rung({ r, bench, x }) {
  * the groups sum to the hero's. A row without a reference (Posts, or the email
  * stages before a delivery benchmark exists) is shown in place with no step
  * and its actual in grey - context, not a component of the arithmetic.
- * Rounding residual is parked on the largest step; a real residual (the hero
- * is capped at the edition) is left visible. */
+ * Rounding left over is parked on the largest step; the edition's cap on the
+ * hero, which the snapshot names (figures.mjs walkCap) rather than the size
+ * of the leftover, is left visible. */
 function chainSteps(factors) {
   // factors: [{label, a, e, note}] -> steps summing to prod(a) - prod(e)
   const out = [];
@@ -402,7 +404,7 @@ const ROW_NUM = { fontSize: 12.5, fontWeight: 600, textAlign: "right" };
 /* The walk, as data: from the target - or, with a basket, from the benchmark
  * with the stretch set aside - down every group's rows to the actual. Null
  * when there is nothing to walk: no row with a reference yet. */
-function buildWaterfall(snap, groups) {
+export function buildWaterfall(snap, groups) {
   const expTotal = snap?.hero?.expectedToday ?? 0;
   const nowTotal = snap?.hero?.now ?? 0;
   const day = snap?.day ?? 0;
@@ -422,14 +424,15 @@ function buildWaterfall(snap, groups) {
   const sections = groups.map((g) => ({ key: g.key, short: g.short, ...groupWaterfall(g, snap, hasBm) }));
   const stepRows = sections.flatMap((s) => s.rows.filter((r) => finite(r.value)));
   if (!stepRows.length) return null;
-  // per-group rounding only: each group's steps sum to its own gap by
-  // construction; the difference to the hero is the edition cap, left visible
-  const residual = (nowTotal - startTotal) - stepRows.reduce((a, r) => a + r.value, 0);
-  if (Math.abs(residual) <= 0.5) {
-    const biggest = stepRows.reduce((a, b) => (Math.abs(b.value) > Math.abs(a.value) ? b : a));
-    biggest.value += residual;
-  }
-  const capped = Math.abs(residual) > 0.5;
+  // The steps are demand, so on a release over its edition they add up to more
+  // than the capped actual; that cap is the snapshot's to say (walkCap) and is
+  // left visible as the gap. Everything else left over is rounding - the
+  // channels are kept to 0.1 of a unit, the levels to whole ones, and the
+  // funnel's factors do not multiply back exactly - parked on the largest step.
+  const over = walkCap(snap, false);
+  const closed = closeWalk(stepRows.map((r) => r.value), startTotal, nowTotal, over);
+  stepRows.forEach((r, i) => { r.value = closed[i]; });
+  const capped = over > 0;
 
   // running level through every row (info rows carry the level across); each
   // row remembers its group, which is how the 2 × 2 card finds its rung
@@ -479,7 +482,7 @@ function buildWaterfall(snap, groups) {
     body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.",
   } : null;
 
-  return { flat, X, domain: [lo - pad, hi + pad], expTotal, bmTotal, nowTotal, hasBm, day, dayText: dayLabel(snap, day), words, capped, stretchTip };
+  return { flat, X, domain: [lo - pad, hi + pad], expTotal, bmTotal, nowTotal, hasBm, day, dayText: dayLabel(snap, day), words, capped, over, stretchTip };
 }
 
 const targetTip = (wf) => ({
@@ -494,7 +497,7 @@ const bmTip = (wf) => ({
 const actualTip = (wf) => ({
   head: "Secured to date",
   rows: [{ label: "Secured units", value: fmt(wf.nowTotal) }],
-  body: wf.capped ? "The steps add up to more than the gap - the sellout caps the actual." : undefined,
+  body: wf.capped ? `The steps add up to ${fmt(wf.over)} more than the actual: demand the edition cannot hold, so the sellout caps it.` : undefined,
 });
 const stepTip = (r, hasBm) => ({
   head: r.label, body: r.note,
@@ -508,7 +511,7 @@ const infoTip = (r) => ({ head: r.label, body: r.note, rows: r.tipRows });
 
 /* The rungs, as data: five groups of { label, v, bm, plan, unit, kind, inv,
  * note } for buildRung, off the same snapshot the waterfall walks. */
-function rungModel(snap) {
+export function rungModel(snap) {
   const targeted = snap?.targeted !== false;
   const fbg = snap?.funnelByGroup || {};
   const email = snap?.email || {};

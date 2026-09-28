@@ -19,6 +19,7 @@
 import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, BADGE_WORDS, C, QBadge, fmt, fmtSigned, useTip, LevelWaterfall, waterfallOpening, waterfallScale, HATCH } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import { channelWalk } from "../figures.mjs";
 
 /* Demand the edition cannot hold: the last step of a walk on a sold-out
  * release, in the hero's over-sellout hatch, dropping to the capped figure
@@ -92,17 +93,12 @@ export default function Waterfall({ snap, horizon = "today" }) {
   };
   /* By channel: each channel steps from its target to its actual (today) or
    * from its target to its projection (at close), in the order the page lists
-   * them. The channels add up to the release's demand, so on a sold-out
-   * release the walk ends with a Beyond sellout step down to the capped
-   * figure, the same step the drivers view carries. */
-  const channels = (snap?.channels || []).map((c) => {
-    const a = isToday ? c.now ?? 0 : c.proj ?? 0;
-    const e = hasBm ? (isToday ? c.bmExp ?? 0 : c.bm ?? 0) : (isToday ? c.exp ?? 0 : c.target ?? 0);
-    return { key: c.key, label: c.name, value: a - e, a, e };
-  });
-  let run = start;
-  const chanPath = channels.map((c) => { const from = run; run += c.value; return { ...c, from, to: run }; });
-  const residual = outcome - run;
+   * them, in whole units that add up (figures.mjs). The channels add up to the
+   * release's demand, so on a release over its edition the walk ends with a
+   * Beyond sellout step down to the capped figure: the drivers view's own
+   * step, taken from the snapshot, never from what rounding leaves over. */
+  const cw = channelWalk(snap, { today: isToday });
+  const chanPath = cw ? cw.steps : [];
   const xClose = { close: !isToday };
   const xHere = { ...xClose, where: title };   // the figures this card shows that the hero owns
   const stepRows = by === "channels"
@@ -135,7 +131,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
         };
       });
   // the channels add up to the demand; the cap is its own step down to the outcome
-  if (by === "channels" && Math.abs(residual) > 0.5) stepRows.push(beyondStep(residual, run, outcome, xClose));
+  if (by === "channels" && cw && cw.beyond < 0) stepRows.push(beyondStep(cw.beyond, cw.end, outcome, xClose));
   const rows = [
     ...waterfallOpening({ hasBm, bm: benchmark, target, words, k, xArg: xHere }),
     ...stepRows,

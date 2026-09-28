@@ -10,6 +10,7 @@ import { SOURCES, sourceRow } from "../web/src/explain/sources.mjs";
 import { preorderUnits } from "../web/src/explain/explanations.mjs";
 import { inDraw } from "../shared/sellThrough.mjs";
 import { fmt, fmtPct, fmtSigned } from "../web/src/format.mjs";
+import { channelWalk } from "../web/src/figures.mjs";
 
 const root = new URL("../data/app/", import.meta.url);
 // derived/ is the build's own output and not in the repo: a fresh checkout has none
@@ -140,6 +141,12 @@ for (const f of files) {
           const r = s.sellthrough.products.find((p) => p.key === arg.key);
           const p = close ? r.pctClose : r.pct;
           return p === null || p === undefined ? null : Math.round(p * 100) + "%";
+        },
+        // the Channels view's step, whole units that add up (Waterfall.jsx); the
+        // card only asks for Today where the snapshot has a Today walk
+        "wf.channel": () => {
+          if (!close && !(s.waterfall && s.waterfall.today)) return undefined;
+          return fmtSigned(channelWalk(s, { today: !close }).steps.find((x) => x.key === arg.key).value);
         },
         "framing.head": () => {
           const fc = s.framing.forecast && s.framing.forecast[close ? "close" : "today"];
