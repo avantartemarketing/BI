@@ -153,19 +153,21 @@ const context = (text) => ({ type: "context", elements: [mrkdwn(text)] });
  * framing take-up, and one row per product (or the release as one row
  * without the draw feed). `horizon` is the page's toggle: "close" reads the
  * projection, as the card does. The day is moved on to the day this goes out
- * (`today`, for the tests). */
-function model(snap, { horizon = "today", today } = {}) {
+ * (`today`, for the tests). `direct` says the page reads Direct spread over
+ * the other channels, and the snapshot handed in is that reading. */
+function model(snap, { horizon = "today", today, direct = false } = {}) {
   const st = (snap && snap.sellthrough) || {};
   const close = horizon === "close";
   const products = Array.isArray(st.products) ? st.products : [];
   const fullNames = products.map((p) => String(p.name || ""));
   const names = shortNames(fullNames);
   const soldOf = (p) => num(p.sold) + num(p.soldAssumed);
-  // the whole edition is the products' editions added up; the release's own
-  // edition size stands in when a product has none
+  // the products' editions added up, for splitting the release's target over
+  // the works; the headline's edition is the card's, the release's own, with
+  // this sum standing in only when the release has none
   const editionSum = products.length && products.every((p) => num(p.edition) > 0)
     ? products.reduce((n, p) => n + num(p.edition), 0) : null;
-  const edition = editionSum || (num(st.edition) > 0 ? num(st.edition) : null);
+  const edition = num(st.edition) > 0 ? num(st.edition) : editionSum;
   const releaseName = String(snap.releaseName || snap.id || "Release");
   const artist = String(snap.artist || releaseName);
 
@@ -177,15 +179,23 @@ function model(snap, { horizon = "today", today } = {}) {
   const lag = Math.max(0, daysBetween(snap.asOf, sent));
   const of = num(snap.of);
   const day = Math.min(num(snap.day) + lag, of > 0 ? of : Infinity);
-  const through = snap.completeThrough || snap.asOf;
-  const dayLine = of > 0 ? `Day ${fmt(day)} of ${fmt(of)}${through ? `, figures to ${fmtDay(through)}` : ""}.`
-    : through ? `Figures to ${fmtDay(through)}.` : null;
+  // the figures run to the page's as-of day ("data through" on the page),
+  // which is only partly in while the feed is live on it
+  const through = snap.asOf || snap.completeThrough || null;
+  const partial = !!snap.asOf && finite(snap.asOfFraction) && num(snap.asOfFraction) < 1;
+  const toWords = through ? `${fmtDay(through)}${partial ? " so far" : ""}` : null;
+  const dayLine = of > 0 ? `Day ${fmt(day)} of ${fmt(of)}${toWords ? `, figures to ${toWords}` : ""}.`
+    : toWords ? `Figures to ${toWords}.` : null;
 
-  // the headline, as the card computes it
+  // the headline, as the card computes it: today's units over the release's
+  // edition, and at close the card's own percentage (the sell-through's pct,
+  // on that edition from these same parts); both on the edition it prints
   const sold = num(st.sold), drafts = finite(st.drafts) ? num(st.drafts) : null, inHand = num(st.soldPredicted);
   const future = close ? num(st.futureEntriesPredicted) : 0;
   const units = sold + (drafts || 0) + inHand + future;
-  const headPct = edition ? (close ? num(st.pct) : Math.min(units / edition, 1)) : null;
+  const headPct = edition
+    ? (close && edition === num(st.edition) && finite(st.pct) ? num(st.pct) : Math.min(units / edition, 1))
+    : null;
   const what = close ? "projected at close" : "sold through";
   const headline = headPct === null
     ? { bold: `${fmt(units)} units ${close ? "projected at close" : "spoken for"}`, rest: "" }
@@ -256,8 +266,8 @@ function model(snap, { horizon = "today", today } = {}) {
   total.framingRate = fcTotal ? fcTotal.frames / fcTotal.prints : null;
 
   return {
-    close, artist, releaseName, prefix: prefix ? prefixWords(prefix) : null, day: of > 0 ? { day, of } : null, through,
-    worksLine, dayLine, headline, totals, framing, framingCols, rows, total,
+    close, artist, releaseName, prefix: prefix ? prefixWords(prefix) : null, day: of > 0 ? { day, of } : null, through, toWords,
+    direct: !!direct, worksLine, dayLine, headline, totals, framing, framingCols, rows, total,
     hasProducts: products.length > 0,
     incomplete: Array.isArray(st.incomplete) ? st.incomplete : [],
   };
@@ -302,6 +312,11 @@ function byName(name, items) {
 const round1 = (v) => Math.round(v * 10) / 10;
 /* a number Slack can sort, shown as words; a dash where there is nothing */
 const cell = (v, text) => (v === null ? raw("-") : rawNum(v, text));
+
+/* Which attribution the figures are on, said only when the page has Direct
+ * spread over the other channels (its Direct switch on Spread, docs 1.3):
+ * the entries still to come and the framing forecast move with it. */
+const DIRECT_WORDS = "Attribution: Direct spread over the other channels.";
 
 /* The table's title, and the footnote the units column's asterisk points
  * to: what "units sold" counts, since the figure is more than the paid ones. */
@@ -352,16 +367,19 @@ function tableBlock(m) {
 
 /* The update as Block Kit: the artist as the header; the works' shared
  * title and the campaign day on one line; the table's title, then the
- * table; then, in small type, the day the figures run to, the totals and
- * the framing take-up in plain sentences, a note while a feed is missing,
- * and last the footnote the units column points to. `horizon` is the
- * page's toggle: "close" reads the projection, as the card does. Returns
- * the blocks and the one-line text Slack shows in notifications. */
-function composeSellThroughBlocks(snap, { horizon = "today", today } = {}) {
-  const m = model(snap, { horizon, today });
+ * table; then, in small type, the day the figures run to (the page's as-of
+ * day, "so far" while it is only partly in), which attribution they are on
+ * when the page spreads Direct over the other channels, the totals and the
+ * framing take-up in plain sentences, a note while a feed is missing, and
+ * last the footnote the units column points to. `horizon` is the page's
+ * toggle: "close" reads the projection, as the card does; `direct` is its
+ * Direct switch on Spread, with `snap` already that reading. Returns the
+ * blocks and the one-line text Slack shows in notifications. */
+function composeSellThroughBlocks(snap, { horizon = "today", today, direct = false } = {}) {
+  const m = model(snap, { horizon, today, direct });
   const dayWords = m.day ? `day ${fmt(m.day.day)} of ${fmt(m.day.of)}` : null;
   const above = m.prefix && dayWords ? `${m.prefix}, ${dayWords}` : m.prefix || (dayWords ? dayWords[0].toUpperCase() + dayWords.slice(1) : null);
-  const below = [m.through ? `Figures to ${fmtDay(m.through)}.` : null, m.totals, m.framing].filter(Boolean).join(" ");
+  const below = [m.toWords ? `Figures to ${m.toWords}.` : null, m.direct ? DIRECT_WORDS : null, m.totals, m.framing].filter(Boolean).join(" ");
   const blocks = [
     { type: "header", text: { type: "plain_text", text: m.artist.slice(0, 150) } },
     ...(above ? [section(above)] : []),

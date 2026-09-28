@@ -128,5 +128,44 @@ E = run(launch, 0.5, launch, launch - timedelta(days=1), 0.5)
 check(not E["complete"] and E["day"] == L and E["asOfFraction"] == 0.5, f"launch day in progress: complete={E['complete']} day={E['day']}")
 F = run(launch, 1.0, launch, launch, 1.0)
 check(F["complete"] and F["asOfFraction"] == 1.0, "launch day full: complete")
+
+# ---- the projections at close on a part day: the spend to date (today so far
+# included) plus the run rate over the full days after today and the rest of
+# today, and the entries in hand today counted, as the units beside them are
+rest = (launch - TODAY).days + (1 - 0.4375)
+want = pd_["spendToDate"] + pd_["budget"]["current"] * rest
+check(abs(pd_["spendProjectedTotal"] - want) < 0.01,
+      f"spend at close = spend to date + the run rate x {rest} days: {pd_['spendProjectedTotal']} vs {want:.2f}")
+check(abs(B["paid"]["spendProjectedTotal"] - (B["paid"]["spendToDate"] + 500.0 * (launch - (TODAY - timedelta(days=1))).days)) < 0.01,
+      f"on a full day, every day left at the run rate: {B['paid']['spendProjectedTotal']}")
+check(C["paid"]["spendProjectedTotal"] >= C["paid"]["spendToDate"] and F["paid"]["spendProjectedTotal"] == F["paid"]["spendToDate"],
+      "a complete campaign's spend at close is its spend")
+G = run(launch, 0.9, launch, launch - timedelta(days=1), 0.9)          # the last day, nine tenths seen
+part_g = next(r for r in G["paid"]["daily"] if r.get("partial"))
+check(part_g["entries"] > 0.3 and G["paid"]["entriesProjected"] >= G["paid"]["entriesToDate"] - 0.05,
+      f"entries at close keep today's entries in hand: {G['paid']['entriesProjected']} vs {G['paid']['entriesToDate']} to date")
+for s in (A, B, E, G):
+    check(s["paid"]["entriesProjected"] >= s["paid"]["entriesToDate"] - 0.05, f"{s['asOf']}: projected entries below those in hand")
+
+# ---- the waterfall's Paid spend step reads the spend to date, today so far
+# included, against the plan by today (read at the share of today seen), as
+# the Paid spend card and the funnel's Spend rung do. A part day with a big
+# spend so far: the full days alone moved it into Paid efficiency.
+def paid_day_frac(s):
+    start, span = s["paid"]["paidStartDays"], s["of"] - s["paid"]["paidStartDays"]
+    return min(1.0, max(0.0, (max(0.0, s["day"] - (1 - s["asOfFraction"])) - start) / span)) if span > 0 else 1.0
+at_h = frame(TODAY, 0.4)
+sp_h = spend_frame(TODAY, 0.4)
+sp_h.loc[sp_h["spend_date"] == TODAY, "spend"] = 9000.0
+H = build.build_release(cfg, at_h, sp_h, emails, content, curves, TODAY, artist_posts, {}, None, panel, people,
+                        full_through=TODAY - timedelta(days=1), seen=0.4375)
+build.check_snapshot(H)
+cpp, frac = H["targets"]["paid"]["cost_per_purchase"], paid_day_frac(H)
+full_h = sum(r["spend"] for r in H["paid"]["daily"] if not r.get("partial"))
+for key, budget in (("steps", H["paid"]["spendBudget"]), ("stepsBm", H["paid"]["benchmarkBudget"])):
+    step = next(x["value"] for x in H["waterfall"]["today"][key] if x["key"] == "paid_spend")
+    want = (H["paid"]["spendToDate"] - budget * frac) / cpp
+    check(abs(step - want) <= 1.5 and abs(step - (full_h - budget * frac) / cpp) > 5,
+          f"today's {key} Paid spend on the spend to date: {step} vs {want:.1f} (full days alone {(full_h - budget * frac) / cpp:.1f})")
 print("FAILED" if failed else "ok: part-day clock", failed if failed else "")
 sys.exit(1 if failed else 0)

@@ -156,5 +156,55 @@ with tempfile.TemporaryDirectory() as tmp:
 check(build.SPEND_CURRENCY == "EUR" and close(float(sp["spend"].iloc[0]), 100.0 * build.pricing.RATES_TO_EUR["EUR"]), f"spend read in euros: {sp['spend'].iloc[0]}")
 check(paid["spendCurrency"] == "EUR" and paid["spendRate"] == build.pricing.RATES_TO_EUR["EUR"], "the paid block says which currency the spend came in")
 
+# the sizing block as docs/DATA_MODEL.md 7 writes it, read back off the
+# published figures: every quantity the card prints is the documented formula
+# of the others, so the doc cannot drift from the build unnoticed
+def sizing_as_documented(snap, label):
+    p, b = snap["paid"], snap["paid"]["budget"]
+    drop, days = p["dropOff"], b["daysLeft"]
+    s_now, cpe_now = b["current"], b["cpeNow"]
+    check(close(b["entriesNeeded"], b["selloutGap"] / (1 - drop), 0.01),
+          f"{label}: entries_needed = sellout_gap / (1 - drop_off): {b['entriesNeeded']} vs {b['selloutGap']}")
+    # the cost path of DATA_MODEL 7, rebuilt from the figures the block publishes
+    path = build.CostPath(cpe_now, b["spendAtWindow"], b["spentAtWindow"], b["spentSoFar"], days,
+                          b["elasticity"], b["wearout"], b["wearoutK"])
+    m = path.multipliers(s_now)
+    check(len(m) == days > 0 and close(b["wearToClose"], m[-1], 0.002) and close(b["cpeAtClose"], cpe_now * m[-1], 0.002),
+          f"{label}: cpe(close, s_now) = cpe_now x the path's rise to the close: {b['cpeAtClose']} vs {cpe_now * m[-1]:.2f}")
+    check(close(p["roiDeclineModel"]["dailyFactor"], (1 / m[-1]) ** (1 / days), 0.001),
+          f"{label}: dailyFactor = the path's average fall a day")
+    supply = path.spend_for_units(b["selloutGap"]) if b["selloutGap"] > 0 else 0.0
+    check(close(b["supplySpend"], supply, 0.002), f"{label}: supply_spend buys the gap on the path: {b['supplySpend']} vs {supply:.2f}")
+    check(b["selloutGap"] <= 0 or close(path.units(b["supplySpend"]), b["selloutGap"], 0.005),
+          f"{label}: the units the supply spend buys are the gap")
+    check(close(b["budgetToSellOut"], b["supplySpend"] * days, 0.001), f"{label}: budget_to_sellout = supply_spend x days_left")
+    cpe_max = (1 - p["cannibalisation"]) * p["profitPerUnitAA"] / (b["floor"] * p["aaBudgetShare"])
+    roi = path.spend_for_cpe_close(cpe_max)
+    check((b["roiSpend"] is None and roi == float("inf")) or close(b["roiSpend"], roi, 0.002),
+          f"{label}: roi_spend ends the path on the floor's price: {b['roiSpend']} vs {roi}")
+    check(close(b["finalDayRoi"], (1 - p["cannibalisation"]) * p["profitPerUnitAA"] / (b["cpeAtRecommended"] * p["aaBudgetShare"]), 0.005),
+          f"{label}: ROI at close at the recommended spend, net of cannibalisation")
+    rois = [x["roi"] for x in p["daily"] if not x.get("partial")][-3:]
+    check(b["forcedDecrease"] == (len(rois) == 3 and all(r is not None and r < p["roiTarget"] for r in rois)),
+          f"{label}: the forced decrease reads the trailing 3-day ROI of the last 3 full days: {rois}")
+    # benchmark.paidBudget is the basket's own budget, unscaled (DATA_MODEL 10a);
+    # the target's, x K, is targets.paid.budget
+    bm = snap["benchmark"]
+    check(bm["paidBudget"] == p["benchmarkBudget"], f"{label}: benchmark.paidBudget is paid.benchmarkBudget")
+    check(close(bm["paidBudget"] * bm["k"], snap["targets"]["paid"]["budget"], 0.001),
+          f"{label}: benchmark.paidBudget x K is the target's budget: {bm['paidBudget']} x {bm['k']} vs {snap['targets']['paid']['budget']}")
+
+for label, snap in (("profit share", S), ("revenue share", R), ("cannibalisation 35%", T)):
+    sizing_as_documented(snap, label)
+# the revenue share halves AA's ROI to about 0.5: no daily spend brings the
+# price at the close under the floor's, and the cut that follows is held to
+# 30% a day like any other, never a stop overnight
+rb = R["paid"]["budget"]
+check(rb["roiSpend"] == 0.0 and rb["cap"] == "roi_floor" and rb["paced"]
+      and close(rb["recommended"], rb["current"] * (1 - build.BENCH["spend_rules"]["max_daily_change"]), 0.001),
+      f"a floor no spend meets is a paced cut: {rb['recommended']} from {rb['current']} (roi spend {rb['roiSpend']}, cap {rb['cap']})")
+print(f"sizing as documented: gap {S['paid']['budget']['selloutGap']}, entries {S['paid']['budget']['entriesNeeded']}, "
+      f"supply {S['paid']['budget']['supplySpend']}/day x {S['paid']['budget']['daysLeft']} = {S['paid']['budget']['budgetToSellOut']}")
+
 print("FAILED" if failed else "ok: party ROI", failed if failed else "")
 sys.exit(1 if failed else 0)

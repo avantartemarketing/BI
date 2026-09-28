@@ -190,8 +190,49 @@ check(parts(at({ today: "2026-10-30" }).blocks).sections[0].endsWith("day 24 of 
   check(rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[1] === "I|62|-|-|31|49%" && rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[4] === "Total|126|-|-|58|46%", `no target at all: ${rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[4]}`);
 }
 
-// the whole edition is the products' editions added up, not the page's sellout target
-check(composeSellThroughBlocks({ ...snap, sellthrough: { ...snap.sellthrough, edition: 500 } }, { today: "2026-09-17" }).text === "Test Artist: 21% sold through, 126 of 600 units", "edition sum");
+// the headline's edition is the card's, the release's own, when the works' editions add up to
+// more (Julian Schnabel: three works of 200 on a release of 500): the percentage and the
+// "of N units" are both on it at both horizons, and at close the percentage is the card's
+{
+  const parts = (st, close) => st.sold + st.drafts + st.soldPredicted + (close ? st.futureEntriesPredicted : 0);
+  const st500 = { ...snap.sellthrough, edition: 500, editionSum: 600, editionMismatch: true };
+  st500.pct = Math.round(Math.min(parts(st500, true) / 500, 1) * 10000) / 10000;   // etl/build.py close_headline
+  const mismatch = { ...snap, sellthrough: st500 };
+  const t = composeSellThroughBlocks(mismatch, { today: "2026-09-17" }).text;
+  const c = composeSellThroughBlocks(mismatch, { today: "2026-09-17", horizon: "close" }).text;
+  check(t === "Test Artist: 25% sold through, 126 of 500 units", `today on the release's edition, as the card: ${t}`);
+  check(c === "Test Artist: 37% projected at close, 186 of 500 units", `at close on the release's edition, as the card: ${c}`);
+  for (const [text, close] of [[t, false], [c, true]]) {
+    const [, p, u, e] = text.match(/(\d+)% [a-z ]+, ([\d,]+) of ([\d,]+) units$/);
+    check(Number(p) === Math.round((100 * parts(st500, close)) / Number(e.replace(/,/g, ""))) && Number(u) === Math.round(parts(st500, close)),
+      `the percentage is the printed units over the printed edition: ${text}`);
+  }
+  // the works' split of the release's target still reads the works' own editions
+  check(rowsOf(composeSellThroughBlocks(mismatch, { today: "2026-09-17" }).blocks)[3] === "III|24|133|18%|11|48%", "the target split is by the works' editions");
+  // a release without an edition of its own: the works' editions stand in, and at close the
+  // percentage is read off the units rather than the missing pct
+  const noEdition = { ...snap, sellthrough: { ...snap.sellthrough, edition: null, pct: null } };
+  check(composeSellThroughBlocks(noEdition, { today: "2026-09-17" }).text === "Test Artist: 21% sold through, 126 of 600 units", "no release edition: the works' sum");
+  check(composeSellThroughBlocks(noEdition, { today: "2026-09-17", horizon: "close" }).text === "Test Artist: 31% projected at close, 186 of 600 units", "no release edition at close: off the units, not 0%");
+}
+
+// the figures run to the page's as-of day, "so far" while that day is only partly in
+{
+  const below = (s) => parts(composeSellThroughBlocks(s, { today: s.asOf }).blocks).contexts[0];
+  check(below({ ...snap, asOf: "2026-09-18", completeThrough: "2026-09-17", asOfFraction: 0.5 }).startsWith("Figures to 18 Sep so far. Paid 94"), `a live day: ${below({ ...snap, asOf: "2026-09-18", completeThrough: "2026-09-17", asOfFraction: 0.5 })}`);
+  check(below({ ...snap, asOf: "2026-09-24", completeThrough: "2026-09-23", asOfFraction: 1 }).startsWith("Figures to 24 Sep. Paid 94"), `a closed window, the page's asOf: ${below({ ...snap, asOf: "2026-09-24", completeThrough: "2026-09-23", asOfFraction: 1 })}`);
+}
+
+// with the page's Direct switch on Spread the message is the Spread reading and says so;
+// on Channel it says nothing about attribution
+{
+  const spread = { ...snap, sellthrough: { ...snap.sellthrough, futureEntriesPredicted: 50, pct: 0.2937 } };
+  const on = composeSellThroughBlocks(spread, { today: "2026-09-17", horizon: "close", direct: true });
+  const off = composeSellThroughBlocks(snap, { today: "2026-09-17", horizon: "close" });
+  check(parts(on.blocks).contexts[0].startsWith("Figures to 17 Sep. Attribution: Direct spread over the other channels. Paid 94"), `Spread said: ${parts(on.blocks).contexts[0]}`);
+  check(!/Direct/.test(JSON.stringify(off.blocks)), "Channel says nothing of attribution");
+  check(on.text === "Test Artist: 29% projected at close, 176 of 600 units" && /still to come 50\./.test(parts(on.blocks).contexts[0]), `the Spread reading's figures: ${on.text}`);
+}
 
 // a release without products: the release is the one row, no Total row, and the note says what is missing
 {
@@ -239,6 +280,23 @@ if (fs.existsSync(dir)) {
           check(works.every((r) => r[4].type !== "raw_number" || r[4].value <= r[1].value), `${f}: no row frames more than it counts at ${horizon}`);
         }
       } else check(!total, `${f}: no Total row for one work`);
+    }
+    // the headline is the card's (web/src/modules/SellThrough.jsx: the release's edition, today's
+    // units over it, at close the sell-through's pct), on the page as it reads with Direct on
+    // Channel and on Spread, the Spread reading being the snapshot with its variant laid over
+    const variant = s.variants && s.variants.direct_spread;
+    for (const [view, direct] of [[s, false], ...(variant ? [[{ ...s, ...variant }, true]] : [])]) {
+      const st = view.sellthrough || {};
+      if (!(st.edition > 0)) continue;
+      for (const horizon of ["today", "close"]) {
+        const close = horizon === "close";
+        const units = (st.sold ?? 0) + (st.drafts ?? 0) + (st.soldPredicted ?? 0) + (close ? st.futureEntriesPredicted ?? 0 : 0);
+        const cardPct = close ? st.pct ?? 0 : Math.min(units / st.edition, 1);
+        const want = `${Math.round(cardPct * 100)}% ${close ? "projected at close" : "sold through"}, ${Math.round(units).toLocaleString("en-GB")} of ${Math.round(st.edition).toLocaleString("en-GB")} units`;
+        const m = composeSellThroughBlocks(view, { horizon, direct });
+        check(m.text.endsWith(want), `${f} ${horizon}${direct ? " (Spread)" : ""}: the card's headline: ${m.text} vs ${want}`);
+        check(/Attribution: Direct spread/.test(JSON.stringify(m.blocks)) === direct, `${f} ${horizon}: the attribution said only on Spread`);
+      }
     }
     if (print && /schnabel|warhol/.test(f)) console.log("\n" + asText(composeSellThroughBlocks(s)));
   }

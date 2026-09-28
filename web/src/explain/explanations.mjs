@@ -19,12 +19,14 @@
  * or null when the figure is not on this page. Plain JavaScript (no JSX), so
  * tests/explain.mjs runs every builder against every snapshot on file. */
 import { fmt, fmtSigned, fmtPct, fmtDay, MINUS, paidDayFrac } from "../format.mjs";
+import { channelWalk, paidUnits } from "../figures.mjs";
 import { inDraw } from "../../../shared/sellThrough.mjs";
 
 /* ---- formatting ---- */
 const n = (v, d = 0) => fmt(v, d);
 const u = (v) => fmt(v, v > 0 && v < 10 ? 1 : 0);            // the channels card's units
 const pct = (x, d = 0) => fmtPct(x, d);
+const dailyRate = (x) => pct(x, x > 0 && x < 0.0005 ? 2 : 1);   // a drift a day: never "0.0%" for one above 0
 const eur = (v, d = 0) => (v === null || v === undefined ? "–" : (v < 0 ? MINUS : "") + "€" + fmt(Math.abs(v), d));
 const signed = (v, d = 0) => fmtSigned(v, d);
 const dayOf = (iso) => (iso ? fmtDay(new Date(String(iso).slice(0, 10) + "T00:00:00Z")) : null);
@@ -163,14 +165,18 @@ EXPLAIN["hero.secured"] = (a, { snap: s }) => {
 /* The units counted from entries made as a pre-order, on each product: a
  * unit converts at the pre-order rate or the entry rate, so the product's
  * expected orders less its units at the entry rate, over the difference in
- * rate, is its pre-order units. Whole units, so the rounding of the
- * published figures cannot move it while the rates sit 10 points or more
- * apart; null where they do not. */
+ * rate, is its pre-order units. The claims a draw round has made that the
+ * order table has not caught up with (`claims`, docs 6.3) are in the
+ * expected orders at the pre-order rate but are nobody's entry, so they come
+ * out first. Whole units, so the rounding of the published figures cannot
+ * move it while the rates sit 10 points or more apart; null where they do
+ * not. */
+const claimsOf = (p) => (finite(p.claims) && p.claims > 0 ? p.claims : 0);   // 0 before claims were counted
 export function preorderUnits(st) {
   const r = st.conversion, pr = st.preorderConversion;
   const products = Array.isArray(st.products) ? st.products : [];
   if (!products.length || !finite(r) || !finite(pr) || Math.abs(pr - r) < 0.1) return null;
-  return sum(products.map((p) => Math.max(Math.round(((p.predicted ?? 0) - r * (p.allocated ?? 0)) / (pr - r)), 0)));
+  return sum(products.map((p) => Math.max(Math.round(((p.predicted ?? 0) - pr * claimsOf(p) - r * (p.allocated ?? 0)) / (pr - r)), 0)));
 }
 
 EXPLAIN["st.draw"] = (a, { snap: s }) => {
@@ -184,6 +190,10 @@ EXPLAIN["st.draw"] = (a, { snap: s }) => {
   const predicted = products ? sum(products.map((p) => p.predicted)) : null;
   const who = products && Array.isArray(st.patterns) ? inDraw({ products, patterns: st.patterns }) : null;
   const preU = products ? preorderUnits(st) : null;
+  // a claim round's winners whose orders the order table has not shown yet:
+  // counted first, at the pre-order rate (their card is charged), docs 6.3
+  const claims = products ? sum(products.map(claimsOf)) : 0;
+  const preRate = finite(pre) && pre > 0 && pre <= 1 ? pre : rate;
   const steps = [];
   const notes = [];
   if (products && who) {
@@ -205,9 +215,14 @@ EXPLAIN["st.draw"] = (a, { snap: s }) => {
       ? seg`Multiply by the ${pct(rate)} of entries that usually become orders, or ${pct(pre)} for an entry made as a pre-order, with the card already authorised.`
       : seg`Multiply by the ${pct(rate)} of entries that usually become orders.`);
     const base = products ? allocated * rate : finite(st.inHandUnits) ? st.inHandUnits * rate : null;
-    if (base !== null && draw - base >= 0.5 && finite(pre) && pre > rate) {
-      notes.push(`${n(products ? allocated : st.inHandUnits)} × ${pct(rate)} is ${n(base)}; the pre-order entries, at ${pct(pre)}, add the other ${n(draw - base)}.`);
+    const fromClaims = claims * preRate;
+    if (base !== null && draw - base - fromClaims >= 0.5 && finite(pre) && pre > rate) {
+      notes.push(`${n(products ? allocated : st.inHandUnits)} × ${pct(rate)} is ${n(base)}; the pre-order entries, at ${pct(pre)}, add the other ${n(draw - base - fromClaims)}.`);
     }
+  }
+  if (claims > 0) {
+    steps.push(seg`Add the ${n(claims)} winners of this draw round whose claims the order table has not caught up with yet: their cards are charged, so they count at the pre-order rate, ${n(claims)} × ${pct(preRate)} = ${n(claims * preRate, 1)} orders, on their works before anyone still in the draw.`);
+    notes.push("A claim leaves this count when its order reaches the order table, where it is a unit paid, so claiming never reads as the sell-through going down.");
   }
   if (predicted !== null && predicted - draw >= 0.5) {
     notes.push(`That is ${n(predicted, 1)} orders, held to ${n(draw)} by the room left in the works.`);
@@ -225,7 +240,7 @@ EXPLAIN["st.draw"] = (a, { snap: s }) => {
     steps, total: { v: n(draw), label: "expected from the draw" },
     sources: [
       { key: "entries", gave: "Each entry's works, the most the entrant wants, and whether it was a pre-order" },
-      { key: "orders", gave: "What each work has left: its paid and draft units" },
+      { key: "orders", gave: claims > 0 ? "What each work has left, and the round's claims not yet in the order table" : "What each work has left: its paid and draft units" },
       { key: "settings", gave: rateSource(s) },
     ],
     notes, method: "Data model 6.3",
@@ -257,8 +272,19 @@ EXPLAIN["hero.proj"] = (a, { snap: s }) => {
   const [rNow, rPaid, rOrg] = roundParts([now, paidMore, orgMore], capped ? demand : h.projected);
   const steps = [seg`Start from the ${drill(n(rNow), "hero.secured")} units secured so far.`];
   if (paid) {
+    // the cost per entry follows the campaign's cost path (docs 7): rising
+    // as its spend adds up at its wear-out, which can be 0, then holding at
+    // today's; a snapshot built before the wear-out reads its drift a day
+    const bud = (s.paid || {}).budget || {};
+    const drift = bud.driftPerDay;
+    const costPath = finite(bud.wearout)
+      ? (bud.wearout > 0 ? `at a cost per entry that rises as the campaign's spend adds up, ${pct(2 ** bud.wearout - 1)} with each doubling of it`
+        : "at today's cost per entry, flat to the close")
+      : !finite(drift) ? "at the campaign's projected cost per entry"
+      : drift > 0 ? `at a cost per entry that rises ${dailyRate(drift)} a day`
+      : "at today's cost per entry, flat to the close";
     steps.push(rPaid > 0
-      ? seg`Add the ${n(rPaid)} more that paid should bring if today's daily spend carries on to the close, at a cost per entry that rises a little each day.`
+      ? seg`Add the ${n(rPaid)} more that paid should bring if today's daily spend carries on to the close, ${costPath}.`
       : seg`Add nothing more from paid: there has been no spend in the last three days, so none is projected.`);
   }
   steps.push(seg`Add the ${n(rOrg)} more the organic channels should bring, each following the shape its past launches took, scaled to how it is doing against plan so far.`);
@@ -317,7 +343,7 @@ EXPLAIN["hero.target"] = (a, c) => {
       note: `${pct(ratio(h.now, h.expectedToday))} of the target by today.` }] : [],
     sources: [
       { key: "settings", gave: "The campaign's target" },
-      { key: "curves", gave: "How each channel's units build up over a campaign" },
+      { key: "curves", gave: "How each channel's entries build up over a campaign, the timing its units are planned on" },
       ...(hasBasket(s) ? [{ key: "basket", gave: "The launches the curves are read from" }] : []),
     ],
     notes: [`By ${dayText(s)} the plan asks for ${pct(ratio(h.expectedToday, h.target))} of the whole target.`],
@@ -498,7 +524,6 @@ const RUNG_SOURCES = {
   "Sessions": [["funnel", "Sessions by channel"]],
   "Session → sale": [["funnel", "Sessions and entries by channel"], ["orders", "Units paid by channel"]],
   "Session → buyer": [["funnel", "Sessions and entries by channel"], ["orders", "Buyers by channel"]],
-  "Session → entry": [["funnel", "Sessions and entries"]],
   "Delivered emails": [["hubspot", "Emails delivered for this release"]],
   "Open rate": [["hubspot", "Emails delivered and opened"]],
   "Click rate": [["hubspot", "Emails opened and clicked"]],
@@ -640,7 +665,8 @@ EXPLAIN["paid.roi"] = (a, c) => {
   const net = ppu * (1 - cann);
   const notes = [];
   if (!artist && p.aaBudgetShareAssumed) notes.push("No product records its deal yet, so half the spend is assumed to be Avant Arte's. Type each product's AA profit share (or AA revenue share) on the Target setting tab: the spend divides as the profit does.");
-  if (!artist) notes.push("Avant Arte's profit per unit includes the framing uplift, which is Avant Arte's alone.");
+  // only where there is an uplift: a sculpture edition has no frame on offer
+  if (!artist && ((s.economics || {}).frameUpliftPerUnit ?? 0) > 0) notes.push("Avant Arte's profit per unit includes the framing uplift, which is Avant Arte's alone.");
   notes.push(whole ? "The whole campaign's full days." : "The last three full days, so the figure moves with the latest spend rather than the campaign's average.");
   return {
     where: "Paid ROI", when: null,
@@ -671,13 +697,22 @@ EXPLAIN["paid.roi"] = (a, c) => {
 /* The rule that set the figure, as the last step (docs 7, 11a). */
 function capStep(b) {
   const cur = b.current, cum = b.cumRoi;
+  // a floor or a supply figure further than 30% from today's spend is paced
+  // to it: the rule reached one figure and the recommendation is another
+  const paced = b.paced && finite(cur) && finite(b.recommended)
+    ? seg` The pacing rule then holds the move to 30% of today's spend in a day, ${eur(cur)} × ${b.recommended >= cur ? "1.3" : "0.7"} = ${eur(b.recommended)}: a bigger jump in a day resets Meta's learning, and the price with it.`
+    : null;
   switch (b.cap) {
-    case "supply": return seg`The spend that reaches the target is the lower, so it is the figure: more would buy entries the target does not need.`;
-    case "roi_floor": return seg`The spend at the ROI floor is the lower, so it is the figure: more would take the ROI at the close under ${n(b.floor ?? 1, 1)}.`;
+    case "supply": return paced
+      ? [...seg`The spend that reaches the target is the lower, so it is where the budget is heading.`, ...paced]
+      : seg`The spend that reaches the target is the lower, so it is the figure: more would buy entries the target does not need.`;
+    case "roi_floor": return paced
+      ? [...seg`The spend at the ROI floor is the lower, so it is where the budget is heading.`, ...paced]
+      : seg`The spend at the ROI floor is the lower, so it is the figure: more would take the ROI at the close under ${n(b.floor ?? 1, 1)}.`;
     case "pacing": return seg`The pacing rule then holds the move to 30% of today's spend, ${eur(cur)} × ${b.recommended >= cur ? "1.3" : "0.7"}: a bigger jump in a day resets Meta's learning, and the price with it.`;
     case "roi_band_hold": return seg`Cumulative ROI is ${n(cum, 2)}, between 0.9 and 1.3, where the spend rules say hold: the budget stays where it is.`;
     case "roi_band_decrease": return seg`Cumulative ROI is ${n(cum, 2)}, below 0.9, where the spend rules say cut, by up to 30% a day.`;
-    case "forced_decrease": return seg`The forecast ROI has been below target three days running, which forces a cut.`;
+    case "forced_decrease": return seg`The trailing 3-day ROI has been below target on each of the last three full days, which forces a cut.`;
     case "plan_rate": return seg`There is no spend yet to price from, so the first day runs at the plan's daily rate.`;
     case "zero_conversion": return seg`The last day spent and bought no entries, which cuts the budget by 30%.`;
     case "zero_conversion_pause": return seg`Three days of spend with no entries pause the campaign.`;
@@ -685,10 +720,54 @@ function capStep(b) {
     default: return b.paced ? seg`The pacing rule then holds the move to 30% of today's spend in a day.` : null;
   }
 }
+/* How the paid model moves the cost per entry (docs 7): with the day's budget
+ * at the campaign's elasticity and as its spend adds up at its wear-out,
+ * either of which can be 0. A snapshot built before the wear-out carries a
+ * drift a day instead, read the way it was built. A figure not on the snapshot
+ * is read as rising, the way the model's priors have it. */
+function costMoves(b) {
+  if (finite(b.wearout)) {
+    const byDay = !finite(b.elasticity) || b.elasticity > 0;
+    const bySoFar = b.wearout > 0;
+    const power = finite(b.elasticity) ? ` (to the power ${n(b.elasticity, 2)})` : "";
+    const doubling = `each doubling of it makes an entry ${pct(2 ** b.wearout - 1)} dearer`;
+    if (byDay && bySoFar) {
+      return { step: "the cost per entry rises with the day's budget and as the campaign's spend adds up",
+        note: `Cost per entry rises with the day's budget${power} and with the campaign's spend so far: ${doubling}.` };
+    }
+    if (bySoFar) {
+      return { step: "the cost per entry rises as the campaign's spend adds up, not with the day's budget",
+        note: `Cost per entry rises with the campaign's spend so far, ${doubling}, and not with the day's budget.` };
+    }
+    if (byDay) {
+      return { step: "the cost per entry rises with the day's budget; this campaign's own days show no wear-out",
+        note: `Cost per entry rises with the day's budget${power}; this campaign's own days show no rise with its spend so far, so none is priced.` };
+    }
+    return { step: "the cost per entry holds at today's", note: "Cost per entry is priced flat, at today's, whatever the budget and the spend so far." };
+  }
+  const bySpend = !finite(b.elasticity) || b.elasticity > 0;
+  const byTime = !finite(b.driftPerDay) || b.driftPerDay > 0;
+  const power = finite(b.elasticity) ? ` (spend to the power ${n(b.elasticity, 2)})` : "";
+  const perDay = finite(b.driftPerDay) ? ` by ${dailyRate(b.driftPerDay)} a day` : " over time";
+  if (bySpend && byTime) {
+    return { step: "the cost per entry rises with spend and with time",
+      note: `Cost per entry is priced to rise with daily spend${power} and${perDay}.` };
+  }
+  if (bySpend) {
+    return { step: "the cost per entry rises with spend, not with time",
+      note: `Cost per entry is priced to rise with daily spend${power}, and not over time.` };
+  }
+  if (byTime) {
+    return { step: "the cost per entry rises with time, not with spend",
+      note: `Cost per entry is priced flat in daily spend, rising${perDay}.` };
+  }
+  return { step: "the cost per entry holds at today's", note: "Cost per entry is priced flat, at today's, whatever the spend and the day." };
+}
 EXPLAIN["paid.rec"] = (a, { snap: s }) => {
   const b = (s.paid || {}).budget || {};
   const cur = b.current, rec = b.recommended;
   if (!finite(rec)) return null;
+  const cost = costMoves(b);
   const steps = [];
   if (finite(cur)) steps.push(seg`Today's daily spend is ${eur(cur)}: the last full day's spend on the campaign.`);
   if (finite(b.supplySpend)) {
@@ -696,7 +775,7 @@ EXPLAIN["paid.rec"] = (a, { snap: s }) => {
       ? seg`The spend that would reach the target by the close is ${eur(b.supplySpend)} a day: after units secured and what the organic channels are on course to bring, ${n(b.selloutGap)} units are still needed, ${n(b.entriesNeeded)} entries at the ${pct(rateOf(s))} rate, bought at the cost per entry that spend implies.`
       : seg`The spend that would reach the target by the close is ${eur(b.supplySpend)} a day.`);
   }
-  if (finite(b.roiSpend)) steps.push(seg`The spend at which the ROI at the close ends on the floor of ${n(b.floor ?? 1, 1)} is ${eur(b.roiSpend)} a day: the cost per entry rises with the day's budget and as the campaign's spend adds up.`);
+  if (finite(b.roiSpend)) steps.push(seg`The spend at which the ROI at the close ends on the floor of ${n(b.floor ?? 1, 1)} is ${eur(b.roiSpend)} a day: ${cost.step}.`);
   if (finite(b.supplySpend) && finite(b.roiSpend)) steps.push(seg`The lower of the two, ${eur(Math.min(b.supplySpend, b.roiSpend))} a day, is as far as it is worth going.`);
   const rule = capStep(b);
   if (rule) steps.push(rule);
@@ -713,9 +792,9 @@ EXPLAIN["paid.rec"] = (a, { snap: s }) => {
       { key: "rules", gave: "The ±30% a day pacing, the ROI bands and the floor" },
     ],
     notes: [
-      finite(b.wearout)
-        ? `Cost per entry rises with the day's budget (to the power ${n(b.elasticity, 2)}) and with the campaign's spend so far: each doubling of it makes an entry ${pct(2 ** b.wearout - 1)} dearer.`
-        : `Cost per entry is priced to rise with daily spend (spend to the power ${n(b.elasticity, 2)}) and by ${pct(b.driftPerDay, 1)} a day.`,
+      ...(b.paced && b.cap === "roi_floor" && finite(b.finalDayRoi) && b.finalDayRoi < (b.floor ?? 1)
+        ? [`At the paced spend the ROI at the close is ${n(b.finalDayRoi, 2)}, under the floor of ${n(b.floor ?? 1, 1)}, until the cuts reach the floor's spend.`] : []),
+      cost.note,
       "Implement writes the figure to Meta and logs it; Ignore logs the decision and keeps the budget.",
     ],
     method: "Data model 7",
@@ -727,9 +806,11 @@ EXPLAIN["paid.units"] = (a, { snap: s }) => {
   const p = s.paid || {};
   const close = !!(a && a.close);
   const frac = paidDayFrac(s, close);
-  const now = p.unitsToDate ?? 0;
-  const fill = close ? (s.complete ? now : p.unitProjected ?? now) : now;
-  const target = (p.unitTarget ?? 0) * frac;
+  // the paid channel row, the operands the Channels card divides, so the
+  // Paid spend card, the Channels card and this print one percentage
+  const pu = paidUnits(s, close);
+  const fill = pu.fill, target = pu.target;
+  const whole = pu.fromRow ? (channelOf(s, "paid") || {}).target : p.unitTarget;
   const pc = ratio(fill, target);
   if (pc === null) return null;
   return {
@@ -737,9 +818,9 @@ EXPLAIN["paid.units"] = (a, { snap: s }) => {
     name: "Paid units against target", value: `${Math.round(pc * 100)}%`, unit: close ? "of paid's target, projected at close" : "of paid's target by today",
     say: "The units paid has secured against the share of its target due by now.",
     steps: [
-      close ? seg`Paid is projected to secure ${n(fill)} units by the close.` : seg`Paid has secured ${n(fill)} units so far: units paid on its orders plus its share of the entries still in the draw.`,
-      close ? seg`Its target is ${n(p.unitTarget)} units.` : seg`Its target is ${n(p.unitTarget)} units over the ${s.of - (p.paidStartDays ?? 1)} days it runs, evenly: ${pct(frac)} of them are gone, so ${n(target)} are due by today.`,
-      seg`${n(fill)} ÷ ${n(target)} = ${Math.round(pc * 100)}%.`,
+      close ? seg`Paid is projected to secure ${u(fill)} units by the close.` : seg`Paid has secured ${u(fill)} units so far: units paid on its orders plus its share of the entries still in the draw.`,
+      close ? seg`Its target is ${u(target)} units.` : seg`Its target is ${u(whole)} units over the ${s.of - (p.paidStartDays ?? 1)} days it runs, evenly: ${pct(frac)} of them are gone, so ${u(target)} are due by today.`,
+      seg`${u(fill)} ÷ ${u(target)} = ${Math.round(pc * 100)}%.`,
     ],
     total: { v: `${Math.round(pc * 100)}%`, label: "of target" },
     sources: [
@@ -756,15 +837,26 @@ EXPLAIN["paid.spend"] = (a, { snap: s }) => {
   const p = s.paid || {};
   const close = !!(a && a.close);
   if (close && !s.complete && finite(p.spendProjectedTotal)) {
+    const b = p.budget || {};
+    // the full days after today, and the share of today still to come: the
+    // days the build carries the run rate over (etl/build.py rest_days)
     const days = Math.max((s.of ?? 0) - (s.day ?? 0), 0);
+    const rest = Math.min(Math.max(1 - (s.asOfFraction ?? 1), 0), 1);
+    // the run rate: the last full day's spend, else on a first day the
+    // recommendation the build carries instead
+    const rate = finite(b.current) && b.current > 0 ? b.current
+      : (finite(b.recommended) && b.daysLeft ? b.recommended : 0);
+    const spent = p.spendToDate ?? 0;
+    const [fullPart, restPart] = roundParts([rate * days, rate * rest], Math.round(p.spendProjectedTotal) - Math.round(spent));
     return {
       where: "Paid spend / day", when: "At close",
       name: "Spend projected at close", value: eur(p.spendProjectedTotal),
       unit: "by the close",
-      say: "What the campaign will have spent by the close if today's daily spend carries on.",
+      say: "What the campaign will have spent by the close if the last full day's spend carries on.",
       steps: [
-        seg`Start from the ${eur(p.spendToDate)} spent so far.`,
-        seg`Add today's daily spend of ${eur((p.budget || {}).current)} for each of the ${days} days left, and the rest of today.`,
+        seg`Start from the ${eur(spent)} spent so far${rest > 0 ? ", today so far included" : ""}.`,
+        ...(days > 0 ? [seg`Add the last full day's spend, ${eur(rate)}, for each of the ${days} days after today: ${eur(fullPart)}.`] : []),
+        ...(rest > 0 ? [seg`Add it for the ${pct(rest)} of today still to come: ${eur(restPart)}.`] : []),
       ],
       total: { v: eur(p.spendProjectedTotal), label: "projected spend" },
       compare: finite(p.spendBudget) ? [{ label: "Budget", v: eur(p.spendBudget), note: "The paid budget for the campaign." }] : [],
@@ -826,20 +918,29 @@ EXPLAIN["st.head"] = (a, { snap: s }) => {
   if (rDrafts > 0) steps.push(seg`Add the draft orders awaiting payment: ${n(rDrafts)}.`);
   if (draw > 0) steps.push(seg`Add the orders expected from the draw: ${drill(n(rDraw), "st.draw")}.`);
   if (close && future > 0) steps.push(seg`Add the units still to come by the close, the projection's further units spread over the room left: ${n(rFuture)}.`);
-  if (ed) steps.push(seg`${n(units)} of the ${n(ed)} units in the edition${head >= 1 && units > ed ? ", held at the whole edition" : ""}.`);
-  const value = ed ? `${Math.round(head * 100)}%` : n(units);
+  // the units column of a release drawn as one row explains its units, not the %
+  const asUnits = !!(a && a.as === "units");
+  if (ed && !asUnits) steps.push(seg`${n(units)} of the ${n(ed)} units in the edition${head >= 1 && units > ed ? ", held at the whole edition" : ""}.`);
+  const pctText = ed ? `${Math.round(head * 100)}%` : null;
+  const value = asUnits ? (ed ? `${n(units)} of ${n(ed)}` : n(units)) : pctText ?? n(units);
+  const notes = ["No target or benchmark on this card: it counts against the edition. The rows below add up to it."];
+  if (st.editionMismatch && finite(st.editionSum) && ed) {
+    notes.push(`The works' editions add up to ${n(st.editionSum)}, not the ${n(ed)} the release is set at: the headline reads the release's, each row its own work's. One of the two is wrong; both are set on the Target setting tab.`);
+  }
   return {
     where: "Sell-through by product", when: close ? "At close" : "Today",
-    name: close ? "Sell-through at close" : "Sell-through", value, unit: ed ? `of the ${n(ed)} edition` : "units",
+    name: close ? "Sell-through at close" : "Sell-through", value,
+    unit: asUnits ? (close ? "units expected by the close" : "units spoken for") : ed ? `of the ${n(ed)} edition` : "units",
     say: close ? "The share of the edition expected to be sold by the close." : "The share of the edition spoken for today: paid, raised on draft orders, or expected from the draw.",
-    steps, total: { v: value, label: ed ? "of the edition" : "units" },
+    steps, total: asUnits ? { v: n(units), label: ed ? `of the ${n(ed)} units in the edition` : "units" } : { v: value, label: ed ? "of the edition" : "units" },
+    compare: asUnits && pctText ? [{ label: "Sell-through", v: pctText, k: "st.head", arg: { close }, note: "The same units as a share of the edition." }] : [],
     sources: [
       { key: "orders", gave: "Units paid and draft orders, work by work" },
       { key: "entries", gave: "The entries still in the draw" },
       { key: "settings", gave: rateSource(s) },
       ...(close ? [{ key: "funnel", gave: "The projection's further units" }] : []),
     ],
-    notes: ["No target or benchmark on this card: it counts against the edition. The rows below add up to it."],
+    notes,
     method: "Data model 6.3",
   };
 };
@@ -865,17 +966,26 @@ EXPLAIN["st.row"] = (a, { snap: s }) => {
     steps.push(seg`Add the ${n(r.allocated)} units the people still in the draw are counted on here, at ${pct(rate)}${finite(pre) && pre !== rate ? ` (${pct(pre)} for pre-order entries)` : ""}${held ? ", held to the room left" : ""}: ${n(rShown)}.`);
   }
   if (close && future > 0) steps.push(seg`Add its share of the units still to come by the close: ${n(rFuture)}.`);
-  if (finite(r.edition) && r.edition > 0) steps.push(seg`${n(units)} of its ${n(r.edition)} edition.`);
-  const value = finite(pr) ? `${Math.round(pr * 100)}%` : n(units);
+  const hasEd = finite(r.edition) && r.edition > 0;
+  // the row's units column ("208 of 1,000") explains its units, closing on
+  // them in the total line; the % column its %
+  const asUnits = !!(a && a.as === "units");
+  if (hasEd && !asUnits) steps.push(seg`${n(units)} of its ${n(r.edition)} edition.`);
+  const pctText = finite(pr) ? `${Math.round(pr * 100)}%` : null;
+  const value = asUnits ? (hasEd ? `${n(units)} of ${n(r.edition)}` : n(units)) : pctText ?? n(units);
   return {
     where: "Sell-through by product", when: close ? "At close" : "Today",
-    name: r.name, value, unit: finite(r.edition) ? `of its ${n(r.edition)} edition` : "units",
-    say: `The share of ${r.name}'s edition ${close ? "expected to be sold by the close" : "spoken for today"}.`,
-    steps, total: { v: value, label: finite(r.edition) ? "of the edition" : "units" },
+    name: r.name, value,
+    unit: asUnits ? (close ? "units expected by the close" : "units spoken for") : finite(r.edition) ? `of its ${n(r.edition)} edition` : "units",
+    say: asUnits
+      ? `${r.name}'s units ${close ? "expected to be sold by the close" : "spoken for today"}: paid, raised on draft orders, or expected from the draw.`
+      : `The share of ${r.name}'s edition ${close ? "expected to be sold by the close" : "spoken for today"}.`,
+    steps, total: asUnits ? { v: n(units), label: hasEd ? `of its ${n(r.edition)} edition` : "units" } : { v: value, label: finite(r.edition) ? "of the edition" : "units" },
+    compare: asUnits && pctText ? [{ label: "Sell-through", v: pctText, k: "st.row", arg: { key: r.key, close }, note: "The same units as a share of its edition." }] : [],
     sources: [
-      { key: "orders", gave: "Its units paid and draft orders" },
+      { key: "orders", gave: "Its name, units paid and draft orders" },
       { key: "entries", gave: "The entries naming it" },
-      { key: "settings", gave: "Its name and edition, where typed" },
+      { key: "airtable", gave: "Its edition, matched by its Shopify title" },
     ],
     notes: (r.oversubscribed ?? 0) > 0 ? [`${n(r.oversubscribed)} more units of demand than the edition has room for.`] : [],
     method: "Data model 6.3",
@@ -1026,7 +1136,10 @@ EXPLAIN["wf.step"] = (a, { snap: s }) => {
     organic_traffic: sum(ORGANIC.map((k) => (fbg[k] || {})[tr])),
     organic_conversion: sum(ORGANIC.map((k) => (fbg[k] || {})[cv])),
   };
-  const spent = sum(fullDays(s).map((d) => d.spend));
+  // the spend to date, today so far included: the plan beside it is read at
+  // the share of today seen (paidDayFrac), as the Paid spend card reads it
+  const spent = finite(p.spendToDate) ? p.spendToDate : sum((p.daily || []).map((d) => d.spend));
+  const partDay = (p.daily || []).some((d) => d.partial);
   const frac = paidDayFrac(s);
   const bmBudget = finite(p.benchmarkBudget) ? p.benchmarkBudget
     : (s.benchmark && s.benchmark.unitsByGroup && finite(cpp)) ? s.benchmark.unitsByGroup.paid * cpp : null;
@@ -1041,9 +1154,10 @@ EXPLAIN["wf.step"] = (a, { snap: s }) => {
     steps.push(seg`For each organic channel, apply its conversion against ${refWord}'s to its actual sessions: ${ORGANIC.filter((k) => fbg[k]).map((k) => `${chName(s, k)} ${signed((fbg[k] || {})[cv] ?? 0)}`).join(", ")}.`);
   } else if (step.key === "paid_spend") {
     say = `What spending more or less than ${w.hasBm ? "the basket's launches" : "the budget"} by now is worth, in units.`;
+    const sofar = partDay ? " to date, today so far included" : " to date";
     steps.push(w.hasBm
-      ? seg`Paid has spent ${eur(spent)} over its full days, against ${eur(planned)} of the benchmark budget due by now: the basket's paid units at the plan's cost per unit, spread evenly over the days paid runs.`
-      : seg`Paid has spent ${eur(spent)} over its full days, against ${eur(planned)} of its budget due by now, spread evenly over the days paid runs.`);
+      ? seg`Paid has spent ${eur(spent)}${sofar}, against ${eur(planned)} of the benchmark budget due by now: the basket's paid units at the plan's cost per unit, spread evenly over the days paid runs.`
+      : seg`Paid has spent ${eur(spent)}${sofar}, against ${eur(planned)} of its budget due by now, spread evenly over the days paid runs.`);
     steps.push(seg`Price the difference at the plan's cost per unit, ${eur(cpp, 2)}: ${eur(spent - planned)} ÷ ${eur(cpp, 2)} = ${signed(raw.paid_spend)}.`);
   } else if (step.key === "paid_efficiency") {
     say = "What paid's cost per unit added or cost: the rest of paid's gap once its spend is accounted for.";
@@ -1057,12 +1171,30 @@ EXPLAIN["wf.step"] = (a, { snap: s }) => {
   const notes = [];
   let reading = raw[step.key];
   if (!w.today && step.key !== "oversubscribed") {
-    const tot = raw.organic_traffic + raw.organic_conversion + raw.paid_spend + raw.paid_efficiency;
+    const four = [raw.organic_traffic, raw.organic_conversion, raw.paid_spend, raw.paid_efficiency];
+    const tot = sum(four);
     const outcome = w.view.projection, start = w.hasBm ? w.view.benchmark : w.view.target;
-    const scale = tot ? (outcome - start) / tot : null;
-    if (finite(scale)) {
-      steps.push(seg`That is the reading to date. At close each contributor is scaled by the same factor, ×${n(scale, 2)}, so the four add up to the projection's ${signed(outcome - start)} against ${w.hasBm ? "the benchmark" : "the target"}.`);
-      reading = reading * scale;
+    const vs = w.hasBm ? "the benchmark" : "the target";
+    if (s.complete) {
+      // nothing left to project: the build copies the walk to date
+      steps.push(seg`The launch has closed, so its walk at close is its walk to date.`);
+    } else {
+      // the factor the build scaled by (waterfall.closeScale / closeScaleBm);
+      // null where it shared the rest of the gap out by size instead. A
+      // snapshot from before either field reads the same rule off its steps.
+      const key = w.hasBm ? "closeScaleBm" : "closeScale";
+      const g = tot ? (outcome - start) / tot : null;
+      const f = key in w.wf ? w.wf[key]
+        : (Math.abs(tot) >= 0.5 && finite(g) && g >= 0 && g <= 3 ? g : null);
+      if (finite(f)) {
+        steps.push(seg`That is the reading to date. At close each contributor is scaled by the same factor, ×${n(f, 2)}, so the four add up to the projection's ${signed(outcome - start)} against ${vs}.`);
+        reading = reading * f;
+      } else {
+        const size = sum(four.map((x) => Math.abs(x)));
+        const rest = (outcome - start) - tot;
+        steps.push(seg`That is the reading to date. The ${signed(rest)} still to come by the close is shared over the four in proportion to their size to date, so they add up to the projection's ${signed(outcome - start)} against ${vs}.`);
+        if (size > 0) reading = reading + rest * Math.abs(reading) / size;
+      }
     }
   }
   if (finite(reading) && step.key !== "oversubscribed" && Math.round(reading) !== step.value) {
@@ -1091,17 +1223,27 @@ EXPLAIN["wf.channel"] = (a, { snap: s }) => {
   const act = close ? ch.proj ?? 0 : ch.now ?? 0;
   const ref = hasBm ? (close ? ch.bm : ch.bmExp) ?? 0 : (close ? ch.target : ch.exp) ?? 0;
   const v = act - ref;
+  // the step as the card prints it: whole units that add up to the outcome
+  // (figures.mjs channelWalk)
+  const cw = channelWalk(s, { today: !close });
+  const step = cw && cw.steps.find((x) => x.key === ch.key);
+  const shown = step ? step.value : v;
+  const notes = [];
+  if (step && signed(v) !== signed(shown)) {
+    notes.push(`Worked out, it is ${signed(v, 1)}; the card prints ${signed(shown)} because the walk prints every channel in whole units that add up exactly to the figure printed, the rounding left over going where it moves a figure least.`);
+  }
+  notes.push("The channels add up to the release's demand, so on a release over its edition the last step, Beyond sellout, drops to the capped figure.");
   return {
     where: close ? "Projection vs target" : "Actual vs target", when: close ? "At close" : "Today",
-    name: ch.name, value: signed(v), unit: `units against its ${hasBm ? "benchmark" : "target"}`,
+    name: ch.name, value: signed(shown), unit: `units against its ${hasBm ? "benchmark" : "target"}`,
     say: `${ch.name}'s ${close ? "projection" : "units secured"} against what ${hasBm ? "the basket's launches" : "the plan"} had for it${close ? " at close" : " by now"}.`,
     steps: [
       seg`${ch.name} ${close ? "is projected to secure" : "has secured"} ${u(act)} units.`,
       seg`Its ${hasBm ? "benchmark" : "target"}${close ? "" : " by today"} is ${u(ref)}.`,
     ],
-    total: { v: signed(v), label: "units" },
+    total: { v: signed(shown), label: "units" },
     sources: [{ key: "orders", gave: "Units paid by channel" }, { key: "funnel", gave: "Entries by channel" }, ...(hasBm ? [{ key: "basket", gave: "The benchmark" }] : [])],
-    notes: ["The channels add up to the release's demand, so on a sold-out release the last step drops to the capped figure."],
+    notes,
     method: "Data model 9",
   };
 };

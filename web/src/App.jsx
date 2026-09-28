@@ -49,16 +49,25 @@ async function getJSON(url) {
 const STATUS_LABEL = { live: "in flight", upcoming: "upcoming", closed: "closed", catalogue: "catalogue" };
 
 /* Search across every release the funnel data mentions - artist, title,
- * quarter, campaign code or id - keeping the index's own order (in flight,
- * then closed most recent first, then catalogue by traffic). */
+ * quarter (the name's and the one it closes in), campaign code or id -
+ * keeping the index's own order (in flight, then closed most recent first,
+ * then catalogue by traffic). */
 function searchReleases(releases, q) {
   const needle = q.trim().toLowerCase();
   if (!needle) return [];
   const terms = needle.split(/\s+/);
   return releases.filter((r) => {
-    const hay = `${r.name} ${r.releaseName} ${r.quarter || ""} ${r.id}`.toLowerCase();
+    const hay = `${r.name} ${r.releaseName} ${r.quarter || ""} ${closeQuarter(r) || ""} ${r.id}`.toLowerCase();
     return terms.every((t) => hay.includes(t));
   });
+}
+
+/* The quarter a dated release closes in ("2026 Q4"), from its window end.
+ * The quarter in a release's name is the funnel export's and can disagree. */
+function closeQuarter(r) {
+  if (!r.windowEnd) return null;
+  const d = new Date(r.windowEnd + "T00:00:00Z");
+  return Number.isNaN(d.getTime()) ? null : `${d.getUTCFullYear()} Q${Math.floor(d.getUTCMonth() / 3) + 1}`;
 }
 
 export default function App() {
@@ -274,7 +283,12 @@ function ReleaseRow({ r, asOf, active, onClick }) {
   if (state) rows.push({ label: "Pace", value: STATE[state].word, color: STATE[state].color });
   rows.push({ label: "Status", value: STATUS_LABEL[status] || status });
   if (r.quarter) rows.push({ label: "Quarter", value: r.quarter });
-  if (!targeted) rows.push({ label: "Targets", value: status === "upcoming" ? "not set - opens soon" : "not set - actuals only" });
+  // the name's quarter is upstream's; where the window closes in another, say so
+  const closesIn = status === "catalogue" ? null : closeQuarter(r);
+  if (closesIn && closesIn !== r.quarter) rows.push({ label: "Closes in", value: closesIn, color: C.amber });
+  // an upcoming launch whose window Airtable says has opened, with nothing in the funnel yet, does not "open soon"
+  if (!targeted) rows.push({ label: "Targets", value: status !== "upcoming" ? "not set - actuals only"
+    : clock && clock.opensIn > 0 ? "not set - opens soon" : "not set - announce passed, no funnel rows yet" });
   if (status === "catalogue" && r.lastSeen) rows.push({ label: "Last traffic", value: r.lastSeen });
   const content = { head: r.releaseName || r.name, rows };
 
@@ -484,7 +498,7 @@ function DirectToggle({ on, onChange, share }) {
   const pct = (x) => (x === null || x === undefined ? "–" : Math.round(100 * x) + "%");
   const tip = `Direct is ${pct(share && share.entries)} of this release's entries and ${pct(share && share.units)} of its units as the funnel attributes them. `
     + "Spread shares Direct out over the other channels in proportion to their own volumes, day by day, and reads the benchmark's channel split the same way. "
-    + "Totals and what has been sold do not move; the plan's pace and the projections can shift a little with the channel mix, and paid reads the entries it is given.";
+    + "Totals, what has been sold and the paid budget do not move; the plan's pace and the projections can shift a little with the channel mix, and paid reads the entries it is given, at a cost per unit rescaled to them.";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }} title={tip}>
       <span style={{ fontSize: 12, color: "#6c6b68" }}>Direct</span>
@@ -578,10 +592,12 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           )}
         </div>
         <div className="page-controls">
-          {(showHorizon || variant) && (
+          {(showHorizon || (variant && tab === "overview")) && (
             <div className="page-toggles">
               {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
-              {variant && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} />}
+              {/* the switch lays the variant over the Overview's cards; the other
+                  tabs read Direct as a channel, so it is not offered there */}
+              {variant && tab === "overview" && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} />}
             </div>
           )}
           <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough}
@@ -599,7 +615,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
         )}
       </nav>
-      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : tab === "audit" && !upcoming ? <DrawAudit snap={snap} /> : upcoming ? (
+      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} /> : tab === "audit" && !upcoming ? <DrawAudit snap={snap} /> : upcoming ? (
         <div style={{ maxWidth: 560, marginTop: 24 }}><Upcoming snap={snap} onSetup={() => setTab("targets")} /></div>
       ) : (
         <>

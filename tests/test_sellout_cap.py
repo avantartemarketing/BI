@@ -13,6 +13,11 @@ import pandas as pd
 import build, baskets
 
 base = dict(next(r for r in build.INPUTS["releases"] if r["id"] == "julianschnabel_le_26"))
+# the template's economics pinned (an edition of 500 and its profits), so the
+# synthetic demand below runs past the edition whatever the release's own
+# inputs come to say
+base["legacy_economics"] = {**(base.get("legacy_economics") or {}), "edition_size": 500,
+                            "artist_profit": 254165, "aa_group_profit": 335957}
 base["release_name"] = "Synthetic Artist · Synthetic Work · 2026 Q3"   # no draw or orders feed answers to this name
 base["campaign_name"] = "Synthetic · Enter draw"
 base["campaign_names"] = [base["campaign_name"]]

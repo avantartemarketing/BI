@@ -19,6 +19,7 @@
 import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, BADGE_WORDS, C, QBadge, fmt, fmtSigned, useTip, LevelWaterfall, waterfallOpening, waterfallScale, HATCH } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import { channelWalk } from "../figures.mjs";
 
 /* Demand the edition cannot hold: the last step of a walk on a sold-out
  * release, in the hero's over-sellout hatch, dropping to the capped figure
@@ -92,17 +93,12 @@ export default function Waterfall({ snap, horizon = "today" }) {
   };
   /* By channel: each channel steps from its target to its actual (today) or
    * from its target to its projection (at close), in the order the page lists
-   * them. The channels add up to the release's demand, so on a sold-out
-   * release the walk ends with a Beyond sellout step down to the capped
-   * figure, the same step the drivers view carries. */
-  const channels = (snap?.channels || []).map((c) => {
-    const a = isToday ? c.now ?? 0 : c.proj ?? 0;
-    const e = hasBm ? (isToday ? c.bmExp ?? 0 : c.bm ?? 0) : (isToday ? c.exp ?? 0 : c.target ?? 0);
-    return { key: c.key, label: c.name, value: a - e, a, e };
-  });
-  let run = start;
-  const chanPath = channels.map((c) => { const from = run; run += c.value; return { ...c, from, to: run }; });
-  const residual = outcome - run;
+   * them, in whole units that add up (figures.mjs). The channels add up to the
+   * release's demand, so on a release over its edition the walk ends with a
+   * Beyond sellout step down to the capped figure: the drivers view's own
+   * step, taken from the snapshot, never from what rounding leaves over. */
+  const cw = channelWalk(snap, { today: isToday });
+  const chanPath = cw ? cw.steps : [];
   const xClose = { close: !isToday };
   const xHere = { ...xClose, where: title };   // the figures this card shows that the hero owns
   const stepRows = by === "channels"
@@ -135,7 +131,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
         };
       });
   // the channels add up to the demand; the cap is its own step down to the outcome
-  if (by === "channels" && Math.abs(residual) > 0.5) stepRows.push(beyondStep(residual, run, outcome, xClose));
+  if (by === "channels" && cw && cw.beyond < 0) stepRows.push(beyondStep(cw.beyond, cw.end, outcome, xClose));
   const rows = [
     ...waterfallOpening({ hasBm, bm: benchmark, target, words, k, xArg: xHere }),
     ...stepRows,
@@ -147,7 +143,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
   ];
   const X = waterfallScale([outcome, target, ...path.map((p) => p.to), ...(by === "channels" ? chanPath.map((c) => c.to) : []), ...(hasBm ? [benchmark] : [])]);
   const seg = (
-    <span className="seg compact" role="group" aria-label="Waterfall by">
+    <span className="seg compact" role="group" aria-label="Waterfall by" style={{ flexShrink: 0 }}>
       {[["drivers", "Drivers", "The four stored contributors: organic traffic and conversion, paid spend and efficiency"],
         ["channels", "Channels", "Each channel's units against its own target"]].map(([v, label, tip]) => (
         <button key={v} className={by === v ? "active" : ""} onClick={() => setBy(v)} title={tip}>{label}</button>
@@ -155,21 +151,23 @@ export default function Waterfall({ snap, horizon = "today" }) {
     </span>
   );
 
+  /* The head carries the title, the horizon and the gap, and nothing else: the
+     gap is the card's headline figure and is never cut. Where the card is too
+     narrow for all three on one line the gap takes a line of its own (the
+     head's wrap); the Drivers / Channels switch sits in the foot. */
   return (
     <Card
       dot={GROUP_DOTS.outcome}
       title={title}
       badge={<HorizonBadge horizon={isToday ? "today" : "close"} />}
+      wrapHead
       right={
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-          {seg}
-          <span
-            className="num"
-            {...tipApi.props(netTip)}
-            style={{ fontSize: 13.5, fontWeight: 600, color: netC, whiteSpace: "nowrap" }}
-          >
-            <Ex k="wf.net" arg={xHere} focus>{fmtSigned(net)}</Ex>
-          </span>
+        <span
+          className="num"
+          {...tipApi.props(netTip)}
+          style={{ fontSize: 13.5, fontWeight: 600, color: netC, whiteSpace: "nowrap", flexShrink: 0 }}
+        >
+          <Ex k="wf.net" arg={xHere} focus>{fmtSigned(net)}</Ex>
         </span>
       }
     >
@@ -178,7 +176,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
       <div style={{ height: 12, flexShrink: 0 }} />
       <div
         style={{
-          height: 26, display: "flex", justifyContent: "space-between",
+          height: 26, display: "flex", gap: 10,
           alignItems: "center", flexShrink: 0,
         }}
       >
@@ -190,15 +188,16 @@ export default function Waterfall({ snap, horizon = "today" }) {
             ? "The list opens at the target; the stretch is the part of the gap that is ambition beyond the basket, what launches like this one typically have by now. From the benchmark the contributors read against the basket and sum exactly to the gap between it and what is secured to date, so with the stretch they sum to the gap the header prints. Without a basket they read against the target."
             : "The list opens at the target; the stretch is the part of the gap that is ambition beyond the basket. From the benchmark the contributors read against the basket and sum exactly to the gap between it and the projection at close. Demand beyond the sellout is the last step, so the walk lands on the capped figure the hero prints.",
         }} />
+        {seg}
+        {/* the day first, so that on a narrow card the ellipsis takes words, not the number */}
         <span style={{
-          fontSize: 12, color: C.muted, whiteSpace: "nowrap",
-          minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 10,
+          marginLeft: "auto", fontSize: 12, color: C.muted, whiteSpace: "nowrap",
+          minWidth: 0, overflow: "hidden", textOverflow: "ellipsis",
         }}>
+          {isToday && snap?.day ? "day " + snap.day + " · " : ""}
           {/* where there is no basket at all, the model that set the target instead */}
           {hasBm ? "" : "no comparable basket · "}
-          {isToday
-            ? "secured units" + (snap?.day ? ", day " + snap.day : "")
-            : "units"}
+          {isToday ? "secured units" : "units"}
         </span>
       </div>
     </Card>

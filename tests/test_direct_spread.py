@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Direct spread over the other channels (docs 1.3): the redistribution keeps
 every day's totals and hands Direct's volume out pro rata, the benchmark's
-split is spread the same way without moving its medians, and a page built
-both ways carries the differing blocks under variants.direct_spread with the
+split is spread the same way without moving its medians or the money - the
+paid budget is the Channel view's whichever cost prices it - the share it
+spreads is the panel's own where the panel carries it, and a page built both
+ways carries the differing blocks under variants.direct_spread with the
 totals untouched.
 python3 tests/test_direct_spread.py (needs pandas)"""
 import sys, json, pathlib, random, copy
@@ -62,6 +64,36 @@ check(close(ug["search_direct_other"], 110.0 + 110.0 * 110.0 / rest) and close(u
 check(close(sum(sp["sessions_by_group"].values()), 40000.0) and sp["conv"] == profile["conv"], "sessions kept, conversion held")
 check(build.spread_profile(profile, None) is profile, "no norm, no change")
 
+# ---- the Direct switch never moves the money (docs 1.3): paid takes its share
+# of Direct's units, so a paid unit costs that much less and the budget stays
+costed = dict(profile, cost_per_purchase=150.0, n_costed=5)
+spc = build.spread_profile(costed, norm)
+factor = spc["units_by_group"]["paid"] / costed["units_by_group"]["paid"]
+check(factor > 1 and close(spc["cost_scale"], 1 / factor) and close(spc["cost_per_purchase"], 150.0 / factor),
+      f"the basket's cost is rescaled by the paid group's change: x{factor:.4f}, {spc['cost_per_purchase']:.2f}")
+rel = {"edition_size": 1600.0, "unit_price": 1000.0, "units_per_buyer": 1.0}
+for name, r, prof in (("the basket's cost", rel, costed), ("a typed cost", dict(rel, cost_per_purchase=291), costed),
+                      ("the panel constant", rel, dict(profile, cost_per_purchase=0.0, n_costed=0))):
+    t0 = build.benchmark_targets(r, prof)
+    t1 = build.benchmark_targets(r, build.spread_profile(prof, norm))
+    check(close(t1["paid"]["budget"], t0["paid"]["budget"]) and t1["paid"]["units"] > t0["paid"]["units"],
+          f"{name}: the budget is the Channel view's ({t1['paid']['budget']:.2f} vs {t0['paid']['budget']:.2f}), the paid units are not")
+    check(t1["paid"]["cost_per_purchase_source"] == t0["paid"]["cost_per_purchase_source"], f"{name}: the source is kept")
+check(build.cost_per_purchase_for({}, profile=costed) == 150.0, "a profile never spread reads its cost as it is")
+
+# ---- the share spread is the panel's own where the panel carries it
+cohort = pd.DataFrame({"release_name": [f"L{i}" for i in range(10)],
+                       "window_start": [pd.Timestamp("2026-05-01")] * 10, "window_end": [pd.Timestamp("2026-06-01")] * 10,
+                       "direct_in_group_sessions": [0.6] * 5 + [0.7] * 5, "direct_in_group_entries": [0.5] * 10,
+                       "direct_in_group_units": [0.3, 0.4] * 5})
+from_panel = build.direct_share_norm(pd.DataFrame(columns=["simple_release_name", "event_date", "channel"]), cohort, date(2026, 9, 24))
+check(from_panel["source"] == "panel" and close(from_panel["sessions"], 0.65) and close(from_panel["units"], 0.35)
+      and from_panel["n"] == 10, f"the panel's median Direct share: {from_panel}")
+from_feed = build.direct_share_norm(pd.DataFrame(columns=["simple_release_name", "event_date", "channel"]),
+                                    cohort.drop(columns=["direct_in_group_sessions", "direct_in_group_entries", "direct_in_group_units"]),
+                                    date(2026, 9, 24))
+check(from_feed["source"] == "feed", f"a panel without the columns falls back to today's feed: {from_feed}")
+
 # ---- a page built both ways on the synthetic harness
 base = dict(next(r for r in build.INPUTS["releases"] if r["id"] == "julianschnabel_le_26"))
 base["campaign_name"] = "Synthetic · Enter draw"; base["campaign_names"] = [base["campaign_name"]]
@@ -90,9 +122,11 @@ emails, content, people = build.load_emails(), build.load_content(), build.load_
 panel = baskets.load_panel()
 curves = json.loads((ROOT / "data/app/curves.json").read_text())
 # the panel's launches have no rows in this synthetic frame, so the norm the
-# build would read is empty and the benchmark's split stays; a norm is set by
+# build would read off the feed is empty and the benchmark's split stays (a
+# panel that carries its own Direct shares is read above); a norm is set by
 # hand so the targets' spread is exercised too
-empty = build.direct_share_norm(at, panel, TODAY)
+feed_only = panel.drop(columns=[c for c in panel.columns if c.startswith("direct_in_group_")])
+empty = build.direct_share_norm(at, feed_only, TODAY)
 check(empty is not None and empty.get("units") is None, f"no panel rows, no norm: {empty}")
 check(build.spread_profile(profile, empty) == profile or build.spread_profile(profile, empty)["units_by_group"] == profile["units_by_group"], "an empty norm leaves the split alone")
 direct_norm = {"units": 0.5, "sessions": 0.5, "entries": 0.5, "n": 10, "recentMonths": 18}
@@ -117,6 +151,46 @@ check(var["paid"]["entriesToDate"] > snap["paid"]["entriesToDate"] and var["paid
 check(close(sum(c["now"] for c in var["channels"]), sum(c["now"] for c in snap["channels"]), 0.3), "the channels still add up to the same secured units")
 ds = snap["directShare"]
 check(ds and 0 < ds["entries"] < 1 and 0 < ds["units"] < 1, f"Direct's share of the window is published: {ds}")
+# the switch moves units between channels, never the money: the budget, the
+# benchmark's and the paid card's are the Channel view's to the cent
+view = {**snap, **var}
+for label, a, b in (("paid.spendBudget", view["paid"]["spendBudget"], snap["paid"]["spendBudget"]),
+                    ("paid.benchmarkBudget", view["paid"]["benchmarkBudget"], snap["paid"]["benchmarkBudget"]),
+                    ("benchmark.paidBudget", view["benchmark"]["paidBudget"], snap["benchmark"]["paidBudget"]),
+                    ("targets.paid.budget", view["targets"]["paid"]["budget"], snap["targets"]["paid"]["budget"])):
+    check(abs(a - b) <= 0.01, f"{label} is the same both ways: {a} vs {b}")
+check(view["paid"]["unitTarget"] > snap["paid"]["unitTarget"], "while paid's unit target takes its share of Direct")
+# and so with a cost the release typed itself
+typed = build.with_direct_spread(build.build_release, dict(copy.deepcopy(base), cost_per_purchase=291), at, spend, emails,
+                                 content, curves, TODAY, build.load_artist_posts(), {}, None, panel, people,
+                                 full_through=TODAY, seen=1.0, direct_norm=direct_norm)
+build.check_snapshot(typed)
+tv = {**typed, **typed["variants"]["direct_spread"]}
+check(typed["targets"]["paid"]["cost_per_purchase_source"] == "release"
+      and abs(tv["paid"]["spendBudget"] - typed["paid"]["spendBudget"]) <= 0.01,
+      f"a typed cost: the budget is the same both ways: {tv['paid']['spendBudget']} vs {typed['paid']['spendBudget']}")
+
+# ---- the email plan does not move with the switch. The sends the plan asks
+# for are read on AA Email's sessions as the funnel attributes them; the
+# spread's share of the basket's email sessions is traffic Direct brought, so
+# it lands in the sessions-per-click reference, and the chain still
+# multiplies out to each view's planned sessions.
+rates = {"open_rate": 0.166, "click_rate": 0.033, "ctor_rate": 0.195, "spc_rate": 1.39, "total": None, "curve": None,
+         "cohort": {"n": 3, "releases": ["x", "y", "z"], "from": "2026-01-01", "to": "2026-06-01"}}
+snap_e = build.with_direct_spread(build.build_release, copy.deepcopy(base), at, spend, emails, content, curves, TODAY,
+                                  build.load_artist_posts(), {}, rates, panel, people, full_through=TODAY, seen=1.0, direct_norm=direct_norm)
+build.check_snapshot(snap_e)
+var_e = snap_e["variants"]["direct_spread"]
+f_sess = var_e["funnelByGroup"]["aa_email"]["sessions_expected"] / snap_e["funnelByGroup"]["aa_email"]["sessions_expected"]
+check(snap_e["email"]["deliveredTarget"] and snap_e["email"]["deliveredBenchmark"] and "email" not in var_e,
+      f"the planned sends are the same both ways: {snap_e['email']['deliveredTarget']} vs {(var_e.get('email') or {}).get('deliveredTarget')}")
+check(f_sess > 1.001 and snap_e["benchmarks"]["emailSessionsPerClickRef"] == 1.39
+      and abs(var_e["benchmarks"]["emailSessionsPerClickRef"] - 1.39 * f_sess) < 0.002,
+      f"the spread lands in sessions per click: x{f_sess:.4f}, {snap_e['benchmarks']['emailSessionsPerClickRef']} -> {var_e['benchmarks']['emailSessionsPerClickRef']}")
+for label, view in (("base", snap_e), ("spread", {**snap_e, **var_e})):
+    sess = view["funnelByGroup"]["aa_email"]["sessions_expected"]
+    chain = view["email"]["deliveredTarget"] * 0.166 * 0.195 * view["benchmarks"]["emailSessionsPerClickRef"]
+    check(abs(chain - sess) <= 0.001 * sess + 0.2, f"{label}: sends x open x clicks per open x sessions per click = the plan's sessions: {chain:.1f} vs {sess}")
 print(f"direct share of entries {ds['entries']:.1%}; sdo {sdo(snap['channels'])['now']:.0f} -> {sdo(var['channels'])['now']:.0f}, paid {paid(snap['channels'])['now']:.0f} -> {paid(var['channels'])['now']:.0f}; variant blocks {sorted(var)}")
 print("FAILED" if failed else "ok: direct spread", failed if failed else "")
 sys.exit(1 if failed else 0)

@@ -16,7 +16,8 @@
  * artist, title, window_start, window_end (ISO days), units, price (EUR, 0
  * when Airtable has none), sessions, paid_share, campaign_days, edition_size.
  * `L` is the release: {name, artist, target, price, currency?,
- * private_room_open?, announce_date?, launch_end?}.
+ * private_room_open?, announce_date?, launch_end?}. `opts.asOf` is the day
+ * the basket is read on, the snapshot's asOf (the build's); without it, today.
  */
 export const SIMILAR_N = 8;
 export const OWN_MAX = 3.0;
@@ -29,6 +30,17 @@ export const SCALE_MISMATCH_FACTOR = 4.0;
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const day = (s) => { if (!s) return null; const d = new Date(String(s).slice(0, 10) + "T00:00:00Z"); return Number.isNaN(d.getTime()) ? null : d; };
 const fold = (s) => String(s || "").trim().toLowerCase();
+// the day the basket is read on, a whole day as the Python side's date is
+const today = () => { const n = new Date(); return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate())); };
+const asOfDay = (v) => (v instanceof Date && !Number.isNaN(v.getTime()) ? v : v ? day(v) || today() : today());
+/* `n` calendar months before a day, kept inside the month it lands in the
+ * way pandas' DateOffset is (31 Aug less six months is 28 Feb, not 3 Mar),
+ * so both sides cut the recent tier on the same day. */
+export function monthsBefore(d, n) {
+  const first = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - n, 1));
+  const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), Math.min(d.getUTCDate(), last)));
+}
 
 /* This release's unit price in euros, the way the Python side finds it: a
  * release already on the panel carries Airtable's value-weighted price and
@@ -57,6 +69,26 @@ export function releaseStart(rows, L, asOf) {
     if (d) return d;
   }
   return asOf;
+}
+
+/* When this launch closes: its panel row's window_end when it has one,
+ * measured the way every other launch's close is, else its launch_end. */
+export function releaseEnd(rows, L) {
+  const me = rows.find((r) => r.release_name === L.name);
+  if (me && day(me.window_end)) return day(me.window_end);
+  return day(L.launch_end);
+}
+
+/* The day the basket is read at, and whether the release has closed by
+ * asOf: a closed release is read at its own close, so its basket stops
+ * moving once it closes (etl/baskets.py similar_members); a live one at
+ * asOf. `cutoff` is where the recent tier starts. */
+export function basketClock(rows, L, asOf) {
+  const at = asOfDay(asOf);
+  const end = releaseEnd(rows, L);
+  const closed = !!end && end < at;
+  const ref = closed ? end : at;
+  return { ref, closed, end, cutoff: monthsBefore(ref, RECENT_MONTHS) };
 }
 
 /* The release's artist: its panel row's, else the one given, else the first
@@ -90,7 +122,7 @@ export function distances(pool, L, price) {
 /* The artist's own earlier launches that belong in the basket: same artist,
  * closed before this launch opened, within OWN_MAX on both axes. Nearest first. */
 export function ownMembers(rows, L, opts = {}) {
-  const asOf = opts.asOf ? day(opts.asOf) || new Date() : new Date();
+  const asOf = asOfDay(opts.asOf);
   const pool = rows.filter((r) => r.release_name !== L.name);
   if (!pool.length || !(num(L.target) > 0)) return [];
   const artist = releaseArtist(rows, L);
@@ -109,23 +141,27 @@ export function ownMembers(rows, L, opts = {}) {
 }
 
 /* The SIMILAR_N nearest. Returns {members, reach, on}: the members in basket
- * order, how far the furthest of them is, and the axes that ranked them. */
+ * order, how far the furthest of them is, and the axes that ranked them. A
+ * release that has closed by asOf is read at its own close (basketClock):
+ * recent is the RECENT_MONTHS before it closed, and a launch that closed
+ * after it is left out. */
 export function similarMembers(rows, L, opts = {}) {
-  const asOf = opts.asOf ? day(opts.asOf) || new Date() : new Date();
+  const asOf = asOfDay(opts.asOf);
   const preferRecent = opts.preferRecent === undefined || opts.preferRecent === null ? true : !!opts.preferRecent;
   const pool = rows.filter((r) => r.release_name !== L.name);
   if (!(num(L.target) > 0) || !pool.length) return { members: [], reach: null, on: [] };
   const { d, on } = distances(pool, L, releasePrice(rows, L));
   const first = ownMembers(rows, L, { asOf });
   const taken = new Set(first);
+  const { ref, closed, cutoff } = basketClock(rows, L, asOf);
+  const later = (r) => { const end = day(r.window_end); return closed && !!end && end > ref; };
   // the final key on every sort is the name, a total order shared with Python
   const nameOrder = (a, b) => { const x = String(pool[a].release_name), y = String(pool[b].release_name); return x < y ? -1 : x > y ? 1 : 0; };
   let rest = [];
-  for (let i = 0; i < pool.length; i++) if (!taken.has(pool[i].release_name) && Number.isFinite(d[i])) rest.push(i);
+  for (let i = 0; i < pool.length; i++) if (!taken.has(pool[i].release_name) && Number.isFinite(d[i]) && !later(pool[i])) rest.push(i);
   if (preferRecent && rest.length) {
     // three tiers, distance within each: comparable and recent, comparable and
     // older, then everything beyond NEAR
-    const cutoff = new Date(asOf); cutoff.setUTCMonth(cutoff.getUTCMonth() - RECENT_MONTHS);
     const tier = (i) => {
       if (d[i] > NEAR) return 2;
       const end = day(pool[i].window_end);

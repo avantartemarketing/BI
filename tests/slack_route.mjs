@@ -59,6 +59,8 @@ const app = spawn(process.execPath, [path.join(ROOT, "server", "index.js")], {
     TARGETS_LOG: path.join(tmp, "targets.log"), DECISIONS_PATH: path.join(tmp, "decisions.log"),
     SLACK_STATE_PATH: path.join(tmp, "slack.json"), SLACK_STATE_FALLBACK_PATH: path.join(tmp, "slack.json"),
     SLACK_BOT_TOKEN: "xoxb-test", SLACK_API: `${slackBase}/api/chat.postMessage`,
+    // the build a boot or a save runs writes its pages here, not into the checkout
+    APP_DATA_PATH: path.join(tmp, "app"),
   },
   stdio: ["ignore", "pipe", "pipe"],
 });
@@ -126,6 +128,30 @@ d = await r.json().catch(() => ({}));
 check(r.ok && Array.isArray(d.blocks) && d.channel === "sales-updates", `dry run returns the message (${r.status})`);
 check(/: \d+% projected at close, /.test(d.text || "") && d.blocks.find((b) => b.type === "table").rows[0][1].text === "Units at close *", `at close: ${d.text}`);
 check(seen.length === 0, "a dry run calls nothing");
+
+// ---- the page's Direct switch: on Spread the message is the snapshot with its
+// variants.direct_spread laid over it, as the cards read it, and says so; on
+// Channel (or with nothing sent) it is the snapshot as built
+const SPREAD = "warhol_le_26";
+const spreadSnap = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "app", "releases", `${SPREAD}.json`), "utf8"));
+const variant = spreadSnap.variants && spreadSnap.variants.direct_spread;
+if (variant && variant.sellthrough) {
+  await send(`/api/releases/${SPREAD}/slack-channel`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: "sales-updates" }),
+  });
+  const closeUnits = (st) => Math.round(st.sold + (st.drafts || 0) + st.soldPredicted + st.futureEntriesPredicted).toLocaleString("en-GB");
+  const asBuilt = closeUnits(spreadSnap.sellthrough), spread = closeUnits({ ...spreadSnap.sellthrough, ...variant.sellthrough });
+  seen.length = 0;
+  const on = await (await post(SPREAD, { horizon: "close", dryRun: true, directSpread: true })).json();
+  const off = await (await post(SPREAD, { horizon: "close", dryRun: true, directSpread: false })).json();
+  const none = await (await post(SPREAD, { horizon: "close", dryRun: true })).json();
+  const said = (m) => JSON.stringify(m.blocks || []).includes("Attribution: Direct spread over the other channels.");
+  check(new RegExp(`, ${spread} of [\\d,]+ units$`).test(on.text || "") && said(on), `Spread posts the Spread reading and says so: ${on.text} (want ${spread})`);
+  check(new RegExp(`, ${asBuilt} of [\\d,]+ units$`).test(off.text || "") && !said(off), `Channel posts the snapshot as built: ${off.text} (want ${asBuilt})`);
+  check(none.text === off.text && !said(none), "nothing sent reads as Channel");
+  check(asBuilt !== spread, `the fixture tells the two apart (${asBuilt} vs ${spread})`);
+  check(seen.length === 0, "dry runs call nothing");
+}
 
 // ---- a refusal from Slack is a failed post, said in words
 seen.length = 0;

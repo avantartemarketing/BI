@@ -131,7 +131,7 @@ function Campaigns({ code, chosen, all, suggested, onChange }) {
           <label key={name} className="ts-check-row">
             <input type="checkbox" checked={chosen.includes(name)} onChange={(e) => toggle(name, e.target.checked)} />
             <span className="nm" title={name}>{name}</span>
-            <span className={`meta${hit ? "" : " warn"}`}>{hit ? `${fmtMoney(hit.spend)} · last ${hit.last}` : "no spend rows by this name"}</span>
+            <span className={`meta${hit ? "" : " warn"}`}>{!hit ? "no spend rows by this name" : hit.last ? `${fmtMoney(hit.spend)} · last ${hit.last}` : "no spend yet"}</span>
           </label>
         );
       })}
@@ -154,13 +154,16 @@ function Campaigns({ code, chosen, all, suggested, onChange }) {
 /* Nobody types into it: what the basket's median gives each channel and what
  * the target asks of it. Benchmark values are the basket's own medians; the
  * target is the benchmark lifted by K (§1). Conversion carries no uplift at
- * all - it is held at the benchmark (§4), which is why the column says so. */
+ * all - it is held at the benchmark (§4), which is why the column says so:
+ * the row's benchmark units over its benchmark sessions, the rate the funnel
+ * holds (funnelByGroup conv_benchmark), so target sessions at it give target
+ * units. The basket's median entries per session (profile.conv) is another
+ * quantity, entries rather than units, and no target is read from it. */
 function BasketTable({ profile, off, k }) {
-  const rows = GROUPS.map((g) => ({
-    ...g, off: off.includes(g.key),
-    bmS: profile.sessions_by_group[g.key] || 0, bmU: profile.units_by_group[g.key] || 0,
-    conv: profile.conv[g.key] > 0 ? profile.conv[g.key] : null,
-  }));
+  const rows = GROUPS.map((g) => {
+    const bmS = profile.sessions_by_group[g.key] || 0, bmU = profile.units_by_group[g.key] || 0;
+    return { ...g, off: off.includes(g.key), bmS, bmU, conv: bmS > 0 ? bmU / bmS : null };
+  });
   return (
     <div className="ts-tblwrap">
       <table className="ts-table">
@@ -171,7 +174,7 @@ function BasketTable({ profile, off, k }) {
             <th title="The benchmark lifted by the same K as every other volume.">Target units</th>
             <th className="bm" title="The basket's median sessions from this channel.">Benchmark sessions</th>
             <th title="The benchmark lifted by K.">Target sessions</th>
-            <th title="Conversion rates are held at the benchmark - the uplift is asked of traffic and spend only.">Session → unit (held)</th>
+            <th title="Benchmark units over benchmark sessions: the rate the target holds, so target sessions at it give target units. Conversion rates are held at the benchmark - the uplift is asked of traffic and spend only.">Session → unit (held)</th>
           </tr>
         </thead>
         <tbody>
@@ -429,8 +432,11 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
 
 /* ======================= the tab ======================= */
 
-export default function TargetSetting({ snap, onSaved }) {
-  const [meta, setMeta] = useState(null);       // {inputs, sourced, benchmarks, meta_campaigns, derived, draws, creating}
+/* `directSpread`: the Overview is set to spread Direct over the other
+ * channels. The plan here always reads Direct as a channel of its own, so
+ * the tab says so rather than contradicting the Channels card silently. */
+export default function TargetSetting({ snap, onSaved, directSpread = false }) {
+  const [meta, setMeta] = useState(null);       // {inputs, sourced, benchmarks, meta_campaigns, derived, creating}
   const [inp, setInp] = useState(null);         // editable inputs
   const [pick, setPick] = useState(null);       // a basket chosen in the picker, not yet saved
   const [picking, setPicking] = useState(false);
@@ -762,6 +768,11 @@ export default function TargetSetting({ snap, onSaved }) {
     </Field>
   );
   const legacy = inp.legacy_economics;
+  // the last build found the works' editions do not add up to the release's
+  // (docs 6.3): said here, where both are set, as on the Sell-through card
+  const stEd = snap.sellthrough || {};
+  const editionNote = stEd.editionMismatch && Number.isFinite(stEd.editionSum) && Number.isFinite(stEd.edition)
+    ? { sum: stEd.editionSum, release: stEd.edition } : null;
   const airtableMatch = (sourced.airtable || {}).match || "none";
   const airtableNote = (sourced.airtable || {}).note || "";
 
@@ -972,6 +983,12 @@ export default function TargetSetting({ snap, onSaved }) {
             The target is the benchmark lifted by <b>×{k ? fmt(k, 2) : "–"}</b> in every channel and on every day. Conversion rates are held at the
             benchmark: the uplift is asked of traffic and spend only.
           </div>
+          {directSpread && (
+            <div className="ts-caption">
+              Direct is read as a channel of its own here, as the funnel attributes it. The Overview is set to spread it over the other channels,
+              so its Channels card splits the same plan differently; the paid budget is the same either way.
+            </div>
+          )}
         </section>
 
         <section className="ts-card" aria-label="Products and economics">
@@ -996,6 +1013,13 @@ export default function TargetSetting({ snap, onSaved }) {
               <b>Release-level figures still in force.</b> This release was set up before the model went per product: target {fmt(legacy.edition_size)}{legacy.edition_total > legacy.edition_size ? ` of ${fmt(legacy.edition_total)}` : ""} units at {fmtMoney(legacy.unit_price || 0, 0)},
               artist {fmtMoney((legacy.artist_profit || 0) / (legacy.edition_size || 1), 0)} and AA {fmtMoney((legacy.aa_group_profit || 0) / (legacy.edition_size || 1), 0)} per unit.
               The products below are what Airtable holds; the totals switch to them when these are cleared.
+            </Notice>
+          )}
+          {editionNote && (
+            <Notice>
+              <b>The works' editions add up to {fmt(editionNote.sum)}; the release's edition is {fmt(editionNote.release)}.</b> The page reads {fmt(editionNote.release)} as
+              the whole edition (the hero's sellout, the sell-through headline and the room left) while each work's row reads its own. One of the two is
+              wrong: check the works' editions below, and whether {fmt(editionNote.release)} is the whole edition or only the target.
             </Notice>
           )}
           <ProductsGrid products={products} econ={econ} editing={editing} onField={onField} onFieldAll={onFieldAll} onName={onName}
@@ -1047,6 +1071,9 @@ export default function TargetSetting({ snap, onSaved }) {
           // to read the typed price in its currency (shared/basketRule.mjs)
           artist={snap.artist || ""} currency="EUR"
           announceDate={announce || null} privateRoomOpen={prOpen || null}
+          // the page's day and the release's close: the rule reads a closed
+          // release at its close, as the build does
+          launchEnd={closes || null} asOf={snap.asOf || null}
           // the picker asks for a target and a price when there are none, and
           // writes them onto a product added by hand so the basket follows
           onInputs={onPickerInputs}

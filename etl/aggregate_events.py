@@ -287,10 +287,30 @@ def entries_start(d: pd.DataFrame):
     return pd.NaT
 
 
+def placeholder_announce(announce, close, last_entry, as_of=None) -> bool:
+    """An upstream announce on or after the release's own close cannot be its
+    campaign's, nor can one that came more than SETTLED_DAYS after its last
+    entry day: Airtable's Announce Date was bulk-filled with 2025-04-17 on 41
+    launches of 2023-24, and it reaches the funnel's clock. It is treated as
+    absent, the rule etl/build.py upcoming_releases already puts an Airtable
+    announce to against its close. The entries only judge an announce that
+    has passed (`as_of`, the data's last day): a launch in its early access
+    has entries before an announce still to come, and a draw can open a few
+    days after its announce."""
+    if announce is None or pd.isna(announce):
+        return False
+    if close is not None and pd.notna(close) and announce >= close:
+        return True
+    return bool(last_entry is not None and pd.notna(last_entry) and as_of is not None and pd.notna(as_of)
+                and announce <= as_of and (announce - last_entry).days > SETTLED_DAYS)
+
+
 def infer_windows(out: pd.DataFrame, as_of: pd.Timestamp) -> pd.DataFrame:
     """One row per release: announce, close, and where each came from.
 
-    Upstream dates take priority. Otherwise the announcement is the first big
+    Upstream dates take priority, but an upstream announce on or after the
+    release's own close, or long after its last entry day, is a placeholder
+    and is inferred (placeholder_announce). Otherwise the announcement is the first big
     traffic spike when it comes SPIKE_LEAD..SPIKE_MAX_LEAD days before the
     draw opens (an announcement with the draw opening later - the traffic
     between the two is real campaign traffic), else the day the draw opens:
@@ -316,12 +336,20 @@ def infer_windows(out: pd.DataFrame, as_of: pd.Timestamp) -> pd.DataFrame:
                "announce": None, "close": None, "source": "none", "announce_rule": None, "close_rule": None}
         # upstream, field by field: an announce is kept whatever the close; a
         # close before its announce or a window over 90 days (one upstream
-        # record does that) is treated as absent and inferred instead
+        # record does that) is treated as absent and inferred instead. An
+        # announce on or after the release's own close, or long after its last
+        # entry day, is a placeholder (placeholder_announce) and is inferred;
+        # the close it came with stays when it sits by the draw's own end
         a = c = None; arule = crule = None
         if name in up.index and pd.notna(up.loc[name, "announce"]):
             a, arule = up.loc[name, "announce"], "upstream"
             uc = up.loc[name, "close"]
-            if pd.notna(uc) and 3 <= (uc - a).days <= 90:
+            last = d.loc[d["entrants"] > 0, "event_date"].max()
+            if placeholder_announce(a, uc, last, as_of):
+                a = arule = None
+                if pd.notna(uc) and pd.notna(last) and abs((uc - last).days) <= SETTLED_DAYS:
+                    c, crule = uc, "upstream"
+            elif pd.notna(uc) and 3 <= (uc - a).days <= 90:
                 c, crule = uc, "upstream"
         if a is None and row["entrants"] < MIN_INFER_ENTRANTS:
             rows.append(row); continue
@@ -350,7 +378,8 @@ def infer_windows(out: pd.DataFrame, as_of: pd.Timestamp) -> pd.DataFrame:
         if not (3 <= L <= 90):
             row.update(announce=a, announce_rule=arule, source="upstream" if arule == "upstream" else "none")
             rows.append(row); continue
-        src = "upstream" if (arule == "upstream" and crule == "upstream") else ("mixed" if arule == "upstream" else "inferred")
+        src = ("upstream" if (arule == "upstream" and crule == "upstream")
+               else ("mixed" if "upstream" in (arule, crule) else "inferred"))
         row.update(announce=a, close=c, source=src, announce_rule=arule, close_rule=crule)
         rows.append(row)
     w = pd.DataFrame(rows)
@@ -419,13 +448,39 @@ def _products(sub_e: pd.DataFrame) -> int:
     return int(v) if pd.notna(v) and v >= 1 else 1
 
 
+def countdown_close(ev: pd.DataFrame) -> pd.Series:
+    """Each release's close by the upstream clock its events carry: the event
+    day plus the days until launch, on the rows where that is not negative
+    (the clock's exact side), the commonest. Empty without the clock."""
+    if "days_until_launch" not in ev.columns or ev.empty:
+        return pd.Series(dtype="datetime64[ns]")
+    try:
+        dul = pd.to_numeric(ev["days_until_launch"], errors="coerce")
+        m = dul.notna() & (dul >= 0)
+        if not m.any():
+            return pd.Series(dtype="datetime64[ns]")
+        day = ev.loc[m, "event_date"] + pd.to_timedelta(dul[m], unit="D")
+        return day.groupby(ev.loc[m, "simple_release_name"].astype(str)).agg(mode_or_none)
+    except (TypeError, ValueError, OverflowError) as e:
+        print(f"aggregate_events: no countdown close for the placeholder check ({e})")
+        return pd.Series(dtype="datetime64[ns]")
+
+
 def people_file(ev: pd.DataFrame) -> pd.DataFrame:
     de = ev[ev["event_name"] == "draw entry intent"]
     pu = ev[ev["event_name"] == "purchase"]
     ann = ev.groupby("simple_release_name")["announcement_date"].agg(lambda s: pd.to_datetime(s.dropna()).min() if s.notna().any() else pd.NaT)
     first = ev[ev["event_name"] != "signup"].groupby("simple_release_name")["event_date"].min()
     releases = sorted(set(de["simple_release_name"].dropna()) | set(pu["simple_release_name"].dropna()))
-    start = {r: (ann.get(r) if pd.notna(ann.get(r)) else first.get(r)) for r in releases}
+    # an announcement on or after the release's own close or its last entry
+    # day is a placeholder (placeholder_announce: 2025-04-17 on 41 launches
+    # of 2023-24), which made each release's own buyers "returning": the
+    # campaign starts at its first event instead
+    close = countdown_close(ev)
+    last_entry = de.groupby("simple_release_name", observed=True)["event_date"].max()
+    as_of = ev["event_date"].max() if len(ev) else None
+    start = {r: (ann.get(r) if pd.notna(ann.get(r)) and not placeholder_announce(ann.get(r), close.get(str(r)), last_entry.get(r), as_of)
+                 else first.get(r)) for r in releases}
     artist_of = {r: str(r).split(" · ")[0] for r in releases}
     ent_sets = {r: set(de.loc[de["simple_release_name"] == r, "aa_account_id"].dropna()) for r in releases}
     buy_sets = {r: set(pu.loc[pu["simple_release_name"] == r, "aa_account_id"].dropna()) for r in releases}

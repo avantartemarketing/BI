@@ -52,5 +52,37 @@ check(!/order_id,|customer_id,|aa_account_id/.test(units.slice(units.lastIndexOf
 check(!/user_email|customer_email/.test(units), "no address column is named in the units query");
 check(bq.UNITS_PAID_HEADER.join(",") === "release,product_title,order_date,channel,purchase_event,units_paid,units_private_room,prints_offered_paid,frames_paid", "the units file's columns");
 check(path.dirname(bq.UNITS_PAID) === path.dirname(bq.ORDERS_BY_PRODUCT), "the units file lives beside orders_by_product.csv, from the same pull");
+// one name per product (docs/DATA_MODEL.md 2.4): each Shopify product goes by
+// the title on its latest line, so a renamed work, if only in its capitals,
+// is one product; two products under one title stay one (a private-room
+// variant) unless their SKUs name different works, which are then told apart
+// by the work; and all three files name products that way, so they join
+const ctes = bq.orderLinesCtes();
+check(/product_titles AS \(\n\s+SELECT release, shopify_product_id,\n\s+ARRAY_AGG\(product_title ORDER BY COALESCE\(order_date, draft_date\) DESC, product_title LIMIT 1\)\[OFFSET\(0\)\] AS title,/.test(ctes)
+  && /FROM lines WHERE shopify_product_id IS NOT NULL GROUP BY 1, 2\)/.test(ctes), "a Shopify product is named by the title on its latest line");
+check(/MIN\(work_code\) AS work_code/.test(ctes)
+  && /IF\(work_code IS NOT NULL AND MIN\(work_code\) OVER \(PARTITION BY release, title\) != MAX\(work_code\) OVER \(PARTITION BY release, title\),\n\s+CONCAT\(title, ' \(', work_code, '\)'\), title\) AS product_title/.test(ctes),
+  "a title two works share is told apart by the work each one's SKUs name, and only then");
+check(/typed AS \(\n\s+SELECT l\.\* EXCEPT \(product_title\), COALESCE\(pn\.product_title, l\.product_title\) AS product_title,/.test(ctes)
+  && /LEFT JOIN product_names pn ON pn\.release = l\.release AND pn\.shopify_product_id = l\.shopify_product_id\n/.test(ctes),
+  "every typed line carries its product's one name");
+check(/FROM typed l LEFT JOIN paid_customers/.test(orders) && /GROUP BY l\.release, l\.product_title\n/.test(orders) && /FROM typed l LEFT JOIN purchase_channel/.test(units),
+  "orders and units group on that name");
+check(draws.startsWith("WITH " + ctes + ",") && /COALESCE\(n\.product_title, o\.product_title\) AS product_title, COUNT\(DISTINCT o\.order_id\) AS orders/.test(draws)
+  && /JOIN lines o ON o\.order_id = b\.shopify_order_id AND o\.release = w\.release AND o\.order_source_type = 'Order'\n/.test(draws)
+  && /LEFT JOIN product_names n ON n\.release = o\.release AND n\.shopify_product_id = o\.shopify_product_id\n/.test(draws)
+  && !draws.slice(ctes.length).includes("JOIN `"), "the draw map reads the feed's own lines and names a draw's product the same way");
+check(/FROM typed\s+WHERE entry_draft/.test(claims) && /FROM typed WHERE paid AND customer_id IS NOT NULL/.test(claims), "the claims name products the same way");
+check([orders, draws, units, claims].every((s) => !/SELECT\s+\*/i.test(s) && !/user_email|customer_email/.test(s)),
+  "no orders query takes * from a table or names an address column");
+// the private-room and from-draft units are a part of units_paid: paid lines
+// only, as units_paid.csv counts them, never a refunded or pending order's
+check(/SUM\(IF\(l\.paid AND l\.order_originated_from_drafts = 1, l\.quantity, 0\)\) AS units_from_drafts/.test(orders)
+  && /SUM\(IF\(l\.paid AND l\.is_private_room = 1, l\.quantity, 0\)\) AS units_private_room/.test(orders)
+  && /SUM\(IF\(l\.is_private_room = 1, l\.quantity, 0\)\) AS units_private_room/.test(units) && /WHERE l\.paid AND/.test(units),
+  "from-draft and private-room units count the paid lines, in both files");
+// first and last order stay the feed's freshness: any order line
+check(/MIN\(IF\(l\.order_source_type = 'Order', l\.order_date, NULL\)\) AS first_order/.test(orders)
+  && /MAX\(IF\(l\.order_source_type = 'Order', l\.order_date, NULL\)\) AS last_order/.test(orders), "first and last order read any order line");
 console.log(failed ? `${failed} failure(s)` : "ok: orders sql");
 process.exit(failed ? 1 : 0);

@@ -99,6 +99,7 @@ PAID_START_DAYS = 1      # paid starts the day after the announce: its plan and 
 UPCOMING_DAYS = 120      # an Airtable launch this far ahead is listed before the funnel sees it (§1.7)
 UPCOMING_UNTYPED_DAYS = 60   # ... but one Airtable has not typed as a draw only this far ahead
 UPCOMING_TYPES = {"Draw", ""}   # the LE draw path; blank is a project Airtable has not typed yet
+UPCOMING_NOT_DRAW = {"OG", "NFT", "TL", "TLC"}   # originals, NFTs, timed editions: an untyped launch mostly of these is no draw
 ASSUMED_CAMPAIGN_DAYS = 24      # announce to close, when Airtable has no announce date yet
 CATALOGUE_DAYS = 90      # window shown for a release with no campaign clock
 
@@ -432,6 +433,13 @@ def social_block(content: pd.DataFrame, ap: pd.DataFrame, code, start, end) -> d
     impressions or engagements. The rung sums posts and stories, so a Notion
     count goes to posts with stories at zero; impressions and engagements stay
     on the export, and nothing reads them today.
+
+    The export stops wherever it was last regenerated, so a count from it
+    says how far it reaches: `postsThrough` is the last day in the file,
+    `postsEndsFirst` that it stops before this window starts (the count is
+    unknown, not zero) and `postsPartial` that it stops inside the window
+    (the count runs to postsThrough only). The Notion log is read live, so a
+    count from it carries none of these.
     """
     ct = content.iloc[0:0]
     if code:
@@ -450,6 +458,20 @@ def social_block(content: pd.DataFrame, ap: pd.DataFrame, code, start, end) -> d
         out["posts"] = posts_in(ap, code, "brand", start, end) if code else 0
         out["stories"] = 0
         out["postsSource"] = "notion"
+    # how far the export reaches, so a window it stops short of reads as
+    # unknown rather than as a real zero; any fault reading it leaves no date
+    out["postsThrough"], out["postsEndsFirst"], out["postsPartial"] = None, False, False
+    if out["postsSource"] == "emplifi":
+        try:
+            last = content["Date"].max() if len(content) and "Date" in content.columns else None
+            if last is not None and not pd.isna(last):
+                through = pd.Timestamp(last).date()
+                s0, s1 = pd.Timestamp(start).date(), pd.Timestamp(end).date()
+                out["postsThrough"] = through.isoformat()
+                out["postsEndsFirst"] = bool(through < s0)
+                out["postsPartial"] = bool(s0 <= through < s1)
+        except (TypeError, ValueError, AttributeError):
+            out["postsThrough"], out["postsEndsFirst"], out["postsPartial"] = None, False, False
     # the artist's own account, always the Notion log - there is no other source
     out["artistPosts"] = None if (ap is None or ap.empty) else (
         posts_in(ap, code, "artist", start, end) if code else 0)
@@ -553,7 +575,17 @@ def direct_share_norm(at: pd.DataFrame, panel: pd.DataFrame | None, as_of: date)
     median over the draw panel's launches closed in the last RECENT_MONTHS,
     each over its own window (the cohort untracked_norms reads). The Direct
     switch reads the benchmark's channel split with this much of the group
-    spread over the other channels, the same rule the actuals get."""
+    spread over the other channels, the same rule the actuals get.
+
+    The split it is applied to is the panel's, so the share is the panel's
+    too wherever the panel carries it (direct_in_group_<metric>, written by
+    etl/analysis/release_clusters.py from the same pull as the split): read
+    off today's feed instead, a re-attribution upstream moves the share and
+    not the split, and the Direct view mixes two attributions - on 24 Sep
+    2026 Direct's share of the group's units fell from 0.73 to 0.33 in one
+    refresh while the panel's split stayed on 10 Sep's. A panel written
+    before the columns existed falls back to today's feed over the same
+    windows. `source` says which was read: "panel" or "feed"."""
     if panel is None or not len(panel) or "window_end" not in panel.columns:
         return None
     ends = pd.to_datetime(panel["window_end"], errors="coerce")
@@ -561,6 +593,16 @@ def direct_share_norm(at: pd.DataFrame, panel: pd.DataFrame | None, as_of: date)
     recent = panel[ends >= cutoff]
     use_recent = len(recent) >= UNTRACKED_NORM_MIN
     pool = recent if use_recent else panel
+    cols = {k: f"direct_in_group_{k}" for k in DIRECT_METRICS}
+    if all(c in pool.columns for c in cols.values()) and pool[list(cols.values())].notna().any().all():
+        out: dict = {"recentMonths": baskets.RECENT_MONTHS if use_recent else None, "source": "panel"}
+        ns = []
+        for k, c in cols.items():
+            ser = pd.to_numeric(pool[c], errors="coerce").dropna()
+            out[k] = round(float(ser.median()), 4) if len(ser) else None
+            ns.append(len(ser))
+        out["n"] = max(ns)
+        return out
     shares: dict[str, list[float]] = {k: [] for k in DIRECT_METRICS}
     for r in pool.to_dict("records"):
         ws = pd.to_datetime(r.get("window_start"), errors="coerce")
@@ -574,7 +616,7 @@ def direct_share_norm(at: pd.DataFrame, panel: pd.DataFrame | None, as_of: date)
         for k, v in channel_share(sub, "Direct", within_group=True).items():
             if v is not None:
                 shares[k].append(v)
-    out: dict = {"recentMonths": baskets.RECENT_MONTHS if use_recent else None}
+    out: dict = {"recentMonths": baskets.RECENT_MONTHS if use_recent else None, "source": "feed"}
     for k, xs in shares.items():
         ser = pd.Series(xs, dtype=float)
         out[k] = round(float(ser.median()), 4) if len(ser) else None
@@ -587,10 +629,19 @@ def spread_profile(profile: dict, norm: dict | None) -> dict:
     Search/direct/other group (the panel's median, direct_share_norm) leaves
     the group and lands on every group in proportion to what remains, units
     and sessions alike. The headline medians do not move, so K does not
-    either; conversion stays at the benchmark like every other rate."""
+    either; conversion stays at the benchmark like every other rate.
+
+    Nor does the money. Paid takes its share of Direct's units, so the same
+    spend buys more of them: the cost of a paid unit is rescaled by the paid
+    group's change (`cost_scale`, channel units over spread units), and paid
+    units x cost x K - the paid budget, and the benchmark's - is the Channel
+    view's to the cent. The basket's own figure is rescaled here; a figure the
+    release typed, or the panel constant, takes the same scale where it is
+    picked (cost_per_purchase_for). A display switch never moves a budget."""
     if not norm:
         return profile
     out = dict(profile)
+    paid_before = float((profile.get("units_by_group") or {}).get("paid") or 0.0)
     for key, metric in (("units_by_group", "units"), ("sessions_by_group", "sessions")):
         share = norm.get(metric)
         grp = {g: float(v or 0.0) for g, v in (out.get(key) or {}).items()}
@@ -609,6 +660,12 @@ def spread_profile(profile: dict, norm: dict | None) -> dict:
         total = float(out.get(metric) or 0.0)
         if total > 0:
             out["share_units" if metric == "units" else "share_sessions"] = {g: round(v / total, 6) for g, v in out[key].items()}
+    paid_after = float((out.get("units_by_group") or {}).get("paid") or 0.0)
+    if paid_before > 0 and paid_after > 0:
+        out["cost_scale"] = paid_before / paid_after
+        cpp = float(profile.get("cost_per_purchase") or 0.0)
+        if cpp > 0:
+            out["cost_per_purchase"] = cpp * out["cost_scale"]
     out["direct_spread"] = norm
     return out
 
@@ -759,16 +816,20 @@ def cost_per_purchase_for(release: dict, b: dict = BENCH, profile: dict | None =
     over their paid units, baskets.attach_paid_costs; on the profile as
     cost_per_purchase, 0 when too few members have a reading), else the
     panel's constant. A release saved while the figure was still a quartile
-    pick (cpp_pick, retired) is read at that quartile."""
+    pick (cpp_pick, retired) is read at that quartile. On a profile read with
+    Direct spread the release's figure and the constant take the profile's
+    cost_scale, as the basket's figure already has (spread_profile), so the
+    budget is the same whichever way Direct is read."""
+    scale = float((profile or {}).get("cost_scale") or 1.0)
     own = release.get("cost_per_purchase")
     if own not in (None, "") and float(own) > 0:
-        return float(own)
+        return float(own) * scale
     basket = float((profile or {}).get("cost_per_purchase") or 0)
     if basket > 0:
         return basket
     pick = release.get("cpp_pick")
     table = b["cost_per_purchase"]
-    return float(table[pick] if pick in table else table["Median"])
+    return float(table[pick] if pick in table else table["Median"]) * scale
 
 
 def cost_per_purchase_source(release: dict, b: dict = BENCH, profile: dict | None = None) -> str:
@@ -1060,6 +1121,15 @@ def group_targets(targets: dict) -> dict:
 
 CLEAN_EXCLUDE_STAGES = {"Missing campaign dates", "Outside campaign window"}
 
+# The curve a group's unit plan is read off (docs §5.3): its plan line, its
+# expected-by-today and the shape of its forward path. The page counts secured
+# units, which take a draw entry the day it is made, while Total_Product_Units
+# books the draw's winners on the close day. Read as demand, that booking put
+# about a quarter of the email and social targets on the last day, so the
+# projection counted on a close-day jump the entries never make. The entries
+# curve times units the way the actual does. Paid reads its even daily plan.
+UNIT_PLAN_CURVE = "entries"
+
 
 def poisson_fit(y, X, offset=None, iters: int = 100):
     """Poisson regression, log E[y] = X b + offset, by iteratively reweighted
@@ -1277,6 +1347,52 @@ def observation_clock(newest: date, now: datetime | None = None) -> tuple[date, 
 
 EMAIL_REF_MONTHS = 24   # rate references: draw launches that closed within this span
 
+# Every launch on file, configured and discovered, with its artist and dates,
+# noted once a run by main() (note_launches), so an email window never reaches
+# back into an earlier launch by the same artist (email_window_start).
+LAUNCHES: list[dict] = []
+
+
+def _artist_key(release_name: str | None) -> str:
+    return str(release_name or "").split(" · ")[0].strip().casefold()
+
+
+def note_launches(releases) -> None:
+    """Record every launch's name, artist and close for email_window_start."""
+    out = []
+    for r in releases or []:
+        name = (r or {}).get("release_name")
+        try:
+            end = date.fromisoformat(str(r.get("launch_end"))[:10]) if name and r.get("launch_end") else None
+        except ValueError:
+            end = None
+        if end is not None:
+            out.append({"name": name, "artist": _artist_key(name), "close": end})
+    LAUNCHES[:] = out
+
+
+def email_window_start(release: dict, start: date, launches: list[dict] | None = None) -> date:
+    """Where a release's email window opens: `start` (its private room or its
+    announce), or the day after an earlier launch by the same artist closed,
+    when that is later. Sends join a release by campaign code alone, and an
+    artist's launches can carry one code between them: Zeng Fanzhi's July
+    Rainbow sends were tagged with the LE's code and fell inside a window
+    opened a month before the LE's announce, so the LE counted them as its
+    own. An earlier launch is one that closed before this one's announce, so
+    the window never starts after it."""
+    name = (release or {}).get("release_name")
+    artist = _artist_key(name)
+    try:
+        ann = date.fromisoformat(str(release.get("announce_date"))[:10])
+    except (AttributeError, TypeError, ValueError):
+        return start
+    if not artist:
+        return start
+    for w in (LAUNCHES if launches is None else launches):
+        if w["name"] != name and w["artist"] == artist and w["close"] < ann:
+            start = max(start, w["close"] + timedelta(days=1))
+    return start
+
 
 def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: list[dict] = (),
                               spend: pd.DataFrame | None = None,
@@ -1302,7 +1418,10 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
     reference and let it carry whatever a small-list release lost on sends.
 
     Each part is None until >= 2 launches qualify; the whole is None when
-    neither does."""
+    neither does. Every launch's own row rides on the result (rows), so a
+    release is read against the cohort without itself and without the
+    launches that closed after it (email_bench_for), and each launch's sends
+    are read from where its email window opens (email_window_start)."""
     if emails.empty:
         return None
 
@@ -1330,7 +1449,10 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         spc = sessions / clicked if sessions and clicked > 0 else None
         return (rid, end, opened / total, clicked / total, clicked / opened if opened > 0 else None, spc)
 
-    shares, totals, rates, seen = [], [], [], set()
+    # one row per launch with sends on file: the configured ones give a total
+    # and a delivery curve, and a rate row when they closed within the span;
+    # the discovered draw launches a rate row
+    rows, seen = [], set()
     recent = as_of - timedelta(days=EMAIL_REF_MONTHS * 30)
     for r in INPUTS["releases"]:
         seen.add(r["campaign_code"])
@@ -1338,7 +1460,8 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         if end >= as_of:
             continue
         ann = date.fromisoformat(r["announce_date"])
-        core = window_sends(r["campaign_code"], date.fromisoformat(r["private_room_open"]), end)
+        start = email_window_start(r, date.fromisoformat(r["private_room_open"]))
+        core = window_sends(r["campaign_code"], start, end)
         if core is None:
             continue
         total = float(core["delivered"].sum())
@@ -1349,11 +1472,10 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         for t in CURVE_GRID:
             sel = cum[c["pdsa"] <= t]
             row.append(float(sel.iloc[-1]) if len(sel) else 0.0)
-        shares.append(row)
-        totals.append(total)
-        if end >= recent:
-            rates.append(rate_row(r["id"], end, core,
-                                  email_sessions(r["release_name"], date.fromisoformat(r["private_room_open"]), end)))
+        rows.append({"id": r["id"], "name": r.get("release_name"), "code": r["campaign_code"], "end": end,
+                     "total": total, "shares": row,
+                     "rate": rate_row(r["id"], end, core, email_sessions(r["release_name"], start, end))
+                     if end >= recent else None})
     for r in discovered:
         code = r.get("campaign_code")
         if not code or code in seen or not r.get("announce_date") or not r.get("launch_end"):
@@ -1365,13 +1487,26 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         if not camp or not camp.lower().endswith("draw"):
             continue
         ann = date.fromisoformat(r["announce_date"])
-        core = window_sends(code, ann - timedelta(days=PR_LEAD_DAYS), end)
+        start = email_window_start(r, ann - timedelta(days=PR_LEAD_DAYS))
+        core = window_sends(code, start, end)
         if core is not None:
-            rates.append(rate_row(r["id"], end, core,
-                                  email_sessions(r["release_name"], ann - timedelta(days=PR_LEAD_DAYS), end)))
+            rows.append({"id": r["id"], "name": r.get("release_name"), "code": code, "end": end,
+                         "total": None, "shares": None,
+                         "rate": rate_row(r["id"], end, core, email_sessions(r["release_name"], start, end))})
+    return email_medians(rows)
 
+
+def email_medians(rows: list[dict]) -> dict | None:
+    """The email references from the launches' rows (email_delivered_benchmark):
+    the median delivered total and the pooled delivery-timing curve over the
+    configured launches, and the median open, click, clicks-per-open and
+    sessions-per-click rates over the rate cohort. Each part is None until two
+    launches qualify; the whole is None when neither does."""
+    shares = [r["shares"] for r in rows if r.get("total") is not None]
+    totals = [r["total"] for r in rows if r.get("total") is not None]
+    rates = [r["rate"] for r in rows if r.get("rate") is not None]
     out = {"total": None, "curve": None, "open_rate": None, "click_rate": None, "ctor_rate": None,
-           "spc_rate": None, "cohort": None}
+           "spc_rate": None, "cohort": None, "rows": rows}
     if len(totals) >= 2:
         med = pd.DataFrame(shares).median().tolist()
         for i in range(1, len(med)):
@@ -1390,6 +1525,29 @@ def email_delivered_benchmark(emails: pd.DataFrame, as_of: date, discovered: lis
         out["cohort"] = {"n": len(rates), "releases": [x[0] for x in rates],
                          "from": rates[-1][1].isoformat(), "to": rates[0][1].isoformat()}
     return out if (out["total"] is not None or out["open_rate"] is not None) else None
+
+
+def email_bench_for(bench: dict | None, release: dict | None) -> dict | None:
+    """The email references one release is read against (docs 8): the run's
+    cohort without the release's own sends and without the launches that
+    closed after it, so a closed release is never graded against itself or
+    against launches that had not closed when it did. A live release's cohort
+    is the run's own (every launch in it closed before today). A launch is
+    left out by id, by name and by campaign code: a configured release's
+    discovered twin carries another id and the same code."""
+    if not bench or not release or not bench.get("rows"):
+        return bench
+    rid, name, code = release.get("id"), release.get("release_name"), release.get("campaign_code")
+    try:
+        end = date.fromisoformat(str(release.get("launch_end"))[:10])
+    except (TypeError, ValueError):
+        end = None
+
+    def own_or_later(r: dict) -> bool:
+        return bool(r["id"] == rid or (name and r.get("name") == name) or (code and r.get("code") == code)
+                    or (end is not None and r["end"] > end))
+    keep = [r for r in bench["rows"] if not own_or_later(r)]
+    return bench if len(keep) == len(bench["rows"]) else email_medians(keep)
 
 
 def email_refs(bench: dict | None) -> dict:
@@ -1470,13 +1628,9 @@ def build_curves(at: pd.DataFrame, members: list[str] | None = None) -> dict:
         for m in metrics:
             c = curve_from(sub, m, clean)
             curves["groups"][g][m] = c  # may be None -> UI/build falls back to all
-    # Paid units book on the draw-close date (winners are allocated then), so a
-    # units-shaped paid plan cliffs ~46 pts on the final day while the plotted
-    # actual (secured units) accrues entry-timed. Plan paid units on the entries
-    # shape instead - demand timing, not allocation bookkeeping (docs §5.3).
-    if curves["groups"].get("paid", {}).get("entries"):
-        curves["groups"]["paid"]["units"] = curves["groups"]["paid"]["entries"]
-    # p25/p75 band for the all-entries curve (status guardrails)
+    # The units series stay as measured, draw winners on the close day, and
+    # no plan is read off them: the groups' unit plans read the entries series
+    # (UNIT_PLAN_CURVE) and paid its even daily plan.
     return curves
 
 
@@ -1593,6 +1747,10 @@ def load_products_feed() -> dict:
 _ORDERS_FEED: dict | None = None
 _PRODUCT_EDITIONS = None
 _ARTIST_STOP = {"the", "estate", "foundation", "studio", "of", "and"}
+# a work the orders feed tells apart from another of the same title by the
+# work its SKUs name (server/bigquery.js product_names): 'Problem Painting
+# (FISCH-PROB2)'
+_WORK_SUFFIX = re.compile(r"^(.+) \(([^()-]+-[^()-]+)\)$")
 
 
 def _artist_tokens(name) -> set[str]:
@@ -1604,7 +1762,9 @@ def product_editions():
     (data/release_pricing.csv, one row per product): a lookup by release name
     and Shopify product title. The title must match; among rows that share a
     title the release's year and then its artist decide, so a reissued title
-    finds its own row, and a title that stays ambiguous gets no edition."""
+    finds its own row, and a title that stays ambiguous gets no edition. A
+    work the orders feed names with its work code after a title it shares
+    with another work reads that title's rows."""
     global _PRODUCT_EDITIONS
     if _PRODUCT_EDITIONS is not None:
         return _PRODUCT_EDITIONS
@@ -1627,6 +1787,11 @@ def product_editions():
 
     def lookup(release_name: str, product_title: str):
         cands = by_title.get(_norm(product_title)) or []
+        if not cands:
+            # one of two works that share a title: Airtable's rows of that
+            # title, one per work, give its edition where they agree
+            m = _WORK_SUFFIX.match(str(product_title))
+            cands = (by_title.get(_norm(m.group(1))) or []) if m else []
         if not cands:
             return None
         parts = [x.strip() for x in str(release_name).split("·")]
@@ -1715,6 +1880,18 @@ def load_orders_feed() -> dict:
                 for d in (r.last_order, r.last_draft):
                     if d and (rel["asOf"] is None or d > rel["asOf"]):
                         rel["asOf"] = d
+            # the query names each Shopify product once (server/bigquery.js
+            # product_names); one under two titles is a file pulled before
+            # that, whose renamed works are split across rows until the next pull
+            names: dict = {}
+            for r in df.itertuples(index=False):
+                for pid in str(getattr(r, "product_ids", "") or "").split("|"):
+                    if pid.strip():
+                        names.setdefault((r.release, pid.strip()), set()).add(r.product_title)
+            split = sorted({rel for (rel, _), ts in names.items() if len(ts) > 1})
+            if split:
+                print(f"warning: {p1.name} names one Shopify product with two titles in {len(split)} release(s), "
+                      f"splitting a work across rows until the next pull: {', '.join(split[:5])}{' ...' if len(split) > 5 else ''}")
     if feed and p2.exists():
         try:
             dm = pd.read_csv(p2, dtype=str).fillna("")
@@ -1817,6 +1994,10 @@ def orders_campaign_codes() -> dict:
 ORDERS_SINCE = date.fromisoformat(os.environ.get("BQ_SINCE") or "2025-01-01")   # server/bigquery.js SINCE
 EARLY_SALES_DAYS = 45   # a first sale opens the window, but never earlier than this before the announce
 UNITS_GRACE_DAYS = 2    # sales count to two days after the close, on both cards, and not after
+DRAW_END_MAX_DAYS = 21  # a draw that ran past the clock's close moves the close this far at most (sales_close)
+LATE_WARN_DAYS = 14     # units paid in these days after the window shut ...
+LATE_WARN_UNITS = 10    # ... at least this many ...
+LATE_WARN_SHARE = 0.10  # ... and this share of them with the window's own: the build warns the close may be early
 NO_EVENT_WARN_SHARE = 0.05   # paid units the funnel has no purchase event for: warn above this share...
 NO_EVENT_WARN_MIN = 5        # ... on at least this many units
 # beside the other two orders files, from the same pull (server/bigquery.js
@@ -1920,6 +2101,60 @@ def sales_window(rows: pd.DataFrame | None, campaign_start: date, announce: date
     return start, end, first
 
 
+def draw_end(name: str) -> date | None:
+    """The day the release's draw ended: the last entry day over its draws in
+    the events aggregate (release_products.json draws[].last), which is the
+    allocation day on the launches checked. None when the feed has no draw
+    for the release or no day it can read."""
+    feed = load_products_feed().get(name)
+    draws = feed.get("draws") if isinstance(feed, dict) else None
+    days = []
+    for d in draws if isinstance(draws, list) else []:
+        try:
+            days.append(date.fromisoformat(str(d.get("last"))[:10]))
+        except (AttributeError, TypeError, ValueError):
+            continue
+    return max(days) if days else None
+
+
+def sales_close(name: str, launch_end: date) -> tuple[date, date | None]:
+    """The close the sales window counts to (docs 6.3): the later of the
+    clock's close and the day the release's draw ended (draw_end). The
+    winners are drawn and pay when the draw ends, and a clock that closed
+    before it (Jaume Plensa's UTOPIA: close 29 July, draw to 5 August, 155
+    of 218 units paid after) dropped their payments from every card. A draw
+    end more than DRAW_END_MAX_DAYS past the clock's close moves it that far
+    and no further. Returns (the close, the draw's last entry day when it
+    moved the close, else None); a release whose draw ended by the clock's
+    close keeps it, as does one the feed has no draw for."""
+    end = draw_end(name)
+    if end is None or end <= launch_end:
+        return launch_end, None
+    return min(end, launch_end + timedelta(days=DRAW_END_MAX_DAYS)), end
+
+
+def late_paid_warning(rid: str, rows: pd.DataFrame | None, shut: date, info: dict) -> str | None:
+    """A build warning when many units were paid just after the sales window
+    shut: at least LATE_WARN_UNITS in the LATE_WARN_DAYS after `shut`, and at
+    least LATE_WARN_SHARE of those with the window's own. A draw that ran
+    past the recorded close has its winners pay there, so the close is the
+    first thing to check (docs 6.3). Printed and returned; None otherwise."""
+    if info.get("source") != "orders" or rows is None or not len(rows):
+        return None
+    try:
+        late = float(rows.loc[(rows["event_date"] > shut) & (rows["event_date"] <= shut + timedelta(days=LATE_WARN_DAYS)),
+                              "units"].sum())
+    except (KeyError, TypeError, ValueError):
+        return None     # a warning, never a stop
+    counted = float(info.get("total") or 0.0)
+    if late < LATE_WARN_UNITS or late < LATE_WARN_SHARE * (late + counted):
+        return None
+    msg = (f"warning: {rid}: {late:.0f} units paid in the {LATE_WARN_DAYS} days after its sales window shut on "
+           f"{shut} ({late / (late + counted):.0%} of them with the {counted:.0f} it counted) - check its close")
+    print(msg)
+    return msg
+
+
 def swap_units(win: pd.DataFrame, name: str, rows: pd.DataFrame | None,
                start: date, end: date, shut: date) -> tuple[pd.DataFrame, dict]:
     """The window's units from the orders table in place of the funnel's
@@ -2017,8 +2252,20 @@ def _no_draft_frames(p: dict) -> dict:
     return {k: 0.0 for k in ("draftPrints", "draftFrames") if p.get(k) is not None}
 
 
+def _drafts_before(p: dict, since: date | None) -> bool:
+    """Every draft on the product was raised before `since`: its last draft
+    day (the orders feed's latest draft line) is earlier. A product with no
+    draft day on file keeps its drafts."""
+    if since is None:
+        return False
+    try:
+        return date.fromisoformat(str(p.get("lastDraft") or "")[:10]) < since
+    except ValueError:
+        return False
+
+
 def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: date, closed: bool,
-                     source: str) -> dict | None:
+                     source: str, drafts_since: date | None = None) -> dict | None:
     """The orders feed as the sell-through and framing cards read it, cut to
     the window the page counts: each product's paid units, prints and frames
     summed over [start, end] from the units feed, every title kept (a title
@@ -2027,14 +2274,21 @@ def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: dat
     Once the window has closed, drafts and entry drafts no longer count:
     whatever they become is paid after the close. The all-time record when
     the page reads the funnel's units, less its drafts once the window has
-    closed, the same rule."""
+    closed, the same rule. `drafts_since` (a catalogue page's first day)
+    drops the drafts of a product whose every draft was raised before it:
+    a draft left unpaid for months is not a sale in waiting in the last 90
+    days (the feed dates a product's latest draft, not each one)."""
     of = load_orders_feed().get(name)
     if source != "orders" or rows is None:
-        if not (closed and of):
+        if not of or not (closed or any(_drafts_before(p, drafts_since) for p in of["products"].values())):
             return of
         shut = {"drafts": 0.0, "winnerDrafts": 0.0, "entrantPrints": 0.0, "entrantFrames": 0.0}
-        return {**of, "products": {t: {**p, **shut, **_no_draft_frames(p)} for t, p in of["products"].items()}, "drafts": 0.0,
-                "framing": {**(of.get("framing") or {}), "entrantPrints": 0.0, "entrantFrames": 0.0}}
+        products = {t: ({**p, **shut, **_no_draft_frames(p)} if closed or _drafts_before(p, drafts_since) else p)
+                    for t, p in of["products"].items()}
+        return {**of, "products": products, "drafts": sum(float(p.get("drafts") or 0.0) for p in products.values()),
+                "framing": {**(of.get("framing") or {}),
+                            "entrantPrints": sum(float(p.get("entrantPrints") or 0.0) for p in products.values()),
+                            "entrantFrames": sum(float(p.get("entrantFrames") or 0.0) for p in products.values())}}
     inside = rows[(rows["event_date"] >= start) & (rows["event_date"] <= end)]
     per = inside.groupby("product_title").agg(units=("units", "sum"), private_room=("private_room", "sum"),
                                                prints=("prints_offered", "sum"), frames=("frames", "sum"))
@@ -2053,7 +2307,7 @@ def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: dat
         p.update(unitsPaid=paid, privateRoom=float(r["private_room"]) if r is not None else 0.0,
                  printsOffered=float(r["prints"]) if r is not None else 0.0,
                  frames=float(r["frames"]) if r is not None else 0.0)
-        if closed:
+        if closed or _drafts_before(p, drafts_since):
             p.update(drafts=0.0, winnerDrafts=0.0, entrantPrints=0.0, entrantFrames=0.0, **_no_draft_frames(p))
         out["products"][t] = p
         out["unitsPaid"] += paid
@@ -2358,9 +2612,35 @@ def edition_total(release: dict):
     return size
 
 
+def entries_in_hand(patterns: list, draws: list, since: date) -> list:
+    """The entry patterns less the draws that ended before `since` (docs
+    6.3). A catalogue page counts its last 90 days, and a draw whose last
+    entry came before them was allocated long ago: its losers are not in
+    hand, nor are its unpaid wins. Their ids leave every list of every
+    pattern (a purchase through one stays in the buyer's `bought`, their own
+    history), and a pattern left with no draw goes, so a page whose draws
+    all ended earlier reads no patterns, as a closed page does. A draw with
+    no readable last day stays."""
+    stale = set()
+    for d in draws or []:
+        try:
+            if date.fromisoformat(str(d.get("last"))[:10]) < since:
+                stale.add(str(d.get("id")))
+        except (AttributeError, TypeError, ValueError):
+            continue
+    if not stale:
+        return patterns
+    out = []
+    for p in patterns:
+        q = {**p, **{k: [x for x in (p.get(k) or []) if str(x) not in stale] for k in ("open", "won", "sold", "pre")}}
+        if q["open"] or q["won"] or q["sold"]:
+            out.append(q)
+    return out
+
+
 def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: float, inventory_left,
                       future_entries: float = 0.0, expected_today=None, bm_today=None, bm_close=None,
-                      orders=..., closed: bool = False) -> dict:
+                      orders=..., closed: bool = False, entries_since: date | None = None) -> dict:
     """The snapshot's `sellthrough`: the release-level prediction as before,
     and - where the event feed has the release's draws - the per-product
     block: products from the draws and what was typed for them, the entries
@@ -2372,7 +2652,9 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     `orders` is the orders record the page reads (orders_in_window: cut to
     the days the page counts), the all-time record when left out. `closed`
     says the window has shut (two days past the close): nothing in hand and
-    nothing still to come counts any more, only what was paid in it."""
+    nothing still to come counts any more, only what was paid in it.
+    `entries_since` (a catalogue page's first day) leaves out the entries of
+    draws that ended before it (entries_in_hand)."""
     if closed:
         unconverted, future_entries = 0.0, 0.0
     rate = entry_rate(release)
@@ -2405,7 +2687,10 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     if not feed or not feed.get("draws"):
         st["incomplete"] = ["products"]
         return st
-    products, source = products_from_draws(feed["draws"], draw_products_typed(release), edition)
+    # a draw the orders feed pairs with a product is named by it unless a
+    # name was typed against its draw id (products_from_draws, attach_orders)
+    products, source = products_from_draws(feed["draws"], draw_products_typed(release), edition,
+                                           (of or {}).get("draws"))
     if of:
         products, source = attach_orders(products, of["products"], of["draws"], source,
                                          orders_only=bool(of.get("windowed")))
@@ -2419,6 +2704,8 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
             p["claimsInFlight"] = n
     # once the window has shut, no entry is still in hand: only what was paid counts
     patterns = [] if closed else (feed.get("patterns") or [])
+    if patterns and entries_since is not None:
+        patterns = entries_in_hand(patterns, feed["draws"], entries_since)
     pp = sell_through_products(products, patterns, rate=rate, edition=edition,
                                sold_total=units_sold, future_units=future_entries, expected_today=expected_today,
                                benchmark_today=bm_today, benchmark_close=bm_close, preorder_rate=pre_rate)
@@ -2589,6 +2876,84 @@ def daterange(a: date, b: date):
         d += timedelta(days=1)
 
 
+def whole(x: float) -> float:
+    """A benchmark in whole units as the page rounds it: from the one-decimal
+    figure the snapshot publishes (benchmark.units), a half away from zero, as
+    fmt does in the browser. Python's round() takes a half to the even number
+    (132.5 -> 132) and reads a float's own noise (217.49999... -> 217), which
+    put a benchmark of 132 on the hero beside a median of 133 in its working."""
+    v = round(float(x), 1)
+    w = float(math.floor(abs(v) + 0.5))
+    return -w if v < 0 and w else w
+
+
+# The at-close waterfall scales the walk to date by the close gap over the
+# to-date gap (docs §9). Below this to-date gap the ratio is rounding, not a
+# reading, and above this factor the walk to date is too small a base to
+# scale: either way the rest of the gap is shared out by size instead.
+WF_CLOSE_MIN_GAP = 0.5
+WF_CLOSE_SCALE_MAX = 3.0
+
+
+def close_walk(raw: list[float], gap_today: float, gap_close: float) -> tuple[list[float], float | None]:
+    """The waterfall's contributors at close from the same contributors to
+    date (docs §9), for a release still live: each scaled by one factor, the
+    close gap over the to-date gap (both unrounded: the contributors of each
+    group add up to its actual less its reference by construction), so they
+    keep their proportions and add up to the projection's gap.
+
+    A factor off a to-date gap under WF_CLOSE_MIN_GAP is a ratio of rounding
+    (a release sitting on its pace drew bars of a billion units), and one that
+    is negative or above WF_CLOSE_SCALE_MAX flips every contributor's sign or
+    blows offsetting ones up. There the part of the close gap still to come
+    is shared over the contributors in proportion to their size to date:
+    where they all point the same way that is the same walk as the factor's.
+    Returns the unrounded values and the factor, None when shared out."""
+    raw = [float(v) for v in raw]
+    if abs(gap_today) >= WF_CLOSE_MIN_GAP:
+        scale = gap_close / gap_today
+        if 0.0 <= scale <= WF_CLOSE_SCALE_MAX:
+            return [v * scale for v in raw], scale
+    size = sum(abs(v) for v in raw)
+    if size <= 0:
+        return raw, None          # nothing to date to share it by: the walk's rounding step places it
+    rest = gap_close - sum(raw)
+    return [v + rest * abs(v) / size for v in raw], None
+
+
+WF_STEPS = [("organic_traffic", "Organic traffic"), ("organic_conversion", "Organic conversion"),
+            ("paid_spend", "Paid spend"), ("paid_efficiency", "Paid efficiency")]
+
+
+def settle_steps(vals: list[float], gap: float) -> list[dict]:
+    """The waterfall's four steps in whole units, adding up exactly to the gap
+    the card prints (the rounded pair, not the raw difference: rounding each
+    end separately can move it by a unit), the rounding residual parked on the
+    largest step."""
+    steps = [{"key": k, "label": l, "value": round(v, 0)} for (k, l), v in zip(WF_STEPS, vals)]
+    max(steps, key=lambda s: abs(s["value"]))["value"] += gap - sum(s["value"] for s in steps)
+    return steps
+
+
+def waterfall_walks(raw: list[float], gap_today: float, gap_close: float,
+                    shown_today: float, shown_close: float, complete: bool) -> tuple[list[dict], list[dict], float | None]:
+    """One reference's walks (docs §9): the contributors to date (`raw`, whose
+    unrounded total is `gap_today`) as steps adding up to `shown_today`, and
+    the same at close adding up to `shown_close`. A closed release has nothing
+    left to project (its projection is its actual, its reference by today its
+    reference), so its walk at close is its walk to date, copied: rescaling
+    it by the ratio of two equal gaps made of rounded parts moved bars by a
+    unit between the horizons, and on a release that closed on target divided
+    rounding by rounding (steps of a billion units). A live release's walk is
+    scaled to its projection (close_walk). Returns (today, close, factor), the
+    factor None when copied or shared out."""
+    today = settle_steps(raw, shown_today)
+    if complete:
+        return today, settle_steps([s["value"] for s in today], shown_close), None
+    vals, scale = close_walk(raw, gap_today, gap_close)
+    return today, settle_steps(vals, shown_close), scale
+
+
 # ---------------------------------------------------------------- every release
 
 _QUARTER_RE = re.compile(r"^(\d{4}) Q([1-4])$")
@@ -2630,7 +2995,10 @@ def code_activity(spend: pd.DataFrame | None, emails: pd.DataFrame | None) -> di
         hi[code] = max(hi.get(code, d), d)
 
     if spend is not None and {"campaign_name", "spend_date"} <= set(spend.columns):
-        for name, day in zip(spend["campaign_name"], spend["spend_date"]):
+        # the days it spent: the Meta export keeps sending a campaign's rows,
+        # at zero, for about four weeks after it stops
+        spent = spend[pd.to_numeric(spend["spend"], errors="coerce") > 0] if "spend" in spend.columns else spend
+        for name, day in zip(spent["campaign_name"], spent["spend_date"]):
             if isinstance(name, str):
                 take(name.split(" · ")[0].strip(), day)
     if emails is not None and {"campaign", "sent_at"} <= set(emails.columns):
@@ -2677,6 +3045,140 @@ def guess_code(artist: str, title: str, year: int, codes: set[str], siblings: in
     if len(les) == 1 and t == "multiple":
         return les[0]
     return None
+
+
+def orders_codes() -> dict[str, list[str]]:
+    """Release name -> the campaign codes its rows carry in the orders feed
+    (data/orders_by_product.csv campaign_code: the campaign its own order
+    lines were sold under), each once. Empty without the file."""
+    p = DATA / "orders_by_product.csv"
+    if not p.exists():
+        return {}
+    try:
+        df = pd.read_csv(p, usecols=["release", "campaign_code"], dtype=str).fillna("")
+    except (OSError, ValueError) as e:
+        print(f"warning: ignoring {p.name} for campaign codes: {e}")
+        return {}
+    out: dict[str, list[str]] = {}
+    for rel, code in zip(df["release"], df["campaign_code"].str.strip()):
+        if rel and code and code not in out.setdefault(rel, []):
+            out[rel].append(code)
+    return out
+
+
+def source_campaign_codes(records: list[dict], codes: set[str], launch_frame: pd.DataFrame | None,
+                          spend: pd.DataFrame | None, orders: dict[str, list[str]] | None = None) -> list[tuple]:
+    """Each funnel release's campaign code from its own feeds, before the
+    guess (docs 11b): the code the orders feed gives it, else the release
+    code of the Airtable launch it matched, taken when exactly one code the
+    feeds use (the sends, the posts, the release inputs, Meta's campaign
+    names) is that code - in the feed's spelling, so Kai_Content_24 on the
+    orders joins the sends tagged KAI_CONTENT_24. guess_code rejects a code
+    whose year is the planning year (JeffKoons_LE_25 on a 2026 Q1 launch), a
+    short stub (LY_LE_26) or one not in the artist's name (PietParra), so
+    30-odd pages had no code while their orders named it.
+
+    A code the orders feed gives several releases, or an Airtable launch
+    several releases matched, is a group show's (the eight Amphora releases
+    under Multiple_Amphorae_24) and nobody's: its sends and spend would count
+    on every page. So is a code a configured release carries. A guess that
+    names another code than the sourced one is kept and said: one release can
+    be tagged two ways (Eddie Martinez's Scaffold, EDDIE_SCAFFOLD_24 on its
+    sends and EddieMart_Scaffold_24 on its orders and Meta), and the guess is
+    the one joining sends today. Sets campaign_code and code_source
+    ('orders', 'airtable', 'guess' or None) on every record; returns
+    (id, code, source) for each code it set."""
+    orders = orders_codes() if orders is None else orders
+    feed = {c for c in codes if _CODE_RE.match(str(c))}
+    if spend is not None and "campaign_name" in spend.columns:
+        feed |= {p for p in (str(n).split(" · ")[0].strip() for n in spend["campaign_name"].dropna()) if _CODE_RE.match(p)}
+    spelt: dict[str, set] = {}
+    for c in feed:
+        spelt.setdefault(_norm(c), set()).add(c)
+
+    def in_feeds(cand: str) -> str | None:
+        if cand in feed:
+            return cand
+        got = spelt.get(_norm(cand)) or set()
+        return next(iter(got)) if len(got) == 1 else None
+
+    # the Airtable launch each release matched (etl/pricing.py), by its release code
+    at: dict[str, list[str]] = {}
+    if launch_frame is not None and len(launch_frame) and records:
+        try:
+            frame = _frame_of_releases(records)
+            for n, c in zip(frame["release_name"], pricing.match(frame, launch_frame)["airtable_release"]):
+                if isinstance(c, str) and c.strip():
+                    at[n] = [x.strip() for x in c.split("+") if x.strip()]
+        except Exception as e:  # noqa: BLE001 - the orders' codes still stand; the refresh must not stop here
+            print(f"warning: campaign codes: the Airtable launches could not be matched ({e})")
+    users = {"orders": collections.Counter(_norm(c) for cs in orders.values() for c in set(cs)),
+             "airtable": collections.Counter(_norm(c) for cs in at.values() for c in set(cs))}
+    configured = {_norm(r["campaign_code"]): r["release_name"] for r in INPUTS["releases"] if r.get("campaign_code")}
+
+    def pick(name: str, cands: list[str]) -> str | None:
+        # a group show's code, whichever feed proposes it: shared on the
+        # orders, or a launch several releases matched
+        if any(users["orders"][_norm(c)] > 1 or users["airtable"][_norm(c)] > 1 for c in cands):
+            return None
+        hits = {f for f in (in_feeds(c) for c in cands) if f}
+        if len(hits) != 1:
+            return None
+        code = hits.pop()
+        return code if configured.get(_norm(code), name) == name else None
+
+    set_codes = []
+    for r in records:
+        name, guess = r["release_name"], r.get("campaign_code")
+        code = src = None
+        if len(orders.get(name) or []) == 1:
+            code, src = pick(name, orders[name]), "orders"
+        if code is None and at.get(name):
+            code, src = pick(name, at[name]), "airtable"
+        if code is None:
+            r["code_source"] = "guess" if guess else None
+            continue
+        if guess and _norm(guess) != _norm(code):
+            print(f"{r['id']}: campaign code {guess} (guessed) kept - the {src} feed gives {code}; type the one it runs under")
+            r["code_source"] = "guess"
+            continue
+        r["campaign_code"], r["code_source"] = guess or code, src   # a guess spelt the feed's way keeps its spelling
+        if not guess:
+            set_codes.append((r["id"], code, src))
+    return set_codes
+
+
+def unclaimed_draw_campaigns(spend: pd.DataFrame | None, records: list[dict],
+                             orders: dict[str, list[str]] | None = None) -> list[str]:
+    """A build warning for each Meta draw campaign ("<code> · Enter draw",
+    "<code> · Draw ...") whose code the orders feed gives exactly one release
+    on file, when no page claims it: a configured release's campaigns, or a
+    discovered page's matched campaign. Its spend is then on no page (EUR
+    148k of it on 24 September 2026, before codes came from the orders
+    feed). Printed and returned."""
+    if spend is None or spend.empty or not {"campaign_name", "spend"} <= set(spend.columns):
+        return []
+    orders = orders_codes() if orders is None else orders
+    by_code: dict[str, set] = {}
+    for rel, cs in orders.items():
+        for c in cs:
+            by_code.setdefault(c, set()).add(rel)
+    on_file = {r["release_name"] for r in records} | {r["release_name"] for r in INPUTS["releases"]}
+    claimed = {r.get("campaign_name") for r in records} | {r.get("campaign_name") for r in INPUTS["releases"]}
+    for r in INPUTS["releases"]:
+        claimed.update(r.get("campaign_names") or [])
+    out = []
+    for camp, total in spend.groupby("campaign_name")["spend"].sum().items():
+        parts = str(camp).split(" · ", 1)
+        rel = by_code.get(parts[0].strip()) or set()
+        if len(parts) < 2 or "draw" not in parts[1].lower() or len(rel) != 1 or camp in claimed:
+            continue
+        (release,) = rel
+        if release in on_file:
+            out.append(f"warning: Meta draw campaign {camp!r} (EUR {float(total):,.0f}) is the orders feed's code "
+                       f"for {release!r} alone, and no page claims it")
+            print(out[-1])
+    return out
 
 
 # ---------------------------------------------------------------- release inputs (docs §1.6)
@@ -3049,6 +3551,23 @@ def match_campaign(code: str | None, spend: pd.DataFrame) -> str | None:
     return names[0] if len(names) == 1 else None
 
 
+def meta_campaigns(spend: pd.DataFrame) -> list[dict]:
+    """Every Meta campaign in the spend feed with its spend and the last day it
+    spent, most recently active first, for the Target setting tab's matcher.
+    The last day is the last with spend above zero: the export keeps sending
+    a campaign's rows, at zero, for about four weeks after it stops. A
+    campaign that never spent has no last day and lists at the end."""
+    spent = spend[pd.to_numeric(spend["spend"], errors="coerce") > 0]
+    last = spent.groupby("campaign_name")["spend_date"].max()
+    camp = spend.groupby("campaign_name").agg(spend=("spend", "sum")).reset_index()
+    camp["last"] = camp["campaign_name"].map(last)
+    camp["_day"] = pd.to_datetime(camp["last"], errors="coerce")
+    camp = camp.sort_values(["_day", "spend"], ascending=False, na_position="last")
+    return [{"name": r.campaign_name, "spend": round(float(r.spend), 2),
+             "last": r.last.isoformat() if pd.notna(r.last) else None}
+            for r in camp.itertuples()]
+
+
 def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[dict]:
     """One record per simple_release_name in the funnel data.
 
@@ -3059,7 +3578,9 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
     clock is catalogue: a work still drawing traffic, with no campaign window
     to measure against. Clock dates that make no sense (close before
     announce, or a window outside 3..90 days) are dropped with a note rather
-    than trusted - two upstream rows do that today."""
+    than trusted - the placeholder announce of docs 1.5 does that where the
+    release had too few entrants for aggregate_events to infer a clock, and
+    on every one of its releases when FUNNEL_SOURCE=export."""
     out = []
     g = at.groupby("simple_release_name")
     stats = g.agg(first=("event_date", "min"), last=("event_date", "max"),
@@ -3130,12 +3651,22 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
         out.append({
             "id": rid, "release_name": str(name), "artist": artist, "title": title, "quarter": quarter,
             "type": "LE", "campaign_code": code,   # the LE export: everything in it is an LE
+            "code_source": "guess" if code else None,   # the orders feed or Airtable, once source_campaign_codes has run
             "announce_date": announce.isoformat() if announce else None,
             "launch_end": launch.isoformat() if launch else None,
             "dates_note": note,
             "first_seen": st["first"].isoformat(), "last_seen": st["last"].isoformat(),
             "sessions": float(st["sessions"]), "entries": float(st["entries"]), "units": float(st["units"]),
         })
+    # The quarter is the name's, and the name is the funnel export's own and
+    # the join key, so it stands; where the campaign closes in another
+    # quarter the build says so, for the name to be corrected upstream
+    for r in out:
+        closes = pricing.quarter_of(pd.Timestamp(r["launch_end"])) if r["quarter"] and r["launch_end"] else ""
+        if closes and closes != r["quarter"]:
+            said = f"the name says {r['quarter']}, but the campaign closes {r['launch_end']} ({closes})"
+            r["dates_note"] = r["dates_note"] or said
+            print(f"{r['release_name']}: {said} - the name comes from the funnel export; correct it there")
     return out
 
 
@@ -3181,49 +3712,106 @@ def load_launches() -> pd.DataFrame | None:
         return None
 
 
+def funnel_spellings(existing: list[dict], on_file: dict[str, set[str]], launch_frame: pd.DataFrame) -> dict[str, str]:
+    """Airtable's artist name -> the funnel's, where they differ: the releases
+    on file the matcher placed on an artist's Airtable launches say how the
+    funnel writes that artist ("Kukwon Woo" in Airtable is "Woo Kuk Won" in
+    the funnel). The latest such release decides."""
+    artist_of: dict[str, str] = {}
+    for ids, artist in zip(launch_frame["airtable_ids"], launch_frame["artist"]):
+        for i in str(ids or "").split("|"):
+            if i:
+                artist_of[i] = str(artist)
+    latest: dict[str, tuple[tuple[str, str], str]] = {}
+    for r in _frame_of_releases(existing).itertuples(index=False):
+        when = tuple(v if isinstance(v, str) else "" for v in (r.quarter, r.close))
+        for a in {artist_of[i] for i in on_file.get(r.release_name, ()) if i in artist_of}:
+            if a not in latest or when >= latest[a][0]:
+                latest[a] = (when, str(r.artist))
+    return {a: spelt for a, (_, spelt) in latest.items() if spelt and spelt != a}
+
+
+def _works_title(titles: str) -> str:
+    """A launch's works as a release title, "Barbed Wire / Mind Trip": each
+    distinct title once, without Airtable's bracketed notes."""
+    names = [re.sub(r"\s*\[[^\]]*\]?", "", t).strip() for t in str(titles or "").split(" / ")]
+    return " / ".join(dict.fromkeys(n for n in names if n))
+
+
 def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], as_of: date,
                       activity: dict[str, tuple[date, date]] | None = None) -> list[dict]:
     """The launches Airtable knows and the funnel does not yet (§1.7), as the
     records build_upcoming reads: draws closing after today and within
-    UPCOMING_DAYS, whose Airtable records no release on file matched.
+    UPCOMING_DAYS, whose Airtable records no release on file matched. A
+    launch with no type counts as a draw unless most of its records are
+    originals, NFTs or timed editions (UPCOMING_NOT_DRAW).
 
     Named the way the funnel will name them - "Artist · Title · YYYY Qn", the
-    title "Multiple" when the launch has several works - so the page keeps its
-    id when the funnel catches up; adopt_funnel_names covers the launches the
-    funnel names differently. The announce date is Airtable's, else assumed
-    ASSUMED_CAMPAIGN_DAYS before the close and said so; the price is
-    converted to euros, the page's currency, at the fixed table. The
-    campaign code is guessed only among codes active in the launch's own
-    window (`activity`, code_activity less the codes releases on file carry):
-    before a campaign spends or sends there is nothing to guess from."""
+    title "Multiple" when the launch has several works, the artist spelt as
+    the funnel spells it where a release on file already matched that
+    Airtable artist (funnel_spellings) - so the page keeps its id when the
+    funnel catches up; adopt_funnel_names covers a launch set up before the
+    funnel named it differently. A second launch of the artist in the quarter
+    takes its works as its title, then its close date, so no two pages share
+    a name. The announce date is Airtable's, else assumed
+    ASSUMED_CAMPAIGN_DAYS before the close and said so; one that has passed
+    with no code moving for the launch on Meta or in the sends is said to
+    be possibly out of date. The price is converted to euros, the page's
+    currency, at the fixed table. The campaign code is guessed only among
+    codes active in the launch's own window (`activity`, code_activity less
+    the codes releases on file carry): before a campaign spends or sends
+    there is nothing to guess from."""
     if launch_frame is None or not len(launch_frame):
         return []
     on_file = airtable_ids_on_file(existing, launch_frame)
     used: set[str] = set().union(*on_file.values()) if on_file else set()
+    # a release set up from an upcoming page keeps the ids it was set up
+    # from (§1.7): that launch is represented whatever the matcher makes of it
+    used |= {i for r in existing if r.get("airtable_ids") for i in str(r["airtable_ids"]).split("|") if i}
     names = {r["release_name"] for r in existing}
+    spelling = funnel_spellings(existing, on_file, launch_frame)
     horizon = as_of + timedelta(days=UPCOMING_DAYS)
-    out, seen_ids = [], {}
+    out, seen_ids, listed = [], {}, set()
     for l in launch_frame.sort_values("launch_date").itertuples():
         if pd.isna(l.launch_date):
             continue
         close = l.launch_date.date()
         if not (as_of < close <= horizon):
             continue
-        if str(l.launch_type or "") not in UPCOMING_TYPES:
+        ltype = str(l.launch_type or "")
+        if ltype not in UPCOMING_TYPES:
             continue
         # a project two months out with no launch type is not a campaign yet
-        if not str(l.launch_type or "") and close > as_of + timedelta(days=UPCOMING_UNTYPED_DAYS):
+        if not ltype and close > as_of + timedelta(days=UPCOMING_UNTYPED_DAYS):
+            continue
+        # nor is one made mostly of originals, NFTs or timed editions: an
+        # originals show or a timed print is not a draw
+        kinds = getattr(l, "edition_type_counts", None)
+        off = sum(n for k, n in kinds.items() if k in UPCOMING_NOT_DRAW) if isinstance(kinds, dict) else 0
+        if not ltype and 2 * off > int(l.n_products):
             continue
         if str(l.project_status or "").startswith("1.4"):   # pitching: nothing to plan yet
             continue
         ids = set(str(l.airtable_ids).split("|")) if l.airtable_ids else set()
         if ids & used:
             continue
+        artist = spelling.get(str(l.artist), str(l.artist))
         title = "Multiple" if int(l.n_products) > 1 else str(l.titles)
         quarter = pricing.quarter_of(l.launch_date)
-        name = f"{l.artist} · {title} · {quarter}"
-        if name in names:
+        name = f"{artist} · {title} · {quarter}"
+        # a release on file by this name that the matcher placed on no launch
+        # may be this one under the name its page was set up with
+        if name in names and not on_file.get(name):
             continue
+        if name in names or name in listed:
+            # the artist's other launch this quarter has the name: this one
+            # takes its works as its title, and its close date if that is taken too
+            works = _works_title(l.titles)
+            for alt in ([works] if works and works != title else []) + [f"{works or title} (closes {close.day} {close:%b})"]:
+                title, name = alt, f"{artist} · {alt} · {quarter}"
+                if name not in names and name not in listed:
+                    break
+        listed.add(name)
         assumed = pd.isna(l.announce_date) or l.announce_date.date() >= close
         announce = close - timedelta(days=ASSUMED_CAMPAIGN_DAYS) if assumed else l.announce_date.date()
         pr_open = l.private_room_date.date() if not pd.isna(l.private_room_date) else announce - timedelta(days=PR_LEAD_DAYS)
@@ -3233,7 +3821,13 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
         # releases does not apply, and the page marks the code as guessed
         lo_w, hi_w = announce - timedelta(days=30), close + timedelta(days=2)
         moving = {c for c, (lo, hi) in (activity or {}).items() if hi >= lo_w and lo <= hi_w}
-        code = guess_code(str(l.artist), title, close.year, moving, 1)
+        spellings = list(dict.fromkeys([artist, str(l.artist)]))
+        code = next((c for c in (guess_code(a, title, close.year, moving, 1) for a in spellings) if c), None)
+        # the announce has passed and no code for the artist moves in the
+        # window: no spend, no sends, and no funnel release has its records,
+        # so Airtable's dates have most likely slipped
+        stale = (activity is not None and not assumed and announce < as_of
+                 and not any(guess_code(a, title, close.year, {c}, 1) for c in moving for a in spellings))
         rid = slugify(name) or "release"
         if rid in seen_ids:
             seen_ids[rid] += 1; rid = f"{rid}_{seen_ids[rid]}"
@@ -3242,11 +3836,14 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
         price = float(l.unit_price) if pd.notna(l.unit_price) else None
         rate = pricing.RATES_TO_EUR.get(str(l.currency or "")) if price is not None else None
         out.append({
-            "id": rid, "release_name": name, "artist": str(l.artist), "title": title, "quarter": quarter,
+            "id": rid, "release_name": name, "artist": artist, "title": title, "quarter": quarter,
             "type": "LE", "campaign_code": code, "campaign_name": None,
             "announce_date": announce.isoformat(), "launch_end": close.isoformat(),
             "private_room_open": pr_open.isoformat(),
-            "dates_note": "announce date assumed: Airtable has none for it yet" if assumed else None,
+            "dates_assumed": bool(assumed),
+            "dates_note": ("announce date assumed: Airtable has none for it yet" if assumed else
+                           f"Airtable's announce date, {announce.isoformat()}, has passed with no spend, sends or "
+                           f"traffic for this launch, so its dates may be out of date" if stale else None),
             "first_seen": None, "last_seen": None, "sessions": 0.0, "entries": 0.0, "units": 0.0,
             "source": "airtable",
             "edition_size": int(l.edition_size) if pd.notna(l.edition_size) and l.edition_size > 0 else None,
@@ -3324,6 +3921,8 @@ def build_upcoming(rec: dict, as_of: date, email_bench: dict | None = None, full
         "derived": {
             "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
             "dates_source": "airtable", "dates_note": rec["dates_note"],
+            # the announce is a stand-in (Airtable has none), not merely doubtful
+            "dates_assumed": bool(rec.get("dates_assumed")),
             "campaign_code": rec["campaign_code"], "first_seen": None, "last_seen": None,
         },
         "airtable": {k: rec.get(k) for k in (
@@ -3357,9 +3956,21 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     full_through = full_through or as_of
     seen = 1.0 if full_through >= as_of else seen
     dated = rec["announce_date"] is not None
+    dates_note = rec["dates_note"]
     if dated:
         announce = date.fromisoformat(rec["announce_date"])
-        launch_end = date.fromisoformat(rec["launch_end"])
+        clock_end = date.fromisoformat(rec["launch_end"])
+        # a draw that ran past the clock's close: its winners pay when it
+        # ends, so the page closes with the draw - the sales window, the
+        # spend and sends it counts, its length in the sidebar (docs 6.3)
+        launch_end, drew_to = sales_close(name, clock_end)
+        if drew_to is not None:
+            moved = (f"the draw ran to {drew_to}, {(drew_to - clock_end).days} days past the campaign clock's "
+                     f"close of {clock_end}: the page closes with it"
+                     + (f" at {launch_end}, {DRAW_END_MAX_DAYS} days on, and no later" if launch_end < drew_to else ""))
+            dates_note = "; ".join(x for x in (dates_note, moved) if x)
+            if not direct_spread:
+                print(f"{'warning: ' if launch_end < drew_to else ''}{rec['id']}: {moved}")
         window_start = announce - timedelta(days=PR_LEAD_DAYS)
         L = (launch_end - announce).days
         complete = full_through >= launch_end
@@ -3388,6 +3999,8 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= window_end)]
     win, uinfo = swap_units(win, name, urows, window_start, window_end,
                             launch_end + timedelta(days=UNITS_GRACE_DAYS))
+    if closed and not direct_spread:
+        late_paid_warning(rec["id"], urows, window_end, uinfo)
     untracked = untracked_block(win, untracked_norms)
     untracked["noEvent"] = uinfo["noEvent"]
     pre = win
@@ -3455,10 +4068,14 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     unconverted = float(upto["Draw_Entries_Total_Units_No_Conv"].sum())
     code = rec.get("campaign_code")
     # the sell-through's count, adopted by the hero as in build_release; no
-    # edition here, so nothing is capped and nothing is projected
-    of_win = orders_in_window(name, urows, window_start, window_end, closed, uinfo["source"])
+    # edition here, so nothing is capped and nothing is projected. A
+    # catalogue page counts its 90 days: no entry in hand from a draw that
+    # ended before them, no draft raised before them (docs 6.3)
+    since = None if dated else window_start
+    of_win = orders_in_window(name, urows, window_start, window_end, closed, uinfo["source"], drafts_since=since)
     sellthrough = sellthrough_block({"edition_size": None, "entry_conversion_rate": rec.get("entry_conversion_rate")},
-                                    rec["release_name"], units_sold, unconverted, None, orders=of_win, closed=closed)
+                                    rec["release_name"], units_sold, unconverted, None, orders=of_win, closed=closed,
+                                    entries_since=since)
     if uinfo["source"] == "orders":
         sellthrough["unitsOutsideWindow"] = {"before": uinfo["before"], "after": uinfo["after"], "pending": uinfo["pending"]}
     hero_now, _ = adopt_sellthrough(sellthrough, channels_out, funnel_by_group, hero_now, hero_now, True)
@@ -3521,8 +4138,9 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     feed_through = email_feed_through(emails)
     em = emails.iloc[0:0]
     if code:
+        # never reaching back into an earlier launch by the same artist
         em_all = emails[(emails["campaign"] == code)
-                        & (emails["sent_at"].dt.date >= window_start)
+                        & (emails["sent_at"].dt.date >= email_window_start(rec, window_start))
                         & (emails["sent_at"].dt.date <= min(as_of, launch_end))]
         em = em_all[em_all["email_type"].isin(["GEN", "CUS", "INS"])]
         if em.empty and not em_all.empty:
@@ -3548,7 +4166,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "type": rec["type"],
         "campaignCode": code, "campaignName": camp, "marketingLead": None, "privateRoomOpen": None,
         "windowStart": rec["announce_date"] if dated else window_start.isoformat(),
-        "windowEnd": rec["launch_end"] if dated else None,
+        "windowEnd": launch_end.isoformat() if dated else None,
         "campaignLengthDays": L if dated else None, "day": day_n, "of": L,
         "asOf": as_of.isoformat(), "complete": complete,
         # where the units came from and the days they were counted over, the
@@ -3564,9 +4182,10 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         # funnel attributes it, for the dashboard's Direct switch
         "directShare": direct_share,
         "derived": {
-            "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
-            "dates_source": "campaign clock" if dated else None, "dates_note": rec["dates_note"],
-            "campaign_code": code, "first_seen": rec["first_seen"], "last_seen": rec["last_seen"],
+            "announce_date": rec["announce_date"], "launch_end": launch_end.isoformat() if dated else rec["launch_end"],
+            "dates_source": "campaign clock" if dated else None, "dates_note": dates_note,
+            "campaign_code": code, "campaign_code_source": rec.get("code_source") if code else None,
+            "first_seen": rec["first_seen"], "last_seen": rec["last_seen"],
         },
         "economics": None, "currency": "units",
         "hero": {"now": round(hero_now, 0), "expectedToday": None, "delta": None, "projected": None,
@@ -3581,7 +4200,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
                    "entries": round(float(upto["Draw_Entries_Eligible_Units"].sum()))},
         "benchmarks": {"chargeDropOff": 1 - e2o, "cannibalisation": b["cannibalisation"], "targetBuffer": b["target_buffer"],
-                       **email_refs(email_bench)},
+                       **email_refs(email_bench_for(email_bench, rec))},
     }
 
 
@@ -3599,6 +4218,7 @@ def actuals_rec(release: dict, rat: pd.DataFrame) -> dict:
         "quarter": parts[-1] if qm else None,
         "type": release.get("type", "LE"),
         "campaign_code": release.get("campaign_code"), "campaign_name": release.get("campaign_name"),
+        "code_source": "typed" if release.get("campaign_code") else None,
         "announce_date": release["announce_date"], "launch_end": release["launch_end"],
         "dates_note": None,
         "first_seen": (dates.min() if dates is not None else date.fromisoformat(release["announce_date"])).isoformat(),
@@ -3636,7 +4256,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # launches from the day it is discovered and nobody has to pick anything
     # first. There is no other model: without a basket to read, the release
     # keeps its actuals-only page (docs/DATA_MODEL.md §3).
-    basket = profile = None
+    basket = profile = unspread = None
     if panel is not None and len(panel):
         basket = baskets.resolve_basket(release.get("benchmark_basket"), panel, release, as_of)
         # the channels this release will not run leave the basket's medians
@@ -3644,6 +4264,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # benchmark mark on the page (BENCHMARK_SPEC §4.3)
         off = baskets.channels_off_of(release)
         basket["profile"] = baskets.apply_channels_off(basket["profile"], off)
+        # as the funnel attributes it, before the Direct switch's spread: the
+        # email plan's sends are read on these sessions (email block below)
+        unspread = basket["profile"]
         if direct_spread:
             # the benchmark's channel split read the same way as the actuals
             basket["profile"] = spread_profile(basket["profile"], direct_norm)
@@ -3652,13 +4275,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             basket = None
         else:
             # Every release gets a benchmark, including one bigger than
-            # anything on record. The basket search falls back to the launches
-            # nearest this edition in size rather than giving up, so an
-            # unprecedented edition is benchmarked against the biggest launches
-            # there have been and the uplift states how far past them it is
-            # being asked to go. That is a number someone can argue with; an
-            # empty panel is not. scaleMismatch is still published so the card
-            # can say the basket is nowhere near this edition's size.
+            # anything on record. The basket is the launches nearest this
+            # edition however far away they are, so an unprecedented edition is
+            # benchmarked against the biggest launches there have been and the
+            # uplift states how far past them it is being asked to go. That is
+            # a number someone can argue with; an empty panel is not.
+            # scaleMismatch (the median more than SCALE_MISMATCH_FACTOR from
+            # the edition) is only logged here: the snapshot's basket block
+            # does not carry it, and the picker says "Nothing on file is this
+            # size" from the reach of the members instead.
             profile = basket["profile"]
             if off:
                 print(f"{release['id']}: not in plan: {', '.join(off)} - benchmarked on the basket's other "
@@ -3716,11 +4341,20 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # earlier, to two days after the close; the units in it are the orders
     # table's, each on its own purchase event's channel
     urows = units_rows(name)
-    window_start, window_end, first_paid = sales_window(urows, min(pr_open, announce), announce, launch_end, as_of)
-    closed = as_of > launch_end + timedelta(days=UNITS_GRACE_DAYS)
+    # a draw that ran past the typed close has its winners pay when it ends:
+    # the window counts to the draw's end (sales_close), folded into the
+    # close day below, while the plan keeps the typed dates
+    sales_end, drew_to = sales_close(name, launch_end)
+    if drew_to is not None and not direct_spread:
+        print(f"{release['id']}: the draw ran to {drew_to}, past the close of {launch_end}: "
+              f"sales count to {sales_end} plus the grace")
+    window_start, window_end, first_paid = sales_window(urows, min(pr_open, announce), announce, sales_end, as_of)
+    closed = as_of > sales_end + timedelta(days=UNITS_GRACE_DAYS)
     win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= window_end)]
     win, uinfo = swap_units(win, name, urows, window_start, window_end,
-                            launch_end + timedelta(days=UNITS_GRACE_DAYS))
+                            sales_end + timedelta(days=UNITS_GRACE_DAYS))
+    if closed and not direct_spread:
+        late_paid_warning(release["id"], urows, window_end, uinfo)
     # how much of the window has no channel, read before the fold below hides it
     untracked = untracked_block(win, untracked_norms)
     untracked["noEvent"] = uinfo["noEvent"]
@@ -3897,7 +4531,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             now_g = (float(sub_g["units"].sum())
                      + entry_rate(release) * float(sub_g["entries_no_conv"].sum()))
             tgt_g = gtargets[og]["units"]
-            w_g = curve_value(rcurves, og, "units", pdsa_now)
+            w_g = curve_value(rcurves, og, UNIT_PLAN_CURVE, pdsa_now)   # the channel loop's w
             r_perf = min(max((now_g / (tgt_g * w_g)) if tgt_g * w_g > 0 else 1.0, 0.25), 2.5)
             organic_future += tgt_g * (1 - w_g) * (1 + w_g * (r_perf - 1))
     sellout_gap = max(release["edition_size"] - secured_now - organic_future, 0.0)
@@ -3932,7 +4566,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # the workbook's pacing rules, transcribed into the benchmarks but never
     # applied until now: cumulative ROI below 0.9 -> decrease, above 1.3 ->
     # increase, between -> hold; daily change capped at 30%; changes under 10%
-    # ignored; 3 days of forecast ROI below target force a decrease.
+    # ignored; the trailing 3-day ROI below target on each of the last 3 full
+    # days forces a decrease.
     band = "hold"
     if cum_roi is not None:
         if cum_roi < rules["decrease_below_cum_roi"]:
@@ -3957,12 +4592,18 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     if supply_spend is not None and days_left:
         unconstrained = min(supply_spend, roi_spend)
         base = "supply" if supply_spend <= roi_spend else "roi_floor"
-        if unconstrained <= 0:
-            recommended, cap = 0.0, base            # nothing needed, or the floor says stop
+        # nothing needed: the edition is secured without paid, so it stops. A
+        # floor no spend can meet (the cost path's price at the close is past
+        # it however small the day) is a cut like any other, held to 30% a
+        # day by the pacing rule below, unless nothing is running to cut
+        if unconstrained <= 0 and (base == "supply" or s0 <= 0):
+            recommended, cap = 0.0, base
         elif zero_pause and s0 > 0:
             recommended, cap = 0.0, "zero_conversion_pause"
         elif zero_cut and s0 > 0:
             recommended = min(unconstrained, s0 * (1 - rules.get("zero_conversion_decrease", 0.3)))
+            if recommended <= 0:                    # a floor no spend meets: still a paced cut
+                recommended, paced = s0 * (1 - rules["max_daily_change"]), True
             cap = "zero_conversion"
         elif s0 <= 0:
             recommended = min(unconstrained, plan_rate) if plan_rate else unconstrained
@@ -4017,11 +4658,18 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 future_cum += gtargets["paid"]["entries"] * max(cv - prev_curve, 0.0)
                 prev_curve = cv
             paid_future[d] = future_cum
+    # the days still to run at the run rate, on the entries' own clock: each
+    # full day after the last one seen, today's for what is left of it. The
+    # spend at close is the spend to date (today so far included) plus the
+    # run rate over these, as the units beside it are
+    rest_days = sum(((1 - seen) if (d == as_of and as_of > full_through) else 1.0)
+                    for d in daterange(full_through + timedelta(days=1), launch_end))
 
     channels_out = []
     hero_now = hero_exp = hero_target = hero_proj = 0.0
     hero_bm = hero_bm_today = 0.0        # benchmark at close, benchmark by today
     funnel_by_group = {}
+    email_sess = {}                      # AA Email's sessions by today, plan and basket, unrounded
     e2o = entry_rate(release)
     # Paid follows spend, and spend is planned evenly over the days paid runs:
     # from the day after the announce (PAID_START_DAYS) to the close. So the
@@ -4048,7 +4696,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             cum_nc += float(row["entries_no_conv"]) if row is not None else 0.0
             cum_s += float(row["sessions"]) if row is not None else 0.0
             p = pdsa_for(release, d)
-            cv = paid_pace(p) if g == "paid" else curve_value(rcurves, g, "units", p)   # paid: the even share of its days
+            # paid: the even share of its days; the rest: the entry-timed curve
+            cv = paid_pace(p) if g == "paid" else curve_value(rcurves, g, UNIT_PLAN_CURVE, p)
             # in benchmark mode the plan IS the benchmark lifted by K, taken
             # off the one curve, so the two lines the trajectory draws are in
             # the K ratio on every day rather than only in total (§4.1)
@@ -4060,16 +4709,17 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             if bench:
                 row_out["bm"] = round(bm_day, 2)
             daily.append(row_out)
-        # the share of the campaign observed: per the group's historic shape,
-        # and for paid the even daily budget's share (see paid_pace above)
-        w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, "units", pdsa_today)
+        # the share of the campaign observed: per the group's historic
+        # entry-timed shape (UNIT_PLAN_CURVE), and for paid the even daily
+        # budget's share (see paid_pace above)
+        w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, UNIT_PLAN_CURVE, pdsa_today)
         bm_exp = bm_tgt * w                                # benchmark pace by today
         exp = bm_exp * k if bench else tgt * w
         sess_w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, "sessions", pdsa_today)
         sess_exp = sess_tgt * sess_w
         now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
         # Forward projection (docs §5.4): the remaining volume follows this channel's
-        # HISTORIC shape curve; its level scales with demonstrated performance
+        # HISTORIC entry-timed shape curve; its level scales with demonstrated performance
         # (actual/expected), trusted in proportion to how much of the campaign the
         # curve says we have observed. Paid instead projects spend ÷ efficiency
         # (future entries convert to units at 0.8).
@@ -4087,7 +4737,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             proj = now + tgt * (1 - w) * r_shrunk
             for d in daterange(full_through + timedelta(days=1), launch_end):
                 i = (d - window_start).days
-                cv = curve_value(rcurves, g, "units", pdsa_for(release, d))
+                cv = curve_value(rcurves, g, UNIT_PLAN_CURVE, pdsa_for(release, d))
                 frac = (cv - w) / (1 - w) if w < 1 else 1.0
                 if 0 <= i < len(daily):
                     daily[i]["proj"] = round(now + (proj - now) * max(min(frac, 1.0), 0.0), 2)
@@ -4117,6 +4767,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "bps_expected": (conv_exp / upb_plan) if upb_plan else 0.0,
             "contrib_buyers": round(buyer_conv, 1), "contrib_per_buyer": round(per_buyer, 1),
         }
+        if g == "aa_email":
+            email_sess = {"plan": sess_exp, "bm": bm_sessions.get(g, 0.0) * sess_w if bench else None}
         if bench:
             # The funnel cards are always Today (§2), so the benchmark they sit
             # against is the benchmark pace by today - the same point the target
@@ -4236,6 +4888,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "wearout": wear,
             "wearoutK": wear_k,
             "spentSoFar": round(spent_so_far, 2),
+            # the anchor: the daily spend and the spend so far the window's
+            # price was paid at, so the path can be rebuilt from the block
+            "spendAtWindow": round(spend_ref, 2) if spend_ref else None,
+            "spentAtWindow": round(clock_ref, 2),
             "costTerms": cost_terms,
             "band": band, "forcedDecrease": forced, "zeroConversionDays": zero_days,
             "cumRoi": round(cum_roi, 3) if cum_roi else None,
@@ -4245,10 +4901,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "daysLeft": days_left,
         },
         "unitTarget": targets["paid"]["units"],
-        "entriesProjected": round(cum_pentries + future_cum, 1),
-        "unitProjected": paid_ch["proj"] if paid_ch else round((cum_pentries + future_cum) * (1 - drop), 1),
+        # the entries in hand, today's so far included, and those still to come
+        # (future_cum counts only the rest of today), so the projection at close
+        # cannot read below the entries already in
+        "entriesProjected": round(cum_pentries + part_entries + future_cum, 1),
+        "unitProjected": paid_ch["proj"] if paid_ch else round((cum_pentries + part_entries + future_cum) * (1 - drop), 1),
         "spendBudget": round(targets["paid"]["budget"], 2),
-        "spendProjectedTotal": round(cum_spend + (planned_spend or 0) * days_left, 2),
+        "spendProjectedTotal": round(cum_spend + part_spend + (planned_spend or 0) * rest_days, 2),
         "profitPerUnitAA": round(ppu_aa, 2),
         "profitPerUnitArtist": round(ppu_artist, 2),
         "aaBudgetShare": aa_budget_share,
@@ -4285,10 +4944,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         paid_out["benchmarkUnits"] = round(bm_units["paid"], 1)
         paid_out["benchmarkBudget"] = round(bm_units["paid"] * targets["paid"]["cost_per_purchase"], 2)
 
-    # ---- email funnel (docs §8): launch-window customer sends for this campaign
+    # ---- email funnel (docs §8): launch-window customer sends for this campaign,
+    # from where the window opens or, when later, the day after an earlier
+    # launch by the same artist closed (email_window_start)
     feed_through = email_feed_through(emails)
+    email_start = email_window_start(release, window_start)
     em_all = emails[(emails["campaign"] == release["campaign_code"])
-                    & (emails["sent_at"].dt.date >= window_start)
+                    & (emails["sent_at"].dt.date >= email_start)
                     & (emails["sent_at"].dt.date <= min(as_of, launch_end))]
     em = em_all[em_all["email_type"].isin(["GEN", "CUS", "INS"])]
     if em.empty and not em_all.empty:
@@ -4317,8 +4979,22 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # be the target, and left sessions per click carrying whatever the sends
     # lost). Until two launches give a sessions-per-click median, the median
     # delivered total on the pooled delivery-timing curve stands in.
+    # The rates are the cohort's without this release's own sends and without
+    # the launches that closed after it (email_bench_for).
+    email_bench = email_bench_for(email_bench, release)
+    # The sends are read on AA Email's sessions as the funnel attributes them.
+    # The Direct switch spreads Direct's share of the basket onto AA Email as
+    # well; that is traffic Direct brought, not sends, so it leaves the sends
+    # the plan asks for alone and lands in sessions per click, whose
+    # reference carries the same share (email_refs_out below).
+    spread_f = 1.0
+    if direct_spread and unspread:
+        _raw = float((unspread.get("sessions_by_group") or {}).get("aa_email") or 0.0)
+        _now = float((profile.get("sessions_by_group") or {}).get("aa_email") or 0.0)
+        if _raw > 0 and _now > 0:
+            spread_f = _now / _raw
     email_out["deliveredTarget"] = None
-    sess_plan = (funnel_by_group.get("aa_email") or {}).get("sessions_expected")
+    sess_plan = round(email_sess["plan"] / spread_f, 1) if email_sess.get("plan") is not None else None
     rate_chain = (email_bench["open_rate"] * email_bench["ctor_rate"] * email_bench["spc_rate"]
                   if email_bench and all(email_bench.get(k) for k in ("open_rate", "ctor_rate", "spc_rate"))
                   else None)
@@ -4344,11 +5020,17 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # the waterfall's walk from the benchmark reads. The cohort's median send on
     # the curve carries no uplift, so where it is the target it is this too.
     email_out["deliveredBenchmark"] = None
-    sess_bm_plan = (funnel_by_group.get("aa_email") or {}).get("sessions_benchmark")
+    sess_bm_plan = round(email_sess["bm"] / spread_f, 1) if email_sess.get("bm") is not None else None
     if rate_chain and sess_bm_plan:
         email_out["deliveredBenchmark"] = round(sess_bm_plan / rate_chain, 1)
     elif email_out["deliveredTarget"] is not None and not rate_chain:
         email_out["deliveredBenchmark"] = email_out["deliveredTarget"]
+    email_refs_out = email_refs(email_bench)
+    if spread_f != 1.0 and email_bench and email_bench.get("spc_rate") is not None:
+        # with Direct spread, the sessions-per-click reference on the spread's
+        # basis, so the chain still multiplies out to the plan's sessions and
+        # the rung reads a spread actual against a spread reference
+        email_refs_out["emailSessionsPerClickRef"] = round(email_bench["spc_rate"] * spread_f, 3)
 
     # ---- social content
     ct = content[(content["campaign_code"] == release["campaign_code"])
@@ -4368,15 +5050,16 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     wf_conv = sum(funnel_by_group[g]["contrib_conversion"] for g in organic_groups)
     # paid's plan by today is the even share of its days (paid_pace), the share
     # the paid card, the channels card and the funnel rung read - not the
-    # panel's historic paid shape, which put this step on a different plan
+    # panel's historic paid shape, which put this step on a different plan.
+    # That plan is read at the share of today seen, so the spend set against
+    # it is the spend to date, today so far included (paid.spendToDate): the
+    # full days alone moved the part day's spend into Paid efficiency
+    spend_to_date = cum_spend + part_spend
     spend_planned_to_date = targets["paid"]["budget"] * paid_pace(pdsa_today)
-    wf_paid_spend = ((cum_spend - spend_planned_to_date) / targets["paid"]["cost_per_purchase"]
+    wf_paid_spend = ((spend_to_date - spend_planned_to_date) / targets["paid"]["cost_per_purchase"]
                      ) if targets["paid"]["cost_per_purchase"] else 0.0
     paid_gap = funnel_by_group["paid"]["contrib_traffic"] + funnel_by_group["paid"]["contrib_conversion"]
     wf_paid_eff = paid_gap - wf_paid_spend
-    # scale contributor gaps (to-date) to close: same blend factor as projections
-    scale = ((hero_proj - hero_target) / (wf_traffic + wf_conv + wf_paid_spend + wf_paid_eff)
-             if (wf_traffic + wf_conv + wf_paid_spend + wf_paid_eff) else 0.0)
     # the projection and the actual the card prints are the hero's, capped at
     # the whole edition; demand beyond it is the last step of every walk, so
     # the steps still close on the figure printed (docs 6.3½)
@@ -4385,47 +5068,34 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     over_close, over_today = round(hero_proj, 0) - proj_shown, round(hero_now, 0) - now_shown
     def beyond(over: float) -> list[dict]:
         return [{"key": "oversubscribed", "label": "Beyond sellout", "value": -over}] if over > 0 else []
+    # The four contributors measured to date and left unscaled are the Today
+    # horizon (§2), where the question is why the launch is where it is, not
+    # where it will end. The gaps are already actual minus target today by
+    # construction (traffic + conversion per group is exactly that group's now
+    # minus its expected), so they need no blend factor; at close they are
+    # copied on a closed release and scaled on a live one (waterfall_walks).
+    actual_today, target_today = now_shown, round(hero_exp, 0)
+    today_steps, close_steps, scale = waterfall_walks(
+        [wf_traffic, wf_conv, wf_paid_spend, wf_paid_eff], hero_now - hero_exp, hero_proj - hero_target,
+        round(hero_now, 0) - target_today, round(hero_proj, 0) - round(hero_target, 0), complete)
     waterfall = {
         "target": round(hero_target, 0), "projection": proj_shown,
-        "steps": [
-            {"key": "organic_traffic", "label": "Organic traffic", "value": round(wf_traffic * scale, 0)},
-            {"key": "organic_conversion", "label": "Organic conversion", "value": round(wf_conv * scale, 0)},
-            {"key": "paid_spend", "label": "Paid spend", "value": round(wf_paid_spend * scale, 0)},
-            {"key": "paid_efficiency", "label": "Paid efficiency", "value": round(wf_paid_eff * scale, 0)},
-        ],
+        "steps": close_steps + beyond(over_close),
+        # the factor the close steps are the steps to date times; None when
+        # they are copied (a closed release) or the rest of the gap is shared
+        # out by size (close_walk)
+        "closeScale": round(scale, 4) if scale is not None else None,
     }
-    # force exact reconciliation (rounding residual goes to the largest step),
-    # measured against the rounded pair the card prints
-    resid = (round(hero_proj, 0) - round(hero_target, 0)) - sum(s["value"] for s in waterfall["steps"])
-    if waterfall["steps"]:
-        biggest = max(waterfall["steps"], key=lambda s: abs(s["value"]))
-        biggest["value"] += resid
-    waterfall["steps"] += beyond(over_close)
     if bench:
-        # The same four contributors, measured to date and left unscaled: this
-        # is the Today horizon (§2), where the question is why the launch is
-        # where it is, not where it will end. The gaps are already actual minus
-        # target today by construction (traffic + conversion per group is
-        # exactly that group's now minus its expected), so they need no blend
-        # factor - only the same rounding reconciliation the close steps get.
-        today_steps = [
-            {"key": "organic_traffic", "label": "Organic traffic", "value": round(wf_traffic, 0)},
-            {"key": "organic_conversion", "label": "Organic conversion", "value": round(wf_conv, 0)},
-            {"key": "paid_spend", "label": "Paid spend", "value": round(wf_paid_spend, 0)},
-            {"key": "paid_efficiency", "label": "Paid efficiency", "value": round(wf_paid_eff, 0)},
-        ]
-        # the gap the bars have to span is the one the card prints, so the
-        # residual is measured against the rounded pair rather than the raw
-        # difference - rounding each end separately can move it by a unit
-        actual_today, target_today = now_shown, round(hero_exp, 0)
-        resid_today = (round(hero_now, 0) - target_today) - sum(s["value"] for s in today_steps)
-        max(today_steps, key=lambda s: abs(s["value"]))["value"] += resid_today
         today_steps += beyond(over_today)
-        waterfall["benchmark"] = round(hero_bm, 0)
-        waterfall["stretch"] = round(hero_target - hero_bm, 0)
+        # the benchmark in whole units as the page rounds benchmark.units, the
+        # stretch the difference of the two figures printed
+        bm_close, bm_today = whole(hero_bm), whole(hero_bm_today)
+        waterfall["benchmark"] = bm_close
+        waterfall["stretch"] = round(hero_target, 0) - bm_close
         waterfall["today"] = {
-            "benchmark": round(hero_bm_today, 0),
-            "stretch": round(hero_exp - hero_bm_today, 0),
+            "benchmark": bm_today,
+            "stretch": target_today - bm_today,
             "target": target_today,
             "actual": actual_today,
             "steps": today_steps,
@@ -4441,23 +5111,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         wf_conv_bm = sum(funnel_by_group[g]["contrib_conversion_bm"] for g in organic_groups)
         bm_budget = bm_units["paid"] * targets["paid"]["cost_per_purchase"]
         spend_bm_to_date = bm_budget * paid_pace(pdsa_today)
-        wf_paid_spend_bm = ((cum_spend - spend_bm_to_date) / targets["paid"]["cost_per_purchase"]
+        wf_paid_spend_bm = ((spend_to_date - spend_bm_to_date) / targets["paid"]["cost_per_purchase"]
                             ) if targets["paid"]["cost_per_purchase"] else 0.0
         paid_gap_bm = funnel_by_group["paid"]["contrib_traffic_bm"] + funnel_by_group["paid"]["contrib_conversion_bm"]
         wf_paid_eff_bm = paid_gap_bm - wf_paid_spend_bm
-        raw_bm = [wf_traffic_bm, wf_conv_bm, wf_paid_spend_bm, wf_paid_eff_bm]
-        labels = [("organic_traffic", "Organic traffic"), ("organic_conversion", "Organic conversion"),
-                  ("paid_spend", "Paid spend"), ("paid_efficiency", "Paid efficiency")]
-        def steps_bm(scale):
-            return [{"key": k, "label": l, "value": round(v * scale, 0)} for (k, l), v in zip(labels, raw_bm)]
-        tot_bm = sum(raw_bm)
-        close_bm = steps_bm(((hero_proj - hero_bm) / tot_bm) if tot_bm else 0.0)
-        resid_bm = round(hero_proj, 0) - round(hero_bm, 0) - sum(s["value"] for s in close_bm)
-        max(close_bm, key=lambda s: abs(s["value"]))["value"] += resid_bm
+        today_bm, close_bm, scale_bm = waterfall_walks(
+            [wf_traffic_bm, wf_conv_bm, wf_paid_spend_bm, wf_paid_eff_bm], hero_now - hero_bm_today, hero_proj - hero_bm,
+            round(hero_now, 0) - bm_today, round(hero_proj, 0) - bm_close, complete)
         waterfall["stepsBm"] = close_bm + beyond(over_close)
-        today_bm = steps_bm(1.0)
-        bm_today = round(hero_bm_today, 0)
-        max(today_bm, key=lambda s: abs(s["value"]))["value"] += (round(hero_now, 0) - bm_today) - sum(s["value"] for s in today_bm)
+        waterfall["closeScaleBm"] = round(scale_bm, 4) if scale_bm is not None else None
         today_bm += beyond(over_today)
         waterfall["today"]["stepsBm"] = today_bm
         assert abs(sum(s["value"] for s in today_bm) - (actual_today - bm_today)) < 0.5, (
@@ -4469,11 +5131,17 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     edition = float(release["edition_size"])     # the target the plan runs on
     total = float(edition_total(release))         # the whole edition: caps and oversubscription
     status_pct = (min(hero_now, total) - hero_exp) / hero_exp if hero_exp else 0.0
+    # the traffic the sidebar row reads (index_row), counted as the
+    # actuals-only page counts it: sessions in the window, the last day seen
+    in_window = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= window_end)]
     snap = {
         "id": release["id"],
         "releaseName": name,
         "artist": name.split(" · ")[0], "title": name.split(" · ")[1],
+        "quarter": name_quarter(name),
         "type": "LE",
+        "totals": {"sessions": round(float(in_window["Sessions_Total"].sum()))},
+        "derived": {"last_seen": rat["event_date"].max().isoformat() if len(rat) else None},
         "campaignCode": release["campaign_code"], "campaignName": camp,
         "campaignNames": camps,
         "marketingLead": release.get("marketing_lead"),
@@ -4554,7 +5222,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "chargeDropOff": round(1 - entry_rate(release), 4),
             "cannibalisation": b["cannibalisation"],
             "targetBuffer": b["target_buffer"],
-            **email_refs(email_bench),
+            **email_refs_out,
         },
     }
     if bench:
@@ -4583,21 +5251,25 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "convByGroup": {g: round(v, 6) for g, v in profile["conv"].items()},
             # the channels set aside for this release and the basket's full
             # medians before they were (§4.3): what the page says was set
-            # aside, and what the browser re-reads as the switches are flipped
+            # aside, and what the browser re-reads as the switches are flipped.
+            # The Target setting tab rebuilds the targets from these, so they
+            # carry the build's own precision, not the cards' tenth of a unit:
+            # rounded, they put the tab's paid budget EUR 1-12 off the page's
             "channelsOff": list(profile.get("channels_off") or []),
-            "unitsAll": round(profile.get("units_all", profile["units"]), 1),
-            "sessionsAll": round(profile.get("sessions_all", profile["sessions"]), 1),
-            "entriesAll": round(profile.get("entries_all", profile["entries"]), 1),
-            "unitsP25All": round(profile.get("units_p25_all", profile["units_p25"]), 1),
-            "unitsP75All": round(profile.get("units_p75_all", profile["units_p75"]), 1),
-            "unitsByGroupAll": {g: round(v, 1) for g, v in (profile.get("units_by_group_all") or bm_units).items()},
-            "sessionsByGroupAll": {g: round(v, 1) for g, v in (profile.get("sessions_by_group_all") or bm_sessions).items()},
+            "unitsAll": round(profile.get("units_all", profile["units"]), 6),
+            "sessionsAll": round(profile.get("sessions_all", profile["sessions"]), 6),
+            "entriesAll": round(profile.get("entries_all", profile["entries"]), 6),
+            "unitsP25All": round(profile.get("units_p25_all", profile["units_p25"]), 6),
+            "unitsP75All": round(profile.get("units_p75_all", profile["units_p75"]), 6),
+            "unitsByGroupAll": {g: round(v, 6) for g, v in (profile.get("units_by_group_all") or bm_units).items()},
+            "sessionsByGroupAll": {g: round(v, 6) for g, v in (profile.get("sessions_by_group_all") or bm_sessions).items()},
             "convByGroupAll": {g: round(v, 6) for g, v in (profile.get("conv_all") or profile["conv"]).items()},
             "privateRoomShare": round(profile["private_room_share"], 4),
             "paidBudget": round(bm_units["paid"] * targets["paid"]["cost_per_purchase"], 2),
             # what a paid unit cost the basket's launches, and how many had a
-            # reading (0 members: the panel constant prices the budget)
-            "costPerPurchase": round(float(profile.get("cost_per_purchase") or 0), 2),
+            # reading (0 members: the panel constant prices the budget); the
+            # tab prices the budget with it, so at the build's precision too
+            "costPerPurchase": round(float(profile.get("cost_per_purchase") or 0), 6),
             "costPerPurchaseN": int(profile.get("n_costed") or 0),
             # the people behind the basket's units, at the rate the target
             # holds. The rate is held at the benchmark, so the whole uplift
@@ -4605,9 +5277,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "unitsPerBuyer": round(upb, 4),
             "buyers": round(profile["units"] / upb, 1) if upb else None,
         }
-        snap["hero"]["benchmark"] = round(hero_bm, 0)
-        snap["hero"]["benchmarkToday"] = round(hero_bm_today, 0)
-        snap["hero"]["stretch"] = round(hero_target - hero_bm, 0)
+        # in whole units as the page rounds benchmark.units (whole), the
+        # waterfall's figures; the stretch is the difference of the two printed
+        snap["hero"]["benchmark"] = whole(hero_bm)
+        snap["hero"]["benchmarkToday"] = whole(hero_bm_today)
+        snap["hero"]["stretch"] = round(hero_target, 0) - whole(hero_bm)
         # secured vs what a comparable launch had by today. The sidebar's middle
         # state is exactly this sign, and the index carries it so the sidebar
         # does not have to guess the boundary from statusPct - 1/K moves with
@@ -4620,15 +5294,94 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
 
 # ---------------------------------------------------------------- main
 
-def check_snapshot(snap: dict) -> None:
+def product_name_warnings(sell: dict) -> list[str]:
+    """Sell-through rows named for another draw's work (docs 6.3): a row whose
+    name is, by _by_name, the title a draw outside the row sold, while the
+    name is none of the titles its own draws sold. The row's figures follow
+    its own draws, so the name sits on another work's units (the Mondrian
+    names did, handed to the draws by position). Names are typed by a person
+    and a short one can be another work's too, so this is a warning for the
+    refresh log, never a failed build."""
+    dp = sell.get("drawProducts") if isinstance(sell.get("drawProducts"), dict) else {}
+    out = []
+    for r in sell.get("products") or []:
+        if not isinstance(r, dict) or not isinstance(r.get("name"), str) or re.match(r"^Draw \d+$", r["name"]):
+            continue
+        own = {str(d) for d in (r.get("draws") or [])}
+        if not own:
+            continue     # a product only the orders feed names, with no draw of its own
+        mine = {str(dp[d]) for d in own if dp.get(d)}
+        if any(_by_name(r["name"], [t]) is not None for t in mine):
+            continue
+        others = sorted({str(t) for d, t in dp.items() if t and str(d) not in own and str(t) not in mine})
+        hit = _by_name(r["name"], others)
+        if hit is not None:
+            sold_by = sorted(str(d) for d, t in dp.items() if str(t) == hit)
+            out.append(f"sell-through row {r['name']!r} (draw {', '.join(sorted(own))}) carries the name of "
+                       f"{hit!r}, which draw {', '.join(sold_by)} sold")
+    return out
+
+
+def stale_build_warnings(snap: dict) -> list[str]:
+    """What a page this ETL builds always carries (docs 6.3, 10a), checked
+    softly: a targeted page says where its units came from and the days it
+    counted (`unitsSource`, `salesWindow`), and once its sales window has shut
+    nothing in hand still counts - no drafts, no draw winners predicted, no
+    entries in hand or still to come, no entry patterns. A page that breaks
+    one was built by an older ETL, as the committed fallback pages of 24 and
+    25 September 2026 were, and its figures are not this build's. Warnings,
+    not failures: a claim still landing (draw_claims) can put a predicted unit
+    on a shut window, and a failure would stop the whole refresh. A page
+    without `salesWindow` is taken as shut once its as-of day is past its
+    close plus the grace, the rule the older builds missed."""
+    out: list[str] = []
+    if snap.get("targeted", True) and not snap.get("upcoming"):
+        missing = [k for k in ("unitsSource", "salesWindow") if not snap.get(k)]
+        if missing:
+            out.append(f"no {' or '.join(missing)}: built by an ETL older than the orders sales window - "
+                       f"its figures are not this build's; rebuild it")
+    sw, sell = snap.get("salesWindow"), snap.get("sellthrough") or {}
+    if isinstance(sw, dict):
+        shut, end = bool(sw.get("closed")), sw.get("end")
+    else:
+        try:
+            end = (date.fromisoformat(str(snap.get("windowEnd"))[:10]) + timedelta(days=UNITS_GRACE_DAYS)).isoformat()
+            shut = str(snap.get("asOf") or "") > end
+        except ValueError:
+            shut, end = False, None
+    if shut and sell:
+        left = [f"{k} {sell[k]}" for k in ("drafts", "soldPredicted", "inHandUnits", "futureEntriesPredicted")
+                if abs(_num(sell.get(k)) or 0.0) > 0.05]
+        if sell.get("patterns"):
+            left.append(f"{len(sell['patterns'])} entry patterns")
+        if left:
+            out.append(f"its sales window shut on {end} but the sell-through still counts {', '.join(left)}")
+    return out
+
+
+# what check_snapshot warned of: the soft checks, which never stop the build
+SNAPSHOT_WARNINGS: list[str] = []
+
+
+def check_snapshot(snap: dict, soft: bool = True) -> list[str]:
     """Cross-check a snapshot's own arithmetic before it is written.
 
     These are relationships that must hold by definition, so a breach means a
     code path disagrees with another one - the class of bug where two cards
     print different answers for the same quantity. Cheap to run, and it fails
     the build rather than shipping a number that cannot be true.
+
+    The soft checks (stale_build_warnings) are printed and returned, never
+    raised: the signs of a page built by an older ETL. `soft` is off for the
+    Direct switch's view, which carries the same page's fields.
     """
     rid = snap.get("id", "?")
+    # the soft checks, logged below with the rest and never raised, start
+    # with the signs of a page an older ETL built
+    try:
+        warnings = stale_build_warnings(snap) if soft else []
+    except Exception as e:  # noqa: BLE001 - a soft check never stops the build
+        warnings = [f"the soft checks could not run ({e})"]
     hero, sell = snap.get("hero") or {}, snap.get("sellthrough") or {}
     now, sold = hero.get("now"), sell.get("sold")
     edition = (snap.get("sellthrough") or {}).get("edition")
@@ -4669,9 +5422,10 @@ def check_snapshot(snap: dict) -> None:
         # comparison carries up to half a unit times K of rounding on its own -
         # a fixed tolerance of one unit fails an honest snapshot as soon as the
         # uplift passes 2, and check_snapshot aborts the whole run, not just
-        # this release.
+        # this release. It is rounded from the tenth the page prints (whole),
+        # which can sit 0.05 further off the median: 0.55 units times K.
         lifted = (hero.get("benchmark") or 0) * bm["k"]
-        if abs(lifted - (hero.get("target") or 0)) > 0.5 * bm["k"] + 1.0:
+        if abs(lifted - (hero.get("target") or 0)) > 0.55 * bm["k"] + 1.0:
             problems.append(f"hero.benchmark x k is {lifted:.1f} but hero.target is {hero.get('target')}")
         wf_today = (snap.get("waterfall") or {}).get("today") or {}
         steps = sum(s["value"] for s in wf_today.get("steps") or [])
@@ -4705,11 +5459,49 @@ def check_snapshot(snap: dict) -> None:
             problems.append(f"sellthrough.pct {sell['pct']} of {ed_st} but its parts add to {parts:.1f}")
         if hero.get("projected") is not None and abs(float(hero["projected"]) - at_close) > 1.0:
             problems.append(f"hero.projected {hero['projected']} but the sell-through's count at close is {at_close:.1f}")
-    # the Direct switch's view of the page holds to the same rules
+    # soft checks: figures that should agree, and what a person typed, which
+    # can be wrong without any figure being impossible; logged
+    # (SNAPSHOT_WARNINGS) and never stopping the build. The Direct switch's
+    # view carries the page's own names, so they are read once
+    if soft:
+        try:
+            warnings += product_name_warnings(sell)
+        except Exception as e:  # noqa: BLE001 - a soft check never stops the build
+            warnings.append(f"product names not checked: {e}")
     alt = (snap.get("variants") or {}).get("direct_spread")
+    try:
+        # the benchmark the hero prints is the basket's median as the page rounds it
+        if bm and hero.get("benchmark") is not None and bm.get("units") is not None:
+            if hero["benchmark"] != whole(bm["units"]):
+                warnings.append(f"hero.benchmark {hero['benchmark']} but benchmark.units {bm['units']} prints as {whole(bm['units']):.0f}")
+        # what is projected at close cannot be less than what is already in
+        paid = snap.get("paid") or {}
+        for proj_key, now_key, tol in (("entriesProjected", "entriesToDate", 0.05), ("spendProjectedTotal", "spendToDate", 0.01)):
+            pv, nv = paid.get(proj_key), paid.get(now_key)
+            if isinstance(pv, (int, float)) and isinstance(nv, (int, float)) and pv < nv - tol:
+                warnings.append(f"paid.{proj_key} {pv} is below paid.{now_key} {nv}")
+        # a closed release's walk at close is its walk to date
+        wf = snap.get("waterfall") or {}
+        if snap.get("complete") and wf.get("today"):
+            for key in ("steps", "stepsBm"):
+                close_v = [s.get("value") for s in wf.get(key) or []]
+                today_v = [s.get("value") for s in wf["today"].get(key) or []]
+                if close_v and today_v and close_v != today_v:
+                    warnings.append(f"a closed release's waterfall {key} at close {close_v} differ from today's {today_v}")
+        # the Direct switch moves attribution, not the sends the plan asks for
+        if alt and isinstance(alt.get("email"), dict) and isinstance(snap.get("email"), dict):
+            a, b_ = alt["email"].get("deliveredTarget"), snap["email"].get("deliveredTarget")
+            if a is not None and b_ is not None and abs(a - b_) > 0.5:
+                warnings.append(f"the Direct view's email.deliveredTarget {a} differs from the page's {b_}")
+    except Exception as e:  # noqa: BLE001 - a soft check never stops the build
+        warnings.append(f"the figures' soft checks could not run ({e})")
+    for w in warnings:
+        SNAPSHOT_WARNINGS.append(f"{rid}: {w}")
+        print(f"check_snapshot warning: {rid}: {w}")
+    # the Direct switch's view of the page holds to the same rules
     if alt:
         try:
-            check_snapshot({**snap, **alt, "variants": None, "id": f"{rid} with Direct spread"})
+            check_snapshot({**snap, **alt, "variants": None, "id": f"{rid} with Direct spread"}, soft=False)
         except AssertionError as e:
             problems.append(str(e))
     if problems:
@@ -4719,12 +5511,85 @@ def check_snapshot(snap: dict) -> None:
             # the refresh itself never runs this way
             CHECK_WARNINGS.append(msg)
             print(f"check_snapshot: {msg}")
-            return
+            return warnings
         raise AssertionError(msg)
+    return warnings
 
 
 # problems check_snapshot found with CHECK_SNAPSHOT=warn (a verification run)
 CHECK_WARNINGS: list[str] = []
+
+# ---- the benchmark panel against the feed (docs/DATA_MODEL.md 6.3) -----------
+# The panel (data/release_clusters.csv) is written by hand after a full pull;
+# the pages are rebuilt from the feed every hour. These say when the two have
+# come apart. Warnings for the refresh log only: the pages are right on their
+# own terms, and the fix is a re-run of etl/analysis/release_clusters.py.
+PANEL_DRIFT_TOL = 0.05   # a closed page's share of units per group against its own panel row
+PANEL_WARNINGS: list[str] = []
+
+
+def panel_drift(snap: dict, panel: pd.DataFrame | None) -> str | None:
+    """A closed targeted page set against its own row in the panel: the page's
+    share of units per display group (channels[].now, the Channel view) and
+    the row's unit_share_<g>. Both count the same launch, so on one channel
+    attribution they agree to a few points (0.025 at most on the five pages
+    that have a row, on 24 Sep 2026 before the feed moved); further apart
+    than PANEL_DRIFT_TOL on any group, the panel was read on an older
+    attribution than the page, and every basket cut from it sets the
+    per-channel targets on the older split. None when there is nothing to
+    say; never raises."""
+    try:
+        if panel is None or not len(panel) or not snap.get("complete") or not snap.get("benchmark"):
+            return None
+        hit = panel[panel["release_name"] == snap.get("releaseName")]
+        if not len(hit):
+            return None
+        row = hit.iloc[0]
+        now = {c.get("key"): float(c.get("now") or 0.0) for c in (snap.get("channels") or [])}
+        total = sum(now.get(g, 0.0) for g in baskets.GROUPS)
+        if total <= 0:
+            return None
+        apart = []
+        for g in baskets.GROUPS:
+            share = pd.to_numeric(row.get(f"unit_share_{g}"), errors="coerce")
+            if pd.isna(share):
+                continue
+            page = now.get(g, 0.0) / total
+            if abs(page - float(share)) > PANEL_DRIFT_TOL:
+                apart.append((abs(page - float(share)), g, page, float(share)))
+        if not apart:
+            return None
+        apart.sort(reverse=True)
+        return (f"panel: {snap.get('id')} has closed and its units split is up to {apart[0][0]:.2f} from its own panel row ("
+                + ", ".join(f"{g} {p:.2f} on the page, {s:.2f} in the panel" for _, g, p, s in apart)
+                + "): the panel's channel attribution is older than the feed's, so the baskets set per-channel targets "
+                  "on the older split - re-run etl/analysis/release_clusters.py after a full pull")
+    except Exception as e:  # noqa: BLE001 - a warning must never stop the refresh
+        return f"panel: the drift check for {snap.get('id')} could not run ({e})"
+
+
+def panel_unsettled(as_of: date) -> str | None:
+    """The launches the panel still has in flight although they closed at
+    least baskets.SETTLE_DAYS ago: a re-run would settle them, and until it
+    does no basket can hold them (Dali and Glenn Ligon from September 2026).
+    None when the panel owes nothing; never raises."""
+    try:
+        due = baskets.unsettled(as_of)
+    except Exception as e:  # noqa: BLE001 - a warning must never stop the refresh
+        return f"panel: the in-flight check could not run ({e})"
+    if not due:
+        return None
+    return (f"panel: {len(due)} launch(es) closed {baskets.SETTLE_DAYS} or more days before {as_of} are still "
+            f"'{baskets.IN_FLIGHT}' in data/release_clusters.csv, so no basket can hold them: "
+            + ", ".join(f"{r['release_name']} (closed {r['close']})" for r in due)
+            + " - re-run etl/analysis/release_clusters.py after a full pull")
+
+
+def warn_panel(msg: str | None) -> None:
+    """Print a panel warning and keep it for the run's summary."""
+    if msg:
+        PANEL_WARNINGS.append(msg)
+        print(msg)
 
 
 def funnel_coverage(at: pd.DataFrame, curves: dict) -> str:
@@ -4761,13 +5626,19 @@ def units_coverage() -> str:
             f"{i.get('releases')} releases, {i.get('units', 0):,.0f} units, {share:.1%} with no purchase event{unknown}{step}")
 
 
+def name_quarter(name: str) -> str | None:
+    """The quarter a release name ends in ("Artist · Title · 2026 Q3"), or None."""
+    parts = [p.strip() for p in str(name).split(" · ")]
+    return parts[-1] if len(parts) >= 2 and _QUARTER_RE.match(parts[-1]) else None
+
+
 def index_row(snap: dict, status: str) -> dict:
     """One sidebar row. Shared so the whole build and a single-release rebuild
     cannot drift into describing the same release two different ways."""
     return {
         "id": snap["id"], "name": f"{snap['artist']} - {snap['title']}",
         "releaseName": snap["releaseName"], "artist": snap["artist"], "title": snap["title"],
-        "quarter": snap.get("quarter"), "type": snap["type"],
+        "quarter": snap.get("quarter") or name_quarter(snap["releaseName"]), "type": snap["type"],
         "status": status, "targeted": snap.get("targeted", True),
         "day": snap["day"], "of": snap["of"], "complete": snap["complete"],
         "windowEnd": snap.get("windowEnd"),
@@ -4851,6 +5722,22 @@ def build_upcoming_pages() -> int:
         (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
         patch_index(snap, None, status="upcoming")
         n += 1
+    # an upcoming row the list no longer holds (closed, taken up by the
+    # funnel, renamed, or no longer read as a draw) leaves the index, which
+    # otherwise keeps it without a page until the next full build
+    path = APP / "index.json"
+    if path.exists():
+        try:
+            doc = json.loads(path.read_text())
+            ids = {rec["id"] for rec in upcoming}
+            rows = doc.get("releases", [])
+            kept = [r for r in rows if r.get("status") != "upcoming" or r.get("id") in ids]
+            if len(kept) != len(rows):
+                doc["releases"] = kept
+                path.write_text(json.dumps(doc, indent=1))
+                print(f"upcoming: {len(rows) - len(kept)} row(s) no longer upcoming left the index")
+        except (OSError, ValueError) as e:
+            print(f"upcoming: could not tidy the index ({e})")
     print(f"upcoming: wrote {n} page(s) from Airtable -> {DERIVED}")
     return n
 
@@ -4897,6 +5784,17 @@ def main(only: str | None = None):
     mark("load")
     launch_frame = load_launches()
     adopt_funnel_names(INPUTS["releases"], discovered, launch_frame)
+    # each release's campaign code from its orders or its Airtable launch
+    # before the guess discover_releases made (docs 11b), and before the
+    # upcoming launches are guessed from the codes nobody carries
+    try:
+        got = source_campaign_codes(discovered, known_codes(emails, content, artist_posts), launch_frame, spend)
+    except Exception as e:  # noqa: BLE001 - the guesses stand; the refresh goes on
+        got = []
+        print(f"warning: campaign codes from the orders and Airtable failed ({e}) - the guesses stand")
+    if got:
+        print(f"campaign codes: {len(got)} from the feeds where the guess found none - "
+              + ", ".join(f"{rid} {code} ({src})" for rid, code, src in got[:12]) + (" ..." if len(got) > 12 else ""))
     upcoming: list[dict] = []
     if not only:
         # the codes an upcoming launch can be guessed from: those moving on Meta
@@ -4928,6 +5826,24 @@ def main(only: str | None = None):
     except (OSError, ValueError, KeyError) as e:
         panel = None
         print(f"baskets: no draw panel ({e}) - no release can be benchmarked, so none is targeted")
+    if panel is not None:
+        # what the panel's channel split was read from, and what reading it set aside
+        try:
+            basis = baskets.panel_basis()
+            print(f"baskets: channel split as the feed attributed it through {basis['through'] or 'an unrecorded day'}"
+                  + (f" ({basis['attribution']}; panel written {basis['built']})" if basis["attribution"] else ""))
+            if baskets.GUARDED.get("units"):
+                print(f"baskets: left out, units past {baskets.UNITS_MAX_MULTIPLE:g}x the edition or the orders feed: "
+                      + "; ".join(baskets.GUARDED["units"]))
+            if baskets.GUARDED.get("rates"):
+                print(f"baskets: {len(baskets.GUARDED['rates'])} conversion rates emptied (under {baskets.RATE_MIN_SESSIONS} "
+                      f"sessions, or over {baskets.RATE_MAX_PER_SESSION:g} entries or units per session): "
+                      + "; ".join(baskets.GUARDED["rates"]))
+            for note in baskets.GUARDED.get("skipped") or []:
+                print(f"baskets: a panel guard could not run, the panel is read without it - {note}")
+        except Exception as e:  # noqa: BLE001 - the log lines must never stop the refresh
+            print(f"baskets: could not describe the panel ({e})")
+        warn_panel(panel_unsettled(as_of))
 
     APP.mkdir(parents=True, exist_ok=True)
     (APP / "releases").mkdir(exist_ok=True)
@@ -4944,6 +5860,8 @@ def main(only: str | None = None):
         curves_path.write_text(json.dumps(curves, indent=1))
         print(f"curves: n={curves['n_releases']} clean releases")
 
+    # every launch's artist and close, for the email windows' same-artist clip
+    note_launches(list(INPUTS["releases"]) + list(discovered))
     email_bench = email_delivered_benchmark(emails, as_of, discovered, spend, at)
     if email_bench and email_bench["open_rate"] is not None:
         c = email_bench["cohort"]
@@ -4980,7 +5898,8 @@ def main(only: str | None = None):
         except OSError:
             pass
     if direct_norm and direct_norm.get("units") is not None:
-        print(f"direct norm: {direct_norm['units']:.1%} of its group's units, {direct_norm['sessions']:.1%} of its sessions (n={direct_norm['n']})")
+        print(f"direct norm: {direct_norm['units']:.1%} of its group's units, {direct_norm['sessions']:.1%} of its sessions (n={direct_norm['n']}, "
+              + ("read off the panel)" if direct_norm.get("source") == "panel" else "read off today's feed: the panel does not carry it yet)"))
     if norms:
         print("untracked norm: " + ", ".join(f"{k} median {v['median']:.1%} p90 {v['p90']:.1%} (n={v['n']})"
                                              for k, v in norms.items() if isinstance(v, dict) and v.get("median") is not None))
@@ -4994,6 +5913,7 @@ def main(only: str | None = None):
                              artist_posts, posts_bench, email_bench, panel, people,
                                  full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
         check_snapshot(snap)
+        warn_panel(panel_drift(snap, panel))
         (APP / "releases" / f"{only}.json").write_text(json.dumps(snap, indent=1))
         bmk = snap.get("benchmark")
         print(f"{snap['id']}: day {snap['day']}/{snap['of']} "
@@ -5019,6 +5939,7 @@ def main(only: str | None = None):
                                  artist_posts, posts_bench, email_bench, panel, people,
                                  full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
             check_snapshot(snap)
+            warn_panel(panel_drift(snap, panel))
             (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
             add(snap, "closed" if snap["complete"] else "live")
             n_full += 1
@@ -5038,6 +5959,11 @@ def main(only: str | None = None):
             written.add(f"{rec['id']}.json")
             add(snap, "catalogue" if snap["catalogue"] else ("closed" if snap["complete"] else "live"))
             n_actuals += 1
+    # a draw campaign the orders tie to one release that no page claims
+    try:
+        unclaimed_draw_campaigns(spend, discovered)
+    except Exception as e:  # noqa: BLE001 - a warning, never a stop
+        print(f"warning: the unclaimed draw campaigns could not be listed ({e})")
     # the launches Airtable knows and the funnel does not yet: a page each,
     # with the dates, edition and price to set targets from (§1.7)
     n_upcoming = 0
@@ -5076,10 +6002,7 @@ def main(only: str | None = None):
     # meta_campaigns feeds the Meta-campaign matcher (most recently active first);
     # discovered carries the derived defaults a release starts from when someone
     # sets targets for it in the dashboard
-    camp = (spend.groupby("campaign_name")
-                 .agg(spend=("spend", "sum"), last=("spend_date", "max"))
-                 .reset_index()
-                 .sort_values(["last", "spend"], ascending=False))
+    camp = meta_campaigns(spend)
     (APP / "inputs.json").write_text(json.dumps({
         "benchmarks": BENCH,
         # the inputs as saved (the tab edits these), and beside them what the
@@ -5098,6 +6021,7 @@ def main(only: str | None = None):
             r["id"]: {
                 "release_name": r["release_name"], "artist": r["artist"], "title": r["title"],
                 "type": r["type"], "campaign_code": r["campaign_code"],
+                "code_source": r.get("code_source"),
                 "campaign_name": r.get("campaign_name"),
                 "announce_date": r["announce_date"], "launch_end": r["launch_end"],
                 "private_room_open": r.get("private_room_open") or (
@@ -5111,15 +6035,16 @@ def main(only: str | None = None):
             }
             for r in discovered + upcoming if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}
         },
-        "meta_campaigns": [
-            {"name": r.campaign_name, "spend": round(float(r.spend), 2), "last": r.last.isoformat()}
-            for r in camp.itertuples()
-        ],
+        "meta_campaigns": camp,
     }, indent=1))
     print(funnel_coverage(at, curves))
     print(units_coverage())
     if os.environ.get("CHECK_SNAPSHOT") == "warn":
         print(f"check_snapshot: {len(CHECK_WARNINGS)} page(s) with problems (warn mode: nothing stopped)")
+    if PANEL_WARNINGS:
+        print(f"panel: {len(PANEL_WARNINGS)} warning(s) above - the benchmark panel wants a re-run (README, 'Re-running the benchmark panel')")
+    if SNAPSHOT_WARNINGS:
+        print(f"check_snapshot: {len(SNAPSHOT_WARNINGS)} warning(s) from the soft checks (nothing stopped)")
     print(f"wrote {n_full} targeted + {n_actuals} actuals-only + {n_upcoming} upcoming releases "
           f"({sum(1 for e in index if e['status'] == 'live')} live) -> {APP}")
 

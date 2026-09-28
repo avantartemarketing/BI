@@ -133,13 +133,21 @@ Normalisation rules:
   in Untracked's place), and the benchmark's channel split is read the same way, with the
   panel's median Direct share of the Search/direct/other group (`direct_share_norm`, the
   cohort of the untracked norm) leaving the group and landing on every group pro rata
-  (`spread_profile`; the headline medians and K do not move). The ETL builds every page both
-  ways (`with_direct_spread`) and stores the blocks that differ under `variants.direct_spread`;
-  `directShare` carries Direct's share of the release's window as the funnel attributes it.
-  The switch in the page head lays the variant over the page, so every card reads one
-  attribution; it is a methodology choice and sticks per browser. Totals, what has been sold
-  and the spend do not move; the plan's pace and the projections shift a little with the
-  channel mix (each group has its own curve), and paid reads the entries it is given.
+  (`spread_profile`; the headline medians and K do not move). The share is the panel's own
+  (`direct_in_group_<metric>`, written by `release_clusters.py` from the same pull as the split
+  it is applied to); a panel written before those columns falls back to the share on today's
+  feed over the same windows, which mixes two attributions once the feed re-attributes (on 24
+  September 2026 it fell from 0.73 to 0.33 of the group's units in one refresh). The ETL builds
+  every page both ways (`with_direct_spread`) and stores the blocks that differ under
+  `variants.direct_spread`; `directShare` carries Direct's share of the release's window as the
+  funnel attributes it. The switch in the Overview's head lays the variant over the page, so
+  every card reads one attribution; it is a methodology choice and sticks per browser. The
+  Target setting tab always reads Direct as a channel: the switch is not shown there, and the
+  tab says so when the Overview is set to Spread. Totals, what has been sold, the spend and the
+  paid budget do not move: paid takes its share of Direct's units, so its cost per unit is
+  rescaled by the paid group's change (`cost_scale`) and paid units × cost is the Channel
+  view's. The plan's pace and the projections shift a little with the channel mix (each group
+  has its own curve), and paid reads the entries it is given.
 - **Paid Search** has no benchmarks, no spend feed, and never appears in the daily export -
   every "Total Paid" benchmark is an alias of Paid Social. Model paid = Paid Social; keep Paid
   Search only as a raw actuals bucket.
@@ -189,7 +197,19 @@ Stage boundary rules (verified empirically):
 
 **The clock is filled in where upstream carries none** (`etl/aggregate_events.py`, §2.3; the
 upstream feed has dates for 2026 launches only). Upstream dates always take priority, field by
-field. Otherwise, for a release with at least 10 entrants: the announcement is the first big
+field, with one exception: an upstream announce on or after the release's own close, or once
+it has passed more than a week after the release's last entry day, is a placeholder and is
+treated as absent (`placeholder_announce`, the test the upcoming list puts Airtable's announce
+to, §1.7; the entries never judge an announce still to come, since a launch in early access has
+entries before it, nor one days after them, since a draw can open after its announce).
+Airtable's Announce Date reads 2025-04-17
+on 41 launches of 2023-24 (§11, #24), which gave 29 releases a clock of 2025-04-17..their 2024
+close, rejected by the build, so 17 closed draws (Pejac 2024 Q3, George Condo 2024 Q1) were
+catalogue pages. Their announce is now inferred, and the upstream close they came with is kept
+where it is within a week of the draw's last entry day (else the close is inferred too; the
+window's source reads `mixed` or `inferred`); `release_people.csv` starts such a release's
+campaign at its first event, not at the placeholder, which made every buyer of it read as
+returning. Otherwise, for a release with at least 10 entrants: the announcement is the first big
 traffic spike (a day with at least a quarter of the release's busiest day, at least 30 sessions,
 and at least three times the previous week's median) when it comes 6 to 30 days before the draw
 opens - an announcement with the draw opening later, and the traffic in between is real campaign
@@ -262,7 +282,12 @@ planned dates. The private room defaults to two weeks before the announce when n
 name; the pull never takes an email), else what was typed. **The campaign code** is what was
 saved, else the prefix of the first Meta campaign's name, else the guess from the email and
 content feeds. **The Meta campaigns** (`campaign_names`) are the list saved, else the draw
-campaign the spend feed names for the code; paid spend is summed over the list.
+campaign the spend feed names for the code; paid spend is summed over the list. The tab
+offers every campaign in the feed (`meta_campaigns`) with its spend and the last day it
+spent, most recently active first: a day with spend above zero, since the export keeps a
+campaign's rows at zero for about four weeks after it stops ("no spend yet" when it never
+spent). A code's active days, which the upcoming launches' code guess reads (§1.7), are
+counted the same way.
 
 ### 1.7 Upcoming launches (from Airtable)
 
@@ -273,18 +298,30 @@ dates. So the build lists **upcoming launches** from Airtable (`etl/build.py
 upcoming_releases`) beside the releases the funnel mentions:
 
 - a draw (`launch_type` Draw, or blank - a project Airtable has not typed yet) closing after
-  the build date and within 120 days (60 for a blank type), not at the pitching stage;
+  the build date and within 120 days (60 for a blank type), not at the pitching stage (the
+  status most of its records hold, a tie going to the less advanced stage). A blank type
+  counts as a draw only when most of the launch's records are not originals (`OG`), NFTs or
+  timed editions (`TL`, `TLC`): an originals show or a 48-hour timed print is no draw;
 - whose Airtable records no release on file already matched - the same matcher the panel's
   pricing uses (`etl/pricing.py match`), run over every discovered and configured release,
   so the artist's earlier launch does not stand for the new one and a launch the funnel
-  already carries under its own title is not listed twice;
+  already carries under its own title is not listed twice - and whose ids no saved input
+  carries (a release set up from an upcoming page keeps them, `airtable_ids`);
 - named the way the funnel will name it, `Artist · Title · YYYY Qn` with the title `Multiple`
-  when the launch has several works, so the page keeps its id when the funnel catches up.
+  when the launch has several works, and the artist spelt as the funnel spells them where a
+  release on file already matched that Airtable artist (Airtable's "Kukwon Woo" is the
+  funnel's "Woo Kuk Won"), so the page keeps its id when the funnel catches up. A second
+  launch of the artist in the same quarter takes its works as its title ("Pejac · Barbed
+  Wire / Mind Trip · 2026 Q4"), then its close date, so no two pages share a name or an id.
 
 Its page (`build_upcoming`, status `upcoming`, `upcoming: true`) has the dates, the edition,
 the price in euros at the panel's fixed rates, the works and the project's Airtable status,
-and no actuals; the sidebar lists it under Upcoming with the days until it opens. The
-announce date is Airtable's, else assumed 24 days before the close and said so; the campaign
+and no actuals; the sidebar lists it under Upcoming with the days until it opens, or until it
+closes once Airtable's announce date has passed and the funnel still has no rows for it. The
+announce date is Airtable's (the earliest over the launch's sized, non-bundle records, as the
+Set up targets tab reads them), else assumed 24 days before the close and said so; one that
+has passed while no code for the artist moves on Meta or in the sends in the launch's window
+is said to be possibly out of date (`dates_note`). The campaign
 code is guessed from the feeds' codes and Meta's campaign names, never from a code a release
 on file already carries. `inputs.json` `discovered` carries the edition, the price and the
 Airtable record ids as the defaults the Set up targets tab starts from, and a save keeps the
@@ -507,10 +544,10 @@ them alone; `BQ_ORDERS=off` skips them; `BQ_ORDERS_TABLE` renames the table; all
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product title | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), and no line of an order tagged `upsell_order_merged` (an upsell bought after an order is folded into it, and the upsell's own order stays in the table with the same lines: counting it counts them twice; the data team's Metabase questions leave it out too), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts`, `units_private_room`, `list_price_eur` (median list price), `product_ids`, `skus`, `first_order`, `last_order`, `last_draft`; and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, each to the work its SKU names, else shared across the order's prints, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts), `prints_offered_awaiting` and `frames_awaiting` (the same on the orders awaiting payment, the lines `units_draft_pending` counts, for the Framing forecast) |
-| `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, `orders` (their orders on it), `share` (of their orders) |
+| `data/orders_by_product.csv` | release × product (one name per product, below) | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), and no line of an order tagged `upsell_order_merged` (an upsell bought after an order is folded into it, and the upsell's own order stays in the table with the same lines: counting it counts them twice; the data team's Metabase questions leave it out too), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts` and `units_private_room` (the paid units placed from a draft and through the private room: parts of `units_paid`, the paid lines as `units_paid.csv` counts them, never a refunded or pending order's), `list_price_eur` (median list price), `product_ids`, `skus`, `first_order` and `last_order` (the first and last day of any order line, cancelled and refunded included: how far the feed runs, the `ordersAsOf` stamp, not when anything sold), `last_draft`; and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, each to the work its SKU names, else shared across the order's prints, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts), `prints_offered_awaiting` and `frames_awaiting` (the same on the orders awaiting payment, the lines `units_draft_pending` counts, for the Framing forecast) |
+| `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, by the same names, `orders` (their orders on it), `share` (of their orders) |
 | `data/draw_claims.csv` | release × draw, only draws with any | claims a draw round has made that the order table has not caught up with: `claims` (winners the event feed flags who still hold an open pre-authorisation draft, the app's entry draft, on the draw's own product and have no paid order for it), `units` (on those drafts), and `product_title` (the draw's product: the one its winners have paid orders for most, else the one its entrants hold drafts for most). Written with the orders files, empty when its query fails, never committed: a claims file from another moment than the orders would count a sale twice (§6.3) |
-| `sources/units_paid.csv` | release × product title × order day (CET) × channel × `purchase_event` | `units_paid`, `units_private_room`, `prints_offered_paid`, `frames_paid`: the paid lines of `orders_by_product.csv` by the same rule (one set of CTEs, `orderLinesCtes`), each order on the channel of its earliest purchase event in the event feed (`AA_session_custom_channel_group_split_touch`, joined on the Shopify order id alone), `Untracked` with `purchase_event` false where the event feed has no purchase for the order. Summed over its days and channels it is `units_paid` per product. The units every card counts (§6.3); written beside the other two in the same commit, so a deploy resets all three to one committed copy, and `etl/build.py` reads a release whose units here do not add up to its `units_paid` in `orders_by_product.csv` as out of step (two pulls), counting the funnel's units for it until the next pull |
+| `data/units_paid.csv` | release × product (the same names) × order day (CET) × channel × `purchase_event` | `units_paid`, `units_private_room`, `prints_offered_paid`, `frames_paid`: the paid lines of `orders_by_product.csv` by the same rule (one set of CTEs, `orderLinesCtes`), each order on the channel of its earliest purchase event in the event feed (`AA_session_custom_channel_group_split_touch`, joined on the Shopify order id alone), `Untracked` with `purchase_event` false where the event feed has no purchase for the order. Summed over its days and channels it is `units_paid` per product. The units every card counts (§6.3); written beside the other two in the same commit, so a deploy resets all three to one committed copy, and `etl/build.py` reads a release whose units here do not add up to its `units_paid` in `orders_by_product.csv` as out of step (two pulls), counting the funnel's units for it until the next pull |
 
 **The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
 named by its winners: the draw entry rows give (release, account, draw) for winners, the
@@ -555,9 +592,20 @@ pre-order requests, allocated like a draw).
 
 Only product lines count as units (`shopify_product_type = 'Product'`): a frame is a line of
 its own (`Frame`) with no release on it, left out of units and counted in the four framing
-columns by joining it to the prints through the order (§6.4). Two Shopify products with one
-title (a private-room variant at a different price) are one product here. Test orders are
-dropped.
+columns by joining it to the prints through the order (§6.4). Test orders are dropped.
+
+**One name per product.** A line carries the title its product had when the line was made,
+so each Shopify product is named by the title on its latest line: a work renamed during its
+sale, if only in its capitals ('Something forbidden (Blue)', then 'Something Forbidden
+(Blue)'; Harland Miller's Willpower, 19 and 2 of 25 on two rows), stays one product. Two
+Shopify products with one title (a private-room variant at a different price) are one product
+here, unless their SKUs name different works (the SKU's first two segments): Urs Fischer's two
+Problem Paintings, `FISCH-PROB1` and `FISCH-PROB2`, are then 'Problem Painting (FISCH-PROB1)'
+and 'Problem Painting (FISCH-PROB2)', each against its own edition (`product_editions` reads
+Airtable's rows of the title before the work), where the one title had read 110 of 100. The three
+files and the claims name products this way (`product_names` in `orderLinesCtes`), so they join
+on the name; a file pulled before that, with one Shopify product under two titles, is named in
+the build log until the next pull.
 
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down
@@ -639,7 +687,8 @@ plan sold nothing in the median launch - shows its actuals rather than a target 
 model.
 
 What stayed, and where it moved: the cost per purchase is a figure per release
-(`cost_per_purchase`, € per paid unit; blank means the panel's median, §4 E); the Referral
+(`cost_per_purchase`, € per paid unit; blank means the basket's median cost per paid unit, else
+the panel's median, §4 E); the Referral
 Artist tier became the artist posting tier (`artist_posting_tier`, the cohort of the
 artist-posts benchmark); "N/A" on Referral Artist became the artist's own channels not in plan
 (`channels_off`, spec §4.3); and the order-split medians still place a group's target on its
@@ -728,10 +777,17 @@ Keep 0.8 as the planning constant; surface the per-channel table as diagnostics.
 **E. Cost per purchase (paid)**: quartiles over 22 hand-curated historical paid campaigns
 (mixing LE + TL): **Low €128.75 / Median €177 / High €291**. Since 2026-09-23 the price of a
 paid unit comes from the basket first: each panel launch's cost per paid unit is Meta's spend
-under its campaign code inside its window over the paid units the funnel attributed
-(`baskets.attach_paid_costs`, a reading from 5 paid units and some spend; the campaign code is
-the orders feed's, §2.4), and the basket's median over the members with a reading prices the
-paid budget once three have one (`profile.cost_per_purchase`, `n_costed`). The release's own
+under its campaign code from its window's start to the close, over its paid units with the
+launch's Untracked units folded in (`unit_share_paid` × all units), the basis the page prices
+its own paid units on (`baskets.attach_paid_costs`, a reading from 5 tracked paid units and
+some spend; the campaign code is the orders feed's, §2.4), and the basket's median over the
+members with a reading prices the paid budget once three have one (`profile.cost_per_purchase`,
+`n_costed`). Until 2026-09-28 it was the spend over the whole panel window, to three days after
+the allocation, over the tracked paid units alone: a basis about 7% dearer per unit than the
+page's, and far dearer for a launch that spent after its close (Felipe Pantone spent 15,121 of
+its 16,750 there), so paid read cheaper against plan than it was. The one difference left is
+the window's start, 45 days before the announce where the page opens at the private room;
+no costed launch on file has spend that early. The release's own
 `cost_per_purchase` on the Target setting tab comes before it (Abdulnasser Gharem carries
 €291, the quartile it was planned at), and the Median constant stands in when the basket has
 too few readings. `targets.paid.cost_per_purchase_source` says which of the three priced it. Companion stats (static): ROI
@@ -778,7 +834,10 @@ more are we asking for?** Everything below falls out of that one sentence.
 
 Both references are on every bar at once. The fill says what the business asked for and where
 the basket agrees with it; the outline says what the basket typically reaches. Percentages,
-RAG colours and the headline deltas read against the target. Drawing grammar: spec §7.
+RAG colours and the headline deltas read against the target: a funnel rung is green at or above
+it, amber less than 10% short and red 10% or more short, and the sidebar's dot is amber behind
+target only while the release is at or ahead of the benchmark's pace for today (spec §5, §7).
+Drawing grammar: spec §7.
 
 ```
 K = edition_size / benchmark_units_total
@@ -794,12 +853,13 @@ and label are the only difference between them (spec §1, §7).
 
 The panel is `data/release_clusters.csv` filtered to `panel == "draw"` (108 completed draw
 campaigns, §4 "Baskets of comparables"); cluster names come from
-`data/release_cluster_baskets.json`. Six ready-made baskets: `cluster_0` Paid-led headline
-launches, `cluster_1` Paid-supported small editions, `cluster_2` Email-led collector launches,
-`cluster_3` Artist-audience draws, `all_12m` (every draw launch whose `window_end` is within 365
-days of `as_of`), and `same_artist` (the same artist's earlier launches, disabled under 3
-members). A **bespoke** basket is a hand-ticked set of panel releases; one saved from the picker
-is written to `data/app/baskets.json` and thereafter offered alongside the ready-made ones.
+`data/release_cluster_baskets.json`. Seven ready-made baskets: `similar_size` (the suggested
+one, below), `cluster_0` Paid-led headline launches, `cluster_1` Paid-supported small editions,
+`cluster_2` Email-led collector launches, `cluster_3` Artist-audience draws, `all_12m` (every
+draw launch whose `window_end` is within 365 days of `as_of`), and `same_artist` (the same
+artist's earlier launches, disabled when it has no members). A **bespoke** basket is a
+hand-ticked set of panel releases; one saved from the picker is written to
+`data/app/baskets.json` and thereafter offered alongside the ready-made ones.
 
 Two rules carry the weight, and both are in the module because three callers - the ETL, the
 picker API and the re-run a saved basket triggers - have to agree to the last unit:
@@ -812,9 +872,11 @@ picker API and the re-run a saved basket triggers - have to agree to the last un
   different launch), so taking them directly leaves the five channel benchmarks summing to
   something other than the headline printed above them. Shares are renormalised to sum to 1.
 
-Sizes: under **3** members a basket cannot be used at all and the caller falls back to the
-suggested one; under **10** it is used but carries `basket.thin = True`, which the picker shows
-as a warning. A median over an empty or all-NaN column is `0.0`, never NaN.
+Sizes: a basket with no members (`MIN_MEMBERS` 1) cannot be used at all and the caller falls
+back to the suggested one; a single launch can, its own figures being the medians. Under **6**
+members (`THIN_MEMBERS`) a basket is used but carries `basket.thin = True`, which the picker and
+the Target setting tab show as a warning. A median over an empty or all-NaN column is `0.0`,
+never NaN.
 
 The profile is the medians themselves: `n` and `members`; `units` (median
 `tot_total_product_units`) with `units_p25` / `units_p75`; `price` (median `unit_price_eur`
@@ -822,23 +884,40 @@ over the `n_priced` members Airtable priced) with `price_p25` / `price_p75`, and
 (median units on offer); `sessions` (median
 `tot_sessions_total`); `entries` (median `tot_draw_entries_eligible_units`); `campaign_days`;
 `private_room_share`; `share_units` and `share_sessions` per display group; `conv` (median
-`conv_sess_entry_<group>`, 0 where there is no history); and the two products
+`conv_sess_entry_<group>`, 0 where there is no history; a group's rate counts only over 100 of
+its sessions and at no more than 0.25 entries or units per session, and `baskets.load_panel`
+empties the rest, as the panel script does from its next run); and the two products
 `units_by_group` = `share_units[g] × units` and `sessions_by_group` = `share_sessions[g] ×
-sessions`. Groups are the five display groups of §1.3.
+sessions`. Groups are the five display groups of §1.3. The volumes are the panel window's,
+45 days before the announce to three days after the allocation, where the page counts from
+the private room to two days after the close, so a session benchmark carries some traffic
+from before the private room that the page never counts: a few per cent of sessions on most
+launches, more on a channel that runs early (Parra's artist referrals, 2,173 on the panel
+against 1,398 on the page). The cost per paid unit is on the page's basis (§4 E).
 
-The suggested basket, `similar_size` ("Similar size and shape"), is cut on three bands in log
-space - **size, price and shape** - widening the size and price bands through 2×, 2.5×, 3×, 4×
-and giving up price, then shape, then the band's tightness before it gives up on scale; the
-ladder, and the test that put price in it (price predicts session-to-entry conversion beyond
-size on five of eight benchmarked metrics, and the band cuts the leave-one-out benchmark error
-on seven of eight), are in `docs/BENCHMARK_SPEC.md` §3.1 and §3.1.1.
+The suggested basket, `similar_size` ("Similar size and shape"), is the **`SIMILAR_N` = 8
+launches nearest this one on units and unit price** (`similar_members`): the artist's own
+earlier launches first, when within ×3 on both axes, then the nearest of everything else, with
+launches closed in the last 18 months ranked ahead of older ones among those within ×4 while
+`prefer_recent` is on (the default). A launch's distance is the larger of its units multiple and
+its price multiple. The rule, why eight and not a widening band, and the test that put price in
+it (price predicts session-to-entry conversion beyond size on five of eight benchmarked
+metrics) are in `docs/BENCHMARK_SPEC.md` §3.1 and §3.1.1; `shared/basketRule.mjs` mirrors it for
+the picker. The picker reads the basket's `reach`, how far its furthest member is: past ×4 it
+says nothing on file is this size.
+A release that has closed is read at its own close (its panel `window_end`, else its
+`launch_end`): the recent tier runs back from it rather than from `as_of`, and launches that
+closed after it are left out, so its basket stops moving after it closes.
 
-`suggest_basket` picks the basket a release starts on: its own `cluster` if the panel has it,
-else `nearest_cluster`, else the cluster whose median units are closest to the edition size **in
-log space** (the panel runs from tens of units to thousands, so a linear gap would put
-everything in the big basket), tie-broken on paid-session share against the release's paid plan.
-The suggestion is a starting point and is always overridable - `suggestedId` rides on the
-snapshot next to the chosen `id` so the card can say which one was picked for you.
+`suggest_basket` picks the basket a release starts on: `similar_size` whenever it has a
+member, which it does for any release with an edition size while the panel holds another launch
+with units on file. Only without one does it fall back to the shape clusters: the release's own
+`cluster` if the panel has it, else `nearest_cluster`, else the cluster whose median units are
+closest to the edition size **in log space** (the panel runs from tens of units to thousands, so
+a linear gap would put everything in the big basket), tie-broken on paid-session share against
+the release's paid plan. The suggestion is a starting point and is always overridable -
+`suggestedId` rides on the snapshot next to the chosen `id` so the card can say which one was
+picked for you.
 
 ### 4a.2½ Edition pricing (`etl/pull_airtable.py`, `etl/pricing.py`)
 
@@ -862,8 +941,10 @@ that is the field's currency in Airtable). Credentials are `AIRTABLE_TOKEN` (rea
 
 `etl/pricing.py` joins the records to the release list. A **launch** is one artist's records
 under one release code on one launch date (a group show puts eight artists under one code;
-each artist's release is its own row in the panel). Bundles ("Set of 4", a diptych of listed
-prints, any record without an edition size) carry the sum of their parts and are left out, so
+each artist's release is its own row in the panel). Bundles (a title with a set word - "Set of
+4", "[Pair]", "[Quartet]", "[COMBINED PRODUCT]", a diptych or triptych - or any record without
+an edition size; a bracketed note alone, "[Special Print Edition]", "[OG painting - 1/5]", is
+not one) carry the sum of their parts and are left out, so
 a launch's `unit_price` is the **value-weighted mean over its sized products** (the price of
 the average unit in the edition), `edition_size` the sum of their units, `launch_value` the
 sum of price × units. The match runs strictest first and is never silent: exact artist + title
@@ -914,7 +995,9 @@ paid_budget  = profile["units_by_group"]["paid"] × cost_per_purchase × K    # 
 `compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
 `per_channel`, `paid{…}`, `launch_value`, `units_per_buyer`, `buyers`, `buyers_by_group`,
 `organic_sessions`, `total_sessions`, `entries_target`, `buffer` - or `None` when the release
-has no basket to read (§3). Organic units are not split into a draw half and a private-room
+has no basket to read (§3). `buffer`, and the snapshot's `benchmarks.targetBuffer`, carry the
+LE workbook's 0.75 haircut for reference only: no colour on the page reads them (§4a.1).
+Organic units are not split into a draw half and a private-room
 half: every organic unit is targeted through its group and asked for as an entry, so
 `entries_target = edition_size / 0.8`, and `group_targets` sums to the edition size exactly.
 The private room stays a measured quantity - the basket's `private_room_share`, the orders
@@ -932,9 +1015,12 @@ diagnostics and the untracked-redistribution comparisons of §6.2 all keep worki
 The daily plan is the benchmark's own shape, scaled once:
 
 ```
-benchmark_plan[g][d] = profile["units_by_group"][g] × curve(basket, g, "units", pdsa(d))
+benchmark_plan[g][d] = profile["units_by_group"][g] × curve(basket, g, "entries", pdsa(d))
 target_plan[g][d]    = benchmark_plan[g][d] × K
 ```
+
+(`"entries"`: every unit plan is entry-timed, §5.3; paid's curve is its even daily share,
+`paid_pace`, on both lines alike.)
 
 Target and benchmark therefore stand in exactly the ratio K at **every** point of the campaign,
 not only at close - which is what makes the even uplift legible on the trajectory: the gap
@@ -953,11 +1039,12 @@ requires `expectedToday(channel)` from "channel-shaped curves, never straight li
 
 ### 5.1 Method
 1. Take completed, clean LE campaigns (campaign window fully observed, ≥ 20 draw entries;
-   currently n = 18 from the export - grows over time).
+   n = 18 in v1, 76 in the pooled panel at the 2026-09-24 build; a release reads its basket's,
+   §5.3).
 2. For each, compute cumulative share of the campaign's final total at each pdsa, per metric
    (sessions, draw entries, units) - and per channel where volume allows.
-3. Pool across releases on the pdsa axis: **median = the target trajectory; p25/p75 = guardrail
-   band**.
+3. Pool across releases on the pdsa axis: **median = the target trajectory**. (v1 also planned a
+   p25/p75 guardrail band; it was never built, and the build publishes the medians alone.)
 4. A release's daily plan = `target_total(metric, channel) × curve(pdsa of that day)`.
    `expectedToday = target_total × curve(pdsa_today)`.
 
@@ -990,26 +1077,61 @@ Shape facts the dashboard should encode:
 - Stage split of totals (pooled): sessions EA .11 / S1 .32 / S2 .17 / S3 .36 / LC .04;
   units .17 / .28 / .16 / .25 / .13.
 - Dispersion is wide (sessions p25–p75 at mid-campaign: .41–.81) - always show the band, and
-  status vs plan should use the band, not the median alone, before shouting red.
+  status vs plan should use the band, not the median alone, before shouting red. (Not built:
+  the curves are medians alone and the trajectory draws no band, §5.3.)
 
 ### 5.3 Per-channel curves
-Email is spike-driven (sends), socials are post-driven, search/direct is smooth. v1 ships:
-pooled per-display-group curves where n permits, else the all-channel curve. The email plan
-curve should eventually be derived from the **planned send schedule** (Announcement, Early
-Access 1–3, Sustain, Last Chance 48/24h - the taxonomy in §8) rather than history alone.
 
-**Paid units plan uses the entries shape.** Historical `Total_Product_Units` for the paid
-group books ~98.6% of draw units on the draw-close date (winners are allocated then), so a
-units-shaped plan cliffs ~46% of the paid target onto the final day while the plotted
-actual (secured units, §6.3½) accrues entry-timed - the plan would read "behind" all
-campaign and "catch up" in one fictional day. `build_curves` therefore substitutes the paid
-group's entries curve for its units curve (final step 0.21 instead of 0.46 - the genuine
-last-chance surge remains). Verified 2026-08-28: dropping each historical release's close
-day removes the units-curve jump entirely, proving it is allocation bookkeeping, not
-last-day demand; a historical secured-units curve is NOT reconstructable because the export
-retroactively reclassifies converted entries out of `*_No_Conv`.
+**What the build does.** A release is paced on its own basket's curves (`basket_curves`; the
+basket is §4a.2's): per display group and per metric (sessions, draw entries, units), the median
+across the basket's clean completed members of the cumulative share reached at each point of
+`CURVE_GRID` (pdsa −0.6 to 1.15 in 0.05 steps), forced monotone and scaled to end at 1. A series
+fewer than 4 members can shape reads the pooled panel's (every clean completed launch in the
+export: 76 at the 2026-09-24 build, `data/app/curves.json`), and a group the pooled panel cannot
+shape either reads the all-channel curve. Medians only: no percentile band is built, and the
+trajectory draws none. Which curve each plan reads:
+- **units, every organic group: the entries curve** (`UNIT_PLAN_CURVE`, below) - the plan line,
+  the expected-by-today and the shape of the forward path (§5.4);
+- **sessions: the sessions curve** - the sessions targets by today and the funnel's expected
+  sessions;
+- **paid: no curve** - the even daily budget's share (below); the paid entries curve is read
+  only by the forward path's fallback before any spend (§5.4).
 
-**Curves are tier-blind, and that is deliberate.** The target sets a channel's LEVEL but
+The units curves stay in `curves.json` as measured, and no plan is read off them.
+
+Email is spike-driven (sends), socials are post-driven, search/direct is smooth. v1 shipped
+pooled per-display-group curves where n permitted, else the all-channel curve; the build now
+reads the basket's (above). The email plan curve should eventually be derived from the
+**planned send schedule** (Announcement, Early Access 1–3, Sustain, Last Chance 48/24h - the
+taxonomy in §8) rather than history alone.
+
+**Every unit plan runs on the entries shape.** Historical `Total_Product_Units` books the
+draw's units on the draw-close date (winners are allocated then): ~98.6% of the paid group's,
+and in the pooled panel the last 5% of the clock holds 0.34 of AA Email's units against 0.11 of
+its entries (AA Meta 0.37 against 0.12, search / direct / other 0.16 against 0.11). The plotted
+actual is secured units (§6.3½), which count an entry the day it is made, so a units-shaped plan
+cliffs onto the final day: it reads "behind" all campaign, "catches up" in one fictional day, and
+the §5.4 projection books the cliff as demand still to come. Until 2026-09-28 only paid planned on
+entries and the organic groups read the booking curve: Warhol's 24 September page put 23% of the
+AA Email target on the last day, and its dashed line climbed 236 organic units on 30 September
+against a trailing pace of about 17 a day. `build_release` now reads every curve-planned group's
+plan, expected-by-today and path off its entries curve (`UNIT_PLAN_CURVE` in `etl/build.py`;
+`tests/test_entry_timed_plan.py` holds each group's close-day plan step to its entries curve's
+step over the same day). Re-read on the pooled entries curves (the basket's are rebuilt on every
+run and not kept), the 24 September pages move from 1,449 to about 1,233 at close and from 1,667
+to about 1,957 by today (Warhol), and from 190 to about 161 and 405 to about 452 (Julian
+Schnabel); closed releases keep their figures and only their plan line changes shape. The genuine
+last-chance surge remains in the entries curve. Verified 2026-08-28: dropping each historical
+release's close day removes the units-curve jump entirely, proving it is allocation bookkeeping,
+not last-day demand; a historical secured-units curve is NOT reconstructable because the export
+retroactively reclassifies converted entries out of `*_No_Conv`. Two limits of the entries
+shape: private-room units sold before the announce have no entries to time them (the pooled
+curves hold no pre-announce share on any metric either), and on the day before an announce the
+plan interpolates part way to the announce-day burst on the 0.05 grid, further on entries than it
+did on units.
+
+**Curves were tier-blind, and that was deliberate (2026-08-29; the per-basket curves below
+replaced the one pooled shape).** The target sets a channel's LEVEL but
 every release shares one median SHAPE per display group. Tested 2026-08-29 with `etl/analysis/tier_curve_probe.py`:
 split the clean panel in half by each group's realised share, difference each group's curve
 against that release's own all-channel curve (so a release that simply ran early does not
@@ -1065,18 +1187,18 @@ budget over those days, and the paid block publishes `paidStartDays` and `paidDa
 cards (`paidDayFrac` in `web/src/ui.jsx`). Not the panel's historic paid shape, which starts
 near zero and told the Channels vs targets card there was nothing to expect on days when the
 Paid spend card, reading the even plan, showed the units bought. The organic groups keep their
-shape curves. The waterfall's Paid spend step (§9) measures spend to date against the same even
-share of the budget. (2026-09-23.)
+entry-timed shape curves. The waterfall's Paid spend step (§9) measures spend to date, today so
+far included, against the same even share of the budget. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
 intervention shown alongside, never baked into the projection.
 
-**Organic channels** - the remaining volume follows the channel's *historic shape curve*;
-its level scales with demonstrated performance, trusted in proportion to how much of the
-campaign the curve says has been observed:
+**Organic channels** - the remaining volume follows the channel's *historic shape curve*, the
+entry-timed one its plan reads (§5.3); its level scales with demonstrated performance, trusted in
+proportion to how much of the campaign the curve says has been observed:
 ```
-w        = curve_channel(pdsa_today)                 # share of campaign observed
+w        = curve(basket, group, "entries", pdsa_today)   # share of campaign observed
 r        = clamp(actual / expected, 0.25, 2.5)       # demonstrated performance
 proj     = actual + target × (1 − w) × (1 + w × (r − 1))
 path(d)  = actual + (proj − actual) × (curve(pdsa_d) − w) / (1 − w)   # shaped, not linear
@@ -1166,7 +1288,17 @@ table (§2.4), cut to one window of days.
   opening, else the announce), or the release's first paid order where that is earlier - an
   early private-room sale opens the window - but never more than 45 days before the announce
   (`EARLY_SALES_DAYS`); to two days after the close (`UNITS_GRACE_DAYS`, the winners paying
-  in the grace), or the as-of day while the launch is live. The funnel's sessions and entries
+  in the grace), or the as-of day while the launch is live. The close is the later of the
+  clock's and the day the draw ended, its last entry day in the draw feed (`sales_close`,
+  `release_products.json` draws' `last`, the allocation day on the launches checked), moved
+  21 days at most (`DRAW_END_MAX_DAYS`): the winners pay when the draw ends, and a clock that
+  closed first dropped their payments from every card (Jaume Plensa's UTOPIA, clock 29 July,
+  draw to 5 August: 61 of 218 units counted; Johnson Tsang's Alliance read as a 7-day
+  campaign that ran 22). An actuals page then closes with the draw - its length in the
+  sidebar, and the spend and sends it counts - and says so in `derived.dates_note`; a
+  targeted page keeps its typed plan and folds the payments into its close day. The build
+  warns when at least 10 units, and 10% of them with the window's own, are paid in the 14
+  days after a window shut (`late_paid_warning`). The funnel's sessions and entries
   are cut to the same days. Units paid outside the window count on no card; the snapshot
   says how many (`sellthrough.unitsOutsideWindow.{before, after, pending}`: before it
   opened, after it shut, and, while it is open, paid after the as-of day, which count on
@@ -1193,7 +1325,13 @@ table (§2.4), cut to one window of days.
   in the orders less 209 in the funnel). `check_snapshot` fails a build where the two part.
 - **Catalogue pages.** A catalogue page's 90 days are all in the orders feed, so a release it
   has no row for sold nothing in them (the funnel's purchase event there was an order with no
-  product line on it), rather than falling back to the funnel's count.
+  product line on it), rather than falling back to the funnel's count. A catalogue page is
+  never closed, so its secured units also keep only what belongs to its 90 days: the entries
+  of a draw whose last entry came before them leave the patterns (`entries_in_hand`: its
+  losers are not in hand, George Condo 2024 Q1 read 301 secured on nothing sold, Pejac 2024
+  Q3 471), and a product whose every draft was raised before them keeps no drafts
+  (`orders_in_window` `drafts_since`, on its last draft day: the feed dates a product's latest
+  draft, not each one, so a product with a draft inside the window keeps them all).
 - **Product rows.** A draw the orders feed does not name yet takes no sales of its own on an
   orders-sourced page (not the event feed's winners who bought, counted over all time on
   another basis), and nor does any draw when nothing at all was paid in the window; its units
@@ -1215,9 +1353,19 @@ table (§2.4), cut to one window of days.
   2025-01-01): `unitsSource` says which (`orders` or `funnel`), `salesWindow` gives
   `{start, end, closed, firstPaid}`, and `check_snapshot` fails a build where an
   orders-sourced page's `sellthrough.sold` is not `unitsPaidOrders`.
-- **Not moved.** The benchmark panel (`etl/release_clusters.py`, `etl/baskets.py`) still reads
-  the funnel's units for past releases; the reconciliation puts the difference at about 0.1%
-  of units on the tracked releases, and moving it is a follow-up.
+- **Not moved.** The benchmark panel (`etl/analysis/release_clusters.py`, `etl/baskets.py`)
+  still reads the funnel's units for past releases, and moving it to the orders feed is a
+  follow-up. The reconciliation's 0.1% is the order-level match on orders both feeds know since
+  2025-01-01; over the draw panel's windows the gap is 0.8% of units on launches since 2025 and
+  2% overall, most of it two 2023-24 draws whose purchase events carry every unit twice
+  (Johnson Tsang's Open the Right Mind, 196 units on an edition of 100, 98 in the orders feed;
+  Kaï's Content, 162 against 81). `baskets.load_panel` leaves out any launch past 1.5× its
+  edition or the orders feed's units over its window. The panel's channel split is only as
+  current as its last run: the feed moved some 10 to 15% of each launch's units from AA Email
+  to Referral Other on 24 September 2026, and the panel, last run on 10 September, did not
+  follow. The build warns when a closed page's units split is more than 0.05 from its own
+  panel row on any group, and when a launch the panel has in flight closed a settle period
+  (7 days) ago (README, "Re-running the benchmark panel").
 
 Sell-through is three things added up, per product:
 
@@ -1241,7 +1389,8 @@ uncapped demand is kept so an oversubscribed product stays visible as such.
 **Where the per-product data comes from.** A release runs **one draw per product**, so the
 event feed's `draw_id` is the product dimension (§2.2: exact against the multiset cap on 38 of
 38 releases with one or two draws; a re-run or a second wave adds a draw for the same product,
-which the Target setting tab merges by giving both draws the same name). Per draw entry
+and the two merge where both carry one name typed against their draw ids, `products: [{key:
+draw_id, name}]` in the release's inputs, which no page edits today). Per draw entry
 (entrant × draw) the flags fold with `any` as the export folds them:
 
 | state | definition | counts as |
@@ -1255,8 +1404,14 @@ which the Target setting tab merges by giving both draws the same name). Per dra
 release; empty means no cap. **Sold and drafts per product come from the orders feed** (§2.4):
 each draw is named with the Shopify product its winners bought, and a product whose draws are
 named takes that product's units paid as `sold`, its orders awaiting payment as `drafts`, the
-product title as its name where nobody typed one and its Airtable edition where none is typed
-(`attach_orders` in `etl/sellthrough.py`, the same rule in `shared/sellThrough.mjs`). A title
+product title as its name unless a name was typed against one of its draw ids, and its
+Airtable edition where none is typed (`attach_orders` in `etl/sellthrough.py`, the same rule in
+`shared/sellThrough.mjs`). A name typed with no draw id (the older hand-typed list) is handed
+out by position, which says nothing about which draw it meant, so it never stands over a title:
+it names only a draw the orders feed cannot place yet, and one that names a placed draw's
+product is left out (the names typed that way for Mondrian and James Jean, whose draws all
+opened on one day, had sat on each other's works). `check_snapshot` logs a warning, never a
+failure, for a row named for the product another draw sold. A title
 no draw names is added as a product of its own once every draw is named; before that it is
 ambiguous and its units stay at release level. Where a draw is not yet named (no winner has
 bought yet) sold per product falls back, on a funnel-sourced page, to the draw's winners who
@@ -1376,12 +1531,17 @@ print on the same units as the units column, so the asterisk's footnote covers b
 for a work with no frame on offer; the columns left out where the release has no framing
 option or the snapshot no forecast), and a bold Total row adding them up (the forecast's own
 totals, the rows' frames before rounding); then, in small type, the day the figures
-run to, the totals (paid, awaiting payment, expected from the draw, at close the units still
+run to (the page's `asOf`, "so far" while `asOfFraction` is under 1), the attribution when the
+page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still
 to come) and the two framing readings behind the table's figure (`framing.rate` on the paid
 prints with the count behind it, and the entrants' rate on their pre-authorised prints, the
 Framing card's two bars, §6.4; either alone where only one has anything to say; nothing on a
 snapshot without the block or where no print has a frame on offer; the plan's rate is not
-repeated) as plain sentences. The figures are computed once, on the server, at the horizon the page is on.
+repeated) as plain sentences. The figures are computed once, on the server, at the horizon the page is on
+and with its Direct switch (on Spread, from the snapshot with `variants.direct_spread` laid over
+it, as the cards read it). The notification's headline is the card's: the release's
+`sellthrough.edition` (the works' editions added up only when it has none) under both the
+percentage and the "of N units", at close the card's `sellthrough.pct`.
 
 **One row of the grid, whatever the count.** The rows have a fixed 196px of the card; the
 pitch is that shared by the count, capped at 60px, and the bar is half the pitch (seven
@@ -1403,11 +1563,18 @@ crowded the one reading it is for, each product against its own edition. The car
 prose either; the allocation's account is in the draw-winners key's popup, the split of
 unattributed sales in the paid key's, and the editions are checked on the Target setting tab.
 
-**Products and editions** are typed on the Target setting tab (`products:
-[{key: draw_id, name, edition}]`; `productsFromDraws`): one row per draw the feed found, a
-name (draws sharing a name merge), an edition. A single product with no edition takes the
+**Products and editions.** One row per draw the feed found (`productsFromDraws`), named by
+the Shopify title its winners bought and sized by the Airtable record of that title (§2.4,
+`attach_orders`). A name or an edition typed against the draw id (`products: [{key: draw_id,
+name, edition}]` in the release's inputs) stands over those, and draws sharing a typed name
+merge. The Target setting tab no longer lists the draws: these are typed into the release's
+inputs, `etl/release_inputs.json`, or `data/inputs.saved.json` (`SAVED_INPUTS_PATH`) once the
+release has been saved on the tab, since that record then stands in for the repo's; the tab
+sends them back as they came. A single product with no edition takes the
 release's; with several products the card runs on units and says so until every product has
-one, and it flags editions that do not add up to the release's. `entry_conversion_rate`
+one, and it flags editions that do not add up to the release's (`sellthrough.editionMismatch`:
+an amber "editions add to N" beside the card's title, and a note on the Target setting tab,
+which leave the figures as they are until one of the two is corrected). `entry_conversion_rate`
 (optional, per release) is the rate the prediction converts entries in hand at, and the rate
 the whole page runs on: the secured-units currency, the paid model's converting entries and
 the targets' eligible entries (§6.3½).
@@ -1513,6 +1680,9 @@ adjCPE(day)     = spend(day) / (entries(day) × (1 − drop_off))          # cos
 ROI_party(day)  = (1 − cannibalisation) × profit_per_unit_party / (adjCPE × budget_share_party)
 cum versions    = same on Σ spend / Σ entries
 ```
+The paid block publishes the adjusted figures: `l3dCpe` (the last three full days) and
+`cumCpe` (every full day) are spend over the entries that become orders, entries × (1 −
+drop_off), so the cards label them per converting entry, 1.25× plain spend per entry at 0.2.
 Spend is Meta's, billed in euros: `load_spend` converts it once to euros at the fixed
 `RATES_TO_EUR` rate (`SPEND_CURRENCY`, `spendCurrency` and `spendRate` on the paid block), so every
 spend, cost per entry, budget and ROI figure on the page is euros. `cannibalisation` is the
@@ -1538,7 +1708,10 @@ can show its working in the ? popup. The card reads AA by default and has an AA 
 paid group's secured units (§6.3½: units sold + 0.8 × unconverted entries, every paid channel),
 the paid column of the channels card, so the Paid spend card's bar and that column are one
 figure; `entriesToDate` and `entriesProjected` stay the paid campaign's draw entries, the
-quantity the CPE and the ROI are priced on. `daily[]` runs over the full days the rules read;
+quantity the CPE and the ROI are priced on. At close, `spendProjectedTotal` is `spendToDate`
+(today so far included) plus the last full day's spend over the full days after today and the
+share of today still to come, and `entriesProjected` is `entriesToDate` plus the entries that
+spend buys on the same days, so neither reads below its figure to date. `daily[]` runs over the full days the rules read;
 on a live day the as-of day so far rides at the end as one more row marked `partial: true`
 (its spend and entries, no ROI point), so the Paid ROI chart's bars sum to `spendToDate` and
 the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip that row.
@@ -1548,24 +1721,38 @@ the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip 
 organic projection (§5.4), so paid is sized to top up only the gap organic is
 not on course to fill:
 ```
-secured_now      = units_sold_total + 0.8 × entries_banked    # all channels
-organic_future   = Σ over organic groups of (proj − now)      # §5.4 projection
-sellout_gap      = max(edition_size − secured_now − organic_future, 0)
-cpe(d, s)        = cpe_window × (s / spend_window)^eps × ((K + C_d) / (K + C_window))^w
-                   # C_d = spent before day d at a flat s from today; see the cost terms below
-supply_spend     = s where Σ over the days left of s / cpe(d, s) = sellout_gap
-roi_spend        = s where cpe(close, s) = the price at the ROI floor
-budget_to_sellout= supply_spend × days_left
-ROI_check_party  = (1 − cannibalisation) × profit_per_unit_party / (cpe(close, s) × budget_share_party)
+secured_now       = units paid + draft orders + the draw's expected orders, work by work, capped at the edition   # the hero's secured units (§6.3½)
+organic_future    = Σ over organic groups of (proj − now)       # §5.4 projection
+sellout_gap       = max(edition_size − secured_now − organic_future, 0)
+entries_needed    = sellout_gap / (1 − drop_off)                # every unit asked for as an entry at the rate
+cpe(d, s)         = cpe_window × (s / spend_window)^eps × ((K + C_d) / (K + C_window))^w
+                    # C_d = spent before day d at a flat s from today; see the cost terms below
+supply_spend      = s where Σ over the days left of s / cpe(d, s) = sellout_gap
+budget_to_sellout = supply_spend × days_left
+cpe_max           = (1 − cannibalisation) × profit_per_unit_AA / (roi_floor × budget_share_AA)
+roi_spend         = s where cpe(close, s) = cpe_max
+recommended       = min(supply_spend, roi_spend), then the pacing rules below
+ROI_close_party   = (1 − cannibalisation) × profit_per_unit_party / (cpe(close, recommended) × budget_share_party)
 ```
+`cpe_now` is the trailing-3-day adjusted CPE and `s_now` the last full day's spend;
+`supply_spend` is the daily spend whose entries fill the gap by the close, `roi_spend` the one
+whose ROI at close is the floor, and `eps` and `drift` are the campaign's own
+(`campaign_cost_terms`, below). With `eps` 0, or no spend on the last full day, the price is
+flat in spend: `supply_spend = sellout_gap × cpe_now / Σ_t (1 + drift)^−t`, and the floor
+either never binds or stops the spend. The gap is priced in converting units at the adjusted
+CPE, which is the same money as `entries_needed` at the raw cost per entry. `paid.budget` publishes `selloutGap`, `organicFuture`, `entriesNeeded`,
+`supplySpend`, `budgetToSellOut`, `roiSpend`, `cpeNow`, `cpeAtClose`, `cpeAtRecommended`,
+`driftToClose` and `finalDayRoi` (AA's; the artist's is `paid.artist.finalDayRoi`).
 A launch pacing well ahead organically reads a recommendation of €0/day -
 nothing extra is needed to secure sell-out, whatever the current ROI.
 
 **Pacing rules** (v1 rules engine; target and thresholds):
-- Target ROI (AA) = **1.1** (last-day forecast).
+- Target ROI (AA) = **1.1**: the Paid ROI card's target (`roiTarget`) and the forced-decrease
+  test below. The floor the recommendation stops at is `roi_floor` **1.0**, on the ROI at close.
 - Daily direction: cum-ROI < 0.9 → Decrease; 0.9–1.3 → Maintain; > 1.3 → Increase.
-- Daily spend change capped at **±30%**; changes ≤ 10% are ignored (0%).
-- Downside protection: forecast ROI < 1.1 for **3 consecutive days → forced Decrease**.
+- Daily spend change capped at **±30%**; changes under 10% are ignored (0%).
+- Downside protection: the trailing 3-day ROI (`daily[].roi`, the chart's line) below 1.1 on
+  each of the last **3 full days → forced Decrease**.
 - Cost per entry is not flat: it rises as the campaign's **spend adds up**, and a little with
   the **day's budget**. One cost path (`CostPath` in `etl/build.py`) prices every future day, at
   a flat daily spend s, as
@@ -1579,7 +1766,8 @@ nothing extra is needed to secure sell-out, whatever the current ROI.
   w × log(1 + spent before / K)`, the regression the panel priors come from, days with no entry
   included), then shrunk to the priors together through their joint covariance
   (`campaign_cost_terms`; published as `budget.elasticity`, `budget.wearout`, `budget.wearoutK`,
-  `budget.spentSoFar`, `budget.wearToClose` and `budget.costTerms`). A campaign that ramps its
+  `budget.spentSoFar`, `budget.wearToClose` and `budget.costTerms`, with the anchor as
+  `budget.spendAtWindow` and `budget.spentAtWindow`, so the path can be rebuilt from the block). A campaign that ramps its
   budget as it goes cannot tell a bigger day from more spend so far - Warhol's own days put the
   two at −0.8 correlation - and the joint shrink moves the pair towards the panel along the line
   its data cannot pin down. The priors are `cpe_wearout` 0.22 ± 0.18, `cpe_wearout_k` €100 and
@@ -1595,9 +1783,17 @@ nothing extra is needed to secure sell-out, whatever the current ROI.
 This maps 1:1 onto the design's Paid module contract:
 `roiDeclineModel = { start: today's actual ROI, dailyFactor }` (dailyFactor: the path's average fall a day,
 `(1 / wearToClose)^(1 / days left)`; the card draws `roiPath` and uses the factor only for a snapshot without one);
-`recommended = min(spend at ROI floor, spend at supply cap)`, `cap ∈ {roi_floor, supply}` -
-supply cap = the budget-to-sell-out logic (spending beyond it buys entries exceeding the units
-left); ROI floor = 1.0/1.1 last-day forecast rule.
+`recommended = min(spend at ROI floor, spend at supply
+cap)`, then paced by the rules above, and `cap` names what bound it: `supply` or `roi_floor` (the
+lower of the two stood), `pacing` (the +30% a day ceiling when the band says increase),
+`roi_band_hold`, `roi_band_decrease`, `forced_decrease`, `plan_rate` (no spend yet to price
+from: the first day runs at the plan's daily rate), `zero_conversion` (the last day spent and
+bought no entries: −30%), `zero_conversion_pause` (three such days: 0) or `hold_small_change` (a
+move under 10%); `paced` marks a cut held to 30% a day. A floor no daily spend can meet (the
+path's price at the close is past it however small the day, `roiSpend` 0) is cut towards the
+same way, never stopped overnight; only a gap already filled stops paid at once (`supply`, 0). Supply cap = the budget-to-sell-out
+logic (spending beyond it buys entries exceeding the units left); ROI floor = the spend at which
+the ROI at close ends on `roi_floor` (1.0).
 
 ---
 
@@ -1614,6 +1810,22 @@ Reference rates for the funnel module: use the release's own campaign sends vs t
 median for the same send type. ⚠ Bundle sends (`FREQ_LE_Bundle`) promote 2–3 releases and cannot
 be attributed to one release.
 
+**Whose sends, and graded against whom.** A release's email block counts the sends carrying its
+campaign code from the day its window opens (§6.3), or from the day after an earlier launch by
+the same artist closed when that is later: sends join by code alone, and an artist's launches
+can carry one code between them (Zeng Fanzhi's July Rainbow sends were tagged with the LE's).
+The reference rates (open, clicks per open, sessions per click) and the delivered fallback are
+the medians of completed draw launches, read for each release **without its own sends and
+without the launches that closed after it** (left out by id, name and campaign code): the email
+form of "a release is never a member of its own benchmark" (§4a.2). A live release reads the
+whole cohort, every launch in it having closed before today.
+
+**The Direct switch leaves the email plan alone.** The sends the plan asks for are read on AA
+Email's sessions as the funnel attributes them, and the Spread view's
+`benchmarks.emailSessionsPerClickRef` carries the spread's share of the basket's email sessions,
+so the chain still multiplies out to the plan's sessions and the sessions-per-click rung reads
+spread against spread.
+
 ### Social content (Emplifi)
 Post/story-level per platform (instagram 90%, twitter/X since 2025-08). Join via Labels →
 campaign code. Useful metrics: impressions, reach, engagements (+ rates, verified =
@@ -1621,6 +1833,11 @@ engagements/impressions and /reach), saves (posts), story views/exits/taps/compl
 views. Two owned profiles (Avant Arte ~2.9M followers; Avant Insiders ~74k) - normalise
 per-1000-followers separately. Funnel-module rungs "Posts" and "Sessions/post" = count of posts
 for the campaign in the window; sessions from the funnel feed ÷ posts.
+The export is regenerated by hand, so a count from it says how far it reaches
+(`social_block`): `social.postsThrough` is the export's last day, `postsEndsFirst` that it
+stops before the release's window (the AA Meta Posts rung then shows a dash, not a zero) and
+`postsPartial` that it stops inside it (the rung reads "Posts to 13 Aug"). A count from the
+Notion log is read live and carries neither (`postsThrough` null).
 
 ---
 
@@ -1640,11 +1857,11 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | | actual line | daily cumulative actuals |
 | | projection | linear from today's actual to projected-at-close |
 | Channels vs targets | per group | now / expected / projected / target per display group (§1.3) |
-| Funnel by channel | rungs | email: Delivered/Open/Click vs reference; social: posts, sessions/post; all: session → entry vs benchmark (§4B); paid: spend & cost/entry vs plan |
+| Funnel by channel | rungs | email: Delivered/Open/Click vs reference; social: posts, sessions/post; all: session → sale (units secured per session; session → buyer where units per buyer differ from the plan's) vs benchmark (§4B), the rate the Organic funnel's low rung reads for the four organic channels together; paid: spend & cost/entry vs plan |
 | | contribution | units vs expected, repriced one-at-a-time; per-channel contributions sum to that channel's gap |
 | Key drivers | top movers | rank funnel steps by |contribution|, Adding vs Costing |
 | Paid ROI | series | §7 daily ROI (AA); decline model start = today's ROI |
-| Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), `cap` recorded; Implement → append-only decision log |
+| Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), paced by the spend rules, `cap` naming the rule that bound it; Implement → append-only decision log |
 | Sell-through by product | rows | §6.3: per product sold / entries in hand allocated by the maximum-quantity rule × the entry → order rate / (at close) units still to come, against the product's edition; no target or benchmark drawn |
 | Entries by country | top 5 | geo split of entries (requires country dim in the daily feed - **currently missing; needs adding to the BigQuery export**) |
 | Framing | buyers, entrants | §6.4: frames per print on the prints a frame was on offer for, paid orders and the app's pre-authorisation drafts, against the plan's frame conversion and the basket's median |
@@ -1707,25 +1924,25 @@ actuals-only page omits it.
 | `benchmark.k` | the even uplift K |
 | `benchmark.stretchUnits`, `stretchPct` | `target − benchmark` in units, and `K − 1` |
 | `asOf`, `completeThrough`, `asOfFraction` | the newest day in the feed (today, part-observed, while the feed is live), the last full day, and the share of the as-of day seen (1 on a full day and once the window has closed). The actuals run through `asOf`; the paid pacing rules, the run rates and `complete` read `completeThrough`; every reference by today is read at the share, so the page compares the day so far with the same share of the basket's day |
-| `benchmark.unitsByGroup`, `sessionsByGroup`, `convByGroup` | the per-group medians (conversion is held, so `convByGroup` is both benchmark and target) |
-| `benchmark.paidBudget` | benchmark paid units × the cost per purchase in force × K |
-| `benchmark.costPerPurchase`, `costPerPurchaseN` | the basket's median cost per paid unit (0 when fewer than three members have a reading, and the panel constant prices the budget) and the members with one (§4 E) |
+| `benchmark.unitsByGroup`, `sessionsByGroup`, `convByGroup` | the per-group medians. The conversion held is `unitsByGroup / sessionsByGroup` (session → unit), the rate `funnelByGroup.conv_benchmark` carries and the Target setting tab's `Session → unit (held)` column shows; `convByGroup` is the basket's median session → eligible entry rate (`conv_sess_entry`), descriptive only - no target is read from it |
+| `benchmark.paidBudget` | benchmark paid units × the cost per purchase in force: the basket's own budget, unscaled, the same figure as `paid.benchmarkBudget`. The target's budget, × K, is `targets.paid.budget` (§4a.3) |
+| `benchmark.costPerPurchase`, `costPerPurchaseN` | the basket's median cost per paid unit (0 when fewer than three members have a reading, and the panel constant prices the budget; 6 dp, the precision the Target setting tab prices the budget at) and the members with one (§4 E) |
 | `targets.paid.cost_per_purchase`, `cost_per_purchase_source` | the price a paid unit is planned at and where it came from: `release`, `basket` or `panel` |
 | `benchmark.channelsOff` | the display groups this release set aside (BENCHMARK_SPEC §4.3); their medians are zero above and the other channels carry the target |
-| `benchmark.unitsAll`, `sessionsAll`, `entriesAll`, `unitsP25All`, `unitsP75All`, `unitsByGroupAll`, `sessionsByGroupAll`, `convByGroupAll` | the basket's full medians before any channel was set aside, so the page can say what left and the browser can re-read the basket as the switches move |
+| `benchmark.unitsAll`, `sessionsAll`, `entriesAll`, `unitsP25All`, `unitsP75All`, `unitsByGroupAll`, `sessionsByGroupAll`, `convByGroupAll` | the basket's full medians before any channel was set aside, so the page can say what left and the browser can re-read the basket as the switches move; at the build's precision (6 dp, as `costPerPurchase`), so the Target setting tab rebuilds `targets.paid.budget` and `paidBudget` to the cent with nothing edited |
 | `benchmark.privateRoomShare` | the basket's median private-room share of email units - descriptive; nothing derives a target from it since the split went (§3) |
-| `hero.benchmark`, `benchmarkToday`, `stretch` | benchmark at close, benchmark pace to today, the stretch |
+| `hero.benchmark`, `benchmarkToday`, `stretch` | benchmark at close, benchmark pace to today, the stretch; the benchmarks in whole units rounded from their one-decimal figure a half away from zero, as the page prints `benchmark.units` (132.5 is 133), and the stretch the printed target less the printed benchmark; `waterfall.benchmark` and `today.benchmark` are the same figures |
 | `channels[].bm`, `bmExp` | per group: benchmark at close, benchmark by today |
 | `channels[].daily[].bm` | the benchmark plan for that day, beside `actual` / `plan` / `proj` |
 | `funnelByGroup[g].sessions_benchmark`, `conv_benchmark` | the basket's sessions by today (the sessions rung's reference) and its conversion at close (the conversion rung's fallback on a snapshot without `conv_benchmark_today`) |
 | `funnelByGroup[g].conv_benchmark_today`, `contrib_traffic_bm`, `contrib_conversion_bm`, `contrib_buyers_bm`, `contrib_per_buyer_bm` | the same three-factor decomposition against the basket's pace by today, summing to the group's actual − its benchmark today; the waterfalls' walk from the benchmark, and the conversion rungs' reference (Funnel by channel, Organic funnel), so a rung and the step beside it read the same figure |
-| `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median |
+| `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median. Read on the sessions as the funnel attributes them, so the same in both Direct views (§8) |
 | `sellthrough.benchmarkUnits` | the benchmark on the sell-through prediction |
 | `sellthrough.conversion`, `inHandUnits` | the entry → order rate the prediction runs at, and the entries in hand before it (§6.3) |
 | `sellthrough.products[]` | per product: `key`, `name`, `draws`, `edition`, `sold`, `drafts`, `entrants`, `inHand.{open, won}`, `allocated`, `pinned`, `fixed`, `flexible`, `predicted`, `shown`, `room`, `oversubscribed`, `futurePredicted`, `pct`, `pctClose`, `expectedToday`, `benchmarkToday`, `benchmarkClose` (§6.3) |
 | `sellthrough.attributedSold`, `unattributedSold`, `soldSource` | sold units the draw feed named a product for, the rest, and whether products' sales came from tagged purchases or from winners who bought |
 | `sellthrough.drafts`, `unitsPaidOrders`, `ordersAsOf`, `incomplete` | orders awaiting payment and units paid across the release from the orders feed (over the window when `unitsSource` is `orders`, then equal to `sold`), the last order or draft day they run to (absent without the feed), and what the card is still waiting on: the list behind its Incomplete data stamp (§6.3) |
-| `unitsSource`, `salesWindow` | `orders` or `funnel`: where the page's units sold came from; `{start, end, closed, firstPaid}`: the days every card counts sales over, whether the window has shut (close + 2 days), and the first paid order inside the 45-day floor (§6.3) |
+| `unitsSource`, `salesWindow` | `orders` or `funnel`: where the page's units sold came from; `{start, end, closed, firstPaid}`: the days every card counts sales over, whether the window has shut (close + 2 days), and the first paid order inside the 45-day floor (§6.3). Every targeted page this build writes carries both, so `check_snapshot` warns of one without them (a page from an older ETL), and of a shut window whose sell-through still counts drafts, draw winners, entries in hand or to come, or entry patterns (`stale_build_warnings`: printed, never a stop; `tests/test_committed_snapshots.py` runs the checks over the committed pages) |
 | `sellthrough.unitsOutsideWindow` | `{before, after, pending}`: units paid before the window opened and after it shut, counted on no card, and units paid after the as-of day while it is open, which count on the next build (present when `unitsSource` is `orders`) |
 | `untracked.noEvent` | `{count, total, share, high}`: the window's paid units with no purchase event, which count on Untracked; `high` shows the banner (§1.3) |
 | `framing` | `{prints, frames, rate, entrants: {prints, frames, rate} or null, plan, benchmark: {rate, n, of} or null, works: [...], notOffered: {units, works}, asOf}` - frames per print for the Framing card (§6.4); null when nothing on the release has been offered a frame |
@@ -1735,6 +1952,7 @@ actuals-only page omits it.
 | `sellthrough.draws`, `patterns` | the draw feed as reduced by `products_file`, so a save re-runs the rule on the server without the feed |
 | `paid.benchmarkUnits`, `benchmarkBudget` | the paid module's two benchmark marks |
 | `waterfall.benchmark`, `stretch`, `target`, `projection` | the at-close waterfall's left-hand columns; `steps` are unchanged and `stepsBm` are the same four contributors against the basket, summing to `projection − benchmark` |
+| `waterfall.closeScale`, `closeScaleBm` | the factor the at-close `steps` (`stepsBm`) are the steps to date times; null where they are copied (a closed release) or where the rest of the gap is shared out by size (below) |
 | `waterfall.today` | `{benchmark, stretch, target, actual, steps, stepsBm}` - the same four contributors measured **to date**, against the target and against the basket |
 
 `waterfall.today.steps` are not the close steps scaled down: they are the contributions as
@@ -1742,6 +1960,13 @@ measured so far, and they must sum exactly to `actual − target`, with the roun
 parked on the largest step, exactly as the close steps do (§9, "Projection vs target");
 `stepsBm` the same against `benchmark`, which is the walk the cards draw once the stretch has
 been set aside.
+At close, a release that has closed has nothing left to project, so its `steps` and `stepsBm`
+are its steps to date, copied. A live release's are its steps to date scaled by one factor,
+the close gap over the to-date gap, both unrounded (`closeScale`, `closeScaleBm`); where the
+to-date gap is under half a unit, or the factor is negative or above 3, a factor would turn
+rounding into bars or flip every sign, so the part of the gap still to come is shared over
+the steps to date in proportion to their size instead (the same walk as the factor's when they
+all point one way).
 `hero.benchmarkToday` and `channels[].bmExp` are read off the basket curve at today's pdsa
 (§5.3), which is what keeps the K identity of §4a.4 true today as well as at close.
 
@@ -1795,6 +2020,12 @@ Model bugs found in the sheet (the rebuild should implement the *intent*):
     eligible entrants, and shrinks as winners are allocated; `Collectors_Eligible_Entries` is the
     people count and `Draw_Entries_Eligible_Units` the units (§2.2). Check which column the
     workbook's eligible-entry benchmarks read.
+24. Airtable's Announce Date is 2025-04-17 on 41 launch records of 2023-24 (launch dates
+    2023-12-07..2024-09-18), a bulk fill later than every one of those launches, and it flows
+    into the LE Funnel Report's campaign clock (`announcement_date`, `days_since_announcement`)
+    for 29 releases. The ETL treats an announce on or after its own close as absent (§1.5).
+    Fix upstream: clear or correct the field on those records, and have the report's clock
+    ignore an announcement date later than the launch date.
 
 ---
 
@@ -1804,11 +2035,13 @@ Since 2026-09-28 the forward price runs on the campaign's spend so far (§7): th
 described below is retired, and `cpe_spend_elasticity`, refitted beside the wear-out, is 0.09.
 What follows is how the recommendation came to be priced at all.
 
-`cpe_spend_elasticity` (0.38 at the time) is the within-campaign elasticity of cost per entry to daily
-spend, fitted on the 13 campaigns where daily Meta spend joins to daily paid entries
-(`etl/analysis/cpe_elasticity.py`; 170 campaign-days; campaign fixed effects; a day-drift
-term absorbs the time trend, which came out at 0.4%/day ± 1.1 against the workbook's
-5/7/10% tiers). Before it, the recommendation priced every extra entry at today's cost per
+`cpe_spend_elasticity` (0.38 ± 0.19 at the time) was the panel's prior for the within-campaign
+elasticity of cost per entry to daily spend, fitted with campaign fixed effects and a calendar-day
+drift term on the 29 campaigns and 433 campaign-days where daily Meta spend joins to daily paid
+entries (`etl/analysis/cpe_elasticity.py`, 2026-09-23; the first fit, on 13 campaigns and 170
+days on 2026-09-07, gave 0.38 as well). Each campaign's own elasticity and drift were fitted from
+its days and shrunk to the priors by precision. Before the
+elasticity was modelled, the recommendation priced every extra entry at today's cost per
 entry and the ROI floor could never bind (flat price → ROI independent of spend), so a
 release a long way from sell-out was told to multiply its daily budget fifty-fold. The
 workbook's pacing rules (`spend_rules`: ±30%/day, the 0.9/1.3 cumulative-ROI bands, the
@@ -1826,9 +2059,11 @@ projection could head under 1 while the floor passed. The daily tiers are the co
 the workbook's own spend path (row 229 ramps 6-10% a day; at elasticity 0.38 that is 3.5-5%
 a day of cost rise on its own), so with elasticity modelled they double count; applied
 consistently they told a campaign at cumulative ROI 3.5 to cut. `spend_rules.
-cpe_daily_drift_by_third` then became the pure time effect, 0.5% a day (measured 0.36 ± 1.12;
-`etl/analysis/cpe_elasticity.py`), later 2.5%, until the spend-so-far curve replaced it; the
-workbook values sit in `cpe_daily_drift_by_third_workbook`. The workbook's own template, note, produces the same
+cpe_daily_drift_by_third` then became the prior for the pure time effect: 0.5% a day from the first
+fit (0.36 ± 1.12 on 13 campaigns), then 2.5% a day ± 3.5 from the 2026-09-23 fit on 29, each
+campaign's own fitted drift shrunk to it and clamped to 0-10% a day, until the spend-so-far curve
+replaced it on 2026-09-28; the workbook values sit in `cpe_daily_drift_by_third_workbook`. The
+workbook's own template, note, produces the same
 runaway "expected daily spend" the first version of this card did (Warhol_LE_26 row 229:
 €181k-256k a day; Dali_LE_26 row 231 suggests €3.7k-10.9k a day against €1.5k spent) and
 tames it with a "max increase per day 2.0" rule rather than a price that responds to spend.
@@ -1847,8 +2082,26 @@ The zero-conversion rules are now applied (`zero_conversion_decrease`,
 
 The build enumerates every `simple_release_name` in the funnel data and derives a record
 per release (`discover_releases`): id (slug of the name), artist / title / quarter (the name
-is always `Artist · Title · YYYY Qn`), dates from the campaign clock (§1.5), a campaign code
-guessed from the email and content feeds, and traffic totals. Releases with target inputs on
+is always `Artist · Title · YYYY Qn`), dates from the campaign clock (§1.5), a campaign code,
+and traffic totals. The code is the one the release's orders carry, else its matched Airtable
+launch's, taken when exactly one code the sends, posts, inputs or Meta names use is that code
+and in their spelling (`source_campaign_codes`, `code_source` `orders` or `airtable`, on the
+page as `derived.campaign_code_source`, which the No targets card prints); a code
+the orders give several releases, or a launch several releases matched, is a group show's and
+nobody's (`Multiple_Amphorae_24`). Only then is it guessed from the email and content feeds
+(`guess_code`, `code_source` `guess`), which rejects a code carrying the planning year
+(`JeffKoons_LE_25` on a 2026 Q1 launch) or a stub that is not the artist's name: 24 pages had
+no code while their orders named it (EUR 121,761 of draw spend and 1.38m emails delivered on
+no page, September 2026). A guess that names another code than the orders stays and the build
+says so (Eddie Martinez's Scaffold sends are `EDDIE_SCAFFOLD_24`, its orders and Meta
+`EddieMart_Scaffold_24`), and the build warns of a Meta draw campaign the orders tie to one
+release on file that no page claims (`unclaimed_draw_campaigns`). The name is the export's own
+and the join key, so its quarter stands even where the campaign closes in another; the build
+prints that and keeps it as the release's `dates_note` ("the name says 2027 Q1, but the
+campaign closes 2026-10-15 (2026 Q4)"), for the name to be corrected upstream, and the
+sidebar's tooltip shows the quarter it closes in beside the name's. Every sidebar row, a
+targeted one too, carries the quarter, the sessions in its window and the last day it was
+seen. Releases with target inputs on
 file take the full build (§5-§9); the rest take an actuals-only build (`build_actuals`) that
 emits the same snapshot shape with every target-derived field `null` and `targeted: false`.
 

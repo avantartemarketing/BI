@@ -108,9 +108,15 @@ The ETL builds a page for **every** release the funnel data mentions (`discover_
   means, so there is no key under the list. Every other release is reachable from the
   search box (artist, title, quarter, id), on the same row with the date it closed. A
   closed or catalogue release you pick stays pinned under **Viewing** while selected.
-- **Campaign codes** for unconfigured releases are guessed from the codes the email and
-  content feeds use (`AntonyMic_LE_26`), by artist and year; a guess is only taken when it
-  is unambiguous, is labelled as a guess, and can be corrected in Target setting. The code's
+- **Campaign codes** for unconfigured releases come from the release's own orders (the code
+  its order lines carry, `orders_by_product.csv`), else from the Airtable launch it matched,
+  when exactly one code the feeds use is that code, in the feeds' spelling
+  (`source_campaign_codes`); a code the orders give several releases (a group show such as
+  `Multiple_Amphorae_24`) is left off every page. Only where neither names one are they
+  guessed from the codes the email and content feeds use (`AntonyMic_LE_26`), by artist and
+  year; a guess is only taken when it is unambiguous. The page labels the code with where it
+  came from, and it can be corrected in Target setting. The build warns of a Meta draw
+  campaign the orders tie to one release that no page claims. The code's
   middle segment is not treated as a release type - every release in the LE export is an LE,
   whatever the feed tagged it (the content feed tags Warhol's 2026 LE `AndyWarhol_TL_26`).
 
@@ -276,7 +282,8 @@ docs/DATA_MODEL.md §2.2, reconciles the rebuild against the export column by co
 (`data/app/reconciliation.json`, and the verdict in the refresh status), and writes
 `data/app/release_people.csv`: per release, unique entrants and buyers, returning collectors
 and overlap with the artist's previous releases. It also fills in the campaign clock for the
-releases the upstream feed has no dates for (upstream dates always win; otherwise the first
+releases the upstream feed has no dates for (upstream dates always win, but an announce on or
+after the release's own close is a placeholder and is inferred; otherwise the first
 big traffic spike or the day the draw opens, and the allocation day - docs §1.5), recorded
 in `data/app/release_windows.csv`, which takes the across-time curve panel from 24 campaigns
 to 96. The build reads the rebuilt file
@@ -300,6 +307,31 @@ upstream table carries announcement dates for the back catalogue (data-quality i
 so there is no rush to reach for it. If the process is ever OOM-killed mid-refresh the
 symptom is the whole app going 502 for a moment and the header reading **Source status
 unknown** afterwards; shorten `BQ_SINCE`.
+
+### Re-running the benchmark panel
+
+The panel the baskets are cut from (`data/release_clusters.csv`, with
+`data/release_cluster_baskets.json`) is written by `etl/analysis/release_clusters.py`, by hand:
+the hourly refresh never runs it, and the pages read it as committed. Each run writes the channel
+attribution it read and the day it ran on every row (`attribution_basis`, `attribution_through`,
+`panel_built`), and each launch's Direct share of its group, which the Direct switch reads. The
+build warns in its log (`panel: ...`, never stopping the refresh) when a closed page's units split
+is more than 0.05 from its own panel row on any group - the feed's attribution has moved since the
+panel was read - and when a launch the panel has "in flight" closed at least 7 days ago. Either
+means a re-run is due. It needs:
+
+- BigQuery with a full pull reaching back to the panel's start:
+  `BQ_SINCE=2023-01-01 node server/bigquery.js --write --full` (the default `BQ_SINCE` of
+  2025-01-01 would leave out every launch before 2025, as "window starts before the export");
+- a local Python with scikit-learn and scipy besides pandas (Render's has pandas only), then
+  `python3 etl/analysis/release_clusters.py` from the repo root, which also re-attaches the
+  Airtable pricing;
+- a look at the cluster names, which are attached by rank (docs/RELEASE_CLUSTERS.md §8, item 4),
+  and at the launches it now settles or leaves out;
+- committing the two files; the next refresh rebuilds every page and the picker's candidates.
+
+A re-run lets a closed release's basket take in launches that closed after it (on the September
+2026 panel, James Jean, Mondrian and Zeng Fanzhi would move), so decide first whether it should.
 
 ### Google Sheet (fallback; `server/sheets.js`)
 
@@ -333,13 +365,17 @@ HubSpot campaign name is the release's campaign code, when the code appears in t
 email or campaign name, or when an `Artist_Type_YY` token in either names the same
 artist and year as exactly one known code (so `AndyWarhol_LE_26` sends join the
 `AndyWarhol_TL_26` Meta code); known codes are every configured, saved and discovered
-release. The GEN/CUS/INS send-type filter still reads the name convention. The
+release. That join never folds a code some feed already uses (the sends' Campaign column,
+the Meta campaigns, the content feed's `campaign_code`) into a sibling: it is that campaign's
+own (`ZengFanzhi_TL_26`, the Rainbow launch, is not `ZengFanzhi_LE_26`). The GEN/CUS/INS
+send-type filter still reads the name convention. The
 `emails` field of `/api/refresh/status` says, per targeted release, how many sends in
 the last 60 days joined it and lists the recent sends that joined nothing - the first
 place to look when a release's email rows are blank. The email references are
 recomputed from that file at every refresh: open rate, click rate, clicks per open and
 sessions per click (AA Email sessions over tracked clicks) as the median pooled rate
-across completed draw launches of the last 24 months (configured and discovered). The
+across completed draw launches of the last 24 months (configured and discovered), each
+release's read without its own sends and without the launches that closed after it. The
 delivered target is the sends the release's own AA Email sessions plan implies by today
 at those rates, so a release sending to a small list is judged against a volume that fits
 it, and the benchmark's sends are the same at the basket's pace (the waterfall's walk from
@@ -396,7 +432,11 @@ in that release's window, so campaigns that ran before the log existed keep the 
 they have. Notion records a row per post and no format, so a Notion count goes to
 `posts` with `stories` at zero; `impressions` and `engagements` stay on the export, and
 nothing reads them today. `social.postsSource` on the snapshot says which source a
-release used.
+release used. A count from the export says how far the export reaches
+(`social.postsThrough`, its last day): where it stops before the release's window the AA Meta
+Posts rung shows a dash rather than a zero, and where it stops inside the window the rung
+reads "Posts to 13 Aug". Setting `NOTION_TOKEN` on the deploy (or regenerating the export)
+is what brings the count up to date.
 
 **Manual (local):** drop the source exports into `sources/` (file names in `etl/*.py`
 headers), then:
@@ -520,8 +560,9 @@ Framing card's headline; a dash for a work with no frame on offer; the two colum
 out on a release without a framing option), and a bold **Total** row adding them up (the
 framed units before rounding, so the Total is the card's own figure), the Work column
 wrapping rather than cropping and the figures right-aligned (Slack's `data_table` block takes
-no column settings and cut the names off); then, in small type, the day the figures run to,
-the totals (paid, awaiting payment, expected from the draw, at close the units still to come)
+no column settings and cut the names off); then, in small type, the day the figures run to
+(the page's as-of day, "so far" while that day is only partly in), the attribution when the
+page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still to come)
 and the two framing readings behind the table's figure in plain sentences, and last the
 footnote both asterisked columns point to: paid units, drafts and the forecast conversions
 from draw entries. The figures in the table are numbers with their words, so a column
@@ -529,7 +570,10 @@ sorts as numbers on a tap; the header row is plain text, as Slack requires. A wo
 is the one typed for it on the Target setting tab when targets are set per product, else
 the release's target split by edition share, the rule the card's references follow. The
 message is composed on the server (`server/slack.js`) from the same snapshot the card
-reads, by the card's own rules, at the horizon the page is on. It replaced a picture of
+reads, by the card's own rules, at the horizon the page is on and with its Direct switch: on
+Spread the button sends `directSpread` and the message is composed from the snapshot with
+`variants.direct_spread` laid over it, as the cards are. The headline is the card's, on the
+release's edition (the works' editions added up stand in only when it has none). It replaced a picture of
 the card, which Slack fits to a fixed height whatever the file's size, then a table with
 bars drawn in text, which wrapped on a phone, then a plain `table` block; the data table
 was the one that read on a phone. The notification text is the headline alone.
@@ -589,8 +633,10 @@ it is a card like the others and moves with them.
 and press Shift+Enter): a panel opens at the right with the figure, what it is in one sentence,
 the working as numbered steps with the page's own numbers, what it reads against, the data
 sources it comes from (each with how fresh it is on this page: green for a feed pulled on
-every refresh, grey for an input somebody set, amber where the last refresh reported that feed
-failing), and anything worth knowing. A figure inside a step that has working of its own is a
+every refresh, reading to the day the page's data runs to, with the release's own last order
+or last day of spend named beside it where that is earlier, "to 24 Sep · last order 27 Aug";
+grey for an input somebody set; amber where the last refresh reported that feed failing), and
+anything worth knowing. A figure inside a step that has working of its own is a
 link down to it, with a crumb back; **Copy as text** puts the whole explanation on the
 clipboard. The page narrows beside the panel (to two columns, or one on a laptop) and
 shift-clicking another number swaps it; Esc or × closes it, and so does a new release or
@@ -621,9 +667,12 @@ entrant who entered more products than their maximum quantity is counted on that
 products only, placed for revenue: on the priciest of them until its expected orders reach
 its edition, over-allocating for the payments expected to fail so the most valuable editions
 show sold out first, then on whichever has the most room. Products come from the event feed's
-draws (one draw per product) and are named and sized on the Target setting tab, where the
-entry → order and pre-order rates are set per release and apply to every product; a product nobody has named takes its Shopify title
-and, where the title matches an Airtable record, its edition. Until the feed has run once after
+draws (one draw per product), each named by the Shopify title its winners bought and sized by
+the Airtable record of that title (docs 2.4, 6.3). A name or edition typed against the draw id
+(`products: [{key: draw_id, name, edition}]` in the release's inputs) stands over those; a
+name typed with no draw id only names a draw the orders feed cannot place yet. The Target
+setting tab no longer lists the draws: it sets the entry → order and pre-order rates per
+release, which apply to every product. Until the feed has run once after
 a deploy the card shows the release as one row and says so. **Post to Slack** in the card's
 head sends the card as a message, these rows as a table of figures with the framing take-up
 above them, to the release's channel (see "Posting sell-through to Slack").

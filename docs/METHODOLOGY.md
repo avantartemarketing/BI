@@ -81,21 +81,22 @@ all. The card says how many entrants moved and where they went.
 The 0.8 is the entry → order rate (80% of eligible entries historically become
 orders). An entry made as a PRE-ORDER converts higher, at 0.95: the card is
 already authorised, so it is charged at the draw rather than invoiced
-afterwards. Both rates can be set per release on the Target setting tab,
-alongside each product's name and edition size, and a product can set its own
-pre-order rate where its draw has already been run and those cards have
-already been charged. Sales the draw cannot name a product for
-(private room, pre-orders) are shown at release level rather than guessed onto
-a product.
+afterwards. Both rates are the release's: they can be set on the Target setting
+tab, alongside each product's name and edition size, and every product converts
+at the same two (a product no longer carries a pre-order rate of its own). Sales
+the draw cannot name a product for (private room, pre-orders) are shown at
+release level rather than guessed onto a product.
 
 **Direct as a source.** The Overview has a Direct switch. As a channel, Direct
 is what the funnel export attributes to it. Spread, its sessions, entries and
 units are shared out over the other channels in proportion to what each did
 that day, the way the untracked rows always are, and the benchmark's channel
 split is read the same way (the panel's typical Direct share of the
-Search/direct/other group, spread over every group pro rata). Totals and what
-has been sold do not move; the channel cards, the funnel and paid do, and the
-plan's pace shifts a little with the channel mix.
+Search/direct/other group, spread over every group pro rata). Totals, what has
+been sold and the paid budget do not move - paid's cost per unit falls by the
+share of Direct it takes on - while the channel cards, the funnel and paid's
+units do, and the plan's pace shifts a little with the channel mix. The Target
+setting tab always reads Direct as a channel.
 
 ## 2. The inputs (Target setting tab)
 
@@ -156,7 +157,8 @@ pre-orders), the 20% cannibalisation, the 35% frame take-up (the profit per fram
 always the product's own), the 6% budget sense
 check, the paid spend rules, and two tables read at the median only - the
 channel order split, which places a channel group's target on its individual
-channels, and the cost per purchase, the default price of a paid unit.
+channels, and the cost per purchase, the price of a paid unit when neither the
+release nor its basket has one (Step 5).
 
 ## 4. The target model, step by step
 
@@ -217,64 +219,113 @@ stays on the snapshot as data.
 
 ```
 paid_units  = benchmark_paid_units × K
-paid_budget = paid_units × cost per purchase        (the release's figure, else €177)
+paid_budget = paid_units × cost per purchase
 ```
+
+The cost per purchase is the price of a paid unit, taken in this order: the
+release's own figure, where one is typed on the Target setting tab; else the
+basket's median cost per paid unit (each launch's Meta spend over the paid units
+it sold), once three or more of the basket's launches have one on file; else the
+panel's €177. The tab says which of the three priced the release.
 
 Sense check: **paid budget should stay under 6% of launch value** - the dashboard
 flags a breach but does not block it. A release that will not run paid says so
 with the switch: paid leaves the benchmark, and its target and budget are zero.
 
-### Step 6 - buffer
+### Step 6 - status colours
 
-`target inc. buffer = 0.75 × target` - a 25% haircut on any target, used as the
-amber warning line. Above target is green, between buffer and target is amber,
-below buffer is red.
+The colours read the target and the benchmark, never a fixed haircut. The dot
+beside each release in the sidebar is green at or ahead of target, amber behind
+target but at or ahead of the benchmark's pace for today, red behind the
+benchmark as well, and hollow when no targets are set; where there is no
+benchmark pace to read, amber is anything no more than 10% behind target. The
+rungs of Funnel by channel and the Organic funnel are green at or above their
+target, amber when less than 10% short of it and red when 10% or more short,
+with a cost rung judged the other way round. The LE workbook's 25% buffer
+(`target inc. buffer = 0.75 × target`) colours nothing on the page.
 
-### Worked example - Glenn Ligon (edition 150)
+### Worked example - an illustrative release
 
-Basket: the 8 launches nearest in size and price, median 134 units → **K = 1.12**.
-Benchmark → target by group: AA Email 56.2 → 62.9, AA Meta 4.6 → 5.2, artist
-0.6 → 0.6, search / direct / other 53.0 → 59.3, paid 19.5 → 21.9, which sum to
-150. Sessions 24,402 → 27,316. Entries target 150 ÷ 0.8 = 187.5, against
-134 ÷ 0.8 = 167.5 for the benchmark. Paid budget 21.9 × €177 = **€3,873**
-(benchmark €3,460), 0.9% of the €450,000 launch value.
+This release is made up, with round numbers so the arithmetic can be followed
+by hand; it is not a release on the dashboard. A real release's own figures are
+on its Target setting tab, and shift-clicking a figure on its page shows the
+working with them.
+
+An edition of 300 at €1,500 a unit, so the launch value is €450,000. Its basket
+is the 8 launches nearest in size and price, whose median launch sold 240
+units: **K = 300 ÷ 240 = 1.25**. Each group's benchmark is its median share of
+units times those 240, and its target is that times K:
+
+| Group | Median share of units | Benchmark | Target (× 1.25) |
+| --- | --- | --- | --- |
+| AA Email | 40% | 96 | 120 |
+| AA Meta | 5% | 12 | 15 |
+| Artist's own channels | 2.5% | 6 | 7.5 |
+| Search / direct / other | 32.5% | 78 | 97.5 |
+| Paid | 20% | 48 | 60 |
+| All five | 100% | 240 | 300 |
+
+Inside a group the target is placed on its channels by the order-split
+medians: AA Email's 120 go about 93% to the manual sends and 7% to the
+automated flows, 112 and 8. Sessions take the same uplift, the basket's median
+of 20,000 becoming a target of 20,000 × 1.25 = 25,000, while the conversion
+rates stay the basket's. Entries target 300 ÷ 0.8 = 375, against 240 ÷ 0.8 =
+300 for the benchmark.
+
+No cost per purchase is typed for the release, and 6 of the 8 launches in the
+basket have a cost per paid unit on file (their Meta spend over their paid
+units), so the median of those six, €200, prices a paid unit. Paid budget
+60 × €200 = **€12,000** (benchmark 48 × €200 = €9,600), 2.7% of the launch
+value and inside the 6% sense check. Had fewer than three of the launches had
+a reading, the panel's €177 would have priced it: 60 × €177 = €10,620.
+
+Paid runs from the day after the announce to the close. On a campaign 25 days
+long that is 24 days, so the plan spends €12,000 ÷ 24 = €500 a day, and 13
+days after the announce the paid plan by today is (13 − 1) ÷ 24 = half of it:
+30 of the 60 units, and €6,000 spent. The organic groups are read off the
+basket's own pace curves instead (§5).
 
 ## 5. Targets across time: the campaign clock
 
-A launch-total target is spread over days using **pooled historical curves**, not
-straight lines.
+A launch-total target is spread over days using **the median curves of the
+release's basket** (§3), not straight lines.
 
 1. Every day of a campaign is stamped with `pdsa` - percent of days since
    announcement (0 = announce, 1 = draw close; negative = early access).
-2. For each completed, clean historical LE (fully observed window, ≥20 entries -
-   currently ~15 releases, growing as campaigns close), compute the cumulative
-   share of its final total reached at each pdsa, per metric and per channel
-   group.
-3. The **median across releases is the target trajectory**; the 25th–75th
-   percentile band is the guardrail shading on the trajectory chart.
+2. For each clean, completed launch in the basket (fully observed window, ≥20
+   entries), compute the cumulative share of its final total reached at each
+   pdsa, per metric (sessions, draw entries, units) and per channel group.
+3. The **median across the basket's launches is the target trajectory**. Where
+   fewer than 4 of them can shape a series, that series comes from the pooled
+   panel of every clean, completed launch in the export (76 at the 24 September
+   build), and a channel group the panel cannot shape either reads the
+   all-channel curve. Only the median is used: the trajectory chart draws no
+   percentile band.
 4. `expected today = target_total × curve(pdsa_today)` - this is the "expected"
-   tick every module compares against. Channel groups with thin history fall back
-   to the all-channel curve.
+   tick every module compares against.
 
-One deliberate exception: the **paid unit plan follows the entry-timed shape**,
-not the unit-booking shape. Historically ~98% of paid draw units are *recorded*
-on the draw-close date (winners are allocated then), so a booking-shaped plan
-would cliff ~46% of the paid target onto the final day while the secured-units
-actual accrues as entries arrive. Entry timing reflects when the demand actually
-came in; a genuine (smaller) last-chance surge remains in the curve.
+**Units are planned on the entry-timed shape.** The page counts secured units
+(§1), which take a draw entry the day it is made, while the funnel records a
+draw's units on the draw-close date, when the winners are allocated. So each
+organic channel group's unit plan, its expected-by-today and the path of its
+projection (§6) follow the group's draw-entries curve, not the unit-booking curve: a
+booking-shaped plan put about a quarter of the email and social targets on the
+final day, and the projection read that as demand still to come. Entry timing
+reflects when the demand actually came in; a genuine (smaller) last-chance surge
+remains in the curve. Sessions targets follow the sessions curve.
 
-The campaign stages shown in the header follow the same clock: Early access
-(before announce), Sustain 1–3 (thirds of the window), Last chance (draw-close
-day onward).
+**Paid follows its budget, not a curve.** Paid starts the day after the announce
+and runs to the close, and its budget is planned evenly over those days, so its
+plan by any day is the even daily share of its target (§6).
 
 ## 6. Forward projections
 
 Projections describe the **current trajectory** - the paid-spend recommendation
 is the intervention shown alongside, never baked into the projection.
 
-**Organic channels.** The remaining volume follows the channel's historic shape;
-its level scales with demonstrated performance, trusted in proportion to how much
-of the campaign has been observed:
+**Organic channels.** The remaining volume follows the channel's historic
+entry-timed shape (§5); its level scales with demonstrated performance, trusted
+in proportion to how much of the campaign has been observed:
 
 ```
 w    = curve(pdsa_today)                    share of campaign the curve says is done
@@ -288,8 +339,13 @@ is shaped by the curve, not drawn straight.
 
 **Paid.** Projection = projected spend ÷ projected efficiency, day by day:
 current daily spend run-rate, divided by a cost-per-entry that starts at the
-trailing-3-day CPE and deteriorates **5% / 7% / 10% per day** across the first /
-second / final third of the window. Projected entries convert to units at 0.8.
+trailing-3-day CPE and rises by **the campaign's own daily drift**, the same every
+day to the close: fitted on its own days once it has 8 with spend and an entry,
+shrunk to a 2.5%-a-day prior and held between 0 and 10% a day (the prior alone
+until then; §7). Projected entries convert to units at 0.8.
+Today counts for what is left of it, so the spend projected at close is the spend
+to date, today so far included, plus the last full day's spend over the full days
+after today and the rest of today, and the entries in hand today stay in.
 Paid starts the day after the announce and runs to the close; its plan by today is the
 even daily budget's share of its target over those days, not the panel's historic paid
 shape, so every card reads the same paid plan.
@@ -344,11 +400,13 @@ gap organic is *not* on course to fill - not to buy the whole remaining edition
 by itself:
 
 ```
-secured now     = units sold + 0.8 × entries banked        (all channels)
+secured now     = units paid + draft orders + orders expected from the draw, work by work,
+                  capped at the edition        (the hero's secured units, §1)
 organic to come = shape-following organic projection of further secured units (§6)
 sell-out gap    = max(edition size − secured now − organic to come, 0)
-budget          = the flat daily spend whose entries, priced on the cost path
-                  below, fill the gap by the close
+entries needed  = sell-out gap ÷ rate       (every unit asked for as an entry, as in the targets)
+supply spend    = the daily spend whose entries fill the gap by the close, at the price below
+budget          = supply spend × days left
 ```
 
 A launch pacing well ahead organically can therefore read a recommendation of
@@ -373,7 +431,8 @@ level per campaign (`etl/analysis/cpe_elasticity.py`, 28 September 2026). A
 campaign with 8 days of its own has its pair fitted and shrunk to the panel's
 together: a campaign that ramps its budget as it goes cannot tell a bigger day
 from more spend so far, so the pair moves towards the panel along the line its
-data cannot pin down.
+data cannot pin down. A release's own figures are in the explainer on its Paid
+spend recommendation and in the card's floor popup.
 
 Why spend so far and not days: on the panel it fits better than a straight
 drift a day (deviance 1375 against 1456, where the straight drift read 3.6% a
@@ -394,7 +453,10 @@ target      = min(sell-out s, ROI-floor s)
 ```
 
 A release that could only sell out by spending fifty times today's budget is
-told so by the ROI floor, which binds long before the supply figure does.
+told so by the ROI floor, which binds long before the supply figure does. A
+floor no daily spend can meet, because the spend already made has worn the
+price past it, is a cut like any other, held to 30% a day; only a gap already
+filled stops paid at once.
 
 **One forward path.** That single path serves the paid projection on the
 trajectory and the Paid ROI chart's dotted line (both at today's spend) and the
@@ -427,14 +489,14 @@ the paid team.
 
 **Pacing rules:** target ROI (AA) **1.1**, floor **1.0**. Cumulative ROI below
 0.9 → decrease; 0.9–1.3 → hold (never raise); above 1.3 → increase. Daily
-changes are capped at ±30% and changes under 10% are ignored. Forecast ROI
-below target for 3 consecutive days forces a decrease. The recommendation is
+changes are capped at ±30% and changes under 10% are ignored. The trailing
+3-day ROI below target on each of the last three full days forces a decrease. The recommendation is
 the target above, paced by these rules from today's spend; the card's
 "Capped by" names which one bound it in a word (Sellout, Floor, Pacing, Hold,
 Decrease, Forced, Plan, Zero, Pause, Steady), with the rule in full at the head
 of its tooltip and the unconstrained figures beneath. With no spend yet there is no price to anchor on: the
 first day starts at the plan's daily rate. ROI shown against the
-recommendation is the ROI at that spend level's cost per entry.
+recommendation is the ROI at the close at that spend level's cost per entry.
 
 ## 8. Where the numbers come from
 
@@ -442,8 +504,12 @@ recommendation is the ROI at that spend level's cost per entry.
   and channel (the channel of each order's purchase event), pulled on every
   refresh with the other orders figures.
 - **Daily funnel** (sessions, entries, units by channel × day) and **Meta spend**
-  are pulled live from the *LE Paid Calculator* Google Sheet on boot and every
-  hour. The header's "data through" day is the newest day in the feed, which while the
+  are pulled live from BigQuery (the LE Funnel Report's daily export and the Meta
+  ads insights table) on boot and every hour. The *LE Paid Calculator* Google
+  Sheet stands in while BigQuery is not configured and is tried when a BigQuery
+  pull fails, in which case the header reads "Sources stale", since the sheet's
+  copy is cut at 50,000 rows a tab.
+  The header's "data through" day is the newest day in the feed, which while the
   feed is live is today, part-observed: the actuals run through it and the header says
   "today so far". The paid pacing rules, the run rates and whether a campaign is complete
   read only full days, and every reference "by today" is read at the share of today seen,

@@ -177,13 +177,47 @@ _BASE_NUMERIC = [
     # edition pricing, joined from Airtable by etl/pricing.py (docs/DATA_MODEL.md)
     "unit_price", "unit_price_eur", "edition_size", "launch_value", "launch_value_eur",
     "n_products", "price_min", "price_max", "price_match_score", "price_match_days",
+    # Direct's share of its own group, which release_clusters.py writes from
+    # its next run on (build.direct_share_norm reads them when they are there)
+    "direct_in_group_sessions", "direct_in_group_entries", "direct_in_group_units",
 ]
 _GROUP_NUMERIC = ["unit_share_", "sess_share_", "ent_share_", "conv_sess_entry_",
                   "conv_sess_unit_", "sessions_", "entries_", "units_"]
 _DATE_COLS = ["window_start", "window_end", "announce", "close", "first_seen", "last_seen"]
 
+# The panel is written once, by hand, after a full BigQuery pull; these rules
+# are applied as it is read, so a count the funnel export got wrong stops
+# reaching a median at the next build rather than at the next re-run.
+# release_clusters.py applies the same ones as it writes the panel.
+#
+# A channel group's conversion is a rate only over enough sessions, and only
+# while its entries (and units) stay a plausible share of them. The export
+# books a launch's entries on a channel whose sessions went somewhere else now
+# and then - Albers 2026 Q2 has 44 AA Social entries on 57 sessions, 77%, where
+# the next launch on file reads 11% - and a basket's median takes such a
+# reading at face value. Either test failing empties the group's two rates,
+# which the medians skip as missing history.
+RATE_MIN_SESSIONS = 100
+RATE_MAX_PER_SESSION = 0.25
+# A launch cannot sell more than its edition, and its funnel units should be
+# the orders feed's give or take a few per cent (DATA_MODEL 6.3). The funnel's
+# purchase events carry every unit twice for two 2023-24 draws (Johnson Tsang's
+# Open the Right Mind: 196 units on an edition of 100, 98 in the orders feed).
+# A row past either by this multiple is a count that cannot be true, and it is
+# left out of the panel rather than benchmarked against.
+UNITS_MAX_MULTIPLE = 1.5
+UNITS_FEED_PATH = DATA / "units_paid.csv"
+# release_clusters.py: a launch that closed under SETTLE_DAYS before the
+# export's last day is written out with this reason and no features. A re-run
+# settles it once the SETTLE_DAYS have passed (unsettled() below).
+IN_FLIGHT = "in flight / not settled"
+SETTLE_DAYS = 7
+
 _panel_cache: pd.DataFrame | None = None
 _names_cache: dict[int, str] | None = None
+# what load_panel() set aside, for the build's log: {"units": [names], "rates":
+# ["name: group ..."], "skipped": [a guard that could not run, and why]}
+GUARDED: dict[str, list[str]] = {"units": [], "rates": [], "skipped": []}
 
 
 # ---------------------------------------------------------------- the panel
@@ -227,8 +261,92 @@ def _join_people(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def implausible_rates(frame: pd.DataFrame) -> dict[str, pd.Series]:
+    """Per display group, the rows whose conversion is not a rate: fewer than
+    RATE_MIN_SESSIONS sessions in the group, or more than RATE_MAX_PER_SESSION
+    entries or units per session. A frame without a group's session count has
+    nothing to test for that group."""
+    out = {}
+    for g in GROUPS:
+        if f"sessions_{g}" not in frame.columns:
+            continue
+        s = pd.to_numeric(frame[f"sessions_{g}"], errors="coerce")
+        bad = s < RATE_MIN_SESSIONS
+        for col in (f"entries_{g}", f"units_{g}"):
+            if col in frame.columns:
+                bad = bad | (pd.to_numeric(frame[col], errors="coerce") > RATE_MAX_PER_SESSION * s)
+        out[g] = bad.fillna(False).astype(bool)
+    return out
+
+
+def guard_rates(frame: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """The frame with every implausible rate emptied (implausible_rates), and
+    one note per rate that was a number before: "release: group, entries on
+    sessions". Only the conversion columns change."""
+    out = frame.copy()
+    notes = []
+    for g, bad in implausible_rates(out).items():
+        rate = f"conv_sess_entry_{g}"
+        if rate in out.columns:
+            had = bad & pd.to_numeric(out[rate], errors="coerce").gt(0)
+            for i in out.index[had]:
+                entries = _num(out.at[i, f"entries_{g}"]) if f"entries_{g}" in out.columns else 0.0
+                notes.append(f"{out.at[i, 'release_name']}: {g} {entries:.0f} entries on "
+                             f"{_num(out.at[i, f'sessions_{g}']):.0f} sessions")
+        for col in (rate, f"conv_sess_unit_{g}"):
+            if col in out.columns:
+                out[col] = pd.to_numeric(out[col], errors="coerce").mask(bad)
+    return out, notes
+
+
+def orders_in_window(frame: pd.DataFrame, path: pathlib.Path | str | None = None) -> pd.Series | None:
+    """Each row's units paid in the orders feed (data/units_paid.csv) over its
+    panel window, NaN for a launch the feed does not know. None when there is
+    no feed to read: the units test then reads the edition alone."""
+    if not {"release_name", "window_start", "window_end"} <= set(frame.columns):
+        return None
+    try:
+        up = pd.read_csv(path or UNITS_FEED_PATH, usecols=["release", "order_date", "units_paid"])
+    except (OSError, ValueError):
+        return None
+    up["order_date"] = pd.to_datetime(up["order_date"], errors="coerce")
+    up["units_paid"] = pd.to_numeric(up["units_paid"], errors="coerce").fillna(0.0)
+    by = {str(n): g for n, g in up.groupby("release")}
+    starts = pd.to_datetime(frame["window_start"], errors="coerce")
+    ends = pd.to_datetime(frame["window_end"], errors="coerce")
+    vals = []
+    for name, s0, s1 in zip(frame["release_name"].astype(str), starts, ends):
+        g = by.get(name)
+        if g is None or pd.isna(s0) or pd.isna(s1):
+            vals.append(float("nan"))
+            continue
+        vals.append(float(g.loc[(g["order_date"] >= s0) & (g["order_date"] <= s1), "units_paid"].sum()))
+    return pd.Series(vals, index=frame.index, dtype=float)
+
+
+def units_out_of_line(frame: pd.DataFrame, orders: pd.Series | None = None) -> pd.Series:
+    """The rows whose units cannot be true: more than UNITS_MAX_MULTIPLE times
+    the edition on offer, or than the orders feed's units paid over the same
+    window. A missing edition or a launch the feed does not know (or sold
+    nothing in the window, which says the windows disagree rather than the
+    count) is not a test failed."""
+    bad = pd.Series(False, index=frame.index)
+    if "tot_total_product_units" not in frame.columns:
+        return bad
+    units = pd.to_numeric(frame["tot_total_product_units"], errors="coerce")
+    if "edition_size" in frame.columns:
+        ed = pd.to_numeric(frame["edition_size"], errors="coerce")
+        bad = bad | ((ed > 0) & (units > UNITS_MAX_MULTIPLE * ed))
+    if orders is not None:
+        o = pd.to_numeric(orders.reindex(frame.index), errors="coerce")
+        bad = bad | ((o > 0) & (units > UNITS_MAX_MULTIPLE * o))
+    return bad.fillna(False).astype(bool)
+
+
 def load_panel() -> pd.DataFrame:
-    """The draw panel: the 108 launches that ran the draw mechanic.
+    """The draw panel: the launches that ran the draw mechanic, less any whose
+    units cannot be true, with the conversion rates that cannot be real
+    emptied (the rules above; GUARDED says what they caught).
 
     Cached for the life of the process - the ETL profiles a dozen baskets per
     release and the API answers the picker from the same frame. Callers treat
@@ -246,10 +364,65 @@ def load_panel() -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], errors="coerce")
     df["release_name"] = df["release_name"].astype(str)
+    # a guard that cannot run leaves the panel as it is, and says so: the
+    # panel is what every targeted page stands on
+    GUARDED.update(units=[], rates=[], skipped=[])
+    try:
+        out_of_line = units_out_of_line(df, orders_in_window(df))
+        GUARDED["units"] = df.loc[out_of_line, "release_name"].tolist()
+        df = df[~out_of_line]
+    except Exception as e:  # noqa: BLE001
+        GUARDED["skipped"].append(f"units check: {e}")
+    try:
+        df, GUARDED["rates"] = guard_rates(df)
+    except Exception as e:  # noqa: BLE001
+        GUARDED["skipped"].append(f"rates check: {e}")
     df = _join_people(df)
     df["artist"] = df["artist"].astype(str)
     _panel_cache = df.reset_index(drop=True)
     return _panel_cache
+
+
+def unsettled(as_of: date, path: pathlib.Path | str | None = None) -> list[dict]:
+    """Launches the panel on file still has in flight although they closed at
+    least SETTLE_DAYS before `as_of`: a re-run of release_clusters.py would
+    settle them into the panel, and until it does no basket can hold them.
+    [{release_name, close}], oldest close first; empty when nothing is owed
+    or the panel cannot be read."""
+    try:
+        df = pd.read_csv(path or PANEL_PATH, usecols=lambda c: c in ("release_name", "exclude_reason", "close"),
+                         low_memory=False)
+    except (OSError, ValueError):
+        return []
+    if not {"release_name", "exclude_reason", "close"} <= set(df.columns):
+        return []
+    close = pd.to_datetime(df["close"], errors="coerce")
+    due = (df["exclude_reason"].astype(str).str.strip() == IN_FLIGHT) & (
+        close <= pd.Timestamp(as_of) - pd.Timedelta(days=SETTLE_DAYS))
+    rows = df[due].assign(close=close[due]).sort_values("close")
+    return [{"release_name": str(r["release_name"]), "close": r["close"].date().isoformat()} for _, r in rows.iterrows()]
+
+
+def panel_basis(path: pathlib.Path | str | None = None) -> dict:
+    """What the panel's channel split was read from and when it was written:
+    {attribution, through, built}. release_clusters.py records them on every
+    row it writes; a panel written before it did says nothing, and the
+    baskets file's as_of (the export's last day) stands in for `through`."""
+    out = {"attribution": None, "through": None, "built": None}
+    try:
+        df = pd.read_csv(path or PANEL_PATH, low_memory=False,
+                         usecols=lambda c: c in ("attribution_basis", "attribution_through", "panel_built"))
+        for col, key in (("attribution_basis", "attribution"), ("attribution_through", "through"), ("panel_built", "built")):
+            if col in df.columns and df[col].notna().any():
+                out[key] = str(df[col].dropna().iloc[0])
+    except (OSError, ValueError):
+        pass
+    if out["through"] is None:
+        try:
+            out["through"] = json.loads(BASKETS_PATH.read_text()).get("as_of")
+        except (OSError, ValueError, AttributeError):
+            pass
+    return out
 
 
 def _num(value: object) -> float:
@@ -284,14 +457,25 @@ PAID_COST_MIN_MEMBERS = 3   # and a basket's median needs this many members with
 
 def attach_paid_costs(panel: pd.DataFrame, spend: pd.DataFrame | None, codes: dict) -> pd.DataFrame:
     """Two columns on the panel, per launch: `paid_spend_eur`, Meta's spend under
-    the launch's campaign code inside its window (the campaign names are
-    "code · objective"; the window is the same one the live page sums spend
-    over), and `cost_per_paid_unit`, that over the paid units the funnel
-    attributed to the launch. A reading needs some spend and at least
-    PAID_COST_MIN_UNITS paid units; otherwise NaN, and so is a launch whose
-    code has no spend on file. `codes` maps release name to campaign code
-    (the orders feed's, docs 2.4). The basket's median of the column is the
-    price a paid unit is planned at (basket_profile, cost_per_purchase)."""
+    the launch's campaign code (the campaign names are "code · objective")
+    from the panel window's start to the close, and `cost_per_paid_unit`, that
+    over the launch's paid units with its Untracked units folded in
+    (unit_share_paid x all units, the share Untracked left out of).
+
+    That is the basis the page prices its own paid units on - spend to the
+    close over the paid channel's units after the Untracked fold, the Funnel
+    by channel card's cost per unit to date - so the plan price a basket gives
+    and the actual it is read against are one figure. The panel window runs on
+    to three days after the allocation, and spend in that tail is none the
+    page ever counts; the tracked paid units alone left the plan some 7%
+    dearer per unit than the page reads its own. The window still opens 45
+    days before the announce where the page opens at the private room, which
+    is the one difference left (docs/DATA_MODEL.md 4 E). A reading needs some
+    spend and at least PAID_COST_MIN_UNITS tracked paid units; otherwise NaN,
+    and so is a launch whose code has no spend on file. `codes` maps release
+    name to campaign code (the orders feed's, docs 2.4). The basket's median
+    of the column is the price a paid unit is planned at (basket_profile,
+    cost_per_purchase)."""
     out = panel.copy()
     out["paid_spend_eur"] = float("nan")
     out["cost_per_paid_unit"] = float("nan")
@@ -304,19 +488,26 @@ def attach_paid_costs(panel: pd.DataFrame, spend: pd.DataFrame | None, codes: di
     sp["spend_date"] = pd.to_datetime(sp["spend_date"], errors="coerce")
     sp["spend"] = pd.to_numeric(sp["spend"], errors="coerce").fillna(0.0)
     by_code = {c: g for c, g in sp.groupby("code")}
-    starts = pd.to_datetime(out.get("window_start"), errors="coerce")
-    ends = pd.to_datetime(out.get("window_end"), errors="coerce")
-    units = pd.to_numeric(out.get("units_paid"), errors="coerce")
+
+    def col(name: str) -> pd.Series:
+        return out[name] if name in out.columns else pd.Series(float("nan"), index=out.index)
+
+    starts = pd.to_datetime(col("window_start"), errors="coerce")
+    # the page sums spend to the close; a row without one keeps its window's end
+    ends = pd.to_datetime(col("close"), errors="coerce").fillna(pd.to_datetime(col("window_end"), errors="coerce"))
+    units = pd.to_numeric(col("units_paid"), errors="coerce")
+    folded = pd.to_numeric(col("unit_share_paid"), errors="coerce") * pd.to_numeric(col("tot_total_product_units"), errors="coerce")
+    folded = folded.where(folded > 0, units)
     spends, costs = [], []
-    for name, s0, s1, u in zip(out["release_name"], starts, ends, units):
+    for name, s0, s1, u, f in zip(out["release_name"], starts, ends, units, folded):
         g = by_code.get(codes.get(str(name)) or "")
         if g is None or pd.isna(s0) or pd.isna(s1):
             spends.append(float("nan")); costs.append(float("nan"))
             continue
         total = float(g.loc[(g["spend_date"] >= s0) & (g["spend_date"] <= s1), "spend"].sum())
         spends.append(total)
-        ok = total > 0 and not pd.isna(u) and float(u) >= PAID_COST_MIN_UNITS
-        costs.append(total / float(u) if ok else float("nan"))
+        ok = total > 0 and not pd.isna(u) and float(u) >= PAID_COST_MIN_UNITS and not pd.isna(f) and float(f) > 0
+        costs.append(total / float(f) if ok else float("nan"))
     out["paid_spend_eur"] = spends
     out["cost_per_paid_unit"] = costs
     return out
@@ -628,6 +819,17 @@ def _release_start(panel: pd.DataFrame, release: dict | None, as_of: date) -> pd
     return pd.Timestamp(as_of)
 
 
+def _release_end(panel: pd.DataFrame, release: dict | None) -> pd.Timestamp | None:
+    """When this launch closes: its panel row's window_end when it has one,
+    measured the way every other launch's close is, else its launch_end.
+    None when neither is a date."""
+    row = _panel_row(panel, release)
+    if row is not None and pd.notna(row.get("window_end")):
+        return pd.Timestamp(row["window_end"])
+    got = pd.to_datetime((release or {}).get("launch_end"), errors="coerce")
+    return pd.Timestamp(got) if pd.notna(got) else None
+
+
 def _release_price(panel: pd.DataFrame, release: dict | None) -> float:
     """This release's unit price in euros, or 0.0 when it has none.
 
@@ -722,6 +924,12 @@ def similar_members(panel: pd.DataFrame, release: dict | None, as_of: date | Non
     basket, there being nothing to be near to. A panel shorter than SIMILAR_N
     gives what it has.
 
+    A release that has closed is read at its own close (_release_end), not at
+    as_of: "recent" is the RECENT_MONTHS before it closed, and a launch that
+    closed after it is left out, having not been there to compare it with.
+    So its basket stops moving once it closes, whatever later rebuilds or
+    panel refreshes bring. A live release is read at as_of, as before.
+
     Returns the members, the reach - how far the furthest member is - and the
     axes that ranked them, ("size",) or ("size", "price").
     """
@@ -731,19 +939,25 @@ def similar_members(panel: pd.DataFrame, release: dict | None, as_of: date | Non
     if size <= 0 or not len(pool):
         return [], None, ()
     as_of = as_of or date.today()
+    end = _release_end(panel, release)
+    closed = end is not None and end < pd.Timestamp(as_of)
+    ref = end if closed else pd.Timestamp(as_of)
     d, on = _distances(pool, release, panel)
     names = pool["release_name"].to_numpy()
+    ends = (pd.to_datetime(pool["window_end"], errors="coerce") if "window_end" in pool.columns
+            else pd.Series(pd.NaT, index=pool.index, dtype="datetime64[ns]"))
+    later = (ends > ref).to_numpy() if closed else np.zeros(len(pool), dtype=bool)
 
     first = own_members(panel, release, as_of)
     taken = set(first)
-    rest = np.array([i for i in range(len(pool)) if names[i] not in taken and np.isfinite(d[i])], dtype=int)
+    rest = np.array([i for i in range(len(pool))
+                     if names[i] not in taken and np.isfinite(d[i]) and not later[i]], dtype=int)
 
     prefer_recent = (release or {}).get("prefer_recent")
     prefer_recent = True if prefer_recent is None else bool(prefer_recent)
     if prefer_recent and len(rest):
-        ends = pd.to_datetime(pool["window_end"], errors="coerce").to_numpy()
-        cutoff = np.datetime64(pd.Timestamp(as_of) - pd.DateOffset(months=RECENT_MONTHS))
-        recent = ends >= cutoff
+        cutoff = np.datetime64(ref - pd.DateOffset(months=RECENT_MONTHS))
+        recent = ends.to_numpy() >= cutoff
         # three tiers, distance within each: comparable and recent, comparable
         # and older, then everything beyond NEAR
         tier = np.where(d[rest] <= NEAR, np.where(recent[rest], 0, 1), 2)

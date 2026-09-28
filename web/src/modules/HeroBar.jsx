@@ -1,6 +1,7 @@
-/* Units vs sellout - hero module (spec §4.1, unified secured-units currency, docs §6.4):
- * secured units = units sold (all routes incl. private room) + 0.8 × eligible entry
- * units not yet converted, capped at the edition size.
+/* Units vs sellout - hero module (spec §4.1, unified secured-units currency, docs §6.3½):
+ * secured units = units paid (all routes incl. private room) + draft orders not
+ * yet paid + the orders expected from the entries still in the draw, work by
+ * work, capped at the edition size (the sell-through's own count).
  *
  * One bar, one horizon, both references (BENCHMARK_SPEC 7). The fill is the
  * target - darker from zero to whichever of target and benchmark is lower,
@@ -17,7 +18,7 @@
 import React from "react";
 import {
   Card, TrackBar, HATCH, GROUP_DOTS, HorizonBadge, C, fmt, fmtSigned, useTip, useWidth,
-  labelPx, axisLabelLeft, BADGE_WORDS, dayLabel,
+  textPx, axisLabelLeft, BADGE_WORDS, dayLabel,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 
@@ -27,6 +28,18 @@ const OUTLINE_SWATCH = (
     <path d="M1 10 V1.5 H11 V10" fill="none" stroke={C.refLine} strokeWidth="1.5" strokeDasharray="1.6 1.6" />
   </svg>
 );
+
+/* What secured units are made of, as the sell-through counts them (docs 6.3½):
+ * the draw's part is the entries still in hand, allocated work by work, at the
+ * release's entry → order rate (and a pre-order's own rate). */
+function securedTip(snap) {
+  const st = snap?.sellthrough || {};
+  const pct = (x) => Math.round(x * 100) + "%";
+  const rate = Number.isFinite(st.conversion) ? st.conversion : 0.8;
+  const pre = Number.isFinite(st.preorderConversion) && st.preorderConversion !== rate ? st.preorderConversion : null;
+  return "Secured units = units paid (all routes incl. private room) + draft orders not yet paid + the orders " +
+    `expected from the entries still in the draw, work by work, at ${pct(rate)}${pre !== null ? ` (${pct(pre)} for a pre-order)` : ""}`;
+}
 
 /* TrackBar's scale, repeated here so the floating labels land on the same one.
  * A label that drifts off the thing it names is worse than no label at all. */
@@ -77,9 +90,9 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const oversub = hero.oversubscribedUnits ?? 0;
   const overPct = sellout > 0 ? Math.round((proj / sellout) * 100) : null;
 
-  const unitsTip =
-    "Secured units = units sold (all routes incl. private room) + 0.8 × eligible " +
-    "entry units not yet converted, capped at the edition size.";
+  const unitsTip = close
+    ? "Projected demand = the units secured today and what each channel is on course to add by the close, capped at the edition size."
+    : securedTip(snap) + ", capped at the edition size.";
   const refRows = [
     { label: words.target, value: fmt(target) },
     ...(bm !== null ? [{ label: words.bm, value: fmt(bm) }] : []),
@@ -110,10 +123,11 @@ export default function HeroBar({ snap, horizon = "today" }) {
      the lower, each centred on the thing it names and tucked against whichever
      end it would otherwise run off. Two rows because the two figures are often
      within a few pixels of each other, and a label printed through another
-     number says less than no label. */
+     number says less than no label. The words are measured in the page's own
+     font, so a label tucked against an end stops at it. */
   const [labRef, labW] = useWidth();
   const labelAt = (text, v) => {
-    const left = axisLabelLeft({ pct: pos(v), rowW: labW, textW: labelPx(text) });
+    const left = axisLabelLeft({ pct: pos(v), rowW: labW, textW: textPx(text) });
     return left === null
       ? { position: "absolute", left: `${pos(v)}%`, bottom: 0, transform: "translateX(-50%)", fontSize: 12, whiteSpace: "nowrap" }
       : { position: "absolute", left, bottom: 0, fontSize: 12, whiteSpace: "nowrap" };
@@ -126,6 +140,9 @@ export default function HeroBar({ snap, horizon = "today" }) {
       dot={GROUP_DOTS.volume}
       title={partial ? "Units vs target" : "Units vs sellout"}
       badge={<HorizonBadge horizon={horizon} />}
+      // "oversubscribed +N" takes a line of its own on a narrow card rather
+      // than break the title, the horizon chip and itself each onto two
+      wrapHead
       right={oversub > 0 ? (
         <span
           className="hint-dotted"
@@ -189,7 +206,10 @@ export default function HeroBar({ snap, horizon = "today" }) {
         </div>
       </div>
 
-      <div className="legend-rows">
+      {/* with the oversubscribed note the head can take a second line on a
+          narrow card, so the key's rows take the tighter step (as Framing's
+          do) rather than running into the card's bottom padding */}
+      <div className={"legend-rows" + (oversub > 0 ? " tight" : "")}>
         <div className="legend-row">
           <span className="swatch" style={{ background: C.blue }} />
           <span style={{ color: C.muted }}>{close ? "Projected demand" : "To date"}</span>
@@ -229,8 +249,9 @@ function HeroActuals({ snap }) {
   const t = useTip();
   const now = snap.hero?.now ?? 0;
   const sold = snap.sellthrough?.sold ?? 0;
+  const drafts = snap.sellthrough?.drafts;
   const banked = snap.sellthrough?.soldPredicted ?? 0;
-  const unitsTip = "Secured units = units sold (all routes incl. private room) + 0.8 × eligible entry units not yet converted.";
+  const unitsTip = securedTip(snap) + ".";
   return (
     <Card dot={GROUP_DOTS.volume} title="Secured units">
       <div className="spacer-8" />
@@ -242,14 +263,23 @@ function HeroActuals({ snap }) {
       </div>
       <div className="lead-caption" style={{ color: C.muted }}>no target set - actuals only</div>
       <div className="legend-rows" style={{ marginTop: 20 }}>
+        {/* the parts of the lead, in the sell-through's ramp of blues, so the
+            rows add up to it */}
         <div className="legend-row">
           <span className="swatch" style={{ background: C.blueDeep }} />
-          <span style={{ color: C.muted }}>Units sold</span>
+          <span style={{ color: C.muted }}>Units paid</span>
           <span className="val"><Ex k="st.paid">{fmt(sold)}</Ex></span>
         </div>
+        {Number.isFinite(drafts) && (
+          <div className="legend-row">
+            <span className="swatch" style={{ background: C.blue }} />
+            <span style={{ color: C.muted }}>Draft orders</span>
+            <span className="val"><Ex k="st.drafts">{fmt(drafts)}</Ex></span>
+          </div>
+        )}
         <div className="legend-row">
-          <span className="swatch" style={{ background: C.blue }} />
-          <span style={{ color: C.muted }}>Draw conversions (entries × 0.8)</span>
+          <span className="swatch" style={{ background: C.blueLight }} />
+          <span style={{ color: C.muted }}>Expected from the draw</span>
           <span className="val"><Ex k="st.draw">{fmt(banked)}</Ex></span>
         </div>
       </div>

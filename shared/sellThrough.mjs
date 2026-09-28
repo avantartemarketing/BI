@@ -351,33 +351,64 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
   };
 }
 
+// a typed name for an orders title: the same, case aside, or one starts the
+// other where both are four characters or more (the rule etl/build.py
+// _by_name and server/slack.js byName match names by)
+const namesTitle = (name, title) => {
+  const n = String(name || "").trim().toLowerCase();
+  const t = String(title || "").trim().toLowerCase();
+  if (!n || !t) return false;
+  return n === t || (n.length >= 4 && t.length >= 4 && (t.startsWith(n) || n.startsWith(t)));
+};
+
 /* The products of a release, from the draws the event feed found and what
- * was typed against them on the Target setting tab. One draw is one product
- * unless two draws are given the same name, which merges them (a re-run or a
- * second wave of the same product). A draw nobody has named is "Draw N" in
- * first-entry order. Typed entries carry the draw id as `key`; an entry with
- * no key (the older hand-typed list) is matched to the unclaimed draws in
- * order. Sold units come from the draw feed: winners who bought, or the
- * purchases the feed tags with a draw where it does. A single product with no
- * edition typed is the edition itself.
- *   draws       [{ id, first, entrants, eligible, winners, sold, open, wonUnpaid, purchaseUnits }]
- *   configured  [{ key, name, edition }]  (may be empty)
- *   editionSize the release's edition, or null */
-export function productsFromDraws(draws, configured, editionSize) {
+ * was typed against them (mirror of etl/sellthrough.products_from_draws).
+ * One draw is one product unless two draws are given the same name, which
+ * merges them (a re-run or a second wave of the same product). A draw nobody
+ * has named is "Draw N" in first-entry order. Typed entries carry the draw id
+ * as `key` and name that draw. An entry with no key (the older hand-typed
+ * list) is matched by position, which says nothing about which draw it
+ * meant, so it only names a draw the orders feed does not pair with a
+ * product (`drawProducts`): a paired draw takes its product's title in
+ * attachOrders, an entry that names a paired draw's product is left out, and
+ * the rest go to the unpaired draws in first-entry order, marked
+ * `keylessName` so attachOrders never keeps such a name over a title. Sold
+ * units come from the draw feed: winners who bought, or the purchases the
+ * feed tags with a draw where it does. A single product with no edition
+ * typed is the edition itself.
+ *   draws        [{ id, first, entrants, eligible, winners, sold, open, wonUnpaid, purchaseUnits }]
+ *   configured   [{ key, name, edition }]  (may be empty)
+ *   editionSize  the release's edition, or null
+ *   drawProducts {draw id: the product title its winners bought} (may be absent) */
+export function productsFromDraws(draws, configured, editionSize, drawProducts = null) {
   const sorted = (draws || []).slice().sort((a, b) =>
     String(a.first || "").localeCompare(String(b.first || "")) || String(a.id).localeCompare(String(b.id)));
   const cfg = Array.isArray(configured) ? configured.filter((c) => c && typeof c === "object") : [];
   const byKey = new Map(cfg.filter((c) => c.key !== undefined && c.key !== null && c.key !== "").map((c) => [String(c.key), c]));
-  const legacy = cfg.filter((c) => c.key === undefined || c.key === null || c.key === "");
+  const paired = new Map(drawProducts && typeof drawProducts === "object"
+    ? Object.entries(drawProducts).filter(([, t]) => t !== undefined && t !== null && t !== "").map(([d, t]) => [String(d), String(t)])
+    : []);
+  const titles = new Set(paired.values());
+  const legacy = cfg.filter((c) => (c.key === undefined || c.key === null || c.key === "")
+    && ![...titles].some((t) => namesTitle(c.name, t)));
   const tagged = sorted.some((d) => Number(d.purchaseUnits) > 0);
   const groups = new Map();
   sorted.forEach((d, i) => {
     let c = byKey.get(String(d.id)) || null;
-    if (!c && legacy.length) c = legacy.shift();
-    const name = (c && typeof c.name === "string" && c.name.trim()) || `Draw ${i + 1}`;
+    let keyless = false;
+    if (!c && legacy.length && !paired.has(String(d.id))) { c = legacy.shift(); keyless = true; }
+    const typed = (c && typeof c.name === "string" && c.name.trim()) || null;
+    const name = typed || `Draw ${i + 1}`;
+    keyless = keyless && typed !== null;
     const edition = c && finite(c.edition) && Number(c.edition) > 0 ? Math.round(Number(c.edition)) : null;
     let g = groups.get(name);
-    if (!g) { g = { key: String(d.id), name, edition, draws: [], sold: 0, entrants: 0, drafts: null }; groups.set(name, g); }
+    if (!g) {
+      g = { key: String(d.id), name, edition, draws: [], sold: 0, entrants: 0, drafts: null };
+      if (keyless) g.keylessName = true;
+      groups.set(name, g);
+    } else if (!keyless) {
+      delete g.keylessName;   // the name was typed against one of its draws
+    }
     if (g.edition === null && edition !== null) g.edition = edition;
     g.draws.push(String(d.id));
     g.sold += tagged ? (Number(d.purchaseUnits) || 0) : (Number(d.sold) || 0);
@@ -395,12 +426,14 @@ export function productsFromDraws(draws, configured, editionSize) {
  * drafts, listPrice, edition}} and `drawProducts` {draw id: product title},
  * the product a draw's winners bought. A product whose draws name a title
  * takes that title's paid units as sold and its orders awaiting payment as
- * drafts, and the title as its name where nobody typed one; a title already
- * taken by an earlier product is not taken twice. Titles no draw names are
- * added as products of their own only once every draw is named, because
- * before that they are ambiguous and stay at release level. Returns the
- * products and the sold source: "orders" once every product has its sales
- * from the feed. `ordersOnly` when the page's units sold are the orders
+ * drafts, and the title as its name unless a name was typed against one of
+ * its draws: a name from the older list with no draw id (`keylessName`,
+ * handed out by position) never stands over the product the draw sold. A
+ * title already taken by an earlier product is not taken twice. Titles no
+ * draw names are added as products of their own only once every draw is
+ * named, because before that they are ambiguous and stay at release level.
+ * Returns the products and the sold source: "orders" once every product has
+ * its sales from the feed. `ordersOnly` when the page's units sold are the orders
  * feed's over its window (docs 6.3): a product none of whose draws the feed
  * names takes no sales of its own, and its units stay at release level. */
 const DEFAULT_NAME = /^Draw \d+$/;
@@ -429,7 +462,7 @@ export function attachOrders(products, orders, drawProducts, source, ordersOnly 
     const q = { ...p };
     q.sold = rows.reduce((n, r) => n + (Number(r.unitsPaid) || 0), 0);
     q.drafts = rows.reduce((n, r) => n + draftCount(r), 0);
-    if (!q.name || DEFAULT_NAME.test(String(q.name))) q.name = titles.join(" / ");
+    if (!q.name || DEFAULT_NAME.test(String(q.name)) || q.keylessName) { q.name = titles.join(" / "); delete q.keylessName; }
     if (!(finite(q.edition) && Number(q.edition) > 0)) {
       const eds = rows.filter((r) => finite(r.edition) && Number(r.edition) > 0).map((r) => Number(r.edition));
       if (eds.length && eds.length === rows.length) q.edition = Math.round(eds.reduce((a, b) => a + b, 0));

@@ -19,10 +19,11 @@
  * The drawing grammar lives here rather than in each module so every card says it
  * the same way; these signatures are fixed because the modules are written
  * against them in parallel. */
-import React, { createContext, useContext, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   MINUS, dayElapsed, paidDayFrac, fmt, fmtSigned, fmtMoney, fmtK, fmtPct, fmtDay, windowDate, dayLabel, dayAxisLabel,
 } from "./format.mjs";
+import { labelPx, textPx, timeAxis, nameLines } from "./labels.mjs";
 import { Ex } from "./explain/Explain.jsx";
 
 /* ---- the popup system (agreed on the Dashboard Popups canvas) ----
@@ -154,10 +155,14 @@ export function ragColor(pct) {
   return C.red;
 }
 
-export function Card({ tall, wide, dot, title, badge, right, children, style }) {
+/* `wrapHead`: short of room, the right slot takes a line of its own under
+   the title, for a head whose right slot holds a figure that must never be
+   cut (the card would clip it mid-number) or whose title would otherwise
+   break onto two or three lines against the card's top edge. */
+export function Card({ tall, wide, dot, title, badge, right, children, style, wrapHead }) {
   return (
     <div className={`card${tall ? " tall" : ""}${wide ? " wide" : ""}`} style={style}>
-      <div className="mod-head">
+      <div className={`mod-head${wrapHead ? " wrap" : ""}`}>
         <span className="gdot" style={{ background: dot }} />
         <span className="title">{title}</span>
         {badge || null}
@@ -178,30 +183,80 @@ export function QBadge({ tip, content }) {
  * are cut from the same cloth. */
 export const HATCH = `repeating-linear-gradient(135deg, ${C.blue} 0 1.5px, ${C.blueLight} 1.5px 5px)`;
 
-/* The live width of an element. Label collision is a pixel question, never a
+/* The live size of an element. Label collision is a pixel question, never a
  * fraction one - two labels 20% apart are comfortable on a wide card and on top
  * of each other on a narrow one - so a card that places labels by value measures
- * the row it is placing them in. */
-export function useWidth() {
-  const ref = useRef(null);
-  const [w, setW] = useState(0);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-    const measure = () => setW(el.clientWidth);
+ * the plot or row it is placing them in (the arithmetic is in labels.mjs). It
+ * measures again whenever the element resizes, and renders once more when the
+ * page's webfont lands, since a label measured before then was measured in the
+ * fallback face. A callback ref, so an element that mounts after the card
+ * (a plot behind an empty state) is measured too. */
+export function useBoxSize() {
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const [, setFonts] = useState(0);
+  const ro = useRef(null);
+  const ref = useCallback((el) => {
+    if (ro.current) { ro.current.disconnect(); ro.current = null; }
+    if (!el) return;
+    const measure = () => setSize((s) => (s.w === el.clientWidth && s.h === el.clientHeight ? s : { w: el.clientWidth, h: el.clientHeight }));
     measure();
-    if (typeof ResizeObserver === "undefined") return undefined;
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
+    if (typeof ResizeObserver !== "undefined") { ro.current = new ResizeObserver(measure); ro.current.observe(el); }
   }, []);
+  useEffect(() => {
+    let live = true;
+    const fonts = typeof document !== "undefined" ? document.fonts : null;
+    const bump = () => { if (live) setFonts((n) => n + 1); };
+    if (fonts) {
+      if (fonts.status !== "loaded") fonts.ready.then(bump);
+      if (fonts.addEventListener) fonts.addEventListener("loadingdone", bump);
+    }
+    return () => {
+      live = false;
+      if (fonts && fonts.removeEventListener) fonts.removeEventListener("loadingdone", bump);
+      if (ro.current) ro.current.disconnect();
+    };
+  }, []);
+  return [ref, size.w, size.h];
+}
+export function useWidth() {
+  const [ref, w] = useBoxSize();
   return [ref, w];
 }
 
-/* Roughly how wide a 12px axis label renders. Tabular numerals and a system
- * sans sit close enough to this for collision work, and erring high only ever
- * buys a little more clearance. */
-export const labelPx = (text) => String(text).length * 6.7;
+/* labelPx: the length estimate; textPx: the measured width; timeAxis: the
+ * "today" and axis-end rule; nameLines: the placer (labels.mjs). */
+export { labelPx, textPx, timeAxis, nameLines };
+
+/* The names nameLines has set, and their leaders: a thin leader runs from a
+ * name's edge to a grey point on the thing it names, or stops `dot` px short
+ * of a dot it names, so the dot stays whole. A name that could only go on a
+ * card-white patch wears one. Drawn inside the plot the names were placed in. */
+export function LineNames({ names }) {
+  if (!names || !names.length) return null;
+  return (
+    <>
+      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none" }} aria-hidden="true">
+        {names.map((n) => {
+          const dx = n.anchor.x - n.start.x, dy = n.anchor.y - n.start.y, len = Math.hypot(dx, dy) || 1;
+          const end = n.dot ? { x: n.anchor.x - (dx / len) * n.dot, y: n.anchor.y - (dy / len) * n.dot } : n.anchor;
+          return (
+            <g key={n.key}>
+              <line x1={n.start.x.toFixed(1)} y1={n.start.y.toFixed(1)} x2={end.x.toFixed(1)} y2={end.y.toFixed(1)} stroke={C.targetLine} strokeWidth="1" />
+              {!n.dot && <circle cx={n.anchor.x.toFixed(1)} cy={n.anchor.y.toFixed(1)} r="2.4" fill={C.targetLine} />}
+            </g>
+          );
+        })}
+      </svg>
+      {names.map((n) => (
+        <div key={n.key} title={n.title} style={{
+          position: "absolute", left: n.x0, top: n.y0, height: n.h, lineHeight: `${n.h}px`,
+          fontSize: 12, fontWeight: n.weight, color: n.color, whiteSpace: "nowrap",
+          ...(n.knock ? { background: "#fff", padding: "0 3px", margin: "0 -3px", borderRadius: 2 } : {}),
+        }}>{n.text}</div>
+      ))}
+    </>
+  );
+}
 
 /* Place a value-anchored label on an axis row that also carries fixed labels at
  * its ends. Centred on its own tick wherever it fits; slid just clear of an end
@@ -518,14 +573,24 @@ export function RungTrack({ dev, bmPos, up, neutral, guide, bench = true }) {
 }
 
 /* The rung grammar in three marks, so nobody has to guess what the centre or
- * the tick is. The tick is dropped with no basket, exactly as the rung drops it. */
+ * the tick is. The tick is dropped with no basket, exactly as the rung drops it.
+ * The scale note is the key's least part: on a row with no room for it beside
+ * the marks (a one-column card on a narrow page) it gives way, measured in
+ * pixels, and stays in the key's hover, rather than running off the card. */
+const RUNG_NOTE = "×4 fills the rung";
 export function RungKey({ bench = true }) {
+  const [ref, rowW] = useWidth();
   const item = {
     display: "flex", alignItems: "center", gap: 6,
     fontSize: 11.5, color: C.muted, whiteSpace: "nowrap",
   };
+  // the marks and their words, the 12px gaps between, then the note
+  const tw = (s) => textPx(s, 11.5);
+  const marks = (10 + 6 + tw("Actual")) + 12 + (2 + 6 + tw("Target")) + (bench ? 12 + (2 + 6 + tw("Benchmark")) : 0);
+  const showNote = !rowW || marks + 12 + tw(RUNG_NOTE) <= rowW;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 18px", marginTop: 6 }}>
+    <div ref={ref} title={showNote ? undefined : "×4 either way fills the rung: the dot is the actual against the target, on a log scale"}
+      style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 18px", marginTop: 6 }}>
       <span style={item}>
         <span style={{
           width: 10, height: 10, borderRadius: "50%", flex: "0 0 10px",
@@ -543,7 +608,7 @@ export function RungKey({ bench = true }) {
           Benchmark
         </span>
       )}
-      <span style={{ ...item, marginLeft: "auto" }}>×4 fills the rung</span>
+      {showNote && <span style={{ ...item, marginLeft: "auto" }}>{RUNG_NOTE}</span>}
     </div>
   );
 }

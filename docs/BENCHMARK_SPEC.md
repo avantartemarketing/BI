@@ -50,7 +50,11 @@ funnel** are always Today; **Paid ROI** has no horizon and **no reference at all
 ### 3.1 Ready-made baskets (`etl/baskets.py`)
 
 Built from `data/release_clusters.csv` (rows with `panel == "draw"`, 108 of them) and
-`data/release_cluster_baskets.json`.
+`data/release_cluster_baskets.json`, read with two guards (`baskets.load_panel`; the panel
+script applies the same ones as it writes): a launch whose units run past 1.5× its edition or
+the orders feed's units paid over the same window is left out (two 2023-24 draws the funnel
+counts twice, Johnson Tsang's Open the Right Mind and Kaï's Content, so 106 are read), and a
+group's conversion rates are emptied where they cannot be rates (§3.2).
 
 | id | name | membership |
 |---|---|---|
@@ -77,6 +81,17 @@ A release is **never a member of its own benchmark** — always drop its own
    being new. It is a tier, not a tiebreak: among comparables a recent ×2.0 outranks an older
    ×1.0. That is deliberate and it is strong - turning it on moved seven of nine live benchmarks
    by 5% to 30% - so the picker says what it passed over, and the switch is per release.
+
+**A release that has closed is read at its own close.** Its close is its panel row's
+`window_end`, else its `launch_end`. Once that is before `as_of`, "the last 18 months" runs
+back from the close, not from the build's day, and a launch that closed after it is left out
+of the basket (the artist's own were already only those closed before it opened). So a closed
+release's basket stops moving: a later rebuild cannot age a member out of the recent tier, and
+a panel refresh cannot add a launch that was not there to compare it with. A live release is
+read at `as_of` as before. Brought in on 2026-09-28, it moved three closed benchmarks once
+against the 24 Sep build: James Jean 475.5 to 670.5 (Parra, closed a day after it, out),
+Mondrian 541 to 475.5 (James Jean and Parra out), Abdulnasser 41 to 35.5 (Zeng Fanzhi's
+multiple out); the other six are unchanged.
 
 Distance is the larger of the two multiples, each taken so it reads above 1 whichever side it
 falls: a launch is only as near as its worse axis, because matched on size at four times the
@@ -138,8 +153,14 @@ on every run and `GET /api/baskets/candidates` serves that file, starting a Pyth
 when there is no file yet. Opening the picker is one 50KB fetch and no Python.
 
 `GET /api/baskets?release=<id>` still takes three previews for other callers: `recent=0|1`
-overrides the saved `prefer_recent`, and `units=&price=` stand in for the saved edition size
-and unit price. All three are part of the server's cache key. The picker no longer uses it.
+overrides the saved `prefer_recent`, and `units=&price=` stand in for the edition size and unit
+price. All three are part of the server's cache key. The picker no longer uses it. Without
+them the release is read the way the build reads it (`server/baskets.js` `resolveRelease`,
+mirroring `resolve_release`): the edition size and price from its release-level figures
+(`legacy_economics`) while it carries them, else its products' target units and their weighted
+euro price (`shared/economics.mjs`), and the dates from the sourced block; the day is the
+build's (`basket_candidates.json` `asOf`). A save that names a ready basket is checked against
+the release as that save leaves it, so the suggestion saves as it was shown.
 
 #### 3.1.1 Why price is in the ladder (`etl/analysis/price_probe.py`, run 2026-09-17)
 
@@ -170,17 +191,20 @@ benchmark|. The price band brings the benchmark closer on seven of eight metrics
 conversion by 0.11, Wilcoxon p 0.008; social by 0.05, p 0.046; units per session by 0.05),
 further on referral-artist conversion by 0.02, and a size+price ladder without shape is worse on
 all but one, so shape stays in. The cost is tighter baskets: the median basket falls from 15
-launches to 10, and 42 of the 108 panel launches get a basket flagged thin (under 10) against 18
+launches to 10, and 42 of the 108 panel launches get a basket flagged thin (under 10, the threshold then) against 18
 before. The band widens more often too (55 launches answered at 2×, 32 at 2.5×, 13 at 3×, 8 at
 4×, against 99 at 2× before).
 
 **Every release gets a benchmark.** An edition larger than anything on record is benchmarked
 against the largest launches there have been, and the multiplier states how far past them it is
 being asked to go: Andy Warhol at 2,440 units, against a panel whose biggest launch ever is 987,
-lands on the six biggest launches on file (both Cattelan editions among them), a benchmark of
-865 and an uplift of ×2.82. "Nearly three times the biggest thing we have ever done" is a plan
-someone can argue with; a blank panel is not. Such a basket is flagged `thin` (under 10 members)
-and carries `scaleMismatch`, so a card can say the basket is nowhere near this edition's size.
+lands on the eight biggest launches on file (495 to 987 units), a benchmark of 805.5 and an
+uplift of ×3.03 (the 24 September 2026 build). "Two and a half times the biggest thing we have
+ever done" is a plan someone can argue with; a blank panel is not. Eight members is not thin,
+but the furthest of them is ×4.9 away, past `NEAR`, so the picker says "Nothing on file is this
+size" above them. `scaleMismatch` (`_resolved`) is a different test, the median against the
+edition (×3.03 here, under `SCALE_MISMATCH_FACTOR` ×4): the build prints it to its log and the
+snapshot does not carry it (§5).
 
 ### 3.2 Profile (the medians)
 
@@ -211,20 +235,37 @@ Groups are the five display groups: `aa_email`, `aa_social`, `referral_artist`,
 
 Per-channel benchmarks are **median share × median total**, never the median of the
 per-channel column - so they sum exactly to the headline median. Medians over an empty or
-all-NaN column are `0.0`, never NaN. The price range is taken over the members Airtable priced
+all-NaN column are `0.0`, never NaN. A group's `conv_sess_entry_<g>` (and `conv_sess_unit_<g>`)
+counts only over at least 100 of the group's sessions and at no more than 0.25 entries or units
+per session; below or past that it is empty and the median skips it (Albers 2026 Q2 read 44 AA
+Meta entries on 57 sessions, 77%, and lifted four baskets' AA Meta conversion by up to half a
+point).
+
+The profile's volumes are the panel's, measured over the panel window: 45 days before the
+announce to three days after the allocation. The page's actuals start at the private room (or
+the first paid order) and stop two days after the close, so a session benchmark carries the
+pre-private-room traffic the page never counts: a few per cent of sessions on most launches,
+more on a channel that runs early (Parra's artist referrals, 2,173 on the panel against 1,398
+on the page). The **cost per paid unit** is on the page's basis instead (`attach_paid_costs`):
+spend to the close over the paid units with Untracked folded in, the Funnel card's cost per unit
+to date. The window's earlier start is the one difference left, and no costed launch on file
+has spend that early. The price range is taken over the members Airtable priced
 (`n_priced`), in euros, and the picker prints it next to the units range on every basket,
 ready-made or hand-picked, so a basket that matches on size but not price is visibly so.
 
-A basket with fewer than **3** members cannot be used (the caller falls back to the
-suggested cluster and records `basket.thin = True` when `n < 10`).
+A basket with no members cannot be used (`MIN_MEMBERS` = 1: the caller falls back to the
+suggested basket); a single launch can, its own figures being the medians. `basket.thin` is
+`True` when `n < 6` (`THIN_MEMBERS`).
 
 ### 3.3 Suggestion
 
 `suggest_basket(panel, release)` returns the ready-made id for a release:
 
-1. If the release is in the panel and has a `cluster`, use `cluster_<n>`.
-2. Otherwise use `nearest_cluster` if present.
-3. Otherwise pick the cluster whose median units are closest to the edition size in log
+1. `similar_size` whenever it has at least one member (`MIN_MEMBERS`): any release with an
+   edition size, while the panel holds another launch with units on file.
+2. Otherwise, if the release is in the panel and has a `cluster`, use `cluster_<n>`.
+3. Otherwise use `nearest_cluster` if present.
+4. Otherwise pick the cluster whose median units are closest to the edition size in log
    space, tie-broken by paid-session share against the panel's median paid share (none when
    paid is not in plan).
 
@@ -247,6 +288,8 @@ paid_budget  = profile["units_by_group"]["paid"] * cost_per_purchase * K   # the
 `compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
 `per_channel`, `paid{...}`, `launch_value`, `units_per_buyer`, `buyers`, `buyers_by_group`,
 `organic_sessions`, `total_sessions`, `entries_target`, `buffer` - or `None` with no basket.
+`buffer` (and the snapshot's `benchmarks.targetBuffer`) is the LE workbook's 0.75 haircut,
+carried for reference only: no colour reads it (§7).
 
 - Organic units are not split into draw and private room (the LE workbook dropped that split
   in September 2026 and the model followed): every organic unit is targeted through its group
@@ -265,9 +308,12 @@ function already returns `None` for that series and `curve_value` falls back to 
 curve. Curves are cached per basket id for the run.
 
 ```
-benchmark_plan[g][d] = profile["units_by_group"][g] * curve(basket, g, "units", pdsa(d))
+benchmark_plan[g][d] = profile["units_by_group"][g] * curve(basket, g, "entries", pdsa(d))
 target_plan[g][d]    = benchmark_plan[g][d] * K
 ```
+
+The curve is the entries one: units are secured units, which count an entry the day it is
+made, so every unit plan is entry-timed (DATA_MODEL §5.3).
 
 So target and benchmark stay in exactly the K ratio on every day — which is what makes the
 even uplift legible on the trajectory.
@@ -533,7 +579,7 @@ the column form the inset is horizontal: fill and outline are inset 6% of the co
 actual 27%. The outline takes no hover of its own (it would sit on top of every fill beneath
 it and steal theirs); the figure it names goes in the fills' popups.
 
-Labels that are placed by value never print through one another. Two rules, both measured in
+Labels that are placed by value never print through one another. Three rules, all measured in
 pixels off the real element rather than assumed from a fraction, because the same fraction
 buys different room on a one-column card and a two-column one:
 
@@ -543,9 +589,15 @@ buys different room on a one-column card and a two-column one:
   build runs behind it, and `GET /api/inputs/:id/build` reports `running`, `done` or `failed`
   (with `seconds` and the error). `storage.durable` on both says whether saves land on a
   persistent disk (`SAVED_INPUTS_PATH`); the tab warns when they do not.
-- **Readings stacked on one line** (the trajectory's today column) spread with `spreadLabels`:
-  sorted, pushed to a minimum gap, squeezed back inside the plot. The ticks and dots stay on
-  their true values - only the text moves, which is what keeps a moved label honest.
+- **A word naming a line or a set of marks** (the trajectory's secured, projected, target and
+  benchmark; Paid ROI's "daily spend" and "paid off") is set in clear space by `nameLines`
+  (`web/src/labels.mjs`) with a thin leader to a point on what it names: never on a bar, a dot
+  or a figure, never across a line (the today line included) where anywhere is clear, and never
+  on another name. The marks stay on their true values - only the word moves.
+- **"today" on a time axis** (the trajectory and Paid ROI) always shows on a live release,
+  centred on the today line and kept inside the plot; the announce or close date at the axis
+  end gives way where the two would print into each other (`timeAxis`). Words are measured in
+  the page's own font, and the cards measure again once the webfont has landed.
 - **A value-anchored label on an axis row with fixed end labels** (the hero and sell-through
   benchmark, against `0` and `sellout`) is placed by `axisLabelLeft`: centred on its tick
   where it fits, slid just clear of the end label where it does not.
@@ -560,7 +612,7 @@ rather than as one mark per channel.
 | **Units vs sellout** (hero) | fill = target today in two tints, outline = benchmark today, blue = to date, track = out to the sellout; two label rows above the bar, the benchmark on the upper and the target on the lower, so the two never print through each other; legend rows To date / Target today / Benchmark today | fill = projected; blue hatch = demand over the sellout, which takes the third legend row when there is any (the label above the bar still names the benchmark) |
 | **Unit trajectory** | two columns wide. The target's pace as a solid 1.5px line, the benchmark's pace as a dotted 1.5px line, the actual in front, no area under any of them; each line named once (secured, projected, target, benchmark) by a word set in clear space with a thin leader to a point on the line, the secured line at its dot, the names placed one after another so two never overlap; the figures live in the hover and in the names' tooltips; ahead of today the references drop back | both run the full width, plus a solid 2px level at the target and a dotted one at the benchmark, named together at the left |
 | **Channels vs targets** | fill and outline per column, actual inside them, foot = % vs target with its own green/red; in the % view every target is 100% and, the uplift being one multiple, every outline sits at the same height too | same with the projected fill |
-| **Funnel by channel** / **Organic funnel** | always Today. **The target runs down the centre of every rung**, the benchmark is a **dotted tick** wherever the basket's figure lands on the same log scale, blue/red dot = actual; ×4 either way fills the rung (`›` marks beyond). Pale bar spans centre→dot. The % and its RAG colour are vs target. Volume rungs carry the uplift, so the tick sits 1/K off the centre; rate rungs are held at the benchmark, so the tick sits on the centre line. The conversion rung reads the basket's conversion **by today** (`conv_benchmark_today`, the figure the waterfall walks against), never its conversion at close: a basket's sessions come earlier than its units, so the at-close rate would put every release behind for most of the campaign while the walk beside it said otherwise. | - |
+| **Funnel by channel** / **Organic funnel** | always Today. **The target runs down the centre of every rung**, the benchmark is a **dotted tick** wherever the basket's figure lands on the same log scale, blue/red dot = actual; ×4 either way fills the rung (`›` marks beyond). Pale bar spans centre→dot. The % and its RAG colour are vs target: green at or above it, amber less than 10% short, red 10% or more short, a cost rung judged the other way round. Volume rungs carry the uplift, so the tick sits 1/K off the centre; rate rungs are held at the benchmark, so the tick sits on the centre line. The conversion rung reads the basket's conversion **by today** (`conv_benchmark_today`, the figure the waterfall walks against), never its conversion at close: a basket's sessions come earlier than its units, so the at-close rate would put every release behind for most of the campaign while the walk beside it said otherwise. | - |
 | **Actual / Projection vs target** (waterfall) | Target today → Stretch (a bar in the stretch tint from the target down, or up, to the benchmark: the part of the gap that is ambition beyond the basket, its popup naming the uplift) → Benchmark today (dotted tick) → the steps, each read against the basket (`waterfall.today.stepsBm`, summing to actual − benchmark) → Actual today; with the stretch they sum to the gap the header prints. Without a basket the list opens at the target and the steps read against it. A `Drivers | Channels` toggle in the card's header picks the steps: the four stored contributors, or each channel's units against its own benchmark in the page's order (they add up to the release's demand; on a sold-out release the last step, Beyond sellout, drops to the capped figure) | the same, ending at Projection (`waterfall.stepsBm`) |
 | **Funnel by channel**, waterfall view | opens at the benchmark's dotted tick, with the stretch beneath it as the band up to the target and the target's solid tick at its end (two rows, not three); then the per-stage rows, every reference read off the basket's pace by today (sessions, implied sends, the benchmark budget) so the rows sum to actual − benchmark, off the same snapshot figures. The channels are blocks of rows rather than rows of their own, and grey 1px drops carry the running level from each row to the next as on the outcome waterfall. The tall card prints no channel column and no figure column: its row labels carry the channel where the label alone would not say it (Email sessions, Paid spend), a row's figures are in its popup, on the bar or on its name, and the levels print theirs beside the label. Pointing at a name lights its bar and a bar its name | - |
 | **Funnel by channel**, 2 × 2 | the waterfall view with two columns by two rows of room: the channel names in a column to the left of their rows (a name lights all of its rows), the bars across the card on a unit axis (gridlines behind the rows, the figures at the foot), and the figures in a column of their own. Not on the page by default; added from the layout editor | - |
@@ -620,7 +672,10 @@ apply is a disabled box, never a dash):
    picker, its profile as chips, the **Channels in plan** switches (§4.3: Running paid; Artist's
    own channels, with the posting tier beside them, disabled while the artist is off), and the
    per-channel table `benchmark units | target units | benchmark sessions | target sessions |
-   session → unit (held)`, where a group set aside reads `not in plan`. The table and the chips
+   session → unit (held)`, where a group set aside reads `not in plan`. The held rate is the
+   row's own benchmark units over its benchmark sessions, the rate the funnel holds
+   (`funnelByGroup.conv_benchmark`), so a row's target sessions at it give its target units; the
+   basket's median entries per session (`convByGroup`) is not shown there. The table and the chips
    follow the switches and the launches ticked in the picker live, through the same model the
    build runs.
 4. **Products & economics** card — one grid drawn the way Airtable draws one: the cell is the
@@ -664,7 +719,9 @@ guides to both axes so it reads even when it sits past every dot on file; the ba
 eight filled dots nearest it, the artist's own members as diamonds; and the reach is drawn as
 the box it is, since "within ×R on both" is a square in log space. Above the map, one sentence
 says what was chosen and why, in amber where the honest thing is a warning ("Nothing on file is
-this size"; "2 nearer launches were passed over for being older than 18 months"), and three
+this size"; "2 nearer launches were passed over for being older than 18 months"; for a release
+that has closed, in grey, "One nearer launch closed after this one and is left out"; the rule is
+run on the page's `asOf` and the release's close, as the build runs it), and three
 switches: Prefer recent (live, per release), Running paid (live: off reads the basket without
 its paid units, §4.3, and is saved with the targets as `channels_off`) and Estate (drawn and
 inert, saying why: the panel needs labelling). Under the map,
@@ -692,7 +749,9 @@ The rail puts this launch beside the basket, a row per statistic - units, unit p
 sessions, paid share, campaign days - so whether the basket resembles the launch is read
 across. A launch's own units and price are the target and price being set on the tab;
 sessions and paid share are to date and would be read against closed launches' totals, so
-those rows are the basket's alone. Under them, a thin-basket warning at fewer than 6 and
+those rows are the basket's alone. The paid share is the tab's figure: paid's median share
+of sessions renormalised with the other channels' (§3.2), over the channels in plan. Under
+them, a thin-basket warning at fewer than 6 and
 which basket the ticks are: "as suggested" until an edit, then "edited". Ticks still
 matching what the modal opened on pick that basket, with its id and the ETL's own profile,
 rather than a bespoke copy of it.

@@ -151,24 +151,6 @@ const baskets = require("./baskets");
 const INPUTS_PATH = path.join(DATA, "inputs.json");
 const SAVED_INPUTS_PATH = process.env.SAVED_INPUTS_PATH || path.join(ROOT, "data", "inputs.saved.json");
 const TARGETS_LOG = process.env.TARGETS_LOG || path.join(ROOT, "data", "targets.log.jsonl");
-// the per-product sell-through rule, re-run on a save that changes product
-// editions or the entry -> order rate (docs/DATA_MODEL.md §6.3)
-// the draws the event feed found per release (etl/aggregate_events.py), so the
-// Target setting tab can list them for naming and sizing; counts only
-const PRODUCTS_FEED = path.join(DATA, "release_products.json");
-let productsFeedCache = { mtime: null, doc: {} };
-function productsFeed() {
-  try {
-    const mtime = fs.statSync(PRODUCTS_FEED).mtimeMs;
-    if (productsFeedCache.mtime !== mtime) productsFeedCache = { mtime, doc: JSON.parse(fs.readFileSync(PRODUCTS_FEED, "utf8")) };
-  } catch { productsFeedCache = { mtime: null, doc: {} }; }
-  return productsFeedCache.doc;
-}
-function drawsFor(releaseName) {
-  const rec = releaseName ? productsFeed()[releaseName] : null;
-  if (!rec) return null;
-  return { draws: rec.draws || [], entrants: rec.entrants ?? null, eligible: rec.eligible ?? null, allocated: !!rec.allocated };
-}
 
 // Express 4 does not catch a rejection from an async handler, and Node exits on
 // an unhandled one - which would take the SPA down with it, since the same
@@ -269,8 +251,6 @@ app.get("/api/inputs/:id", (req, res) => {
     sourced: sourcedFor(doc, id),
     benchmarks: doc.benchmarks,
     meta_campaigns: doc.meta_campaigns || [],
-    // the draws (one per product) the event feed found for this release
-    draws: drawsFor((inputs || disc || {}).release_name),
     storage: storageInfo(),
   });
 });
@@ -310,7 +290,8 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     }
   }
   // what a paid unit costs to buy, in euros: paid units x this is the paid budget.
-  // Empty means the panel's median (etl/benchmarks.json cost_per_purchase).
+  // Empty means the basket's median cost per paid unit, else the panel's median
+  // (etl/benchmarks.json cost_per_purchase; etl/build.py cost_per_purchase_for).
   if (body.cost_per_purchase !== undefined) {
     if (body.cost_per_purchase === null || body.cost_per_purchase === "") next.cost_per_purchase = null;
     else {
@@ -357,16 +338,6 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   for (const f of ["marketing_lead", "campaign_code", "airtable_release", "airtable_ids"]) {
     if (body[f] !== undefined) next[f] = body[f] === null ? null : String(body[f]).slice(0, 200);
   }
-  /* The benchmark basket (BENCHMARK_SPEC §6). An unresolvable basket is
-   * reported here and the save is refused: falling back to the suggestion
-   * would leave someone looking at a benchmark line they did not choose and
-   * cannot tell apart from the one they did. null clears the basket, and the
-   * release is benchmarked against the suggested one again. */
-  if (body.benchmark_basket !== undefined) {
-    const check = await baskets.validateBasketSpec(body.benchmark_basket, id);
-    if (!check.ok) errors.push(check.error);
-    else next.benchmark_basket = check.normalised;
-  }
   if (body.prefer_recent !== undefined) {
     // the basket's recency preference: launches closed in the last 18 months
     // rank first among the comparable ones (etl/baskets.py similar_members)
@@ -399,7 +370,9 @@ app.post("/api/inputs/:id", route(async (req, res) => {
    * artist's and Avant Arte's profit per unit, the deal's revenue or profit
    * share, the framing take-up and profit; empty means Airtable's, or the
    * default. A draw entry (key = the draw id) is the sell-through card's: the
-   * name typed for the draw, its edition and its pre-order rate. */
+   * name typed for the draw and its edition (docs §6.3). No page edits those
+   * today; the tab sends them back as they came, and a draw with none takes
+   * the Shopify title its winners bought. */
   if (body.products !== undefined) {
     if (body.products === null) next.products = null;
     else if (!Array.isArray(body.products) || body.products.length > 60) errors.push("products is a list of up to 60 entries");
@@ -471,6 +444,18 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   }
   if (new Date(next.launch_end) <= new Date(next.announce_date)) {
     errors.push("launch_end must be after announce_date");
+  }
+  /* The benchmark basket (BENCHMARK_SPEC §6). An unresolvable basket is
+   * reported here and the save is refused: falling back to the suggestion
+   * would leave someone looking at a benchmark line they did not choose and
+   * cannot tell apart from the one they did. null clears the basket, and the
+   * release is benchmarked against the suggested one again. Checked last, on
+   * the release as this save leaves it - its products, edition, price,
+   * recency preference and dates - which is what the build will pick on. */
+  if (body.benchmark_basket !== undefined) {
+    const check = await baskets.validateBasketSpec(body.benchmark_basket, id, { release: next });
+    if (!check.ok) errors.push(check.error);
+    else next.benchmark_basket = check.normalised;
   }
   if (errors.length) return res.status(400).json({ error: errors.join("; ") });
 
@@ -719,16 +704,22 @@ app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
 }));
 /* The card to Slack, as a Block Kit message composed from the snapshot on
  * disk by the card's own rules (server/slack.js). The body says which
- * horizon the page is on ({horizon: "today" | "close"}); {dryRun: true}
- * returns the message instead of posting it. */
+ * horizon the page is on ({horizon: "today" | "close"}) and whether its
+ * Direct switch is on Spread ({directSpread: true}), in which case the
+ * message is composed from the snapshot with variants.direct_spread laid
+ * over it, as the page's cards are (web/src/App.jsx), and says so;
+ * {dryRun: true} returns the message instead of posting it. */
 app.post("/api/releases/:id/slack", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
-  const snap = readSnapshot(id);
-  if (!snap) return res.status(404).json({ error: "unknown release" });
+  const base = readSnapshot(id);
+  if (!base) return res.status(404).json({ error: "unknown release" });
   const st = slack.stateFor(id);
   if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
   const horizon = req.body && req.body.horizon === "close" ? "close" : "today";
-  const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon });
+  const variant = base.variants && base.variants.direct_spread;
+  const spread = !!(req.body && req.body.directSpread === true && variant && typeof variant === "object");
+  const snap = spread ? { ...base, ...variant } : base;
+  const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon, direct: spread });
   if (req.body && req.body.dryRun) return res.json({ channel: st.channel, text, blocks });
   try {
     await slack.postMessage(st.channel, text, blocks);

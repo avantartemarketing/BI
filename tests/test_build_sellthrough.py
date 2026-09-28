@@ -8,6 +8,8 @@ funnel file.  python3 tests/test_build_sellthrough.py
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import pathlib
 import sys
 
@@ -122,6 +124,58 @@ st = build.sellthrough_block(release, NAME, units_sold=40, unconverted=100, inve
 check(st["soldSource"] == "winners" and st["incomplete"] == ["sales by product", "draft orders"], f"partial feed {st['incomplete']}")
 check(st["products"][0]["sold"] == 41 and st["products"][1]["drafts"] is None, "the named draw has its orders, the other does not")
 build._ORDERS_FEED = {}
+
+# 7b. names typed with no draw id, on draws the orders feed pairs with the
+#     other way round (the Mondrian and James Jean inputs): position would
+#     put "Red" on the draw that sold the blue print; each draw takes the
+#     title its winners bought instead, and one typed against its draw id stands
+build._ORDERS_FEED = {NAME: {
+    "products": {"Red print": {"unitsPaid": 41, "drafts": 0, "listPrice": 500, "edition": 100},
+                 "Blue print": {"unitsPaid": 22, "drafts": 0, "listPrice": 500, "edition": 200}},
+    "draws": {"d1": "Blue print", "d2": "Red print"}, "drafts": 0.0, "unitsPaid": 63.0, "asOf": "2026-08-20",
+}}
+keyless = {"edition_size": 300, "products": [{"name": "Red", "edition": None}, {"name": "Blue", "edition": None}]}
+st = build.sellthrough_block(keyless, NAME, 40, 100, 260, 30)
+check([(p["name"], p["sold"]) for p in st["products"]] == [("Blue print", 22), ("Red print", 41)],
+      f"keyless names never stand over the draws' products: {[(p['name'], p['sold']) for p in st['products']]}")
+st = build.sellthrough_block({**keyless, "products": [{"key": "d2", "name": "Red"}, {"key": "d1", "name": "Blue"}]}, NAME, 40, 100, 260, 30)
+check([(p["name"], p["sold"]) for p in st["products"]] == [("Blue", 22), ("Red", 41)],
+      f"names typed against the draw ids stand: {[(p['name'], p['sold']) for p in st['products']]}")
+check(build.product_name_warnings(st) == [], "the right names raise no warning")
+build._ORDERS_FEED = {}
+
+# 7c. the soft check: a row named for the work another draw sold is a warning
+#     in the refresh log (the Mondrian rotation), never a failed build, and
+#     short names, re-runs, unnamed draws and numbered works raise none
+T1, T2, T3 = ("Tableau No.1 with Red, Blue, Yellow, Black, and Gray", "Composition with Red, Yellow, Black, Blue, and Gray",
+              "Composition with Large Red Plane, Yellow, Black, Gray, and Blue")
+pairs = {"a": T1, "b": T2, "c": T3}
+rotated = {"products": [{"key": "a", "name": "Composition with Red, Yellow", "draws": ["a"]},
+                        {"key": "b", "name": "Composition with Large Red Plane", "draws": ["b"]},
+                        {"key": "c", "name": "Tableau no.1", "draws": ["c"]}], "drawProducts": pairs}
+w = build.product_name_warnings(rotated)
+check(len(w) == 3 and "'Tableau no.1' (draw c)" in w[2] and "which draw a sold" in w[2], f"the rotation is flagged: {w}")
+right = {"products": [{"key": "a", "name": "Tableau no.1", "draws": ["a"]},
+                      {"key": "b", "name": "Composition with Red, Yellow", "draws": ["b"]},
+                      {"key": "c", "name": T3, "draws": ["c"]}], "drawProducts": pairs}
+check(build.product_name_warnings(right) == [], "short names and titles on their own draws are fine")
+quiet = [
+    {"products": [{"name": "Castles I", "draws": ["a"]}, {"name": "Castles II", "draws": ["b"]}],
+     "drawProducts": {"a": "Castles I", "b": "Castles II"}},                       # numbered works start each other
+    {"products": [{"name": "Problem Painting", "draws": ["a"]}, {"name": "Draw 2", "draws": ["b"]}],
+     "drawProducts": {"a": "Problem Painting", "b": "Problem Painting"}},          # a re-run, or a title taken
+    {"products": [{"key": "p:Poster", "name": "Poster", "draws": []}], "drawProducts": {"a": "Poster print"}},
+    {"products": [None, {"name": 5, "draws": ["a"]}, {"name": "Red"}], "drawProducts": None},
+    {},
+]
+check(all(build.product_name_warnings(s) == [] for s in quiet), f"no warning on good data: {[build.product_name_warnings(s) for s in quiet]}")
+log = io.StringIO()
+try:
+    with contextlib.redirect_stdout(log):
+        build.check_snapshot({"id": "rotated", "hero": {}, "sellthrough": rotated})
+except AssertionError as e:
+    check(False, f"a naming warning stopped the build: {e}")
+check(log.getvalue().count("check_snapshot warning: rotated: sell-through row") == 3, f"the warnings reach the log: {log.getvalue()!r}")
 
 # 8. a target that is only part of the edition: the block reads the whole edition
 st = build.sellthrough_block({**release, "edition_total": 900}, NAME, units_sold=40, unconverted=100, inventory_left=860, future_entries=30)

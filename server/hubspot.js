@@ -10,7 +10,12 @@
  * email carries an Artist_Type_YY token whose artist and year name exactly one
  * known code (so AndyWarhol_LE_26 sends join the AndyWarhol_TL_26 Meta code).
  * Known codes are every release the ETL knows (data/app/inputs.json: configured
- * and discovered) plus the dashboard's saved target inputs. Unmatched emails
+ * and discovered) plus the dashboard's saved target inputs. The artist+year join
+ * never folds a code some feed already uses (the sends' Campaign column, the
+ * Meta campaigns' codes, the content feed's campaign_code) into a sibling: that
+ * code is a campaign of its own, and ZengFanzhi_TL_26, the July Rainbow launch's,
+ * had its sends joined to ZengFanzhi_LE_26 and counted as the LE's. An artist
+ * with two codes in use in a year gets no fuzzy join at all. Unmatched emails
  * keep their raw campaign name and simply don't join a release. Email type
  * (the GEN/CUS/INS filter) still comes from the name convention in
  * etl/build.py, so email names should keep the *_CUS_* style segments.
@@ -31,6 +36,9 @@ const ROOT = path.resolve(__dirname, "..");
 // repo's sources/, where the checked-in copy is the ETL's fallback)
 const OUT = process.env.HUBSPOT_CSV || path.join(process.env.SOURCES_PATH || path.join(ROOT, "sources"), "all_sent_emails.csv");
 const SAVED = process.env.SAVED_INPUTS_PATH || path.join(ROOT, "data", "inputs.saved.json");
+// the other feeds whose campaign codes are in use (codesInUse), where the pulls write them
+const SPEND_CSV = path.join(ROOT, "data", "spend_daily.csv");
+const CONTENT_CSV = path.join(ROOT, "data", "content_posts.csv");
 const API = process.env.HUBSPOT_API || "https://api.hubapi.com/marketing/v3/emails";
 /* The listing comes back oldest first, so a page cap cuts off the newest sends,
  * not the oldest: a 6,000-email cap once froze the feed at 14 Aug 2026 while
@@ -64,11 +72,41 @@ function artistYear(code) {
   return m ? `${m[1].toLowerCase()}_${m[2]}` : null;
 }
 
+/* Every campaign code a feed already uses: the sends' Campaign column as the
+ * file on disk has it, the Meta campaigns' codes (the spend feed names them
+ * "<code> · Enter draw") and the content feed's campaign_code, in the build's
+ * code shape (etl/build.py _CODE_RE). A feed that cannot be read adds nothing. */
+const CODE = /^[A-Za-z0-9]+_[A-Za-z0-9]+_\d{2}$/;
+function codesInUse({ emailsCsv = OUT, spendCsv = SPEND_CSV, contentCsv = CONTENT_CSV } = {}) {
+  const out = new Set();
+  const column = (files, name, f = (v) => v) => {
+    let text = null;
+    for (const file of files) { try { text = fs.readFileSync(file, "utf8"); break; } catch { /* the next copy */ } }
+    if (text === null) return;
+    const lines = text.split(/\r?\n/);
+    const i = parseCsvLine(lines[0] || "").indexOf(name);
+    if (i < 0) return;
+    for (const line of lines.slice(1)) {
+      if (!line.trim()) continue;
+      const v = f(String(parseCsvLine(line)[i] ?? "").trim());
+      if (CODE.test(v)) out.add(v);
+    }
+  };
+  // the sends as last pulled; on a disk without a pull yet, the checked-in copy
+  column([emailsCsv, path.join(ROOT, "sources", "all_sent_emails.csv")], "Campaign");
+  column([spendCsv], "campaign_name", (v) => v.split(" · ")[0].trim());
+  column([contentCsv], "campaign_code");
+  return out;
+}
+
 /* Index of known codes: the exact list plus artist+year keys that name exactly
- * one code (an artist with two coded releases in a year gets no fuzzy join). */
-function campaignIndex(codes) {
+ * one code among the known codes and every code a feed uses (inUse). A token
+ * that is a code in use shares its key with the known sibling it would have
+ * joined, so the key is ambiguous and nothing is folded: an artist with two
+ * codes in use in a year gets no fuzzy join. */
+function campaignIndex(codes, inUse = []) {
   const byKey = new Map();
-  for (const c of codes) {
+  for (const c of new Set([...codes, ...inUse])) {
     const k = artistYear(c);
     if (k) byKey.set(k, byKey.has(k) ? null : c); // null = ambiguous
   }
@@ -76,7 +114,8 @@ function campaignIndex(codes) {
 }
 
 /* -> {code, via}: via is the token that carried an artist+year join, else null.
- * An unmatched email returns its raw campaign name as code. */
+ * The join only lands on a known code. An unmatched email returns its raw
+ * campaign name as code. */
 function matchCampaign(name, campaignName, index) {
   const { codes, byKey } = Array.isArray(index) ? campaignIndex(index) : index;
   if (campaignName && codes.includes(campaignName)) return { code: campaignName, via: null };
@@ -86,7 +125,7 @@ function matchCampaign(name, campaignName, index) {
   for (const s of [campaignName || "", name || ""]) {
     for (const m of s.matchAll(TOKEN)) {
       const hit = byKey.get(artistYear(m[0]));
-      if (hit) return { code: hit, via: m[0] };
+      if (hit && codes.includes(hit)) return { code: hit, via: m[0] };
     }
   }
   return { code: campaignName || "", via: null };
@@ -160,7 +199,7 @@ async function fetchEmailsCsv(now = Date.now()) {
   const token = process.env.HUBSPOT_TOKEN;
   if (!token) return null;
   const { targeted, all } = knownCampaignCodes();
-  const index = campaignIndex(all);
+  const index = campaignIndex(all, codesInUse());
   const known = new Set(all);
   const since = new Date(now - HORIZON_DAYS * 864e5);
   const pulled = new Map();
@@ -232,4 +271,4 @@ async function refreshEmails() {
   return `hubspot ${out.rows} emails, sends through ${out.through} (${out.pulled} pulled, ${how}, ${out.kept} kept from the file${cap}); ${out.summary}`;
 }
 
-module.exports = { refreshEmails, fetchEmailsCsv, matchCampaign, campaignIndex, knownCampaignCodes, summarise, parseCsvLine, OUT };
+module.exports = { refreshEmails, fetchEmailsCsv, matchCampaign, campaignIndex, codesInUse, knownCampaignCodes, summarise, parseCsvLine, OUT };

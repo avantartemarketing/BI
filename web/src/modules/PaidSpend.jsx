@@ -22,8 +22,10 @@ import {
   Card, HorizonBadge, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip, dayElapsed, paidDayFrac,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import { paidUnits } from "../figures.mjs";
 
 const money = (v) => "€" + fmt(Math.round(v ?? 0));
+const hasNum = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const moneyK = (v) => "€" + fmtK(v ?? 0);
 
 export default function PaidSpend({ snap, horizon = "today" }) {
@@ -41,6 +43,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const d = cur !== null && rec !== null ? Math.round(rec) - Math.round(cur) : null;
   const floorF = fmt(budget.floor ?? 1, 1);
   const noPrice = !noCampaign && rec === null;   // spend exists but no cost-per-entry history yet
+  // the gap is measured to the target (edition_size, docs 7); where the target
+  // is only part of the edition (Warhol: 2,440 of 6,100) that is not a sellout
+  const partial = !!(snap.edition && snap.edition.total > snap.edition.target);
 
   // ----- lozenge (recommended vs current), voice per §6.3 / §4.7 -----
   const lozTip = noCampaign ? { head: "No paid campaign live yet" } : noPrice ? {
@@ -55,10 +60,10 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cost / unit at recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at recommended", value: fmt(budget.finalDayRoi, 2) },
       { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
-      { label: "Spend to sell out / day", value: budget.supplySpend !== null && budget.supplySpend !== undefined ? money(budget.supplySpend) : "–" },
+      { label: partial ? "Spend to reach target / day" : "Spend to sell out / day", value: budget.supplySpend !== null && budget.supplySpend !== undefined ? money(budget.supplySpend) : "–" },
       { label: "Spend at ROI floor / day", value: budget.roiSpend !== null && budget.roiSpend !== undefined ? money(budget.roiSpend) : "–" },
       ...(typeof budget.selloutGap === "number"
-        ? [{ label: "Sell-out gap (units)", value: fmt(budget.selloutGap) }]
+        ? [{ label: partial ? "Target gap (units)" : "Sell-out gap (units)", value: fmt(budget.selloutGap) }]
         : []),
       { label: "ROI floor", value: floorF },
     ],
@@ -77,7 +82,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   // One word on the chip, the rule in full at the head of its popup.
   const showCap = !complete && !noCampaign && rec !== null && !!budget.cap;
   const CAPS = {
-    supply: ["Sellout", "Supply - sell-out"],
+    supply: partial ? ["Target", "Supply - target"] : ["Sellout", "Supply - sell-out"],
     roi_floor: ["Floor", "ROI floor"],
     pacing: ["Pacing", "Pacing ±30% / day"],
     roi_band_hold: ["Hold", "ROI band - hold"],
@@ -92,6 +97,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const capLabel = capName + (budget.paced ? " · paced" : "");
   // a cap the pacing rule then limited says so in the popup rather than on the chip
   const pacedRow = budget.paced ? [{ label: "Pacing", value: "move limited to 30% / day" }] : [];
+  // a floor or a supply cap the pacing rule then limited is two figures: the
+  // spend the rule reached, and the paced recommendation beside it
+  const recPacedRow = budget.paced ? [{ label: "Recommended, paced", value: money(rec) + " / day" }] : [];
   const bandTip = {
     head: capLabel,
     body: budget.cap === "pacing"
@@ -101,7 +109,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       : budget.cap === "roi_band_decrease"
       ? "Cumulative ROI is below 0.9: the rules say decrease, by up to 30% a day."
       : budget.cap === "forced_decrease"
-      ? "Forecast ROI has been below target for three days running: the rules force a decrease."
+      ? "The trailing 3-day ROI has been below target on each of the last three full days: the rules force a decrease."
       : budget.cap === "plan_rate"
       ? "No spend yet to anchor a price on, so the first day starts at the plan's daily rate."
       : budget.cap === "zero_conversion"
@@ -141,15 +149,19 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cost / unit at close, today's spend", value: budget.cpeAtClose ? "€" + fmt(budget.cpeAtClose) : "–" },
       { label: "Cost / unit at close, recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at close, recommended", value: fmt(budget.finalDayRoi, 2) },
-      { label: "Spend at the floor", value: money(rec) + " / day" },
+      { label: "Spend at the floor", value: hasNum(budget.roiSpend) ? money(budget.roiSpend) + " / day" : "–" },
+      ...recPacedRow,
       ...pacedRow,
     ],
   };
   const capTip = !["supply", "roi_floor"].includes(budget.cap) ? bandTip : budget.cap === "roi_floor" ? floorTip : budget.cap === "supply" ? {
     head: capLabel,
-    body: "The spend that sells the edition out by launch, at the cost per entry that spend implies - more would buy entries the edition cannot hold.",
+    body: partial
+      ? "The spend that reaches the target by launch, at the cost per entry that spend implies - more would buy entries the target does not need."
+      : "The spend that sells the edition out by launch, at the cost per entry that spend implies - more would buy entries the edition cannot hold.",
     rows: [
-      { label: "Spend cap", value: money(rec) + " / day" },
+      { label: "Spend cap", value: hasNum(budget.supplySpend) ? money(budget.supplySpend) + " / day" : "–" },
+      ...recPacedRow,
       { label: "Entries needed", value: fmt(budget.entriesNeeded) },
       ...(typeof budget.organicFuture === "number"
         ? [{ label: "Organic still to come", value: fmt(budget.organicFuture) }]
@@ -175,8 +187,6 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   // paid set aside for this release (BENCHMARK_SPEC 4.3): the target and the
   // budget are zero by choice, and the card says so above the bars
   const paidOff = hasBm && (snap.benchmark.channelsOff || []).includes("paid");
-  const bmUnitsAll = hasBm && paid.benchmarkUnits !== null && paid.benchmarkUnits !== undefined
-    ? paid.benchmarkUnits : null;
   const bmSpendAll = hasBm && paid.benchmarkBudget !== null && paid.benchmarkBudget !== undefined
     ? paid.benchmarkBudget : null;
   const targetWord = close ? "Target" : "Target today";
@@ -184,16 +194,19 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const bmBody = "The median of the matched basket - what launches like this one typically reach.";
 
   // paid.daily carries draw ENTRIES; the target, the projection and the benchmark
-  // are all in secured units, so the bar reads paid.unitsToDate, the paid group's
-  // secured units - the figure the channels card's paid column shows, so the two
-  // cards cannot disagree. Summing the daily entries here put the bar over its
-  // own target on every release with a drop-off.
-  const unitsNow = Math.round(paid.unitsToDate ?? 0);
-  const unitsProj = complete ? unitsNow : (paid.unitProjected ?? unitsNow);
-  const unitsFill = close ? unitsProj : unitsNow;
-  const unitsTarget = (paid.unitTarget ?? 0) * dayFrac;
-  const unitsBm = bmUnitsAll === null ? null : bmUnitsAll * dayFrac;
-  const unitsPct = unitsTarget > 0 ? Math.round((unitsFill / unitsTarget) * 100) : null;
+  // are all in secured units, so the bar reads the paid group's secured units,
+  // off the paid channel row: the figures the channels card's paid column
+  // divides (figures.mjs paidUnits), so the two cards and the explainer print
+  // one percentage. Summing the daily entries here put the bar over its own
+  // target on every release with a drop-off, and rounding the units before
+  // dividing moved the percentage off the channels card's on a small paid volume.
+  const pu = paidUnits(snap, close);
+  const unitsNow = pu.now;
+  const unitsProj = pu.proj;
+  const unitsFill = pu.fill;
+  const unitsTarget = pu.target;
+  const unitsBm = hasBm ? pu.bm : null;
+  const unitsPct = pu.pct === null ? null : Math.round(pu.pct * 100);
   const unitsTip = {
     head: "Paid units",
     rows: [
@@ -221,7 +234,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
 
   // ----- the stretch: the band on the units bar, named in its popup -----
   const k = snap.benchmark?.k ?? null;
-  const stretchUnits = bmUnitsAll === null ? null : unitsTarget - bmUnitsAll * dayFrac;
+  const stretchUnits = unitsBm === null ? null : unitsTarget - unitsBm;
   const stretchTip = {
     head: "Stretch",
     rows: [
@@ -327,7 +340,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           />
           <span {...tipApi.props(spendTip)} style={rightLabel}><Ex k="paid.spend" arg={{ close }}>{moneyK(spendFill)}</Ex></span>
         </div>
-        <div style={{ height: 14, display: "flex", gap: 14, alignItems: "center" }}>
+        {/* the key wraps rather than running off a narrow card: at close it
+            names four marks, more than a one-column card has room for on a line */}
+        <div style={{ minHeight: 14, display: "flex", flexWrap: "wrap", gap: "4px 14px", alignItems: "center" }}>
           <div style={legendItem}><span style={sw(C.blue)} />To date</div>
           {close && <div style={legendItem}><span style={sw(C.blueLight)} />Projected</div>}
           <div style={legendItem}><span style={sw(C.refBase)} />Target</div>
@@ -392,7 +407,7 @@ function PaidSpendActuals({ snap }) {
         <div style={row}><span style={{ color: C.muted }}>Campaign</span><span style={{ fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }} title={snap.campaignName || ""}>{snap.campaignName || "–"}</span></div>
         <div style={row}><span style={{ color: C.muted }}>Spend to date</span><span className="num"><Ex k="paid.spend" arg={{ close: false }}>{money(spend)}</Ex></span></div>
         <div style={row}><span style={{ color: C.muted }}>Paid entries to date</span><span className="num">{fmt(entries)}</span></div>
-        <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }}>€ per entry, whole campaign</span><span className="num">{paid.cumCpe ? <Ex k="paid.cpe" arg={{ whole: true }}>{"€" + fmt(paid.cumCpe, 2)}</Ex> : "–"}</span></div>
+        <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }} title="Spend over the entries that become orders, whole campaign, full days">€ per converting entry, whole campaign</span><span className="num">{paid.cumCpe ? <Ex k="paid.cpe" arg={{ whole: true }}>{"€" + fmt(paid.cumCpe, 2)}</Ex> : "–"}</span></div>
       </div>
     </Card>
   );

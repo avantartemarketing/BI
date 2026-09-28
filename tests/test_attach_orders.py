@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """attach_orders (etl/sellthrough.py) on the fixtures, and its parity with
-the JS side (tests/attach_orders.mjs --json).  python3 tests/test_attach_orders.py
+the JS side (tests/attach_orders.mjs --json). A case with `draws` builds its
+products with products_from_draws first, given the draws' pairing unless
+`pairDraws` is false.  python3 tests/test_attach_orders.py
 """
 from __future__ import annotations
 
@@ -11,7 +13,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "etl"))
-from sellthrough import attach_orders  # noqa: E402
+from sellthrough import attach_orders, products_from_draws  # noqa: E402
 
 fixtures = json.loads((ROOT / "tests" / "attach_orders_fixtures.json").read_text())
 
@@ -31,7 +33,12 @@ def norm(v):
 failed = 0
 py = []
 for c in fixtures["cases"]:
-    products, source = attach_orders(c["products"], c["orders"], c["drawProducts"], c["source"],
+    if c.get("draws") is not None:
+        start, src = products_from_draws(c["draws"], c.get("configured") or [], c.get("editionSize"),
+                                         None if c.get("pairDraws") is False else c["drawProducts"])
+    else:
+        start, src = c["products"], c["source"]
+    products, source = attach_orders(start, c["orders"], c["drawProducts"], src,
                                      orders_only=bool(c.get("ordersOnly")))
     py.append({"products": products, "source": source})
     got = {"names": [p["name"] for p in products], "sold": [p["sold"] for p in products],

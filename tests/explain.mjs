@@ -4,18 +4,20 @@
  * into explanations that exist on the same page, add its parts up to the
  * figure, and read cleanly: no em dash, no "undefined", no NaN. */
 import assert from "node:assert";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { EXPLAIN, explain, asText, roundParts } from "../web/src/explain/explanations.mjs";
 import { SOURCES, sourceRow } from "../web/src/explain/sources.mjs";
 import { preorderUnits } from "../web/src/explain/explanations.mjs";
-import { inDraw } from "../shared/sellThrough.mjs";
+import { inDraw, sellThroughProducts } from "../shared/sellThrough.mjs";
 import { fmt, fmtPct, fmtSigned } from "../web/src/format.mjs";
+import { channelWalk, paidUnits } from "../web/src/figures.mjs";
 
 const root = new URL("../data/app/", import.meta.url);
-const files = [
-  ...readdirSync(new URL("releases/", root)).filter((f) => f.endsWith(".json")).map((f) => new URL(`releases/${f}`, root)),
-  ...readdirSync(new URL("derived/", root)).filter((f) => f.endsWith(".json")).map((f) => new URL(`derived/${f}`, root)),
-];
+// derived/ is the build's own output and not in the repo: a fresh checkout has none
+const pages = (dir) => (existsSync(new URL(dir, root))
+  ? readdirSync(new URL(dir, root)).filter((f) => f.endsWith(".json")).map((f) => new URL(`${dir}${f}`, root))
+  : []);
+const files = [...pages("releases/"), ...pages("derived/")];
 assert.ok(files.length >= 5, "the snapshots on file");
 
 /* ---- roundParts: whole parts that add up to the rounded whole ---- */
@@ -57,7 +59,11 @@ function cases(s) {
     if (g && s.benchmark) out.push(["funnel.rung", { group: c.name, label: "Sessions", kind: "vol", unit: "count", v: g.sessions_actual, target: g.sessions_benchmark * k, bm: g.sessions_benchmark, k }]);
   }
   out.push(["traj.end", { sel: "all" }]);
-  for (const p of (s.sellthrough && s.sellthrough.products) || []) both("st.row", { key: p.key });
+  for (const p of (s.sellthrough && s.sellthrough.products) || []) {
+    both("st.row", { key: p.key });
+    both("st.row", { key: p.key, as: "units" });   // the row's units column
+  }
+  both("st.head", { as: "units" });                  // a release drawn as one row
   for (const h of ["today", "close"]) {
     const wf = s.waterfall;
     const v = wf && (h === "today" ? wf.today || wf : wf);
@@ -132,13 +138,40 @@ for (const f of files) {
         "st.head": () => {
           const st = s.sellthrough, ed = st.edition;
           const units = st.sold + (st.drafts ?? 0) + (st.soldPredicted ?? 0);
+          // the units column of a release drawn as one row
+          if (arg.as === "units") {
+            const all = units + (close ? st.futureEntriesPredicted ?? 0 : 0);
+            return ed ? `${fmt(all)} of ${fmt(ed)}` : fmt(all);
+          }
           const head = close ? st.pct ?? 0 : Math.min(units / ed, 1);
           return ed ? Math.round(head * 100) + "%" : null;
         },
         "st.row": () => {
           const r = s.sellthrough.products.find((p) => p.key === arg.key);
+          if (arg.as === "units") {
+            // the units column: SellThrough.jsx unitsOf, "208 of 1,000"
+            const units = (r.sold ?? 0) + (r.soldAssumed ?? 0) + (r.drafts ?? 0) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0);
+            return r.edition > 0 ? `${fmt(units)} of ${fmt(r.edition)}` : fmt(units);
+          }
           const p = close ? r.pctClose : r.pct;
           return p === null || p === undefined ? null : Math.round(p * 100) + "%";
+        },
+        // the Paid spend card's units %: the Channels card's Paid column, one figure
+        "paid.units": () => {
+          const c = s.channels.find((x) => x.key === "paid");
+          return Math.round(((close ? c.proj : c.now) / (close ? c.target : c.exp)) * 100) + "%";
+        },
+        // the trajectory's end: All channels is the hero's pair, a channel its own row
+        "traj.end": () => {
+          if (arg.sel === "all") return Math.round((h.projected / h.target) * 100) + "%";
+          const c = s.channels.find((x) => x.key === arg.sel);
+          return Math.round(((c.proj ?? c.now ?? 0) / c.target) * 100) + "%";
+        },
+        // the Channels view's step, whole units that add up (Waterfall.jsx); the
+        // card only asks for Today where the snapshot has a Today walk
+        "wf.channel": () => {
+          if (!close && !(s.waterfall && s.waterfall.today)) return undefined;
+          return fmtSigned(channelWalk(s, { today: !close }).steps.find((x) => x.key === arg.key).value);
         },
         "framing.head": () => {
           const fc = s.framing.forecast && s.framing.forecast[close ? "close" : "today"];
@@ -185,8 +218,9 @@ for (const f of files) {
   if (pre !== null) {
     const allocated = st.products.reduce((t, p) => t + (p.allocated ?? 0), 0);
     const predicted = st.products.reduce((t, p) => t + (p.predicted ?? 0), 0);
+    const claims = st.products.reduce((t, p) => t + (p.claims ?? 0), 0);   // a claim round's, at the pre-order rate
     assert.ok(pre >= 0 && pre <= allocated, `${s.id}: pre-order units ${pre} of ${allocated}`);
-    const back = pre * st.preorderConversion + (allocated - pre) * st.conversion;
+    const back = claims * st.preorderConversion + pre * st.preorderConversion + (allocated - pre) * st.conversion;
     assert.ok(Math.abs(back - predicted) <= 0.05 * st.products.length + 1e-9, `${s.id}: the split prices back to the expected orders: ${back} vs ${predicted}`);
   }
 }
@@ -221,5 +255,127 @@ assert.strictEqual(explain("launch.days", {}, wctx).value, "6 days");
 const drawEx = explain("st.draw", {}, wctx);
 assert.ok(drawEx.steps.map(segText).some((t) => / of those units were entered as pre-orders: they count at 95%/.test(t)), "the draw's working splits the pre-orders out");
 assert.strictEqual(explain("nonsense", {}, wctx), null, "an unknown figure explains nothing");
+
+/* ---- paid's cost per entry moves at the campaign's own drift, which can be 0 (docs 7) ---- */
+const paidStep = (snap) => explain("hero.proj", {}, { snap, st: null }).steps.map(segText).find((t) => t.includes("that paid should bring"));
+const recWords = (snap) => { const ex = explain("paid.rec", {}, { snap, st: null }); return [...ex.steps.map(segText), ...ex.notes].join(" | "); };
+const driftW = w.paid.budget.driftPerDay;
+assert.ok(driftW > 0 && paidStep(w).includes(`rises ${fmtPct(driftW, 1)} a day`), `the projection names the campaign's drift: ${paidStep(w)}`);
+assert.ok(recWords(w).includes("rises with spend and with time") && recWords(w).includes(`and by ${fmtPct(driftW, 1)} a day`), `a drifting cost rises with time: ${recWords(w)}`);
+const flat = structuredClone(w);
+flat.paid.budget.driftPerDay = 0;          // as on a campaign whose own days show no rise (Warhol, 25 Sep)
+assert.ok(!/rise/.test(paidStep(flat)) && paidStep(flat).includes("today's cost per entry, flat to the close"), `no drift, no rise: ${paidStep(flat)}`);
+assert.ok(!/with time\b|0\.0%/.test(recWords(flat).replace("not with time", "")) && recWords(flat).includes("rises with spend, not with time")
+  && recWords(flat).includes("and not over time"), `no drift: the recommendation says the cost does not rise with time: ${recWords(flat)}`);
+flat.paid.budget.driftPerDay = 0.0003;     // a drift too small for one decimal is still named, never "0.0%"
+assert.ok(paidStep(flat).includes("rises 0.03% a day"), `a small drift keeps its figure: ${paidStep(flat)}`);
+flat.paid.budget.elasticity = 0;
+flat.paid.budget.driftPerDay = 0;
+assert.ok(recWords(flat).includes("holds at today's") && !/rises|0\.0%/.test(recWords(flat)), `flat in spend and in time: ${recWords(flat)}`);
+
+/* ---- the paid units % is one figure: the Channels card's Paid column, the
+ * Paid spend card's bar (figures.mjs paidUnits) and the explanation ---- */
+let paidCases = 0;
+for (const f of files) {
+  const raw = JSON.parse(readFileSync(f, "utf8"));
+  for (const s of [raw, ...(raw.variants && raw.variants.direct_spread ? [{ ...raw, ...raw.variants.direct_spread }] : [])]) {
+    if (!(s.channels || []).some((c) => c.key === "paid")) continue;
+    for (const close of [false, true]) {
+      const ctx = { snap: s, st: null };
+      const units = explain("paid.units", { close }, ctx), chan = explain("channel.pct", { key: "paid", close }, ctx);
+      assert.strictEqual(!units, !chan, `${s.id}: both or neither`);
+      if (!units) continue;
+      const card = Math.round(paidUnits(s, close).pct * 100) + "%";
+      assert.strictEqual(units.value, chan.value, `${s.id} ${close ? "close" : "today"}: paid.units ${units.value} is channel.pct ${chan.value}`);
+      assert.strictEqual(card, chan.value, `${s.id} ${close ? "close" : "today"}: the Paid spend card's ${card} is the Channels card's ${chan.value}`);
+      paidCases++;
+    }
+  }
+}
+assert.ok(paidCases >= 30, `paid units cases: ${paidCases}`);
+
+/* ---- a floor or supply figure the pacing rule then limited ---- */
+{
+  // the 25 September build of Julian Schnabel: the floor's spend is under a 30% cut
+  const b = { current: 1502.95, recommended: 1052.07, cap: "roi_floor", paced: true, roiSpend: 638.66, supplySpend: 20326384.98,
+    finalDayRoi: 0.825, floor: 1, cumRoi: 1.759, elasticity: 0.3851, driftPerDay: 0.01 };
+  const at = (budget) => explain("paid.rec", {}, { snap: { ...w, paid: { ...w.paid, budget } }, st: null });
+  const floor = at(b);
+  assert.strictEqual(floor.value, "€1,052");
+  const texts = floor.steps.map(segText);
+  assert.ok(texts.some((t) => t.includes("is €639 a day")), "the floor's own spend is named");
+  assert.ok(/€1,503 × 0\.7 = €1,052/.test(texts.at(-1)), `the paced floor names the pacing step: ${texts.at(-1)}`);
+  assert.ok(!/more would take the ROI at the close under/.test(texts.at(-1)), "and does not say the figure sits on the floor");
+  assert.ok(floor.notes.some((x) => x.includes("0.83, under the floor")), "the ROI at the paced spend is said");
+  const supply = at({ ...b, cap: "supply", supplySpend: 600, roiSpend: 5000 });
+  assert.ok(/The spend that reaches the target is the lower/.test(segText(supply.steps.at(-1))) && /× 0\.7 = €1,052/.test(segText(supply.steps.at(-1))), "a paced supply cap too");
+  // unpaced, the floor is the figure, as before
+  assert.ok(/more would take the ROI at the close under 1\.0/.test(segText(at({ ...b, paced: false, recommended: 638.66 }).steps.at(-1))));
+  // the forced decrease reads what the build tests: the trailing 3-day ROI, day by day
+  assert.ok(/trailing 3-day ROI has been below target on each of the last three full days/.test(segText(at({ ...b, cap: "forced_decrease", paced: false }).steps.at(-1))));
+}
+
+/* ---- a claim round's winners: in the draw's expected orders, not pre-order entries ---- */
+{
+  const st = w.sellthrough;
+  const k = Math.max(st.products.findIndex((p) => /Lifesize/.test(p.name)), 0);
+  const base = st.products.map((p) => ({ key: p.key, name: p.name, edition: p.edition, draws: p.draws, sold: p.sold, drafts: p.drafts }));
+  const run = (n) => {
+    const pp = sellThroughProducts({ products: base.map((p, i) => (i === k && n ? { ...p, claimsInFlight: n } : p)), patterns: st.patterns,
+      rate: st.conversion, edition: st.edition, soldTotal: st.sold, preorderRate: st.preorderConversion });
+    return { ...st, products: pp.products, soldPredicted: pp.soldPredicted, claimsInFlight: n };
+  };
+  const without = run(0), claimed = run(8);
+  assert.strictEqual(claimed.products[k].claims, 8, "the allocator carries the claims on the row");
+  const pre0 = preorderUnits(without), pre8 = preorderUnits(claimed);
+  assert.ok(pre0 !== null && Math.abs(pre8 - pre0) <= st.products.length, `claims are not pre-order entries: ${pre0} without, ${pre8} with 8 claims`);
+  const allocated = claimed.products.reduce((t, p) => t + p.allocated, 0), predicted = claimed.products.reduce((t, p) => t + p.predicted, 0);
+  const back = 8 * st.preorderConversion + pre8 * st.preorderConversion + (allocated - pre8) * st.conversion;
+  assert.ok(Math.abs(back - predicted) <= 0.05 * st.products.length + 1e-9, `the split and the claims price back to the expected orders: ${back} vs ${predicted}`);
+  const ex = explain("st.draw", {}, { snap: { ...w, sellthrough: claimed }, st: null });
+  const steps = ex.steps.map(segText);
+  assert.ok(steps.some((t) => /the 8 winners of this draw round whose claims/.test(t) && /8 × 95% = 7\.6 orders/.test(t)), `a claims step: ${steps.join(" | ")}`);
+  assert.ok(!explain("st.draw", {}, wctx).steps.map(segText).some((t) => /claims/.test(t)), "and none outside a claim round");
+}
+
+/* ---- freshness: the day the page's data runs to, the release's last activity beside it ---- */
+for (const f of files) {
+  const s = JSON.parse(readFileSync(f, "utf8"));
+  if (!s.asOf) continue;
+  const day = (iso) => fmt(Number(iso.slice(8, 10))) + " " + ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(iso.slice(5, 7)) - 1];
+  const reach = `to ${day(s.asOf)}${typeof s.asOfFraction === "number" && s.asOfFraction < 1 ? ", so far" : ""}`;
+  const orders = sourceRow({ key: "orders", gave: "x" }, s, null).fresh;
+  const lastOrder = (s.sellthrough && s.sellthrough.ordersAsOf) || null;
+  assert.strictEqual(orders, lastOrder && lastOrder < s.asOf ? `${reach} · last order ${day(lastOrder)}` : reach, `${s.id}: orders ${orders}`);
+  const spendRows = ((s.paid && s.paid.daily) || []).filter((d) => (d.spend ?? 0) > 0);
+  const lastSpend = spendRows.length ? spendRows[spendRows.length - 1].date : null;
+  const meta = sourceRow({ key: "meta", gave: "x" }, s, null).fresh;
+  assert.strictEqual(meta, lastSpend && lastSpend < s.asOf ? `${reach} · last spend ${day(lastSpend)}` : reach, `${s.id}: meta ${meta}`);
+}
+{
+  const m = JSON.parse(readFileSync(new URL("releases/mondrian_le_26.json", root), "utf8"));
+  assert.strictEqual(sourceRow({ key: "meta", gave: "x" }, m, null).fresh, "to 24 Sep · last spend 4 Aug", "a closed campaign's spend names its last day");
+  assert.strictEqual(sourceRow({ key: "orders", gave: "x" }, w, null).fresh, "to 24 Sep, so far", "a live page's orders run to today so far");
+  const stale = { ...w, social: { ...w.social, postsSource: "emplifi", postsThrough: "2026-08-13", postsEndsFirst: true } };
+  assert.strictEqual(sourceRow({ key: "social", gave: "x" }, stale, null).fresh, "to 13 Aug", "the post export reads to its own last day");
+}
+
+/* ---- the framing uplift is named only where there is one ---- */
+{
+  const framed = explain("paid.roi", { party: "aa" }, wctx);
+  assert.ok(framed.notes.some((x) => /framing uplift/.test(x)), "Warhol's AA profit carries a framing uplift");
+  const bare = explain("paid.roi", { party: "aa" }, { snap: { ...w, economics: { ...w.economics, frameUpliftPerUnit: 0 } }, st: null });
+  assert.ok(!bare.notes.some((x) => /framing uplift/.test(x)), "a release with no framing uplift does not claim one");
+}
+
+/* ---- editions that do not add up are said ---- */
+{
+  const j = JSON.parse(readFileSync(new URL("releases/julianschnabel_le_26.json", root), "utf8"));
+  if (j.sellthrough && j.sellthrough.editionMismatch) {
+    const head = explain("st.head", {}, { snap: j, st: null });
+    assert.ok(head.notes.some((x) => x.includes(`add up to ${fmt(j.sellthrough.editionSum)}, not the ${fmt(j.sellthrough.edition)}`)), "the headline's working names the mismatch");
+  }
+  assert.ok(!explain("st.head", {}, wctx).notes.some((x) => /editions add up to/.test(x)), "and only where there is one");
+}
 
 console.log(`explain: ${shown} explanations of ${checked} figures across ${files.length} snapshots ok`);

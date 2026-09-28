@@ -35,8 +35,10 @@
  * where the total is held at the edition). The scale is units, the total's
  * figure sits at the end of its line, and a legend under the plot gives each
  * group's units and share at close; the hover reads them on any day. */
-import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, labelPx, dayElapsed } from "../ui.jsx";
+import React, { useMemo, useState } from "react";
+import {
+  Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, dayElapsed, textPx, timeAxis, nameLines, useBoxSize, LineNames,
+} from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
@@ -78,123 +80,10 @@ function unitTicks(top) {
   for (let v = step; v <= top + 1e-9; v += step) out.push(v);
   return out;
 }
-const LABEL_TODAY_PX = 38; // rendered width of "today" at 12px
-
-/* ---- naming the lines --------------------------------------------------------
- * A name is a word in clear space with a leader to a point on its line. It
- * may sit anywhere no curve, no dot, no figure and no other name runs
- * through, its leader may cross no name, no dot and no other leader, and
- * among those places it takes the one with the shortest leader, the fewest
- * curves under the leader, and an anchor near the middle of its line, spread
- * from the other names' anchors. The names are set one after another, each
- * treating the ones already set as walls, so two never overlap. Only when a
- * name has nowhere that clear does it settle for a place across a curve or a
- * leader, and only when it has nowhere at all does it go on a card-white
- * patch where it runs into the least. Another name is the one wall that
- * holds in every tier, so two names never overlap. All of
- * it is in real pixels off the measured plot, with the text measured in the
- * page's own font, so it holds whatever width the card is given. */
-function segHitsBox(x0, y0, x1, y1, b) {
-  // Liang-Barsky: does the segment cross the box, edges included
-  let t0 = 0, t1 = 1;
-  const dx = x1 - x0, dy = y1 - y0;
-  const clip = (p, q) => {
-    if (p === 0) return q >= 0;
-    const r = q / p;
-    if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; }
-    else { if (r < t0) return false; if (r < t1) t1 = r; }
-    return true;
-  };
-  return clip(-dx, x0 - b.x0) && clip(dx, b.x1 - x0) && clip(-dy, y0 - b.y0) && clip(dy, b.y1 - y0);
-}
-const boxesTouch = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
-// do two segments cross (touching counts)
-function segsCross(a, b, c, d) {
-  const o = (p, q, r) => Math.sign((q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x));
-  const on = (p, q, r) => Math.min(p.x, q.x) <= r.x && r.x <= Math.max(p.x, q.x) && Math.min(p.y, q.y) <= r.y && r.y <= Math.max(p.y, q.y);
-  const o1 = o(a, b, c), o2 = o(a, b, d), o3 = o(c, d, a), o4 = o(c, d, b);
-  if (o1 !== o2 && o3 !== o4) return true;
-  return (o1 === 0 && on(a, b, c)) || (o2 === 0 && on(a, b, d)) || (o3 === 0 && on(c, d, a)) || (o4 === 0 && on(c, d, b));
-}
-// where a leader leaves its name: the point where the line from the box's
-// centre to the anchor crosses the box's edge, a step clear of the text
-function leaderStart(box, anchor) {
-  const cx = (box.x0 + box.x1) / 2, cy = (box.y0 + box.y1) / 2;
-  const dx = anchor.x - cx, dy = anchor.y - cy;
-  const len = Math.hypot(dx, dy) || 1;
-  const tx = dx !== 0 ? ((dx > 0 ? box.x1 : box.x0) - cx) / dx : Infinity;
-  const ty = dy !== 0 ? ((dy > 0 ? box.y1 : box.y0) - cy) / dy : Infinity;
-  const t = Math.min(tx, ty);
-  return { x: cx + dx * t + (dx / len) * 3, y: cy + dy * t + (dy / len) * 3 };
-}
-// the eight ways a name can sit off its anchor, at four distances
-const DIRS = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]
-  .map(([dx, dy]) => { const n = Math.hypot(dx, dy); return [dx / n, dy / n]; });
-const DISTS = [18, 30, 44, 60];
-function nameLines({ labels, curves, blocks, bounds }) {
-  const names = [];                      // each name's box as it is set: nothing may ever touch these
-  const leaders = [];                    // each leader as it is set
-  const anchorsSet = [];
-  const segs = curves.flatMap((c) => c.pts.slice(1).map((p, i) => ({ a: c.pts[i], b: p })));
-  const near = (s, pt) => Math.hypot(s.a.x - pt.x, s.a.y - pt.y) < 7 || Math.hypot(s.b.x - pt.x, s.b.y - pt.y) < 7;
-  const inside = (pt, b) => pt.x >= b.x0 && pt.x <= b.x1 && pt.y >= b.y0 && pt.y <= b.y1;
-  const out = [];
-  for (const lb of labels) {
-    const candidates = [];
-    for (const anchor of lb.anchors) {
-      // the leader may run into the mark it points at (the today dot), not into any other
-      const marks = blocks.filter((b) => !inside(anchor, b));
-      for (const [ux, uy] of DIRS) for (const d of DISTS) {
-        const ax = anchor.x + ux * d, ay = anchor.y + uy * d;
-        const x0 = ux < 0 ? ax - lb.w : ux > 0 ? ax : ax - lb.w / 2;
-        const y0 = uy < 0 ? ay - lb.h : uy > 0 ? ay : ay - lb.h / 2;
-        const box = { x0, y0, x1: x0 + lb.w, y1: y0 + lb.h };
-        const pad = { x0: x0 - 2, y0: y0 - 2, x1: box.x1 + 2, y1: box.y1 + 2 };
-        if (pad.x0 < bounds.x0 || pad.x1 > bounds.x1 || pad.y0 < bounds.y0 || pad.y1 > bounds.y1) continue;
-        const start = leaderStart(box, anchor);
-        const onName = names.some((n) => boxesTouch(pad, n) || segHitsBox(start.x, start.y, anchor.x, anchor.y, n));
-        if (onName) continue;            // never on another name, never a leader through one
-        const onMark = blocks.filter((b) => boxesTouch(pad, b)).length + marks.filter((b) => segHitsBox(start.x, start.y, anchor.x, anchor.y, b)).length;
-        const onLeader = leaders.filter((l) => segHitsBox(l.a.x, l.a.y, l.b.x, l.b.y, pad) || segsCross(start, anchor, l.a, l.b)).length;
-        const underBox = segs.filter((s) => segHitsBox(s.a.x, s.a.y, s.b.x, s.b.y, pad)).length;
-        const underLeader = segs.filter((s) => !near(s, anchor) && segsCross(start, anchor, s.a, s.b)).length;
-        const len = Math.hypot(start.x - anchor.x, start.y - anchor.y);
-        const crowd = anchorsSet.filter((p) => Math.abs(p.x - anchor.x) < 48).length;
-        candidates.push({
-          box, start, anchor, underBox,
-          cost: underBox * 10 + underLeader * 3 + len * 0.04 + (anchor.cost || 0) + crowd * 4,
-          // the tiers, worst first: on a dot or the figure; across a leader or under a curve; clear
-          hard: onMark, soft: onLeader + underBox,
-        });
-      }
-    }
-    if (!candidates.length) continue;
-    const pick = (list) => list.reduce((best, c) => (c.cost < best.cost ? c : best));
-    const clear = candidates.filter((c) => c.hard === 0 && c.soft === 0);
-    const clearish = candidates.filter((c) => c.hard === 0);
-    const best = clear.length ? pick(clear) : clearish.length ? pick(clearish)
-      : pick(candidates.map((c) => ({ ...c, cost: c.cost + c.hard * 100 })));
-    const knock = best.hard > 0 || best.underBox > 0;
-    names.push({ x0: best.box.x0 - 2, y0: best.box.y0 - 2, x1: best.box.x1 + 2, y1: best.box.y1 + 2 });
-    leaders.push({ a: best.start, b: best.anchor });
-    anchorsSet.push(best.anchor);
-    out.push({ ...lb, x0: best.box.x0, y0: best.box.y0, start: best.start, anchor: best.anchor, knock });
-  }
-  return out;
-}
-let ctx2d = null, fontFamily = null;
-function pageFont() {
-  if (fontFamily) return fontFamily;
-  try { fontFamily = getComputedStyle(document.body).fontFamily || "sans-serif"; } catch { fontFamily = "sans-serif"; }
-  return fontFamily;
-}
-function textWidth(text, font) {
-  try {
-    if (!ctx2d) ctx2d = document.createElement("canvas").getContext("2d");
-    ctx2d.font = font;
-    return ctx2d.measureText(text).width;
-  } catch { return text.length * 6.8; }   // no canvas (a test runner): a fair guess at 12px
-}
+/* The names are set by nameLines, the placer this card grew and the charts
+ * now share (web/src/labels.mjs): each line named once, in a word in clear
+ * space with a thin leader to a point on it, all in real pixels off the
+ * measured plot, with the text measured in the page's own font. */
 
 function slicePts(daily, windowStart, of) {
   if (!daily || !daily.length) return [];
@@ -256,21 +145,9 @@ export default function Trajectory({ snap }) {
   const [view, setView] = useState("lines");   // "lines" (against target) | "channels"
   const byChannel = view === "channels";
   const [hover, setHover] = useState(null);   // {i, frac}
-  // the plot's real height, so label spacing can be set in pixels rather than
+  // the plot's real size, so label spacing can be set in pixels rather than
   // in a percentage guessed from a card size that is free to change
-  const plotRef = useRef(null);
-  const [plotH, setPlotH] = useState(0);
-  const [plotW, setPlotW] = useState(0);
-  useLayoutEffect(() => {
-    const el = plotRef.current;
-    if (!el) return undefined;
-    const measure = () => { setPlotH(el.clientHeight); setPlotW(el.clientWidth); };
-    measure();
-    if (typeof ResizeObserver === "undefined") return undefined;
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  const [plotRef, plotW, plotH] = useBoxSize();
   const channels = snap.channels || [];
   const of = snap.of || 1;
   const day = Math.max(0, Math.min(snap.day ?? 0, of));
@@ -453,11 +330,26 @@ export default function Trajectory({ snap }) {
   const bmToday = hasBm ? s.bmExp : null;
   const showToday = targeted;
 
-  const projPct = targeted && s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
-  // axis: % of target when there is one, secured units when there is not
-  const axisTop = targeted ? s.target : yTopV / 1.02;
-  const axisLabelTop = targeted ? "100%" : fmt(axisTop);
-  const axisLabelMid = targeted ? "50%" : axisTop >= 2 ? fmt(axisTop / 2) : "";
+  // All channels ends on the hero's projection over the hero's target, the pair
+  // the hero and the explainer print: the channels' sums are kept to 0.1 of a
+  // unit and can round to the other side of a half percent (98% against 99%)
+  const hero = snap.hero || {};
+  const heroPct = (byChannel || sel === "all") && Number.isFinite(hero.projected) && hero.target > 0
+    ? Math.round((hero.projected / hero.target) * 100) : null;
+  const projPct = targeted && s.target > 0 ? heroPct ?? Math.round((s.proj / s.target) * 100) : null;
+  // axis: % of target when there is one, secured units when there is not -
+  // a group set aside for the release has no target for 100% to be, and its
+  // 100%, 50% and 0 all printed on the baseline
+  const pctAxis = targeted && s.target > 0;
+  const axisTop = pctAxis ? s.target : yTopV / 1.02;
+  const axisLabelTop = pctAxis ? "100%" : fmt(axisTop);
+  const axisLabelMid = pctAxis ? "50%" : axisTop >= 2 ? fmt(axisTop / 2) : "";
+  // a y label a line's height from another gives way, the middle one first
+  // (in pixels, off the measured plot)
+  const yPx = (v) => (y(v) / Y0) * plotH;
+  const clearOf = (a, b) => !(plotH > 0) || Math.abs(yPx(a) - yPx(b)) >= 15;
+  const showAxisTop = clearOf(axisTop, 0);
+  const showAxisMid = showAxisTop && clearOf(axisTop / 2, 0) && clearOf(axisTop, axisTop / 2);
   const pctColor = projPct !== null && projPct >= 100 ? C.ink : C.red;
   const nowTip = byChannel ? fmt(s.now) + " units secured to date" :
     fmt(s.now) + " units secured to date · " + fmt(planToday) + " target by day " + day +
@@ -471,34 +363,26 @@ export default function Trajectory({ snap }) {
       (sel === "all" && projPct !== null && projPct > 100
         ? " · demand beyond the sellout cannot convert" : "");
   /* "today" always shows on a live release: it is the reading that matters, and
-   * the line it names is otherwise just a line. "day 1" and "day N" sit at the
-   * ends, so in the first or last days one of them would overprint it; how
-   * close is too close is a pixel question, not a fraction one, so it is
-   * measured against the plot, and the end label is the one to give way, since
-   * the axis already ends there. The fraction is the fallback before the first
-   * measurement lands. */
+   * the line it names is otherwise just a line. The axis ends are the announce
+   * and close dates ("3 Sep", "30 Sep": the points at index 0 and index of),
+   * the day number when the window has no start, so in the first or last days
+   * one of them would overprint it; how close is too close is a pixel
+   * question, not a fraction one, so timeAxis measures the words against the
+   * plot, keeps "today" inside it, and lets the end label give way, since the
+   * axis already ends there. */
   const showTodayLabel = !complete;
-  // the axis ends are the announce and close dates ("3 Sep", "30 Sep": the
-  // points at index 0 and index of), the day number when the window has no
-  // start; their widths as drawn at 12px
   const day1Text = dayAxisLabel(snap, 0), endText = dayAxisLabel(snap, of);
-  const day1Room = plotW > 0
-    ? todayFrac * plotW - (LABEL_TODAY_PX / 2 + labelPx(day1Text) + 8)
-    : (todayFrac < 0.08 ? -1 : 1);
-  const endLabelRoom = plotW > 0
-    ? (1 - todayFrac) * plotW - (LABEL_TODAY_PX / 2 + labelPx(endText) + 10)
-    : (todayFrac > 0.82 ? -1 : 1);
-  const showDay1Label = !(showTodayLabel && day1Room < 0);
-  const showEndLabel = !(showTodayLabel && endLabelRoom < 0);
+  const xAxis = timeAxis({ rowW: plotW, frac: todayFrac, live: showTodayLabel, startText: day1Text, endText });
+  const showDay1Label = xAxis.start, showEndLabel = xAxis.end;
 
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const xLabel = { position: "absolute", top: "100%", paddingTop: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
-  /* The names, set clear of everything drawn (the placer at the top of the
-   * file): secured at its dot, projected, target and benchmark each anchored
-   * somewhere along their line, in that order, so the one that matters most
-   * gets the best place. An anchor is a day's point on the line, away from
-   * the ends and from the today dot. Nothing is placed until the plot has
-   * been measured. */
+  /* The names, set clear of everything drawn (nameLines, labels.mjs): secured
+   * at its dot, projected, target and benchmark each anchored somewhere along
+   * their line, in that order, so the one that matters most gets the best
+   * place. An anchor is a day's point on the line, away from the ends and
+   * from the today dot. The today line is one of the lines a name keeps off
+   * where it can. Nothing is placed until the plot has been measured. */
   let names = [];
   if (!byChannel && showToday && plotW > 0 && plotH > 0) {
     const px = (i) => (i / N) * plotW;
@@ -523,13 +407,13 @@ export default function Trajectory({ snap }) {
       ...polylines((p) => p.actual, 0, lastA).map((pts) => ({ pts })),
       ...targetRuns.map((pts) => ({ pts })), ...bmRuns.map((pts) => ({ pts })),
       ...(projRun.length > 1 ? [{ pts: projRun }] : []),
+      ...(!complete ? [{ pts: [{ x: px(todayPos), y: 0 }, { x: px(todayPos), y: plotH }] }] : []),
     ];
     const ax = px(todayPos), ayNow = py(nowVal), ayEnd = py(complete ? nowVal : s.proj);
-    const font = (weight) => `${weight} 12px ${pageFont()}`;
     const blocks = [
       { x0: ax - 6, y0: ayNow - 6, x1: ax + 6, y1: ayNow + 6 },   // the today dot
       ...(targeted && !complete ? [{ x0: plotW - 6, y0: ayEnd - 6, x1: plotW + 6, y1: ayEnd + 6 }] : []),   // the projection's dot
-      ...(projPct !== null ? [{ x0: plotW + 8, y0: ayEnd - 8, x1: plotW + 12 + textWidth(`${projPct}%`, font(600)), y1: ayEnd + 8 }] : []),
+      ...(projPct !== null ? [{ x0: plotW + 8, y0: ayEnd - 8, x1: plotW + 12 + textPx(`${projPct}%`, 12, 600), y1: ayEnd + 8 }] : []),
     ];
     // the anchors a line offers: its points a day in from either end and a day
     // clear of the today dot, each costing a little for its distance from the
@@ -547,9 +431,10 @@ export default function Trajectory({ snap }) {
       return [{ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, cost: 0 }];
     };
     const H = 14;
-    const label = (key, text, color, weight, title, anchors) => ({ key, text, color, weight, title, anchors, w: textWidth(text, font(weight)), h: H });
+    const label = (key, text, color, weight, title, anchors) => ({ key, text, color, weight, title, anchors, w: textPx(text, 12, weight), h: H });
     const labels = [
-      label("now", "secured", C.ink, 600, nowTip, [{ x: ax, y: ayNow, cost: 0 }]),
+      // its leader stops short of the today dot it names
+      { ...label("now", "secured", C.ink, 600, nowTip, [{ x: ax, y: ayNow, cost: 0 }]), dot: 6.5 },
       ...(showProjSeg && projRun.length > 1 ? [label("proj", "projected", C.muted, 500, projTip, projAnchors())] : []),
       label("target", "target", C.ink, 500,
         `${fmt(planToday)} target by day ${day} · ${fmt(s.target)} at close`, anchorsOn(targetRuns, true)),
@@ -721,30 +606,7 @@ export default function Trajectory({ snap }) {
 
             {/* the names and their leaders: a leader runs from the name's edge to
                 a grey point on its line, or up to the edge of the today dot */}
-            {showToday && names.length > 0 && (
-              <>
-                <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none" }} aria-hidden="true">
-                  {names.map((n) => {
-                    const toDot = n.key === "now";
-                    const dx = n.anchor.x - n.start.x, dy = n.anchor.y - n.start.y, len = Math.hypot(dx, dy) || 1;
-                    const end = toDot ? { x: n.anchor.x - (dx / len) * 6.5, y: n.anchor.y - (dy / len) * 6.5 } : n.anchor;
-                    return (
-                      <g key={n.key}>
-                        <line x1={n.start.x.toFixed(1)} y1={n.start.y.toFixed(1)} x2={end.x.toFixed(1)} y2={end.y.toFixed(1)} stroke={C.targetLine} strokeWidth="1" />
-                        {!toDot && <circle cx={n.anchor.x.toFixed(1)} cy={n.anchor.y.toFixed(1)} r="2.4" fill={C.targetLine} />}
-                      </g>
-                    );
-                  })}
-                </svg>
-                {names.map((n) => (
-                  <div key={n.key} title={n.title} style={{
-                    position: "absolute", left: n.x0, top: n.y0, height: n.h, lineHeight: `${n.h}px`,
-                    fontSize: 12, fontWeight: n.weight, color: n.color, whiteSpace: "nowrap",
-                    ...(n.knock ? { background: "#fff", padding: "0 3px", margin: "0 -3px", borderRadius: 2 } : {}),
-                  }}>{n.text}</div>
-                ))}
-              </>
-            )}
+            {showToday && <LineNames names={names} />}
 
             {/* projection end dot (white-cored); on complete releases projection = actual,
                 so the today dot already sits at the close and only the % label remains */}
@@ -788,8 +650,8 @@ export default function Trajectory({ snap }) {
               <div key={v} style={{ ...axisLabel, top: pctTop(y(v)) }}>{fmt(v)}</div>
             )) : (
               <>
-                <div style={{ ...axisLabel, top: pctTop(y(axisTop)) }}>{axisLabelTop}</div>
-                <div style={{ ...axisLabel, top: pctTop(y(axisTop / 2)) }}>{axisLabelMid}</div>
+                {showAxisTop && <div style={{ ...axisLabel, top: pctTop(y(axisTop)) }}>{axisLabelTop}</div>}
+                {showAxisMid && <div style={{ ...axisLabel, top: pctTop(y(axisTop / 2)) }}>{axisLabelMid}</div>}
               </>
             )}
             <div style={{ ...axisLabel, top: "100%" }}>0</div>
@@ -797,7 +659,10 @@ export default function Trajectory({ snap }) {
             {/* x axis */}
             {showDay1Label && <div style={{ ...xLabel, left: 0 }} title="announced">{day1Text}</div>}
             {showTodayLabel && (
-              <div style={{ ...xLabel, left: `${(todayFrac * 100).toFixed(2)}%`, transform: "translateX(-50%)", color: C.ink }}>
+              <div style={{
+                ...xLabel, color: C.ink,
+                ...(xAxis.todayLeft === null ? { left: `${(todayFrac * 100).toFixed(2)}%`, transform: "translateX(-50%)" } : { left: xAxis.todayLeft }),
+              }}>
                 today
               </div>
             )}
