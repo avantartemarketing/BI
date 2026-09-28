@@ -947,9 +947,9 @@ EXPLAIN["st.row"] = (a, { snap: s }) => {
     steps, total: asUnits ? { v: n(units), label: hasEd ? `of its ${n(r.edition)} edition` : "units" } : { v: value, label: finite(r.edition) ? "of the edition" : "units" },
     compare: asUnits && pctText ? [{ label: "Sell-through", v: pctText, k: "st.row", arg: { key: r.key, close }, note: "The same units as a share of its edition." }] : [],
     sources: [
-      { key: "orders", gave: "Its units paid and draft orders" },
+      { key: "orders", gave: "Its name, units paid and draft orders" },
       { key: "entries", gave: "The entries naming it" },
-      { key: "settings", gave: "Its name and edition, where typed" },
+      { key: "airtable", gave: "Its edition, matched by its Shopify title" },
     ],
     notes: (r.oversubscribed ?? 0) > 0 ? [`${n(r.oversubscribed)} more units of demand than the edition has room for.`] : [],
     method: "Data model 6.3",

@@ -35,8 +35,9 @@
  * allocator applies at close (shared/sellThrough.mjs).
  * The card carries no copy about it: the account of who moved where is in
  * the popup of the draw-winners key, the split of sales the feed cannot name
- * a product for in the paid key's, and the editions are set where they are
- * typed, on the Target setting tab. Where the works' editions do not add up
+ * a product for in the paid key's. A work's edition is Airtable's, matched by
+ * its Shopify title, and the release's is set on the Target setting tab;
+ * where the works' editions do not add up
  * to the release's, an amber "editions add to N" beside the title says so
  * (docs 6.3), and the Target setting tab carries the same note.
  *

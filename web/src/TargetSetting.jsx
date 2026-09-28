@@ -436,7 +436,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
  * channels. The plan here always reads Direct as a channel of its own, so
  * the tab says so rather than contradicting the Channels card silently. */
 export default function TargetSetting({ snap, onSaved, directSpread = false }) {
-  const [meta, setMeta] = useState(null);       // {inputs, sourced, benchmarks, meta_campaigns, derived, draws, creating}
+  const [meta, setMeta] = useState(null);       // {inputs, sourced, benchmarks, meta_campaigns, derived, creating}
   const [inp, setInp] = useState(null);         // editable inputs
   const [pick, setPick] = useState(null);       // a basket chosen in the picker, not yet saved
   const [picking, setPicking] = useState(false);
