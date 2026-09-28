@@ -4703,11 +4703,17 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     edition = float(release["edition_size"])     # the target the plan runs on
     total = float(edition_total(release))         # the whole edition: caps and oversubscription
     status_pct = (min(hero_now, total) - hero_exp) / hero_exp if hero_exp else 0.0
+    # the traffic the sidebar row reads (index_row), counted as the
+    # actuals-only page counts it: sessions in the window, the last day seen
+    in_window = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= window_end)]
     snap = {
         "id": release["id"],
         "releaseName": name,
         "artist": name.split(" · ")[0], "title": name.split(" · ")[1],
+        "quarter": name_quarter(name),
         "type": "LE",
+        "totals": {"sessions": round(float(in_window["Sessions_Total"].sum()))},
+        "derived": {"last_seen": rat["event_date"].max().isoformat() if len(rat) else None},
         "campaignCode": release["campaign_code"], "campaignName": camp,
         "campaignNames": camps,
         "marketingLead": release.get("marketing_lead"),
@@ -5138,13 +5144,19 @@ def units_coverage() -> str:
             f"{i.get('releases')} releases, {i.get('units', 0):,.0f} units, {share:.1%} with no purchase event{unknown}{step}")
 
 
+def name_quarter(name: str) -> str | None:
+    """The quarter a release name ends in ("Artist · Title · 2026 Q3"), or None."""
+    parts = [p.strip() for p in str(name).split(" · ")]
+    return parts[-1] if len(parts) >= 2 and _QUARTER_RE.match(parts[-1]) else None
+
+
 def index_row(snap: dict, status: str) -> dict:
     """One sidebar row. Shared so the whole build and a single-release rebuild
     cannot drift into describing the same release two different ways."""
     return {
         "id": snap["id"], "name": f"{snap['artist']} - {snap['title']}",
         "releaseName": snap["releaseName"], "artist": snap["artist"], "title": snap["title"],
-        "quarter": snap.get("quarter"), "type": snap["type"],
+        "quarter": snap.get("quarter") or name_quarter(snap["releaseName"]), "type": snap["type"],
         "status": status, "targeted": snap.get("targeted", True),
         "day": snap["day"], "of": snap["of"], "complete": snap["complete"],
         "windowEnd": snap.get("windowEnd"),

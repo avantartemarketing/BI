@@ -2031,7 +2031,9 @@ The zero-conversion rules are now applied (`zero_conversion_decrease`,
 The build enumerates every `simple_release_name` in the funnel data and derives a record
 per release (`discover_releases`): id (slug of the name), artist / title / quarter (the name
 is always `Artist · Title · YYYY Qn`), dates from the campaign clock (§1.5), a campaign code
-guessed from the email and content feeds, and traffic totals. Releases with target inputs on
+guessed from the email and content feeds, and traffic totals. Every sidebar row, a targeted
+one too, carries the quarter, the sessions in its window and the last day it was seen.
+Releases with target inputs on
 file take the full build (§5-§9); the rest take an actuals-only build (`build_actuals`) that
 emits the same snapshot shape with every target-derived field `null` and `targeted: false`.
 
