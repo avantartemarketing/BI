@@ -3530,13 +3530,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             basket = None
         else:
             # Every release gets a benchmark, including one bigger than
-            # anything on record. The basket search falls back to the launches
-            # nearest this edition in size rather than giving up, so an
-            # unprecedented edition is benchmarked against the biggest launches
-            # there have been and the uplift states how far past them it is
-            # being asked to go. That is a number someone can argue with; an
-            # empty panel is not. scaleMismatch is still published so the card
-            # can say the basket is nowhere near this edition's size.
+            # anything on record. The basket is the launches nearest this
+            # edition however far away they are, so an unprecedented edition is
+            # benchmarked against the biggest launches there have been and the
+            # uplift states how far past them it is being asked to go. That is
+            # a number someone can argue with; an empty panel is not.
+            # scaleMismatch (the median more than SCALE_MISMATCH_FACTOR from
+            # the edition) is only logged here: the snapshot's basket block
+            # does not carry it, and the picker says "Nothing on file is this
+            # size" from the reach of the members instead.
             profile = basket["profile"]
             if off:
                 print(f"{release['id']}: not in plan: {', '.join(off)} - benchmarked on the basket's other "

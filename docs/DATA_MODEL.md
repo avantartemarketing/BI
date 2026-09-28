@@ -798,12 +798,13 @@ and label are the only difference between them (spec §1, §7).
 
 The panel is `data/release_clusters.csv` filtered to `panel == "draw"` (108 completed draw
 campaigns, §4 "Baskets of comparables"); cluster names come from
-`data/release_cluster_baskets.json`. Six ready-made baskets: `cluster_0` Paid-led headline
-launches, `cluster_1` Paid-supported small editions, `cluster_2` Email-led collector launches,
-`cluster_3` Artist-audience draws, `all_12m` (every draw launch whose `window_end` is within 365
-days of `as_of`), and `same_artist` (the same artist's earlier launches, disabled under 3
-members). A **bespoke** basket is a hand-ticked set of panel releases; one saved from the picker
-is written to `data/app/baskets.json` and thereafter offered alongside the ready-made ones.
+`data/release_cluster_baskets.json`. Seven ready-made baskets: `similar_size` (the suggested
+one, below), `cluster_0` Paid-led headline launches, `cluster_1` Paid-supported small editions,
+`cluster_2` Email-led collector launches, `cluster_3` Artist-audience draws, `all_12m` (every
+draw launch whose `window_end` is within 365 days of `as_of`), and `same_artist` (the same
+artist's earlier launches, disabled when it has no members). A **bespoke** basket is a
+hand-ticked set of panel releases; one saved from the picker is written to
+`data/app/baskets.json` and thereafter offered alongside the ready-made ones.
 
 Two rules carry the weight, and both are in the module because three callers - the ETL, the
 picker API and the re-run a saved basket triggers - have to agree to the last unit:
@@ -816,9 +817,11 @@ picker API and the re-run a saved basket triggers - have to agree to the last un
   different launch), so taking them directly leaves the five channel benchmarks summing to
   something other than the headline printed above them. Shares are renormalised to sum to 1.
 
-Sizes: under **3** members a basket cannot be used at all and the caller falls back to the
-suggested one; under **10** it is used but carries `basket.thin = True`, which the picker shows
-as a warning. A median over an empty or all-NaN column is `0.0`, never NaN.
+Sizes: a basket with no members (`MIN_MEMBERS` 1) cannot be used at all and the caller falls
+back to the suggested one; a single launch can, its own figures being the medians. Under **6**
+members (`THIN_MEMBERS`) a basket is used but carries `basket.thin = True`, which the picker and
+the Target setting tab show as a warning. A median over an empty or all-NaN column is `0.0`,
+never NaN.
 
 The profile is the medians themselves: `n` and `members`; `units` (median
 `tot_total_product_units`) with `units_p25` / `units_p75`; `price` (median `unit_price_eur`
@@ -830,19 +833,26 @@ over the `n_priced` members Airtable priced) with `price_p25` / `price_p75`, and
 `units_by_group` = `share_units[g] × units` and `sessions_by_group` = `share_sessions[g] ×
 sessions`. Groups are the five display groups of §1.3.
 
-The suggested basket, `similar_size` ("Similar size and shape"), is cut on three bands in log
-space - **size, price and shape** - widening the size and price bands through 2×, 2.5×, 3×, 4×
-and giving up price, then shape, then the band's tightness before it gives up on scale; the
-ladder, and the test that put price in it (price predicts session-to-entry conversion beyond
-size on five of eight benchmarked metrics, and the band cuts the leave-one-out benchmark error
-on seven of eight), are in `docs/BENCHMARK_SPEC.md` §3.1 and §3.1.1.
+The suggested basket, `similar_size` ("Similar size and shape"), is the **`SIMILAR_N` = 8
+launches nearest this one on units and unit price** (`similar_members`): the artist's own
+earlier launches first, when within ×3 on both axes, then the nearest of everything else, with
+launches closed in the last 18 months ranked ahead of older ones among those within ×4 while
+`prefer_recent` is on (the default). A launch's distance is the larger of its units multiple and
+its price multiple. The rule, why eight and not a widening band, and the test that put price in
+it (price predicts session-to-entry conversion beyond size on five of eight benchmarked
+metrics) are in `docs/BENCHMARK_SPEC.md` §3.1 and §3.1.1; `shared/basketRule.mjs` mirrors it for
+the picker. The picker reads the basket's `reach`, how far its furthest member is: past ×4 it
+says nothing on file is this size.
 
-`suggest_basket` picks the basket a release starts on: its own `cluster` if the panel has it,
-else `nearest_cluster`, else the cluster whose median units are closest to the edition size **in
-log space** (the panel runs from tens of units to thousands, so a linear gap would put
-everything in the big basket), tie-broken on paid-session share against the release's paid plan.
-The suggestion is a starting point and is always overridable - `suggestedId` rides on the
-snapshot next to the chosen `id` so the card can say which one was picked for you.
+`suggest_basket` picks the basket a release starts on: `similar_size` whenever it has a
+member, which it does for any release with an edition size while the panel holds another launch
+with units on file. Only without one does it fall back to the shape clusters: the release's own
+`cluster` if the panel has it, else `nearest_cluster`, else the cluster whose median units are
+closest to the edition size **in log space** (the panel runs from tens of units to thousands, so
+a linear gap would put everything in the big basket), tie-broken on paid-session share against
+the release's paid plan. The suggestion is a starting point and is always overridable -
+`suggestedId` rides on the snapshot next to the chosen `id` so the card can say which one was
+picked for you.
 
 ### 4a.2½ Edition pricing (`etl/pull_airtable.py`, `etl/pricing.py`)
 

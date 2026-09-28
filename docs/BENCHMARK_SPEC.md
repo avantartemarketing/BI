@@ -170,17 +170,20 @@ benchmark|. The price band brings the benchmark closer on seven of eight metrics
 conversion by 0.11, Wilcoxon p 0.008; social by 0.05, p 0.046; units per session by 0.05),
 further on referral-artist conversion by 0.02, and a size+price ladder without shape is worse on
 all but one, so shape stays in. The cost is tighter baskets: the median basket falls from 15
-launches to 10, and 42 of the 108 panel launches get a basket flagged thin (under 10) against 18
+launches to 10, and 42 of the 108 panel launches get a basket flagged thin (under 10, the threshold then) against 18
 before. The band widens more often too (55 launches answered at 2×, 32 at 2.5×, 13 at 3×, 8 at
 4×, against 99 at 2× before).
 
 **Every release gets a benchmark.** An edition larger than anything on record is benchmarked
 against the largest launches there have been, and the multiplier states how far past them it is
 being asked to go: Andy Warhol at 2,440 units, against a panel whose biggest launch ever is 987,
-lands on the six biggest launches on file (both Cattelan editions among them), a benchmark of
-865 and an uplift of ×2.82. "Nearly three times the biggest thing we have ever done" is a plan
-someone can argue with; a blank panel is not. Such a basket is flagged `thin` (under 10 members)
-and carries `scaleMismatch`, so a card can say the basket is nowhere near this edition's size.
+lands on the eight biggest launches on file (495 to 987 units), a benchmark of 805.5 and an
+uplift of ×3.03 (the 24 September 2026 build). "Two and a half times the biggest thing we have
+ever done" is a plan someone can argue with; a blank panel is not. Eight members is not thin,
+but the furthest of them is ×4.9 away, past `NEAR`, so the picker says "Nothing on file is this
+size" above them. `scaleMismatch` (`_resolved`) is a different test, the median against the
+edition (×3.03 here, under `SCALE_MISMATCH_FACTOR` ×4): the build prints it to its log and the
+snapshot does not carry it (§5).
 
 ### 3.2 Profile (the medians)
 
@@ -215,16 +218,19 @@ all-NaN column are `0.0`, never NaN. The price range is taken over the members A
 (`n_priced`), in euros, and the picker prints it next to the units range on every basket,
 ready-made or hand-picked, so a basket that matches on size but not price is visibly so.
 
-A basket with fewer than **3** members cannot be used (the caller falls back to the
-suggested cluster and records `basket.thin = True` when `n < 10`).
+A basket with no members cannot be used (`MIN_MEMBERS` = 1: the caller falls back to the
+suggested basket); a single launch can, its own figures being the medians. `basket.thin` is
+`True` when `n < 6` (`THIN_MEMBERS`).
 
 ### 3.3 Suggestion
 
 `suggest_basket(panel, release)` returns the ready-made id for a release:
 
-1. If the release is in the panel and has a `cluster`, use `cluster_<n>`.
-2. Otherwise use `nearest_cluster` if present.
-3. Otherwise pick the cluster whose median units are closest to the edition size in log
+1. `similar_size` whenever it has at least one member (`MIN_MEMBERS`): any release with an
+   edition size, while the panel holds another launch with units on file.
+2. Otherwise, if the release is in the panel and has a `cluster`, use `cluster_<n>`.
+3. Otherwise use `nearest_cluster` if present.
+4. Otherwise pick the cluster whose median units are closest to the edition size in log
    space, tie-broken by paid-session share against the panel's median paid share (none when
    paid is not in plan).
 
