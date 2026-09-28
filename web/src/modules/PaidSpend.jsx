@@ -47,7 +47,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     head: "No recommendation yet", body: "Needs a few days of paid entries to price them.",
   } : {
     head: "Daily budget",
-    body: "Entries are priced at the cost per entry the recommended spend implies (cost rises with spend), then paced by the workbook's rules: ±30% a day, hold while cumulative ROI sits between 0.9 and 1.3, cut below 0.9.",
+    body: "Entries are priced at the cost per entry the recommended spend implies (cost rises with the day's budget and as the spend adds up), then paced by the workbook's rules: ±30% a day, hold while cumulative ROI sits between 0.9 and 1.3, cut below 0.9.",
     rows: [
       { label: "Current", value: money(cur) },
       { label: "Recommended", value: money(rec) },
@@ -119,20 +119,24 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const ct = budget.costTerms || {};
   const pct = (v, d = 1) => (v === null || v === undefined ? "–" : fmt(v * 100, d) + "%");
   const own = (v, se, f) => (v === null || v === undefined ? "" : ` (own ${f(v)} ± ${f(se)} over ${fmt(ct.fitDays)} days)`);
+  // an older snapshot still carries the drift a day it was built on
+  const hasWear = typeof budget.wearout === "number";
   const costCurveRows = [
-    { label: "Cost rises with daily spend as", value: `spend^${fmt(budget.elasticity, 2)}` + own(ct.elasticityOwn, ct.elasticitySe, (v) => fmt(v, 2)) },
-    { label: "Cost drift per day", value: pct(budget.driftPerDay) + own(ct.driftOwn, ct.driftSe, (v) => pct(v)) },
+    { label: "Cost rises with the day's budget as", value: `budget^${fmt(budget.elasticity, 2)}` + own(ct.elasticityOwn, ct.elasticitySe, (v) => fmt(v, 2)) },
+    hasWear
+      ? { label: "Cost rises with spend so far as", value: `spent^${fmt(budget.wearout, 2)}, ${pct(2 ** budget.wearout - 1, 0)} a doubling` + own(ct.wearoutOwn, ct.wearoutSe, (v) => fmt(v, 2)) }
+      : { label: "Cost drift per day", value: pct(budget.driftPerDay) },
   ];
   const floorTip = {
     head: capLabel,
-    body: "The floor is on ROI at close, on the same drifting cost path the Paid ROI chart draws. At today's spend that path ends at " +
-      fmt(budget.finalDayRoi !== null && budget.cpeAtRecommended && budget.cpeAtClose ? null : null, 2).replace("–", "") +
+    body: "The floor is on ROI at close, on the cost path the Paid ROI chart draws: cost per entry rises as the campaign's spend adds up, so a bigger budget wears it out faster. At today's spend that path ends at " +
       "the chart's projected figure; the recommendation is the spend at which it ends on the floor" +
       (budget.paced ? ", cut no faster than 30% a day" : "") + ".",
     rows: [
       { label: "Floor", value: floorF },
       // the cost curve the path is drawn on: this campaign's own response to
-      // spend and to time where it has enough days, shrunk to the panel's
+      // the day's budget and to its spend so far where it has enough days,
+      // shrunk to the panel's
       ...costCurveRows,
       { label: "Cost / unit at close, today's spend", value: budget.cpeAtClose ? "€" + fmt(budget.cpeAtClose) : "–" },
       { label: "Cost / unit at close, recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },

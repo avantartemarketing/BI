@@ -1087,7 +1087,7 @@ has actually delivered.
 **Paid** - projection = **projected spend ÷ projected efficiency**, day by day:
 ```
 spend_fwd(d) = current daily spend run-rate            # not the recommendation
-cpe_fwd(d)   = trailing-3-day CPE × Π (1 + drift)      # drift 5%/7%/10%/day by window third
+cpe_fwd(d)   = trailing-3-day CPE × path(d)            # the cost path of §7: rises with spend so far
 entries_fwd  = Σ spend_fwd(d) / cpe_fwd(d)
 ```
 Fallback when no spend history exists yet: paid target × remaining share of the paid curve.
@@ -1551,11 +1551,12 @@ not on course to fill:
 secured_now      = units_sold_total + 0.8 × entries_banked    # all channels
 organic_future   = Σ over organic groups of (proj − now)      # §5.4 projection
 sellout_gap      = max(edition_size − secured_now − organic_future, 0)
-entries_needed   = sellout_gap × (1 + drop_off)
-forecast_CPE     = trailing_3day_adjCPE × 1.5                 # 1.5 = assumed CPE deterioration to launch
-budget_to_sellout= entries_needed × forecast_CPE
-daily_spend      = budget_to_sellout / days_until_launch
-ROI_check_party  = profit_per_unit_party / (forecast_CPE × budget_share_party)
+cpe(d, s)        = cpe_window × (s / spend_window)^eps × ((K + C_d) / (K + C_window))^w
+                   # C_d = spent before day d at a flat s from today; see the cost terms below
+supply_spend     = s where Σ over the days left of s / cpe(d, s) = sellout_gap
+roi_spend        = s where cpe(close, s) = the price at the ROI floor
+budget_to_sellout= supply_spend × days_left
+ROI_check_party  = (1 − cannibalisation) × profit_per_unit_party / (cpe(close, s) × budget_share_party)
 ```
 A launch pacing well ahead organically reads a recommendation of €0/day -
 nothing extra is needed to secure sell-out, whatever the current ROI.
@@ -1565,24 +1566,35 @@ nothing extra is needed to secure sell-out, whatever the current ROI.
 - Daily direction: cum-ROI < 0.9 → Decrease; 0.9–1.3 → Maintain; > 1.3 → Increase.
 - Daily spend change capped at **±30%**; changes ≤ 10% are ignored (0%).
 - Downside protection: forecast ROI < 1.1 for **3 consecutive days → forced Decrease**.
-- Cost per entry is not flat: it rises with the **daily spend level** and with **time**. The
-  build prices every future pound on `cpe = cpe_now × (spend / spend_now)^eps × (1 + drift)^days`,
-  and both terms are fitted from the campaign's own days once it has `cpe_fit_min_days` (8) with
-  spend and an entry, by the regression the panel priors come from (`log cpe = a + eps × log
-  spend + drift × day`), then shrunk to the panel's priors by precision (`campaign_cost_terms` in
-  `etl/build.py`; published as `budget.elasticity`, `budget.driftPerDay` and `budget.costTerms`).
-  The priors are `cpe_spend_elasticity` 0.38 ± 0.19 and `cpe_daily_drift_by_third` 2.5% a day
-  ± 3.5 (the between-campaign spread), from the 2026-09-23 fit on 29 campaigns and 433
-  campaign-days (`etl/analysis/cpe_elasticity.py`: elasticity 0.35 to 0.45 across day filters, drift
-  2.6 to 4.0% a day, 1.4% on the 2026 campaigns alone). A campaign that ramps spend and ages at
-  the same time cannot separate the two from its own days - Warhol's 17 days from €1k to €30k a
-  day give 0.42 ± 0.53 and −3.5% ± 10 - so for most campaigns the priors carry the drift and the
-  campaign's own days move the elasticity only when they are tight. The workbook's 5 / 7 / 10% a
-  day by third was the cost rise along its own ramping spend path, which the elasticity already
-  prices; it is kept in `cpe_daily_drift_by_third_workbook` and not applied on top.
+- Cost per entry is not flat: it rises as the campaign's **spend adds up**, and a little with
+  the **day's budget**. One cost path (`CostPath` in `etl/build.py`) prices every future day, at
+  a flat daily spend s, as
+  `cpe_window × (s / spend_window)^eps × ((K + spent before the day) / (K + spent at the window))^w`:
+  the trailing three days' price, paid at that window's daily spend and at its spend-weighted
+  place on the clock. The clock counts every day the release's campaigns spent, ahead of the
+  window included. The paid projection and the Paid ROI chart read the path at today's spend,
+  the recommendation at its own, so a bigger budget wears the audience out faster. The wear-out
+  `w` and the elasticity `eps` are fitted from the campaign's own days once it has
+  `cpe_fit_min_days` (8) with spend, as Poisson (`log E[entries] = a + (1 − eps) × log spend −
+  w × log(1 + spent before / K)`, the regression the panel priors come from, days with no entry
+  included), then shrunk to the priors together through their joint covariance
+  (`campaign_cost_terms`; published as `budget.elasticity`, `budget.wearout`, `budget.wearoutK`,
+  `budget.spentSoFar`, `budget.wearToClose` and `budget.costTerms`). A campaign that ramps its
+  budget as it goes cannot tell a bigger day from more spend so far - Warhol's own days put the
+  two at −0.8 correlation - and the joint shrink moves the pair towards the panel along the line
+  its data cannot pin down. The priors are `cpe_wearout` 0.22 ± 0.18, `cpe_wearout_k` €100 and
+  `cpe_spend_elasticity` 0.09 ± 0.08 (the between-campaign spreads), from the 2026-09-28 fit on
+  47 Meta draw campaigns and 783 campaign-days (`etl/analysis/cpe_elasticity.py`): each doubling
+  of spend so far makes an entry 17% dearer. It fits better than a straight drift a day
+  (deviance 1375 against 1456) and, cutting 32 past campaigns at 40, 60 and 80% of their run,
+  predicts the rest of the run with a median miss of 46% against the drift's 57%. Near the
+  close it under-predicts, as the drift did: entries surge in the final days. The drift a day it
+  replaced (2.5%, and before it the workbook's 5 / 7 / 10% by third, kept in
+  `cpe_daily_drift_by_third_workbook`) is retired.
 
 This maps 1:1 onto the design's Paid module contract:
-`roiDeclineModel = { start: today's actual ROI, dailyFactor }` (dailyFactor ≈ 1/(1+tier drift));
+`roiDeclineModel = { start: today's actual ROI, dailyFactor }` (dailyFactor: the path's average fall a day,
+`(1 / wearToClose)^(1 / days left)`; the card draws `roiPath` and uses the factor only for a snapshot without one);
 `recommended = min(spend at ROI floor, spend at supply cap)`, `cap ∈ {roi_floor, supply}` -
 supply cap = the budget-to-sell-out logic (spending beyond it buys entries exceeding the units
 left); ROI floor = 1.0/1.1 last-day forecast rule.
@@ -1788,7 +1800,11 @@ Model bugs found in the sheet (the rebuild should implement the *intent*):
 
 ## 11a. Paid recommendation: elastic price and the pacing rules
 
-`cpe_spend_elasticity` (0.38) is the within-campaign elasticity of cost per entry to daily
+Since 2026-09-28 the forward price runs on the campaign's spend so far (§7): the time drift
+described below is retired, and `cpe_spend_elasticity`, refitted beside the wear-out, is 0.09.
+What follows is how the recommendation came to be priced at all.
+
+`cpe_spend_elasticity` (0.38 at the time) is the within-campaign elasticity of cost per entry to daily
 spend, fitted on the 13 campaigns where daily Meta spend joins to daily paid entries
 (`etl/analysis/cpe_elasticity.py`; 170 campaign-days; campaign fixed effects; a day-drift
 term absorbs the time trend, which came out at 0.4%/day ± 1.1 against the workbook's
@@ -1810,9 +1826,9 @@ projection could head under 1 while the floor passed. The daily tiers are the co
 the workbook's own spend path (row 229 ramps 6-10% a day; at elasticity 0.38 that is 3.5-5%
 a day of cost rise on its own), so with elasticity modelled they double count; applied
 consistently they told a campaign at cumulative ROI 3.5 to cut. `spend_rules.
-cpe_daily_drift_by_third` is now the pure time effect, 0.5% a day (measured 0.36 ± 1.12;
-`etl/analysis/cpe_elasticity.py`); the workbook values sit beside it as
-`cpe_daily_drift_by_third_workbook`. The workbook's own template, note, produces the same
+cpe_daily_drift_by_third` then became the pure time effect, 0.5% a day (measured 0.36 ± 1.12;
+`etl/analysis/cpe_elasticity.py`), later 2.5%, until the spend-so-far curve replaced it; the
+workbook values sit in `cpe_daily_drift_by_third_workbook`. The workbook's own template, note, produces the same
 runaway "expected daily spend" the first version of this card did (Warhol_LE_26 row 229:
 €181k-256k a day; Dali_LE_26 row 231 suggests €3.7k-10.9k a day against €1.5k spent) and
 tames it with a "max increase per day 2.0" rule rather than a price that responds to spend.

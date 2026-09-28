@@ -1,7 +1,9 @@
 /* Paid ROI (spec §4.6) - wide 2-col card.
  * Daily spend bars (own axis, bottom band) + actual ROI line + modelled decline
  * dotted to close, anchored at the line's last actual point so dot and line
- * always meet: roi(i) = lastRoi × roiDeclineModel.dailyFactor^i (falls
+ * always meet. The decline is the ETL's roiPath: ROI at today's spend as the
+ * campaign's spend adds up (docs 7). roiDeclineModel.dailyFactor, the path's
+ * average fall a day, draws it only for a snapshot without a path (falling
  * back to roiDeclineModel.start at today when there are no daily ROI points).
  * The line is the trailing-3-calendar-day rolling ROI, matching the headline:
  * a window with spend but no entries is a genuine 0, a window with no spend is
@@ -108,8 +110,8 @@ export default function PaidRoi({ snap }) {
     ? { d: lastRoiPt.d, v: lastRoiPt.roi }
     : view.start !== null && view.start !== undefined ? { d: today, v: view.start } : null;
   // The dotted line is the ETL's forward path (roiPath: today's spend, cost
-  // drifting by the spend rules' tiers) - the same path the budget
-  // recommendation's ROI floor is judged on, so the two cards cannot
+  // per entry rising as the campaign's spend adds up) - the same path the
+  // budget recommendation's ROI floor is judged on, so the two cards cannot
   // disagree. The geometric model is only a fallback for older snapshots.
   const pathPts = view.path
     .map((p) => ({ d: dayIndex(p.date, snap.windowStart, null), v: p.roi }))

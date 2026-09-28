@@ -696,7 +696,7 @@ EXPLAIN["paid.rec"] = (a, { snap: s }) => {
       ? seg`The spend that would reach the target by the close is ${eur(b.supplySpend)} a day: after units secured and what the organic channels are on course to bring, ${n(b.selloutGap)} units are still needed, ${n(b.entriesNeeded)} entries at the ${pct(rateOf(s))} rate, bought at the cost per entry that spend implies.`
       : seg`The spend that would reach the target by the close is ${eur(b.supplySpend)} a day.`);
   }
-  if (finite(b.roiSpend)) steps.push(seg`The spend at which the ROI at the close ends on the floor of ${n(b.floor ?? 1, 1)} is ${eur(b.roiSpend)} a day: the cost per entry rises with spend and with time.`);
+  if (finite(b.roiSpend)) steps.push(seg`The spend at which the ROI at the close ends on the floor of ${n(b.floor ?? 1, 1)} is ${eur(b.roiSpend)} a day: the cost per entry rises with the day's budget and as the campaign's spend adds up.`);
   if (finite(b.supplySpend) && finite(b.roiSpend)) steps.push(seg`The lower of the two, ${eur(Math.min(b.supplySpend, b.roiSpend))} a day, is as far as it is worth going.`);
   const rule = capStep(b);
   if (rule) steps.push(rule);
@@ -713,7 +713,9 @@ EXPLAIN["paid.rec"] = (a, { snap: s }) => {
       { key: "rules", gave: "The ±30% a day pacing, the ROI bands and the floor" },
     ],
     notes: [
-      `Cost per entry is priced to rise with daily spend (spend to the power ${n(b.elasticity, 2)}) and by ${pct(b.driftPerDay, 1)} a day.`,
+      finite(b.wearout)
+        ? `Cost per entry rises with the day's budget (to the power ${n(b.elasticity, 2)}) and with the campaign's spend so far: each doubling of it makes an entry ${pct(2 ** b.wearout - 1)} dearer.`
+        : `Cost per entry is priced to rise with daily spend (spend to the power ${n(b.elasticity, 2)}) and by ${pct(b.driftPerDay, 1)} a day.`,
       "Implement writes the figure to Meta and logs it; Ignore logs the decision and keeps the budget.",
     ],
     method: "Data model 7",
