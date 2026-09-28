@@ -13,13 +13,14 @@
  *
  * One toggle only. The page header carries Today | At close, so the horizon
  * arrives as a prop and the card keeps just:
- *   % | Units  - % puts every channel against its own target on one 100% scale,
- *                so the fills align into a shared level across the card and,
- *                the uplift being one even multiple, so do the outlines; Units
- *                keeps real magnitudes, so each column is that channel's own size.
+ *   Units | %  - Units, the default, keeps real magnitudes, so each column is
+ *                that channel's own size; % puts every channel against its own
+ *                target on one 100% scale, so the fills align into a shared
+ *                level across the card and, the uplift being one even multiple,
+ *                so do the outlines.
  * Foot per column: the actual as a % of this horizon's target, green at or above
- * and red below. The stretch multiple is said once, at the foot of the card,
- * rather than drawn on five bars. */
+ * and red below. The stretch multiple is not printed: it is in the Stretch
+ * key's popup and the target's explainer, rather than drawn on five bars. */
 import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, BmOutline, BADGE_WORDS, C, fmt, useTip } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
@@ -38,7 +39,7 @@ const OUTLINE_SWATCH = (
 
 export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   const t = useTip();
-  const [scale, setScale] = useState("pct");   // pct | units
+  const [scale, setScale] = useState("units");   // units | pct
   const rows = snap?.channels || [];
   // no targets: nothing to compare against, so units only and no toggle
   const targeted = !snap || snap.targeted !== false;
@@ -117,8 +118,8 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
     >
       {targeted && <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, margin: "10px 0 12px", flex: "0 0 auto" }}>
         {seg(
-          [["pct", "%", "Every channel against its own target, on one 100% scale"],
-           ["units", "Units", "Secured units, so channels are comparable in size"]],
+          [["units", "Units", "Secured units, so channels are comparable in size"],
+           ["pct", "%", "Every channel against its own target, on one 100% scale"]],
           scale, setScale,
         )}
       </div>}
@@ -232,10 +233,9 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
               <span style={legendItem} title={stretchNote}><span style={swatch(C.refStretch)} />Stretch</span>
             )}
             {hasBm && <span style={legendItem} title="The median of the matched basket, per channel">{OUTLINE_SWATCH}Benchmark</span>}
-            <span style={{ marginLeft: "auto", whiteSpace: "nowrap" }} title={stretchNote}>
-              {/* the stretch said once, in words, rather than drawn on five bars */}
-              {hasBm && k > 0 ? <>target is <Ex k="k">{"×" + fmt(k, 2)}</Ex> the benchmark</>
-                : !targeted ? "secured units · no targets"
+            <span style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>
+              {/* the scale in words; the stretch multiple is in the Stretch key's popup */}
+              {!targeted ? "secured units · no targets"
                 : pct ? "target = 100%" : "secured units"}
             </span>
           </div>

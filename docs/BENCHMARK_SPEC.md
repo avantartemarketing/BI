@@ -32,7 +32,7 @@ briefly replaced it, which drew one reference at a time and left the other as a 
 ## 2. Horizon: one page-level toggle
 
 A single `Compare Today | At close` control in the page header drives every container. No
-container carries its own horizon toggle (the Channels card keeps `% | Units` only).
+container carries its own horizon toggle (the Channels card keeps `Units | %` only, Units the default).
 
 - **Today** - actuals vs the target and the benchmark for today.
 - **At close** - projection vs the target and the benchmark for the whole campaign.
@@ -569,9 +569,9 @@ rather than as one mark per channel.
 | **Paid ROI** | unchanged - no reference | - |
 
 The stretch is never a band of its own. It is the lighter tint of the fill, and it is the
-same even uplift in every channel and on every day (§1), so it is said once in words at the
-foot of the channels card (`target is ×1.49 the benchmark`), once as a lozenge on Paid spend,
-and in the target's popup on every card that has one. The one place it is a step is where the
+same even uplift in every channel and on every day (§1), so it is said in the popup of the
+channels card's Stretch key (the foot stopped printing the multiple on 28 September 2026),
+once as a lozenge on Paid spend, and in the target's popup on every card that has one. The one place it is a step is where the
 two waterfalls open: the target, then the stretch as a bar in the stretch tint down (or up) to
 the benchmark, so that the rows below can read against the basket and the distance the business
 asked for is drawn like every other distance on those cards - the part of the gap to target that
