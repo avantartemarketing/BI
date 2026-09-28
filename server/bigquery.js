@@ -397,9 +397,10 @@ const spendSql = () =>
  *                          card as the entry), the app's own pre-authorisation
  *                          drafts (one per live entry, whatever the SKU -
  *                          counted apart, because the card already counts
- *                          those as entries), from drafts,
- *                          private room, the list price, first and last
- *                          order day, last draft day; and the framing
+ *                          those as entries), the paid units from drafts and
+ *                          through the private room, the list price, first
+ *                          and last order day (any order line: the feed's
+ *                          freshness, not a sale), last draft day; and the framing
  *                          (docs/DATA_MODEL.md 6.4): the paid prints a frame
  *                          was on offer for and the frames bought with them,
  *                          each frame going to the work its SKU names, and
@@ -554,9 +555,14 @@ const ordersSql = () =>
   "  SUM(IF(l.entry_draft, l.quantity, 0)) AS units_entry_drafts,\n" +
   "  SUM(IF(l.winner_draft, l.quantity, 0)) AS units_winner_drafts,\n" +
   "  SUM(IF(l.winner_draft_lapsed, l.quantity, 0)) AS units_winner_drafts_lapsed,\n" +
-  "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.order_originated_from_drafts = 1, l.quantity, 0)) AS units_from_drafts,\n" +
-  "  SUM(IF(l.order_source_type = 'Order' AND l.cancelled_order = 0 AND l.is_private_room = 1, l.quantity, 0)) AS units_private_room,\n" +
+  // the paid units that came from a draft or through the private room: a
+  // part of units_paid, as units_paid.csv counts them, never a refunded or
+  // pending order's lines
+  "  SUM(IF(l.paid AND l.order_originated_from_drafts = 1, l.quantity, 0)) AS units_from_drafts,\n" +
+  "  SUM(IF(l.paid AND l.is_private_room = 1, l.quantity, 0)) AS units_private_room,\n" +
   "  APPROX_QUANTILES(IF(l.shopify_product_variant_price > 0, CAST(l.shopify_product_variant_price AS FLOAT64), NULL), 2)[OFFSET(1)] AS list_price_eur,\n" +
+  // the first and last day of any order line, cancelled and refunded too:
+  // how far the feed runs (ordersAsOf), not when anything sold
   "  MIN(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS first_order,\n" +
   "  MAX(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS last_order,\n" +
   "  MAX(l.draft_date) AS last_draft,\n" +
