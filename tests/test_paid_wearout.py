@@ -90,6 +90,34 @@ check(p.spend_for_cpe_close(1.0) == 0.0, "a floor below even a euro a day's pric
 check(p.spend_for_cpe_close(1e12) == math.inf, "a floor no spend reaches: no limit")
 check(build.CostPath(100.0, None, 0.0, 0.0, 0, eps, wear, K).cpe_close(500.0) == 100.0, "no days left: the window's price")
 
+# ---- the close's lift: the draw's last days buy more, the floor reads the price underneath
+lift = [1.5, 1.4]
+pl = build.CostPath(100.0, 1000.0, 20000.0, 20000.0, 10, eps, wear, K, lift=lift)
+ml, mu_ = pl.multipliers(1000.0), pl.multipliers(1000.0, lifted=False)
+check(close(ml[-1], m[-1] / 1.5, 1e-9) and close(ml[-2], m[-2] / 1.4, 1e-9) and ml[:-2] == m[:-2],
+      "the close day's price is divided by lift[0], the day before's by lift[1], the rest untouched")
+check(mu_ == m and close(pl.cpe_close(1000.0), p.cpe_close(1000.0), 1e-9), "the floor's price at the close is the one underneath the lift")
+check(pl.units(1000.0) > p.units(1000.0), "the lift buys more units by the close")
+# a window in the rush paid a price the rush cut: the price underneath is the window's times its lift
+pa = build.CostPath(100.0, 1000.0, 20000.0, 20000.0, 1, eps, wear, K, lift=lift, anchor_lift=1.4)
+check(close(pa.multipliers(1000.0)[0], 1.4 / 1.5, 1e-9) and close(pa.cpe_close(1000.0), 140.0, 1e-9),
+      f"a window the day before the close, the close ahead: {pa.multipliers(1000.0)[0]:.4f}, underneath {pa.cpe_close(1000.0):.1f}")
+
+# ---- the campaign's own last days are read as the close's rush, not as its wear-out
+close_day = date(2026, 3, 1) + timedelta(days=len(ramp) - 1)
+rushed = days_of(ramp, 0.12, 0.35, level=40.0)
+for i, lf in ((len(ramp) - 1, B["cpe_close_lift"][0]), (len(ramp) - 2, B["cpe_close_lift"][1])):
+    rushed[i]["entries"] *= lf
+with_close = build.campaign_cost_terms(rushed, close=close_day)
+without = build.campaign_cost_terms(rushed)
+check(close(with_close["wearoutOwn"], 0.35, 0.05) and close(with_close["elasticityOwn"], 0.12, 0.25),
+      f"with the close's date the campaign's own terms come back: eps {with_close['elasticityOwn']} w {with_close['wearoutOwn']}")
+miss = lambda t: abs(t["elasticityOwn"] - 0.12) + abs(t["wearoutOwn"] - 0.35)
+# on a ramp the rush lands on the biggest days: without the date it is read as
+# a cheaper big day and, through the pair's tie, as more wear-out
+check(miss(without) > miss(with_close) + 0.05,
+      f"without it the rush skews them: eps {without['elasticityOwn']} w {without['wearoutOwn']}")
+
 # ---- the paid block: one path for the chart, the projection and the floor
 base = dict(next(r for r in build.INPUTS["releases"] if r["id"] == "julianschnabel_le_26"))
 base["release_name"] = "Synthetic Artist · Wear-out · 2026 Q3"
@@ -132,8 +160,13 @@ ct = bud["costTerms"]
 check(ct["fitDays"] >= 8 and bud["wearout"] > 0, f"the synthetic campaign fits its own wear-out: {ct}")
 check(close(bud["spentSoFar"], 5000.0 + sum(spend_by_day.values()), 1e-6), f"the clock counts the spend ahead of the window: {bud['spentSoFar']}")
 path = [r["roi"] for r in paid["roiPath"]]
-check(len(path) == bud["daysLeft"] and all(b < a for a, b in zip(path, path[1:])), "the ROI line falls every day at today's spend")
-check(close(path[-1], paid["l3dRoi"] / bud["wearToClose"], 0.01), f"the line ends at the L3D over the path's rise: {path[-1]} vs {paid['l3dRoi']} / {bud['wearToClose']}")
+lifts = bud["closeLift"]
+check(lifts == B["cpe_close_lift"] and bud["liftAtWindow"] == 1.0, f"the block carries the close's lift, none in the window: {lifts} {bud['liftAtWindow']}")
+body = path[:-len(lifts)]
+check(len(path) == bud["daysLeft"] and all(b < a for a, b in zip(body, body[1:])), "the ROI line falls every day at today's spend until the close's last days")
+check(path[-1] > path[-len(lifts) - 1], "and rises on them, the deadline's rush")
+check(close(path[-1], paid["l3dRoi"] * lifts[0] / bud["wearToClose"], 0.01),
+      f"the line ends at the L3D over the path's rise, times the close day's lift: {path[-1]} vs {paid['l3dRoi']} x {lifts[0]} / {bud['wearToClose']}")
 check(close(bud["cpeAtClose"], bud["cpeNow"] * bud["wearToClose"], 0.01), "the price at close is the window's times the same rise")
 if bud["recommended"] and bud["recommended"] > bud["current"] * 1.01:
     check(bud["cpeAtRecommended"] > bud["cpeAtClose"], "a bigger recommended budget ends the path dearer")

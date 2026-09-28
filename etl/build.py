@@ -1169,7 +1169,8 @@ def poisson_fit(y, X, offset=None, iters: int = 100):
     return beta, inv * phi
 
 
-def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH, spent_before: float = 0.0) -> dict:
+def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH, spent_before: float = 0.0,
+                        close: date | None = None) -> dict:
     """How this campaign's cost per entry has responded to the day's budget
     and to its own spend so far, shrunk to the panel's priors (docs §7).
 
@@ -1189,7 +1190,10 @@ def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH, spent_before: f
     -0.8 correlation), and the pair then moves towards the panel along the
     line its data cannot pin down, not each on its own. A campaign whose
     daily budget never moved cannot tell its elasticity from its level, so
-    it keeps the prior elasticity and fits its wear-out alone.
+    it keeps the prior elasticity and fits its wear-out alone. The draw's
+    last days (`close`, the close's date) are fitted with the close's lift
+    held at the panel's (cpe_close_lift), so a campaign's own cheap final
+    days are read as the deadline's rush, not as its spend wearing off.
 
     Returns the values used (elasticity, wear-out, K) and how they were
     reached (own estimates, standard errors, days), all JSON-ready."""
@@ -1201,13 +1205,16 @@ def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH, spent_before: f
     out = {"elasticity": prior_eps, "wearout": prior_w, "wearoutK": k,
            "elasticityPrior": prior_eps, "wearoutPrior": prior_w, "elasticityOwn": None, "elasticitySe": None,
            "wearoutOwn": None, "wearoutSe": None, "ownCorrelation": None, "fitDays": 0}
+    lift = [float(v) for v in (b.get("cpe_close_lift") or [])]
     rows, spent = [], float(spent_before or 0.0)
     for x in sorted(paid_daily or [], key=lambda r: r["date"]):
         if x.get("partial"):          # the part day is not a day's worth of anything
             continue
         s = float(x.get("spend") or 0.0)
-        if s > 20:
-            rows.append((s, float(x.get("entries") or 0.0), spent))
+        to_close = (close - date.fromisoformat(x["date"])).days if close else None
+        if s > 20 and (to_close is None or to_close >= 0):
+            rows.append((s, float(x.get("entries") or 0.0), spent,
+                         math.log(lift[to_close]) if to_close is not None and to_close < len(lift) else 0.0))
         spent += s
     if len(rows) < int(b.get("cpe_fit_min_days", 8) or 8):
         return out
@@ -1215,7 +1222,8 @@ def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH, spent_before: f
     ls = np.log([r[0] for r in rows])
     clock = np.log1p(np.array([r[2] for r in rows]) / k)
     one = np.ones(len(rows))
-    fit = poisson_fit(y, np.column_stack([one, ls, clock])) if float(np.std(ls)) > 1e-6 else None
+    rush = np.array([r[3] for r in rows])                # the close's lift, in logs, 0 before it
+    fit = poisson_fit(y, np.column_stack([one, ls, clock]), offset=rush) if float(np.std(ls)) > 1e-6 else None
     prior = np.array([prior_eps, prior_w])
     # the prior's spread; a zero width holds that term at the prior
     prior_var = np.array([max(prior_eps_sd, 1e-6) ** 2, max(prior_w_sd, 1e-6) ** 2])
@@ -1235,7 +1243,7 @@ def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH, spent_before: f
             eps, wear = prior
     else:
         # a flat budget: the day's level is the prior's, the wear-out the campaign's own
-        fit = poisson_fit(y, np.column_stack([one, clock]), offset=(1.0 - prior_eps) * ls)
+        fit = poisson_fit(y, np.column_stack([one, clock]), offset=(1.0 - prior_eps) * ls + rush)
         if fit is None:
             return out
         beta, cov = fit
@@ -1265,26 +1273,45 @@ class CostPath:
     moves the price once, through the elasticity, and again as it adds up,
     through the wear-out: a bigger budget wears the audience out faster. The
     first future day is the day after the last full day (the part day, when
-    there is one), and each day adds a full day's spend to the clock."""
+    there is one), and each day adds a full day's spend to the clock.
+
+    The draw's last days buy more: lift[k] is how many times the entries a
+    euro buys k days before the close (the last future day is the close), so
+    their price is divided by it. A window that itself fell in those days
+    paid a price the rush had cut, anchor_lift (its spend-weighted lift), so
+    the price underneath is the window's times anchor_lift."""
 
     def __init__(self, cpe_now: float, spend_ref: float | None, clock_ref: float, spent: float,
-                 n_days: int, eps: float, wear: float, k: float):
+                 n_days: int, eps: float, wear: float, k: float,
+                 lift: tuple | list = (), anchor_lift: float = 1.0):
         self.cpe_now, self.spend_ref, self.clock_ref, self.spent = cpe_now, spend_ref, clock_ref, spent
         self.n, self.eps, self.wear, self.k = max(int(n_days), 0), eps, wear, k
+        self.lift, self.anchor_lift = [float(v) for v in (lift or [])], float(anchor_lift or 1.0)
 
-    def multipliers(self, s: float) -> list[float]:
-        """The price on each future day over the anchor's, at a flat daily spend s."""
+    def multipliers(self, s: float, lifted: bool = True) -> list[float]:
+        """The price on each future day over the anchor's, at a flat daily
+        spend s; with lifted=False, the price underneath the close's lift."""
         lvl = (s / self.spend_ref) ** self.eps if (self.eps and self.spend_ref and s > 0) else 1.0
         base = self.k + self.clock_ref
-        return [lvl * ((self.k + self.spent + s * i) / base) ** self.wear for i in range(self.n)]
+        out = []
+        for i in range(self.n):
+            m = lvl * ((self.k + self.spent + s * i) / base) ** self.wear * self.anchor_lift
+            to_close = self.n - 1 - i
+            if lifted and to_close < len(self.lift):
+                m /= self.lift[to_close]
+            out.append(m)
+        return out
 
     def cpe_close(self, s: float) -> float:
-        """The price of a converting entry on the last day, at a flat daily spend s."""
-        m = self.multipliers(s)
-        return self.cpe_now * (m[-1] if m else 1.0)
+        """The price of a converting entry at the close before the close's
+        lift, at a flat daily spend s: the path's worst day, where the ROI
+        floor is read."""
+        m = self.multipliers(s, lifted=False)
+        return self.cpe_now * (m[-1] if m else self.anchor_lift)
 
     def units(self, s: float) -> float:
-        """Converting units a flat daily spend s buys from the first future day to the close."""
+        """Converting units a flat daily spend s buys from the first future day
+        to the close, the close's lift included."""
         return sum(s / (self.cpe_now * m) for m in self.multipliers(s)) if s > 0 else 0.0
 
     @staticmethod
@@ -4447,13 +4474,17 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # had spent before each day, any spend ahead of the window included
     spent_before_window = float(spend[spend["campaign_name"].isin(camps)
                                       & (spend["spend_date"] < window_start)]["spend"].sum()) if camps else 0.0
-    clock3: list[tuple[float, float]] = []      # the window's days: (spend, spent before the day)
+    close_lift = [float(v) for v in (b.get("cpe_close_lift") or [])]
+    # the window's days: (spend, spent before the day, the close's lift on the day)
+    clock3: list[tuple[float, float, float]] = []
     for d in days:
         if d > min(full_through, launch_end):
             break
         s = float(spend_day.get(d, 0.0))
         e = float(paid_entries_day.get(d, 0.0))
-        clock3.append((s, spent_before_window + cum_spend))
+        to_close = (launch_end - d).days
+        clock3.append((s, spent_before_window + cum_spend,
+                       close_lift[to_close] if 0 <= to_close < len(close_lift) else 1.0))
         cum_spend += s; cum_pentries += e
         win3.append((s, e))
         if len(win3) > 3:
@@ -4494,16 +4525,19 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # etl/analysis/cpe_elasticity.py) and could not say that a bigger budget
     # wears the audience out faster. The campaign's own curve, shrunk to the
     # panel's priors where it has the days for one (campaign_cost_terms).
-    cost_terms = campaign_cost_terms(paid_daily, b, spent_before=spent_before_window)
+    cost_terms = campaign_cost_terms(paid_daily, b, spent_before=spent_before_window, close=launch_end)
     eps, wear, wear_k = cost_terms["elasticity"], cost_terms["wearout"], cost_terms["wearoutK"]
     spent_so_far = spent_before_window + cum_spend        # through the last full day
     # the anchor: the window's price, paid at its daily spend and at its
     # spend-weighted place on the clock
-    w_spend = sum(x for x, _ in clock3)
-    spend_ref = w_spend / max(sum(1 for x, _ in clock3 if x > 0), 1) if w_spend > 0 else None
-    clock_ref = sum(x * c for x, c in clock3) / w_spend if w_spend > 0 else spent_so_far
+    w_spend = sum(x for x, _, _ in clock3)
+    spend_ref = w_spend / max(sum(1 for x, _, _ in clock3 if x > 0), 1) if w_spend > 0 else None
+    clock_ref = sum(x * c for x, c, _ in clock3) / w_spend if w_spend > 0 else spent_so_far
+    # a window in the draw's last days paid a price the rush had cut
+    anchor_lift = sum(x * lf for x, _, lf in clock3) / w_spend if w_spend > 0 else 1.0
     future_days = list(daterange(full_through + timedelta(days=1), launch_end))
-    cost = (CostPath(l3d_cpe, spend_ref, clock_ref, spent_so_far, len(future_days), eps, wear, wear_k)
+    cost = (CostPath(l3d_cpe, spend_ref, clock_ref, spent_so_far, len(future_days), eps, wear, wear_k,
+                     lift=close_lift, anchor_lift=anchor_lift)
             if l3d_cpe else None)
     forecast_cpe = l3d_cpe                                # the window's price (per converting unit)
 
@@ -4632,7 +4666,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 if l3d_roi is not None and not complete else [])
     roi_path_artist = ([{"date": d.isoformat(), "roi": round(l3d_roi_artist / f, 3)} for d, f in zip(future_days, path_now)]
                        if l3d_roi_artist is not None and not complete else [])
-    wear_end = path_now[-1] if path_now else 1.0
+    # the rise to the close underneath the close's lift: the worst day, where
+    # the floor is read (cpeAtClose), and the fallback factor's fall
+    wear_end = cost.multipliers(s0, lifted=False)[-1] if (cost and future_days) else 1.0
     # the path's average fall a day, for a reader that draws the line from a factor
     daily_factor = round((1 / wear_end) ** (1 / len(path_now)), 4) if path_now else 1.0
 
@@ -4892,6 +4928,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # price was paid at, so the path can be rebuilt from the block
             "spendAtWindow": round(spend_ref, 2) if spend_ref else None,
             "spentAtWindow": round(clock_ref, 2),
+            # the close's lift on the path's last days, and the window's own
+            "closeLift": close_lift,
+            "liftAtWindow": round(anchor_lift, 4),
             "costTerms": cost_terms,
             "band": band, "forcedDecrease": forced, "zeroConversionDays": zero_days,
             "cumRoi": round(cum_roi, 3) if cum_roi else None,

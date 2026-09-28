@@ -414,37 +414,54 @@ A launch pacing well ahead organically can therefore read a recommendation of
 
 **Price rises as the spend adds up.** Within a campaign, what a euro buys falls
 as the campaign's total spend grows: each doubling of what it has spent makes
-the next entry about 17% dearer (14% fewer entries a euro). A bigger day costs
-a little more on top. On a future day, at a flat daily spend s:
+the next entry about 18% dearer (15% fewer entries a euro). A bigger day costs
+a little more on top, and the draw's last two days buy more, as the deadline
+pulls people in. On a future day, at a flat daily spend s:
 
 ```
-cpe(day, s) = cpe_window × (s / spend_window)^eps × ((K + spent before the day) / (K + spent at the window))^w
+cpe(day, s) = cpe_window × lift_window × (s / spend_window)^eps
+              × ((K + spent before the day) / (K + spent at the window))^w ÷ lift(day)
 ```
 
 `cpe_window` is the trailing three days' price, paid at that window's daily
 spend (`spend_window`) and at its place on the clock (`spent at the window`,
-its spend-weighted spend so far). The wear-out `w` is 0.22 and `K` €100; the
-elasticity `eps` to the day's budget is 0.09 (doubling the day's budget makes
-an entry about 6% dearer). Both are measured on our own campaigns: 47 Meta draw
-campaigns tied to a release, 783 campaign-days, entries as Poisson with one
-level per campaign (`etl/analysis/cpe_elasticity.py`, 28 September 2026). A
-campaign with 8 days of its own has its pair fitted and shrunk to the panel's
-together: a campaign that ramps its budget as it goes cannot tell a bigger day
-from more spend so far, so the pair moves towards the panel along the line its
-data cannot pin down. A release's own figures are in the explainer on its Paid
-spend recommendation and in the card's floor popup.
+its spend-weighted spend so far). The wear-out `w` is 0.24 and `K` €100; the
+elasticity `eps` to the day's budget is 0.08 (doubling the day's budget makes
+an entry about 6% dearer). `lift(day)` is the close's: ×1.53 on the close day
+and ×1.40 the day before (95% ranges ×1.26 to ×1.87 and ×1.07 to ×1.83), 1
+before that, where the day before those reads ×1.07 ± 0.14 and nothing earlier
+shows. `lift_window` takes it back out of a trailing window that itself fell
+in those days, so the price underneath is what the path carries forward. All
+of it is measured on our own campaigns: 42 Meta draw campaigns tied to a
+release, 705 campaign-days up to the draw's close, entries as Poisson with one
+level per campaign and the days to the close from the funnel export's own
+campaign clock (`etl/analysis/cpe_elasticity.py`, 28 September 2026). Spend
+after a draw has closed (72 campaign-days, €62k for 230 entries) is left out:
+the forecast never runs past the close. A campaign with 8 days of its own has
+its pair fitted, with the close's lift held at the panel's, and shrunk to the
+panel's together: a campaign that ramps its budget as it goes cannot tell a
+bigger day from more spend so far, so the pair moves towards the panel along
+the line its data cannot pin down. A release's own figures are in the
+explainer on its Paid spend recommendation and in the card's floor popup.
 
 Why spend so far and not days: on the panel it fits better than a straight
-drift a day (deviance 1375 against 1456, where the straight drift read 3.6% a
-day), and a back-test that cut 32 past campaigns at 40, 60 and 80% of their run
+drift a day (deviance 1254 against 1294, where the straight drift read 4.6% a
+day), and a back-test that cut past campaigns at 40, 60 and 80% of their run
 and predicted the rest from the spend they actually had missed by 46% against
-the old drift's 57% (median, either direction). It also says what a drift a day
-could not: a bigger budget wears the audience out faster, because the clock
-moves with the money. The sign-ups the draw campaigns bring and the link clicks
-of every campaign, the sign-up campaigns included, wear out alike (17% and 14%
-fewer a euro per doubling). Where it is weak is the final days: entries surge
-towards the close, which no clock of this kind sees, and in the last fifth of a
-campaign every version under-predicts by about a quarter.
+the old drift's 57% (median, either direction; 32 campaigns). It also says what
+a drift a day could not: a bigger budget wears the audience out faster,
+because the clock moves with the money. The sign-ups the draw campaigns bring
+and the link clicks of every campaign, the sign-up campaigns included, wear
+out alike (17% and 14% fewer a euro per doubling). Without the close's lift
+every version under-predicted the last fifth of a campaign by about a fifth;
+with it, on the 29 campaigns with 14 days up to their close, the miss falls
+from 46% to 42% overall and the bias from −7% to +2% (−18% to −3% in the last
+fifth).
+
+The ROI floor reads the price at the close underneath the lift, the path's
+worst day: the deadline's rush is a bonus on the last two days, and a budget
+that only clears the floor because of it would be paying under it on every
+day before.
 
 ```
 sell-out s  : Σ over the days left of s / cpe(day, s) = units still to secure
