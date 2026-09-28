@@ -197,7 +197,16 @@ Stage boundary rules (verified empirically):
 
 **The clock is filled in where upstream carries none** (`etl/aggregate_events.py`, §2.3; the
 upstream feed has dates for 2026 launches only). Upstream dates always take priority, field by
-field. Otherwise, for a release with at least 10 entrants: the announcement is the first big
+field, with one exception: an upstream announce on or after the release's own close, or after
+its last entry day, is a placeholder and is treated as absent (`placeholder_announce`, the test
+the upcoming list puts Airtable's announce to, §1.7). Airtable's Announce Date reads 2025-04-17
+on 41 launches of 2023-24 (§11, #24), which gave 29 releases a clock of 2025-04-17..their 2024
+close, rejected by the build, so 17 closed draws (Pejac 2024 Q3, George Condo 2024 Q1) were
+catalogue pages. Their announce is now inferred, and the upstream close they came with is kept
+where it is within a week of the draw's last entry day (else the close is inferred too; the
+window's source reads `mixed` or `inferred`); `release_people.csv` starts such a release's
+campaign at its first event, not at the placeholder, which made every buyer of it read as
+returning. Otherwise, for a release with at least 10 entrants: the announcement is the first big
 traffic spike (a day with at least a quarter of the release's busiest day, at least 30 sessions,
 and at least three times the previous week's median) when it comes 6 to 30 days before the draw
 opens - an announcement with the draw opening later, and the traffic in between is real campaign
@@ -1999,6 +2008,12 @@ Model bugs found in the sheet (the rebuild should implement the *intent*):
     eligible entrants, and shrinks as winners are allocated; `Collectors_Eligible_Entries` is the
     people count and `Draw_Entries_Eligible_Units` the units (§2.2). Check which column the
     workbook's eligible-entry benchmarks read.
+24. Airtable's Announce Date is 2025-04-17 on 41 launch records of 2023-24 (launch dates
+    2023-12-07..2024-09-18), a bulk fill later than every one of those launches, and it flows
+    into the LE Funnel Report's campaign clock (`announcement_date`, `days_since_announcement`)
+    for 29 releases. The ETL treats an announce on or after its own close as absent (§1.5).
+    Fix upstream: clear or correct the field on those records, and have the report's clock
+    ignore an announcement date later than the launch date.
 
 ---
 

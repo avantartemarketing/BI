@@ -3453,7 +3453,9 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
     clock is catalogue: a work still drawing traffic, with no campaign window
     to measure against. Clock dates that make no sense (close before
     announce, or a window outside 3..90 days) are dropped with a note rather
-    than trusted - two upstream rows do that today."""
+    than trusted - the placeholder announce of docs 1.5 does that where the
+    release had too few entrants for aggregate_events to infer a clock, and
+    on every one of its releases when FUNNEL_SOURCE=export."""
     out = []
     g = at.groupby("simple_release_name")
     stats = g.agg(first=("event_date", "min"), last=("event_date", "max"),

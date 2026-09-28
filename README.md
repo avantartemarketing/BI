@@ -282,7 +282,8 @@ docs/DATA_MODEL.md §2.2, reconciles the rebuild against the export column by co
 (`data/app/reconciliation.json`, and the verdict in the refresh status), and writes
 `data/app/release_people.csv`: per release, unique entrants and buyers, returning collectors
 and overlap with the artist's previous releases. It also fills in the campaign clock for the
-releases the upstream feed has no dates for (upstream dates always win; otherwise the first
+releases the upstream feed has no dates for (upstream dates always win, but an announce on or
+after the release's own close is a placeholder and is inferred; otherwise the first
 big traffic spike or the day the draw opens, and the allocation day - docs §1.5), recorded
 in `data/app/release_windows.csv`, which takes the across-time curve panel from 24 campaigns
 to 96. The build reads the rebuilt file
