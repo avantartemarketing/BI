@@ -100,14 +100,17 @@
    "draw_entries_file": "draw_mondrian_entries.csv",
    "products": [
     {
+     "key": "draw_3GUGHFWVVkxCPiQ8F2fOYP2lOQ0",
      "name": "Composition with Red, Yellow",
      "edition": null
     },
     {
+     "key": "draw_3GUGMG0bGhxyuhxyvEwaQfefYW2",
      "name": "Composition with Large Red Plane",
      "edition": null
     },
     {
+     "key": "draw_3GUG6ZYwu9a8a336ZPL2EEnRxxY",
      "name": "Tableau no.1",
      "edition": null
     }
@@ -178,10 +181,12 @@
    "draw_entries_file": "draw_jamesjean_blossom_entries.csv",
    "products": [
     {
+     "key": "draw_3GGPHrLwPfoBOTMquNWLfPYZw2J",
      "name": "Blossom Print",
      "edition": null
     },
     {
+     "key": "draw_3GGP9Zj9nf2N7kAZs9PGpDhXUKh",
      "name": "Blossom Vase",
      "edition": null
     }

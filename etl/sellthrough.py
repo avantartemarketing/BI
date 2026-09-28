@@ -345,6 +345,16 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
 _DEFAULT_NAME = re.compile(r"^Draw \d+$")
 
 
+def _names_title(name, title) -> bool:
+    """A typed name for an orders title: the same, case aside, or one starts
+    the other where both are four characters or more (the rule etl/build.py
+    _by_name and server/slack.js byName match names by)."""
+    n, t = str(name or "").strip().lower(), str(title or "").strip().lower()
+    if not n or not t:
+        return False
+    return n == t or (len(n) >= 4 and len(t) >= 4 and (t.startswith(n) or n.startswith(t)))
+
+
 def _draft_count(r: dict) -> float:
     """A product's drafts as the card counts them: the draft lines a person
     raised that are not the payment step of a live entry - the way the sales
@@ -369,11 +379,14 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
     `draw_products` {draw id: product title}, the product a draw's winners
     bought. A product whose draws name a title takes that title's paid units
     as sold and its orders awaiting payment as drafts, and the title as its
-    name where nobody typed one; a title already taken by an earlier product
-    is not taken twice. Titles no draw names are added as products of their
-    own only once every draw is named, because before that they are
-    ambiguous and stay at release level. Returns the products and the sold
-    source: "orders" once every product has its sales from the feed.
+    name unless a name was typed against one of its draws: a name from the
+    older list with no draw id (`keylessName`, handed out by position) never
+    stands over the product the draw sold. A title already taken by an
+    earlier product is not taken twice. Titles no draw names are added as
+    products of their own only once every draw is named, because before
+    that they are ambiguous and stay at release level. Returns the products
+    and the sold source: "orders" once every product has its sales from the
+    feed.
 
     `orders_only` when the page's units sold are the orders feed's over its
     window (docs 6.3): a product none of whose draws the feed names then
@@ -408,8 +421,9 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
         q = dict(p)
         q["sold"] = float(sum(float(r.get("unitsPaid") or 0) for r in rows))
         q["drafts"] = float(sum(_draft_count(r) for r in rows))
-        if not q.get("name") or _DEFAULT_NAME.match(str(q["name"])):
+        if not q.get("name") or _DEFAULT_NAME.match(str(q["name"])) or q.get("keylessName"):
             q["name"] = " / ".join(titles)
+            q.pop("keylessName", None)
         if not (_finite(q.get("edition")) and float(q["edition"]) > 0):
             eds = [float(r["edition"]) for r in rows if _finite(r.get("edition")) and float(r["edition"]) > 0]
             if eds and len(eds) == len(rows):
@@ -438,30 +452,52 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
     return out, ("orders" if all_named else source)
 
 
-def products_from_draws(draws: list[dict], configured, edition_size=None) -> tuple[list[dict], str]:
+def products_from_draws(draws: list[dict], configured, edition_size=None,
+                        draw_products: dict | None = None) -> tuple[list[dict], str]:
     """The products of a release from the draws the feed found and what was
     typed against them (mirror of productsFromDraws): one draw per product,
     draws with the same typed name merged, unnamed draws "Draw N" in
     first-entry order; sold from winners who bought, or from the purchases the
     feed tags with a draw where it does; a single unsized product takes the
-    release's edition."""
+    release's edition.
+
+    A typed entry names the draw its `key` is. An entry with no key (the
+    older hand-typed list) is matched by position, which says nothing about
+    which draw it meant, so it only names a draw the orders feed does not
+    pair with a product (`draw_products`, {draw id: title}): a paired draw
+    takes its product's title in attach_orders, an entry that names a paired
+    draw's product is left out, and the rest go to the unpaired draws in
+    first-entry order, marked `keylessName` so attach_orders never keeps
+    such a name over a title."""
     sorted_draws = sorted(draws or [], key=lambda d: (str(d.get("first") or ""), str(d.get("id"))))
     cfg = [c for c in (configured or []) if isinstance(c, dict)] if isinstance(configured, list) else []
     by_key = {str(c["key"]): c for c in cfg if c.get("key") not in (None, "")}
-    legacy = [c for c in cfg if c.get("key") in (None, "")]
+    paired = {str(k): str(v) for k, v in draw_products.items() if v not in (None, "")} \
+        if isinstance(draw_products, dict) else {}
+    titles = set(paired.values())
+    legacy = [c for c in cfg if c.get("key") in (None, "")
+              and not any(_names_title(c.get("name"), t) for t in titles)]
     tagged = any(float(d.get("purchaseUnits") or 0) > 0 for d in sorted_draws)
     groups: dict[str, dict] = {}
     for i, d in enumerate(sorted_draws):
         c = by_key.get(str(d.get("id")))
-        if c is None and legacy:
+        keyless = False
+        if c is None and legacy and str(d.get("id")) not in paired:
             c = legacy.pop(0)
-        name = (c.get("name").strip() if c and isinstance(c.get("name"), str) and c.get("name").strip() else None) or f"Draw {i + 1}"
+            keyless = True
+        typed = c.get("name").strip() if c and isinstance(c.get("name"), str) and c.get("name").strip() else None
+        name = typed or f"Draw {i + 1}"
+        keyless = keyless and typed is not None
         edition = int(round(float(c["edition"]))) if c and _finite(c.get("edition")) and float(c["edition"]) > 0 else None
         g = groups.get(name)
         if g is None:
             g = {"key": str(d.get("id")), "name": name, "edition": edition, "draws": [], "sold": 0,
                  "entrants": 0, "drafts": None}
+            if keyless:
+                g["keylessName"] = True
             groups[name] = g
+        elif not keyless:
+            g.pop("keylessName", None)   # the name was typed against one of its draws
         if g["edition"] is None and edition is not None:
             g["edition"] = edition
         g["draws"].append(str(d.get("id")))

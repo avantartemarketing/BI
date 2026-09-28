@@ -2329,7 +2329,10 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     if not feed or not feed.get("draws"):
         st["incomplete"] = ["products"]
         return st
-    products, source = products_from_draws(feed["draws"], draw_products_typed(release), edition)
+    # a draw the orders feed pairs with a product is named by it unless a
+    # name was typed against its draw id (products_from_draws, attach_orders)
+    products, source = products_from_draws(feed["draws"], draw_products_typed(release), edition,
+                                           (of or {}).get("draws"))
     if of:
         products, source = attach_orders(products, of["products"], of["draws"], source,
                                          orders_only=bool(of.get("windowed")))
@@ -4556,6 +4559,34 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
 
 # ---------------------------------------------------------------- main
 
+def product_name_warnings(sell: dict) -> list[str]:
+    """Sell-through rows named for another draw's work (docs 6.3): a row whose
+    name is, by _by_name, the title a draw outside the row sold, while the
+    name is none of the titles its own draws sold. The row's figures follow
+    its own draws, so the name sits on another work's units (the Mondrian
+    names did, handed to the draws by position). Names are typed by a person
+    and a short one can be another work's too, so this is a warning for the
+    refresh log, never a failed build."""
+    dp = sell.get("drawProducts") if isinstance(sell.get("drawProducts"), dict) else {}
+    out = []
+    for r in sell.get("products") or []:
+        if not isinstance(r, dict) or not isinstance(r.get("name"), str) or re.match(r"^Draw \d+$", r["name"]):
+            continue
+        own = {str(d) for d in (r.get("draws") or [])}
+        if not own:
+            continue     # a product only the orders feed names, with no draw of its own
+        mine = {str(dp[d]) for d in own if dp.get(d)}
+        if any(_by_name(r["name"], [t]) is not None for t in mine):
+            continue
+        others = sorted({str(t) for d, t in dp.items() if t and str(d) not in own and str(t) not in mine})
+        hit = _by_name(r["name"], others)
+        if hit is not None:
+            sold_by = sorted(str(d) for d, t in dp.items() if str(t) == hit)
+            out.append(f"sell-through row {r['name']!r} (draw {', '.join(sorted(own))}) carries the name of "
+                       f"{hit!r}, which draw {', '.join(sold_by)} sold")
+    return out
+
+
 def check_snapshot(snap: dict) -> None:
     """Cross-check a snapshot's own arithmetic before it is written.
 
@@ -4641,6 +4672,15 @@ def check_snapshot(snap: dict) -> None:
             problems.append(f"sellthrough.pct {sell['pct']} of {ed_st} but its parts add to {parts:.1f}")
         if hero.get("projected") is not None and abs(float(hero["projected"]) - at_close) > 1.0:
             problems.append(f"hero.projected {hero['projected']} but the sell-through's count at close is {at_close:.1f}")
+    # soft checks: what a person typed can be wrong without any figure being
+    # impossible, so these go to the refresh log and never stop the build
+    warnings: list[str] = []
+    try:
+        warnings += product_name_warnings(sell)
+    except Exception as e:  # noqa: BLE001 - a soft check never stops the build
+        warnings.append(f"product names not checked: {e}")
+    for w in warnings:
+        print(f"check_snapshot warning: {rid}: {w}")
     # the Direct switch's view of the page holds to the same rules
     alt = (snap.get("variants") or {}).get("direct_spread")
     if alt:
