@@ -1777,7 +1777,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | | actual line | daily cumulative actuals |
 | | projection | linear from today's actual to projected-at-close |
 | Channels vs targets | per group | now / expected / projected / target per display group (§1.3) |
-| Funnel by channel | rungs | email: Delivered/Open/Click vs reference; social: posts, sessions/post; all: session → entry vs benchmark (§4B); paid: spend & cost/entry vs plan |
+| Funnel by channel | rungs | email: Delivered/Open/Click vs reference; social: posts, sessions/post; all: session → sale (units secured per session; session → buyer where units per buyer differ from the plan's) vs benchmark (§4B), the rate the Organic funnel's low rung reads for the four organic channels together; paid: spend & cost/entry vs plan |
 | | contribution | units vs expected, repriced one-at-a-time; per-channel contributions sum to that channel's gap |
 | Key drivers | top movers | rank funnel steps by |contribution|, Adding vs Costing |
 | Paid ROI | series | §7 daily ROI (AA); decline model start = today's ROI |

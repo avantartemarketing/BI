@@ -8,9 +8,12 @@
  *                    rung is neutral and the counts live in the hover popup
  *   Mid funnel     - sessions, a volume: the target carries the even uplift, so
  *                    reading against the target puts the centre at benchmark × K
- *   Low funnel     - session → entry conversion, a rate held at the benchmark
- *                    (entry-weighted: Σ sessions×conv / Σ sessions on each
- *                    side, benchmark sessions weighting the benchmark side)
+ *   Low funnel     - session → sale, units secured per session, a rate held at
+ *                    the benchmark (session-weighted: Σ sessions×conv / Σ
+ *                    sessions on each side, benchmark sessions weighting the
+ *                    benchmark side); Funnel by channel calls the same rate
+ *                    Session → sale, or splits it into Session → buyer and
+ *                    units per buyer where those differ from the plan
  * The target is the centre line, the dot is the actual on a log scale where ×4
  * either way fills the rung, and the benchmark is a dotted tick wherever the
  * basket's own figure lands on the same scale - the rung's form of the dotted
@@ -185,13 +188,13 @@ function FunnelView({ snap }) {
         }}
       />
       <FunnelRung
-        tier="Low funnel" metric="Session → entry" r={lowR} bench={bench}
-        x={{ card: "Organic funnel", group: "Organic channels", label: "Session → entry", kind: "rate", unit: "%",
+        tier="Low funnel" metric="Session → sale" r={lowR} bench={bench}
+        x={{ card: "Organic funnel", group: "Organic channels", label: "Session → sale", kind: "rate", unit: "%",
              v: convA === null ? null : convA * 100, target: lowR.target === null ? null : lowR.target * 100,
              bm: lowR.bm === null || lowR.bm === undefined ? null : lowR.bm * 100, k,
-             note: "Units secured per session on the four organic channels together, each channel weighted by its sessions." }}
+             note: "Units secured per session on the four organic channels together, each channel weighted by its sessions. Where buyers take more or fewer pieces than the plan assumed, Funnel by channel splits the same rate into Session → buyer and Units per buyer." }}
         tip={{
-          head: "Low funnel · Session → entry",
+          head: "Low funnel · Session → sale",
           body: bench
             ? "Conversion is held at the benchmark, so the target and the benchmark are the same figure."
             : undefined,

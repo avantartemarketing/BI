@@ -519,7 +519,6 @@ const RUNG_SOURCES = {
   "Sessions": [["funnel", "Sessions by channel"]],
   "Session → sale": [["funnel", "Sessions and entries by channel"], ["orders", "Units paid by channel"]],
   "Session → buyer": [["funnel", "Sessions and entries by channel"], ["orders", "Buyers by channel"]],
-  "Session → entry": [["funnel", "Sessions and entries"]],
   "Delivered emails": [["hubspot", "Emails delivered for this release"]],
   "Open rate": [["hubspot", "Emails delivered and opened"]],
   "Click rate": [["hubspot", "Emails opened and clicked"]],

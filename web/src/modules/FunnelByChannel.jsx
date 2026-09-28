@@ -6,13 +6,16 @@
  * mock's static list:
  *   AA Email  - a stage-by-stage chain: Delivered emails vs cohort-median delivery
  *               curve · Open rate · Click rate (clicks per opened email) · Sessions per
- *               click · Session → entry. Rate references are the ETL's cohort medians
+ *               click · Session → sale. Rate references are the ETL's cohort medians
  *               (fixed defaults until two launches qualify); sessions per click is
  *               judged against the plan's expected sessions over expected clicks.
- *   AA Meta   - Posts + stories (no ref) · Sessions · Session → entry
+ *   AA Meta   - Posts + stories (no ref) · Sessions · Session → sale
  *   Referral artist - Posts (artist accounts; no feed yet, renders neutral) ·
- *               Sessions · Session → entry
- *   Search-direct-other - Sessions · Session → entry
+ *               Sessions · Session → sale
+ *   Search-direct-other - Sessions · Session → sale
+ *   (Session → sale is units secured per session; where the release's units per
+ *   buyer differ from the plan's it reads Session → buyer, the pieces per buyer
+ *   being a release-level row of the waterfall view.)
  *   Paid      - Spend vs the budget's share of the days paid runs · Cost per
  *               unit (spend over paid secured units) vs the plan's cost per
  *               purchase (inverted)
