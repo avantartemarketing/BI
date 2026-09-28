@@ -1156,8 +1156,8 @@ budget over those days, and the paid block publishes `paidStartDays` and `paidDa
 cards (`paidDayFrac` in `web/src/ui.jsx`). Not the panel's historic paid shape, which starts
 near zero and told the Channels vs targets card there was nothing to expect on days when the
 Paid spend card, reading the even plan, showed the units bought. The organic groups keep their
-entry-timed shape curves. The waterfall's Paid spend step (§9) measures spend to date against
-the same even share of the budget. (2026-09-23.)
+entry-timed shape curves. The waterfall's Paid spend step (§9) measures spend to date, today so
+far included, against the same even share of the budget. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
@@ -1663,7 +1663,10 @@ can show its working in the ? popup. The card reads AA by default and has an AA 
 paid group's secured units (§6.3½: units sold + 0.8 × unconverted entries, every paid channel),
 the paid column of the channels card, so the Paid spend card's bar and that column are one
 figure; `entriesToDate` and `entriesProjected` stay the paid campaign's draw entries, the
-quantity the CPE and the ROI are priced on. `daily[]` runs over the full days the rules read;
+quantity the CPE and the ROI are priced on. At close, `spendProjectedTotal` is `spendToDate`
+(today so far included) plus the last full day's spend over the full days after today and the
+share of today still to come, and `entriesProjected` is `entriesToDate` plus the entries that
+spend buys on the same days, so neither reads below its figure to date. `daily[]` runs over the full days the rules read;
 on a live day the as-of day so far rides at the end as one more row marked `partial: true`
 (its spend and entries, no ROI point), so the Paid ROI chart's bars sum to `spendToDate` and
 the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip that row.
@@ -1856,7 +1859,7 @@ actuals-only page omits it.
 | `benchmark.channelsOff` | the display groups this release set aside (BENCHMARK_SPEC §4.3); their medians are zero above and the other channels carry the target |
 | `benchmark.unitsAll`, `sessionsAll`, `entriesAll`, `unitsP25All`, `unitsP75All`, `unitsByGroupAll`, `sessionsByGroupAll`, `convByGroupAll` | the basket's full medians before any channel was set aside, so the page can say what left and the browser can re-read the basket as the switches move |
 | `benchmark.privateRoomShare` | the basket's median private-room share of email units - descriptive; nothing derives a target from it since the split went (§3) |
-| `hero.benchmark`, `benchmarkToday`, `stretch` | benchmark at close, benchmark pace to today, the stretch |
+| `hero.benchmark`, `benchmarkToday`, `stretch` | benchmark at close, benchmark pace to today, the stretch; the benchmarks in whole units rounded from their one-decimal figure a half away from zero, as the page prints `benchmark.units` (132.5 is 133), and the stretch the printed target less the printed benchmark; `waterfall.benchmark` and `today.benchmark` are the same figures |
 | `channels[].bm`, `bmExp` | per group: benchmark at close, benchmark by today |
 | `channels[].daily[].bm` | the benchmark plan for that day, beside `actual` / `plan` / `proj` |
 | `funnelByGroup[g].sessions_benchmark`, `conv_benchmark` | the basket's sessions by today (the sessions rung's reference) and its conversion at close (the conversion rung's fallback on a snapshot without `conv_benchmark_today`) |
@@ -1877,6 +1880,7 @@ actuals-only page omits it.
 | `sellthrough.draws`, `patterns` | the draw feed as reduced by `products_file`, so a save re-runs the rule on the server without the feed |
 | `paid.benchmarkUnits`, `benchmarkBudget` | the paid module's two benchmark marks |
 | `waterfall.benchmark`, `stretch`, `target`, `projection` | the at-close waterfall's left-hand columns; `steps` are unchanged and `stepsBm` are the same four contributors against the basket, summing to `projection − benchmark` |
+| `waterfall.closeScale`, `closeScaleBm` | the factor the at-close `steps` (`stepsBm`) are the steps to date times; null where they are copied (a closed release) or where the rest of the gap is shared out by size (below) |
 | `waterfall.today` | `{benchmark, stretch, target, actual, steps, stepsBm}` - the same four contributors measured **to date**, against the target and against the basket |
 
 `waterfall.today.steps` are not the close steps scaled down: they are the contributions as
@@ -1884,6 +1888,13 @@ measured so far, and they must sum exactly to `actual − target`, with the roun
 parked on the largest step, exactly as the close steps do (§9, "Projection vs target");
 `stepsBm` the same against `benchmark`, which is the walk the cards draw once the stretch has
 been set aside.
+At close, a release that has closed has nothing left to project, so its `steps` and `stepsBm`
+are its steps to date, copied. A live release's are its steps to date scaled by one factor,
+the close gap over the to-date gap, both unrounded (`closeScale`, `closeScaleBm`); where the
+to-date gap is under half a unit, or the factor is negative or above 3, a factor would turn
+rounding into bars or flip every sign, so the part of the gap still to come is shared over
+the steps to date in proportion to their size instead (the same walk as the factor's when they
+all point one way).
 `hero.benchmarkToday` and `channels[].bmExp` are read off the basket curve at today's pdsa
 (§5.3), which is what keeps the K identity of §4a.4 true today as well as at close.
 

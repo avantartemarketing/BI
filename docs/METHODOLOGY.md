@@ -343,6 +343,9 @@ trailing-3-day CPE and rises by **the campaign's own daily drift**, the same eve
 day to the close: fitted on its own days once it has 8 with spend and an entry,
 shrunk to a 2.5%-a-day prior and held between 0 and 10% a day (the prior alone
 until then; §7). Projected entries convert to units at 0.8.
+Today counts for what is left of it, so the spend projected at close is the spend
+to date, today so far included, plus the last full day's spend over the full days
+after today and the rest of today, and the entries in hand today stay in.
 Paid starts the day after the announce and runs to the close; its plan by today is the
 even daily budget's share of its target over those days, not the panel's historic paid
 shape, so every card reads the same paid plan.

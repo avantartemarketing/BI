@@ -2560,6 +2560,84 @@ def daterange(a: date, b: date):
         d += timedelta(days=1)
 
 
+def whole(x: float) -> float:
+    """A benchmark in whole units as the page rounds it: from the one-decimal
+    figure the snapshot publishes (benchmark.units), a half away from zero, as
+    fmt does in the browser. Python's round() takes a half to the even number
+    (132.5 -> 132) and reads a float's own noise (217.49999... -> 217), which
+    put a benchmark of 132 on the hero beside a median of 133 in its working."""
+    v = round(float(x), 1)
+    w = float(math.floor(abs(v) + 0.5))
+    return -w if v < 0 and w else w
+
+
+# The at-close waterfall scales the walk to date by the close gap over the
+# to-date gap (docs §9). Below this to-date gap the ratio is rounding, not a
+# reading, and above this factor the walk to date is too small a base to
+# scale: either way the rest of the gap is shared out by size instead.
+WF_CLOSE_MIN_GAP = 0.5
+WF_CLOSE_SCALE_MAX = 3.0
+
+
+def close_walk(raw: list[float], gap_today: float, gap_close: float) -> tuple[list[float], float | None]:
+    """The waterfall's contributors at close from the same contributors to
+    date (docs §9), for a release still live: each scaled by one factor, the
+    close gap over the to-date gap (both unrounded: the contributors of each
+    group add up to its actual less its reference by construction), so they
+    keep their proportions and add up to the projection's gap.
+
+    A factor off a to-date gap under WF_CLOSE_MIN_GAP is a ratio of rounding
+    (a release sitting on its pace drew bars of a billion units), and one that
+    is negative or above WF_CLOSE_SCALE_MAX flips every contributor's sign or
+    blows offsetting ones up. There the part of the close gap still to come
+    is shared over the contributors in proportion to their size to date:
+    where they all point the same way that is the same walk as the factor's.
+    Returns the unrounded values and the factor, None when shared out."""
+    raw = [float(v) for v in raw]
+    if abs(gap_today) >= WF_CLOSE_MIN_GAP:
+        scale = gap_close / gap_today
+        if 0.0 <= scale <= WF_CLOSE_SCALE_MAX:
+            return [v * scale for v in raw], scale
+    size = sum(abs(v) for v in raw)
+    if size <= 0:
+        return raw, None          # nothing to date to share it by: the walk's rounding step places it
+    rest = gap_close - sum(raw)
+    return [v + rest * abs(v) / size for v in raw], None
+
+
+WF_STEPS = [("organic_traffic", "Organic traffic"), ("organic_conversion", "Organic conversion"),
+            ("paid_spend", "Paid spend"), ("paid_efficiency", "Paid efficiency")]
+
+
+def settle_steps(vals: list[float], gap: float) -> list[dict]:
+    """The waterfall's four steps in whole units, adding up exactly to the gap
+    the card prints (the rounded pair, not the raw difference: rounding each
+    end separately can move it by a unit), the rounding residual parked on the
+    largest step."""
+    steps = [{"key": k, "label": l, "value": round(v, 0)} for (k, l), v in zip(WF_STEPS, vals)]
+    max(steps, key=lambda s: abs(s["value"]))["value"] += gap - sum(s["value"] for s in steps)
+    return steps
+
+
+def waterfall_walks(raw: list[float], gap_today: float, gap_close: float,
+                    shown_today: float, shown_close: float, complete: bool) -> tuple[list[dict], list[dict], float | None]:
+    """One reference's walks (docs §9): the contributors to date (`raw`, whose
+    unrounded total is `gap_today`) as steps adding up to `shown_today`, and
+    the same at close adding up to `shown_close`. A closed release has nothing
+    left to project (its projection is its actual, its reference by today its
+    reference), so its walk at close is its walk to date, copied: rescaling
+    it by the ratio of two equal gaps made of rounded parts moved bars by a
+    unit between the horizons, and on a release that closed on target divided
+    rounding by rounding (steps of a billion units). A live release's walk is
+    scaled to its projection (close_walk). Returns (today, close, factor), the
+    factor None when copied or shared out."""
+    today = settle_steps(raw, shown_today)
+    if complete:
+        return today, settle_steps([s["value"] for s in today], shown_close), None
+    vals, scale = close_walk(raw, gap_today, gap_close)
+    return today, settle_steps(vals, shown_close), scale
+
+
 # ---------------------------------------------------------------- every release
 
 _QUARTER_RE = re.compile(r"^(\d{4}) Q([1-4])$")
@@ -4001,6 +4079,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 future_cum += gtargets["paid"]["entries"] * max(cv - prev_curve, 0.0)
                 prev_curve = cv
             paid_future[d] = future_cum
+    # the days still to run at the run rate, on the entries' own clock: each
+    # full day after the last one seen, today's for what is left of it. The
+    # spend at close is the spend to date (today so far included) plus the
+    # run rate over these, as the units beside it are
+    rest_days = sum(((1 - seen) if (d == as_of and as_of > full_through) else 1.0)
+                    for d in daterange(full_through + timedelta(days=1), launch_end))
 
     channels_out = []
     hero_now = hero_exp = hero_target = hero_proj = 0.0
@@ -4228,10 +4312,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "daysLeft": days_left,
         },
         "unitTarget": targets["paid"]["units"],
-        "entriesProjected": round(cum_pentries + future_cum, 1),
-        "unitProjected": paid_ch["proj"] if paid_ch else round((cum_pentries + future_cum) * (1 - drop), 1),
+        # the entries in hand, today's so far included, and those still to come
+        # (future_cum counts only the rest of today), so the projection at close
+        # cannot read below the entries already in
+        "entriesProjected": round(cum_pentries + part_entries + future_cum, 1),
+        "unitProjected": paid_ch["proj"] if paid_ch else round((cum_pentries + part_entries + future_cum) * (1 - drop), 1),
         "spendBudget": round(targets["paid"]["budget"], 2),
-        "spendProjectedTotal": round(cum_spend + (planned_spend or 0) * days_left, 2),
+        "spendProjectedTotal": round(cum_spend + part_spend + (planned_spend or 0) * rest_days, 2),
         "profitPerUnitAA": round(ppu_aa, 2),
         "profitPerUnitArtist": round(ppu_artist, 2),
         "aaBudgetShare": aa_budget_share,
@@ -4351,15 +4438,16 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     wf_conv = sum(funnel_by_group[g]["contrib_conversion"] for g in organic_groups)
     # paid's plan by today is the even share of its days (paid_pace), the share
     # the paid card, the channels card and the funnel rung read - not the
-    # panel's historic paid shape, which put this step on a different plan
+    # panel's historic paid shape, which put this step on a different plan.
+    # That plan is read at the share of today seen, so the spend set against
+    # it is the spend to date, today so far included (paid.spendToDate): the
+    # full days alone moved the part day's spend into Paid efficiency
+    spend_to_date = cum_spend + part_spend
     spend_planned_to_date = targets["paid"]["budget"] * paid_pace(pdsa_today)
-    wf_paid_spend = ((cum_spend - spend_planned_to_date) / targets["paid"]["cost_per_purchase"]
+    wf_paid_spend = ((spend_to_date - spend_planned_to_date) / targets["paid"]["cost_per_purchase"]
                      ) if targets["paid"]["cost_per_purchase"] else 0.0
     paid_gap = funnel_by_group["paid"]["contrib_traffic"] + funnel_by_group["paid"]["contrib_conversion"]
     wf_paid_eff = paid_gap - wf_paid_spend
-    # scale contributor gaps (to-date) to close: same blend factor as projections
-    scale = ((hero_proj - hero_target) / (wf_traffic + wf_conv + wf_paid_spend + wf_paid_eff)
-             if (wf_traffic + wf_conv + wf_paid_spend + wf_paid_eff) else 0.0)
     # the projection and the actual the card prints are the hero's, capped at
     # the whole edition; demand beyond it is the last step of every walk, so
     # the steps still close on the figure printed (docs 6.3½)
@@ -4368,47 +4456,34 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     over_close, over_today = round(hero_proj, 0) - proj_shown, round(hero_now, 0) - now_shown
     def beyond(over: float) -> list[dict]:
         return [{"key": "oversubscribed", "label": "Beyond sellout", "value": -over}] if over > 0 else []
+    # The four contributors measured to date and left unscaled are the Today
+    # horizon (§2), where the question is why the launch is where it is, not
+    # where it will end. The gaps are already actual minus target today by
+    # construction (traffic + conversion per group is exactly that group's now
+    # minus its expected), so they need no blend factor; at close they are
+    # copied on a closed release and scaled on a live one (waterfall_walks).
+    actual_today, target_today = now_shown, round(hero_exp, 0)
+    today_steps, close_steps, scale = waterfall_walks(
+        [wf_traffic, wf_conv, wf_paid_spend, wf_paid_eff], hero_now - hero_exp, hero_proj - hero_target,
+        round(hero_now, 0) - target_today, round(hero_proj, 0) - round(hero_target, 0), complete)
     waterfall = {
         "target": round(hero_target, 0), "projection": proj_shown,
-        "steps": [
-            {"key": "organic_traffic", "label": "Organic traffic", "value": round(wf_traffic * scale, 0)},
-            {"key": "organic_conversion", "label": "Organic conversion", "value": round(wf_conv * scale, 0)},
-            {"key": "paid_spend", "label": "Paid spend", "value": round(wf_paid_spend * scale, 0)},
-            {"key": "paid_efficiency", "label": "Paid efficiency", "value": round(wf_paid_eff * scale, 0)},
-        ],
+        "steps": close_steps + beyond(over_close),
+        # the factor the close steps are the steps to date times; None when
+        # they are copied (a closed release) or the rest of the gap is shared
+        # out by size (close_walk)
+        "closeScale": round(scale, 4) if scale is not None else None,
     }
-    # force exact reconciliation (rounding residual goes to the largest step),
-    # measured against the rounded pair the card prints
-    resid = (round(hero_proj, 0) - round(hero_target, 0)) - sum(s["value"] for s in waterfall["steps"])
-    if waterfall["steps"]:
-        biggest = max(waterfall["steps"], key=lambda s: abs(s["value"]))
-        biggest["value"] += resid
-    waterfall["steps"] += beyond(over_close)
     if bench:
-        # The same four contributors, measured to date and left unscaled: this
-        # is the Today horizon (§2), where the question is why the launch is
-        # where it is, not where it will end. The gaps are already actual minus
-        # target today by construction (traffic + conversion per group is
-        # exactly that group's now minus its expected), so they need no blend
-        # factor - only the same rounding reconciliation the close steps get.
-        today_steps = [
-            {"key": "organic_traffic", "label": "Organic traffic", "value": round(wf_traffic, 0)},
-            {"key": "organic_conversion", "label": "Organic conversion", "value": round(wf_conv, 0)},
-            {"key": "paid_spend", "label": "Paid spend", "value": round(wf_paid_spend, 0)},
-            {"key": "paid_efficiency", "label": "Paid efficiency", "value": round(wf_paid_eff, 0)},
-        ]
-        # the gap the bars have to span is the one the card prints, so the
-        # residual is measured against the rounded pair rather than the raw
-        # difference - rounding each end separately can move it by a unit
-        actual_today, target_today = now_shown, round(hero_exp, 0)
-        resid_today = (round(hero_now, 0) - target_today) - sum(s["value"] for s in today_steps)
-        max(today_steps, key=lambda s: abs(s["value"]))["value"] += resid_today
         today_steps += beyond(over_today)
-        waterfall["benchmark"] = round(hero_bm, 0)
-        waterfall["stretch"] = round(hero_target - hero_bm, 0)
+        # the benchmark in whole units as the page rounds benchmark.units, the
+        # stretch the difference of the two figures printed
+        bm_close, bm_today = whole(hero_bm), whole(hero_bm_today)
+        waterfall["benchmark"] = bm_close
+        waterfall["stretch"] = round(hero_target, 0) - bm_close
         waterfall["today"] = {
-            "benchmark": round(hero_bm_today, 0),
-            "stretch": round(hero_exp - hero_bm_today, 0),
+            "benchmark": bm_today,
+            "stretch": target_today - bm_today,
             "target": target_today,
             "actual": actual_today,
             "steps": today_steps,
@@ -4424,23 +4499,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         wf_conv_bm = sum(funnel_by_group[g]["contrib_conversion_bm"] for g in organic_groups)
         bm_budget = bm_units["paid"] * targets["paid"]["cost_per_purchase"]
         spend_bm_to_date = bm_budget * paid_pace(pdsa_today)
-        wf_paid_spend_bm = ((cum_spend - spend_bm_to_date) / targets["paid"]["cost_per_purchase"]
+        wf_paid_spend_bm = ((spend_to_date - spend_bm_to_date) / targets["paid"]["cost_per_purchase"]
                             ) if targets["paid"]["cost_per_purchase"] else 0.0
         paid_gap_bm = funnel_by_group["paid"]["contrib_traffic_bm"] + funnel_by_group["paid"]["contrib_conversion_bm"]
         wf_paid_eff_bm = paid_gap_bm - wf_paid_spend_bm
-        raw_bm = [wf_traffic_bm, wf_conv_bm, wf_paid_spend_bm, wf_paid_eff_bm]
-        labels = [("organic_traffic", "Organic traffic"), ("organic_conversion", "Organic conversion"),
-                  ("paid_spend", "Paid spend"), ("paid_efficiency", "Paid efficiency")]
-        def steps_bm(scale):
-            return [{"key": k, "label": l, "value": round(v * scale, 0)} for (k, l), v in zip(labels, raw_bm)]
-        tot_bm = sum(raw_bm)
-        close_bm = steps_bm(((hero_proj - hero_bm) / tot_bm) if tot_bm else 0.0)
-        resid_bm = round(hero_proj, 0) - round(hero_bm, 0) - sum(s["value"] for s in close_bm)
-        max(close_bm, key=lambda s: abs(s["value"]))["value"] += resid_bm
+        today_bm, close_bm, scale_bm = waterfall_walks(
+            [wf_traffic_bm, wf_conv_bm, wf_paid_spend_bm, wf_paid_eff_bm], hero_now - hero_bm_today, hero_proj - hero_bm,
+            round(hero_now, 0) - bm_today, round(hero_proj, 0) - bm_close, complete)
         waterfall["stepsBm"] = close_bm + beyond(over_close)
-        today_bm = steps_bm(1.0)
-        bm_today = round(hero_bm_today, 0)
-        max(today_bm, key=lambda s: abs(s["value"]))["value"] += (round(hero_now, 0) - bm_today) - sum(s["value"] for s in today_bm)
+        waterfall["closeScaleBm"] = round(scale_bm, 4) if scale_bm is not None else None
         today_bm += beyond(over_today)
         waterfall["today"]["stepsBm"] = today_bm
         assert abs(sum(s["value"] for s in today_bm) - (actual_today - bm_today)) < 0.5, (
@@ -4588,9 +4655,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "unitsPerBuyer": round(upb, 4),
             "buyers": round(profile["units"] / upb, 1) if upb else None,
         }
-        snap["hero"]["benchmark"] = round(hero_bm, 0)
-        snap["hero"]["benchmarkToday"] = round(hero_bm_today, 0)
-        snap["hero"]["stretch"] = round(hero_target - hero_bm, 0)
+        # in whole units as the page rounds benchmark.units (whole), the
+        # waterfall's figures; the stretch is the difference of the two printed
+        snap["hero"]["benchmark"] = whole(hero_bm)
+        snap["hero"]["benchmarkToday"] = whole(hero_bm_today)
+        snap["hero"]["stretch"] = round(hero_target, 0) - whole(hero_bm)
         # secured vs what a comparable launch had by today. The sidebar's middle
         # state is exactly this sign, and the index carries it so the sidebar
         # does not have to guess the boundary from statusPct - 1/K moves with
@@ -4680,9 +4749,10 @@ def check_snapshot(snap: dict) -> None:
         # comparison carries up to half a unit times K of rounding on its own -
         # a fixed tolerance of one unit fails an honest snapshot as soon as the
         # uplift passes 2, and check_snapshot aborts the whole run, not just
-        # this release.
+        # this release. It is rounded from the tenth the page prints (whole),
+        # which can sit 0.05 further off the median: 0.55 units times K.
         lifted = (hero.get("benchmark") or 0) * bm["k"]
-        if abs(lifted - (hero.get("target") or 0)) > 0.5 * bm["k"] + 1.0:
+        if abs(lifted - (hero.get("target") or 0)) > 0.55 * bm["k"] + 1.0:
             problems.append(f"hero.benchmark x k is {lifted:.1f} but hero.target is {hero.get('target')}")
         wf_today = (snap.get("waterfall") or {}).get("today") or {}
         steps = sum(s["value"] for s in wf_today.get("steps") or [])
@@ -4716,17 +4786,37 @@ def check_snapshot(snap: dict) -> None:
             problems.append(f"sellthrough.pct {sell['pct']} of {ed_st} but its parts add to {parts:.1f}")
         if hero.get("projected") is not None and abs(float(hero["projected"]) - at_close) > 1.0:
             problems.append(f"hero.projected {hero['projected']} but the sell-through's count at close is {at_close:.1f}")
-    # soft checks: what a person typed can be wrong without any figure being
-    # impossible, so these go to the refresh log and never stop the build
+    # soft checks: figures that should agree, and what a person typed, which
+    # can be wrong without any figure being impossible; logged
+    # (SNAPSHOT_WARNINGS) and never stopping the build
     warnings: list[str] = []
     try:
         warnings += product_name_warnings(sell)
     except Exception as e:  # noqa: BLE001 - a soft check never stops the build
         warnings.append(f"product names not checked: {e}")
+    # the benchmark the hero prints is the basket's median as the page rounds it
+    if bm and hero.get("benchmark") is not None and bm.get("units") is not None:
+        if hero["benchmark"] != whole(bm["units"]):
+            warnings.append(f"hero.benchmark {hero['benchmark']} but benchmark.units {bm['units']} prints as {whole(bm['units']):.0f}")
+    # what is projected at close cannot be less than what is already in
+    paid = snap.get("paid") or {}
+    for proj_key, now_key, tol in (("entriesProjected", "entriesToDate", 0.05), ("spendProjectedTotal", "spendToDate", 0.01)):
+        pv, nv = paid.get(proj_key), paid.get(now_key)
+        if isinstance(pv, (int, float)) and isinstance(nv, (int, float)) and pv < nv - tol:
+            warnings.append(f"paid.{proj_key} {pv} is below paid.{now_key} {nv}")
+    # a closed release's walk at close is its walk to date
+    wf = snap.get("waterfall") or {}
+    if snap.get("complete") and wf.get("today"):
+        for key in ("steps", "stepsBm"):
+            close_v = [s.get("value") for s in wf.get(key) or []]
+            today_v = [s.get("value") for s in wf["today"].get(key) or []]
+            if close_v and today_v and close_v != today_v:
+                warnings.append(f"a closed release's waterfall {key} at close {close_v} differ from today's {today_v}")
+    alt = (snap.get("variants") or {}).get("direct_spread")
     for w in warnings:
+        SNAPSHOT_WARNINGS.append(f"{rid}: {w}")
         print(f"check_snapshot warning: {rid}: {w}")
     # the Direct switch's view of the page holds to the same rules
-    alt = (snap.get("variants") or {}).get("direct_spread")
     if alt:
         try:
             check_snapshot({**snap, **alt, "variants": None, "id": f"{rid} with Direct spread"})
@@ -4745,6 +4835,8 @@ def check_snapshot(snap: dict) -> None:
 
 # problems check_snapshot found with CHECK_SNAPSHOT=warn (a verification run)
 CHECK_WARNINGS: list[str] = []
+# what check_snapshot's soft rules found this run: logged, never fatal
+SNAPSHOT_WARNINGS: list[str] = []
 
 # ---- the benchmark panel against the feed (docs/DATA_MODEL.md 6.3) -----------
 # The panel (data/release_clusters.csv) is written by hand after a full pull;

@@ -812,15 +812,26 @@ EXPLAIN["paid.spend"] = (a, { snap: s }) => {
   const p = s.paid || {};
   const close = !!(a && a.close);
   if (close && !s.complete && finite(p.spendProjectedTotal)) {
+    const b = p.budget || {};
+    // the full days after today, and the share of today still to come: the
+    // days the build carries the run rate over (etl/build.py rest_days)
     const days = Math.max((s.of ?? 0) - (s.day ?? 0), 0);
+    const rest = Math.min(Math.max(1 - (s.asOfFraction ?? 1), 0), 1);
+    // the run rate: the last full day's spend, else on a first day the
+    // recommendation the build carries instead
+    const rate = finite(b.current) && b.current > 0 ? b.current
+      : (finite(b.recommended) && b.daysLeft ? b.recommended : 0);
+    const spent = p.spendToDate ?? 0;
+    const [fullPart, restPart] = roundParts([rate * days, rate * rest], Math.round(p.spendProjectedTotal) - Math.round(spent));
     return {
       where: "Paid spend / day", when: "At close",
       name: "Spend projected at close", value: eur(p.spendProjectedTotal),
       unit: "by the close",
-      say: "What the campaign will have spent by the close if today's daily spend carries on.",
+      say: "What the campaign will have spent by the close if the last full day's spend carries on.",
       steps: [
-        seg`Start from the ${eur(p.spendToDate)} spent so far.`,
-        seg`Add today's daily spend of ${eur((p.budget || {}).current)} for each of the ${days} days left, and the rest of today.`,
+        seg`Start from the ${eur(spent)} spent so far${rest > 0 ? ", today so far included" : ""}.`,
+        ...(days > 0 ? [seg`Add the last full day's spend, ${eur(rate)}, for each of the ${days} days after today: ${eur(fullPart)}.`] : []),
+        ...(rest > 0 ? [seg`Add it for the ${pct(rest)} of today still to come: ${eur(restPart)}.`] : []),
       ],
       total: { v: eur(p.spendProjectedTotal), label: "projected spend" },
       compare: finite(p.spendBudget) ? [{ label: "Budget", v: eur(p.spendBudget), note: "The paid budget for the campaign." }] : [],
@@ -1100,7 +1111,10 @@ EXPLAIN["wf.step"] = (a, { snap: s }) => {
     organic_traffic: sum(ORGANIC.map((k) => (fbg[k] || {})[tr])),
     organic_conversion: sum(ORGANIC.map((k) => (fbg[k] || {})[cv])),
   };
-  const spent = sum(fullDays(s).map((d) => d.spend));
+  // the spend to date, today so far included: the plan beside it is read at
+  // the share of today seen (paidDayFrac), as the Paid spend card reads it
+  const spent = finite(p.spendToDate) ? p.spendToDate : sum((p.daily || []).map((d) => d.spend));
+  const partDay = (p.daily || []).some((d) => d.partial);
   const frac = paidDayFrac(s);
   const bmBudget = finite(p.benchmarkBudget) ? p.benchmarkBudget
     : (s.benchmark && s.benchmark.unitsByGroup && finite(cpp)) ? s.benchmark.unitsByGroup.paid * cpp : null;
@@ -1115,9 +1129,10 @@ EXPLAIN["wf.step"] = (a, { snap: s }) => {
     steps.push(seg`For each organic channel, apply its conversion against ${refWord}'s to its actual sessions: ${ORGANIC.filter((k) => fbg[k]).map((k) => `${chName(s, k)} ${signed((fbg[k] || {})[cv] ?? 0)}`).join(", ")}.`);
   } else if (step.key === "paid_spend") {
     say = `What spending more or less than ${w.hasBm ? "the basket's launches" : "the budget"} by now is worth, in units.`;
+    const sofar = partDay ? " to date, today so far included" : " to date";
     steps.push(w.hasBm
-      ? seg`Paid has spent ${eur(spent)} over its full days, against ${eur(planned)} of the benchmark budget due by now: the basket's paid units at the plan's cost per unit, spread evenly over the days paid runs.`
-      : seg`Paid has spent ${eur(spent)} over its full days, against ${eur(planned)} of its budget due by now, spread evenly over the days paid runs.`);
+      ? seg`Paid has spent ${eur(spent)}${sofar}, against ${eur(planned)} of the benchmark budget due by now: the basket's paid units at the plan's cost per unit, spread evenly over the days paid runs.`
+      : seg`Paid has spent ${eur(spent)}${sofar}, against ${eur(planned)} of its budget due by now, spread evenly over the days paid runs.`);
     steps.push(seg`Price the difference at the plan's cost per unit, ${eur(cpp, 2)}: ${eur(spent - planned)} ÷ ${eur(cpp, 2)} = ${signed(raw.paid_spend)}.`);
   } else if (step.key === "paid_efficiency") {
     say = "What paid's cost per unit added or cost: the rest of paid's gap once its spend is accounted for.";
@@ -1131,12 +1146,30 @@ EXPLAIN["wf.step"] = (a, { snap: s }) => {
   const notes = [];
   let reading = raw[step.key];
   if (!w.today && step.key !== "oversubscribed") {
-    const tot = raw.organic_traffic + raw.organic_conversion + raw.paid_spend + raw.paid_efficiency;
+    const four = [raw.organic_traffic, raw.organic_conversion, raw.paid_spend, raw.paid_efficiency];
+    const tot = sum(four);
     const outcome = w.view.projection, start = w.hasBm ? w.view.benchmark : w.view.target;
-    const scale = tot ? (outcome - start) / tot : null;
-    if (finite(scale)) {
-      steps.push(seg`That is the reading to date. At close each contributor is scaled by the same factor, ×${n(scale, 2)}, so the four add up to the projection's ${signed(outcome - start)} against ${w.hasBm ? "the benchmark" : "the target"}.`);
-      reading = reading * scale;
+    const vs = w.hasBm ? "the benchmark" : "the target";
+    if (s.complete) {
+      // nothing left to project: the build copies the walk to date
+      steps.push(seg`The launch has closed, so its walk at close is its walk to date.`);
+    } else {
+      // the factor the build scaled by (waterfall.closeScale / closeScaleBm);
+      // null where it shared the rest of the gap out by size instead. A
+      // snapshot from before either field reads the same rule off its steps.
+      const key = w.hasBm ? "closeScaleBm" : "closeScale";
+      const g = tot ? (outcome - start) / tot : null;
+      const f = key in w.wf ? w.wf[key]
+        : (Math.abs(tot) >= 0.5 && finite(g) && g >= 0 && g <= 3 ? g : null);
+      if (finite(f)) {
+        steps.push(seg`That is the reading to date. At close each contributor is scaled by the same factor, ×${n(f, 2)}, so the four add up to the projection's ${signed(outcome - start)} against ${vs}.`);
+        reading = reading * f;
+      } else {
+        const size = sum(four.map((x) => Math.abs(x)));
+        const rest = (outcome - start) - tot;
+        steps.push(seg`That is the reading to date. The ${signed(rest)} still to come by the close is shared over the four in proportion to their size to date, so they add up to the projection's ${signed(outcome - start)} against ${vs}.`);
+        if (size > 0) reading = reading + rest * Math.abs(reading) / size;
+      }
     }
   }
   if (finite(reading) && step.key !== "oversubscribed" && Math.round(reading) !== step.value) {
