@@ -259,3 +259,37 @@ def test_one_member_basket() -> None:
 
 if __name__ == "__main__" and "test_one_member_basket" in globals():
     test_one_member_basket()
+
+
+def test_bundle_words() -> None:
+    """A bundle is a record with a set word in its title (or no edition size);
+    a bracketed note on a single edition is not one. Titles as Airtable has
+    them in data/release_pricing.csv."""
+    sets = ["Valley of the Shadow of Death & Breakfast on the Beach [Diptych]", "Brillo Print [Set of 6]",
+            "[Pair] Split-Rocker (Wood) Pink/Blue & Pink/Orange", "Red Arm & Blue Arm [Pair]", "Lea & Monica [COMBINED PRODUCT]",
+            "[Quartet] Double Portrait, 1988-90, Reflection with Two Children (Self-portrait), 1965",
+            "It wasn't me + Floating [DIPTYCH // PAIRING]", "HOPE (Triptych)", "Full set of prints", "Untitled [Dream House - Pre-order set of 6]"]
+    editions = ["Barbed Wire [Special Print Edition]", "Mind Trip [Standard Print Edition]", "LARGE FORMAT PAINTINGS [OG painting - 1/5]",
+                "Content [Hand finished]", "Untitled [Dream House 1]", "V&A fundraiser [Digital only]", "Yellow Sapphire [Public]",
+                "[UPDATED - 12 consigned] Saturn V - Print edition", "‘Growing up [OG Series - Paired 1/1 NFT]", "Waterfall (Kirifuri)"]
+    assert all(P.BUNDLE_RE.search(t) for t in sets), [t for t in sets if not P.BUNDLE_RE.search(t)]
+    assert not any(P.BUNDLE_RE.search(t) for t in editions), [t for t in editions if P.BUNDLE_RE.search(t)]
+    # the Pejac print draw of 18 Dec 2026: four editions with a bracketed note,
+    # sized and priced by value (488,000 over 200 units), not a mean of four bundles
+    recs = pd.DataFrame([
+        dict(airtable_id=2606, artist="Pejac", title="Barbed Wire [Special Print Edition]", unit_price=3500, edition_size=20),
+        dict(airtable_id=3094, artist="Pejac", title="Barbed Wire [Standard Print Edition]", unit_price=2800, edition_size=80),
+        dict(airtable_id=2807, artist="Pejac", title="Mind Trip [Special Print Edition]", unit_price=2500, edition_size=20),
+        dict(airtable_id=3093, artist="Pejac", title="Mind Trip [Standard Print Edition]", unit_price=1800, edition_size=80),
+    ]).assign(release="PejacLE26", launch_date=pd.Timestamp("2026-12-18"), currency="EUR", launch_type="", edition_type="PE",
+              product_type="Silkscreen print", price_status="")
+    recs["artist_key"] = recs["artist"].map(P.artist_key)
+    recs["title_key"] = recs["title"].map(P.norm)
+    recs["bundle"] = recs["title"].fillna("").str.contains(P.BUNDLE_RE) | ~(recs["edition_size"] > 0)
+    lf = P.launches(recs)
+    assert lf.iloc[0]["n_bundles"] == 0 and lf.iloc[0]["edition_size"] == 200 and lf.iloc[0]["unit_price"] == 2440, lf.iloc[0]
+    print("bundle words: ok")
+
+
+if __name__ == "__main__" and "test_bundle_words" in globals():
+    test_bundle_words()

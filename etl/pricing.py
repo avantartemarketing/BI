@@ -87,7 +87,11 @@ MERGE_DAYS = 3            # codes launching within this of each other are one la
 FUZZY_MIN = 0.85          # artist-name similarity below this is listed, never used
 FUZZY_SHOW = 0.6          # ... and below this it is not even listed
 STOP_TOKENS = {"the", "estate", "foundation", "of", "and"}
-BUNDLE_RE = re.compile(r"set of|\[|diptych|triptych", re.I)
+# a record that sells several works as one: the set words Airtable's titles use
+# ("[Set of 2]", "[Pair]", "[Quartet]", "[COMBINED PRODUCT]", "... Diptych").
+# A bracket alone is not one: "[Special Print Edition]", "[OG painting - 1/5]"
+# and "[Hand finished]" annotate a single edition of its own.
+BUNDLE_RE = re.compile(r"set of|diptych|triptych|\bpairs?\b|\bquartet\b|combined product", re.I)
 
 PRICE_COLS = ["airtable_release", "airtable_ids", "n_products", "unit_price", "price_min", "price_max", "currency",
               "unit_price_eur", "edition_size", "launch_value", "launch_value_eur", "airtable_launch_date",
@@ -171,6 +175,26 @@ def _mode(values: pd.Series) -> str:
     return str(got.mode().iloc[0]) if len(got) else ""
 
 
+def _stage(status: str) -> float:
+    """The number a project status starts with ("1.4. Pitching" 1.4, "03.
+    Proofing" 3, "3.5. Pre-Launch" 3.5), infinity when there is none."""
+    m = re.match(r"\s*(\d+(?:\.\d+)?)", status)
+    return float(m.group(1)) if m else float("inf")
+
+
+def _status_mode(values: pd.Series) -> str:
+    """The launch's project status: the one most of its records hold, a tie
+    going to the least advanced stage. By name, "03. Proofing" sorts before
+    "1.4. Pitching", so a launch half at pitching read as proofing."""
+    got = values.dropna().astype(str)
+    got = got[got != ""]
+    if not len(got):
+        return ""
+    counts = got.value_counts()
+    tied = [s for s, n in counts.items() if n == counts.max()]
+    return min(tied, key=lambda s: (_stage(s), s))
+
+
 def launches(records: pd.DataFrame) -> pd.DataFrame:
     """One row per launch: one artist's records sharing a release code on one
     launch date. The artist is part of the key because a group show puts eight
@@ -197,6 +221,12 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
             pmin, pmax = float(priced["unit_price"].min()), float(priced["unit_price"].max())
         else:
             size = value = price = pmin = pmax = float("nan")
+        # the campaign's dates are its editions' own, read off the sized,
+        # non-bundle records as release_products reads them, so the upcoming
+        # page and the Set up targets tab give one announce; a launch with no
+        # such record falls back to every record's dates
+        dated = g[~g["bundle"]] if (~g["bundle"]).any() else g
+        kinds = g["edition_type"].fillna("").astype(str).str.strip().str.upper()
         rows.append({
             "launch_key": key,
             "airtable_release": _mode(g["release"]) or "",
@@ -213,12 +243,15 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
             "launch_date": g["launch_date"].min(),
             "quarter": quarter_of(g["launch_date"].min()),
             "launch_type": _mode(g["launch_type"]), "edition_type": _mode(g["edition_type"]),
+            # how many records carry each edition type (OG, PE, TL, NFT ...), so
+            # a launch of originals or timed editions can be told from a draw
+            "edition_type_counts": {k: int(n) for k, n in kinds[kinds != ""].value_counts().items()},
             "product_type": _mode(g["product_type"]), "price_status": _worst_status(g["price_status"]),
             # the campaign's other dates and where the project stands, for a
             # launch the funnel has not seen yet (etl/build.py upcoming_releases)
-            "announce_date": _first_day(g.get("announce_date")),
-            "private_room_date": _first_day(g.get("private_room_date")),
-            "project_status": _mode(g["project_status"]) if "project_status" in g.columns else "",
+            "announce_date": _first_day(dated.get("announce_date")),
+            "private_room_date": _first_day(dated.get("private_room_date")),
+            "project_status": _status_mode(g["project_status"]) if "project_status" in g.columns else "",
         })
     out = pd.DataFrame(rows)
     rate = out["currency"].map(RATES_TO_EUR)

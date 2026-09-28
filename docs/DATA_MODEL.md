@@ -281,18 +281,26 @@ dates. So the build lists **upcoming launches** from Airtable (`etl/build.py
 upcoming_releases`) beside the releases the funnel mentions:
 
 - a draw (`launch_type` Draw, or blank - a project Airtable has not typed yet) closing after
-  the build date and within 120 days (60 for a blank type), not at the pitching stage;
+  the build date and within 120 days (60 for a blank type), not at the pitching stage (the
+  status most of its records hold, a tie going to the less advanced stage). A blank type
+  counts as a draw only when most of the launch's records are not originals (`OG`), NFTs or
+  timed editions (`TL`, `TLC`): an originals show or a 48-hour timed print is no draw;
 - whose Airtable records no release on file already matched - the same matcher the panel's
   pricing uses (`etl/pricing.py match`), run over every discovered and configured release,
   so the artist's earlier launch does not stand for the new one and a launch the funnel
-  already carries under its own title is not listed twice;
+  already carries under its own title is not listed twice - and whose ids no saved input
+  carries (a release set up from an upcoming page keeps them, `airtable_ids`);
 - named the way the funnel will name it, `Artist · Title · YYYY Qn` with the title `Multiple`
-  when the launch has several works, so the page keeps its id when the funnel catches up.
+  when the launch has several works, so the page keeps its id when the funnel catches up. A
+  second launch of the artist in the same quarter takes its works as its title ("Pejac ·
+  Barbed Wire / Mind Trip · 2026 Q4"), then its close date, so no two pages share a name or
+  an id.
 
 Its page (`build_upcoming`, status `upcoming`, `upcoming: true`) has the dates, the edition,
 the price in euros at the panel's fixed rates, the works and the project's Airtable status,
 and no actuals; the sidebar lists it under Upcoming with the days until it opens. The
-announce date is Airtable's, else assumed 24 days before the close and said so; the campaign
+announce date is Airtable's (the earliest over the launch's sized, non-bundle records, as the
+Set up targets tab reads them), else assumed 24 days before the close and said so; the campaign
 code is guessed from the feeds' codes and Meta's campaign names, never from a code a release
 on file already carries. `inputs.json` `discovered` carries the edition, the price and the
 Airtable record ids as the defaults the Set up targets tab starts from, and a save keeps the
@@ -912,8 +920,10 @@ that is the field's currency in Airtable). Credentials are `AIRTABLE_TOKEN` (rea
 
 `etl/pricing.py` joins the records to the release list. A **launch** is one artist's records
 under one release code on one launch date (a group show puts eight artists under one code;
-each artist's release is its own row in the panel). Bundles ("Set of 4", a diptych of listed
-prints, any record without an edition size) carry the sum of their parts and are left out, so
+each artist's release is its own row in the panel). Bundles (a title with a set word - "Set of
+4", "[Pair]", "[Quartet]", "[COMBINED PRODUCT]", a diptych or triptych - or any record without
+an edition size; a bracketed note alone, "[Special Print Edition]", "[OG painting - 1/5]", is
+not one) carry the sum of their parts and are left out, so
 a launch's `unit_price` is the **value-weighted mean over its sized products** (the price of
 the average unit in the edition), `edition_size` the sum of their units, `launch_value` the
 sum of price × units. The match runs strictest first and is never silent: exact artist + title

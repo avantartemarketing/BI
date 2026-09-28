@@ -99,6 +99,7 @@ PAID_START_DAYS = 1      # paid starts the day after the announce: its plan and 
 UPCOMING_DAYS = 120      # an Airtable launch this far ahead is listed before the funnel sees it (§1.7)
 UPCOMING_UNTYPED_DAYS = 60   # ... but one Airtable has not typed as a draw only this far ahead
 UPCOMING_TYPES = {"Draw", ""}   # the LE draw path; blank is a project Airtable has not typed yet
+UPCOMING_NOT_DRAW = {"OG", "NFT", "TL", "TLC"}   # originals, NFTs, timed editions: an untyped launch mostly of these is no draw
 ASSUMED_CAMPAIGN_DAYS = 24      # announce to close, when Airtable has no announce date yet
 CATALOGUE_DAYS = 90      # window shown for a release with no campaign clock
 
@@ -3318,17 +3319,28 @@ def load_launches() -> pd.DataFrame | None:
         return None
 
 
+def _works_title(titles: str) -> str:
+    """A launch's works as a release title, "Barbed Wire / Mind Trip": each
+    distinct title once, without Airtable's bracketed notes."""
+    names = [re.sub(r"\s*\[[^\]]*\]?", "", t).strip() for t in str(titles or "").split(" / ")]
+    return " / ".join(dict.fromkeys(n for n in names if n))
+
+
 def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], as_of: date,
                       activity: dict[str, tuple[date, date]] | None = None) -> list[dict]:
     """The launches Airtable knows and the funnel does not yet (§1.7), as the
     records build_upcoming reads: draws closing after today and within
-    UPCOMING_DAYS, whose Airtable records no release on file matched.
+    UPCOMING_DAYS, whose Airtable records no release on file matched. A
+    launch with no type counts as a draw unless most of its records are
+    originals, NFTs or timed editions (UPCOMING_NOT_DRAW).
 
     Named the way the funnel will name them - "Artist · Title · YYYY Qn", the
     title "Multiple" when the launch has several works - so the page keeps its
     id when the funnel catches up; adopt_funnel_names covers the launches the
-    funnel names differently. The announce date is Airtable's, else assumed
-    ASSUMED_CAMPAIGN_DAYS before the close and said so; the price is
+    funnel names differently. A second launch of the artist in the quarter
+    takes its works as its title, then its close date, so no two pages share
+    a name. The announce date is Airtable's, else assumed
+    ASSUMED_CAMPAIGN_DAYS before the close and said so. The price is
     converted to euros, the page's currency, at the fixed table. The
     campaign code is guessed only among codes active in the launch's own
     window (`activity`, code_activity less the codes releases on file carry):
@@ -3337,30 +3349,52 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
         return []
     on_file = airtable_ids_on_file(existing, launch_frame)
     used: set[str] = set().union(*on_file.values()) if on_file else set()
+    # a release set up from an upcoming page keeps the ids it was set up
+    # from (§1.7): that launch is represented whatever the matcher makes of it
+    used |= {i for r in existing if r.get("airtable_ids") for i in str(r["airtable_ids"]).split("|") if i}
     names = {r["release_name"] for r in existing}
     horizon = as_of + timedelta(days=UPCOMING_DAYS)
-    out, seen_ids = [], {}
+    out, seen_ids, listed = [], {}, set()
     for l in launch_frame.sort_values("launch_date").itertuples():
         if pd.isna(l.launch_date):
             continue
         close = l.launch_date.date()
         if not (as_of < close <= horizon):
             continue
-        if str(l.launch_type or "") not in UPCOMING_TYPES:
+        ltype = str(l.launch_type or "")
+        if ltype not in UPCOMING_TYPES:
             continue
         # a project two months out with no launch type is not a campaign yet
-        if not str(l.launch_type or "") and close > as_of + timedelta(days=UPCOMING_UNTYPED_DAYS):
+        if not ltype and close > as_of + timedelta(days=UPCOMING_UNTYPED_DAYS):
+            continue
+        # nor is one made mostly of originals, NFTs or timed editions: an
+        # originals show or a timed print is not a draw
+        kinds = getattr(l, "edition_type_counts", None)
+        off = sum(n for k, n in kinds.items() if k in UPCOMING_NOT_DRAW) if isinstance(kinds, dict) else 0
+        if not ltype and 2 * off > int(l.n_products):
             continue
         if str(l.project_status or "").startswith("1.4"):   # pitching: nothing to plan yet
             continue
         ids = set(str(l.airtable_ids).split("|")) if l.airtable_ids else set()
         if ids & used:
             continue
+        artist = str(l.artist)
         title = "Multiple" if int(l.n_products) > 1 else str(l.titles)
         quarter = pricing.quarter_of(l.launch_date)
-        name = f"{l.artist} · {title} · {quarter}"
-        if name in names:
+        name = f"{artist} · {title} · {quarter}"
+        # a release on file by this name that the matcher placed on no launch
+        # may be this one under the name its page was set up with
+        if name in names and not on_file.get(name):
             continue
+        if name in names or name in listed:
+            # the artist's other launch this quarter has the name: this one
+            # takes its works as its title, and its close date if that is taken too
+            works = _works_title(l.titles)
+            for alt in ([works] if works and works != title else []) + [f"{works or title} (closes {close.day} {close:%b})"]:
+                title, name = alt, f"{artist} · {alt} · {quarter}"
+                if name not in names and name not in listed:
+                    break
+        listed.add(name)
         assumed = pd.isna(l.announce_date) or l.announce_date.date() >= close
         announce = close - timedelta(days=ASSUMED_CAMPAIGN_DAYS) if assumed else l.announce_date.date()
         pr_open = l.private_room_date.date() if not pd.isna(l.private_room_date) else announce - timedelta(days=PR_LEAD_DAYS)
@@ -3370,7 +3404,7 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
         # releases does not apply, and the page marks the code as guessed
         lo_w, hi_w = announce - timedelta(days=30), close + timedelta(days=2)
         moving = {c for c, (lo, hi) in (activity or {}).items() if hi >= lo_w and lo <= hi_w}
-        code = guess_code(str(l.artist), title, close.year, moving, 1)
+        code = guess_code(artist, title, close.year, moving, 1)
         rid = slugify(name) or "release"
         if rid in seen_ids:
             seen_ids[rid] += 1; rid = f"{rid}_{seen_ids[rid]}"
@@ -3379,7 +3413,7 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
         price = float(l.unit_price) if pd.notna(l.unit_price) else None
         rate = pricing.RATES_TO_EUR.get(str(l.currency or "")) if price is not None else None
         out.append({
-            "id": rid, "release_name": name, "artist": str(l.artist), "title": title, "quarter": quarter,
+            "id": rid, "release_name": name, "artist": artist, "title": title, "quarter": quarter,
             "type": "LE", "campaign_code": code, "campaign_name": None,
             "announce_date": announce.isoformat(), "launch_end": close.isoformat(),
             "private_room_open": pr_open.isoformat(),
@@ -5162,6 +5196,22 @@ def build_upcoming_pages() -> int:
         (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
         patch_index(snap, None, status="upcoming")
         n += 1
+    # an upcoming row the list no longer holds (closed, taken up by the
+    # funnel, renamed, or no longer read as a draw) leaves the index, which
+    # otherwise keeps it without a page until the next full build
+    path = APP / "index.json"
+    if path.exists():
+        try:
+            doc = json.loads(path.read_text())
+            ids = {rec["id"] for rec in upcoming}
+            rows = doc.get("releases", [])
+            kept = [r for r in rows if r.get("status") != "upcoming" or r.get("id") in ids]
+            if len(kept) != len(rows):
+                doc["releases"] = kept
+                path.write_text(json.dumps(doc, indent=1))
+                print(f"upcoming: {len(rows) - len(kept)} row(s) no longer upcoming left the index")
+        except (OSError, ValueError) as e:
+            print(f"upcoming: could not tidy the index ({e})")
     print(f"upcoming: wrote {n} page(s) from Airtable -> {DERIVED}")
     return n
 
