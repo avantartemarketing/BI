@@ -18,7 +18,9 @@ before day d. eps is the elasticity of cost per entry to the day's budget; w
 is the wear-out, each doubling of the spend so far making the next entry 2^w
 times dearer; K, the spend at which the wear-out starts to bite, is profiled
 on a grid; exp(g_k) is the close's lift, the extra entries a euro buys on the
-final days as the draw's deadline pulls people in. The days to the close are
+final days as the draw's deadline pulls people in (the final days' own paid
+sign-ups entering at once, not earlier sign-ups coming back: close_rush.py).
+The days to the close are
 the funnel export's own campaign clock (days_until_launch). The
 between-campaign spread of each campaign's own fit (DerSimonian-Laird, with
 the close's lift held at the panel's) is the width of each prior, the width

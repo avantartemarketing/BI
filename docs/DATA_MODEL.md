@@ -1765,26 +1765,34 @@ nothing extra is needed to secure sell-out, whatever the current ROI.
   the Paid ROI chart read the path at today's spend, the recommendation at its own, so a bigger
   budget wears the audience out faster. The ROI floor reads the price at the close underneath
   the lift (`cpeAtClose`, `finalDayRoi`, `wearToClose`), the path's worst day: the chart's line
-  rises on the last days, the floor does not lean on them. The wear-out `w` and the elasticity
-  `eps` are fitted from the campaign's own days once it has `cpe_fit_min_days` (8) with spend, as
-  Poisson (`log E[entries] = a + (1 − eps) × log spend − w × log(1 + spent before / K)`, the
-  close's lift held at the panel's, the regression the panel priors come from, days with no entry
-  included), then shrunk to the priors together through their joint covariance
-  (`campaign_cost_terms`; published as `budget.elasticity`, `budget.wearout`, `budget.wearoutK`,
-  `budget.spentSoFar`, `budget.wearToClose` and `budget.costTerms`, with the anchor as
-  `budget.spendAtWindow`, `budget.spentAtWindow` and `budget.liftAtWindow` and the lift as
-  `budget.closeLift`, so the path can be rebuilt from the block). A campaign that ramps its budget
-  as it goes cannot tell a bigger day from more spend so far - Warhol's own days put the two at
-  −0.8 correlation - and the joint shrink moves the pair towards the panel along the line its
-  data cannot pin down. The priors are `cpe_wearout` 0.24 ± 0.17, `cpe_wearout_k` €100,
-  `cpe_spend_elasticity` 0.08 ± 0.08 and `cpe_close_lift` [1.53, 1.40], from the 2026-09-28 fit on
-  42 Meta draw campaigns and 705 campaign-days up to the close (`etl/analysis/cpe_elasticity.py`;
-  spend after a draw closed is left out): each doubling of spend so far makes an entry 18%
-  dearer. It fits better than a straight drift a day (deviance 1254 against 1294) and, cutting
-  past campaigns at 40, 60 and 80% of their run, predicts the rest with a median miss of 42% and
-  a bias of +2% (29 campaigns; without the close's lift 46% and −7%, −18% in the last fifth; the
-  drift a day it replaced missed by 57% on 32). The drift a day (2.5%, and before it the
-  workbook's 5 / 7 / 10% by third, kept in `cpe_daily_drift_by_third_workbook`) is retired.
+  rises on the last days, the floor does not lean on them. The lift is the final days' own paid
+  sign-ups entering at once, not credit deferred from earlier paid sign-ups (an entry is
+  attributed to the channel of the session that signed the person up, and a draw started and not
+  finished counts as signing up): at account level 87% of the final two days' paid entries signed
+  up on those days, and 0.3% of the paid sign-ups who had not entered by then did so then
+  (`etl/analysis/close_rush.py`, aggregates only); within a campaign a euro buys ×1.15 as many
+  sign-ups on the close day and each is ×1.22 as likely to enter. `cpe_close_lift_applied`
+  switches the lift off the path (the fit keeps it and `budget.closeLift` reads `[]`). The
+  wear-out `w` and the elasticity `eps` are fitted from the campaign's own days once it has
+  `cpe_fit_min_days` (8) with spend, as Poisson (`log E[entries] = a + (1 − eps) × log spend − w ×
+  log(1 + spent before / K)`, the close's lift held at the panel's, the regression the panel
+  priors come from, days with no entry included), then shrunk to the priors together through
+  their joint covariance (`campaign_cost_terms`; published as `budget.elasticity`,
+  `budget.wearout`, `budget.wearoutK`, `budget.spentSoFar`, `budget.wearToClose` and
+  `budget.costTerms`, with the anchor as `budget.spendAtWindow`, `budget.spentAtWindow` and
+  `budget.liftAtWindow` and the lift as `budget.closeLift`, so the path can be rebuilt from the
+  block). A campaign that ramps its budget as it goes cannot tell a bigger day from more spend so
+  far - Warhol's own days put the two at −0.8 correlation - and the joint shrink moves the pair
+  towards the panel along the line its data cannot pin down. The priors are `cpe_wearout` 0.24 ±
+  0.17, `cpe_wearout_k` €100, `cpe_spend_elasticity` 0.08 ± 0.08 and `cpe_close_lift` [1.53,
+  1.40], from the 2026-09-28 fit on 42 Meta draw campaigns and 705 campaign-days up to the close
+  (`etl/analysis/cpe_elasticity.py`; spend after a draw closed is left out): each doubling of
+  spend so far makes an entry 18% dearer. It fits better than a straight drift a day (deviance
+  1254 against 1294) and, cutting past campaigns at 40, 60 and 80% of their run, predicts the
+  rest with a median miss of 42% and a bias of +2% (29 campaigns; without the close's lift 46%
+  and −7%, −18% in the last fifth; the drift a day it replaced missed by 57% on 32). The drift a
+  day (2.5%, and before it the workbook's 5 / 7 / 10% by third, kept in
+  `cpe_daily_drift_by_third_workbook`) is retired.
 
 This maps 1:1 onto the design's Paid module contract:
 `roiDeclineModel = { start: today's actual ROI, dailyFactor }` (dailyFactor: the path's average fall a day,

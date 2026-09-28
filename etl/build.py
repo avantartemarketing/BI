@@ -4474,7 +4474,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # had spent before each day, any spend ahead of the window included
     spent_before_window = float(spend[spend["campaign_name"].isin(camps)
                                       & (spend["spend_date"] < window_start)]["spend"].sum()) if camps else 0.0
+    # the close's lift as fitted: the window's price is read underneath it
+    # and the campaign's own terms are fitted with it held (campaign_cost_terms).
+    # The path lifts its own last days by it with cpe_close_lift_applied on,
+    # the rush being the final days' own paid sign-ups entering at once (docs
+    # §7); off, the path runs on the curve alone and the fit keeps the lift
     close_lift = [float(v) for v in (b.get("cpe_close_lift") or [])]
+    path_lift = close_lift if b.get("cpe_close_lift_applied") else []
     # the window's days: (spend, spent before the day, the close's lift on the day)
     clock3: list[tuple[float, float, float]] = []
     for d in days:
@@ -4537,7 +4543,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     anchor_lift = sum(x * lf for x, _, lf in clock3) / w_spend if w_spend > 0 else 1.0
     future_days = list(daterange(full_through + timedelta(days=1), launch_end))
     cost = (CostPath(l3d_cpe, spend_ref, clock_ref, spent_so_far, len(future_days), eps, wear, wear_k,
-                     lift=close_lift, anchor_lift=anchor_lift)
+                     lift=path_lift, anchor_lift=anchor_lift)
             if l3d_cpe else None)
     forecast_cpe = l3d_cpe                                # the window's price (per converting unit)
 
@@ -4928,8 +4934,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # price was paid at, so the path can be rebuilt from the block
             "spendAtWindow": round(spend_ref, 2) if spend_ref else None,
             "spentAtWindow": round(clock_ref, 2),
-            # the close's lift on the path's last days, and the window's own
-            "closeLift": close_lift,
+            # the lift the path puts on its last days ([] with
+            # cpe_close_lift_applied off) and the one taken out of the window's
+            # price
+            "closeLift": path_lift,
             "liftAtWindow": round(anchor_lift, 4),
             "costTerms": cost_terms,
             "band": band, "forcedDecrease": forced, "zeroConversionDays": zero_days,

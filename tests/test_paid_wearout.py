@@ -161,12 +161,19 @@ check(ct["fitDays"] >= 8 and bud["wearout"] > 0, f"the synthetic campaign fits i
 check(close(bud["spentSoFar"], 5000.0 + sum(spend_by_day.values()), 1e-6), f"the clock counts the spend ahead of the window: {bud['spentSoFar']}")
 path = [r["roi"] for r in paid["roiPath"]]
 lifts = bud["closeLift"]
-check(lifts == B["cpe_close_lift"] and bud["liftAtWindow"] == 1.0, f"the block carries the close's lift, none in the window: {lifts} {bud['liftAtWindow']}")
-body = path[:-len(lifts)]
-check(len(path) == bud["daysLeft"] and all(b < a for a, b in zip(body, body[1:])), "the ROI line falls every day at today's spend until the close's last days")
-check(path[-1] > path[-len(lifts) - 1], "and rises on them, the deadline's rush")
-check(close(path[-1], paid["l3dRoi"] * lifts[0] / bud["wearToClose"], 0.01),
-      f"the line ends at the L3D over the path's rise, times the close day's lift: {path[-1]} vs {paid['l3dRoi']} x {lifts[0]} / {bud['wearToClose']}")
+# the path lifts its last days only with the switch on (off, the fit still
+# holds the lift and the path runs on the curve alone)
+applied = B["cpe_close_lift"] if B.get("cpe_close_lift_applied") else []
+check(lifts == applied and bud["liftAtWindow"] == 1.0,
+      f"the block carries the lift the path applies ({applied}), none in the window: {lifts} {bud['liftAtWindow']}")
+body = path[:-len(lifts)] if lifts else path
+check(len(path) == bud["daysLeft"] and all(b < a for a, b in zip(body, body[1:])),
+      "the ROI line falls every day at today's spend" + (" until the close's last days" if lifts else ", to the close"))
+if lifts:
+    check(path[-1] > path[-len(lifts) - 1], "and rises on them, the deadline's rush")
+end_lift = lifts[0] if lifts else 1.0
+check(close(path[-1], paid["l3dRoi"] * end_lift / bud["wearToClose"], 0.01),
+      f"the line ends at the L3D over the path's rise (times the close day's lift when applied): {path[-1]} vs {paid['l3dRoi']} x {end_lift} / {bud['wearToClose']}")
 check(close(bud["cpeAtClose"], bud["cpeNow"] * bud["wearToClose"], 0.01), "the price at close is the window's times the same rise")
 if bud["recommended"] and bud["recommended"] > bud["current"] * 1.01:
     check(bud["cpeAtRecommended"] > bud["cpeAtClose"], "a bigger recommended budget ends the path dearer")

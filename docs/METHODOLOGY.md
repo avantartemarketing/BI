@@ -444,6 +444,27 @@ bigger day from more spend so far, so the pair moves towards the panel along
 the line its data cannot pin down. A release's own figures are in the
 explainer on its Paid spend recommendation and in the card's floor popup.
 
+**What the close's lift is.** An entry is attributed to the channel of the
+session the person signed up in, and a draw started and not finished counts
+as signing up, so the rush could have been credit deferred from earlier paid
+sign-ups coming back on the final day after an email: a pool the final day's
+spend does nothing to, which no budget should be multiplied by. The events
+feed, read at account level (`etl/analysis/close_rush.py`, aggregates only),
+says it is not. Of 5,228 paid entries with a sign-up on the same release,
+4,873 (93%) entered on the day they signed up; of the 528 paid entries on the
+final two days, 458 (87%) signed up on those days and 70 came back from
+earlier; of the 27,974 paid sign-ups across 58 releases who had not entered
+by the final two days, 70 (0.3%) did so then. The lift is the final days' own
+paid sign-ups, who enter at once: within a campaign a euro buys ×1.15 as many
+sign-ups on the close day (×1.08 the day before) and each sign-up is ×1.22
+(×1.20) as likely to enter. So the path lifts the final days' spend
+(`cpe_close_lift_applied`; switched off, the path runs on the curve alone,
+the fit keeps the lift, and the projection runs about a fifth low over a
+campaign's last fifth). The lift's reach on a very big final day is the one
+thing the panel cannot pin down: the final days' entries read it shrinking by
+6% per doubling of the day's spend against the campaign's usual, ± 6%, so a
+day at four times the usual could be buying ×1.35 rather than ×1.53.
+
 Why spend so far and not days: on the panel it fits better than a straight
 drift a day (deviance 1254 against 1294, where the straight drift read 4.6% a
 day), and a back-test that cut past campaigns at 40, 60 and 80% of their run

@@ -129,7 +129,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const own = (v, se, f) => (v === null || v === undefined ? "" : ` (own ${f(v)} ± ${f(se)} over ${fmt(ct.fitDays)} days)`);
   // an older snapshot still carries the drift a day it was built on
   const hasWear = typeof budget.wearout === "number";
-  // the draw's last days, close day first: what a euro buys on them, times
+  // the lift the path puts on the draw's last days, close day first: what a
+  // euro buys on them, times; [] with benchmarks cpe_close_lift_applied off
   const lifts = Array.isArray(budget.closeLift) ? budget.closeLift : [];
   const costCurveRows = [
     { label: "Cost rises with the day's budget as", value: `budget^${fmt(budget.elasticity, 2)}` + own(ct.elasticityOwn, ct.elasticitySe, (v) => fmt(v, 2)) },
