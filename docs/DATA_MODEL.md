@@ -948,9 +948,12 @@ diagnostics and the untracked-redistribution comparisons of §6.2 all keep worki
 The daily plan is the benchmark's own shape, scaled once:
 
 ```
-benchmark_plan[g][d] = profile["units_by_group"][g] × curve(basket, g, "units", pdsa(d))
+benchmark_plan[g][d] = profile["units_by_group"][g] × curve(basket, g, "entries", pdsa(d))
 target_plan[g][d]    = benchmark_plan[g][d] × K
 ```
+
+(`"entries"`: every unit plan is entry-timed, §5.3; paid's curve is its even daily share,
+`paid_pace`, on both lines alike.)
 
 Target and benchmark therefore stand in exactly the ratio K at **every** point of the campaign,
 not only at close - which is what makes the even uplift legible on the trajectory: the gap
@@ -969,11 +972,12 @@ requires `expectedToday(channel)` from "channel-shaped curves, never straight li
 
 ### 5.1 Method
 1. Take completed, clean LE campaigns (campaign window fully observed, ≥ 20 draw entries;
-   currently n = 18 from the export - grows over time).
+   n = 18 in v1, 76 in the pooled panel at the 2026-09-24 build; a release reads its basket's,
+   §5.3).
 2. For each, compute cumulative share of the campaign's final total at each pdsa, per metric
    (sessions, draw entries, units) - and per channel where volume allows.
-3. Pool across releases on the pdsa axis: **median = the target trajectory; p25/p75 = guardrail
-   band**.
+3. Pool across releases on the pdsa axis: **median = the target trajectory**. (v1 also planned a
+   p25/p75 guardrail band; it was never built, and the build publishes the medians alone.)
 4. A release's daily plan = `target_total(metric, channel) × curve(pdsa of that day)`.
    `expectedToday = target_total × curve(pdsa_today)`.
 
@@ -1006,26 +1010,61 @@ Shape facts the dashboard should encode:
 - Stage split of totals (pooled): sessions EA .11 / S1 .32 / S2 .17 / S3 .36 / LC .04;
   units .17 / .28 / .16 / .25 / .13.
 - Dispersion is wide (sessions p25–p75 at mid-campaign: .41–.81) - always show the band, and
-  status vs plan should use the band, not the median alone, before shouting red.
+  status vs plan should use the band, not the median alone, before shouting red. (Not built:
+  the curves are medians alone and the trajectory draws no band, §5.3.)
 
 ### 5.3 Per-channel curves
-Email is spike-driven (sends), socials are post-driven, search/direct is smooth. v1 ships:
-pooled per-display-group curves where n permits, else the all-channel curve. The email plan
-curve should eventually be derived from the **planned send schedule** (Announcement, Early
-Access 1–3, Sustain, Last Chance 48/24h - the taxonomy in §8) rather than history alone.
 
-**Paid units plan uses the entries shape.** Historical `Total_Product_Units` for the paid
-group books ~98.6% of draw units on the draw-close date (winners are allocated then), so a
-units-shaped plan cliffs ~46% of the paid target onto the final day while the plotted
-actual (secured units, §6.3½) accrues entry-timed - the plan would read "behind" all
-campaign and "catch up" in one fictional day. `build_curves` therefore substitutes the paid
-group's entries curve for its units curve (final step 0.21 instead of 0.46 - the genuine
-last-chance surge remains). Verified 2026-08-28: dropping each historical release's close
-day removes the units-curve jump entirely, proving it is allocation bookkeeping, not
-last-day demand; a historical secured-units curve is NOT reconstructable because the export
-retroactively reclassifies converted entries out of `*_No_Conv`.
+**What the build does.** A release is paced on its own basket's curves (`basket_curves`; the
+basket is §4a.2's): per display group and per metric (sessions, draw entries, units), the median
+across the basket's clean completed members of the cumulative share reached at each point of
+`CURVE_GRID` (pdsa −0.6 to 1.15 in 0.05 steps), forced monotone and scaled to end at 1. A series
+fewer than 4 members can shape reads the pooled panel's (every clean completed launch in the
+export: 76 at the 2026-09-24 build, `data/app/curves.json`), and a group the pooled panel cannot
+shape either reads the all-channel curve. Medians only: no percentile band is built, and the
+trajectory draws none. Which curve each plan reads:
+- **units, every organic group: the entries curve** (`UNIT_PLAN_CURVE`, below) - the plan line,
+  the expected-by-today and the shape of the forward path (§5.4);
+- **sessions: the sessions curve** - the sessions targets by today and the funnel's expected
+  sessions;
+- **paid: no curve** - the even daily budget's share (below); the paid entries curve is read
+  only by the forward path's fallback before any spend (§5.4).
 
-**Curves are tier-blind, and that is deliberate.** The target sets a channel's LEVEL but
+The units curves stay in `curves.json` as measured, and no plan is read off them.
+
+Email is spike-driven (sends), socials are post-driven, search/direct is smooth. v1 shipped
+pooled per-display-group curves where n permitted, else the all-channel curve; the build now
+reads the basket's (above). The email plan curve should eventually be derived from the
+**planned send schedule** (Announcement, Early Access 1–3, Sustain, Last Chance 48/24h - the
+taxonomy in §8) rather than history alone.
+
+**Every unit plan runs on the entries shape.** Historical `Total_Product_Units` books the
+draw's units on the draw-close date (winners are allocated then): ~98.6% of the paid group's,
+and in the pooled panel the last 5% of the clock holds 0.34 of AA Email's units against 0.11 of
+its entries (AA Meta 0.37 against 0.12, search / direct / other 0.16 against 0.11). The plotted
+actual is secured units (§6.3½), which count an entry the day it is made, so a units-shaped plan
+cliffs onto the final day: it reads "behind" all campaign, "catches up" in one fictional day, and
+the §5.4 projection books the cliff as demand still to come. Until 2026-09-28 only paid planned on
+entries and the organic groups read the booking curve: Warhol's 24 September page put 23% of the
+AA Email target on the last day, and its dashed line climbed 236 organic units on 30 September
+against a trailing pace of about 17 a day. `build_release` now reads every curve-planned group's
+plan, expected-by-today and path off its entries curve (`UNIT_PLAN_CURVE` in `etl/build.py`;
+`tests/test_entry_timed_plan.py` holds each group's close-day plan step to its entries curve's
+step over the same day). Re-read on the pooled entries curves (the basket's are rebuilt on every
+run and not kept), the 24 September pages move from 1,449 to about 1,233 at close and from 1,667
+to about 1,957 by today (Warhol), and from 190 to about 161 and 405 to about 452 (Julian
+Schnabel); closed releases keep their figures and only their plan line changes shape. The genuine
+last-chance surge remains in the entries curve. Verified 2026-08-28: dropping each historical
+release's close day removes the units-curve jump entirely, proving it is allocation bookkeeping,
+not last-day demand; a historical secured-units curve is NOT reconstructable because the export
+retroactively reclassifies converted entries out of `*_No_Conv`. Two limits of the entries
+shape: private-room units sold before the announce have no entries to time them (the pooled
+curves hold no pre-announce share on any metric either), and on the day before an announce the
+plan interpolates part way to the announce-day burst on the 0.05 grid, further on entries than it
+did on units.
+
+**Curves were tier-blind, and that was deliberate (2026-08-29; the per-basket curves below
+replaced the one pooled shape).** The target sets a channel's LEVEL but
 every release shares one median SHAPE per display group. Tested 2026-08-29 with `etl/analysis/tier_curve_probe.py`:
 split the clean panel in half by each group's realised share, difference each group's curve
 against that release's own all-channel curve (so a release that simply ran early does not
@@ -1081,18 +1120,18 @@ budget over those days, and the paid block publishes `paidStartDays` and `paidDa
 cards (`paidDayFrac` in `web/src/ui.jsx`). Not the panel's historic paid shape, which starts
 near zero and told the Channels vs targets card there was nothing to expect on days when the
 Paid spend card, reading the even plan, showed the units bought. The organic groups keep their
-shape curves. The waterfall's Paid spend step (§9) measures spend to date against the same even
-share of the budget. (2026-09-23.)
+entry-timed shape curves. The waterfall's Paid spend step (§9) measures spend to date against
+the same even share of the budget. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
 intervention shown alongside, never baked into the projection.
 
-**Organic channels** - the remaining volume follows the channel's *historic shape curve*;
-its level scales with demonstrated performance, trusted in proportion to how much of the
-campaign the curve says has been observed:
+**Organic channels** - the remaining volume follows the channel's *historic shape curve*, the
+entry-timed one its plan reads (§5.3); its level scales with demonstrated performance, trusted in
+proportion to how much of the campaign the curve says has been observed:
 ```
-w        = curve_channel(pdsa_today)                 # share of campaign observed
+w        = curve(basket, group, "entries", pdsa_today)   # share of campaign observed
 r        = clamp(actual / expected, 0.25, 2.5)       # demonstrated performance
 proj     = actual + target × (1 − w) × (1 + w × (r − 1))
 path(d)  = actual + (proj − actual) × (curve(pdsa_d) − w) / (1 − w)   # shaped, not linear

@@ -285,40 +285,45 @@ basket's own pace curves instead (§5).
 
 ## 5. Targets across time: the campaign clock
 
-A launch-total target is spread over days using **pooled historical curves**, not
-straight lines.
+A launch-total target is spread over days using **the median curves of the
+release's basket** (§3), not straight lines.
 
 1. Every day of a campaign is stamped with `pdsa` - percent of days since
    announcement (0 = announce, 1 = draw close; negative = early access).
-2. For each completed, clean historical LE (fully observed window, ≥20 entries -
-   currently ~15 releases, growing as campaigns close), compute the cumulative
-   share of its final total reached at each pdsa, per metric and per channel
-   group.
-3. The **median across releases is the target trajectory**; the 25th–75th
-   percentile band is the guardrail shading on the trajectory chart.
+2. For each clean, completed launch in the basket (fully observed window, ≥20
+   entries), compute the cumulative share of its final total reached at each
+   pdsa, per metric (sessions, draw entries, units) and per channel group.
+3. The **median across the basket's launches is the target trajectory**. Where
+   fewer than 4 of them can shape a series, that series comes from the pooled
+   panel of every clean, completed launch in the export (76 at the 24 September
+   build), and a channel group the panel cannot shape either reads the
+   all-channel curve. Only the median is used: the trajectory chart draws no
+   percentile band.
 4. `expected today = target_total × curve(pdsa_today)` - this is the "expected"
-   tick every module compares against. Channel groups with thin history fall back
-   to the all-channel curve.
+   tick every module compares against.
 
-One deliberate exception: the **paid unit plan follows the entry-timed shape**,
-not the unit-booking shape. Historically ~98% of paid draw units are *recorded*
-on the draw-close date (winners are allocated then), so a booking-shaped plan
-would cliff ~46% of the paid target onto the final day while the secured-units
-actual accrues as entries arrive. Entry timing reflects when the demand actually
-came in; a genuine (smaller) last-chance surge remains in the curve.
+**Units are planned on the entry-timed shape.** The page counts secured units
+(§1), which take a draw entry the day it is made, while the funnel records a
+draw's units on the draw-close date, when the winners are allocated. So each
+organic channel group's unit plan, its expected-by-today and the path of its
+projection (§6) follow the group's draw-entries curve, not the unit-booking curve: a
+booking-shaped plan put about a quarter of the email and social targets on the
+final day, and the projection read that as demand still to come. Entry timing
+reflects when the demand actually came in; a genuine (smaller) last-chance surge
+remains in the curve. Sessions targets follow the sessions curve.
 
-The campaign stages shown in the header follow the same clock: Early access
-(before announce), Sustain 1–3 (thirds of the window), Last chance (draw-close
-day onward).
+**Paid follows its budget, not a curve.** Paid starts the day after the announce
+and runs to the close, and its budget is planned evenly over those days, so its
+plan by any day is the even daily share of its target (§6).
 
 ## 6. Forward projections
 
 Projections describe the **current trajectory** - the paid-spend recommendation
 is the intervention shown alongside, never baked into the projection.
 
-**Organic channels.** The remaining volume follows the channel's historic shape;
-its level scales with demonstrated performance, trusted in proportion to how much
-of the campaign has been observed:
+**Organic channels.** The remaining volume follows the channel's historic
+entry-timed shape (§5); its level scales with demonstrated performance, trusted
+in proportion to how much of the campaign has been observed:
 
 ```
 w    = curve(pdsa_today)                    share of campaign the curve says is done

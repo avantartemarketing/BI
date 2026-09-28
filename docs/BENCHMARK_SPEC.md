@@ -273,9 +273,12 @@ function already returns `None` for that series and `curve_value` falls back to 
 curve. Curves are cached per basket id for the run.
 
 ```
-benchmark_plan[g][d] = profile["units_by_group"][g] * curve(basket, g, "units", pdsa(d))
+benchmark_plan[g][d] = profile["units_by_group"][g] * curve(basket, g, "entries", pdsa(d))
 target_plan[g][d]    = benchmark_plan[g][d] * K
 ```
+
+The curve is the entries one: units are secured units, which count an entry the day it is
+made, so every unit plan is entry-timed (DATA_MODEL §5.3).
 
 So target and benchmark stay in exactly the K ratio on every day — which is what makes the
 even uplift legible on the trajectory.

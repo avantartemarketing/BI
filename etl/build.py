@@ -1060,6 +1060,15 @@ def group_targets(targets: dict) -> dict:
 
 CLEAN_EXCLUDE_STAGES = {"Missing campaign dates", "Outside campaign window"}
 
+# The curve a group's unit plan is read off (docs §5.3): its plan line, its
+# expected-by-today and the shape of its forward path. The page counts secured
+# units, which take a draw entry the day it is made, while Total_Product_Units
+# books the draw's winners on the close day. Read as demand, that booking put
+# about a quarter of the email and social targets on the last day, so the
+# projection counted on a close-day jump the entries never make. The entries
+# curve times units the way the actual does. Paid reads its even daily plan.
+UNIT_PLAN_CURVE = "entries"
+
 
 def campaign_cost_terms(paid_daily: list[dict], b: dict = BENCH) -> dict:
     """How this campaign's cost per entry has responded to its own spend and
@@ -1350,13 +1359,9 @@ def build_curves(at: pd.DataFrame, members: list[str] | None = None) -> dict:
         for m in metrics:
             c = curve_from(sub, m, clean)
             curves["groups"][g][m] = c  # may be None -> UI/build falls back to all
-    # Paid units book on the draw-close date (winners are allocated then), so a
-    # units-shaped paid plan cliffs ~46 pts on the final day while the plotted
-    # actual (secured units) accrues entry-timed. Plan paid units on the entries
-    # shape instead - demand timing, not allocation bookkeeping (docs §5.3).
-    if curves["groups"].get("paid", {}).get("entries"):
-        curves["groups"]["paid"]["units"] = curves["groups"]["paid"]["entries"]
-    # p25/p75 band for the all-entries curve (status guardrails)
+    # The units series stay as measured, draw winners on the close day, and
+    # no plan is read off them: the groups' unit plans read the entries series
+    # (UNIT_PLAN_CURVE) and paid its even daily plan.
     return curves
 
 
@@ -3772,7 +3777,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             now_g = (float(sub_g["units"].sum())
                      + entry_rate(release) * float(sub_g["entries_no_conv"].sum()))
             tgt_g = gtargets[og]["units"]
-            w_g = curve_value(rcurves, og, "units", pdsa_now)
+            w_g = curve_value(rcurves, og, UNIT_PLAN_CURVE, pdsa_now)   # the channel loop's w
             r_perf = min(max((now_g / (tgt_g * w_g)) if tgt_g * w_g > 0 else 1.0, 0.25), 2.5)
             organic_future += tgt_g * (1 - w_g) * (1 + w_g * (r_perf - 1))
     sellout_gap = max(release["edition_size"] - secured_now - organic_future, 0.0)
@@ -3941,7 +3946,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             cum_nc += float(row["entries_no_conv"]) if row is not None else 0.0
             cum_s += float(row["sessions"]) if row is not None else 0.0
             p = pdsa_for(release, d)
-            cv = paid_pace(p) if g == "paid" else curve_value(rcurves, g, "units", p)   # paid: the even share of its days
+            # paid: the even share of its days; the rest: the entry-timed curve
+            cv = paid_pace(p) if g == "paid" else curve_value(rcurves, g, UNIT_PLAN_CURVE, p)
             # in benchmark mode the plan IS the benchmark lifted by K, taken
             # off the one curve, so the two lines the trajectory draws are in
             # the K ratio on every day rather than only in total (§4.1)
@@ -3953,16 +3959,17 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             if bench:
                 row_out["bm"] = round(bm_day, 2)
             daily.append(row_out)
-        # the share of the campaign observed: per the group's historic shape,
-        # and for paid the even daily budget's share (see paid_pace above)
-        w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, "units", pdsa_today)
+        # the share of the campaign observed: per the group's historic
+        # entry-timed shape (UNIT_PLAN_CURVE), and for paid the even daily
+        # budget's share (see paid_pace above)
+        w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, UNIT_PLAN_CURVE, pdsa_today)
         bm_exp = bm_tgt * w                                # benchmark pace by today
         exp = bm_exp * k if bench else tgt * w
         sess_w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, "sessions", pdsa_today)
         sess_exp = sess_tgt * sess_w
         now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
         # Forward projection (docs §5.4): the remaining volume follows this channel's
-        # HISTORIC shape curve; its level scales with demonstrated performance
+        # HISTORIC entry-timed shape curve; its level scales with demonstrated performance
         # (actual/expected), trusted in proportion to how much of the campaign the
         # curve says we have observed. Paid instead projects spend ÷ efficiency
         # (future entries convert to units at 0.8).
@@ -3980,7 +3987,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             proj = now + tgt * (1 - w) * r_shrunk
             for d in daterange(full_through + timedelta(days=1), launch_end):
                 i = (d - window_start).days
-                cv = curve_value(rcurves, g, "units", pdsa_for(release, d))
+                cv = curve_value(rcurves, g, UNIT_PLAN_CURVE, pdsa_for(release, d))
                 frac = (cv - w) / (1 - w) if w < 1 else 1.0
                 if 0 <= i < len(daily):
                     daily[i]["proj"] = round(now + (proj - now) * max(min(frac, 1.0), 0.0), 2)

@@ -324,7 +324,7 @@ EXPLAIN["hero.target"] = (a, c) => {
       note: `${pct(ratio(h.now, h.expectedToday))} of the target by today.` }] : [],
     sources: [
       { key: "settings", gave: "The campaign's target" },
-      { key: "curves", gave: "How each channel's units build up over a campaign" },
+      { key: "curves", gave: "How each channel's entries build up over a campaign, the timing its units are planned on" },
       ...(hasBasket(s) ? [{ key: "basket", gave: "The launches the curves are read from" }] : []),
     ],
     notes: [`By ${dayText(s)} the plan asks for ${pct(ratio(h.expectedToday, h.target))} of the whole target.`],
