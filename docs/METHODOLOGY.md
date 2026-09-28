@@ -242,14 +242,46 @@ target, amber when less than 10% short of it and red when 10% or more short,
 with a cost rung judged the other way round. The LE workbook's 25% buffer
 (`target inc. buffer = 0.75 × target`) colours nothing on the page.
 
-### Worked example - Glenn Ligon (edition 150)
+### Worked example - an illustrative release
 
-Basket: the 8 launches nearest in size and price, median 134 units → **K = 1.12**.
-Benchmark → target by group: AA Email 56.2 → 62.9, AA Meta 4.6 → 5.2, artist
-0.6 → 0.6, search / direct / other 53.0 → 59.3, paid 19.5 → 21.9, which sum to
-150. Sessions 24,402 → 27,316. Entries target 150 ÷ 0.8 = 187.5, against
-134 ÷ 0.8 = 167.5 for the benchmark. Paid budget 21.9 × €177 = **€3,873**
-(benchmark €3,460), 0.9% of the €450,000 launch value.
+This release is made up, with round numbers so the arithmetic can be followed
+by hand; it is not a release on the dashboard. A real release's own figures are
+on its Target setting tab, and shift-clicking a figure on its page shows the
+working with them.
+
+An edition of 300 at €1,500 a unit, so the launch value is €450,000. Its basket
+is the 8 launches nearest in size and price, whose median launch sold 240
+units: **K = 300 ÷ 240 = 1.25**. Each group's benchmark is its median share of
+units times those 240, and its target is that times K:
+
+| Group | Median share of units | Benchmark | Target (× 1.25) |
+| --- | --- | --- | --- |
+| AA Email | 40% | 96 | 120 |
+| AA Meta | 5% | 12 | 15 |
+| Artist's own channels | 2.5% | 6 | 7.5 |
+| Search / direct / other | 32.5% | 78 | 97.5 |
+| Paid | 20% | 48 | 60 |
+| All five | 100% | 240 | 300 |
+
+Inside a group the target is placed on its channels by the order-split
+medians: AA Email's 120 go about 93% to the manual sends and 7% to the
+automated flows, 112 and 8. Sessions take the same uplift, the basket's median
+of 20,000 becoming a target of 20,000 × 1.25 = 25,000, while the conversion
+rates stay the basket's. Entries target 300 ÷ 0.8 = 375, against 240 ÷ 0.8 =
+300 for the benchmark.
+
+No cost per purchase is typed for the release, and 6 of the 8 launches in the
+basket have a cost per paid unit on file (their Meta spend over their paid
+units), so the median of those six, €200, prices a paid unit. Paid budget
+60 × €200 = **€12,000** (benchmark 48 × €200 = €9,600), 2.7% of the launch
+value and inside the 6% sense check. Had fewer than three of the launches had
+a reading, the panel's €177 would have priced it: 60 × €177 = €10,620.
+
+Paid runs from the day after the announce to the close. On a campaign 25 days
+long that is 24 days, so the plan spends €12,000 ÷ 24 = €500 a day, and 13
+days after the announce the paid plan by today is (13 − 1) ÷ 24 = half of it:
+30 of the 60 units, and €6,000 spent. The organic groups are read off the
+basket's own pace curves instead (§5).
 
 ## 5. Targets across time: the campaign clock
 
