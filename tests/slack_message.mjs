@@ -15,7 +15,9 @@ const { composeSellThroughBlocks, shortNames, sharedPrefix } = require(path.join
 const print = process.argv.includes("--print");
 let failed = 0;
 const check = (cond, msg) => { if (!cond) { failed += 1; console.log("FAIL " + msg); } };
-const cellText = (c) => (c.type === "raw_text" ? c.text : c.type === "raw_number" ? String(c.text ?? c.value) : c.elements.map((s) => s.elements.map((e) => e.text).join("")).join(""));
+const cellText = (c) => (c.type === "raw_text" ? c.text : c.elements.map((s) => s.elements.map((e) => e.text).join("")).join(""));
+// a figure cell's number, read off its words ("1,234", "52%"); null for "-"
+const cellNum = (c) => { const t = cellText(c).replace(/[,%]/g, ""); return t === "-" || t === "" ? null : Number(t); };
 const parts = (blocks) => ({
   types: blocks.map((b) => b.type).join(" "),
   header: blocks.find((b) => b.type === "header"),
@@ -90,9 +92,12 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
   check(rowsOf(m.blocks)[4] === "Total|126|353|36%|58|46%", `the Total row adds the rows up, the frames before rounding: ${rowsOf(m.blocks)[4]}`);
   check(t.rows[4].every((c) => c.type === "rich_text" && c.elements[0].elements[0].style.bold === true), "the Total row is bold");
   const r = t.rows[1];
-  check(r[0].type === "raw_text" && r[1].type === "raw_number" && r[1].value === 62 && r[1].text === "62", `units as a number with its words: ${JSON.stringify(r[1])}`);
-  check(r[3].value === 52 && r[3].text === "52%" && r[5].value === 49 && r[5].text === "49%", `shares as numbers that show as shares: ${JSON.stringify(r[3])} ${JSON.stringify(r[5])}`);
-  check(r[4].type === "raw_number" && r[4].value === 31 && r[4].text === "31", `framed units as a number: ${JSON.stringify(r[4])}`);
+  // every cell is one of the two types Slack's table reads: raw_number cells
+  // posted, and showed blank on the phone app
+  check(t.rows.every((row) => row.every((c) => c.type === "raw_text" || c.type === "rich_text")), "every cell is raw_text or rich_text");
+  check(r[0].type === "raw_text" && r[1].type === "raw_text" && r[1].text === "62", `units as their words: ${JSON.stringify(r[1])}`);
+  check(r[3].text === "52%" && r[5].text === "49%", `shares as shares: ${JSON.stringify(r[3])} ${JSON.stringify(r[5])}`);
+  check(r[4].type === "raw_text" && r[4].text === "31", `framed units: ${JSON.stringify(r[4])}`);
   // the framed units are on the units column's own units: never more than the row's units
   check(rowsOf(m.blocks).slice(1).every((x) => { const c = x.split("|"); return Number(c[4]) <= Number(c[1]); }), "no row frames more than it counts");
   check(p.contexts[0] === "Figures to 17 Sep. Paid 94, awaiting payment 5, expected from the draw 27. 43% of paid prints took a frame, 40 of 94; entrants asked for frames on 67% of their pre-authorised prints.", `the small type: ${p.contexts[0]}`);
@@ -274,10 +279,10 @@ if (fs.existsSync(dir)) {
           const fcAt = s.framing.forecast[horizon];
           const want = fcAt.prints > 0 ? Math.round(fcAt.frames).toLocaleString("en-GB") : "-";
           check(total && cellText(total[4]) === want, `${f}: the Total framed units are the forecast's (${total && cellText(total[4])} vs ${want})`);
-          const rowFrames = works.reduce((n, r) => n + (r[4].type === "raw_number" ? r[4].value : 0), 0);
+          const rowFrames = works.reduce((n, r) => n + (cellNum(r[4]) ?? 0), 0);
           check(Math.abs(rowFrames - fcAt.frames) <= works.length / 2 + 0.5, `${f}: the rows' framed units add up to the Total within rounding (${rowFrames} vs ${fcAt.frames})`);
           // and no row frames more units than it counts
-          check(works.every((r) => r[4].type !== "raw_number" || r[4].value <= r[1].value), `${f}: no row frames more than it counts at ${horizon}`);
+          check(works.every((r) => cellNum(r[4]) === null || cellNum(r[4]) <= cellNum(r[1])), `${f}: no row frames more than it counts at ${horizon}`);
         }
       } else check(!total, `${f}: no Total row for one work`);
     }

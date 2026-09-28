@@ -143,7 +143,6 @@ const prefixWords = (p) => p.replace(/[\s(,:-]+$/, "").trim();
 
 const bold = (t) => ({ type: "rich_text", elements: [{ type: "rich_text_section", elements: [{ type: "text", text: String(t), style: { bold: true } }] }] });
 const raw = (t) => ({ type: "raw_text", text: String(t) });
-const rawNum = (value, text) => ({ type: "raw_number", value: Number(value), ...(text !== undefined ? { text: String(text) } : {}) });
 const mrkdwn = (text) => ({ type: "mrkdwn", text });
 const section = (text) => ({ type: "section", text: mrkdwn(text) });
 const context = (text) => ({ type: "context", elements: [mrkdwn(text)] });
@@ -311,7 +310,11 @@ function byName(name, items) {
 
 const round1 = (v) => Math.round(v * 10) / 10;
 /* a number Slack can sort, shown as words; a dash where there is nothing */
-const cell = (v, text) => (v === null ? raw("-") : rawNum(v, text));
+/* A figure's cell: its words as plain text, "-" where it has none. Slack's
+ * table reads two cell types, raw_text and rich_text; a raw_number cell
+ * posted without complaint and showed as a blank on the phone app (the
+ * header row, plain text, was the only row that read). */
+const cell = (v, text) => raw(v === null ? "-" : text);
 
 /* Which attribution the figures are on, said only when the page has Direct
  * spread over the other channels (its Direct switch on Spread, docs 1.3):
@@ -347,7 +350,7 @@ function tableBlock(m) {
   ] : []);
   const rows = m.rows.map((r) => [
     raw(r.name),
-    rawNum(Math.round(r.units), fmt(r.units)),
+    raw(fmt(r.units)),
     cell(r.target === null ? null : Math.round(r.target), fmt(r.target)),
     cell(r.target ? round1((r.units / r.target) * 100) : null, r.target ? pct(r.units / r.target) : null),
     ...framing(r),

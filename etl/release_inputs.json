@@ -179,6 +179,12 @@
    "launch_end": "2026-08-20",
    "artist_posting_tier": "High",
    "draw_entries_file": "draw_jamesjean_blossom_entries.csv",
+   "products": [
+    {
+     "airtable_id": "2805",
+     "target_sellthrough": 1
+    }
+   ],
    "legacy_economics": {
     "edition_size": 600,
     "unit_price": 700,

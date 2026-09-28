@@ -565,8 +565,9 @@ no column settings and cut the names off); then, in small type, the day the figu
 page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still to come)
 and the two framing readings behind the table's figure in plain sentences, and last the
 footnote both asterisked columns point to: paid units, drafts and the forecast conversions
-from draw entries. The figures in the table are numbers with their words, so a column
-sorts as numbers on a tap; the header row is plain text, as Slack requires. A work's target
+from draw entries. Every cell is plain text (`raw_text`), the Total row rich text in bold:
+the two cell types Slack's table reads. Figures went out as `raw_number` cells for a while,
+which Slack accepted and its phone app showed as blank rows under the header. A work's target
 is the one typed for it on the Target setting tab when targets are set per product, else
 the release's target split by edition share, the rule the card's references follow. The
 message is composed on the server (`server/slack.js`) from the same snapshot the card
