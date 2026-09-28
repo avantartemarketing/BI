@@ -165,14 +165,18 @@ EXPLAIN["hero.secured"] = (a, { snap: s }) => {
 /* The units counted from entries made as a pre-order, on each product: a
  * unit converts at the pre-order rate or the entry rate, so the product's
  * expected orders less its units at the entry rate, over the difference in
- * rate, is its pre-order units. Whole units, so the rounding of the
- * published figures cannot move it while the rates sit 10 points or more
- * apart; null where they do not. */
+ * rate, is its pre-order units. The claims a draw round has made that the
+ * order table has not caught up with (`claims`, docs 6.3) are in the
+ * expected orders at the pre-order rate but are nobody's entry, so they come
+ * out first. Whole units, so the rounding of the published figures cannot
+ * move it while the rates sit 10 points or more apart; null where they do
+ * not. */
+const claimsOf = (p) => (finite(p.claims) && p.claims > 0 ? p.claims : 0);   // 0 before claims were counted
 export function preorderUnits(st) {
   const r = st.conversion, pr = st.preorderConversion;
   const products = Array.isArray(st.products) ? st.products : [];
   if (!products.length || !finite(r) || !finite(pr) || Math.abs(pr - r) < 0.1) return null;
-  return sum(products.map((p) => Math.max(Math.round(((p.predicted ?? 0) - r * (p.allocated ?? 0)) / (pr - r)), 0)));
+  return sum(products.map((p) => Math.max(Math.round(((p.predicted ?? 0) - pr * claimsOf(p) - r * (p.allocated ?? 0)) / (pr - r)), 0)));
 }
 
 EXPLAIN["st.draw"] = (a, { snap: s }) => {
@@ -186,6 +190,10 @@ EXPLAIN["st.draw"] = (a, { snap: s }) => {
   const predicted = products ? sum(products.map((p) => p.predicted)) : null;
   const who = products && Array.isArray(st.patterns) ? inDraw({ products, patterns: st.patterns }) : null;
   const preU = products ? preorderUnits(st) : null;
+  // a claim round's winners whose orders the order table has not shown yet:
+  // counted first, at the pre-order rate (their card is charged), docs 6.3
+  const claims = products ? sum(products.map(claimsOf)) : 0;
+  const preRate = finite(pre) && pre > 0 && pre <= 1 ? pre : rate;
   const steps = [];
   const notes = [];
   if (products && who) {
@@ -207,9 +215,14 @@ EXPLAIN["st.draw"] = (a, { snap: s }) => {
       ? seg`Multiply by the ${pct(rate)} of entries that usually become orders, or ${pct(pre)} for an entry made as a pre-order, with the card already authorised.`
       : seg`Multiply by the ${pct(rate)} of entries that usually become orders.`);
     const base = products ? allocated * rate : finite(st.inHandUnits) ? st.inHandUnits * rate : null;
-    if (base !== null && draw - base >= 0.5 && finite(pre) && pre > rate) {
-      notes.push(`${n(products ? allocated : st.inHandUnits)} × ${pct(rate)} is ${n(base)}; the pre-order entries, at ${pct(pre)}, add the other ${n(draw - base)}.`);
+    const fromClaims = claims * preRate;
+    if (base !== null && draw - base - fromClaims >= 0.5 && finite(pre) && pre > rate) {
+      notes.push(`${n(products ? allocated : st.inHandUnits)} × ${pct(rate)} is ${n(base)}; the pre-order entries, at ${pct(pre)}, add the other ${n(draw - base - fromClaims)}.`);
     }
+  }
+  if (claims > 0) {
+    steps.push(seg`Add the ${n(claims)} winners of this draw round whose claims the order table has not caught up with yet: their cards are charged, so they count at the pre-order rate, ${n(claims)} × ${pct(preRate)} = ${n(claims * preRate, 1)} orders, on their works before anyone still in the draw.`);
+    notes.push("A claim leaves this count when its order reaches the order table, where it is a unit paid, so claiming never reads as the sell-through going down.");
   }
   if (predicted !== null && predicted - draw >= 0.5) {
     notes.push(`That is ${n(predicted, 1)} orders, held to ${n(draw)} by the room left in the works.`);
@@ -227,7 +240,7 @@ EXPLAIN["st.draw"] = (a, { snap: s }) => {
     steps, total: { v: n(draw), label: "expected from the draw" },
     sources: [
       { key: "entries", gave: "Each entry's works, the most the entrant wants, and whether it was a pre-order" },
-      { key: "orders", gave: "What each work has left: its paid and draft units" },
+      { key: "orders", gave: claims > 0 ? "What each work has left, and the round's claims not yet in the order table" : "What each work has left: its paid and draft units" },
       { key: "settings", gave: rateSource(s) },
     ],
     notes, method: "Data model 6.3",
@@ -648,7 +661,8 @@ EXPLAIN["paid.roi"] = (a, c) => {
   const net = ppu * (1 - cann);
   const notes = [];
   if (!artist && p.aaBudgetShareAssumed) notes.push("No product records its deal yet, so half the spend is assumed to be Avant Arte's. Type each product's AA profit share (or AA revenue share) on the Target setting tab: the spend divides as the profit does.");
-  if (!artist) notes.push("Avant Arte's profit per unit includes the framing uplift, which is Avant Arte's alone.");
+  // only where there is an uplift: a sculpture edition has no frame on offer
+  if (!artist && ((s.economics || {}).frameUpliftPerUnit ?? 0) > 0) notes.push("Avant Arte's profit per unit includes the framing uplift, which is Avant Arte's alone.");
   notes.push(whole ? "The whole campaign's full days." : "The last three full days, so the figure moves with the latest spend rather than the campaign's average.");
   return {
     where: "Paid ROI", when: null,

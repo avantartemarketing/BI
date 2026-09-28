@@ -8,7 +8,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { EXPLAIN, explain, asText, roundParts } from "../web/src/explain/explanations.mjs";
 import { SOURCES, sourceRow } from "../web/src/explain/sources.mjs";
 import { preorderUnits } from "../web/src/explain/explanations.mjs";
-import { inDraw } from "../shared/sellThrough.mjs";
+import { inDraw, sellThroughProducts } from "../shared/sellThrough.mjs";
 import { fmt, fmtPct, fmtSigned } from "../web/src/format.mjs";
 import { channelWalk, paidUnits } from "../web/src/figures.mjs";
 
@@ -218,8 +218,9 @@ for (const f of files) {
   if (pre !== null) {
     const allocated = st.products.reduce((t, p) => t + (p.allocated ?? 0), 0);
     const predicted = st.products.reduce((t, p) => t + (p.predicted ?? 0), 0);
+    const claims = st.products.reduce((t, p) => t + (p.claims ?? 0), 0);   // a claim round's, at the pre-order rate
     assert.ok(pre >= 0 && pre <= allocated, `${s.id}: pre-order units ${pre} of ${allocated}`);
-    const back = pre * st.preorderConversion + (allocated - pre) * st.conversion;
+    const back = claims * st.preorderConversion + pre * st.preorderConversion + (allocated - pre) * st.conversion;
     assert.ok(Math.abs(back - predicted) <= 0.05 * st.products.length + 1e-9, `${s.id}: the split prices back to the expected orders: ${back} vs ${predicted}`);
   }
 }
@@ -312,6 +313,37 @@ assert.ok(paidCases >= 30, `paid units cases: ${paidCases}`);
   assert.ok(/more would take the ROI at the close under 1\.0/.test(segText(at({ ...b, paced: false, recommended: 638.66 }).steps.at(-1))));
   // the forced decrease reads what the build tests: the trailing 3-day ROI, day by day
   assert.ok(/trailing 3-day ROI has been below target on each of the last three full days/.test(segText(at({ ...b, cap: "forced_decrease", paced: false }).steps.at(-1))));
+}
+
+/* ---- a claim round's winners: in the draw's expected orders, not pre-order entries ---- */
+{
+  const st = w.sellthrough;
+  const k = Math.max(st.products.findIndex((p) => /Lifesize/.test(p.name)), 0);
+  const base = st.products.map((p) => ({ key: p.key, name: p.name, edition: p.edition, draws: p.draws, sold: p.sold, drafts: p.drafts }));
+  const run = (n) => {
+    const pp = sellThroughProducts({ products: base.map((p, i) => (i === k && n ? { ...p, claimsInFlight: n } : p)), patterns: st.patterns,
+      rate: st.conversion, edition: st.edition, soldTotal: st.sold, preorderRate: st.preorderConversion });
+    return { ...st, products: pp.products, soldPredicted: pp.soldPredicted, claimsInFlight: n };
+  };
+  const without = run(0), claimed = run(8);
+  assert.strictEqual(claimed.products[k].claims, 8, "the allocator carries the claims on the row");
+  const pre0 = preorderUnits(without), pre8 = preorderUnits(claimed);
+  assert.ok(pre0 !== null && Math.abs(pre8 - pre0) <= st.products.length, `claims are not pre-order entries: ${pre0} without, ${pre8} with 8 claims`);
+  const allocated = claimed.products.reduce((t, p) => t + p.allocated, 0), predicted = claimed.products.reduce((t, p) => t + p.predicted, 0);
+  const back = 8 * st.preorderConversion + pre8 * st.preorderConversion + (allocated - pre8) * st.conversion;
+  assert.ok(Math.abs(back - predicted) <= 0.05 * st.products.length + 1e-9, `the split and the claims price back to the expected orders: ${back} vs ${predicted}`);
+  const ex = explain("st.draw", {}, { snap: { ...w, sellthrough: claimed }, st: null });
+  const steps = ex.steps.map(segText);
+  assert.ok(steps.some((t) => /the 8 winners of this draw round whose claims/.test(t) && /8 × 95% = 7\.6 orders/.test(t)), `a claims step: ${steps.join(" | ")}`);
+  assert.ok(!explain("st.draw", {}, wctx).steps.map(segText).some((t) => /claims/.test(t)), "and none outside a claim round");
+}
+
+/* ---- the framing uplift is named only where there is one ---- */
+{
+  const framed = explain("paid.roi", { party: "aa" }, wctx);
+  assert.ok(framed.notes.some((x) => /framing uplift/.test(x)), "Warhol's AA profit carries a framing uplift");
+  const bare = explain("paid.roi", { party: "aa" }, { snap: { ...w, economics: { ...w.economics, frameUpliftPerUnit: 0 } }, st: null });
+  assert.ok(!bare.notes.some((x) => /framing uplift/.test(x)), "a release with no framing uplift does not claim one");
 }
 
 /* ---- editions that do not add up are said ---- */

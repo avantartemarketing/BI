@@ -171,6 +171,9 @@ export default function PaidRoi({ snap }) {
   // order they are applied, so the basis is on the card and not in a doc
   const cpeUsed = complete ? paid.cumCpe : paid.l3dCpe;
   const dropOff = paid.dropOff ?? 0.2;
+  // AA's profit per unit carries a framing uplift only where there is one
+  // (a sculpture edition has no frame on offer)
+  const frameUplift = (snap.economics?.frameUpliftPerUnit ?? 0) > 0;
   // the spend feed is Meta's, billed in euros; the build converts it once
   const spendNote = paid.spendCurrency && paid.spendCurrency !== "EUR"
     ? ` Spend is Meta's, billed in ${paid.spendCurrency === "EUR" ? "euros" : paid.spendCurrency}, converted to euros at a fixed rate (${paid.spendRate}).` : "";
@@ -193,7 +196,8 @@ export default function PaidRoi({ snap }) {
       { label: "€/entry L3D", value: fmt(paid.l3dCpe, 2) },
       { label: "€/entry total", value: fmt(paid.cumCpe, 2) },
     ],
-    body: "Profit per unit, the share of the spend and the cannibalisation are the Target setting tab's (products and economics, paid assumptions; the AA figure includes the framing uplift, which is Avant Arte's alone). "
+    body: "Profit per unit, the share of the spend and the cannibalisation are the Target setting tab's (products and economics, paid assumptions"
+      + (frameUplift ? "; the AA figure includes the framing uplift, which is Avant Arte's alone). " : "). ")
       + "The spend divides as the profit does: on a profit share each side carries its share of the profit, on a revenue share Avant Arte carries it all"
       + (splitAssumed ? "; no product records its deal yet, so half is assumed. " : ". ")
       + "A converting entry is one that becomes an order, " + pct(1 - dropOff) + " of entries." + spendNote,
