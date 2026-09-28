@@ -15,7 +15,7 @@ export default function NoTargets({ snap, onSetup }) {
       <div className="spacer-8" />
       <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.5 }}>
         {dated
-          ? <>Dates come from the funnel export's campaign clock: announced <b>{d.announce_date}</b>, closes <b>{d.launch_end}</b>. They can be a day out - check them when you set targets.</>
+          ? <>Dates come from the funnel export's campaign clock: announced <b>{d.announce_date}</b>, closes <b>{d.launch_end}</b>{d.dates_note ? ` (${d.dates_note})` : ""}. They can be a day out - check them when you set targets.</>
           : <>No campaign dates in the funnel export for this release, so it is shown as a catalogue item: the last 90 days of traffic{d.dates_note ? ` (${d.dates_note})` : ""}.</>}
       </div>
       <div style={{ marginTop: 12 }}>

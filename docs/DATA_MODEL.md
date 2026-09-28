@@ -1278,7 +1278,17 @@ table (§2.4), cut to one window of days.
   opening, else the announce), or the release's first paid order where that is earlier - an
   early private-room sale opens the window - but never more than 45 days before the announce
   (`EARLY_SALES_DAYS`); to two days after the close (`UNITS_GRACE_DAYS`, the winners paying
-  in the grace), or the as-of day while the launch is live. The funnel's sessions and entries
+  in the grace), or the as-of day while the launch is live. The close is the later of the
+  clock's and the day the draw ended, its last entry day in the draw feed (`sales_close`,
+  `release_products.json` draws' `last`, the allocation day on the launches checked), moved
+  21 days at most (`DRAW_END_MAX_DAYS`): the winners pay when the draw ends, and a clock that
+  closed first dropped their payments from every card (Jaume Plensa's UTOPIA, clock 29 July,
+  draw to 5 August: 61 of 218 units counted; Johnson Tsang's Alliance read as a 7-day
+  campaign that ran 22). An actuals page then closes with the draw - its length in the
+  sidebar, and the spend and sends it counts - and says so in `derived.dates_note`; a
+  targeted page keeps its typed plan and folds the payments into its close day. The build
+  warns when at least 10 units, and 10% of them with the window's own, are paid in the 14
+  days after a window shut (`late_paid_warning`). The funnel's sessions and entries
   are cut to the same days. Units paid outside the window count on no card; the snapshot
   says how many (`sellthrough.unitsOutsideWindow.{before, after, pending}`: before it
   opened, after it shut, and, while it is open, paid after the as-of day, which count on

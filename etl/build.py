@@ -1874,6 +1874,10 @@ def orders_campaign_codes() -> dict:
 ORDERS_SINCE = date.fromisoformat(os.environ.get("BQ_SINCE") or "2025-01-01")   # server/bigquery.js SINCE
 EARLY_SALES_DAYS = 45   # a first sale opens the window, but never earlier than this before the announce
 UNITS_GRACE_DAYS = 2    # sales count to two days after the close, on both cards, and not after
+DRAW_END_MAX_DAYS = 21  # a draw that ran past the clock's close moves the close this far at most (sales_close)
+LATE_WARN_DAYS = 14     # units paid in these days after the window shut ...
+LATE_WARN_UNITS = 10    # ... at least this many ...
+LATE_WARN_SHARE = 0.10  # ... and this share of them with the window's own: the build warns the close may be early
 NO_EVENT_WARN_SHARE = 0.05   # paid units the funnel has no purchase event for: warn above this share...
 NO_EVENT_WARN_MIN = 5        # ... on at least this many units
 # beside the other two orders files, from the same pull (server/bigquery.js
@@ -1975,6 +1979,57 @@ def sales_window(rows: pd.DataFrame | None, campaign_start: date, announce: date
         first = min(paid["event_date"]) if len(paid) else None
     start = min(campaign_start, first) if first is not None else campaign_start
     return start, end, first
+
+
+def draw_end(name: str) -> date | None:
+    """The day the release's draw ended: the last entry day over its draws in
+    the events aggregate (release_products.json draws[].last), which is the
+    allocation day on the launches checked. None when the feed has no draw
+    for the release or no day it can read."""
+    feed = load_products_feed().get(name)
+    draws = feed.get("draws") if isinstance(feed, dict) else None
+    days = []
+    for d in draws if isinstance(draws, list) else []:
+        try:
+            days.append(date.fromisoformat(str(d.get("last"))[:10]))
+        except (AttributeError, TypeError, ValueError):
+            continue
+    return max(days) if days else None
+
+
+def sales_close(name: str, launch_end: date) -> tuple[date, date | None]:
+    """The close the sales window counts to (docs 6.3): the later of the
+    clock's close and the day the release's draw ended (draw_end). The
+    winners are drawn and pay when the draw ends, and a clock that closed
+    before it (Jaume Plensa's UTOPIA: close 29 July, draw to 5 August, 155
+    of 218 units paid after) dropped their payments from every card. A draw
+    end more than DRAW_END_MAX_DAYS past the clock's close moves it that far
+    and no further. Returns (the close, the draw's last entry day when it
+    moved the close, else None); a release whose draw ended by the clock's
+    close keeps it, as does one the feed has no draw for."""
+    end = draw_end(name)
+    if end is None or end <= launch_end:
+        return launch_end, None
+    return min(end, launch_end + timedelta(days=DRAW_END_MAX_DAYS)), end
+
+
+def late_paid_warning(rid: str, rows: pd.DataFrame | None, shut: date, info: dict) -> str | None:
+    """A build warning when many units were paid just after the sales window
+    shut: at least LATE_WARN_UNITS in the LATE_WARN_DAYS after `shut`, and at
+    least LATE_WARN_SHARE of those with the window's own. A draw that ran
+    past the recorded close has its winners pay there, so the close is the
+    first thing to check (docs 6.3). Printed and returned; None otherwise."""
+    if info.get("source") != "orders" or rows is None or not len(rows):
+        return None
+    late = float(rows.loc[(rows["event_date"] > shut) & (rows["event_date"] <= shut + timedelta(days=LATE_WARN_DAYS)),
+                          "units"].sum())
+    counted = float(info.get("total") or 0.0)
+    if late < LATE_WARN_UNITS or late < LATE_WARN_SHARE * (late + counted):
+        return None
+    msg = (f"warning: {rid}: {late:.0f} units paid in the {LATE_WARN_DAYS} days after its sales window shut on "
+           f"{shut} ({late / (late + counted):.0%} of them with the {counted:.0f} it counted) - check its close")
+    print(msg)
+    return msg
 
 
 def swap_units(win: pd.DataFrame, name: str, rows: pd.DataFrame | None,
@@ -3589,9 +3644,21 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     full_through = full_through or as_of
     seen = 1.0 if full_through >= as_of else seen
     dated = rec["announce_date"] is not None
+    dates_note = rec["dates_note"]
     if dated:
         announce = date.fromisoformat(rec["announce_date"])
-        launch_end = date.fromisoformat(rec["launch_end"])
+        clock_end = date.fromisoformat(rec["launch_end"])
+        # a draw that ran past the clock's close: its winners pay when it
+        # ends, so the page closes with the draw - the sales window, the
+        # spend and sends it counts, its length in the sidebar (docs 6.3)
+        launch_end, drew_to = sales_close(name, clock_end)
+        if drew_to is not None:
+            moved = (f"the draw ran to {drew_to}, {(drew_to - clock_end).days} days past the campaign clock's "
+                     f"close of {clock_end}: the page closes with it"
+                     + (f" at {launch_end}, {DRAW_END_MAX_DAYS} days on, and no later" if launch_end < drew_to else ""))
+            dates_note = "; ".join(x for x in (dates_note, moved) if x)
+            if not direct_spread:
+                print(f"{'warning: ' if launch_end < drew_to else ''}{rec['id']}: {moved}")
         window_start = announce - timedelta(days=PR_LEAD_DAYS)
         L = (launch_end - announce).days
         complete = full_through >= launch_end
@@ -3620,6 +3687,8 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= window_end)]
     win, uinfo = swap_units(win, name, urows, window_start, window_end,
                             launch_end + timedelta(days=UNITS_GRACE_DAYS))
+    if closed and not direct_spread:
+        late_paid_warning(rec["id"], urows, window_end, uinfo)
     untracked = untracked_block(win, untracked_norms)
     untracked["noEvent"] = uinfo["noEvent"]
     pre = win
@@ -3781,7 +3850,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "type": rec["type"],
         "campaignCode": code, "campaignName": camp, "marketingLead": None, "privateRoomOpen": None,
         "windowStart": rec["announce_date"] if dated else window_start.isoformat(),
-        "windowEnd": rec["launch_end"] if dated else None,
+        "windowEnd": launch_end.isoformat() if dated else None,
         "campaignLengthDays": L if dated else None, "day": day_n, "of": L,
         "asOf": as_of.isoformat(), "complete": complete,
         # where the units came from and the days they were counted over, the
@@ -3797,8 +3866,8 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         # funnel attributes it, for the dashboard's Direct switch
         "directShare": direct_share,
         "derived": {
-            "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
-            "dates_source": "campaign clock" if dated else None, "dates_note": rec["dates_note"],
+            "announce_date": rec["announce_date"], "launch_end": launch_end.isoformat() if dated else rec["launch_end"],
+            "dates_source": "campaign clock" if dated else None, "dates_note": dates_note,
             "campaign_code": code, "first_seen": rec["first_seen"], "last_seen": rec["last_seen"],
         },
         "economics": None, "currency": "units",
@@ -3954,11 +4023,20 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # earlier, to two days after the close; the units in it are the orders
     # table's, each on its own purchase event's channel
     urows = units_rows(name)
-    window_start, window_end, first_paid = sales_window(urows, min(pr_open, announce), announce, launch_end, as_of)
-    closed = as_of > launch_end + timedelta(days=UNITS_GRACE_DAYS)
+    # a draw that ran past the typed close has its winners pay when it ends:
+    # the window counts to the draw's end (sales_close), folded into the
+    # close day below, while the plan keeps the typed dates
+    sales_end, drew_to = sales_close(name, launch_end)
+    if drew_to is not None and not direct_spread:
+        print(f"{release['id']}: the draw ran to {drew_to}, past the close of {launch_end}: "
+              f"sales count to {sales_end} plus the grace")
+    window_start, window_end, first_paid = sales_window(urows, min(pr_open, announce), announce, sales_end, as_of)
+    closed = as_of > sales_end + timedelta(days=UNITS_GRACE_DAYS)
     win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= window_end)]
     win, uinfo = swap_units(win, name, urows, window_start, window_end,
-                            launch_end + timedelta(days=UNITS_GRACE_DAYS))
+                            sales_end + timedelta(days=UNITS_GRACE_DAYS))
+    if closed and not direct_spread:
+        late_paid_warning(release["id"], urows, window_end, uinfo)
     # how much of the window has no channel, read before the fold below hides it
     untracked = untracked_block(win, untracked_norms)
     untracked["noEvent"] = uinfo["noEvent"]
