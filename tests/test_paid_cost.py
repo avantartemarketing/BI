@@ -123,6 +123,9 @@ def test_js_agrees() -> None:
     expect = []
     for i, c in enumerate(cases):
         prof = dict(c["profile"], cost_per_purchase=[0.0, 123.0, 123.0][i % 3], n_costed=[0, 4, 4][i % 3])
+        if i >= 3:
+            # read with Direct spread: the scale the paid units took (build.spread_profile)
+            prof["cost_scale"] = 0.9
         inp = {"edition_size": c["release"]["edition_size"], "unit_price": c["release"]["unit_price"],
                "cost_per_purchase": 210 if i % 3 == 2 else None, "units_per_buyer": 1.25}
         payload["cases"].append({"name": c["name"], "off": [], "profile": prof, "inp": inp})

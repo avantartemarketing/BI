@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Direct spread over the other channels (docs 1.3): the redistribution keeps
 every day's totals and hands Direct's volume out pro rata, the benchmark's
-split is spread the same way without moving its medians, the share it spreads
-is the panel's own where the panel carries it, and a page built both ways
-carries the differing blocks under variants.direct_spread with the totals
-untouched.
+split is spread the same way without moving its medians or the money - the
+paid budget is the Channel view's whichever cost prices it - the share it
+spreads is the panel's own where the panel carries it, and a page built both
+ways carries the differing blocks under variants.direct_spread with the
+totals untouched.
 python3 tests/test_direct_spread.py (needs pandas)"""
 import sys, json, pathlib, random, copy
 from datetime import date, timedelta
@@ -62,6 +63,23 @@ rest = 800.0 - 110.0
 check(close(ug["search_direct_other"], 110.0 + 110.0 * 110.0 / rest) and close(ug["paid"], 200.0 + 110.0 * 200.0 / rest), f"Direct's half of the group lands pro rata: {ug}")
 check(close(sum(sp["sessions_by_group"].values()), 40000.0) and sp["conv"] == profile["conv"], "sessions kept, conversion held")
 check(build.spread_profile(profile, None) is profile, "no norm, no change")
+
+# ---- the Direct switch never moves the money (docs 1.3): paid takes its share
+# of Direct's units, so a paid unit costs that much less and the budget stays
+costed = dict(profile, cost_per_purchase=150.0, n_costed=5)
+spc = build.spread_profile(costed, norm)
+factor = spc["units_by_group"]["paid"] / costed["units_by_group"]["paid"]
+check(factor > 1 and close(spc["cost_scale"], 1 / factor) and close(spc["cost_per_purchase"], 150.0 / factor),
+      f"the basket's cost is rescaled by the paid group's change: x{factor:.4f}, {spc['cost_per_purchase']:.2f}")
+rel = {"edition_size": 1600.0, "unit_price": 1000.0, "units_per_buyer": 1.0}
+for name, r, prof in (("the basket's cost", rel, costed), ("a typed cost", dict(rel, cost_per_purchase=291), costed),
+                      ("the panel constant", rel, dict(profile, cost_per_purchase=0.0, n_costed=0))):
+    t0 = build.benchmark_targets(r, prof)
+    t1 = build.benchmark_targets(r, build.spread_profile(prof, norm))
+    check(close(t1["paid"]["budget"], t0["paid"]["budget"]) and t1["paid"]["units"] > t0["paid"]["units"],
+          f"{name}: the budget is the Channel view's ({t1['paid']['budget']:.2f} vs {t0['paid']['budget']:.2f}), the paid units are not")
+    check(t1["paid"]["cost_per_purchase_source"] == t0["paid"]["cost_per_purchase_source"], f"{name}: the source is kept")
+check(build.cost_per_purchase_for({}, profile=costed) == 150.0, "a profile never spread reads its cost as it is")
 
 # ---- the share spread is the panel's own where the panel carries it
 cohort = pd.DataFrame({"release_name": [f"L{i}" for i in range(10)],
@@ -133,6 +151,24 @@ check(var["paid"]["entriesToDate"] > snap["paid"]["entriesToDate"] and var["paid
 check(close(sum(c["now"] for c in var["channels"]), sum(c["now"] for c in snap["channels"]), 0.3), "the channels still add up to the same secured units")
 ds = snap["directShare"]
 check(ds and 0 < ds["entries"] < 1 and 0 < ds["units"] < 1, f"Direct's share of the window is published: {ds}")
+# the switch moves units between channels, never the money: the budget, the
+# benchmark's and the paid card's are the Channel view's to the cent
+view = {**snap, **var}
+for label, a, b in (("paid.spendBudget", view["paid"]["spendBudget"], snap["paid"]["spendBudget"]),
+                    ("paid.benchmarkBudget", view["paid"]["benchmarkBudget"], snap["paid"]["benchmarkBudget"]),
+                    ("benchmark.paidBudget", view["benchmark"]["paidBudget"], snap["benchmark"]["paidBudget"]),
+                    ("targets.paid.budget", view["targets"]["paid"]["budget"], snap["targets"]["paid"]["budget"])):
+    check(abs(a - b) <= 0.01, f"{label} is the same both ways: {a} vs {b}")
+check(view["paid"]["unitTarget"] > snap["paid"]["unitTarget"], "while paid's unit target takes its share of Direct")
+# and so with a cost the release typed itself
+typed = build.with_direct_spread(build.build_release, dict(copy.deepcopy(base), cost_per_purchase=291), at, spend, emails,
+                                 content, curves, TODAY, build.load_artist_posts(), {}, None, panel, people,
+                                 full_through=TODAY, seen=1.0, direct_norm=direct_norm)
+build.check_snapshot(typed)
+tv = {**typed, **typed["variants"]["direct_spread"]}
+check(typed["targets"]["paid"]["cost_per_purchase_source"] == "release"
+      and abs(tv["paid"]["spendBudget"] - typed["paid"]["spendBudget"]) <= 0.01,
+      f"a typed cost: the budget is the same both ways: {tv['paid']['spendBudget']} vs {typed['paid']['spendBudget']}")
 print(f"direct share of entries {ds['entries']:.1%}; sdo {sdo(snap['channels'])['now']:.0f} -> {sdo(var['channels'])['now']:.0f}, paid {paid(snap['channels'])['now']:.0f} -> {paid(var['channels'])['now']:.0f}; variant blocks {sorted(var)}")
 print("FAILED" if failed else "ok: direct spread", failed if failed else "")
 sys.exit(1 if failed else 0)

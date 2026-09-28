@@ -429,7 +429,10 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
 
 /* ======================= the tab ======================= */
 
-export default function TargetSetting({ snap, onSaved }) {
+/* `directSpread`: the Overview is set to spread Direct over the other
+ * channels. The plan here always reads Direct as a channel of its own, so
+ * the tab says so rather than contradicting the Channels card silently. */
+export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const [meta, setMeta] = useState(null);       // {inputs, sourced, benchmarks, meta_campaigns, derived, draws, creating}
   const [inp, setInp] = useState(null);         // editable inputs
   const [pick, setPick] = useState(null);       // a basket chosen in the picker, not yet saved
@@ -972,6 +975,12 @@ export default function TargetSetting({ snap, onSaved }) {
             The target is the benchmark lifted by <b>×{k ? fmt(k, 2) : "–"}</b> in every channel and on every day. Conversion rates are held at the
             benchmark: the uplift is asked of traffic and spend only.
           </div>
+          {directSpread && (
+            <div className="ts-caption">
+              Direct is read as a channel of its own here, as the funnel attributes it. The Overview is set to spread it over the other channels,
+              so its Channels card splits the same plan differently; the paid budget is the same either way.
+            </div>
+          )}
         </section>
 
         <section className="ts-card" aria-label="Products and economics">

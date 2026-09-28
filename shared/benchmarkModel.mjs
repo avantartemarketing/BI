@@ -114,9 +114,13 @@ export function benchmarkTargets(profile, inp, b) {
   const e2o = ownRate > 0 && ownRate <= 1 ? ownRate : (num(b.eligible_entry_to_order) || 0.8);
   // what a paid unit costs to buy: the release's own figure, else the basket's
   // median cost per paid unit, else the panel's constant (etl/build.py
-  // cost_per_purchase_for), and where it came from
+  // cost_per_purchase_for), and where it came from. A profile read with Direct
+  // spread carries the scale its paid units took (spread_profile): the typed
+  // figure and the constant take it too, as the basket's already has, so the
+  // budget is the same whichever way Direct is read
   const own = num(inp.cost_per_purchase), basket = num(profile.cost_per_purchase);
-  const cpp = own > 0 ? own : basket > 0 ? basket : num((b.cost_per_purchase || {}).Median);
+  const scale = num(profile.cost_scale) > 0 ? num(profile.cost_scale) : 1;
+  const cpp = own > 0 ? own * scale : basket > 0 ? basket : num((b.cost_per_purchase || {}).Median) * scale;
   const cppSource = own > 0 ? "release" : basket > 0 ? "basket" : "panel";
   const upb = num(inp.units_per_buyer) > 0 ? num(inp.units_per_buyer) : (num(profile.units_per_buyer) > 0 ? num(profile.units_per_buyer) : 1);
   const price = num(inp.unit_price);

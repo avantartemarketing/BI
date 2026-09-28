@@ -140,10 +140,14 @@ Normalisation rules:
   September 2026 it fell from 0.73 to 0.33 of the group's units in one refresh). The ETL builds
   every page both ways (`with_direct_spread`) and stores the blocks that differ under
   `variants.direct_spread`; `directShare` carries Direct's share of the release's window as the
-  funnel attributes it. The switch in the page head lays the variant over the page, so every
-  card reads one attribution; it is a methodology choice and sticks per browser. Totals, what
-  has been sold and the spend do not move; the plan's pace and the projections shift a little
-  with the channel mix (each group has its own curve), and paid reads the entries it is given.
+  funnel attributes it. The switch in the Overview's head lays the variant over the page, so
+  every card reads one attribution; it is a methodology choice and sticks per browser. The
+  Target setting tab always reads Direct as a channel: the switch is not shown there, and the
+  tab says so when the Overview is set to Spread. Totals, what has been sold, the spend and the
+  paid budget do not move: paid takes its share of Direct's units, so its cost per unit is
+  rescaled by the paid group's change (`cost_scale`) and paid units × cost is the Channel
+  view's. The plan's pace and the projections shift a little with the channel mix (each group
+  has its own curve), and paid reads the entries it is given.
 - **Paid Search** has no benchmarks, no spend feed, and never appears in the daily export -
   every "Total Paid" benchmark is an alias of Paid Social. Model paid = Paid Social; keep Paid
   Search only as a raw actuals bucket.

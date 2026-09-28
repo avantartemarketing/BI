@@ -484,7 +484,7 @@ function DirectToggle({ on, onChange, share }) {
   const pct = (x) => (x === null || x === undefined ? "–" : Math.round(100 * x) + "%");
   const tip = `Direct is ${pct(share && share.entries)} of this release's entries and ${pct(share && share.units)} of its units as the funnel attributes them. `
     + "Spread shares Direct out over the other channels in proportion to their own volumes, day by day, and reads the benchmark's channel split the same way. "
-    + "Totals and what has been sold do not move; the plan's pace and the projections can shift a little with the channel mix, and paid reads the entries it is given.";
+    + "Totals, what has been sold and the paid budget do not move; the plan's pace and the projections can shift a little with the channel mix, and paid reads the entries it is given, at a cost per unit rescaled to them.";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }} title={tip}>
       <span style={{ fontSize: 12, color: "#6c6b68" }}>Direct</span>
@@ -578,10 +578,12 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           )}
         </div>
         <div className="page-controls">
-          {(showHorizon || variant) && (
+          {(showHorizon || (variant && tab === "overview")) && (
             <div className="page-toggles">
               {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
-              {variant && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} />}
+              {/* the switch lays the variant over the Overview's cards; the other
+                  tabs read Direct as a channel, so it is not offered there */}
+              {variant && tab === "overview" && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} />}
             </div>
           )}
           <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough}
@@ -599,7 +601,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
         )}
       </nav>
-      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} /> : tab === "audit" && !upcoming ? <DrawAudit snap={snap} /> : upcoming ? (
+      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} /> : tab === "audit" && !upcoming ? <DrawAudit snap={snap} /> : upcoming ? (
         <div style={{ maxWidth: 560, marginTop: 24 }}><Upcoming snap={snap} onSetup={() => setTab("targets")} /></div>
       ) : (
         <>

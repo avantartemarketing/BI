@@ -607,10 +607,19 @@ def spread_profile(profile: dict, norm: dict | None) -> dict:
     Search/direct/other group (the panel's median, direct_share_norm) leaves
     the group and lands on every group in proportion to what remains, units
     and sessions alike. The headline medians do not move, so K does not
-    either; conversion stays at the benchmark like every other rate."""
+    either; conversion stays at the benchmark like every other rate.
+
+    Nor does the money. Paid takes its share of Direct's units, so the same
+    spend buys more of them: the cost of a paid unit is rescaled by the paid
+    group's change (`cost_scale`, channel units over spread units), and paid
+    units x cost x K - the paid budget, and the benchmark's - is the Channel
+    view's to the cent. The basket's own figure is rescaled here; a figure the
+    release typed, or the panel constant, takes the same scale where it is
+    picked (cost_per_purchase_for). A display switch never moves a budget."""
     if not norm:
         return profile
     out = dict(profile)
+    paid_before = float((profile.get("units_by_group") or {}).get("paid") or 0.0)
     for key, metric in (("units_by_group", "units"), ("sessions_by_group", "sessions")):
         share = norm.get(metric)
         grp = {g: float(v or 0.0) for g, v in (out.get(key) or {}).items()}
@@ -629,6 +638,12 @@ def spread_profile(profile: dict, norm: dict | None) -> dict:
         total = float(out.get(metric) or 0.0)
         if total > 0:
             out["share_units" if metric == "units" else "share_sessions"] = {g: round(v / total, 6) for g, v in out[key].items()}
+    paid_after = float((out.get("units_by_group") or {}).get("paid") or 0.0)
+    if paid_before > 0 and paid_after > 0:
+        out["cost_scale"] = paid_before / paid_after
+        cpp = float(profile.get("cost_per_purchase") or 0.0)
+        if cpp > 0:
+            out["cost_per_purchase"] = cpp * out["cost_scale"]
     out["direct_spread"] = norm
     return out
 
@@ -779,16 +794,20 @@ def cost_per_purchase_for(release: dict, b: dict = BENCH, profile: dict | None =
     over their paid units, baskets.attach_paid_costs; on the profile as
     cost_per_purchase, 0 when too few members have a reading), else the
     panel's constant. A release saved while the figure was still a quartile
-    pick (cpp_pick, retired) is read at that quartile."""
+    pick (cpp_pick, retired) is read at that quartile. On a profile read with
+    Direct spread the release's figure and the constant take the profile's
+    cost_scale, as the basket's figure already has (spread_profile), so the
+    budget is the same whichever way Direct is read."""
+    scale = float((profile or {}).get("cost_scale") or 1.0)
     own = release.get("cost_per_purchase")
     if own not in (None, "") and float(own) > 0:
-        return float(own)
+        return float(own) * scale
     basket = float((profile or {}).get("cost_per_purchase") or 0)
     if basket > 0:
         return basket
     pick = release.get("cpp_pick")
     table = b["cost_per_purchase"]
-    return float(table[pick] if pick in table else table["Median"])
+    return float(table[pick] if pick in table else table["Median"]) * scale
 
 
 def cost_per_purchase_source(release: dict, b: dict = BENCH, profile: dict | None = None) -> str:

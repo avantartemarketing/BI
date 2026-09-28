@@ -92,9 +92,11 @@ is what the funnel export attributes to it. Spread, its sessions, entries and
 units are shared out over the other channels in proportion to what each did
 that day, the way the untracked rows always are, and the benchmark's channel
 split is read the same way (the panel's typical Direct share of the
-Search/direct/other group, spread over every group pro rata). Totals and what
-has been sold do not move; the channel cards, the funnel and paid do, and the
-plan's pace shifts a little with the channel mix.
+Search/direct/other group, spread over every group pro rata). Totals, what has
+been sold and the paid budget do not move - paid's cost per unit falls by the
+share of Direct it takes on - while the channel cards, the funnel and paid's
+units do, and the plan's pace shifts a little with the channel mix. The Target
+setting tab always reads Direct as a channel.
 
 ## 2. The inputs (Target setting tab)
 
