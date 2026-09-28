@@ -1,6 +1,7 @@
-/* Units vs sellout - hero module (spec §4.1, unified secured-units currency, docs §6.4):
- * secured units = units sold (all routes incl. private room) + 0.8 × eligible entry
- * units not yet converted, capped at the edition size.
+/* Units vs sellout - hero module (spec §4.1, unified secured-units currency, docs §6.3½):
+ * secured units = units paid (all routes incl. private room) + draft orders not
+ * yet paid + the orders expected from the entries still in the draw, work by
+ * work, capped at the edition size (the sell-through's own count).
  *
  * One bar, one horizon, both references (BENCHMARK_SPEC 7). The fill is the
  * target - darker from zero to whichever of target and benchmark is lower,
@@ -27,6 +28,18 @@ const OUTLINE_SWATCH = (
     <path d="M1 10 V1.5 H11 V10" fill="none" stroke={C.refLine} strokeWidth="1.5" strokeDasharray="1.6 1.6" />
   </svg>
 );
+
+/* What secured units are made of, as the sell-through counts them (docs 6.3½):
+ * the draw's part is the entries still in hand, allocated work by work, at the
+ * release's entry → order rate (and a pre-order's own rate). */
+function securedTip(snap) {
+  const st = snap?.sellthrough || {};
+  const pct = (x) => Math.round(x * 100) + "%";
+  const rate = Number.isFinite(st.conversion) ? st.conversion : 0.8;
+  const pre = Number.isFinite(st.preorderConversion) && st.preorderConversion !== rate ? st.preorderConversion : null;
+  return "Secured units = units paid (all routes incl. private room) + draft orders not yet paid + the orders " +
+    `expected from the entries still in the draw, work by work, at ${pct(rate)}${pre !== null ? ` (${pct(pre)} for a pre-order)` : ""}`;
+}
 
 /* TrackBar's scale, repeated here so the floating labels land on the same one.
  * A label that drifts off the thing it names is worse than no label at all. */
@@ -77,9 +90,9 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const oversub = hero.oversubscribedUnits ?? 0;
   const overPct = sellout > 0 ? Math.round((proj / sellout) * 100) : null;
 
-  const unitsTip =
-    "Secured units = units sold (all routes incl. private room) + 0.8 × eligible " +
-    "entry units not yet converted, capped at the edition size.";
+  const unitsTip = close
+    ? "Projected demand = the units secured today and what each channel is on course to add by the close, capped at the edition size."
+    : securedTip(snap) + ", capped at the edition size.";
   const refRows = [
     { label: words.target, value: fmt(target) },
     ...(bm !== null ? [{ label: words.bm, value: fmt(bm) }] : []),
@@ -229,8 +242,9 @@ function HeroActuals({ snap }) {
   const t = useTip();
   const now = snap.hero?.now ?? 0;
   const sold = snap.sellthrough?.sold ?? 0;
+  const drafts = snap.sellthrough?.drafts;
   const banked = snap.sellthrough?.soldPredicted ?? 0;
-  const unitsTip = "Secured units = units sold (all routes incl. private room) + 0.8 × eligible entry units not yet converted.";
+  const unitsTip = securedTip(snap) + ".";
   return (
     <Card dot={GROUP_DOTS.volume} title="Secured units">
       <div className="spacer-8" />
@@ -242,14 +256,23 @@ function HeroActuals({ snap }) {
       </div>
       <div className="lead-caption" style={{ color: C.muted }}>no target set - actuals only</div>
       <div className="legend-rows" style={{ marginTop: 20 }}>
+        {/* the parts of the lead, in the sell-through's ramp of blues, so the
+            rows add up to it */}
         <div className="legend-row">
           <span className="swatch" style={{ background: C.blueDeep }} />
-          <span style={{ color: C.muted }}>Units sold</span>
+          <span style={{ color: C.muted }}>Units paid</span>
           <span className="val"><Ex k="st.paid">{fmt(sold)}</Ex></span>
         </div>
+        {Number.isFinite(drafts) && (
+          <div className="legend-row">
+            <span className="swatch" style={{ background: C.blue }} />
+            <span style={{ color: C.muted }}>Draft orders</span>
+            <span className="val"><Ex k="st.drafts">{fmt(drafts)}</Ex></span>
+          </div>
+        )}
         <div className="legend-row">
-          <span className="swatch" style={{ background: C.blue }} />
-          <span style={{ color: C.muted }}>Draw conversions (entries × 0.8)</span>
+          <span className="swatch" style={{ background: C.blueLight }} />
+          <span style={{ color: C.muted }}>Expected from the draw</span>
           <span className="val"><Ex k="st.draw">{fmt(banked)}</Ex></span>
         </div>
       </div>

@@ -397,7 +397,8 @@ gap organic is *not* on course to fill - not to buy the whole remaining edition
 by itself:
 
 ```
-secured now     = the sell-through's count (§1): units paid + drafts + rate × entries in hand
+secured now     = units paid + draft orders + orders expected from the draw, work by work,
+                  capped at the edition        (the hero's secured units, §1)
 organic to come = shape-following organic projection of further secured units (§6)
 sell-out gap    = max(edition size − secured now − organic to come, 0)
 entries needed  = sell-out gap ÷ rate       (every unit asked for as an entry, as in the targets)

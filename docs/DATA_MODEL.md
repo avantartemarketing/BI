@@ -1673,7 +1673,7 @@ the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip 
 organic projection (§5.4), so paid is sized to top up only the gap organic is
 not on course to fill:
 ```
-secured_now       = spoken_for                                 # §6.3½: units paid + drafts + rate × entries in hand
+secured_now       = units paid + draft orders + the draw's expected orders, work by work, capped at the edition   # the hero's secured units (§6.3½)
 organic_future    = Σ over organic groups of (proj − now)       # §5.4 projection
 sellout_gap       = max(edition_size − secured_now − organic_future, 0)
 entries_needed    = sellout_gap / (1 − drop_off)                # every unit asked for as an entry at the rate
