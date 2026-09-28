@@ -1754,6 +1754,12 @@ Reference rates for the funnel module: use the release's own campaign sends vs t
 median for the same send type. ⚠ Bundle sends (`FREQ_LE_Bundle`) promote 2–3 releases and cannot
 be attributed to one release.
 
+**The Direct switch leaves the email plan alone.** The sends the plan asks for are read on AA
+Email's sessions as the funnel attributes them, and the Spread view's
+`benchmarks.emailSessionsPerClickRef` carries the spread's share of the basket's email sessions,
+so the chain still multiplies out to the plan's sessions and the sessions-per-click rung reads
+spread against spread.
+
 ### Social content (Emplifi)
 Post/story-level per platform (instagram 90%, twitter/X since 2025-08). Join via Labels →
 campaign code. Useful metrics: impressions, reach, engagements (+ rates, verified =
@@ -1864,7 +1870,7 @@ actuals-only page omits it.
 | `channels[].daily[].bm` | the benchmark plan for that day, beside `actual` / `plan` / `proj` |
 | `funnelByGroup[g].sessions_benchmark`, `conv_benchmark` | the basket's sessions by today (the sessions rung's reference) and its conversion at close (the conversion rung's fallback on a snapshot without `conv_benchmark_today`) |
 | `funnelByGroup[g].conv_benchmark_today`, `contrib_traffic_bm`, `contrib_conversion_bm`, `contrib_buyers_bm`, `contrib_per_buyer_bm` | the same three-factor decomposition against the basket's pace by today, summing to the group's actual − its benchmark today; the waterfalls' walk from the benchmark, and the conversion rungs' reference (Funnel by channel, Organic funnel), so a rung and the step beside it read the same figure |
-| `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median |
+| `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median. Read on the sessions as the funnel attributes them, so the same in both Direct views (§8) |
 | `sellthrough.benchmarkUnits` | the benchmark on the sell-through prediction |
 | `sellthrough.conversion`, `inHandUnits` | the entry → order rate the prediction runs at, and the entries in hand before it (§6.3) |
 | `sellthrough.products[]` | per product: `key`, `name`, `draws`, `edition`, `sold`, `drafts`, `entrants`, `inHand.{open, won}`, `allocated`, `pinned`, `fixed`, `flexible`, `predicted`, `shown`, `room`, `oversubscribed`, `futurePredicted`, `pct`, `pctClose`, `expectedToday`, `benchmarkToday`, `benchmarkClose` (§6.3) |

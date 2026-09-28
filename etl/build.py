@@ -3685,7 +3685,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # launches from the day it is discovered and nobody has to pick anything
     # first. There is no other model: without a basket to read, the release
     # keeps its actuals-only page (docs/DATA_MODEL.md §3).
-    basket = profile = None
+    basket = profile = unspread = None
     if panel is not None and len(panel):
         basket = baskets.resolve_basket(release.get("benchmark_basket"), panel, release, as_of)
         # the channels this release will not run leave the basket's medians
@@ -3693,6 +3693,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # benchmark mark on the page (BENCHMARK_SPEC §4.3)
         off = baskets.channels_off_of(release)
         basket["profile"] = baskets.apply_channels_off(basket["profile"], off)
+        # as the funnel attributes it, before the Direct switch's spread: the
+        # email plan's sends are read on these sessions (email block below)
+        unspread = basket["profile"]
         if direct_spread:
             # the benchmark's channel split read the same way as the actuals
             basket["profile"] = spread_profile(basket["profile"], direct_norm)
@@ -4090,6 +4093,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     hero_now = hero_exp = hero_target = hero_proj = 0.0
     hero_bm = hero_bm_today = 0.0        # benchmark at close, benchmark by today
     funnel_by_group = {}
+    email_sess = {}                      # AA Email's sessions by today, plan and basket, unrounded
     e2o = entry_rate(release)
     # Paid follows spend, and spend is planned evenly over the days paid runs:
     # from the day after the announce (PAID_START_DAYS) to the close. So the
@@ -4187,6 +4191,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "bps_expected": (conv_exp / upb_plan) if upb_plan else 0.0,
             "contrib_buyers": round(buyer_conv, 1), "contrib_per_buyer": round(per_buyer, 1),
         }
+        if g == "aa_email":
+            email_sess = {"plan": sess_exp, "bm": bm_sessions.get(g, 0.0) * sess_w if bench else None}
         if bench:
             # The funnel cards are always Today (§2), so the benchmark they sit
             # against is the benchmark pace by today - the same point the target
@@ -4387,8 +4393,19 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # be the target, and left sessions per click carrying whatever the sends
     # lost). Until two launches give a sessions-per-click median, the median
     # delivered total on the pooled delivery-timing curve stands in.
+    # The sends are read on AA Email's sessions as the funnel attributes them.
+    # The Direct switch spreads Direct's share of the basket onto AA Email as
+    # well; that is traffic Direct brought, not sends, so it leaves the sends
+    # the plan asks for alone and lands in sessions per click, whose
+    # reference carries the same share (email_refs_out below).
+    spread_f = 1.0
+    if direct_spread and unspread:
+        _raw = float((unspread.get("sessions_by_group") or {}).get("aa_email") or 0.0)
+        _now = float((profile.get("sessions_by_group") or {}).get("aa_email") or 0.0)
+        if _raw > 0 and _now > 0:
+            spread_f = _now / _raw
     email_out["deliveredTarget"] = None
-    sess_plan = (funnel_by_group.get("aa_email") or {}).get("sessions_expected")
+    sess_plan = round(email_sess["plan"] / spread_f, 1) if email_sess.get("plan") is not None else None
     rate_chain = (email_bench["open_rate"] * email_bench["ctor_rate"] * email_bench["spc_rate"]
                   if email_bench and all(email_bench.get(k) for k in ("open_rate", "ctor_rate", "spc_rate"))
                   else None)
@@ -4414,11 +4431,17 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # the waterfall's walk from the benchmark reads. The cohort's median send on
     # the curve carries no uplift, so where it is the target it is this too.
     email_out["deliveredBenchmark"] = None
-    sess_bm_plan = (funnel_by_group.get("aa_email") or {}).get("sessions_benchmark")
+    sess_bm_plan = round(email_sess["bm"] / spread_f, 1) if email_sess.get("bm") is not None else None
     if rate_chain and sess_bm_plan:
         email_out["deliveredBenchmark"] = round(sess_bm_plan / rate_chain, 1)
     elif email_out["deliveredTarget"] is not None and not rate_chain:
         email_out["deliveredBenchmark"] = email_out["deliveredTarget"]
+    email_refs_out = email_refs(email_bench)
+    if spread_f != 1.0 and email_bench and email_bench.get("spc_rate") is not None:
+        # with Direct spread, the sessions-per-click reference on the spread's
+        # basis, so the chain still multiplies out to the plan's sessions and
+        # the rung reads a spread actual against a spread reference
+        email_refs_out["emailSessionsPerClickRef"] = round(email_bench["spc_rate"] * spread_f, 3)
 
     # ---- social content
     ct = content[(content["campaign_code"] == release["campaign_code"])
@@ -4604,7 +4627,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "chargeDropOff": round(1 - entry_rate(release), 4),
             "cannibalisation": b["cannibalisation"],
             "targetBuffer": b["target_buffer"],
-            **email_refs(email_bench),
+            **email_refs_out,
         },
     }
     if bench:
@@ -4816,7 +4839,12 @@ def check_snapshot(snap: dict) -> None:
             today_v = [s.get("value") for s in wf["today"].get(key) or []]
             if close_v and today_v and close_v != today_v:
                 warnings.append(f"a closed release's waterfall {key} at close {close_v} differ from today's {today_v}")
+    # the Direct switch moves attribution, not the sends the plan asks for
     alt = (snap.get("variants") or {}).get("direct_spread")
+    if alt and isinstance(alt.get("email"), dict) and isinstance(snap.get("email"), dict):
+        a, b_ = alt["email"].get("deliveredTarget"), snap["email"].get("deliveredTarget")
+        if a is not None and b_ is not None and abs(a - b_) > 0.5:
+            warnings.append(f"the Direct view's email.deliveredTarget {a} differs from the page's {b_}")
     for w in warnings:
         SNAPSHOT_WARNINGS.append(f"{rid}: {w}")
         print(f"check_snapshot warning: {rid}: {w}")

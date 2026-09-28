@@ -169,6 +169,28 @@ tv = {**typed, **typed["variants"]["direct_spread"]}
 check(typed["targets"]["paid"]["cost_per_purchase_source"] == "release"
       and abs(tv["paid"]["spendBudget"] - typed["paid"]["spendBudget"]) <= 0.01,
       f"a typed cost: the budget is the same both ways: {tv['paid']['spendBudget']} vs {typed['paid']['spendBudget']}")
+
+# ---- the email plan does not move with the switch. The sends the plan asks
+# for are read on AA Email's sessions as the funnel attributes them; the
+# spread's share of the basket's email sessions is traffic Direct brought, so
+# it lands in the sessions-per-click reference, and the chain still
+# multiplies out to each view's planned sessions.
+rates = {"open_rate": 0.166, "click_rate": 0.033, "ctor_rate": 0.195, "spc_rate": 1.39, "total": None, "curve": None,
+         "cohort": {"n": 3, "releases": ["x", "y", "z"], "from": "2026-01-01", "to": "2026-06-01"}}
+snap_e = build.with_direct_spread(build.build_release, copy.deepcopy(base), at, spend, emails, content, curves, TODAY,
+                                  build.load_artist_posts(), {}, rates, panel, people, full_through=TODAY, seen=1.0, direct_norm=direct_norm)
+build.check_snapshot(snap_e)
+var_e = snap_e["variants"]["direct_spread"]
+f_sess = var_e["funnelByGroup"]["aa_email"]["sessions_expected"] / snap_e["funnelByGroup"]["aa_email"]["sessions_expected"]
+check(snap_e["email"]["deliveredTarget"] and snap_e["email"]["deliveredBenchmark"] and "email" not in var_e,
+      f"the planned sends are the same both ways: {snap_e['email']['deliveredTarget']} vs {(var_e.get('email') or {}).get('deliveredTarget')}")
+check(f_sess > 1.001 and snap_e["benchmarks"]["emailSessionsPerClickRef"] == 1.39
+      and abs(var_e["benchmarks"]["emailSessionsPerClickRef"] - 1.39 * f_sess) < 0.002,
+      f"the spread lands in sessions per click: x{f_sess:.4f}, {snap_e['benchmarks']['emailSessionsPerClickRef']} -> {var_e['benchmarks']['emailSessionsPerClickRef']}")
+for label, view in (("base", snap_e), ("spread", {**snap_e, **var_e})):
+    sess = view["funnelByGroup"]["aa_email"]["sessions_expected"]
+    chain = view["email"]["deliveredTarget"] * 0.166 * 0.195 * view["benchmarks"]["emailSessionsPerClickRef"]
+    check(abs(chain - sess) <= 0.001 * sess + 0.2, f"{label}: sends x open x clicks per open x sessions per click = the plan's sessions: {chain:.1f} vs {sess}")
 print(f"direct share of entries {ds['entries']:.1%}; sdo {sdo(snap['channels'])['now']:.0f} -> {sdo(var['channels'])['now']:.0f}, paid {paid(snap['channels'])['now']:.0f} -> {paid(var['channels'])['now']:.0f}; variant blocks {sorted(var)}")
 print("FAILED" if failed else "ok: direct spread", failed if failed else "")
 sys.exit(1 if failed else 0)
