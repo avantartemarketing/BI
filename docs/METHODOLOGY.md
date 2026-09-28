@@ -155,7 +155,8 @@ pre-orders), the 20% cannibalisation, the 35% frame take-up (the profit per fram
 always the product's own), the 6% budget sense
 check, the paid spend rules, and two tables read at the median only - the
 channel order split, which places a channel group's target on its individual
-channels, and the cost per purchase, the default price of a paid unit.
+channels, and the cost per purchase, the price of a paid unit when neither the
+release nor its basket has one (Step 5).
 
 ## 4. The target model, step by step
 
@@ -216,8 +217,14 @@ stays on the snapshot as data.
 
 ```
 paid_units  = benchmark_paid_units × K
-paid_budget = paid_units × cost per purchase        (the release's figure, else €177)
+paid_budget = paid_units × cost per purchase
 ```
+
+The cost per purchase is the price of a paid unit, taken in this order: the
+release's own figure, where one is typed on the Target setting tab; else the
+basket's median cost per paid unit (each launch's Meta spend over the paid units
+it sold), once three or more of the basket's launches have one on file; else the
+panel's €177. The tab says which of the three priced the release.
 
 Sense check: **paid budget should stay under 6% of launch value** - the dashboard
 flags a breach but does not block it. A release that will not run paid says so

@@ -639,7 +639,8 @@ plan sold nothing in the median launch - shows its actuals rather than a target 
 model.
 
 What stayed, and where it moved: the cost per purchase is a figure per release
-(`cost_per_purchase`, € per paid unit; blank means the panel's median, §4 E); the Referral
+(`cost_per_purchase`, € per paid unit; blank means the basket's median cost per paid unit, else
+the panel's median, §4 E); the Referral
 Artist tier became the artist posting tier (`artist_posting_tier`, the cohort of the
 artist-posts benchmark); "N/A" on Referral Artist became the artist's own channels not in plan
 (`channels_off`, spec §4.3); and the order-split medians still place a group's target on its

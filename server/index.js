@@ -310,7 +310,8 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     }
   }
   // what a paid unit costs to buy, in euros: paid units x this is the paid budget.
-  // Empty means the panel's median (etl/benchmarks.json cost_per_purchase).
+  // Empty means the basket's median cost per paid unit, else the panel's median
+  // (etl/benchmarks.json cost_per_purchase; etl/build.py cost_per_purchase_for).
   if (body.cost_per_purchase !== undefined) {
     if (body.cost_per_purchase === null || body.cost_per_purchase === "") next.cost_per_purchase = null;
     else {

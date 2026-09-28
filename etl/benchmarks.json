@@ -65,7 +65,7 @@
   }
  },
  "cost_per_purchase": {
-  "_meaning": "EUR per paid unit, quartiles over the paid campaigns on file; Median is the default the paid budget is priced at when a release has no cost_per_purchase of its own",
+  "_meaning": "EUR per paid unit, quartiles over the paid campaigns on file; Median prices the paid budget only when a release has no cost_per_purchase of its own and fewer than three of its basket's launches have a cost per paid unit on file (etl/build.py cost_per_purchase_for: the release's figure, else the basket's median, else this)",
   "Low": 128.75,
   "Median": 177,
   "High": 291

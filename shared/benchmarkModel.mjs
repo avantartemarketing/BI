@@ -97,7 +97,8 @@ export function profileOf(bm) {
 /* The targets from a basket's medians (BENCHMARK_SPEC 4): one even uplift
  * K = sellout / median units carries every volume, conversion rates are held.
  * `inp` is the release: edition_size, unit_price, cost_per_purchase (blank
- * means the panel's median), units_per_buyer (the plan's rate, from the
+ * means the basket's median cost per paid unit, else the panel's median),
+ * units_per_buyer (the plan's rate, from the
  * snapshot). `b` is etl/benchmarks.json. Returns the figures the rail prints,
  * each beside the benchmark it is lifted from - the basket's own median,
  * unscaled - so benchmark + stretch = target on every row. Null when the
