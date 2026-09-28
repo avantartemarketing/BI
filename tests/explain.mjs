@@ -356,6 +356,8 @@ for (const f of files) {
   const m = JSON.parse(readFileSync(new URL("releases/mondrian_le_26.json", root), "utf8"));
   assert.strictEqual(sourceRow({ key: "meta", gave: "x" }, m, null).fresh, "to 24 Sep · last spend 4 Aug", "a closed campaign's spend names its last day");
   assert.strictEqual(sourceRow({ key: "orders", gave: "x" }, w, null).fresh, "to 24 Sep, so far", "a live page's orders run to today so far");
+  const stale = { ...w, social: { ...w.social, postsSource: "emplifi", postsThrough: "2026-08-13", postsEndsFirst: true } };
+  assert.strictEqual(sourceRow({ key: "social", gave: "x" }, stale, null).fresh, "to 13 Aug", "the post export reads to its own last day");
 }
 
 /* ---- the framing uplift is named only where there is one ---- */

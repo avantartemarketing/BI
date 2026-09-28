@@ -1,7 +1,7 @@
 /* Figures more than one place prints, worked out once: a card, the
  * explainer (web/src/explain) and the tests all import them from here, so
  * the two cannot round or read apart. Plain JavaScript, no JSX. */
-import { paidDayFrac } from "./format.mjs";
+import { fmtDay, paidDayFrac } from "./format.mjs";
 
 const finite = (v) => typeof v === "number" && Number.isFinite(v);
 
@@ -123,4 +123,19 @@ export function paidUnits(snap, close = false) {
   }
   const fill = close ? proj : now;
   return { now, proj, fill, target, bm, pct: target > 0 ? fill / target : null, fromRow: !!c };
+}
+
+/* ---- social ---- */
+
+/* How far the AA Meta post count reaches. The Emplifi export is a file
+ * somebody regenerates by hand, so where it stops before the release's
+ * window the count is not known (a dash, not a zero), and where it stops
+ * inside the window the count runs to its last day only. Null when the count
+ * covers the window: the live Notion log, or an export that reaches it. */
+export function postsCover(snap) {
+  const so = (snap && snap.social) || {};
+  if (!so.postsThrough || !(so.postsEndsFirst || so.postsPartial)) return null;
+  const d = new Date(String(so.postsThrough).slice(0, 10) + "T00:00:00Z");
+  const through = Number.isFinite(d.getTime()) ? fmtDay(d) : String(so.postsThrough);
+  return { through, endsFirst: !!so.postsEndsFirst, partial: !so.postsEndsFirst && !!so.postsPartial };
 }

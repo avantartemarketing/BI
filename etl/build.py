@@ -432,6 +432,13 @@ def social_block(content: pd.DataFrame, ap: pd.DataFrame, code, start, end) -> d
     impressions or engagements. The rung sums posts and stories, so a Notion
     count goes to posts with stories at zero; impressions and engagements stay
     on the export, and nothing reads them today.
+
+    The export stops wherever it was last regenerated, so a count from it
+    says how far it reaches: `postsThrough` is the last day in the file,
+    `postsEndsFirst` that it stops before this window starts (the count is
+    unknown, not zero) and `postsPartial` that it stops inside the window
+    (the count runs to postsThrough only). The Notion log is read live, so a
+    count from it carries none of these.
     """
     ct = content.iloc[0:0]
     if code:
@@ -450,6 +457,20 @@ def social_block(content: pd.DataFrame, ap: pd.DataFrame, code, start, end) -> d
         out["posts"] = posts_in(ap, code, "brand", start, end) if code else 0
         out["stories"] = 0
         out["postsSource"] = "notion"
+    # how far the export reaches, so a window it stops short of reads as
+    # unknown rather than as a real zero; any fault reading it leaves no date
+    out["postsThrough"], out["postsEndsFirst"], out["postsPartial"] = None, False, False
+    if out["postsSource"] == "emplifi":
+        try:
+            last = content["Date"].max() if len(content) and "Date" in content.columns else None
+            if last is not None and not pd.isna(last):
+                through = pd.Timestamp(last).date()
+                s0, s1 = pd.Timestamp(start).date(), pd.Timestamp(end).date()
+                out["postsThrough"] = through.isoformat()
+                out["postsEndsFirst"] = bool(through < s0)
+                out["postsPartial"] = bool(s0 <= through < s1)
+        except (TypeError, ValueError, AttributeError):
+            out["postsThrough"], out["postsEndsFirst"], out["postsPartial"] = None, False, False
     # the artist's own account, always the Notion log - there is no other source
     out["artistPosts"] = None if (ap is None or ap.empty) else (
         posts_in(ap, code, "artist", start, end) if code else 0)

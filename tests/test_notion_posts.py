@@ -84,4 +84,25 @@ assert notion_covers(None, D(2026, 1, 1), D(2026, 1, 31)) is False
 s = social_block(CONTENT, LOG, None, D(2026, 1, 1), D(2026, 1, 31))
 assert s["posts"] == 0 and s["artistPosts"] == 0, s
 
+# --- how far the export reaches: its last row, 2026-03-20 here ---------------
+# a window it covers carries no marker
+s = social_block(CONTENT, NONE, "A_LE_26", D(2026, 1, 1), D(2026, 1, 31))
+assert s["postsThrough"] == "2026-03-20" and not s["postsEndsFirst"] and not s["postsPartial"], s
+# a window it stops inside: the count runs to its last day only
+s = social_block(CONTENT, NONE, "A_LE_26", D(2026, 3, 1), D(2026, 4, 30))
+assert s["postsPartial"] and not s["postsEndsFirst"] and s["posts"] == 1, s
+# a window it stops before: no count to give, which is not a zero
+s = social_block(CONTENT, NONE, "A_LE_26", D(2026, 5, 1), D(2026, 5, 31))
+assert s["postsEndsFirst"] and not s["postsPartial"] and s["posts"] == 0, s
+# the last day of the window is covered once the export reaches it
+s = social_block(CONTENT, NONE, "A_LE_26", D(2026, 3, 1), D(2026, 3, 20))
+assert not s["postsPartial"] and not s["postsEndsFirst"], s
+# the Notion log is read live: it has no reach to state
+s = social_block(CONTENT, LOG, "A_LE_26", D(2026, 1, 1), D(2026, 1, 31))
+assert s["postsSource"] == "notion" and s["postsThrough"] is None, s
+assert not s["postsEndsFirst"] and not s["postsPartial"], s
+# nor does an empty export
+s = social_block(CONTENT.iloc[0:0], NONE, "A_LE_26", D(2026, 1, 1), D(2026, 1, 31))
+assert s["postsThrough"] is None and not s["postsEndsFirst"] and not s["postsPartial"], s
+
 print("notion posts: all cases ok")

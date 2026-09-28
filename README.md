@@ -421,7 +421,11 @@ in that release's window, so campaigns that ran before the log existed keep the 
 they have. Notion records a row per post and no format, so a Notion count goes to
 `posts` with `stories` at zero; `impressions` and `engagements` stay on the export, and
 nothing reads them today. `social.postsSource` on the snapshot says which source a
-release used.
+release used. A count from the export says how far the export reaches
+(`social.postsThrough`, its last day): where it stops before the release's window the AA Meta
+Posts rung shows a dash rather than a zero, and where it stops inside the window the rung
+reads "Posts to 13 Aug". Setting `NOTION_TOKEN` on the deploy (or regenerating the export)
+is what brings the count up to date.
 
 **Manual (local):** drop the source exports into `sources/` (file names in `etl/*.py`
 headers), then:
