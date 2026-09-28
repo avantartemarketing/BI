@@ -31,6 +31,8 @@ const app = spawn(process.execPath, [path.join(ROOT, "server", "index.js")], {
     LAYOUT_PATH: path.join(tmp, "layout.json"), SAVED_INPUTS_PATH: path.join(tmp, "inputs.saved.json"),
     TARGETS_LOG: path.join(tmp, "targets.log"), DECISIONS_PATH: path.join(tmp, "decisions.log"),
     SLACK_STATE_PATH: path.join(tmp, "slack.json"),
+    // the build a boot or a save runs writes its pages here, not into the checkout
+    APP_DATA_PATH: path.join(tmp, "app"),
   },
   stdio: ["ignore", "pipe", "pipe"],
 });

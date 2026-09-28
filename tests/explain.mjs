@@ -4,7 +4,7 @@
  * into explanations that exist on the same page, add its parts up to the
  * figure, and read cleanly: no em dash, no "undefined", no NaN. */
 import assert from "node:assert";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { EXPLAIN, explain, asText, roundParts } from "../web/src/explain/explanations.mjs";
 import { SOURCES, sourceRow } from "../web/src/explain/sources.mjs";
 import { preorderUnits } from "../web/src/explain/explanations.mjs";
@@ -12,10 +12,11 @@ import { inDraw } from "../shared/sellThrough.mjs";
 import { fmt, fmtPct, fmtSigned } from "../web/src/format.mjs";
 
 const root = new URL("../data/app/", import.meta.url);
-const files = [
-  ...readdirSync(new URL("releases/", root)).filter((f) => f.endsWith(".json")).map((f) => new URL(`releases/${f}`, root)),
-  ...readdirSync(new URL("derived/", root)).filter((f) => f.endsWith(".json")).map((f) => new URL(`derived/${f}`, root)),
-];
+// derived/ is the build's own output and not in the repo: a fresh checkout has none
+const pages = (dir) => (existsSync(new URL(dir, root))
+  ? readdirSync(new URL(dir, root)).filter((f) => f.endsWith(".json")).map((f) => new URL(`${dir}${f}`, root))
+  : []);
+const files = [...pages("releases/"), ...pages("derived/")];
 assert.ok(files.length >= 5, "the snapshots on file");
 
 /* ---- roundParts: whole parts that add up to the rounded whole ---- */

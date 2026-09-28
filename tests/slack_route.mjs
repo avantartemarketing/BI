@@ -59,6 +59,8 @@ const app = spawn(process.execPath, [path.join(ROOT, "server", "index.js")], {
     TARGETS_LOG: path.join(tmp, "targets.log"), DECISIONS_PATH: path.join(tmp, "decisions.log"),
     SLACK_STATE_PATH: path.join(tmp, "slack.json"), SLACK_STATE_FALLBACK_PATH: path.join(tmp, "slack.json"),
     SLACK_BOT_TOKEN: "xoxb-test", SLACK_API: `${slackBase}/api/chat.postMessage`,
+    // the build a boot or a save runs writes its pages here, not into the checkout
+    APP_DATA_PATH: path.join(tmp, "app"),
   },
   stdio: ["ignore", "pipe", "pipe"],
 });
