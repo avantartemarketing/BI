@@ -81,12 +81,11 @@ all. The card says how many entrants moved and where they went.
 The 0.8 is the entry → order rate (80% of eligible entries historically become
 orders). An entry made as a PRE-ORDER converts higher, at 0.95: the card is
 already authorised, so it is charged at the draw rather than invoiced
-afterwards. Both rates can be set per release on the Target setting tab,
-alongside each product's name and edition size, and a product can set its own
-pre-order rate where its draw has already been run and those cards have
-already been charged. Sales the draw cannot name a product for
-(private room, pre-orders) are shown at release level rather than guessed onto
-a product.
+afterwards. Both rates are the release's: they can be set on the Target setting
+tab, alongside each product's name and edition size, and every product converts
+at the same two (a product no longer carries a pre-order rate of its own). Sales
+the draw cannot name a product for (private room, pre-orders) are shown at
+release level rather than guessed onto a product.
 
 **Direct as a source.** The Overview has a Direct switch. As a channel, Direct
 is what the funnel export attributes to it. Spread, its sessions, entries and
