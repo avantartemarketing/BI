@@ -2031,9 +2031,13 @@ The zero-conversion rules are now applied (`zero_conversion_decrease`,
 The build enumerates every `simple_release_name` in the funnel data and derives a record
 per release (`discover_releases`): id (slug of the name), artist / title / quarter (the name
 is always `Artist · Title · YYYY Qn`), dates from the campaign clock (§1.5), a campaign code
-guessed from the email and content feeds, and traffic totals. Every sidebar row, a targeted
-one too, carries the quarter, the sessions in its window and the last day it was seen.
-Releases with target inputs on
+guessed from the email and content feeds, and traffic totals. The name is the export's own
+and the join key, so its quarter stands even where the campaign closes in another; the build
+prints that and keeps it as the release's `dates_note` ("the name says 2027 Q1, but the
+campaign closes 2026-10-15 (2026 Q4)"), for the name to be corrected upstream, and the
+sidebar's tooltip shows the quarter it closes in beside the name's. Every sidebar row, a
+targeted one too, carries the quarter, the sessions in its window and the last day it was
+seen. Releases with target inputs on
 file take the full build (§5-§9); the rest take an actuals-only build (`build_actuals`) that
 emits the same snapshot shape with every target-derived field `null` and `targeted: false`.
 

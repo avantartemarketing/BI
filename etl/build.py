@@ -3274,6 +3274,15 @@ def discover_releases(at: pd.DataFrame, as_of: date, codes: set[str]) -> list[di
             "first_seen": st["first"].isoformat(), "last_seen": st["last"].isoformat(),
             "sessions": float(st["sessions"]), "entries": float(st["entries"]), "units": float(st["units"]),
         })
+    # The quarter is the name's, and the name is the funnel export's own and
+    # the join key, so it stands; where the campaign closes in another
+    # quarter the build says so, for the name to be corrected upstream
+    for r in out:
+        closes = pricing.quarter_of(pd.Timestamp(r["launch_end"])) if r["quarter"] and r["launch_end"] else ""
+        if closes and closes != r["quarter"]:
+            said = f"the name says {r['quarter']}, but the campaign closes {r['launch_end']} ({closes})"
+            r["dates_note"] = r["dates_note"] or said
+            print(f"{r['release_name']}: {said} - the name comes from the funnel export; correct it there")
     return out
 
 

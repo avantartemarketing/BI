@@ -49,16 +49,25 @@ async function getJSON(url) {
 const STATUS_LABEL = { live: "in flight", upcoming: "upcoming", closed: "closed", catalogue: "catalogue" };
 
 /* Search across every release the funnel data mentions - artist, title,
- * quarter, campaign code or id - keeping the index's own order (in flight,
- * then closed most recent first, then catalogue by traffic). */
+ * quarter (the name's and the one it closes in), campaign code or id -
+ * keeping the index's own order (in flight, then closed most recent first,
+ * then catalogue by traffic). */
 function searchReleases(releases, q) {
   const needle = q.trim().toLowerCase();
   if (!needle) return [];
   const terms = needle.split(/\s+/);
   return releases.filter((r) => {
-    const hay = `${r.name} ${r.releaseName} ${r.quarter || ""} ${r.id}`.toLowerCase();
+    const hay = `${r.name} ${r.releaseName} ${r.quarter || ""} ${closeQuarter(r) || ""} ${r.id}`.toLowerCase();
     return terms.every((t) => hay.includes(t));
   });
+}
+
+/* The quarter a dated release closes in ("2026 Q4"), from its window end.
+ * The quarter in a release's name is the funnel export's and can disagree. */
+function closeQuarter(r) {
+  if (!r.windowEnd) return null;
+  const d = new Date(r.windowEnd + "T00:00:00Z");
+  return Number.isNaN(d.getTime()) ? null : `${d.getUTCFullYear()} Q${Math.floor(d.getUTCMonth() / 3) + 1}`;
 }
 
 export default function App() {
@@ -274,6 +283,9 @@ function ReleaseRow({ r, asOf, active, onClick }) {
   if (state) rows.push({ label: "Pace", value: STATE[state].word, color: STATE[state].color });
   rows.push({ label: "Status", value: STATUS_LABEL[status] || status });
   if (r.quarter) rows.push({ label: "Quarter", value: r.quarter });
+  // the name's quarter is upstream's; where the window closes in another, say so
+  const closesIn = status === "catalogue" ? null : closeQuarter(r);
+  if (closesIn && closesIn !== r.quarter) rows.push({ label: "Closes in", value: closesIn, color: C.amber });
   // an upcoming launch whose window Airtable says has opened, with nothing in the funnel yet, does not "open soon"
   if (!targeted) rows.push({ label: "Targets", value: status !== "upcoming" ? "not set - actuals only"
     : clock && clock.opensIn > 0 ? "not set - opens soon" : "not set - announce passed, no funnel rows yet" });
