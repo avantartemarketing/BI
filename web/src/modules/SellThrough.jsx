@@ -35,8 +35,10 @@
  * allocator applies at close (shared/sellThrough.mjs).
  * The card carries no copy about it: the account of who moved where is in
  * the popup of the draw-winners key, the split of sales the feed cannot name
- * a product for in the paid key's, and the editions are checked where they
- * are typed, on the Target setting tab.
+ * a product for in the paid key's, and the editions are set where they are
+ * typed, on the Target setting tab. Where the works' editions do not add up
+ * to the release's, an amber "editions add to N" beside the title says so
+ * (docs 6.3), and the Target setting tab carries the same note.
  *
  * "Post to Slack" sends the card as a Block Kit message composed on the
  * server from the same snapshot by the same rules (server/slack.js), at the
@@ -47,9 +49,10 @@
  * and the channels, and here they only crowded the reading. Each row is the
  * product against its own edition and nothing else.
  *
- * Nothing in the head but the title and the horizon: no toggle and no rate,
- * by decision. Every bar is its product against its own edition; the rate
- * the estimate runs at is in the headline's popup and in the Slack message.
+ * Nothing in the head but the title and the horizon (and the editions flag
+ * when they do not add up): no toggle and no rate, by decision. Every bar is
+ * its product against its own edition; the rate the estimate runs at is in
+ * the headline's popup and in the Slack message.
  * Without product editions the card runs on units and says what is
  * missing. Without the draw feed at all it is one row, the release, as
  * before. */
@@ -292,6 +295,23 @@ export default function SellThrough({ snap, horizon = "today" }) {
       : channel
         ? `Post this card, as a message with a table of the works, to #${channel}`
         : "Set a Slack channel for this release on the Target setting tab, then this posts the card there";
+  /* The works' editions do not add up to the release's (docs 6.3): the card
+     says so beside its title, with both figures in the popup, rather than
+     reading one edition in the headline and another in the rows unremarked.
+     Which is right is for the Target setting tab, where the editions are set. */
+  const mismatch = fromFeed && !!st.editionMismatch && finite(st.editionSum) && edition !== null;
+  const mismatchFlag = mismatch ? (
+    <span {...t.props({
+      head: "Editions do not add up",
+      rows: [
+        { label: "The works' editions, added up", value: fmt(st.editionSum) },
+        { label: "The release's edition", value: fmt(edition) },
+      ],
+      body: `The headline, the room left and the hero read the release's ${fmt(edition)}; each row reads its own work's edition. One of the two is wrong: check them on the Target setting tab.`,
+    })} style={{ fontSize: 11.5, fontWeight: 500, color: C.amber, whiteSpace: "nowrap", cursor: "help" }}>
+      editions add to {fmt(st.editionSum)}
+    </span>
+  ) : null;
   const slackButton = snap && snap.id ? (
     <button
       className="btn secondary small"
@@ -312,7 +332,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
       dot={GROUP_DOTS.outcome}
       title="Sell-through by product"
       badge={<HorizonBadge horizon={horizon} />}
-      right={slackButton}
+      right={mismatchFlag ? <>{mismatchFlag}{slackButton}</> : slackButton}
     >
       {/* the headline line: the release's figure on the left, its key on the
           right, one line, spaced from the head as every card's lead is (an
@@ -415,7 +435,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
                   </div>
                   <ProductBar row={r} close={close} maxV={maxFor(r)} tips={tips} height={barH} radius={barR} />
                   <div className="num" {...t.props(nameTip)} style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 12.5, color: C.muted }}>
-                    <Ex k={rx.k} arg={rx.arg}>{fig.units}</Ex>
+                    {/* the units column explains its units, the % column its % */}
+                    <Ex k={rx.k} arg={{ ...rx.arg, as: "units" }}>{fig.units}</Ex>
                   </div>
                   <div className="num" style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 13, fontWeight: 600, color: C.ink }}>
                     {fig.pct !== null ? <Ex k={rx.k} arg={rx.arg}>{fig.pct}</Ex> : null}

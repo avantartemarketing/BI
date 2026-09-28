@@ -1527,7 +1527,9 @@ inputs, `etl/release_inputs.json`, or `data/inputs.saved.json` (`SAVED_INPUTS_PA
 release has been saved on the tab, since that record then stands in for the repo's; the tab
 sends them back as they came. A single product with no edition takes the
 release's; with several products the card runs on units and says so until every product has
-one, and it flags editions that do not add up to the release's. `entry_conversion_rate`
+one, and it flags editions that do not add up to the release's (`sellthrough.editionMismatch`:
+an amber "editions add to N" beside the card's title, and a note on the Target setting tab,
+which leave the figures as they are until one of the two is corrected). `entry_conversion_rate`
 (optional, per release) is the rate the prediction converts entries in hand at, and the rate
 the whole page runs on: the secured-units currency, the paid model's converting entries and
 the targets' eligible entries (§6.3½).

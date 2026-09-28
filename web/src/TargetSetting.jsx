@@ -768,6 +768,11 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     </Field>
   );
   const legacy = inp.legacy_economics;
+  // the last build found the works' editions do not add up to the release's
+  // (docs 6.3): said here, where both are set, as on the Sell-through card
+  const stEd = snap.sellthrough || {};
+  const editionNote = stEd.editionMismatch && Number.isFinite(stEd.editionSum) && Number.isFinite(stEd.edition)
+    ? { sum: stEd.editionSum, release: stEd.edition } : null;
   const airtableMatch = (sourced.airtable || {}).match || "none";
   const airtableNote = (sourced.airtable || {}).note || "";
 
@@ -1008,6 +1013,13 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
               <b>Release-level figures still in force.</b> This release was set up before the model went per product: target {fmt(legacy.edition_size)}{legacy.edition_total > legacy.edition_size ? ` of ${fmt(legacy.edition_total)}` : ""} units at {fmtMoney(legacy.unit_price || 0, 0)},
               artist {fmtMoney((legacy.artist_profit || 0) / (legacy.edition_size || 1), 0)} and AA {fmtMoney((legacy.aa_group_profit || 0) / (legacy.edition_size || 1), 0)} per unit.
               The products below are what Airtable holds; the totals switch to them when these are cleared.
+            </Notice>
+          )}
+          {editionNote && (
+            <Notice>
+              <b>The works' editions add up to {fmt(editionNote.sum)}; the release's edition is {fmt(editionNote.release)}.</b> The page reads {fmt(editionNote.release)} as
+              the whole edition (the hero's sellout, the sell-through headline and the room left) while each work's row reads its own. One of the two is
+              wrong: check the works' editions below, and whether {fmt(editionNote.release)} is the whole edition or only the target.
             </Notice>
           )}
           <ProductsGrid products={products} econ={econ} editing={editing} onField={onField} onFieldAll={onFieldAll} onName={onName}

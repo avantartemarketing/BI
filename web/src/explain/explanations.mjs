@@ -869,20 +869,29 @@ EXPLAIN["st.head"] = (a, { snap: s }) => {
   if (rDrafts > 0) steps.push(seg`Add the draft orders awaiting payment: ${n(rDrafts)}.`);
   if (draw > 0) steps.push(seg`Add the orders expected from the draw: ${drill(n(rDraw), "st.draw")}.`);
   if (close && future > 0) steps.push(seg`Add the units still to come by the close, the projection's further units spread over the room left: ${n(rFuture)}.`);
-  if (ed) steps.push(seg`${n(units)} of the ${n(ed)} units in the edition${head >= 1 && units > ed ? ", held at the whole edition" : ""}.`);
-  const value = ed ? `${Math.round(head * 100)}%` : n(units);
+  // the units column of a release drawn as one row explains its units, not the %
+  const asUnits = !!(a && a.as === "units");
+  if (ed && !asUnits) steps.push(seg`${n(units)} of the ${n(ed)} units in the edition${head >= 1 && units > ed ? ", held at the whole edition" : ""}.`);
+  const pctText = ed ? `${Math.round(head * 100)}%` : null;
+  const value = asUnits ? (ed ? `${n(units)} of ${n(ed)}` : n(units)) : pctText ?? n(units);
+  const notes = ["No target or benchmark on this card: it counts against the edition. The rows below add up to it."];
+  if (st.editionMismatch && finite(st.editionSum) && ed) {
+    notes.push(`The works' editions add up to ${n(st.editionSum)}, not the ${n(ed)} the release is set at: the headline reads the release's, each row its own work's. One of the two is wrong; both are set on the Target setting tab.`);
+  }
   return {
     where: "Sell-through by product", when: close ? "At close" : "Today",
-    name: close ? "Sell-through at close" : "Sell-through", value, unit: ed ? `of the ${n(ed)} edition` : "units",
+    name: close ? "Sell-through at close" : "Sell-through", value,
+    unit: asUnits ? (close ? "units expected by the close" : "units spoken for") : ed ? `of the ${n(ed)} edition` : "units",
     say: close ? "The share of the edition expected to be sold by the close." : "The share of the edition spoken for today: paid, raised on draft orders, or expected from the draw.",
-    steps, total: { v: value, label: ed ? "of the edition" : "units" },
+    steps, total: asUnits ? { v: n(units), label: ed ? `of the ${n(ed)} units in the edition` : "units" } : { v: value, label: ed ? "of the edition" : "units" },
+    compare: asUnits && pctText ? [{ label: "Sell-through", v: pctText, k: "st.head", arg: { close }, note: "The same units as a share of the edition." }] : [],
     sources: [
       { key: "orders", gave: "Units paid and draft orders, work by work" },
       { key: "entries", gave: "The entries still in the draw" },
       { key: "settings", gave: rateSource(s) },
       ...(close ? [{ key: "funnel", gave: "The projection's further units" }] : []),
     ],
-    notes: ["No target or benchmark on this card: it counts against the edition. The rows below add up to it."],
+    notes,
     method: "Data model 6.3",
   };
 };
@@ -908,13 +917,22 @@ EXPLAIN["st.row"] = (a, { snap: s }) => {
     steps.push(seg`Add the ${n(r.allocated)} units the people still in the draw are counted on here, at ${pct(rate)}${finite(pre) && pre !== rate ? ` (${pct(pre)} for pre-order entries)` : ""}${held ? ", held to the room left" : ""}: ${n(rShown)}.`);
   }
   if (close && future > 0) steps.push(seg`Add its share of the units still to come by the close: ${n(rFuture)}.`);
-  if (finite(r.edition) && r.edition > 0) steps.push(seg`${n(units)} of its ${n(r.edition)} edition.`);
-  const value = finite(pr) ? `${Math.round(pr * 100)}%` : n(units);
+  const hasEd = finite(r.edition) && r.edition > 0;
+  // the row's units column ("208 of 1,000") explains its units, closing on
+  // them in the total line; the % column its %
+  const asUnits = !!(a && a.as === "units");
+  if (hasEd && !asUnits) steps.push(seg`${n(units)} of its ${n(r.edition)} edition.`);
+  const pctText = finite(pr) ? `${Math.round(pr * 100)}%` : null;
+  const value = asUnits ? (hasEd ? `${n(units)} of ${n(r.edition)}` : n(units)) : pctText ?? n(units);
   return {
     where: "Sell-through by product", when: close ? "At close" : "Today",
-    name: r.name, value, unit: finite(r.edition) ? `of its ${n(r.edition)} edition` : "units",
-    say: `The share of ${r.name}'s edition ${close ? "expected to be sold by the close" : "spoken for today"}.`,
-    steps, total: { v: value, label: finite(r.edition) ? "of the edition" : "units" },
+    name: r.name, value,
+    unit: asUnits ? (close ? "units expected by the close" : "units spoken for") : finite(r.edition) ? `of its ${n(r.edition)} edition` : "units",
+    say: asUnits
+      ? `${r.name}'s units ${close ? "expected to be sold by the close" : "spoken for today"}: paid, raised on draft orders, or expected from the draw.`
+      : `The share of ${r.name}'s edition ${close ? "expected to be sold by the close" : "spoken for today"}.`,
+    steps, total: asUnits ? { v: n(units), label: hasEd ? `of its ${n(r.edition)} edition` : "units" } : { v: value, label: finite(r.edition) ? "of the edition" : "units" },
+    compare: asUnits && pctText ? [{ label: "Sell-through", v: pctText, k: "st.row", arg: { key: r.key, close }, note: "The same units as a share of its edition." }] : [],
     sources: [
       { key: "orders", gave: "Its units paid and draft orders" },
       { key: "entries", gave: "The entries naming it" },

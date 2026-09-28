@@ -59,7 +59,11 @@ function cases(s) {
     if (g && s.benchmark) out.push(["funnel.rung", { group: c.name, label: "Sessions", kind: "vol", unit: "count", v: g.sessions_actual, target: g.sessions_benchmark * k, bm: g.sessions_benchmark, k }]);
   }
   out.push(["traj.end", { sel: "all" }]);
-  for (const p of (s.sellthrough && s.sellthrough.products) || []) both("st.row", { key: p.key });
+  for (const p of (s.sellthrough && s.sellthrough.products) || []) {
+    both("st.row", { key: p.key });
+    both("st.row", { key: p.key, as: "units" });   // the row's units column
+  }
+  both("st.head", { as: "units" });                  // a release drawn as one row
   for (const h of ["today", "close"]) {
     const wf = s.waterfall;
     const v = wf && (h === "today" ? wf.today || wf : wf);
@@ -134,11 +138,21 @@ for (const f of files) {
         "st.head": () => {
           const st = s.sellthrough, ed = st.edition;
           const units = st.sold + (st.drafts ?? 0) + (st.soldPredicted ?? 0);
+          // the units column of a release drawn as one row
+          if (arg.as === "units") {
+            const all = units + (close ? st.futureEntriesPredicted ?? 0 : 0);
+            return ed ? `${fmt(all)} of ${fmt(ed)}` : fmt(all);
+          }
           const head = close ? st.pct ?? 0 : Math.min(units / ed, 1);
           return ed ? Math.round(head * 100) + "%" : null;
         },
         "st.row": () => {
           const r = s.sellthrough.products.find((p) => p.key === arg.key);
+          if (arg.as === "units") {
+            // the units column: SellThrough.jsx unitsOf, "208 of 1,000"
+            const units = (r.sold ?? 0) + (r.soldAssumed ?? 0) + (r.drafts ?? 0) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0);
+            return r.edition > 0 ? `${fmt(units)} of ${fmt(r.edition)}` : fmt(units);
+          }
           const p = close ? r.pctClose : r.pct;
           return p === null || p === undefined ? null : Math.round(p * 100) + "%";
         },
@@ -146,6 +160,12 @@ for (const f of files) {
         "paid.units": () => {
           const c = s.channels.find((x) => x.key === "paid");
           return Math.round(((close ? c.proj : c.now) / (close ? c.target : c.exp)) * 100) + "%";
+        },
+        // the trajectory's end: All channels is the hero's pair, a channel its own row
+        "traj.end": () => {
+          if (arg.sel === "all") return Math.round((h.projected / h.target) * 100) + "%";
+          const c = s.channels.find((x) => x.key === arg.sel);
+          return Math.round(((c.proj ?? c.now ?? 0) / c.target) * 100) + "%";
         },
         // the Channels view's step, whole units that add up (Waterfall.jsx); the
         // card only asks for Today where the snapshot has a Today walk
@@ -292,6 +312,16 @@ assert.ok(paidCases >= 30, `paid units cases: ${paidCases}`);
   assert.ok(/more would take the ROI at the close under 1\.0/.test(segText(at({ ...b, paced: false, recommended: 638.66 }).steps.at(-1))));
   // the forced decrease reads what the build tests: the trailing 3-day ROI, day by day
   assert.ok(/trailing 3-day ROI has been below target on each of the last three full days/.test(segText(at({ ...b, cap: "forced_decrease", paced: false }).steps.at(-1))));
+}
+
+/* ---- editions that do not add up are said ---- */
+{
+  const j = JSON.parse(readFileSync(new URL("releases/julianschnabel_le_26.json", root), "utf8"));
+  if (j.sellthrough && j.sellthrough.editionMismatch) {
+    const head = explain("st.head", {}, { snap: j, st: null });
+    assert.ok(head.notes.some((x) => x.includes(`add up to ${fmt(j.sellthrough.editionSum)}, not the ${fmt(j.sellthrough.edition)}`)), "the headline's working names the mismatch");
+  }
+  assert.ok(!explain("st.head", {}, wctx).notes.some((x) => /editions add up to/.test(x)), "and only where there is one");
 }
 
 console.log(`explain: ${shown} explanations of ${checked} figures across ${files.length} snapshots ok`);

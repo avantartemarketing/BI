@@ -453,7 +453,13 @@ export default function Trajectory({ snap }) {
   const bmToday = hasBm ? s.bmExp : null;
   const showToday = targeted;
 
-  const projPct = targeted && s.target > 0 ? Math.round((s.proj / s.target) * 100) : null;
+  // All channels ends on the hero's projection over the hero's target, the pair
+  // the hero and the explainer print: the channels' sums are kept to 0.1 of a
+  // unit and can round to the other side of a half percent (98% against 99%)
+  const hero = snap.hero || {};
+  const heroPct = (byChannel || sel === "all") && Number.isFinite(hero.projected) && hero.target > 0
+    ? Math.round((hero.projected / hero.target) * 100) : null;
+  const projPct = targeted && s.target > 0 ? heroPct ?? Math.round((s.proj / s.target) * 100) : null;
   // axis: % of target when there is one, secured units when there is not
   const axisTop = targeted ? s.target : yTopV / 1.02;
   const axisLabelTop = targeted ? "100%" : fmt(axisTop);
