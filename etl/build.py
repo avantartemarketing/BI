@@ -4633,21 +4633,25 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "convByGroup": {g: round(v, 6) for g, v in profile["conv"].items()},
             # the channels set aside for this release and the basket's full
             # medians before they were (§4.3): what the page says was set
-            # aside, and what the browser re-reads as the switches are flipped
+            # aside, and what the browser re-reads as the switches are flipped.
+            # The Target setting tab rebuilds the targets from these, so they
+            # carry the build's own precision, not the cards' tenth of a unit:
+            # rounded, they put the tab's paid budget EUR 1-12 off the page's
             "channelsOff": list(profile.get("channels_off") or []),
-            "unitsAll": round(profile.get("units_all", profile["units"]), 1),
-            "sessionsAll": round(profile.get("sessions_all", profile["sessions"]), 1),
-            "entriesAll": round(profile.get("entries_all", profile["entries"]), 1),
-            "unitsP25All": round(profile.get("units_p25_all", profile["units_p25"]), 1),
-            "unitsP75All": round(profile.get("units_p75_all", profile["units_p75"]), 1),
-            "unitsByGroupAll": {g: round(v, 1) for g, v in (profile.get("units_by_group_all") or bm_units).items()},
-            "sessionsByGroupAll": {g: round(v, 1) for g, v in (profile.get("sessions_by_group_all") or bm_sessions).items()},
+            "unitsAll": round(profile.get("units_all", profile["units"]), 6),
+            "sessionsAll": round(profile.get("sessions_all", profile["sessions"]), 6),
+            "entriesAll": round(profile.get("entries_all", profile["entries"]), 6),
+            "unitsP25All": round(profile.get("units_p25_all", profile["units_p25"]), 6),
+            "unitsP75All": round(profile.get("units_p75_all", profile["units_p75"]), 6),
+            "unitsByGroupAll": {g: round(v, 6) for g, v in (profile.get("units_by_group_all") or bm_units).items()},
+            "sessionsByGroupAll": {g: round(v, 6) for g, v in (profile.get("sessions_by_group_all") or bm_sessions).items()},
             "convByGroupAll": {g: round(v, 6) for g, v in (profile.get("conv_all") or profile["conv"]).items()},
             "privateRoomShare": round(profile["private_room_share"], 4),
             "paidBudget": round(bm_units["paid"] * targets["paid"]["cost_per_purchase"], 2),
             # what a paid unit cost the basket's launches, and how many had a
-            # reading (0 members: the panel constant prices the budget)
-            "costPerPurchase": round(float(profile.get("cost_per_purchase") or 0), 2),
+            # reading (0 members: the panel constant prices the budget); the
+            # tab prices the budget with it, so at the build's precision too
+            "costPerPurchase": round(float(profile.get("cost_per_purchase") or 0), 6),
             "costPerPurchaseN": int(profile.get("n_costed") or 0),
             # the people behind the basket's units, at the rate the target
             # holds. The rate is held at the benchmark, so the whole uplift

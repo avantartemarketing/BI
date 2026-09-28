@@ -191,7 +191,78 @@ def test_js_agrees() -> None:
     print(f"js agrees: ok over {len(cases)} cases")
 
 
+def test_tab_round_trip() -> None:
+    """The Target setting tab, with nothing edited, rebuilds the header from
+    the snapshot's benchmark block (profileOf, TargetSetting.jsx). Published
+    at the cards' tenth of a unit, that put its paid budget EUR 1-12 off the
+    one the page prints (Abdulnasser EUR 454 against EUR 444) until the same
+    basket was picked again. Built snapshots, re-read in JS, give the page's
+    own targets.paid.budget and benchmark.paidBudget to the cent."""
+    import random
+    import pandas as pd
+    emails, content, people = build.load_emails(), build.load_content(), build.load_people()
+    artist_posts, panel = build.load_artist_posts(), B.load_panel()
+    curves = json.loads((ROOT / "data" / "app" / "curves.json").read_text())
+    camp = "Synthetic · Enter draw"
+    snaps = []
+    for raw in build.INPUTS["releases"]:
+        r = build.resolve_release(raw, None, {})
+        if not r.get("edition_size") or not r.get("unit_price") or not r.get("announce_date"):
+            continue
+        ann = dt.date.fromisoformat(r["announce_date"])
+        as_of = ann + dt.timedelta(days=4)
+        for off in ([], ["referral_artist"]):
+            cfg = dict(r, release_name=f"Synthetic {r['id']} · Work · 2026 Q3", campaign_name=camp,
+                       campaign_names=[camp], channels_off=off)
+            rnd, rows, d = random.Random(3), [], ann
+            while d <= as_of:
+                for ch, sess, ent in (("AA Email Man", 300, 1.2), ("Direct", 200, 0.8), ("Paid Social", 250, 0.6)):
+                    rows.append({"channel": ch, "event_date": d, "simple_release_name": cfg["release_name"],
+                                 "campaign_stage": "launch", "Sessions_Total": sess * (1 + 0.1 * rnd.random()),
+                                 "Total_Product_Units": ent * 0.3, "Product_Units_Private_Room": 0.0,
+                                 "Draw_Entries_Total_Units_No_Conv": ent * 0.7, "Draw_Entries_Eligible_Units": ent,
+                                 "days_since_announcement": (d - ann).days, "days_until_launch": 20,
+                                 "pct_days_since_announcement": 0.1, "pct_days_until_launch": 0.9})
+                d += dt.timedelta(days=1)
+            spend = pd.DataFrame([{"campaign_name": camp, "spend_date": ann + dt.timedelta(days=i), "impressions": 1000,
+                                   "reach": 800, "link_clicks": 40, "spend": 500.0} for i in range(5)])
+            snap = build.build_release(cfg, pd.DataFrame(rows), spend, emails, content, curves, as_of,
+                                       artist_posts, {}, None, panel, people)
+            if snap.get("benchmark"):
+                snaps.append((f"{r['id']} off={','.join(off) or '-'}", r, snap))
+        if len(snaps) >= 8:
+            break
+    assert len(snaps) >= 6, f"targeted releases built: {len(snaps)}"
+    payload = {
+        "bench": {k: build.BENCH[k] for k in ("eligible_entry_to_order", "cost_per_purchase", "budget_sense_check_max_pct_of_launch_value")},
+        "snaps": [{"name": name, "benchmark": s["benchmark"],
+                   # what the tab hands the model with nothing edited (TargetSetting.jsx)
+                   "inp": {"edition_size": r["edition_size"], "unit_price": r["unit_price"],
+                           "cost_per_purchase": r.get("cost_per_purchase"),
+                           "units_per_buyer": (s.get("targets") or {}).get("units_per_buyer") or 0,
+                           "entry_conversion_rate": r.get("entry_conversion_rate")}}
+                  for name, r, s in snaps],
+    }
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump(payload, f)
+        path = f.name
+    res = subprocess.run(["node", str(ROOT / "tests" / "channels_off_parity.mjs"), "--snaps", path],
+                         capture_output=True, text=True, check=True)
+    got = {x["name"]: x for x in json.loads(res.stdout)}
+    bad = []
+    for name, _r, s in snaps:
+        js = got[name]
+        for key, page, tab in (("targets.paid.budget", s["targets"]["paid"]["budget"], js["paid_budget"]),
+                               ("benchmark.paidBudget", s["benchmark"]["paidBudget"], js["bm_paid_budget"]),
+                               ("benchmark.k", s["benchmark"]["k"], round(js["k"], 4))):
+            if abs(float(page) - float(tab)) > 0.01:
+                bad.append(f"{name}: {key} page {page} tab {tab}")
+    assert not bad, "\n".join(bad)
+    print(f"tab round trip: ok over {len(snaps)} built snapshots")
+
+
 if __name__ == "__main__":
     test_profile_without_a_channel()
     test_targets_without_a_channel()
     test_js_agrees()
+    test_tab_round_trip()
