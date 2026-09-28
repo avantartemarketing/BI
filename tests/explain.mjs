@@ -10,7 +10,7 @@ import { SOURCES, sourceRow } from "../web/src/explain/sources.mjs";
 import { preorderUnits } from "../web/src/explain/explanations.mjs";
 import { inDraw } from "../shared/sellThrough.mjs";
 import { fmt, fmtPct, fmtSigned } from "../web/src/format.mjs";
-import { channelWalk } from "../web/src/figures.mjs";
+import { channelWalk, paidUnits } from "../web/src/figures.mjs";
 
 const root = new URL("../data/app/", import.meta.url);
 // derived/ is the build's own output and not in the repo: a fresh checkout has none
@@ -142,6 +142,11 @@ for (const f of files) {
           const p = close ? r.pctClose : r.pct;
           return p === null || p === undefined ? null : Math.round(p * 100) + "%";
         },
+        // the Paid spend card's units %: the Channels card's Paid column, one figure
+        "paid.units": () => {
+          const c = s.channels.find((x) => x.key === "paid");
+          return Math.round(((close ? c.proj : c.now) / (close ? c.target : c.exp)) * 100) + "%";
+        },
         // the Channels view's step, whole units that add up (Waterfall.jsx); the
         // card only asks for Today where the snapshot has a Today walk
         "wf.channel": () => {
@@ -246,5 +251,26 @@ assert.ok(paidStep(flat).includes("rises 0.03% a day"), `a small drift keeps its
 flat.paid.budget.elasticity = 0;
 flat.paid.budget.driftPerDay = 0;
 assert.ok(recWords(flat).includes("holds at today's") && !/rises|0\.0%/.test(recWords(flat)), `flat in spend and in time: ${recWords(flat)}`);
+
+/* ---- the paid units % is one figure: the Channels card's Paid column, the
+ * Paid spend card's bar (figures.mjs paidUnits) and the explanation ---- */
+let paidCases = 0;
+for (const f of files) {
+  const raw = JSON.parse(readFileSync(f, "utf8"));
+  for (const s of [raw, ...(raw.variants && raw.variants.direct_spread ? [{ ...raw, ...raw.variants.direct_spread }] : [])]) {
+    if (!(s.channels || []).some((c) => c.key === "paid")) continue;
+    for (const close of [false, true]) {
+      const ctx = { snap: s, st: null };
+      const units = explain("paid.units", { close }, ctx), chan = explain("channel.pct", { key: "paid", close }, ctx);
+      assert.strictEqual(!units, !chan, `${s.id}: both or neither`);
+      if (!units) continue;
+      const card = Math.round(paidUnits(s, close).pct * 100) + "%";
+      assert.strictEqual(units.value, chan.value, `${s.id} ${close ? "close" : "today"}: paid.units ${units.value} is channel.pct ${chan.value}`);
+      assert.strictEqual(card, chan.value, `${s.id} ${close ? "close" : "today"}: the Paid spend card's ${card} is the Channels card's ${chan.value}`);
+      paidCases++;
+    }
+  }
+}
+assert.ok(paidCases >= 30, `paid units cases: ${paidCases}`);
 
 console.log(`explain: ${shown} explanations of ${checked} figures across ${files.length} snapshots ok`);

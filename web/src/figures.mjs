@@ -1,6 +1,7 @@
 /* Figures more than one place prints, worked out once: a card, the
  * explainer (web/src/explain) and the tests all import them from here, so
  * the two cannot round or read apart. Plain JavaScript, no JSX. */
+import { paidDayFrac } from "./format.mjs";
 
 const finite = (v) => typeof v === "number" && Number.isFinite(v);
 
@@ -92,4 +93,34 @@ export function channelWalk(snap, { today = false } = {}) {
   let run = start;
   const steps = chans.map((c, i) => { const from = run; run += values[i]; return { ...c, value: values[i], from, to: run }; });
   return { start, outcome, hasBm, steps, beyond: over > 0 ? -over : 0, end: run };
+}
+
+/* ---- paid ---- */
+
+/* Paid's units against its target: the one figure the Channels card's Paid
+ * column, the Paid spend card's units bar and the paid.units explanation
+ * print. It is the paid channel row, the fields the Channels card divides
+ * (now and exp today, proj and target at close), so the three cannot round
+ * apart; a snapshot without a paid row falls back to the paid block. */
+export function paidUnits(snap, close = false) {
+  const s = snap || {};
+  const p = s.paid || {};
+  const c = (s.channels || []).find((x) => x && x.key === "paid");
+  const hasBm = !!s.benchmark;
+  let now, proj, target, bm;
+  if (c) {
+    now = c.now ?? 0;
+    proj = c.proj ?? now;
+    target = (close ? c.target : c.exp) ?? 0;
+    const b = close ? c.bm : c.bmExp;
+    bm = hasBm && finite(b) ? b : null;
+  } else {
+    const frac = paidDayFrac(s, close);
+    now = p.unitsToDate ?? 0;
+    proj = s.complete ? now : p.unitProjected ?? now;
+    target = (p.unitTarget ?? 0) * frac;
+    bm = hasBm && finite(p.benchmarkUnits) ? p.benchmarkUnits * frac : null;
+  }
+  const fill = close ? proj : now;
+  return { now, proj, fill, target, bm, pct: target > 0 ? fill / target : null, fromRow: !!c };
 }

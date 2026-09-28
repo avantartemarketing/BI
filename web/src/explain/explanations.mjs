@@ -19,7 +19,7 @@
  * or null when the figure is not on this page. Plain JavaScript (no JSX), so
  * tests/explain.mjs runs every builder against every snapshot on file. */
 import { fmt, fmtSigned, fmtPct, fmtDay, MINUS, paidDayFrac } from "../format.mjs";
-import { channelWalk } from "../figures.mjs";
+import { channelWalk, paidUnits } from "../figures.mjs";
 import { inDraw } from "../../../shared/sellThrough.mjs";
 
 /* ---- formatting ---- */
@@ -757,9 +757,11 @@ EXPLAIN["paid.units"] = (a, { snap: s }) => {
   const p = s.paid || {};
   const close = !!(a && a.close);
   const frac = paidDayFrac(s, close);
-  const now = p.unitsToDate ?? 0;
-  const fill = close ? (s.complete ? now : p.unitProjected ?? now) : now;
-  const target = (p.unitTarget ?? 0) * frac;
+  // the paid channel row, the operands the Channels card divides, so the
+  // Paid spend card, the Channels card and this print one percentage
+  const pu = paidUnits(s, close);
+  const fill = pu.fill, target = pu.target;
+  const whole = pu.fromRow ? (channelOf(s, "paid") || {}).target : p.unitTarget;
   const pc = ratio(fill, target);
   if (pc === null) return null;
   return {
@@ -767,9 +769,9 @@ EXPLAIN["paid.units"] = (a, { snap: s }) => {
     name: "Paid units against target", value: `${Math.round(pc * 100)}%`, unit: close ? "of paid's target, projected at close" : "of paid's target by today",
     say: "The units paid has secured against the share of its target due by now.",
     steps: [
-      close ? seg`Paid is projected to secure ${n(fill)} units by the close.` : seg`Paid has secured ${n(fill)} units so far: units paid on its orders plus its share of the entries still in the draw.`,
-      close ? seg`Its target is ${n(p.unitTarget)} units.` : seg`Its target is ${n(p.unitTarget)} units over the ${s.of - (p.paidStartDays ?? 1)} days it runs, evenly: ${pct(frac)} of them are gone, so ${n(target)} are due by today.`,
-      seg`${n(fill)} ÷ ${n(target)} = ${Math.round(pc * 100)}%.`,
+      close ? seg`Paid is projected to secure ${u(fill)} units by the close.` : seg`Paid has secured ${u(fill)} units so far: units paid on its orders plus its share of the entries still in the draw.`,
+      close ? seg`Its target is ${u(target)} units.` : seg`Its target is ${u(whole)} units over the ${s.of - (p.paidStartDays ?? 1)} days it runs, evenly: ${pct(frac)} of them are gone, so ${u(target)} are due by today.`,
+      seg`${u(fill)} ÷ ${u(target)} = ${Math.round(pc * 100)}%.`,
     ],
     total: { v: `${Math.round(pc * 100)}%`, label: "of target" },
     sources: [

@@ -22,6 +22,7 @@ import {
   Card, HorizonBadge, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip, dayElapsed, paidDayFrac,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import { paidUnits } from "../figures.mjs";
 
 const money = (v) => "€" + fmt(Math.round(v ?? 0));
 const moneyK = (v) => "€" + fmtK(v ?? 0);
@@ -171,8 +172,6 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   // paid set aside for this release (BENCHMARK_SPEC 4.3): the target and the
   // budget are zero by choice, and the card says so above the bars
   const paidOff = hasBm && (snap.benchmark.channelsOff || []).includes("paid");
-  const bmUnitsAll = hasBm && paid.benchmarkUnits !== null && paid.benchmarkUnits !== undefined
-    ? paid.benchmarkUnits : null;
   const bmSpendAll = hasBm && paid.benchmarkBudget !== null && paid.benchmarkBudget !== undefined
     ? paid.benchmarkBudget : null;
   const targetWord = close ? "Target" : "Target today";
@@ -180,16 +179,19 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const bmBody = "The median of the matched basket - what launches like this one typically reach.";
 
   // paid.daily carries draw ENTRIES; the target, the projection and the benchmark
-  // are all in secured units, so the bar reads paid.unitsToDate, the paid group's
-  // secured units - the figure the channels card's paid column shows, so the two
-  // cards cannot disagree. Summing the daily entries here put the bar over its
-  // own target on every release with a drop-off.
-  const unitsNow = Math.round(paid.unitsToDate ?? 0);
-  const unitsProj = complete ? unitsNow : (paid.unitProjected ?? unitsNow);
-  const unitsFill = close ? unitsProj : unitsNow;
-  const unitsTarget = (paid.unitTarget ?? 0) * dayFrac;
-  const unitsBm = bmUnitsAll === null ? null : bmUnitsAll * dayFrac;
-  const unitsPct = unitsTarget > 0 ? Math.round((unitsFill / unitsTarget) * 100) : null;
+  // are all in secured units, so the bar reads the paid group's secured units,
+  // off the paid channel row: the figures the channels card's paid column
+  // divides (figures.mjs paidUnits), so the two cards and the explainer print
+  // one percentage. Summing the daily entries here put the bar over its own
+  // target on every release with a drop-off, and rounding the units before
+  // dividing moved the percentage off the channels card's on a small paid volume.
+  const pu = paidUnits(snap, close);
+  const unitsNow = pu.now;
+  const unitsProj = pu.proj;
+  const unitsFill = pu.fill;
+  const unitsTarget = pu.target;
+  const unitsBm = hasBm ? pu.bm : null;
+  const unitsPct = pu.pct === null ? null : Math.round(pu.pct * 100);
   const unitsTip = {
     head: "Paid units",
     rows: [
@@ -217,7 +219,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
 
   // ----- the stretch: the band on the units bar, named in its popup -----
   const k = snap.benchmark?.k ?? null;
-  const stretchUnits = bmUnitsAll === null ? null : unitsTarget - bmUnitsAll * dayFrac;
+  const stretchUnits = unitsBm === null ? null : unitsTarget - unitsBm;
   const stretchTip = {
     head: "Stretch",
     rows: [
