@@ -18,7 +18,7 @@
 import React from "react";
 import {
   Card, TrackBar, HATCH, GROUP_DOTS, HorizonBadge, C, fmt, fmtSigned, useTip, useWidth,
-  labelPx, axisLabelLeft, BADGE_WORDS, dayLabel,
+  textPx, axisLabelLeft, BADGE_WORDS, dayLabel,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 
@@ -123,10 +123,11 @@ export default function HeroBar({ snap, horizon = "today" }) {
      the lower, each centred on the thing it names and tucked against whichever
      end it would otherwise run off. Two rows because the two figures are often
      within a few pixels of each other, and a label printed through another
-     number says less than no label. */
+     number says less than no label. The words are measured in the page's own
+     font, so a label tucked against an end stops at it. */
   const [labRef, labW] = useWidth();
   const labelAt = (text, v) => {
-    const left = axisLabelLeft({ pct: pos(v), rowW: labW, textW: labelPx(text) });
+    const left = axisLabelLeft({ pct: pos(v), rowW: labW, textW: textPx(text) });
     return left === null
       ? { position: "absolute", left: `${pos(v)}%`, bottom: 0, transform: "translateX(-50%)", fontSize: 12, whiteSpace: "nowrap" }
       : { position: "absolute", left, bottom: 0, fontSize: 12, whiteSpace: "nowrap" };

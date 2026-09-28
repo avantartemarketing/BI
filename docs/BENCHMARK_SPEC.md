@@ -579,7 +579,7 @@ the column form the inset is horizontal: fill and outline are inset 6% of the co
 actual 27%. The outline takes no hover of its own (it would sit on top of every fill beneath
 it and steal theirs); the figure it names goes in the fills' popups.
 
-Labels that are placed by value never print through one another. Two rules, both measured in
+Labels that are placed by value never print through one another. Three rules, all measured in
 pixels off the real element rather than assumed from a fraction, because the same fraction
 buys different room on a one-column card and a two-column one:
 
@@ -589,9 +589,15 @@ buys different room on a one-column card and a two-column one:
   build runs behind it, and `GET /api/inputs/:id/build` reports `running`, `done` or `failed`
   (with `seconds` and the error). `storage.durable` on both says whether saves land on a
   persistent disk (`SAVED_INPUTS_PATH`); the tab warns when they do not.
-- **Readings stacked on one line** (the trajectory's today column) spread with `spreadLabels`:
-  sorted, pushed to a minimum gap, squeezed back inside the plot. The ticks and dots stay on
-  their true values - only the text moves, which is what keeps a moved label honest.
+- **A word naming a line or a set of marks** (the trajectory's secured, projected, target and
+  benchmark; Paid ROI's "daily spend" and "paid off") is set in clear space by `nameLines`
+  (`web/src/labels.mjs`) with a thin leader to a point on what it names: never on a bar, a dot
+  or a figure, never across a line (the today line included) where anywhere is clear, and never
+  on another name. The marks stay on their true values - only the word moves.
+- **"today" on a time axis** (the trajectory and Paid ROI) always shows on a live release,
+  centred on the today line and kept inside the plot; the announce or close date at the axis
+  end gives way where the two would print into each other (`timeAxis`). Words are measured in
+  the page's own font, and the cards measure again once the webfont has landed.
 - **A value-anchored label on an axis row with fixed end labels** (the hero and sell-through
   benchmark, against `0` and `sellout`) is placed by `axisLabelLeft`: centred on its tick
   where it fits, slid just clear of the end label where it does not.

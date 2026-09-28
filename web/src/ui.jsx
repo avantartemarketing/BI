@@ -19,10 +19,11 @@
  * The drawing grammar lives here rather than in each module so every card says it
  * the same way; these signatures are fixed because the modules are written
  * against them in parallel. */
-import React, { createContext, useContext, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   MINUS, dayElapsed, paidDayFrac, fmt, fmtSigned, fmtMoney, fmtK, fmtPct, fmtDay, windowDate, dayLabel, dayAxisLabel,
 } from "./format.mjs";
+import { labelPx, textPx, timeAxis, nameLines } from "./labels.mjs";
 import { Ex } from "./explain/Explain.jsx";
 
 /* ---- the popup system (agreed on the Dashboard Popups canvas) ----
@@ -181,30 +182,80 @@ export function QBadge({ tip, content }) {
  * are cut from the same cloth. */
 export const HATCH = `repeating-linear-gradient(135deg, ${C.blue} 0 1.5px, ${C.blueLight} 1.5px 5px)`;
 
-/* The live width of an element. Label collision is a pixel question, never a
+/* The live size of an element. Label collision is a pixel question, never a
  * fraction one - two labels 20% apart are comfortable on a wide card and on top
  * of each other on a narrow one - so a card that places labels by value measures
- * the row it is placing them in. */
-export function useWidth() {
-  const ref = useRef(null);
-  const [w, setW] = useState(0);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-    const measure = () => setW(el.clientWidth);
+ * the plot or row it is placing them in (the arithmetic is in labels.mjs). It
+ * measures again whenever the element resizes, and renders once more when the
+ * page's webfont lands, since a label measured before then was measured in the
+ * fallback face. A callback ref, so an element that mounts after the card
+ * (a plot behind an empty state) is measured too. */
+export function useBoxSize() {
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const [, setFonts] = useState(0);
+  const ro = useRef(null);
+  const ref = useCallback((el) => {
+    if (ro.current) { ro.current.disconnect(); ro.current = null; }
+    if (!el) return;
+    const measure = () => setSize((s) => (s.w === el.clientWidth && s.h === el.clientHeight ? s : { w: el.clientWidth, h: el.clientHeight }));
     measure();
-    if (typeof ResizeObserver === "undefined") return undefined;
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
+    if (typeof ResizeObserver !== "undefined") { ro.current = new ResizeObserver(measure); ro.current.observe(el); }
   }, []);
+  useEffect(() => {
+    let live = true;
+    const fonts = typeof document !== "undefined" ? document.fonts : null;
+    const bump = () => { if (live) setFonts((n) => n + 1); };
+    if (fonts) {
+      if (fonts.status !== "loaded") fonts.ready.then(bump);
+      if (fonts.addEventListener) fonts.addEventListener("loadingdone", bump);
+    }
+    return () => {
+      live = false;
+      if (fonts && fonts.removeEventListener) fonts.removeEventListener("loadingdone", bump);
+      if (ro.current) ro.current.disconnect();
+    };
+  }, []);
+  return [ref, size.w, size.h];
+}
+export function useWidth() {
+  const [ref, w] = useBoxSize();
   return [ref, w];
 }
 
-/* Roughly how wide a 12px axis label renders. Tabular numerals and a system
- * sans sit close enough to this for collision work, and erring high only ever
- * buys a little more clearance. */
-export const labelPx = (text) => String(text).length * 6.7;
+/* labelPx: the length estimate; textPx: the measured width; timeAxis: the
+ * "today" and axis-end rule; nameLines: the placer (labels.mjs). */
+export { labelPx, textPx, timeAxis, nameLines };
+
+/* The names nameLines has set, and their leaders: a thin leader runs from a
+ * name's edge to a grey point on the thing it names, or stops `dot` px short
+ * of a dot it names, so the dot stays whole. A name that could only go on a
+ * card-white patch wears one. Drawn inside the plot the names were placed in. */
+export function LineNames({ names }) {
+  if (!names || !names.length) return null;
+  return (
+    <>
+      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none" }} aria-hidden="true">
+        {names.map((n) => {
+          const dx = n.anchor.x - n.start.x, dy = n.anchor.y - n.start.y, len = Math.hypot(dx, dy) || 1;
+          const end = n.dot ? { x: n.anchor.x - (dx / len) * n.dot, y: n.anchor.y - (dy / len) * n.dot } : n.anchor;
+          return (
+            <g key={n.key}>
+              <line x1={n.start.x.toFixed(1)} y1={n.start.y.toFixed(1)} x2={end.x.toFixed(1)} y2={end.y.toFixed(1)} stroke={C.targetLine} strokeWidth="1" />
+              {!n.dot && <circle cx={n.anchor.x.toFixed(1)} cy={n.anchor.y.toFixed(1)} r="2.4" fill={C.targetLine} />}
+            </g>
+          );
+        })}
+      </svg>
+      {names.map((n) => (
+        <div key={n.key} title={n.title} style={{
+          position: "absolute", left: n.x0, top: n.y0, height: n.h, lineHeight: `${n.h}px`,
+          fontSize: 12, fontWeight: n.weight, color: n.color, whiteSpace: "nowrap",
+          ...(n.knock ? { background: "#fff", padding: "0 3px", margin: "0 -3px", borderRadius: 2 } : {}),
+        }}>{n.text}</div>
+      ))}
+    </>
+  );
+}
 
 /* Place a value-anchored label on an axis row that also carries fixed labels at
  * its ends. Centred on its own tick wherever it fits; slid just clear of an end
