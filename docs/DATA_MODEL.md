@@ -1142,7 +1142,9 @@ has actually delivered.
 **Paid** - projection = **projected spend ÷ projected efficiency**, day by day:
 ```
 spend_fwd(d) = current daily spend run-rate            # not the recommendation
-cpe_fwd(d)   = trailing-3-day CPE × Π (1 + drift)      # drift 5%/7%/10%/day by window third
+cpe_fwd(d)   = trailing-3-day CPE × (1 + drift)^k      # k: days after the last full day; drift =
+               # budget.driftPerDay, the campaign's own daily fit shrunk to the 2.5%-a-day
+               # prior and clamped to 0-10%, the same every day to the close (§7)
 entries_fwd  = Σ spend_fwd(d) / cpe_fwd(d)
 ```
 Fallback when no spend history exists yet: paid target × remaining share of the paid curve.
@@ -1891,8 +1893,10 @@ projection could head under 1 while the floor passed. The daily tiers are the co
 the workbook's own spend path (row 229 ramps 6-10% a day; at elasticity 0.38 that is 3.5-5%
 a day of cost rise on its own), so with elasticity modelled they double count; applied
 consistently they told a campaign at cumulative ROI 3.5 to cut. `spend_rules.
-cpe_daily_drift_by_third` is now the pure time effect, 0.5% a day (measured 0.36 ± 1.12;
-`etl/analysis/cpe_elasticity.py`); the workbook values sit beside it as
+cpe_daily_drift_by_third` is now the prior for the pure time effect, 2.5% a day ± 3.5 (the
+2026-09-23 fit on 29 campaigns; the first fit, 0.36 ± 1.12 on 13, had set 0.5%;
+`etl/analysis/cpe_elasticity.py`): each campaign's own fitted drift is shrunk to it and clamped
+to 0-10% a day (`campaign_cost_terms`, §7); the workbook values sit beside it as
 `cpe_daily_drift_by_third_workbook`. The workbook's own template, note, produces the same
 runaway "expected daily spend" the first version of this card did (Warhol_LE_26 row 229:
 €181k-256k a day; Dali_LE_26 row 231 suggests €3.7k-10.9k a day against €1.5k spent) and

@@ -337,8 +337,10 @@ is shaped by the curve, not drawn straight.
 
 **Paid.** Projection = projected spend ÷ projected efficiency, day by day:
 current daily spend run-rate, divided by a cost-per-entry that starts at the
-trailing-3-day CPE and deteriorates **5% / 7% / 10% per day** across the first /
-second / final third of the window. Projected entries convert to units at 0.8.
+trailing-3-day CPE and rises by **the campaign's own daily drift**, the same every
+day to the close: fitted on its own days once it has 8 with spend and an entry,
+shrunk to a 2.5%-a-day prior and held between 0 and 10% a day (the prior alone
+until then; §7). Projected entries convert to units at 0.8.
 Paid starts the day after the announce and runs to the close; its plan by today is the
 even daily budget's share of its target over those days, not the panel's historic paid
 shape, so every card reads the same paid plan.
@@ -448,9 +450,12 @@ drift on top of the spend elasticity they count the same effect twice (the
 workbook's own spend path ramps 6–10% a day, and at elasticity 0.38 that ramp
 alone lifts cost per entry 3.5–5% a day) and drive ROI at close under 1 on
 every campaign: a release five days in at a cumulative ROI of 3.5 was told to
-cut. Net of spend, the within-campaign time drift measures 0.36% a day ± 1.12
-on our own campaigns; the model uses 0.5% a day, with the workbook's figures
-kept beside it.
+cut. Net of spend, the within-campaign time drift measures about 2.6% a day
+across 29 of our own campaigns (the first fit, on 13, read 0.36% ± 1.12 and set
+0.5%). The model takes 2.5% a day as the prior, fits each campaign's own drift
+once it has 8 days with spend and an entry, shrinks it to the prior by precision
+and holds it between 0 and 10% a day; the Paid spend card's floor popup shows
+the rate in force. The workbook's figures are kept beside it.
 
 The pacing rules themselves are the **TL template's** "ROI / SPEND RULES" block
 (cumulative ROI below 0.9 decrease, 0.9–1.3 maintain, above 1.3 increase;
