@@ -230,11 +230,17 @@ Sense check: **paid budget should stay under 6% of launch value** - the dashboar
 flags a breach but does not block it. A release that will not run paid says so
 with the switch: paid leaves the benchmark, and its target and budget are zero.
 
-### Step 6 - buffer
+### Step 6 - status colours
 
-`target inc. buffer = 0.75 × target` - a 25% haircut on any target, used as the
-amber warning line. Above target is green, between buffer and target is amber,
-below buffer is red.
+The colours read the target and the benchmark, never a fixed haircut. The dot
+beside each release in the sidebar is green at or ahead of target, amber behind
+target but at or ahead of the benchmark's pace for today, red behind the
+benchmark as well, and hollow when no targets are set; where there is no
+benchmark pace to read, amber is anything no more than 10% behind target. The
+rungs of Funnel by channel and the Organic funnel are green at or above their
+target, amber when less than 10% short of it and red when 10% or more short,
+with a cost rung judged the other way round. The LE workbook's 25% buffer
+(`target inc. buffer = 0.75 × target`) colours nothing on the page.
 
 ### Worked example - Glenn Ligon (edition 150)
 

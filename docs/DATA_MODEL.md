@@ -779,7 +779,10 @@ more are we asking for?** Everything below falls out of that one sentence.
 
 Both references are on every bar at once. The fill says what the business asked for and where
 the basket agrees with it; the outline says what the basket typically reaches. Percentages,
-RAG colours and the headline deltas read against the target. Drawing grammar: spec §7.
+RAG colours and the headline deltas read against the target: a funnel rung is green at or above
+it, amber less than 10% short and red 10% or more short, and the sidebar's dot is amber behind
+target only while the release is at or ahead of the benchmark's pace for today (spec §5, §7).
+Drawing grammar: spec §7.
 
 ```
 K = edition_size / benchmark_units_total
@@ -915,7 +918,9 @@ paid_budget  = profile["units_by_group"]["paid"] × cost_per_purchase × K    # 
 `compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
 `per_channel`, `paid{…}`, `launch_value`, `units_per_buyer`, `buyers`, `buyers_by_group`,
 `organic_sessions`, `total_sessions`, `entries_target`, `buffer` - or `None` when the release
-has no basket to read (§3). Organic units are not split into a draw half and a private-room
+has no basket to read (§3). `buffer`, and the snapshot's `benchmarks.targetBuffer`, carry the
+LE workbook's 0.75 haircut for reference only: no colour on the page reads them (§4a.1).
+Organic units are not split into a draw half and a private-room
 half: every organic unit is targeted through its group and asked for as an entry, so
 `entries_target = edition_size / 0.8`, and `group_targets` sums to the edition size exactly.
 The private room stays a measured quantity - the basket's `private_room_share`, the orders
