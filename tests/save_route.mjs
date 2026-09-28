@@ -1,8 +1,10 @@
 /* POST /api/inputs/:id end to end: the save answers at once with a build
  * ticket, the inputs are on disk before the build runs, the build's status
  * is polled from GET /api/inputs/:id/build (here it fails, since the checkout
- * has no funnel export - that is a status, not a lost save), and the
- * cannibalisation input is validated as a fraction.
+ * has no funnel export - that is a status, not a lost save), the
+ * cannibalisation input is validated as a fraction, and the suggested
+ * benchmark basket saves as it was shown, on the release's own edition and
+ * price and on the ones a first setup types.
  *
  *   node tests/save_route.mjs
  */
@@ -97,16 +99,54 @@ if (anyRelease) {
   check(none.status === 400 && /at least 1/.test(none.body.error || ""), `an empty basket is refused: ${none.status} ${none.body.error}`);
 }
 
-// a first save of a launch the funnel has not seen (an upcoming page from
-// Airtable): queued the same way, as a one-release build, not the catalogue
+// the suggested basket saves as it was shown. The release's edition and price
+// are its release-level figures or its products (the build's reading), so the
+// API suggests the rule's eight, and "Use this basket" with the ticks untouched
+// (a ready basket by id) saves with the picker's recency switch either way
+const listed = await get(`/api/baskets?release=${RELEASE}`);
+const similar = (listed.body.baskets || []).find((b) => b.id === "similar_size");
+check(listed.status === 200 && listed.body.suggested === "similar_size" && similar && similar.n === 8 && !similar.disabled,
+  `the suggestion is the similar basket, eight launches: ${listed.body.suggested} n=${similar && similar.n}`);
+for (const recent of [true, false]) {
+  const r = await post(`/api/inputs/${RELEASE}`, { inputs: { benchmark_basket: { kind: "ready", id: "similar_size" }, prefer_recent: recent } });
+  check(r.status === 200 && r.body.queued === true, `the untouched suggestion saves, prefer_recent ${recent}: ${r.status} ${JSON.stringify(r.body).slice(0, 160)}`);
+  const onDisk = JSON.parse(fs.readFileSync(path.join(tmp, "inputs.saved.json"), "utf8")).releases[RELEASE];
+  check(onDisk && onDisk.benchmark_basket && onDisk.benchmark_basket.kind === "ready" && onDisk.benchmark_basket.id === "similar_size" && onDisk.prefer_recent === recent,
+    `stored as the ready basket with the switch: ${JSON.stringify(onDisk && onDisk.benchmark_basket)} ${onDisk && onDisk.prefer_recent}`);
+  for (let i = 0; i < 120; i++) { const b = (await get(`/api/inputs/${RELEASE}/build`)).body; if (b.status !== "running") break; await sleep(500); }
+}
+
+// a first setup, the target and price typed in the picker (it writes them on a
+// product added by hand): the basket is checked on the save's own product, not
+// on the stored record, which has none. A bad fraction beside it keeps the
+// save from landing, so only the basket's verdict is read
 const inputsDoc = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "app", "inputs.json"), "utf8"));
+const bareId = Object.keys(inputsDoc.discovered || {}).find((id) => {
+  const d = inputsDoc.discovered[id], s = (inputsDoc.sourced || {})[id];
+  return d.announce_date && d.launch_end && !(s && s.airtable && (s.airtable.products || []).some((p) => p.edition));
+});
+if (bareId) {
+  const basket = { benchmark_basket: { kind: "ready", id: "similar_size" }, prefer_recent: true, cannibalisation: 1.5 };
+  const typedProduct = [{ manual: true, name: "Release", edition: 300, unit_price: 900, currency: "EUR" }];
+  const withProduct = await post(`/api/inputs/${bareId}`, { inputs: { ...basket, products: typedProduct } });
+  check(withProduct.status === 400 && /cannibalisation/.test(withProduct.body.error || "") && !/comparable launches/.test(withProduct.body.error || ""),
+    `the typed product gives the basket its eight: ${withProduct.status} ${withProduct.body.error}`);
+  const without = await post(`/api/inputs/${bareId}`, { inputs: basket });
+  check(without.status === 400 && /has only 0 comparable launches/.test(without.body.error || ""), `with no product there is nothing to be near to: ${without.body.error}`);
+  check(!fs.existsSync(path.join(tmp, "inputs.saved.json")) || !JSON.parse(fs.readFileSync(path.join(tmp, "inputs.saved.json"), "utf8")).releases[bareId], "and a refused first save stores nothing");
+}
+
+// a first save of a launch the funnel has not seen (an upcoming page from
+// Airtable): queued the same way, as a one-release build, not the catalogue,
+// and it can take the suggested basket at once, read on Airtable's products
 const upcomingId = Object.keys(inputsDoc.discovered || {}).find((id) => (inputsDoc.discovered[id].source === "airtable") && ((inputsDoc.sourced || {})[id] || {}).airtable && (inputsDoc.sourced[id].airtable.products || []).some((p) => p.edition && p.unit_price));
 if (upcomingId) {
-  const first = await post(`/api/inputs/${upcomingId}`, { inputs: { cannibalisation: 0.25 } });
+  const first = await post(`/api/inputs/${upcomingId}`, { inputs: { cannibalisation: 0.25, benchmark_basket: { kind: "ready", id: "similar_size" } } });
   check(first.status === 200 && first.body.queued === true && first.body.created === true && first.body.build.full === false,
     `a first save is queued as a one-release build: ${first.status} ${JSON.stringify(first.body).slice(0, 160)}`);
   const savedUp = JSON.parse(fs.readFileSync(path.join(tmp, "inputs.saved.json"), "utf8")).releases[upcomingId];
   check(savedUp && savedUp.cannibalisation === 0.25 && savedUp.release_name, "the new release's inputs are on disk with its name");
+  check(savedUp && savedUp.benchmark_basket && savedUp.benchmark_basket.id === "similar_size", `with the suggested basket: ${JSON.stringify(savedUp && savedUp.benchmark_basket)}`);
   for (let i = 0; i < 120; i++) { const b = (await get(`/api/inputs/${upcomingId}/build`)).body; if (b.status !== "running") break; await sleep(500); }
   console.log(`first save of ${upcomingId}: queued, one-release build`);
 } else {

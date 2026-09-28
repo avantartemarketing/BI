@@ -44,14 +44,15 @@ const TTL_MS = 2 * 60 * 1000;
 const PY_TIMEOUT_MS = 60 * 1000;
 
 /* The request/reply contract with the ETL. Three ops, one process each:
- *   {op:"baskets", release}    -> {suggested, baskets, saved}
+ *   {op:"baskets", release, as_of} -> {suggested, baskets, saved}
  *   {op:"candidates"}          -> {rows}          the draw panel, newest first, with each launch's
  *                                                   units, sessions, paid share, unit price (EUR) and edition size
  *   {op:"profile", members}    -> {profile, unknown}
- * as_of is today because that is what the build uses - all_12m is "the last
- * twelve months" as of the run, and the picker has to show the same basket the
- * ETL would use. allow_nan=False on the way out: a NaN would serialise as
- * invalid JSON and fail in the browser rather than here. */
+ * as_of is the build's day (the candidates file's asOf, written by the same
+ * run), today without one: all_12m is "the last twelve months" as of the run,
+ * the recent tier is measured from it for a live release, and the picker has
+ * to show the same basket the ETL would use. allow_nan=False on the way out: a
+ * NaN would serialise as invalid JSON and fail in the browser rather than here. */
 const PY = `
 import json, sys
 from datetime import date
@@ -62,6 +63,10 @@ panel = B.load_panel()
 release = req.get("release") or None
 own = str((release or {}).get("release_name") or "")
 pd = B.pd
+try:
+    as_of = date.fromisoformat(str(req.get("as_of"))[:10]) if req.get("as_of") else date.today()
+except ValueError:
+    as_of = date.today()
 
 def txt(value):
     return "" if pd.isna(value) else str(value)
@@ -85,7 +90,7 @@ else:
                           disabled=len(members) < B.MIN_MEMBERS,
                           profile=B.basket_profile(panel, members)))
     out = {"suggested": B.suggest_basket(panel, release or {}),
-           "baskets": B.ready_baskets(panel, date.today(), release),
+           "baskets": B.ready_baskets(panel, as_of, release),
            "saved": saved}
 
 json.dump(out, sys.stdout, allow_nan=False)
@@ -144,15 +149,14 @@ function readJson(file, fallback) {
   }
 }
 
-/* The release as the ETL knows it: a dashboard save wins over the ETL's own
+/* The release's record as stored: a dashboard save wins over the ETL's own
  * inputs, and a release nobody has set targets for is still in `discovered`
- * with enough (name, dates, edition size) for the suggestion to work. Python
- * reads release_name, edition_size, channels_off and the dates off this, and
- * tolerates any of them being absent. */
-function releaseFor(releaseId) {
+ * with its name and dates. What the basket needs from it is resolved by
+ * resolveRelease below. */
+function releaseFor(releaseId, doc) {
   const id = String(releaseId || "").replace(/[^a-z0-9_]/g, "");
   if (!id) return null;
-  const doc = readJson(INPUTS_PATH, {});
+  doc = doc || readJson(INPUTS_PATH, {});
   const saved = readJson(SAVED_INPUTS_PATH, {}).releases || {};
   return saved[id] || (doc.releases || {})[id] || (doc.discovered || {})[id] || null;
 }
@@ -160,6 +164,57 @@ function releaseFor(releaseId) {
 function releaseName(releaseId) {
   const release = releaseFor(releaseId);
   return String((release && release.release_name) || "");
+}
+
+/* The release as the build reads it (etl/build.py resolve_release), which is
+ * what the basket is picked on. The stored record carries no edition size or
+ * unit price of its own since the targets went per product: they are the
+ * release-level figures it still carries (legacy_economics, or the top-level
+ * keys of inputs saved before the move), else its products - Airtable's, with
+ * the figures typed over them - as the target units summed and the price
+ * weighted by them in euros (shared/economics.mjs, the build's mirror). Each
+ * date is the Notion log's, then as typed, then the funnel's clock, then
+ * Airtable's, from the sourced block the build writes beside the inputs.
+ * Python reads release_name, edition_size, unit_price, currency,
+ * prefer_recent, channels_off and the dates off the result. */
+const economicsPromise = import("../shared/economics.mjs");
+const DATE_KEYS = ["private_room_open", "announce_date", "launch_end"];
+async function resolveRelease(rec, releaseId, doc) {
+  if (!rec || typeof rec !== "object") return null;
+  const id = String(releaseId || rec.id || "").replace(/[^a-z0-9_]/g, "");
+  doc = doc || readJson(INPUTS_PATH, {});
+  const { resolveProducts, releaseEconomics, LEGACY_KEYS } = await economicsPromise;
+  const sourced = (doc.sourced && doc.sourced[id]) || {};
+  const at = sourced.airtable || {};
+  const bench = doc.benchmarks || {};
+  const r = { ...rec };
+  let legacy = r.legacy_economics;
+  if ((legacy === null || legacy === undefined) && LEGACY_KEYS.some((k) => r[k] !== undefined && r[k] !== null && r[k] !== "")) {
+    legacy = Object.fromEntries(LEGACY_KEYS.filter((k) => k in r).map((k) => [k, r[k]]));
+  }
+  const econ = releaseEconomics(resolveProducts(at.products || [], Array.isArray(r.products) ? r.products : [], bench), legacy || null, bench);
+  if (econ.mode === "release") {
+    // the typed figures, the price in the record's own currency as the build reads it
+    r.edition_size = econ.edition_size;
+    r.unit_price = econ.unit_price;
+  } else if (econ.mode === "products") {
+    r.edition_size = econ.edition_size;
+    r.unit_price = econ.unit_price;
+    r.currency = econ.currency;
+  }
+  for (const k of DATE_KEYS) {
+    const v = [(sourced.notion || {})[k], rec[k], (sourced.clock || {})[k], at[k]].find((x) => x);
+    if (v) r[k] = String(v).slice(0, 10);
+  }
+  return r;
+}
+
+/* The day the build read the baskets on: the candidates file's asOf, written
+ * by the same run. Null before the first build, and Python takes today. */
+function buildAsOf() {
+  const doc = readJson(CANDIDATES_PATH, null);
+  const v = doc && typeof doc.asOf === "string" ? doc.asOf.slice(0, 10) : null;
+  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
 }
 
 /* GET /api/baskets?release=<id>: the six ready-made baskets for this release
@@ -170,23 +225,25 @@ function releaseName(releaseId) {
  * listing, so the picker's switch can ask "and without recency?" before the
  * person has saved anything. It is part of the cache key because it changes
  * the answer. */
-/* `opts.units` and `opts.price` stand in for the release's saved edition size
- * and unit price, so the picker can ask for the basket a target would get
- * before that target is saved - a release with none saved has nothing to be
- * near to otherwise, and the picker's first job is to ask for them. Both are
- * part of the cache key because they change the answer. */
-function readyBaskets(releaseId, opts = {}) {
-  let release = releaseFor(releaseId);
+/* `opts.units` and `opts.price` stand in for the release's edition size and
+ * unit price (in euros), so the picker can ask for the basket a target would
+ * get before that target is saved. `opts.release` is a record to read in
+ * place of the stored one - a save's own, so the basket it names is checked
+ * against the release as that save leaves it. Everything that changes the
+ * answer is part of the cache key. */
+async function readyBaskets(releaseId, opts = {}) {
+  const doc = readJson(INPUTS_PATH, {});
+  let release = await resolveRelease(opts.release || releaseFor(releaseId, doc), releaseId, doc);
   if (release) {
-    release = { ...release };
     if (opts.preferRecent !== undefined) release.prefer_recent = !!opts.preferRecent;
     if (opts.units > 0) release.edition_size = opts.units;
     if (opts.price > 0) { release.unit_price = opts.price; release.currency = "EUR"; }
   }
-  const key = "baskets:" + ((release && release.release_name) || "") + ":" +
-    (release && release.prefer_recent === false ? "old" : "recent") + ":" +
-    (opts.units > 0 ? opts.units : "-") + ":" + (opts.price > 0 ? opts.price : "-");
-  return cached(key, () => runBaskets({ op: "baskets", release }));
+  const asOf = buildAsOf();
+  const key = "baskets:" + JSON.stringify([asOf, release && [release.release_name || "", release.prefer_recent === false,
+    Number(release.edition_size) || 0, Number(release.unit_price) || 0, release.currency || "EUR",
+    ...DATE_KEYS.map((k) => release[k] || null), release.channels_off || [], release.artist || "", release.nearest_cluster ?? null]]);
+  return cached(key, () => runBaskets({ op: "baskets", release, as_of: asOf }));
 }
 
 /* GET /api/baskets/candidates: the whole draw panel, as the rows the picker
@@ -224,9 +281,12 @@ function uniqueId(base, taken) {
  *
  * `releaseId` is optional and only used for the "not a member of its own
  * benchmark" rule (§3.1); the picker's Save-as-ready-made path has no release.
- * Async because every rule needs the panel, which lives in Python.
+ * `opts` goes to readyBaskets: a save passes its own record as opts.release,
+ * so a ready basket is checked on the edition, price, recency preference and
+ * dates the save gives the release, not the ones it replaces. Async because
+ * every rule needs the panel, which lives in Python.
  */
-async function validateBasketSpec(spec, releaseId) {
+async function validateBasketSpec(spec, releaseId, opts = {}) {
   if (spec === null || spec === undefined) return { ok: true, normalised: null };
   if (typeof spec !== "object" || Array.isArray(spec)) {
     return { ok: false, error: "benchmark_basket must be an object like {kind, id} or {kind:\"bespoke\", members}" };
@@ -247,7 +307,7 @@ async function validateBasketSpec(spec, releaseId) {
     if (unknown.length) {
       return { ok: false, error: `not launches in the draw panel: ${unknown.slice(0, 5).join(", ")}${unknown.length > 5 ? ` and ${unknown.length - 5} more` : ""}` };
     }
-    const own = releaseName(releaseId);
+    const own = opts.release && opts.release.release_name ? String(opts.release.release_name) : releaseName(releaseId);
     if (own && members.includes(own)) {
       return { ok: false, error: `a release is never a member of its own benchmark - remove ${own}` };
     }
@@ -262,7 +322,7 @@ async function validateBasketSpec(spec, releaseId) {
 
   const id = spec.id === null || spec.id === undefined ? "" : String(spec.id).trim();
   if (!id) return { ok: false, error: `a ${kind} benchmark_basket needs an id` };
-  const listed = await readyBaskets(releaseId);
+  const listed = await readyBaskets(releaseId, opts);
   const pool = (kind === "saved" ? listed.saved : listed.baskets) || [];
   const hit = pool.find((b) => b.id === id);
   if (!hit) return { ok: false, error: `no ${kind} basket with id "${id}"` };
@@ -300,4 +360,4 @@ async function saveBasket({ name, members } = {}) {
   return { ...row, kind: "saved", n: row.members.length, disabled: false, profile };
 }
 
-module.exports = { readyBaskets, candidates, saveBasket, validateBasketSpec, invalidate, MIN_MEMBERS, KINDS };
+module.exports = { readyBaskets, candidates, saveBasket, validateBasketSpec, resolveRelease, invalidate, MIN_MEMBERS, KINDS };

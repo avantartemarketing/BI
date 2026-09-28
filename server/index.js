@@ -358,16 +358,6 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   for (const f of ["marketing_lead", "campaign_code", "airtable_release", "airtable_ids"]) {
     if (body[f] !== undefined) next[f] = body[f] === null ? null : String(body[f]).slice(0, 200);
   }
-  /* The benchmark basket (BENCHMARK_SPEC §6). An unresolvable basket is
-   * reported here and the save is refused: falling back to the suggestion
-   * would leave someone looking at a benchmark line they did not choose and
-   * cannot tell apart from the one they did. null clears the basket, and the
-   * release is benchmarked against the suggested one again. */
-  if (body.benchmark_basket !== undefined) {
-    const check = await baskets.validateBasketSpec(body.benchmark_basket, id);
-    if (!check.ok) errors.push(check.error);
-    else next.benchmark_basket = check.normalised;
-  }
   if (body.prefer_recent !== undefined) {
     // the basket's recency preference: launches closed in the last 18 months
     // rank first among the comparable ones (etl/baskets.py similar_members)
@@ -472,6 +462,18 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   }
   if (new Date(next.launch_end) <= new Date(next.announce_date)) {
     errors.push("launch_end must be after announce_date");
+  }
+  /* The benchmark basket (BENCHMARK_SPEC §6). An unresolvable basket is
+   * reported here and the save is refused: falling back to the suggestion
+   * would leave someone looking at a benchmark line they did not choose and
+   * cannot tell apart from the one they did. null clears the basket, and the
+   * release is benchmarked against the suggested one again. Checked last, on
+   * the release as this save leaves it - its products, edition, price,
+   * recency preference and dates - which is what the build will pick on. */
+  if (body.benchmark_basket !== undefined) {
+    const check = await baskets.validateBasketSpec(body.benchmark_basket, id, { release: next });
+    if (!check.ok) errors.push(check.error);
+    else next.benchmark_basket = check.normalised;
   }
   if (errors.length) return res.status(400).json({ error: errors.join("; ") });
 

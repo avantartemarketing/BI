@@ -82,6 +82,17 @@ A release is **never a member of its own benchmark** — always drop its own
    ×1.0. That is deliberate and it is strong - turning it on moved seven of nine live benchmarks
    by 5% to 30% - so the picker says what it passed over, and the switch is per release.
 
+**A release that has closed is read at its own close.** Its close is its panel row's
+`window_end`, else its `launch_end`. Once that is before `as_of`, "the last 18 months" runs
+back from the close, not from the build's day, and a launch that closed after it is left out
+of the basket (the artist's own were already only those closed before it opened). So a closed
+release's basket stops moving: a later rebuild cannot age a member out of the recent tier, and
+a panel refresh cannot add a launch that was not there to compare it with. A live release is
+read at `as_of` as before. Brought in on 2026-09-28, it moved three closed benchmarks once
+against the 24 Sep build: James Jean 475.5 to 670.5 (Parra, closed a day after it, out),
+Mondrian 541 to 475.5 (James Jean and Parra out), Abdulnasser 41 to 35.5 (Zeng Fanzhi's
+multiple out); the other six are unchanged.
+
 Distance is the larger of the two multiples, each taken so it reads above 1 whichever side it
 falls: a launch is only as near as its worse axis, because matched on size at four times the
 price is not a comparable. That is the figure the picker shows in its two columns, so the
@@ -142,8 +153,14 @@ on every run and `GET /api/baskets/candidates` serves that file, starting a Pyth
 when there is no file yet. Opening the picker is one 50KB fetch and no Python.
 
 `GET /api/baskets?release=<id>` still takes three previews for other callers: `recent=0|1`
-overrides the saved `prefer_recent`, and `units=&price=` stand in for the saved edition size
-and unit price. All three are part of the server's cache key. The picker no longer uses it.
+overrides the saved `prefer_recent`, and `units=&price=` stand in for the edition size and unit
+price. All three are part of the server's cache key. The picker no longer uses it. Without
+them the release is read the way the build reads it (`server/baskets.js` `resolveRelease`,
+mirroring `resolve_release`): the edition size and price from its release-level figures
+(`legacy_economics`) while it carries them, else its products' target units and their weighted
+euro price (`shared/economics.mjs`), and the dates from the sourced block; the day is the
+build's (`basket_candidates.json` `asOf`). A save that names a ready basket is checked against
+the release as that save leaves it, so the suggestion saves as it was shown.
 
 #### 3.1.1 Why price is in the ladder (`etl/analysis/price_probe.py`, run 2026-09-17)
 
@@ -693,7 +710,9 @@ guides to both axes so it reads even when it sits past every dot on file; the ba
 eight filled dots nearest it, the artist's own members as diamonds; and the reach is drawn as
 the box it is, since "within ×R on both" is a square in log space. Above the map, one sentence
 says what was chosen and why, in amber where the honest thing is a warning ("Nothing on file is
-this size"; "2 nearer launches were passed over for being older than 18 months"), and three
+this size"; "2 nearer launches were passed over for being older than 18 months"; for a release
+that has closed, in grey, "One nearer launch closed after this one and is left out"; the rule is
+run on the page's `asOf` and the release's close, as the build runs it), and three
 switches: Prefer recent (live, per release), Running paid (live: off reads the basket without
 its paid units, §4.3, and is saved with the targets as `channels_off`) and Estate (drawn and
 inert, saying why: the panel needs labelling). Under the map,

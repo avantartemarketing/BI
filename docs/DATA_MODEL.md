@@ -865,6 +865,9 @@ it (price predicts session-to-entry conversion beyond size on five of eight benc
 metrics) are in `docs/BENCHMARK_SPEC.md` §3.1 and §3.1.1; `shared/basketRule.mjs` mirrors it for
 the picker. The picker reads the basket's `reach`, how far its furthest member is: past ×4 it
 says nothing on file is this size.
+A release that has closed is read at its own close (its panel `window_end`, else its
+`launch_end`): the recent tier runs back from it rather than from `as_of`, and launches that
+closed after it are left out, so its basket stops moving after it closes.
 
 `suggest_basket` picks the basket a release starts on: `similar_size` whenever it has a
 member, which it does for any release with an edition size while the panel holds another launch

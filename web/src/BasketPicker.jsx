@@ -17,7 +17,9 @@
  * opening the picker is one small fetch and no Python process. The rule: the
  * artist's own earlier launches first, then the nearest on units and price,
  * with launches closed in the last eighteen months ranked ahead of older ones
- * among the comparable when "prefer recent" is on.
+ * among the comparable when "prefer recent" is on. It is read on the page's
+ * day (asOf), and a release that has closed at its own close, leaving out
+ * the launches that closed after it.
  *
  * A release with no target or price yet has nothing to be near to, so the
  * picker's first job is to ask for them, and it does so in place: the two
@@ -32,7 +34,7 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { C, fmt, fmtK, fmtMoney, fmtPct } from "./ui.jsx";
-import { similarMembers, ownMembers, releasePrice, releaseArtist, MIN_MEMBERS, THIN_MEMBERS, NEAR, RECENT_MONTHS } from "../../shared/basketRule.mjs";
+import { similarMembers, ownMembers, releasePrice, releaseArtist, basketClock, MIN_MEMBERS, THIN_MEMBERS, NEAR, RECENT_MONTHS } from "../../shared/basketRule.mjs";
 import { GROUPS, applyChannelsOff } from "../../shared/benchmarkModel.mjs";
 
 const SIMILAR_NAME = "Similar size and shape";   // etl/baskets.py SIMILAR_NAME: the basket with id similar_size
@@ -213,7 +215,7 @@ const Legend = () => {
   );
 };
 
-export default function BasketPicker({ releaseId, releaseName, artist, currency, announceDate, privateRoomOpen, targetUnits, unitPrice, preferRecent = true, channelsOff = [], current, onInputs, onPick, onClose }) {
+export default function BasketPicker({ releaseId, releaseName, artist, currency, announceDate, privateRoomOpen, launchEnd, asOf, targetUnits, unitPrice, preferRecent = true, channelsOff = [], current, onInputs, onPick, onClose }) {
   const [recent, setRecent] = useState(preferRecent !== false);
   const [rows, setRows] = useState(null);
   const [error, setError] = useState(null);
@@ -230,8 +232,8 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
   const placeable = targetUnits > 0 && unitPrice > 0;
   const L = useMemo(() => ({
     name: releaseName, artist: artist || "", target: targetUnits, price: unitPrice, currency: currency || "EUR",
-    private_room_open: privateRoomOpen || null, announce_date: announceDate || null,
-  }), [releaseName, artist, targetUnits, unitPrice, currency, privateRoomOpen, announceDate]);
+    private_room_open: privateRoomOpen || null, announce_date: announceDate || null, launch_end: launchEnd || null,
+  }), [releaseName, artist, targetUnits, unitPrice, currency, privateRoomOpen, announceDate, launchEnd]);
 
   // Escape closes. Nothing else is trapped: the picker sits over a page that is
   // still readable behind it.
@@ -255,9 +257,12 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
      milliseconds rather than by a Python process per keystroke. Ticks that
      still equal the previous suggestion (or are empty) move to the new one;
      ticks someone has edited are theirs and stay, with the seed updated
-     underneath so the headline still says "edited" against the right thing. */
-  const rule = useMemo(() => (rows && placeable ? similarMembers(rows, L, { preferRecent: recent }) : null), [rows, L, recent, placeable]);
-  const ownList = useMemo(() => (rows && placeable ? ownMembers(rows, L) : []), [rows, L, placeable]);
+     underneath so the headline still says "edited" against the right thing.
+     Read on the page's own day (the snapshot's asOf, the build's), and a
+     release that has closed at its close, as the build reads it. */
+  const rule = useMemo(() => (rows && placeable ? similarMembers(rows, L, { preferRecent: recent, asOf }) : null), [rows, L, recent, placeable, asOf]);
+  const ownList = useMemo(() => (rows && placeable ? ownMembers(rows, L, { asOf }) : []), [rows, L, placeable, asOf]);
+  const clock = useMemo(() => (rows ? basketClock(rows, L, asOf) : null), [rows, L, asOf]);
   useEffect(() => {
     const next = rule && rule.members.length
       ? { id: "similar_size", name: SIMILAR_NAME, kind: "ready", members: rule.members, own: ownList, reach: rule.reach }
@@ -302,12 +307,17 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
   const ownIn = members.filter(isOwn).length;
   const K = live.units > 0 && L.target > 0 ? L.target / live.units : null;
 
-  // what "prefer recent" cost, said only while the ticks are the rule's
+  // what "prefer recent" cost, said only while the ticks are the rule's; the
+  // cut-off is the rule's own, from the release's close once it has closed
   const passedOver = useMemo(() => {
-    if (!recent || !untouched || reach === null) return 0;
-    const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - RECENT_MONTHS);
-    return scored.filter((s) => !ticked.has(s.release_name) && s.d !== null && s.d < reach && s.window_end && new Date(s.window_end) < cutoff).length;
-  }, [scored, ticked, recent, untouched, reach]);
+    if (!recent || !untouched || reach === null || !clock) return 0;
+    return scored.filter((s) => !ticked.has(s.release_name) && s.d !== null && s.d < reach && s.window_end && new Date(s.window_end + "T00:00:00Z") < clock.cutoff).length;
+  }, [scored, ticked, recent, untouched, reach, clock]);
+  // and what closing first cost: a closed release leaves out the launches that closed after it
+  const closedAfter = useMemo(() => {
+    if (!untouched || reach === null || !clock || !clock.closed) return 0;
+    return scored.filter((s) => !ticked.has(s.release_name) && s.d !== null && s.d < reach && s.window_end && new Date(s.window_end + "T00:00:00Z") > clock.ref).length;
+  }, [scored, ticked, untouched, reach, clock]);
 
   /* The list: members first in rank order, then the rest by distance. "Most
      similar" is everything within NEAR, never fewer than SHOW_AT_LEAST; a ticked
@@ -355,7 +365,9 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
     const priced = priceUsed > 0 && unitPrice > 0 && Math.round(priceUsed) !== Math.round(unitPrice)
       ? <span style={{ color: C.muted }}> (the {fmtMoney(priceUsed)} Airtable has for it, not the {fmtMoney(unitPrice)} typed)</span> : null;
     let s = <>The <b>{n}</b> launches nearest to <b>{fmt(L.target)} units at {fmtMoney(priceUsed)}</b>{priced}{ownIn ? <>, starting with {who}'s own {ownIn === 1 ? "one" : ownIn}</> : null}</>;
-    const cost = passedOver ? <> <span style={{ color: C.amber }}>{passedOver === 1 ? "One nearer launch was" : `${passedOver} nearer launches were`} passed over for being older than {RECENT_MONTHS} months.</span></> : null;
+    const older = passedOver ? <> <span style={{ color: C.amber }}>{passedOver === 1 ? "One nearer launch was" : `${passedOver} nearer launches were`} passed over for being older than {RECENT_MONTHS} months.</span></> : null;
+    const later = closedAfter ? <> <span style={{ color: C.muted }}>{closedAfter === 1 ? "One nearer launch closed" : `${closedAfter} nearer launches closed`} after this one and {closedAfter === 1 ? "is" : "are"} left out.</span></> : null;
+    const cost = older || later ? <>{older}{later}</> : null;
     // the switches change how the basket is read, not which launches are in it
     const paidNote = paidOff ? <span style={{ color: C.muted }}> Paid is not in plan, so the basket is read without its paid units.</span> : null;
     if (reach === null) return <>{s}.{paidNote}</>;

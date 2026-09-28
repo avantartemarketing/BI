@@ -819,6 +819,17 @@ def _release_start(panel: pd.DataFrame, release: dict | None, as_of: date) -> pd
     return pd.Timestamp(as_of)
 
 
+def _release_end(panel: pd.DataFrame, release: dict | None) -> pd.Timestamp | None:
+    """When this launch closes: its panel row's window_end when it has one,
+    measured the way every other launch's close is, else its launch_end.
+    None when neither is a date."""
+    row = _panel_row(panel, release)
+    if row is not None and pd.notna(row.get("window_end")):
+        return pd.Timestamp(row["window_end"])
+    got = pd.to_datetime((release or {}).get("launch_end"), errors="coerce")
+    return pd.Timestamp(got) if pd.notna(got) else None
+
+
 def _release_price(panel: pd.DataFrame, release: dict | None) -> float:
     """This release's unit price in euros, or 0.0 when it has none.
 
@@ -913,6 +924,12 @@ def similar_members(panel: pd.DataFrame, release: dict | None, as_of: date | Non
     basket, there being nothing to be near to. A panel shorter than SIMILAR_N
     gives what it has.
 
+    A release that has closed is read at its own close (_release_end), not at
+    as_of: "recent" is the RECENT_MONTHS before it closed, and a launch that
+    closed after it is left out, having not been there to compare it with.
+    So its basket stops moving once it closes, whatever later rebuilds or
+    panel refreshes bring. A live release is read at as_of, as before.
+
     Returns the members, the reach - how far the furthest member is - and the
     axes that ranked them, ("size",) or ("size", "price").
     """
@@ -922,19 +939,25 @@ def similar_members(panel: pd.DataFrame, release: dict | None, as_of: date | Non
     if size <= 0 or not len(pool):
         return [], None, ()
     as_of = as_of or date.today()
+    end = _release_end(panel, release)
+    closed = end is not None and end < pd.Timestamp(as_of)
+    ref = end if closed else pd.Timestamp(as_of)
     d, on = _distances(pool, release, panel)
     names = pool["release_name"].to_numpy()
+    ends = (pd.to_datetime(pool["window_end"], errors="coerce") if "window_end" in pool.columns
+            else pd.Series(pd.NaT, index=pool.index, dtype="datetime64[ns]"))
+    later = (ends > ref).to_numpy() if closed else np.zeros(len(pool), dtype=bool)
 
     first = own_members(panel, release, as_of)
     taken = set(first)
-    rest = np.array([i for i in range(len(pool)) if names[i] not in taken and np.isfinite(d[i])], dtype=int)
+    rest = np.array([i for i in range(len(pool))
+                     if names[i] not in taken and np.isfinite(d[i]) and not later[i]], dtype=int)
 
     prefer_recent = (release or {}).get("prefer_recent")
     prefer_recent = True if prefer_recent is None else bool(prefer_recent)
     if prefer_recent and len(rest):
-        ends = pd.to_datetime(pool["window_end"], errors="coerce").to_numpy()
-        cutoff = np.datetime64(pd.Timestamp(as_of) - pd.DateOffset(months=RECENT_MONTHS))
-        recent = ends >= cutoff
+        cutoff = np.datetime64(ref - pd.DateOffset(months=RECENT_MONTHS))
+        recent = ends.to_numpy() >= cutoff
         # three tiers, distance within each: comparable and recent, comparable
         # and older, then everything beyond NEAR
         tier = np.where(d[rest] <= NEAR, np.where(recent[rest], 0, 1), 2)

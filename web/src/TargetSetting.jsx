@@ -1056,6 +1056,9 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
           // to read the typed price in its currency (shared/basketRule.mjs)
           artist={snap.artist || ""} currency="EUR"
           announceDate={announce || null} privateRoomOpen={prOpen || null}
+          // the page's day and the release's close: the rule reads a closed
+          // release at its close, as the build does
+          launchEnd={closes || null} asOf={snap.asOf || null}
           // the picker asks for a target and a price when there are none, and
           // writes them onto a product added by hand so the basket follows
           onInputs={onPickerInputs}
