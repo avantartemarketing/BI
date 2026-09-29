@@ -183,18 +183,30 @@ release nor its basket has one (Step 5).
 K = target units / benchmark units of demand
 ```
 
-The target is the edition, or the part of it being sold. K is the one even
-uplift applied to **every volume** the basket reports - units, sessions, entries
-and spend - in every channel group and on every day of the campaign.
-**Conversion rates are held at the benchmark**: a target that quietly assumes
-the site converts better than it ever has is a target nobody can act on, so the
-stretch is asked of traffic and spend only.
+The target is the edition, or the part of it being sold. K is the stretch as
+one multiple. By default it is an even uplift applied to **every volume** the
+basket reports - units, sessions, entries and spend - in every channel group
+and on every day of the campaign. **Conversion rates are held at the
+benchmark**: a target that quietly assumes the site converts better than it
+ever has is a target nobody can act on, so the stretch is asked of traffic and
+spend only.
+
+**Where the stretch comes from.** Often the plan knows where the extra will
+come from - most of it from more paid spend, or an artist expected to
+outperform - and the Target setting tab can say so: a share of the stretch per
+channel group. Each group's target is then its benchmark plus its share of the
+gap to the edition, its sessions and entries lifted to match, and the paid
+budget follows the paid units; a group with nothing placed on it stays at its
+benchmark. Blank means the basket's own shares, which is the even uplift. A
+channel not in plan takes none, and a cut (a target below the basket's median)
+is placed the same way, never taking a channel below zero.
 
 ### Step 2 - channel groups
 
 ```
-target_units(g)    = benchmark_units(g)    × K        for each of the five groups
-target_sessions(g) = benchmark_sessions(g) × K
+target_units(g)    = benchmark_units(g) + stretch × share(g)    for each of the five groups
+                   = benchmark_units(g) × K when the shares are the basket's own
+target_sessions(g) = benchmark_sessions(g) × target_units(g) / benchmark_units(g)
 ```
 
 The five groups are AA Email, AA Meta (the brand's own social), the artist's own

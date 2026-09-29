@@ -17,7 +17,7 @@
  * re-derived here; on a complete release the projection equals the actual
  * close. */
 import React, { useState } from "react";
-import { Card, HorizonBadge, GROUP_DOTS, BADGE_WORDS, C, QBadge, fmt, fmtSigned, useTip, LevelWaterfall, waterfallOpening, waterfallScale, HATCH } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, BADGE_WORDS, C, QBadge, fmt, fmtSigned, useTip, LevelWaterfall, waterfallOpening, waterfallScale, HATCH, stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { channelWalk } from "../figures.mjs";
 
@@ -133,7 +133,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
   // the channels add up to the demand; the cap is its own step down to the outcome
   if (by === "channels" && cw && cw.beyond < 0) stepRows.push(beyondStep(cw.beyond, cw.end, outcome, xClose));
   const rows = [
-    ...waterfallOpening({ hasBm, bm: benchmark, target, words, k, xArg: xHere }),
+    ...waterfallOpening({ hasBm, bm: benchmark, target, words, k, xArg: xHere, stretchNote: stretchWords(snap) }),
     ...stepRows,
     { kind: "level", key: "outcome", label: outcomeLabel, value: outcome, color: C.blue, x: { k: "hero.fill", arg: xHere },
       tip: {

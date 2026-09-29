@@ -39,6 +39,7 @@ import {
   Card, GROUP_DOTS, C, fmt, fmtSigned, fmtMoney, MINUS, useTip,
   rungGeom, rungPos, RungTrack, RungKey, Tick, refWords, dayElapsed, paidDayFrac, dayLabel,
 } from "../ui.jsx";
+import { stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { walkCap, closeWalk, postsCover } from "../figures.mjs";
 
@@ -115,7 +116,7 @@ function buildRung(spec, bench, k) {
       head: label,
       body: (note ? note + " " : "") + (bmv !== null
         ? kind === "vol"
-          ? `Target is the benchmark × K (${fmt(k, 2)}), the even uplift to the edition size.`
+          ? `Target is the benchmark × ${fmt(k, 2)}, this channel's uplift to the edition size (K for every channel unless the stretch was placed on the Target setting tab).`
           : "Rates are held at the benchmark, so the target and the benchmark are the same figure."
         : ""),
       rows: [
@@ -489,7 +490,7 @@ export function buildWaterfall(snap, groups) {
       { label: "Stretch", value: fmtSigned(stretchTotal) },
       ...(snap?.benchmark?.k ? [{ label: "Uplift", value: "×" + fmt(snap.benchmark.k, 2) }] : []),
     ],
-    body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.",
+    body: `What the business asked for over and above the basket - ${stretchWords(snap)}. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.`,
   } : null;
 
   return { flat, X, domain: [lo - pad, hi + pad], expTotal, bmTotal, nowTotal, hasBm, day, dayText: dayLabel(snap, day), words, capped, over, stretchTip };
@@ -532,6 +533,9 @@ export function rungModel(snap) {
   const of = snap?.of ?? 0;
   const bench = !!snap?.benchmark;
   const k = snap?.benchmark?.k ?? 1;
+  // each channel's own uplift (BENCHMARK_SPEC 4.4): K unless the stretch was placed
+  const kByGroup = snap?.benchmark?.kByGroup || {};
+  const kgOf = (key) => (Number.isFinite(kByGroup[key]) && kByGroup[key] > 0 ? kByGroup[key] : k);
   const bmConv = snap?.benchmark?.convByGroup || {};
   // the same two rates the waterfall view divides by, so the two tabs of this
   // card cannot describe one quantity differently
@@ -669,12 +673,13 @@ export function rungModel(snap) {
       ],
     },
   ];
-  return { targeted, groups, bench, k };
+  return { targeted, groups, bench, k, kgOf };
 }
 
 /* The tall card's funnel view: the groups stacked, one centre line behind them. */
 function RungStack({ m }) {
-  const { groups, bench, k } = m;
+  const { groups, bench, k, kgOf } = m;
+  const kOf = (g) => (kgOf ? kgOf(g.key) : k);
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column", gap: GROUP_GAP }}>
@@ -696,8 +701,8 @@ function RungStack({ m }) {
               <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap" }}>{g.name}</div>
             </div>
             {g.rungs.map((raw) => {
-              const r = buildRung(raw, bench, k);
-              const x = { group: g.name, label: r.label, kind: raw.kind, unit: raw.unit, v: raw.v, target: r.target, bm: r.bm, inv: !!raw.inv, note: raw.note, k };
+              const r = buildRung(raw, bench, kOf(g));
+              const x = { group: g.name, label: r.label, kind: raw.kind, unit: raw.unit, v: raw.v, target: r.target, bm: r.bm, inv: !!raw.inv, note: raw.note, k: kOf(g) };
               return <Rung key={r.label} r={r} bench={bench} x={x} />;
             })}
           </div>

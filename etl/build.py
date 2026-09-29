@@ -939,6 +939,66 @@ def units_per_buyer_for(release: dict, profile: dict | None, slope: float) -> tu
     return 1.0, "default"
 
 
+def stretch_weights(release: dict, profile: dict) -> dict[str, float]:
+    """Where the stretch comes from (BENCHMARK_SPEC §4.4): the share of the gap
+    between the target and the basket's median each group is asked for. The
+    release's `stretch_from` when typed on the Target setting tab - a share
+    per group, read over the groups in plan that have a benchmark to lift and
+    renormalised - else the basket's own unit shares, which is the even
+    uplift: every group lifted by the same K. A group set aside
+    (channels_off, benchmark 0) takes none, and a share typed on one falls
+    to the others."""
+    bm = {g: float((profile.get("units_by_group") or {}).get(g) or 0.0) for g in baskets.GROUPS}
+    total = sum(v for v in bm.values() if v > 0)
+    even = {g: (bm[g] / total if total > 0 and bm[g] > 0 else 0.0) for g in baskets.GROUPS}
+    raw = release.get("stretch_from")
+    if not isinstance(raw, dict):
+        return even
+    w = {}
+    for g in baskets.GROUPS:
+        try:
+            v = float(raw.get(g) or 0.0)
+        except (TypeError, ValueError):
+            v = 0.0
+        w[g] = max(v, 0.0) if bm[g] > 0 else 0.0
+    s = sum(w.values())
+    return {g: w[g] / s for g in baskets.GROUPS} if s > 0 else even
+
+
+def stretch_typed(release: dict, profile: dict) -> bool:
+    """Whether the release placed its stretch (a share on a group that has a
+    benchmark to lift), as against the even uplift the weights fall to."""
+    raw = release.get("stretch_from")
+    if not isinstance(raw, dict):
+        return False
+    bm = profile.get("units_by_group") or {}
+    return any(float(bm.get(g) or 0.0) > 0 and float(raw.get(g) or 0.0) > 0 for g in baskets.GROUPS)
+
+
+def allocate_stretch(bm_units: dict, size: float, weights: dict) -> dict[str, float]:
+    """Each group's target units: its benchmark plus its share of the stretch,
+    the edition less the basket's median, negative when the basket reached
+    more than the edition. A cut a group cannot carry - more than its
+    benchmark - stops at zero and the rest falls on the other groups by their
+    shares, so the groups always sum to the edition."""
+    units = {g: float(bm_units.get(g) or 0.0) for g in baskets.GROUPS}
+    w = {g: max(float(weights.get(g) or 0.0), 0.0) for g in baskets.GROUPS}
+    for _ in range(len(baskets.GROUPS) + 1):
+        gap = size - sum(units.values())
+        tot = sum(w.values())
+        if abs(gap) < 1e-9 or tot <= 0:
+            break
+        out = {g: units[g] + gap * w[g] / tot for g in units}
+        short = [g for g in out if out[g] < -1e-9]
+        if not short:
+            units = out
+            break
+        for g in short:
+            units[g] = 0.0
+            w[g] = 0.0
+    return units
+
+
 def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER_BUYER_FALLBACK) -> dict:
     """Targets from a basket's medians (BENCHMARK_SPEC §4).
 
@@ -946,7 +1006,12 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
     entries, units, spend - in every channel and on every day. Conversion rates
     are held at the benchmark: a target that quietly assumes the site converts
     better than it ever has is a target nobody can act on, so the uplift is
-    asked of traffic and spend only.
+    asked of traffic and spend only. Where the stretch comes from is a choice
+    (§4.4): by default each group takes its share of the gap to the edition
+    in proportion to its benchmark, which is every group lifted by the same
+    K; the Target setting tab can place it instead (most of it on paid, say),
+    and then each group carries its own uplift, its sessions and entries with
+    it, and the paid budget follows the paid units.
 
     Organic units are not split into a draw half and a private-room half any
     more: every organic unit goes through its group's channel split and is
@@ -960,10 +1025,14 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
     """
     b = BENCH
     size = float(release["edition_size"])
-    k = size / profile["units"]
+    k = size / profile["units"]   # the stretch as one multiple: the even uplift
     e2o = entry_rate(release)     # the release's own entry -> order rate, else the panel's
-    units = {g: profile["units_by_group"][g] * k for g in baskets.GROUPS}
-    sessions = {g: profile["sessions_by_group"][g] * k for g in baskets.GROUPS}
+    # where the stretch comes from (§4.4): each group's target is its benchmark
+    # plus its share of the gap to the edition, its sessions at its own uplift
+    weights = stretch_weights(release, profile)
+    units = allocate_stretch(profile["units_by_group"], size, weights)
+    kg = {g: (units[g] / profile["units_by_group"][g]) if profile["units_by_group"][g] > 0 else 0.0 for g in baskets.GROUPS}
+    sessions = {g: profile["sessions_by_group"][g] * kg[g] for g in baskets.GROUPS}
 
     paid_units = units["paid"]
     organic_units = size - paid_units
@@ -996,7 +1065,7 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
             }
 
     cpp = cost_per_purchase_for(release, b, profile)
-    budget = profile["units_by_group"]["paid"] * cpp * k
+    budget = paid_units * cpp        # the paid units, wherever the stretch was placed
     launch_value = size * release["unit_price"]
     organic_sessions = sum(pc["sessions"] for pc in per_channel.values())
 
@@ -1026,6 +1095,11 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
         "entries_target": sum(pc["eligible_entries"] for pc in per_channel.values()) + paid_units / e2o,
         "entry_rate": e2o,
         "buffer": b["target_buffer"],
+        # the uplift as one multiple, each group's own, and where the stretch
+        # was placed (§4.4): the basket's shares unless the tab typed some
+        "k": k, "k_by_group": kg, "stretch_from": weights,
+        "stretch_typed": stretch_typed(release, profile),
+        "stretch_units": size - profile["units"],
     }
     # the partition the whole page rests on: what the five groups are asked to
     # sell is the edition, no more and no less (§4)
@@ -4357,6 +4431,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # target and benchmark stay in exactly the K ratio on every day (§4.1) -
     # which is what makes an even uplift legible on the trajectory.
     k = (float(release["edition_size"]) / profile["units"]) if bench else 1.0
+    # each group's own uplift: K for every group unless the stretch was placed
+    # on the Target setting tab (benchmark_targets, §4.4)
+    kg = dict((targets or {}).get("k_by_group") or {}) if bench else {}
     bm_units = profile["units_by_group"] if bench else {}
     bm_sessions = profile["sessions_by_group"] if bench else {}
     rcurves = basket_curves(at, basket, curves) if bench else curves
@@ -4740,11 +4817,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             p = pdsa_for(release, d)
             # paid: the even share of its days; the rest: the entry-timed curve
             cv = paid_pace(p) if g == "paid" else curve_value(rcurves, g, UNIT_PLAN_CURVE, p)
-            # in benchmark mode the plan IS the benchmark lifted by K, taken
-            # off the one curve, so the two lines the trajectory draws are in
-            # the K ratio on every day rather than only in total (§4.1)
+            # in benchmark mode the plan IS the benchmark lifted by the
+            # group's uplift, taken off the one curve, so the two lines the
+            # trajectory draws are in that ratio on every day rather than
+            # only in total (§4.1)
             bm_day = bm_tgt * cv
-            plan = bm_day * k if bench else tgt * cv
+            plan = bm_day * kg.get(g, k) if bench else tgt * cv
             row_out = {"date": d.isoformat(),
                        "actual": round(cum_u + e2o * cum_nc, 2) if d <= as_of else None,
                        "plan": round(plan, 2), "proj": None}
@@ -4756,7 +4834,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # budget's share (see paid_pace above)
         w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, UNIT_PLAN_CURVE, pdsa_today)
         bm_exp = bm_tgt * w                                # benchmark pace by today
-        exp = bm_exp * k if bench else tgt * w
+        exp = bm_exp * kg.get(g, k) if bench else tgt * w
         sess_w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, "sessions", pdsa_today)
         sess_exp = sess_tgt * sess_w
         now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
@@ -5297,6 +5375,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "sessions": round(profile["sessions"], 1), "entries": round(profile["entries"], 1),
             "campaignDays": round(profile["campaign_days"], 1),
             "k": round(k, 4),
+            # each group's own uplift and the share of the stretch it carries
+            # (§4.4): K for every group unless the tab placed the stretch
+            "kByGroup": {g: round(float(v), 4) for g, v in (targets.get("k_by_group") or {}).items()},
+            "stretchFrom": {g: round(float(v), 4) for g, v in (targets.get("stretch_from") or {}).items()},
+            "stretchTyped": bool(targets.get("stretch_typed")),
             "stretchUnits": round(edition - profile["units"], 1), "stretchPct": round(k - 1, 4),
             "unitsByGroup": {g: round(v, 1) for g, v in bm_units.items()},
             "sessionsByGroup": {g: round(v, 1) for g, v in bm_sessions.items()},

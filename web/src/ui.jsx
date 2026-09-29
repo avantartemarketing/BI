@@ -26,6 +26,14 @@ import {
 } from "./format.mjs";
 import { labelPx, textPx, timeAxis, nameLines, placeTip, placeBeside } from "./labels.mjs";
 import { Ex } from "./explain/Explain.jsx";
+import { describeStretch } from "../../shared/benchmarkModel.mjs";
+
+/* Where the stretch comes from, in the cards' words: the shares the Target
+ * setting tab placed on the channels, else the even uplift (BENCHMARK_SPEC 4.4). */
+export function stretchWords(snap) {
+  const names = Object.fromEntries(((snap && snap.channels) || []).map((c) => [c.key, c.name]));
+  return describeStretch(snap && snap.benchmark, names);
+}
 
 /* ---- the popup system (agreed on the Dashboard Popups canvas) ----
  * One chrome, three tiers: chart readouts (inline, .chart-tip), element details
@@ -425,7 +433,7 @@ export function LevelWaterfall({ rows, X, labelW = 116, valueW = 48, gap = 12 })
  * close on the outcome: the stretch is the part of the gap to target that is
  * ambition, the steps are the part that is performance. Without a basket the
  * target opens alone and the steps read against it. */
-export function waterfallOpening({ hasBm, bm, target, words, k, targetHead, unitWord = "Units", xArg }) {
+export function waterfallOpening({ hasBm, bm, target, words, k, targetHead, unitWord = "Units", xArg, stretchNote }) {
   // xArg: the horizon the explainer reads these rows at, when it should
   const ex = (key) => (xArg ? { x: { k: key, arg: xArg } } : {});
   const targetRow = {
@@ -445,7 +453,7 @@ export function waterfallOpening({ hasBm, bm, target, words, k, targetHead, unit
           { label: "Stretch", value: fmtSigned(stretch) },
           ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
         ],
-        body: "What the business asked for over and above the basket - the same even uplift in every channel and on every day. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.",
+        body: `What the business asked for over and above the basket - ${stretchNote || "the same even uplift in every channel and on every day"}. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.`,
       } },
     { kind: "level", key: "bm", label: words.bm, value: bm, dotted: true, ...ex("hero.bm"),
       tip: { head: words.bm, rows: [{ label: unitWord, value: fmt(bm) }],

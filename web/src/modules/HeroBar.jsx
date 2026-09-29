@@ -20,6 +20,7 @@ import {
   Card, TrackBar, HATCH, GROUP_DOTS, HorizonBadge, C, fmt, fmtSigned, useTip, useWidth,
   textPx, axisLabelLeft, BADGE_WORDS, dayLabel,
 } from "../ui.jsx";
+import { stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 
 /* The legend's outline swatch: the same dotted silhouette the bar carries. */
@@ -109,7 +110,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
       { label: "Stretch", value: fmtSigned(stretch) },
       ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
     ],
-    body: "What the business is asking for over and above the basket - the same even uplift in every channel and on every day.",
+    body: `What the business is asking for over and above the basket - ${stretchWords(snap)}.`,
   };
   const bmTip = bm === null ? null : {
     head: "Benchmark",

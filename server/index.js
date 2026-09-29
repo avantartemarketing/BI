@@ -221,6 +221,7 @@ function defaultsFor(id, disc) {
     preorder_conversion_rate: null,
     prefer_recent: true,
     cost_per_purchase: null, cannibalisation: null, artist_posting_tier: "Medium", channels_off: [],
+    stretch_from: null,
   };
 }
 
@@ -356,6 +357,27 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       const off = CHANNEL_GROUPS.filter((g) => raw.includes(g));
       if (off.length === CHANNEL_GROUPS.length) errors.push("every channel is off - at least one has to be in plan");
       next.channels_off = off;
+    }
+  }
+  /* Where the stretch comes from (BENCHMARK_SPEC 4.4): a share per channel
+   * group, any non-negative numbers, read over the groups in plan and
+   * renormalised by the model; null (or all blank) means the basket's own
+   * shares, the even uplift. */
+  if (body.stretch_from !== undefined) {
+    const raw = body.stretch_from;
+    if (raw === null) next.stretch_from = null;
+    else if (typeof raw !== "object" || Array.isArray(raw)) errors.push("stretch_from must be an object of channel group shares, or null");
+    else {
+      const unknown = Object.keys(raw).filter((g) => !CHANNEL_GROUPS.includes(g));
+      if (unknown.length) errors.push(`stretch_from: unknown channel group ${unknown.join(", ")}`);
+      const out = {};
+      for (const g of CHANNEL_GROUPS) {
+        if (raw[g] === undefined || raw[g] === null || raw[g] === "") continue;
+        const v = Number(raw[g]);
+        if (!Number.isFinite(v) || v < 0) { errors.push(`stretch_from.${g} must be a share of 0 or more`); continue; }
+        out[g] = Math.round(v * 10000) / 10000;
+      }
+      next.stretch_from = Object.values(out).some((v) => v > 0) ? out : null;
     }
   }
   // the retired inputs leave a release the first time it is saved again; the

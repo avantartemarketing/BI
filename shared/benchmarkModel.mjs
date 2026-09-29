@@ -100,12 +100,68 @@ export function profileOf(bm) {
   };
 }
 
+/* Where the stretch comes from (BENCHMARK_SPEC 4.4, etl/build.py
+ * stretch_weights): the share of the gap between the target and the basket's
+ * median each group is asked for. The release's stretch_from when typed (a
+ * share per group, over the groups in plan that have a benchmark to lift,
+ * renormalised), else the basket's own unit shares - the even uplift. */
+export function stretchWeights(inp, unitsByGroup) {
+  const bm = byGroup(unitsByGroup, (_g, v) => v);
+  const total = GROUPS.reduce((s, g) => s + (bm[g] > 0 ? bm[g] : 0), 0);
+  const even = byGroup(bm, (_g, v) => (total > 0 && v > 0 ? v / total : 0));
+  const raw = inp && inp.stretch_from;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return even;
+  const w = byGroup(bm, (g, v) => (v > 0 ? Math.max(num(raw[g]), 0) : 0));
+  const s = GROUPS.reduce((t, g) => t + w[g], 0);
+  return s > 0 ? byGroup(w, (_g, v) => v / s) : even;
+}
+
+/* Whether the release placed its stretch: a share on a group with a benchmark to lift. */
+export function stretchTyped(inp, unitsByGroup) {
+  const raw = inp && inp.stretch_from;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
+  return GROUPS.some((g) => num((unitsByGroup || {})[g]) > 0 && num(raw[g]) > 0);
+}
+
+/* Each group's target units: its benchmark plus its share of the stretch (the
+ * edition less the basket's median, negative when the basket reached more). A
+ * cut a group cannot carry stops at zero and the rest falls on the others by
+ * their shares, so the groups always sum to the edition (etl/build.py
+ * allocate_stretch). */
+export function allocateStretch(unitsByGroup, size, weights) {
+  let units = byGroup(unitsByGroup, (_g, v) => v);
+  const w = byGroup(weights, (_g, v) => Math.max(v, 0));
+  for (let i = 0; i <= GROUPS.length; i += 1) {
+    const gap = size - GROUPS.reduce((s, g) => s + units[g], 0);
+    const tot = GROUPS.reduce((s, g) => s + w[g], 0);
+    if (Math.abs(gap) < 1e-9 || tot <= 0) break;
+    const out = byGroup(units, (g, v) => v + gap * w[g] / tot);
+    const short = GROUPS.filter((g) => out[g] < -1e-9);
+    if (!short.length) { units = out; break; }
+    for (const g of short) { units[g] = 0; w[g] = 0; }
+  }
+  return units;
+}
+
+/* One clause on where the stretch comes from, for the cards: the shares the
+ * Target setting tab placed, else the even uplift. `names` maps a group key
+ * to its display name; `bm` is a snapshot's benchmark block. */
+export function describeStretch(bm, names = {}) {
+  if (!bm || !bm.stretchTyped) return "the same even uplift in every channel and on every day";
+  const from = bm.stretchFrom || {}, kg = bm.kByGroup || {};
+  const parts = GROUPS.filter((g) => num(from[g]) > 0).sort((a, b) => num(from[b]) - num(from[a]))
+    .map((g) => `${names[g] || g} ${Math.round(num(from[g]) * 100)}% (×${num(kg[g]).toFixed(2)})`);
+  return `placed on the Target setting tab: ${parts.join(", ")}; the other channels stay at their benchmark`;
+}
+
 /* The targets from a basket's medians (BENCHMARK_SPEC 4): one even uplift
- * K = sellout / median units carries every volume, conversion rates are held.
+ * K = sellout / median units carries every volume, conversion rates are held,
+ * unless the stretch was placed (4.4), when each group carries its own.
  * `inp` is the release: edition_size, unit_price, cost_per_purchase (blank
  * means the basket's median cost per paid unit, else the panel's median),
  * units_per_buyer (the plan's rate, from the
- * snapshot). `b` is etl/benchmarks.json. Returns the figures the rail prints,
+ * snapshot), stretch_from (a share per group, blank for the even uplift).
+ * `b` is etl/benchmarks.json. Returns the figures the rail prints,
  * each beside the benchmark it is lifted from - the basket's own median,
  * unscaled - so benchmark + stretch = target on every row. Null when the
  * profile has no median units to lift. */
@@ -136,18 +192,26 @@ export function benchmarkTargets(profile, inp, b) {
   const bmPaid = ug.paid;
   const bmSessions = GROUPS.reduce((s, g) => s + sg[g], 0);
   const bmBudget = bmPaid * cpp, bmLaunchValue = median * price;
-  const paidUnits = bmPaid * k;
-  const budget = bmBudget * k, launchValue = size * price;
+  // where the stretch comes from (4.4): each group's target is its benchmark
+  // plus its share of the gap to the edition, its sessions at its own uplift;
+  // the basket's own shares, the default, lift every group by K
+  const weights = stretchWeights(inp, ug);
+  const units = allocateStretch(ug, size, weights);
+  const kg = byGroup(ug, (g, v) => (v > 0 ? units[g] / v : 0));
+  const sessions = byGroup(sg, (g, v) => v * kg[g]);
+  const paidUnits = units.paid;
+  const budget = paidUnits * cpp, launchValue = size * price;
   return {
-    k, edition_size: size, cost_per_purchase: cpp, cost_per_purchase_source: cppSource, units_per_buyer: upb,
-    units_by_group: byGroup(ug, (_g, v) => v * k), sessions_by_group: byGroup(sg, (_g, v) => v * k),
+    k, k_by_group: kg, stretch_from: weights, stretch_typed: stretchTyped(inp, ug), stretch_units: size - median,
+    edition_size: size, cost_per_purchase: cpp, cost_per_purchase_source: cppSource, units_per_buyer: upb,
+    units_by_group: units, sessions_by_group: sessions,
     paid_units: paidUnits, organic_units: size - paidUnits,
     buyers: size / upb,
     // every unit of the edition is asked for as an entry at the eligible-entry
     // rate (etl/build.py benchmark_targets): the whole edition over that rate
     entries_target: size / e2o,
     entry_rate: e2o,
-    total_sessions: bmSessions * k,
+    total_sessions: GROUPS.reduce((s, g) => s + sessions[g], 0),
     paid: {
       units: paidUnits, budget, cost_per_purchase: cpp, cost_per_purchase_source: cppSource,
       budget_pct_of_launch_value: launchValue > 0 ? budget / launchValue : null,

@@ -21,6 +21,7 @@ import React, { useState } from "react";
 import {
   Card, HorizonBadge, TrackBar, Lozenge, GROUP_DOTS, C, fmt, fmtK, fmtSigned, MINUS, postDecision, useTip, dayElapsed, paidDayFrac,
 } from "../ui.jsx";
+import { stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { paidUnits } from "../figures.mjs";
 
@@ -250,7 +251,9 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Stretch", value: fmtSigned(Math.round(stretchUnits ?? 0)) + " units" },
       { label: "Uplift", value: "×" + fmt(k ?? 0, 2) },
     ],
-    body: "The even uplift the business put on the basket's median. It is the same multiple in every channel and on every day, so the paid share of it is simply the benchmark's paid units at that multiple.",
+    body: snap.benchmark?.stretchTyped
+      ? `The stretch the business put on the basket's median, ${stretchWords(snap)}. Paid's target is its benchmark plus the share of the stretch placed on it.`
+      : "The even uplift the business put on the basket's median. It is the same multiple in every channel and on every day, so the paid share of it is simply the benchmark's paid units at that multiple.",
   };
 
   // ----- decision buttons -----

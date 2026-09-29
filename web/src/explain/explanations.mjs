@@ -21,6 +21,10 @@
 import { fmt, fmtSigned, fmtPct, fmtDay, MINUS, paidDayFrac } from "../format.mjs";
 import { channelWalk, paidUnits } from "../figures.mjs";
 import { inDraw } from "../../../shared/sellThrough.mjs";
+import { describeStretch } from "../../../shared/benchmarkModel.mjs";
+// where the stretch comes from, in the channels' names (BENCHMARK_SPEC 4.4)
+const groupNames = (s) => Object.fromEntries(((s && s.channels) || []).map((c) => [c.key, c.name]));
+const stretchPlaced = (s) => !!(s && s.benchmark && s.benchmark.stretchTyped);
 
 /* ---- formatting ---- */
 const n = (v, d = 0) => fmt(v, d);
@@ -373,7 +377,7 @@ EXPLAIN["release.target"] = (a, { snap: s }) => {
     steps.push(seg`The target is ${n(target)} units, the figure typed for the release on the Target setting tab${partial ? `: ${pct(target / total)} of the ${n(total)} edition` : ""}.`);
   }
   if (chans.length) steps.push(seg`It is split across the channels in the shares the basket's launches took: ${chans.map((ch, i) => `${ch.name} ${n(tParts[i])}`).join(", ")}.`);
-  if (hasBasket(s) && finite(k)) steps.push(seg`Against the benchmark of ${drill(n(h.benchmark), "hero.bm", { close: true })} units, that is ${drill("×" + n(k, 2), "k")}: the same uplift on every channel and every day.`);
+  if (hasBasket(s) && finite(k)) steps.push(seg`Against the benchmark of ${drill(n(h.benchmark), "hero.bm", { close: true })} units, that is ${drill("×" + n(k, 2), "k")}: ${stretchPlaced(s) ? describeStretch(s.benchmark, groupNames(s)) : "the same uplift on every channel and every day"}.`);
   const notes = [];
   if (e.mode !== "products" && productSum > 0 && Math.abs(productSum - target) >= 1) {
     notes.push(`The works' own targets in Airtable add up to ${n(productSum)}. The figure typed for the release stands until it is cleared on the Target setting tab.`);
@@ -477,7 +481,9 @@ EXPLAIN["k"] = (a, { snap: s }) => {
     ],
     total: { v: "×" + n(b.k, 2), label: "the benchmark" },
     sources: [{ key: "settings", gave: "The target" }, { key: "basket", gave: "The benchmark" }],
-    notes: ["The same multiple lifts every volume (sessions, entries, units, spend) on every channel and every day. Conversion rates are held at the benchmark: the plan is the same launch, bigger."],
+    notes: [stretchPlaced(s)
+      ? `The stretch is ${describeStretch(s.benchmark, groupNames(s))}, so each channel's volumes (sessions, entries, units, spend) carry its own uplift and this multiple is the total over the basket. Conversion rates are held at the benchmark.`
+      : "The same multiple lifts every volume (sessions, entries, units, spend) on every channel and every day. Conversion rates are held at the benchmark: the plan is the same launch, bigger."],
     method: "Data model 4a.1",
   };
 };
@@ -558,7 +564,7 @@ EXPLAIN["funnel.rung"] = (a, { snap: s }) => {
     steps.push(seg`Its reference is the median across completed draw launches with sends on file: ${fmtRung(target, unit)}.`);
   } else if (finite(bm) && bm !== 0) {
     steps.push(kind === "vol"
-      ? seg`The target by today is the basket's ${fmtRung(bm, unit)} lifted ×${n(k, 2)}, the even uplift: ${fmtRung(target, unit)}.`
+      ? seg`The target by today is the basket's ${fmtRung(bm, unit)} lifted ×${n(k, 2)}, ${stretchPlaced(s) ? "this channel's own uplift" : "the even uplift"}: ${fmtRung(target, unit)}.`
       : seg`Rates are held at the basket's, so the target is the benchmark itself: ${fmtRung(target, unit)}.`);
   } else {
     steps.push(seg`The plan's figure by today is ${fmtRung(target, unit)}.`);

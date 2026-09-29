@@ -1016,11 +1016,14 @@ With a basket in hand, `targeting_mode` is `"benchmark"` and the launch total is
 demand the basket had (§4a.2), not by a quartile pick:
 
 ```
-K            = edition_size / profile["units"]          # the basket's median demand (§4a.2)
-units[g]     = profile["units_by_group"][g]    × K        # sums to edition_size exactly
-sessions[g]  = profile["sessions_by_group"][g] × K
-entries[g]   = units[g] / 0.8                             # the eligible-entry → order rate, §4 D
-paid_budget  = profile["units_by_group"]["paid"] × cost_per_purchase × K    # the release's figure, else the basket's median cost per paid unit, else the panel constant (§4 E)
+K            = edition_size / profile["units"]          # the basket's median demand (§4a.2): the stretch as one multiple
+stretch      = edition_size − profile["units"]
+w[g]         = stretch_from[g] renormalised over the groups in plan with a benchmark, else profile["share_units"][g]   # where the stretch comes from, §4a.4
+units[g]     = profile["units_by_group"][g] + stretch × w[g]   # sums to edition_size exactly; = benchmark × K when w is the basket's shares
+k[g]         = units[g] / profile["units_by_group"][g]         # the group's own uplift; K for every group with the basket's shares
+sessions[g]  = profile["sessions_by_group"][g] × k[g]          # conversion held
+entries[g]   = units[g] / 0.8                                  # the eligible-entry → order rate, §4 D
+paid_budget  = units["paid"] × cost_per_purchase               # the release's figure, else the basket's median cost per paid unit, else the panel constant (§4 E)
 ```
 
 `compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
@@ -1041,24 +1044,43 @@ group's target is split across its raw channels with the `order_split` medians o
 `quality = "benchmark"` marking where the level came from. So the channel-level cards, the funnel
 diagnostics and the untracked-redistribution comparisons of §6.2 all keep working untouched.
 
+**Where the stretch comes from** (`stretch_weights`, `allocate_stretch`, `stretch_typed` in
+`etl/build.py`; the release input `stretch_from`, a share per group, saved from the Target
+setting tab and validated by the server). The gap between the target and the basket's median
+is asked of the groups in shares: the basket's own unit shares by default, which is every
+group lifted by the same K (the even uplift), or the shares typed on the tab when the plan
+knows where the extra will come from - most of it from more paid spend, say, or an artist
+expected to outperform. A group set aside (`channels_off`) or with no benchmark to lift takes
+none, and a share typed on it falls to the others; a negative stretch (a basket that reached
+more than the edition) is a cut placed the same way, and a cut bigger than a group's benchmark
+stops at zero with the rest falling on the others, so the groups always sum to the edition.
+Each group then carries its own uplift `k[g]`, its sessions and entries with it, and the paid
+budget follows the paid units; K stays the total over the basket. `targets` carries `k`,
+`k_by_group`, `stretch_from` (the weights in force), `stretch_typed` and `stretch_units`; the
+snapshot's benchmark block `kByGroup`, `stretchFrom` and `stretchTyped`, which the cards read
+to say where the stretch was placed (`shared/benchmarkModel.mjs` `describeStretch`).
+Decision 25 (§11c) is amended accordingly: the stretch is one even uplift *unless placed*, and
+conversion rates are held either way.
+
 ### 4a.4 The K ratio holds on every day
 
-The daily plan is the benchmark's own shape, scaled once:
+The daily plan is the benchmark's own shape, scaled once per group:
 
 ```
 benchmark_plan[g][d] = profile["units_by_group"][g] × curve(basket, g, "entries", pdsa(d))
-target_plan[g][d]    = benchmark_plan[g][d] × K
+target_plan[g][d]    = benchmark_plan[g][d] × k[g]     # K for every group unless the stretch was placed
 ```
 
 (`"entries"`: every unit plan is entry-timed, §5.3; paid's curve is its even daily share,
 `paid_pace`, on both lines alike.)
 
-Target and benchmark therefore stand in exactly the ratio K at **every** point of the campaign,
-not only at close - which is what makes the even uplift legible on the trajectory: the gap
+Target and benchmark therefore stand in exactly the ratio `k[g]` at **every** point of the
+campaign, not only at close - which is what makes the uplift legible on the trajectory: the gap
 between the two lines is the stretch, widening with the curve, never crossing and never
-converging. The same identity is what the snapshot asserts: `hero.benchmarkToday × K ==
-hero.expectedToday` and `channels[].bmExp × K == channels[].exp`, to within rounding. If those
-ever disagree, the curve was evaluated twice with different members, not the maths.
+converging. The same identity is what the snapshot asserts: `channels[].bmExp × k[g] ==
+channels[].exp` and, summed over the groups, `hero.expectedToday` (with the basket's own
+shares, `hero.benchmarkToday × K`), to within rounding. If those ever disagree, the curve was
+evaluated twice with different members, not the maths.
 
 ---
 
@@ -2175,7 +2197,11 @@ The four that were live arguments, recorded so they are not relitigated from the
     for "is this release pacing normally?"; it is the wrong shape for "did we hit the number",
     because a band gives a launch two answers and lets the reader pick. One fill for the target,
     one dotted outline for the benchmark, and the actual in front of both.
-25. **The stretch is one even uplift, with conversion rates held.** K multiplies every volume in
+25. **The stretch is one even uplift unless placed, with conversion rates held either way.**
+    Since 29 September 2026 the Target setting tab can say where the stretch comes from (§4a.3,
+    `stretch_from`): each group's target is then its benchmark plus its share, its sessions and
+    entries at its own uplift, and the paid budget follows the paid units. With nothing typed
+    the shares are the basket's own, which is the even uplift below. K multiplies every volume in
     every channel on every day; no channel is asked to convert better than the basket did. The
     alternative - spreading the uplift by channel, or buying part of it with a conversion
     assumption - is exactly the quartile-lever model, retired on 2026-09-23 (§3): the one

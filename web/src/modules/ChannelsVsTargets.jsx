@@ -22,7 +22,7 @@
  * and red below. The stretch multiple is not printed: it is in the Stretch
  * key's popup and the target's explainer, rather than drawn on five bars. */
 import React, { useState } from "react";
-import { Card, HorizonBadge, GROUP_DOTS, BmOutline, BADGE_WORDS, C, fmt, useTip } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, BmOutline, BADGE_WORDS, C, fmt, useTip, stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 
 /* The fill nearly fills the slot and the actual sits well inside it, so the
@@ -94,7 +94,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   // benchmark, and the foot says so rather than printing a dash
   const offGroups = new Set((snap.benchmark && snap.benchmark.channelsOff) || []);
   const stretchNote = k > 0
-    ? `The target is ×${fmt(k, 2)} the benchmark - the same even uplift in every channel and on every day.`
+    ? `The target is ×${fmt(k, 2)} the benchmark - ${stretchWords(snap)}.`
     : undefined;
 
   const seg = (opts, value, set) => (

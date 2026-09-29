@@ -159,7 +159,9 @@ function Campaigns({ code, chosen, all, suggested, onChange }) {
  * holds (funnelByGroup conv_benchmark), so target sessions at it give target
  * units. The basket's median entries per session (profile.conv) is another
  * quantity, entries rather than units, and no target is read from it. */
-function BasketTable({ profile, off, k }) {
+function BasketTable({ profile, off, k, kg }) {
+  // each channel's own uplift (BENCHMARK_SPEC 4.4): K unless the stretch was placed
+  const kgOf = (key) => (kg && Number.isFinite(kg[key]) ? kg[key] : k);
   const rows = GROUPS.map((g) => {
     const bmS = profile.sessions_by_group[g.key] || 0, bmU = profile.units_by_group[g.key] || 0;
     return { ...g, off: off.includes(g.key), bmS, bmU, conv: bmS > 0 ? bmU / bmS : null };
@@ -171,9 +173,9 @@ function BasketTable({ profile, off, k }) {
           <tr>
             <th className="l">Channel</th>
             <th className="bm" title="The basket's median units of demand from this channel: units sold, plus what the eligible entrants left without a unit, or whose payment failed, would have bought at the entry rate.">Benchmark units</th>
-            <th title="The benchmark lifted by the same K as every other volume.">Target units</th>
+            <th title="The benchmark plus this channel's share of the stretch: lifted by K everywhere unless the stretch was placed below, then by the channel's own uplift.">Target units</th>
             <th className="bm" title="The basket's median sessions from this channel.">Benchmark sessions</th>
-            <th title="The benchmark lifted by K.">Target sessions</th>
+            <th title="The benchmark sessions at the channel's own uplift, conversion held.">Target sessions</th>
             <th title="Benchmark units over benchmark sessions: the rate the target holds, so target sessions at it give target units. Conversion rates are held at the benchmark - the uplift is asked of traffic and spend only.">Session → unit (held)</th>
           </tr>
         </thead>
@@ -187,9 +189,9 @@ function BasketTable({ profile, off, k }) {
             <tr key={r.key}>
               <td className="l">{r.name}</td>
               <td className="bm">{fmt(r.bmU)}</td>
-              <td className="tg">{fmt(r.bmU * k)}</td>
+              <td className="tg">{fmt(r.bmU * kgOf(r.key))}</td>
               <td className="bm">{fmt(r.bmS)}</td>
-              <td className="tg">{fmt(r.bmS * k)}</td>
+              <td className="tg">{fmt(r.bmS * kgOf(r.key))}</td>
               <td>{r.conv === null ? "" : fmtPct(r.conv, 2)}</td>
             </tr>
           ))}
@@ -198,7 +200,7 @@ function BasketTable({ profile, off, k }) {
             <td className="bm">{fmt(profile.units)}</td>
             <td>{fmt(profile.units * k)}</td>
             <td className="bm">{fmt(profile.sessions)}</td>
-            <td>{fmt(profile.sessions * k)}</td>
+            <td>{fmt(GROUPS.reduce((s, g) => s + (profile.sessions_by_group[g.key] || 0) * kgOf(g.key), 0))}</td>
             <td />
           </tr>
         </tbody>
@@ -582,6 +584,18 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const editionSize = econ.edition_size || 0;
   const bmUnits = profile && profile.units > 0 ? profile.units : null;
   const k = bmUnits ? (editionSize > 0 ? editionSize / bmUnits : bm ? bm.k : null) : null;
+  /* where the stretch comes from (BENCHMARK_SPEC 4.4): a share per channel
+   * group, typed as whole percentages and kept as fractions; blank, or every
+   * cell blank, means the basket's own shares - the even uplift */
+  const stretchFrom = inp.stretch_from && typeof inp.stretch_from === "object" && !Array.isArray(inp.stretch_from) ? inp.stretch_from : null;
+  const stretchTyped = !!(stretchFrom && GROUPS.some((g) => !isOff(g.key) && Number(stretchFrom[g.key]) > 0));
+  const setStretch = (key) => (e) => {
+    const v = e.target.value;
+    const next = { ...(stretchFrom || {}) };
+    if (v === "" || v === null || v === undefined) delete next[key];
+    else next[key] = Math.max(Number(v), 0) / 100;
+    setInp({ ...inp, stretch_from: Object.keys(next).length ? next : null });
+  };
   const paidShare = profile ? profile.share_sessions.paid : null;
   // the price of a paid unit: the release's own, else the basket's median cost
   // per paid unit, else the panel's constant (shared/benchmarkModel.mjs)
@@ -737,7 +751,13 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     edition_size: editionSize, unit_price: econ.unit_price || 0, cost_per_purchase: cpp,
     units_per_buyer: (snap.targets || {}).units_per_buyer || 0,
     entry_conversion_rate: inp.entry_conversion_rate,
+    stretch_from: stretchFrom,
   }, b) : null;
+  const signed = (v) => (v < 0 ? MINUS : "+") + fmt(Math.abs(v), 0);
+  const stretchHelp = !T ? "Choose a basket first."
+    : stretchTyped
+      ? `The stretch of ${signed(Math.round(T.stretch_units))} units is asked of ${GROUPS.filter((g) => T.stretch_from[g.key] > 0).sort((a, b) => T.stretch_from[b.key] - T.stretch_from[a.key]).map((g) => `${g.name} ${Math.round(100 * T.stretch_from[g.key])}% (×${fmt(T.k_by_group[g.key], 2)})`).join(", ")}; the other channels stay at their benchmark.`
+      : `Blank: each channel takes its share of the ${signed(Math.round(T.stretch_units))}-unit stretch in proportion to its benchmark, the same uplift ×${fmt(k || 1, 2)} everywhere. Type shares to place it, most of it on paid, say.`;
   const BM = T ? T.benchmark : null;
   const paidOff = isOff("paid");
   const figure = (label, target, bmv, format, tip, opts = {}) => {
@@ -749,11 +769,11 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     return { label, tip, value: opts.paid && paidOff ? "–" : target === null ? "–" : format(target), subs, red: !!(opts.sense && opts.sense.breached), subRed: !!(opts.sense && opts.sense.breached) };
   };
   const figures = T ? [
-    figure("Paid units", T.paid_units, BM.paid_units, (v) => fmt(v, 0), "The basket's median paid units, lifted by K.", { paid: true }),
+    figure("Paid units", T.paid_units, BM.paid_units, (v) => fmt(v, 0), "The basket's median paid units plus paid's share of the stretch: lifted by K when the stretch is even, more when it is placed on paid.", { paid: true }),
     figure("Buyers", T.buyers, BM.buyers, (v) => fmt(v, 0), `People, not pieces: the target divided by ${fmt(T.units_per_buyer, 3)} units per buyer.`),
     figure("Eligible entries", T.entries_target, BM.entries, (v) => fmt(v, 0),
       `Target units ÷ the ${T.entry_rate ? Math.round(T.entry_rate * 100) + "%" : "80%"} eligible-entry → order rate (the release's own where typed, else the panel's): every unit is asked for as an entry. The benchmark is the basket's median units asked for the same way.`),
-    figure("Sessions", T.total_sessions, BM.sessions, (v) => fmt(v, 0), "The basket's median sessions, lifted by the same K as every other volume."),
+    figure("Sessions", T.total_sessions, BM.sessions, (v) => fmt(v, 0), "Each channel's benchmark sessions at its own uplift, conversion held: the basket's median sessions × K when the stretch is even."),
     figure("Paid budget", T.paid.budget, BM.paid_budget, (v) => fmtMoney(v, 0), `Paid units × ${fmtMoney(cpp)} per unit.`, { paid: true }),
     figure("Of launch value", T.paid.budget_pct_of_launch_value ?? 0, BM.budget_pct_of_launch_value ?? 0, (v) => fmtPct(v, 1),
       "Sense check: paid budget should stay under 6% of launch value.", { paid: true, sense: { breached: !!T.paid.sense_check_breached } }),
@@ -978,15 +998,49 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
               </div>
             </Field>
           </div>
-          {profile ? <BasketTable profile={profile} off={off} k={k || 1} /> : (
+          {profile && (
+            <div className="ts-grid" style={{ marginTop: 20 }}>
+              <Field label="Where the stretch comes from" help={stretchHelp}
+                tip="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions and entries lifted to match and conversion held. Blank: the basket's own shares, the same uplift in every channel.">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 14px", alignItems: "flex-end" }}>
+                  {GROUPS.map((g) => {
+                    const gOff = isOff(g.key);
+                    const w = T && T.stretch_from ? T.stretch_from[g.key] : null;
+                    const typed = stretchFrom && stretchFrom[g.key] !== undefined && stretchFrom[g.key] !== null;
+                    return (
+                      <label key={g.key} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: C.muted, minWidth: 118 }}>
+                        <span>{g.name}{gOff ? " · not in plan" : ""}</span>
+                        <div className={`ts-box num${gOff ? " dis" : ""}`} style={{ width: 118 }}>
+                          <input type="number" min="0" max="100" step="1" disabled={gOff}
+                            placeholder={w === null || w === undefined ? "" : fmt(100 * w, 0)}
+                            value={typed ? Math.round(100 * Number(stretchFrom[g.key])) : ""}
+                            onChange={setStretch(g.key)} />
+                          <span className="unit">%</span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                  <div className="ts-row" style={{ gap: 8 }}>
+                    <button type="button" className="ts-btn secondary" disabled={!stretchTyped} onClick={() => setInp({ ...inp, stretch_from: null })}
+                      title="Back to the basket's own shares: the same uplift in every channel.">Even</button>
+                    <button type="button" className="ts-btn secondary" disabled={paidOff} onClick={() => setInp({ ...inp, stretch_from: { paid: 1 } })}
+                      title="The whole stretch from paid: the other channels stay at their benchmark.">All from paid</button>
+                  </div>
+                </div>
+              </Field>
+            </div>
+          )}
+          {profile ? <BasketTable profile={profile} off={off} k={k || 1} kg={T ? T.k_by_group : null} /> : (
             <div className="ts-caption">
               No basket yet. Choose one to see the benchmark and the targets it gives; a release saved without one is
               benchmarked against the launches nearest its target and price.
             </div>
           )}
           <div className="ts-caption">
-            The target is the benchmark lifted by <b>×{k ? fmt(k, 2) : "–"}</b> in every channel and on every day. Conversion rates are held at the
-            benchmark: the uplift is asked of traffic and spend only.
+            {stretchTyped
+              ? <>The target is the benchmark plus the stretch, placed as above: each channel carries its own uplift on every day, <b>×{k ? fmt(k, 2) : "–"}</b> over the basket in all. </>
+              : <>The target is the benchmark lifted by <b>×{k ? fmt(k, 2) : "–"}</b> in every channel and on every day. </>}
+            Conversion rates are held at the benchmark: the uplift is asked of traffic and spend only.
           </div>
           {directSpread && (
             <div className="ts-caption">

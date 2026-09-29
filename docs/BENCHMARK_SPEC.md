@@ -286,17 +286,22 @@ takes the suggested one. There is no other model: the quartile levers were retir
 no median units on the channels in plan - keeps its actuals-only page.
 
 ```
-K            = edition_size / profile["units"]
-units[g]     = profile["units_by_group"][g]    * K       # sums to edition_size exactly
-sessions[g]  = profile["sessions_by_group"][g] * K
+K            = edition_size / profile["units"]           # the stretch as one multiple
+stretch      = edition_size - profile["units"]
+w[g]         = stretch_from[g] renormalised over the groups in plan with a benchmark, else share_units[g]   # §4.4
+units[g]     = profile["units_by_group"][g] + stretch * w[g]    # sums to edition_size exactly; benchmark * K with the basket's shares
+k[g]         = units[g] / profile["units_by_group"][g]          # the group's own uplift, K for every group with the basket's shares
+sessions[g]  = profile["sessions_by_group"][g] * k[g]
 entries[g]   = units[g] / e2o                            # e2o = eligible_entry_to_order (0.8)
 entries      = edition_size / e2o                        # every unit asked for as an entry
-paid_budget  = profile["units_by_group"]["paid"] * cost_per_purchase * K   # the release's figure, else the basket's median cost per paid unit, else the panel constant
+paid_budget  = units["paid"] * cost_per_purchase          # the release's figure, else the basket's median cost per paid unit, else the panel constant
 ```
 
 `compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
 `per_channel`, `paid{...}`, `launch_value`, `units_per_buyer`, `buyers`, `buyers_by_group`,
-`organic_sessions`, `total_sessions`, `entries_target`, `buffer` - or `None` with no basket.
+`organic_sessions`, `total_sessions`, `entries_target`, `buffer`, and the uplift as `k`,
+`k_by_group`, `stretch_from` (the weights in force), `stretch_typed` and `stretch_units` -
+or `None` with no basket.
 `buffer` (and the snapshot's `benchmarks.targetBuffer`) is the LE workbook's 0.75 haircut,
 carried for reference only: no colour reads it (§7).
 
@@ -324,8 +329,27 @@ target_plan[g][d]    = benchmark_plan[g][d] * K
 The curve is the entries one: units are secured units, which count an entry the day it is
 made, so every unit plan is entry-timed (DATA_MODEL §5.3).
 
-So target and benchmark stay in exactly the K ratio on every day — which is what makes the
-even uplift legible on the trajectory.
+So target and benchmark stay in exactly the `k[g]` ratio on every day (K for every group
+unless the stretch was placed, §4.4) - which is what makes the uplift legible on the
+trajectory.
+
+### 4.4 Where the stretch comes from
+
+The gap between the target and the basket's median is asked of the channel groups in shares
+(`stretch_weights`, `allocate_stretch` in `etl/build.py`; `stretchWeights`, `allocateStretch`
+in `shared/benchmarkModel.mjs`): the basket's own unit shares by default, which is every group
+lifted by the same K, or the release input `stretch_from` - a share per group typed on the
+Target setting tab (§8), any non-negative numbers, read over the groups in plan that have a
+benchmark to lift and renormalised. A group set aside or with no benchmark takes none, and a
+share typed on it falls to the others. A negative stretch is a cut placed the same way; a cut
+bigger than a group's benchmark stops at zero and the rest falls on the others, so the groups
+always sum to the edition. Each group then carries its own uplift `k[g] = units[g] /
+benchmark[g]`: its sessions and entries follow it with conversion held, the paid budget is the
+paid units at the price, the daily plan and expected-by-today read `k[g]` (§4.1), and K remains
+the total over the basket. The server validates `stretch_from` (object of known group keys,
+numbers ≥ 0; null, or all blank, means the basket's shares). The cards name where the stretch
+was placed (`describeStretch`): the hero's, the funnel's, the channels' and the paid card's
+stretch popups, and the explainer.
 
 Paid is the exception to the curves: its plan by any day is the even share of its target over
 the days paid runs, the day after the announce to the close (`PAID_START_DAYS`), since paid
@@ -454,6 +478,10 @@ All new fields are **additive**. Existing consumers keep working.
     "unitsSold": 190.0, "nShort": 3,                          // the sales beside it, members that sold out short
     "sessions": 23543.0, "entries": 194.0, "campaignDays": 26.0,
     "k": 1.4019, "stretchUnits": 86.0, "stretchPct": 0.4019,
+    // §4.4: each group's own uplift, the share of the stretch it carries, and
+    // whether the tab placed it (false: the basket's own shares, K everywhere)
+    "kByGroup": { "aa_email": 1.4019, ..., "paid": 1.4019 },
+    "stretchFrom": { "aa_email": 0.39, ..., "paid": 0.25 }, "stretchTyped": false,
     "unitsByGroup":    { "aa_email": 83.5, ... },
     "sessionsByGroup": { "aa_email": 4579.0, ... },
     "convByGroup":     { "aa_email": 0.0155, ... },
@@ -687,7 +715,11 @@ apply is a disabled box, never a dash):
    (`funnelByGroup.conv_benchmark`), so a row's target sessions at it give its target units; the
    basket's median entries per session (`convByGroup`) is not shown there. The table and the chips
    follow the switches and the launches ticked in the picker live, through the same model the
-   build runs.
+   build runs. Under the switches, **Where the stretch comes from** (§4.4): a percentage box
+   per channel group in plan (a group set aside reads `not in plan`), blank meaning the
+   basket's own shares with the effective share as the placeholder, an `Even` button that
+   clears them and an `All from paid` preset; the helper under it says what each channel is
+   asked for and at what uplift, and the table's target columns follow each channel's own.
 4. **Products & economics** card — one grid drawn the way Airtable draws one: the cell is the
    input, a glyph on every header carries the unit (`#` a count, `%` and `€`, `ƒ` computed, a
    tick), headers never wrap and the grid scrolls sideways inside the card with the row number
