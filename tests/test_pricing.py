@@ -252,7 +252,8 @@ def test_one_member_basket() -> None:
     one = str(panel.iloc[0]["release_name"])
     prof = B.basket_profile(panel, [one])
     assert B.MIN_MEMBERS == 1 and prof["n"] == 1 and prof["members"] == [one]
-    assert prof["units"] == float(panel.iloc[0]["tot_total_product_units"]) and prof["units_p25"] == prof["units_p75"] == prof["units"]
+    assert prof["units"] == float(panel.iloc[0]["demand_units"]) and prof["units_sold"] == float(panel.iloc[0]["tot_total_product_units"])
+    assert prof["units_p25"] == prof["units_p75"] == prof["units"]
     assert B.basket_profile(panel, [])["n"] == 0
     print("one-member basket: ok")
 

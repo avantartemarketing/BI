@@ -170,7 +170,7 @@ function BasketTable({ profile, off, k }) {
         <thead>
           <tr>
             <th className="l">Channel</th>
-            <th className="bm" title="The basket's median units from this channel.">Benchmark units</th>
+            <th className="bm" title="The basket's median units of demand from this channel: units sold, plus what the eligible entrants left without a unit, or whose payment failed, would have bought at the entry rate.">Benchmark units</th>
             <th title="The benchmark lifted by the same K as every other volume.">Target units</th>
             <th className="bm" title="The basket's median sessions from this channel.">Benchmark sessions</th>
             <th title="The benchmark lifted by K.">Target sessions</th>
@@ -939,9 +939,14 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
               {profile ? (
                 <div className="ts-chips">
                   <span className="ts-chip" title="Launches in the basket. Under six and the median moves a lot on one launch.">{fmt(prof ? prof.n : bm && bm.basket ? bm.basket.n : null)} launches</span>
-                  <span className="ts-chip" title={off.length ? "Median units without the channels set aside, with the 25th to 75th percentile read the same way." : "Median units, with the 25th to 75th percentile of the basket beside it."}>
-                    median {fmt(profile.units)} units · P25 {fmt(profile.units_p25)} to P75 {fmt(profile.units_p75)}
+                  <span className="ts-chip" title={(off.length ? "Median units of demand without the channels set aside, with the 25th to 75th percentile read the same way." : "Median units of demand, with the 25th to 75th percentile of the basket beside it.") + " Demand is what a launch would have sold with enough supply: its units sold, plus what the eligible entrants left without a unit, or whose payment failed, would have bought at the entry rate."}>
+                    median {fmt(profile.units)} units of demand · P25 {fmt(profile.units_p25)} to P75 {fmt(profile.units_p75)}
                   </span>
+                  {profile.n_short > 0 && (
+                    <span className="ts-chip" title={`${fmt(profile.n_short)} of the basket's launches sold out with people left wanting. The benchmark counts the demand they had, not the edition they happened to have; on sales alone the basket's median is ${fmt(profile.units_sold)} units.`}>
+                      {fmt(profile.n_short)} sold out short · median sold {fmt(profile.units_sold)}
+                    </span>
+                  )}
                   {profile.price > 0 && (
                     <span className="ts-chip" title="Median unit price of the basket in euros (from Airtable), with its 25th to 75th percentile. The default basket matches on price as well as size (BENCHMARK_SPEC 3.1).">
                       median price {fmtMoney(profile.price)} · {fmtMoney(profile.price_p25)} to {fmtMoney(profile.price_p75)}

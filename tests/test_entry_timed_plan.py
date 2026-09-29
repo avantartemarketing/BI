@@ -134,7 +134,10 @@ def verify(tag, snap, curves):
         for r in c["daily"]:
             check(abs(r["plan"] - r["bm"] * K) <= 0.006 * K + 0.01, f"{tag} {g} {r['date']}: plan {r['plan']} is not bm {r['bm']} x K {K}")
         check(abs(float(c["bmExp"]) * K - float(c["exp"])) <= 0.06 * K + 0.06, f"{tag} {g}: bmExp {c['bmExp']} x K {K} is not exp {c['exp']}")
-        if g == "paid" or T <= 0:
+        # a target under a unit has no close-day step to read: the plan is
+        # printed to a hundredth, and a basket whose median artist-referral
+        # share is a few hundredths of a percent gives one
+        if g == "paid" or T < 1:
             continue
         # the plan is the entries curve on every day, not the units curve
         for r in c["daily"]:

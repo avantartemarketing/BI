@@ -10,8 +10,9 @@
  * the same thing the build will.
  *
  * A profile is the basket's medians as etl/baskets.py basket_profile writes
- * them: units, sessions, entries, units_p25, units_p75, units_by_group,
- * sessions_by_group, share_units, share_sessions, conv.
+ * them: units (demand: what the launches would have sold with enough
+ * supply), units_sold, n_short, sessions, entries, units_p25, units_p75,
+ * units_by_group, sessions_by_group, share_units, share_sessions, conv.
  * The snapshot's benchmark block carries the same figures under camel-case
  * names, with the basket's full medians as the *All fields; profileOf turns
  * that block back into a profile so the switches can be re-read in place.
@@ -43,7 +44,8 @@ export function applyChannelsOff(profile, off) {
   const out = {
     ...profile,
     channels_off: offList,
-    units_all: num(profile.units), sessions_all: num(profile.sessions), entries_all: num(profile.entries),
+    units_all: num(profile.units), units_sold_all: num(profile.units_sold ?? profile.units),
+    sessions_all: num(profile.sessions), entries_all: num(profile.entries),
     units_by_group_all: unitsAll, sessions_by_group_all: sessAll,
   };
   if (!offList.length) return out;
@@ -52,6 +54,7 @@ export function applyChannelsOff(profile, off) {
   const sessions = keep.reduce((s, g) => s + sessAll[g], 0);
   const ratio = out.units_all > 0 ? units / out.units_all : 0;
   out.units = units;
+  out.units_sold = out.units_sold_all * ratio;
   out.sessions = sessions;
   out.entries = out.entries_all * ratio;
   out.units_p25 = num(profile.units_p25) * ratio;
@@ -82,6 +85,9 @@ export function profileOf(bm) {
   return {
     n: bm.basket ? bm.basket.n : null,
     units: num(bm.unitsAll ?? bm.units), sessions: num(bm.sessionsAll ?? bm.sessions), entries: num(bm.entriesAll ?? bm.entries),
+    // the sales beside the demand, and the members that sold out short; a
+    // snapshot built before demand reads its units as both
+    units_sold: num(bm.unitsSoldAll ?? bm.unitsSold ?? bm.unitsAll ?? bm.units), n_short: num(bm.nShort),
     units_p25: num(bm.unitsP25All ?? bm.unitsP25), units_p75: num(bm.unitsP75All ?? bm.unitsP75),
     price: num(bm.price), price_p25: num(bm.priceP25), price_p75: num(bm.priceP75), n_priced: num(bm.nPriced),
     campaign_days: num(bm.campaignDays),
@@ -149,7 +155,7 @@ export function benchmarkTargets(profile, inp, b) {
     },
     launch_value: launchValue,
     benchmark: {
-      units: median, paid_units: bmPaid,
+      units: median, units_sold: num(profile.units_sold) || median, n_short: num(profile.n_short), paid_units: bmPaid,
       // the basket's median units asked for as entries the way the target is,
       // so the row keeps the K ratio like every other; the basket's measured
       // median entries stay on the snapshot as data (benchmark.entries)

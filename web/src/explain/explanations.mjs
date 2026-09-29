@@ -405,7 +405,10 @@ EXPLAIN["hero.bm"] = (a, { snap: s }) => {
   const parts = roundParts(chans.map((ch) => (close ? ch.bm : ch.bmExp) ?? 0), v);
   const steps = [
     seg`The basket is ${basketName(s)} like this one, chosen on the Target setting tab. This release is never one of them.`,
-    seg`Their median result is ${n(b.units)} units${finite(b.unitsP25) && finite(b.unitsP75) ? ` (half of them landed between ${n(b.unitsP25)} and ${n(b.unitsP75)})` : ""}, split across the channels in their median shares.`,
+    seg`Their median demand is ${n(b.units)} units${finite(b.unitsP25) && finite(b.unitsP75) ? ` (half of them landed between ${n(b.unitsP25)} and ${n(b.unitsP75)})` : ""}, split across the channels in their median shares.`,
+    ...(finite(b.unitsSold) && b.nShort > 0
+      ? [seg`Demand is what a launch would have sold with enough supply: its units sold, plus what the eligible entrants left without a unit, or whose payment failed, would have bought at the entry rate. ${n(b.nShort)} of these launches sold out with people left wanting; on sales alone their median is ${n(b.unitsSold)} units.`]
+      : []),
   ];
   if (close) steps.push(seg`That gives ${chans.map((ch, i) => `${ch.name} ${n(parts[i])}`).join(", ")}.`);
   else {

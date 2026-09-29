@@ -282,8 +282,9 @@ skips it), and `etl/aggregate_events.py` - run before `build.py` on every refres
 the daily export from that and the conversion events with the definitions in
 docs/DATA_MODEL.md §2.2, reconciles the rebuild against the export column by column
 (`data/app/reconciliation.json`, and the verdict in the refresh status), and writes
-`data/app/release_people.csv`: per release, unique entrants and buyers, returning collectors
-and overlap with the artist's previous releases. It also fills in the campaign clock for the
+`data/app/release_people.csv`: per release, unique entrants and buyers, returning collectors,
+overlap with the artist's previous releases, winners who did not pay and entries whose payment
+failed (the demand the benchmark counts, docs §4a.2). It also fills in the campaign clock for the
 releases the upstream feed has no dates for (upstream dates always win, but an announce on or
 after the release's own close is a placeholder and is inferred; otherwise the first
 big traffic spike or the day the draw opens, and the allocation day - docs §1.5), recorded

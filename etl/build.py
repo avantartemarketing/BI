@@ -5283,6 +5283,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                        "n": basket["n"], "thin": basket["thin"],
                        "suggestedId": basket["suggestedId"]},
             "units": round(profile["units"], 1),
+            # units are demand (baskets.demand_columns): what the basket's
+            # launches would have sold with enough supply; the sales beside
+            # them, and how many members sold out with people left wanting
+            "unitsSold": round(profile.get("units_sold", profile["units"]), 1),
+            "nShort": int(profile.get("n_short") or 0),
             "unitsP25": round(profile["units_p25"], 1), "unitsP75": round(profile["units_p75"], 1),
             # the basket's unit prices in euros (median and middle half), from
             # Airtable via the panel - 0 when no member is priced (§3.2)
@@ -5304,6 +5309,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # rounded, they put the tab's paid budget EUR 1-12 off the page's
             "channelsOff": list(profile.get("channels_off") or []),
             "unitsAll": round(profile.get("units_all", profile["units"]), 6),
+            "unitsSoldAll": round(profile.get("units_sold_all", profile.get("units_sold", profile["units"])), 6),
             "sessionsAll": round(profile.get("sessions_all", profile["sessions"]), 6),
             "entriesAll": round(profile.get("entries_all", profile["entries"]), 6),
             "unitsP25All": round(profile.get("units_p25_all", profile["units_p25"]), 6),

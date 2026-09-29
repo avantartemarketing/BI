@@ -143,10 +143,25 @@ Every reference number on the page comes from the release's **benchmark basket**
 the past draw launches most like this one, matched on edition size and unit
 price, with the artist's own earlier launches first and recent launches
 preferred. The benchmark is that basket's **median**, per metric and per channel
-group: units, sessions and eligible entries at close, each group's share of
-them, each group's conversion rate, the campaign length, and the pace through
-the window. The basket is suggested automatically and can be changed on the
-Target setting tab; a release is never in its own basket.
+group: units of demand, sessions and eligible entries at close, each group's
+share of them, each group's conversion rate, the campaign length, and the pace
+through the window. The basket is suggested automatically and can be changed on
+the Target setting tab; a release is never in its own basket.
+
+**Units are demand, not sales.** A launch that sold out with people left
+wanting reads as the demand it had: its units sold, plus what the eligible
+entrants left without a unit, and the entrants whose payment failed, would have
+bought at the 80% entry rate - the same reading as a live release's secured
+units. We are the Revolution sold 987 of 1,000 with 668 eligible entrants left
+wanting 658 units and 109 entries whose payment failed: on sales it looks like a
+launch that needed all of its traffic for 987 units; on demand it reached about
+1,600. A comparable that did not sell out reads as its sales, and a winner who
+did not pay adds nothing: they were offered a unit. The picker and the Target
+setting tab say how many of the basket sold out short and what their median
+sales were. (Why: read on sales, a basket of sold-out launches asks the next one
+for more sessions and entries per unit than it needs, and calls the difference a
+stretch; on the nine releases benchmarked in September 2026 the uplift fell by
+4-30%, Warhol's from ×3.0 to ×2.1.)
 
 Until September 2026 the model was a stack of quartile picks instead - a Low /
 Medium / High chosen per channel from the whole historical panel. That model was
@@ -165,7 +180,7 @@ release nor its basket has one (Step 5).
 ### Step 1 - the uplift
 
 ```
-K = target units / benchmark units
+K = target units / benchmark units of demand
 ```
 
 The target is the edition, or the part of it being sold. K is the one even
@@ -224,8 +239,8 @@ paid_budget = paid_units × cost per purchase
 
 The cost per purchase is the price of a paid unit, taken in this order: the
 release's own figure, where one is typed on the Target setting tab; else the
-basket's median cost per paid unit (each launch's Meta spend over the paid units
-it sold), once three or more of the basket's launches have one on file; else the
+basket's median cost per paid unit (each launch's Meta spend over its paid units
+of demand), once three or more of the basket's launches have one on file; else the
 panel's €177. The tab says which of the three priced the release.
 
 Sense check: **paid budget should stay under 6% of launch value** - the dashboard

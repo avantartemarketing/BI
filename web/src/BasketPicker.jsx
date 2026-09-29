@@ -59,19 +59,24 @@ const median = (values) => quantile(values, 0.5);
  * the basket is saved; this is the shape of the answer, not the answer. */
 function liveProfile(rows) {
   const units = rows.map((r) => r.units), priced = rows.map((r) => r.price).filter((p) => p > 0);
-  const total = median(units), sessions = median(rows.map((r) => r.sessions));
+  // the benchmark's units are demand (etl/baskets.py demand_columns): what
+  // each launch would have sold with enough supply; a row without the
+  // figure reads its sales
+  const demand = rows.map((r) => (r.demand > 0 ? r.demand : r.units));
+  const total = median(demand), sessions = median(rows.map((r) => r.sessions));
   // each group's median share, renormalised so share x total adds back to the
   // headline median - etl/baskets.py _shares, over the same rows
-  const shares = (key) => {
-    const raw = Object.fromEntries(GROUPS.map((g) => [g, median(rows.map((r) => ((r[key] || {})[g])))]));
+  const shares = (key, fallback) => {
+    const raw = Object.fromEntries(GROUPS.map((g) => [g, median(rows.map((r) => ((r[key] || r[fallback] || {})[g])))]));
     const tot = GROUPS.reduce((s, g) => s + raw[g], 0);
     return Object.fromEntries(GROUPS.map((g) => [g, tot > 0 ? raw[g] / tot : 0]));
   };
-  const share_units = shares("unit_shares"), share_sessions = shares("sess_shares");
+  const share_units = shares("demand_shares", "unit_shares"), share_sessions = shares("sess_shares");
   const positive = (vals) => median(vals.filter((v) => typeof v === "number" && v > 0));
   return {
     n: rows.length, members: rows.map((r) => r.release_name),
-    units: total, units_p25: quantile(units, 0.25), units_p75: quantile(units, 0.75),
+    units: total, units_sold: median(units), n_short: rows.filter((r) => r.sold_short).length,
+    units_p25: quantile(demand, 0.25), units_p75: quantile(demand, 0.75),
     price: median(priced), price_p25: quantile(priced, 0.25), price_p75: quantile(priced, 0.75), n_priced: priced.length,
     sessions,
     entries: median(rows.map((r) => r.entries)),
@@ -288,8 +293,13 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
   }).sort((a, b) => (a.d ?? Infinity) - (b.d ?? Infinity)), [rows, releaseName, L]);
 
   // what a bar says when pointed at: the figure, which way it falls and by how much
-  const unitsHint = (r) => r.units === L.target ? `Sold ${fmt(r.units)} units in its window, the same as this launch's target`
-    : `Sold ${fmt(r.units)} units in its window, ${x(r.du)} ${r.units < L.target ? "fewer" : "more"} than this launch's target of ${fmt(L.target)}`;
+  // a launch that sold out short says what it would have sold: the figure
+  // the benchmark counts it at (etl/baskets.py demand_columns)
+  const demandNote = (r) => (r.sold_short && r.demand > r.units
+    ? `; it sold out with ${fmt((r.unmet_units || 0) + (r.payment_failed_units || 0))} more units wanted, so the benchmark counts its demand of ${fmt(r.demand)}`
+    : "");
+  const unitsHint = (r) => (r.units === L.target ? `Sold ${fmt(r.units)} units in its window, the same as this launch's target`
+    : `Sold ${fmt(r.units)} units in its window, ${x(r.du)} ${r.units < L.target ? "fewer" : "more"} than this launch's target of ${fmt(L.target)}`) + demandNote(r);
   const priceHint = (r) => !(r.price > 0) ? "Airtable has no unit price for it, so it is ranked on units alone"
     : r.dp !== null && r.dp <= 1 ? `Priced at ${fmtMoney(r.price)}, the same as this launch`
     : `Priced at ${fmtMoney(r.price)}, ${x(r.dp)} ${r.price < priceUsed ? "lower" : "higher"} than this launch's ${fmtMoney(priceUsed)}`;
@@ -487,7 +497,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 72px 72px", gap: 8, fontSize: 11, color: C.muted, marginTop: 10, paddingBottom: 5, borderBottom: `1px solid ${C.border}` }}>
                       <span /><span style={{ textAlign: "right" }}>This launch</span><span style={{ textAlign: "right", color: C.ink, fontWeight: 600 }}>Basket</span>
                     </div>
-                    {railRow("Units", fmt(L.target), members.length ? fmt(live.units) : "–", paidOff ? "This launch's target against the basket's median units without paid - the benchmark with paid out of plan." : "This launch's target against the basket's median units at close - the benchmark.")}
+                    {railRow("Units", fmt(L.target), members.length ? fmt(live.units) : "–", paidOff ? "This launch's target against the basket's median units without paid - the benchmark with paid out of plan." : "This launch's target against the basket's median units of demand at close (units sold, plus what the entrants left without a unit would have bought) - the benchmark.")}
                     {railRow("Unit price", fmtMoney(priceUsed), members.length && live.price > 0 ? fmtMoney(live.price) : "–", "Unit price in euros, from Airtable. Launches Airtable could not price are left out of the median.")}
                     {railRow("Sessions", null, members.length ? fmtK(live.sessions) : "–", "The basket's median sessions. This launch's own are to date, so there is nothing to compare them with yet.")}
                     {railRow("Paid share", null, paidOff ? "not run" : members.length ? fmtPct(live.share_sessions.paid, 0) : "–", paidOff ? "Paid is not in plan for this release." : "Median share of sessions from paid.")}

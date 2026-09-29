@@ -212,8 +212,10 @@ snapshot does not carry it (§5).
 profile = {
   "n": int,                       # members used
   "members": [release_name, ...],
-  "units": float,                 # median tot_total_product_units        -> 214
-  "units_p25": float, "units_p75": float,
+  "units": float,                 # median demand_units: sold + 0.8 x (unmet + failed-payment units) -> 214
+  "units_sold": float,            # median tot_total_product_units, the sales beside the demand
+  "n_short": int,                 # members that sold out short (sold_short)
+  "units_p25": float, "units_p75": float,   # on demand_units
   "price": float,                 # median unit_price_eur over priced members -> 1488 (0 when none)
   "price_p25": float, "price_p75": float,
   "n_priced": int,                # members with a price
@@ -232,6 +234,13 @@ profile = {
 
 Groups are the five display groups: `aa_email`, `aa_social`, `referral_artist`,
 `search_direct_other`, `paid`.
+
+**Units are demand, not sales** (DATA_MODEL §4a.2, `baskets.demand_columns`): each launch's
+units sold plus what the eligible entrants left without a unit, and the entrants whose payment
+failed, would have bought at the eligible-entry → order rate; eligible winners who did not pay
+add nothing. `share_units` is the demand's split (`demand_share_<g>`: the sold part where the
+units were, the unmet part where the eligible entries came from), and the cost per paid unit
+is spend over paid demand. The similarity rule (§3.1) still matches on units sold.
 
 Per-channel benchmarks are **median share × median total**, never the median of the
 per-channel column - so they sum exactly to the headline median. Medians over an empty or
@@ -441,7 +450,8 @@ All new fields are **additive**. Existing consumers keep working.
   "benchmark": {
     "basket": { "id": "cluster_0", "kind": "ready", "name": "Paid-led headline launches",
                 "n": 33, "thin": false, "suggestedId": "cluster_0" },
-    "units": 214.0, "unitsP25": 148.0, "unitsP75": 468.0,
+    "units": 214.0, "unitsP25": 148.0, "unitsP75": 468.0,   // demand (DATA_MODEL 4a.2)
+    "unitsSold": 190.0, "nShort": 3,                          // the sales beside it, members that sold out short
     "sessions": 23543.0, "entries": 194.0, "campaignDays": 26.0,
     "k": 1.4019, "stretchUnits": 86.0, "stretchPct": 0.4019,
     "unitsByGroup":    { "aa_email": 83.5, ... },
@@ -450,7 +460,7 @@ All new fields are **additive**. Existing consumers keep working.
     "paidBudget": 9735.0,
     // §4.3: the groups set aside, and the basket's full medians before they were
     "channelsOff": ["paid"],
-    "unitsAll": 268.0, "sessionsAll": 61000.0, "entriesAll": 240.0,
+    "unitsAll": 268.0, "unitsSoldAll": 236.0, "sessionsAll": 61000.0, "entriesAll": 240.0,
     "unitsP25All": 190.0, "unitsP75All": 520.0,
     "unitsByGroupAll": { "aa_email": 83.5, ..., "paid": 54.0 },
     "sessionsByGroupAll": { ... }, "convByGroupAll": { ... },

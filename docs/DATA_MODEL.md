@@ -492,7 +492,10 @@ live refresh both chain it):
   precedence order removes). Result on 2026-09-10 over 393,868 channel-days: within tolerance on
   all 26 metric columns; 20 of them within 0.05%.
 - **`data/app/release_people.csv`**: per release, unique entrants, eligible entrants, winners and
-  buyers; entrants and buyers who had bought (or entered a draw) before the campaign started;
+  buyers; `won_unpaid` (eligible winners who did not buy), `payment_failed` and
+  `payment_failed_units` (entries excluded for a failed payment that did not buy, and their
+  units: the demand the benchmark counts, §4a.2); entrants and buyers who had bought (or entered
+  a draw) before the campaign started;
   first-time buyers; and how many entrants and buyers had entered or bought one of the same
   artist's previous releases. Counts only, no identifier. A campaign's start is the upstream
   announcement date where the events carry one, else the first entry or purchase.
@@ -772,14 +775,16 @@ them (§4a.2). Their last values are in the repository history.
 
 **D. Eligible entry → order** ("drop-off" complement): benchmark table exists
 (total .43/.66/.90, capped at 1) but the model **assumes a flat 0.8** everywhere (hardcoded).
-Keep 0.8 as the planning constant; surface the per-channel table as diagnostics.
+Keep 0.8 as the planning constant; surface the per-channel table as diagnostics. The same
+rate prices the demand the benchmark is read on (§4a.2).
 
 **E. Cost per purchase (paid)**: quartiles over 22 hand-curated historical paid campaigns
 (mixing LE + TL): **Low €128.75 / Median €177 / High €291**. Since 2026-09-23 the price of a
 paid unit comes from the basket first: each panel launch's cost per paid unit is Meta's spend
-under its campaign code from its window's start to the close, over its paid units with the
-launch's Untracked units folded in (`unit_share_paid` × all units), the basis the page prices
-its own paid units on (`baskets.attach_paid_costs`, a reading from 5 tracked paid units and
+under its campaign code from its window's start to the close, over its paid units of demand
+(§4a.2: what the spend bought, whether or not the edition had room for it) with the launch's
+Untracked units folded in (`demand_share_paid` × all demand), the page's own basis for a paid
+unit (`baskets.attach_paid_costs`, a reading from 5 tracked paid units and
 some spend; the campaign code is the orders feed's, §2.4), and the basket's median over the
 members with a reading prices the paid budget once three have one (`profile.cost_per_purchase`,
 `n_costed`). Until 2026-09-28 it was the spend over the whole panel window, to three days after
@@ -828,7 +833,7 @@ more are we asking for?** Everything below falls out of that one sentence.
 
 | | what it is | drawn as |
 |---|---|---|
-| **Benchmark** | what launches in the matched basket typically reach: the **median** of that basket, per metric and per channel | a dotted outline of the column it would make, `#ea8f66`, drawn over the target's fill |
+| **Benchmark** | what launches in the matched basket typically reach, in demand (§4a.2): the **median** of that basket, per metric and per channel | a dotted outline of the column it would make, `#ea8f66`, drawn over the target's fill |
 | **Target** | benchmark × K, the business target | the fill: `#f8ccba` from zero to whichever of the two is lower, `#f8ddd0` from the benchmark up to the target when the target is the higher |
 | **Stretch** | target − benchmark = benchmark × (K − 1) | the lighter band of the fill, a number, and the opening step of the two waterfalls; never a band of its own |
 
@@ -878,8 +883,10 @@ members (`THIN_MEMBERS`) a basket is used but carries `basket.thin = True`, whic
 the Target setting tab show as a warning. A median over an empty or all-NaN column is `0.0`,
 never NaN.
 
-The profile is the medians themselves: `n` and `members`; `units` (median
-`tot_total_product_units`) with `units_p25` / `units_p75`; `price` (median `unit_price_eur`
+The profile is the medians themselves: `n` and `members`; `units` (median `demand_units`, what
+the launch would have sold with enough supply, below) with `units_p25` / `units_p75` on the
+same, `units_sold` (median `tot_total_product_units`) and `n_short` (members that sold out
+short); `price` (median `unit_price_eur`
 over the `n_priced` members Airtable priced) with `price_p25` / `price_p75`, and `edition_size`
 (median units on offer); `sessions` (median
 `tot_sessions_total`); `entries` (median `tot_draw_entries_eligible_units`); `campaign_days`;
@@ -894,6 +901,30 @@ the private room to two days after the close, so a session benchmark carries som
 from before the private room that the page never counts: a few per cent of sessions on most
 launches, more on a channel that runs early (Parra's artist referrals, 2,173 on the panel
 against 1,398 on the page). The cost per paid unit is on the page's basis (§4 E).
+
+**Units are demand, not sales** (`baskets.demand_columns`, on the panel as it loads). A
+comparable that sold out with people left wanting - We are the Revolution: 1,000 offered, 987
+sold, 877 of 1,545 eligible entrants won, 668 were left wanting 658 units and 109 entries were
+excluded because the payment failed - read on its sales as a launch that needed 100k sessions
+and 1,532 eligible entry units to sell 987, so everything benchmarked against it was asked for
+more sessions and entries per unit than it needs, and a bigger stretch. Each launch's
+`demand_units` = `tot_total_product_units` + rate × (`tot_draw_entries_total_units_no_conv`,
+the units wanted by eligible entrants who neither won nor bought, + `payment_failed_units`, the
+units wanted by entrants excluded for a failed payment who did not buy, from
+`release_people.csv`), the rate being the panel's eligible-entry → order rate (0.8, §4 D), so a
+comparable's demand and a live release's secured units are one currency. Eligible winners who
+did not pay (`won_unpaid`, 7.7% of winners on the panel) add nothing: they were offered a unit,
+and are inside that rate's own shortfall; an undersubscribed launch therefore reads as its
+sales. Per group, the sold part lands where the units did (`unit_share_<g>`) and the unmet
+part where the eligible entries came from (`ent_share_<g>`), giving `demand_<g>` and
+`demand_share_<g>`; `sold_short` marks a launch whose demand ran a tenth or more past its
+sales. Over the 108 draw launches demand runs a median 1.13× sales, 47 of them past 1.25×; on
+the nine releases benchmarked on 29 September 2026 it lowered K by 4-30% (Warhol 3.03 → 2.13).
+Demand is per release, not per product: Murakami 2026 Q2's unmet demand sat on the products
+that sold out while others did not, and a comparable's demand is read as the reach its
+marketing produced; the sell-through card handles the product mix of a live release. The
+similarity rule below still matches on units sold, the edition's size against the
+comparables'; only the medians are read on demand.
 
 The suggested basket, `similar_size` ("Similar size and shape"), is the **`SIMILAR_N` = 8
 launches nearest this one on units and unit price** (`similar_members`): the artist's own
@@ -981,11 +1012,11 @@ Refresh: `python3 etl/pull_airtable.py && python3 etl/analysis/release_clusters.
 
 ### 4a.3 Target maths (`etl/build.py`)
 
-With a basket in hand, `targeting_mode` is `"benchmark"` and the launch total is divided by what
-the basket did, not by a quartile pick:
+With a basket in hand, `targeting_mode` is `"benchmark"` and the launch total is divided by the
+demand the basket had (§4a.2), not by a quartile pick:
 
 ```
-K            = edition_size / profile["units"]
+K            = edition_size / profile["units"]          # the basket's median demand (§4a.2)
 units[g]     = profile["units_by_group"][g]    × K        # sums to edition_size exactly
 sessions[g]  = profile["sessions_by_group"][g] × K
 entries[g]   = units[g] / 0.8                             # the eligible-entry → order rate, §4 D
@@ -1933,7 +1964,7 @@ actuals-only page omits it.
 | `directShare` | `{sessions, entries, units}` - Direct's share of the window as the funnel attributes it (§1.3) |
 | `variants.direct_spread` | the top-level blocks that differ when Direct is spread over the other channels (`channels`, `funnelByGroup`, `paid`, `targets`, `groupTargets`, `waterfall`, `benchmark`, ...); the Overview's Direct switch lays them over the page (§1.3) |
 | `benchmark.basket` | `{id, kind, name, n, thin, suggestedId}`; `kind` is `ready`, `bespoke` or `saved` |
-| `benchmark.units`, `unitsP25`, `unitsP75` | the basket's median units and its middle half |
+| `benchmark.units`, `unitsP25`, `unitsP75`, `unitsSold`, `nShort` | the basket's median units of demand (§4a.2) and its middle half, the median sales beside it, and how many members sold out short |
 | `benchmark.sessions`, `entries`, `campaignDays` | the other headline medians of the profile |
 | `benchmark.k` | the even uplift K |
 | `benchmark.stretchUnits`, `stretchPct` | `target − benchmark` in units, and `K − 1` |
@@ -1943,7 +1974,7 @@ actuals-only page omits it.
 | `benchmark.costPerPurchase`, `costPerPurchaseN` | the basket's median cost per paid unit (0 when fewer than three members have a reading, and the panel constant prices the budget; 6 dp, the precision the Target setting tab prices the budget at) and the members with one (§4 E) |
 | `targets.paid.cost_per_purchase`, `cost_per_purchase_source` | the price a paid unit is planned at and where it came from: `release`, `basket` or `panel` |
 | `benchmark.channelsOff` | the display groups this release set aside (BENCHMARK_SPEC §4.3); their medians are zero above and the other channels carry the target |
-| `benchmark.unitsAll`, `sessionsAll`, `entriesAll`, `unitsP25All`, `unitsP75All`, `unitsByGroupAll`, `sessionsByGroupAll`, `convByGroupAll` | the basket's full medians before any channel was set aside, so the page can say what left and the browser can re-read the basket as the switches move; at the build's precision (6 dp, as `costPerPurchase`), so the Target setting tab rebuilds `targets.paid.budget` and `paidBudget` to the cent with nothing edited |
+| `benchmark.unitsAll`, `unitsSoldAll`, `sessionsAll`, `entriesAll`, `unitsP25All`, `unitsP75All`, `unitsByGroupAll`, `sessionsByGroupAll`, `convByGroupAll` | the basket's full medians before any channel was set aside, so the page can say what left and the browser can re-read the basket as the switches move; at the build's precision (6 dp, as `costPerPurchase`), so the Target setting tab rebuilds `targets.paid.budget` and `paidBudget` to the cent with nothing edited |
 | `benchmark.privateRoomShare` | the basket's median private-room share of email units - descriptive; nothing derives a target from it since the split went (§3) |
 | `hero.benchmark`, `benchmarkToday`, `stretch` | benchmark at close, benchmark pace to today, the stretch; the benchmarks in whole units rounded from their one-decimal figure a half away from zero, as the page prints `benchmark.units` (132.5 is 133), and the stretch the printed target less the printed benchmark; `waterfall.benchmark` and `today.benchmark` are the same figures |
 | `channels[].bm`, `bmExp` | per group: benchmark at close, benchmark by today |

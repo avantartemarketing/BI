@@ -13,7 +13,7 @@ API (spec §6) and the re-run a saved basket triggers. A disagreement there
 shows up as a benchmark line that moves when nobody changed anything, so the
 medians are computed once, here, and nowhere else.
 
-Two rules carry most of the weight:
+Three rules carry most of the weight:
 
   * A release is never a member of its own benchmark (§3.1). Leaving it in
     lets a launch grade itself, and on a small cluster it drags the median
@@ -23,6 +23,13 @@ Two rules carry most of the weight:
     not sum to its median total - each channel peaks on a different launch -
     so taking them directly would leave the five channel benchmarks summing to
     something other than the headline the card prints above them.
+  * The benchmark's units are demand, not sales (demand_columns): what a
+    launch would have sold with enough supply, its units sold plus what the
+    eligible entrants left without a unit, and the entrants whose payment
+    failed, would have bought at the entry rate. Read on sales, a comparable
+    that sold out with people left wanting looks like a launch that needed
+    all of its traffic to sell its edition, and everything benchmarked
+    against it is asked for more than it needs.
 
 Inputs are the two files the clustering analysis writes
 (etl/analysis/release_clusters.py): data/release_clusters.csv, one row per
@@ -230,19 +237,24 @@ def _join_people(df: pd.DataFrame) -> pd.DataFrame:
     NaN: a median skips them, which is the right answer for a launch the event
     feed does not reach back to.
     """
-    for col in ("buyers", "products", "products_known", "units_per_buyer", "purchased_units"):
+    for col in ("buyers", "products", "products_known", "units_per_buyer", "purchased_units",
+                "won_unpaid", "payment_failed", "payment_failed_units"):
         if col in df.columns:
             df = df.drop(columns=[col])
     try:
         ppl = pd.read_csv(PEOPLE_PATH,
                           usecols=lambda c: c in ("release_name", "buyers", "units",
-                                                  "products", "products_known", "draws"))
+                                                  "products", "products_known", "draws",
+                                                  # the two shortfalls demand_columns reads
+                                                  "won_unpaid", "payment_failed", "payment_failed_units"))
         ppl = ppl.rename(columns={"units": "purchased_units"})
     except (OSError, ValueError):
         df["buyers"] = float("nan")
         df["products"] = float("nan")
         df["products_known"] = False
         df["units_per_buyer"] = float("nan")
+        for col in ("won_unpaid", "payment_failed", "payment_failed_units"):
+            df[col] = float("nan")
         return df
     ppl["release_name"] = ppl["release_name"].astype(str)
     ppl["products_known"] = ppl["products_known"].astype(str).str.lower().isin(("true", "1"))
@@ -258,7 +270,77 @@ def _join_people(df: pd.DataFrame) -> pd.DataFrame:
     df["units_per_buyer"] = (units / buyers.where(buyers > 0))
     df["products"] = pd.to_numeric(df["products"], errors="coerce")
     df["products_known"] = df["products_known"].fillna(False).astype(bool)
+    # a people file written before these columns leaves them NaN: demand then
+    # counts no failed payments, and says nothing false
+    for col in ("won_unpaid", "payment_failed", "payment_failed_units"):
+        df[col] = pd.to_numeric(df[col], errors="coerce") if col in df.columns else float("nan")
     return df
+
+
+# a launch sold out short when the demand it had ran this far past its sales
+SOLD_SHORT_FACTOR = 1.1
+
+
+def entry_to_order_rate() -> float:
+    """The panel's eligible-entry -> order rate (etl/benchmarks.json
+    eligible_entry_to_order), the rate the page's secured units and the
+    benchmark's demand both price an entry at; 0.8 when the file cannot be
+    read. Read here rather than from build.py so the API shim can price the
+    panel without the ETL."""
+    try:
+        return float(json.loads((ROOT / "etl" / "benchmarks.json").read_text()).get("eligible_entry_to_order") or 0.8)
+    except (OSError, ValueError):
+        return 0.8
+
+
+def demand_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """What each launch would have sold with enough supply: the demand the
+    benchmark is read on (docs/DATA_MODEL.md §4a.2).
+
+        demand = units sold
+               + rate x units wanted by eligible entrants who neither won nor bought
+               + rate x units wanted by entrants excluded for a failed payment who did not buy
+
+    A launch that sold out with people left wanting reads as the demand it
+    had, not the edition it happened to have; one that did not sell out reads
+    as its sales, since every eligible entrant was offered a unit and the
+    ones who did not take it are the rate's own shortfall. Eligible winners
+    who did not pay are inside that rate too (offered a unit, did not buy),
+    so they add nothing; entrants whose payment failed were never offered
+    one, so they count like the entrants left without a unit. The rate is
+    the page's own eligible-entry -> order rate, so a comparable's demand and
+    a live release's secured units are one currency. Per group, the sold
+    part lands where the units did (unit_share_<g>) and the unmet part where
+    the eligible entries came from (ent_share_<g>).
+
+    Adds units_sold, unmet_units, payment_failed_units, demand_units,
+    demand_<g>, demand_share_<g> (summing to 1) and sold_short: demand at
+    least SOLD_SHORT_FACTOR times the sales. A frame without the export's
+    counts reads its sales as its demand."""
+    rate = entry_to_order_rate()
+    out = df.copy()
+
+    def num(col: str) -> pd.Series:
+        return pd.to_numeric(out[col], errors="coerce") if col in out.columns else pd.Series(float("nan"), index=out.index)
+
+    sold = num("tot_total_product_units").fillna(0.0)
+    unmet = num("tot_draw_entries_total_units_no_conv").fillna(0.0).clip(lower=0.0)
+    failed = num("payment_failed_units").fillna(0.0).clip(lower=0.0)
+    extra = rate * (unmet + failed)
+    out["units_sold"] = sold
+    out["unmet_units"] = unmet
+    out["payment_failed_units"] = failed
+    out["demand_units"] = sold + extra
+    total = pd.Series(0.0, index=out.index)
+    for g in GROUPS:
+        us = num(f"unit_share_{g}").fillna(0.0)
+        es = num(f"ent_share_{g}")
+        out[f"demand_{g}"] = us * sold + es.where(es.notna(), us) * extra
+        total = total + out[f"demand_{g}"]
+    for g in GROUPS:
+        out[f"demand_share_{g}"] = (out[f"demand_{g}"] / total.where(total > 0)).fillna(0.0)
+    out["sold_short"] = (extra > 0) & (out["demand_units"] >= SOLD_SHORT_FACTOR * sold)
+    return out
 
 
 def implausible_rates(frame: pd.DataFrame) -> dict[str, pd.Series]:
@@ -377,7 +459,7 @@ def load_panel() -> pd.DataFrame:
         df, GUARDED["rates"] = guard_rates(df)
     except Exception as e:  # noqa: BLE001
         GUARDED["skipped"].append(f"rates check: {e}")
-    df = _join_people(df)
+    df = demand_columns(_join_people(df))
     df["artist"] = df["artist"].astype(str)
     _panel_cache = df.reset_index(drop=True)
     return _panel_cache
@@ -459,8 +541,9 @@ def attach_paid_costs(panel: pd.DataFrame, spend: pd.DataFrame | None, codes: di
     """Two columns on the panel, per launch: `paid_spend_eur`, Meta's spend under
     the launch's campaign code (the campaign names are "code · objective")
     from the panel window's start to the close, and `cost_per_paid_unit`, that
-    over the launch's paid units with its Untracked units folded in
-    (unit_share_paid x all units, the share Untracked left out of).
+    over the launch's paid units of demand with its Untracked units folded in
+    (demand_share_paid x all demand, the share Untracked left out of): what
+    the spend bought, whether or not the edition had room for it.
 
     That is the basis the page prices its own paid units on - spend to the
     close over the paid channel's units after the Untracked fold, the Funnel
@@ -496,7 +579,12 @@ def attach_paid_costs(panel: pd.DataFrame, spend: pd.DataFrame | None, codes: di
     # the page sums spend to the close; a row without one keeps its window's end
     ends = pd.to_datetime(col("close"), errors="coerce").fillna(pd.to_datetime(col("window_end"), errors="coerce"))
     units = pd.to_numeric(col("units_paid"), errors="coerce")
+    # the paid units the spend bought, on the benchmark's own basis: paid
+    # demand (demand_columns) with Untracked folded in; a frame without it
+    # reads the sold units with the same fold
+    demand = pd.to_numeric(col("demand_share_paid"), errors="coerce") * pd.to_numeric(col("demand_units"), errors="coerce")
     folded = pd.to_numeric(col("unit_share_paid"), errors="coerce") * pd.to_numeric(col("tot_total_product_units"), errors="coerce")
+    folded = demand.where(demand > 0, folded)
     folded = folded.where(folded > 0, units)
     spends, costs = [], []
     for name, s0, s1, u, f in zip(out["release_name"], starts, ends, units, folded):
@@ -556,10 +644,16 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
     rows = panel[panel["release_name"].isin(wanted)] if len(panel) and wanted else panel.iloc[0:0]
     used = [str(n) for n in rows["release_name"].tolist()] if len(rows) else []
 
-    units = _median(rows, "tot_total_product_units")
+    # the benchmark's units are demand (demand_columns), with the sales
+    # beside them; a frame without the columns, a test's, reads its sales
+    ucol = "demand_units" if "demand_units" in rows.columns else "tot_total_product_units"
+    uprefix = "demand_share_" if f"demand_share_{GROUPS[0]}" in rows.columns else "unit_share_"
+    units = _median(rows, ucol)
+    units_sold = _median(rows, "tot_total_product_units")
     sessions = _median(rows, "tot_sessions_total")
-    share_units = _shares(rows, "unit_share_")
+    share_units = _shares(rows, uprefix)
     share_sessions = _shares(rows, "sess_share_")
+    n_short = int(rows["sold_short"].fillna(False).astype(bool).sum()) if "sold_short" in rows.columns else 0
     # the basket's unit prices in euros, from Airtable via the panel; a
     # member without one is skipped, and n_priced says how many had one
     priced = pd.to_numeric(rows.get("unit_price_eur"), errors="coerce") if "unit_price_eur" in rows.columns else pd.Series(dtype=float)
@@ -570,8 +664,11 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
         "n": len(used),
         "members": used,
         "units": units,
-        "units_p25": _quantile(rows, "tot_total_product_units", 0.25),
-        "units_p75": _quantile(rows, "tot_total_product_units", 0.75),
+        "units_sold": units_sold,
+        # members that sold out with people left wanting (sold_short)
+        "n_short": n_short,
+        "units_p25": _quantile(rows, ucol, 0.25),
+        "units_p75": _quantile(rows, ucol, 0.75),
         "price": _num(priced.median()) if len(priced) else 0.0,
         "price_p25": _num(priced.quantile(0.25)) if len(priced) else 0.0,
         "price_p75": _num(priced.quantile(0.75)) if len(priced) else 0.0,
@@ -636,6 +733,7 @@ def apply_channels_off(profile: dict, off: list[str]) -> dict:
     out = dict(profile)
     out["channels_off"] = off
     out["units_all"] = _num(profile.get("units"))
+    out["units_sold_all"] = _num(profile.get("units_sold", profile.get("units")))
     out["sessions_all"] = _num(profile.get("sessions"))
     out["entries_all"] = _num(profile.get("entries"))
     out["units_by_group_all"] = {g: _num(units_all.get(g)) for g in GROUPS}
@@ -650,6 +748,7 @@ def apply_channels_off(profile: dict, off: list[str]) -> dict:
     sessions = sum(_num(sess_all.get(g)) for g in keep)
     ratio = (units / out["units_all"]) if out["units_all"] > 0 else 0.0
     out["units"] = _num(units)
+    out["units_sold"] = _num(out["units_sold_all"] * ratio)
     out["sessions"] = _num(sessions)
     out["entries"] = _num(out["entries_all"] * ratio)
     # the middle half scales with the median: it describes the same launches
@@ -708,6 +807,14 @@ def candidate_rows(panel: pd.DataFrame) -> list[dict]:
             "window_end": _day(r.get("window_end")),
             "campaign_days": _num(r.get("campaign_days")),
             "units": _num(r.get("tot_total_product_units")),
+            # what the launch would have sold with enough supply, the
+            # benchmark's units (demand_columns), the two counts behind the
+            # difference, and each group's share of it
+            "demand": _num(r.get("demand_units")) or _num(r.get("tot_total_product_units")),
+            "unmet_units": _num(r.get("unmet_units")),
+            "payment_failed_units": _num(r.get("payment_failed_units")),
+            "sold_short": bool(r.get("sold_short")) if isinstance(r.get("sold_short"), (bool, np.bool_)) else False,
+            "demand_shares": {g: _num(r.get(f"demand_share_{g}", r.get(f"unit_share_{g}"))) for g in GROUPS},
             "sessions": _num(r.get("tot_sessions_total")),
             "paid_share": _num(r.get("sess_share_paid")),
             # each group's share of the launch's units and sessions: what the

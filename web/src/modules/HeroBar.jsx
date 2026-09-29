@@ -114,7 +114,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const bmTip = bm === null ? null : {
     head: "Benchmark",
     rows: refRows,
-    body: "The median of the matched basket - what launches like this one typically reach.",
+    body: "The median of the matched basket - the demand launches like this one typically reach: units sold, plus what the entrants left without a unit would have bought at the entry rate.",
   };
 
   const axisLabel = { position: "absolute", top: 4, fontSize: 12, whiteSpace: "nowrap" };

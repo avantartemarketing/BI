@@ -22,7 +22,8 @@ Outputs:
                                    reads (FUNNEL_SOURCE=export reads the export instead)
   data/app/release_people.csv      one row per release: unique entrants and buyers,
                                    returning collectors, overlap with the artist's
-                                   previous releases - no identifier in it
+                                   previous releases, winners who did not pay and
+                                   entries whose payment failed - no identifier in it
   data/app/reconciliation.json     rebuilt against export, column by column
   data/app/release_windows.csv     every release's campaign window and where it came from
   data/app/release_products.json   per release, the draws (one per product) with entrant,
@@ -114,8 +115,11 @@ FLAGS = ["draw_entry_eligible", "winner", "pre_order", "draw_with_purchase",
 EVENT_COLS = [CH, "event_date", "event_name", "aa_account_id", "simple_release_name", "announcement_date",
               "draw_entry_multiset_preference_max_quantity_once", "order_pieces",
               # the multiset cap and the draw id, the two product-count signals
-              "draw_entry_multiset_preference_max_quantity", "draw_id"] + CLOCK + FLAGS
-LABELS = [CH, "simple_release_name", "campaign_stage", "event_name"]
+              "draw_entry_multiset_preference_max_quantity", "draw_id",
+              # why an entry was excluded: "Payment Failed" is the one the
+              # benchmark's demand counts (people_file)
+              "exclusion_reason"] + CLOCK + FLAGS
+LABELS = [CH, "simple_release_name", "campaign_stage", "event_name", "exclusion_reason"]
 
 
 def load_events() -> pd.DataFrame:
@@ -489,6 +493,13 @@ def people_file(ev: pd.DataFrame) -> pd.DataFrame:
         s0 = pd.Timestamp(start[r])
         entr, buyers = ent_sets[r], buy_sets[r]
         sub_e = de[de["simple_release_name"] == r]
+        # entries excluded because the payment failed, that did not buy: never
+        # offered a unit, so the benchmark's demand counts them at the entry
+        # rate like the eligible entrants left without one (docs 4a.2). A
+        # frame without the flags (a test's) counts none
+        bought = sub_e["draw_with_purchase"] if "draw_with_purchase" in sub_e.columns else pd.Series(False, index=sub_e.index)
+        failed = (sub_e[(sub_e["exclusion_reason"].astype(str) == "Payment Failed") & ~bought]
+                  if "exclusion_reason" in sub_e.columns else sub_e.iloc[0:0])
         prior_buyers = set(pu.loc[pu["event_date"] < s0, "aa_account_id"].dropna())
         prior_entrants = set(de.loc[de["event_date"] < s0, "aa_account_id"].dropna())
         prev = [q for q in releases if artist_of[q] == artist_of[r] and q != r and pd.Timestamp(start[q]) < s0]
@@ -497,6 +508,11 @@ def people_file(ev: pd.DataFrame) -> pd.DataFrame:
             "release_name": r, "artist": artist_of[r], "campaign_start": s0.date().isoformat(),
             "entrants": len(entr), "eligible_entrants": int(sub_e.loc[sub_e["draw_entry_eligible"], "aa_account_id"].nunique()),
             "winners": int(sub_e.loc[sub_e["winner"], "aa_account_id"].nunique()),
+            # eligible winners who did not buy: offered a unit, and inside the
+            # entry rate's own shortfall, so demand counts nothing for them
+            "won_unpaid": int(sub_e.loc[sub_e["draw_entry_eligible"] & sub_e["winner"] & ~bought, "aa_account_id"].nunique()),
+            "payment_failed": int(failed["aa_account_id"].nunique()),
+            "payment_failed_units": float(failed["units_once"].sum()) if "units_once" in failed.columns else float(len(failed)),
             "buyers": len(buyers), "units": float(pu.loc[pu["simple_release_name"] == r, "order_pieces"].sum()),
             # How many products the draw offered, read off the multiset preference
             # cap. It is only recorded from 2025-08-28: every launch that closed
