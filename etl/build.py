@@ -4150,10 +4150,14 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         s_, e_ = float(spend_day.get(d, 0.0)), float(paid_entries_day.get(d, 0.0))
         cum_spend += s_; cum_pentries += e_
         win3 = (win3 + [(s_, e_)])[-3:]
-        paid_daily.append({"date": d.isoformat(), "spend": round(s_, 2), "entries": e_, "roi": None, "roiArtist": None})
+        paid_daily.append({"date": d.isoformat(), "spend": round(s_, 2), "entries": e_, "roi": None, "roiArtist": None,
+                           "roi1": None, "roiArtist1": None})
     s3, e3 = sum(x for x, _ in win3), sum(y for _, y in win3)
     l3d_raw = s3 / e3 if e3 > 0 else None
     l3d_cpe = l3d_raw / (1 - drop) if l3d_raw else None
+    s1, e1 = win3[-1] if win3 else (0.0, 0.0)
+    l1d_raw = s1 / e1 if e1 > 0 else None
+    l1d_cpe = l1d_raw / (1 - drop) if l1d_raw else None
     cum_cpe = cum_spend / (cum_pentries * (1 - drop)) if cum_pentries else None
     # the part day so far: in the to-date figures, never in the rates
     part_spend = part_entries = 0.0
@@ -4165,7 +4169,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     # the part day so far, marked, at the end of the series (as build_release)
     if full_through < as_of <= launch_end:
         paid_daily.append({"date": as_of.isoformat(), "spend": round(part_spend, 2), "entries": part_entries,
-                           "roi": None, "roiArtist": None, "partial": True})
+                           "roi": None, "roiArtist": None, "roi1": None, "roiArtist1": None, "partial": True})
     paid_ch = next((c for c in channels_out if c["key"] == "paid"), None)
     paid_out = {
         "daily": paid_daily,
@@ -4174,8 +4178,9 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         # its column on the channels card (units sold + 0.8 x unconverted
         # entries), published rather than left to the page to derive
         "unitsToDate": paid_ch["now"] if paid_ch else round((cum_pentries + part_entries) * (1 - drop), 1),
-        "cumRoi": None, "l3dRoi": None,
+        "cumRoi": None, "l3dRoi": None, "l1dRoi": None,
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
+        "l1dCpe": round(l1d_cpe, 2) if l1d_cpe else None,
         "cumCpe": round(cum_cpe, 2) if cum_cpe else None,
         "roiDeclineModel": {"start": None, "dailyFactor": None}, "roiTarget": None,
         "artist": None,
@@ -4492,7 +4497,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # daily 'roi' is the trailing-3-CALENDAR-day rolling ROI: a window with
     # spend but no entries is a genuine 0, a window with no spend is null.
     # AA's reading is 'roi', the artist's 'roiArtist': the same days, the
-    # artist's profit per unit over the artist's share of the spend.
+    # artist's profit per unit over the artist's share of the spend. 'roi1'
+    # and 'roiArtist1' are the day's own reading on the same rule (the card's
+    # 1d switch): one day's spend over that day's entries.
     paid_daily = []
     cum_spend = cum_pentries = 0.0
     win3: list[tuple[float, float]] = []
@@ -4521,9 +4528,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         roi3 = None if s3 <= 0 else 0.0 if e3 <= 0 else party_roi(ppu_aa, aa_budget_share, adj3)
         roi3_artist = (None if s3 <= 0 or artist_budget_share <= 0 else 0.0 if e3 <= 0
                        else party_roi(ppu_artist, artist_budget_share, adj3))
+        adj1 = (s / (e * (1 - drop))) if s > 0 and e > 0 else None
+        roi1 = None if s <= 0 else 0.0 if e <= 0 else party_roi(ppu_aa, aa_budget_share, adj1)
+        roi1_artist = (None if s <= 0 or artist_budget_share <= 0 else 0.0 if e <= 0
+                       else party_roi(ppu_artist, artist_budget_share, adj1))
         paid_daily.append({"date": d.isoformat(), "spend": round(s, 2), "entries": e,
                            "roi": round(roi3, 3) if roi3 is not None else None,
-                           "roiArtist": round(roi3_artist, 3) if roi3_artist is not None else None})
+                           "roiArtist": round(roi3_artist, 3) if roi3_artist is not None else None,
+                           "roi1": round(roi1, 3) if roi1 is not None else None,
+                           "roiArtist1": round(roi1_artist, 3) if roi1_artist is not None else None})
     # the part day so far: in the to-date figures, never in the rules
     part_spend = part_entries = 0.0
     if full_through < as_of <= launch_end:
@@ -4542,6 +4555,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     cum_roi_artist = party_roi(ppu_artist, artist_budget_share, cum_adj_cpe)
     l3d_roi_artist = (party_roi(ppu_artist, artist_budget_share, l3d_cpe) if l3d_cpe
                       else (0.0 if s3 > 0 and artist_budget_share > 0 else None))
+    # the last full day alone (the card's 1d switch): the same working on one
+    # day's spend and entries, the quickest read and the noisiest; unknown
+    # when that day bought no entries, nothing when it spent nothing
+    s1, e1 = win3[-1] if win3 else (0.0, 0.0)
+    l1d_raw_cpe = s1 / e1 if e1 > 0 else None
+    l1d_cpe = l1d_raw_cpe / (1 - drop) if l1d_raw_cpe else None
+    l1d_roi = party_roi(ppu_aa, aa_budget_share, l1d_cpe) if l1d_cpe else (0.0 if s1 > 0 else None)
+    l1d_roi_artist = (party_roi(ppu_artist, artist_budget_share, l1d_cpe) if l1d_cpe
+                      else (0.0 if s1 > 0 and artist_budget_share > 0 else None))
 
     # ---- one forward cost path (docs §7), read by the paid projection, the
     # ROI chart and the recommendation alike. Cost per entry rises with the
@@ -4910,7 +4932,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # the cost fit and the rolling ROI above read the full days only
     if full_through < as_of <= launch_end:
         paid_daily.append({"date": as_of.isoformat(), "spend": round(part_spend, 2), "entries": part_entries,
-                           "roi": None, "roiArtist": None, "partial": True})
+                           "roi": None, "roiArtist": None, "roi1": None, "roiArtist1": None, "partial": True})
     # the paid group's own column on the channels card: secured units (units
     # sold + 0.8 x unconverted entries, every paid channel), so the paid card's
     # units bar and that column cannot disagree
@@ -4926,6 +4948,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "cumRoi": round(cum_roi, 3) if cum_roi else None,
         "l3dRoi": round(l3d_roi, 3) if l3d_roi is not None else None,
         "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
+        "l1dRoi": round(l1d_roi, 3) if l1d_roi is not None else None,
+        "l1dCpe": round(l1d_cpe, 2) if l1d_cpe else None,
         "cumCpe": round(cum_adj_cpe, 2) if cum_adj_cpe else None,
         "roiDeclineModel": {"start": round(l3d_roi, 3) if l3d_roi is not None else None,
                             "dailyFactor": daily_factor},
@@ -4994,6 +5018,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "artist": {
             "cumRoi": round(cum_roi_artist, 3) if cum_roi_artist else None,
             "l3dRoi": round(l3d_roi_artist, 3) if l3d_roi_artist is not None else None,
+            "l1dRoi": round(l1d_roi_artist, 3) if l1d_roi_artist is not None else None,
             "roiDeclineModel": {"start": round(l3d_roi_artist, 3) if l3d_roi_artist is not None else None,
                                 "dailyFactor": daily_factor},
             "roiPath": roi_path_artist,
