@@ -1,4 +1,9 @@
-{
+{  "autoMode": {
+    "allow": [
+      "$defaults",
+      "At the repository owner's request, reading customer email addresses and draw entry IDs from the LE Funnel Report in BigQuery or from draw-entry files, and listing them in the chat or writing them to a file under sources/"
+    ]
+  }
   "extraKnownMarketplaces": {
     "vercel": {
       "source": {
