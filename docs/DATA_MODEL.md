@@ -994,12 +994,16 @@ that is the field's currency in Airtable). Credentials are `AIRTABLE_TOKEN` (rea
 `AIRTABLE_BASE_ID` and `AIRTABLE_TABLE`, environment only.
 
 `etl/pricing.py` joins the records to the release list. A **launch** is one artist's records
-under one release code on one launch date, or on launch dates within `STAGGER_DAYS` (45) of
-each other: works of one code that close on different days are one launch, dated by its last
-close (`launch_date`, the day the campaign ends), with the first close and every close beside
-it (`first_launch_date`, `closes`) and the quarter of the first, the one the funnel names the
-release in; the same code's wave months later is a launch of its own (a group show puts eight
-artists under one code; each artist's release is its own row in the panel). Bundles (a title with a set word - "Set of
+under one release code on one launch date, or on staggered closes: works of one code that
+close on different days are one launch, dated by its last close (`launch_date`, the day the
+campaign ends), with the first close and every close beside it (`first_launch_date`, `closes`)
+and the quarter of the first, the one the funnel names the release in. Staggered means within
+`STAGGER_DAYS` (21), draws on both days (an originals show, NFTs or a timed edition under a
+draw's code, `STAGGER_APART`, is another launch: Pejac's show on 13 November 2026 and its
+print draw on 18 December share a code) and, where the later day's records carry an announce
+date, one on or before the earlier close; the same code's wave months later is a launch of
+its own (a group show puts eight artists under one code; each artist's release is its own row
+in the panel). Bundles (a title with a set word - "Set of
 4", "[Pair]", "[Quartet]", "[COMBINED PRODUCT]", a diptych or triptych - or any record without
 an edition size; a bracketed note alone, "[Special Print Edition]", "[OG painting - 1/5]", is
 not one) carry the sum of their parts and are left out, so

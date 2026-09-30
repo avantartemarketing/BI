@@ -84,7 +84,10 @@ RATES_TO_EUR = {"EUR": 1.0, "GBP": 1.18, "USD": 0.92}
 WINDOW_BEFORE_DAYS = 45   # a launch date this far before the announce still belongs to the campaign (early access)
 WINDOW_AFTER_DAYS = 30    # and this far after the close (a draw that ran past the clock)
 MERGE_DAYS = 3            # codes launching within this of each other are one launch
-STAGGER_DAYS = 45         # one code, closes this far apart at most: one launch whose works close on different days
+STAGGER_DAYS = 21         # one code, closes this far apart at most: one launch whose works close on different days
+# an originals show, NFTs or a timed edition under the same code as a draw is
+# another launch, never a staggered close of it (etl/build.py UPCOMING_NOT_DRAW)
+STAGGER_APART = {"OG", "NFT", "TL", "TLC"}
 FUZZY_MIN = 0.85          # artist-name similarity below this is listed, never used
 FUZZY_SHOW = 0.6          # ... and below this it is not even listed
 STOP_TOKENS = {"the", "estate", "foundation", "of", "and"}
@@ -198,9 +201,9 @@ def _status_mode(values: pd.Series) -> str:
 
 def launches(records: pd.DataFrame) -> pd.DataFrame:
     """One row per launch: one artist's records sharing a release code, on one
-    launch date or on dates within STAGGER_DAYS of each other. The artist is
-    part of the key because a group show puts eight artists' works under one
-    code (MultipleAmphorae24), and the panel names each artist's release
+    launch date or on staggered closes. The artist is part of the key because
+    a group show puts eight artists' works under one code
+    (MultipleAmphorae24), and the panel names each artist's release
     separately; the code is part of it because an artist can launch two
     editions on one day under two codes, and those merge later only if the
     panel treats them as one. Works of one code that close on different days
@@ -208,21 +211,34 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
     one launch, dated by its last close - the day the campaign ends - with the
     first close and every close beside it (`first_launch_date`, `closes`) and
     the quarter of the first, the one the funnel named it in; read as two
-    launches, the page took the nearer and a second page listed the rest."""
+    launches, the page took the nearer and a second page listed the rest.
+    Staggered means within STAGGER_DAYS, draws on both days (an originals
+    show or a timed edition under a draw's code is another launch,
+    STAGGER_APART) and, where the later day's records carry an announce
+    date, one on or before the earlier close: campaigns that overlap."""
     rec = records[records["launch_date"].notna()].copy()
     code = rec["release"].fillna("").astype(str).str.strip()
     day = rec["launch_date"].dt.strftime("%Y-%m-%d")
     rec["launch_key"] = np.where(code != "", code + "@" + day + "@" + rec["artist_key"], rec["artist_key"] + "@" + day)
-    # under one code and artist, a run of dates with no gap over STAGGER_DAYS
-    # is one launch: the key takes the run's first date
+    # under one code and artist, a run of close dates that qualify as
+    # staggered is one launch: the key takes the run's first date
+    kinds_all = (rec["edition_type"].fillna("").astype(str).str.strip().str.upper() if "edition_type" in rec.columns
+                 else pd.Series("", index=rec.index))
+    ann_all = (pd.to_datetime(rec["announce_date"], errors="coerce") if "announce_date" in rec.columns
+               else pd.Series(pd.NaT, index=rec.index))
     coded = rec[code != ""].sort_values("launch_date")
     for (c, a), g in coded.groupby([code[coded.index], coded["artist_key"]], sort=False):
-        start, prev = None, None
-        for idx, d in zip(g.index, g["launch_date"]):
-            if start is None or (d - prev).days > STAGGER_DAYS:
+        start = prev_day = None
+        prev_apart = False
+        for d, gd in g.groupby("launch_date", sort=True):
+            apart = 2 * int(kinds_all[gd.index].isin(STAGGER_APART).sum()) > len(gd)
+            ann = ann_all[gd.index].min()
+            joins = (start is not None and (d - prev_day).days <= STAGGER_DAYS and not apart and not prev_apart
+                     and not (pd.notna(ann) and ann > prev_day))
+            if not joins:
                 start = d
-            rec.at[idx, "launch_key"] = f"{c}@{start.strftime('%Y-%m-%d')}@{a}"
-            prev = d
+            rec.loc[gd.index, "launch_key"] = f"{c}@{start.strftime('%Y-%m-%d')}@{a}"
+            prev_day, prev_apart = d, apart
     rows = []
     for key, g in rec.groupby("launch_key", sort=False):
         sized = g[~g["bundle"] & g["unit_price"].notna()]

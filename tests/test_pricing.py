@@ -49,11 +49,15 @@ def airtable_rows() -> pd.DataFrame:
         dict(airtable_id=12, artist="Stagger Maker", title="Box (Green)", release="StaggerTL26", unit_price=750, edition_size=1000, launch_date="2026-03-24"),
         dict(airtable_id=13, artist="Stagger Maker", title="Box (White)", release="StaggerTL26", unit_price=750, edition_size=1000, launch_date="2026-03-24"),
         dict(airtable_id=14, artist="Stagger Maker", title="Box (Wave 2)", release="StaggerTL26", unit_price=750, edition_size=500, launch_date="2026-06-30"),
+        # an originals show ten days before a print draw under the same code: two launches
+        dict(airtable_id=15, artist="Show Maker", title="Painting", release="ShowTL26", unit_price=20000, edition_size=1, launch_date="2026-04-01"),
+        dict(airtable_id=16, artist="Show Maker", title="Print", release="ShowTL26", unit_price=800, edition_size=100, launch_date="2026-04-11"),
     ]
     df = pd.DataFrame(rows)
     df["currency"] = np.where(df["unit_price"].notna(), "EUR", "")
     for c in ("launch_type", "edition_type", "product_type", "price_status"):
         df[c] = "Draw" if c == "launch_type" else ("PE" if c == "edition_type" else ("Standard print" if c == "product_type" else "Confirmed"))
+    df.loc[df["title"] == "Painting", "edition_type"] = "OG"
     return df
 
 
@@ -130,6 +134,8 @@ def test_launches_and_match() -> None:
     assert first["closes"] == ["2026-03-10", "2026-03-24"] and first["quarter"] == "2026 Q1" and first["n_products"] == 3
     assert first["edition_size"] == 2100 and set(first["airtable_ids"].split("|")) == {"11", "12", "13"}
     assert st.iloc[1]["closes"] == ["2026-06-30"] and st.iloc[1]["n_products"] == 1
+    show = lf[lf["airtable_release"] == "ShowTL26"]
+    assert len(show) == 2 and sorted(show["closes"].map(tuple)) == [("2026-04-01",), ("2026-04-11",)], show[["launch_date", "closes"]]
     # the release typed to the first close matches the whole launch, so its
     # page carries every work and runs to the last close
     assert got["Stagger Maker · Multiple · 2026 Q1"] == "artist+window", res.iloc[8]["price_note"]
