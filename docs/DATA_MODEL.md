@@ -331,6 +331,11 @@ upcoming_releases`) beside the releases the funnel mentions:
   funnel's "Woo Kuk Won"), so the page keeps its id when the funnel catches up. A second
   launch of the artist in the same quarter takes its works as its title ("Pejac · Barbed
   Wire / Mind Trip · 2026 Q4"), then its close date, so no two pages share a name or an id.
+  A title of many works names the ones that fit in 100 characters and counts the rest
+  ("Brillo Box Collectable (Green Landscape) / Brillo Box Collectable (Green Portrait) and 9
+  more"), and an id is at most 120 characters (`slugify`): the id names the page's file, and
+  one launch of twelve works made an id no file name holds, which stopped every refresh at
+  the build with "File name too long" (28 September 2026).
 
 Its page (`build_upcoming`, status `upcoming`, `upcoming: true`) has the dates, the edition,
 the price in euros at the panel's fixed rates, the works and the project's Airtable status,
@@ -1755,9 +1760,10 @@ adjCPE(day)     = spend(day) / (entries(day) × (1 − drop_off))          # cos
 ROI_party(day)  = (1 − cannibalisation) × profit_per_unit_party / (adjCPE × budget_share_party)
 cum versions    = same on Σ spend / Σ entries
 ```
-The paid block publishes the adjusted figures: `l3dCpe` (the last three full days) and
-`cumCpe` (every full day) are spend over the entries that become orders, entries × (1 −
-drop_off), so the cards label them per converting entry, 1.25× plain spend per entry at 0.2.
+The paid block publishes the adjusted figures: `l3dCpe` (the last three full days), `l1dCpe`
+(the last full day alone) and `cumCpe` (every full day) are spend over the entries that
+become orders, entries × (1 − drop_off), so the cards label them per converting entry, 1.25×
+plain spend per entry at 0.2.
 Spend is Meta's, billed in euros: `load_spend` converts it once to euros at the fixed
 `RATES_TO_EUR` rate (`SPEND_CURRENCY`, `spendCurrency` and `spendRate` on the paid block), so every
 spend, cost per entry, budget and ROI figure on the page is euros. `cannibalisation` is the
@@ -1769,15 +1775,22 @@ release's own, from the Target setting tab (§1.6): the products' figures weight
 target units, or the release-level `legacy_economics` while it stands; AA's profit per unit
 includes the framing uplift.
 
-Both parties are published. AA's reading is the paid block's `cumRoi`, `l3dRoi`, `daily[].roi`,
-`roiPath` and `budget.finalDayRoi`; the artist's is `paid.artist` (`cumRoi`, `l3dRoi`, `roiPath`,
-`roiDeclineModel`, `finalDayRoi`, `profitPerUnit`, `budgetShare`) and `daily[].roiArtist`: the same
-days and the same forward path, with the artist's profit per unit over the artist's share of the
-spend (`1 − aa_budget_share`). On a deal where the artist carries no spend (a revenue share,
-`aa_budget_share` 1) every artist figure is `None`: there is no artist ROI to read. The terms the
-figures are read with sit on the block as `cannibalisation` and `dropOff`, so the Paid ROI card
-can show its working in the ? popup. The card reads AA by default and has an AA / Artist switch
-(kept per browser); the spend recommendation, its ROI floor and the pacing rules stay AA's.
+Both parties are published. AA's reading is the paid block's `cumRoi`, `l3dRoi`, `l1dRoi`,
+`daily[].roi`, `daily[].roi1`, `roiPath` and `budget.finalDayRoi`; the artist's is `paid.artist`
+(`cumRoi`, `l3dRoi`, `l1dRoi`, `roiPath`, `roiDeclineModel`, `finalDayRoi`, `profitPerUnit`,
+`budgetShare`) and `daily[].roiArtist`, `daily[].roiArtist1`: the same days and the same forward
+path, with the artist's profit per unit over the artist's share of the spend (`1 −
+aa_budget_share`). `l1dRoi` and `daily[].roi1` are the last full day alone on the same working, one
+day's spend over that day's entries, `None` on a day with no spend and 0 on a day that spent and
+bought nothing. On a deal where the artist carries no spend (a revenue share, `aa_budget_share` 1)
+every artist figure is `None`: there is no artist ROI to read. The terms the figures are read with
+sit on the block as `cannibalisation` and `dropOff`, so the Paid ROI card can show its working in
+the ? popup. The card reads AA over the three-day window by default and has two switches, 3d / 1d
+and AA / Artist (both kept per browser); in the 1d view the headline, the line and the ? working
+read the last full day, and the dotted projection is the same cost path re-read from that day's
+price (the path scaled by the ratio of the two readings on the last day, ROI being one over the
+price). The spend recommendation, its ROI floor and the pacing rules stay AA's on the three-day
+window.
 
 **What the paid block publishes in units and days.** `unitsToDate` and `unitProjected` are the
 paid group's secured units (§6.3½: units sold + 0.8 × unconverted entries, every paid channel),

@@ -226,6 +226,24 @@ function writeAtomic(file, text) {
   fs.renameSync(tmp, file);
 }
 
+/* A Python script's failure, the error first. A traceback's last line is the
+ * exception; the refresh status keeps 300 characters of the message, which
+ * used to be the middle of the traceback (pathlib's own frames) with the
+ * exception cut off the end, so the header read "Sources stale" and the
+ * tooltip could not say why. Lead with the exception and the innermost frame
+ * in etl/, then the tail of the traceback for the rest. */
+function pyFailure(script, stderr, fallback) {
+  const text = String(stderr || "").trimEnd();
+  if (!text) return `${script} failed: ${fallback || "no output"}`;
+  const lines = text.split("\n");
+  const error = lines[lines.length - 1].trim();
+  const frame = [...lines].reverse()
+    .map((l) => /^\s*File "([^"]+)", line (\d+), in (.+)$/.exec(l))
+    .find((m) => m && m[1].includes(`${path.sep}etl${path.sep}`));
+  const where = frame ? ` (etl/${path.basename(frame[1])}:${frame[2]} in ${frame[3]})` : "";
+  return `${script} failed: ${error}${where} | ${text.slice(-800)}`;
+}
+
 function runPy(script, timeoutMs, args = []) {
   const venvPy = path.join(ROOT, ".venv", "bin", "python3");
   const py = fs.existsSync(venvPy) ? venvPy : "python3";
@@ -233,7 +251,7 @@ function runPy(script, timeoutMs, args = []) {
     execFile(py, [path.join(ROOT, "etl", script), ...args],
       { cwd: ROOT, timeout: timeoutMs, maxBuffer: 16 * 1024 * 1024 },
       (err, stdout, stderr) => {
-        if (err) reject(new Error(`${script} failed: ${(stderr || err.message).slice(-800)}`));
+        if (err) reject(new Error(pyFailure(script, stderr, err.message)));
         else resolve(stdout.trim());
       });
   });
@@ -450,6 +468,6 @@ function startScheduler() {
 }
 
 module.exports = {
-  refresh, status, startScheduler, runEtl, buildUpcoming, writeAtomic,
+  refresh, status, startScheduler, runEtl, buildUpcoming, writeAtomic, pyFailure,
   convertAcrossTime, convertSpend, acrossTimeWriter, spendWriter, normDate, parseCsv,
 };

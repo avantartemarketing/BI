@@ -88,6 +88,15 @@ check(paid["cannibalisation"] == build.BENCH["cannibalisation"] and paid["dropOf
 # the working the card shows: profit per unit net of cannibalisation over the cost of a converting entry and the share
 check(close(paid["l3dRoi"], (1 - paid["cannibalisation"]) * ppu_aa / (paid["l3dCpe"] * share_aa)), "AA's L3D is the published working")
 check(close(art["l3dRoi"], (1 - paid["cannibalisation"]) * ppu_artist / (paid["l3dCpe"] * art["budgetShare"])), "the artist's L3D is the same working")
+# the card's 1d switch: the last full day alone, the same working on one day's
+# spend and entries, published beside the three-day figures
+check(close(art["l1dRoi"], paid["l1dRoi"] * ratio), f"last full day: {art['l1dRoi']} vs {paid['l1dRoi']} x {ratio:.4f}")
+check(close(paid["l1dRoi"], (1 - paid["cannibalisation"]) * ppu_aa / (paid["l1dCpe"] * share_aa)), "AA's L1D is the published working")
+last = [r for r in paid["daily"] if not r.get("partial")][-1]
+check(close(last["roi1"], paid["l1dRoi"]) and close(last["roiArtist1"], art["l1dRoi"]), "the last full day's own reading is the headline's 1d figure")
+check(close(last["spend"] / (last["entries"] * (1 - paid["dropOff"])), paid["l1dCpe"]), "the 1d cost per converting entry is that day's spend over its converting entries")
+check(all(close(r["roiArtist1"], r["roi1"] * ratio) for r in paid["daily"] if r.get("roi1") is not None), "every day's artist 1d ROI is AA's in the party ratio")
+check(all(r["roi1"] is None or r["spend"] > 0 for r in paid["daily"]), "no spend on the day, no 1d reading")
 print(f"profit share: AA {paid['cumRoi']} artist {art['cumRoi']} (ratio {ratio:.3f}); shares AA {share_aa} artist {art['budgetShare']}")
 
 # the paid channel's plan by today is the even daily budget's share, the
@@ -127,9 +136,10 @@ cfg["legacy_economics"]["artist_profit_share"] = 0
 R = run(cfg)
 paid, art = R["paid"], R["paid"]["artist"]
 check(paid["aaBudgetShare"] == 1.0 and art["budgetShare"] == 0.0, f"revenue share: AA carries the spend {paid['aaBudgetShare']} / {art['budgetShare']}")
-check(art["cumRoi"] is None and art["l3dRoi"] is None and art["finalDayRoi"] is None and art["roiPath"] == [] and art["roiDeclineModel"]["start"] is None,
-      f"no artist ROI on a revenue share: {art}")
-check(all(r["roiArtist"] is None for r in paid["daily"]) and any(r["roi"] is not None for r in paid["daily"]), "AA's days still read, the artist's do not")
+check(art["cumRoi"] is None and art["l3dRoi"] is None and art["l1dRoi"] is None and art["finalDayRoi"] is None and art["roiPath"] == []
+      and art["roiDeclineModel"]["start"] is None, f"no artist ROI on a revenue share: {art}")
+check(all(r["roiArtist"] is None and r["roiArtist1"] is None for r in paid["daily"]) and any(r["roi"] is not None for r in paid["daily"])
+      and any(r["roi1"] is not None for r in paid["daily"]), "AA's days still read, on both windows; the artist's do not")
 print(f"revenue share: AA {paid['cumRoi']} artist {art['cumRoi']}")
 
 # the cannibalisation typed on the tab replaces the standard in every reading

@@ -393,7 +393,9 @@ secured units and the targets' eligible entries are read at.
 
 The headline and the chart line are the **trailing-3-calendar-day** rolling
 version of this: a window with spend but no entries reads as ROI 0 (money out,
-nothing in), and CPE is treated as unknown until entries return.
+nothing in), and CPE is treated as unknown until entries return. The card's
+3d / 1d switch reads the last full day alone instead: the quickest read and
+the noisiest, and the dotted projection then starts from that day's price.
 
 The units the Paid spend card draws are the paid group's secured units (§1), the
 same figure as its column on the channels card; the entries above are what the

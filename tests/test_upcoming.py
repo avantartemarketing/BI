@@ -290,6 +290,47 @@ def test_second_launch_in_a_quarter() -> None:
     print("second launch in a quarter: ok")
 
 
+def test_many_works() -> None:
+    """A second launch in the quarter titled with its works stays a name a
+    page can carry: a dozen works name the first that fit and count the
+    rest, and the id, which names the page's file, is capped. One such
+    launch (twelve Brillo Boxes, 28 Sep 2026) made an id of 355 characters,
+    and writing its page failed the whole build with "File name too long"
+    on every refresh, so the header read "Sources stale" all evening."""
+    works = [f"Brillo Box Collectable ({colour} {kind}) [Standard Print Edition]"
+             for kind in ("Landscape", "Portrait", "Still Life", "Abstract")
+             for colour in ("Green", "Yellow", "Pink")]
+    rows = [(4000 + i, "Andy Warhol", w, "AndyWarholBrilloLE26", "2026-10-14", "2026-09-20", None, 1200, "EUR", 100,
+             "Draw", "PE", "Print", "Confirmed", "3.5. Pre-Launch") for i, w in enumerate(works)]
+    # the artist's other draw this quarter has the plain name
+    rows += [(4100, "Andy Warhol", "Flowers", "AndyWarholFlowersLE26", "2026-10-08", "2026-09-15", None, 900, "EUR", 150,
+              "Draw", "PE", "Print", "Confirmed", "3.5. Pre-Launch"),
+             (4101, "Andy Warhol", "Cow", "AndyWarholFlowersLE26", "2026-10-08", "2026-09-15", None, 900, "EUR", 150,
+              "Draw", "PE", "Print", "Confirmed", "3.5. Pre-Launch")]
+    day = dt.date(2026, 9, 28)
+    ups = [r for r in build.upcoming_releases(airtable_frame(rows), [], day, {}) if r["artist"] == "Andy Warhol"]
+    assert [r["title"] for r in ups][:1] == ["Multiple"], ups
+    brillo = ups[1]
+    assert brillo["title"] == ("Brillo Box Collectable (Green Landscape) / Brillo Box Collectable (Yellow Landscape) "
+                               "and 10 more"), brillo["title"]
+    assert brillo["release_name"] == f"Andy Warhol · {brillo['title']} · 2026 Q4"
+    assert len(brillo["id"]) <= build.ID_MAX_CHARS and brillo["id"].startswith("andy_warhol_brillo_box_collectable_green_landscape"), brillo["id"]
+    # its page builds, and its file name fits
+    snap = build.build_upcoming(brillo, day, None, day)
+    build.check_snapshot(snap)
+    with tempfile.TemporaryDirectory() as tmp:
+        (pathlib.Path(tmp) / f"{brillo['id']}.json").write_text(json.dumps(snap))
+    # a title within the bound is left alone; the whole works list of a long
+    # launch would have made an id no file name holds
+    assert build._works_title("Barbed Wire [Special] / Barbed Wire [Standard] / Mind Trip") == "Barbed Wire / Mind Trip"
+    assert len(build.slugify(" · ".join(["Andy Warhol", " / ".join(works), "2026 Q4"]))) <= build.ID_MAX_CHARS
+    # the id is capped whatever the name, cut at a word and never ending in "_"
+    sid = build.slugify(" · ".join(["Some Artist"] + [f"Work number {i} of the series" for i in range(40)]))
+    assert len(sid) <= build.ID_MAX_CHARS and not sid.endswith("_") and sid.startswith("some_artist_work_number_0"), sid
+    assert build.slugify("Pejac · Barbed Wire / Mind Trip · 2026 Q4") == "pejac_barbed_wire_mind_trip_2026_q4"
+    print("many works: ok")
+
+
 def test_funnel_spelling() -> None:
     """The funnel's spelling of an artist the matcher already links, so the
     upcoming page keeps its id when the funnel carries the launch."""
@@ -392,6 +433,7 @@ if __name__ == "__main__":
     test_adoption()
     test_not_a_draw()
     test_second_launch_in_a_quarter()
+    test_many_works()
     test_funnel_spelling()
     test_stale_dates()
     test_dates_from_editions()
