@@ -28,7 +28,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { C, MINUS, fmt, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
 import { resolveProducts, releaseEconomics, LEGACY_KEYS } from "../../shared/economics.mjs";
-import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf } from "../../shared/benchmarkModel.mjs";
+import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf, rebalanceShares, stretchWeights } from "../../shared/benchmarkModel.mjs";
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -600,17 +600,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const bmUnits = profile && profile.units > 0 ? profile.units : null;
   const k = bmUnits ? (editionSize > 0 ? editionSize / bmUnits : bm ? bm.k : null) : null;
   /* where the stretch comes from (BENCHMARK_SPEC 4.4): a share per channel
-   * group, typed as whole percentages and kept as fractions; blank, or every
-   * cell blank, means the basket's own shares - the even uplift */
+   * group, set with coupled sliders below and kept as fractions that add to
+   * 1; null means the basket's own shares - the even uplift */
   const stretchFrom = inp.stretch_from && typeof inp.stretch_from === "object" && !Array.isArray(inp.stretch_from) ? inp.stretch_from : null;
   const stretchTyped = !!(stretchFrom && GROUPS.some((g) => !isOff(g.key) && Number(stretchFrom[g.key]) > 0));
-  const setStretch = (key) => (e) => {
-    const v = e.target.value;
-    const next = { ...(stretchFrom || {}) };
-    if (v === "" || v === null || v === undefined) delete next[key];
-    else next[key] = Math.max(Number(v), 0) / 100;
-    setInp({ ...inp, stretch_from: Object.keys(next).length ? next : null });
-  };
   const paidShare = profile ? profile.share_sessions.paid : null;
   // the price of a paid unit: the release's own, else the basket's median cost
   // per paid unit, else the panel's constant (shared/benchmarkModel.mjs)
@@ -784,9 +777,16 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const stretchHelp = !T ? "Choose a basket first."
     : stretchTyped
       ? `The stretch of ${signed(Math.round(T.stretch_units))} units is asked of ${GROUPS.filter((g) => T.stretch_from[g.key] > 0).sort((a, b) => T.stretch_from[b.key] - T.stretch_from[a.key]).map((g) => `${g.name} ${Math.round(100 * T.stretch_from[g.key])}% (×${fmt(T.k_by_group[g.key], 2)})`).join(", ")}; the other channels stay at their benchmark.`
-      : `Blank: each channel takes its share of the ${signed(Math.round(T.stretch_units))}-unit stretch in proportion to its benchmark, the same uplift ×${fmt(k || 1, 2)} everywhere. Type shares to place it, most of it on paid, say.`;
+      : `Blank: each channel takes its share of the ${signed(Math.round(T.stretch_units))}-unit stretch in proportion to its benchmark, the same uplift ×${fmt(k || 1, 2)} everywhere. Drag a slider to place it, most of it on paid, say: the other channels follow, so the shares always add to 100%.`;
   const BM = T ? T.benchmark : null;
   const paidOff = isOff("paid");
+  /* the sliders: the shares in force (placed, else the basket's own) over the
+   * groups in plan with a benchmark to lift; moving one rescales the others so
+   * they always add to 100 (shared/benchmarkModel.mjs rebalanceShares) */
+  const activeGroups = profile ? GROUPS.map((g) => g.key).filter((g) => !isOff(g) && Number((profile.units_by_group || {})[g]) > 0) : [];
+  const evenShares = profile ? stretchWeights({ stretch_from: null }, profile.units_by_group) : {};
+  const shares = T && T.stretch_from ? T.stretch_from : evenShares;
+  const slideStretch = (key) => (e) => setInp({ ...inp, stretch_from: rebalanceShares(shares, key, Number(e.target.value) / 100, activeGroups) });
   const figure = (label, target, bmv, format, tip, opts = {}) => {
     let stretch = target === null || bmv === null ? null : target - bmv;
     if (stretch !== null && format(Math.abs(stretch)) === format(0)) stretch = 0;
@@ -1064,26 +1064,27 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
           {profile && (
             <div className="ts-grid" style={{ marginTop: 20 }}>
               <Field label="Where the stretch comes from" help={stretchHelp}
-                tip="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions and entries lifted to match and conversion held. Blank: the basket's own shares, the same uplift in every channel.">
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 14px", alignItems: "flex-end" }}>
-                  {GROUPS.map((g) => {
-                    const gOff = isOff(g.key);
-                    const w = T && T.stretch_from ? T.stretch_from[g.key] : null;
-                    const typed = stretchFrom && stretchFrom[g.key] !== undefined && stretchFrom[g.key] !== null;
-                    return (
-                      <label key={g.key} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: C.muted, minWidth: 118 }}>
-                        <span>{g.name}{gOff ? " · not in plan" : ""}</span>
-                        <div className={`ts-box num${gOff ? " dis" : ""}`} style={{ width: 118 }}>
-                          <input type="number" min="0" max="100" step="1" disabled={gOff}
-                            placeholder={w === null || w === undefined ? "" : fmt(100 * w, 0)}
-                            value={typed ? Math.round(100 * Number(stretchFrom[g.key])) : ""}
-                            onChange={setStretch(g.key)} />
-                          <span className="unit">%</span>
-                        </div>
-                      </label>
-                    );
-                  })}
-                  <div className="ts-row" style={{ gap: 8 }}>
+                tip="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions and entries lifted to match and conversion held. Even: the basket's own shares, the same uplift in every channel. Drag one channel's slider and the others rescale, so the shares always add to 100%.">
+                <div className="ts-stretch">
+                  <div className="ts-sliders">
+                    {GROUPS.map((g) => {
+                      const gOff = isOff(g.key);
+                      const active = activeGroups.includes(g.key);
+                      const pct = active ? Math.round(100 * Number(shares[g.key] || 0)) : 0;
+                      const basketPct = active ? Math.round(100 * Number(evenShares[g.key] || 0)) : 0;
+                      return (
+                        <label key={g.key} className={`ts-slider${active ? "" : " dis"}`}
+                          title={gOff ? "Not in plan: this channel takes none of the stretch." : !active ? "No benchmark in the basket to lift: nothing to place here."
+                            : "Drag to set this channel's share of the stretch; the others rescale so the shares add to 100."}>
+                          <span className="head"><span>{g.name}{gOff ? " · not in plan" : !active ? " · no benchmark" : ""}</span><b>{active ? `${pct}%` : "–"}</b></span>
+                          <input type="range" min="0" max="100" step="1" disabled={!active || activeGroups.length < 2} value={pct}
+                            aria-label={`${g.name}: share of the stretch`} onChange={slideStretch(g.key)} />
+                          <span className="note">{active && stretchTyped && basketPct !== pct ? `basket ${basketPct}%` : ""}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="ts-row" style={{ gap: 8, marginTop: 10 }}>
                     <button type="button" className="ts-btn secondary" disabled={!stretchTyped} onClick={() => setInp({ ...inp, stretch_from: null })}
                       title="Back to the basket's own shares: the same uplift in every channel.">Even</button>
                     <button type="button" className="ts-btn secondary" disabled={paidOff} onClick={() => setInp({ ...inp, stretch_from: { paid: 1 } })}

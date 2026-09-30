@@ -1133,9 +1133,13 @@ diagnostics and the untracked-redistribution comparisons of §6.2 all keep worki
 `etl/build.py`; the release input `stretch_from`, a share per group, saved from the Target
 setting tab and validated by the server). The gap between the target and the basket's median
 is asked of the groups in shares: the basket's own unit shares by default, which is every
-group lifted by the same K (the even uplift), or the shares typed on the tab when the plan
+group lifted by the same K (the even uplift), or the shares set on the tab when the plan
 knows where the extra will come from - most of it from more paid spend, say, or an artist
-expected to outperform. A group set aside (`channels_off`) or with no benchmark to lift takes
+expected to outperform. The tab sets them with one slider per group, coupled: moving one
+group's share rescales the others so the shares always add to 100%, each keeping its
+proportion of the rest (`shared/benchmarkModel.mjs` `rebalanceShares`); a group set aside
+or with no benchmark has no slider, Even puts the basket's own shares back and All from paid
+places the whole stretch on paid. A group set aside (`channels_off`) or with no benchmark to lift takes
 none, and a share typed on it falls to the others; a negative stretch (a basket that reached
 more than the edition) is a cut placed the same way, and a cut bigger than a group's benchmark
 stops at zero with the rest falling on the others, so the groups always sum to the edition.
