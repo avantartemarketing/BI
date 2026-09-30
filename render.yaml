@@ -58,6 +58,8 @@ services:
         sync: false
       - key: SLACK_BOT_TOKEN   # Slack app bot token (chat:write, chat:write.public) - the sell-through card's Post to Slack button
         sync: false
+      - key: SLACK_ALERT_CHANNEL   # where a failing refresh is reported (README, "Alerts"); nothing is posted without it
+        sync: false
       - key: SLACK_STATE_PATH
         value: /var/data/slack.json
       - key: RESEND_API_KEY   # only for the magic-link fallback, which exists only without a Google client

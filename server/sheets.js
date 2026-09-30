@@ -244,6 +244,19 @@ function pyFailure(script, stderr, fallback) {
   return `${script} failed: ${error}${where} | ${text.slice(-800)}`;
 }
 
+/* The build's line for the pages that did not build ("pages failed: N -
+ * id: error; ..."), read off the whole of its output rather than its last
+ * lines, so the status can say how many and which (etl/build.py main). */
+function parseBuildSummary(stdout) {
+  const m = /^pages failed: (\d+) - (.*)$/m.exec(String(stdout || ""));
+  if (!m) return { pagesFailed: 0, failedPages: [] };
+  const failedPages = m[2].split(";").map((s) => s.trim())
+    .filter((s) => s && !/^and \d+ more$/.test(s))
+    .map((s) => s.split(":")[0].trim()).slice(0, 5);
+  return { pagesFailed: Number(m[1]), failedPages };
+}
+let lastBuild = { pagesFailed: 0, failedPages: [] };   // the last full build's summary
+
 function runPy(script, timeoutMs, args = []) {
   const venvPy = path.join(ROOT, ".venv", "bin", "python3");
   const py = fs.existsSync(venvPy) ? venvPy : "python3";
@@ -281,6 +294,7 @@ async function runEtlOnce(release) {
     console.error("sheets: " + agg);
   }
   const build = await runPy("build.py", 5 * 60 * 1000);
+  lastBuild = parseBuildSummary(build);
   return [agg, ...build.split("\n").slice(-3)].filter(Boolean).join(" | ");
 }
 
@@ -425,6 +439,10 @@ async function refresh({ full = false } = {}) {
     if (updated) {
       try {
         out.etl = await runEtl();
+        // the pages that did not build: the build went on without them and
+        // wrote the index, so the step succeeded, and the header says how many
+        out.etlPagesFailed = lastBuild.pagesFailed;
+        out.etlFailedPages = lastBuild.failedPages;
       } catch (e) {
         const msg = String((e && e.message) || e).slice(0, 300);
         out.etl = msg.startsWith("etl failed") ? msg : "etl failed: " + msg;
@@ -439,9 +457,53 @@ async function refresh({ full = false } = {}) {
   })();
   try {
     const result = await running;
-    lastRefresh = { at: new Date().toISOString(), ...result };
+    const now = new Date().toISOString();
+    // when the current run of failed refreshes began, for the header's
+    // "refresh failing since"; cleared by the first one that succeeds
+    failingSince = result.ok === false ? (failingSince || now) : null;
+    lastRefresh = { at: now, failingSince, ...result };
+    alertRefresh(lastRefresh, now).catch((e) => console.error("sheets: alert failed - " + String((e && e.message) || e).slice(0, 200)));
     return result;
   } finally { running = null; runningSince = null; }
+}
+let failingSince = null;
+
+/* Refresh alerts: one line to SLACK_ALERT_CHANNEL on the second consecutive
+ * troubled refresh (a failed feed or step, or a page that did not build),
+ * once per run of trouble, and one line when it recovers. Nobody hovers the
+ * header's tooltip: on 28 September the build failed all evening before
+ * anyone saw. Without the channel or the token nothing is posted. The
+ * decision is a pure function so tests/py_failure.mjs can run it. */
+let alertState = { troubled: 0, alerted: false, since: null };
+function alertDecision(state, result, now) {
+  const troubled = result.ok === false || Number(result.etlPagesFailed || 0) > 0;
+  if (troubled) {
+    const next = { troubled: (state.troubled || 0) + 1, alerted: !!state.alerted, since: state.since || now };
+    if (next.troubled >= 2 && !next.alerted) return { post: "trouble", state: { ...next, alerted: true } };
+    return { post: null, state: next };
+  }
+  return { post: state.alerted ? "recovery" : null, state: { troubled: 0, alerted: false, since: null } };
+}
+/* What is wrong, one line per failing feed or step, as the status words it. */
+function troubleLines(result) {
+  const feeds = [["BigQuery", result.bigquery], ["Sheet", result.sheet], ["Email", result.emails],
+    ["Notion", result.notion], ["Airtable", result.airtable], ["ETL", result.etl]];
+  const lines = feeds.filter(([, v]) => /failed|misconfigured|stale/i.test(String(v || "")))
+    .map(([k, v]) => `${k}: ${String(v).slice(0, 240)}`);
+  const n = Number(result.etlPagesFailed || 0);
+  if (n > 0) lines.push(`${n} page${n === 1 ? "" : "s"} did not build: ${(result.etlFailedPages || []).join(", ")}`);
+  return lines;
+}
+async function alertRefresh(result, now = new Date().toISOString()) {
+  const d = alertDecision(alertState, result, now);
+  alertState = d.state;
+  const channel = process.env.SLACK_ALERT_CHANNEL;
+  if (!d.post || !channel || !process.env.SLACK_BOT_TOKEN) return null;
+  const clock = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" }) + " UK";
+  const text = d.post === "trouble"
+    ? `Dashboard refresh: failing since ${clock(alertState.since)}, ${alertState.troubled} attempts in a row.\n` + troubleLines(result).join("\n")
+    : `Dashboard refresh: back to normal at ${clock(now)}.`;
+  return require("./slack").postMessage(channel, text);
 }
 
 /* The last attempt's outcome plus whether one is in flight right now. A full
@@ -468,6 +530,6 @@ function startScheduler() {
 }
 
 module.exports = {
-  refresh, status, startScheduler, runEtl, buildUpcoming, writeAtomic, pyFailure,
+  refresh, status, startScheduler, runEtl, buildUpcoming, writeAtomic, pyFailure, parseBuildSummary, alertDecision, troubleLines,
   convertAcrossTime, convertSpend, acrossTimeWriter, spendWriter, normDate, parseCsv,
 };

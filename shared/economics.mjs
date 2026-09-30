@@ -36,7 +36,10 @@ export function mergeProducts(airtable, typed) {
     if (!t || typeof t !== "object" || !(t.airtable_id || t.manual)) continue;
     const keys = {};
     for (const k of PRODUCT_KEYS) if (k in t && !blank(t[k])) keys[k] = t[k];
-    if (t.name !== undefined && t.name !== null) keys.name = String(t.name);   // as typed: the server trims on save
+    // as typed: the server trims on save, and saves "" for an Airtable product
+    // nobody named, which is no name at all - Airtable's title stands (the
+    // Cattelan works read "unnamed" over "Not Afraid of Love" and "Novecento")
+    if (t.name !== undefined && t.name !== null && String(t.name).trim() !== "") keys.name = String(t.name);
     let target = t.airtable_id ? byId.get(String(t.airtable_id)) : null;
     if (!target && t.manual) target = byName.get(norm(t.name)) || null;
     if (!target) {

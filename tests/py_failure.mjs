@@ -44,4 +44,45 @@ assert.strictEqual(pyFailure("build.py", "   \n", undefined), "build.py failed: 
 assert.ok(pyFailure("pull_airtable.py", "airtable: 401 from the API\n", "exit 1")
   .startsWith("pull_airtable.py failed: airtable: 401 from the API | "));
 
+/* ---- the pages that did not build, off the build's summary line ---- */
+const { parseBuildSummary, alertDecision, troubleLines } = require("../server/sheets.js");
+const out = [
+  "andy_warhol_le_26: day 8/24 now=100 exp=90 target=300 proj=280",
+  "page failed: andy_warhol_brillo_box_2026_q4: OSError: [Errno 36] File name too long: '/var/data/app/derived/x.json'",
+  "pages failed: 1 - andy_warhol_brillo_box_2026_q4: OSError: [Errno 36] File name too long: '/var/data/app/derived/x.json'",
+  "wrote 9 targeted + 361 actuals-only + 6 upcoming releases (14 live) -> /var/data/app",
+].join("\n");
+assert.deepStrictEqual(parseBuildSummary(out), { pagesFailed: 1, failedPages: ["andy_warhol_brillo_box_2026_q4"] });
+assert.deepStrictEqual(parseBuildSummary("wrote 9 targeted + 361 actuals-only + 7 upcoming releases (14 live) -> /var/data/app"), { pagesFailed: 0, failedPages: [] });
+assert.deepStrictEqual(parseBuildSummary("pages failed: 7 - a: KeyError: 'x'; b: ValueError: y; c: E: z; d: E: z; e: E: z; and 2 more"),
+  { pagesFailed: 7, failedPages: ["a", "b", "c", "d", "e"] });
+assert.deepStrictEqual(parseBuildSummary(""), { pagesFailed: 0, failedPages: [] });
+
+/* ---- the alert: the second troubled refresh in a row, once, and the recovery ---- */
+const healthy = { ok: true, etlPagesFailed: 0 };
+const broken = { ok: false, etl: "etl failed: build.py failed: OSError: [Errno 36] File name too long" };
+const partly = { ok: true, etlPagesFailed: 1, etlFailedPages: ["andy_warhol_brillo_box_2026_q4"] };
+let s = { troubled: 0, alerted: false, since: null };
+let d = alertDecision(s, broken, "t1");
+assert.strictEqual(d.post, null, "one failure is not yet an alert");
+assert.deepStrictEqual(d.state, { troubled: 1, alerted: false, since: "t1" });
+d = alertDecision(d.state, broken, "t2");
+assert.strictEqual(d.post, "trouble", "the second in a row is");
+assert.deepStrictEqual(d.state, { troubled: 2, alerted: true, since: "t1" }, "and it remembers when the trouble began");
+d = alertDecision(d.state, broken, "t3");
+assert.strictEqual(d.post, null, "once per run of trouble");
+assert.strictEqual(d.state.troubled, 3);
+d = alertDecision(d.state, healthy, "t4");
+assert.strictEqual(d.post, "recovery", "the first healthy refresh after an alert says so");
+assert.deepStrictEqual(d.state, { troubled: 0, alerted: false, since: null });
+// a single failure that clears itself posts nothing either way
+d = alertDecision(alertDecision(s, broken, "t1").state, healthy, "t2");
+assert.strictEqual(d.post, null);
+// a page that did not build counts as trouble too, on a refresh that otherwise succeeded
+d = alertDecision(alertDecision(s, partly, "t1").state, partly, "t2");
+assert.strictEqual(d.post, "trouble");
+assert.deepStrictEqual(troubleLines(partly), ["1 page did not build: andy_warhol_brillo_box_2026_q4"]);
+assert.deepStrictEqual(troubleLines({ ...broken, bigquery: "funnel 436052 rows", emails: "hubspot failed: 401" }),
+  ["Email: hubspot failed: 401", "ETL: etl failed: build.py failed: OSError: [Errno 36] File name too long"]);
+
 console.log("py failure message: ok");
