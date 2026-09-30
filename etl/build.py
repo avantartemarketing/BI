@@ -5906,7 +5906,7 @@ def build_upcoming_pages() -> int:
         rec["campaign_name"] = match_campaign(rec["campaign_code"], spend) if (rec.get("campaign_code") and spend is not None) else None
         snap = build_upcoming(rec, as_of, None, as_of)
         check_snapshot(snap)
-        (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
+        write_page(DERIVED / f"{rec['id']}.json", snap)
         patch_index(snap, None, status="upcoming")
         n += 1
     # an upcoming row the list no longer holds (closed, taken up by the
@@ -5927,6 +5927,28 @@ def build_upcoming_pages() -> int:
             print(f"upcoming: could not tidy the index ({e})")
     print(f"upcoming: wrote {n} page(s) from Airtable -> {DERIVED}")
     return n
+
+
+def write_page(path: pathlib.Path, snap: dict) -> None:
+    """A page to disk, stamped with when it was built: the header reads
+    `builtAt` beside the data's last day, so a page's age is its own and not
+    the refresh's."""
+    snap["builtAt"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    path.write_text(json.dumps(snap, indent=1))
+
+
+def guard_page(failures: list, rid: str, fn) -> bool:
+    """Run one page's build. On any error the page is skipped, (id, error) is
+    kept for the summary and False comes back, so one page's failure never
+    stops the build; True when it built."""
+    try:
+        fn()
+        return True
+    except Exception as e:  # noqa: BLE001 - one page's failure never stops the build
+        err = f"{type(e).__name__}: {str(e)[:300]}"
+        failures.append((rid, err))
+        print(f"page failed: {rid}: {err}")
+        return False
 
 
 def main(only: str | None = None):
@@ -6101,7 +6123,7 @@ def main(only: str | None = None):
                                  full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
         check_snapshot(snap)
         warn_panel(panel_drift(snap, panel))
-        (APP / "releases" / f"{only}.json").write_text(json.dumps(snap, indent=1))
+        write_page(APP / "releases" / f"{only}.json", snap)
         bmk = snap.get("benchmark")
         print(f"{snap['id']}: day {snap['day']}/{snap['of']} "
               f"now={snap['hero']['now']} exp={snap['hero']['expectedToday']} "
@@ -6118,34 +6140,58 @@ def main(only: str | None = None):
     index, written, n_full, n_actuals = [], set(), 0, 0
     def add(snap, status):
         index.append(index_row(snap, status))
+    # One page's failure never stops the build (guard_page): the page is
+    # skipped with its error kept for the summary line, it keeps its previous
+    # file and its previous row in the index, and every other page is built
+    # and indexed as usual. Before, a launch titled with a dozen works stopped
+    # the build after every release page was written and before the index, so
+    # every refresh failed for an evening (28 September 2026).
+    failures: list[tuple[str, str]] = []
+    try:
+        prev_rows = {str(r.get("id")): r for r in json.loads((APP / "index.json").read_text()).get("releases", [])}
+    except (OSError, ValueError):
+        prev_rows = {}
+
+    def keep_previous(rid: str) -> None:
+        written.add(f"{rid}.json")
+        if rid in prev_rows:
+            index.append(prev_rows[rid])
 
     for rec in discovered:
         cfg = configured.pop(rec["release_name"], None)
         if cfg:
-            snap = with_direct_spread(build_release, cfg, at, spend, emails, content, curves, as_of,
-                                 artist_posts, posts_bench, email_bench, panel, people,
-                                 full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
-            check_snapshot(snap)
-            warn_panel(panel_drift(snap, panel))
-            (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
-            add(snap, "closed" if snap["complete"] else "live")
-            n_full += 1
-            bmk = snap.get("benchmark")
-            print(f"{snap['id']}: day {snap['day']}/{snap['of']} "
-                  f"now={snap['hero']['now']} exp={snap['hero']['expectedToday']} "
-                  f"target={snap['hero']['target']} proj={snap['hero']['projected']}"
-                  + (f" benchmark={bmk['units']} (x{bmk['k']}, {bmk['basket']['id']} n={bmk['basket']['n']})"
-                     if bmk else ""))
+            def build_targeted(cfg=cfg):
+                snap = with_direct_spread(build_release, cfg, at, spend, emails, content, curves, as_of,
+                                     artist_posts, posts_bench, email_bench, panel, people,
+                                     full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
+                check_snapshot(snap)
+                warn_panel(panel_drift(snap, panel))
+                write_page(APP / "releases" / f"{cfg['id']}.json", snap)
+                add(snap, "closed" if snap["complete"] else "live")
+                bmk = snap.get("benchmark")
+                print(f"{snap['id']}: day {snap['day']}/{snap['of']} "
+                      f"now={snap['hero']['now']} exp={snap['hero']['expectedToday']} "
+                      f"target={snap['hero']['target']} proj={snap['hero']['projected']}"
+                      + (f" benchmark={bmk['units']} (x{bmk['k']}, {bmk['basket']['id']} n={bmk['basket']['n']})"
+                         if bmk else ""))
+            if guard_page(failures, cfg["id"], build_targeted):
+                n_full += 1
+            else:
+                keep_previous(cfg["id"])
         else:
-            rec["campaign_name"] = match_campaign(rec["campaign_code"], spend)
-            snap = with_direct_spread(build_actuals, rec, by_name[rec["release_name"]], spend, emails, content, as_of,
-                                 email_bench, artist_posts, full_through=full_through, seen=seen,
-                                 untracked_norms=norms, direct_norm=direct_norm)
-            check_snapshot(snap)
-            (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
-            written.add(f"{rec['id']}.json")
-            add(snap, "catalogue" if snap["catalogue"] else ("closed" if snap["complete"] else "live"))
-            n_actuals += 1
+            def build_derived(rec=rec):
+                rec["campaign_name"] = match_campaign(rec["campaign_code"], spend)
+                snap = with_direct_spread(build_actuals, rec, by_name[rec["release_name"]], spend, emails, content, as_of,
+                                     email_bench, artist_posts, full_through=full_through, seen=seen,
+                                     untracked_norms=norms, direct_norm=direct_norm)
+                check_snapshot(snap)
+                write_page(DERIVED / f"{rec['id']}.json", snap)
+                written.add(f"{rec['id']}.json")
+                add(snap, "catalogue" if snap["catalogue"] else ("closed" if snap["complete"] else "live"))
+            if guard_page(failures, rec["id"], build_derived):
+                n_actuals += 1
+            else:
+                keep_previous(rec["id"])
     # a draw campaign the orders tie to one release that no page claims
     try:
         unclaimed_draw_campaigns(spend, discovered)
@@ -6155,22 +6201,30 @@ def main(only: str | None = None):
     # with the dates, edition and price to set targets from (§1.7)
     n_upcoming = 0
     for rec in upcoming:
-        snap = build_upcoming(rec, as_of, email_bench, full_through)
-        check_snapshot(snap)
-        (DERIVED / f"{rec['id']}.json").write_text(json.dumps(snap, indent=1))
-        written.add(f"{rec['id']}.json")
-        add(snap, "upcoming")
-        n_upcoming += 1
+        def build_coming(rec=rec):
+            snap = build_upcoming(rec, as_of, email_bench, full_through)
+            check_snapshot(snap)
+            write_page(DERIVED / f"{rec['id']}.json", snap)
+            written.add(f"{rec['id']}.json")
+            add(snap, "upcoming")
+        if guard_page(failures, rec["id"], build_coming):
+            n_upcoming += 1
+        else:
+            keep_previous(rec["id"])
     # configured releases the funnel data does not mention yet (announced, no
     # traffic) still get built, as before
     for cfg in configured.values():
-        snap = with_direct_spread(build_release, cfg, at, spend, emails, content, curves, as_of,
-                             artist_posts, posts_bench, email_bench, panel, people,
-                                 full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
-        check_snapshot(snap)
-        (APP / "releases" / f"{cfg['id']}.json").write_text(json.dumps(snap, indent=1))
-        add(snap, "closed" if snap["complete"] else "live")
-        n_full += 1
+        def build_configured(cfg=cfg):
+            snap = with_direct_spread(build_release, cfg, at, spend, emails, content, curves, as_of,
+                                 artist_posts, posts_bench, email_bench, panel, people,
+                                     full_through=full_through, seen=seen, untracked_norms=norms, direct_norm=direct_norm)
+            check_snapshot(snap)
+            write_page(APP / "releases" / f"{cfg['id']}.json", snap)
+            add(snap, "closed" if snap["complete"] else "live")
+        if guard_page(failures, cfg["id"], build_configured):
+            n_full += 1
+        else:
+            keep_previous(cfg["id"])
     # a release that has left the data (or been promoted) must not linger
     for stale in DERIVED.glob("*.json"):
         if stale.name not in written:
@@ -6232,6 +6286,12 @@ def main(only: str | None = None):
         print(f"panel: {len(PANEL_WARNINGS)} warning(s) above - the benchmark panel wants a re-run (README, 'Re-running the benchmark panel')")
     if SNAPSHOT_WARNINGS:
         print(f"check_snapshot: {len(SNAPSHOT_WARNINGS)} warning(s) from the soft checks (nothing stopped)")
+    # the pages that did not build, on one line the refresh status reads
+    # (server/sheets.js parseBuildSummary): the id and the error, the first
+    # five in full
+    if failures:
+        print(f"pages failed: {len(failures)} - " + "; ".join(f"{rid}: {err}" for rid, err in failures[:5])
+              + (f"; and {len(failures) - 5} more" if len(failures) > 5 else ""))
     print(f"wrote {n_full} targeted + {n_actuals} actuals-only + {n_upcoming} upcoming releases "
           f"({sum(1 for e in index if e['status'] == 'live')} live) -> {APP}")
 

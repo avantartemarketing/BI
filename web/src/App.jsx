@@ -14,6 +14,7 @@
  * is a target worth holding, the second is a launch in trouble. */
 import React, { useEffect, useMemo, useState } from "react";
 import { initial as watchInitial, step as watchStep } from "../../shared/refreshWatch.mjs";
+import { freshness, TONE_COLOR } from "../../shared/freshness.mjs";
 import { C, fmt, fmtSigned, fmtPct, fmtDay, TipProvider, useTip } from "./ui.jsx";
 import HeroBar from "./modules/HeroBar.jsx";
 import LaunchStrip from "./modules/LaunchStrip.jsx";
@@ -410,67 +411,19 @@ function CoverageBanner({ noEvent }) {
   );
 }
 
-/* The header used to assert "Sources fresh" as a literal, so a broken hourly
- * ingestion - expired token, un-shared sheet, an ETL exception - looked
- * identical to a healthy one while the page served frozen numbers. This reads
- * the status the server already records and says which it is. */
-function Freshness({ asOf, st, emailThrough, partial }) {
+/* The header's freshness line: the page's own age first (the day its data
+ * runs to, when it was built), the pipeline's health second, in words a
+ * reader can act on. It used to read the refresh's failure flag alone, so a
+ * page rebuilt an hour ago read "Sources stale" because a later step of the
+ * refresh had failed. The rule is shared/freshness.mjs, which
+ * tests/freshness.mjs runs through its states; this only renders it. */
+function Freshness({ asOf, st, emailThrough, partial, builtAt }) {
   const t = useTip();
-  // the email feed's last send: when it falls a week or more behind the build,
-  // every email rung on the page is reading an empty feed, and the header is
-  // where that has to show - the pull itself "succeeds" either way
-  const day = (s) => new Date(s + "T00:00:00Z").getTime();
-  const emailLag = asOf && emailThrough ? Math.round((day(asOf) - day(emailThrough)) / 864e5) : null;
-  const emailBehind = emailLag !== null && emailLag > 7;
-
-  const feeds = st && [["BigQuery", st.bigquery], ["Sheet", st.sheet], ["Email", st.emails],
-    ["Notion", st.notion], ["Airtable", st.airtable], ["ETL", st.etl]]
-    .filter(([, v]) => v !== undefined && v !== null);
-  // which feeds the last refresh reported failing: the funnel's own (BigQuery,
-  // the sheet, the ETL) make the page stale; a side feed (email, Notion,
-  // Airtable) leaves the figures current and is named for what it is
-  const failed = (feeds || []).filter(([, v]) => /failed|misconfigured|stale/i.test(String(v))).map(([k]) => k);
-  const coreFailed = failed.some((k) => k === "BigQuery" || k === "Sheet" || k === "ETL");
-  const stale = st && st.ok === false && (coreFailed || !failed.length);
-  const sideFailed = st && st.ok === false && !stale ? failed : [];
-  const running = st && st.running;
-  /* A feed with no token does not fail, so `ok` stays true and the header read
-   * "Sources fresh" while a whole feed was dormant and its panels sat empty.
-   * That is not a failure and should not turn the header red, but it is not
-   * "fresh" either: name the dormant feeds in the header so nobody has to
-   * hover to find out the email panels have no source at all. */
-  const dormant = (feeds || [])
-    .filter(([, v]) => / off \(/.test(String(v)))
-    .map(([k]) => k.toLowerCase());
-  const label = st === undefined ? "Checking sources…"
-    : running && !st.at ? "Refreshing sources…"
-    : st === null || !st.at ? "Source status unknown"
-    : stale ? "Sources stale"
-    : sideFailed.length ? `${sideFailed.join(" and ")} failed`
-    : dormant.length ? `Sources fresh · ${dormant.join(" and ")} off`
-    : "Sources fresh";
-  const color = st === undefined ? "#6c6b68" : stale ? "#b8461d"
-    : sideFailed.length || dormant.length || emailBehind ? "#8a5f00"
-    : st && st.at ? "#6c6b68" : "#8a5f00";
-  const tip = {
-    head: running ? `${label} (refresh in progress)` : label,
-    body: running
-      ? `A refresh started ${new Date(st.runningSince).toLocaleTimeString()} is still running` +
-        (st.at ? `; the figures below are from the previous one at ${new Date(st.at).toLocaleString()}.` : ".")
-      : st && st.at
-      ? `Last refresh attempt ${new Date(st.at).toLocaleString()}`
-      : "The dashboard has not been able to read the refresh status.",
-    // the feed lines are the diagnosis - a HubSpot summary names the releases its
-    // sends joined, which starts well past character 70 - so they are not cut
-    rows: [
-      ...(emailThrough ? [{ label: "Emails through", value: emailThrough, color: emailBehind ? "#8a5f00" : undefined }] : []),
-      ...(feeds ? feeds.map(([k, v]) => ({ label: k, value: String(v) })) : []),
-    ],
-  };
+  const f = freshness({ asOf, partial, builtAt, st, emailThrough });
   return (
-    <span className="freshness" style={{ color }} {...t.props(tip)}>
-      {stale && <span aria-hidden="true">⚠ </span>}
-      {label}{emailBehind && ` · emails through ${emailThrough}`} · data through {asOf}{partial && " (today so far)"}
+    <span className="freshness" style={{ color: TONE_COLOR[f.tone] }} {...t.props({ head: f.head, body: f.body, rows: f.rows })}>
+      {f.warn && <span aria-hidden="true">⚠ </span>}
+      {f.label}
     </span>
   );
 }
@@ -610,7 +563,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
               {variant && tab === "overview" && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} />}
             </div>
           )}
-          <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough}
+          <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough} builtAt={snap.builtAt}
             partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} />
         </div>
       </header>

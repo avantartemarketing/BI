@@ -178,12 +178,34 @@ are set (the launches ahead of the funnel appear in the sidebar as Upcoming, doc
 `DATA_MODEL.md` 1.7), and reruns the ETL in place - no redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
 (signed-in session required): both **start** the refresh and return at once with
 `running: true`; poll `GET /api/refresh/status` for the outcome, or hover the header's
-source-freshness line, which shows the same thing. A page built from data older than the last full
+freshness line, which shows the same thing. That line answers two questions apart
+(`shared/freshness.mjs`): the page's own age first, "Data through 30 Sep (today so far) · built
+08:46", from the page's `asOf` and `builtAt`, red only when the data is two or more days behind;
+then the pipeline's health, in amber and never red, since none of it says the figures on screen
+are wrong: "refresh failing since 22:08 yesterday" (`failingSince`, the first failed attempt of
+the current run), "1 page not built" (`etlPagesFailed`, `etlFailedPages`), a side feed that
+failed, a feed with no token. It used to read "Sources stale" off the refresh's failure flag
+alone, so a page rebuilt an hour ago read stale because a later step of the refresh had failed.
+A page built from data older than the last full
 day also carries an amber banner under the header: how many days behind it is, and what the
 refresh is doing about it, with the time it started. The page reloads itself when that refresh
 lands. Data through yesterday is normal until the first refresh of the day and is not flagged. A refresh is a multi-year BigQuery pull
 plus the ETL and takes a few minutes - longer than Render's proxy will hold a request
 open, so an endpoint that waited for it came back as a 502.
+
+**One page's failure never stops the build.** `build.py` builds each page under a guard
+(`guard_page`): a page that raises is skipped with its id and error on the build's `pages failed:`
+line, keeps its previous file and its previous row in the index, and every other page is built
+and the index written. The refresh then counts as succeeded with `etlPagesFailed` pages missing,
+which the header names. Before, a launch titled with a dozen works stopped the build after every
+release page was written and before the index, so every refresh failed for an evening (28
+September 2026) while the header said the sources were stale over fresh figures.
+
+**Alerts.** Set `SLACK_ALERT_CHANNEL` (a channel name or id the Slack app can post to, with
+`SLACK_BOT_TOKEN`) and the second consecutive troubled refresh, a failed feed or step or a page
+that did not build, posts one line there with what is failing, once per run of trouble, and one
+line when it recovers. Nobody hovers the header's tooltip: without the alert the 28 September
+failure ran all evening before anyone saw it.
 There are two paths to the same two files, and BigQuery wins whenever it is configured.
 
 ### BigQuery (preferred; `server/bigquery.js`)

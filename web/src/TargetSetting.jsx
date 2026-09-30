@@ -1104,8 +1104,11 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
               <NumBox value={asPct(inp.preorder_conversion_rate)} placeholder="95" unit="%"
                 onCommit={(raw) => { const c = String(raw).replace(/[^0-9]/g, ""); setInp((prev) => ({ ...prev, preorder_conversion_rate: c === "" ? null : clamp(parseInt(c, 10), 1, 100) / 100 })); }} />
             </Field>
-            <Field label="Cost per paid unit" src="blank = the median"
-              help={basketCpp > 0 ? `Paid units at this price is the paid budget. The basket's median is each launch's Meta spend over the paid units it sold, ${profile.n_costed || 0} launches with spend on file.` : "Paid units at this price is the paid budget. The panel's median stands in until three of the basket's launches have spend on file."}
+            <Field label="Cost per paid unit"
+              src={basketCpp > 0 ? `blank = the basket's median (${profile.n_costed || 0} launches with spend)`
+                : `blank = the panel's median (the basket has ${(profile && profile.n_costed) || 0} of the 3 launches with spend it needs)`}
+              help={basketCpp > 0 ? `Paid units at this price is the paid budget. Blank reads the basket: its median is each launch's Meta spend over the paid units it sold, ${profile.n_costed || 0} launches with spend on file. Type a figure only to override that.`
+                : `Paid units at this price is the paid budget. Blank reads the basket once three of its launches have spend on file (${(profile && profile.n_costed) || 0} do today); until then the panel's median stands in. Type a figure only to override that.`}
               tip="What a paid unit costs to buy. Blank = the basket's median cost per paid unit (each launch's Meta spend over the paid units it sold), or the panel's median when fewer than three of the basket's launches have spend on file.">
               <NumBox value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)}
                 placeholder={fmt(basketCpp > 0 ? basketCpp : panelCpp)} unit="€"
