@@ -237,7 +237,9 @@ const cellText = (key, v, raw = false) => {
 /* The one-or-the-other rule: a product's deal is a revenue share or a profit
  * share, so while either holds a figure the other is closed; unticked
  * framing closes the two frame cells beside it. */
+const OFF_WHY = "Unticked: this work is not part of the release, so it counts nothing here. Tick it to count it again.";
 const closedFor = (p, key) => {
+  if (p.excluded) return true;   // unticked: every figure cell is closed
   if (key === "aa_revenue_share") return p.aa_profit_share !== null && p.aa_revenue_share === null;
   if (key === "aa_profit_share") return p.aa_revenue_share !== null && p.aa_profit_share === null;
   if (key === "frame_conversion" || key === "frame_profit_per_unit") return !p.framing_available;
@@ -274,13 +276,17 @@ function moveByRow(e) {
   }
 }
 
-function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, onAdd, onRemove, onReset, emptyNote }) {
+function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, onAdd, onRemove, onReset, onInclude, emptyNote }) {
   // rows are keyed by the Airtable id, else the row's place in the list: a
   // manual product's name is typed in place, so it cannot be the key
   const rowKey = (p, i) => (p.airtable_id ? `a-${p.airtable_id}` : `m-${i}`);
+  // the works in the release: the totals and the set-all row read these; an
+  // unticked work stays on the grid, greyed, with every cell closed
+  const live = products.filter((p) => !p.excluded);
   const glyph = (c) => <span className="glyph" aria-hidden="true">{c.glyph}</span>;
   const srcTitle = (src) => (src === "airtable" ? "Airtable's figure - type over it to override" : src === "default" ? "The benchmark default - type over it to override" : src === "typed" ? "Typed here; clear to go back to Airtable's" : "Airtable holds none - type it");
   const cell = (p, c) => {
+    if (p.excluded) return <td key={c.key} className="closed" title={OFF_WHY} />;
     if (c.date) return <td key={c.key} className="calc" title={c.tip}>{p.launch_date ? fmtDate(p.launch_date) : ""}</td>;
     if (c.calc) return <td key={c.key} className="calc" title={c.tip}>{p.edition ? fmt(p.target_units) : ""}</td>;
     const typed = p.airtable_id && p.sources[c.key] === "typed";
@@ -318,6 +324,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
             ? <input className="cell name" size={1} value={p.name || ""} placeholder="Product name" onChange={(e) => onName(p, e.target.value)} />
             : <span className="nm" title={p.name || "unnamed"}>{p.name || "unnamed"}</span>}
           <span className="src" title={p.airtable_id ? `Airtable record ${p.project_code || p.airtable_id}` : "Added on this tab, not in Airtable"}>{p.airtable_id ? `Airtable ${p.project_code || p.airtable_id}` : "added by hand"}</span>
+          {p.excluded && <span className="src off" title={OFF_WHY}>unticked</span>}
           {editing && p.airtable_id && n > 0 && (
             <button type="button" className="ts-link" onClick={() => onReset(p)} title={`Back to Airtable's figures on this row (${n} typed)`}>Reset</button>
           )}
@@ -339,7 +346,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
         if (c.check) {
           return (
             <td key={c.key} className="check">
-              <input type="checkbox" className="tick" checked={products.every((p) => p.framing_available)} title="Every product at once"
+              <input type="checkbox" className="tick" checked={live.every((p) => p.framing_available)} title="Every product at once"
                 onChange={(e) => onFieldAll(c.key, e.target.checked)} />
             </td>
           );
@@ -361,7 +368,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
   // sell-through and price weighted by target units, the profits and the
   // share per target unit, the framing uplift per target unit
   const weighted = (key) => {
-    const rows = products.filter((p) => p[key] !== null && p[key] !== undefined && p.target_units > 0);
+    const rows = live.filter((p) => p[key] !== null && p[key] !== undefined && p.target_units > 0);
     const tot = rows.reduce((s, p) => s + p.target_units, 0);
     return tot ? rows.reduce((s, p) => s + p.target_units * p[key], 0) / tot : null;
   };
@@ -370,7 +377,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
   const sum = () => (
     <tr className="sum">
       <td className="gut" />
-      <td className="l primary">Total · per target unit<span className="src">{products.length === 1 ? "the one product" : `the ${products.length} products together`}</span></td>
+      <td className="l primary">Total · per target unit<span className="src">{live.length === 1 ? "the one product" : `the ${live.length} products together`}{live.length < products.length ? `, ${products.length - live.length} unticked` : ""}</span></td>
       <td title="The editions summed.">{fmt(econ.edition_total)}</td>
       <td title="Target units over the editions.">{econ.edition_total ? Math.round((100 * econ.edition_size) / econ.edition_total) : ""}</td>
       <td title="Price per target unit, weighted by target units, in euros.">{econ.unit_price ? cellText("unit_price", econ.unit_price) : ""}</td>
@@ -391,7 +398,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
           <colgroup><col style={{ width: 32 }} /><col style={{ width: 230 }} /></colgroup>
           <thead>
             <tr>
-              <th className="gut" />
+              <th className="gut" title="Ticked: part of the release. Untick a work to leave it out; it stays here, greyed, and counts nothing." />
               <th className="l primary"><span className="glyph" aria-hidden="true">A</span>Product</th>
               {GRID.map((c) => <th key={c.key} className={c.calc ? "calc" : undefined} title={c.tip}>{glyph(c)}{c.label}</th>)}
             </tr>
@@ -399,8 +406,14 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
           <tbody>
             {editing && products.length > 1 && setAll()}
             {products.map((p, i) => (
-              <tr key={rowKey(p, i)}>
-                <td className="gut">{i + 1}</td>
+              <tr key={rowKey(p, i)} className={p.excluded ? "off" : undefined}>
+                <td className="gut">
+                  <input type="checkbox" className="tick" checked={!p.excluded} disabled={!editing || !p.airtable_id}
+                    title={p.excluded ? "Unticked: not part of the release. Tick to count it again."
+                      : !p.airtable_id ? "Added by hand: Remove takes it off the release."
+                        : editing ? "Untick to leave this work out of the release: it stays here, greyed, and counts nothing." : "Part of the release. Switch on Edit figures to untick it."}
+                    onChange={(e) => onInclude(p, e.target.checked)} />
+                </td>
                 {nameCell(p, i)}
                 {GRID.map((c) => cell(p, c))}
               </tr>
@@ -657,11 +670,23 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     setInp({ ...inp, products: [...(inp.products || []), { manual: true, name: `Product ${n}` }] });
   };
   const onRemove = (p) => setInp({ ...inp, products: (inp.products || []).filter((t) => !(t.manual && norm(t.name) === norm(p.name))) });
-  // back to Airtable's figures: one product's typed entry dropped, or all of them
-  const onReset = (p) => setInp((prev) => ({ ...prev, products: (prev.products || []).filter((t) => !(p.airtable_id && String(t.airtable_id) === String(p.airtable_id))) }));
-  const onResetAll = () => setInp((prev) => ({ ...prev, products: (prev.products || []).filter((t) => !t.airtable_id) }));
+  // the tick: an unticked work stays on the grid with its typed figures and
+  // counts nothing; ticked again, an entry that carried nothing else goes
+  const bare = (t) => Object.entries(t).every(([k, v]) => k === "airtable_id" || k === "manual" || (k === "name" && !t.manual) || v === null || v === undefined || v === "");
+  const onInclude = (p, on) => setInp((prev) => {
+    const list = prev.products || [];
+    if (!on) return { ...prev, products: applyEntry(list, p, { excluded: true }) };
+    const out = list.map((t) => (sameEntry(t, p) ? Object.fromEntries(Object.entries(t).filter(([k]) => k !== "excluded")) : t));
+    return { ...prev, products: out.filter((t) => !(sameEntry(t, p) && t.airtable_id && bare(t))) };
+  });
+  // back to Airtable's figures: one product's typed entry dropped, or all of
+  // them; a tick left off stays off
+  const onReset = (p) => setInp((prev) => ({ ...prev, products: (prev.products || []).flatMap((t) => ((p.airtable_id && String(t.airtable_id) === String(p.airtable_id))
+    ? (t.excluded ? [{ airtable_id: t.airtable_id, excluded: true }] : []) : [t])) }));
+  const onResetAll = () => setInp((prev) => ({ ...prev, products: (prev.products || []).flatMap((t) => (!t.airtable_id ? [t] : t.excluded ? [{ airtable_id: t.airtable_id, excluded: true }] : [])) }));
   const typedCount = products.filter((p) => p.airtable_id).reduce((s, p) => s + typedKeys(p).length, 0);
   const manualCount = products.filter((p) => !p.airtable_id).length;
+  const excludedCount = products.filter((p) => p.excluded).length;
   // the picker asks for a target and a price when there are none: they land
   // on a product added by hand, so the basket follows the typing
   const onPickerInputs = (patch) => {
@@ -788,7 +813,19 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
      launch is otherwise a page that runs to the wrong day */
   const driftOf = (f, value, src) => Object.entries({ airtable: (sourced.airtable || {})[f], clock: (sourced.clock || {})[f] })
     .filter(([name, d]) => d && d !== value && name !== src);
-  const workCloses = (sourced.airtable || {}).closes || [];
+  // the works' own closes as the build reads them (etl/build.py
+  // product_closes over the sized works in the release): an unticked work's
+  // day drops out, so the note beside Draw closes says what the page will
+  const workCloses = (() => {
+    const by = new Map();
+    for (const p of products) {
+      if (p.excluded || !p.edition || !p.launch_date) continue;
+      const d = String(p.launch_date).slice(0, 10);
+      if (!by.has(d)) by.set(d, []);
+      by.get(d).push(p.name || "");
+    }
+    return [...by.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, names]) => ({ date, works: names.length, names }));
+  })();
   const dateField = (label, f, value, src, tip) => {
     const drift = driftOf(f, value, src);
     const help = (
@@ -851,6 +888,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     editing ? "Editing" : atProducts.length ? "Figures from Airtable" : null,
     typedCount ? `${typedCount} figure${typedCount === 1 ? "" : "s"} typed over Airtable` : null,
     manualCount ? `${manualCount} product${manualCount === 1 ? "" : "s"} added by hand` : null,
+    excludedCount ? `${excludedCount} unticked` : null,
   ].filter(Boolean).join(" · ");
   const asPct = (v) => (v === null || v === undefined || v === "" ? "" : String(Math.round(Number(v) * 100)));
 
@@ -1107,7 +1145,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
             </Notice>
           )}
           <ProductsGrid products={products} econ={econ} editing={editing} onField={onField} onFieldAll={onFieldAll} onName={onName}
-            onAdd={onAdd} onRemove={onRemove} onReset={onReset} emptyNote={airtableNote} />
+            onAdd={onAdd} onRemove={onRemove} onReset={onReset} onInclude={onInclude} emptyNote={airtableNote} />
           <div className="ts-caption">
             Launch value <b>{fmtMoney(econ.launch_value, 0)}</b>
             {(econ.launch_currencies || []).some((c) => c !== "EUR") ? ` (from ${(econ.launch_currencies || []).join(", ")} at a fixed rate)` : ""}

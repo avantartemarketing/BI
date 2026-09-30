@@ -391,7 +391,9 @@ app.post("/api/inputs/:id", route(async (req, res) => {
    * Airtable's: its edition, target sell-through, price and currency, the
    * artist's and Avant Arte's profit per unit, the deal's revenue or profit
    * share, the framing take-up and profit; empty means Airtable's, or the
-   * default. A draw entry (key = the draw id) is the sell-through card's: the
+   * default; excluded: true is the tick on the grid, a work left out of the
+   * release that stays on the grid and counts nothing (docs 1.6). A draw
+   * entry (key = the draw id) is the sell-through card's: the
    * name typed for the draw and its edition (docs §6.3). No page edits those
    * today; the tab sends them back as they came, and a draw with none takes
    * the Shopify title its winners bought. */
@@ -426,6 +428,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
             else entry.currency = c;
           }
           if (p.framing_available !== undefined && p.framing_available !== null && p.framing_available !== "") entry.framing_available = !!p.framing_available;
+          if (p.excluded === true) entry.excluded = true;
           if (entry.aa_revenue_share !== null && entry.aa_profit_share !== null) errors.push(`${label} cannot carry both a revenue share and a profit share - the deal is one or the other`);
         } else {
           entry.edition = numField("edition", 0, null, true);
@@ -442,7 +445,8 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   if (creating || next.legacy_economics === null) {
     const products = resolveProducts((sourced.airtable || {}).products || [], next.products || [], doc.benchmarks || {});
     const econ = releaseEconomics(products, next.legacy_economics || null, doc.benchmarks || {});
-    if (!(econ.edition_size > 0)) errors.push("no product has an edition yet - Airtable holds none for this release, so type one on the products table");
+    if (products.length && products.every((p) => p.excluded)) errors.push("every product is unticked - tick at least one, or add a work by hand");
+    else if (!(econ.edition_size > 0)) errors.push("no product has an edition yet - Airtable holds none for this release, so type one on the products table");
     else if (!(econ.launch_value > 0)) errors.push("no product has a unit price yet - type one on the products table");
   }
   // the entry -> order rate the sell-through prediction converts entries in

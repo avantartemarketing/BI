@@ -3391,6 +3391,10 @@ def _merge_products(airtable: list[dict], typed: list) -> list[dict]:
             out.append(target)
             if keys.get("name"):
                 by_name[_norm(keys["name"])] = target
+        # the tick (docs 1.6): unticked on the tab, the work stays on the grid
+        # with its typed figures and counts nothing
+        if t.get("excluded") is True:
+            target["excluded"] = True
         target["typed"].update(keys)
     return out
 
@@ -3421,7 +3425,7 @@ def _effective_product(p: dict, b: dict) -> dict:
         return default
 
     e: dict = {"airtable_id": p.get("airtable_id"), "name": typed.get("name") or p.get("name") or "Product",
-               "project_code": p.get("project_code"),
+               "project_code": p.get("project_code"), "excluded": bool(p.get("excluded")),
                # the day this work's draw closes (Airtable): one launch's works can
                # close on different days, and the page runs to the last (§1.6)
                "launch_date": str(p.get("launch_date"))[:10] if p.get("launch_date") else None}
@@ -3493,7 +3497,8 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
 
     - products: Airtable's records for the launch (etl/pricing.py
       release_products) with the figures typed on the Target setting tab laid
-      over them; the targets, launch value, profits per unit, framing and the
+      over them, less the works unticked there (kept as excluded_products);
+      the targets, launch value, profits per unit, framing and the
       paid-budget split follow from them, weighted by each product's target
       units. A release still carrying release-level figures (legacy_economics,
       or the top-level keys of inputs saved before the model went per
@@ -3513,8 +3518,12 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         legacy = {k: r[k] for k in LEGACY_KEYS if k in r}
     at = pricing.release_products(r)
     typed = r.get("products") if isinstance(r.get("products"), list) else []
-    products = [_effective_product(p, b) for p in _merge_products(at["products"], typed)]
+    merged = [_effective_product(p, b) for p in _merge_products(at["products"], typed)]
+    # a work unticked on the tab (docs 1.6) stays on the grid and counts
+    # nothing here: not in the edition, the targets, the closes or the page
+    products = [p for p in merged if not p.get("excluded")]
     r["economics_products"] = products
+    r["excluded_products"] = [p for p in merged if p.get("excluded")]
     r["airtable_match"] = {"how": at["match"], "note": at["note"]}
 
     sized = [p for p in products if p["edition"]]
@@ -3656,7 +3665,9 @@ def resolve_inputs(discovered: list[dict], spend: pd.DataFrame | None, notion: d
         rr = resolve_release(dict(r, clock_dates=clocks.get(r["release_name"])), spend, notion)
         src = rr.get("input_sources") or {}
         n = len([p for p in rr.get("economics_products") or [] if p.get("edition")])
-        print(f"{rr['id']}: inputs - economics from {src.get('economics') or 'nothing'} ({n} sized products, "
+        off = len(rr.get("excluded_products") or [])
+        print(f"{rr['id']}: inputs - economics from {src.get('economics') or 'nothing'} ({n} sized products"
+              f"{f', {off} unticked' if off else ''}, "
               f"target {rr.get('edition_size')} of {rr.get('edition_total')}), dates "
               f"{src.get('private_room_open')}/{src.get('announce_date')}/{src.get('launch_end')}, "
               f"lead {src.get('marketing_lead') or '-'}, campaigns {len(rr.get('campaign_names') or [])} ({src.get('campaigns') or '-'})")
@@ -5621,6 +5632,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # "release" while typed release-level figures still stand
             "mode": release.get("economics_mode"),
             "products": release.get("economics_products") or [],
+            # the works unticked on the tab: on the grid, out of every figure
+            "excludedProducts": [{"airtable_id": p.get("airtable_id"), "name": p.get("name"), "edition": p.get("edition")}
+                                 for p in release.get("excluded_products") or []],
             "deal": release.get("deal") or [],
             "launchCurrencies": release.get("launch_currencies") or [],
             "airtableMatch": release.get("airtable_match"),

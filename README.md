@@ -575,7 +575,7 @@ The target header - the secured-units target, its uplift over the basket, and si
 derived figures each with its benchmark and stretch - recomputes live in the browser via
 `shared/benchmarkModel.mjs` (the per-unit economics via `shared/economics.mjs`). The
 products sit on an Airtable-like grid, locked to Airtable's figures until **Edit figures** is
-switched on;
+switched on, each with a tick on its row (unticked, a work stays on the grid and counts nothing);
 **Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue, a first save included: the server removes the upcoming or actuals-only page the built one replaces) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
 
 ## Auditing the allocator tool with an admin export

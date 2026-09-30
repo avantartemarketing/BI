@@ -588,6 +588,10 @@ select.native {
 .sheet td input.cell { cursor: text; }
 .sheet td input.tick, .sheet td button, .sheet td button[title] { cursor: pointer; }
 .sheet td input.tick:disabled { cursor: default; }
+/* a work unticked on the grid: still listed, greyed, every cell closed */
+.sheet tr.off td.gut, .sheet tr.off td.primary, .sheet tr.off td.primary .nm { color: #9a988f; }
+.sheet tr.off td.primary .nm { text-decoration: line-through; text-decoration-color: #c8c5bc; }
+.sheet td .src.off { color: #b3751f; }
 @media (prefers-reduced-motion: reduce) { .ts-big, .ts-figures, .ts-switch .tr, .ts-switch .tr::after { transition: none; } }
 /* the product cell: the name gives way first, then its Airtable code; the
    Reset or Remove link at its end always stays in view */

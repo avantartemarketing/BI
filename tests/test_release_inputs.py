@@ -101,6 +101,19 @@ def test_products_and_totals() -> None:
         assert r4["edition_size"] == 120 and r4["edition_total"] == 170
         assert build.draw_products_typed(r4) == [typed[2]]
 
+        # a work unticked on the tab (excluded): on the grid with its typed
+        # figures, out of the totals and the closes; ticked, both closes stand
+        at["products"][1]["launch_date"] = "2026-10-14"
+        r11 = build.resolve_release(dict(base, products=[{"airtable_id": "12", "excluded": True, "unit_price": 2500}]), None, {})
+        assert [p["name"] for p in r11["economics_products"]] == ["Red"] and r11["edition_size"] == 40 and r11["edition_total"] == 100
+        off = r11["excluded_products"]
+        assert [p["name"] for p in off] == ["Blue"] and off[0]["excluded"] is True and off[0]["unit_price"] == 2500 and off[0]["sources"]["unit_price"] == "typed"
+        assert r11["closes"] == [{"date": "2026-09-30", "works": 1, "names": ["Red"]}], r11["closes"]
+        assert all(p["excluded"] is False for p in r11["economics_products"])
+        both = build.resolve_release(dict(base), None, {})
+        assert [c["date"] for c in both["closes"]] == ["2026-09-30", "2026-10-14"] and both["excluded_products"] == []
+        at["products"][1]["launch_date"] = "2026-09-30"
+
         # the release-level figures a release still carries stand in for its totals
         r5 = build.resolve_release(dict(base, legacy_economics={"edition_size": 200, "edition_total": 300, "unit_price": 900,
                                                                "artist_profit": 20000, "aa_group_profit": 40000, "artist_profit_share": 0}), None, {})
@@ -207,6 +220,7 @@ def test_js_agrees() -> None:
             dict(AT[0], framing=None, framing_available=None, framing_default=False),
             dict(AT[1], airtable_id="13", name="Print", framing=None, framing_available=None, framing_default=True, frame_profit_per_unit=None)],
          "typed": [], "legacy": None},
+        {"name": "a work unticked", "airtable": AT, "typed": [{"airtable_id": "12", "excluded": True, "unit_price": 2500}], "legacy": None},
     ]
     payload = {"bench": {k: b[k] for k in ("frame_conversion",)}, "cases": cases}
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
@@ -234,6 +248,8 @@ def test_js_agrees() -> None:
                     bad.append((c["name"], pp["name"], key, a, bb))
             if pp["deal"] != jp["deal"] or pp["framing_available"] != jp["framing_available"] or pp["sources"] != jp["sources"]:
                 bad.append((c["name"], pp["name"], "deal/framing/sources", (pp["deal"], pp["framing_available"], pp["sources"]), (jp["deal"], jp["framing_available"], jp["sources"])))
+            if bool(pp.get("excluded")) != bool(jp.get("excluded")):
+                bad.append((c["name"], pp["name"], "excluded", pp.get("excluded"), jp.get("excluded")))
         r = build.resolve_release({"id": "t", "release_name": "Test Artist · Multiple · 2026 Q3", "products": c["typed"],
                                    "legacy_economics": c["legacy"], "announce_date": "2026-09-01", "launch_end": "2026-09-28"}, None, {})
         je = js["economics"]

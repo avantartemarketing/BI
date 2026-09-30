@@ -243,7 +243,13 @@ over the edition, else the expected sell-through, else 100%), unit price and cur
 artist's and Avant Arte's profit per unit, the deal's revenue share or profit share, the framing
 option and the framing take-up and profit. The figures typed on the tab lay over them per
 product (`products[]` entries with `airtable_id`, or `manual: true` for a work Airtable has no
-record for); blank means Airtable's. The release's figures follow:
+record for); blank means Airtable's. A work Airtable lists under the launch that is not
+part of the release is unticked on the grid (`excluded: true` on its entry): it stays on the
+grid, greyed, with any figures typed on it kept for when it is ticked again, and counts nothing
+below - not in the edition, the targets, the launch value, the works' closes, the sell-through
+card or the Slack rows (`excludedProducts` on the snapshot lists them). Its Airtable record
+stays with the release, so the upcoming list does not read it as a launch of its own. The
+release's figures follow:
 
 ```
 target units        = Σ round(edition × target sell-through)          # edition_size
