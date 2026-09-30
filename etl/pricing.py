@@ -206,7 +206,9 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
     (MultipleAmphorae24), and the panel names each artist's release
     separately; the code is part of it because an artist can launch two
     editions on one day under two codes, and those merge later only if the
-    panel treats them as one. Works of one code that close on different days
+    panel treats them as one (_pick, codes within MERGE_DAYS of each other;
+    the upcoming list reads them as one launch the same way, etl/build.py
+    _one_launch_each). Works of one code that close on different days
     (Warhol's Lifesize on 30 September 2026, its colourways on 14 October) are
     one launch, dated by its last close - the day the campaign ends - with the
     first close and every close beside it (`first_launch_date`, `closes`) and

@@ -276,16 +276,18 @@ def test_second_launch_in_a_quarter() -> None:
              "announce_date": "2026-10-20", "launch_end": "2026-11-13"}]
     later = [r for r in build.upcoming_releases(typed, show, dt.date(2026, 10, 19), {}) if r["artist"] == "Pejac"]
     assert [r["release_name"] for r in later] == ["Pejac · Barbed Wire / Mind Trip · 2026 Q4"], later
-    # the same works launched twice in the quarter: the close date tells them apart
-    again = [(i + 10000, a, t, "PejacLE26b", "2026-12-21", ad, pd_, p, c, s, lt, e, pt, ps, st)
+    # the same works launched twice in the quarter, a week apart (within three days
+    # they would be one launch, test_codes_on_one_day), untyped so within 60 days of
+    # the build: the close date tells them apart
+    again = [(i + 10000, a, t, "PejacLE26b", "2026-12-25", ad, pd_, p, c, s, lt, e, pt, ps, st)
              for i, a, t, _, _, ad, pd_, p, c, s, lt, e, pt, ps, st in PEJAC_PRINTS]
-    twice = [r for r in build.upcoming_releases(airtable_frame(PEJAC_PRINTS + again), [], dt.date(2026, 10, 22), {})]
+    twice = [r for r in build.upcoming_releases(airtable_frame(PEJAC_PRINTS + again), [], dt.date(2026, 10, 26), {})]
     assert [r["release_name"] for r in twice] == ["Pejac · Multiple · 2026 Q4",
                                                    "Pejac · Barbed Wire / Mind Trip · 2026 Q4"], twice
-    thrice = [(i + 20000, a, t, "PejacLE26c", "2026-12-23", ad, pd_, p, c, s, lt, e, pt, ps, st)
+    thrice = [(i + 20000, a, t, "PejacLE26c", "2026-12-29", ad, pd_, p, c, s, lt, e, pt, ps, st)
               for i, a, t, _, _, ad, pd_, p, c, s, lt, e, pt, ps, st in PEJAC_PRINTS]
-    three = build.upcoming_releases(airtable_frame(PEJAC_PRINTS + again + thrice), [], dt.date(2026, 10, 24), {})
-    assert [r["release_name"] for r in three][-1] == "Pejac · Barbed Wire / Mind Trip (closes 23 Dec) · 2026 Q4", three
+    three = build.upcoming_releases(airtable_frame(PEJAC_PRINTS + again + thrice), [], dt.date(2026, 10, 30), {})
+    assert [r["release_name"] for r in three][-1] == "Pejac · Barbed Wire / Mind Trip (closes 29 Dec) · 2026 Q4", three
     assert len({r["id"] for r in three}) == 3 and len({r["release_name"] for r in three}) == 3
     print("second launch in a quarter: ok")
 
@@ -465,11 +467,113 @@ def test_adoption_by_match() -> None:
     print("adoption by match: ok")
 
 
+def test_codes_on_one_day() -> None:
+    """One artist's codes closing within three days of each other are one
+    upcoming launch, as the matcher merges them for a release on file: Ai
+    Weiwei's Lego prints and Lego Middle Fingers, two codes closing on 30
+    November 2026, listed as "Ai Weiwei · Multiple" beside "Ai Weiwei · Lego
+    Middle Finger 1 - Red / ... and 1 more" until they were one page. Codes
+    further apart are two launches, and an originals show beside a draw
+    stays its own."""
+    prints = [(i, "Ai Weiwei", t, "AiWeiweiLego2026", "2026-11-30", "2026-10-29", None, 2500, "EUR", 100, "Draw", "PE", "Digital print", "Confirmed", "3.5. Pre-Launch")
+              for i, t in ((2490, "Diptych 1 - Art is Life"), (2491, "Diptych 1 - Life is Art"), (2837, "Single - Liberty is about the Fight (Wave)"))]
+    fingers = [(i, "Ai Weiwei", f"Lego Middle Finger {k} - {c}", "AiWeiweiLegoMiddleFinger", "2026-11-30", "2026-10-29", None, 500, "EUR", 750, "Draw", "SE", "Mid cost 3D edition", None, "1.5. Agreed to edition")
+               for i, k, c in ((2857, 1, "Red"), (3193, 2, "Blue"), (3194, 3, "Green"), (3195, 4, "Clear"))]
+    lf = airtable_frame(prints + fingers)
+    assert len(lf) == 2, "two codes are two launches on file; the listing makes them one"
+    up = build.upcoming_releases(lf, [], dt.date(2026, 9, 30), {})
+    assert [r["release_name"] for r in up] == ["Ai Weiwei · Multiple · 2026 Q4"], [r["release_name"] for r in up]
+    one = up[0]
+    # the editions add and the price is value-weighted; the two diptychs read as sets
+    # (pricing.BUNDLE_RE), so the prints count one work's 100: (100 × 2500 + 4 × 750 × 500) / 3100
+    assert one["n_products"] == 7 and one["edition_size"] == 3100 and one["unit_price"] == 565, one
+    assert set(one["airtable_ids"].split("|")) == {"2490", "2491", "2837", "2857", "3193", "3194", "3195"}
+    assert one["airtable_release"] == "AiWeiweiLegoMiddleFinger+AiWeiweiLego2026", one["airtable_release"]
+    assert one["launch_end"] == "2026-11-30" and one["announce_date"] == "2026-10-29" and one["closes"] == ["2026-11-30"] and one["dates_note"] is None
+    assert one["project_status"] == "1.5. Agreed to edition" and one["launch_type"] == "Draw"   # the code with the most works
+    assert "Lego Middle Finger 1 - Red" in one["titles"] and "Diptych 1 - Art is Life" in one["titles"]
+    snap = build.build_upcoming(one, dt.date(2026, 9, 30), None, dt.date(2026, 9, 30))
+    build.check_snapshot(snap)
+    assert snap["airtable"]["edition_size"] == 3100 and snap["airtable"]["n_products"] == 7
+    # set up from that page, the release carries every id: neither code lists again
+    made = [{"release_name": one["release_name"], "airtable_ids": one["airtable_ids"], "announce_date": one["announce_date"], "launch_end": one["launch_end"]}]
+    assert build.upcoming_releases(lf, made, dt.date(2026, 9, 30), {}) == []
+    # three days apart still one launch, dated by the last close and saying both; ten days apart, two
+    near = airtable_frame(prints + [r[:4] + ("2026-12-03",) + r[5:] for r in fingers])
+    up = build.upcoming_releases(near, [], dt.date(2026, 9, 30), {})
+    assert [r["release_name"] for r in up] == ["Ai Weiwei · Multiple · 2026 Q4"] and up[0]["launch_end"] == "2026-12-03", up
+    assert up[0]["closes"] == ["2026-11-30", "2026-12-03"] and "the works close on different days, 30 Nov and 3 Dec" in up[0]["dates_note"]
+    far = airtable_frame(prints + [r[:4] + ("2026-12-10",) + r[5:] for r in fingers])
+    assert [r["release_name"] for r in build.upcoming_releases(far, [], dt.date(2026, 9, 30), {})] == [
+        "Ai Weiwei · Multiple · 2026 Q4",
+        "Ai Weiwei · Lego Middle Finger 1 - Red / Lego Middle Finger 2 - Blue / Lego Middle Finger 3 - Green and 1 more · 2026 Q4"]
+    # an originals show typed a draw, closing the same day: not the prints' launch
+    show = [(5001 + k, "Ai Weiwei", f"Study [OG - Painting {k}/2]", "AiWeiweiShow26", "2026-11-30", None, None, 25000, "EUR", 1, "Draw", "OG", "Painting", "Confirmed", "3.5. Pre-Launch") for k in (1, 2)]
+    both = build.upcoming_releases(airtable_frame(prints + fingers + show), [], dt.date(2026, 9, 30), {})
+    assert [r["release_name"] for r in both] == ["Ai Weiwei · Multiple · 2026 Q4", "Ai Weiwei · Study · 2026 Q4"], [r["release_name"] for r in both]
+    assert both[0]["n_products"] == 7
+    print("codes on one day: ok")
+
+
+def test_adoption_by_name() -> None:
+    """The funnel renamed the release into the next quarter with its rows,
+    and the matcher cannot place the renamed release: its clock is not
+    readable, and the launch's quarter is its first close's (2026 Q3), so
+    the quarter in its name fails the test. The page adopts it by name: the
+    same artist and title in another quarter, its rows in the window that
+    was set. A second funnel release on the launch (the Lifesize read as its
+    own release) does not confuse it, nor does a later launch in the same
+    words whose rows start after the close; and where the matcher places
+    two funnel releases on the launch, the one named like the input is taken."""
+    lf = pricing.launches(records([
+        (3232, "The Andy Warhol Foundation", "Brillo Box Collectable (Lifesize)", "AndyWarholTL26", "2026-09-30", None, None, 2500, "EUR", 100, "Draw", "PE", "Silkscreen print", "Confirmed", "03. Proofing"),
+        (3066, "The Andy Warhol Foundation", "Brillo Box Collectable (Green Landscape)", "AndyWarholTL26", "2026-10-14", "2026-09-02", None, 750, "EUR", 1000, "Draw", "PE", "Silkscreen print", "Confirmed", "3.5. Pre-Launch"),
+        (3063, "The Andy Warhol Foundation", "Brillo Box Collectable (Green Portrait)", "AndyWarholTL26", "2026-10-14", "2026-09-02", None, 750, "EUR", 1000, "Draw", "PE", "Silkscreen print", "Confirmed", "3.5. Pre-Launch"),
+    ]))
+    assert lf.iloc[0]["quarter"] == "2026 Q3", "the launch's quarter is its first close's"
+    def page():
+        return [{"id": "warhol_le_26", "release_name": "Andy Warhol Estate · Multiple · 2026 Q3", "campaign_code": "AndyWarhol_TL_26",
+                 "announce_date": "2026-09-03", "launch_end": "2026-09-30"}]
+    renamed_rec = {"release_name": "Andy Warhol Estate · Multiple · 2026 Q4", "artist": "Andy Warhol Estate", "title": "Multiple", "quarter": "2026 Q4",
+                   "announce_date": None, "launch_end": None, "dates_note": "campaign clock present but unreadable",
+                   "first_seen": "2026-09-01", "last_seen": "2026-09-30"}
+    lifesize = {"release_name": "Andy Warhol Estate · Brillo Box Collectable (Lifesize) · 2026 Q3", "artist": "Andy Warhol Estate",
+                "title": "Brillo Box Collectable (Lifesize)", "quarter": "2026 Q3", "announce_date": "2026-09-03", "launch_end": "2026-09-30",
+                "first_seen": "2026-09-01", "last_seen": "2026-09-30"}
+    want = [("warhol_le_26", "Andy Warhol Estate · Multiple · 2026 Q3", "Andy Warhol Estate · Multiple · 2026 Q4")]
+    # the matcher cannot place the renamed release, and places the Lifesize: the name decides
+    assert build.airtable_ids_on_file([renamed_rec, lifesize], lf).keys() == {lifesize["release_name"]}
+    configured = page()
+    assert build.adopt_funnel_names(configured, [renamed_rec, lifesize], lf) == want
+    assert configured[0]["release_name"] == "Andy Warhol Estate · Multiple · 2026 Q4" and configured[0]["adopted_from"] == "Andy Warhol Estate · Multiple · 2026 Q3"
+    # without Airtable at all, the name still decides; the funnel's spelling of the artist does not matter
+    assert build.adopt_funnel_names(page(), [renamed_rec], None) == want
+    spelt = dict(renamed_rec, release_name="The Andy Warhol Foundation · Multiple · 2026 Q4", artist="The Andy Warhol Foundation")
+    assert build.adopt_funnel_names(page(), [spelt], None) == [("warhol_le_26", "Andy Warhol Estate · Multiple · 2026 Q3", "The Andy Warhol Foundation · Multiple · 2026 Q4")]
+    # the artist's next launch in the same words, its rows after the close: not this one
+    later = dict(renamed_rec, first_seen="2026-11-02", last_seen="2026-11-20")
+    assert build.adopt_funnel_names(page(), [later], None) == []
+    # nor an earlier one whose rows ended before the announce, nor another title, nor the same quarter under another artist
+    assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Andy Warhol Estate · Multiple · 2026 Q2", quarter="2026 Q2", first_seen="2026-05-01", last_seen="2026-06-30")], None) == []
+    assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Andy Warhol Estate · Flowers · 2026 Q4", title="Flowers")], None) == []
+    assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Ai Weiwei · Multiple · 2026 Q4", artist="Ai Weiwei")], None) == []
+    # two funnel releases on the launch, the input spelt as Airtable spells the artist: the one named like it
+    foundation = [{"id": "warhol_le_26", "release_name": "The Andy Warhol Foundation · Multiple · 2026 Q3", "announce_date": "2026-09-03", "launch_end": "2026-09-30"}]
+    dated = dict(renamed_rec, release_name="Andy Warhol Estate · Multiple · 2026 Q3", quarter="2026 Q3", announce_date="2026-09-03", launch_end="2026-09-30")
+    assert len(build.airtable_ids_on_file([dated, lifesize], lf)) == 2
+    assert build.adopt_funnel_names(foundation, [dated, lifesize], lf) == [("warhol_le_26", "The Andy Warhol Foundation · Multiple · 2026 Q3", "Andy Warhol Estate · Multiple · 2026 Q3")]
+    # ... and neither named like it: left alone
+    assert build.adopt_funnel_names([{"id": "w", "release_name": "The Andy Warhol Foundation · Brillo · 2026 Q3", "announce_date": "2026-09-03", "launch_end": "2026-09-30"}], [dated, lifesize], lf) == []
+    print("adoption by name: ok")
+
+
 if __name__ == "__main__":
     test_upcoming()
     test_page()
     test_adoption()
     test_adoption_by_match()
+    test_adoption_by_name()
+    test_codes_on_one_day()
     test_not_a_draw()
     test_second_launch_in_a_quarter()
     test_many_works()

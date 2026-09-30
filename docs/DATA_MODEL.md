@@ -319,7 +319,13 @@ upcoming_releases`) beside the releases the funnel mentions:
   timed editions (`TL`, `TLC`): an originals show or a 48-hour timed print is no draw;
 - listed once for a launch whose works close on different days (one launch, §4a.2½, closing
   on the last of them, its `dates_note` naming each close and the page's `closes` carrying
-  them for the sidebar);
+  them for the sidebar), and once for one artist's codes closing within three days of each
+  other (`MERGE_DAYS`, the matcher's rule for one launch under several codes): Ai Weiwei's
+  Lego prints and Lego Middle Fingers, two codes closing on 30 November 2026, are one launch
+  with every code's records, the editions added and the price the value-weighted mean, where
+  they listed as "Ai Weiwei · Multiple" beside "Ai Weiwei · Lego Middle Finger 1 - Red / ...
+  and 1 more". A launch mostly of originals, NFTs or timed editions stays apart from a draw
+  closing the same day, as under one code;
 - whose Airtable records no release on file already matched - the same matcher the panel's
   pricing uses (`etl/pricing.py match`), run over every discovered and configured release,
   so the artist's earlier launch does not stand for the new one and a launch the funnel
@@ -351,17 +357,32 @@ Airtable record ids as the defaults the Set up targets tab starts from, and a sa
 ids on the inputs (`airtable_release`, `airtable_ids`).
 
 **When the funnel catches up, or renames.** A configured release the funnel does not mention
-is checked on every build against the funnel's releases matched to the same Airtable launch
-(`adopt_funnel_names`): the ids its inputs carry when it was set up from an upcoming page,
-else the launch the matcher places it on (a page set up by hand). One match and the input
-takes the funnel's release name - written back to the saved inputs with `adopted_from` - so
-the actuals attach to the targets that were set, under the page's existing id, rather than
-opening a second, untargeted page beside them. That covers a launch set up under a guessed
-name before the funnel named it after one work, and a launch whose close moved into another
-quarter: upstream renames it with every row it has (Warhol's 2026 Q3 became 2026 Q4 when its
-colourways moved to 14 October), so without the adoption its page stands empty while its
-actuals open a second page. The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when
-`AIRTABLE_TOKEN` is set; without it the checked-in file stands.
+is checked on every build for the funnel release that is the same launch
+(`adopt_funnel_names`), and takes its name - written back to the saved inputs with
+`adopted_from` - so the actuals attach to the targets that were set, under the page's
+existing id, rather than opening a second, untargeted page beside them. Two readings, the
+first that answers decides:
+
+- by name: a funnel release with the same artist (an estate's words folded, as the matcher
+  folds them) and title in another quarter, whose rows fall in the window that was set (its
+  first day on or before the close in force, its last on or after the announce), is the
+  release renamed upstream with every row it has. A launch whose close moves into the next
+  quarter is renamed that way: Warhol's 2026 Q3 became 2026 Q4 when its colourways moved to
+  14 October, and its page stood empty while its actuals opened a second page. This reading
+  needs no Airtable, which matters because the matcher can fail the renamed release: its
+  campaign clock can be unreadable, and its launch's quarter is its first close's (§4a.2½),
+  so the quarter in the new name does not agree. The window test keeps the artist's genuinely
+  next launch in the same words from being taken for it;
+- by its launch: the ids its inputs carry when it was set up from an upcoming page, else the
+  launch the matcher places it on (a page set up by hand); the funnel release matched to the
+  same Airtable records has the name the input takes. That covers a launch set up under a
+  guessed name before the funnel named it after one work, and an artist the funnel spells
+  another way. Where several funnel releases sit on the launch (the Lifesize read as a release
+  of its own beside the colourways), the one named like the input is taken, and with none
+  named like it the input is left alone.
+
+The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when `AIRTABLE_TOKEN` is
+set; without it the checked-in file stands.
 
 ## 2. Source feeds
 

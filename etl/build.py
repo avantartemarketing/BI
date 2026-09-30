@@ -46,6 +46,7 @@ import os
 import time
 import pathlib
 import re
+import types
 import sys
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
@@ -3905,13 +3906,67 @@ def _works_title(titles: str, limit: int = WORKS_TITLE_CHARS) -> str:
     return " / ".join(kept) + (f" and {rest} more" if rest else "")
 
 
+def _mostly_not_draw(l) -> bool:
+    """Whether most of a launch's records are originals, NFTs or timed
+    editions (UPCOMING_NOT_DRAW): an originals show or a timed print, not a draw."""
+    kinds = getattr(l, "edition_type_counts", None)
+    off = sum(n for k, n in kinds.items() if k in UPCOMING_NOT_DRAW) if isinstance(kinds, dict) else 0
+    return 2 * off > int(l.n_products)
+
+
+def _one_launch_each(launches: list) -> list:
+    """One artist's codes closing within MERGE_DAYS of each other are one
+    launch, as the matcher merges them for a release on file (pricing._pick):
+    Ai Weiwei's Lego prints and Lego Middle Fingers, two codes closing on 30
+    November 2026, are one page, where they listed as "Ai Weiwei · Multiple"
+    beside "Ai Weiwei · Lego Middle Finger 1 - Red / ... and 1 more". A
+    launch mostly of originals, NFTs or timed editions stays apart from a
+    draw (an originals show opening the day a print draw closes), as under
+    one code. The merged launch has every code's records, the editions
+    added, the value-weighted price (pricing._combine), the last close as
+    its date and every close beside it, and the rest from the code with the
+    most works."""
+    groups: list[list] = []
+    for l in launches:
+        for g in groups:
+            if (g[0].artist_key == l.artist_key and (l.launch_date - g[0].launch_date).days <= pricing.MERGE_DAYS
+                    and _mostly_not_draw(g[0]) == _mostly_not_draw(l)):
+                g.append(l)
+                break
+        else:
+            groups.append([l])
+    out = []
+    for g in groups:
+        if len(g) == 1:
+            out.append(g[0])
+            continue
+        g = sorted(g, key=lambda m: (-int(m.n_products), str(m.airtable_release or "")))
+        d = pricing._combine([pd.Series(vars(m)) for m in g])
+        d["launch_date"] = max(m.launch_date for m in g)
+        d["closes"] = sorted({c for m in g for c in (getattr(m, "closes", None) or [])})
+        counts: dict[str, int] = {}
+        for m in g:
+            for k, n in (getattr(m, "edition_type_counts", None) or {}).items():
+                counts[k] = counts.get(k, 0) + int(n)
+        d["edition_type_counts"] = counts
+        for col in ("announce_date", "private_room_date"):
+            dates = [getattr(m, col) for m in g if not pd.isna(getattr(m, col, None))]
+            d[col] = min(dates) if dates else pd.NaT
+        d["title_keys"] = set().union(*[getattr(m, "title_keys", None) or set() for m in g])
+        out.append(types.SimpleNamespace(**d))
+    out.sort(key=lambda m: m.launch_date)
+    return out
+
+
 def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], as_of: date,
                       activity: dict[str, tuple[date, date]] | None = None) -> list[dict]:
     """The launches Airtable knows and the funnel does not yet (§1.7), as the
     records build_upcoming reads: draws closing after today and within
     UPCOMING_DAYS, whose Airtable records no release on file matched. A
     launch with no type counts as a draw unless most of its records are
-    originals, NFTs or timed editions (UPCOMING_NOT_DRAW).
+    originals, NFTs or timed editions (UPCOMING_NOT_DRAW). One artist's
+    codes closing within MERGE_DAYS of each other are one launch
+    (_one_launch_each), as the matcher reads them for a release on file.
 
     Named the way the funnel will name them - "Artist · Title · YYYY Qn", the
     title "Multiple" when the launch has several works, the artist spelt as
@@ -3938,8 +3993,9 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
     names = {r["release_name"] for r in existing}
     spelling = funnel_spellings(existing, on_file, launch_frame)
     horizon = as_of + timedelta(days=UPCOMING_DAYS)
-    out, seen_ids, listed = [], {}, set()
-    for l in launch_frame.sort_values("launch_date").itertuples():
+    eligible = []
+    for rec in launch_frame.sort_values("launch_date", kind="stable").to_dict("records"):
+        l = types.SimpleNamespace(**rec)
         if pd.isna(l.launch_date):
             continue
         close = l.launch_date.date()
@@ -3953,15 +4009,17 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
             continue
         # nor is one made mostly of originals, NFTs or timed editions: an
         # originals show or a timed print is not a draw
-        kinds = getattr(l, "edition_type_counts", None)
-        off = sum(n for k, n in kinds.items() if k in UPCOMING_NOT_DRAW) if isinstance(kinds, dict) else 0
-        if not ltype and 2 * off > int(l.n_products):
+        if not ltype and _mostly_not_draw(l):
             continue
         if str(l.project_status or "").startswith("1.4"):   # pitching: nothing to plan yet
             continue
         ids = set(str(l.airtable_ids).split("|")) if l.airtable_ids else set()
         if ids & used:
             continue
+        eligible.append(l)
+    out, seen_ids, listed = [], {}, set()
+    for l in _one_launch_each(eligible):
+        close = l.launch_date.date()
         artist = spelling.get(str(l.artist), str(l.artist))
         title = "Multiple" if int(l.n_products) > 1 else str(l.titles)
         quarter = pricing.quarter_of(l.launch_date)
@@ -4031,39 +4089,83 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
     return out
 
 
+def _name_keys(rec: dict) -> tuple[str, str, str]:
+    """(artist key, title key, quarter) of a release, from its own fields or
+    its name: what the matcher compares, an estate's words folded."""
+    f = _frame_of_releases([rec]).iloc[0]
+    return pricing.artist_key(f["artist"]), pricing.norm(f["title"]), str(f["quarter"] or "")
+
+
+def _renamed_twin(c: dict, ck: tuple[str, str, str], d: dict, dk: tuple[str, str, str]) -> bool:
+    """Whether the funnel release `d` is the configured release `c` under
+    another quarter: the same artist and title, a different quarter, and
+    rows in the campaign window that was set (the first day seen on or
+    before the close in force, the last on or after the announce), so the
+    artist's genuinely next launch in the same words is not taken for it."""
+    if not ck[1] or ck[:2] != dk[:2] or not ck[2] or not dk[2] or ck[2] == dk[2]:
+        return False
+    first, last = str(d.get("first_seen") or "")[:10], str(d.get("last_seen") or "")[:10]
+    hi, lo = str(c.get("launch_end") or "")[:10], str(c.get("announce_date") or "")[:10]
+    if hi and first and first > hi:
+        return False
+    if lo and last and last < lo:
+        return False
+    return True
+
+
 def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_frame: pd.DataFrame | None) -> list[tuple[str, str, str]]:
     """A configured release the funnel does not mention takes the funnel's
     name for the same launch (§1.7), so the actuals attach to the targets
-    instead of opening a second, untargeted page beside them. The launch is
-    known by its Airtable records: the ids a release set up from an upcoming
-    page carries, else the ones the matcher places the release on (a page
-    set up by hand). A funnel release now matched to those records has the
-    name the input takes: a launch set up under a guessed name before the
-    funnel named it after one work, or one whose close moved into another
-    quarter and was renamed upstream with its rows (Warhol's 2026 Q3 became
-    2026 Q4 when its colourways moved to 14 October, and its page stood
-    empty). The rename is written back to the saved inputs so it holds; the
-    id, and so the page's address, does not change."""
+    instead of opening a second, untargeted page beside them. Two readings,
+    the first that answers decides:
+
+    - by name: a funnel release with the same artist and title in another
+      quarter, its rows in the window that was set, is the release renamed
+      upstream with its rows (Warhol's 2026 Q3 became 2026 Q4 when its
+      colourways moved to 14 October, and its page stood empty). This needs
+      no Airtable: the renamed release's clock can be unreadable, and its
+      launch's quarter is its first close's, so the matcher can fail it;
+    - by its launch: the Airtable records the input carries when it was set
+      up from an upcoming page, else the ones the matcher places it on (a
+      page set up by hand). The funnel release matched to the same records
+      has the name the input takes (a launch set up under a guessed name
+      before the funnel named it after one work; the artist spelt another
+      way); where several funnel releases sit on the launch, the one named
+      like the input.
+
+    The rename is written back to the saved inputs so it holds; the id, and
+    so the page's address, does not change."""
     funnel_names = {r["release_name"] for r in discovered}
     pending = [c for c in configured if c["release_name"] not in funnel_names]
-    if not pending or launch_frame is None or not len(launch_frame):
+    if not pending:
         return []
-    on_file = airtable_ids_on_file(discovered, launch_frame)
-    placed = airtable_ids_on_file([c for c in pending if not c.get("airtable_ids")], launch_frame)
+    by_name = {r["release_name"]: r for r in discovered}
+    keys = {n: _name_keys(r) for n, r in by_name.items()}
+    have_launches = launch_frame is not None and len(launch_frame) > 0
+    on_file = airtable_ids_on_file(discovered, launch_frame) if have_launches else {}
+    placed = airtable_ids_on_file([c for c in pending if not c.get("airtable_ids")], launch_frame) if have_launches else {}
     taken = {c["release_name"] for c in configured}
-    renamed = []
+    renamed, hows = [], {}
     for c in pending:
-        ids = set(str(c["airtable_ids"]).split("|")) if c.get("airtable_ids") else placed.get(c["release_name"], set())
-        if not ids:
+        ck = _name_keys(c)
+        twins = [n for n in keys if n not in taken and _renamed_twin(c, ck, by_name[n], keys[n])]
+        new, how = (twins[0], "by its name") if len(twins) == 1 else (None, "")
+        if new is None:
+            ids = set(str(c["airtable_ids"]).split("|")) if c.get("airtable_ids") else placed.get(c["release_name"], set())
+            hits = [n for n, s in on_file.items() if s & ids and n not in taken] if ids else []
+            if len(hits) > 1:
+                same = [n for n in hits if keys[n][:2] == ck[:2]]
+                hits = same if len(same) == 1 else hits
+            if len(hits) == 1:
+                new, how = hits[0], "by its launch"
+        if new is None:
             continue
-        hits = [n for n, s in on_file.items() if s & ids and n not in taken]
-        if len(hits) != 1:
-            continue
-        old, new = c["release_name"], hits[0]
+        old = c["release_name"]
         c["release_name"] = new
         c["adopted_from"] = old
         taken.add(new)
         renamed.append((c["id"], old, new))
+        hows[c["id"]] = how
     if renamed and _saved_inputs.exists():
         try:
             doc = json.loads(_saved_inputs.read_text())
@@ -4078,7 +4180,7 @@ def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_fr
         except (OSError, ValueError) as e:
             print(f"warning: could not write the adopted names back to {_saved_inputs.name}: {e}")
     for rid, old, new in renamed:
-        print(f"{rid}: the funnel now carries this launch as {new!r} (set up as {old!r}) - adopted")
+        print(f"{rid}: the funnel now carries this launch as {new!r} (set up as {old!r}) - adopted {hows[rid]}")
     return renamed
 
 
