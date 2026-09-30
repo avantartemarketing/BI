@@ -38,7 +38,7 @@ export function whenWords(iso, now = new Date()) {
   return `${t.toLocaleDateString(undefined, { day: "numeric", month: "short" })} ${time}`;
 }
 
-export function freshness({ asOf, partial, builtAt, st, emailThrough, now = new Date() }) {
+export function freshness({ asOf, partial, builtAt, st, emailThrough, funnelNote, now = new Date() }) {
   const feeds = st ? [["BigQuery", st.bigquery], ["Sheet", st.sheet], ["Email", st.emails],
     ["Notion", st.notion], ["Airtable", st.airtable], ["ETL", st.etl]]
     .filter(([, v]) => v !== undefined && v !== null) : [];
@@ -59,8 +59,11 @@ export function freshness({ asOf, partial, builtAt, st, emailThrough, now = new 
   const data = asOf ? `Data through ${asOf}${partial ? " (today so far)" : ""}` : "No data date on this page";
   const built = builtAt ? `built ${whenWords(builtAt, now)}` : null;
 
-  // the notes after the data words, the amber ones first
+  // the notes after the data words, the amber ones first: this page's own
+  // (the funnel has no rows under its name, so its actuals cannot attach),
+  // then the pipeline's
   const notes = [];
+  if (funnelNote) notes.push({ text: "no funnel rows under this name", tone: "amber" });
   if (st === undefined) notes.push({ text: "checking the refresh", tone: "muted" });
   else if (running && !st.at) notes.push({ text: "refreshing", tone: "muted" });
   else if (st === null || !st.at) notes.push({ text: "refresh status unknown", tone: "amber" });
@@ -78,6 +81,7 @@ export function freshness({ asOf, partial, builtAt, st, emailThrough, now = new 
   // the popup: the page first, the pipeline second, then the feed lines
   const clock = (iso) => new Date(iso).toLocaleString();
   const head = behind ? `This page is ${ageDays} days behind`
+    : funnelNote ? "This page is current, the funnel has no rows under its name"
     : coreFailed ? "This page is current, the refresh is failing"
     : pagesFailed > 0 ? "This page is current, some pages did not build"
     : sideFailed.length ? `This page is current, ${sideFailed.join(" and ").toLowerCase()} failed`
@@ -93,6 +97,7 @@ export function freshness({ asOf, partial, builtAt, st, emailThrough, now = new 
       (Array.isArray(st.etlFailedPages) && st.etlFailedPages.length ? `: ${st.etlFailedPages.join(", ")}.` : ".");
     if (running) body += ` A refresh started ${new Date(st.runningSince).toLocaleTimeString()} is running now.`;
   }
+  if (funnelNote) body = `${funnelNote} The page shows its plan with no actuals until a funnel release attaches. ${body}`;
   const rows = [
     ...(builtAt ? [{ label: "Page built", value: clock(builtAt) }] : []),
     ...(emailThrough ? [{ label: "Emails through", value: emailThrough, color: emailBehind ? "#8a5f00" : undefined }] : []),

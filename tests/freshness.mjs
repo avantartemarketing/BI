@@ -45,6 +45,15 @@ assert.strictEqual(f.tone, "neutral");
 
 // a page that did not build on the last refresh: the build went on without
 // it, the index was written, and the header says how many
+// a page the funnel has no rows under: its own note first, amber, with the build's words in the popup
+f = freshness({ ...page, st: ok, funnelNote: "The funnel has no rows under 'Andy Warhol Estate · Multiple · 2026 Q3'. Nothing in the funnel is in the same words in another quarter." });
+assert.strictEqual(f.tone, "amber");
+assert.ok(f.label.includes("no funnel rows under this name"), f.label);
+assert.strictEqual(f.head, "This page is current, the funnel has no rows under its name");
+assert.ok(f.body.startsWith("The funnel has no rows under 'Andy Warhol Estate · Multiple · 2026 Q3'.") && f.body.includes("no actuals until a funnel release attaches"), f.body);
+f = freshness({ ...page, st: ok, funnelNote: null });
+assert.strictEqual(f.tone, "neutral");
+
 f = freshness({ ...page, st: { ...ok, etlPagesFailed: 1, etlFailedPages: ["andy_warhol_brillo_box_collectable_2026_q4"] } });
 assert.strictEqual(f.tone, "amber");
 assert.ok(f.label.includes("1 page not built"), f.label);

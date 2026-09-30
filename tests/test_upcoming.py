@@ -593,6 +593,29 @@ def test_adoption_by_name() -> None:
     # the artist's next launch in the same words, its rows after the close: not this one
     later = dict(renamed_rec, first_seen="2026-11-02", last_seen="2026-11-20")
     assert build.adopt_funnel_names(page(), [later], None, at) == []
+    # the old name still in the funnel with stray rows (sessions, no entries): the page moves to the
+    # twin all the same, and says it moved for that reason
+    q3_rec = {"release_name": "Andy Warhol Estate · Multiple · 2026 Q3", "artist": "Andy Warhol Estate", "title": "Multiple", "quarter": "2026 Q3",
+              "announce_date": "2026-09-03", "launch_end": "2026-09-30", "first_seen": "2026-07-13", "last_seen": "2026-09-30"}
+    stray = pd.concat([at, rows(q3_rec["release_name"], "2026-07-13", "2026-09-30")], ignore_index=True)
+    moved = page()
+    assert build.adopt_funnel_names(moved, [q3_rec, renamed_rec], None, stray) == want and moved[0]["adopted_from"] == "Andy Warhol Estate · Multiple · 2026 Q3"
+    # ... but a split, the old name keeping most of the window's entries: the page stays where its entries are
+    kept = pd.concat([rows(q3_rec["release_name"], "2026-07-13", "2026-09-24", campaign[:22]),
+                      rows("Andy Warhol Estate · Multiple · 2026 Q4", "2026-09-25", "2026-09-30", campaign[22:])], ignore_index=True)
+    assert build.adopt_funnel_names(page(), [q3_rec, dict(renamed_rec, first_seen="2026-09-25")], None, kept) == []
+    # a page the funnel has no rows for that nothing names gets a note saying what was considered
+    alone = page()
+    assert build.adopt_funnel_names(alone, [earlier], None, at_old) == []
+    assert "no rows under 'Andy Warhol Estate · Multiple · 2026 Q3'" in alone[0]["funnel_note"] and "2025 Q4" in alone[0]["funnel_note"] \
+        and "outside this page's window" in alone[0]["funnel_note"], alone[0]["funnel_note"]
+    none = page()
+    assert build.adopt_funnel_names(none, [], None, at) == [] and "Nothing in the funnel is in the same words" in none[0]["funnel_note"]
+    both = page()
+    assert build.adopt_funnel_names(both, [renamed_rec, spelt], None, at_spelt) == [] and "more than one" in both[0]["funnel_note"]
+    # a page that adopts loses any note from before
+    again = [dict(page()[0], funnel_note="old")]
+    assert build.adopt_funnel_names(again, [renamed_rec], None, at) == want and "funnel_note" not in again[0]
     # nor an earlier one whose rows ended before the announce, nor another title, nor the same quarter under another artist
     assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Andy Warhol Estate · Multiple · 2026 Q2", quarter="2026 Q2", first_seen="2026-05-01", last_seen="2026-06-30")], None, at) == []
     assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Andy Warhol Estate · Flowers · 2026 Q4", title="Flowers")], None, at) == []

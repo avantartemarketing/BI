@@ -375,7 +375,10 @@ first that answers decides:
   launch's quarter is its first close's (§4a.2½), so the quarter in the new name does not
   agree. The entries test is what keeps the artist's other launches in the same words from
   being taken for it: every past "Ai Weiwei · Multiple" release draws catalogue traffic to
-  this day, so its rows overlap any window, but its entries sit in its own campaign;
+  this day, so its rows overlap any window, but its entries sit in its own campaign. A page
+  whose own name is still in the funnel is read the same way when that name holds under a
+  tenth of the twin's entries and units in the window (`ADOPT_MOVED_SHARE`): the rows moved
+  and stray ones stayed behind, which get no actuals-only page of their own;
 - by its launch: the ids its inputs carry when it was set up from an upcoming page, else the
   launch the matcher places it on (a page set up by hand); the funnel release matched to the
   same Airtable records has the name the input takes. That covers a launch set up under a
@@ -384,8 +387,13 @@ first that answers decides:
   of its own beside the colourways), the one named like the input is taken, and with none
   named like it the input is left alone.
 
-The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when `AIRTABLE_TOKEN` is
-set; without it the checked-in file stands.
+A page the funnel has no rows for that neither reading names carries `funnelNote`: what
+was considered and why it was not given another name (the same words elsewhere with the
+share of their entries in this window, the launch the matcher placed it on). The header's
+freshness line shows it in amber, "no funnel rows under this name", with the words in its
+popup, and the build's log prints them; a failure inside the adoption is a warning line, never
+a lost refresh. The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when
+`AIRTABLE_TOKEN` is set; without it the checked-in file stands.
 
 ## 2. Source feeds
 

@@ -102,6 +102,7 @@ UPCOMING_UNTYPED_DAYS = 60   # ... but one Airtable has not typed as a draw only
 UPCOMING_TYPES = {"Draw", ""}   # the LE draw path; blank is a project Airtable has not typed yet
 UPCOMING_NOT_DRAW = {"OG", "NFT", "TL", "TLC"}   # originals, NFTs, timed editions: an untyped launch mostly of these is no draw
 ADOPT_ACTIVITY_SHARE = 0.5   # a funnel release adopted by name has at least this share of its entries and units in the page's window (§1.7)
+ADOPT_MOVED_SHARE = 0.1      # ... and a page whose own name still has rows adopts it only when those hold under this share of the twin's
 ASSUMED_CAMPAIGN_DAYS = 24      # announce to close, when Airtable has no announce date yet
 CATALOGUE_DAYS = 90      # window shown for a release with no campaign clock
 
@@ -4018,8 +4019,13 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
         if ids & used:
             continue
         eligible.append(l)
+    try:
+        merged = _one_launch_each(eligible)
+    except Exception as e:  # noqa: BLE001 - listed apart costs less than no list
+        print(f"warning: one artist's codes could not be read as one launch ({e}) - listed apart")
+        merged = eligible
     out, seen_ids, listed = [], {}, set()
-    for l in _one_launch_each(eligible):
+    for l in merged:
         close = l.launch_date.date()
         artist = spelling.get(str(l.artist), str(l.artist))
         title = "Multiple" if int(l.n_products) > 1 else str(l.titles)
@@ -4097,100 +4103,152 @@ def _name_keys(rec: dict) -> tuple[str, str, str]:
     return pricing.artist_key(f["artist"]), pricing.norm(f["title"]), str(f["quarter"] or "")
 
 
-def _activity_share(at: pd.DataFrame, name: str, lo: str, hi: str) -> float:
-    """The share of a funnel release's draw entries and units that fall in
-    the window lo..hi (ISO dates, either blank for no bound); 0 with none
-    at all."""
+def _window_of(c: dict) -> tuple[str, str]:
+    """The window a configured release's funnel activity is read over (ISO
+    dates, either blank for no bound): from the private room where the
+    inputs open one, else the announce, to the close run on
+    WINDOW_AFTER_DAYS for a close that moved."""
+    lo, pr = str(c.get("announce_date") or "")[:10], str(c.get("private_room_open") or "")[:10]
+    lo = min(lo, pr) if lo and pr else (lo or pr)
+    hi = str(c.get("launch_end") or "")[:10]
+    if hi:
+        hi = (date.fromisoformat(hi) + timedelta(days=pricing.WINDOW_AFTER_DAYS)).isoformat()
+    return lo, hi
+
+
+def _activity(at: pd.DataFrame, name: str, lo: str, hi: str) -> tuple[float, float]:
+    """A funnel release's draw entries and units in the window lo..hi (ISO
+    dates, either blank for no bound), and in all."""
     rows = at[at["simple_release_name"] == name]
     if not len(rows):
-        return 0.0
+        return 0.0, 0.0
     act = rows["Draw_Entries_Eligible_Units"].fillna(0).astype(float) + rows["Total_Product_Units"].fillna(0).astype(float)
     total = float(act.sum())
     if total <= 0:
-        return 0.0
+        return 0.0, 0.0
     when = pd.to_datetime(rows["event_date"])
     mask = pd.Series(True, index=rows.index)
     if lo:
         mask &= when >= pd.Timestamp(lo)
     if hi:
         mask &= when <= pd.Timestamp(hi)
-    return float(act[mask].sum()) / total
+    return float(act[mask].sum()), total
 
 
-def _renamed_twin(c: dict, ck: tuple[str, str, str], d: dict, dk: tuple[str, str, str], at: pd.DataFrame | None = None) -> bool:
-    """Whether the funnel release `d` is the configured release `c` under
-    another quarter: the same artist and title, a different quarter, rows
-    in the campaign window that was set (the first day seen on or before
-    the close in force, the last on or after the announce) and, with the
-    funnel data `at` to read, most of its entries and units in that window
-    (ADOPT_ACTIVITY_SHARE; the window opens with the private room where the
-    inputs have one, and runs WINDOW_AFTER_DAYS past the close for one that
-    moved). The last test is the one that matters: the artist's other
-    launches in the same words ("Ai Weiwei · Multiple · 2025 Q4", and the
-    2026 Q3 draw beside a 2026 Q4 page) draw catalogue traffic to this day,
-    so their rows overlap any window, but their entries sit in their own
-    campaigns; a release renamed with its rows has this campaign's entries
-    and no others. Strict on purpose: a page left blank until the launch
-    reading or a hand costs less than a page renamed to the wrong release."""
-    if not ck[1] or ck[:2] != dk[:2] or not ck[2] or not dk[2] or ck[2] == dk[2]:
-        return False
+def _same_words_elsewhere(ck: tuple[str, str, str], dk: tuple[str, str, str]) -> bool:
+    """The same artist and title, in another quarter."""
+    return bool(ck[1]) and ck[:2] == dk[:2] and bool(ck[2]) and bool(dk[2]) and ck[2] != dk[2]
+
+
+def _rows_overlap(c: dict, d: dict) -> bool:
+    """The funnel release's rows reach the configured release's window: its
+    first day seen on or before the close in force, its last on or after
+    the announce."""
     first, last = str(d.get("first_seen") or "")[:10], str(d.get("last_seen") or "")[:10]
     hi, lo = str(c.get("launch_end") or "")[:10], str(c.get("announce_date") or "")[:10]
     if hi and first and first > hi:
         return False
     if lo and last and last < lo:
         return False
-    if at is None:
-        return True
-    if not lo and not hi:
-        return False
-    pr = str(c.get("private_room_open") or "")[:10]
-    lo_open = min(lo, pr) if lo and pr else (lo or pr)
-    hi_run = (date.fromisoformat(hi) + timedelta(days=pricing.WINDOW_AFTER_DAYS)).isoformat() if hi else ""
-    return _activity_share(at, d["release_name"], lo_open, hi_run) >= ADOPT_ACTIVITY_SHARE
+    return True
+
+
+def _missing_words(name: str, cands: list, twins: list, hits: list) -> str:
+    """Why a page the funnel has no rows for was not given another name, for
+    the build's log and the page's header."""
+    said = f"The funnel has no rows under {name!r}."
+    if cands:
+        said += " In the same words in another quarter: " + ", ".join(
+            f"{n!r}" + (f" ({share:.0%} of its entries and units in this page's window)" if share is not None else "")
+            for n, share, _ in cands) + "."
+        if len(twins) > 1:
+            said += " Not adopted: more than one of them holds this window's entries."
+        elif not twins:
+            said += " Not adopted: their entries sit outside this page's window, so they are other launches."
+    else:
+        said += " Nothing in the funnel is in the same words in another quarter."
+    if hits:
+        said += " The matcher places its Airtable launch on " + ", ".join(repr(h) for h in hits) + \
+            (", which is not the one name it would take." if len(hits) > 1 else ".")
+    return said
 
 
 def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_frame: pd.DataFrame | None,
                        at: pd.DataFrame | None = None) -> list[tuple[str, str, str]]:
-    """A configured release the funnel does not mention takes the funnel's
-    name for the same launch (§1.7), so the actuals attach to the targets
-    instead of opening a second, untargeted page beside them. Two readings,
-    the first that answers decides:
+    """A configured release the funnel does not mention, or mentions under a
+    name that no longer holds its entries, takes the funnel's name for the
+    same launch (§1.7), so the actuals attach to the targets instead of
+    opening a second, untargeted page beside them. Two readings, the first
+    that answers decides:
 
     - by name: a funnel release with the same artist and title in another
       quarter, its entries and units in the window that was set (`at`, the
-      funnel data; _renamed_twin), is the release renamed upstream with its
-      rows (Warhol's 2026 Q3 became 2026 Q4 when its colourways moved to 14
-      October, and its page stood empty). This needs no Airtable: the
-      renamed release's clock can be unreadable, and its launch's quarter is
-      its first close's, so the matcher can fail it;
-    - by its launch: the Airtable records the input carries when it was set
-      up from an upcoming page, else the ones the matcher places it on (a
-      page set up by hand). The funnel release matched to the same records
-      has the name the input takes (a launch set up under a guessed name
-      before the funnel named it after one work; the artist spelt another
-      way); where several funnel releases sit on the launch, the one named
-      like the input.
+      funnel data; ADOPT_ACTIVITY_SHARE over _window_of), is the release
+      renamed upstream with its rows (Warhol's 2026 Q3 became 2026 Q4 when
+      its colourways moved to 14 October, and its page stood empty). This
+      needs no Airtable: the renamed release's clock can be unreadable, and
+      its launch's quarter is its first close's, so the matcher can fail
+      it. A page whose own name is still in the funnel is read the same
+      way when its own rows hold under ADOPT_MOVED_SHARE of the twin's
+      entries and units in the window: the rows moved and stray ones stayed
+      behind. The test on entries is what keeps the artist's other
+      launches in the same words from being taken: every past "Ai Weiwei ·
+      Multiple" draws catalogue traffic to this day, so its rows overlap
+      any window, but its entries sit in its own campaign;
+    - by its launch, for a name the funnel lacks: the Airtable records the
+      input carries when it was set up from an upcoming page, else the ones
+      the matcher places it on (a page set up by hand). The funnel release
+      matched to the same records has the name the input takes (a launch
+      set up under a guessed name before the funnel named it after one
+      work; the artist spelt another way); where several funnel releases
+      sit on the launch, the one named like the input.
 
     The rename is written back to the saved inputs so it holds; the id, and
-    so the page's address, does not change."""
+    so the page's address, does not change. A page the funnel has no rows
+    for that neither reading names gets `funnel_note`, which says what was
+    considered, for the build's log and the page's header."""
     funnel_names = {r["release_name"] for r in discovered}
-    pending = [c for c in configured if c["release_name"] not in funnel_names]
-    if not pending:
-        return []
     by_name = {r["release_name"]: r for r in discovered}
     keys = {n: _name_keys(r) for n, r in by_name.items()}
-    have_launches = launch_frame is not None and len(launch_frame) > 0
+    taken = {c["release_name"] for c in configured}
+    pending = [c for c in configured if c["release_name"] not in funnel_names]
+    have_launches = launch_frame is not None and len(launch_frame) > 0 and bool(pending)
     on_file = airtable_ids_on_file(discovered, launch_frame) if have_launches else {}
     placed = airtable_ids_on_file([c for c in pending if not c.get("airtable_ids")], launch_frame) if have_launches else {}
-    taken = {c["release_name"] for c in configured}
     renamed, hows = [], {}
-    for c in pending:
+    for c in configured:
+        name = c["release_name"]
+        missing = name not in funnel_names
+        if not missing and at is None:
+            continue
         ck = _name_keys(c)
-        twins = [n for n in keys if n not in taken and _renamed_twin(c, ck, by_name[n], keys[n], at)]
+        lo, hi = _window_of(c)
+        # the funnel releases in the same words in another quarter whose rows
+        # reach this window, each with the share of its entries and units in it
+        cands = []
+        for n in keys:
+            if n in taken or not _same_words_elsewhere(ck, keys[n]) or not _rows_overlap(c, by_name[n]):
+                continue
+            if at is None:
+                cands.append((n, None, None))
+            else:
+                within, total = _activity(at, n, lo, hi)
+                cands.append((n, within / total if total > 0 else 0.0, within))
+        twins = [n for n, share, within in cands if share is None or (share >= ADOPT_ACTIVITY_SHARE and within > 0)]
+        if at is not None and not (lo or hi):
+            twins = []
+        if not missing:
+            # the name is in the funnel: the rows moved only if this name holds
+            # (nearly) none of the window's entries and units while a twin does
+            if not twins:
+                continue
+            own, _ = _activity(at, name, lo, hi)
+            if own > ADOPT_MOVED_SHARE * max(w for n, _, w in cands if n in twins):
+                continue
         new, how = (twins[0], "by its name") if len(twins) == 1 else (None, "")
-        if new is None:
-            ids = set(str(c["airtable_ids"]).split("|")) if c.get("airtable_ids") else placed.get(c["release_name"], set())
+        hits = []
+        if new is None and missing:
+            ids = set(str(c["airtable_ids"]).split("|")) if c.get("airtable_ids") else placed.get(name, set())
             hits = [n for n, s in on_file.items() if s & ids and n not in taken] if ids else []
             if len(hits) > 1:
                 same = [n for n in hits if keys[n][:2] == ck[:2]]
@@ -4198,13 +4256,16 @@ def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_fr
             if len(hits) == 1:
                 new, how = hits[0], "by its launch"
         if new is None:
+            if missing:
+                c["funnel_note"] = _missing_words(name, cands, twins, hits)
+                print(f"{c['id']}: {c['funnel_note']}")
             continue
-        old = c["release_name"]
         c["release_name"] = new
-        c["adopted_from"] = old
+        c["adopted_from"] = name
+        c.pop("funnel_note", None)
         taken.add(new)
-        renamed.append((c["id"], old, new))
-        hows[c["id"]] = how
+        renamed.append((c["id"], name, new))
+        hows[c["id"]] = how + ("" if missing else " (its own name holds none of the window's entries)")
     if renamed and _saved_inputs.exists():
         try:
             doc = json.loads(_saved_inputs.read_text())
@@ -5529,6 +5590,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # clock now puts elsewhere than the page runs on
         "closes": release.get("closes") or [],
         "dateDrift": release.get("date_drift") or {},
+        # a page the funnel has no rows under (adopt_funnel_names): what was
+        # considered and why it was not given another name, for the header
+        "funnelNote": release.get("funnel_note"),
         "privateRoomOpen": release["private_room_open"],
         "windowStart": release["announce_date"], "windowEnd": release["launch_end"],
         "campaignLengthDays": L, "day": day_n, "of": L,
@@ -6199,7 +6263,14 @@ def main(only: str | None = None):
     # Before the inputs are resolved, so an adopted name is the one resolved.
     mark("load")
     launch_frame = load_launches()
-    adopt_funnel_names(INPUTS["releases"], discovered, launch_frame, at)
+    try:
+        adopted = adopt_funnel_names(INPUTS["releases"], discovered, launch_frame, at)
+    except Exception as e:  # noqa: BLE001 - a page kept under its old name costs less than a lost refresh
+        adopted = []
+        print(f"warning: adopting the funnel's names failed ({e}) - every page keeps its name")
+    # a name a page moved away from that the funnel still carries holds the
+    # stray rows of that launch: no actuals-only page of its own
+    moved_names = {old for _, old, _ in adopted if old in {r["release_name"] for r in discovered}}
     # each release's campaign code from its orders or its Airtable launch
     # before the guess discover_releases made (docs 11b), and before the
     # upcoming launches are guessed from the codes nobody carries
@@ -6365,6 +6436,8 @@ def main(only: str | None = None):
             index.append(prev_rows[rid])
 
     for rec in discovered:
+        if rec["release_name"] in moved_names:
+            continue
         cfg = configured.pop(rec["release_name"], None)
         if cfg:
             def build_targeted(cfg=cfg):

@@ -422,9 +422,9 @@ function CoverageBanner({ noEvent }) {
  * page rebuilt an hour ago read "Sources stale" because a later step of the
  * refresh had failed. The rule is shared/freshness.mjs, which
  * tests/freshness.mjs runs through its states; this only renders it. */
-function Freshness({ asOf, st, emailThrough, partial, builtAt }) {
+function Freshness({ asOf, st, emailThrough, partial, builtAt, funnelNote }) {
   const t = useTip();
-  const f = freshness({ asOf, partial, builtAt, st, emailThrough });
+  const f = freshness({ asOf, partial, builtAt, st, emailThrough, funnelNote });
   return (
     <span className="freshness" style={{ color: TONE_COLOR[f.tone] }} {...t.props({ head: f.head, body: f.body, rows: f.rows })}>
       {f.warn && <span aria-hidden="true">⚠ </span>}
@@ -569,7 +569,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
             </div>
           )}
           <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough} builtAt={snap.builtAt}
-            partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} />
+            partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} funnelNote={snap.funnelNote} />
         </div>
       </header>
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
