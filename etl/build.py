@@ -101,6 +101,7 @@ UPCOMING_DAYS = 120      # an Airtable launch this far ahead is listed before th
 UPCOMING_UNTYPED_DAYS = 60   # ... but one Airtable has not typed as a draw only this far ahead
 UPCOMING_TYPES = {"Draw", ""}   # the LE draw path; blank is a project Airtable has not typed yet
 UPCOMING_NOT_DRAW = {"OG", "NFT", "TL", "TLC"}   # originals, NFTs, timed editions: an untyped launch mostly of these is no draw
+ADOPT_ACTIVITY_SHARE = 0.5   # a funnel release adopted by name has at least this share of its entries and units in the page's window (§1.7)
 ASSUMED_CAMPAIGN_DAYS = 24      # announce to close, when Airtable has no announce date yet
 CATALOGUE_DAYS = 90      # window shown for a release with no campaign clock
 
@@ -4096,12 +4097,41 @@ def _name_keys(rec: dict) -> tuple[str, str, str]:
     return pricing.artist_key(f["artist"]), pricing.norm(f["title"]), str(f["quarter"] or "")
 
 
-def _renamed_twin(c: dict, ck: tuple[str, str, str], d: dict, dk: tuple[str, str, str]) -> bool:
+def _activity_share(at: pd.DataFrame, name: str, lo: str, hi: str) -> float:
+    """The share of a funnel release's draw entries and units that fall in
+    the window lo..hi (ISO dates, either blank for no bound); 0 with none
+    at all."""
+    rows = at[at["simple_release_name"] == name]
+    if not len(rows):
+        return 0.0
+    act = rows["Draw_Entries_Eligible_Units"].fillna(0).astype(float) + rows["Total_Product_Units"].fillna(0).astype(float)
+    total = float(act.sum())
+    if total <= 0:
+        return 0.0
+    when = pd.to_datetime(rows["event_date"])
+    mask = pd.Series(True, index=rows.index)
+    if lo:
+        mask &= when >= pd.Timestamp(lo)
+    if hi:
+        mask &= when <= pd.Timestamp(hi)
+    return float(act[mask].sum()) / total
+
+
+def _renamed_twin(c: dict, ck: tuple[str, str, str], d: dict, dk: tuple[str, str, str], at: pd.DataFrame | None = None) -> bool:
     """Whether the funnel release `d` is the configured release `c` under
-    another quarter: the same artist and title, a different quarter, and
-    rows in the campaign window that was set (the first day seen on or
-    before the close in force, the last on or after the announce), so the
-    artist's genuinely next launch in the same words is not taken for it."""
+    another quarter: the same artist and title, a different quarter, rows
+    in the campaign window that was set (the first day seen on or before
+    the close in force, the last on or after the announce) and, with the
+    funnel data `at` to read, most of its entries and units in that window
+    (ADOPT_ACTIVITY_SHARE; the window opens with the private room where the
+    inputs have one, and runs WINDOW_AFTER_DAYS past the close for one that
+    moved). The last test is the one that matters: the artist's other
+    launches in the same words ("Ai Weiwei · Multiple · 2025 Q4", and the
+    2026 Q3 draw beside a 2026 Q4 page) draw catalogue traffic to this day,
+    so their rows overlap any window, but their entries sit in their own
+    campaigns; a release renamed with its rows has this campaign's entries
+    and no others. Strict on purpose: a page left blank until the launch
+    reading or a hand costs less than a page renamed to the wrong release."""
     if not ck[1] or ck[:2] != dk[:2] or not ck[2] or not dk[2] or ck[2] == dk[2]:
         return False
     first, last = str(d.get("first_seen") or "")[:10], str(d.get("last_seen") or "")[:10]
@@ -4110,21 +4140,30 @@ def _renamed_twin(c: dict, ck: tuple[str, str, str], d: dict, dk: tuple[str, str
         return False
     if lo and last and last < lo:
         return False
-    return True
+    if at is None:
+        return True
+    if not lo and not hi:
+        return False
+    pr = str(c.get("private_room_open") or "")[:10]
+    lo_open = min(lo, pr) if lo and pr else (lo or pr)
+    hi_run = (date.fromisoformat(hi) + timedelta(days=pricing.WINDOW_AFTER_DAYS)).isoformat() if hi else ""
+    return _activity_share(at, d["release_name"], lo_open, hi_run) >= ADOPT_ACTIVITY_SHARE
 
 
-def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_frame: pd.DataFrame | None) -> list[tuple[str, str, str]]:
+def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_frame: pd.DataFrame | None,
+                       at: pd.DataFrame | None = None) -> list[tuple[str, str, str]]:
     """A configured release the funnel does not mention takes the funnel's
     name for the same launch (§1.7), so the actuals attach to the targets
     instead of opening a second, untargeted page beside them. Two readings,
     the first that answers decides:
 
     - by name: a funnel release with the same artist and title in another
-      quarter, its rows in the window that was set, is the release renamed
-      upstream with its rows (Warhol's 2026 Q3 became 2026 Q4 when its
-      colourways moved to 14 October, and its page stood empty). This needs
-      no Airtable: the renamed release's clock can be unreadable, and its
-      launch's quarter is its first close's, so the matcher can fail it;
+      quarter, its entries and units in the window that was set (`at`, the
+      funnel data; _renamed_twin), is the release renamed upstream with its
+      rows (Warhol's 2026 Q3 became 2026 Q4 when its colourways moved to 14
+      October, and its page stood empty). This needs no Airtable: the
+      renamed release's clock can be unreadable, and its launch's quarter is
+      its first close's, so the matcher can fail it;
     - by its launch: the Airtable records the input carries when it was set
       up from an upcoming page, else the ones the matcher places it on (a
       page set up by hand). The funnel release matched to the same records
@@ -4148,7 +4187,7 @@ def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_fr
     renamed, hows = [], {}
     for c in pending:
         ck = _name_keys(c)
-        twins = [n for n in keys if n not in taken and _renamed_twin(c, ck, by_name[n], keys[n])]
+        twins = [n for n in keys if n not in taken and _renamed_twin(c, ck, by_name[n], keys[n], at)]
         new, how = (twins[0], "by its name") if len(twins) == 1 else (None, "")
         if new is None:
             ids = set(str(c["airtable_ids"]).split("|")) if c.get("airtable_ids") else placed.get(c["release_name"], set())
@@ -6160,7 +6199,7 @@ def main(only: str | None = None):
     # Before the inputs are resolved, so an adopted name is the one resolved.
     mark("load")
     launch_frame = load_launches()
-    adopt_funnel_names(INPUTS["releases"], discovered, launch_frame)
+    adopt_funnel_names(INPUTS["releases"], discovered, launch_frame, at)
     # each release's campaign code from its orders or its Airtable launch
     # before the guess discover_releases made (docs 11b), and before the
     # upcoming launches are guessed from the codes nobody carries

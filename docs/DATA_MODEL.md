@@ -364,15 +364,18 @@ existing id, rather than opening a second, untargeted page beside them. Two read
 first that answers decides:
 
 - by name: a funnel release with the same artist (an estate's words folded, as the matcher
-  folds them) and title in another quarter, whose rows fall in the window that was set (its
-  first day on or before the close in force, its last on or after the announce), is the
-  release renamed upstream with every row it has. A launch whose close moves into the next
-  quarter is renamed that way: Warhol's 2026 Q3 became 2026 Q4 when its colourways moved to
-  14 October, and its page stood empty while its actuals opened a second page. This reading
-  needs no Airtable, which matters because the matcher can fail the renamed release: its
-  campaign clock can be unreadable, and its launch's quarter is its first close's (§4a.2½),
-  so the quarter in the new name does not agree. The window test keeps the artist's genuinely
-  next launch in the same words from being taken for it;
+  folds them) and title in another quarter, with at least half of its draw entries and units
+  in the window that was set (`ADOPT_ACTIVITY_SHARE`; from the private room where the inputs
+  open one, else the announce, to the close in force run on 30 days, for a close that moved),
+  is the release renamed upstream with every row it has.
+  A launch whose close moves into the next quarter is renamed that way: Warhol's 2026 Q3
+  became 2026 Q4 when its colourways moved to 14 October, and its page stood empty while its
+  actuals opened a second page. This reading needs no Airtable, which matters because the
+  matcher can fail the renamed release: its campaign clock can be unreadable, and its
+  launch's quarter is its first close's (§4a.2½), so the quarter in the new name does not
+  agree. The entries test is what keeps the artist's other launches in the same words from
+  being taken for it: every past "Ai Weiwei · Multiple" release draws catalogue traffic to
+  this day, so its rows overlap any window, but its entries sit in its own campaign;
 - by its launch: the ids its inputs carry when it was set up from an upcoming page, else the
   launch the matcher places it on (a page set up by hand); the funnel release matched to the
   same Airtable records has the name the input takes. That covers a launch set up under a

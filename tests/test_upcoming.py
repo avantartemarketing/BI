@@ -541,22 +541,62 @@ def test_adoption_by_name() -> None:
                 "title": "Brillo Box Collectable (Lifesize)", "quarter": "2026 Q3", "announce_date": "2026-09-03", "launch_end": "2026-09-30",
                 "first_seen": "2026-09-01", "last_seen": "2026-09-30"}
     want = [("warhol_le_26", "Andy Warhol Estate · Multiple · 2026 Q3", "Andy Warhol Estate · Multiple · 2026 Q4")]
+
+    def rows(name, first, last, entry_days=()):
+        """The funnel's rows for a release: a session a day from first to last, an entry and a unit on each of entry_days."""
+        days = pd.date_range(first, last, freq="D")
+        return pd.DataFrame({"simple_release_name": name, "event_date": days.date, "Sessions_Total": 10.0,
+                             "Draw_Entries_Eligible_Units": [1.0 if d.date().isoformat() in set(entry_days) else 0.0 for d in days],
+                             "Total_Product_Units": [1.0 if d.date().isoformat() in set(entry_days) else 0.0 for d in days]})
+    campaign = [d.date().isoformat() for d in pd.date_range("2026-09-03", "2026-09-30")]
+    # the renamed release: catalogue traffic since July (as the funnel carries every release's), its entries in the campaign
+    at = pd.concat([rows("Andy Warhol Estate · Multiple · 2026 Q4", "2026-07-13", "2026-09-30", campaign),
+                    rows(lifesize["release_name"], "2026-09-01", "2026-09-30", campaign)], ignore_index=True)
     # the matcher cannot place the renamed release, and places the Lifesize: the name decides
     assert build.airtable_ids_on_file([renamed_rec, lifesize], lf).keys() == {lifesize["release_name"]}
     configured = page()
-    assert build.adopt_funnel_names(configured, [renamed_rec, lifesize], lf) == want
+    assert build.adopt_funnel_names(configured, [renamed_rec, lifesize], lf, at) == want
     assert configured[0]["release_name"] == "Andy Warhol Estate · Multiple · 2026 Q4" and configured[0]["adopted_from"] == "Andy Warhol Estate · Multiple · 2026 Q3"
     # without Airtable at all, the name still decides; the funnel's spelling of the artist does not matter
-    assert build.adopt_funnel_names(page(), [renamed_rec], None) == want
+    assert build.adopt_funnel_names(page(), [renamed_rec], None, at) == want
     spelt = dict(renamed_rec, release_name="The Andy Warhol Foundation · Multiple · 2026 Q4", artist="The Andy Warhol Foundation")
-    assert build.adopt_funnel_names(page(), [spelt], None) == [("warhol_le_26", "Andy Warhol Estate · Multiple · 2026 Q3", "The Andy Warhol Foundation · Multiple · 2026 Q4")]
+    at_spelt = pd.concat([at, rows(spelt["release_name"], "2026-07-13", "2026-09-30", campaign)], ignore_index=True)
+    assert build.adopt_funnel_names(page(), [spelt], None, at_spelt) == [("warhol_le_26", "Andy Warhol Estate · Multiple · 2026 Q3", "The Andy Warhol Foundation · Multiple · 2026 Q4")]
+    # the close moved to 14 October and the campaign ran on: the entries past the typed close still count as this window's
+    ran_on = [d.date().isoformat() for d in pd.date_range("2026-09-03", "2026-10-14")]
+    at_ran = rows("Andy Warhol Estate · Multiple · 2026 Q4", "2026-07-13", "2026-10-14", ran_on)
+    assert build.adopt_funnel_names(page(), [dict(renamed_rec, last_seen="2026-10-14")], None, at_ran) == want
+    # the artist's earlier launch in the same words draws catalogue traffic to this day, so its rows overlap
+    # the window; its entries sit in its own campaign a year ago, so it is not this release
+    old_days = [d.date().isoformat() for d in pd.date_range("2025-10-20", "2025-11-17")]
+    earlier = dict(renamed_rec, release_name="Andy Warhol Estate · Multiple · 2025 Q4", quarter="2025 Q4", first_seen="2025-10-06", last_seen="2026-09-30")
+    at_old = rows(earlier["release_name"], "2025-10-06", "2026-09-30", old_days)
+    assert build.adopt_funnel_names(page(), [earlier], None, at_old) == []
+    # ... even with a catalogue sale or two in the window
+    at_old2 = rows(earlier["release_name"], "2025-10-06", "2026-09-30", old_days + ["2026-09-10", "2026-09-20"])
+    assert build.adopt_funnel_names(page(), [earlier], None, at_old2) == []
+    # the private room's entries are the campaign's where the inputs open one before the announce
+    early = [d.date().isoformat() for d in pd.date_range("2026-08-24", "2026-09-10")]
+    at_early = rows("Andy Warhol Estate · Multiple · 2026 Q4", "2026-07-13", "2026-09-30", early)
+    assert build.adopt_funnel_names(page(), [renamed_rec], None, at_early) == []
+    opened = [dict(page()[0], private_room_open="2026-08-24")]
+    assert build.adopt_funnel_names(opened, [renamed_rec], None, at_early) == want
+    # a page set up for the artist's next launch, the last one's draw just closed: its entries are its own
+    weiwei = [{"id": "ai_weiwei_multiple_2026_q4", "release_name": "Ai Weiwei · Multiple · 2026 Q4", "airtable_ids": "2490|2491",
+               "private_room_open": "2026-10-15", "announce_date": "2026-10-29", "launch_end": "2026-11-30"}]
+    q3 = {"release_name": "Ai Weiwei · Multiple · 2026 Q3", "artist": "Ai Weiwei", "title": "Multiple", "quarter": "2026 Q3",
+          "announce_date": "2026-08-28", "launch_end": "2026-09-24", "first_seen": "2026-06-05", "last_seen": "2026-10-20"}
+    at_q3 = rows(q3["release_name"], "2026-06-05", "2026-10-20", [d.date().isoformat() for d in pd.date_range("2026-09-14", "2026-09-24")])
+    assert build.adopt_funnel_names(weiwei, [q3], None, at_q3) == [] and weiwei[0]["release_name"] == "Ai Weiwei · Multiple · 2026 Q4"
+    # and a release with no entries or units at all is not taken
+    assert build.adopt_funnel_names(page(), [renamed_rec], None, rows("Andy Warhol Estate · Multiple · 2026 Q4", "2026-07-13", "2026-09-30")) == []
     # the artist's next launch in the same words, its rows after the close: not this one
     later = dict(renamed_rec, first_seen="2026-11-02", last_seen="2026-11-20")
-    assert build.adopt_funnel_names(page(), [later], None) == []
+    assert build.adopt_funnel_names(page(), [later], None, at) == []
     # nor an earlier one whose rows ended before the announce, nor another title, nor the same quarter under another artist
-    assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Andy Warhol Estate · Multiple · 2026 Q2", quarter="2026 Q2", first_seen="2026-05-01", last_seen="2026-06-30")], None) == []
-    assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Andy Warhol Estate · Flowers · 2026 Q4", title="Flowers")], None) == []
-    assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Ai Weiwei · Multiple · 2026 Q4", artist="Ai Weiwei")], None) == []
+    assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Andy Warhol Estate · Multiple · 2026 Q2", quarter="2026 Q2", first_seen="2026-05-01", last_seen="2026-06-30")], None, at) == []
+    assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Andy Warhol Estate · Flowers · 2026 Q4", title="Flowers")], None, at) == []
+    assert build.adopt_funnel_names(page(), [dict(renamed_rec, release_name="Ai Weiwei · Multiple · 2026 Q4", artist="Ai Weiwei")], None, at) == []
     # two funnel releases on the launch, the input spelt as Airtable spells the artist: the one named like it
     foundation = [{"id": "warhol_le_26", "release_name": "The Andy Warhol Foundation · Multiple · 2026 Q3", "announce_date": "2026-09-03", "launch_end": "2026-09-30"}]
     dated = dict(renamed_rec, release_name="Andy Warhol Estate · Multiple · 2026 Q3", quarter="2026 Q3", announce_date="2026-09-03", launch_end="2026-09-30")
