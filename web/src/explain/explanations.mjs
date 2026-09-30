@@ -610,20 +610,23 @@ EXPLAIN["drivers.step"] = (a, { snap: s }) => {
 
 /* ---- paid ---- */
 const fullDays = (s) => ((s.paid && s.paid.daily) || []).filter((d) => !d.partial);
-function lastThree(s) {
+/* The last `days` full days: three for the card's usual reading, one for its 1d switch. */
+function lastDays(s, days) {
   const rows = fullDays(s);
   if (!rows.length) return null;
   const last = rows[rows.length - 1].date;
   const t = Date.parse(last + "T00:00:00Z");
-  const within = rows.filter((d) => t - Date.parse(d.date + "T00:00:00Z") < 3 * 86400000);
+  const within = rows.filter((d) => t - Date.parse(d.date + "T00:00:00Z") < days * 86400000);
   return { rows: within, spend: sum(within.map((d) => d.spend)), entries: sum(within.map((d) => d.entries)), from: within[0].date, to: last };
 }
+const oneDay = (a) => !!(a && a.window === "1d");
 
 EXPLAIN["paid.cpe"] = (a, { snap: s }) => {
   const p = s.paid || {};
   const drop = p.dropOff ?? 0.2;
   const whole = !!(a && a.whole);
-  const v = whole ? p.cumCpe : p.l3dCpe;
+  const one = !whole && oneDay(a);
+  const v = whole ? p.cumCpe : one ? p.l1dCpe : p.l3dCpe;
   if (!finite(v)) return null;
   let spend, entries, span;
   if (whole) {
@@ -632,19 +635,19 @@ EXPLAIN["paid.cpe"] = (a, { snap: s }) => {
     const first = rows.find((d) => (d.spend ?? 0) > 0);
     span = first ? `from ${dayOf(first.date)} to ${dayOf(rows[rows.length - 1].date)}` : "";
   } else {
-    const w = lastThree(s);
+    const w = lastDays(s, one ? 1 : 3);
     if (!w) return null;
-    spend = w.spend; entries = w.entries; span = `from ${dayOf(w.from)} to ${dayOf(w.to)}`;
+    spend = w.spend; entries = w.entries; span = w.from === w.to ? `on ${dayOf(w.to)}` : `from ${dayOf(w.from)} to ${dayOf(w.to)}`;
   }
   const conv = entries * (1 - drop);
   return {
     where: "Paid ROI", when: null,
-    name: whole ? "Cost per converting entry, whole campaign" : "Cost per converting entry, last 3 days",
+    name: whole ? "Cost per converting entry, whole campaign" : one ? "Cost per converting entry, last full day" : "Cost per converting entry, last 3 days",
     value: eur(v, 2), unit: "per entry that becomes an order",
     say: "What paid spent for each draw entry that goes on to become an order.",
     steps: [
       seg`Add up the spend on the paid campaign ${span}: ${eur(spend)}.`,
-      seg`Count the paid entries on those days: ${n(entries, 1)}.`,
+      seg`Count the paid entries ${one ? "that day" : "on those days"}: ${n(entries, 1)}.`,
       seg`${pct(1 - drop)} of entries become orders, so ${n(entries, 1)} × ${pct(1 - drop)} = ${n(conv, 1)} converting entries.`,
       seg`${eur(spend)} ÷ ${n(conv, 1)} = ${eur(v, 2)}.`,
     ],
@@ -662,13 +665,15 @@ EXPLAIN["paid.roi"] = (a, c) => {
   const s = c.snap, p = s.paid || {};
   const artist = !!(a && a.party === "artist");
   const whole = !!(a && a.whole) || !!s.complete;
-  if (s.targeted === false) return EXPLAIN["paid.cpe"]({ whole }, c);
+  const one = !whole && oneDay(a);
+  const window = one ? "1d" : "3d";
+  if (s.targeted === false) return EXPLAIN["paid.cpe"]({ whole, window }, c);
   const view = artist ? p.artist || {} : p;
-  const v = whole ? view.cumRoi : view.l3dRoi;
+  const v = whole ? view.cumRoi : one ? view.l1dRoi : view.l3dRoi;
   const ppu = artist ? view.profitPerUnit : p.profitPerUnitAA;
   const share = artist ? view.budgetShare : p.aaBudgetShare;
   const cann = p.cannibalisation ?? 0.2;
-  const cpe = whole ? p.cumCpe : p.l3dCpe;
+  const cpe = whole ? p.cumCpe : one ? p.l1dCpe : p.l3dCpe;
   if (!finite(v) || !finite(ppu) || !finite(share) || !finite(cpe)) return null;
   const who = artist ? "the artist" : "Avant Arte";
   const Who = artist ? "The artist" : "Avant Arte";
@@ -677,21 +682,25 @@ EXPLAIN["paid.roi"] = (a, c) => {
   if (!artist && p.aaBudgetShareAssumed) notes.push("No product records its deal yet, so half the spend is assumed to be Avant Arte's. Type each product's AA profit share (or AA revenue share) on the Target setting tab: the spend divides as the profit does.");
   // only where there is an uplift: a sculpture edition has no frame on offer
   if (!artist && ((s.economics || {}).frameUpliftPerUnit ?? 0) > 0) notes.push("Avant Arte's profit per unit includes the framing uplift, which is Avant Arte's alone.");
-  notes.push(whole ? "The whole campaign's full days." : "The last three full days, so the figure moves with the latest spend rather than the campaign's average.");
+  notes.push(whole ? "The whole campaign's full days."
+    : one ? "The last full day alone: the quickest read and the noisiest, one day's spend over that day's entries."
+    : "The last three full days, so the figure moves with the latest spend rather than the campaign's average.");
   return {
     where: "Paid ROI", when: null,
-    name: `${artist ? "Artist" : "AA"} ROI${whole ? (s.complete ? ", final" : ", whole campaign") : ", last 3 days"}`,
+    name: `${artist ? "Artist" : "AA"} ROI${whole ? (s.complete ? ", final" : ", whole campaign") : one ? ", last full day" : ", last 3 days"}`,
     value: n(v, 2), unit: `profit back per euro ${who} spends`,
     say: `What ${who} makes on the units paid brings in, for each euro of ${artist ? "their" : "its"} share of the spend.`,
     steps: [
       seg`Start with ${who}'s profit per unit: ${eur(ppu, 2)}.`,
       seg`Take off ${pct(cann)} for sales that would have come anyway: ${eur(net, 2)}.`,
-      seg`Divide by what paid spent for each entry that becomes an order, ${drill(eur(cpe, 2), "paid.cpe", { whole })}: ${n(net / cpe, 2)}.`,
+      seg`Divide by what paid spent for each entry that becomes an order, ${drill(eur(cpe, 2), "paid.cpe", { whole, window })}: ${n(net / cpe, 2)}.`,
       seg`Divide by ${who}'s share of the spend, ${pct(share)}: ${n(net / cpe / share, 2)}.`,
     ],
     total: { v: n(v, 2), label: "ROI" },
     compare: [
       ...(!artist && finite(p.roiTarget) ? [{ label: "Target ROI", v: n(p.roiTarget, 2), note: "The spend rules' target for the last day's forecast." }] : []),
+      ...(one && finite(view.l3dRoi) ? [{ label: "Last 3 days", v: n(view.l3dRoi, 2), k: "paid.roi", arg: { party: artist ? "artist" : "aa", whole: false, window: "3d" }, note: "The same reading over the trailing three full days, steadier and a day or two behind." }] : []),
+      ...(!whole && !one && finite(view.l1dRoi) ? [{ label: "Last full day", v: n(view.l1dRoi, 2), k: "paid.roi", arg: { party: artist ? "artist" : "aa", whole: false, window: "1d" }, note: "The last full day alone, the quickest read and the noisiest." }] : []),
       ...(!whole && finite(view.cumRoi) ? [{ label: "Whole campaign", v: n(view.cumRoi, 2), k: "paid.roi", arg: { party: artist ? "artist" : "aa", whole: true }, note: "The same reading over every full day." }] : []),
     ],
     sources: [

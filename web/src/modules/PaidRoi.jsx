@@ -8,7 +8,11 @@
  * back to roiDeclineModel.start at today when there are no daily ROI points).
  * The line is the trailing-3-calendar-day rolling ROI, matching the headline:
  * a window with spend but no entries is a genuine 0, a window with no spend is
- * null (the line skips it). The as-of day so far is the last row of paid.daily,
+ * null (the line skips it). The 3d / 1d switch in the head reads the last full
+ * day alone instead (daily roi1, paid.l1dRoi): quicker and noisier. The dotted
+ * projection is priced on the three-day window, so in the 1d view it is the
+ * same path re-read from that day's price: scaled by the ratio of the two
+ * readings on the last day, since ROI is one over the price. The as-of day so far is the last row of paid.daily,
  * marked partial: it is a bar, so the bars sum to the paid card's spend to date,
  * and never a point on the line. Points are mapped to campaign day via
  * date − windowStart and clipped to day 1..of;
@@ -37,6 +41,7 @@ import { Ex } from "../explain/Explain.jsx";
 const W = 480, H = 200, BAND_TOP = 132;
 const DAY_MS = 86400000;
 const PARTY_PREF = "paidRoiParty";   // the switch sticks across releases, per browser
+const WINDOW_PREF = "paidRoiWindow"; // 3d or 1d, the same way
 
 function dayIndex(dateStr, windowStart, fallback) {
   if (windowStart) {
@@ -47,11 +52,13 @@ function dayIndex(dateStr, windowStart, fallback) {
 }
 
 const readParty = () => { try { return localStorage.getItem(PARTY_PREF) === "artist" ? "artist" : "aa"; } catch { return "aa"; } };
+const readWindow = () => { try { return localStorage.getItem(WINDOW_PREF) === "1d" ? "1d" : "3d"; } catch { return "3d"; } };
 const pct = (x) => (x === null || x === undefined ? "–" : fmt(100 * x, 0) + "%");
 
 export default function PaidRoi({ snap }) {
   const [hover, setHover] = useState(null);   // day number
   const [partyPref, setPartyPref] = useState(readParty);
+  const [windowPref, setWindowPref] = useState(readWindow);
   // the plot's real size: where a word can go without landing on a bar or a
   // line is a pixel question
   const [plotRef, plotW, plotH] = useBoxSize();
@@ -85,10 +92,19 @@ export default function PaidRoi({ snap }) {
   const artistOk = targeted && artistReason === null;
   const party = partyPref === "artist" && artistOk ? "artist" : "aa";
   const setParty = (v) => { setPartyPref(v); try { localStorage.setItem(PARTY_PREF, v); } catch { /* per-browser convenience only */ } };
+  // ----- which window: the trailing three full days, or the last full day alone -----
+  const oneDayOk = paid.l1dCpe !== undefined;   // a snapshot built before the 1d reading has none
+  const win = windowPref === "1d" && oneDayOk ? "1d" : "3d";
+  const setWindow = (v) => { setWindowPref(v); try { localStorage.setItem(WINDOW_PREF, v); } catch { /* per-browser convenience only */ } };
+  const winWords = win === "1d" ? "last full day" : "last 3 days";
+  const winShort = win === "1d" ? "L1D" : "L3D";
+  const cpeRecent = win === "1d" ? paid.l1dCpe : paid.l3dCpe;
   const view = party === "artist"
-    ? { label: "Artist", key: "roiArtist", cum: artist.cumRoi, l3d: artist.l3dRoi, path: artist.roiPath || [],
+    ? { label: "Artist", key: win === "1d" ? "roiArtist1" : "roiArtist", key3: "roiArtist", cum: artist.cumRoi,
+        recent: win === "1d" ? artist.l1dRoi : artist.l3dRoi, path: artist.roiPath || [],
         start: (artist.roiDeclineModel || {}).start, target: null, ppu: artist.profitPerUnit, share: artist.budgetShare }
-    : { label: "AA", key: "roi", cum: paid.cumRoi, l3d: paid.l3dRoi, path: paid.roiPath || [],
+    : { label: "AA", key: win === "1d" ? "roi1" : "roi", key3: "roi", cum: paid.cumRoi,
+        recent: win === "1d" ? paid.l1dRoi : paid.l3dRoi, path: paid.roiPath || [],
         start: (paid.roiDeclineModel || {}).start, target: paid.roiTarget ?? null, ppu: paid.profitPerUnitAA, share: paid.aaBudgetShare };
   const targetLine = view.target !== null && view.target !== undefined ? "\nTarget " + fmt(view.target, 2) : "";
   // no product records its deal: the split of the spend is an assumed half,
@@ -103,6 +119,7 @@ export default function PaidRoi({ snap }) {
       spend: d.spend ?? 0,
       entries: d.entries ?? null,
       roi: d[view.key] ?? null,
+      roi3: d[view.key3] ?? null,   // the three-day reading of the same day, the projection's price
       partial: !!d.partial,   // the as-of day so far: a bar, never a point on the line
     }))
     .filter((p) => p.d >= 1 && p.d <= of);
@@ -123,8 +140,12 @@ export default function PaidRoi({ snap }) {
   // per entry rising as the campaign's spend adds up) - the same path the
   // budget recommendation's ROI floor is judged on, so the two cards cannot
   // disagree. The geometric model is only a fallback for older snapshots.
+  // The path is priced on the three-day window. In the 1d view it is re-read
+  // from the last full day's price: ROI is one over the price, so the path
+  // scales by the ratio of the two readings on that day.
+  const pathScale = win === "1d" && lastRoiPt && lastRoiPt.roi > 0 && lastRoiPt.roi3 > 0 ? lastRoiPt.roi / lastRoiPt.roi3 : 1;
   const pathPts = view.path
-    .map((p) => ({ d: dayIndex(p.date, snap.windowStart, null), v: p.roi }))
+    .map((p) => ({ d: dayIndex(p.date, snap.windowStart, null), v: p.roi === null || p.roi === undefined ? null : p.roi * pathScale }))
     .filter((p) => p.d !== null && p.d >= 1 && p.d <= of && p.v !== null && p.v !== undefined);
   const showModel = !complete && paidLive && anchor !== null && anchor.d <= of && (pathPts.length > 0 || factor !== null);
   const paidOff = !complete && !paidLive && anchor !== null && lastSpendDay > 0;
@@ -176,13 +197,13 @@ export default function PaidRoi({ snap }) {
 
   // ----- lead + header stats -----
   // ROI needs the profit split; without targets the lead is cost per entry
-  const leadVal = !targeted ? (complete ? paid.cumCpe : paid.l3dCpe) : complete ? view.cum : view.l3d;
+  const leadVal = !targeted ? (complete ? paid.cumCpe : cpeRecent) : complete ? view.cum : view.recent;
   const leadCaption = !targeted
-    ? (complete ? "€ per converting entry, whole campaign - ROI needs targets" : "€ per converting entry, last 3 days - ROI needs targets")
-    : complete ? `${view.label} ROI final` : `${view.label} ROI last 3 days`;
+    ? (complete ? "€ per converting entry, whole campaign - ROI needs targets" : `€ per converting entry, ${winWords} - ROI needs targets`)
+    : complete ? `${view.label} ROI final` : `${view.label} ROI ${winWords}`;
   // the working behind the headline: the figures it is read from, in the
   // order they are applied, so the basis is on the card and not in a doc
-  const cpeUsed = complete ? paid.cumCpe : paid.l3dCpe;
+  const cpeUsed = complete ? paid.cumCpe : cpeRecent;
   const dropOff = paid.dropOff ?? 0.2;
   // AA's profit per unit carries a framing uplift only where there is one
   // (a sculpture edition has no frame on offer)
@@ -193,7 +214,7 @@ export default function PaidRoi({ snap }) {
   const moreTip = !targeted ? {
     head: "Paid cost",
     rows: [
-      { label: "€/converting entry L3D", value: fmt(paid.l3dCpe, 2) },
+      { label: `€/converting entry ${winShort}`, value: fmt(cpeRecent, 2) },
       { label: "€/converting entry total", value: fmt(paid.cumCpe, 2) },
     ],
     body: "Cost per converting entry: spend over the entries that become orders (" + pct(1 - dropOff) + " of them). ROI needs the profit split from the Target setting tab." + spendNote,
@@ -202,11 +223,11 @@ export default function PaidRoi({ snap }) {
     rows: [
       { label: `${view.label} profit per unit`, value: "€" + fmt(view.ppu, 2) },
       { label: "less cannibalisation", value: pct(paid.cannibalisation ?? 0.2) },
-      { label: complete ? "÷ € per converting entry, whole campaign" : "÷ € per converting entry, last 3 days", value: fmt(cpeUsed, 2) },
+      { label: complete ? "÷ € per converting entry, whole campaign" : `÷ € per converting entry, ${winWords}`, value: fmt(cpeUsed, 2) },
       { label: `÷ ${view.label} share of the spend${splitAssumed ? " (assumed)" : ""}`, value: pct(view.share) },
-      { label: complete ? "= ROI final" : "= ROI last 3 days", value: fmt(leadVal, 2) },
+      { label: complete ? "= ROI final" : `= ROI ${winWords}`, value: fmt(leadVal, 2) },
       { label: "ROI total", value: fmt(view.cum, 2) },
-      { label: "€/converting entry L3D", value: fmt(paid.l3dCpe, 2) },
+      { label: `€/converting entry ${winShort}`, value: fmt(cpeRecent, 2) },
       { label: "€/converting entry total", value: fmt(paid.cumCpe, 2) },
     ],
     body: "Profit per unit, the share of the spend and the cannibalisation are the Target setting tab's (products and economics, paid assumptions"
@@ -215,14 +236,25 @@ export default function PaidRoi({ snap }) {
       + (splitAssumed ? "; no product records its deal yet, so half is assumed. " : ". ")
       + "A converting entry is one that becomes an order, " + pct(1 - dropOff) + " of entries." + spendNote,
   };
-  const todayTip = `${view.label} ROI last 3 days ` + fmt(view.l3d, 2) + targetLine;
-  const projTip = `Projected ${view.label} ROI at close ` + fmt(declineEnd, 2) + targetLine;
+  const todayTip = `${view.label} ROI ${winWords} ` + fmt(view.recent, 2) + targetLine;
+  const projTip = `Projected ${view.label} ROI at close ` + fmt(declineEnd, 2)
+    + (win === "1d" ? " (the cost path from the last full day's price)" : "") + targetLine;
   const finalTip = `${view.label} ROI final ` + fmt(view.cum, 2) + targetLine;
 
   const statVal = { fontSize: 13, fontWeight: 600, color: C.ink };
-  // the head keeps the party switch; the two whole-campaign totals stand
-  // beside the headline, cost per entry over the cumulative ROI
-  const right = targeted && artist ? (
+  // the head keeps the two switches, the window and the party; the two
+  // whole-campaign totals stand beside the headline, cost per entry over the
+  // cumulative ROI
+  const windowSeg = (
+    <span className="seg compact" title="The days the headline and the line read: the last three full days, or the last full day alone">
+      <button className={win === "3d" ? "active" : ""} onClick={() => setWindow("3d")}
+        title="The trailing three full days: steadier, and a day or two behind">3d</button>
+      <button className={win === "1d" ? "active" : ""} disabled={!oneDayOk} onClick={() => setWindow("1d")}
+        style={oneDayOk ? undefined : { opacity: 0.45, cursor: "default" }}
+        title={oneDayOk ? "The last full day alone: the quickest read, and the noisiest" : "The last-day reading needs a rebuilt snapshot"}>1d</button>
+    </span>
+  );
+  const partySeg = targeted && artist ? (
     <span className="seg compact" title="Whose ROI: Avant Arte's or the artist's, each their profit per unit over their share of the spend">
       <button className={party === "aa" ? "active" : ""} onClick={() => setParty("aa")}
         title="Avant Arte's ROI: its profit per unit over its share of the paid spend">AA</button>
@@ -231,6 +263,12 @@ export default function PaidRoi({ snap }) {
         title={artistOk ? "The artist's ROI: their profit per unit over their share of the paid spend" : artistReason}>Artist</button>
     </span>
   ) : null;
+  const right = (
+    <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+      {windowSeg}
+      {partySeg}
+    </span>
+  );
   const statRow = { display: "flex", gap: 6, alignItems: "baseline", whiteSpace: "nowrap", fontSize: 12, color: C.muted };
   const totals = (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flex: "0 0 auto" }}>
@@ -309,7 +347,7 @@ export default function PaidRoi({ snap }) {
       <div className="spacer-8" />
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flex: "0 0 auto" }}>
         <div className="lead">
-          <span><Ex k="paid.roi" arg={{ party, whole: complete }} focus>{fmt(leadVal, 2)}</Ex></span>
+          <span><Ex k="paid.roi" arg={{ party, whole: complete, window: win }} focus>{fmt(leadVal, 2)}</Ex></span>
           <span style={{ fontSize: 12, fontWeight: 400, letterSpacing: 0, color: C.muted, whiteSpace: "nowrap" }}>{leadCaption}</span>
           <QBadge content={moreTip} />
           {splitAssumed && (
@@ -373,7 +411,7 @@ export default function PaidRoi({ snap }) {
                   )}
                   <ChartTip left={leftPct(hover)}>
                     <div className="t-head">{dayLabel(snap, hover, true)}{p && p.partial ? " · so far today" : ""}</div>
-                    {p && <div className="t-row"><span>{view.label} ROI (3d)</span><span className="v">{roiV !== null ? fmt(roiV, 2) : "–"}</span></div>}
+                    {p && <div className="t-row"><span>{view.label} ROI ({win})</span><span className="v">{roiV !== null ? fmt(roiV, 2) : "–"}</span></div>}
                     {roiV === null && projV !== undefined && <div className="t-row"><span>ROI projected</span><span className="v">{fmt(projV, 2)}</span></div>}
                     {p && <div className="t-row"><span>Spend</span><span className="v">€{fmt(p.spend, 2)}</span></div>}
                     {p && <div className="t-row"><span>Entries</span><span className="v">{fmt(p.entries ?? 0)}</span></div>}

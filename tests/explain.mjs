@@ -47,6 +47,9 @@ function cases(s) {
     "framing.buyers", "framing.entrants", "framing.plan", "framing.bm", "paid.rec", "paid.current", "launch.days"]) out.push([k, {}]);
   for (const party of ["aa", "artist"]) for (const whole of [false, true]) out.push(["paid.roi", { party, whole }]);
   for (const whole of [false, true]) out.push(["paid.cpe", { whole }]);
+  // the card's 1d switch: the last full day alone
+  for (const party of ["aa", "artist"]) out.push(["paid.roi", { party, whole: false, window: "1d" }]);
+  out.push(["paid.cpe", { whole: false, window: "1d" }]);
   for (const c of s.channels || []) {
     both("channel.pct", { key: c.key });
     both("wf.channel", { key: c.key });
@@ -131,9 +134,10 @@ for (const f of files) {
           return Math.round(((close ? c.proj : c.now) / (close ? c.target : c.exp)) * 100) + "%";
         },
         "paid.roi": () => {
-          if (s.targeted === false) return "€" + fmt(arg.whole || s.complete ? s.paid.cumCpe : s.paid.l3dCpe, 2);
+          const one = !(arg.whole || s.complete) && arg.window === "1d";
+          if (s.targeted === false) return "€" + fmt(arg.whole || s.complete ? s.paid.cumCpe : one ? s.paid.l1dCpe : s.paid.l3dCpe, 2);
           const v = arg.party === "artist" ? s.paid.artist : s.paid;
-          return fmt(arg.whole || s.complete ? v.cumRoi : v.l3dRoi, 2);
+          return fmt(arg.whole || s.complete ? v.cumRoi : one ? v.l1dRoi : v.l3dRoi, 2);
         },
         "st.head": () => {
           const st = s.sellthrough, ed = st.edition;
@@ -249,6 +253,27 @@ assert.strictEqual(roi.value, "1.79");
 assert.ok(segText(roi.steps[2]).includes("€751.34"), "the ROI divides by the last three days' cost per converting entry");
 const cpe = explain("paid.cpe", {}, wctx);
 assert.ok(segText(cpe.steps[0]).includes("21 Sep to 23 Sep"), "the last three full days");
+
+/* ---- the card's 1d switch: the last full day alone, on a page rebuilt with the figures ---- */
+{
+  const rows = w.paid.daily.filter((d) => !d.partial);
+  const last = rows[rows.length - 1];
+  const drop = w.paid.dropOff ?? 0.2;
+  const cpe1 = last.spend / (last.entries * (1 - drop));
+  const roi1 = ((1 - (w.paid.cannibalisation ?? 0.2)) * w.paid.profitPerUnitAA) / (cpe1 * w.paid.aaBudgetShare);
+  const w1 = { ...w, paid: { ...w.paid, l1dCpe: Math.round(cpe1 * 100) / 100, l1dRoi: Math.round(roi1 * 1000) / 1000 } };
+  const ctx1 = { snap: w1, st: null };
+  const one = explain("paid.roi", { party: "aa", window: "1d" }, ctx1);
+  assert.ok(one && one.name.endsWith(", last full day"), `the 1d reading is named for its day: ${one && one.name}`);
+  assert.strictEqual(one.value, fmt(w1.paid.l1dRoi, 2), "the 1d reading is the published figure");
+  assert.ok(segText(one.steps[2]).includes("€" + fmt(w1.paid.l1dCpe, 2)), "and divides by the last full day's cost per converting entry");
+  const cpeOne = explain("paid.cpe", { window: "1d" }, ctx1);
+  assert.ok(segText(cpeOne.steps[0]).includes("on 23 Sep") && !segText(cpeOne.steps[0]).includes("21 Sep"), "the 1d cost reads one day");
+  assert.ok(one.compare.some((c) => c.label === "Last 3 days" && c.arg.window === "3d"), "the 1d reading points at the three-day one");
+  assert.ok(explain("paid.roi", { party: "aa" }, ctx1).compare.some((c) => c.label === "Last full day" && c.arg.window === "1d"),
+    "and the three-day reading points at the 1d one once the page has it");
+  assert.strictEqual(explain("paid.roi", { party: "aa", window: "1d" }, wctx), null, "a page built before the 1d reading explains nothing for it");
+}
 assert.strictEqual(explain("paid.rec", {}, wctx).value, "€28,281");
 assert.ok(segText(explain("paid.rec", {}, wctx).steps.at(-1)).includes("× 1.3"), "held by the pacing rule");
 assert.strictEqual(explain("launch.days", {}, wctx).value, "6 days");
