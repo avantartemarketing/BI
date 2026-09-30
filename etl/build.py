@@ -3407,7 +3407,10 @@ def _effective_product(p: dict, b: dict) -> dict:
         return default
 
     e: dict = {"airtable_id": p.get("airtable_id"), "name": typed.get("name") or p.get("name") or "Product",
-               "project_code": p.get("project_code")}
+               "project_code": p.get("project_code"),
+               # the day this work's draw closes (Airtable): one launch's works can
+               # close on different days, and the page runs to the last (§1.6)
+               "launch_date": str(p.get("launch_date"))[:10] if p.get("launch_date") else None}
     edition = _num(pick("edition"))
     e["edition"] = int(round(edition)) if edition and edition > 0 else None
     share = _num(pick("target_sellthrough", default=1.0, kind="default"))
@@ -3456,6 +3459,19 @@ def legacy_budget_share(artist_profit_share) -> tuple[float, bool]:
     if aps <= 0:
         return 1.0, False
     return round(min(max(1.0 - aps, 0.0), 1.0), 4), False
+
+
+def product_closes(products: list[dict]) -> list[dict]:
+    """The works' own close dates (docs §1.6): one launch's works can close on
+    different days, and the page runs to the last while the sell-through
+    counts each work at its own draw. One entry per date, earliest first,
+    with the works on it; sized products only, a bundle carrying no draw of
+    its own."""
+    by_close: dict[str, list[str]] = {}
+    for p in products or []:
+        if p.get("edition") and p.get("launch_date"):
+            by_close.setdefault(str(p["launch_date"])[:10], []).append(p.get("name") or "")
+    return [{"date": d, "works": len(n), "names": n} for d, n in sorted(by_close.items())]
 
 
 def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: dict | None = None) -> dict:
@@ -3559,6 +3575,27 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
     if not r.get("private_room_open") and r.get("announce_date"):
         r["private_room_open"] = (date.fromisoformat(r["announce_date"]) - timedelta(days=PR_LEAD_DAYS)).isoformat()
         sources["private_room_open"] = "default"
+    # the works' own closes (docs §1.6): one launch's works can close on
+    # different days, and the page runs to the last while the sell-through
+    # counts each work at its own draw. Each close with the works on it.
+    r["closes"] = product_closes(sized)
+    r["staggered"] = len(r["closes"]) > 1
+    # a date that moved after it was typed, or that Airtable and the funnel's
+    # clock disagree on: said beside the date in force, never silently
+    # overridden (the tab offers the other reading with one click)
+    drift = {}
+    for key, at_key in (("announce_date", "announce_date"), ("launch_end", "launch_date")):
+        here = r.get(key)
+        if not here:
+            continue
+        others = {}
+        for name, v in (("airtable", at.get(at_key)), ("clock", clock.get(key))):
+            v = str(v)[:10] if v else None
+            if v and v != here and name != sources.get(key):
+                others[name] = v
+        if others:
+            drift[key] = {"inForce": here, "source": sources.get(key), **others}
+    r["date_drift"] = drift
     if at.get("marketing_lead"):
         r["marketing_lead"], sources["marketing_lead"] = at["marketing_lead"], "airtable"
     else:
@@ -3624,12 +3661,15 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
     # the identity); the record's other columns stay in the pricing file
     keep = ("airtable_id", "name", "project_code", "edition", "target_sellthrough", "unit_price", "currency",
             "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share",
-            "framing_available", "framing_default", "frame_conversion", "frame_profit_per_unit")
+            "framing_available", "framing_default", "frame_conversion", "frame_profit_per_unit",
+            "launch_date")
     products = [{k: p.get(k) for k in keep} for p in at["products"]]
     return {
         "airtable": {"match": at["match"], "note": at["note"], "products": products,
                      "announce_date": at["announce_date"], "launch_end": at["launch_date"],
-                     "private_room_open": at["private_room_date"], "marketing_lead": at["marketing_lead"]},
+                     "private_room_open": at["private_room_date"], "marketing_lead": at["marketing_lead"],
+                     # the works' own closes, for a launch whose works close on different days
+                     "closes": product_closes(at["products"])},
         "notion": {k: nd.get(k) for k in ("private_room_open", "announce_date", "launch_end")},
         "clock": {k: rec.get("clock_dates", {}).get(k) if rec.get("clock_dates") else None
                   for k in ("private_room_open", "announce_date", "launch_end")},
@@ -3913,6 +3953,11 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
                 if name not in names and name not in listed:
                     break
         listed.add(name)
+        # a launch whose works close on different days (pricing.launches):
+        # the page runs to the last, and says so
+        closes = [str(d)[:10] for d in (getattr(l, "closes", None) or []) if d]
+        staggered = ("the works close on different days, " + " and ".join(
+            f"{date.fromisoformat(d).day} {date.fromisoformat(d):%b}" for d in closes) + "; the page runs to the last") if len(closes) > 1 else None
         assumed = pd.isna(l.announce_date) or l.announce_date.date() >= close
         announce = close - timedelta(days=ASSUMED_CAMPAIGN_DAYS) if assumed else l.announce_date.date()
         pr_open = l.private_room_date.date() if not pd.isna(l.private_room_date) else announce - timedelta(days=PR_LEAD_DAYS)
@@ -3942,9 +3987,12 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
             "announce_date": announce.isoformat(), "launch_end": close.isoformat(),
             "private_room_open": pr_open.isoformat(),
             "dates_assumed": bool(assumed),
-            "dates_note": ("announce date assumed: Airtable has none for it yet" if assumed else
-                           f"Airtable's announce date, {announce.isoformat()}, has passed with no spend, sends or "
-                           f"traffic for this launch, so its dates may be out of date" if stale else None),
+            "dates_note": "; ".join(x for x in (
+                ("announce date assumed: Airtable has none for it yet" if assumed else
+                 f"Airtable's announce date, {announce.isoformat()}, has passed with no spend, sends or "
+                 f"traffic for this launch, so its dates may be out of date" if stale else None),
+                staggered) if x) or None,
+            "closes": closes,
             "first_seen": None, "last_seen": None, "sessions": 0.0, "entries": 0.0, "units": 0.0,
             "source": "airtable",
             "edition_size": int(l.edition_size) if pd.notna(l.edition_size) and l.edition_size > 0 else None,
@@ -4019,6 +4067,8 @@ def build_upcoming(rec: dict, as_of: date, email_bench: dict | None = None, full
         "completeThrough": (full_through or as_of).isoformat(), "asOfFraction": 1.0,
         "targeted": False, "catalogue": False, "upcoming": True,
         "untracked": None,
+        # the works' closes when they differ (§1.6), for the sidebar's row
+        "closes": [{"date": d} for d in (rec.get("closes") or [])] if len(rec.get("closes") or []) > 1 else [],
         "derived": {
             "announce_date": rec["announce_date"], "launch_end": rec["launch_end"],
             "dates_source": "airtable", "dates_note": rec["dates_note"],
@@ -5274,6 +5324,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # clock for the dates, airtable or typed for the lead, products or
         # typed release-level figures for the economics
         "inputSources": release.get("input_sources") or {},
+        # the works' own closes (§1.6) and a date Airtable or the funnel's
+        # clock now puts elsewhere than the page runs on
+        "closes": release.get("closes") or [],
+        "dateDrift": release.get("date_drift") or {},
         "privateRoomOpen": release["private_room_open"],
         "windowStart": release["announce_date"], "windowEnd": release["launch_end"],
         "campaignLengthDays": L, "day": day_n, "of": L,
@@ -5778,6 +5832,9 @@ def index_row(snap: dict, status: str) -> dict:
         "status": status, "targeted": snap.get("targeted", True),
         "day": snap["day"], "of": snap["of"], "complete": snap["complete"],
         "windowEnd": snap.get("windowEnd"),
+        # the works' close dates when they differ, so the row can say both
+        "closes": [c["date"] for c in (snap.get("closes") or [])] if len(snap.get("closes") or []) > 1 else [],
+        "dateDrift": bool(snap.get("dateDrift")),
         "statusPct": snap["hero"]["statusPct"], "ok": snap["hero"]["ok"],
         # actual vs the benchmark for today, so the sidebar can tell
         # "behind target but ahead of typical" from "behind typical"

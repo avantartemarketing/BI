@@ -42,6 +42,13 @@ def airtable_rows() -> pd.DataFrame:
         dict(airtable_id=9, artist="The Someone Foundation", title="Box", release="SomeoneTL26", unit_price=750, edition_size=1000, launch_date="2026-09-30"),
         # a record with no code at all
         dict(airtable_id=10, artist="Solo Maker", title="Loop", release=None, unit_price=900, edition_size=40, launch_date="2024-03-03"),
+        # one code whose works close on different days, two weeks apart: one launch
+        # (the campaign ends with the last close); the same code's wave three
+        # months later is another launch
+        dict(airtable_id=11, artist="Stagger Maker", title="Box (Lifesize)", release="StaggerTL26", unit_price=2500, edition_size=100, launch_date="2026-03-10"),
+        dict(airtable_id=12, artist="Stagger Maker", title="Box (Green)", release="StaggerTL26", unit_price=750, edition_size=1000, launch_date="2026-03-24"),
+        dict(airtable_id=13, artist="Stagger Maker", title="Box (White)", release="StaggerTL26", unit_price=750, edition_size=1000, launch_date="2026-03-24"),
+        dict(airtable_id=14, artist="Stagger Maker", title="Box (Wave 2)", release="StaggerTL26", unit_price=750, edition_size=500, launch_date="2026-06-30"),
     ]
     df = pd.DataFrame(rows)
     df["currency"] = np.where(df["unit_price"].notna(), "EUR", "")
@@ -68,6 +75,9 @@ def panel_rows() -> pd.DataFrame:
              announce="2024-02-01", close="2024-02-22", panel="draw"),
         dict(release_name="Test Artist · Sunrise (Red) · 2023 Q1", artist="Test Artist", title="Sunrise (Red)", quarter="2023 Q1",
              announce="2023-01-05", close="2023-01-26", panel="draw"),
+        # set up with the first close typed: the whole staggered launch is its
+        dict(release_name="Stagger Maker · Multiple · 2026 Q1", artist="Stagger Maker", title="Multiple", quarter="2026 Q1",
+             announce="2026-02-15", close="2026-03-10", panel="draw"),
     ])
 
 
@@ -110,6 +120,20 @@ def test_launches_and_match() -> None:
     assert got["Test Artist · Sunrise (Red) · 2023 Q1"] == "none", res.iloc[7]["price_note"]
     assert "exact title found but launched" in res.iloc[7]["price_note"]
     assert set(P.PRICE_COLS) <= set(res.columns)
+    # works of one code closing on different days are one launch, dated by the
+    # last close, with the first and every close beside it and the quarter of
+    # the first; the wave three months on is a launch of its own
+    st = lf[lf["airtable_release"] == "StaggerTL26"].sort_values("launch_date")
+    assert len(st) == 2, st[["launch_date", "n_products"]]
+    first = st.iloc[0]
+    assert first["launch_date"].date().isoformat() == "2026-03-24" and first["first_launch_date"].date().isoformat() == "2026-03-10"
+    assert first["closes"] == ["2026-03-10", "2026-03-24"] and first["quarter"] == "2026 Q1" and first["n_products"] == 3
+    assert first["edition_size"] == 2100 and set(first["airtable_ids"].split("|")) == {"11", "12", "13"}
+    assert st.iloc[1]["closes"] == ["2026-06-30"] and st.iloc[1]["n_products"] == 1
+    # the release typed to the first close matches the whole launch, so its
+    # page carries every work and runs to the last close
+    assert got["Stagger Maker · Multiple · 2026 Q1"] == "artist+window", res.iloc[8]["price_note"]
+    assert res.iloc[8]["edition_size"] == 2100 and res.iloc[8]["airtable_launch_date"] == "2026-03-24"
 
 
 def synthetic_panel(n: int = 40, seed: int = 7) -> pd.DataFrame:

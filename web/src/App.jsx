@@ -310,6 +310,11 @@ function ReleaseRow({ r, asOf, active, onClick }) {
   else if (clock.opensIn > 0) when = `Opens ${on(clock.announce)}`;
   else if (status === "closed") when = `Closed ${on(clock.launch)}`;
   else { when = on(clock.launch); count = Math.max(clock.daysLeft, 0); }
+  // a launch whose works close on different days names each close; the
+  // count on the right is to the last (docs 1.6)
+  if (status !== "closed" && Array.isArray(r.closes) && r.closes.length > 1) {
+    when = `Closes ${r.closes.map((d) => on(new Date(d + "T00:00:00Z"))).join(" · ")}`;
+  }
   return (
     <button className={`release-row${active ? " active" : ""}`} onClick={onClick} {...t.props(content)}>
       {state

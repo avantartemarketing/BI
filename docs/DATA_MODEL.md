@@ -278,6 +278,21 @@ then the funnel export's campaign clock (measured, exact for the announce), then
 planned dates. The private room defaults to two weeks before the announce when nothing has it.
 `inputSources` on the snapshot names the source of each.
 
+**A date that moved.** A typed date stands, but never silently: on every build
+`resolve_release` compares each date in force with what Airtable and the funnel's clock hold,
+and where another source puts it elsewhere the snapshot says so (`dateDrift`: the date in
+force, its source, and the other readings), the sidebar's row carries the flag, and the
+Target setting tab prints the other reading beside the date with a one-click `use it`. A
+launch whose date slipped a fortnight in Airtable is otherwise a page that runs to the wrong
+day. **Works that close on different days.** One launch's works can close on different days
+(Warhol's Lifesize on 30 September 2026, its colourways on 14 October): the release's close is
+the last of them, the day the campaign ends, and each work's own close rides on its product
+(`launch_date`), on the snapshot and the sidebar's row (`closes`, one entry per date with the
+works on it), on the tab's products grid (a `Closes` column) and beside the `Draw closes`
+date; the sell-through card counts each work at its own draw. Read as two launches, the page
+took the nearer close alone and a second, "upcoming" page listed the rest (§1.7,
+§4a.2½).
+
 **The marketing lead** comes from Airtable's `Marketing lead` field (a colleague's display
 name; the pull never takes an email), else what was typed. **The campaign code** is what was
 saved, else the prefix of the first Meta campaign's name, else the guess from the email and
@@ -302,6 +317,9 @@ upcoming_releases`) beside the releases the funnel mentions:
   status most of its records hold, a tie going to the less advanced stage). A blank type
   counts as a draw only when most of the launch's records are not originals (`OG`), NFTs or
   timed editions (`TL`, `TLC`): an originals show or a 48-hour timed print is no draw;
+- listed once for a launch whose works close on different days (one launch, §4a.2½, closing
+  on the last of them, its `dates_note` naming each close and the page's `closes` carrying
+  them for the sidebar);
 - whose Airtable records no release on file already matched - the same matcher the panel's
   pricing uses (`etl/pricing.py match`), run over every discovered and configured release,
   so the artist's earlier launch does not stand for the new one and a launch the funnel
@@ -971,8 +989,12 @@ that is the field's currency in Airtable). Credentials are `AIRTABLE_TOKEN` (rea
 `AIRTABLE_BASE_ID` and `AIRTABLE_TABLE`, environment only.
 
 `etl/pricing.py` joins the records to the release list. A **launch** is one artist's records
-under one release code on one launch date (a group show puts eight artists under one code;
-each artist's release is its own row in the panel). Bundles (a title with a set word - "Set of
+under one release code on one launch date, or on launch dates within `STAGGER_DAYS` (45) of
+each other: works of one code that close on different days are one launch, dated by its last
+close (`launch_date`, the day the campaign ends), with the first close and every close beside
+it (`first_launch_date`, `closes`) and the quarter of the first, the one the funnel names the
+release in; the same code's wave months later is a launch of its own (a group show puts eight
+artists under one code; each artist's release is its own row in the panel). Bundles (a title with a set word - "Set of
 4", "[Pair]", "[Quartet]", "[COMBINED PRODUCT]", a diptych or triptych - or any record without
 an edition size; a bracketed note alone, "[Special Print Edition]", "[OG painting - 1/5]", is
 not one) carry the sum of their parts and are left out, so

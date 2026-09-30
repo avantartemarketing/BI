@@ -220,6 +220,7 @@ const GRID = [
   { key: "target_sellthrough", label: "Sell-through", glyph: "%", tip: "The share of the edition targeted to sell by close. Blank = Airtable's target (its units target over the edition, else the expected sell-through), else 100%." },
   { key: "unit_price", label: "Price", glyph: "€", tip: "Retail price per unit. Airtable prices in euros, the page's currency; a product in another currency is converted at a fixed rate." },
   { key: "target_units", label: "Target units", glyph: "ƒ", calc: true, tip: "Computed: edition × sell-through." },
+  { key: "launch_date", label: "Closes", glyph: "", calc: true, date: true, tip: "The day this work's draw closes, from Airtable. Works of one launch can close on different days: the page runs to the last, the sell-through card counts each work at its own draw." },
   { key: "artist_profit_per_unit", label: "Artist profit", glyph: "€", tip: "The artist's profit on one unit sold." },
   { key: "aa_profit_per_unit", label: "AA profit", glyph: "€", tip: "Avant Arte's profit on one unit sold, before framing." },
   { key: "aa_revenue_share", label: "AA revenue share", glyph: "%", tip: "Avant Arte's own share of revenue on a royalty deal (not the artist's), where Avant Arte carries the ads outright. Closed while the product has an AA profit share." },
@@ -280,6 +281,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
   const glyph = (c) => <span className="glyph" aria-hidden="true">{c.glyph}</span>;
   const srcTitle = (src) => (src === "airtable" ? "Airtable's figure - type over it to override" : src === "default" ? "The benchmark default - type over it to override" : src === "typed" ? "Typed here; clear to go back to Airtable's" : "Airtable holds none - type it");
   const cell = (p, c) => {
+    if (c.date) return <td key={c.key} className="calc" title={c.tip}>{p.launch_date ? fmtDate(p.launch_date) : ""}</td>;
     if (c.calc) return <td key={c.key} className="calc" title={c.tip}>{p.edition ? fmt(p.target_units) : ""}</td>;
     const typed = p.airtable_id && p.sources[c.key] === "typed";
     if (c.check) {
@@ -780,13 +782,36 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   ] : [];
 
   const DATE_WORDS = { notion: "from the Notion log", typed: "typed", clock: "from the funnel clock", airtable: "from Airtable" };
-  const dateField = (label, f, value, src, tip) => (
-    <Field key={f} label={label} tip={tip} help={src ? DATE_WORDS[src] : "not known yet: type it"}>
-      {src === "notion"
-        ? <RoBox value={fmtDate(value)} title="From the Notion log" />
-        : <div className="ts-box"><input type="date" value={value || ""} onChange={set(f)} /></div>}
-    </Field>
-  );
+  const OTHER_WORDS = { airtable: "Airtable now has", clock: "the funnel clock has" };
+  /* a date another source puts elsewhere than the one in force (docs 1.6):
+     said beside it, with one click to take the other reading; a moved
+     launch is otherwise a page that runs to the wrong day */
+  const driftOf = (f, value, src) => Object.entries({ airtable: (sourced.airtable || {})[f], clock: (sourced.clock || {})[f] })
+    .filter(([name, d]) => d && d !== value && name !== src);
+  const workCloses = (sourced.airtable || {}).closes || [];
+  const dateField = (label, f, value, src, tip) => {
+    const drift = driftOf(f, value, src);
+    const help = (
+      <>
+        {src ? DATE_WORDS[src] : "not known yet: type it"}
+        {drift.map(([name, d]) => (
+          <span key={name}> · {OTHER_WORDS[name]} {fmtDate(d)}{src !== "notion" && (
+            <> <button type="button" className="ts-link" onClick={() => setInp({ ...inp, [f]: d })} title={`Type ${fmtDate(d)} here, the ${name === "airtable" ? "Airtable" : "funnel clock"} date.`}>use it</button></>
+          )}</span>
+        ))}
+        {f === "launch_end" && workCloses.length > 1 && (
+          <span> · the works close on different days: {workCloses.map((c) => `${fmtDate(c.date)} (${c.works === 1 && c.names && c.names[0] ? c.names[0] : `${c.works} works`})`).join(", ")}; the page runs to the last, the sell-through counts each at its own draw</span>
+        )}
+      </>
+    );
+    return (
+      <Field key={f} label={label} tip={tip} help={help}>
+        {src === "notion"
+          ? <RoBox value={fmtDate(value)} title="From the Notion log" />
+          : <div className="ts-box"><input type="date" value={value || ""} onChange={set(f)} /></div>}
+      </Field>
+    );
+  };
   const legacy = inp.legacy_economics;
   // the last build found the works' editions do not add up to the release's
   // (docs 6.3): said here, where both are set, as on the Sell-through card

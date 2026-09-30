@@ -64,6 +64,9 @@ export function effectiveProduct(p, b) {
   const e = { airtable_id: p.airtable_id || null, name: typed.name !== undefined ? typed.name : p.name || "Product", project_code: p.project_code || null };
   const edition = num(pick("edition"));
   e.edition = edition && edition > 0 ? Math.round(edition) : null;
+  // the day this work's draw closes (Airtable): one launch's works can close
+  // on different days, and the page runs to the last (docs 1.6)
+  e.launch_date = p.launch_date || null;
   const share = num(pick("target_sellthrough", null, 1.0));
   e.target_sellthrough = share === null ? 1.0 : Math.min(Math.max(share, 0), 1);
   e.target_units = e.edition ? Math.round(e.edition * e.target_sellthrough) : 0;

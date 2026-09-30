@@ -84,6 +84,7 @@ RATES_TO_EUR = {"EUR": 1.0, "GBP": 1.18, "USD": 0.92}
 WINDOW_BEFORE_DAYS = 45   # a launch date this far before the announce still belongs to the campaign (early access)
 WINDOW_AFTER_DAYS = 30    # and this far after the close (a draw that ran past the clock)
 MERGE_DAYS = 3            # codes launching within this of each other are one launch
+STAGGER_DAYS = 45         # one code, closes this far apart at most: one launch whose works close on different days
 FUZZY_MIN = 0.85          # artist-name similarity below this is listed, never used
 FUZZY_SHOW = 0.6          # ... and below this it is not even listed
 STOP_TOKENS = {"the", "estate", "foundation", "of", "and"}
@@ -196,16 +197,32 @@ def _status_mode(values: pd.Series) -> str:
 
 
 def launches(records: pd.DataFrame) -> pd.DataFrame:
-    """One row per launch: one artist's records sharing a release code on one
-    launch date. The artist is part of the key because a group show puts eight
-    artists' works under one code (MultipleAmphorae24), and the panel names
-    each artist's release separately; the code is part of it because an artist
-    can launch two editions on one day under two codes, and those merge later
-    only if the panel treats them as one."""
+    """One row per launch: one artist's records sharing a release code, on one
+    launch date or on dates within STAGGER_DAYS of each other. The artist is
+    part of the key because a group show puts eight artists' works under one
+    code (MultipleAmphorae24), and the panel names each artist's release
+    separately; the code is part of it because an artist can launch two
+    editions on one day under two codes, and those merge later only if the
+    panel treats them as one. Works of one code that close on different days
+    (Warhol's Lifesize on 30 September 2026, its colourways on 14 October) are
+    one launch, dated by its last close - the day the campaign ends - with the
+    first close and every close beside it (`first_launch_date`, `closes`) and
+    the quarter of the first, the one the funnel named it in; read as two
+    launches, the page took the nearer and a second page listed the rest."""
     rec = records[records["launch_date"].notna()].copy()
     code = rec["release"].fillna("").astype(str).str.strip()
     day = rec["launch_date"].dt.strftime("%Y-%m-%d")
     rec["launch_key"] = np.where(code != "", code + "@" + day + "@" + rec["artist_key"], rec["artist_key"] + "@" + day)
+    # under one code and artist, a run of dates with no gap over STAGGER_DAYS
+    # is one launch: the key takes the run's first date
+    coded = rec[code != ""].sort_values("launch_date")
+    for (c, a), g in coded.groupby([code[coded.index], coded["artist_key"]], sort=False):
+        start, prev = None, None
+        for idx, d in zip(g.index, g["launch_date"]):
+            if start is None or (d - prev).days > STAGGER_DAYS:
+                start = d
+            rec.at[idx, "launch_key"] = f"{c}@{start.strftime('%Y-%m-%d')}@{a}"
+            prev = d
     rows = []
     for key, g in rec.groupby("launch_key", sort=False):
         sized = g[~g["bundle"] & g["unit_price"].notna()]
@@ -240,7 +257,12 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
             "unit_price": price, "price_min": pmin, "price_max": pmax,
             "currency": _mode(priced["currency"]) if len(priced) else "",
             "edition_size": size, "launch_value": value,
-            "launch_date": g["launch_date"].min(),
+            # the campaign ends with its last close; the first close and every
+            # close ride beside it, and the quarter is the first close's, the
+            # one the funnel names the release in
+            "launch_date": g["launch_date"].max(),
+            "first_launch_date": g["launch_date"].min(),
+            "closes": sorted({d.strftime("%Y-%m-%d") for d in g["launch_date"]}),
             "quarter": quarter_of(g["launch_date"].min()),
             "launch_type": _mode(g["launch_type"]), "edition_type": _mode(g["edition_type"]),
             # how many records carry each edition type (OG, PE, TL, NFT ...), so
