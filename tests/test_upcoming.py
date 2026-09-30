@@ -427,10 +427,49 @@ def test_spend_days() -> None:
     print("spend days: ok")
 
 
+def test_adoption_by_match() -> None:
+    """A page set up by hand carries no Airtable ids; the matcher places it
+    on its launch. When the funnel renames the release (its close moved into
+    the next quarter and every row moved with it), the page adopts the new
+    name by that launch, rather than standing empty beside a second page."""
+    lf = pricing.launches(records([
+        # Warhol's works under one code: the Lifesize on 30 Sep, the colourways on 14 Oct
+        (3232, "The Andy Warhol Foundation", "Brillo Box Collectable (Lifesize)", "AndyWarholTL26", "2026-09-30", None, None, 2500, "EUR", 100, "Draw", "PE", "Silkscreen print", "Confirmed", "03. Proofing"),
+        (3066, "The Andy Warhol Foundation", "Brillo Box Collectable (Green Landscape)", "AndyWarholTL26", "2026-10-14", "2026-09-02", None, 750, "EUR", 1000, "Draw", "PE", "Silkscreen print", "Confirmed", "3.5. Pre-Launch"),
+        (3063, "The Andy Warhol Foundation", "Brillo Box Collectable (Green Portrait)", "AndyWarholTL26", "2026-10-14", "2026-09-02", None, 750, "EUR", 1000, "Draw", "PE", "Silkscreen print", "Confirmed", "3.5. Pre-Launch"),
+        # the same artist's earlier launch, which must not stand for it
+        (2000, "The Andy Warhol Foundation", "Flowers", "AndyWarholLE25", "2025-11-20", None, None, 900, "EUR", 300, "Draw", "PE", "Silkscreen print", "Confirmed", "09. Fully completed"),
+    ]))
+    assert len(lf[lf["airtable_release"] == "AndyWarholTL26"]) == 1, "one staggered launch"
+    configured = [{"id": "warhol_le_26", "release_name": "Andy Warhol Estate · Multiple · 2026 Q3", "artist": "Andy Warhol Estate", "title": "Multiple",
+                   "quarter": "2026 Q3", "announce_date": "2026-09-03", "launch_end": "2026-09-30"}]
+    discovered = [{"release_name": "Andy Warhol Estate · Multiple · 2026 Q4", "artist": "Andy Warhol Estate", "title": "Multiple", "quarter": "2026 Q4",
+                   "announce_date": "2026-09-03", "launch_end": "2026-09-30"},
+                  {"release_name": "Andy Warhol Estate · Flowers · 2025 Q4", "artist": "Andy Warhol Estate", "title": "Flowers", "quarter": "2025 Q4",
+                   "announce_date": "2025-10-28", "launch_end": "2025-11-20"}]
+    with tempfile.TemporaryDirectory() as d:
+        saved = pathlib.Path(d) / "inputs.saved.json"
+        saved.write_text(json.dumps({"releases": {"warhol_le_26": dict(configured[0])}}))
+        keep = build._saved_inputs
+        build._saved_inputs = saved
+        try:
+            renamed = build.adopt_funnel_names(configured, discovered, lf)
+        finally:
+            build._saved_inputs = keep
+        assert renamed == [("warhol_le_26", "Andy Warhol Estate · Multiple · 2026 Q3", "Andy Warhol Estate · Multiple · 2026 Q4")], renamed
+        assert configured[0]["release_name"] == "Andy Warhol Estate · Multiple · 2026 Q4" and configured[0]["adopted_from"] == "Andy Warhol Estate · Multiple · 2026 Q3"
+        assert json.loads(saved.read_text())["releases"]["warhol_le_26"]["release_name"] == "Andy Warhol Estate · Multiple · 2026 Q4"
+    # a release the matcher cannot place is left alone; one the funnel still names is not pending
+    assert build.adopt_funnel_names([{"id": "y", "release_name": "Nobody Here · Thing · 2026 Q4", "announce_date": "2026-09-03", "launch_end": "2026-09-30"}], discovered, lf) == []
+    assert build.adopt_funnel_names(configured, discovered, lf) == []
+    print("adoption by match: ok")
+
+
 if __name__ == "__main__":
     test_upcoming()
     test_page()
     test_adoption()
+    test_adoption_by_match()
     test_not_a_draw()
     test_second_launch_in_a_quarter()
     test_many_works()

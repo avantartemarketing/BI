@@ -350,12 +350,17 @@ on file already carries. `inputs.json` `discovered` carries the edition, the pri
 Airtable record ids as the defaults the Set up targets tab starts from, and a save keeps the
 ids on the inputs (`airtable_release`, `airtable_ids`).
 
-**When the funnel catches up.** A configured release the funnel does not mention, whose
-inputs carry Airtable ids, is checked on every build against the funnel's releases matched
-to those ids (`adopt_funnel_names`). One match and the input takes the funnel's release
-name - written back to the saved inputs with `adopted_from` - so the actuals attach to the
-targets that were set, under the page's existing id, rather than opening a second, untargeted
-page beside them. The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when
+**When the funnel catches up, or renames.** A configured release the funnel does not mention
+is checked on every build against the funnel's releases matched to the same Airtable launch
+(`adopt_funnel_names`): the ids its inputs carry when it was set up from an upcoming page,
+else the launch the matcher places it on (a page set up by hand). One match and the input
+takes the funnel's release name - written back to the saved inputs with `adopted_from` - so
+the actuals attach to the targets that were set, under the page's existing id, rather than
+opening a second, untargeted page beside them. That covers a launch set up under a guessed
+name before the funnel named it after one work, and a launch whose close moved into another
+quarter: upstream renames it with every row it has (Warhol's 2026 Q3 became 2026 Q4 when its
+colourways moved to 14 October), so without the adoption its page stands empty while its
+actuals open a second page. The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when
 `AIRTABLE_TOKEN` is set; without it the checked-in file stands.
 
 ## 2. Source feeds

@@ -4032,21 +4032,30 @@ def upcoming_releases(launch_frame: pd.DataFrame | None, existing: list[dict], a
 
 
 def adopt_funnel_names(configured: list[dict], discovered: list[dict], launch_frame: pd.DataFrame | None) -> list[tuple[str, str, str]]:
-    """A release set up before the funnel saw it carries the Airtable ids it
-    was set up from (§1.7). When a funnel release now matches that launch, the
-    input takes the funnel's name, so the actuals attach to the targets
-    instead of opening a second, untargeted page beside them. The rename is
-    written back to the saved inputs so it holds; the id, and so the page's
-    address, does not change."""
+    """A configured release the funnel does not mention takes the funnel's
+    name for the same launch (§1.7), so the actuals attach to the targets
+    instead of opening a second, untargeted page beside them. The launch is
+    known by its Airtable records: the ids a release set up from an upcoming
+    page carries, else the ones the matcher places the release on (a page
+    set up by hand). A funnel release now matched to those records has the
+    name the input takes: a launch set up under a guessed name before the
+    funnel named it after one work, or one whose close moved into another
+    quarter and was renamed upstream with its rows (Warhol's 2026 Q3 became
+    2026 Q4 when its colourways moved to 14 October, and its page stood
+    empty). The rename is written back to the saved inputs so it holds; the
+    id, and so the page's address, does not change."""
     funnel_names = {r["release_name"] for r in discovered}
-    pending = [c for c in configured if c.get("airtable_ids") and c["release_name"] not in funnel_names]
+    pending = [c for c in configured if c["release_name"] not in funnel_names]
     if not pending or launch_frame is None or not len(launch_frame):
         return []
     on_file = airtable_ids_on_file(discovered, launch_frame)
+    placed = airtable_ids_on_file([c for c in pending if not c.get("airtable_ids")], launch_frame)
     taken = {c["release_name"] for c in configured}
     renamed = []
     for c in pending:
-        ids = set(str(c["airtable_ids"]).split("|"))
+        ids = set(str(c["airtable_ids"]).split("|")) if c.get("airtable_ids") else placed.get(c["release_name"], set())
+        if not ids:
+            continue
         hits = [n for n, s in on_file.items() if s & ids and n not in taken]
         if len(hits) != 1:
             continue
