@@ -30,7 +30,13 @@
  * days older than the overlap changed since last time, so the assumption that
  * deep history is static is measured, not trusted. Upstream backfills (e.g.
  * announcement dates for the back catalogue) rewrite the clock columns years
- * back; the weekly full pull is what picks those up.
+ * back; the weekly full pull is what picks those up. A release renamed or
+ * removed upstream is the one change the overlap cannot carry: the platform
+ * renames every row at once, the rows older than the overlap keep the old
+ * name locally, and the build lists the release twice (the Lichtenstein
+ * quarter, 30 September 2026). So every incremental pull compares the release
+ * names in the rows it keeps with the overlap's, and once a day with
+ * upstream's, and pulls in full when a name has gone (renamedOutsideOverlap).
  *
  * Memory: results are STREAMED to disk a page at a time. A pull back to 2023
  * held in memory as the API's row objects is ~900 MB, and the Render instance
@@ -43,6 +49,8 @@
  *   BQ_PROJECT                     billing/query project   default avantarte-data-production
  *   BQ_DATASET                     default AA_company_tables
  *   BQ_SINCE                       history window start    default 2025-01-01
+ *   BQ_NAMES_CHECK_HOURS           hours between checks of the kept rows'
+ *                                  release names against upstream, default 24
  * The service account needs BigQuery Data Viewer on the dataset and BigQuery
  * Job User on the project. Spend is optional - if the account cannot see
  * meta_ads_insights_export the funnel still refreshes (BQ_SPEND=off skips it
@@ -94,6 +102,10 @@ const SINCE = process.env.BQ_SINCE || "2025-01-01";
 const LOCATION = process.env.BQ_LOCATION || undefined; // e.g. "EU"; omit to let BQ infer
 const OVERLAP_DAYS = Math.max(1, Number(process.env.BQ_OVERLAP_DAYS) || 45);
 const FULL_EVERY_DAYS = Math.max(1, Number(process.env.BQ_FULL_EVERY_DAYS) || 7);
+// how often an incremental pull checks the release names of the rows it keeps
+// against upstream (renamedOutsideOverlap): the check scans one column of the
+// event table, 0.6 GB, so daily rather than hourly
+const NAMES_CHECK_HOURS = Math.max(1, Number(process.env.BQ_NAMES_CHECK_HOURS) || 24);
 // One page is the only thing held in memory. 5k rows of the 33-column funnel
 // table is ~6 MB of API JSON; with the heap capped at 192 MB in package.json's
 // start script (V8 otherwise lets garbage pile up to whatever the box allows)
@@ -372,6 +384,12 @@ async function query(token, sql, params = {}, { pageRows = PAGE_ROWS, onHeader, 
 const funnelSql = () =>
   `SELECT * FROM \`${PROJECT}.${DATASET}.${FUNNEL_TABLE}\`\n` +
   "WHERE event_date >= @since\nORDER BY event_date";
+// the release names upstream in the rows older than the overlap (event_date
+// before @before): what the rows an incremental pull keeps must still agree
+// with (renamedOutsideOverlap)
+const funnelNamesSql = () =>
+  `SELECT DISTINCT simple_release_name FROM \`${PROJECT}.${DATASET}.${FUNNEL_TABLE}\`\n` +
+  "WHERE event_date >= @since AND event_date < @before AND simple_release_name IS NOT NULL";
 const spendSql = () =>
   `SELECT * FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
   "WHERE spend_date >= @since\nORDER BY campaign_name, spend_date";
@@ -866,6 +884,14 @@ function browsingSql() {
   return sql;
 }
 
+/* The release names in the browsing rows older than the overlap, for the
+ * rename check an incremental pull runs (renamedOutsideOverlap). */
+function browsingNamesSql() {
+  return `SELECT DISTINCT simple_release_name FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+    "WHERE event_name IN ('page_view', 'session_start') AND event_date >= @since AND event_date < @before\n" +
+    "  AND simple_release_name IS NOT NULL";
+}
+
 const fmtDMY = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso); return m ? `${m[3]}/${m[2]}/${m[1]}` : iso; };
 
 /* Same shape of guard as the events writer: declared header, address scan,
@@ -899,7 +925,8 @@ function browsingWriter(headerRow) {
   return w;
 }
 
-const BROWSING_FEED = { label: "browsing", file: LE_BROWSING, meta: BROWSING_META, sql: browsingSql, makeWriter: browsingWriter };
+const BROWSING_FEED = { label: "browsing", file: LE_BROWSING, meta: BROWSING_META, sql: browsingSql, namesSql: browsingNamesSql,
+                        makeWriter: browsingWriter };
 
 // ---------------------------------------------------------------- local file
 
@@ -946,7 +973,7 @@ function writeMeta(m, file = META) {
   fs.renameSync(file + ".tmp", file);
 }
 
-/* Streams the local funnel CSV line by line: onLine(line, iso) per data row.
+/* Streams the local funnel CSV line by line: onLine(line, iso, cells) per data row.
  * Resolves to { header: string[], rows }. Lines are parsed with the same CSV
  * rules the writer used, so a quoted comma in a release name is safe. */
 async function scanLocal(file, onLine) {
@@ -962,7 +989,7 @@ async function scanLocal(file, onLine) {
     if (!line) continue;
     const cells = parseCsv(line)[0] || [];
     rows++;
-    onLine(line, isoFromDMY(cells[di]));
+    onLine(line, isoFromDMY(cells[di]), cells);
   }
   return { header, rows };
 }
@@ -1005,9 +1032,51 @@ class Tmp {
 }
 
 class HeaderChanged extends Error {}
+class NamesChanged extends Error {}
 
-/* Streams one table through a row converter into `tmp`. onRow(line, iso) is
- * called per kept row (for fingerprints and the max date). expectHeader, when
+/* The rename check. An incremental pull keeps the local rows older than the
+ * overlap as they are, so a release renamed or removed upstream keeps its old
+ * name on them, the funnel seems to carry both names, and the build lists the
+ * release twice (Roy Lichtenstein Estate's quarter, corrected upstream from
+ * 2027 Q4 to 2026 Q4, sat in the sidebar as two rows on 30 September 2026).
+ * Two readings, both answered with a full pull:
+ *   - renamedOutsideOverlap: a name that stood in the local overlap rows and
+ *     still stands in the kept rows, but that the re-pull no longer carries,
+ *     went at once. Free: the names are read off the rows already streamed. A
+ *     release wholly inside the overlap is re-pulled whole and never listed here;
+ *   - namesMissingUpstream: the kept rows' names against upstream's names in
+ *     the rows before the overlap (releaseNames), for a release renamed with
+ *     no row in the overlap; once every NAMES_CHECK_HOURS (namesCheckDue),
+ *     since the query scans a column of the event table. */
+function renamedOutsideOverlap(keptNames, overlapNames, pulledNames) {
+  return [...overlapNames].filter((n) => n && keptNames.has(n) && !pulledNames.has(n)).sort();
+}
+function namesMissingUpstream(keptNames, upstreamNames) {
+  return [...keptNames].filter((n) => n && !upstreamNames.has(n)).sort();
+}
+function namesCheckDue(meta, nowIso, hours = NAMES_CHECK_HOURS) {
+  const at = meta && meta.namesCheckedAt ? Date.parse(meta.namesCheckedAt) : NaN;
+  return !Number.isFinite(at) || Date.parse(nowIso) - at >= hours * 3600 * 1000;
+}
+function describeNames(names, what) {
+  const shown = names.slice(0, 3).map((n) => `"${n}"`).join(", ") + (names.length > 3 ? ` and ${names.length - 3} more` : "");
+  return `${names.length} release name${names.length === 1 ? "" : "s"} ${what} ${names.length === 1 ? "it" : "them"} (${shown})` +
+    ` - renamed or removed upstream outside the ${OVERLAP_DAYS}-day overlap`;
+}
+/* The release names upstream in the feed's rows older than `before`, and the
+ * bytes the query scanned (0.03 GB on the export, 0.6 GB on the event table,
+ * measured 30 September 2026). */
+async function releaseNames(token, feed, before) {
+  const names = new Set();
+  const q = await query(token, feed.namesSql(), { since: { type: "DATE", value: SINCE }, before: { type: "DATE", value: before } }, {
+    onRows(rows) { for (const r of rows) { const n = String((r && r[0]) ?? "").trim(); if (n) names.add(n); } },
+  });
+  return { names, bytes: q.bytes };
+}
+
+/* Streams one table through a row converter into `tmp`. onRow(line, iso,
+ * cells) is called per kept row (for fingerprints, the max date and the
+ * release names). expectHeader, when
  * given, is the local file's column list: a different set from BigQuery means
  * the local rows cannot be merged with the new ones (HeaderChanged). */
 async function streamTable(token, sql, since, makeWriter, tmp, { onRow, expectHeader } = {}) {
@@ -1029,7 +1098,7 @@ async function streamTable(token, sql, since, makeWriter, tmp, { onRow, expectHe
         tmp.line(line);
         if (onRow) {
           const d = writer.dateIndex >= 0 ? normDate(r[writer.dateIndex]) : null;
-          onRow(line, d ? `${d[0]}-${String(d[1]).padStart(2, "0")}-${String(d[2]).padStart(2, "0")}` : null);
+          onRow(line, d ? `${d[0]}-${String(d[1]).padStart(2, "0")}-${String(d[2]).padStart(2, "0")}` : null, r);
         }
       }
     },
@@ -1044,7 +1113,7 @@ async function streamTable(token, sql, since, makeWriter, tmp, { onRow, expectHe
  * export and the browsing counts are the two instances; both are keyed by
  * event_date, written DD/MM/YYYY, and merged on the same overlap rules. */
 const FUNNEL_FEED = {
-  label: "funnel", file: ACROSS_TIME, meta: META, sql: funnelSql,
+  label: "funnel", file: ACROSS_TIME, meta: META, sql: funnelSql, namesSql: funnelNamesSql,
   makeWriter: (h) => require("./sheets").acrossTimeWriter(h),
 };
 
@@ -1072,15 +1141,27 @@ async function pullIncremental(token, write, full, feed) {
     const fromRaw = isoMinusDays(meta.maxDate, OVERLAP_DAYS);
     const from = fromRaw < SINCE ? SINCE : fromRaw;
     const tmp = new Tmp(feed.file, write);
+    // the release names on each side of the overlap, for the rename check:
+    // the rows kept from the local file, the local rows the pull replaces, and
+    // the rows pulled (renamedOutsideOverlap)
+    const ni = Array.isArray(meta.header) ? meta.header.indexOf("simple_release_name") : -1;
+    const nameOf = (cells) => (ni >= 0 && cells ? String(cells[ni] ?? "").trim() : "");
+    const keptNames = new Set(), overlapNames = new Set(), pulledNames = new Set();
+    let namesCheckedAt = meta.namesCheckedAt || null, namesBytes = 0;
     try {
       let maxDate = "";
       const bq = await streamTable(token, feed.sql(), from, feed.makeWriter, tmp, {
         expectHeader: meta.header,
-        onRow(_line, iso) { if (iso && iso > maxDate) maxDate = iso; },
+        onRow(_line, iso, cells) {
+          if (iso && iso > maxDate) maxDate = iso;
+          const n = nameOf(cells); if (n) pulledNames.add(n);
+        },
       });
       let keptLocal = 0, localOverlap = 0;
-      await scanLocal(feed.file, (line, iso) => {
-        if (iso && iso < from) { keptLocal++; tmp.line(line); } else localOverlap++;
+      await scanLocal(feed.file, (line, iso, cells) => {
+        const n = nameOf(cells);
+        if (iso && iso < from) { keptLocal++; tmp.line(line); if (n) keptNames.add(n); }
+        else { localOverlap++; if (iso && n) overlapNames.add(n); }
       });
       // an empty or thin overlap pull is upstream failing, not history ending -
       // writing it would delete the last OVERLAP_DAYS of good data
@@ -1088,22 +1169,41 @@ async function pullIncremental(token, write, full, feed) {
         throw new Error(`incremental ${feed.label} pull returned ${bq.rows} rows for the last ${OVERLAP_DAYS} days ` +
           `where the local file has ${localOverlap} - not overwriting`);
       }
+      // a release renamed or removed upstream outside the overlap would keep
+      // its old name on the kept rows and be listed twice: a full pull instead
+      const vanished = renamedOutsideOverlap(keptNames, overlapNames, pulledNames);
+      if (vanished.length) {
+        throw new NamesChanged(describeNames(vanished, `left the last ${OVERLAP_DAYS} days upstream while older local rows still carry`));
+      }
+      if (ni >= 0 && keptNames.size && feed.namesSql && namesCheckDue(meta, now)) {
+        const upstream = await releaseNames(token, feed, from);
+        namesBytes = upstream.bytes;
+        const gone = namesMissingUpstream(keptNames, upstream.names);
+        if (gone.length) {
+          throw new NamesChanged(describeNames(gone, "upstream no longer has before the overlap, where older local rows still carry"));
+        }
+        namesCheckedAt = now;
+      }
       const total = bq.rows + keptLocal;
       const before = existingRows(feed.file);
       if (write) {
         tmp.commit(feed.file);
-        writeMeta({ ...meta, maxDate: maxDate || meta.maxDate, rows: total, pulledAt: now, mode }, feed.meta);
+        writeMeta({ ...meta, maxDate: maxDate || meta.maxDate, rows: total, pulledAt: now, mode, namesCheckedAt }, feed.meta);
       } else tmp.discard();
       const fullAge = Math.floor((Date.now() - Date.parse(meta.fullAt)) / 86400000);
       return {
-        rows: total, bytes: bq.bytes, cached: bq.cached, dropped: bq.dropped, mode,
+        rows: total, bytes: bq.bytes + namesBytes, cached: bq.cached, dropped: bq.dropped, mode,
         note: `${feed.label} ${total} rows (${total - before >= 0 ? "+" : ""}${total - before} since last refresh; ` +
-          `${bq.rows} re-pulled over the last ${OVERLAP_DAYS} days, last full pull ${fullAge}d ago)`,
+          `${bq.rows} re-pulled over the last ${OVERLAP_DAYS} days, last full pull ${fullAge}d ago` +
+          `${namesCheckedAt === now ? ", release names agree with upstream" : ""})`,
       };
     } catch (e) {
       tmp.discard();
-      if (!(e instanceof HeaderChanged)) throw e;
-      mode = "full"; reason = e.message; meta = null;   // fall through to a full pull
+      if (e instanceof NamesChanged) {
+        mode = "full"; reason = e.message;   // fall through to a full pull; the fingerprints below say what moved
+      } else if (e instanceof HeaderChanged) {
+        mode = "full"; reason = e.message; meta = null;   // fall through to a full pull
+      } else throw e;
     }
   }
 
@@ -1133,7 +1233,7 @@ async function pullIncremental(token, write, full, feed) {
   }
   if (write) {
     tmp.commit(feed.file);
-    writeMeta({ since: SINCE, header: bq.header, maxDate, rows: bq.rows, fullAt: now, pulledAt: now, mode: "full" }, feed.meta);
+    writeMeta({ since: SINCE, header: bq.header, maxDate, rows: bq.rows, fullAt: now, pulledAt: now, namesCheckedAt: now, mode: "full" }, feed.meta);
   } else tmp.discard();
   return {
     rows: bq.rows, bytes: bq.bytes, cached: bq.cached, dropped: bq.dropped, mode: "full",
@@ -1281,7 +1381,8 @@ async function pull({ write = true, full = false, events = true, only = null } =
 }
 
 module.exports = {
-  pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
+  pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS, NAMES_CHECK_HOURS,
+  renamedOutsideOverlap, namesMissingUpstream, namesCheckDue, describeNames, funnelNamesSql, browsingNamesSql,
   SOURCES, ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
   DRAW_CLAIMS, DRAW_CLAIMS_HEADER, drawClaimsSql,
   UNITS_PAID, UNITS_PAID_HEADER, unitsPaidSql, orderLinesCtes,

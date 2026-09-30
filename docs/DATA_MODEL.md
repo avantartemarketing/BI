@@ -392,8 +392,19 @@ was considered and why it was not given another name (the same words elsewhere w
 share of their entries in this window, the launch the matcher placed it on). The header's
 freshness line shows it in amber, "no funnel rows under this name", with the words in its
 popup, and the build's log prints them; a failure inside the adoption is a warning line, never
-a lost refresh. The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when
-`AIRTABLE_TOKEN` is set; without it the checked-in file stands.
+a lost refresh.
+
+A rename reaches the files through the pull, and the incremental pull keeps the rows older
+than its 45-day overlap as they were (README, Incremental): a renamed release's old name would
+stay on those rows, the funnel would seem to carry both names, and the release would be
+listed twice under each until the weekly full pull (Roy
+Lichtenstein Estate, 30 September 2026: one July row under the corrected-away 2027 Q4 beside
+the September rows under 2026 Q4). The pull now notices a name that has gone upstream, on
+every incremental pull from the overlap's own rows and once a day against upstream, and
+pulls in full instead.
+
+The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when `AIRTABLE_TOKEN` is
+set; without it the checked-in file stands.
 
 ## 2. Source feeds
 

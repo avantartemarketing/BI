@@ -252,6 +252,19 @@ it up, or force one. An incremental pull that comes back thin (fewer than half t
 the local file has for the overlap) is refused rather than written, since writing it
 would delete the last 45 days.
 
+**Renames.** The one change the overlap cannot carry is a release renamed or removed
+upstream. The platform renames every row at once, the incremental pull re-pulls only the
+last 45 days, and the rows older than that keep the old name locally, so the funnel seems to
+carry both names and the build lists the release twice, under each (Roy Lichtenstein
+Estate's quarter was corrected from 2027 Q4 to 2026 Q4 and sat in the sidebar as two rows
+on 30 September 2026). Every incremental pull now compares the release names in the rows it
+keeps with the overlap's: a name that stood in the overlap and still stands before it, but
+that the re-pull no longer carries, turns the pull into a full one at once. Once a day
+(`BQ_NAMES_CHECK_HOURS`, default 24) the kept rows' names are also checked against upstream's
+in the rows before the overlap, for a release renamed with no row in the overlap; that query
+scans one column, 0.6 GB on the event table, hence daily. The note says which name went. The
+same check runs on the browsing feed, which the rebuilt export the build reads is made from.
+
 Check the connection without writing anything: `node server/bigquery.js` prints the plan
 (full or incremental, and why), row counts and GB scanned; add `--write` to replace the
 CSVs, `--full` to force a full pull, `--events` to pull the event-level feed alone, `--orders`
