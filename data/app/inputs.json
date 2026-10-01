@@ -23377,6 +23377,7 @@
       "unit_price": 475.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23413,6 +23414,7 @@
       "unit_price": 475.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23449,6 +23451,7 @@
       "unit_price": 350.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23485,6 +23488,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23521,6 +23525,7 @@
       "unit_price": 250.0,
       "currency": "EUR",
       "framing_available": null,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23557,6 +23562,7 @@
       "unit_price": 250.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -23568,6 +23574,7 @@
       "unit_price": 250.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23604,6 +23611,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23640,6 +23648,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23676,6 +23685,7 @@
       "unit_price": 300.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23712,6 +23722,7 @@
       "unit_price": 250.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23748,6 +23759,7 @@
       "unit_price": 600.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -23759,6 +23771,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -23770,6 +23783,7 @@
       "unit_price": 600.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23806,6 +23820,7 @@
       "unit_price": 410.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23842,6 +23857,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23878,6 +23894,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23914,6 +23931,7 @@
       "unit_price": 550.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -23950,6 +23968,7 @@
       "unit_price": 2000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -23961,6 +23980,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -23972,6 +23992,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24008,6 +24029,7 @@
       "unit_price": 300.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24068,6 +24090,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24104,6 +24127,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -24115,6 +24139,7 @@
       "unit_price": 600.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24151,6 +24176,7 @@
       "unit_price": 600.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -24162,6 +24188,7 @@
       "unit_price": 3500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24198,6 +24225,7 @@
       "unit_price": 400.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -24209,6 +24237,7 @@
       "unit_price": 400.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -24220,6 +24249,7 @@
       "unit_price": 400.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24256,6 +24286,7 @@
       "unit_price": 550.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24292,6 +24323,7 @@
       "unit_price": 350.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24328,6 +24360,7 @@
       "unit_price": 1360.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24367,6 +24400,7 @@
       "unit_price": 450.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24406,6 +24440,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24442,6 +24477,7 @@
       "unit_price": 650.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24478,6 +24514,7 @@
       "unit_price": 475.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24514,6 +24551,7 @@
       "unit_price": 440.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24550,6 +24588,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24639,6 +24678,7 @@
       "unit_price": 650.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24678,6 +24718,7 @@
       "unit_price": 850.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24745,6 +24786,7 @@
       "unit_price": 350.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -24756,6 +24798,7 @@
       "unit_price": 350.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -24767,6 +24810,7 @@
       "unit_price": 350.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24806,6 +24850,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24848,6 +24893,7 @@
       "unit_price": 700.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24887,6 +24933,7 @@
       "unit_price": 850.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24925,6 +24972,7 @@
       "unit_price": 900.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -24964,6 +25012,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25003,6 +25052,7 @@
       "unit_price": 800.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25014,6 +25064,7 @@
       "unit_price": 800.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25025,6 +25076,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25036,6 +25088,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25075,6 +25128,7 @@
       "unit_price": 795.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25086,6 +25140,7 @@
       "unit_price": 675.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25097,6 +25152,7 @@
       "unit_price": 795.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25108,6 +25164,7 @@
       "unit_price": 675.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25147,6 +25204,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25158,6 +25216,7 @@
       "unit_price": 550.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25197,6 +25256,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25208,6 +25268,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25244,6 +25305,7 @@
       "unit_price": 600.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25255,6 +25317,7 @@
       "unit_price": 600.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25294,6 +25357,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25333,6 +25397,7 @@
       "unit_price": 1300.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25372,6 +25437,7 @@
       "unit_price": 700.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25383,6 +25449,7 @@
       "unit_price": 700.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25422,6 +25489,7 @@
       "unit_price": 450.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25433,6 +25501,7 @@
       "unit_price": 450.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25472,6 +25541,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25510,6 +25580,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25521,6 +25592,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25532,6 +25604,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25543,6 +25616,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25582,6 +25656,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25593,6 +25668,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25604,6 +25680,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25643,6 +25720,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25654,6 +25732,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25693,6 +25772,7 @@
       "unit_price": 1300.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25704,6 +25784,7 @@
       "unit_price": 1300.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25715,6 +25796,7 @@
       "unit_price": 1300.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25726,6 +25808,7 @@
       "unit_price": 1300.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25737,6 +25820,7 @@
       "unit_price": 1300.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25776,6 +25860,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25787,6 +25872,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25825,6 +25911,7 @@
       "unit_price": 650.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25864,6 +25951,7 @@
       "unit_price": 600.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -25930,6 +26018,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25941,6 +26030,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25952,6 +26042,7 @@
       "unit_price": 310.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25963,6 +26054,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": false,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25974,6 +26066,7 @@
       "unit_price": 310.0,
       "currency": "EUR",
       "framing_available": null,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -25985,6 +26078,7 @@
       "unit_price": 310.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26024,6 +26118,7 @@
       "unit_price": 1300.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26062,6 +26157,7 @@
       "unit_price": 675.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26073,6 +26169,7 @@
       "unit_price": 625.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26112,6 +26209,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26123,6 +26221,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26162,6 +26261,7 @@
       "unit_price": 1500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26173,6 +26273,7 @@
       "unit_price": 1500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26184,6 +26285,7 @@
       "unit_price": 1500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26195,6 +26297,7 @@
       "unit_price": 1500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26234,6 +26337,7 @@
       "unit_price": 675.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26273,6 +26377,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26284,6 +26389,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26295,6 +26401,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26334,6 +26441,7 @@
       "unit_price": 400.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26345,6 +26453,7 @@
       "unit_price": 600.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26356,6 +26465,7 @@
       "unit_price": 400.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26395,6 +26505,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26406,6 +26517,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26445,6 +26557,7 @@
       "unit_price": 795.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26456,6 +26569,7 @@
       "unit_price": 795.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26467,6 +26581,7 @@
       "unit_price": 795.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26478,6 +26593,7 @@
       "unit_price": 795.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26517,6 +26633,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26528,6 +26645,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26539,6 +26657,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26550,6 +26669,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26589,6 +26709,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26600,6 +26721,7 @@
       "unit_price": 800.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26611,6 +26733,7 @@
       "unit_price": 800.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26622,6 +26745,7 @@
       "unit_price": 800.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26661,6 +26785,7 @@
       "unit_price": 1000.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26700,6 +26825,7 @@
       "unit_price": 625.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26711,6 +26837,7 @@
       "unit_price": 625.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26722,6 +26849,7 @@
       "unit_price": 625.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26733,6 +26861,7 @@
       "unit_price": 625.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26771,6 +26900,7 @@
       "unit_price": 850.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26782,6 +26912,7 @@
       "unit_price": 850.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26793,6 +26924,7 @@
       "unit_price": 850.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26832,6 +26964,7 @@
       "unit_price": 525.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26843,6 +26976,7 @@
       "unit_price": 525.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26854,6 +26988,7 @@
       "unit_price": 525.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26865,6 +27000,7 @@
       "unit_price": 525.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26876,6 +27012,7 @@
       "unit_price": 525.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26887,6 +27024,7 @@
       "unit_price": 525.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26926,6 +27064,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26937,6 +27076,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -26975,6 +27115,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26986,6 +27127,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -26997,6 +27139,7 @@
       "unit_price": 750.0,
       "currency": "EUR",
       "framing_available": true,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }
@@ -27033,6 +27176,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": null,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -27044,6 +27188,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": null,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -27055,6 +27200,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": null,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      },
@@ -27066,6 +27212,7 @@
       "unit_price": 500.0,
       "currency": "EUR",
       "framing_available": null,
+      "frame_conversion": null,
       "excluded": false,
       "typed": {}
      }

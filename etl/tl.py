@@ -85,6 +85,11 @@ RELEASES = APP / "tl_releases.csv"
 FEED = APP / "tl_feed.json"
 PANEL = APP / "tl_panel.csv"
 CURVES = APP / "tl_curves.json"
+# the windows hour by hour from the orders table and the buyers (server/bigquery.js tlUnitsSql, tlBuyersSql)
+TL_UNITS = DATA / "tl_units_hourly.csv"
+TL_BUYERS = DATA / "tl_buyers.csv"
+LIVE_STATUS = ("paid", "awaiting")      # the lines a window's units count: paid plus awaiting payment (decision 10)
+OUT_STATUS = ("cancelled", "refunded")
 BENCH = json.loads((ROOT / "etl" / "benchmarks.json").read_text())
 
 GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"]
@@ -271,6 +276,53 @@ def load_series() -> dict | None:
     return {"daily": daily, "hourly": hourly, "releases": rel, "feed": feed,
             "by_release": {n: g for n, g in daily.groupby("release")},
             "hourly_by_release": {n: g for n, g in hourly.groupby("release")}}
+
+
+def load_orders() -> dict:
+    """The orders table's reading of the windows: the hourly lines per release
+    and the buyers per release, or empty frames when the pull has not written them."""
+    out = {"hourly": pd.DataFrame(columns=["release", "product_title", "hour", "channel", "status", "units", "orders", "units_private", "prints_offered", "frames", "value"]),
+           "buyers": pd.DataFrame(columns=["release", "buyers", "buyers_multiple", "pieces"]), "by_release": {}, "buyers_by_release": {}}
+    if TL_UNITS.exists():
+        h = pd.read_csv(TL_UNITS, low_memory=False)
+        h["ts"] = pd.to_datetime(h["hour"], utc=True, errors="coerce")
+        h["group"] = h["channel"].map(GROUP_OF).fillna("untracked")
+        for c in ("units", "orders", "units_private", "prints_offered", "frames", "value"):
+            h[c] = pd.to_numeric(h[c], errors="coerce").fillna(0.0)
+        out["hourly"] = h
+        out["by_release"] = {n: g for n, g in h.groupby("release")}
+    if TL_BUYERS.exists():
+        b = pd.read_csv(TL_BUYERS, low_memory=False)
+        out["buyers"] = b
+        out["buyers_by_release"] = {str(r["release"]): r for r in b.to_dict("records")}
+    return out
+
+
+def _orders_rows(orders: dict | None, name: str) -> pd.DataFrame | None:
+    if not orders:
+        return None
+    g = orders["by_release"].get(name)
+    return g if g is not None and len(g) else None
+
+
+def window_from_orders(rows: pd.DataFrame, sales_open: datetime, until: datetime) -> dict:
+    """What the orders table says of a window: the lines made from the sales
+    open to `until`, units paid plus awaiting, the rest counted apart."""
+    win = rows[(rows["ts"] >= sales_open) & (rows["ts"] < until)]
+    live = win[win["status"].isin(LIVE_STATUS)]
+    paid = win[win["status"] == "paid"]
+    awaiting = win[win["status"] == "awaiting"]
+    out_ = win[win["status"].isin(OUT_STATUS)]
+    return {
+        "win": win, "live": live, "paid": paid, "awaiting": awaiting,
+        "units": float(live["units"].sum()), "units_paid": float(paid["units"].sum()),
+        "awaiting_units": float(awaiting["units"].sum()), "awaiting_value": float(awaiting["value"].sum()), "awaiting_orders": float(awaiting["orders"].sum()),
+        "orders": float(live["orders"].sum()), "cancelled": float(out_["units"].sum()),
+        "private": float(live["units_private"].sum()),
+        "prints_offered_paid": float(paid["prints_offered"].sum()), "frames_paid": float(paid["frames"].sum()),
+        "prints_offered_awaiting": float(awaiting["prints_offered"].sum()), "frames_awaiting": float(awaiting["frames"].sum()),
+        "by_group": _by_group(live, "units"),
+    }
 
 
 def _rel_rows(series: dict, name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -683,9 +735,11 @@ def units_curve(hourly: pd.DataFrame, sales_open: datetime, close: datetime, tot
 # ---------------------------------------------------------------- the panel (spec §8)
 
 def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, emails: pd.DataFrame | None,
-                as_of: date, now: datetime) -> tuple[pd.DataFrame, dict]:
+                as_of: date, now: datetime, orders_data: dict | None = None) -> tuple[pd.DataFrame, dict]:
     """Every completed TL as a comparable, with its measures; and the pace
-    curves per member (CURVES). Counts only."""
+    curves per member (CURVES). Counts only. Where the orders table has the
+    launch's lines, its window units (paid plus awaiting at the settle), frames
+    per print and buyers of several pieces are read from it; else from the feed."""
     rel = series["releases"]
     matched = match_feed_to_airtable(rel, timed)
     activity = code_activity(spend, emails)
@@ -709,6 +763,21 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
         units = float(settled["units"].sum()) if len(settled) else float(r.get("units") or 0)
         orders = float(settled["orders"].sum()) if len(settled) else float(r.get("orders") or 0)
         sg, ug = _by_group(pre, "signups"), _by_group(settled, "units")
+        # the orders table's reading where it has the launch: units at the
+        # settle, frames per print, the buyers of several pieces
+        o_rows = _orders_rows(orders_data, name)
+        frames_per_print = float("nan")
+        multiple_share = (float(r["buyers_multiple"]) / float(r["buyers_unique"])) if _num(r.get("buyers_unique")) else float("nan")
+        units_source = "feed"
+        if o_rows is not None:
+            o = window_from_orders(o_rows, d["sales_open"], d["settle"])
+            if o["units"] > 0:
+                units, ug, units_source = o["units"], o["by_group"], "orders"
+                if o["prints_offered_paid"] >= 20:
+                    frames_per_print = o["frames_paid"] / o["prints_offered_paid"]
+            b = (orders_data or {}).get("buyers_by_release", {}).get(name)
+            if b is not None and _num(b.get("buyers")) and float(b["buyers"]) >= 20:
+                multiple_share = float(b["buyers_multiple"]) / float(b["buyers"])
         sess = _by_group(pre, "sessions")
         conv_g = _by_group(pre, "signups_converted")
         ss, us, sess_s = _shares(sg), _shares(ug), _shares(sess)
@@ -749,7 +818,7 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
             "units_window": float(win["units"].sum()) if len(win) else 0.0,
             "units_private": float(settled["units_private"].sum()) if len(settled) and "units_private" in settled.columns else 0.0,
             "buyers_unique": _num(r.get("buyers_unique")), "buyers_multiple": _num(r.get("buyers_multiple")),
-            "multiple_share": (float(r["buyers_multiple"]) / float(r["buyers_unique"])) if _num(r.get("buyers_unique")) else float("nan"),
+            "multiple_share": multiple_share, "frames_per_print": frames_per_print, "units_source": units_source,
             "spend_pre": spend_pre, "spend_window": spend_win, "cost_per_signup": cps, "cost_per_sale": cpu,
             "paid_share_signups": ss["paid"], "paid_share_units": us["paid"], "untracked_share": untracked_share,
             "units_target": _num((launch or {}).get("units_target")), "edition_size": _num((launch or {}).get("edition_size")),
@@ -810,6 +879,7 @@ def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dic
         "signup_order_rate": _median(rows, "signup_order_rate", positive=True),
         "purchases_per_order": _median(rows, "purchases_per_order", positive=True),
         "multiple_share": _median(rows, "multiple_share"),
+        "frames_per_print": _median(rows, "frames_per_print", positive=True),
         "share_signups": ss, "share_sessions": sess_s, "share_units": us,
         "signups_by_group": {g: ss[g] * signups for g in GROUPS},
         "sessions_by_group": {g: sess_s[g] * sessions for g in GROUPS},
@@ -1158,6 +1228,7 @@ def _products(rec: dict) -> tuple[list[dict], dict]:
                      "units_target": _num(t.get("units_target")) if _num(t.get("units_target")) is not None else _num(p.get("units_target")),
                      "unit_price": _num(t.get("unit_price")) if _num(t.get("unit_price")) is not None else _num(p.get("unit_price")),
                      "currency": t.get("currency") or p.get("currency") or "EUR", "framing_available": p.get("framing_available"),
+                     "frame_conversion": _num(t.get("frame_conversion")) if _num(t.get("frame_conversion")) is not None else _num(p.get("frame_conversion")),
                      "excluded": bool(t.get("excluded")), "typed": {k: t.get(k) for k in ("edition", "units_target", "unit_price") if t.get(k) is not None}})
     for m in manual:
         rows.append({"airtable_id": None, "manual": True, "name": m.get("name"), "edition": _num(m.get("edition")), "units_target": _num(m.get("units_target")),
@@ -1205,8 +1276,45 @@ def _email_card(emails: pd.DataFrame | None, code: str | None, d: dict, daily: p
     return {"code": code, "sends": sends, "automated": automated, "totals": tot}
 
 
+def _plan_frame_rate(products: list[dict]) -> float | None:
+    """Airtable's framing take-up, weighted over the ticked works that frame."""
+    rows = [(p.get("units_target") or p.get("edition") or 1.0, p["frame_conversion"]) for p in products
+            if not p.get("excluded") and p.get("framing_available") is not False and _num(p.get("frame_conversion")) is not None]
+    w = sum(u for u, _ in rows)
+    return (sum(u * r for u, r in rows) / w) if w > 0 else None
+
+
+def _sales_products(live: pd.DataFrame, products: list[dict], units_target: float | None) -> list[dict]:
+    """One row per work from the orders table's lines, matched to Airtable's
+    works by name, with its target (typed over Airtable's) and edition."""
+    by_name = {pricing.norm(p.get("name") or ""): p for p in products}
+    out = []
+    for title, g in live.groupby("product_title"):
+        p = by_name.get(pricing.norm(title))
+        out.append({"name": str(title), "airtable_id": (p or {}).get("airtable_id"), "excluded": bool((p or {}).get("excluded")),
+                    "units": float(g["units"].sum()), "awaiting": float(g.loc[g["status"] == "awaiting", "units"].sum()),
+                    "orders": float(g["orders"].sum()), "target": (p or {}).get("units_target"), "edition": (p or {}).get("edition"),
+                    "share": (float(g["units"].sum()) / units_target) if units_target else None})
+    # a ticked work with no line yet still has its row
+    seen = {pricing.norm(r["name"]) for r in out}
+    for p in products:
+        if not p.get("excluded") and pricing.norm(p.get("name") or "") not in seen:
+            out.append({"name": p.get("name"), "airtable_id": p.get("airtable_id"), "excluded": False, "units": 0.0, "awaiting": 0.0, "orders": 0.0,
+                        "target": p.get("units_target"), "edition": p.get("edition"), "share": 0.0 if units_target else None})
+    return sorted(out, key=lambda r: -r["units"])
+
+
+def data_to_hint(orders: dict | None) -> str | None:
+    """How far the orders table's reading runs: the newest hour in the file."""
+    try:
+        h = orders["hourly"]["ts"].max() if orders and len(orders.get("hourly", [])) else None
+        return _iso(h) if h is not None and not pd.isna(h) else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, spend: pd.DataFrame | None, emails: pd.DataFrame | None,
-             as_of: date, now: datetime, seen: float = 1.0) -> dict:
+             as_of: date, now: datetime, seen: float = 1.0, orders_data: dict | None = None) -> dict:
     """The page snapshot of one TL (module docstring)."""
     d = rec["dates"]
     inp = rec.get("inputs") or {}
@@ -1310,39 +1418,73 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
             "bmShareSignups": profile.get("paid_share_signups"), "shareSignups": (paid_signups / now_signups) if now_signups > 0 else None,
             "paidDaily": [{"date": day.isoformat(), "spend": float(v)} for day, v in sp.groupby("day")["spend"].sum().items()] if len(sp) else []}
 
-    # ---- sales: the window's units from the feed's purchase events (phase one)
+    # ---- sales: the window's units, from the orders table (paid plus awaiting,
+    # by the hour, channel and product, with the frames and the buyers) where
+    # it has the launch's lines, else from the feed's purchase events
     sales = None
-    if state in ("window", "settling", "closed") and len(hourly):
+    if state in ("window", "settling", "closed"):
         until = min(now, d["settle"])
-        win = _window(hourly, d["sales_open"], until)
-        units = float(win["units"].sum()); orders = float(win["orders"].sum())
-        ug = _by_group(win, "units")
-        unit_curve = profile.get("unit_curve") or [0.0] * len(CURVE_FRACS)
         span = (d["close"] - d["sales_open"]).total_seconds()
-        hours = []
-        h = d["sales_open"]
-        by_hour = win.groupby("ts")["units"].sum()
-        cum = 0.0
-        while h < d["close"] and h <= until + timedelta(hours=1):
-            cum += float(by_hour.get(pd.Timestamp(h), 0.0))
-            f = min((h + timedelta(hours=1) - d["sales_open"]).total_seconds() / span, 1.0) if span > 0 else 1.0
-            i = min(int(round(f * TL_UNIT_CURVE_STEPS)), TL_UNIT_CURVE_STEPS)
-            hours.append({"hour": _iso(h), "sinceOpen": round((h - d["sales_open"]).total_seconds() / 3600, 1), "units": float(by_hour.get(pd.Timestamp(h), 0.0)),
-                          "cum": cum, "plan": (release_for_basket["units_target"] * unit_curve[i]) if release_for_basket["units_target"] else None,
-                          "bm": (profile["units"] * unit_curve[i]) if basket["n"] else None})
-            h += timedelta(hours=1)
-        f_now = min(max((until - d["sales_open"]).total_seconds() / span, 0.0), 1.0) if span > 0 else 1.0
-        i_now = min(int(round(f_now * TL_UNIT_CURVE_STEPS)), TL_UNIT_CURVE_STEPS)
-        exp_units = (release_for_basket["units_target"] * unit_curve[i_now]) if release_for_basket["units_target"] else None
-        sales = {"units": units, "orders": orders, "piecesPerOrder": (units / orders) if orders else None, "unitsTarget": release_for_basket["units_target"],
-                 "expectedNow": exp_units, "bmNow": (profile["units"] * unit_curve[i_now]) if basket["n"] else None, "bmUnits": profile["units"] if basket["n"] else None,
-                 "statusPct": ((units - exp_units) / exp_units) if exp_units else None, "byHour": hours,
-                 "byGroup": [{"key": g, "name": GROUP_NAMES[g], "units": ug[g], "target": (release_for_basket["units_target"] * profile["share_units"][g]) if release_for_basket["units_target"] else None,
-                              "bm": profile["units_by_group"][g] if basket["n"] else None} for g in GROUPS],
-                 "untracked": ug.get("untracked", 0.0), "private": float(win["units_private"].sum()) if "units_private" in win.columns else None,
-                 "cancelled": float(win["units_cancelled"].sum()) if "units_cancelled" in win.columns else None,
-                 "spend": spend_win, "paidUnits": ug["paid"], "costPerSale": (spend_win / ug["paid"]) if ug["paid"] >= PAID_COST_MIN_UNITS and spend_win > 0 else None,
-                 "note": "units are the feed's purchase events, pieces on orders not cancelled; the orders table's paid and awaiting lines come with the window build"}
+        unit_curve = profile.get("unit_curve") or [0.0] * len(CURVE_FRACS)
+        units_target = release_for_basket["units_target"]
+        feed_win = _window(hourly, d["sales_open"], until) if len(hourly) else hourly
+        feed_units = float(feed_win["units"].sum()) if len(feed_win) else 0.0
+        feed_orders = float(feed_win["orders"].sum()) if len(feed_win) else 0.0
+        o_rows = _orders_rows(orders_data, name)
+        o = window_from_orders(o_rows, d["sales_open"], until) if o_rows is not None else None
+        use_orders = o is not None and o["units"] > 0
+        if use_orders:
+            live = o["live"]
+            by_hour = live.groupby("ts")["units"].sum()
+            ug = o["by_group"]
+            units, orders_n = o["units"], (feed_orders if feed_orders > 0 else o["orders"])
+        else:
+            by_hour = feed_win.groupby("ts")["units"].sum() if len(feed_win) else pd.Series(dtype=float)
+            ug = _by_group(feed_win, "units")
+            units, orders_n = feed_units, feed_orders
+        if use_orders or len(hourly):
+            hours = []
+            h, cum = d["sales_open"], 0.0
+            while h < d["close"] and h <= until + timedelta(hours=1):
+                cum += float(by_hour.get(pd.Timestamp(h), 0.0))
+                f = min((h + timedelta(hours=1) - d["sales_open"]).total_seconds() / span, 1.0) if span > 0 else 1.0
+                i = min(int(round(f * TL_UNIT_CURVE_STEPS)), TL_UNIT_CURVE_STEPS)
+                hours.append({"hour": _iso(h), "sinceOpen": round((h - d["sales_open"]).total_seconds() / 3600, 1), "units": float(by_hour.get(pd.Timestamp(h), 0.0)),
+                              "cum": cum, "plan": (units_target * unit_curve[i]) if units_target else None,
+                              "bm": (profile["units"] * unit_curve[i]) if basket["n"] else None})
+                h += timedelta(hours=1)
+            f_now = min(max((until - d["sales_open"]).total_seconds() / span, 0.0), 1.0) if span > 0 else 1.0
+            i_now = min(int(round(f_now * TL_UNIT_CURVE_STEPS)), TL_UNIT_CURVE_STEPS)
+            exp_units = (units_target * unit_curve[i_now]) if units_target else None
+            paid_units = ug.get("paid", 0.0)
+            sales = {"source": "orders" if use_orders else "feed", "units": units, "orders": orders_n, "piecesPerOrder": (units / orders_n) if orders_n else None,
+                     "unitsTarget": units_target, "expectedNow": exp_units, "bmNow": (profile["units"] * unit_curve[i_now]) if basket["n"] else None,
+                     "bmUnits": profile["units"] if basket["n"] else None, "statusPct": ((units - exp_units) / exp_units) if exp_units else None,
+                     "byHour": hours,
+                     "byGroup": [{"key": g, "name": GROUP_NAMES[g], "units": ug.get(g, 0.0), "target": (units_target * profile["share_units"][g]) if units_target else None,
+                                  "bm": profile["units_by_group"][g] if basket["n"] else None} for g in GROUPS],
+                     "untracked": ug.get("untracked", 0.0), "feedUnits": feed_units,
+                     "spend": spend_win, "paidUnits": paid_units, "costPerSale": (spend_win / paid_units) if paid_units >= PAID_COST_MIN_UNITS and spend_win > 0 else None,
+                     "dataTo": data_to_hint(orders_data) if use_orders else None}
+            if use_orders:
+                sales.update({
+                    "unitsPaid": o["units_paid"], "private": o["private"], "cancelled": o["cancelled"],
+                    "awaiting": {"units": o["awaiting_units"], "orders": o["awaiting_orders"], "value": o["awaiting_value"]},
+                    "framing": {"printsOfferedPaid": o["prints_offered_paid"], "framesPaid": o["frames_paid"],
+                                "printsOfferedAwaiting": o["prints_offered_awaiting"], "framesAwaiting": o["frames_awaiting"],
+                                "bmRate": profile.get("frames_per_print") or None, "planRate": _plan_frame_rate(products)} if o["prints_offered_paid"] + o["prints_offered_awaiting"] > 0 else None,
+                    "products": _sales_products(live, products, units_target),
+                    "note": "units are the orders table's paid lines plus the orders awaiting payment (drafts and pending), by pieces, made from the sales open; "
+                            "each order on the channel of its purchase event in the TL feed",
+                })
+                b = (orders_data or {}).get("buyers_by_release", {}).get(name)
+                if b is not None and _num(b.get("buyers")):
+                    sales["multiples"] = {"buyers": float(b["buyers"]), "multiple": float(b["buyers_multiple"]), "piecesPerBuyer": (float(b["pieces"]) / float(b["buyers"])) if float(b["buyers"]) else None,
+                                          "bmShare": profile.get("multiple_share") or None}
+            else:
+                sales.update({"private": float(feed_win["units_private"].sum()) if "units_private" in feed_win.columns and len(feed_win) else None,
+                              "cancelled": float(feed_win["units_cancelled"].sum()) if "units_cancelled" in feed_win.columns and len(feed_win) else None,
+                              "note": "units are the feed's purchase events, pieces on orders not cancelled; the orders table has no lines for this launch yet"})
 
     announce = d["announce"]
     close_day = d["close"].date()
@@ -1470,8 +1612,9 @@ def build_all(ctx: dict) -> dict:
         out["note"] = "tl: no TL feed aggregation and no timed launches in Airtable - no TL pages"
         return out
     spend, emails = ctx.get("spend"), ctx.get("emails")
+    orders_data = ctx["orders"] if "orders" in ctx else load_orders()
     if series is not None:
-        panel, curves = panel_frame(series, timed, spend, emails, as_of, now)
+        panel, curves = panel_frame(series, timed, spend, emails, as_of, now, orders_data)
     else:
         panel, curves = pd.DataFrame(), {}
     out["panel_n"] = len(panel)
@@ -1487,7 +1630,7 @@ def build_all(ctx: dict) -> dict:
         if only and rec["id"] != only:
             continue
         try:
-            snap = build_tl(rec, series, panel, curves, spend, emails, as_of, now, seen)
+            snap = build_tl(rec, series, panel, curves, spend, emails, as_of, now, seen, orders_data)
         except Exception as e:  # noqa: BLE001 - one page's failure never stops the build
             out["failures"].append((rec["id"], f"{type(e).__name__}: {e}"))
             continue
@@ -1529,8 +1672,11 @@ if __name__ == "__main__":
     # development: the TL pages alone, from the aggregation on disk and Airtable
     import build as B  # noqa: E402
     as_of_arg = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--as-of=")), None)
-    as_of = date.fromisoformat(as_of_arg) if as_of_arg else date.today()
-    res = build_all({"as_of": as_of, "now": datetime.now(timezone.utc), "seen": 1.0, "launch_frame": B.load_launches(),
+    now_arg = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--now=")), None)
+    # --now=2026-06-30T20:00:00Z replays a completed launch as it stood at that moment (its window, its settling)
+    now = _ts(now_arg) or datetime.now(timezone.utc)
+    as_of = date.fromisoformat(as_of_arg) if as_of_arg else now.date()
+    res = build_all({"as_of": as_of, "now": now, "seen": 1.0, "launch_frame": B.load_launches(),
                      "inputs": B.INPUTS["releases"], "spend": B.load_spend(), "emails": B.load_emails(), "write": "--write" in sys.argv})
     print(res["note"])
     for row in res["rows"]:

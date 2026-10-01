@@ -53,7 +53,7 @@ export function TLChips({ snap }) {
         {snap.tlLabel || STATE_WORDS[st]}
       </span>
       <span className="chip" title="The public window, Amsterdam time: Airtable's launch date at its launch time, else the feed's timestamp, else 14:00">
-        {st === "window" || st === "settling" || st === "closed" ? `Closed ${when(snap.windowClose)}` : `Opens ${when(snap.windowOpen)}`} · {hours(snap.windowHours)}
+        {st === "window" ? `Closes ${when(snap.windowClose)}` : st === "settling" || st === "closed" ? `Closed ${when(snap.windowClose)}` : `Opens ${when(snap.windowOpen)}`} · {hours(snap.windowHours)}
       </span>
       {snap.economics && snap.economics.units_target > 0 && (
         <span className="chip" title={`Airtable's units target summed over the ticked works${snap.economics.edition_size ? `, of an edition of ${fmt(snap.economics.edition_size)}` : ""}`}>
@@ -517,19 +517,100 @@ function SalesByChannel({ snap }) {
 
 function SalesOrders({ snap }) {
   const s = snap.sales || {};
+  const a = s.awaiting || null;
   const row = { display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, padding: "6px 0", borderBottom: `1px solid ${C.hairline}` };
   const cpu = num(s.costPerSale), bm = num((snap.paid || {}).bmCostPerSale);
   return (
-    <Card dot={GROUP_DOTS.paid} title="Orders, private room and paid sales">
+    <Card dot={GROUP_DOTS.paid} title="Orders, awaiting payment and paid sales" right={s.source === "orders" ? <span title={s.note}>orders table</span> : <span title={s.note}>purchase events</span>}>
       <div className="spacer-8" />
       <div style={row}><span style={{ color: C.muted }}>Orders</span><span className="num">{fmt(s.orders || 0)}</span></div>
       <div style={row}><span style={{ color: C.muted }}>Pieces per order</span><span className="num">{s.piecesPerOrder ? fmt(s.piecesPerOrder, 2) : "–"}</span></div>
+      {a && <div style={row}><span style={{ color: C.muted }}>Awaiting payment</span><span className="num">{fmt(a.units)} units{a.value ? ` · ${fmtMoney(a.value)}` : ""}</span></div>}
       <div style={row}><span style={{ color: C.muted }}>Private-room units</span><span className="num">{s.private !== null && s.private !== undefined ? fmt(s.private) : "–"}</span></div>
-      <div style={row}><span style={{ color: C.muted }}>Cancelled units</span><span className="num">{s.cancelled !== null && s.cancelled !== undefined ? fmt(s.cancelled) : "–"}</span></div>
-      <div style={row}><span style={{ color: C.muted }}>Spend in the window</span><span className="num">{fmtMoney(s.spend || 0)}</span></div>
-      <div style={row}><span style={{ color: C.muted }}>Paid units (split touch)</span><span className="num">{fmt(s.paidUnits || 0)}</span></div>
+      <div style={row}><span style={{ color: C.muted }}>{s.source === "orders" ? "Cancelled or refunded" : "Cancelled units"}</span><span className="num">{s.cancelled !== null && s.cancelled !== undefined ? fmt(s.cancelled) : "–"}</span></div>
+      <div style={row}><span style={{ color: C.muted }}>Spend in the window · paid units</span><span className="num">{fmtMoney(s.spend || 0)} · {fmt(s.paidUnits || 0)}</span></div>
       <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }}>Cost per sale</span><span className="num" style={{ color: cpu !== null && bm ? (cpu <= bm ? C.green : C.red) : C.ink }}>{cpu !== null ? fmtMoney(cpu) : "–"}{bm ? <span style={{ color: C.muted }}> · basket {fmtMoney(bm)}</span> : null}</span></div>
-      <div style={{ fontSize: 11.5, color: C.muted, marginTop: 10 }}>{s.note}</div>
+      {s.feedUnits !== null && s.feedUnits !== undefined && s.source === "orders" && (
+        <div style={{ fontSize: 11.5, color: C.muted, marginTop: 8 }}>The feed's purchase events carry {fmt(s.feedUnits)} pieces, the cross-check.</div>
+      )}
+    </Card>
+  );
+}
+
+/* Frames per print on the window's paid prints and on the orders awaiting
+ * payment, against the basket and the plan (the LE Framing card's reading). */
+function SalesFraming({ snap }) {
+  const f = (snap.sales || {}).framing;
+  if (!f) return null;
+  const row = { display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, padding: "6px 0", borderBottom: `1px solid ${C.hairline}` };
+  const rate = f.printsOfferedPaid > 0 ? f.framesPaid / f.printsOfferedPaid : null;
+  const rateAw = f.printsOfferedAwaiting > 0 ? f.framesAwaiting / f.printsOfferedAwaiting : null;
+  return (
+    <Card dot={GROUP_DOTS.outcome} title="Framing conversion">
+      <div className="spacer-8" />
+      <div className="lead">{rate !== null ? fmtPct(rate) : "–"}{f.planRate ? <span className="delta" style={{ color: rate !== null && rate >= f.planRate ? C.green : C.red }}>{rate !== null ? fmtSigned(Math.round((rate - f.planRate) * 100)) + " pts" : ""}</span> : null}</div>
+      <div className="lead-caption">of the paid prints a frame was on offer for took one{f.planRate ? ` · plan ${fmtPct(f.planRate)}` : ""}{f.bmRate ? ` · basket ${fmtPct(f.bmRate)}` : ""}</div>
+      <div style={{ marginTop: 10 }}>
+        <div style={row}><span style={{ color: C.muted }}>Paid prints with a frame on offer</span><span className="num">{fmt(f.printsOfferedPaid)}</span></div>
+        <div style={row}><span style={{ color: C.muted }}>Frames bought with them</span><span className="num">{fmt(f.framesPaid)}</span></div>
+        <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }}>On the orders awaiting payment</span><span className="num">{fmt(f.framesAwaiting)} of {fmt(f.printsOfferedAwaiting)}{rateAw !== null ? ` · ${fmtPct(rateAw)}` : ""}</span></div>
+      </div>
+    </Card>
+  );
+}
+
+/* The works' names as the rows can show them: Airtable's bracketed notes and
+ * a leading "Untitled" dropped, and a prefix every work shares dropped too
+ * ("Untitled [Dream House 5]" among six Dream Houses reads "Dream House 5"). */
+function shortNames(names) {
+  const clean = names.map((n) => String(n || "").replace(/^untitled\s*/i, "").replace(/[\[\]]/g, "").trim() || String(n || ""));
+  if (clean.length < 2) return clean;
+  let prefix = clean[0];
+  for (const n of clean.slice(1)) { let i = 0; while (i < prefix.length && i < n.length && prefix[i] === n[i]) i++; prefix = prefix.slice(0, i); }
+  prefix = prefix.replace(/\S*$/, "");   // never cut inside a word
+  if (prefix.trim().length < 8) return clean;
+  return clean.map((n) => n.slice(prefix.length).trim() || n);
+}
+
+/* One row per work: units, awaiting, orders, the share of its target. */
+function SalesProducts({ snap }) {
+  const rows = (snap.sales || {}).products || [];
+  if (!rows.length) return null;
+  const names = shortNames(rows.map((p) => p.name));
+  const row = { display: "grid", gridTemplateColumns: "minmax(0, 1fr) 46px 58px 50px 62px", gap: 6, fontSize: 12, padding: "6px 0", borderBottom: `1px solid ${C.hairline}`, alignItems: "baseline" };
+  const head = { ...row, color: C.muted, fontSize: 11, borderBottom: `1px solid ${C.border}` };
+  const right = { textAlign: "right" };
+  return (
+    <Card dot={GROUP_DOTS.volume} title="Orders per product">
+      <div className="spacer-8" />
+      <div style={head}><span>Work</span><span style={right}>Units</span><span style={right}>Awaiting</span><span style={right}>Orders</span><span style={right}>Of target</span></div>
+      {rows.map((p, i) => {
+        const pct = pctOf(p.units, p.target);
+        return (
+          <div key={p.name} style={row} title={`${p.name}${p.edition ? ` · edition ${fmt(p.edition)}` : ""}${p.target ? ` · target ${fmt(p.target)}` : ""}`}>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: p.excluded ? C.muted : C.ink }}>{names[i]}{p.excluded ? " (unticked)" : ""}</span>
+            <span className="num" style={right}>{fmt(p.units)}</span>
+            <span className="num" style={right}>{fmt(p.awaiting)}</span>
+            <span className="num" style={right}>{fmt(p.orders)}</span>
+            <span className="num" style={{ ...right, color: pct === null ? C.muted : pct >= 100 ? C.green : C.ink }}>{pct !== null ? `${pct}%` : "–"}</span>
+          </div>
+        );
+      })}
+    </Card>
+  );
+}
+
+/* Buyers taking more than one unit in the window, as a count and a share. */
+function SalesMultiples({ snap }) {
+  const m = (snap.sales || {}).multiples;
+  if (!m) return null;
+  const share = m.buyers > 0 ? m.multiple / m.buyers : null;
+  return (
+    <Card dot={GROUP_DOTS.outcome} title="Multiples">
+      <div className="spacer-8" />
+      <div className="lead">{fmt(m.multiple)}{share !== null && m.bmShare ? <span className="delta" style={{ color: share >= m.bmShare ? C.green : C.red }}>{fmtSigned(Math.round((share - m.bmShare) * 100))} pts</span> : null}</div>
+      <div className="lead-caption">buyers took more than one unit{share !== null ? ` · ${fmtPct(share)} of ${fmt(m.buyers)} buyers` : ""}{m.bmShare ? ` · basket ${fmtPct(m.bmShare)}` : ""}</div>
+      {m.piecesPerBuyer ? <div style={{ fontSize: 12.5, color: C.muted, marginTop: 12 }}>{fmt(m.piecesPerBuyer, 2)} pieces a buyer across the window's paid orders.</div> : null}
     </Card>
   );
 }
@@ -564,11 +645,16 @@ export function TLOverview({ snap, onSetup }) {
           <SalesByChannel snap={snap} />
           <SalesCurve snap={snap} />
           <SalesOrders snap={snap} />
+          <SalesProducts snap={snap} />
+          <SalesFraming snap={snap} />
+          <SalesMultiples snap={snap} />
           <SignupsOutcome snap={snap} />
           <HowTheTarget snap={snap} onSetup={onSetup} />
-          <div className="card ghost" style={{ display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24 }}>
-            <span style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.5 }}>Framing conversion, orders per product, multiples and awaiting payment come with the window build from the orders table.</span>
-          </div>
+          {(snap.sales || {}).source !== "orders" && (
+            <div className="card ghost" style={{ display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24 }}>
+              <span style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.5 }}>The orders table has no lines for this launch yet: units are the feed's purchase events, and framing, orders per product and multiples wait for the orders.</span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid" style={{ marginTop: 16 }}>

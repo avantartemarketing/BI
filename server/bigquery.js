@@ -17,6 +17,9 @@
  * And the timed launches' pair, from TL_Funnel_Report_v2 under the same rules
  * (the TL feeds section, docs/TL_SPEC.md §3):
  *   TL_Funnel_Report_v2 -> sources/tl_events.csv, sources/tl_browsing.csv
+ *   Order_Line_Concept  -> data/tl_units_hourly.csv, data/tl_buyers.csv (a
+ *                          window's lines by hour, channel and status; the
+ *                          buyers of several pieces)
  *
  * Why bother: the sheet tabs are query exports capped at 50,000 rows, cut mid
  * date. That cap does not error - it silently shortens the history window as
@@ -460,6 +463,9 @@ const orderLinesCtes = () =>
   "lines AS (\n" +
   "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
   "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_order_id AS order_id,\n" +
+  // when the line was made and the launch it belongs to, for the hour-by-hour
+  // reading of a timed launch's window (tlUnitsSql)
+  "    shopify_order_created_at AS created_at, shopify_draft_order_created_at AS draft_created_at, launch_date, launch_type,\n" +
   // the work a SKU names: its first two segments (WARHO-BRIW1 for the
   // White Portrait print WARHO-BRIW1-PE-DRAW and its frame
   // WARHO-BRIW1-FR-REDRAMINW alike), null for a SKU of another shape
@@ -742,6 +748,76 @@ const drawClaimsSql = () =>
   "LEFT JOIN paid_by b ON b.release = p.release AND b.customer_id = p.customer_id AND b.product_title = dp.product_title\n" +
   "WHERE p.won AND b.customer_id IS NULL\n" +
   "GROUP BY 1, 2, 3\nORDER BY 1, 2";
+
+/* A timed launch's window, hour by hour, from the orders table (docs/TL_SPEC.md
+ * §5): per release x product x hour (UTC, the line's creation) x channel x
+ * status, the units (pieces), the orders those lines sit on, the private-room
+ * units, the prints a frame was on offer for and the frames bought with them,
+ * and the lines' value. The status is the orders feed's own reading of a line
+ * (orderLinesCtes `typed`): paid, awaiting (a draft an advisor raised, or an
+ * order still pending), refunded, cancelled, else other. Each order takes the
+ * channel of its purchase event in the TL feed (TL_Funnel_Report_v2), matched
+ * on the Shopify order id inside BigQuery; an order the feed never saw is
+ * Untracked. Only the lines near a launch are taken: from three days before
+ * its launch_date (the early access opens a day before, and the feed's
+ * timestamp can sit a day off) to sixteen after (a 7-day window and its
+ * settling week), for every release, since the orders table does not type
+ * launches; the TL pages read their own. Aggregates only: no order id,
+ * customer or address leaves BigQuery. Pulled in full with the TL feeds and
+ * written to data/ beside units_paid.csv. */
+const TL_UNITS_HEADER = ["release", "product_title", "hour", "channel", "status", "units", "orders", "units_private",
+  "prints_offered", "frames", "value"];
+const TL_BAND_DAYS_BEFORE = 3, TL_BAND_DAYS_AFTER = 16;
+const tlUnitsSql = () => {
+  const sql = "WITH " + orderLinesCtes() + ",\n" +
+    "purchase_channel AS (\n" +
+    "  SELECT shopify_order_id AS order_id,\n" +
+    "    ARRAY_AGG(NULLIF(AA_session_custom_channel_group_split_touch, '') IGNORE NULLS ORDER BY event_timestamp LIMIT 1)[SAFE_OFFSET(0)] AS channel\n" +
+    `  FROM \`${PROJECT}.${DATASET}.${TL_TABLE}\`\n` +
+    "  WHERE event_name = 'purchase' AND shopify_order_id IS NOT NULL\n" +
+    "  GROUP BY shopify_order_id),\n" +
+    "band AS (\n" +
+    "  SELECT l.*, COALESCE(l.created_at, l.draft_created_at) AS made_at FROM typed l\n" +
+    "  WHERE l.launch_date IS NOT NULL AND COALESCE(l.created_at, l.draft_created_at) IS NOT NULL\n" +
+    `    AND COALESCE(l.created_at, l.draft_created_at) >= TIMESTAMP_SUB(l.launch_date, INTERVAL ${TL_BAND_DAYS_BEFORE} DAY)\n` +
+    `    AND COALESCE(l.created_at, l.draft_created_at) < TIMESTAMP_ADD(l.launch_date, INTERVAL ${TL_BAND_DAYS_AFTER} DAY))\n` +
+    "SELECT l.release, l.product_title,\n" +
+    "  FORMAT_TIMESTAMP('%Y-%m-%dT%H:00:00Z', l.made_at) AS hour,\n" +
+    "  COALESCE(pc.channel, 'Untracked') AS channel,\n" +
+    "  CASE WHEN l.paid THEN 'paid' WHEN l.awaiting THEN 'awaiting' WHEN l.refunded THEN 'refunded'\n" +
+    "       WHEN l.cancelled_order = 1 THEN 'cancelled' ELSE 'other' END AS status,\n" +
+    "  SUM(l.quantity) AS units,\n" +
+    "  COUNT(DISTINCT l.order_id) AS orders,\n" +
+    "  SUM(IF(l.is_private_room = 1, l.quantity, 0)) AS units_private,\n" +
+    "  SUM(IF(l.offered, l.quantity, 0)) AS prints_offered,\n" +
+    "  ROUND(SUM(l.frames_line), 2) AS frames,\n" +
+    "  ROUND(SUM(l.quantity * COALESCE(CAST(l.shopify_product_variant_price AS FLOAT64), 0)), 2) AS value\n" +
+    "FROM band l LEFT JOIN purchase_channel pc ON pc.order_id = l.order_id\n" +
+    "GROUP BY l.release, l.product_title, hour, channel, status\n" +
+    "ORDER BY l.release, hour, l.product_title, channel, status";
+  for (const f of FORBIDDEN_COLUMNS) {
+    if (sql.toLowerCase().includes(f)) throw new Error(`TL units query must not mention ${f}`);
+  }
+  return sql;
+};
+
+/* The buyers of a timed launch (docs/TL_SPEC.md §5, the Multiples card): per
+ * release, the collectors with a paid order in the same band, how many took
+ * more than one piece, and the pieces between them. Counted on the customer
+ * id inside BigQuery; only the counts travel. */
+const TL_BUYERS_HEADER = ["release", "buyers", "buyers_multiple", "pieces"];
+const tlBuyersSql = () =>
+  "WITH " + orderLinesCtes() + ",\n" +
+  "per_buyer AS (\n" +
+  "  SELECT l.release, l.customer_id, SUM(l.quantity) AS pieces FROM typed l\n" +
+  "  WHERE l.paid AND l.customer_id IS NOT NULL AND l.launch_date IS NOT NULL AND l.created_at IS NOT NULL\n" +
+  `    AND l.created_at >= TIMESTAMP_SUB(l.launch_date, INTERVAL ${TL_BAND_DAYS_BEFORE} DAY)\n` +
+  `    AND l.created_at < TIMESTAMP_ADD(l.launch_date, INTERVAL ${TL_BAND_DAYS_AFTER} DAY)\n` +
+  "  GROUP BY 1, 2)\n" +
+  "SELECT release, COUNT(*) AS buyers, COUNTIF(pieces > 1) AS buyers_multiple, SUM(pieces) AS pieces\n" +
+  "FROM per_buyer GROUP BY release ORDER BY release";
+const TL_UNITS = path.join(ROOT, "data", "tl_units_hourly.csv");
+const TL_BUYERS = path.join(ROOT, "data", "tl_buyers.csv");
 
 /* A writer that keeps the columns as they come, once they are the expected
  * ones: these files are read by name in etl/build.py, so a column added or
@@ -1515,6 +1591,23 @@ async function pull({ write = true, full = false, events = true, only = null } =
         notes.push(`${feed.label} unavailable, keeping the last file (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`);
       }
     }
+    // the windows hour by hour from the orders table, and the buyers: two
+    // small files written together, kept as they were when a query fails
+    if (process.env.BQ_ORDERS !== "off") {
+      const t1 = new Tmp(TL_UNITS, write), t2 = new Tmp(TL_BUYERS, write);
+      try {
+        const a = await streamTable(token, tlUnitsSql(), SINCE, passthroughWriter(TL_UNITS_HEADER, "TL units"), t1);
+        if (a.rows < 10) throw new Error(`TL units query returned ${a.rows} rows - not overwriting`);
+        guardShrink("TL units query", a.rows, TL_UNITS);
+        const b = await streamTable(token, tlBuyersSql(), SINCE, passthroughWriter(TL_BUYERS_HEADER, "TL buyers"), t2);
+        if (write) { t1.commit(TL_UNITS); t2.commit(TL_BUYERS); } else { t1.discard(); t2.discard(); }
+        notes.push(`TL orders ${a.rows} hour rows, ${b.rows} releases' buyers`);
+        tl = { rows: (tl ? tl.rows : 0), bytes: (tl ? tl.bytes : 0) + a.bytes + b.bytes, cached: (tl ? tl.cached : true) && a.cached && b.cached, events: tl ? tl.events : null };
+      } catch (e) {
+        t1.discard(); t2.discard();
+        notes.push(`TL orders unavailable, keeping the last files (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`);
+      }
+    }
     tlNote = notes.join(", ");
   }
 
@@ -1544,6 +1637,7 @@ module.exports = {
   LE_BROWSING, BROWSING_META, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
   TL_TABLE, TL_SINCE, TL_EVENTS, TL_EVENTS_META, TL_EVENT_COLUMNS, TL_EVENT_HEADER, tlEventsSql, tlEventsNamesSql, tlEventsWriter, TL_EVENTS_FEED,
   TL_BROWSING, TL_BROWSING_META, TL_BROWSING_HEADER, TL_HOUR_DAYS_BEFORE, TL_HOUR_DAYS_AFTER, tlBrowsingSql, tlBrowsingNamesSql, tlBrowsingWriter, TL_BROWSING_FEED,
+  TL_UNITS, TL_UNITS_HEADER, TL_BUYERS, TL_BUYERS_HEADER, TL_BAND_DAYS_BEFORE, TL_BAND_DAYS_AFTER, tlUnitsSql, tlBuyersSql,
   isoDate, eventsWriterFor, browsingWriterFor,
   PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
   schema, listSchema, schemaText,
@@ -1581,7 +1675,7 @@ if (require.main === module) {
     const wrote = [out.funnelRows !== null && ACROSS_TIME, out.spendRows !== null && SPEND_DAILY,
                    out.ordersRows !== null && `${ORDERS_BY_PRODUCT} + ${DRAW_PRODUCTS} + ${UNITS_PAID}`,
                    out.eventsRows !== null && LE_EVENTS, out.browsingRows !== null && LE_BROWSING,
-                   out.tlRows !== null && `${TL_EVENTS} + ${TL_BROWSING}`].filter(Boolean);
+                   out.tlRows !== null && `${TL_EVENTS} + ${TL_BROWSING} + ${TL_UNITS} + ${TL_BUYERS}`].filter(Boolean);
     console.log(write ? `wrote ${wrote.join(", ")}` : "dry run - pass --write to replace the CSVs");
   })().catch((e) => { console.error(String(e.message || e)); process.exit(1); });
 }

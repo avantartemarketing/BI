@@ -621,9 +621,22 @@ begins with the first sales burst and the pace curve is measured from it; signup
 some launches carry no channel at all, so the paid cost per signup prices the untracked
 ones in at the tracked paid share; a paid signup converts to an order at a fraction of
 an email one, so the signup target's rate is the basket's rates by channel at its mix.
-Phase one carries the signups state in full and a sales summary from the feed's purchase
-events; the window's cards from the orders table (awaiting payment, framing, orders per
-product, multiples) and the 30-minute refresh while a window is open are the next build.
+The window state reads the orders table: `server/bigquery.js` pulls, with the TL feeds,
+every launch's order lines from three days before its launch date to sixteen after, by
+hour, channel (the TL feed's purchase event, matched on the order id inside BigQuery) and
+status (`data/tl_units_hourly.csv`), and the buyers of several pieces per launch
+(`data/tl_buyers.csv`), aggregates only. Units in the window are the paid lines plus the
+orders awaiting payment (drafts and pending), by pieces, from the sales open; the page
+carries the hourly curve against the basket's pace, units by channel and by work against
+each work's target, awaiting payment with its value, framing conversion against the basket
+and Airtable's take-up, the multiples, cancelled and refunded apart, and the feed's
+purchase events as the cross-check (it falls back to them where the orders table has no
+lines for a launch yet). The refresh runs every `REFRESH_WINDOW_MINUTES` (default 30)
+while a window is open or opens within the hour, hourly otherwise (`tests/refresh_interval.mjs`).
+A completed launch can be replayed as it stood at any moment with
+`python3 etl/tl.py --now=2026-06-30T20:00:00Z --write`, which is how the window state was
+rehearsed on Gregory Crewdson's launch before Bisa Butler's opens. Slack posts for TLs and
+a signup-led attribution of window sales are not built (spec §10).
 
 ## Auditing the allocator tool with an admin export
 

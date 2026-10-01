@@ -99,6 +99,25 @@ check(bq.isoDate("2026-10-13") === "2026-10-13", "YYYY-MM-DD (the event feeds)")
 check(bq.isoDate("2026-10-13T17:00:00Z") === "2026-10-13", "a timestamp reads as its day");
 check(bq.isoDate("") === null && bq.isoDate(undefined) === null && bq.isoDate("13 Oct 2026") === null, "anything else is no date");
 
+// ---- the orders table's reading of a window: the orders feed's own lines, by hour and status
+const units = bq.tlUnitsSql(), buyers = bq.tlBuyersSql();
+check(units.startsWith("WITH " + bq.orderLinesCtes() + ",") && buyers.startsWith("WITH " + bq.orderLinesCtes() + ","), "both read the orders feed's typed lines");
+check(/shopify_order_created_at AS created_at, shopify_draft_order_created_at AS draft_created_at, launch_date, launch_type/.test(bq.orderLinesCtes()), "the lines carry their creation time and their launch");
+check(/FROM `[^`]+TL_Funnel_Report_v2`\n\s+WHERE event_name = 'purchase' AND shopify_order_id IS NOT NULL/.test(units), "the channel is the TL feed's purchase event, matched on the order id");
+check(/COALESCE\(pc\.channel, 'Untracked'\) AS channel/.test(units), "an order the feed never saw is Untracked");
+check(/CASE WHEN l\.paid THEN 'paid' WHEN l\.awaiting THEN 'awaiting' WHEN l\.refunded THEN 'refunded'/.test(units), "the status is the orders feed's reading of a line");
+check(/FORMAT_TIMESTAMP\('%Y-%m-%dT%H:00:00Z', l\.made_at\) AS hour/.test(units) && /COALESCE\(l\.created_at, l\.draft_created_at\) AS made_at/.test(units), "the hour is the line's creation, UTC, a draft's at the draft");
+check(/INTERVAL 3 DAY/.test(units) && /INTERVAL 16 DAY/.test(units) && bq.TL_BAND_DAYS_BEFORE === 3 && bq.TL_BAND_DAYS_AFTER === 16, "the lines near a launch: three days before to sixteen after");
+check(/GROUP BY l\.release, l\.product_title, hour, channel, status/.test(units), "grain: release, product, hour, channel, status");
+check(!/order_id,|customer_id,|aa_account_id/.test(units.slice(units.lastIndexOf("SELECT l.release"))), "no id in the units select list");
+check(/COUNTIF\(pieces > 1\) AS buyers_multiple/.test(buyers) && /SELECT l\.release, l\.customer_id, SUM\(l\.quantity\) AS pieces FROM typed l/.test(buyers) && /WHERE l\.paid AND l\.customer_id IS NOT NULL/.test(buyers),
+  "buyers of several pieces are counted on the customer inside BigQuery, paid lines only");
+check(!/SELECT release, customer_id|customer_id\n?FROM per_buyer/.test(buyers.slice(buyers.lastIndexOf("SELECT release"))), "no customer leaves in the buyers file");
+check([units, buyers].every((q) => !/user_email|customer_email/.test(q) && !/SELECT\s+\*/i.test(q)), "neither names an address column or takes *");
+check(bq.TL_UNITS_HEADER.join(",") === "release,product_title,hour,channel,status,units,orders,units_private,prints_offered,frames,value", "the units file's columns");
+check(bq.TL_BUYERS_HEADER.join(",") === "release,buyers,buyers_multiple,pieces", "the buyers file's columns");
+check(path.dirname(bq.TL_UNITS) === path.dirname(bq.UNITS_PAID) && path.dirname(bq.TL_BUYERS) === path.dirname(bq.UNITS_PAID), "written to data/ beside units_paid.csv");
+
 // ---- the summary names the pair, the CLI knows --tl
 import fs from "node:fs";
 const src = fs.readFileSync(path.join(here, "..", "server", "bigquery.js"), "utf8");

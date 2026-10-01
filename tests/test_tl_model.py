@@ -203,6 +203,36 @@ for c, py, js in zip(cases, py_out, js_out):
         check(close(py["sessions_by_group"][g], js["sessions_by_group"][g]), f"{c['name']}: {g} sessions python {py['sessions_by_group'][g]} js {js['sessions_by_group'][g]}")
     check(py["signup_order_rate_source"] == js["signup_order_rate_source"] and py["sense_check_breached"] == js["sense_check_breached"], f"{c['name']}: the sources and the sense check agree")
 
+# ---- the window from the orders table: paid plus awaiting, the rest apart, by hour and product
+hourly = pd.DataFrame([
+    # before the sales open: not the window's
+    {"release": "R", "product_title": "Red", "hour": "2026-06-29T12:00:00Z", "channel": "Direct", "status": "paid", "units": 3, "orders": 3, "units_private": 0, "prints_offered": 3, "frames": 1, "value": 1500},
+    # the early access and the window
+    {"release": "R", "product_title": "Red", "hour": "2026-06-29T16:00:00Z", "channel": "AA Email Man", "status": "paid", "units": 10, "orders": 8, "units_private": 10, "prints_offered": 10, "frames": 4, "value": 5000},
+    {"release": "R", "product_title": "Blue", "hour": "2026-06-30T16:00:00Z", "channel": "Paid Social", "status": "paid", "units": 20, "orders": 15, "units_private": 0, "prints_offered": 20, "frames": 5, "value": 10000},
+    {"release": "R", "product_title": "Blue", "hour": "2026-06-30T17:00:00Z", "channel": "untracked", "status": "awaiting", "units": 2, "orders": 2, "units_private": 0, "prints_offered": 2, "frames": 1, "value": 1000},
+    {"release": "R", "product_title": "Red", "hour": "2026-06-30T18:00:00Z", "channel": "Direct", "status": "cancelled", "units": 4, "orders": 4, "units_private": 0, "prints_offered": 4, "frames": 0, "value": 2000},
+    {"release": "R", "product_title": "Red", "hour": "2026-06-30T19:00:00Z", "channel": "Direct", "status": "refunded", "units": 1, "orders": 1, "units_private": 0, "prints_offered": 1, "frames": 0, "value": 500},
+    # after `until`: not yet
+    {"release": "R", "product_title": "Red", "hour": "2026-07-01T10:00:00Z", "channel": "Direct", "status": "paid", "units": 7, "orders": 7, "units_private": 0, "prints_offered": 7, "frames": 2, "value": 3500},
+])
+hourly["ts"] = pd.to_datetime(hourly["hour"], utc=True)
+hourly["group"] = hourly["channel"].map(tl.GROUP_OF).fillna("untracked")
+o = tl.window_from_orders(hourly, datetime(2026, 6, 29, 16, tzinfo=UTC), datetime(2026, 6, 30, 20, tzinfo=UTC))
+check(o["units"] == 32 and o["units_paid"] == 30 and o["awaiting_units"] == 2 and o["awaiting_value"] == 1000, f"units are paid plus awaiting from the sales open to now ({o['units']}, {o['units_paid']}, {o['awaiting_units']})")
+check(o["cancelled"] == 5 and o["private"] == 10 and o["orders"] == 25, f"cancelled and refunded apart, the private room and the orders counted ({o['cancelled']}, {o['private']}, {o['orders']})")
+check(o["prints_offered_paid"] == 30 and o["frames_paid"] == 9 and o["prints_offered_awaiting"] == 2 and o["frames_awaiting"] == 1, "frames per print on the paid and the awaiting lines")
+check(o["by_group"]["aa_email"] == 10 and o["by_group"]["paid"] == 20 and o["by_group"]["untracked"] == 2, f"by channel group, the untracked apart ({o['by_group']})")
+prods = tl._sales_products(o["live"], [{"name": "Red", "airtable_id": "1", "units_target": 100.0, "edition": 150.0, "excluded": False, "framing_available": True, "frame_conversion": 0.4},
+                                         {"name": "Blue", "airtable_id": "2", "units_target": 300.0, "edition": 300.0, "excluded": False, "framing_available": True, "frame_conversion": 0.2},
+                                         {"name": "Green", "airtable_id": "3", "units_target": 50.0, "edition": 50.0, "excluded": False, "framing_available": False, "frame_conversion": None}], 450.0)
+by = {r["name"]: r for r in prods}
+check(by["Blue"]["units"] == 22 and by["Blue"]["awaiting"] == 2 and by["Blue"]["target"] == 300 and by["Red"]["units"] == 10 and by["Green"]["units"] == 0, "one row per work, matched to Airtable's by name, a work with no line yet at zero")
+check(close(tl._plan_frame_rate([{"name": "Red", "units_target": 100.0, "edition": 150.0, "excluded": False, "framing_available": True, "frame_conversion": 0.4},
+                                 {"name": "Blue", "units_target": 300.0, "edition": 300.0, "excluded": False, "framing_available": True, "frame_conversion": 0.2},
+                                 {"name": "Green", "units_target": 50.0, "excluded": False, "framing_available": False, "frame_conversion": None}]), (100 * 0.4 + 300 * 0.2) / 400),
+      "the framing plan is Airtable's take-up weighted over the works that frame")
+
 # ---- ids: a TL never shares a page id with an LE of the same name
 check(tl.tl_id("Ai Weiwei · Multiple · 2026 Q4") == "ai_weiwei_multiple_2026_q4_tl", "the TL suffix on the id")
 

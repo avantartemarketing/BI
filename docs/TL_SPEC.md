@@ -257,10 +257,16 @@ launch, hence the feed's timestamp as the second reading.
 
 ## 11a. Where the build stands (1 October 2026)
 
-Phase one is built and deployed: the two feeds, the aggregation, the release model with its
-states, the panel (74 completed launches) and baskets, the targets with the live header, the
-signups state's cards, a sales summary for the window and after it, the sidebar state. The
-window's eight cards from the orders table and the 30-minute refresh are phase two.
+Phases one and two are built and deployed: the two feeds, the aggregation, the release model
+with its states, the panel (74 completed launches) and baskets, the targets with the live
+header, the signups state's cards, the sidebar state; and the window state from the orders
+table (`data/tl_units_hourly.csv`, `data/tl_buyers.csv`, pulled with the TL feeds: units paid
+plus awaiting by hour, channel, product and status, framing, the buyers of several pieces,
+the feed's purchase events as the cross-check), the settling and closed states at the final
+figures, the 30-minute refresh while a window is open (`REFRESH_WINDOW_MINUTES`), and the
+replay (`etl/tl.py --now=`), rehearsed on Gregory Crewdson's 2026 window: at 20:00 UTC on 30
+June it read 1,700 units against 852 expected by then, 44 hours left. Not built: Slack posts
+and the signup-led attribution (§10).
 
 What the data showed on the way, and how the build reads it:
 
@@ -279,8 +285,11 @@ What the data showed on the way, and how the build reads it:
   Weems: 3 August on two works, 26 October on the third). The latest date before the open is
   taken.
 - **`tl_events.csv` carries no Shopify order id**, as the LE feed carries none: the window's
-  units will be joined to their purchase events inside BigQuery (the orders feed), so no order
-  id travels. §3 said the id would; this is the safer reading.
+  units are joined to their purchase events inside BigQuery (`tlUnitsSql`), so no order id
+  travels. §3 said the id would; this is the safer reading.
+- **The orders table reads a little under the feed** (Crewdson: 2,879 paid pieces in the
+  settled window against 2,941 pieces on the feed's purchase events, after cancellations and
+  refunds), so the two are shown side by side and the orders table is the headline.
 - **Signups on some launches carry no channel.** Carrie Mae Weems' 2025 launch had 8,549 of
   11,213 signups untracked. The channel shares are read over the tracked signups and the paid
   cost per signup prices the untracked ones in at the tracked paid share, as the LE panel

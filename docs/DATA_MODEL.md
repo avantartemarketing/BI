@@ -687,6 +687,16 @@ files and the claims name products this way (`product_names` in `orderLinesCtes`
 on the name; a file pulled before that, with one Shopify product under two titles, is named in
 the build log until the next pull.
 
+**Timed launches** read the same lines by the hour (docs/TL_SPEC.md §5): `data/tl_units_hourly.csv`
+is `typed` for every launch's lines from three days before its `launch_date` to sixteen after,
+per release x product x hour (UTC, the line's creation; a draft's at the draft) x channel (the
+order's purchase event in `TL_Funnel_Report_v2`, matched on the Shopify order id inside
+BigQuery, else Untracked) x status (paid, awaiting, refunded, cancelled, other): units, orders,
+private-room units, the prints a frame was on offer for and the frames bought with them, the
+lines' value. `data/tl_buyers.csv` counts, per release, the collectors with a paid order in the
+same band, how many took more than one piece, and the pieces between them. Both are written
+with the TL feeds (`node server/bigquery.js --write --tl`), aggregates only.
+
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down
 empirically on the Mondrian and James Jean Blossom draws):
