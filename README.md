@@ -227,6 +227,10 @@ handful of complete campaigns rather than the hundreds we have run.
   both queries filter on the partition column - and the memory, see below.
 - `BIGQUERY=off` forces the sheet path back on. `BQ_ALLOW_SHRINK=1` disables the guard
   that refuses to replace a long history with a much shorter one.
+- The timed launches' pair (`sources/tl_events.csv`, `sources/tl_browsing.csv`, from
+  `TL_Funnel_Report_v2`; "Timed launches" below) runs from `BQ_TL_SINCE` (default
+  `2019-01-01`, every completed launch, since the TL panel is what the history is for);
+  `BQ_TL=off` skips it, `node server/bigquery.js --write --tl` pulls it alone.
 
 The funnel table is required; **spend is optional**. A service account granted the funnel
 dataset but not `meta_ads_insights_export` still refreshes the funnel, and spend falls
@@ -579,6 +583,47 @@ switched on, each with a tick on its row (unticked, a work stays on the grid and
 where the stretch comes from is set with coupled sliders, one per channel group, so the shares
 always add to 100%;
 **Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue, a first save included: the server removes the upcoming or actuals-only page the built one replaces) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
+
+## Timed launches
+
+A timed launch (TL) sells for a fixed window - 24 or 48 hours, 7 days - after a
+pre-window of signups, so its page has two states rather than one plan
+(`docs/TL_SPEC.md`, agreed 1 October 2026): **signups** from the announce to the
+open, watching signups against a signup target worked back from Airtable's units
+target, and **window** from the sales open to the close, watching units sold against
+that target by the hour; then **settling** for seven days and **closed**. The sidebar
+row carries a `TL` badge and the state in words ("signups · opens in 11 d", "window
+open · 31 h left"); the states' boundaries are worked back from Airtable's launch date
+and window length (the open at Airtable's `launch_time`, else the feed's timestamp,
+which runs an hour late in summer time and is corrected, else 14:00 Amsterdam time),
+and every date can be typed over on the tab.
+
+The pipeline is the LE one again with its own files: `server/bigquery.js` pulls the
+two TL feeds under the same personal-data rule (every column named, never the address,
+every cell scanned; the Shopify order id stays behind as it does for the LE feed),
+`etl/aggregate_tl.py` turns them into counts per release, day, hour and channel
+(`data/app/tl_daily.csv`, `tl_hourly.csv`, `tl_releases.csv`, rebuilt every refresh and
+not committed), and `etl/tl.py`, called from `build.py`, matches the feed's releases to
+Airtable's timed launches, works the dates and states out, cuts the **TL panel** of
+completed launches (`data/app/tl_panel.csv`, 74 launches on 1 October 2026, with the
+signup and sales pace curves in `tl_curves.json`), resolves the basket, sets the targets
+and writes a page per launch (`data/app/derived/<id>_tl.json`, the `_tl` suffix since an
+artist can have an LE and a TL of one name in a quarter). A TL page runs on Airtable's
+units target and the suggested basket before anyone saves; **Target setting** in TL
+words (units target, pieces per order, the signup → order rate, the paid prices, the
+channels, the stretch sliders, the basket, the products with their tick) makes the
+targets the release's own, recomputed live by `shared/tlModel.mjs`, and
+`POST /api/inputs/:id` accepts the TL fields.
+
+What the feed showed, and the model allows for: the sales start about a day before the
+public open (the platform's early access, private-room orders), so the window state
+begins with the first sales burst and the pace curve is measured from it; signups on
+some launches carry no channel at all, so the paid cost per signup prices the untracked
+ones in at the tracked paid share; a paid signup converts to an order at a fraction of
+an email one, so the signup target's rate is the basket's rates by channel at its mix.
+Phase one carries the signups state in full and a sales summary from the feed's purchase
+events; the window's cards from the orders table (awaiting payment, framing, orders per
+product, multiples) and the 30-minute refresh while a window is open are the next build.
 
 ## Auditing the allocator tool with an admin export
 

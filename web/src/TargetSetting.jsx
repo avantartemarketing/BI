@@ -52,7 +52,7 @@ const GROUPS = [
 
 /* One field: the label, a source or unit caption beside it, the box, a
  * helper under. The tip sits on the label. */
-function Field({ label, src, tip, help, helpKind, children }) {
+export function Field({ label, src, tip, help, helpKind, children }) {
   return (
     <div className="ts-field">
       <div className="ts-label"><span title={tip}>{label}</span>{src ? <span className="src">{src}</span> : null}</div>
@@ -62,9 +62,9 @@ function Field({ label, src, tip, help, helpKind, children }) {
   );
 }
 
-const RoBox = ({ value, title }) => <div className="ts-box ro" title={title}><span className="txt">{value}</span></div>;
+export const RoBox = ({ value, title }) => <div className="ts-box ro" title={title}><span className="txt">{value}</span></div>;
 
-const TextBox = ({ value, onChange, placeholder, title, list }) => (
+export const TextBox = ({ value, onChange, placeholder, title, list }) => (
   <div className="ts-box" title={title}>
     <input value={value} onChange={onChange} placeholder={placeholder} list={list} />
   </div>
@@ -72,7 +72,7 @@ const TextBox = ({ value, onChange, placeholder, title, list }) => (
 
 /* A number box: what is being typed while it is typed ("5." on the way to
  * "5.5"), the model's figure once it is left, the unit inside the box. */
-function NumBox({ value, placeholder, unit, onCommit, title, disabled }) {
+export function NumBox({ value, placeholder, unit, onCommit, title, disabled }) {
   const [draft, setDraft] = useState(null);
   return (
     <div className={`ts-box num${disabled ? " dis" : ""}`} title={title}>
@@ -86,7 +86,7 @@ function NumBox({ value, placeholder, unit, onCommit, title, disabled }) {
 
 /* A switch: the control and its name; the clause on what it does is the
  * field's helper. */
-function Switch({ on, onChange, label, title }) {
+export function Switch({ on, onChange, label, title }) {
   return (
     <button type="button" className={`ts-switch${on ? " on" : ""}`} aria-pressed={on} onClick={() => onChange(!on)} title={title}>
       <span className="tr" />{label}
@@ -94,11 +94,11 @@ function Switch({ on, onChange, label, title }) {
   );
 }
 
-const Notice = ({ red, children, action }) => (
+export const Notice = ({ red, children, action }) => (
   <div className={`ts-notice${red ? " red" : ""}`}><span>{children}</span>{action || null}</div>
 );
 
-const CardHead = ({ dot, title, desc, right }) => (
+export const CardHead = ({ dot, title, desc, right }) => (
   <div className="ts-card-head">
     <span className="dot" style={{ background: dot }} /><span className="t">{title}</span>
     {desc ? <span className="d">{desc}</span> : null}
@@ -109,7 +109,7 @@ const CardHead = ({ dot, title, desc, right }) => (
 /* The Meta campaigns whose spend is this release's: the ones the spend feed
  * names for the campaign code, ticked or not, and any other campaign added by
  * name. The draw campaign is what the code matches on its own. */
-function Campaigns({ code, chosen, all, suggested, onChange }) {
+export function Campaigns({ code, chosen, all, suggested, onChange }) {
   const [adding, setAdding] = useState("");
   const byName = new Map((all || []).map((c) => [c.name, c]));
   const named = (all || []).filter((c) => code && c.name.startsWith(`${code} · `)).map((c) => c.name);

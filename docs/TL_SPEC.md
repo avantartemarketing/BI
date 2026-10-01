@@ -12,8 +12,9 @@ the build spec for timed-launch pages; the workbook's TL target model as recorde
   use for the LE feed (artist and window, then quarter). An upcoming TL is listed from Airtable
   before the feed carries a row for it, as upcoming LEs are.
 - **First launch.** Bisa Butler · Multiple · 2026 Q4 (Be Mine; I Go To Prepare a Place For You,
-  code `BisaButlerTL26`): announced 15 September, window opens 13 October at 17:00 UTC (the
-  feed's timestamp; Airtable's `launch_time` is blank), 48 hours, closes 15 October. Units target
+  code `BisaButlerTL26`): announced 15 September, window opens 13 October at 16:00 UTC, 18:00
+  Amsterdam time (the feed's timestamp less the hour it runs late in summer, §11a; Airtable's
+  `launch_time` is blank), 48 hours, closes 15 October. Units target
   400, two works of 300 at 750 EUR, framing on order. It is in its pre-window now, with about
   7,600 signups to 1 October, so the signups state can be checked against live data at once and
   the sales state on the 13th. Then Carrie Mae Weems (announce 26 October, window 18 November)
@@ -253,6 +254,49 @@ Risks and costs: the TL feed is 0.5 GB to scan in full, so the pulls are increme
 LE ones and the hourly browsing counts are aggregated inside BigQuery; the hourly state has no
 live test before 13 October, hence the replay; Airtable's `launch_time` is blank on the first
 launch, hence the feed's timestamp as the second reading.
+
+## 11a. Where the build stands (1 October 2026)
+
+Phase one is built and deployed: the two feeds, the aggregation, the release model with its
+states, the panel (74 completed launches) and baskets, the targets with the live header, the
+signups state's cards, a sales summary for the window and after it, the sidebar state. The
+window's eight cards from the orders table and the 30-minute refresh are phase two.
+
+What the data showed on the way, and how the build reads it:
+
+- **The sales start a day before the public open.** The platform's "TL - Early access" stage
+  sells private-room orders from about 24 hours before the open (Gregory Crewdson's 2026
+  launch took 2,147 pieces in the 48 hours from 16:00 UTC on 29 June, the day before its
+  30 June open). The window state begins with the first hour that sold five pieces or more
+  within 36 hours of the open, the sales pace curve is measured from it, and a launch still
+  to open expects an early access 24 hours before, said as expected.
+- **The feed's `launch_date` runs an hour late in summer time.** Against Airtable's
+  `launch_time` and the sales bursts over the 2025-26 launches it reads 17:00Z where the
+  launch was 16:00Z (18:00 Amsterdam) in CEST, and agrees in CET. The open is Airtable's
+  time first, else the feed's less that hour in summer, else 14:00 Amsterdam time; Bisa
+  Butler opens 13 October at 16:00 UTC, 18:00 Amsterdam, not 17:00 UTC as §1 first read it.
+- **Airtable's records can carry a stale announce date beside the current one** (Carrie Mae
+  Weems: 3 August on two works, 26 October on the third). The latest date before the open is
+  taken.
+- **`tl_events.csv` carries no Shopify order id**, as the LE feed carries none: the window's
+  units will be joined to their purchase events inside BigQuery (the orders feed), so no order
+  id travels. §3 said the id would; this is the safer reading.
+- **Signups on some launches carry no channel.** Carrie Mae Weems' 2025 launch had 8,549 of
+  11,213 signups untracked. The channel shares are read over the tracked signups and the paid
+  cost per signup prices the untracked ones in at the tracked paid share, as the LE panel
+  folds its untracked units.
+- **A paid signup converts at a fraction of an email one** (the panel's medians: paid 8%,
+  AA Email 29%, Direct etc. 30%). The signup target's rate is the basket's rates by channel
+  weighted at its mix of signups, so a paid-led plan needs more signups per order; a typed
+  rate still wins.
+- **The feed names the release on fewer sessions than signups for some launches**, so a
+  session → signup rate over 50% is unread rather than taken as a conversion.
+- **The TL feed and the LE feed share the release naming**, and an artist can have one of
+  each in a quarter (Ai Weiwei, 2026 Q4), so a TL page's id carries a `_tl` suffix.
+- **A TL page runs before anyone saves**: on Airtable's units target summed over the ticked
+  works and the suggested basket (the nearest launches by target and price among those of the
+  same window length, falling back to every length when fewer than six). Saving on the tab
+  makes the targets the release's own.
 
 ## 12. Decisions log
 

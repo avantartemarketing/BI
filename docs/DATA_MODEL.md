@@ -778,12 +778,18 @@ again, and a save drops them.
 The full lever arithmetic is in the repository history at that date, and in the workbook's
 `LE_Template - old` tab.
 
-## 3a. The TL target model, as the workbook computes it (recorded 2026-09-23, not built)
+## 3a. The TL target model, as the workbook computes it (recorded 2026-09-23)
 
-The dashboard has no timed-launch path yet: `type` is always `LE`, though the
-`TL_Funnel_Report_v2` feed exists (§2.5). When one is built, the workbook's TL_Template is the
-spec. Its September 2026 revision keeps orders and units apart, which the earlier tab did not.
-In its terms:
+Built on 1 October 2026 along the lines of `docs/TL_SPEC.md`, which is the spec for the
+timed-launch pages: two page states (signups before the window, units in it), the dates worked
+back from Airtable's launch date and window length, a TL panel of completed launches and
+baskets cut from it, the targets of §7 there. The pipeline is `server/bigquery.js` (the TL
+feeds), `etl/aggregate_tl.py` (counts per release, day, hour and channel), `etl/tl.py` (the
+release model, the panel, the baskets, the targets, the pages; `type: "TL"`, ids suffixed
+`_tl`) and `shared/tlModel.mjs` (the live header), with `tests/test_tl_model.py` holding the two
+sides to one figure. What follows is the workbook's own reading, kept as the background the
+spec was agreed against. Its September 2026 revision keeps orders and units apart, which the
+earlier tab did not. In its terms:
 
 ```
 total purchases      = edition target                     # ÷ (1 + 0.2 multiple adjustment) on a Multiple

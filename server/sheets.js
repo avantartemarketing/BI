@@ -293,6 +293,16 @@ async function runEtlOnce(release) {
     agg = String(e.message || e).replace(/\s+/g, " ").slice(0, 300);
     console.error("sheets: " + agg);
   }
+  // the timed launches' aggregation (docs/TL_SPEC.md §3): its own feeds, its
+  // own files, and a failure that costs the TL pages a refresh, never the LE ones
+  try {
+    const out = await runPy("aggregate_tl.py", 5 * 60 * 1000);
+    agg += (agg ? " | " : "") + out.split("\n").filter(Boolean).slice(-1)[0];
+  } catch (e) {
+    const msg = String(e.message || e).replace(/\s+/g, " ").slice(0, 300);
+    agg += (agg ? " | " : "") + msg;
+    console.error("sheets: " + msg);
+  }
   const build = await runPy("build.py", 5 * 60 * 1000);
   lastBuild = parseBuildSummary(build);
   return [agg, ...build.split("\n").slice(-3)].filter(Boolean).join(" | ");
