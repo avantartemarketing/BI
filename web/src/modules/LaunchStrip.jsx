@@ -9,6 +9,7 @@
 import React from "react";
 import { fmtDay, useTip } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import { TLStrip } from "../TLPage.jsx";
 
 const DAY_MS = 86400000;
 const iso = (s) => new Date(s + "T00:00:00Z");
@@ -16,6 +17,9 @@ const days = (n) => `${n} ${Math.abs(n) === 1 ? "day" : "days"}`;
 
 export default function LaunchStrip({ snap }) {
   const t = useTip();
+  // a timed launch's clock runs announce -> open -> close, with hours inside
+  // the window (docs/TL_SPEC.md §9): its own strip, in the same slot
+  if (snap && snap.type === "TL") return <TLStrip snap={snap} />;
   if (!snap || snap.catalogue || !snap.windowStart || !snap.windowEnd || !snap.asOf) return null;
   const announce = iso(snap.windowStart), launch = iso(snap.windowEnd), today = iso(snap.asOf);
   const span = Math.round((launch - announce) / DAY_MS);

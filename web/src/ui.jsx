@@ -184,13 +184,13 @@ export const BADGE_WORDS = { target: "Target", bm: "Benchmark" };
 /* The horizon a card is reading, as a chip beside its title. The cards that
    answer the page's Today / At close toggle wear it, so the words inside them
    do not have to repeat which horizon they are on. */
-export function HorizonBadge({ horizon }) {
+export function HorizonBadge({ horizon, closeLabel = "At close" }) {
   const close = horizon === "close";
   return (
     <Lozenge color="neutral" tip={close
-      ? "This card is reading the projection at close. The page's Compare toggle switches it."
+      ? `This card is reading the projection ${closeLabel.toLowerCase()}. The page's Compare toggle switches it.`
       : "This card is reading where the release is today. The page's Compare toggle switches it."}>
-      {close ? "At close" : "Today"}
+      {close ? closeLabel : "Today"}
     </Lozenge>
   );
 }

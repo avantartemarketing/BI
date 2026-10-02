@@ -110,22 +110,30 @@ benchmark       = the basket's median signups at the same day to open
 Purchases per order and the signup -> order rate are the basket's medians, typed over on the
 tab. The launch strip reads "Announced d Mon, opens in N days".
 
-Cards, in this order:
+**The cards are the LE page's cards**, in the shared layout and in signup words (decided 2
+October 2026: the page mirrors the LE page's containers, changing only where a timed launch is
+conceptually different). The build writes the blocks the LE cards read (`etl/tl.py le_blocks`:
+the channels with their daily series and projections, the funnel's two factors and their
+contributions, the outcome waterfall, the hero, the paid pacing) in signups by day from the
+announce to the open, with the pre-window signup curve as the plan's shape and the untracked
+share spread over the channels in proportion, so the cards add up to the headline as the LE
+cards do; `web/src/vocab.mjs` gives each card its words.
 
-1. **Signups by channel vs target.** Each channel's signups against its share of the signup
-   target (the basket's share of pre-window signups per channel, renormalised over the channels
-   in plan), as the LE channels card; a Where-the-stretch-comes-from reading applies as for LEs.
-2. **Sessions and signup rate by channel.** Sessions, signups and session -> signup conversion
-   per channel against the basket's medians.
-3. **Email sends to signups.** HubSpot sends in the pre-window with delivered, opens and clicks,
-   and the signups on the send's day and channel (AA Email).
-4. **Paid signups and cost per signup.** Spend to date, paid-attributed signups (split touch),
-   cost per signup against the basket's median, the pre-window budget (§7) and what is left of
-   it. This card looks at the signups paid buys, nothing else: the conversion of those signups to
-   orders is the window's business.
+| LE card | On a timed launch before its window |
+|---|---|
+| Campaign clock | announce -> open, days to the open (the TL strip) |
+| Units vs sellout | **Signups vs target**: signups to date against the target by today, the benchmark's pace as the outline, the signup target at the end of the track; at the open the projection |
+| Channels vs targets | signups by channel against each channel's share of the signup target and the basket's |
+| Funnel by channel | the rungs per channel (delivered emails, opens, clicks, sessions, session -> signup; paid spend and cost per signup) and the waterfall from the benchmark through each channel's traffic and conversion to the signups today |
+| Unit trajectory | **Signup trajectory**: cumulative signups from the announce against the target's pace and the benchmark's, the projection to the open, by channel |
+| Organic funnel | sessions and session -> signup over the organic channels; the drivers adding and costing signups |
+| Paid ROI | **Paid cost per signup**: daily spend bars, the trailing three-day cost per signup against the plan's (a timed launch's paid buys signups and its products carry no profit split, so there is no ROI to read) |
+| Paid spend / day | the daily spend that paces the pre-window budget left over the days to the open, the paid signups and the spend against the budget's share by today and the basket's; no rule engine yet, so the buttons wait |
+| Sell-through, Framing, Entries by country | not before the window: nothing has been sold |
+| Actual vs target | the waterfall from the target through the stretch and the benchmark, organic traffic and conversion, paid spend and efficiency, to the signups today |
 
-The signup trajectory chart: cumulative signups from announce (the pre-announce signups as the
-opening level) against the target pace and the benchmark, by day.
+Sessions and signup rates by channel, the email sends and their signups, and the paid signups'
+cost are in the funnel card's rungs and popups, as they are on an LE page.
 
 ## 5. In-window state: sales
 
@@ -142,32 +150,40 @@ pace            = the basket's median cumulative share of window units by hour o
 benchmark       = the basket's median units at the same share of the window
 ```
 
-Cards, matching the LE page as far as makes sense:
+**The cards are the LE page's cards**, in the shared layout and in units, the page's clock
+running in hours from the sales open (`clock: {unit: "hour"}`; the day helpers in
+`web/src/format.mjs` read it, so a day of the LE page is an hour of the window, "Tue 30 Jun
+20:00 · hour 28"):
 
-1. **Hourly sales curve vs pace.** Units by hour from the open, the target pace and the
-   benchmark curve; the x-axis in hours since open, with the close marked.
-2. **Channels vs target.** Units by split-touch channel against each channel's share of the
-   target (the basket's unit shares), as LE.
-3. **Paid sales and ROI.** Spend in the window, paid-attributed units (split touch), cost per
-   sale and ROI, with the spend rules' recommendation as the LE Paid card gives it. This card
-   looks only at the sales paid drives directly in the window, not at paid signups converting.
-4. **Orders, units per order, awaiting payment.** Orders beside units, pieces per order,
-   drafts and pending payment counted apart with their value.
-5. **Framing conversion.** Frames per print on the window's paid prints and on the orders
-   awaiting payment, against the basket and the plan, as the LE Framing card.
-6. **Orders per product.** One row per work (the ticked products of the Target setting grid):
-   units, orders, awaiting, share of the target, as the sell-through card's product rows.
-7. **Multiples.** Buyers taking more than one unit in the window (a customer whose pieces across
-   the window's orders exceed one), as a count and a share of buyers, against the basket.
-8. **Funnel by channel.** Sessions -> buyers by channel, as LE, read over the window.
+| LE card | On a timed launch inside its window |
+|---|---|
+| Campaign clock | open -> close, hours left (the TL strip) |
+| Units vs sellout | **Units vs target**: units sold against the target by now, the benchmark's pace as the outline, the units target at the end of the track; at close the projection |
+| Channels vs targets | units by split-touch channel against each channel's share of the target (the basket's unit shares) and the basket's |
+| Funnel by channel | the window's sessions by channel and the rate they bought at, held at the basket's window rates (`conv_window`, a panel measure), the buyers and the pieces per buyer split where they differ from the plan's; paid spend and cost per sale |
+| Unit trajectory | cumulative units by hour from the sales open against the target's pace and the benchmark's (the basket's unit curve), the projection to the close, by channel |
+| Organic funnel | the window's sessions and session -> sale over the organic channels |
+| Paid ROI | **Paid cost per sale**: the window's daily spend, the cost per sale against the plan's |
+| Paid spend / day | the spend that paces the window budget left over the hours left, paid units and spend against the budget's share by now and the basket's |
+| Sell-through by product | **Sell-through by work**: one row per work, paid and awaiting payment from the orders table against the work's units target (the bar runs past the target where the work has sold more), at close with the projection's still to come; the headline the launch's units over its target, uncapped |
+| Framing | frames per print on the window's paid prints and on the orders awaiting payment, by work, against the basket and Airtable's take-up |
+| Entries by country | not on a timed launch |
+| Actual vs target | the waterfall from the target to the units today (the projection at close) |
+| Pre-window signups | a card of its own, timed launches only: the pre-window's result once the window has opened |
+
+Orders, pieces per order, awaiting payment with its value, the private-room and cancelled units
+and the feed's purchase events as the cross-check stay in the snapshot's `sales` block (the
+sell-through card's popups read it); the multiples are the funnel's pieces-per-buyer row.
 
 ## 6. Closed state
 
 The in-window layout at its final figures: units against target, the complete hourly curve,
-the channel split, paid ROI, framing, products and multiples. For 7 days after the close the
-page is `settling` and keeps reading drafts paid, payments cleared and cancellations; the
-sidebar row says so. Then the figures are final, the page is `closed`, and it is listed with the
-closed releases.
+the channel split, paid cost, framing, the works and the pre-window's result. For 7 days after
+the close the page is `settling` and keeps reading drafts paid, payments cleared and
+cancellations (the close hour's step of every series takes them, so the window's units are its
+lines paid or awaiting by the settle, as the panel counts them); the sidebar row says so. Then
+the figures are final, the page is `closed`, and it is listed with the closed releases. A
+settling or closed page projects nothing: its projection is its actual.
 
 ## 7. Target setting for TLs
 
@@ -317,6 +333,13 @@ What the data showed on the way, and how the build reads it:
   works and the suggested basket (the nearest launches by target and price among those of the
   same window length, falling back to every length when fewer than six). Saving on the tab
   makes the targets the release's own.
+- **The Overview is the LE Overview** (2 October 2026). The first cut had cards of its own (a
+  pace chart, group columns, tables of sends, paid signups and orders); the page now renders the
+  LE cards through the shared layout, in the state's words, off the LE-shaped blocks the build
+  writes beside the TL ones (§4, §5; `tests/test_tl_page.py` holds the channels to the hero, the
+  funnel's contributions and the waterfall's steps to their gaps, on the build's day and on the
+  Crewdson replay). The explainer stays off on a timed launch until its explanations are
+  written; Slack posts and the LE paid rule engine are not applied to timed launches.
 - **The Target setting tab is the LE tab in TL words** (2 October 2026). Its first cut was a
   compact form of its own, with a basket select and a plain products table; it now runs on the
   LE tab's components (the basket picker over the TL panel, the products grid with a units

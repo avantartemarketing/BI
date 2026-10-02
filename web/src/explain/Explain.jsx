@@ -21,7 +21,9 @@ const HINT_UNTIL = 3;
 const readUses = () => { try { return Number(localStorage.getItem(USES)) || 0; } catch { return 0; } };
 const typing = (el) => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName || ""));
 
-export function ExplainProvider({ snap, st, resetKey, children }) {
+/* `enabled` false leaves every figure plain: a timed launch's page carries
+ * figures the LE explanations do not describe yet (docs/TL_SPEC.md §10). */
+export function ExplainProvider({ snap, st, resetKey, enabled = true, children }) {
   const [stack, setStack] = useState([]);         // [{ k, arg }], the last one on screen
   const [uses, setUses] = useState(readUses);
   const [nudged, setNudged] = useState(false);
@@ -98,9 +100,9 @@ export function ExplainProvider({ snap, st, resetKey, children }) {
   const api = useMemo(() => ({ open, close, drill, back, nudge }), [open, close, drill, back, nudge]);
   const top = stack[stack.length - 1] || null;
   return (
-    <Ctx.Provider value={{ ...api, uses, nudged }}>
+    <Ctx.Provider value={{ ...api, uses, nudged, off: !enabled }}>
       {children}
-      {top && <ExplainPanel snap={snap} st={st} stack={stack} api={api} />}
+      {enabled && top && <ExplainPanel snap={snap} st={st} stack={stack} api={api} />}
     </Ctx.Provider>
   );
 }
@@ -109,7 +111,7 @@ export function ExplainProvider({ snap, st, resetKey, children }) {
  * headline figures), so Shift+Enter explains it from the keyboard too. */
 export function Ex({ k, arg, focus = false, children, className, style }) {
   const x = useContext(Ctx);
-  if (!x) return <>{children}</>;
+  if (!x || x.off) return <>{children}</>;
   const go = (e, el) => {
     e.preventDefault();
     e.stopPropagation();
@@ -138,7 +140,7 @@ export function Ex({ k, arg, focus = false, children, className, style }) {
  * on a figure makes it blink, which is how most people will find it. */
 export function ExplainHint() {
   const x = useContext(Ctx);
-  if (!x || x.uses >= HINT_UNTIL) return null;
+  if (!x || x.off || x.uses >= HINT_UNTIL) return null;
   return (
     <span className={"x-hint" + (x.nudged ? " nudge" : "")} aria-hidden="true">
       <kbd>⇧ Shift</kbd> + click any number to see how it is worked out

@@ -42,6 +42,7 @@ import {
 import { stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { walkCap, closeWalk, postsCover } from "../figures.mjs";
+import { wordsOf } from "../vocab.mjs";
 
 const RING = "0 0 0 1px rgba(20,20,19,.45)";
 const NEUTRAL_DOT = "#c8c5bc";
@@ -245,6 +246,7 @@ function emailStages(snap) {
  * rows sum to the group's actual less its benchmark. Off, they read against
  * the plan and sum to actual less target, as they do without a basket. */
 function groupWaterfall(g, snap, vsBm = false) {
+  const W = wordsOf(snap);   // units, or a timed launch's signups (vocab.mjs)
   const ch = (snap.channels || []).find((c) => c.key === g.key) || {};
   const now = ch.now ?? 0, exp = (vsBm ? ch.bmExp : ch.exp) ?? 0;
   const fbg = (snap.funnelByGroup || {})[g.key] || {};
@@ -268,13 +270,13 @@ function groupWaterfall(g, snap, vsBm = false) {
   const upbE = upb.plan > 0 ? upb.plan : 1;
   const splitBuy = Math.abs(upbA - upbE) > 0.001;
   const saleSteps = splitBuy
-    ? [{ label: "Session → buyer", a: convA / upbA, e: convE / upbE, show: P,
+    ? [{ label: W.convBuyer, a: convA / upbA, e: convE / upbE, show: P,
          note: `sessions that became a buyer, vs ${REF} - the pieces each buyer took are a release-level row of their own` },
        // the rate is one release-level fact, so its step is collected out of
        // the groups and printed once below them rather than five times
-       { label: "Units per buyer", a: upbA, e: upbE, show: R, perBuyer: true,
+       { label: W.perBuyer, a: upbA, e: upbE, show: R, perBuyer: true,
          note: "pieces per buyer across the release, vs what the target assumed for this many products" }]
-    : [{ label: "Session → sale", a: convA, e: convE, show: P, note: `session → sale rate vs ${REF}` }];
+    : [{ label: W.conv, a: convA, e: convE, show: P, note: `${W.conv.toLowerCase()} rate vs ${REF}` }];
   const info = (label, v, ref, unit, note) => rows.push({ label, value: null, note, display: fmtVal(v, unit),
     tipRows: [{ label: "Actual", value: fmtVal(v, unit) }, { label: "Reference", value: fmtVal(ref, unit) }] });
   const twoFactor = () => chainSteps([
@@ -359,15 +361,15 @@ function groupWaterfall(g, snap, vsBm = false) {
     if (finite(spendE) && spendE > 0 && spendA > 0 && exp > 0) {
       steps = chainSteps([
         { label: "Spend", a: spendA, e: spendE, show: (v) => fmtVal(v, "eur"), note: `spend to date vs the ${REF}'s share of budget by today` },
-        { label: "Cost per secured unit", a: now / spendA, e: exp / spendE, show: (v) => (v > 0 ? fmtVal(1 / v, "eur") + " per unit" : "–"),
-          note: `secured units per euro, actual vs ${REF} - the cost side of the ledger` },
+        { label: W.paidCost, a: now / spendA, e: exp / spendE, show: (v) => (v > 0 ? fmtVal(1 / v, "eur") + ` per ${W.unitOne}` : "–"),
+          note: `${W.unit} per euro, actual vs ${REF} - the cost side of the ledger` },
       ]);
       rows.push(...steps);
       return { name: g.name, rows, now, exp };
     }
     info("Spend", spendA, spendE, "eur", "no plan or no spend yet");
-    rows.push({ label: "Cost per secured unit", value: now - exp, note: snap.campaignName ? `residual: paid units vs ${REF}` : "no campaign matched - the whole paid gap",
-      tipRows: [{ label: "Secured", value: fmtVal(now, "count") }, { label: "Expected", value: fmtVal(exp, "count") }] });
+    rows.push({ label: W.paidCost, value: now - exp, note: snap.campaignName ? `residual: paid ${W.unit} vs ${REF}` : "no campaign matched - the whole paid gap",
+      tipRows: [{ label: W.secured, value: fmtVal(now, "count") }, { label: "Expected", value: fmtVal(exp, "count") }] });
     return { name: g.name, rows, now, exp };
   }
   const social = snap.social || {};
@@ -493,28 +495,28 @@ export function buildWaterfall(snap, groups) {
     body: `What the business asked for over and above the basket - ${stretchWords(snap)}. The rows below read against the basket, so this step is the part of the gap to target that is ambition rather than performance.`,
   } : null;
 
-  return { flat, X, domain: [lo - pad, hi + pad], expTotal, bmTotal, nowTotal, hasBm, day, dayText: dayLabel(snap, day), words, capped, over, stretchTip };
+  return { flat, X, domain: [lo - pad, hi + pad], expTotal, bmTotal, nowTotal, hasBm, day, dayText: dayLabel(snap, day), words, capped, over, stretchTip, W: wordsOf(snap) };
 }
 
 const targetTip = (wf) => ({
   head: `Target by ${wf.dayText}`,
-  rows: [{ label: "Secured units", value: fmt(wf.expTotal) }],
+  rows: [{ label: wf.W.securedUnits, value: fmt(wf.expTotal) }],
 });
 const bmTip = (wf) => ({
   head: "Benchmark today",
-  rows: [{ label: "Secured units", value: fmt(wf.bmTotal) }],
+  rows: [{ label: wf.W.securedUnits, value: fmt(wf.bmTotal) }],
   body: "The median of the matched basket - what launches like this one typically reach by now. The rows walk from here.",
 });
 const actualTip = (wf) => ({
-  head: "Secured to date",
-  rows: [{ label: "Secured units", value: fmt(wf.nowTotal) }],
+  head: wf.W.toDate,
+  rows: [{ label: wf.W.securedUnits, value: fmt(wf.nowTotal) }],
   body: wf.capped ? `The steps add up to ${fmt(wf.over)} more than the actual: demand the edition cannot hold, so the sellout caps it.` : undefined,
 });
-const stepTip = (r, hasBm) => ({
+const stepTip = (r, hasBm, unit = "units") => ({
   head: r.label, body: r.note,
   rows: [
     ...(r.show ? [{ label: "Actual", value: r.show(r.a) }, { label: "Reference", value: r.show(r.e) }] : []),
-    { label: hasBm ? "vs benchmark" : "vs expected", value: fmtSigned(r.value, 1) + " units", color: r.value >= 0 ? C.green : C.red },
+    { label: hasBm ? "vs benchmark" : "vs expected", value: fmtSigned(r.value, 1) + " " + unit, color: r.value >= 0 ? C.green : C.red },
     { label: "Running total", value: fmt(r.to, 1) },
   ],
 });
@@ -523,6 +525,7 @@ const infoTip = (r) => ({ head: r.label, body: r.note, rows: r.tipRows });
 /* The rungs, as data: five groups of { label, v, bm, plan, unit, kind, inv,
  * note } for buildRung, off the same snapshot the waterfall walks. */
 export function rungModel(snap) {
+  const W = wordsOf(snap);   // units, or a timed launch's signups (vocab.mjs)
   const targeted = snap?.targeted !== false;
   const fbg = snap?.funnelByGroup || {};
   const email = snap?.email || {};
@@ -573,7 +576,7 @@ export function rungModel(snap) {
     const g = fbg[key] || {};
     const rate = (v, by) => (v === null || v === undefined ? null : pct(v / (by || 1)));
     return {
-      label: splitBuyRung ? "Session → buyer" : "Session → sale",
+      label: splitBuyRung ? W.convBuyer : W.conv,
       kind: "rate", unit: "%",
       v: rate(g.conv_actual, upbActual),
       plan: rate(g.conv_expected, upbPlan),
@@ -666,10 +669,14 @@ export function rungModel(snap) {
       key: "paid", name: "Paid", short: "Paid",
       rungs: [
         { label: "Spend", kind: "vol", unit: "eur", v: paid.spendToDate ?? null, plan: spendPlan, bm: spendBm,
-          note: "Spend to date against the budget's share of the days paid runs, the day after the announce to the close. The benchmark budget is the basket's paid spend on the same clock." },
-        { label: "Cost per secured unit", kind: "rate", unit: "eur", inv: true,
+          note: W.tl
+            ? `Spend to date against the budget's share of the ${W.state === "signups" ? "days from the announce to the open" : "window's hours"}, spent evenly. The benchmark budget is the basket's paid spend on the same clock.`
+            : "Spend to date against the budget's share of the days paid runs, the day after the announce to the close. The benchmark budget is the basket's paid spend on the same clock." },
+        { label: W.paidCost, kind: "rate", unit: "eur", inv: true,
           v: costPerUnit, plan: cpp ?? null, bm: cpp ?? null,
-          note: "Spend to date over paid secured units to date, against the plan's cost per unit (the target's cost per purchase). The paid cards price a converting entry instead, which is a different quantity. Lower is better, so cheap sits right." },
+          note: W.tl
+            ? `Spend to date over the paid ${W.unit} to date, against the plan's ${W.paidCost.toLowerCase()} (the basket's median, or the figure typed on the Target setting tab). Lower is better, so cheap sits right.`
+            : "Spend to date over paid secured units to date, against the plan's cost per unit (the target's cost per purchase). The paid cards price a converting entry instead, which is a different quantity. Lower is better, so cheap sits right." },
       ],
     },
   ];
@@ -739,7 +746,7 @@ export default function FunnelByChannel({ snap, horizon, only }) {
           <button className={view === "funnel" ? "active" : ""} onClick={() => setView("funnel")}
             title="Each funnel metric as a deviation: target down the centre, benchmark as a dotted tick, actual as a dot">Funnel</button>
           <button className={view === "wf" ? "active" : ""} onClick={() => setView("wf")}
-            title="Waterfall from expected to actual secured units today, stepped by the same funnel components">Waterfall</button>
+            title={`Waterfall from expected to actual ${wordsOf(snap).unit} today, stepped by the same funnel components`}>Waterfall</button>
         </span>
       ) : (
         <span style={{ fontSize: 11.5, color: C.muted }} title="Grey dots: no reference to judge against until targets are set. The number is the actual.">actuals · no targets</span>
@@ -918,7 +925,7 @@ function Walk({ wf, layout: L }) {
         {g.rows.map((row, i) => {
           const r = row.r, step = row.kind === "step", on = lit(row);
           // the popup names the row in full, whichever card it is on
-          const tip = { ...(step ? stepTip(r, hasBm) : infoTip(r)), head: row.full };
+          const tip = { ...(step ? stepTip(r, hasBm, wf.W.unit) : infoTip(r)), head: row.full };
           const at = { gridRow: i + 1 };
           return (
             <React.Fragment key={row.id}>
@@ -985,7 +992,7 @@ export function FunnelByChannelWide({ snap }) {
   if (!wf) return <FunnelByChannel snap={snap} only="funnel" />;
   return (
     <Card dot={GROUP_DOTS.funnel} title="Funnel by channel"
-      right={<span style={{ fontSize: 11.5, color: C.muted }}>waterfall · secured units, day {wf.day}</span>}>
+      right={<span style={{ fontSize: 11.5, color: C.muted }}>waterfall · {wf.W.securedUnits.toLowerCase()}, {wf.W.stepWord} {wf.day}</span>}>
       <div className="spacer-16" />
       <Walk wf={wf} layout={WALK_WIDE} />
     </Card>

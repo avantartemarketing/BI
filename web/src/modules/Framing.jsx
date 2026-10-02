@@ -42,6 +42,9 @@ export default function Framing({ snap, horizon = "today" }) {
   const f = snap.framing;
   const t = useTip();
   if (!f || (!(f.prints > 0) && !f.entrants)) return null;
+  // a timed launch (docs/TL_SPEC.md §5): the window's paid prints and the
+  // orders awaiting payment, no draw and no forecast
+  const tl = !!f.tl;
   const close = horizon === "close";
   const rate = f.rate ?? null;   // the paid prints' own, the Buyers bar
   const plan = f.plan ?? null;
@@ -77,18 +80,24 @@ export default function Framing({ snap, horizon = "today" }) {
     rows: (f.works || []).map((w) => ({ label: w.name, value: `${fmt(w.frames)} of ${fmt(w.prints)} · ${fmtPct(w.rate)}` })),
     body: notOffered.works.length ? `No frame on offer: ${notOffered.works.join(", ")}` : null,
   };
-  const entTip = ent ? {
+  const entTip = ent ? (tl ? {
+    head: "Awaiting payment",
+    rows: [{ label: "Prints on orders not yet paid", value: fmt(ent.prints) }, { label: "With a frame", value: fmt(ent.frames) }],
+    body: "The frame lines on the window's orders awaiting payment: the rate they will frame at once paid",
+  } : {
     head: "Entrants still in the draw",
     rows: [{ label: "Prints pre-authorised", value: fmt(ent.prints) }, { label: "With a frame", value: fmt(ent.frames) }],
     body: "The frame lines on the app's pre-authorisation drafts: the rate the prints still to be allocated will frame at if they win",
-  } : null;
+  }) : null;
   const planTip = plan !== null ? {
     head: "Plan",
-    body: `The economics assume ${fmtPct(plan)} of prints frame - the frame conversion on the Set up targets tab, or the panel default`,
+    body: tl ? `Airtable's framing take-up for the works, ${fmtPct(plan)} of prints framed, weighted over the works that frame`
+      : `The economics assume ${fmtPct(plan)} of prints frame - the frame conversion on the Set up targets tab, or the panel default`,
   } : null;
   const bmTip = bench ? {
     head: "Benchmark",
-    body: `The median frames per print over ${bench.n} of the basket's ${bench.of} launches with 30 or more prints on offer in the orders feed`,
+    body: tl ? `The basket's median frames per print over its ${bench.n} timed launches, on the paid prints in their windows with a frame on offer`
+      : `The median frames per print over ${bench.n} of the basket's ${bench.of} launches with 30 or more prints on offer in the orders feed`,
   } : {
     head: "Benchmark",
     body: "No launch in the basket has enough framed orders in the feed to read a rate from",
@@ -108,7 +117,7 @@ export default function Framing({ snap, horizon = "today" }) {
           ? <>of prints framed{close ? " at close" : ", forecast included"} · {fmt(head.frames)} of {fmt(head.prints)}</>
           : rate !== null
             ? <>of paid prints went out framed · {fmt(f.frames)} of {fmt(f.prints)}</>
-            : <>no prints sold yet - the entrants' frames below</>}
+            : <>no prints sold yet - the {tl ? "unpaid orders'" : "entrants'"} frames below</>}
       </div>
       {/* the card carries two bars and up to three key rows under a caption
           that wraps on a narrow card, so its spacing is a step tighter than
@@ -121,7 +130,7 @@ export default function Framing({ snap, horizon = "today" }) {
           </Row>
         )}
         {ent && (
-          <Row label="Entrants" sub="pre-authorised" value={fmtPct(ent.rate)} tip={entTip} x="framing.entrants">
+          <Row label={f.entrantsLabel || "Entrants"} sub={f.entrantsSub || "pre-authorised"} value={fmtPct(ent.rate)} tip={entTip} x="framing.entrants">
             <TrackBar now={0} proj={ent.rate} target={plan} bm={bm} max={1} />
           </Row>
         )}

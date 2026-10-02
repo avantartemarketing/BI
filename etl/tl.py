@@ -130,6 +130,7 @@ PAID_COST_MIN_MEMBERS = 3   # a basket's median cost needs this many members wit
 RATE_MIN_SIGNUPS = 30       # a group's signup -> order rate is read from this many signups
 RATE_MIN_SESSIONS = 100     # a group's session -> signup rate from this many sessions
 RATE_MAX_PER_SESSION = 0.5  # ... and over this it is not a rate the feed measured
+RATE_MAX_UNITS_PER_SESSION = 1.0  # a funnel rate over this (units, or signups, per session) is unread: its gap reads as conversion
 RECENT_MONTHS = 18          # a comparable that closed within this many months ranks first (the LE baskets' RECENT_MONTHS)
 NEAR = 4.0                  # a comparable within this multiple on every axis is near
 ID_MAX_CHARS = 120
@@ -781,6 +782,10 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
             if b is not None and _num(b.get("buyers")) and float(b["buyers"]) >= 20:
                 multiple_share = float(b["buyers_multiple"]) / float(b["buyers"])
         sess = _by_group(pre, "sessions")
+        # the window's own funnel: its sessions by group and the units they
+        # converted to, held as the benchmark the window-state funnel reads
+        sess_win = _by_group(win, "sessions")
+        conv_win = {g: (ug[g] / sess_win[g] if sess_win[g] >= RATE_MIN_SESSIONS and ug[g] > 0 else float("nan")) for g in GROUPS}
         conv_g = _by_group(pre, "signups_converted")
         ss, us, sess_s = _shares(sg), _shares(ug), _shares(sess)
         # a group's session -> signup rate needs sessions to read it from, and
@@ -830,6 +835,8 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
             row[f"signups_{g}"] = sg[g]; row[f"sess_share_{g}"] = sess_s[g]; row[f"signup_share_{g}"] = ss[g]
             row[f"unit_share_{g}"] = us[g]; row[f"conv_sess_signup_{g}"] = conv[g]; row[f"sessions_{g}"] = sess[g]
             row[f"signup_order_rate_{g}"] = s2o_g[g]
+            row[f"sess_win_{g}"] = sess_win[g]; row[f"conv_win_{g}"] = conv_win[g]
+        row["sessions_window"] = float(win["sessions"].sum()) if len(win) else 0.0
         rows.append(row)
     panel = pd.DataFrame(rows)
     if len(panel):
@@ -887,6 +894,10 @@ def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dic
         "sessions_by_group": {g: sess_s[g] * sessions for g in GROUPS},
         "units_by_group": {g: us[g] * units for g in GROUPS},
         "conv": {g: _median(rows, f"conv_sess_signup_{g}", positive=True) for g in GROUPS},
+        # the window's funnel: sessions by group inside the window and the rate they bought at
+        "sessions_window": _median(rows, "sessions_window"),
+        "sessions_window_by_group": {g: _median(rows, f"sess_win_{g}") for g in GROUPS},
+        "conv_window": {g: _median(rows, f"conv_win_{g}", positive=True) for g in GROUPS},
         # each group's signup -> order rate: a paid signup converts at a fraction of an email one
         "signup_order_rate_by_group": {g: _median(rows, f"signup_order_rate_{g}", positive=True) for g in GROUPS},
         "paid_share_signups": ss["paid"], "paid_share_units": us["paid"],
@@ -919,6 +930,7 @@ def apply_channels_off(profile: dict, off: list[str]) -> dict:
     out["sessions_by_group_all"] = dict(profile["sessions_by_group"])
     out["units_by_group_all"] = dict(profile["units_by_group"])
     out["conv_all"] = dict(profile["conv"])
+    out["conv_window_all"] = dict(profile.get("conv_window") or {})
     out["signup_order_rate_by_group_all"] = dict(profile.get("signup_order_rate_by_group") or {})
     if not off:
         return out
@@ -935,6 +947,10 @@ def apply_channels_off(profile: dict, off: list[str]) -> dict:
     out["signup_order_rate_by_group"] = {g: (profile.get("signup_order_rate_by_group", {}).get(g, 0.0) if g in keep else 0.0) for g in GROUPS}
     out["paid_share_signups"] = out["share_signups"]["paid"]
     out["paid_share_units"] = out["share_units"]["paid"]
+    out["conv_window"] = {g: ((profile.get("conv_window") or {}).get(g, 0.0) if g in keep else 0.0) for g in GROUPS}
+    swg = profile.get("sessions_window_by_group") or {}
+    out["sessions_window_by_group"] = {g: (swg.get(g, 0.0) if g in keep else 0.0) for g in GROUPS}
+    out["sessions_window"] = sum(out["sessions_window_by_group"].values())
     return out
 
 
@@ -1422,8 +1438,10 @@ def _email_card(emails: pd.DataFrame | None, code: str | None, d: dict, daily: p
     if emails is None or not len(emails) or not code:
         return None
     em = emails[emails["campaign"].astype(str).str.strip() == code].copy() if "campaign" in emails.columns else emails.iloc[0:0]
+    # the last send anywhere in the file: a feed that stops before the launch is an ingestion gap, not silence
+    feed_through = _iso(_day(pd.to_datetime(emails["sent_at"], errors="coerce").max())) if "sent_at" in emails.columns else None
     if not len(em):
-        return {"code": code, "sends": [], "automated": 0, "totals": None}
+        return {"code": code, "sends": 0, "sequence": [], "automated": 0, "totals": None, "delivered": 0, "opened": 0, "clicked": 0, "feedThrough": feed_through}
     em["day"] = pd.to_datetime(em["sent_at"], errors="coerce").dt.date
     lo = (d["announce"] - timedelta(days=7)) if d["announce"] else None
     hi = d["sales_open"].date() if d["sales_open"] else as_of
@@ -1441,7 +1459,11 @@ def _email_card(emails: pd.DataFrame | None, code: str | None, d: dict, daily: p
     in_window = email_daily[(email_daily.index >= (lo or (email_daily.index.min() if len(email_daily) else hi))) & (email_daily.index <= hi)] if len(email_daily) else email_daily
     tot = {"sends": len(sends), "delivered": sum(s["delivered"] or 0 for s in sends), "opened": sum(s["opened"] or 0 for s in sends),
            "clicked": sum(s["clicked"] or 0 for s in sends), "signups": float(in_window.sum()) if len(in_window) else 0.0}
-    return {"code": code, "sends": sends, "automated": automated, "totals": tot}
+    # the LE email card's keys (the funnel's email rungs read them) beside the TL's own sequence
+    return {"code": code, "sends": len(sends), "sequence": sends, "automated": automated, "totals": tot,
+            "delivered": tot["delivered"], "opened": tot["opened"], "clicked": tot["clicked"],
+            "openRate": (tot["opened"] / tot["delivered"]) if tot["delivered"] else None,
+            "clickRate": (tot["clicked"] / tot["delivered"]) if tot["delivered"] else None, "feedThrough": feed_through}
 
 
 def _plan_frame_rate(products: list[dict]) -> float | None:
@@ -1479,6 +1501,421 @@ def data_to_hint(orders: dict | None) -> str | None:
         return _iso(h) if h is not None and not pd.isna(h) else None
     except Exception:  # noqa: BLE001
         return None
+
+
+# ---------------------------------------------------------------- the LE cards' blocks (spec §4, §5)
+#
+# The TL page is the LE page's cards in TL words (docs/TL_SPEC.md §4, §5), so
+# the snapshot carries the blocks those cards read - the channels with their
+# daily series and projections, the funnel's two factors and their
+# contributions, the outcome waterfall, the hero, the paid pacing, the
+# sell-through rows and the framing - in the state's own unit: signups by day
+# from the announce to the open, units by hour from the sales open to the
+# close. The arithmetic is the LE build's (etl/build.py: the one-at-a-time
+# repricing of the funnel's factors, the forward rule, waterfall_walks), with
+# the pre-window's signup pace curve or the window's unit curve as the plan's
+# shape, and the untracked share spread over the tracked groups in proportion
+# so the cards add up to the headline as the LE cards do.
+
+def _spread(by_group: dict) -> dict[str, float]:
+    """The groups' figures with the untracked share spread over them in proportion."""
+    unt = float(by_group.get("untracked", 0.0) or 0.0)
+    tracked = sum(float(by_group.get(g, 0.0) or 0.0) for g in GROUPS)
+    if unt <= 0:
+        return {g: float(by_group.get(g, 0.0) or 0.0) for g in GROUPS}
+    if tracked <= 0:
+        return {g: unt / len(GROUPS) for g in GROUPS}
+    return {g: float(by_group.get(g, 0.0) or 0.0) * (1 + unt / tracked) for g in GROUPS}
+
+
+def _cum_by_group(frame: pd.DataFrame | None, key: str, col: str, steps: list) -> list[dict[str, float]]:
+    """Cumulative `col` by group at each step (the frame's `key` values up to
+    and including the step), the untracked share spread over the groups."""
+    zero = {g: 0.0 for g in GROUPS}
+    if frame is None or not len(frame) or col not in frame.columns or "group" not in frame.columns:
+        return [dict(zero) for _ in steps]
+    piv = frame.groupby([key, "group"])[col].sum().unstack(fill_value=0.0).sort_index().cumsum()
+    idx, cols = list(piv.index), list(piv.columns)
+    out, j, run = [], 0, {c: 0.0 for c in cols}
+    for s in steps:
+        while j < len(idx) and idx[j] <= s:
+            run = {c: float(piv.iloc[j][c]) for c in cols}
+            j += 1
+        by = {g: run.get(g, 0.0) for g in GROUPS}
+        by["untracked"] = sum(v for c, v in run.items() if c not in GROUPS)
+        out.append(_spread(by))
+    return out
+
+
+def _parts(frame: pd.DataFrame | None, col: str) -> list[dict]:
+    """What a group's figure is made of, by channel, biggest first."""
+    if frame is None or not len(frame) or col not in frame.columns or "channel" not in frame.columns:
+        return []
+    out = [{"name": str(ch), "value": round(float(v), 1)} for ch, v in frame.groupby("channel")[col].sum().items()
+           if float(v) > 0.05 and str(ch).strip().lower() != "untracked"]
+    return sorted(out, key=lambda x: -x["value"])
+
+
+def _project(now: float, exp, tg, w: float, complete: bool) -> float:
+    """The LE build's forward rule: the plan's remaining volume at this
+    channel's demonstrated performance, trusted in proportion to how much of
+    the pace has been seen; without a target, the pace alone."""
+    if complete:
+        return now
+    if tg is None or tg <= 0:
+        return (now / w) if w >= 0.05 else now
+    r_perf = min(max((now / exp) if exp and exp > 0 else 1.0, 0.25), 2.5)
+    return now + tg * (1 - w) * (1 + w * (r_perf - 1))
+
+
+def _curve_at(curve: list, f: float) -> float:
+    """The unit curve's cumulative share at a share `f` of the window, read between its steps."""
+    if not curve:
+        return min(max(f, 0.0), 1.0)
+    pos = min(max(f, 0.0), 1.0) * (len(curve) - 1)
+    i = int(math.floor(pos))
+    j = min(i + 1, len(curve) - 1)
+    return float(curve[i]) + (float(curve[j]) - float(curve[i])) * (pos - i)
+
+
+def le_blocks(cx: dict) -> dict:
+    """The LE cards' blocks for one TL page (the section note above): what
+    build_tl lays over the snapshot. `cx` carries the state and dates, the
+    series, the basket's profile (channels off applied), the targets, the paid
+    spend and, inside the window, the orders table's reading."""
+    import build as B  # noqa: E402 - lazily: build imports this module
+    state, d, profile, targets, off = cx["state"], cx["d"], cx["profile"], cx["targets"], cx["off"]
+    snap = cx["snap"]
+    has_bm = bool(cx["basket_n"])
+    targeted = targets is not None
+    as_of, now, seen = cx["as_of"], cx["now"], cx["seen"]
+    in_window = state in ("window", "settling", "closed")
+    complete = state in ("settling", "closed")
+    econ = cx.get("econ") or {}
+    win = cx.get("win") or {}
+    units_target = win.get("units_target") or (targets or {}).get("units_target") or _num(econ.get("units_target"))
+    edition_total = _num(econ.get("edition_size"))
+    k_all = (targets or {}).get("k")
+    sales = cx.get("sales") or {}
+
+    if not in_window:
+        # ---- the pre-window: signups by day from the announce to the open
+        open_day = d["sales_open"].date()
+        announce = d["announce"] or (open_day - timedelta(days=TL_ASSUMED_PRE_DAYS))
+        of_n = max((open_day - announce).days, 1)
+        steps = [announce + timedelta(days=i) for i in range(of_n + 1)]
+        labels = [s.isoformat() for s in steps]
+        curve = profile.get("signup_curve") or []
+
+        def share_at(dto: int) -> float:
+            i = dto + TL_CURVE_DAYS
+            if i < 0:
+                return 0.0
+            if not curve:
+                return 1.0
+            return float(curve[min(i, len(curve) - 1)])
+
+        pace = [share_at((s - open_day).days) for s in steps]
+        live = as_of < open_day
+        day_no = max(min((as_of - announce).days, of_n), 0) if live else of_n
+        frac_day = seen if live else 1.0
+        dto = (min(as_of, open_day) - open_day).days
+        pace_now = (share_at(dto - 1) + frac_day * (share_at(dto) - share_at(dto - 1))) if live else 1.0
+        seen_steps = [i <= day_no for i in range(len(steps))]
+        frame = cx["daily"]
+        cum_by_g = _cum_by_group(frame, "day", "signups", steps)
+        sess_by_g = _cum_by_group(frame, "day", "sessions", steps)
+        tg_by = (targets or {}).get("signups_by_group") or {}
+        bm_by = profile.get("signups_by_group") or {}
+        conv_held = profile.get("conv") or {}
+        bm_sess_by = profile.get("sessions_by_group") or {}
+        bm_total = float(profile.get("signups") or 0.0)
+        hero_target = (targets or {}).get("signup_target")
+        spend_to_date, budget, cost = cx["spend_pre"], (targets or {}).get("budget_pre"), (targets or {}).get("cost_per_signup")
+        cost_src = (targets or {}).get("cost_per_signup_source")
+        frac_even = max(min((day_no - (1 - frac_day)) / of_n, 1.0), 0.0) if live else 1.0
+        measure_col, step_unit, clock_start = "signups", "day", announce.isoformat()
+        cap_total, edition = None, None
+        day_steps = [s for s in steps if s <= (as_of if live else open_day)]
+        clock_complete = not live
+    else:
+        # ---- the window: units by hour from the sales open to the close
+        start, close = d["sales_open"], d["close"]
+        until = win.get("until") or min(now, d["settle"])
+        of_n = max(int(math.ceil((close - start).total_seconds() / 3600 - 1e-9)), 1)
+        steps = [pd.Timestamp(start + timedelta(hours=i)) for i in range(of_n + 1)]
+        labels = [_iso(s) for s in steps]
+        curve = profile.get("unit_curve") or []
+        pace = [_curve_at(curve, i / of_n) for i in range(of_n + 1)]
+        h_now = min(max((until - start).total_seconds() / 3600, 0.0), float(of_n))
+        day_no = of_n if complete else int(math.floor(h_now))
+        frac_day = 1.0 if complete or h_now >= of_n else (h_now - math.floor(h_now))
+        pace_now = 1.0 if complete else _curve_at(curve, h_now / of_n)
+        seen_steps = [i == 0 or steps[i] <= pd.Timestamp(until) for i in range(len(steps))]
+        o = win.get("o")
+        hourly = cx["hourly"]
+        sess_frame = _window(hourly, start, min(until, close)) if len(hourly) else hourly
+        frame = o["live"] if o is not None else (_window(hourly, start, until) if len(hourly) else hourly)
+        # the close step takes everything to `until`: the window's units are
+        # its lines paid or awaiting by the settle, as the panel counts them
+        cum_steps = steps[:-1] + [max(steps[-1], pd.Timestamp(until))]
+        cum_by_g = _cum_by_group(frame, "ts", "units", cum_steps)
+        sess_by_g = _cum_by_group(sess_frame, "ts", "sessions", steps)
+        # the channels' targets split the units target by the basket's unit mix;
+        # a basket with no unit mix on file leaves the channels without one
+        shares = profile.get("share_units") or {}
+        tg_by = {g: units_target * float(shares.get(g, 0.0)) for g in GROUPS} if (units_target and has_bm and sum(float(shares.get(g, 0.0)) for g in GROUPS) > 0) else {}
+        bm_by = profile.get("units_by_group") or {}
+        conv_held = profile.get("conv_window") or {}
+        bm_sess_by = profile.get("sessions_window_by_group") or {}
+        bm_total = float(profile.get("units") or 0.0)
+        hero_target = units_target
+        k_all = (units_target / bm_total) if (units_target and bm_total > 0) else None
+        spend_to_date, budget, cost = cx["spend_win"], (targets or {}).get("budget_window"), (targets or {}).get("cost_per_sale")
+        cost_src = (targets or {}).get("cost_per_sale_source")
+        frac_even = 1.0 if complete else h_now / of_n
+        measure_col, step_unit, clock_start = "units", "hour", _iso(start)
+        # no cap at Airtable's edition: a timed launch's edition is not a ceiling
+        # on its units (a 2023 launch sold 456 against an edition of 412), and
+        # the chips carry the edition beside the target
+        cap_total, edition = None, None
+        d0, d1 = start.date(), (until if not complete else close).date()
+        day_steps = [d0 + timedelta(days=i) for i in range((d1 - d0).days + 1)]
+        clock_complete = complete
+
+    # ---- each channel group: its series, its two funnel factors, its column
+    kg = {}
+    for g in GROUPS:
+        tg, bm = tg_by.get(g), bm_by.get(g)
+        kg[g] = (tg / bm) if (tg is not None and bm and bm > 0) else (k_all or 1.0)
+    w = pace_now
+    channels, fbg = [], {}
+    tot = {"now": 0.0, "exp": 0.0, "tg": 0.0, "proj": 0.0, "bm": 0.0, "bm_exp": 0.0}
+    now_idx = day_no
+    for g in GROUPS:
+        cum = [c[g] for c in cum_by_g]
+        now_g = cum[now_idx]
+        sess_g = sess_by_g[now_idx][g]
+        tg = tg_by.get(g) if targeted else None
+        bm = bm_by.get(g) if has_bm else None
+        exp = (tg * w) if tg is not None else None
+        bm_exp = (bm * w) if bm is not None else None
+        proj = _project(now_g, exp, tg, w, clock_complete)
+        daily = []
+        for i in range(len(steps)):
+            row = {"date": labels[i], "actual": round(cum[i], 2) if seen_steps[i] else None,
+                   "plan": round(tg * pace[i], 2) if tg is not None else None, "proj": None}
+            if bm is not None:
+                row["bm"] = round(bm * pace[i], 2)
+            if i > now_idx and not clock_complete:
+                frac = ((pace[i] - w) / (1 - w)) if w < 1 else 1.0
+                row["proj"] = round(now_g + (proj - now_g) * max(min(frac, 1.0), 0.0), 2)
+            daily.append(row)
+        # the two factors, sessions and the rate they convert at (held at the
+        # basket's), repriced one at a time so the steps sum to the gap
+        conv_act = (now_g / sess_g) if sess_g > 0 else 0.0
+        held = float(conv_held.get(g) or 0.0)
+        bm_sess = float(bm_sess_by.get(g) or 0.0)
+        sess_exp = (exp / held) if (exp and held > 0) else ((bm_sess * w * kg[g]) if (exp and bm_sess > 0) else 0.0)
+        conv_exp = (exp / sess_exp) if (exp and sess_exp > 0) else 0.0
+        if conv_exp > RATE_MAX_UNITS_PER_SESSION:   # not a rate the feed measured: the whole gap reads as conversion
+            sess_exp, conv_exp = 0.0, 0.0
+        traffic = (sess_g - sess_exp) * conv_exp if sess_exp > 0 else 0.0
+        conversion = (now_g - (exp or 0.0)) - traffic
+        f = {"sessions_actual": round(sess_g, 1), "sessions_expected": round(sess_exp, 1) if exp is not None else None,
+             "conv_actual": conv_act, "conv_expected": conv_exp if exp is not None else None,
+             "contrib_traffic": round(traffic, 1), "contrib_conversion": round(conversion, 1),
+             "bps_actual": conv_act, "bps_expected": conv_exp if exp is not None else None,
+             "contrib_buyers": round(conversion, 1), "contrib_per_buyer": 0.0}
+        if has_bm:
+            sess_bm = bm_sess * w
+            conv_bmx = (bm_exp / sess_bm) if (bm_exp and sess_bm > 0) else 0.0
+            if conv_bmx > RATE_MAX_UNITS_PER_SESSION:
+                sess_bm, conv_bmx = 0.0, 0.0
+            traffic_bm = (sess_g - sess_bm) * conv_bmx if sess_bm > 0 else 0.0
+            conversion_bm = (now_g - (bm_exp or 0.0)) - traffic_bm
+            f.update({"sessions_benchmark": round(sess_bm, 1), "conv_benchmark": held if held > 0 else conv_bmx, "conv_benchmark_today": conv_bmx,
+                      "contrib_traffic_bm": round(traffic_bm, 1), "contrib_conversion_bm": round(conversion_bm, 1),
+                      "contrib_buyers_bm": round(conversion_bm, 1), "contrib_per_buyer_bm": 0.0})
+        fbg[g] = f
+        sub = frame[frame["group"] == g] if (frame is not None and len(frame) and "group" in frame.columns) else None
+        ch = {"key": g, "name": GROUP_NAMES[g], "now": round(now_g, 1), "exp": round(exp, 1) if exp is not None else None,
+              "proj": round(proj, 1), "target": round(tg, 1) if tg is not None else None,
+              "parts": _parts(sub, measure_col), "daily": daily, "off": g in off,
+              "sessions": round(sess_g, 1), "rate": conv_act if sess_g > 0 else None,
+              "bmSessions": bm_sess if has_bm else None, "bmRate": held if (has_bm and held > 0) else None,
+              "sessionsNeeded": ((targets or {}).get("sessions_by_group") or {}).get(g) if (targeted and not in_window) else None}
+        if bm is not None:
+            ch["bm"], ch["bmExp"] = round(bm, 1), round(bm_exp, 1)
+        channels.append(ch)
+        tot["now"] += now_g
+        tot["proj"] += proj
+        if exp is not None:
+            tot["exp"] += exp
+            tot["tg"] += tg
+        if bm is not None:
+            tot["bm"] += bm
+            tot["bm_exp"] += bm_exp
+
+    # ---- the hero: the groups summed, capped at the edition inside the window
+    hero_now, hero_proj = tot["now"], tot["proj"]
+    hero_tg = float(hero_target) if hero_target else (tot["tg"] if targeted and tot["tg"] > 0 else None)
+    hero_exp = (hero_tg * w) if hero_tg else None
+    hero_now_c = min(hero_now, cap_total) if cap_total else hero_now
+    hero_proj_c = min(hero_proj, cap_total) if cap_total else hero_proj
+    hero_bm = bm_total if has_bm else None
+    hero_bm_today = tot["bm_exp"] if has_bm else None
+    status = ((hero_now_c - hero_exp) / hero_exp) if hero_exp else None
+    hero = {"now": round(hero_now_c, 0), "expectedToday": round(hero_exp, 0) if hero_exp is not None else None,
+            "delta": (round(hero_now_c, 0) - round(hero_exp, 0)) if hero_exp is not None else None,
+            "projected": round(hero_proj_c, 0), "target": round(hero_tg, 0) if hero_tg else None,
+            "oversubscribedUnits": round(max(max(hero_now, hero_proj) - cap_total, 0.0), 0) if cap_total else 0.0,
+            "statusPct": status, "ok": (status >= -0.1) if status is not None else None}
+    if has_bm:
+        hero["benchmark"] = B.whole(hero_bm)
+        hero["benchmarkToday"] = B.whole(hero_bm_today)
+        hero["stretch"] = (round(hero_tg, 0) - B.whole(hero_bm)) if hero_tg else None
+
+    # ---- the outcome waterfall: organic traffic and conversion, paid spend and efficiency (docs §9)
+    waterfall = None
+    if targeted and hero_tg and hero_exp is not None:
+        organic = [g for g in GROUPS if g != "paid"]
+        wf_traffic = sum(fbg[g]["contrib_traffic"] for g in organic)
+        wf_conv = sum(fbg[g]["contrib_conversion"] for g in organic)
+        spend_planned = float(budget or 0.0) * frac_even
+        wf_spend = ((spend_to_date - spend_planned) / cost) if cost else 0.0
+        paid_gap = fbg["paid"]["contrib_traffic"] + fbg["paid"]["contrib_conversion"]
+        now_shown, proj_shown = round(hero_now_c, 0), round(hero_proj_c, 0)
+        over_today, over_close = round(hero_now, 0) - now_shown, round(hero_proj, 0) - proj_shown
+
+        def beyond(over: float) -> list[dict]:
+            return [{"key": "oversubscribed", "label": "Beyond sellout", "value": -over}] if over > 0 else []
+
+        target_today = round(hero_exp, 0)
+        today_steps, close_steps, scale = B.waterfall_walks([wf_traffic, wf_conv, wf_spend, paid_gap - wf_spend], hero_now - hero_exp, hero_proj - hero_tg,
+                                                            round(hero_now, 0) - target_today, round(hero_proj, 0) - round(hero_tg, 0), clock_complete)
+        waterfall = {"target": round(hero_tg, 0), "projection": proj_shown, "steps": close_steps + beyond(over_close),
+                     "closeScale": round(scale, 4) if scale is not None else None,
+                     "today": {"target": target_today, "actual": now_shown, "steps": today_steps + beyond(over_today)}}
+        if has_bm:
+            wf_traffic_bm = sum(fbg[g]["contrib_traffic_bm"] for g in organic)
+            wf_conv_bm = sum(fbg[g]["contrib_conversion_bm"] for g in organic)
+            bm_budget = float(bm_by.get("paid") or 0.0) * cost if cost else 0.0
+            wf_spend_bm = ((spend_to_date - bm_budget * frac_even) / cost) if cost else 0.0
+            paid_gap_bm = fbg["paid"]["contrib_traffic_bm"] + fbg["paid"]["contrib_conversion_bm"]
+            bm_close, bm_today = B.whole(hero_bm), B.whole(hero_bm_today)
+            today_bm, close_bm, scale_bm = B.waterfall_walks([wf_traffic_bm, wf_conv_bm, wf_spend_bm, paid_gap_bm - wf_spend_bm], hero_now - hero_bm_today, hero_proj - hero_bm,
+                                                             round(hero_now, 0) - bm_today, round(hero_proj, 0) - bm_close, clock_complete)
+            waterfall.update({"benchmark": bm_close, "stretch": round(hero_tg, 0) - bm_close, "stepsBm": close_bm + beyond(over_close),
+                              "closeScaleBm": round(scale_bm, 4) if scale_bm is not None else None})
+            waterfall["today"].update({"benchmark": bm_today, "stretch": target_today - bm_today, "stepsBm": today_bm + beyond(over_today)})
+
+    # ---- paid: the pacing figures the paid cards read, and the daily cost series
+    sp = cx.get("sp")
+    paid_now = next((c["now"] for c in channels if c["key"] == "paid"), 0.0)
+    by_day_spend = sp.groupby("day")["spend"].sum() if sp is not None and len(sp) else pd.Series(dtype=float)
+    if frame is not None and len(frame) and "group" in frame.columns:
+        pf = frame[frame["group"] == "paid"]
+        key_day = pf["day"] if "day" in pf.columns else pf["ts"].dt.date
+        paid_by_day = pf.groupby(key_day)[measure_col].sum() if len(pf) else pd.Series(dtype=float)
+    else:
+        paid_by_day = pd.Series(dtype=float)
+    rows = []
+    for day in day_steps:
+        # the day in progress is no full day: the as-of day while it is today, or the share of it the feed has seen
+        rows.append({"date": day.isoformat(), "spend": round(float(by_day_spend.get(day, 0.0)), 2), "entries": round(float(paid_by_day.get(day, 0.0)), 1),
+                     "partial": bool(day == as_of and not clock_complete and (frac_day < 1 or as_of >= now.date()))})
+    full = [r for r in rows if not r["partial"]]
+    for i, r in enumerate(full):
+        last3 = full[max(0, i - 2):i + 1]
+        s3, e3 = sum(x["spend"] for x in last3), sum(x["entries"] for x in last3)
+        r["cost3"] = (s3 / e3) if (s3 > 0 and e3 > 0) else None
+        r["cost1"] = (r["spend"] / r["entries"]) if (r["spend"] > 0 and r["entries"] > 0) else None
+    for r in rows:
+        r.setdefault("cost3", None)
+        r.setdefault("cost1", None)
+    tot_spend, tot_got = sum(r["spend"] for r in rows), sum(r["entries"] for r in rows)
+    last_full = next((r for r in reversed(full) if r["spend"] > 0), None)
+    paid_extra = {"spendToDate": round(float(spend_to_date), 2), "spendBudget": budget, "paidStartDays": 0, "unitsToDate": paid_now,
+                  "benchmarkBudget": (float(bm_by.get("paid") or 0.0) * cost) if (has_bm and cost) else None,
+                  "unit": "signup" if not in_window else "sale", "costPlan": cost, "costPlanSource": cost_src,
+                  "costBm": profile.get("cost_per_signup" if not in_window else "cost_per_sale") or None,
+                  "daily": rows, "cumCost": (tot_spend / tot_got) if (tot_spend > 0 and tot_got > 0) else None,
+                  "l3dCost": last_full["cost3"] if last_full else None, "l1dCost": last_full["cost1"] if last_full else None}
+
+    # ---- inside the window: the sell-through rows, the framing and the pieces per buyer
+    sellthrough = framing = None
+    upb = {"plan": 1.0, "actual": 1.0}
+    if in_window and sales:
+        src = sales.get("source")
+        future_total = max(hero_proj_c - hero_now_c, 0.0) if not clock_complete else 0.0
+        rows_p = [r for r in (sales.get("products") or []) if not r.get("excluded")]
+        units_sum = sum(float(r["units"]) for r in rows_p)
+        st_rows = []
+        for r in rows_p:
+            room = _num(r.get("target")) or _num(r.get("edition"))
+            units_r, awaiting_r = float(r["units"]), float(r.get("awaiting") or 0.0)
+            share = (units_r / units_sum) if units_sum > 0 else ((room / units_target) if (units_target and room) else 0.0)
+            fut = future_total * share
+            st_rows.append({"key": str(r.get("airtable_id") or slugify(str(r["name"]))), "name": str(r["name"]), "draws": [], "edition": room,
+                            "sold": units_r - awaiting_r, "soldAssumed": 0.0, "drafts": awaiting_r, "shown": 0.0, "futurePredicted": round(fut, 1),
+                            "room": max(room - units_r, 0.0) if room else None, "oversubscribed": 0.0, "allocated": None, "inHand": None,
+                            "entrants": None, "flexible": 0, "orders": float(r.get("orders") or 0.0),
+                            "pct": (units_r / room) if room else None, "pctClose": ((units_r + fut) / room) if room else None})
+        awaiting = (sales.get("awaiting") or {}).get("units") if src == "orders" else None
+        sellthrough = {"tl": True, "edition": units_target, "editionWord": "units target",
+                       "sold": float(sales.get("unitsPaid")) if sales.get("unitsPaid") is not None else float(sales.get("units") or 0.0),
+                       "drafts": awaiting, "soldPredicted": 0.0, "futureEntriesPredicted": round(future_total, 1),
+                       "pct": ((hero_now_c + future_total) / units_target) if units_target else None,
+                       "conversion": 1.0, "preorderConversion": 1.0, "products": st_rows, "incomplete": [] if src == "orders" else ["orders table"],
+                       "patterns": [], "draws": [], "measure": "units", "editionMismatch": False, "allocationStarted": False, "claimsInFlight": 0,
+                       "orders": sales.get("orders"), "piecesPerOrder": sales.get("piecesPerOrder"), "cancelled": sales.get("cancelled"),
+                       "private": sales.get("private"), "source": src, "note": sales.get("note"), "feedUnits": sales.get("feedUnits")}
+        fr = sales.get("framing")
+        o = win.get("o")
+        if fr and o is not None:
+            works = []
+            for title, g in o["paid"].groupby("product_title"):
+                p_off, f_n = float(g["prints_offered"].sum()), float(g["frames"].sum())
+                if p_off > 0:
+                    works.append({"name": str(title), "prints": p_off, "frames": f_n, "rate": f_n / p_off})
+            not_offered = [p for p in (cx.get("products") or []) if not p.get("excluded") and p.get("framing_available") is False]
+            by_title = {pricing.norm(str(t)): float(v) for t, v in o["live"].groupby("product_title")["units"].sum().items()} if len(o["live"]) else {}
+            rate = (fr["framesPaid"] / fr["printsOfferedPaid"]) if fr.get("printsOfferedPaid") else None
+            ent = ({"prints": fr["printsOfferedAwaiting"], "frames": fr["framesAwaiting"], "rate": fr["framesAwaiting"] / fr["printsOfferedAwaiting"]}
+                   if fr.get("printsOfferedAwaiting") else None)
+            framing = {"tl": True, "prints": fr.get("printsOfferedPaid", 0.0), "frames": fr.get("framesPaid", 0.0), "rate": rate,
+                       "entrants": ent, "entrantsLabel": "Awaiting payment", "entrantsSub": "orders not yet paid",
+                       "plan": fr.get("planRate"), "benchmark": {"rate": fr["bmRate"], "n": profile.get("n"), "of": profile.get("n")} if fr.get("bmRate") else None,
+                       "works": sorted(works, key=lambda x: -x["prints"]),
+                       "notOffered": {"units": sum(by_title.get(pricing.norm(str(p.get("name") or "")), 0.0) for p in not_offered),
+                                      "works": [str(p.get("name")) for p in not_offered]},
+                       "asOf": as_of.isoformat(), "forecast": None}
+        plan_upb = _num((targets or {}).get("purchases_per_order")) or _num(profile.get("purchases_per_order")) or 1.0
+        act_upb = _num(sales.get("piecesPerOrder")) or plan_upb
+        upb = {"plan": round(plan_upb, 4), "actual": round(act_upb, 4)}
+
+    # ---- the benchmark block's LE keys, the clock, the words the cards need
+    bench = dict(snap.get("benchmark") or {})
+    if has_bm:
+        bench.update({"k": k_all, "kByGroup": kg, "stretchFrom": (targets or {}).get("stretch_from"), "stretchTyped": bool((targets or {}).get("stretch_typed")),
+                      "channelsOff": list(off), "convByGroup": {g: float(conv_held.get(g) or 0.0) for g in GROUPS},
+                      "sessionsByGroup": {g: float(bm_sess_by.get(g) or 0.0) for g in GROUPS}, "sessions": sum(float(bm_sess_by.get(g) or 0.0) for g in GROUPS),
+                      ("unitsByGroup" if in_window else "signupsByGroup"): {g: float(bm_by.get(g) or 0.0) for g in GROUPS},
+                      ("units" if in_window else "signups"): bm_total, "n": profile.get("n"), "price": profile.get("price")})
+    code, names = cx.get("code"), cx.get("names") or []
+    out = {"hero": {**(snap.get("hero") or {}), **hero}, "channels": channels, "funnelByGroup": fbg, "waterfall": waterfall,
+           "paid": {**(snap.get("paid") or {}), **paid_extra}, "edition": edition,
+           "clock": {"unit": step_unit, "start": clock_start, "of": of_n, "day": day_no, "complete": clock_complete},
+           "of": of_n, "day": day_no, "asOfFraction": frac_day, "complete": complete, "unitsPerBuyer": upb,
+           "sellthrough": sellthrough, "framing": framing, "unitsSource": "orders" if (in_window and win.get("o") is not None) else "funnel",
+           "campaignName": names[0] if names else (f"{code} · Sign-ups" if code else None), "social": None}
+    if bench:
+        out["benchmark"] = bench
+    if targeted:
+        out["targets"] = {**targets, "paid": {"cost_per_purchase": cost, "cost_per_purchase_source": cost_src, "budget": budget}}
+    return out
+
 
 
 def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, spend: pd.DataFrame | None, emails: pd.DataFrame | None,
@@ -1592,6 +2029,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
     # by the hour, channel and product, with the frames and the buyers) where
     # it has the launch's lines, else from the feed's purchase events
     sales = None
+    win_cx = None
     if state in ("window", "settling", "closed"):
         until = min(now, d["settle"])
         span = (d["close"] - d["sales_open"]).total_seconds()
@@ -1603,6 +2041,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
         o_rows = _orders_rows(orders_data, name)
         o = window_from_orders(o_rows, d["sales_open"], until) if o_rows is not None else None
         use_orders = o is not None and o["units"] > 0
+        win_cx = {"until": until, "o": o if use_orders else None, "units_target": units_target}
         if use_orders:
             live = o["live"]
             by_hour = live.groupby("ts")["units"].sum()
@@ -1708,6 +2147,10 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
         "benchmarks": {"cannibalisation": TL_CANNIBALISATION, "paidSplitPre": TL_PAID_SPLIT_PRE, "settleDays": TL_SETTLE_DAYS,
                        "budgetSenseCheckMaxPct": float(BENCH.get("budget_sense_check_max_pct_of_launch_value") or 0.06)},
     }
+    snap.update(le_blocks({"state": state, "d": d, "as_of": as_of, "now": now, "seen": seen, "daily": daily, "hourly": hourly,
+                           "profile": profile, "basket_n": basket["n"], "targets": targets if targeted else None, "off": off,
+                           "spend_pre": spend_pre, "spend_win": spend_win, "sp": sp, "sales": sales, "win": win_cx,
+                           "products": products, "econ": econ, "snap": snap, "code": code, "names": names}))
     return snap
 
 

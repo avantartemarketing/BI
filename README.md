@@ -608,7 +608,15 @@ Airtable's timed launches, works the dates and states out, cuts the **TL panel**
 completed launches (`data/app/tl_panel.csv`, 74 launches on 1 October 2026, with the
 signup and sales pace curves in `tl_curves.json`), resolves the basket, sets the targets
 and writes a page per launch (`data/app/derived/<id>_tl.json`, the `_tl` suffix since an
-artist can have an LE and a TL of one name in a quarter). A TL page runs on Airtable's
+artist can have an LE and a TL of one name in a quarter). The page is the LE page: the same
+cards in the shared layout, rendered off the LE-shaped blocks the build writes beside the TL
+ones (`etl/tl.py le_blocks`: channels with daily series, funnel contributions, the waterfall,
+the hero, paid pacing, sell-through rows and framing), in signups by day before the window
+opens and in units by hour inside it (`clock`), with `web/src/vocab.mjs` giving each card its
+words; what differs is only what a timed launch has no equivalent for (paid cost per signup or
+sale in place of ROI, budget pacing in place of the LE spend rules, a pre-window signups card
+once the window has opened, no draw, no Slack posts yet). `tests/test_tl_page.py` holds the
+blocks to each other. A TL page runs on Airtable's
 units target and the suggested basket before anyone saves. **Target setting** is the LE
 tab's own components in TL words (`web/src/TLTargets.jsx`): the release and its dates (the
 announce, the open in Amsterdam time, the window length, each with the other readings

@@ -24,6 +24,7 @@
 import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, BmOutline, BADGE_WORDS, C, fmt, useTip, stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import { wordsOf } from "../vocab.mjs";
 
 /* The fill nearly fills the slot and the actual sits well inside it, so the
  * tints and the outline read on both sides of the blue at every card width. */
@@ -47,6 +48,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
   const pct = targeted ? scale === "pct" : false;
   const hasBm = targeted && !!snap?.benchmark;
   const words = BADGE_WORDS;
+  const W = wordsOf(snap);   // units, or a timed launch's signups (vocab.mjs)
 
   // Today compares actuals with the target to date; at close compares the projection
   // with the full target (docs §5.4 / §9). The benchmark for the same horizon rides
@@ -118,7 +120,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
     >
       {targeted && <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, margin: "10px 0 12px", flex: "0 0 auto" }}>
         {seg(
-          [["units", "Units", "Secured units, so channels are comparable in size"],
+          [["units", W.Unit, `${W.securedUnits}, so channels are comparable in size`],
            ["pct", "%", "Every channel against its own target, on one 100% scale"]],
           scale, setScale,
         )}
@@ -138,8 +140,8 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                 ...(withBm ? [{ label: words.bm, value: unit(c.bm) }] : []),
               ];
               const barTip = {
-                head: today ? "Secured to date" : "Projected",
-                rows: [{ label: "Units", value: unit(c.bar) }, ...refRows],
+                head: today ? W.toDate : "Projected",
+                rows: [{ label: W.Unit, value: unit(c.bar) }, ...refRows],
               };
               const refTip = {
                 head: c.name,
@@ -192,7 +194,7 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                   <div
                     {...t.props(c.parts && c.parts.length > 1 ? {
                       head: c.name,
-                      body: "Secured units to date, by channel",
+                      body: `${W.securedUnits} to date, by channel`,
                       rows: c.parts.map((p) => ({ label: p.name, value: unit(p.value) })),
                     } : { head: c.name })}
                     style={{
@@ -204,8 +206,8 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
                   </div>
                   <div
                     className={offGroups.has(c.key) ? undefined : "num"}
-                    title={offGroups.has(c.key) ? "Not in plan for this release: no target and no benchmark. What it secures still counts."
-                      : c.pctOfTarget === null && c.bar > 0 ? `${fmt(c.bar)} secured so far; the plan expects none by today, so there is no share to show yet` : undefined}
+                    title={offGroups.has(c.key) ? `Not in plan for this release: no target and no benchmark. What it brings still counts.`
+                      : c.pctOfTarget === null && c.bar > 0 ? `${fmt(c.bar)} ${W.securedLower} so far; the plan expects none by today, so there is no share to show yet` : undefined}
                     style={{
                       fontSize: offGroups.has(c.key) ? 9.5 : 11, fontWeight: 600,
                       color: c.pctOfTarget === null ? C.muted : c.pctOfTarget >= 100 ? C.green : C.red,
@@ -235,8 +237,8 @@ export default function ChannelsVsTargets({ snap, horizon = "today" }) {
             {hasBm && <span style={legendItem} title="The median of the matched basket, per channel">{OUTLINE_SWATCH}Benchmark</span>}
             <span style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>
               {/* the scale in words; the stretch multiple is in the Stretch key's popup */}
-              {!targeted ? "secured units · no targets"
-                : pct ? "target = 100%" : "secured units"}
+              {!targeted ? `${W.securedUnits.toLowerCase()} · no targets`
+                : pct ? "target = 100%" : W.securedUnits.toLowerCase()}
             </span>
           </div>
         </div>

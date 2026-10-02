@@ -30,6 +30,7 @@ import {
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { postsCover } from "../figures.mjs";
+import { wordsOf } from "../vocab.mjs";
 
 const GROUPS = [
   { key: "aa_email", name: "AA Email", short: "Email" },
@@ -107,6 +108,7 @@ function buildRung({ v, bm, plan, kind }, bench, k) {
 
 function FunnelView({ snap }) {
   const words = refWords("today");
+  const W = wordsOf(snap);   // the rate's words: session -> sale, or -> signup on a timed launch before its window
   const fbg = snap?.funnelByGroup || {};
   const email = snap?.email || {};
   const social = snap?.social || {};
@@ -195,13 +197,15 @@ function FunnelView({ snap }) {
         }}
       />
       <FunnelRung
-        tier="Low funnel" metric="Session → sale" r={lowR} bench={bench}
-        x={{ card: "Organic funnel", group: "Organic channels", label: "Session → sale", kind: "rate", unit: "%",
+        tier="Low funnel" metric={W.conv} r={lowR} bench={bench}
+        x={{ card: "Organic funnel", group: "Organic channels", label: W.conv, kind: "rate", unit: "%",
              v: convA === null ? null : convA * 100, target: lowR.target === null ? null : lowR.target * 100,
              bm: lowR.bm === null || lowR.bm === undefined ? null : lowR.bm * 100, k,
-             note: "Units secured per session on the four organic channels together, each channel weighted by its sessions. Where buyers take more or fewer pieces than the plan assumed, Funnel by channel splits the same rate into Session → buyer and Units per buyer." }}
+             note: W.tl
+               ? `${W.Unit} per session on the four organic channels together, each channel weighted by its sessions.`
+               : "Units secured per session on the four organic channels together, each channel weighted by its sessions. Where buyers take more or fewer pieces than the plan assumed, Funnel by channel splits the same rate into Session → buyer and Units per buyer." }}
         tip={{
-          head: "Low funnel · Session → sale",
+          head: `Low funnel · ${W.conv}`,
           body: bench
             ? "Conversion is held at the benchmark, so the target and the benchmark are the same figure."
             : undefined,
@@ -221,6 +225,7 @@ function FunnelView({ snap }) {
  * (BENCHMARK_SPEC 2), so the page toggle must not reach it. */
 export default function KeyDrivers({ snap, horizon }) {
   const tipApi = useTip();
+  const W = wordsOf(snap);
   const [view, setView] = React.useState("funnel"); // 'funnel' | 'pos' | 'neg'
   React.useEffect(() => setView("funnel"), [snap?.id]);
 
@@ -261,14 +266,14 @@ export default function KeyDrivers({ snap, horizon }) {
           </button>
           <button
             className={view === "pos" ? "active" : ""}
-            title={"Steps adding units vs expected\n" + NOTE}
+            title={`Steps adding ${W.unit} vs expected\n` + NOTE}
             onClick={() => setView("pos")}
           >
             Adding
           </button>
           <button
             className={view === "neg" ? "active" : ""}
-            title={"Steps costing units vs expected\n" + NOTE}
+            title={`Steps costing ${W.unit} vs expected\n` + NOTE}
             onClick={() => setView("neg")}
           >
             Costing
@@ -284,7 +289,7 @@ export default function KeyDrivers({ snap, horizon }) {
           <div className="empty-state">
             {snap?.targeted === false
               ? "Needs targets - the steps are measured against the plan"
-              : isPos ? "No steps adding units vs expected yet" : "No steps costing units vs expected"}
+              : isPos ? `No steps adding ${W.unit} vs expected yet` : `No steps costing ${W.unit} vs expected`}
           </div>
         ) : (
           rows.map((r, i) => (
@@ -307,7 +312,7 @@ export default function KeyDrivers({ snap, horizon }) {
                 className="num"
                 {...tipApi.props({
                   head: `${r.name} · ${r.step}`,
-                  rows: [{ label: "vs expected today", value: fmtSigned(r.v, 1) + " units", color: r.v >= 0 ? "#0f7052" : "#b8461d" }],
+                  rows: [{ label: "vs expected today", value: fmtSigned(r.v, 1) + " " + W.unit, color: r.v >= 0 ? "#0f7052" : "#b8461d" }],
                 })}
                 style={{
                   fontSize: 13.5, fontWeight: 600, textAlign: "right",

@@ -22,6 +22,7 @@ import {
 } from "../ui.jsx";
 import { stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import { wordsOf } from "../vocab.mjs";
 
 /* The legend's outline swatch: the same dotted silhouette the bar carries. */
 const OUTLINE_SWATCH = (
@@ -66,6 +67,9 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const expToday = hero.expectedToday ?? 0;
   const day = snap?.day;
   const words = BADGE_WORDS;
+  // the quantity's words: units against a sellout on an LE, signups or units
+  // against a target on a timed launch (vocab.mjs)
+  const W = wordsOf(snap);
   // the target is only part of the edition (Warhol: 2,440 of 6,100): the card
   // says target where it would otherwise say sellout
   const partial = !!(snap?.edition && snap.edition.total > snap.edition.target);
@@ -91,16 +95,22 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const oversub = hero.oversubscribedUnits ?? 0;
   const overPct = sellout > 0 ? Math.round((proj / sellout) * 100) : null;
 
-  const unitsTip = close
-    ? "Projected demand = the units secured today and what each channel is on course to add by the close, capped at the edition size."
-    : securedTip(snap) + ", capped at the edition size.";
+  const unitsTip = W.tl
+    ? (close
+      ? `${W.projected} = the ${W.unit} so far and what each channel is on course to add by the ${W.closeWord}, at its pace against the plan.`
+      : W.state === "signups"
+        ? "Every signup event the TL funnel export tags to the release before its window opens; signups with no channel are spread over the channels in proportion."
+        : "Units sold in the window: the orders table's paid lines plus the orders awaiting payment, by pieces, from the sales open.")
+    : close
+      ? "Projected demand = the units secured today and what each channel is on course to add by the close, capped at the edition size."
+      : securedTip(snap) + ", capped at the edition size.";
   const refRows = [
     { label: words.target, value: fmt(target) },
     ...(bm !== null ? [{ label: words.bm, value: fmt(bm) }] : []),
   ];
   const targetTip = {
     // at close the target IS the sellout, so it is named as that
-    head: close ? (partial ? `Target · ${Math.round((100 * sellout) / editionTotal)}% of the ${fmt(editionTotal)} edition` : "Sellout") : `Target by ${dayLabel(snap, day)}`,
+    head: close ? (W.tl ? `${W.Unit} target` : partial ? `Target · ${Math.round((100 * sellout) / editionTotal)}% of the ${fmt(editionTotal)} edition` : "Sellout") : `Target by ${dayLabel(snap, day)}`,
     rows: refRows,
   };
   const stretchTip = bm === null ? null : {
@@ -115,7 +125,9 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const bmTip = bm === null ? null : {
     head: "Benchmark",
     rows: refRows,
-    body: "The median of the matched basket - the demand launches like this one typically reach: units sold, plus what the entrants left without a unit would have bought at the entry rate.",
+    body: W.tl
+      ? `The median of the matched basket of timed launches - the ${W.unit} launches like this one typically reach${close ? "" : " by now"}.`
+      : "The median of the matched basket - the demand launches like this one typically reach: units sold, plus what the entrants left without a unit would have bought at the entry rate.",
   };
 
   const axisLabel = { position: "absolute", top: 4, fontSize: 12, whiteSpace: "nowrap" };
@@ -139,7 +151,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
   return (
     <Card
       dot={GROUP_DOTS.volume}
-      title={partial ? "Units vs target" : "Units vs sellout"}
+      title={partial ? W.heroTitlePartial : W.heroTitle}
       badge={<HorizonBadge horizon={horizon} />}
       // "oversubscribed +N" takes a line of its own on a narrow card rather
       // than break the title, the horizon chip and itself each onto two
@@ -154,13 +166,13 @@ export default function HeroBar({ snap, horizon = "today" }) {
       ) : null}
     >
       <div className="spacer-8" />
-      <div className="lead" {...t.props({ head: close ? "Projected demand" : "Secured units", body: unitsTip }, 300)}>
+      <div className="lead" {...t.props({ head: close ? W.projected : W.securedUnits, body: unitsTip }, 300)}>
         <Ex k="hero.fill" arg={{ close }} focus>{fmt(fill)}</Ex>
         <span className="delta" style={{ color: delta >= 0 ? C.green : C.red }}>
           <Ex k="hero.delta" arg={{ close }}>{fmtSigned(delta)}</Ex>
         </span>
         <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
-          {close && !partial ? "vs sellout" : "vs target"}
+          {close && !partial && !W.tl ? "vs sellout" : "vs target"}
         </span>
       </div>
 
@@ -188,10 +200,10 @@ export default function HeroBar({ snap, horizon = "today" }) {
           radius={5}
           tips={{
             proj: { head: "Projected", rows: [
-              { label: "Units", value: fmt(proj) },
-              ...(overPct !== null ? [{ label: "vs sellout", value: overPct + "%" }] : []),
+              { label: W.Unit, value: fmt(proj) },
+              ...(overPct !== null ? [{ label: `vs ${W.sellout}`, value: overPct + "%" }] : []),
             ] },
-            now: { head: "Secured to date", rows: [{ label: "Units", value: fmt(now) }] },
+            now: { head: W.toDate, rows: [{ label: W.Unit, value: fmt(now) }] },
             overshoot: { head: "Oversubscribed", rows: [{ label: "Units", value: "+" + fmt(Math.abs(over)) }] },
             target: targetTip,
             base: bm !== null && bm < target ? bmTip : targetTip,
@@ -202,7 +214,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
         <div style={{ position: "relative", height: 20, marginTop: 8 }}>
           <div style={{ ...axisLabel, left: 0, color: C.muted }}>0</div>
           <div style={{ ...axisLabel, right: 0, color: C.muted }}>
-            sellout <Ex k="release.target">{fmt(sellout)}</Ex>
+            {W.sellout} <Ex k="release.target">{fmt(sellout)}</Ex>
           </div>
         </div>
       </div>
@@ -213,7 +225,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
       <div className={"legend-rows" + (oversub > 0 ? " tight" : "")}>
         <div className="legend-row">
           <span className="swatch" style={{ background: C.blue }} />
-          <span style={{ color: C.muted }}>{close ? "Projected demand" : "To date"}</span>
+          <span style={{ color: C.muted }}>{close ? W.projected : "To date"}</span>
           <span className="val"><Ex k="hero.fill" arg={{ close }}>{fmt(fill)}</Ex></span>
         </div>
         <div className="legend-row" {...t.props(stretchTip || targetTip)}>
@@ -225,7 +237,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
             any, because that is the more urgent fact and the hatch drawing it
             needs naming; otherwise the benchmark, which the label above the bar
             already places. */}
-        {close && (oversub > 0 || over > 0) ? (
+        {close && !W.tl && (oversub > 0 || over > 0) ? (
           <div className="legend-row">
             <span className="swatch" style={{ background: HATCH }} />
             <span style={{ color: C.muted }}>Over sellout</span>
@@ -248,22 +260,23 @@ export default function HeroBar({ snap, horizon = "today" }) {
  * can see what secured is made of. */
 function HeroActuals({ snap }) {
   const t = useTip();
+  const W = wordsOf(snap);
   const now = snap.hero?.now ?? 0;
   const sold = snap.sellthrough?.sold ?? 0;
   const drafts = snap.sellthrough?.drafts;
   const banked = snap.sellthrough?.soldPredicted ?? 0;
-  const unitsTip = securedTip(snap) + ".";
+  const unitsTip = W.tl ? `${W.securedUnits} to date, every channel.` : securedTip(snap) + ".";
   return (
-    <Card dot={GROUP_DOTS.volume} title="Secured units">
+    <Card dot={GROUP_DOTS.volume} title={W.securedUnits}>
       <div className="spacer-8" />
-      <div className="lead" {...t.props({ head: "Secured units", body: unitsTip }, 300)}>
+      <div className="lead" {...t.props({ head: W.securedUnits, body: unitsTip }, 300)}>
         <Ex k="hero.secured" focus>{fmt(now)}</Ex>
         <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
           {snap.catalogue ? "last 90 days" : "to date"}
         </span>
       </div>
       <div className="lead-caption" style={{ color: C.muted }}>no target set - actuals only</div>
-      <div className="legend-rows" style={{ marginTop: 20 }}>
+      {!W.tl && <div className="legend-rows" style={{ marginTop: 20 }}>
         {/* the parts of the lead, in the sell-through's ramp of blues, so the
             rows add up to it */}
         <div className="legend-row">
@@ -283,7 +296,7 @@ function HeroActuals({ snap }) {
           <span style={{ color: C.muted }}>Expected from the draw</span>
           <span className="val"><Ex k="st.draw">{fmt(banked)}</Ex></span>
         </div>
-      </div>
+      </div>}
     </Card>
   );
 }
