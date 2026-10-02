@@ -40,7 +40,8 @@ data/
   orders_by_product.csv   per release x Shopify product: units paid, awaiting payment (draft orders),
                           list price, prints with a frame on offer and the frames bought with them
                           (docs 6.4) - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
-  draw_products.csv       the product each draw's winners bought: the draw to product map
+  draw_products.csv       the product each draw's winners bought, or its entrants hold
+                          pre-authorisation drafts for until it has winners: the draw to product map
   draw_claims.csv         per draw, the claims a draw round has made that the order table has not
                           caught up with (winners still holding an open pre-authorisation draft on the
                           draw's product, no paid order); written with the orders, never committed (docs 6.3)
@@ -282,7 +283,8 @@ paid, orders awaiting payment, list price; the draw's own pre-authorisation draf
 live entry, are counted apart and never shown as drafts; and the framing, the prints a frame
 was on offer for and the frames bought with them, on the paid orders, the pre-authorisation
 drafts and the orders awaiting payment, joined to the prints through the order, docs 6.4) and `data/draw_products.csv` (the product each
-draw's winners bought, joined inside BigQuery on the pseudonymous account id),
+draw's winners bought, or its entrants hold pre-authorisation drafts for until it has winners,
+joined inside BigQuery on the pseudonymous account id),
 `data/draw_claims.csv` (per draw, the winners whose claim the order table has not caught up
 with yet, so claiming pre-orders never dips the sell-through while the orders land; counted
 only above each draw's lowest count over the last six hours, from a day of pulls kept in
@@ -689,14 +691,16 @@ the edition and its percentage in columns of their own, with the key beside the 
 the one card with no target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
 orders per product come from the Shopify order lines in BigQuery (`data/units_paid.csv` over
 the page's window, and `data/orders_by_product.csv` for the drafts),
-joined to the draws through the product each draw's winners bought (docs 2.4); until every draw
+joined to the draws through the product each draw's winners bought, or its entrants hold
+pre-authorisation drafts for until it has winners (docs 2.4); until every draw
 of a release is named that way the card wears an **Incomplete data** stamp, and the sales the
 draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an
 entrant who entered more products than their maximum quantity is counted on that many
 products only, placed for revenue: on the priciest of them until its expected orders reach
 its edition, over-allocating for the payments expected to fail so the most valuable editions
 show sold out first, then on whichever has the most room. Products come from the event feed's
-draws (one draw per product), each named by the Shopify title its winners bought and sized by
+draws (one draw per product), each named by the Shopify title its winners bought, or its
+entrants hold pre-authorisation drafts for until it has winners, and sized by
 the Airtable record of that title (docs 2.4, 6.3). A name or edition typed against the draw id
 (`products: [{key: draw_id, name, edition}]` in the release's inputs) stands over those; a
 name typed with no draw id only names a draw the orders feed cannot place yet. The Target
