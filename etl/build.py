@@ -3307,7 +3307,7 @@ LEGACY_KEYS = ("edition_size", "edition_total", "unit_price", "artist_profit", "
                "artist_profit_share", "framing_available", "frame_conversion", "frame_profit_per_unit",
                "aa_budget_share")
 # a product's figures, typed on the Target setting tab over what Airtable holds
-PRODUCT_KEYS = ("edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
+PRODUCT_KEYS = ("units_target", "edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
                 "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "framing_available",
                 "frame_conversion", "frame_profit_per_unit")
 
@@ -3435,6 +3435,10 @@ def _effective_product(p: dict, b: dict) -> dict:
     share = _num(pick("target_sellthrough", default=1.0, kind="default"))
     e["target_sellthrough"] = min(max(share, 0.0), 1.0) if share is not None else 1.0
     e["target_units"] = int(round(e["edition"] * e["target_sellthrough"])) if e["edition"] else 0
+    # Airtable's units target for the work, typed over on a timed launch's tab
+    # (docs/TL_SPEC.md §7; shared/economics.mjs effectiveProduct)
+    ut = _num(pick("units_target"))
+    e["units_target"] = ut if ut and ut > 0 else None
     price = _num(pick("unit_price"))
     e["unit_price"] = price if price and price > 0 else None
     e["currency"] = str(pick("currency", default=pricing.PAGE_CURRENCY) or pricing.PAGE_CURRENCY).upper()

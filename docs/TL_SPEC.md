@@ -171,11 +171,15 @@ closed releases.
 
 ## 7. Target setting for TLs
 
-The tab asks for, in TL words:
+The tab is the LE tab's own components in TL words (`web/src/TLTargets.jsx` on
+`TargetSetting.jsx`: the form language, the basket picker, the products grid, the stretch
+sliders and the channel table), so the two tabs read the same way; what differs is the target's
+unit, signups before the open where the LE reads units. It asks for:
 
 - **Units target.** Airtable's `units_target` summed over the ticked works (400 for Bisa Butler:
-  one work carries 400, the other none and adds nothing), typed over if the launch target
-  differs. Edition sizes are shown beside it (300 and 300) and cap nothing unless typed as a cap.
+  one work carries 400, the other none and adds nothing), typed over per work on the products
+  grid, where a Units target column stands in place of the LE grid's sell-through. Edition sizes
+  are shown beside it (300 and 300) and cap nothing.
 - **Signup -> order rate** and **purchases per order**: the basket's medians by default, typed
   over.
 - **Channels in plan** and **where the stretch comes from**, as LE (the sliders).
@@ -186,7 +190,8 @@ The tab asks for, in TL words:
   over. Sense check as the template: total budget at most 6% of launch value.
 - **Cannibalisation** for paid: the TL panel's 0.1 by default (the LE default is 0.2), typed
   over.
-- **Products grid** as LE, with the tick; a work unticked counts nothing (§1.6 of the data model).
+- **Products grid** as LE (the same grid with the TL column set), with the tick; a work unticked
+  counts nothing (§1.6 of the data model).
 
 ```
 orders needed         = units target / purchases per order
@@ -220,7 +225,13 @@ Baskets are picked as LE baskets are (`BENCHMARK_SPEC` §4a: price band, target,
 similar-size rule, the picker), with the window length as a further filter (a 48-hour launch is
 measured against 48-hour launches first, falling back to all TLs when thin, and saying so). The
 medians feed the targets of §7 and the benchmarks of §4 and §5. A release saved without a
-basket is benchmarked against the TLs nearest its target and price, as LEs are.
+basket is benchmarked against the TLs nearest its target and price, as LEs are. The rule is the
+LE rule's (`shared/basketRule.mjs`, which the picker runs over `data/app/tl_basket_candidates.json`;
+`etl/tl.py similar_members` in the build): the artist's own earlier launches first, then the
+nearest on the units the window sold and on price, those closed in the last eighteen months
+first, read on the page's day and a closed launch at its own close, so its basket stops moving
+once it closes. `tests/test_tl_basket_parity.py` holds the two sides to the same members in the
+same order, over the live launches, every closed launch on the panel and launches being planned.
 
 ## 9. Sidebar and index
 
@@ -306,6 +317,14 @@ What the data showed on the way, and how the build reads it:
   works and the suggested basket (the nearest launches by target and price among those of the
   same window length, falling back to every length when fewer than six). Saving on the tab
   makes the targets the release's own.
+- **The Target setting tab is the LE tab in TL words** (2 October 2026). Its first cut was a
+  compact form of its own, with a basket select and a plain products table; it now runs on the
+  LE tab's components (the basket picker over the TL panel, the products grid with a units
+  target per work, the stretch sliders and the channel table in signups and sessions), and the
+  TL basket rule was brought onto the LE rule's clock so the picker's suggestion is the build's
+  basket (`tests/test_tl_basket_parity.py`, 136 cases on the day it was written). Bisa Butler's
+  suggested basket moved with it, from eight launches at ×2.40 to eight at ×2.07 over the
+  basket's median signups.
 
 ## 12. Decisions log
 

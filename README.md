@@ -609,11 +609,19 @@ completed launches (`data/app/tl_panel.csv`, 74 launches on 1 October 2026, with
 signup and sales pace curves in `tl_curves.json`), resolves the basket, sets the targets
 and writes a page per launch (`data/app/derived/<id>_tl.json`, the `_tl` suffix since an
 artist can have an LE and a TL of one name in a quarter). A TL page runs on Airtable's
-units target and the suggested basket before anyone saves; **Target setting** in TL
-words (units target, pieces per order, the signup → order rate, the paid prices, the
-channels, the stretch sliders, the basket, the products with their tick) makes the
-targets the release's own, recomputed live by `shared/tlModel.mjs`, and
-`POST /api/inputs/:id` accepts the TL fields.
+units target and the suggested basket before anyone saves. **Target setting** is the LE
+tab's own components in TL words (`web/src/TLTargets.jsx`): the release and its dates (the
+announce, the open in Amsterdam time, the window length, each with the other readings
+beside it and one click to take one), the basket picked on the LE map over the TL panel
+(`GET /api/tl/baskets/candidates`, the launches of the same window length first), the
+channels in plan and the stretch sliders, the basket's channel table in signups and
+sessions, the Airtable-style products grid with a units target per work in place of the
+sell-through, and the assumptions (the signup → order rate, pieces per order, the paid
+prices, cannibalisation). The header recomputes live from `shared/tlModel.mjs`, and
+`POST /api/inputs/:id` accepts the TL fields. The TL basket rule is the LE rule's, shared
+with the picker and read at the same clock (a closed launch at its own close);
+`tests/test_tl_basket_parity.py` holds `etl/tl.py` and `shared/basketRule.mjs` to the same
+members in the same order, as `tests/test_basket_parity.py` does for the LE baskets.
 
 What the feed showed, and the model allows for: the sales start about a day before the
 public open (the platform's early access, private-room orders), so the window state

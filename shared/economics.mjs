@@ -19,7 +19,7 @@ export const PAGE_CURRENCY = "EUR";
 export const RATES_TO_EUR = { EUR: 1.0, GBP: 1.18, USD: 0.92 };
 export const PRODUCT_KEYS = ["edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
   "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "framing_available", "frame_conversion",
-  "frame_profit_per_unit"];
+  "frame_profit_per_unit", "units_target"];
 export const LEGACY_KEYS = ["edition_size", "edition_total", "unit_price", "artist_profit", "aa_group_profit",
   "artist_profit_share", "framing_available", "frame_conversion", "frame_profit_per_unit", "aa_budget_share"];
 
@@ -79,6 +79,11 @@ export function effectiveProduct(p, b) {
   const share = num(pick("target_sellthrough", null, 1.0));
   e.target_sellthrough = share === null ? 1.0 : Math.min(Math.max(share, 0), 1);
   e.target_units = e.edition ? Math.round(e.edition * e.target_sellthrough) : 0;
+  // Airtable's units target for the work, typed over on a timed launch's tab
+  // (docs/TL_SPEC.md §7): the TL target is the sum over the ticked works,
+  // uncapped by the edition; an LE reads it through target_sellthrough above
+  const ut = num(pick("units_target"));
+  e.units_target = ut && ut > 0 ? ut : null;
   const price = num(pick("unit_price"));
   e.unit_price = price && price > 0 ? price : null;
   e.currency = String(pick("currency", null, PAGE_CURRENCY) || PAGE_CURRENCY).toUpperCase();

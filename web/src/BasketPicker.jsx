@@ -220,7 +220,14 @@ const Legend = () => {
   );
 };
 
-export default function BasketPicker({ releaseId, releaseName, artist, currency, announceDate, privateRoomOpen, launchEnd, asOf, targetUnits, unitPrice, preferRecent = true, channelsOff = [], current, onInputs, onPick, onClose }) {
+/* `candidatesUrl` and `lengthHours` serve a timed launch (docs/TL_SPEC.md §8):
+ * the rows are the TL panel's, and the rule is run over the launches of the
+ * same window length first, falling back to every length when fewer than
+ * THIN_MEMBERS of them are on file - the same filter etl/tl.py ready_baskets
+ * applies, so the map suggests what the build will use. The map's axes stay
+ * units sold and price: a TL is measured on the units its window sold. */
+export default function BasketPicker({ releaseId, releaseName, artist, currency, announceDate, privateRoomOpen, launchEnd, asOf, targetUnits, unitPrice, preferRecent = true, channelsOff = [], current, onInputs, onPick, onClose,
+                                       candidatesUrl = "/api/baskets/candidates", lengthHours = null }) {
   const [recent, setRecent] = useState(preferRecent !== false);
   const [rows, setRows] = useState(null);
   const [error, setError] = useState(null);
@@ -250,11 +257,17 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
 
   // the panel, once
   useEffect(() => {
-    fetch("/api/baskets/candidates").then((r) => r.json()).then((d) => {
+    fetch(candidatesUrl).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
       setRows(d.rows || []);
     }).catch((e) => setError(String(e)));
-  }, []);
+  }, [candidatesUrl]);
+  // a timed launch's rule runs over the launches of its window length when
+  // enough are on file (etl/tl.py ready_baskets, TL_THIN)
+  const sameLength = useMemo(() => (rows && lengthHours ? rows.filter((r) => Number(r.window_hours) === Number(lengthHours)) : null), [rows, lengthHours]);
+  // counted without this launch's own row, as etl/tl.py ready_baskets counts the pool
+  const lengthFiltered = !!(sameLength && sameLength.filter((r) => r.release_name !== releaseName).length >= THIN_MEMBERS);
+  const ruleRows = lengthFiltered ? sameLength : rows;
 
   /* The suggestion: the rule in shared/basketRule.mjs over the rows, for this
      target and price and this setting of the recency switch - the same rule
@@ -265,7 +278,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
      underneath so the headline still says "edited" against the right thing.
      Read on the page's own day (the snapshot's asOf, the build's), and a
      release that has closed at its close, as the build reads it. */
-  const rule = useMemo(() => (rows && placeable ? similarMembers(rows, L, { preferRecent: recent, asOf }) : null), [rows, L, recent, placeable, asOf]);
+  const rule = useMemo(() => (ruleRows && placeable ? similarMembers(ruleRows, L, { preferRecent: recent, asOf }) : null), [ruleRows, L, recent, placeable, asOf]);
   const ownList = useMemo(() => (rows && placeable ? ownMembers(rows, L, { asOf }) : []), [rows, L, placeable, asOf]);
   const clock = useMemo(() => (rows ? basketClock(rows, L, asOf) : null), [rows, L, asOf]);
   useEffect(() => {
@@ -380,9 +393,13 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
     const cost = older || later ? <>{older}{later}</> : null;
     // the switches change how the basket is read, not which launches are in it
     const paidNote = paidOff ? <span style={{ color: C.muted }}> Paid is not in plan, so the basket is read without its paid units.</span> : null;
-    if (reach === null) return <>{s}.{paidNote}</>;
-    if (reach > NEAR) return <>{s}. <span style={{ color: C.amber }}>Nothing on file is this size</span> - these are the nearest we have, the furthest {x(reach)} away.{cost}{paidNote}</>;
-    return <>{s} - all within <b>{x(reach)}</b> of it{untouched ? "" : " · edited"}.{cost}{paidNote}</>;
+    const lengthWord = (h) => (h % 24 === 0 && h >= 72 ? `${h / 24}-day` : `${Math.round(h)}-hour`);
+    const lengthNote = lengthHours ? (lengthFiltered
+      ? <span style={{ color: C.muted }}> Among the {lengthWord(lengthHours)} launches on file.</span>
+      : <span style={{ color: C.amber }}> Fewer than {THIN_MEMBERS} {lengthWord(lengthHours)} launches on file, so every window length counts.</span>) : null;
+    if (reach === null) return <>{s}.{lengthNote}{paidNote}</>;
+    if (reach > NEAR) return <>{s}. <span style={{ color: C.amber }}>Nothing on file is this size</span> - these are the nearest we have, the furthest {x(reach)} away.{lengthNote}{cost}{paidNote}</>;
+    return <>{s} - all within <b>{x(reach)}</b> of it{untouched ? "" : " · edited"}.{lengthNote}{cost}{paidNote}</>;
   };
 
   const loading = !rows && !error;

@@ -276,7 +276,10 @@ function moveByRow(e) {
   }
 }
 
-function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, onAdd, onRemove, onReset, onInclude, emptyNote }) {
+/* `columns` is the grid's column set, GRID for an LE; a timed launch's tab
+ * passes its own (TLTargets.jsx), with a units target per work in place of
+ * the sell-through. `caption` replaces the LE words under the grid. */
+function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, onAdd, onRemove, onReset, onInclude, emptyNote, columns = GRID, caption }) {
   // rows are keyed by the Airtable id, else the row's place in the list: a
   // manual product's name is typed in place, so it cannot be the key
   const rowKey = (p, i) => (p.airtable_id ? `a-${p.airtable_id}` : `m-${i}`);
@@ -341,7 +344,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
     <tr className="setall">
       <td className="gut">↓</td>
       <td className="l primary">Set all<span className="src">type here to fill a column</span></td>
-      {GRID.map((c) => {
+      {columns.map((c) => {
         if (c.calc) return <td key={c.key} className="calc" />;
         if (c.check) {
           return (
@@ -352,6 +355,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
           );
         }
         if (c.key === "edition") return <td key={c.key} className="closed" title="Editions differ by work: type each on its own row." />;
+        if (c.key === "units_target") return <td key={c.key} className="closed" title="Targets differ by work: type each on its own row." />;
         const vals = products.filter((p) => !closedFor(p, c.key)).map((p) => (p.sources[c.key] === "typed" ? p[c.key] : undefined));
         const same = vals.length > 0 && vals.every((v) => v !== undefined && v === vals[0]);
         return (
@@ -374,21 +378,27 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
   };
   const aaBefore = (econ.ppu_aa || 0) - (econ.frame_uplift_per_unit || 0);
   const revShare = weighted("aa_revenue_share"), profShare = weighted("aa_profit_share");
+  const unitsTargetSum = live.reduce((t, p) => t + (p.units_target || 0), 0);
+  const sumCell = (c) => {
+    switch (c.key) {
+      case "edition": return <td key={c.key} title="The editions summed.">{fmt(econ.edition_total)}</td>;
+      case "target_sellthrough": return <td key={c.key} title="Target units over the editions.">{econ.edition_total ? Math.round((100 * econ.edition_size) / econ.edition_total) : ""}</td>;
+      case "unit_price": return <td key={c.key} title="Price per target unit, weighted by target units, in euros.">{econ.unit_price ? cellText("unit_price", econ.unit_price) : ""}</td>;
+      case "target_units": return <td key={c.key} title="The target units summed: the secured-units target.">{fmt(econ.edition_size)}</td>;
+      case "units_target": return <td key={c.key} title="The units targets summed over the ticked works: the launch's units target.">{unitsTargetSum > 0 ? fmt(unitsTargetSum) : ""}</td>;
+      case "artist_profit_per_unit": return <td key={c.key} title="Weighted over the target units.">{econ.ppu_artist > 0 ? cellText("artist_profit_per_unit", econ.ppu_artist) : ""}</td>;
+      case "aa_profit_per_unit": return <td key={c.key} title="Weighted over the target units, before framing.">{aaBefore > 0 ? cellText("aa_profit_per_unit", aaBefore) : ""}</td>;
+      case "aa_revenue_share": return <td key={c.key} title="Weighted over the target units of the products on a revenue share.">{revShare !== null ? cellText("aa_revenue_share", revShare) : ""}</td>;
+      case "aa_profit_share": return <td key={c.key} title="Weighted over the target units of the products on a profit share.">{profShare !== null ? cellText("aa_profit_share", profShare) : ""}</td>;
+      case "frame_profit_per_unit": return <td key={c.key} title="The framing uplift per target unit over every product: Avant Arte's alone.">{econ.frame_uplift_per_unit > 0 ? `+${cellText("frame_profit_per_unit", econ.frame_uplift_per_unit)}` : ""}</td>;
+      default: return <td key={c.key} />;
+    }
+  };
   const sum = () => (
     <tr className="sum">
       <td className="gut" />
       <td className="l primary">Total · per target unit<span className="src">{live.length === 1 ? "the one product" : `the ${live.length} products together`}{live.length < products.length ? `, ${products.length - live.length} unticked` : ""}</span></td>
-      <td title="The editions summed.">{fmt(econ.edition_total)}</td>
-      <td title="Target units over the editions.">{econ.edition_total ? Math.round((100 * econ.edition_size) / econ.edition_total) : ""}</td>
-      <td title="Price per target unit, weighted by target units, in euros.">{econ.unit_price ? cellText("unit_price", econ.unit_price) : ""}</td>
-      <td title="The target units summed: the secured-units target.">{fmt(econ.edition_size)}</td>
-      <td title="Weighted over the target units.">{econ.ppu_artist > 0 ? cellText("artist_profit_per_unit", econ.ppu_artist) : ""}</td>
-      <td title="Weighted over the target units, before framing.">{aaBefore > 0 ? cellText("aa_profit_per_unit", aaBefore) : ""}</td>
-      <td title="Weighted over the target units of the products on a revenue share.">{revShare !== null ? cellText("aa_revenue_share", revShare) : ""}</td>
-      <td title="Weighted over the target units of the products on a profit share.">{profShare !== null ? cellText("aa_profit_share", profShare) : ""}</td>
-      <td />
-      <td />
-      <td title="The framing uplift per target unit over every product: Avant Arte's alone.">{econ.frame_uplift_per_unit > 0 ? `+${cellText("frame_profit_per_unit", econ.frame_uplift_per_unit)}` : ""}</td>
+      {columns.map(sumCell)}
     </tr>
   );
   return (
@@ -400,7 +410,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
             <tr>
               <th className="gut" title="Ticked: part of the release. Untick a work to leave it out; it stays here, greyed, and counts nothing." />
               <th className="l primary"><span className="glyph" aria-hidden="true">A</span>Product</th>
-              {GRID.map((c) => <th key={c.key} className={c.calc ? "calc" : undefined} title={c.tip}>{glyph(c)}{c.label}</th>)}
+              {columns.map((c) => <th key={c.key} className={c.calc ? "calc" : undefined} title={c.tip}>{glyph(c)}{c.label}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -415,13 +425,13 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
                     onChange={(e) => onInclude(p, e.target.checked)} />
                 </td>
                 {nameCell(p, i)}
-                {GRID.map((c) => cell(p, c))}
+                {columns.map((c) => cell(p, c))}
               </tr>
             ))}
             {products.length === 0 && (
               <tr className="empty">
                 <td className="gut" />
-                <td className="l" colSpan={GRID.length + 1}>
+                <td className="l" colSpan={columns.length + 1}>
                   No products yet: Airtable has no record matched to this release{emptyNote ? ` (${emptyNote})` : ""}.
                   {editing ? " Add the works by hand until it does." : " Switch on Edit figures to add the works by hand until it does."}
                 </td>
@@ -431,7 +441,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
               <tr className="add">
                 <td className="gut">+</td>
                 <td className="l primary"><button type="button" className="ts-link" onClick={onAdd}>Add a product</button></td>
-                <td colSpan={GRID.length} />
+                <td colSpan={columns.length} />
               </tr>
             )}
             {products.length > 0 && sum()}
@@ -439,13 +449,16 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
         </table>
       </div>
       <div className="ts-caption">
-        The last row is the release as a whole: edition and target units summed, sell-through and price weighted by target units,
+        {caption || <>The last row is the release as a whole: edition and target units summed, sell-through and price weighted by target units,
         the profits and the share per target unit, and the framing uplift per target unit. A product has a revenue share or a
-        profit share, never both: fill one and the other closes. Framing profit is Avant Arte's alone.
+        profit share, never both: fill one and the other closes. Framing profit is Avant Arte's alone.</>}
       </div>
     </>
   );
 }
+
+// the grid, the basket table and the grid's rules, for the timed launches' tab (TLTargets.jsx)
+export { GRID, PCT, closedFor, typedKeys, BasketTable, ProductsGrid };
 
 /* ======================= the tab ======================= */
 

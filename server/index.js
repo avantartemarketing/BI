@@ -644,6 +644,12 @@ app.get("/api/baskets", route(async (req, res) => {
 app.get("/api/baskets/candidates", route(async (_req, res) => {
   res.json(await baskets.candidates());
 }));
+// the TL panel as the picker's candidate rows (etl/tl.py candidate_rows),
+// written by the build; empty until it has run on this checkout
+app.get("/api/tl/baskets/candidates", (_req, res) => {
+  try { res.json(JSON.parse(fs.readFileSync(path.join(DATA, "tl_basket_candidates.json"), "utf8"))); }
+  catch { res.json({ asOf: null, rows: [] }); }
+});
 
 app.post("/api/baskets", route(async (req, res) => {
   const body = req.body || {};

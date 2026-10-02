@@ -85,6 +85,7 @@ RELEASES = APP / "tl_releases.csv"
 FEED = APP / "tl_feed.json"
 PANEL = APP / "tl_panel.csv"
 CURVES = APP / "tl_curves.json"
+CANDIDATES = APP / "tl_basket_candidates.json"   # the panel as the picker's rows (candidate_rows)
 # the windows hour by hour from the orders table and the buyers (server/bigquery.js tlUnitsSql, tlBuyersSql)
 TL_UNITS = DATA / "tl_units_hourly.csv"
 TL_BUYERS = DATA / "tl_buyers.csv"
@@ -119,6 +120,7 @@ TL_CURVE_DAYS = 45          # the signup pace curve runs from this many days bef
 TL_UNIT_CURVE_STEPS = 50    # the sales pace curve's steps across the window
 TL_THIN = 6                 # a basket under this is thin, and the length filter falls back to every TL
 TL_SIMILAR_N = 8
+OWN_MAX = 3.0               # the artist's own earlier launches lead the basket when within this on both axes
 TL_UPCOMING_DAYS = 120      # a timed launch this far ahead in Airtable is listed before the feed sees it
 TL_CANNIBALISATION = 0.1    # the TL panel's default (spec §7; the LE standard is 0.2)
 TL_PAID_SPLIT_PRE = 0.7     # the paid budget's pre-window share when the basket has no reading (the workbook template)
@@ -128,7 +130,7 @@ PAID_COST_MIN_MEMBERS = 3   # a basket's median cost needs this many members wit
 RATE_MIN_SIGNUPS = 30       # a group's signup -> order rate is read from this many signups
 RATE_MIN_SESSIONS = 100     # a group's session -> signup rate from this many sessions
 RATE_MAX_PER_SESSION = 0.5  # ... and over this it is not a rate the feed measured
-RECENT_DAYS = 548           # a comparable that closed within this ranks first (18 months, as the LE baskets)
+RECENT_MONTHS = 18          # a comparable that closed within this many months ranks first (the LE baskets' RECENT_MONTHS)
 NEAR = 4.0                  # a comparable within this multiple on every axis is near
 ID_MAX_CHARS = 120
 CURVE_DAYS = list(range(-TL_CURVE_DAYS, 1))
@@ -945,69 +947,235 @@ def _ready(bid: str, name: str, desc: str, members: list[str], panel: pd.DataFra
     return out
 
 
-def similar_members(pool: pd.DataFrame, units_target: float | None, price: float | None, n: int = TL_SIMILAR_N,
-                    as_of: date | None = None) -> list[str]:
-    """The n launches nearest this one on units target and price: the larger
-    of the two multiples, each taken above 1 whichever side it falls. Among
-    the near ones (within NEAR on both) a launch that closed in the last 18
-    months ranks first, as the LE baskets prefer recent comparables."""
-    if not len(pool):
-        return []
-    size = units_target if units_target and units_target > 0 else None
-    units = pd.to_numeric(pool["units_target"], errors="coerce").fillna(pd.to_numeric(pool["units"], errors="coerce")).to_numpy(dtype=float)
-    prices = pd.to_numeric(pool["unit_price_eur"], errors="coerce").to_numpy(dtype=float)
+def _tl_panel_row(panel: pd.DataFrame, release: dict | None) -> pd.Series | None:
+    name = str((release or {}).get("release_name") or "").strip()
+    if not name or panel is None or not len(panel):
+        return None
+    hit = panel[panel["release_name"].astype(str) == name]
+    return hit.iloc[0] if len(hit) else None
+
+
+def _tl_release_end(panel: pd.DataFrame, release: dict | None) -> date | None:
+    """The day this launch's window closes: its panel row's close when it has
+    one, else its launch_end (shared/basketRule.mjs releaseEnd)."""
+    row = _tl_panel_row(panel, release)
+    if row is not None:
+        c = _day(row.get("close"))
+        if c:
+            return c
+    return _day((release or {}).get("launch_end"))
+
+
+def _tl_release_start(panel: pd.DataFrame, release: dict | None, as_of: date) -> date:
+    """The day this launch's pre-window starts, the cut-off for the artist's
+    earlier launches: its panel row's announce, else its announce date, else
+    its close, else the day it is read on (basketRule.mjs releaseStart)."""
+    row = _tl_panel_row(panel, release)
+    if row is not None:
+        a = _day(row.get("announce"))
+        if a:
+            return a
+    for key in ("announce_date", "launch_end"):
+        got = _day((release or {}).get(key))
+        if got:
+            return got
+    return as_of
+
+
+def _tl_release_artist(panel: pd.DataFrame, release: dict | None) -> str:
+    row = _tl_panel_row(panel, release)
+    if row is not None and str(row.get("artist") or "").strip():
+        return str(row["artist"]).strip()
+    named = str((release or {}).get("artist") or "").strip()
+    if named:
+        return named
+    return str((release or {}).get("release_name") or "").split(" · ")[0].strip()
+
+
+def _tl_release_price(panel: pd.DataFrame, release: dict | None) -> float:
+    """This launch's unit price in euros: the panel's for a launch it already
+    prices, else the release's own (basketRule.mjs releasePrice)."""
+    row = _tl_panel_row(panel, release)
+    if row is not None and (_num(row.get("unit_price_eur")) or 0) > 0:
+        return float(row["unit_price_eur"])
+    return float(_num((release or {}).get("unit_price_eur")) or 0.0)
+
+
+def _tl_distances(pool: pd.DataFrame, size: float, price: float) -> np.ndarray:
+    """How far every launch in the pool is from this one: the larger of its
+    units multiple (the units its window sold against this launch's target)
+    and its price multiple, each taken above 1 whichever side it falls; a
+    launch without a price is ranked on units alone (basketRule.mjs distances)."""
+    units = pd.to_numeric(pool["units"], errors="coerce").to_numpy(dtype=float)
+    prices = (pd.to_numeric(pool["unit_price_eur"], errors="coerce").to_numpy(dtype=float) if "unit_price_eur" in pool.columns
+              else np.full(len(pool), np.nan))
 
     def mult(vals, ref):
         with np.errstate(divide="ignore", invalid="ignore"):
             r = np.maximum(vals / ref, ref / vals)
         return np.where((vals > 0) & np.isfinite(r), r, np.inf)
 
-    d = mult(units, size) if size else np.ones(len(pool))
-    if price and price > 0 and np.isfinite(prices).any():
+    d = mult(units, size)
+    if price > 0 and len(pool):
         dp = mult(prices, price)
         d = np.maximum(d, np.where(np.isfinite(dp), dp, 1.0))
-    closes = pd.to_datetime(pool["close"], utc=True, errors="coerce").dt.date.to_numpy()
-    cutoff = (as_of or date.today()) - timedelta(days=RECENT_DAYS)
-    recent = np.array([c is not None and not pd.isna(c) and c >= cutoff for c in closes])
-    rank = [((0 if (d[i] <= NEAR and recent[i]) else 1 if d[i] <= NEAR else 2), d[i]) for i in range(len(pool))]
-    order = sorted(range(len(pool)), key=lambda i: rank[i])
-    names = pool["release_name"].to_numpy()
-    return [str(names[i]) for i in order[:n] if np.isfinite(d[i])]
+    return d
+
+
+def _tl_closes(pool: pd.DataFrame) -> list:
+    """Each launch's close as a day, None where it has none."""
+    return [_day(v) for v in pool["close"].tolist()] if len(pool) else []
+
+
+def own_members(pool: pd.DataFrame, release: dict, as_of: date, panel: pd.DataFrame | None = None) -> list[str]:
+    """The artist's own earlier launches that lead the basket: the same
+    artist, closed before this launch's pre-window started, within OWN_MAX on
+    both axes; nearest first, then by name (basketRule.mjs ownMembers)."""
+    panel = pool if panel is None else panel
+    own = str(release.get("release_name") or "")
+    pool = pool[pool["release_name"].astype(str) != own] if len(pool) else pool
+    size = _num(release.get("units_target")) or 0.0
+    if size <= 0 or not len(pool):
+        return []
+    artist = _tl_release_artist(panel, release).casefold()
+    if not artist:
+        return []
+    start = _tl_release_start(panel, release, as_of)
+    d = _tl_distances(pool, size, _tl_release_price(panel, release))
+    names = pool["release_name"].astype(str).to_numpy()
+    artists = pool["artist"].astype(str).str.strip().str.casefold().to_numpy()
+    closes = _tl_closes(pool)
+    idx = [i for i in range(len(pool))
+           if artists[i] == artist and closes[i] is not None and closes[i] < start and np.isfinite(d[i]) and d[i] <= OWN_MAX]
+    idx.sort(key=lambda i: (d[i], names[i]))
+    return [names[i] for i in idx]
+
+
+def similar_members(pool: pd.DataFrame, release: dict, as_of: date, panel: pd.DataFrame | None = None) -> list[str]:
+    """The TL_SIMILAR_N launches nearest this one, the rule shared with the
+    picker (shared/basketRule.mjs similarMembers, run over candidate_rows;
+    tests/test_tl_basket_parity.py holds the two to the same members in the
+    same order): the artist's own earlier launches first, then the rest by the
+    larger of the units multiple and the price multiple. With prefer_recent (on
+    unless the release says otherwise) a comparable that closed in the last
+    RECENT_MONTHS ranks before an older one, and a launch beyond NEAR on either
+    axis comes last. A launch that has closed is read at its own close: recent
+    is the RECENT_MONTHS before it, and a launch that closed after it is left
+    out, so its basket stops moving once it closes. `pool` is the launches to
+    pick from (the same window length first, ready_baskets); `panel` the whole
+    panel, where this launch's own row may be."""
+    panel = pool if panel is None else panel
+    own = str(release.get("release_name") or "")
+    pool = pool[pool["release_name"].astype(str) != own] if len(pool) else pool
+    size = _num(release.get("units_target")) or 0.0
+    if size <= 0 or not len(pool):
+        return []
+    end = _tl_release_end(panel, release)
+    closed = end is not None and end < as_of
+    ref = end if closed else as_of
+    d = _tl_distances(pool, size, _tl_release_price(panel, release))
+    names = pool["release_name"].astype(str).to_numpy()
+    closes = _tl_closes(pool)
+    first = own_members(pool, release, as_of, panel)
+    taken = set(first)
+    rest = [i for i in range(len(pool))
+            if names[i] not in taken and np.isfinite(d[i]) and not (closed and closes[i] is not None and closes[i] > ref)]
+    if release.get("prefer_recent") is not False and rest:
+        cutoff = (pd.Timestamp(ref) - pd.DateOffset(months=RECENT_MONTHS)).date()
+
+        def tier(i):
+            if d[i] > NEAR:
+                return 2
+            return 0 if (closes[i] is not None and closes[i] >= cutoff) else 1
+        rest.sort(key=lambda i: (tier(i), d[i], names[i]))
+    else:
+        rest.sort(key=lambda i: (d[i], names[i]))
+    return (first + [names[i] for i in rest])[:TL_SIMILAR_N]
+
+
+def candidate_rows(panel: pd.DataFrame) -> list[dict]:
+    """The TL panel as the picker's candidate rows (shared/basketRule.mjs ranks
+    over these; etl/baskets.py candidate_rows is the LE shape): each launch's
+    window units, price, sessions, channel shares and rates, dates and window
+    length. JSON-ready, counts only."""
+    rows = []
+    if not len(panel):
+        return rows
+    for r in panel.sort_values("close", ascending=False, na_position="last").to_dict("records"):
+        r = _clean(r)
+        rows.append({
+            "release_name": str(r.get("release_name") or ""), "artist": str(r.get("artist") or ""), "title": str(r.get("title") or ""),
+            "quarter": str(r.get("quarter") or ""),
+            "window_start": (r.get("announce") or "")[:10] or None, "window_end": (r.get("close") or "")[:10] or None,
+            "campaign_days": _num(r.get("pre_days")), "window_hours": _num(r.get("window_hours")),
+            "units": _num(r.get("units")) or 0.0, "demand": _num(r.get("units")) or 0.0, "sold_short": False,
+            "unmet_units": 0.0, "payment_failed_units": 0.0,
+            "demand_shares": {g: _num(r.get(f"unit_share_{g}")) or 0.0 for g in GROUPS},
+            "unit_shares": {g: _num(r.get(f"unit_share_{g}")) or 0.0 for g in GROUPS},
+            "sess_shares": {g: _num(r.get(f"sess_share_{g}")) or 0.0 for g in GROUPS},
+            "convs": {g: _num(r.get(f"conv_sess_signup_{g}")) for g in GROUPS},
+            # each group's share of the pre-window signups and its signup -> order
+            # rate, for the tab's live reading of a basket picked by hand
+            "signup_shares": {g: _num(r.get(f"signup_share_{g}")) or 0.0 for g in GROUPS},
+            "s2o": {g: _num(r.get(f"signup_order_rate_{g}")) for g in GROUPS},
+            "sessions": _num(r.get("sessions")) or 0.0, "paid_share": _num(r.get("sess_share_paid")) or 0.0,
+            "signups": _num(r.get("signups")) or 0.0, "entries": _num(r.get("signups")) or 0.0,
+            "signup_order_rate": _num(r.get("signup_order_rate")), "units_per_buyer": _num(r.get("purchases_per_order")) or 0.0,
+            "cost_per_paid_unit": _num(r.get("cost_per_sale")), "cost_per_signup": _num(r.get("cost_per_signup")),
+            "price": _num(r.get("unit_price_eur")) or 0.0, "edition_size": _num(r.get("edition_size")) or 0.0,
+            "units_target": _num(r.get("units_target")), "early_access": bool(r.get("early_access")),
+            "cluster": None, "cluster_name": "",
+        })
+    return rows
 
 
 def ready_baskets(panel: pd.DataFrame, curves: dict, release: dict, as_of: date) -> list[dict]:
-    """The ready-made TL baskets for a release (spec §8), in picker order:
-    launches of the same window length (falling back to every TL when thin),
-    the nearest by target and price, the last twelve months, the artist's own,
-    every completed TL."""
+    """The ready-made TL baskets for a release (spec §8), in picker order: the
+    nearest by units sold and price among the launches of the same window
+    length (every length when fewer than TL_THIN of them are on file, counted
+    as the picker counts them), the launches of the same length, the last
+    twelve months, the artist's own, every completed TL. Read on `as_of`, and a
+    launch that has closed at its close: the launches that closed after it are
+    left out of every basket (similar_members)."""
     own = str(release.get("release_name") or "")
-    open_dt = _ts(release.get("window_open"))
-    pool = panel[panel["release_name"] != own] if len(panel) else panel
-    if open_dt is not None and len(pool):
-        pool = pool[pd.to_datetime(pool["close"], utc=True, errors="coerce") < open_dt]
+    pool = panel[panel["release_name"].astype(str) != own] if len(panel) else panel
+    end = _tl_release_end(panel, release)
+    closed = end is not None and end < as_of
+    ref = end if closed else as_of
     hours = _num(release.get("window_hours"))
     out = []
-    same_len = pool[np.isclose(pd.to_numeric(pool["window_hours"], errors="coerce").fillna(-1), hours or -2)] if len(pool) else pool
+    length_mask = np.isclose(pd.to_numeric(pool["window_hours"], errors="coerce").fillna(-1).to_numpy(dtype=float), hours or -2) if len(pool) else np.zeros(0, dtype=bool)
+    same_len = pool[length_mask] if len(pool) else pool
     fell_back = hours is not None and len(same_len) < TL_THIN
     pool_len = pool if fell_back or hours is None else same_len
-    members = similar_members(pool_len, _num(release.get("units_target")), _num(release.get("unit_price_eur")), as_of=as_of)
-    desc = (f"The {len(members)} completed timed launches nearest this one on units target and price"
+    members = similar_members(pool_len, release, as_of, panel=panel)
+    desc = (f"The {len(members)} completed timed launches nearest this one on units sold and price"
             + (f", among the {hours_words(hours)} launches" if hours and not fell_back else "")
             + (f"; fewer than {TL_THIN} {hours_words(hours)} launches on file, so every length counts" if fell_back else "") + ".")
     out.append(_ready("similar_size", "Similar size and shape", desc, members, panel, curves, fallback=fell_back,
-                      matchedOn=["target", "price"] if _num(release.get("unit_price_eur")) else ["target"]))
+                      matchedOn=["target", "price"] if _tl_release_price(panel, release) > 0 else ["target"]))
+    # the other baskets, read at the same clock
+    closes = _tl_closes(pool)
+    keep = np.array([not (closed and c is not None and c > ref) for c in closes], dtype=bool) if len(pool) else np.zeros(0, dtype=bool)
+    pool_ref = pool[keep] if len(pool) else pool
+    closes_ref = [c for c, k in zip(closes, keep) if k]
     if hours:
         out.append(_ready("same_length", f"{hours_words(hours).capitalize()} launches",
-                          f"Every completed {hours_words(hours)} timed launch on file.", same_len["release_name"].tolist(), panel, curves))
-    cutoff = as_of - timedelta(days=365)
-    closes = pd.to_datetime(pool["close"], utc=True, errors="coerce").dt.date if len(pool) else pd.Series(dtype=object)
-    recent = pool[(closes >= cutoff)] if len(pool) else pool
+                          f"Every completed {hours_words(hours)} timed launch on file.", pool[length_mask & keep]["release_name"].tolist() if len(pool) else [], panel, curves))
+    cutoff = ref - timedelta(days=365)
+    recent = pool_ref[[c is not None and c >= cutoff for c in closes_ref]] if len(pool_ref) else pool_ref
     out.append(_ready("all_12m", "Last 12 months", "Every timed launch completed in the last twelve months.", recent["release_name"].tolist(), panel, curves))
-    artist = str(release.get("artist") or "").strip().casefold()
-    same = pool[pool["artist"].astype(str).str.strip().str.casefold() == artist] if artist and len(pool) else pool.iloc[0:0]
+    artist = _tl_release_artist(panel, release).casefold()
+    start = _tl_release_start(panel, release, as_of)
+    if artist and len(pool_ref):
+        same_artist = pool_ref["artist"].astype(str).str.strip().str.casefold().to_numpy() == artist
+        earlier = np.array([c is not None and c < start for c in closes_ref], dtype=bool)
+        same = pool_ref[same_artist & earlier]
+    else:
+        same = pool_ref.iloc[0:0]
     out.append(_ready("same_artist", "Same artist, earlier launches", f"{release.get('artist') or 'This artist'}'s previous timed launches on file.",
                       same["release_name"].tolist(), panel, curves))
-    out.append(_ready("all_tl", "All timed launches", "Every completed timed launch on file.", pool["release_name"].tolist(), panel, curves))
+    out.append(_ready("all_tl", "All timed launches", "Every completed timed launch on file.", pool_ref["release_name"].tolist(), panel, curves))
     return out
 
 
@@ -1326,7 +1494,9 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
     airtable_units = econ["units_target"] if econ["units_target"] else _num((rec.get("launch") or {}).get("units_target"))
     price = econ["unit_price_eur"] or _num((rec.get("launch") or {}).get("unit_price_eur"))
     release_for_basket = {"release_name": name, "artist": rec["artist"], "window_open": _iso(d["open"]), "window_hours": d["hours"],
-                          "units_target": _num(inp.get("units_target")) or airtable_units, "unit_price_eur": price}
+                          "announce_date": _iso(d["announce"]), "launch_end": _iso(d["close"].date()) if d["close"] else None,
+                          "units_target": _num(inp.get("units_target")) or airtable_units, "unit_price_eur": price,
+                          "prefer_recent": inp.get("prefer_recent") is not False}
     rb = resolve_basket(inp.get("benchmark_basket"), panel, curves, release_for_basket, as_of)
     basket = rb["basket"]
     off = channels_off_of(inp)
@@ -1622,6 +1792,7 @@ def build_all(ctx: dict) -> dict:
         APP.mkdir(parents=True, exist_ok=True)
         tmp = PANEL.with_suffix(".tmp"); panel.to_csv(tmp, index=False); tmp.replace(PANEL)
         tmp = CURVES.with_suffix(".tmp"); tmp.write_text(json.dumps(_json_safe({"asOf": as_of.isoformat(), "curves": curves}), separators=(",", ":"))); tmp.replace(CURVES)
+        tmp = CANDIDATES.with_suffix(".tmp"); tmp.write_text(json.dumps(_json_safe({"asOf": as_of.isoformat(), "rows": candidate_rows(panel)}), indent=1)); tmp.replace(CANDIDATES)
     recs = tl_releases(series or {"releases": pd.DataFrame(columns=["release"]), "daily": pd.DataFrame(), "hourly": pd.DataFrame(), "by_release": {}, "hourly_by_release": {}},
                        ctx.get("launch_frame"), ctx.get("inputs") or [], as_of, now, spend, emails)
     only = ctx.get("only")

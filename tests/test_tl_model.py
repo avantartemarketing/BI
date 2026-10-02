@@ -155,10 +155,19 @@ if panel_path.exists() and tl.CURVES.exists():
         check((hours == 48).all() and not ready["similar_size"].get("fallback"), "the similar basket is cut from the 48-hour launches when there are enough")
     seven = tl.ready_baskets(panel, curves, {**rel, "window_hours": 168.0}, date(2026, 10, 1))
     sim7 = next(b for b in seven if b["id"] == "similar_size")
-    pool7 = panel[(panel["window_hours"] == 168) & (pd.to_datetime(panel["close"], utc=True) < pd.Timestamp("2026-10-13T16:00:00Z"))]
+    pool7 = panel[(panel["window_hours"] == 168) & (panel["release_name"] != rel["release_name"])]
     check(sim7.get("fallback") == (len(pool7) < tl.TL_THIN), "the fallback to every length is said when the length is thin")
-    check(all(pd.to_datetime(panel.set_index("release_name").loc[m, "close"], utc=True) < pd.Timestamp("2026-10-13T16:00:00Z") for m in ready["all_tl"]["members"]),
-          "only launches closed before this one's open are comparables")
+    # a live launch is compared with every completed TL on file; a launch that
+    # has closed is read at its close, and the launches that closed after it
+    # are left out of every basket (the LE rule's clock, shared with the picker)
+    check(ready["all_tl"]["n"] == int((panel["release_name"] != rel["release_name"]).sum()), "every completed launch on file is a comparable for a live launch")
+    closed_rel = {**rel, "release_name": "Somebody · Closed · 2025 Q4", "artist": "Somebody", "launch_end": "2025-11-30", "announce_date": "2025-11-01"}
+    closes = pd.to_datetime(panel.set_index("release_name")["close"], utc=True).dt.date
+    for b in tl.ready_baskets(panel, curves, closed_rel, date(2026, 10, 1)):
+        late = [m for m in b["members"] if closes[m] > date(2025, 11, 30)]
+        check(not late, f"a closed launch is read at its close: {b['id']} holds {late[:3]}, closed after it")
+    sim_closed = next(b for b in tl.ready_baskets(panel, curves, closed_rel, date(2026, 10, 1)) if b["id"] == "similar_size")
+    check(sim_closed["n"] > 0 and all(closes[m] <= date(2025, 11, 30) for m in sim_closed["members"]), "the nearest launches of a closed one are among those closed by its close")
 else:
     print("note: no TL panel on disk - the live-basket cases are skipped (run the build first)")
 
