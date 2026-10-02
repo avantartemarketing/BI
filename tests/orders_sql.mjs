@@ -68,10 +68,23 @@ check(/typed AS \(\n\s+SELECT l\.\* EXCEPT \(product_title\), COALESCE\(pn\.prod
   "every typed line carries its product's one name");
 check(/FROM typed l LEFT JOIN paid_customers/.test(orders) && /GROUP BY l\.release, l\.product_title\n/.test(orders) && /FROM typed l LEFT JOIN purchase_channel/.test(units),
   "orders and units group on that name");
-check(draws.startsWith("WITH " + ctes + ",") && /COALESCE\(n\.product_title, o\.product_title\) AS product_title, COUNT\(DISTINCT o\.order_id\) AS orders/.test(draws)
-  && /JOIN lines o ON o\.order_id = b\.shopify_order_id AND o\.release = w\.release AND o\.order_source_type = 'Order'\n/.test(draws)
-  && /LEFT JOIN product_names n ON n\.release = o\.release AND n\.shopify_product_id = o\.shopify_product_id\n/.test(draws)
-  && !draws.slice(ctes.length).includes("JOIN `"), "the draw map reads the feed's own lines and names a draw's product the same way");
+// the draw map: a draw's product is what its winners paid for most, else what
+// its entrants hold the app's pre-authorisation drafts for most, both read off
+// the feed's own typed lines (one name per product) through the collectors
+// table's customer id, so a draw is named from its first entries
+check(draws.startsWith("WITH " + ctes + ","), "the draw map reads the feed's own lines");
+check(/paid_by AS \(SELECT DISTINCT release, customer_id, product_title FROM typed WHERE paid AND customer_id IS NOT NULL\)/.test(draws)
+  && /held_drafts AS \(SELECT DISTINCT release, customer_id, product_title FROM typed WHERE entry_draft AND customer_id IS NOT NULL\)/.test(draws),
+  "winners' paid orders and entrants' pre-authorisation drafts, by the product's one name");
+check(/FROM draw_people p JOIN paid_by b ON b\.release = p\.release AND b\.customer_id = p\.customer_id\n\s+WHERE p\.won GROUP BY 1, 2, 3/.test(draws)
+  && /FROM draw_people p JOIN held_drafts h ON h\.release = p\.release AND h\.customer_id = p\.customer_id\n\s+GROUP BY 1, 2, 3/.test(draws)
+  && /ORDER BY source, n DESC, product_title\) = 1/.test(draws), "the winners' reading first, else the entrants', the top product taking the draw");
+check(count(draws.slice(ctes.length), /JOIN `/g) === 1 && /JOIN `[^`]+` c ON c\.aa_account_id = e\.aa_account_id AND c\.shopify_customer_id IS NOT NULL/.test(draws)
+  && /LOGICAL_OR\(COALESCE\(e\.winner, FALSE\)\) AS won/.test(draws), "the people join runs on the collectors table's customer id, inside BigQuery");
+check(/SELECT release, draw_id, product_title, n AS orders,\n\s+ROUND\(n \/ SUM\(n\) OVER \(PARTITION BY release, draw_id, source\), 3\) AS share/.test(draws)
+  && bq.DRAW_PRODUCTS_HEADER.join(",") === "release,draw_id,product_title,orders,share", "the file's columns are unchanged");
+check(!/aa_account_id/.test(draws.slice(draws.indexOf("pairs AS ("))) && !/customer_id/.test(draws.slice(draws.indexOf("SELECT release, draw_id, product_title, n AS orders"))),
+  "no person's id leaves: counts per draw and product only");
 check(/FROM typed\s+WHERE entry_draft/.test(claims) && /FROM typed WHERE paid AND customer_id IS NOT NULL/.test(claims), "the claims name products the same way");
 check([orders, draws, units, claims].every((s) => !/SELECT\s+\*/i.test(s) && !/user_email|customer_email/.test(s)),
   "no orders query takes * from a table or names an address column");

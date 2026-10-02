@@ -443,7 +443,9 @@ const spendSql = () =>
  *                          into the order it followed, its lines now there
  *                          too) is left out of everything
  *   draw_products.csv      per draw: the product its winners bought most, by
- *                          the same names, and the share of their orders it took
+ *                          the same names, else the one its entrants hold
+ *                          pre-authorisation drafts for most, and the share of
+ *                          that reading it took
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
@@ -679,31 +681,43 @@ const unitsPaidSql = () => {
   return sql;
 };
 
-// the order lines are the orders feed's own (orderLinesCtes: product lines,
-// no test order, no upsell_order_merged copy), orders only, since a purchase
-// event names an order and a draft's id is not one; and a draw's product goes
-// by the name the orders feed gives it (product_names), so the ETL finds it
+// A draw's product: the one its winners have paid orders for most, else,
+// before it has winners, the one its entrants hold the app's pre-authorisation
+// drafts for most - the draft the app raises on the entered product with every
+// live entry (entry_draft). The same reading drawClaimsSql makes, so a draw is
+// named from its first entries and the sell-through's rows carry their
+// products, sales and drafts from the first day of a campaign, not from its
+// first round of winners (Lichtenstein's four draws stood as "Draw 1" to
+// "Draw 4" with 419 units paid, every one split by edition size, 2 October
+// 2026). The lines are the orders feed's own (orderLinesCtes: product lines,
+// no test order, no upsell_order_merged copy, products by the names the feed
+// gives them, so the ETL finds them); the people join runs on the collectors
+// table's customer id inside BigQuery, and only (release, draw, product,
+// count, share) leaves. `orders` is the people the product was read from
+// (winners who paid for it, or entrants holding a draft on it), `share` their
+// share of that reading.
 const drawProductsSql = () =>
   "WITH " + orderLinesCtes() + ",\n" +
-  "wins AS (\n" +
-  "  SELECT DISTINCT simple_release_name AS release, aa_account_id, draw_id\n" +
-  `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
-  "  WHERE event_name = 'draw entry intent' AND winner AND draw_id IS NOT NULL AND aa_account_id IS NOT NULL AND event_date >= @since),\n" +
-  "buys AS (\n" +
-  "  SELECT DISTINCT simple_release_name AS release, aa_account_id, shopify_order_id\n" +
-  `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
-  "  WHERE event_name = 'purchase' AND shopify_order_id IS NOT NULL AND aa_account_id IS NOT NULL AND event_date >= @since),\n" +
+  "draw_people AS (\n" +
+  "  SELECT e.simple_release_name AS release, e.draw_id, c.shopify_customer_id AS customer_id, LOGICAL_OR(COALESCE(e.winner, FALSE)) AS won\n" +
+  `  FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\` e\n` +
+  `  JOIN \`${PROJECT}.${DATASET}.${COLLECTORS_TABLE}\` c ON c.aa_account_id = e.aa_account_id AND c.shopify_customer_id IS NOT NULL\n` +
+  "  WHERE e.event_name = 'draw entry intent' AND e.draw_id IS NOT NULL AND e.event_date >= @since\n" +
+  "  GROUP BY 1, 2, 3),\n" +
+  "paid_by AS (SELECT DISTINCT release, customer_id, product_title FROM typed WHERE paid AND customer_id IS NOT NULL),\n" +
+  "held_drafts AS (SELECT DISTINCT release, customer_id, product_title FROM typed WHERE entry_draft AND customer_id IS NOT NULL),\n" +
   "pairs AS (\n" +
-  "  SELECT w.release, w.draw_id, COALESCE(n.product_title, o.product_title) AS product_title, COUNT(DISTINCT o.order_id) AS orders\n" +
-  "  FROM wins w\n" +
-  "  JOIN buys b ON b.release = w.release AND b.aa_account_id = w.aa_account_id\n" +
-  "  JOIN lines o ON o.order_id = b.shopify_order_id AND o.release = w.release AND o.order_source_type = 'Order'\n" +
-  "  LEFT JOIN product_names n ON n.release = o.release AND n.shopify_product_id = o.shopify_product_id\n" +
+  "  SELECT p.release, p.draw_id, b.product_title, 0 AS source, COUNT(DISTINCT p.customer_id) AS n\n" +
+  "  FROM draw_people p JOIN paid_by b ON b.release = p.release AND b.customer_id = p.customer_id\n" +
+  "  WHERE p.won GROUP BY 1, 2, 3\n" +
+  "  UNION ALL\n" +
+  "  SELECT p.release, p.draw_id, h.product_title, 1 AS source, COUNT(DISTINCT p.customer_id) AS n\n" +
+  "  FROM draw_people p JOIN held_drafts h ON h.release = p.release AND h.customer_id = p.customer_id\n" +
   "  GROUP BY 1, 2, 3)\n" +
-  "SELECT release, draw_id, product_title, orders,\n" +
-  "  ROUND(orders / SUM(orders) OVER (PARTITION BY release, draw_id), 3) AS share\n" +
+  "SELECT release, draw_id, product_title, n AS orders,\n" +
+  "  ROUND(n / SUM(n) OVER (PARTITION BY release, draw_id, source), 3) AS share\n" +
   "FROM pairs\n" +
-  "QUALIFY ROW_NUMBER() OVER (PARTITION BY release, draw_id ORDER BY orders DESC, product_title) = 1\n" +
+  "QUALIFY ROW_NUMBER() OVER (PARTITION BY release, draw_id ORDER BY source, n DESC, product_title) = 1\n" +
   "ORDER BY release, draw_id";
 
 /* The claims a draw round has made that the order table has not caught up

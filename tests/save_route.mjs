@@ -96,13 +96,18 @@ if (atIds.length > 1) {
   check(clean.status === 200, `the typed products are cleared again: ${clean.status}`);
 } else check(false, "the test release has fewer than two Airtable products");
 
-// the build's status is polled; without a funnel export here it fails, and says so
+// the build's status is polled; without a funnel export here it fails, and
+// says so. The wait covers a boot build holding the lock first (a full build
+// on the committed cache runs about 90 seconds here, October 2026) and the
+// one-release build after it; the save's own answer was timed above
 let st = null;
-for (let i = 0; i < 120; i++) {
+const polled = Date.now();
+for (let i = 0; i < 600; i++) {
   st = (await get(`/api/inputs/${RELEASE}/build`)).body;
   if (st.status !== "running") break;
   await sleep(500);
 }
+const waited = Math.round((Date.now() - polled) / 1000);
 check(st && ["done", "failed"].includes(st.status) && typeof st.seconds === "number", `the build reported an outcome: ${JSON.stringify(st).slice(0, 200)}`);
 check((await get(`/api/inputs/unknown_release_x/build`)).body.status === "idle", "no build on record reads idle");
 
@@ -178,7 +183,7 @@ if (upcomingId) {
 } else {
   console.log("no upcoming launch with a priced product in inputs.json - first-save check skipped");
 }
-console.log(`save answered in ${answered}ms; build ${st && st.status} in ${st && st.seconds}s${st && st.error ? " (" + st.error.slice(0, 80) + ")" : ""}`);
+console.log(`save answered in ${answered}ms; build ${st && st.status} in ${st && st.seconds}s after ${waited}s of polling${st && st.error ? " (" + st.error.slice(0, 80) + ")" : ""}`);
 
 app.kill();
 fs.rmSync(tmp, { recursive: true, force: true });

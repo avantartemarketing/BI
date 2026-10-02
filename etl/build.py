@@ -25,7 +25,8 @@ Inputs:
   sources/all_sent_emails.csv       email sends - written by the HubSpot pull (server/hubspot.js); the checked-in file is its last pull
   data/orders_by_product.csv       per release x Shopify product: units paid, awaiting payment (draft orders),
                                    list price - aggregates from Order_Line_Concept (server/bigquery.js)
-  data/draw_products.csv           the product each draw's winners bought (server/bigquery.js)
+  data/draw_products.csv           the product each draw's winners bought, or its entrants hold
+                                   pre-authorisation drafts for until it has winners (server/bigquery.js)
   sources/draw_*.csv                draw entry exports (PII is stripped here; never committed)
   etl/release_inputs.json           hand-entered launch inputs per release
   etl/benchmarks.json               frozen benchmark values (docs §4)
@@ -1918,7 +1919,8 @@ def load_orders_feed() -> dict:
     paid, orders awaiting payment (drafts: an advisor's draft orders and
     pending orders, not the draw's own pre-authorisation drafts, which are
     kept apart as entryDrafts), the list price and the Airtable edition
-    where the title matches; the product each draw's winners bought;
+    where the title matches; the product each draw's winners bought, or its
+    entrants hold pre-authorisation drafts for until it has winners;
     and the release's totals with the last order or draft day as `asOf`."""
     global _ORDERS_FEED
     if _ORDERS_FEED is not None:

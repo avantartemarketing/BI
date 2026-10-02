@@ -625,17 +625,25 @@ them alone; `BQ_ORDERS=off` skips them; `BQ_ORDERS_TABLE` renames the table; all
 | file | grain | columns |
 |---|---|---|
 | `data/orders_by_product.csv` | release × product (one name per product, below) | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), and no line of an order tagged `upsell_order_merged` (an upsell bought after an order is folded into it, and the upsell's own order stays in the table with the same lines: counting it counts them twice; the data team's Metabase questions leave it out too), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts` and `units_private_room` (the paid units placed from a draft and through the private room: parts of `units_paid`, the paid lines as `units_paid.csv` counts them, never a refunded or pending order's), `list_price_eur` (median list price), `product_ids`, `skus`, `first_order` and `last_order` (the first and last day of any order line, cancelled and refunded included: how far the feed runs, the `ordersAsOf` stamp, not when anything sold), `last_draft`; and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, each to the work its SKU names, else shared across the order's prints, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts), `prints_offered_awaiting` and `frames_awaiting` (the same on the orders awaiting payment, the lines `units_draft_pending` counts, for the Framing forecast) |
-| `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, by the same names, `orders` (their orders on it), `share` (of their orders) |
+| `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, by the same names, else, before the draw has winners, the one its entrants hold the app's pre-authorisation drafts for most; `orders` (the people that reading counted), `share` (their share of it) |
 | `data/draw_claims.csv` | release × draw, only draws with any | claims a draw round has made that the order table has not caught up with: `claims` (winners the event feed flags who still hold an open pre-authorisation draft, the app's entry draft, on the draw's own product and have no paid order for it), `units` (on those drafts), and `product_title` (the draw's product: the one its winners have paid orders for most, else the one its entrants hold drafts for most). Written with the orders files, empty when its query fails, never committed: a claims file from another moment than the orders would count a sale twice (§6.3) |
 | `data/units_paid.csv` | release × product (the same names) × order day (CET) × channel × `purchase_event` | `units_paid`, `units_private_room`, `prints_offered_paid`, `frames_paid`: the paid lines of `orders_by_product.csv` by the same rule (one set of CTEs, `orderLinesCtes`), each order on the channel of its earliest purchase event in the event feed (`AA_session_custom_channel_group_split_touch`, joined on the Shopify order id alone), `Untracked` with `purchase_event` false where the event feed has no purchase for the order. Summed over its days and channels it is `units_paid` per product. The units every card counts (§6.3); written beside the other two in the same commit, so a deploy resets all three to one committed copy, and `etl/build.py` reads a release whose units here do not add up to its `units_paid` in `orders_by_product.csv` as out of step (two pulls), counting the funnel's units for it until the next pull |
 
-**The draw → product map.** The event feed's purchase rows carry no draw id, so a draw is
-named by its winners: the draw entry rows give (release, account, draw) for winners, the
-purchase rows give (release, account, order), and the order line gives the product; the join
-runs inside BigQuery on the pseudonymous account id and only (release, draw, product, count)
-comes out. Winners of several draws buy across them, so the top product takes the draw
-(`share` says how clear it was: 0.6 to 0.9 on the September 2026 releases). A draw with no
-winner who has bought yet has no row, and its product keeps the event feed's figures (§6.3).
+**The draw → product map.** The event feed carries no product on a draw entry, so a draw is
+named through its people: the draw entry rows give (release, account, draw) and whether the
+person won, the collectors table turns the account into the Shopify customer, and the order
+lines give what that customer paid for (`paid`) or holds the app's pre-authorisation draft on
+(`entry_draft`, the draft the app raises on the entered product with every live entry). The
+draw takes the product its winners paid for most; a draw with no winner yet takes the one its
+entrants hold drafts for most, the same reading `draw_claims.csv` makes, so every draw is
+named from its first entries and the sell-through's rows carry their products, sales and
+drafts from a campaign's first day. Until 2 October 2026 only the winners' reading existed, and
+Lichtenstein's four draws stood as "Draw 1" to "Draw 4" with 419 units paid, each split by
+edition size, for want of a first winner. The join runs inside BigQuery and only (release,
+draw, product, count, share) comes out. Entrants of several draws hold drafts across them and
+winners buy across them, so the top product takes the draw (`share` says how clear it was: 0.6
+to 0.9 on the September 2026 releases' winners). A draw with neither a winner who paid nor an
+entrant holding a draft has no row, and its product keeps the event feed's figures (§6.3).
 
 **Two kinds of draft order.** A draw entry creates a Shopify draft order at entry time as a
 pre-authorisation (the draw entries export's `Shopify Draft Order ID`, assigned at entry, not
@@ -735,7 +743,7 @@ production model has to serve. Everything else in a table is never selected.
 |---|---|---|---|
 | `le_funnel_report_split_touch_export` | `server/bigquery.js` (funnel feed, incremental) | all 34 (no personal data; §2.2) | `sources/across_time.csv`: sessions, entries, units by channel × day × release, the campaign clock |
 | `LE_Funnel_Report` | `server/bigquery.js` (events and browsing feeds) | the event columns named in `EVENT_COLUMNS`: event, date, release, pseudonymous account id, signup, draw entry, winner and purchase flags, order counts, channel groups, locales; never `user_email` | `sources/le_events.csv` and `sources/le_browsing.csv`: the rebuilt export, people per release, the draws and entry patterns behind the per-product sell-through |
-| `LE_Funnel_Report` | `server/bigquery.js` (draw map, §2.4) | event_name, winner, draw_id, aa_account_id, shopify_order_id, simple_release_name, event_date | `data/draw_products.csv` |
+| `LE_Funnel_Report` | `server/bigquery.js` (draw map, §2.4) | event_name, winner, draw_id, aa_account_id, simple_release_name, event_date; the collectors table's aa_account_id and shopify_customer_id (joined on inside BigQuery; neither leaves) | `data/draw_products.csv` |
 | `LE_Funnel_Report` | `server/bigquery.js` (units feed, §2.4) | event_name, shopify_order_id, event_timestamp, AA_session_custom_channel_group_split_touch | `data/units_paid.csv`: the channel of each paid order's earliest purchase event, which sets the channel split of units sold on every card |
 | `LE_Funnel_Report` | `server/bigquery.js` (orders and units feeds: the live entries behind a person's draft, §2.4) | event_name, simple_release_name, aa_account_id, draw_id, draw_with_purchase, draw_entry_eligible, winner, event_date | `data/orders_by_product.csv`, `data/units_paid.csv` (only through which drafts count; aggregates only) |
 | `Collector_Concept` | `server/bigquery.js` (the same link, account to Shopify customer) | aa_account_id, shopify_customer_id | `data/orders_by_product.csv`, `data/units_paid.csv` (joined inside BigQuery; no column of it leaves) |
@@ -1560,7 +1568,8 @@ draw_id, name}]` in the release's inputs, which no page edits today). Per draw e
 
 `draw_entry_multiset_preference_max_quantity` is the entrant's maximum quantity across the
 release; empty means no cap. **Sold and drafts per product come from the orders feed** (§2.4):
-each draw is named with the Shopify product its winners bought, and a product whose draws are
+each draw is named with the Shopify product its winners bought, or before it has winners the
+one its entrants hold pre-authorisation drafts for, and a product whose draws are
 named takes that product's units paid as `sold`, its orders awaiting payment as `drafts`, the
 product title as its name unless a name was typed against one of its draw ids, and its
 Airtable edition where none is typed (`attach_orders` in `etl/sellthrough.py`, the same rule in
@@ -1722,7 +1731,8 @@ prose either; the allocation's account is in the draw-winners key's popup, the s
 unattributed sales in the paid key's, and the editions are checked on the Target setting tab.
 
 **Products and editions.** One row per draw the feed found (`productsFromDraws`), named by
-the Shopify title its winners bought and sized by the Airtable record of that title (§2.4,
+the Shopify title its winners bought, or its entrants hold pre-authorisation drafts for until
+it has winners, and sized by the Airtable record of that title (§2.4,
 `attach_orders`). A name or an edition typed against the draw id (`products: [{key: draw_id,
 name, edition}]` in the release's inputs) stands over those, and draws sharing a typed name
 merge. The Target setting tab no longer lists the draws: these are typed into the release's
