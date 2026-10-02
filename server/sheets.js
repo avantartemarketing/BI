@@ -293,6 +293,16 @@ async function runEtlOnce(release) {
     agg = String(e.message || e).replace(/\s+/g, " ").slice(0, 300);
     console.error("sheets: " + agg);
   }
+  // the timed launches' aggregation (docs/TL_SPEC.md §3): its own feeds, its
+  // own files, and a failure that costs the TL pages a refresh, never the LE ones
+  try {
+    const out = await runPy("aggregate_tl.py", 5 * 60 * 1000);
+    agg += (agg ? " | " : "") + out.split("\n").filter(Boolean).slice(-1)[0];
+  } catch (e) {
+    const msg = String(e.message || e).replace(/\s+/g, " ").slice(0, 300);
+    agg += (agg ? " | " : "") + msg;
+    console.error("sheets: " + msg);
+  }
   const build = await runPy("build.py", 5 * 60 * 1000);
   lastBuild = parseBuildSummary(build);
   return [agg, ...build.split("\n").slice(-3)].filter(Boolean).join(" | ");
@@ -513,23 +523,56 @@ function status() {
   return { running: !!running, runningSince, ...(lastRefresh || {}) };
 }
 
+/* How long until the next refresh (docs/TL_SPEC.md §2): REFRESH_MINUTES
+ * (default 60), or REFRESH_WINDOW_MINUTES (default 30) while a timed launch's
+ * window is open or opens before the next hourly tick would run, read off the
+ * index the last build wrote. `index` is the index document (or null) and
+ * `now` a Date; both are injectable for the test. */
+function refreshIntervalMinutes(index, now = new Date(), env = process.env) {
+  const mins = Math.max(5, Number(env.REFRESH_MINUTES) || 60);
+  const windowMins = Math.max(5, Math.min(mins, Number(env.REFRESH_WINDOW_MINUTES) || 30));
+  const rows = (index && Array.isArray(index.releases)) ? index.releases : [];
+  const t = now.getTime();
+  const soon = rows.some((r) => {
+    if (r.type !== "TL") return false;
+    if (r.tlState === "window") return true;
+    // a window that opens before the hourly tick would come round
+    const open = r.salesOpen ? Date.parse(r.salesOpen) : NaN;
+    return Number.isFinite(open) && open > t && open - t <= mins * 60 * 1000;
+  });
+  return soon ? windowMins : mins;
+}
+
+function readIndexDoc() {
+  try { return JSON.parse(fs.readFileSync(path.join(process.env.APP_DATA_PATH || path.join(ROOT, "data", "app"), "index.json"), "utf8")); } catch { return null; }
+}
+
 function startScheduler() {
   if (process.env.SHEETS_REFRESH === "off") {
     console.log("sheets: refresh disabled (SHEETS_REFRESH=off)");
     return;
   }
-  const mins = Math.max(5, Number(process.env.REFRESH_MINUTES) || 60);
   const tick = (label) => refresh()
     .then((r) => console.log(`sheets: ${label} refresh ${r.ok ? "ok" : "with failures"} - ` +
       `${r.bigquery ? r.bigquery + " | " : ""}${r.sheet} | ${r.emails} | ${r.notion} | ` +
       `${r.tookMs}ms | ${r.etl}`))
     .catch((e) => console.error(`sheets: ${label} refresh crashed - ${e.message}`));
-  setTimeout(() => tick("boot"), 8000);
-  setInterval(() => tick("scheduled"), mins * 60 * 1000).unref();
-  console.log(`sheets: live refresh every ${mins}m from sheet ${SHEET_ID.slice(0, 8)}…`);
+  // the interval is read after every refresh: a timed launch's window opening
+  // brings the next tick forward to REFRESH_WINDOW_MINUTES (docs/TL_SPEC.md §2)
+  let lastMins = null;
+  const schedule = () => {
+    const mins = refreshIntervalMinutes(readIndexDoc());
+    if (mins !== lastMins) {
+      console.log(`sheets: next refresh in ${mins}m${mins < (Math.max(5, Number(process.env.REFRESH_MINUTES) || 60)) ? " (a timed launch's window is open or about to)" : ""}`);
+      lastMins = mins;
+    }
+    setTimeout(() => tick("scheduled").finally(schedule), mins * 60 * 1000).unref();
+  };
+  setTimeout(() => tick("boot").finally(schedule), 8000);
+  console.log(`sheets: live refresh every ${refreshIntervalMinutes(readIndexDoc())}m from sheet ${SHEET_ID.slice(0, 8)}…`);
 }
 
 module.exports = {
-  refresh, status, startScheduler, runEtl, buildUpcoming, writeAtomic, pyFailure, parseBuildSummary, alertDecision, troubleLines,
+  refresh, status, startScheduler, refreshIntervalMinutes, runEtl, buildUpcoming, writeAtomic, pyFailure, parseBuildSummary, alertDecision, troubleLines,
   convertAcrossTime, convertSpend, acrossTimeWriter, spendWriter, normDate, parseCsv,
 };

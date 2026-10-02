@@ -1,5 +1,5 @@
 {
- "asOf": "2026-09-24",
+ "asOf": "2026-10-01",
  "rows": [
   {
    "release_name": "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
@@ -10,6 +10,17 @@
    "window_end": "2026-09-04",
    "campaign_days": 27.0,
    "units": 101.0,
+   "demand": 140.2,
+   "unmet_units": 49.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.6183360254426923,
+    "aa_social": 0.05073731002558921,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.31164386655837994,
+    "paid": 0.01928279797333858
+   },
    "sessions": 2266.0,
    "paid_share": 0.000892458723784,
    "unit_shares": {
@@ -51,6 +62,17 @@
    "window_end": "2026-08-29",
    "campaign_days": 28.0,
    "units": 61.0,
+   "demand": 62.6,
+   "unmet_units": 0.0,
+   "payment_failed_units": 2.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.46883630259381603,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.28955704770672014,
+    "paid": 0.24160664969946388
+   },
    "sessions": 10708.0,
    "paid_share": 0.6475754461365972,
    "unit_shares": {
@@ -70,14 +92,14 @@
    "convs": {
     "aa_email": 0.0029839612085042,
     "aa_social": 0.0,
-    "referral_artist": 0.0,
+    "referral_artist": null,
     "search_direct_other": 0.0148448043184885,
     "paid": 0.0018756312220458
    },
    "entries": 33.0,
    "units_per_buyer": 1.297872340425532,
    "private_room_share": 0.3934426229508196,
-   "cost_per_paid_unit": 384.78428571428566,
+   "cost_per_paid_unit": 356.1739452008741,
    "price": 2500.0,
    "edition_size": 100.0,
    "cluster": 1,
@@ -92,6 +114,17 @@
    "window_end": "2026-08-28",
    "campaign_days": 29.0,
    "units": 20.0,
+   "demand": 20.8,
+   "unmet_units": 0.0,
+   "payment_failed_units": 1.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.326007326007326,
+    "aa_social": 0.1336996336996337,
+    "referral_artist": 0.06684981684981679,
+    "search_direct_other": 0.1336996336996337,
+    "paid": 0.33974358974358976
+   },
    "sessions": 11583.0,
    "paid_share": 0.8328133125325013,
    "unit_shares": {
@@ -118,7 +151,7 @@
    "entries": 14.0,
    "units_per_buyer": 1.25,
    "private_room_share": 0.15,
-   "cost_per_paid_unit": 1496.486,
+   "cost_per_paid_unit": 1058.834433962264,
    "price": 4000.0,
    "edition_size": 40.0,
    "cluster": 1,
@@ -133,6 +166,17 @@
    "window_end": "2026-08-24",
    "campaign_days": 21.0,
    "units": 297.0,
+   "demand": 356.2,
+   "unmet_units": 49.0,
+   "payment_failed_units": 25.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.36385292712414924,
+    "aa_social": 0.09902378414972594,
+    "referral_artist": 0.06763183366998833,
+    "search_direct_other": 0.18828540979671127,
+    "paid": 0.2812060452594253
+   },
    "sessions": 26863.0,
    "paid_share": 0.6216609461274437,
    "unit_shares": {
@@ -159,7 +203,7 @@
    "entries": 263.0,
    "units_per_buyer": 1.125,
    "private_room_share": 0.2558922558922559,
-   "cost_per_paid_unit": 41.42582278481012,
+   "cost_per_paid_unit": 32.67229685845204,
    "price": 650.0,
    "edition_size": 300.0,
    "cluster": 0,
@@ -174,6 +218,17 @@
    "window_end": "2026-08-23",
    "campaign_days": 21.0,
    "units": 587.0,
+   "demand": 611.8,
+   "unmet_units": 9.0,
+   "payment_failed_units": 22.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.274841683573751,
+    "aa_social": 0.05942902067357182,
+    "referral_artist": 0.11926503053304711,
+    "search_direct_other": 0.20229247408374715,
+    "paid": 0.3441717911358829
+   },
    "sessions": 48603.0,
    "paid_share": 0.7543259017881081,
    "unit_shares": {
@@ -198,9 +253,9 @@
     "paid": 0.0047846889952153
    },
    "entries": 519.0,
-   "units_per_buyer": 1.1532416502946954,
+   "units_per_buyer": 1.1529411764705881,
    "private_room_share": 0.0834752981260647,
-   "cost_per_paid_unit": 140.1952972972973,
+   "cost_per_paid_unit": 123.17439269714934,
    "price": 700.0,
    "edition_size": 600.0,
    "cluster": 0,
@@ -215,6 +270,17 @@
    "window_end": "2026-08-21",
    "campaign_days": 25.0,
    "units": 884.0,
+   "demand": 1042.4,
+   "unmet_units": 159.0,
+   "payment_failed_units": 39.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.44053517647998663,
+    "aa_social": 0.029703104891029883,
+    "referral_artist": 0.0030912866746427513,
+    "search_direct_other": 0.24267629270645957,
+    "paid": 0.2839941392478813
+   },
    "sessions": 38211.0,
    "paid_share": 0.4821559970566593,
    "unit_shares": {
@@ -234,14 +300,14 @@
    "convs": {
     "aa_email": 0.0250532594801874,
     "aa_social": 0.0427807486631016,
-    "referral_artist": 0.0,
+    "referral_artist": null,
     "search_direct_other": 0.0318080357142857,
     "paid": 0.0139532348612852
    },
    "entries": 841.0,
-   "units_per_buyer": 1.3692307692307693,
+   "units_per_buyer": 1.366153846153846,
    "private_room_share": 0.2002262443438914,
-   "cost_per_paid_unit": 24.53078602620087,
+   "cost_per_paid_unit": 18.97593422238076,
    "price": 500.0,
    "edition_size": 900.0,
    "cluster": 0,
@@ -256,6 +322,17 @@
    "window_end": "2026-08-08",
    "campaign_days": 22.0,
    "units": 214.0,
+   "demand": 219.6,
+   "unmet_units": 0.0,
+   "payment_failed_units": 7.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.15071723874173926,
+    "aa_social": 0.020280253810489354,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.20187942821360633,
+    "paid": 0.6271230792341651
+   },
    "sessions": 65681.0,
    "paid_share": 0.9205616024878808,
    "unit_shares": {
@@ -282,7 +359,7 @@
    "entries": 225.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0560747663551401,
-   "cost_per_paid_unit": 431.77696,
+   "cost_per_paid_unit": 157.40113045027408,
    "price": 1500.0,
    "edition_size": 300.0,
    "cluster": 0,
@@ -297,6 +374,17 @@
    "window_end": "2026-08-02",
    "campaign_days": 28.0,
    "units": 87.0,
+   "demand": 151.0,
+   "unmet_units": 77.0,
+   "payment_failed_units": 3.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.2773246661600261,
+    "aa_social": 0.05338046900445118,
+    "referral_artist": 0.2296235479318207,
+    "search_direct_other": 0.3766298447508414,
+    "paid": 0.06304147215286071
+   },
    "sessions": 7964.0,
    "paid_share": 0.2464503042596348,
    "unit_shares": {
@@ -315,7 +403,7 @@
    },
    "convs": {
     "aa_email": 0.0103819058212829,
-    "aa_social": 0.0892857142857142,
+    "aa_social": null,
     "referral_artist": 0.0196961170512099,
     "search_direct_other": 0.0282885431400282,
     "paid": 0.0072016460905349
@@ -338,6 +426,17 @@
    "window_end": "2026-07-31",
    "campaign_days": 27.0,
    "units": 32.0,
+   "demand": 34.4,
+   "unmet_units": 0.0,
+   "payment_failed_units": 3.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.28255813953488373,
+    "aa_social": 0.18837209302325583,
+    "referral_artist": 0.27209302325581397,
+    "search_direct_other": 0.22441860465116278,
+    "paid": 0.03255813953488373
+   },
    "sessions": 7842.0,
    "paid_share": 0.6201224177505739,
    "unit_shares": {
@@ -362,7 +461,7 @@
     "paid": 0.0002056343820686
    },
    "entries": 20.0,
-   "units_per_buyer": 1.2142857142857142,
+   "units_per_buyer": 1.3214285714285714,
    "private_room_share": 0.21875,
    "cost_per_paid_unit": null,
    "price": 4000.0,
@@ -379,6 +478,17 @@
    "window_end": "2026-07-26",
    "campaign_days": 28.0,
    "units": 196.0,
+   "demand": 198.4,
+   "unmet_units": 0.0,
+   "payment_failed_units": 3.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.3317366673883236,
+    "aa_social": 0.05638204639887077,
+    "referral_artist": 0.1977836876179573,
+    "search_direct_other": 0.1477948794160205,
+    "paid": 0.26630271917882786
+   },
    "sessions": 18877.0,
    "paid_share": 0.6142872351751304,
    "unit_shares": {
@@ -405,7 +515,7 @@
    "entries": 152.0,
    "units_per_buyer": 1.0051020408163265,
    "private_room_share": 0.1989795918367347,
-   "cost_per_paid_unit": 194.51297872340427,
+   "cost_per_paid_unit": 173.0330941037023,
    "price": 850.0,
    "edition_size": 200.0,
    "cluster": 0,
@@ -420,6 +530,17 @@
    "window_end": "2026-07-25",
    "campaign_days": 26.0,
    "units": 181.0,
+   "demand": 184.2,
+   "unmet_units": 0.0,
+   "payment_failed_units": 4.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.41667019191449156,
+    "aa_social": 0.04281530991628709,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.23115285004535818,
+    "paid": 0.30936164812386313
+   },
    "sessions": 17026.0,
    "paid_share": 0.7586857783283195,
    "unit_shares": {
@@ -446,7 +567,7 @@
    "entries": 159.0,
    "units_per_buyer": 1.0274725274725274,
    "private_room_share": 0.149171270718232,
-   "cost_per_paid_unit": 220.6462745098039,
+   "cost_per_paid_unit": 197.4743424951001,
    "price": 1025.0,
    "edition_size": 300.0,
    "cluster": 0,
@@ -461,6 +582,17 @@
    "window_end": "2026-07-19",
    "campaign_days": 29.0,
    "units": 23.0,
+   "demand": 23.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.5,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.36363636363636365,
+    "paid": 0.1363636363636363
+   },
    "sessions": 8324.0,
    "paid_share": 0.5633040759889383,
    "unit_shares": {
@@ -502,6 +634,17 @@
    "window_end": "2026-07-10",
    "campaign_days": 21.0,
    "units": 32.0,
+   "demand": 32.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.5333333333333334,
+    "aa_social": 0.16666666666666663,
+    "referral_artist": 0.06666666666666661,
+    "search_direct_other": 0.23333333333333334,
+    "paid": 0.0
+   },
    "sessions": 5969.0,
    "paid_share": 0.2635463848347593,
    "unit_shares": {
@@ -543,6 +686,17 @@
    "window_end": "2026-07-03",
    "campaign_days": 22.0,
    "units": 289.0,
+   "demand": 291.4,
+   "unmet_units": 0.0,
+   "payment_failed_units": 3.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.3711314344543583,
+    "aa_social": 0.036791352093342444,
+    "referral_artist": 0.0992048730267673,
+    "search_direct_other": 0.17275463280713793,
+    "paid": 0.3201177076183939
+   },
    "sessions": 20081.0,
    "paid_share": 0.7580612858001202,
    "unit_shares": {
@@ -567,9 +721,9 @@
     "paid": 0.0058124174372523
    },
    "entries": 253.0,
-   "units_per_buyer": 1.0205479452054795,
+   "units_per_buyer": 1.0206185567010309,
    "private_room_share": 0.1245674740484429,
-   "cost_per_paid_unit": 164.14758620689656,
+   "cost_per_paid_unit": 153.09270890619123,
    "price": 600.0,
    "edition_size": 400.0,
    "cluster": 0,
@@ -584,6 +738,17 @@
    "window_end": "2026-07-02",
    "campaign_days": 28.0,
    "units": 151.0,
+   "demand": 159.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 10.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.28361654589319213,
+    "aa_social": 0.027897463858978216,
+    "referral_artist": 0.10528190623155012,
+    "search_direct_other": 0.0773844423725718,
+    "paid": 0.5058196416437077
+   },
    "sessions": 31089.0,
    "paid_share": 0.742944587628866,
    "unit_shares": {
@@ -610,7 +775,7 @@
    "entries": 154.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0794701986754966,
-   "cost_per_paid_unit": 232.63555555555553,
+   "cost_per_paid_unit": 20.257674309464797,
    "price": 2000.0,
    "edition_size": 200.0,
    "cluster": 0,
@@ -625,6 +790,17 @@
    "window_end": "2026-06-29",
    "campaign_days": 7.0,
    "units": 195.0,
+   "demand": 215.8,
+   "unmet_units": 13.0,
+   "payment_failed_units": 13.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.41066573576246845,
+    "aa_social": 0.08430802430849024,
+    "referral_artist": 0.10022351341883937,
+    "search_direct_other": 0.14737865840529363,
+    "paid": 0.2574240681049083
+   },
    "sessions": 11428.0,
    "paid_share": 0.5454226279294303,
    "unit_shares": {
@@ -651,7 +827,7 @@
    "entries": 163.0,
    "units_per_buyer": 1.005050505050505,
    "private_room_share": 0.2256410256410256,
-   "cost_per_paid_unit": 60.647234042553194,
+   "cost_per_paid_unit": 10.183050838505533,
    "price": 950.0,
    "edition_size": 200.0,
    "cluster": 0,
@@ -666,6 +842,17 @@
    "window_end": "2026-06-28",
    "campaign_days": 22.0,
    "units": 111.0,
+   "demand": 115.8,
+   "unmet_units": 1.0,
+   "payment_failed_units": 5.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.4383976531145804,
+    "aa_social": 0.036656503167887856,
+    "referral_artist": 0.04791784090163134,
+    "search_direct_other": 0.33771563481122835,
+    "paid": 0.13931236800467198
+   },
    "sessions": 10718.0,
    "paid_share": 0.4351401869158878,
    "unit_shares": {
@@ -692,7 +879,7 @@
    "entries": 84.0,
    "units_per_buyer": 1.247191011235955,
    "private_room_share": 0.1531531531531531,
-   "cost_per_paid_unit": 352.8706666666667,
+   "cost_per_paid_unit": 328.1017775611343,
    "price": 1250.0,
    "edition_size": 200.0,
    "cluster": 0,
@@ -707,6 +894,17 @@
    "window_end": "2026-06-26",
    "campaign_days": 27.0,
    "units": 48.0,
+   "demand": 69.6,
+   "unmet_units": 25.0,
+   "payment_failed_units": 2.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.44181034482758624,
+    "aa_social": 0.08377061469265366,
+    "referral_artist": 0.18665667166416794,
+    "search_direct_other": 0.28776236881559225,
+    "paid": 0.0
+   },
    "sessions": 4251.0,
    "paid_share": 0.0011856770215793,
    "unit_shares": {
@@ -748,6 +946,17 @@
    "window_end": "2026-06-13",
    "campaign_days": 27.0,
    "units": 495.0,
+   "demand": 557.4,
+   "unmet_units": 51.0,
+   "payment_failed_units": 27.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.6219411553641909,
+    "aa_social": 0.012935055615356982,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.2492285611768927,
+    "paid": 0.11589522784355938
+   },
    "sessions": 30348.0,
    "paid_share": 0.5105013437738478,
    "unit_shares": {
@@ -774,7 +983,7 @@
    "entries": 393.0,
    "units_per_buyer": 1.016359918200409,
    "private_room_share": 0.2808080808080808,
-   "cost_per_paid_unit": 201.63863636363638,
+   "cost_per_paid_unit": 137.3390092879257,
    "price": 1275.0,
    "edition_size": 500.0,
    "cluster": 0,
@@ -789,6 +998,17 @@
    "window_end": "2026-06-01",
    "campaign_days": 28.0,
    "units": 63.0,
+   "demand": 66.2,
+   "unmet_units": 1.0,
+   "payment_failed_units": 3.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.52504372714263,
+    "aa_social": 0.05250437271426298,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.36994752742884407,
+    "paid": 0.05250437271426298
+   },
    "sessions": 6757.0,
    "paid_share": 0.4538015176313049,
    "unit_shares": {
@@ -808,7 +1028,7 @@
    "convs": {
     "aa_email": 0.0089686098654708,
     "aa_social": 0.0026212319790301,
-    "referral_artist": 0.0,
+    "referral_artist": null,
     "search_direct_other": 0.0257648953301127,
     "paid": 0.000655737704918
    },
@@ -830,6 +1050,17 @@
    "window_end": "2026-05-31",
    "campaign_days": 28.0,
    "units": 946.0,
+   "demand": 1252.4,
+   "unmet_units": 362.0,
+   "payment_failed_units": 21.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.2294562077097257,
+    "aa_social": 0.029827242790588446,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.35775507894639164,
+    "paid": 0.3829614705532942
+   },
    "sessions": 19644.0,
    "paid_share": 0.4948893112126971,
    "unit_shares": {
@@ -848,15 +1079,15 @@
    },
    "convs": {
     "aa_email": 0.0499545867393278,
-    "aa_social": 0.7719298245614035,
+    "aa_social": null,
     "referral_artist": null,
     "search_direct_other": 0.0718406849060115,
     "paid": 0.0524130773222625
    },
    "entries": 1177.0,
-   "units_per_buyer": 1.1783132530120481,
+   "units_per_buyer": 1.1797346200241254,
    "private_room_share": 0.0570824524312896,
-   "cost_per_paid_unit": 165.034613003096,
+   "cost_per_paid_unit": 111.14231035067169,
    "price": 541.5428167020524,
    "edition_size": 1413.0,
    "cluster": 0,
@@ -871,6 +1102,17 @@
    "window_end": "2026-05-30",
    "campaign_days": 28.0,
    "units": 846.0,
+   "demand": 1892.4,
+   "unmet_units": 1298.0,
+   "payment_failed_units": 10.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.5065597605109418,
+    "aa_social": 0.076526299104821,
+    "referral_artist": 0.004414855722819046,
+    "search_direct_other": 0.4015186504932297,
+    "paid": 0.010980434168188476
+   },
    "sessions": 22717.0,
    "paid_share": 0.0025858225590726,
    "unit_shares": {
@@ -892,10 +1134,10 @@
     "aa_social": 0.0724503922473465,
     "referral_artist": 0.0210526315789473,
     "search_direct_other": 0.1033523868376332,
-    "paid": 0.3275862068965517
+    "paid": null
    },
    "entries": 1692.0,
-   "units_per_buyer": 1.2116788321167884,
+   "units_per_buyer": 1.2784256559766765,
    "private_room_share": 0.3026004728132387,
    "cost_per_paid_unit": null,
    "price": 700.0,
@@ -912,6 +1154,17 @@
    "window_end": "2026-05-25",
    "campaign_days": 28.0,
    "units": 97.0,
+   "demand": 97.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.6774193548387097,
+    "aa_social": 0.053763440860215006,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.19354838709677422,
+    "paid": 0.075268817204301
+   },
    "sessions": 7938.0,
    "paid_share": 0.379984856133266,
    "unit_shares": {
@@ -931,14 +1184,14 @@
    "convs": {
     "aa_email": 0.0104724792985874,
     "aa_social": 0.0155844155844155,
-    "referral_artist": 0.0,
+    "referral_artist": null,
     "search_direct_other": 0.0435967302452316,
     "paid": 0.0023248090335436
    },
    "entries": 75.0,
    "units_per_buyer": 1.00990099009901,
    "private_room_share": 0.268041237113402,
-   "cost_per_paid_unit": 576.3628571428571,
+   "cost_per_paid_unit": 552.5953166421214,
    "price": 1250.0,
    "edition_size": 200.0,
    "cluster": 1,
@@ -953,6 +1206,17 @@
    "window_end": "2026-05-08",
    "campaign_days": 22.0,
    "units": 317.0,
+   "demand": 321.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 5.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.5764065221148351,
+    "aa_social": 0.0102711787045284,
+    "referral_artist": 0.006803729454983703,
+    "search_direct_other": 0.30446262790089645,
+    "paid": 0.10205594182475634
+   },
    "sessions": 13988.0,
    "paid_share": 0.5729473457366568,
    "unit_shares": {
@@ -972,14 +1236,14 @@
    "convs": {
     "aa_email": 0.0199556541019955,
     "aa_social": 0.0333333333333333,
-    "referral_artist": 0.0444444444444444,
+    "referral_artist": null,
     "search_direct_other": 0.0503937007874015,
     "paid": 0.0037612838515546
    },
    "entries": 194.0,
    "units_per_buyer": 1.028301886792453,
    "private_room_share": 0.3375394321766561,
-   "cost_per_paid_unit": 207.68699999999998,
+   "cost_per_paid_unit": 190.18980818705836,
    "price": 800.0,
    "edition_size": 327.0,
    "cluster": 0,
@@ -994,6 +1258,17 @@
    "window_end": "2026-05-03",
    "campaign_days": 21.0,
    "units": 48.0,
+   "demand": 48.8,
+   "unmet_units": 0.0,
+   "payment_failed_units": 1.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.5012207882804325,
+    "aa_social": 0.0830136030694105,
+    "referral_artist": 0.12539239623299617,
+    "search_direct_other": 0.2695326124869202,
+    "paid": 0.02084059993024064
+   },
    "sessions": 7395.0,
    "paid_share": 0.1389265383572784,
    "unit_shares": {
@@ -1035,6 +1310,17 @@
    "window_end": "2026-04-26",
    "campaign_days": 21.0,
    "units": 620.0,
+   "demand": 726.4,
+   "unmet_units": 17.0,
+   "payment_failed_units": 116.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.2812961903776835,
+    "aa_social": 0.04044552529527403,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.36118710533216347,
+    "paid": 0.317071178994879
+   },
    "sessions": 151487.0,
    "paid_share": 0.8834339600182517,
    "unit_shares": {
@@ -1054,14 +1340,14 @@
    "convs": {
     "aa_email": 0.0110772013111789,
     "aa_social": 0.011183048852266,
-    "referral_artist": 0.0,
+    "referral_artist": null,
     "search_direct_other": 0.0273169336384439,
     "paid": 0.001235103898437
    },
    "entries": 483.0,
-   "units_per_buyer": 1.0124223602484472,
+   "units_per_buyer": 1.0138888888888888,
    "private_room_share": 0.146774193548387,
-   "cost_per_paid_unit": 621.7298870056497,
+   "cost_per_paid_unit": 477.7958882828226,
    "price": 2200.0,
    "edition_size": 666.0,
    "cluster": 0,
@@ -1076,6 +1362,17 @@
    "window_end": "2026-04-25",
    "campaign_days": 22.0,
    "units": 146.0,
+   "demand": 204.4,
+   "unmet_units": 61.0,
+   "payment_failed_units": 12.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.46972540841153987,
+    "aa_social": 0.021990499362762133,
+    "referral_artist": 0.006349206349206344,
+    "search_direct_other": 0.27658440505155835,
+    "paid": 0.2253504808249334
+   },
    "sessions": 17209.0,
    "paid_share": 0.5153367091554625,
    "unit_shares": {
@@ -1102,7 +1399,7 @@
    "entries": 183.0,
    "units_per_buyer": 1.0138888888888888,
    "private_room_share": 0.1575342465753424,
-   "cost_per_paid_unit": 234.86964285714288,
+   "cost_per_paid_unit": 142.77282019227383,
    "price": 1650.0,
    "edition_size": 200.0,
    "cluster": 0,
@@ -1117,6 +1414,17 @@
    "window_end": "2026-04-11",
    "campaign_days": 26.0,
    "units": 18.0,
+   "demand": 18.8,
+   "unmet_units": 0.0,
+   "payment_failed_units": 1.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.3591989987484356,
+    "aa_social": 0.059359914178437334,
+    "referral_artist": 0.11871982835687467,
+    "search_direct_other": 0.4627212587162524,
+    "paid": 0.0
+   },
    "sessions": 4385.0,
    "paid_share": 0.4152581087254454,
    "unit_shares": {
@@ -1158,6 +1466,17 @@
    "window_end": "2026-04-03",
    "campaign_days": 28.0,
    "units": 91.0,
+   "demand": 130.2,
+   "unmet_units": 46.0,
+   "payment_failed_units": 3.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.3595475885011684,
+    "aa_social": 0.09841036945678958,
+    "referral_artist": 0.06199039322564101,
+    "search_direct_other": 0.34831999584163237,
+    "paid": 0.1317316529747686
+   },
    "sessions": 5791.0,
    "paid_share": 0.245365512416929,
    "unit_shares": {
@@ -1184,7 +1503,7 @@
    "entries": 113.0,
    "units_per_buyer": 1.1318681318681318,
    "private_room_share": 0.1538461538461538,
-   "cost_per_paid_unit": 28.279090909090908,
+   "cost_per_paid_unit": 18.1366471380273,
    "price": 1500.0,
    "edition_size": 100.0,
    "cluster": 2,
@@ -1199,6 +1518,17 @@
    "window_end": "2026-03-22",
    "campaign_days": 27.0,
    "units": 19.0,
+   "demand": 20.6,
+   "unmet_units": 0.0,
+   "payment_failed_units": 2.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.4337243797195254,
+    "aa_social": 0.06196062567421791,
+    "referral_artist": 0.2607874865156419,
+    "search_direct_other": 0.2435275080906149,
+    "paid": 0.0
+   },
    "sessions": 7856.0,
    "paid_share": 0.3556576093889527,
    "unit_shares": {
@@ -1240,6 +1570,17 @@
    "window_end": "2026-03-20",
    "campaign_days": 27.0,
    "units": 468.0,
+   "demand": 491.2,
+   "unmet_units": 6.0,
+   "payment_failed_units": 23.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.31889627388335684,
+    "aa_social": 0.05432273948504432,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.35979624623901835,
+    "paid": 0.26698474039258047
+   },
    "sessions": 150129.0,
    "paid_share": 0.8590653258289098,
    "unit_shares": {
@@ -1264,9 +1605,9 @@
     "paid": 0.0008694167145363
    },
    "entries": 337.0,
-   "units_per_buyer": 1.0874200426439233,
+   "units_per_buyer": 1.072494669509595,
    "private_room_share": 0.0277777777777777,
-   "cost_per_paid_unit": 664.3909345794393,
+   "cost_per_paid_unit": 542.079118053914,
    "price": 3000.0,
    "edition_size": 666.0,
    "cluster": 0,
@@ -1281,6 +1622,17 @@
    "window_end": "2026-03-06",
    "campaign_days": 29.0,
    "units": 119.0,
+   "demand": 139.8,
+   "unmet_units": 6.0,
+   "payment_failed_units": 20.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.2551870093898947,
+    "aa_social": 0.03590955916181848,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3037867482433204,
+    "paid": 0.4051166832049663
+   },
    "sessions": 17340.0,
    "paid_share": 0.8358183079056866,
    "unit_shares": {
@@ -1307,7 +1659,7 @@
    "entries": 103.0,
    "units_per_buyer": 1.043103448275862,
    "private_room_share": 0.1512605042016806,
-   "cost_per_paid_unit": 131.19909090909093,
+   "cost_per_paid_unit": 101.92863364454907,
    "price": 3500.0,
    "edition_size": 120.0,
    "cluster": 0,
@@ -1322,6 +1674,17 @@
    "window_end": "2026-02-23",
    "campaign_days": 25.0,
    "units": 296.0,
+   "demand": 484.0,
+   "unmet_units": 191.0,
+   "payment_failed_units": 44.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.4983237433514669,
+    "aa_social": 0.044196666550968655,
+    "referral_artist": 0.0012904642925784479,
+    "search_direct_other": 0.3311916772046813,
+    "paid": 0.1249974486003047
+   },
    "sessions": 24976.0,
    "paid_share": 0.6099705562053805,
    "unit_shares": {
@@ -1348,7 +1711,7 @@
    "entries": 306.0,
    "units_per_buyer": 1.073943661971831,
    "private_room_share": 0.402027027027027,
-   "cost_per_paid_unit": 166.22,
+   "cost_per_paid_unit": 79.677328789038,
    "price": 1500.0,
    "edition_size": 300.0,
    "cluster": 0,
@@ -1363,6 +1726,17 @@
    "window_end": "2026-02-06",
    "campaign_days": 11.0,
    "units": 111.0,
+   "demand": 140.6,
+   "unmet_units": 27.0,
+   "payment_failed_units": 10.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.4428060442368057,
+    "aa_social": 0.026336066703976754,
+    "referral_artist": 0.1354194547858319,
+    "search_direct_other": 0.3954384342733858,
+    "paid": 0.0
+   },
    "sessions": 25261.0,
    "paid_share": 0.4017131300313281,
    "unit_shares": {
@@ -1404,6 +1778,17 @@
    "window_end": "2026-02-02",
    "campaign_days": 22.0,
    "units": 127.0,
+   "demand": 271.0,
+   "unmet_units": 175.0,
+   "payment_failed_units": 5.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.34758382281097855,
+    "aa_social": 0.0707159538080967,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.42194939867562176,
+    "paid": 0.15975082470530302
+   },
    "sessions": 41770.0,
    "paid_share": 0.7895103216514643,
    "unit_shares": {
@@ -1428,7 +1813,7 @@
     "paid": 0.0017025934146119
    },
    "entries": 208.0,
-   "units_per_buyer": 1.246031746031746,
+   "units_per_buyer": 1.2421875,
    "private_room_share": 0.5039370078740157,
    "cost_per_paid_unit": null,
    "price": 8500.0,
@@ -1445,6 +1830,17 @@
    "window_end": "2026-02-01",
    "campaign_days": 21.0,
    "units": 101.0,
+   "demand": 109.0,
+   "unmet_units": 3.0,
+   "payment_failed_units": 7.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.30121312165247754,
+    "aa_social": 0.0382717217403092,
+    "referral_artist": 0.11316161446426223,
+    "search_direct_other": 0.3190195051209239,
+    "paid": 0.22833403702202712
+   },
    "sessions": 11769.0,
    "paid_share": 0.667064744519321,
    "unit_shares": {
@@ -1471,7 +1867,7 @@
    "entries": 76.0,
    "units_per_buyer": 1.01,
    "private_room_share": 0.1683168316831683,
-   "cost_per_paid_unit": 416.7885,
+   "cost_per_paid_unit": 334.9257742115028,
    "price": 1250.0,
    "edition_size": 100.0,
    "cluster": 0,
@@ -1486,6 +1882,17 @@
    "window_end": "2026-01-26",
    "campaign_days": 36.0,
    "units": 148.0,
+   "demand": 252.8,
+   "unmet_units": 112.0,
+   "payment_failed_units": 19.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.3478790910875144,
+    "aa_social": 0.0842821807149578,
+    "referral_artist": 0.19040925090658298,
+    "search_direct_other": 0.354260481419864,
+    "paid": 0.02316899587108083
+   },
    "sessions": 6157.0,
    "paid_share": 0.0174979558462796,
    "unit_shares": {
@@ -1527,6 +1934,17 @@
    "window_end": "2026-01-25",
    "campaign_days": 37.0,
    "units": 50.0,
+   "demand": 52.4,
+   "unmet_units": 0.0,
+   "payment_failed_units": 3.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.27800461565773127,
+    "aa_social": 0.11947452511982956,
+    "referral_artist": 0.02325581395348831,
+    "search_direct_other": 0.2991301260429612,
+    "paid": 0.28013491922598976
+   },
    "sessions": 5389.0,
    "paid_share": 0.6679738562091503,
    "unit_shares": {
@@ -1553,7 +1971,7 @@
    "entries": 43.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1,
-   "cost_per_paid_unit": 236.85249999999996,
+   "cost_per_paid_unit": 193.62466730038017,
    "price": 500.0,
    "edition_size": 100.0,
    "cluster": 1,
@@ -1568,6 +1986,17 @@
    "window_end": "2025-11-28",
    "campaign_days": 29.0,
    "units": 44.0,
+   "demand": 58.4,
+   "unmet_units": 17.0,
+   "payment_failed_units": 1.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.6162732259268834,
+    "aa_social": 0.025580827661468585,
+    "referral_artist": 0.046509290370753235,
+    "search_direct_other": 0.22093707819993685,
+    "paid": 0.09069957784095804
+   },
    "sessions": 9892.0,
    "paid_share": 0.4860857200893764,
    "unit_shares": {
@@ -1609,6 +2038,17 @@
    "window_end": "2025-11-20",
    "campaign_days": 28.0,
    "units": 149.0,
+   "demand": 222.60000000000002,
+   "unmet_units": 82.0,
+   "payment_failed_units": 10.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.5361818296105119,
+    "aa_social": 0.016654693255591532,
+    "referral_artist": 0.013747640325231415,
+    "search_direct_other": 0.28713712663996493,
+    "paid": 0.1462787101687003
+   },
    "sessions": 23543.0,
    "paid_share": 0.5504021105484873,
    "unit_shares": {
@@ -1635,7 +2075,7 @@
    "entries": 186.0,
    "units_per_buyer": 1.0273972602739727,
    "private_room_share": 0.3221476510067114,
-   "cost_per_paid_unit": 350.33888888888885,
+   "cost_per_paid_unit": 193.66652996855856,
    "price": 2000.0,
    "edition_size": 200.0,
    "cluster": 0,
@@ -1650,6 +2090,17 @@
    "window_end": "2025-11-02",
    "campaign_days": 29.0,
    "units": 194.0,
+   "demand": 238.0,
+   "unmet_units": 32.0,
+   "payment_failed_units": 23.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.36639062825626834,
+    "aa_social": 0.03059423645311628,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3494907584386952,
+    "paid": 0.2535243768519202
+   },
    "sessions": 43103.0,
    "paid_share": 0.7451642187099928,
    "unit_shares": {
@@ -1676,7 +2127,7 @@
    "entries": 192.0,
    "units_per_buyer": 1.0256410256410255,
    "private_room_share": 0.2010309278350515,
-   "cost_per_paid_unit": 697.8511627906977,
+   "cost_per_paid_unit": 497.3184610757146,
    "price": 5000.0,
    "edition_size": 200.0,
    "cluster": 0,
@@ -1691,6 +2142,17 @@
    "window_end": "2025-10-30",
    "campaign_days": 34.0,
    "units": 987.0,
+   "demand": 1600.6,
+   "unmet_units": 658.0,
+   "payment_failed_units": 109.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.30361154905719767,
+    "aa_social": 0.05608896444302448,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.36240318080200373,
+    "paid": 0.2778963056977741
+   },
    "sessions": 100589.0,
    "paid_share": 0.79686264302804,
    "unit_shares": {
@@ -1715,9 +2177,9 @@
     "paid": 0.0060300749990578
    },
    "entries": 1532.0,
-   "units_per_buyer": 1.0235655737704918,
+   "units_per_buyer": 1.0245649948822928,
    "private_room_share": 0.0770010131712259,
-   "cost_per_paid_unit": 118.94550218340612,
+   "cost_per_paid_unit": 61.237566013186616,
    "price": 1500.0,
    "edition_size": 1000.0,
    "cluster": 0,
@@ -1732,6 +2194,17 @@
    "window_end": "2025-10-03",
    "campaign_days": 33.0,
    "units": 116.0,
+   "demand": 209.60000000000002,
+   "unmet_units": 114.0,
+   "payment_failed_units": 3.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.4364105885919183,
+    "aa_social": 0.04238929107793447,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.5212001203301473,
+    "paid": 0.0
+   },
    "sessions": 7146.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -1756,7 +2229,7 @@
     "paid": null
    },
    "entries": 182.0,
-   "units_per_buyer": 1.2608695652173914,
+   "units_per_buyer": 1.4408602150537635,
    "private_room_share": 0.1637931034482758,
    "cost_per_paid_unit": null,
    "price": 8000.0,
@@ -1773,6 +2246,17 @@
    "window_end": "2025-10-03",
    "campaign_days": 28.0,
    "units": 179.0,
+   "demand": 274.2,
+   "unmet_units": 114.0,
+   "payment_failed_units": 5.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.37356630829611176,
+    "aa_social": 0.029662328644937126,
+    "referral_artist": 0.10132375149553823,
+    "search_direct_other": 0.4954476115634129,
+    "paid": 0.0
+   },
    "sessions": 4574.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -1797,7 +2281,7 @@
     "paid": null
    },
    "entries": 199.0,
-   "units_per_buyer": 1.3478260869565217,
+   "units_per_buyer": 1.5913043478260869,
    "private_room_share": 0.3798882681564245,
    "cost_per_paid_unit": null,
    "price": 1500.0,
@@ -1814,6 +2298,17 @@
    "window_end": "2025-10-02",
    "campaign_days": 20.0,
    "units": 45.0,
+   "demand": 45.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.5,
+    "aa_social": 0.0526315789473684,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4473684210526316,
+    "paid": 0.0
+   },
    "sessions": 3484.0,
    "paid_share": 0.0002870264064293,
    "unit_shares": {
@@ -1855,6 +2350,17 @@
    "window_end": "2025-08-30",
    "campaign_days": 26.0,
    "units": 33.0,
+   "demand": 41.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 10.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.16865299334811532,
+    "aa_social": 0.0,
+    "referral_artist": 0.0591740576496674,
+    "search_direct_other": 0.48371674057649666,
+    "paid": 0.2884562084257206
+   },
    "sessions": 16358.0,
    "paid_share": 0.7693062626510458,
    "unit_shares": {
@@ -1881,7 +2387,7 @@
    "entries": 22.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1212121212121212,
-   "cost_per_paid_unit": 655.2122222222222,
+   "cost_per_paid_unit": 498.60973336536154,
    "price": 4500.0,
    "edition_size": 50.0,
    "cluster": 1,
@@ -1896,6 +2402,17 @@
    "window_end": "2025-08-17",
    "campaign_days": 31.0,
    "units": 148.0,
+   "demand": 175.2,
+   "unmet_units": 1.0,
+   "payment_failed_units": 33.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.2989637932024039,
+    "aa_social": 0.12628595998626385,
+    "referral_artist": 0.053920139900903497,
+    "search_direct_other": 0.24090453347287505,
+    "paid": 0.27992557343755364
+   },
    "sessions": 9074.0,
    "paid_share": 0.5849245115452931,
    "unit_shares": {
@@ -1922,7 +2439,7 @@
    "entries": 103.0,
    "units_per_buyer": 1.0201342281879195,
    "private_room_share": 0.2567567567567567,
-   "cost_per_paid_unit": 72.24921052631579,
+   "cost_per_paid_unit": 55.98091905338444,
    "price": 900.0,
    "edition_size": 150.0,
    "cluster": 0,
@@ -1937,6 +2454,17 @@
    "window_end": "2025-08-15",
    "campaign_days": 27.0,
    "units": 117.0,
+   "demand": 117.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.38738738738738737,
+    "aa_social": 0.12612612612612611,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.45945945945945954,
+    "paid": 0.027027027027027004
+   },
    "sessions": 2492.0,
    "paid_share": 0.0264981655116184,
    "unit_shares": {
@@ -1958,57 +2486,16 @@
     "aa_social": 0.0473186119873817,
     "referral_artist": null,
     "search_direct_other": 0.0498177399756986,
-    "paid": 0.0307692307692307
+    "paid": null
    },
    "entries": 94.0,
-   "units_per_buyer": 1.108974358974359,
+   "units_per_buyer": 1.10828025477707,
    "private_room_share": 0.0769230769230769,
    "cost_per_paid_unit": null,
    "price": 850.0,
    "edition_size": 200.0,
    "cluster": 3,
    "cluster_name": "Artist-audience draws"
-  },
-  {
-   "release_name": "Antony Micallef \u00b7 Self Portrait with Yellow Lake and Magenta \u00b7 2025 Q3",
-   "artist": "Antony Micallef",
-   "title": "Self Portrait with Yellow Lake and Magenta",
-   "quarter": "2025 Q3",
-   "window_start": "2025-05-18",
-   "window_end": "2025-08-01",
-   "campaign_days": 27.0,
-   "units": 59.0,
-   "sessions": 3493.0,
-   "paid_share": 0.0,
-   "unit_shares": {
-    "aa_email": 0.6071428571428571,
-    "aa_social": 0.0,
-    "referral_artist": 0.0,
-    "search_direct_other": 0.3928571428571428,
-    "paid": 0.0
-   },
-   "sess_shares": {
-    "aa_email": 0.7397417503586801,
-    "aa_social": 0.0771879483500717,
-    "referral_artist": 0.0163558106169297,
-    "search_direct_other": 0.1667144906743185,
-    "paid": 0.0
-   },
-   "convs": {
-    "aa_email": 0.0046547711404189,
-    "aa_social": 0.0,
-    "referral_artist": 0.0,
-    "search_direct_other": 0.0137693631669535,
-    "paid": null
-   },
-   "entries": 21.0,
-   "units_per_buyer": 1.0,
-   "private_room_share": 0.5932203389830508,
-   "cost_per_paid_unit": null,
-   "price": 1750.0,
-   "edition_size": 60.0,
-   "cluster": 2,
-   "cluster_name": "Email-led collector launches"
   },
   {
    "release_name": "James Jarvis \u00b7 Hang in there! \u00b7 2025 Q3",
@@ -2019,6 +2506,17 @@
    "window_end": "2025-08-01",
    "campaign_days": 27.0,
    "units": 147.0,
+   "demand": 169.4,
+   "unmet_units": 22.0,
+   "payment_failed_units": 6.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.44771181530074816,
+    "aa_social": 0.04249416502380928,
+    "referral_artist": 0.020055808593357993,
+    "search_direct_other": 0.22080974254887292,
+    "paid": 0.2689284685332116
+   },
    "sessions": 12668.0,
    "paid_share": 0.669411671549608,
    "unit_shares": {
@@ -2045,11 +2543,63 @@
    "entries": 116.0,
    "units_per_buyer": 1.0342465753424657,
    "private_room_share": 0.3401360544217687,
-   "cost_per_paid_unit": 115.90228571428572,
+   "cost_per_paid_unit": 89.04506606297025,
    "price": 600.0,
    "edition_size": 150.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
+  },
+  {
+   "release_name": "Antony Micallef \u00b7 Self Portrait with Yellow Lake and Magenta \u00b7 2025 Q3",
+   "artist": "Antony Micallef",
+   "title": "Self Portrait with Yellow Lake and Magenta",
+   "quarter": "2025 Q3",
+   "window_start": "2025-05-18",
+   "window_end": "2025-08-01",
+   "campaign_days": 27.0,
+   "units": 59.0,
+   "demand": 63.8,
+   "unmet_units": 0.0,
+   "payment_failed_units": 6.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.6066054635020153,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3933945364979847,
+    "paid": 0.0
+   },
+   "sessions": 3493.0,
+   "paid_share": 0.0,
+   "unit_shares": {
+    "aa_email": 0.6071428571428571,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3928571428571428,
+    "paid": 0.0
+   },
+   "sess_shares": {
+    "aa_email": 0.7397417503586801,
+    "aa_social": 0.0771879483500717,
+    "referral_artist": 0.0163558106169297,
+    "search_direct_other": 0.1667144906743185,
+    "paid": 0.0
+   },
+   "convs": {
+    "aa_email": 0.0046547711404189,
+    "aa_social": 0.0,
+    "referral_artist": null,
+    "search_direct_other": 0.0137693631669535,
+    "paid": null
+   },
+   "entries": 21.0,
+   "units_per_buyer": 1.0,
+   "private_room_share": 0.5932203389830508,
+   "cost_per_paid_unit": null,
+   "price": 1750.0,
+   "edition_size": 60.0,
+   "cluster": 2,
+   "cluster_name": "Email-led collector launches"
   },
   {
    "release_name": "Dominique Fung \u00b7 Handheld Fan \u00b7 2025 Q3",
@@ -2060,6 +2610,17 @@
    "window_end": "2025-07-25",
    "campaign_days": 28.0,
    "units": 35.0,
+   "demand": 35.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.1875,
+    "aa_social": 0.15625,
+    "referral_artist": 0.21875,
+    "search_direct_other": 0.4375,
+    "paid": 0.0
+   },
    "sessions": 1442.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -2101,6 +2662,17 @@
    "window_end": "2025-07-11",
    "campaign_days": 29.0,
    "units": 200.0,
+   "demand": 287.2,
+   "unmet_units": 99.0,
+   "payment_failed_units": 10.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.5390435573526978,
+    "aa_social": 0.05729832201743476,
+    "referral_artist": 0.05574923441582031,
+    "search_direct_other": 0.3394769558544019,
+    "paid": 0.00843193035964531
+   },
    "sessions": 6861.0,
    "paid_share": 0.0016274596833851,
    "unit_shares": {
@@ -2142,6 +2714,17 @@
    "window_end": "2025-06-29",
    "campaign_days": 35.0,
    "units": 291.0,
+   "demand": 578.2,
+   "unmet_units": 349.0,
+   "payment_failed_units": 10.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.2651738840586807,
+    "aa_social": 0.030353059616423796,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4912174957889388,
+    "paid": 0.2132555605359568
+   },
    "sessions": 84811.0,
    "paid_share": 0.8018034009017004,
    "unit_shares": {
@@ -2166,9 +2749,9 @@
     "paid": 0.0020661766876236
    },
    "entries": 452.0,
-   "units_per_buyer": 1.1314878892733564,
+   "units_per_buyer": 1.1833910034602075,
    "private_room_share": 0.2783505154639175,
-   "cost_per_paid_unit": 986.7788888888889,
+   "cost_per_paid_unit": 216.07531880954932,
    "price": 6000.0,
    "edition_size": 450.0,
    "cluster": 0,
@@ -2183,6 +2766,17 @@
    "window_end": "2025-05-17",
    "campaign_days": 33.0,
    "units": 38.0,
+   "demand": 54.8,
+   "unmet_units": 20.0,
+   "payment_failed_units": 1.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.35860645961547644,
+    "aa_social": 0.0836076523066647,
+    "referral_artist": 0.12213157769190403,
+    "search_direct_other": 0.4356543103859549,
+    "paid": 0.0
+   },
    "sessions": 3586.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -2224,6 +2818,17 @@
    "window_end": "2025-05-04",
    "campaign_days": 27.0,
    "units": 75.0,
+   "demand": 145.4,
+   "unmet_units": 83.0,
+   "payment_failed_units": 5.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.5208600834460533,
+    "aa_social": 0.025592887353547575,
+    "referral_artist": 0.12799017406995397,
+    "search_direct_other": 0.3255568551304453,
+    "paid": 0.0
+   },
    "sessions": 4142.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -2265,6 +2870,17 @@
    "window_end": "2025-04-18",
    "campaign_days": 22.0,
    "units": 19.0,
+   "demand": 38.2,
+   "unmet_units": 23.0,
+   "payment_failed_units": 1.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.3044472528133838,
+    "aa_social": 0.21929349461394954,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.47625925257266655,
+    "paid": 0.0
+   },
    "sessions": 2023.0,
    "paid_share": 0.0014932802389248,
    "unit_shares": {
@@ -2306,6 +2922,17 @@
    "window_end": "2025-04-17",
    "campaign_days": 28.0,
    "units": 52.0,
+   "demand": 80.8,
+   "unmet_units": 33.0,
+   "payment_failed_units": 3.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.5564679733279451,
+    "aa_social": 0.00712871287128713,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4030066680137402,
+    "paid": 0.033396645787027654
+   },
    "sessions": 7261.0,
    "paid_share": 0.0001381406271584,
    "unit_shares": {
@@ -2347,6 +2974,17 @@
    "window_end": "2025-04-10",
    "campaign_days": 28.0,
    "units": 456.0,
+   "demand": 480.8,
+   "unmet_units": 0.0,
+   "payment_failed_units": 31.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.3500090293813283,
+    "aa_social": 0.06825517867287983,
+    "referral_artist": 0.016758555284863662,
+    "search_direct_other": 0.18145511805067682,
+    "paid": 0.3835221186102514
+   },
    "sessions": 36053.0,
    "paid_share": 0.7331511585756908,
    "unit_shares": {
@@ -2371,9 +3009,9 @@
     "paid": 0.0064275662723918
    },
    "entries": 425.0,
-   "units_per_buyer": 1.0151515151515151,
+   "units_per_buyer": 1.0129870129870129,
    "private_room_share": 0.1228070175438596,
-   "cost_per_paid_unit": 101.65509316770186,
+   "cost_per_paid_unit": 88.75649508375417,
    "price": 700.0,
    "edition_size": 500.0,
    "cluster": 0,
@@ -2388,6 +3026,17 @@
    "window_end": "2025-04-05",
    "campaign_days": 29.0,
    "units": 25.0,
+   "demand": 65.0,
+   "unmet_units": 50.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.2845571095571095,
+    "aa_social": 0.03356643356643354,
+    "referral_artist": 0.1566433566433566,
+    "search_direct_other": 0.5252331002331002,
+    "paid": 0.0
+   },
    "sessions": 2017.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -2429,6 +3078,17 @@
    "window_end": "2025-03-07",
    "campaign_days": 29.0,
    "units": 73.0,
+   "demand": 74.6,
+   "unmet_units": 1.0,
+   "payment_failed_units": 1.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.6551861109023639,
+    "aa_social": 0.07616498036854236,
+    "referral_artist": 0.0010462303014451048,
+    "search_direct_other": 0.22274067444767917,
+    "paid": 0.044862003979969305
+   },
    "sessions": 3156.0,
    "paid_share": 0.0003198976327575,
    "unit_shares": {
@@ -2470,6 +3130,17 @@
    "window_end": "2025-02-24",
    "campaign_days": 36.0,
    "units": 149.0,
+   "demand": 231.4,
+   "unmet_units": 86.0,
+   "payment_failed_units": 17.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.2527903453142814,
+    "aa_social": 0.2674081645847132,
+    "referral_artist": 0.2152069455096837,
+    "search_direct_other": 0.25215836454036855,
+    "paid": 0.012436180050953276
+   },
    "sessions": 4807.0,
    "paid_share": 0.0004214075010535,
    "unit_shares": {
@@ -2511,6 +3182,17 @@
    "window_end": "2025-02-21",
    "campaign_days": 34.0,
    "units": 142.0,
+   "demand": 166.8,
+   "unmet_units": 26.0,
+   "payment_failed_units": 5.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.5481489808153477,
+    "aa_social": 0.013301858513189447,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4318982314148681,
+    "paid": 0.006650929256594724
+   },
    "sessions": 8475.0,
    "paid_share": 0.0003570578433706,
    "unit_shares": {
@@ -2552,6 +3234,17 @@
    "window_end": "2025-02-17",
    "campaign_days": 25.0,
    "units": 99.0,
+   "demand": 99.8,
+   "unmet_units": 0.0,
+   "payment_failed_units": 1.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.3474077341285442,
+    "aa_social": 0.03169017460758833,
+    "referral_artist": 0.020974964282632184,
+    "search_direct_other": 0.32634167857245594,
+    "paid": 0.27358544840877935
+   },
    "sessions": 6516.0,
    "paid_share": 0.5442744552619379,
    "unit_shares": {
@@ -2593,6 +3286,17 @@
    "window_end": "2025-01-31",
    "campaign_days": 32.0,
    "units": 24.0,
+   "demand": 25.6,
+   "unmet_units": 0.0,
+   "payment_failed_units": 2.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.24558823529411763,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.3860294117647059,
+    "paid": 0.36838235294117644
+   },
    "sessions": 5083.0,
    "paid_share": 0.8278785488958991,
    "unit_shares": {
@@ -2619,7 +3323,7 @@
    "entries": 10.0,
    "units_per_buyer": 1.3157894736842106,
    "private_room_share": 0.2083333333333333,
-   "cost_per_paid_unit": 3110.138333333334,
+   "cost_per_paid_unit": 1978.755676147705,
    "price": 6000.0,
    "edition_size": 30.0,
    "cluster": 1,
@@ -2634,6 +3338,17 @@
    "window_end": "2025-01-31",
    "campaign_days": 49.0,
    "units": 20.0,
+   "demand": 22.4,
+   "unmet_units": 0.0,
+   "payment_failed_units": 3.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.4733524988942946,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.10028748341441837,
+    "paid": 0.426360017691287
+   },
    "sessions": 2995.0,
    "paid_share": 0.6511705685618729,
    "unit_shares": {
@@ -2660,7 +3375,7 @@
    "entries": 17.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1,
-   "cost_per_paid_unit": 2332.60375,
+   "cost_per_paid_unit": 1953.9185976400418,
    "price": 6000.0,
    "edition_size": 30.0,
    "cluster": 1,
@@ -2675,6 +3390,17 @@
    "window_end": "2025-01-31",
    "campaign_days": 49.0,
    "units": 38.0,
+   "demand": 42.8,
+   "unmet_units": 6.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.39362286970863114,
+    "aa_social": 0.1324903793293018,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4029686641011545,
+    "paid": 0.07091808686091258
+   },
    "sessions": 559.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -2716,6 +3442,17 @@
    "window_end": "2025-01-31",
    "campaign_days": 49.0,
    "units": 26.0,
+   "demand": 29.2,
+   "unmet_units": 0.0,
+   "payment_failed_units": 4.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.3290357238785926,
+    "aa_social": 0.17418748321246302,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4532299221058287,
+    "paid": 0.043546870803115714
+   },
    "sessions": 687.0,
    "paid_share": 0.0029498525073746,
    "unit_shares": {
@@ -2757,6 +3494,17 @@
    "window_end": "2024-12-13",
    "campaign_days": 20.0,
    "units": 202.0,
+   "demand": 250.0,
+   "unmet_units": 40.0,
+   "payment_failed_units": 20.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.6129735449735451,
+    "aa_social": 0.06008465608465607,
+    "referral_artist": 0.018158730158730083,
+    "search_direct_other": 0.3087830687830687,
+    "paid": 0.0
+   },
    "sessions": 8657.0,
    "paid_share": 0.0001161575095829,
    "unit_shares": {
@@ -2781,7 +3529,7 @@
     "paid": null
    },
    "entries": 149.0,
-   "units_per_buyer": 1.0740740740740742,
+   "units_per_buyer": 1.0952380952380953,
    "private_room_share": 0.2821782178217821,
    "cost_per_paid_unit": null,
    "price": 1650.0,
@@ -2798,6 +3546,17 @@
    "window_end": "2024-12-05",
    "campaign_days": 21.0,
    "units": 98.0,
+   "demand": 131.6,
+   "unmet_units": 34.0,
+   "payment_failed_units": 8.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.5315740241620953,
+    "aa_social": 0.05905365126676599,
+    "referral_artist": 0.06342153660779398,
+    "search_direct_other": 0.3459507879633446,
+    "paid": 0.0
+   },
    "sessions": 5436.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -2839,6 +3598,17 @@
    "window_end": "2024-11-23",
    "campaign_days": 30.0,
    "units": 15.0,
+   "demand": 58.2,
+   "unmet_units": 54.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.3215513009327442,
+    "aa_social": 0.0795287187039764,
+    "referral_artist": 0.27835051546391754,
+    "search_direct_other": 0.32056946489936183,
+    "paid": 0.0
+   },
    "sessions": 3518.0,
    "paid_share": 0.0002856326763781,
    "unit_shares": {
@@ -2880,6 +3650,17 @@
    "window_end": "2024-11-22",
    "campaign_days": 26.0,
    "units": 85.0,
+   "demand": 249.0,
+   "unmet_units": 202.0,
+   "payment_failed_units": 3.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.24627507319249903,
+    "aa_social": 0.053014877939943986,
+    "referral_artist": 0.06687127915455855,
+    "search_direct_other": 0.6309115050989869,
+    "paid": 0.0029272646140115735
+   },
    "sessions": 4834.0,
    "paid_share": 0.0010442773600668,
    "unit_shares": {
@@ -2921,6 +3702,17 @@
    "window_end": "2024-11-07",
    "campaign_days": 20.0,
    "units": 187.0,
+   "demand": 270.2,
+   "unmet_units": 87.0,
+   "payment_failed_units": 17.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.6998613672704075,
+    "aa_social": 0.0023686158401184025,
+    "referral_artist": 0.007105847520355269,
+    "search_direct_other": 0.2906641693691188,
+    "paid": 0.0
+   },
    "sessions": 7812.0,
    "paid_share": 0.0003853069612124,
    "unit_shares": {
@@ -2962,6 +3754,17 @@
    "window_end": "2024-10-27",
    "campaign_days": 21.0,
    "units": 235.0,
+   "demand": 384.6,
+   "unmet_units": 168.0,
+   "payment_failed_units": 19.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.18913076032387088,
+    "aa_social": 0.04964102769718264,
+    "referral_artist": 0.4512265595764017,
+    "search_direct_other": 0.3100016524025447,
+    "paid": 0.0
+   },
    "sessions": 21452.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3003,6 +3806,17 @@
    "window_end": "2024-10-12",
    "campaign_days": 29.0,
    "units": 249.0,
+   "demand": 273.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 30.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.3835736033160927,
+    "aa_social": 0.08415161376534763,
+    "referral_artist": 0.023487242371362464,
+    "search_direct_other": 0.39871401845650783,
+    "paid": 0.11007352209068949
+   },
    "sessions": 9616.0,
    "paid_share": 0.2862231534834992,
    "unit_shares": {
@@ -3029,7 +3843,7 @@
    "entries": 183.0,
    "units_per_buyer": 1.0241935483870968,
    "private_room_share": 0.2650602409638554,
-   "cost_per_paid_unit": 73.61160000000001,
+   "cost_per_paid_unit": 61.24078600333254,
    "price": 700.0,
    "edition_size": 250.0,
    "cluster": 0,
@@ -3044,6 +3858,17 @@
    "window_end": "2024-10-04",
    "campaign_days": 19.0,
    "units": 24.0,
+   "demand": 28.0,
+   "unmet_units": 2.0,
+   "payment_failed_units": 3.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.04736440030557673,
+    "aa_social": 0.13368983957219246,
+    "referral_artist": 0.09472880061115356,
+    "search_direct_other": 0.44003055767761645,
+    "paid": 0.28418640183346067
+   },
    "sessions": 9119.0,
    "paid_share": 0.6711771177117711,
    "unit_shares": {
@@ -3070,7 +3895,7 @@
    "entries": 17.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.0833333333333333,
-   "cost_per_paid_unit": 321.6566666666667,
+   "cost_per_paid_unit": 242.53950268817206,
    "price": 6000.0,
    "edition_size": 25.0,
    "cluster": 1,
@@ -3085,6 +3910,17 @@
    "window_end": "2024-09-27",
    "campaign_days": 26.0,
    "units": 29.0,
+   "demand": 53.0,
+   "unmet_units": 30.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.34661564850244103,
+    "aa_social": 0.07131547697585429,
+    "referral_artist": 0.16750230901174296,
+    "search_direct_other": 0.4029555350310068,
+    "paid": 0.01161103047895499
+   },
    "sessions": 3535.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3126,6 +3962,17 @@
    "window_end": "2024-09-14",
    "campaign_days": 22.0,
    "units": 99.0,
+   "demand": 220.60000000000002,
+   "unmet_units": 148.0,
+   "payment_failed_units": 4.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.17454236737431805,
+    "aa_social": 0.0924017000403524,
+    "referral_artist": 0.17607261331418778,
+    "search_direct_other": 0.5569833192711418,
+    "paid": 0.0
+   },
    "sessions": 4820.0,
    "paid_share": 0.0025178346621905,
    "unit_shares": {
@@ -3167,6 +4014,17 @@
    "window_end": "2024-08-30",
    "campaign_days": 21.0,
    "units": 49.0,
+   "demand": 81.0,
+   "unmet_units": 36.0,
+   "payment_failed_units": 4.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.2664179330845997,
+    "aa_social": 0.043285709952376565,
+    "referral_artist": 0.4370127703461037,
+    "search_direct_other": 0.25328358661691996,
+    "paid": 0.0
+   },
    "sessions": 2314.0,
    "paid_share": 0.0004438526409232,
    "unit_shares": {
@@ -3208,6 +4066,17 @@
    "window_end": "2024-08-11",
    "campaign_days": 16.0,
    "units": 91.0,
+   "demand": 99.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 10.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.26227755111529566,
+    "aa_social": 0.08970022433773873,
+    "referral_artist": 0.11562111331961729,
+    "search_direct_other": 0.5324011112273485,
+    "paid": 0.0
+   },
    "sessions": 12176.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3249,6 +4118,17 @@
    "window_end": "2024-08-09",
    "campaign_days": 26.0,
    "units": 24.0,
+   "demand": 24.8,
+   "unmet_units": 0.0,
+   "payment_failed_units": 1.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.6117713638936051,
+    "aa_social": 0.11262026032823996,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.21844934917940015,
+    "paid": 0.0571590265987549
+   },
    "sessions": 2111.0,
    "paid_share": 0.3939971414959504,
    "unit_shares": {
@@ -3290,6 +4170,17 @@
    "window_end": "2024-08-02",
    "campaign_days": 18.0,
    "units": 92.0,
+   "demand": 95.2,
+   "unmet_units": 4.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.4755568894224357,
+    "aa_social": 0.13782179538482062,
+    "referral_artist": 0.07071161798052551,
+    "search_direct_other": 0.31590969721221823,
+    "paid": 0.0
+   },
    "sessions": 5879.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3314,7 +4205,7 @@
     "paid": null
    },
    "entries": 60.0,
-   "units_per_buyer": 1.0333333333333334,
+   "units_per_buyer": 1.0555555555555556,
    "private_room_share": 0.25,
    "cost_per_paid_unit": null,
    "price": 2025.0,
@@ -3331,6 +4222,17 @@
    "window_end": "2024-07-21",
    "campaign_days": 3.0,
    "units": 765.0,
+   "demand": 1866.6000000000001,
+   "unmet_units": 1368.0,
+   "payment_failed_units": 9.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.4452576112412179,
+    "aa_social": 0.019641682095548677,
+    "referral_artist": 0.07260042567365968,
+    "search_direct_other": 0.4625002809895738,
+    "paid": 0.0
+   },
    "sessions": 36500.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3355,7 +4257,7 @@
     "paid": null
    },
    "entries": 1934.0,
-   "units_per_buyer": 1.1708766716196137,
+   "units_per_buyer": 1.1723625557206538,
    "private_room_share": 0.0143790849673202,
    "cost_per_paid_unit": null,
    "price": 1414.2857142857142,
@@ -3372,6 +4274,17 @@
    "window_end": "2024-06-21",
    "campaign_days": 41.0,
    "units": 196.0,
+   "demand": 209.6,
+   "unmet_units": 9.0,
+   "payment_failed_units": 8.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.47671522993855897,
+    "aa_social": 0.042298920126605764,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.4177643827964997,
+    "paid": 0.06322146713833546
+   },
    "sessions": 8023.0,
    "paid_share": 0.2415574596774193,
    "unit_shares": {
@@ -3398,52 +4311,11 @@
    "entries": 153.0,
    "units_per_buyer": 1.0,
    "private_room_share": 0.1020408163265306,
-   "cost_per_paid_unit": 202.57199999999997,
+   "cost_per_paid_unit": 152.8704583103259,
    "price": 1250.0,
    "edition_size": 200.0,
    "cluster": 0,
    "cluster_name": "Paid-led headline launches"
-  },
-  {
-   "release_name": "Ka\u00ef \u00b7 Content \u00b7 2024 Q2",
-   "artist": "Ka\u00ef",
-   "title": "Content",
-   "quarter": "2024 Q2",
-   "window_start": "2024-03-30",
-   "window_end": "2024-06-01",
-   "campaign_days": 15.0,
-   "units": 162.0,
-   "sessions": 2374.0,
-   "paid_share": 0.0,
-   "unit_shares": {
-    "aa_email": 0.1285714285714285,
-    "aa_social": 0.2428571428571428,
-    "referral_artist": 0.2714285714285714,
-    "search_direct_other": 0.3571428571428571,
-    "paid": 0.0
-   },
-   "sess_shares": {
-    "aa_email": 0.3318984072320275,
-    "aa_social": 0.1838140335772707,
-    "referral_artist": 0.2922944468359879,
-    "search_direct_other": 0.1919931123547137,
-    "paid": 0.0
-   },
-   "convs": {
-    "aa_email": 0.0064850843060959,
-    "aa_social": 0.0304449648711943,
-    "referral_artist": 0.0206185567010309,
-    "search_direct_other": 0.0269058295964125,
-    "paid": null
-   },
-   "entries": 49.0,
-   "units_per_buyer": 2.0238095238095237,
-   "private_room_share": 0.345679012345679,
-   "cost_per_paid_unit": null,
-   "price": 1200.0,
-   "edition_size": 140.0,
-   "cluster": 2,
-   "cluster_name": "Email-led collector launches"
   },
   {
    "release_name": "Asuka Anastacia Ogawa \u00b7 Sleepy \u00b7 2024 Q2",
@@ -3454,6 +4326,17 @@
    "window_end": "2024-05-25",
    "campaign_days": 15.0,
    "units": 51.0,
+   "demand": 76.6,
+   "unmet_units": 31.0,
+   "payment_failed_units": 1.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.42677843433649393,
+    "aa_social": 0.11940360038477393,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.45381796527873214,
+    "paid": 0.0
+   },
    "sessions": 1456.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3495,6 +4378,17 @@
    "window_end": "2024-05-20",
    "campaign_days": 15.0,
    "units": 25.0,
+   "demand": 25.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.29166666666666674,
+    "aa_social": 0.16666666666666663,
+    "referral_artist": 0.08333333333333331,
+    "search_direct_other": 0.45833333333333337,
+    "paid": 0.0
+   },
    "sessions": 1414.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3514,7 +4408,7 @@
    "convs": {
     "aa_email": 0.0080275229357798,
     "aa_social": 0.0178571428571428,
-    "referral_artist": 0.0229885057471264,
+    "referral_artist": null,
     "search_direct_other": 0.0297619047619047,
     "paid": null
    },
@@ -3536,6 +4430,17 @@
    "window_end": "2024-05-03",
    "campaign_days": 15.0,
    "units": 264.0,
+   "demand": 264.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.5294117647058824,
+    "aa_social": 0.0542986425339366,
+    "referral_artist": 0.0361990950226244,
+    "search_direct_other": 0.3800904977375565,
+    "paid": 0.0
+   },
    "sessions": 8035.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3577,6 +4482,17 @@
    "window_end": "2024-03-23",
    "campaign_days": 34.0,
    "units": 443.0,
+   "demand": 873.4000000000001,
+   "unmet_units": 538.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.15927066415131558,
+    "aa_social": 0.036269213196080334,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.803535569537844,
+    "paid": 0.0009245531147601433
+   },
    "sessions": 10794.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3601,7 +4517,7 @@
     "paid": null
    },
    "entries": 607.0,
-   "units_per_buyer": 1.4312267657992566,
+   "units_per_buyer": 1.825278810408922,
    "private_room_share": 0.0,
    "cost_per_paid_unit": null,
    "price": 6000.0,
@@ -3618,6 +4534,17 @@
    "window_end": "2024-03-10",
    "campaign_days": 15.0,
    "units": 28.0,
+   "demand": 52.0,
+   "unmet_units": 30.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.44763513513513514,
+    "aa_social": 0.10849792099792097,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.44386694386694386,
+    "paid": 0.0
+   },
    "sessions": 1819.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3659,6 +4586,17 @@
    "window_end": "2024-02-24",
    "campaign_days": 12.0,
    "units": 46.0,
+   "demand": 46.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.368421052631579,
+    "aa_social": 0.15789473684210523,
+    "referral_artist": 0.026315789473684206,
+    "search_direct_other": 0.44736842105263164,
+    "paid": 0.0
+   },
    "sessions": 2591.0,
    "paid_share": 0.0011596443757247,
    "unit_shares": {
@@ -3678,7 +4616,7 @@
    "convs": {
     "aa_email": 0.0034843205574912,
     "aa_social": 0.0165016501650165,
-    "referral_artist": 0.0105263157894736,
+    "referral_artist": null,
     "search_direct_other": 0.0193965517241379,
     "paid": null
    },
@@ -3700,6 +4638,17 @@
    "window_end": "2024-02-17",
    "campaign_days": 6.0,
    "units": 30.0,
+   "demand": 174.0,
+   "unmet_units": 180.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.1362489486963835,
+    "aa_social": 0.15899715647402776,
+    "referral_artist": 0.3103848772477873,
+    "search_direct_other": 0.39436901758180143,
+    "paid": 0.0
+   },
    "sessions": 4893.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3741,6 +4690,17 @@
    "window_end": "2024-02-16",
    "campaign_days": 22.0,
    "units": 30.0,
+   "demand": 51.6,
+   "unmet_units": 27.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.3405752753977968,
+    "aa_social": 0.010465116279069767,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.6489596083231334,
+    "paid": 0.0
+   },
    "sessions": 2534.0,
    "paid_share": 0.0004045307443365,
    "unit_shares": {
@@ -3782,6 +4742,17 @@
    "window_end": "2024-01-27",
    "campaign_days": 12.0,
    "units": 34.0,
+   "demand": 88.4,
+   "unmet_units": 68.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.119036519036519,
+    "aa_social": 0.15462315462315462,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.7263403263403264,
+    "paid": 0.0
+   },
    "sessions": 1550.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3799,7 +4770,7 @@
     "paid": 0.0
    },
    "convs": {
-    "aa_email": 0.032258064516129,
+    "aa_email": null,
     "aa_social": 0.0203252032520325,
     "referral_artist": null,
     "search_direct_other": 0.0564516129032258,
@@ -3823,6 +4794,17 @@
    "window_end": "2024-01-20",
    "campaign_days": 9.0,
    "units": 25.0,
+   "demand": 25.8,
+   "unmet_units": 1.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.982048143614851,
+    "aa_social": 0.0,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.017951856385148922,
+    "paid": 0.0
+   },
    "sessions": 1622.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3841,7 +4823,7 @@
    },
    "convs": {
     "aa_email": 0.0139130434782608,
-    "aa_social": 0.0,
+    "aa_social": null,
     "referral_artist": null,
     "search_direct_other": 0.0128805620608899,
     "paid": null
@@ -3864,6 +4846,17 @@
    "window_end": "2023-12-15",
    "campaign_days": 19.0,
    "units": 31.0,
+   "demand": 143.8,
+   "unmet_units": 141.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.25217279601164755,
+    "aa_social": 0.1097654807131989,
+    "referral_artist": 0.24638104394664118,
+    "search_direct_other": 0.3916806793285123,
+    "paid": 0.0
+   },
    "sessions": 3439.0,
    "paid_share": 0.0002993115833582,
    "unit_shares": {
@@ -3905,6 +4898,17 @@
    "window_end": "2023-12-08",
    "campaign_days": 11.0,
    "units": 57.0,
+   "demand": 57.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.5227272727272727,
+    "aa_social": 0.022727272727272704,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.45454545454545453,
+    "paid": 0.0
+   },
    "sessions": 3506.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3924,7 +4928,7 @@
    "convs": {
     "aa_email": 0.0028787333573227,
     "aa_social": 0.0049504950495049,
-    "referral_artist": 0.0,
+    "referral_artist": null,
     "search_direct_other": 0.027027027027027,
     "paid": null
    },
@@ -3946,6 +4950,17 @@
    "window_end": "2023-12-03",
    "campaign_days": 17.0,
    "units": 49.0,
+   "demand": 69.8,
+   "unmet_units": 26.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.16549173782904078,
+    "aa_social": 0.0596053963953649,
+    "referral_artist": 0.20227858378077776,
+    "search_direct_other": 0.5726242819948166,
+    "paid": 0.0
+   },
    "sessions": 875.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -3964,7 +4979,7 @@
    },
    "convs": {
     "aa_email": 0.0700389105058365,
-    "aa_social": 0.0597014925373134,
+    "aa_social": null,
     "referral_artist": 0.0534979423868312,
     "search_direct_other": 0.0421052631578947,
     "paid": null
@@ -3987,6 +5002,17 @@
    "window_end": "2023-11-25",
    "campaign_days": 19.0,
    "units": 30.0,
+   "demand": 500.40000000000003,
+   "unmet_units": 588.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.047961630695443645,
+    "aa_social": 0.21456289513843474,
+    "referral_artist": 0.026858513189448378,
+    "search_direct_other": 0.7106169609766733,
+    "paid": 0.0
+   },
    "sessions": 4345.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -4028,6 +5054,17 @@
    "window_end": "2023-11-23",
    "campaign_days": 12.0,
    "units": 199.0,
+   "demand": 279.0,
+   "unmet_units": 99.0,
+   "payment_failed_units": 1.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.3155222475652583,
+    "aa_social": 0.04735672133521595,
+    "referral_artist": 0.20038521414865507,
+    "search_direct_other": 0.43673581695087077,
+    "paid": 0.0
+   },
    "sessions": 4652.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -4069,6 +5106,17 @@
    "window_end": "2023-11-17",
    "campaign_days": 22.0,
    "units": 49.0,
+   "demand": 65.0,
+   "unmet_units": 20.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.3121305361305361,
+    "aa_social": 0.08822377622377622,
+    "referral_artist": 0.23690442890442887,
+    "search_direct_other": 0.36274125874125873,
+    "paid": 0.0
+   },
    "sessions": 1276.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -4087,7 +5135,7 @@
    },
    "convs": {
     "aa_email": 0.0402843601895734,
-    "aa_social": 0.043010752688172,
+    "aa_social": null,
     "referral_artist": 0.0329341317365269,
     "search_direct_other": 0.0451127819548872,
     "paid": null
@@ -4110,6 +5158,17 @@
    "window_end": "2023-11-13",
    "campaign_days": 17.0,
    "units": 24.0,
+   "demand": 56.800000000000004,
+   "unmet_units": 39.0,
+   "payment_failed_units": 2.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.05661419497376416,
+    "aa_social": 0.3207677437172052,
+    "referral_artist": 0.011322838994752832,
+    "search_direct_other": 0.6112952223142778,
+    "paid": 0.0
+   },
    "sessions": 1412.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -4151,6 +5210,17 @@
    "window_end": "2023-11-11",
    "campaign_days": 22.0,
    "units": 41.0,
+   "demand": 76.2,
+   "unmet_units": 44.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.16462332128908286,
+    "aa_social": 0.07185474494733245,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.7635219337635847,
+    "paid": 0.0
+   },
    "sessions": 4122.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -4192,6 +5262,17 @@
    "window_end": "2023-11-10",
    "campaign_days": 28.0,
    "units": 46.0,
+   "demand": 50.8,
+   "unmet_units": 0.0,
+   "payment_failed_units": 6.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.19323260268142156,
+    "aa_social": 0.08640136199191316,
+    "referral_artist": 0.08384762715471375,
+    "search_direct_other": 0.6365184081719516,
+    "paid": 0.0
+   },
    "sessions": 1759.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -4233,6 +5314,17 @@
    "window_end": "2023-11-03",
    "campaign_days": 21.0,
    "units": 39.0,
+   "demand": 39.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.17391304347826084,
+    "aa_social": 0.04347826086956521,
+    "referral_artist": 0.13043478260869562,
+    "search_direct_other": 0.6521739130434784,
+    "paid": 0.0
+   },
    "sessions": 2103.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -4266,47 +5358,6 @@
    "cluster_name": "Artist-audience draws"
   },
   {
-   "release_name": "Johnson Tsang \u00b7 Open the Right Mind \u00b7 2023 Q4",
-   "artist": "Johnson Tsang",
-   "title": "Open the Right Mind",
-   "quarter": "2023 Q4",
-   "window_start": "2023-08-11",
-   "window_end": "2023-10-28",
-   "campaign_days": 30.0,
-   "units": 196.0,
-   "sessions": 2661.0,
-   "paid_share": 0.0003829950210647,
-   "unit_shares": {
-    "aa_email": 0.492063492063492,
-    "aa_social": 0.0793650793650793,
-    "referral_artist": 0.0634920634920634,
-    "search_direct_other": 0.365079365079365,
-    "paid": 0.0
-   },
-   "sess_shares": {
-    "aa_email": 0.2340099578705476,
-    "aa_social": 0.2152432018383761,
-    "referral_artist": 0.2317119877441593,
-    "search_direct_other": 0.3186518575258522,
-    "paid": 0.0003829950210647
-   },
-   "convs": {
-    "aa_email": 0.1031096563011456,
-    "aa_social": 0.0195729537366548,
-    "referral_artist": 0.0148760330578512,
-    "search_direct_other": 0.0408653846153846,
-    "paid": null
-   },
-   "entries": 128.0,
-   "units_per_buyer": 2.0194174757281553,
-   "private_room_share": 0.010204081632653,
-   "cost_per_paid_unit": null,
-   "price": 700.0,
-   "edition_size": 100.0,
-   "cluster": 3,
-   "cluster_name": "Artist-audience draws"
-  },
-  {
    "release_name": "Arghavan Khosravi \u00b7 The Earring \u00b7 2023 Q4",
    "artist": "Arghavan Khosravi",
    "title": "The Earring",
@@ -4315,6 +5366,17 @@
    "window_end": "2023-10-26",
    "campaign_days": 25.0,
    "units": 20.0,
+   "demand": 20.0,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "sold_short": false,
+   "demand_shares": {
+    "aa_email": 0.0833333333333333,
+    "aa_social": 0.0833333333333333,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.8333333333333334,
+    "paid": 0.0
+   },
    "sessions": 1008.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -4333,7 +5395,7 @@
    },
    "convs": {
     "aa_email": 0.0041928721174004,
-    "aa_social": 0.0256410256410256,
+    "aa_social": null,
     "referral_artist": 0.0,
     "search_direct_other": 0.0208333333333333,
     "paid": null
@@ -4356,6 +5418,17 @@
    "window_end": "2023-10-19",
    "campaign_days": 21.0,
    "units": 67.0,
+   "demand": 184.60000000000002,
+   "unmet_units": 147.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.10949865002716702,
+    "aa_social": 0.09923627248266959,
+    "referral_artist": 0.3044122391949795,
+    "search_direct_other": 0.48685283829518394,
+    "paid": 0.0
+   },
    "sessions": 3387.0,
    "paid_share": 0.0,
    "unit_shares": {
@@ -4397,6 +5470,17 @@
    "window_end": "2023-09-23",
    "campaign_days": 19.0,
    "units": 31.0,
+   "demand": 292.6,
+   "unmet_units": 327.0,
+   "payment_failed_units": 0.0,
+   "sold_short": true,
+   "demand_shares": {
+    "aa_email": 0.06108179440750405,
+    "aa_social": 0.3568332712676462,
+    "referral_artist": 0.0,
+    "search_direct_other": 0.5820849343248499,
+    "paid": 0.0
+   },
    "sessions": 2977.0,
    "paid_share": 0.0,
    "unit_shares": {

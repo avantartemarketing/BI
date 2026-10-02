@@ -409,6 +409,17 @@ select.native {
 .ts-card-head .d { font-size: 13px; color: var(--muted); }
 .ts-card-head .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
 .ts-state { font-size: 13px; color: var(--muted); white-space: nowrap; }
+/* where the stretch comes from: one slider per channel group, coupled so the
+   shares always add to 100; the head carries the group and its share */
+.ts-sliders { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px 18px; align-items: end; }
+.ts-slider { display: grid; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+.ts-slider .head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.ts-slider .head b { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
+.ts-slider.dis .head b { color: #b3b1a8; font-weight: 400; }
+.ts-slider input[type=range] { width: 100%; margin: 0; height: 22px; accent-color: var(--blue); cursor: pointer; }
+.ts-slider input[type=range]:disabled { accent-color: #c8c5bc; cursor: default; }
+.ts-slider input[type=range]:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+.ts-slider .note { font-size: 11px; color: #9a988f; min-height: 14px; }
 .ts-grid { display: grid; gap: 20px 24px; }
 .ts-grid > * { min-width: 0; }
 .ts-grid.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -588,6 +599,10 @@ select.native {
 .sheet td input.cell { cursor: text; }
 .sheet td input.tick, .sheet td button, .sheet td button[title] { cursor: pointer; }
 .sheet td input.tick:disabled { cursor: default; }
+/* a work unticked on the grid: still listed, greyed, every cell closed */
+.sheet tr.off td.gut, .sheet tr.off td.primary, .sheet tr.off td.primary .nm { color: #9a988f; }
+.sheet tr.off td.primary .nm { text-decoration: line-through; text-decoration-color: #c8c5bc; }
+.sheet td .src.off { color: #b3751f; }
 @media (prefers-reduced-motion: reduce) { .ts-big, .ts-figures, .ts-switch .tr, .ts-switch .tr::after { transition: none; } }
 /* the product cell: the name gives way first, then its Airtable code; the
    Reset or Remove link at its end always stays in view */

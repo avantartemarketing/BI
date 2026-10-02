@@ -67,6 +67,7 @@ import pandas as pd
 # execs it), so etl/ is on the path.
 import baskets
 import pricing
+import tl   # timed launches: the release model, the panel and the pages (docs/TL_SPEC.md)
 # The per-product sell-through rule (docs §6.3): the entries in hand allocated
 # across the products the way the allocator would place them. The same rule
 # lives in shared/sellThrough.mjs for the server and the web app, and
@@ -3308,7 +3309,7 @@ LEGACY_KEYS = ("edition_size", "edition_total", "unit_price", "artist_profit", "
                "artist_profit_share", "framing_available", "frame_conversion", "frame_profit_per_unit",
                "aa_budget_share")
 # a product's figures, typed on the Target setting tab over what Airtable holds
-PRODUCT_KEYS = ("edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
+PRODUCT_KEYS = ("units_target", "edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
                 "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "framing_available",
                 "frame_conversion", "frame_profit_per_unit")
 
@@ -3393,6 +3394,10 @@ def _merge_products(airtable: list[dict], typed: list) -> list[dict]:
             out.append(target)
             if keys.get("name"):
                 by_name[_norm(keys["name"])] = target
+        # the tick (docs 1.6): unticked on the tab, the work stays on the grid
+        # with its typed figures and counts nothing
+        if t.get("excluded") is True:
+            target["excluded"] = True
         target["typed"].update(keys)
     return out
 
@@ -3423,7 +3428,7 @@ def _effective_product(p: dict, b: dict) -> dict:
         return default
 
     e: dict = {"airtable_id": p.get("airtable_id"), "name": typed.get("name") or p.get("name") or "Product",
-               "project_code": p.get("project_code"),
+               "project_code": p.get("project_code"), "excluded": bool(p.get("excluded")),
                # the day this work's draw closes (Airtable): one launch's works can
                # close on different days, and the page runs to the last (§1.6)
                "launch_date": str(p.get("launch_date"))[:10] if p.get("launch_date") else None}
@@ -3432,6 +3437,10 @@ def _effective_product(p: dict, b: dict) -> dict:
     share = _num(pick("target_sellthrough", default=1.0, kind="default"))
     e["target_sellthrough"] = min(max(share, 0.0), 1.0) if share is not None else 1.0
     e["target_units"] = int(round(e["edition"] * e["target_sellthrough"])) if e["edition"] else 0
+    # Airtable's units target for the work, typed over on a timed launch's tab
+    # (docs/TL_SPEC.md §7; shared/economics.mjs effectiveProduct)
+    ut = _num(pick("units_target"))
+    e["units_target"] = ut if ut and ut > 0 else None
     price = _num(pick("unit_price"))
     e["unit_price"] = price if price and price > 0 else None
     e["currency"] = str(pick("currency", default=pricing.PAGE_CURRENCY) or pricing.PAGE_CURRENCY).upper()
@@ -3495,7 +3504,8 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
 
     - products: Airtable's records for the launch (etl/pricing.py
       release_products) with the figures typed on the Target setting tab laid
-      over them; the targets, launch value, profits per unit, framing and the
+      over them, less the works unticked there (kept as excluded_products);
+      the targets, launch value, profits per unit, framing and the
       paid-budget split follow from them, weighted by each product's target
       units. A release still carrying release-level figures (legacy_economics,
       or the top-level keys of inputs saved before the model went per
@@ -3515,8 +3525,12 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         legacy = {k: r[k] for k in LEGACY_KEYS if k in r}
     at = pricing.release_products(r)
     typed = r.get("products") if isinstance(r.get("products"), list) else []
-    products = [_effective_product(p, b) for p in _merge_products(at["products"], typed)]
+    merged = [_effective_product(p, b) for p in _merge_products(at["products"], typed)]
+    # a work unticked on the tab (docs 1.6) stays on the grid and counts
+    # nothing here: not in the edition, the targets, the closes or the page
+    products = [p for p in merged if not p.get("excluded")]
     r["economics_products"] = products
+    r["excluded_products"] = [p for p in merged if p.get("excluded")]
     r["airtable_match"] = {"how": at["match"], "note": at["note"]}
 
     sized = [p for p in products if p["edition"]]
@@ -3658,7 +3672,9 @@ def resolve_inputs(discovered: list[dict], spend: pd.DataFrame | None, notion: d
         rr = resolve_release(dict(r, clock_dates=clocks.get(r["release_name"])), spend, notion)
         src = rr.get("input_sources") or {}
         n = len([p for p in rr.get("economics_products") or [] if p.get("edition")])
-        print(f"{rr['id']}: inputs - economics from {src.get('economics') or 'nothing'} ({n} sized products, "
+        off = len(rr.get("excluded_products") or [])
+        print(f"{rr['id']}: inputs - economics from {src.get('economics') or 'nothing'} ({n} sized products"
+              f"{f', {off} unticked' if off else ''}, "
               f"target {rr.get('edition_size')} of {rr.get('edition_total')}), dates "
               f"{src.get('private_room_open')}/{src.get('announce_date')}/{src.get('launch_end')}, "
               f"lead {src.get('marketing_lead') or '-'}, campaigns {len(rr.get('campaign_names') or [])} ({src.get('campaigns') or '-'})")
@@ -5623,6 +5639,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # "release" while typed release-level figures still stand
             "mode": release.get("economics_mode"),
             "products": release.get("economics_products") or [],
+            # the works unticked on the tab: on the grid, out of every figure
+            "excludedProducts": [{"airtable_id": p.get("airtable_id"), "name": p.get("name"), "edition": p.get("edition")}
+                                 for p in release.get("excluded_products") or []],
             "deal": release.get("deal") or [],
             "launchCurrencies": release.get("launch_currencies") or [],
             "airtableMatch": release.get("airtable_match"),
@@ -6125,7 +6144,7 @@ def sort_index(index: list[dict]) -> list[dict]:
     return live + upcoming + closed + catalogue
 
 
-def patch_index(snap: dict, as_of: date | None, status: str | None = None) -> None:
+def patch_index(snap: dict, as_of: date | None, status: str | None = None, row: dict | None = None) -> None:
     """Replace one release's row in the index written by the last full build.
 
     A save cannot add or remove releases, so every other row still stands; only
@@ -6138,7 +6157,7 @@ def patch_index(snap: dict, as_of: date | None, status: str | None = None) -> No
         return
     doc = json.loads(path.read_text())
     status = status or ("closed" if snap["complete"] else "live")
-    row = index_row(snap, status)
+    row = row or index_row(snap, status)
     rows = [r for r in doc.get("releases", []) if r.get("id") != snap["id"]]
     rows.append(row)
     doc["releases"] = sort_index(rows)
@@ -6191,7 +6210,8 @@ def build_upcoming_pages() -> int:
             doc = json.loads(path.read_text())
             ids = {rec["id"] for rec in upcoming}
             rows = doc.get("releases", [])
-            kept = [r for r in rows if r.get("status") != "upcoming" or r.get("id") in ids]
+            # a timed launch's upcoming row stays: its page is the TL build's (etl/tl.py), not this list's
+            kept = [r for r in rows if r.get("status") != "upcoming" or r.get("id") in ids or r.get("type") == "TL"]
             if len(kept) != len(rows):
                 doc["releases"] = kept
                 path.write_text(json.dumps(doc, indent=1))
@@ -6394,6 +6414,30 @@ def main(only: str | None = None):
                                              for k, v in norms.items() if isinstance(v, dict) and v.get("median") is not None))
     mark("benchmarks")
 
+    if only and tl.is_tl_id(only, {"inputs": INPUTS["releases"]}):
+        # a timed launch's page: the TL model builds it and patches its row
+        res = tl.build_all({"as_of": as_of, "now": datetime.now(timezone.utc), "seen": seen, "launch_frame": launch_frame,
+                            "inputs": INPUTS["releases"], "spend": spend, "emails": emails, "only": only,
+                            "configured_ids": {r["id"] for r in INPUTS["releases"]}})
+        if res["failures"]:
+            raise SystemExit(f"build: {only} failed - {res['failures'][0][1]}")
+        if not res["rows"]:
+            raise SystemExit(f"build: no timed launch with id {only!r}")
+        snap = res["snaps"][only]
+        patch_index(snap, as_of, row=res["rows"][0])
+        # the inputs document's blocks for this release, so the tab reads what the page was built on
+        try:
+            doc = json.loads((APP / "inputs.json").read_text())
+            doc.setdefault("discovered", {})[only] = res["discovered"][only]
+            doc.setdefault("sourced", {})[only] = res["sourced"][only]
+            (APP / "inputs.json").write_text(json.dumps(doc, indent=1))
+        except (OSError, ValueError) as e:
+            print(f"inputs.json: not updated for {only} ({e})")
+        mark("release")
+        print(f"{snap['id']}: {snap['tlState']} - {snap['tlLabel']}; signups {snap['hero']['now']:.0f} target {snap['hero']['target']}")
+        print("timing: " + " | ".join(f"{label} {secs:.1f}s" for label, secs in marks) + f" | total {time.perf_counter() - t_start:.1f}s")
+        print(f"wrote 1 release ({only}) -> {APP}")
+        return
     if only:
         cfg = next((r for r in INPUTS["releases"] if r["id"] == only), None)
         if cfg is None:
@@ -6507,6 +6551,19 @@ def main(only: str | None = None):
             n_full += 1
         else:
             keep_previous(cfg["id"])
+    # the timed launches (docs/TL_SPEC.md): their pages, their sidebar rows and
+    # the TL panel, from the TL feeds' aggregation and Airtable's timed launches
+    tl_out = {"rows": [], "discovered": {}, "sourced": {}, "written": set(), "failures": [], "note": "tl: not built"}
+    try:
+        tl_out = tl.build_all({"as_of": as_of, "now": datetime.now(timezone.utc), "seen": seen, "launch_frame": launch_frame,
+                               "inputs": INPUTS["releases"], "spend": spend, "emails": emails,
+                               "configured_ids": {r["id"] for r in INPUTS["releases"]}})
+    except Exception as e:  # noqa: BLE001 - the TL pages never stop the LE build
+        tl_out["note"] = f"tl: the timed launches could not be built ({type(e).__name__}: {e})"
+    index.extend(tl_out["rows"])
+    written |= set(tl_out["written"])
+    failures.extend(tl_out["failures"])
+    print(tl_out["note"])
     # a release that has left the data (or been promoted) must not linger
     for stale in DERIVED.glob("*.json"):
         if stale.name not in written:
@@ -6539,6 +6596,8 @@ def main(only: str | None = None):
             # an upcoming launch's Airtable products, so the Set up targets tab
             # starts from them before the funnel has a row (§1.7)
             **{r["id"]: sourced_inputs(r, spend, notion) for r in upcoming},
+            # the timed launches: Airtable's products and the feed's dates (etl/tl.py sourced_for)
+            **tl_out["sourced"],
         },
         "discovered": {
             r["id"]: {
@@ -6557,7 +6616,7 @@ def main(only: str | None = None):
                                      "launch_type", "project_status") if k in r},
             }
             for r in discovered + upcoming if r["release_name"] not in {c["release_name"] for c in INPUTS["releases"]}
-        },
+        } | {rid: rec for rid, rec in tl_out["discovered"].items() if rid not in {c["id"] for c in INPUTS["releases"]}},
         "meta_campaigns": camp,
     }, indent=1))
     print(funnel_coverage(at, curves))
@@ -6574,7 +6633,7 @@ def main(only: str | None = None):
     if failures:
         print(f"pages failed: {len(failures)} - " + "; ".join(f"{rid}: {err}" for rid, err in failures[:5])
               + (f"; and {len(failures) - 5} more" if len(failures) > 5 else ""))
-    print(f"wrote {n_full} targeted + {n_actuals} actuals-only + {n_upcoming} upcoming releases "
+    print(f"wrote {n_full} targeted + {n_actuals} actuals-only + {n_upcoming} upcoming releases + {len(tl_out['rows'])} timed launches "
           f"({sum(1 for e in index if e['status'] == 'live')} live) -> {APP}")
 
 

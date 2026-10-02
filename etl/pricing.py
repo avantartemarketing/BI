@@ -292,6 +292,20 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
             "announce_date": _first_day(dated.get("announce_date")),
             "private_room_date": _first_day(dated.get("private_room_date")),
             "project_status": _status_mode(g["project_status"]) if "project_status" in g.columns else "",
+            # the timed-launch fields (docs/TL_SPEC.md §2, §7): the opening
+            # time as Airtable holds it (a timestamp whose time of day is the
+            # open), the window's length in words ("48 hours", "7 days"), its
+            # end date, the units target summed over the works that carry one
+            # (400 for Bisa Butler: one work carries 400, the other none), and
+            # every announce date the records hold, since a stale one can sit
+            # beside the current one (etl/tl.py takes the latest before the open)
+            "launch_time": _mode(g["launch_time"]) if "launch_time" in g.columns else "",
+            "tl_length": _mode(g["tl_length"]) if "tl_length" in g.columns else "",
+            "tl_end_date": _first_day(g.get("tl_end_date")),
+            "units_target": (float(pd.to_numeric(dated["units_target"], errors="coerce").sum(min_count=1))
+                             if "units_target" in g.columns else float("nan")),
+            "announce_dates": (sorted({d.strftime("%Y-%m-%d") for d in pd.to_datetime(dated["announce_date"], errors="coerce").dropna()})
+                               if "announce_date" in g.columns else []),
         })
     out = pd.DataFrame(rows)
     rate = out["currency"].map(RATES_TO_EUR)
@@ -645,7 +659,8 @@ def _release_row(release: dict) -> pd.DataFrame:
     }])
 
 
-def release_products(release: dict, pricing_path: pathlib.Path | str | None = None) -> dict:
+def release_products(release: dict, pricing_path: pathlib.Path | str | None = None,
+                     launch_frame: pd.DataFrame | None = None) -> dict:
     """The Airtable products of one release: the sized, non-bundle records of
     the launch `match` picks for it, by the same rules as the panel's pricing,
     each as a product dict the target model reads, with the launch-level
@@ -658,6 +673,10 @@ def release_products(release: dict, pricing_path: pathlib.Path | str | None = No
     numbers are None where Airtable has none, never zero; the currency is the
     pull's (EUR) and a price is not converted here."""
     records, lf = records_and_launches(pricing_path)
+    # a TL page matches among Airtable's timed launches alone (etl/tl.py), so
+    # an artist's draw in the same quarter cannot take its place
+    if launch_frame is not None:
+        lf = launch_frame
     out = {"match": "none", "note": "no Airtable pull on file" if records.empty else "", "products": [],
            "launch_date": None, "announce_date": None, "private_room_date": None, "marketing_lead": None}
     if records.empty or not release.get("release_name"):

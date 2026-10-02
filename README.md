@@ -228,6 +228,10 @@ handful of complete campaigns rather than the hundreds we have run.
   both queries filter on the partition column - and the memory, see below.
 - `BIGQUERY=off` forces the sheet path back on. `BQ_ALLOW_SHRINK=1` disables the guard
   that refuses to replace a long history with a much shorter one.
+- The timed launches' pair (`sources/tl_events.csv`, `sources/tl_browsing.csv`, from
+  `TL_Funnel_Report_v2`; "Timed launches" below) runs from `BQ_TL_SINCE` (default
+  `2019-01-01`, every completed launch, since the TL panel is what the history is for);
+  `BQ_TL=off` skips it, `node server/bigquery.js --write --tl` pulls it alone.
 
 The funnel table is required; **spend is optional**. A service account granted the funnel
 dataset but not `meta_ads_insights_export` still refreshes the funnel, and spend falls
@@ -252,6 +256,19 @@ catalogue, say) rewrites the clock columns years back; the weekly full pull is w
 it up, or force one. An incremental pull that comes back thin (fewer than half the rows
 the local file has for the overlap) is refused rather than written, since writing it
 would delete the last 45 days.
+
+**Renames.** The one change the overlap cannot carry is a release renamed or removed
+upstream. The platform renames every row at once, the incremental pull re-pulls only the
+last 45 days, and the rows older than that keep the old name locally, so the funnel seems to
+carry both names and the build lists the release twice, under each (Roy Lichtenstein
+Estate's quarter was corrected from 2027 Q4 to 2026 Q4 and sat in the sidebar as two rows
+on 30 September 2026). Every incremental pull now compares the release names in the rows it
+keeps with the overlap's: a name that stood in the overlap and still stands before it, but
+that the re-pull no longer carries, turns the pull into a full one at once. Once a day
+(`BQ_NAMES_CHECK_HOURS`, default 24) the kept rows' names are also checked against upstream's
+in the rows before the overlap, for a release renamed with no row in the overlap; that query
+scans one column, 0.6 GB on the event table, hence daily. The note says which name went. The
+same check runs on the browsing feed, which the rebuilt export the build reads is made from.
 
 Check the connection without writing anything: `node server/bigquery.js` prints the plan
 (full or incremental, and why), row counts and GB scanned; add `--write` to replace the
@@ -564,8 +581,72 @@ The target header - the secured-units target, its uplift over the basket, and si
 derived figures each with its benchmark and stretch - recomputes live in the browser via
 `shared/benchmarkModel.mjs` (the per-unit economics via `shared/economics.mjs`). The
 products sit on an Airtable-like grid, locked to Airtable's figures until **Edit figures** is
-switched on;
+switched on, each with a tick on its row (unticked, a work stays on the grid and counts nothing);
+where the stretch comes from is set with coupled sliders, one per channel group, so the shares
+always add to 100%;
 **Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue, a first save included: the server removes the upcoming or actuals-only page the built one replaces) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
+
+## Timed launches
+
+A timed launch (TL) sells for a fixed window - 24 or 48 hours, 7 days - after a
+pre-window of signups, so its page has two states rather than one plan
+(`docs/TL_SPEC.md`, agreed 1 October 2026): **signups** from the announce to the
+open, watching signups against a signup target worked back from Airtable's units
+target, and **window** from the sales open to the close, watching units sold against
+that target by the hour; then **settling** for seven days and **closed**. The sidebar
+row carries a `TL` badge and the state in words ("signups · opens in 11 d", "window
+open · 31 h left"); the states' boundaries are worked back from Airtable's launch date
+and window length (the open at Airtable's `launch_time`, else the feed's timestamp,
+which runs an hour late in summer time and is corrected, else 14:00 Amsterdam time),
+and every date can be typed over on the tab.
+
+The pipeline is the LE one again with its own files: `server/bigquery.js` pulls the
+two TL feeds under the same personal-data rule (every column named, never the address,
+every cell scanned; the Shopify order id stays behind as it does for the LE feed),
+`etl/aggregate_tl.py` turns them into counts per release, day, hour and channel
+(`data/app/tl_daily.csv`, `tl_hourly.csv`, `tl_releases.csv`, rebuilt every refresh and
+not committed), and `etl/tl.py`, called from `build.py`, matches the feed's releases to
+Airtable's timed launches, works the dates and states out, cuts the **TL panel** of
+completed launches (`data/app/tl_panel.csv`, 74 launches on 1 October 2026, with the
+signup and sales pace curves in `tl_curves.json`), resolves the basket, sets the targets
+and writes a page per launch (`data/app/derived/<id>_tl.json`, the `_tl` suffix since an
+artist can have an LE and a TL of one name in a quarter). A TL page runs on Airtable's
+units target and the suggested basket before anyone saves. **Target setting** is the LE
+tab's own components in TL words (`web/src/TLTargets.jsx`): the release and its dates (the
+announce, the open in Amsterdam time, the window length, each with the other readings
+beside it and one click to take one), the basket picked on the LE map over the TL panel
+(`GET /api/tl/baskets/candidates`, the launches of the same window length first), the
+channels in plan and the stretch sliders, the basket's channel table in signups and
+sessions, the Airtable-style products grid with a units target per work in place of the
+sell-through, and the assumptions (the signup → order rate, pieces per order, the paid
+prices, cannibalisation). The header recomputes live from `shared/tlModel.mjs`, and
+`POST /api/inputs/:id` accepts the TL fields. The TL basket rule is the LE rule's, shared
+with the picker and read at the same clock (a closed launch at its own close);
+`tests/test_tl_basket_parity.py` holds `etl/tl.py` and `shared/basketRule.mjs` to the same
+members in the same order, as `tests/test_basket_parity.py` does for the LE baskets.
+
+What the feed showed, and the model allows for: the sales start about a day before the
+public open (the platform's early access, private-room orders), so the window state
+begins with the first sales burst and the pace curve is measured from it; signups on
+some launches carry no channel at all, so the paid cost per signup prices the untracked
+ones in at the tracked paid share; a paid signup converts to an order at a fraction of
+an email one, so the signup target's rate is the basket's rates by channel at its mix.
+The window state reads the orders table: `server/bigquery.js` pulls, with the TL feeds,
+every launch's order lines from three days before its launch date to sixteen after, by
+hour, channel (the TL feed's purchase event, matched on the order id inside BigQuery) and
+status (`data/tl_units_hourly.csv`), and the buyers of several pieces per launch
+(`data/tl_buyers.csv`), aggregates only. Units in the window are the paid lines plus the
+orders awaiting payment (drafts and pending), by pieces, from the sales open; the page
+carries the hourly curve against the basket's pace, units by channel and by work against
+each work's target, awaiting payment with its value, framing conversion against the basket
+and Airtable's take-up, the multiples, cancelled and refunded apart, and the feed's
+purchase events as the cross-check (it falls back to them where the orders table has no
+lines for a launch yet). The refresh runs every `REFRESH_WINDOW_MINUTES` (default 30)
+while a window is open or opens within the hour, hourly otherwise (`tests/refresh_interval.mjs`).
+A completed launch can be replayed as it stood at any moment with
+`python3 etl/tl.py --now=2026-06-30T20:00:00Z --write`, which is how the window state was
+rehearsed on Gregory Crewdson's launch before Bisa Butler's opens. Slack posts for TLs and
+a signup-led attribution of window sales are not built (spec §10).
 
 ## Auditing the allocator tool with an admin export
 

@@ -26,3 +26,8 @@ data/app/funnel.cache.json
 data/app/untracked_norms.json
 .venv
 data/draw_claims.csv
+# the TL feeds' aggregation (etl/aggregate_tl.py): rebuilt on every refresh, 25 MB; the panel and its curves are kept
+data/app/tl_daily.csv
+data/app/tl_hourly.csv
+data/app/tl_releases.csv
+data/app/tl_feed.json

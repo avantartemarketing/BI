@@ -14,6 +14,12 @@
  *                         data/units_paid.csv (the units a page counts, per
  *                         product, CET day and the channel of each order's
  *                         purchase event)
+ * And the timed launches' pair, from TL_Funnel_Report_v2 under the same rules
+ * (the TL feeds section, docs/TL_SPEC.md §3):
+ *   TL_Funnel_Report_v2 -> sources/tl_events.csv, sources/tl_browsing.csv
+ *   Order_Line_Concept  -> data/tl_units_hourly.csv, data/tl_buyers.csv (a
+ *                          window's lines by hour, channel and status; the
+ *                          buyers of several pieces)
  *
  * Why bother: the sheet tabs are query exports capped at 50,000 rows, cut mid
  * date. That cap does not error - it silently shortens the history window as
@@ -30,7 +36,13 @@
  * days older than the overlap changed since last time, so the assumption that
  * deep history is static is measured, not trusted. Upstream backfills (e.g.
  * announcement dates for the back catalogue) rewrite the clock columns years
- * back; the weekly full pull is what picks those up.
+ * back; the weekly full pull is what picks those up. A release renamed or
+ * removed upstream is the one change the overlap cannot carry: the platform
+ * renames every row at once, the rows older than the overlap keep the old
+ * name locally, and the build lists the release twice (the Lichtenstein
+ * quarter, 30 September 2026). So every incremental pull compares the release
+ * names in the rows it keeps with the overlap's, and once a day with
+ * upstream's, and pulls in full when a name has gone (renamedOutsideOverlap).
  *
  * Memory: results are STREAMED to disk a page at a time. A pull back to 2023
  * held in memory as the API's row objects is ~900 MB, and the Render instance
@@ -43,6 +55,10 @@
  *   BQ_PROJECT                     billing/query project   default avantarte-data-production
  *   BQ_DATASET                     default AA_company_tables
  *   BQ_SINCE                       history window start    default 2025-01-01
+ *   BQ_TL_SINCE                    the timed-launch feeds' start, default 2019-01-01
+ *                                  (every completed launch: the TL panel needs them)
+ *   BQ_NAMES_CHECK_HOURS           hours between checks of the kept rows'
+ *                                  release names against upstream, default 24
  * The service account needs BigQuery Data Viewer on the dataset and BigQuery
  * Job User on the project. Spend is optional - if the account cannot see
  * meta_ads_insights_export the funnel still refreshes (BQ_SPEND=off skips it
@@ -86,14 +102,22 @@ const FUNNEL_TABLE = process.env.BQ_FUNNEL_TABLE || "le_funnel_report_split_touc
 const SPEND_TABLE = process.env.BQ_SPEND_TABLE || "meta_ads_insights_export";
 // point this at the data team's email-free view when it exists: same columns, same guards
 const EVENTS_TABLE = process.env.BQ_EVENTS_TABLE || "LE_Funnel_Report";
+// the timed launches' event table: the same shape, the same address column, the same rules
+const TL_TABLE = process.env.BQ_TL_TABLE || "TL_Funnel_Report_v2";
 const ORDERS_TABLE = process.env.BQ_ORDERS_TABLE || "Order_Line_Concept";
 // links a draw entrant's account to their Shopify customer id (two id columns, nothing else is selected)
 const COLLECTORS_TABLE = process.env.BQ_COLLECTORS_TABLE || "Collector_Concept";
 const EVENTS_SINCE = process.env.BQ_EVENTS_SINCE || "2019-01-01";   // all time: a returning collector's history is the point
 const SINCE = process.env.BQ_SINCE || "2025-01-01";
+// the TL feeds run from here: all time, so the panel holds every completed launch
+const TL_SINCE = process.env.BQ_TL_SINCE || "2019-01-01";
 const LOCATION = process.env.BQ_LOCATION || undefined; // e.g. "EU"; omit to let BQ infer
 const OVERLAP_DAYS = Math.max(1, Number(process.env.BQ_OVERLAP_DAYS) || 45);
 const FULL_EVERY_DAYS = Math.max(1, Number(process.env.BQ_FULL_EVERY_DAYS) || 7);
+// how often an incremental pull checks the release names of the rows it keeps
+// against upstream (renamedOutsideOverlap): the check scans one column of the
+// event table, 0.6 GB, so daily rather than hourly
+const NAMES_CHECK_HOURS = Math.max(1, Number(process.env.BQ_NAMES_CHECK_HOURS) || 24);
 // One page is the only thing held in memory. 5k rows of the 33-column funnel
 // table is ~6 MB of API JSON; with the heap capped at 192 MB in package.json's
 // start script (V8 otherwise lets garbage pile up to whatever the box allows)
@@ -113,11 +137,13 @@ function configured() {
   if (!sa) return null;
   if (!PROJECT_RE.test(PROJECT)) throw new Error(`BQ_PROJECT "${PROJECT}" is not a valid project id`);
   for (const [name, v] of [["BQ_DATASET", DATASET], ["BQ_FUNNEL_TABLE", FUNNEL_TABLE], ["BQ_SPEND_TABLE", SPEND_TABLE],
-                           ["BQ_EVENTS_TABLE", EVENTS_TABLE], ["BQ_ORDERS_TABLE", ORDERS_TABLE], ["BQ_COLLECTORS_TABLE", COLLECTORS_TABLE]]) {
+                           ["BQ_EVENTS_TABLE", EVENTS_TABLE], ["BQ_ORDERS_TABLE", ORDERS_TABLE], ["BQ_COLLECTORS_TABLE", COLLECTORS_TABLE],
+                           ["BQ_TL_TABLE", TL_TABLE]]) {
     if (!IDENT.test(v)) throw new Error(`${name} "${v}" must be letters, digits and underscores`);
   }
   if (!DATE_RE.test(SINCE)) throw new Error(`BQ_SINCE "${SINCE}" must be YYYY-MM-DD`);
   if (!DATE_RE.test(EVENTS_SINCE)) throw new Error(`BQ_EVENTS_SINCE "${EVENTS_SINCE}" must be YYYY-MM-DD`);
+  if (!DATE_RE.test(TL_SINCE)) throw new Error(`BQ_TL_SINCE "${TL_SINCE}" must be YYYY-MM-DD`);
   return sa;
 }
 
@@ -372,6 +398,12 @@ async function query(token, sql, params = {}, { pageRows = PAGE_ROWS, onHeader, 
 const funnelSql = () =>
   `SELECT * FROM \`${PROJECT}.${DATASET}.${FUNNEL_TABLE}\`\n` +
   "WHERE event_date >= @since\nORDER BY event_date";
+// the release names upstream in the rows older than the overlap (event_date
+// before @before): what the rows an incremental pull keeps must still agree
+// with (renamedOutsideOverlap)
+const funnelNamesSql = () =>
+  `SELECT DISTINCT simple_release_name FROM \`${PROJECT}.${DATASET}.${FUNNEL_TABLE}\`\n` +
+  "WHERE event_date >= @since AND event_date < @before AND simple_release_name IS NOT NULL";
 const spendSql = () =>
   `SELECT * FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
   "WHERE spend_date >= @since\nORDER BY campaign_name, spend_date";
@@ -433,6 +465,9 @@ const orderLinesCtes = () =>
   "lines AS (\n" +
   "  SELECT simple_release_name AS release, release_name, product_title, shopify_product_id, sku, quantity, customer_id, order_lineitem_id,\n" +
   "    order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_order_id AS order_id,\n" +
+  // when the line was made and the launch it belongs to, for the hour-by-hour
+  // reading of a timed launch's window (tlUnitsSql)
+  "    shopify_order_created_at AS created_at, shopify_draft_order_created_at AS draft_created_at, launch_date, launch_type,\n" +
   // the work a SKU names: its first two segments (WARHO-BRIW1 for the
   // White Portrait print WARHO-BRIW1-PE-DRAW and its frame
   // WARHO-BRIW1-FR-REDRAMINW alike), null for a SKU of another shape
@@ -728,6 +763,76 @@ const drawClaimsSql = () =>
   "WHERE p.won AND b.customer_id IS NULL\n" +
   "GROUP BY 1, 2, 3\nORDER BY 1, 2";
 
+/* A timed launch's window, hour by hour, from the orders table (docs/TL_SPEC.md
+ * §5): per release x product x hour (UTC, the line's creation) x channel x
+ * status, the units (pieces), the orders those lines sit on, the private-room
+ * units, the prints a frame was on offer for and the frames bought with them,
+ * and the lines' value. The status is the orders feed's own reading of a line
+ * (orderLinesCtes `typed`): paid, awaiting (a draft an advisor raised, or an
+ * order still pending), refunded, cancelled, else other. Each order takes the
+ * channel of its purchase event in the TL feed (TL_Funnel_Report_v2), matched
+ * on the Shopify order id inside BigQuery; an order the feed never saw is
+ * Untracked. Only the lines near a launch are taken: from three days before
+ * its launch_date (the early access opens a day before, and the feed's
+ * timestamp can sit a day off) to sixteen after (a 7-day window and its
+ * settling week), for every release, since the orders table does not type
+ * launches; the TL pages read their own. Aggregates only: no order id,
+ * customer or address leaves BigQuery. Pulled in full with the TL feeds and
+ * written to data/ beside units_paid.csv. */
+const TL_UNITS_HEADER = ["release", "product_title", "hour", "channel", "status", "units", "orders", "units_private",
+  "prints_offered", "frames", "value"];
+const TL_BAND_DAYS_BEFORE = 3, TL_BAND_DAYS_AFTER = 16;
+const tlUnitsSql = () => {
+  const sql = "WITH " + orderLinesCtes() + ",\n" +
+    "purchase_channel AS (\n" +
+    "  SELECT shopify_order_id AS order_id,\n" +
+    "    ARRAY_AGG(NULLIF(AA_session_custom_channel_group_split_touch, '') IGNORE NULLS ORDER BY event_timestamp LIMIT 1)[SAFE_OFFSET(0)] AS channel\n" +
+    `  FROM \`${PROJECT}.${DATASET}.${TL_TABLE}\`\n` +
+    "  WHERE event_name = 'purchase' AND shopify_order_id IS NOT NULL\n" +
+    "  GROUP BY shopify_order_id),\n" +
+    "band AS (\n" +
+    "  SELECT l.*, COALESCE(l.created_at, l.draft_created_at) AS made_at FROM typed l\n" +
+    "  WHERE l.launch_date IS NOT NULL AND COALESCE(l.created_at, l.draft_created_at) IS NOT NULL\n" +
+    `    AND COALESCE(l.created_at, l.draft_created_at) >= TIMESTAMP_SUB(l.launch_date, INTERVAL ${TL_BAND_DAYS_BEFORE} DAY)\n` +
+    `    AND COALESCE(l.created_at, l.draft_created_at) < TIMESTAMP_ADD(l.launch_date, INTERVAL ${TL_BAND_DAYS_AFTER} DAY))\n` +
+    "SELECT l.release, l.product_title,\n" +
+    "  FORMAT_TIMESTAMP('%Y-%m-%dT%H:00:00Z', l.made_at) AS hour,\n" +
+    "  COALESCE(pc.channel, 'Untracked') AS channel,\n" +
+    "  CASE WHEN l.paid THEN 'paid' WHEN l.awaiting THEN 'awaiting' WHEN l.refunded THEN 'refunded'\n" +
+    "       WHEN l.cancelled_order = 1 THEN 'cancelled' ELSE 'other' END AS status,\n" +
+    "  SUM(l.quantity) AS units,\n" +
+    "  COUNT(DISTINCT l.order_id) AS orders,\n" +
+    "  SUM(IF(l.is_private_room = 1, l.quantity, 0)) AS units_private,\n" +
+    "  SUM(IF(l.offered, l.quantity, 0)) AS prints_offered,\n" +
+    "  ROUND(SUM(l.frames_line), 2) AS frames,\n" +
+    "  ROUND(SUM(l.quantity * COALESCE(CAST(l.shopify_product_variant_price AS FLOAT64), 0)), 2) AS value\n" +
+    "FROM band l LEFT JOIN purchase_channel pc ON pc.order_id = l.order_id\n" +
+    "GROUP BY l.release, l.product_title, hour, channel, status\n" +
+    "ORDER BY l.release, hour, l.product_title, channel, status";
+  for (const f of FORBIDDEN_COLUMNS) {
+    if (sql.toLowerCase().includes(f)) throw new Error(`TL units query must not mention ${f}`);
+  }
+  return sql;
+};
+
+/* The buyers of a timed launch (docs/TL_SPEC.md §5, the Multiples card): per
+ * release, the collectors with a paid order in the same band, how many took
+ * more than one piece, and the pieces between them. Counted on the customer
+ * id inside BigQuery; only the counts travel. */
+const TL_BUYERS_HEADER = ["release", "buyers", "buyers_multiple", "pieces"];
+const tlBuyersSql = () =>
+  "WITH " + orderLinesCtes() + ",\n" +
+  "per_buyer AS (\n" +
+  "  SELECT l.release, l.customer_id, SUM(l.quantity) AS pieces FROM typed l\n" +
+  "  WHERE l.paid AND l.customer_id IS NOT NULL AND l.launch_date IS NOT NULL AND l.created_at IS NOT NULL\n" +
+  `    AND l.created_at >= TIMESTAMP_SUB(l.launch_date, INTERVAL ${TL_BAND_DAYS_BEFORE} DAY)\n` +
+  `    AND l.created_at < TIMESTAMP_ADD(l.launch_date, INTERVAL ${TL_BAND_DAYS_AFTER} DAY)\n` +
+  "  GROUP BY 1, 2)\n" +
+  "SELECT release, COUNT(*) AS buyers, COUNTIF(pieces > 1) AS buyers_multiple, SUM(pieces) AS pieces\n" +
+  "FROM per_buyer GROUP BY release ORDER BY release";
+const TL_UNITS = path.join(ROOT, "data", "tl_units_hourly.csv");
+const TL_BUYERS = path.join(ROOT, "data", "tl_buyers.csv");
+
 /* A writer that keeps the columns as they come, once they are the expected
  * ones: these files are read by name in etl/build.py, so a column added or
  * renamed upstream is a failed pull, not a silently different file. */
@@ -818,38 +923,42 @@ const csvCell = (v) => {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-/* Row converter for the events feed. The header must be the declared list;
+/* Row converter for an event-level feed. The header must be the declared list;
  * each cell is checked for an address-shaped value; timestamps (epoch seconds
- * from the API) become ISO. Throws rather than writes on anything unexpected. */
-function eventsWriter(headerRow) {
-  const header = headerRow.map((h) => String(h ?? "").trim());
-  if (header.length !== EVENT_HEADER.length || header.some((h, i) => h !== EVENT_HEADER[i])) {
-    throw new Error("events feed returned columns that differ from the declared list " +
-      `(${header.length} vs ${EVENT_HEADER.length}) - not writing`);
-  }
-  const di = header.indexOf("event_date");
-  const isTs = header.map((h) => EVENT_TIMESTAMP_COLUMNS.has(h));
-  const w = {
-    header: header.map(csvCell).join(","),
-    dateIndex: di,
-    dropped: 0,
-    row(cells) {
-      if (!cells || !cells.length) return null;
-      const out = new Array(header.length);
-      for (let i = 0; i < header.length; i++) {
-        const v = cells[i] === null || cells[i] === undefined ? "" : String(cells[i]);
-        if (v.length > 5 && ADDRESS_RE.test(v)) {
-          // the message names the column and the day, never the value
-          throw new Error(`events pull aborted: column ${header[i]} carries an address-shaped value ` +
-            `(row dated ${cells[di]}) - nothing written, previous file kept`);
+ * from the API) become ISO. Throws rather than writes on anything unexpected.
+ * The LE events feed and the TL events feed are the two instances. */
+function eventsWriterFor(expect, label) {
+  return (headerRow) => {
+    const header = headerRow.map((h) => String(h ?? "").trim());
+    if (header.length !== expect.length || header.some((h, i) => h !== expect[i])) {
+      throw new Error(`${label} feed returned columns that differ from the declared list ` +
+        `(${header.length} vs ${expect.length}) - not writing`);
+    }
+    const di = header.indexOf("event_date");
+    const isTs = header.map((h) => EVENT_TIMESTAMP_COLUMNS.has(h));
+    const w = {
+      header: header.map(csvCell).join(","),
+      dateIndex: di,
+      dropped: 0,
+      row(cells) {
+        if (!cells || !cells.length) return null;
+        const out = new Array(header.length);
+        for (let i = 0; i < header.length; i++) {
+          const v = cells[i] === null || cells[i] === undefined ? "" : String(cells[i]);
+          if (v.length > 5 && ADDRESS_RE.test(v)) {
+            // the message names the column and the day, never the value
+            throw new Error(`${label} pull aborted: column ${header[i]} carries an address-shaped value ` +
+              `(row dated ${cells[di]}) - nothing written, previous file kept`);
+          }
+          out[i] = isTs[i] ? csvCell(toIso(v)) : csvCell(v);
         }
-        out[i] = isTs[i] ? csvCell(toIso(v)) : csvCell(v);
-      }
-      return out.join(",");
-    },
+        return out.join(",");
+      },
+    };
+    return w;
   };
-  return w;
 }
+const eventsWriter = eventsWriterFor(EVENT_HEADER, "events");
 
 // ---------------------------------------------------------------- browsing feed (counts only)
 
@@ -880,46 +989,167 @@ function browsingSql() {
   return sql;
 }
 
+/* The release names in the browsing rows older than the overlap, for the
+ * rename check an incremental pull runs (renamedOutsideOverlap). */
+function browsingNamesSql() {
+  return `SELECT DISTINCT simple_release_name FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+    "WHERE event_name IN ('page_view', 'session_start') AND event_date >= @since AND event_date < @before\n" +
+    "  AND simple_release_name IS NOT NULL";
+}
+
 const fmtDMY = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso); return m ? `${m[3]}/${m[2]}/${m[1]}` : iso; };
 
 /* Same shape of guard as the events writer: declared header, address scan,
  * and the date written DD/MM/YYYY like the export so the ETL's parser and the
- * incremental merge (scanLocal) treat the two files alike. */
-function browsingWriter(headerRow) {
-  const header = headerRow.map((h) => String(h ?? "").trim());
-  if (header.length !== BROWSING_HEADER.length || header.some((h, i) => h !== BROWSING_HEADER[i])) {
-    throw new Error("browsing feed returned columns that differ from the declared list " +
-      `(${header.length} vs ${BROWSING_HEADER.length}) - not writing`);
-  }
-  const di = header.indexOf("event_date");
-  const w = {
-    header: header.map(csvCell).join(","),
-    dateIndex: di,
-    dropped: 0,
-    row(cells) {
-      if (!cells || !cells.length) return null;
-      const out = new Array(header.length);
-      for (let i = 0; i < header.length; i++) {
-        const v = cells[i] === null || cells[i] === undefined ? "" : String(cells[i]);
-        if (v.length > 5 && ADDRESS_RE.test(v)) {
-          throw new Error(`browsing pull aborted: column ${header[i]} carries an address-shaped value ` +
-            `(row dated ${cells[di]}) - nothing written, previous file kept`);
+ * incremental merge (scanLocal) treat the two files alike. The LE browsing
+ * feed and the TL browsing feed are the two instances. */
+function browsingWriterFor(expect, label) {
+  return (headerRow) => {
+    const header = headerRow.map((h) => String(h ?? "").trim());
+    if (header.length !== expect.length || header.some((h, i) => h !== expect[i])) {
+      throw new Error(`${label} feed returned columns that differ from the declared list ` +
+        `(${header.length} vs ${expect.length}) - not writing`);
+    }
+    const di = header.indexOf("event_date");
+    const w = {
+      header: header.map(csvCell).join(","),
+      dateIndex: di,
+      dropped: 0,
+      row(cells) {
+        if (!cells || !cells.length) return null;
+        const out = new Array(header.length);
+        for (let i = 0; i < header.length; i++) {
+          const v = cells[i] === null || cells[i] === undefined ? "" : String(cells[i]);
+          if (v.length > 5 && ADDRESS_RE.test(v)) {
+            throw new Error(`${label} pull aborted: column ${header[i]} carries an address-shaped value ` +
+              `(row dated ${cells[di]}) - nothing written, previous file kept`);
+          }
+          out[i] = csvCell(i === di ? fmtDMY(v) : v);
         }
-        out[i] = csvCell(i === di ? fmtDMY(v) : v);
-      }
-      return out.join(",");
-    },
+        return out.join(",");
+      },
+    };
+    return w;
   };
-  return w;
 }
+const browsingWriter = browsingWriterFor(BROWSING_HEADER, "browsing");
 
-const BROWSING_FEED = { label: "browsing", file: LE_BROWSING, meta: BROWSING_META, sql: browsingSql, makeWriter: browsingWriter };
+const BROWSING_FEED = { label: "browsing", file: LE_BROWSING, meta: BROWSING_META, sql: browsingSql, namesSql: browsingNamesSql,
+                        makeWriter: browsingWriter };
+
+// ---------------------------------------------------------------- timed-launch feeds (docs/TL_SPEC.md §3)
+
+/* TL_Funnel_Report_v2 is the timed launches' event table: the shape of
+ * LE_Funnel_Report (page views, session starts, signups and purchases, one row
+ * per event since 2019, the customer's address on signed-in rows) for the 83
+ * launches typed Timed. The two feeds here are the LE pair again, under the
+ * same personal-data rule and through the same incremental machinery:
+ *   sources/tl_events.csv    the conversion events, signup and purchase (200k
+ *                            rows all time, measured 1 October 2026), with the
+ *                            pseudonymous account id, the pieces and the flags.
+ *                            The query names every column it takes, user_email
+ *                            is never among them, every cell is scanned before
+ *                            it is written. The Shopify order id stays behind
+ *                            as the LE feed leaves it behind: a window's units
+ *                            are joined to their purchase events inside
+ *                            BigQuery (the orders feed), so no order id travels
+ *   sources/tl_browsing.csv  sessions and page views per channel x day x
+ *                            release, counted inside BigQuery as the LE browsing
+ *                            feed is, and by the hour (event_hour, UTC) from two
+ *                            days before a launch's window opens to nine days
+ *                            after it: the in-window state reads the hours, the
+ *                            rest of the history stays daily (82k hourly rows
+ *                            beside 180k daily; every hour everywhere would be
+ *                            531k rows for nothing a page shows)
+ * Both run from BQ_TL_SINCE (every completed launch: the TL panel is what the
+ * history is for), carry the rename check, and merge on event_date, which the
+ * events feed writes ISO like le_events.csv and the browsing feed DD/MM/YYYY
+ * like le_browsing.csv (scanLocal reads either). */
+const TL_EVENTS = path.join(SOURCES, "tl_events.csv");
+const TL_EVENTS_META = path.join(SOURCES, "tl_events.meta.json");
+const TL_BROWSING = path.join(SOURCES, "tl_browsing.csv");
+const TL_BROWSING_META = path.join(SOURCES, "tl_browsing.meta.json");
+const TL_EVENT_ROW_FILTER = "event_name IN ('signup', 'purchase')";
+// dropped on purpose, as for the LE feed: user_email, user_pseudo_id,
+// ga_session_id, customer_id, subscription_id, the Shopify order id and name,
+// page URLs, titles, slugs and utm strings
+const TL_EVENT_COLUMNS = [
+  "event_timestamp", "event_date", "event_name", "aa_account_id",
+  "simple_release_name", "release_name", "launch_type", "launch_date", "announcement_date",
+  "campaign_stage", "days_since_announcement", "days_until_launch",
+  "pct_days_since_announcement", "pct_days_until_launch",
+  "aa_subscription_type", "pre_post_launch_signup", "converted_signup",
+  "pre_post_launch_purchase", "order_type", "order_source_type", "pr_order", "cancelled_order",
+  "order_products", "order_pieces", "purchase_with_signup",
+  "session_default_channel_group", "AA_session_custom_channel_group", "campaign_id",
+  "session_default_channel_group_split_touch", "AA_session_custom_channel_group_split_touch",
+  "page_view_page_locale", "purchase_page_locale",
+];
+const TL_EVENT_HEADER = TL_EVENT_COLUMNS;
+for (const c of TL_EVENT_HEADER) {
+  if (!IDENT.test(c)) throw new Error(`TL events column "${c}" is not a plain identifier`);
+  if (FORBIDDEN_COLUMNS.includes(c)) throw new Error(`TL events column list must not include ${c}`);
+}
+function tlEventsSql() {
+  const cols = TL_EVENT_COLUMNS.map((c) => `\`${c}\``);
+  const sql = `SELECT ${cols.join(", ")}\nFROM \`${PROJECT}.${DATASET}.${TL_TABLE}\`\n` +
+    `WHERE ${TL_EVENT_ROW_FILTER} AND event_date >= @since\nORDER BY event_date, event_timestamp`;
+  for (const f of FORBIDDEN_COLUMNS) {
+    if (sql.toLowerCase().includes(f)) throw new Error(`TL events query must not mention ${f}`);
+  }
+  if (/select\s+\*|\.\*/i.test(sql)) throw new Error("TL events query must name every column it takes");
+  return sql;
+}
+function tlEventsNamesSql() {
+  return `SELECT DISTINCT simple_release_name FROM \`${PROJECT}.${DATASET}.${TL_TABLE}\`\n` +
+    `WHERE ${TL_EVENT_ROW_FILTER} AND event_date >= @since AND event_date < @before AND simple_release_name IS NOT NULL`;
+}
+const tlEventsWriter = eventsWriterFor(TL_EVENT_HEADER, "TL events");
+const TL_EVENTS_FEED = { label: "TL events", file: TL_EVENTS, meta: TL_EVENTS_META, sql: tlEventsSql, namesSql: tlEventsNamesSql,
+                         makeWriter: tlEventsWriter, since: TL_SINCE };
+
+// the hour is kept from this many days before the window opens (the feed's
+// launch_date, a timestamp) to this many after: the early access that opens
+// the day before the public window (measured 1 October 2026: Gregory
+// Crewdson's sales began 25 hours before the feed's launch_date), a 7-day
+// window and its settling day
+const TL_HOUR_DAYS_BEFORE = 2, TL_HOUR_DAYS_AFTER = 9;
+const TL_BROWSING_HEADER = BROWSING_KEYS.concat(["event_hour", "Sessions_Total", "Page_Views_Total"]);
+function tlBrowsingSql() {
+  const keys = BROWSING_KEYS.map((c) => `\`${c}\``).join(", ");
+  const hour = `IF(launch_date IS NOT NULL AND event_timestamp >= TIMESTAMP_SUB(launch_date, INTERVAL ${TL_HOUR_DAYS_BEFORE} DAY)\n` +
+    `       AND event_timestamp < TIMESTAMP_ADD(launch_date, INTERVAL ${TL_HOUR_DAYS_AFTER} DAY),\n` +
+    "     FORMAT_TIMESTAMP('%Y-%m-%dT%H:00:00Z', event_timestamp), NULL)";
+  const sql = `SELECT ${keys},\n  ${hour} AS event_hour,\n` +
+    `  COUNTIF(event_name = 'session_start') AS Sessions_Total,\n` +
+    `  COUNTIF(event_name = 'page_view') AS Page_Views_Total\n` +
+    `FROM \`${PROJECT}.${DATASET}.${TL_TABLE}\`\n` +
+    `WHERE event_name IN ('page_view', 'session_start') AND event_date >= @since\n` +
+    `GROUP BY ${BROWSING_KEYS.map((_, i) => i + 1).concat([BROWSING_KEYS.length + 1]).join(", ")}\nORDER BY event_date`;
+  for (const f of FORBIDDEN_COLUMNS) {
+    if (sql.toLowerCase().includes(f)) throw new Error(`TL browsing query must not mention ${f}`);
+  }
+  return sql;
+}
+function tlBrowsingNamesSql() {
+  return `SELECT DISTINCT simple_release_name FROM \`${PROJECT}.${DATASET}.${TL_TABLE}\`\n` +
+    "WHERE event_name IN ('page_view', 'session_start') AND event_date >= @since AND event_date < @before\n" +
+    "  AND simple_release_name IS NOT NULL";
+}
+const tlBrowsingWriter = browsingWriterFor(TL_BROWSING_HEADER, "TL browsing");
+const TL_BROWSING_FEED = { label: "TL browsing", file: TL_BROWSING, meta: TL_BROWSING_META, sql: tlBrowsingSql, namesSql: tlBrowsingNamesSql,
+                           makeWriter: tlBrowsingWriter, since: TL_SINCE };
 
 // ---------------------------------------------------------------- local file
 
-const isoFromDMY = (s) => {
-  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s || ""));
-  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+// the date a local row carries, as ISO: DD/MM/YYYY (the export and the
+// browsing feeds) or YYYY-MM-DD (the event feeds)
+const isoDate = (s) => {
+  const v = String(s || "").trim();
+  let m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(v);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
 };
 function isoMinusDays(iso, days) {
   const d = new Date(iso + "T00:00:00Z");
@@ -960,7 +1190,7 @@ function writeMeta(m, file = META) {
   fs.renameSync(file + ".tmp", file);
 }
 
-/* Streams the local funnel CSV line by line: onLine(line, iso) per data row.
+/* Streams the local funnel CSV line by line: onLine(line, iso, cells) per data row.
  * Resolves to { header: string[], rows }. Lines are parsed with the same CSV
  * rules the writer used, so a quoted comma in a release name is safe. */
 async function scanLocal(file, onLine) {
@@ -976,7 +1206,7 @@ async function scanLocal(file, onLine) {
     if (!line) continue;
     const cells = parseCsv(line)[0] || [];
     rows++;
-    onLine(line, isoFromDMY(cells[di]));
+    onLine(line, isoDate(cells[di]), cells);
   }
   return { header, rows };
 }
@@ -1019,9 +1249,51 @@ class Tmp {
 }
 
 class HeaderChanged extends Error {}
+class NamesChanged extends Error {}
 
-/* Streams one table through a row converter into `tmp`. onRow(line, iso) is
- * called per kept row (for fingerprints and the max date). expectHeader, when
+/* The rename check. An incremental pull keeps the local rows older than the
+ * overlap as they are, so a release renamed or removed upstream keeps its old
+ * name on them, the funnel seems to carry both names, and the build lists the
+ * release twice (Roy Lichtenstein Estate's quarter, corrected upstream from
+ * 2027 Q4 to 2026 Q4, sat in the sidebar as two rows on 30 September 2026).
+ * Two readings, both answered with a full pull:
+ *   - renamedOutsideOverlap: a name that stood in the local overlap rows and
+ *     still stands in the kept rows, but that the re-pull no longer carries,
+ *     went at once. Free: the names are read off the rows already streamed. A
+ *     release wholly inside the overlap is re-pulled whole and never listed here;
+ *   - namesMissingUpstream: the kept rows' names against upstream's names in
+ *     the rows before the overlap (releaseNames), for a release renamed with
+ *     no row in the overlap; once every NAMES_CHECK_HOURS (namesCheckDue),
+ *     since the query scans a column of the event table. */
+function renamedOutsideOverlap(keptNames, overlapNames, pulledNames) {
+  return [...overlapNames].filter((n) => n && keptNames.has(n) && !pulledNames.has(n)).sort();
+}
+function namesMissingUpstream(keptNames, upstreamNames) {
+  return [...keptNames].filter((n) => n && !upstreamNames.has(n)).sort();
+}
+function namesCheckDue(meta, nowIso, hours = NAMES_CHECK_HOURS) {
+  const at = meta && meta.namesCheckedAt ? Date.parse(meta.namesCheckedAt) : NaN;
+  return !Number.isFinite(at) || Date.parse(nowIso) - at >= hours * 3600 * 1000;
+}
+function describeNames(names, what) {
+  const shown = names.slice(0, 3).map((n) => `"${n}"`).join(", ") + (names.length > 3 ? ` and ${names.length - 3} more` : "");
+  return `${names.length} release name${names.length === 1 ? "" : "s"} ${what} ${names.length === 1 ? "it" : "them"} (${shown})` +
+    ` - renamed or removed upstream outside the ${OVERLAP_DAYS}-day overlap`;
+}
+/* The release names upstream in the feed's rows older than `before`, and the
+ * bytes the query scanned (0.03 GB on the export, 0.6 GB on the event table,
+ * measured 30 September 2026). */
+async function releaseNames(token, feed, before) {
+  const names = new Set();
+  const q = await query(token, feed.namesSql(), { since: { type: "DATE", value: feed.since || SINCE }, before: { type: "DATE", value: before } }, {
+    onRows(rows) { for (const r of rows) { const n = String((r && r[0]) ?? "").trim(); if (n) names.add(n); } },
+  });
+  return { names, bytes: q.bytes };
+}
+
+/* Streams one table through a row converter into `tmp`. onRow(line, iso,
+ * cells) is called per kept row (for fingerprints, the max date and the
+ * release names). expectHeader, when
  * given, is the local file's column list: a different set from BigQuery means
  * the local rows cannot be merged with the new ones (HeaderChanged). */
 async function streamTable(token, sql, since, makeWriter, tmp, { onRow, expectHeader } = {}) {
@@ -1043,7 +1315,7 @@ async function streamTable(token, sql, since, makeWriter, tmp, { onRow, expectHe
         tmp.line(line);
         if (onRow) {
           const d = writer.dateIndex >= 0 ? normDate(r[writer.dateIndex]) : null;
-          onRow(line, d ? `${d[0]}-${String(d[1]).padStart(2, "0")}-${String(d[2]).padStart(2, "0")}` : null);
+          onRow(line, d ? `${d[0]}-${String(d[1]).padStart(2, "0")}-${String(d[2]).padStart(2, "0")}` : null, r);
         }
       }
     },
@@ -1054,22 +1326,25 @@ async function streamTable(token, sql, since, makeWriter, tmp, { onRow, expectHe
 
 // ---------------------------------------------------------------- pull
 
-/* A feed pulled incrementally: { label, file, meta, sql, makeWriter }. The funnel
- * export and the browsing counts are the two instances; both are keyed by
- * event_date, written DD/MM/YYYY, and merged on the same overlap rules. */
+/* A feed pulled incrementally: { label, file, meta, sql, namesSql, makeWriter,
+ * since? }. The funnel export and the browsing counts are the first two
+ * instances, the TL pair the others; all are keyed by event_date (DD/MM/YYYY
+ * or ISO, isoDate), and merged on the same overlap rules. A feed with its own
+ * `since` runs from there instead of BQ_SINCE. */
 const FUNNEL_FEED = {
-  label: "funnel", file: ACROSS_TIME, meta: META, sql: funnelSql,
+  label: "funnel", file: ACROSS_TIME, meta: META, sql: funnelSql, namesSql: funnelNamesSql,
   makeWriter: (h) => require("./sheets").acrossTimeWriter(h),
 };
 
 /* Decides full vs incremental for a feed. Returns { mode, reason, meta }. */
 function plan(full, feed = FUNNEL_FEED) {
+  const since = feed.since || SINCE;
   const meta = readMeta(feed.meta);
-  const usable = meta && meta.since === SINCE && meta.maxDate && Array.isArray(meta.header) && fs.existsSync(feed.file);
+  const usable = meta && meta.since === since && meta.maxDate && Array.isArray(meta.header) && fs.existsSync(feed.file);
   if (full) return { mode: "full", reason: "requested", meta };
   if (!meta) return { mode: "full", reason: "no record of a previous pull", meta: null };
   if (!fs.existsSync(feed.file)) return { mode: "full", reason: "local file missing", meta: null };
-  if (meta.since !== SINCE) return { mode: "full", reason: `BQ_SINCE changed (${meta.since} -> ${SINCE})`, meta: null };
+  if (meta.since !== since) return { mode: "full", reason: `${feed.since ? "the feed's start" : "BQ_SINCE"} changed (${meta.since} -> ${since})`, meta: null };
   if (!usable) return { mode: "full", reason: "previous pull record unreadable", meta: null };
   const ageDays = (Date.now() - Date.parse(meta.fullAt || 0)) / 86400000;
   if (!(ageDays < FULL_EVERY_DAYS)) return { mode: "full", reason: `last full pull ${Math.floor(ageDays)} days ago`, meta };
@@ -1079,22 +1354,35 @@ function plan(full, feed = FUNNEL_FEED) {
 async function pullIncremental(token, write, full, feed) {
   let { mode, reason, meta } = plan(full, feed);
   const now = new Date().toISOString();
+  const since = feed.since || SINCE;
 
   // ---- incremental: BigQuery rows from the overlap start, then the local
   // rows older than that. Order in the file does not matter to pandas.
   if (mode === "incremental") {
     const fromRaw = isoMinusDays(meta.maxDate, OVERLAP_DAYS);
-    const from = fromRaw < SINCE ? SINCE : fromRaw;
+    const from = fromRaw < since ? since : fromRaw;
     const tmp = new Tmp(feed.file, write);
+    // the release names on each side of the overlap, for the rename check:
+    // the rows kept from the local file, the local rows the pull replaces, and
+    // the rows pulled (renamedOutsideOverlap)
+    const ni = Array.isArray(meta.header) ? meta.header.indexOf("simple_release_name") : -1;
+    const nameOf = (cells) => (ni >= 0 && cells ? String(cells[ni] ?? "").trim() : "");
+    const keptNames = new Set(), overlapNames = new Set(), pulledNames = new Set();
+    let namesCheckedAt = meta.namesCheckedAt || null, namesBytes = 0;
     try {
       let maxDate = "";
       const bq = await streamTable(token, feed.sql(), from, feed.makeWriter, tmp, {
         expectHeader: meta.header,
-        onRow(_line, iso) { if (iso && iso > maxDate) maxDate = iso; },
+        onRow(_line, iso, cells) {
+          if (iso && iso > maxDate) maxDate = iso;
+          const n = nameOf(cells); if (n) pulledNames.add(n);
+        },
       });
       let keptLocal = 0, localOverlap = 0;
-      await scanLocal(feed.file, (line, iso) => {
-        if (iso && iso < from) { keptLocal++; tmp.line(line); } else localOverlap++;
+      await scanLocal(feed.file, (line, iso, cells) => {
+        const n = nameOf(cells);
+        if (iso && iso < from) { keptLocal++; tmp.line(line); if (n) keptNames.add(n); }
+        else { localOverlap++; if (iso && n) overlapNames.add(n); }
       });
       // an empty or thin overlap pull is upstream failing, not history ending -
       // writing it would delete the last OVERLAP_DAYS of good data
@@ -1102,22 +1390,41 @@ async function pullIncremental(token, write, full, feed) {
         throw new Error(`incremental ${feed.label} pull returned ${bq.rows} rows for the last ${OVERLAP_DAYS} days ` +
           `where the local file has ${localOverlap} - not overwriting`);
       }
+      // a release renamed or removed upstream outside the overlap would keep
+      // its old name on the kept rows and be listed twice: a full pull instead
+      const vanished = renamedOutsideOverlap(keptNames, overlapNames, pulledNames);
+      if (vanished.length) {
+        throw new NamesChanged(describeNames(vanished, `left the last ${OVERLAP_DAYS} days upstream while older local rows still carry`));
+      }
+      if (ni >= 0 && keptNames.size && feed.namesSql && namesCheckDue(meta, now)) {
+        const upstream = await releaseNames(token, feed, from);
+        namesBytes = upstream.bytes;
+        const gone = namesMissingUpstream(keptNames, upstream.names);
+        if (gone.length) {
+          throw new NamesChanged(describeNames(gone, "upstream no longer has before the overlap, where older local rows still carry"));
+        }
+        namesCheckedAt = now;
+      }
       const total = bq.rows + keptLocal;
       const before = existingRows(feed.file);
       if (write) {
         tmp.commit(feed.file);
-        writeMeta({ ...meta, maxDate: maxDate || meta.maxDate, rows: total, pulledAt: now, mode }, feed.meta);
+        writeMeta({ ...meta, maxDate: maxDate || meta.maxDate, rows: total, pulledAt: now, mode, namesCheckedAt }, feed.meta);
       } else tmp.discard();
       const fullAge = Math.floor((Date.now() - Date.parse(meta.fullAt)) / 86400000);
       return {
-        rows: total, bytes: bq.bytes, cached: bq.cached, dropped: bq.dropped, mode,
+        rows: total, bytes: bq.bytes + namesBytes, cached: bq.cached, dropped: bq.dropped, mode,
         note: `${feed.label} ${total} rows (${total - before >= 0 ? "+" : ""}${total - before} since last refresh; ` +
-          `${bq.rows} re-pulled over the last ${OVERLAP_DAYS} days, last full pull ${fullAge}d ago)`,
+          `${bq.rows} re-pulled over the last ${OVERLAP_DAYS} days, last full pull ${fullAge}d ago` +
+          `${namesCheckedAt === now ? ", release names agree with upstream" : ""})`,
       };
     } catch (e) {
       tmp.discard();
-      if (!(e instanceof HeaderChanged)) throw e;
-      mode = "full"; reason = e.message; meta = null;   // fall through to a full pull
+      if (e instanceof NamesChanged) {
+        mode = "full"; reason = e.message;   // fall through to a full pull; the fingerprints below say what moved
+      } else if (e instanceof HeaderChanged) {
+        mode = "full"; reason = e.message; meta = null;   // fall through to a full pull
+      } else throw e;
     }
   }
 
@@ -1130,7 +1437,7 @@ async function pullIncremental(token, write, full, feed) {
   const tmp = new Tmp(feed.file, write);
   let bq;
   try {
-    bq = await streamTable(token, feed.sql(), SINCE, feed.makeWriter, tmp, {
+    bq = await streamTable(token, feed.sql(), since, feed.makeWriter, tmp, {
       onRow(line, iso) { if (iso) { fresh.add(iso, line); if (iso > maxDate) maxDate = iso; } },
     });
     if (bq.rows < 100) throw new Error(`${feed.label} query returned ${bq.rows} rows - not overwriting`);
@@ -1147,7 +1454,7 @@ async function pullIncremental(token, write, full, feed) {
   }
   if (write) {
     tmp.commit(feed.file);
-    writeMeta({ since: SINCE, header: bq.header, maxDate, rows: bq.rows, fullAt: now, pulledAt: now, mode: "full" }, feed.meta);
+    writeMeta({ since, header: bq.header, maxDate, rows: bq.rows, fullAt: now, pulledAt: now, namesCheckedAt: now, mode: "full" }, feed.meta);
   } else tmp.discard();
   return {
     rows: bq.rows, bytes: bq.bytes, cached: bq.cached, dropped: bq.dropped, mode: "full",
@@ -1279,7 +1586,46 @@ async function pull({ write = true, full = false, events = true, only = null } =
     }
   }
 
-  const parts = [funnel, spend, orders, ev, br].filter(Boolean);
+  // the timed launches' pair: incremental like the browsing feed, optional
+  // like spend, each file kept when its pull fails
+  let tl = null, tlNote;
+  if (skip("tl")) {
+    tlNote = `TL not pulled (--${only})`;
+  } else if (process.env.BQ_TL === "off" || process.env.BQ_EVENTS === "off") {
+    tlNote = "TL skipped (BQ_TL=off)";
+  } else {
+    const notes = [];
+    for (const feed of [TL_EVENTS_FEED, TL_BROWSING_FEED]) {
+      try {
+        const r = await pullIncremental(token, write, full, feed);
+        notes.push(r.note);
+        tl = { rows: (tl ? tl.rows : 0) + r.rows, bytes: (tl ? tl.bytes : 0) + r.bytes, cached: (tl ? tl.cached : true) && r.cached,
+               events: feed === TL_EVENTS_FEED ? r.rows : (tl ? tl.events : null) };
+      } catch (e) {
+        notes.push(`${feed.label} unavailable, keeping the last file (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`);
+      }
+    }
+    // the windows hour by hour from the orders table, and the buyers: two
+    // small files written together, kept as they were when a query fails
+    if (process.env.BQ_ORDERS !== "off") {
+      const t1 = new Tmp(TL_UNITS, write), t2 = new Tmp(TL_BUYERS, write);
+      try {
+        const a = await streamTable(token, tlUnitsSql(), SINCE, passthroughWriter(TL_UNITS_HEADER, "TL units"), t1);
+        if (a.rows < 10) throw new Error(`TL units query returned ${a.rows} rows - not overwriting`);
+        guardShrink("TL units query", a.rows, TL_UNITS);
+        const b = await streamTable(token, tlBuyersSql(), SINCE, passthroughWriter(TL_BUYERS_HEADER, "TL buyers"), t2);
+        if (write) { t1.commit(TL_UNITS); t2.commit(TL_BUYERS); } else { t1.discard(); t2.discard(); }
+        notes.push(`TL orders ${a.rows} hour rows, ${b.rows} releases' buyers`);
+        tl = { rows: (tl ? tl.rows : 0), bytes: (tl ? tl.bytes : 0) + a.bytes + b.bytes, cached: (tl ? tl.cached : true) && a.cached && b.cached, events: tl ? tl.events : null };
+      } catch (e) {
+        t1.discard(); t2.discard();
+        notes.push(`TL orders unavailable, keeping the last files (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`);
+      }
+    }
+    tlNote = notes.join(", ");
+  }
+
+  const parts = [funnel, spend, orders, ev, br, tl].filter(Boolean);
   const bytes = parts.reduce((n, x) => n + x.bytes, 0);
   const gb = (bytes / 1e9).toFixed(2);
   const cached = parts.every((x) => x.cached) ? ", cache hit" : "";
@@ -1288,19 +1634,25 @@ async function pull({ write = true, full = false, events = true, only = null } =
   return {
     funnelRows: funnel ? funnel.rows : null, spendRows: spend ? spend.rows : null,
     ordersRows: orders ? orders.rows : null,
-    eventsRows: ev ? ev.rows : null, browsingRows: br ? br.rows : null, mode: funnel ? funnel.mode : (only || "events"),
-    summary: `${funnelNote}${spendNote}, ${ordersNote}, ${eventsNote}, ${browsingNote}, since ${SINCE} ` +
+    eventsRows: ev ? ev.rows : null, browsingRows: br ? br.rows : null, tlRows: tl ? tl.rows : null,
+    mode: funnel ? funnel.mode : (only || "events"),
+    summary: `${funnelNote}${spendNote}, ${ordersNote}, ${eventsNote}, ${browsingNote}, ${tlNote}, since ${SINCE} ` +
       `(${gb} GB scanned${cached}, ${sa._env})`,
   };
 }
 
 module.exports = {
-  pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS,
+  pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS, NAMES_CHECK_HOURS,
+  renamedOutsideOverlap, namesMissingUpstream, namesCheckDue, describeNames, funnelNamesSql, browsingNamesSql,
   SOURCES, ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
   DRAW_CLAIMS, DRAW_CLAIMS_HEADER, drawClaimsSql,
   UNITS_PAID, UNITS_PAID_HEADER, unitsPaidSql, orderLinesCtes,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
   LE_BROWSING, BROWSING_META, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
+  TL_TABLE, TL_SINCE, TL_EVENTS, TL_EVENTS_META, TL_EVENT_COLUMNS, TL_EVENT_HEADER, tlEventsSql, tlEventsNamesSql, tlEventsWriter, TL_EVENTS_FEED,
+  TL_BROWSING, TL_BROWSING_META, TL_BROWSING_HEADER, TL_HOUR_DAYS_BEFORE, TL_HOUR_DAYS_AFTER, tlBrowsingSql, tlBrowsingNamesSql, tlBrowsingWriter, TL_BROWSING_FEED,
+  TL_UNITS, TL_UNITS_HEADER, TL_BUYERS, TL_BUYERS_HEADER, TL_BAND_DAYS_BEFORE, TL_BAND_DAYS_AFTER, tlUnitsSql, tlBuyersSql,
+  isoDate, eventsWriterFor, browsingWriterFor,
   PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
   schema, listSchema, schemaText,
 };
@@ -1308,7 +1660,7 @@ module.exports = {
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;
 // --write replaces the CSVs, --full forces a full pull, --events or --browsing
 // pulls that one feed alone (--orders the orders-by-product pair and the units
-// paid by day and channel), --schema
+// paid by day and channel, --tl the timed launches' pair), --schema
 // lists what the account can see (names only, no rows). Handy from a Render shell.
 if (require.main === module) {
   (async () => {
@@ -1324,17 +1676,20 @@ if (require.main === module) {
     const write = process.argv.includes("--write");
     const full = process.argv.includes("--full");
     const only = process.argv.includes("--events") ? "events" : process.argv.includes("--browsing") ? "browsing"
-      : process.argv.includes("--orders") ? "orders" : null;
+      : process.argv.includes("--orders") ? "orders" : process.argv.includes("--tl") ? "tl" : null;
     if (only !== "events" && only !== "orders") {
-      const feed = only === "browsing" ? BROWSING_FEED : FUNNEL_FEED;
-      const p = plan(full, feed);
-      console.log(`plan (${feed.label}): ${p.mode}${p.reason ? ` (${p.reason})` : ""}`);
+      const feeds = only === "browsing" ? [BROWSING_FEED] : only === "tl" ? [TL_EVENTS_FEED, TL_BROWSING_FEED] : [FUNNEL_FEED];
+      for (const feed of feeds) {
+        const p = plan(full, feed);
+        console.log(`plan (${feed.label}): ${p.mode}${p.reason ? ` (${p.reason})` : ""}`);
+      }
     }
     const out = await pull({ write, full, only });
     console.log(out.summary);
     const wrote = [out.funnelRows !== null && ACROSS_TIME, out.spendRows !== null && SPEND_DAILY,
                    out.ordersRows !== null && `${ORDERS_BY_PRODUCT} + ${DRAW_PRODUCTS} + ${UNITS_PAID}`,
-                   out.eventsRows !== null && LE_EVENTS, out.browsingRows !== null && LE_BROWSING].filter(Boolean);
+                   out.eventsRows !== null && LE_EVENTS, out.browsingRows !== null && LE_BROWSING,
+                   out.tlRows !== null && `${TL_EVENTS} + ${TL_BROWSING} + ${TL_UNITS} + ${TL_BUYERS}`].filter(Boolean);
     console.log(write ? `wrote ${wrote.join(", ")}` : "dry run - pass --write to replace the CSVs");
   })().catch((e) => { console.error(String(e.message || e)); process.exit(1); });
 }

@@ -11,12 +11,15 @@
  * framing terms over the products that offer a frame, and the paid-budget
  * split from the deal: on a profit-share deal Avant Arte carries its share
  * of the profit, on a revenue-share (royalty) deal it carries the ads
- * outright. tests/test_release_inputs.py holds the two sides to the figure. */
+ * outright. A work unticked on the grid (`excluded: true` on its entry)
+ * stays in the list, flagged, with its typed figures, and counts nothing in
+ * the totals. tests/test_release_inputs.py holds the two sides to the
+ * figure. */
 export const PAGE_CURRENCY = "EUR";
 export const RATES_TO_EUR = { EUR: 1.0, GBP: 1.18, USD: 0.92 };
 export const PRODUCT_KEYS = ["edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
   "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "framing_available", "frame_conversion",
-  "frame_profit_per_unit"];
+  "frame_profit_per_unit", "units_target"];
 export const LEGACY_KEYS = ["edition_size", "edition_total", "unit_price", "artist_profit", "aa_group_profit",
   "artist_profit_share", "framing_available", "frame_conversion", "frame_profit_per_unit", "aa_budget_share"];
 
@@ -48,6 +51,8 @@ export function mergeProducts(airtable, typed) {
       out.push(target);
       if (keys.name) byName.set(norm(keys.name), target);
     }
+    // the tick: unticked on the tab, the work stays on the grid and counts nothing
+    if (t.excluded === true) target.excluded = true;
     Object.assign(target.typed, keys);
   }
   return out;
@@ -64,7 +69,8 @@ export function effectiveProduct(p, b) {
     src[key] = dflt !== undefined && dflt !== null ? "default" : null;
     return dflt === undefined ? null : dflt;
   };
-  const e = { airtable_id: p.airtable_id || null, name: typed.name !== undefined ? typed.name : p.name || "Product", project_code: p.project_code || null };
+  const e = { airtable_id: p.airtable_id || null, name: typed.name !== undefined ? typed.name : p.name || "Product", project_code: p.project_code || null,
+              excluded: !!p.excluded };
   const edition = num(pick("edition"));
   e.edition = edition && edition > 0 ? Math.round(edition) : null;
   // the day this work's draw closes (Airtable): one launch's works can close
@@ -73,6 +79,11 @@ export function effectiveProduct(p, b) {
   const share = num(pick("target_sellthrough", null, 1.0));
   e.target_sellthrough = share === null ? 1.0 : Math.min(Math.max(share, 0), 1);
   e.target_units = e.edition ? Math.round(e.edition * e.target_sellthrough) : 0;
+  // Airtable's units target for the work, typed over on a timed launch's tab
+  // (docs/TL_SPEC.md §7): the TL target is the sum over the ticked works,
+  // uncapped by the edition; an LE reads it through target_sellthrough above
+  const ut = num(pick("units_target"));
+  e.units_target = ut && ut > 0 ? ut : null;
   const price = num(pick("unit_price"));
   e.unit_price = price && price > 0 ? price : null;
   e.currency = String(pick("currency", null, PAGE_CURRENCY) || PAGE_CURRENCY).toUpperCase();
@@ -106,7 +117,7 @@ export function resolveProducts(airtable, typed, b) {
 /* The release's totals from its products, or from the typed release-level
  * figures while a release still carries them (legacy). */
 export function releaseEconomics(products, legacy, b) {
-  const sized = (products || []).filter((p) => p.edition);
+  const sized = (products || []).filter((p) => p.edition && !p.excluded);   // an unticked work counts nothing
   const targets = sized.reduce((s, p) => s + p.target_units, 0);
   const lnum = (k) => num(legacy && legacy[k]);
   if (legacy && lnum("edition_size") > 0) {

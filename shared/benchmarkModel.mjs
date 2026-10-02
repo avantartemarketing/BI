@@ -123,6 +123,33 @@ export function stretchTyped(inp, unitsByGroup) {
   return GROUPS.some((g) => num((unitsByGroup || {})[g]) > 0 && num(raw[g]) > 0);
 }
 
+/* The Target setting tab's sliders: one group's share moved to `value` (a
+ * fraction), the other active groups rescaled so the shares still add to 1,
+ * each keeping its proportion of the rest; when the others held nothing (the
+ * moved group had it all) the rest is spread evenly over them. Groups not
+ * active (set aside, or with no benchmark to lift) are left out. Shares are
+ * kept to four places as the server keeps them; the moved group holds the
+ * value it was given and the rounding remainder goes on the largest of the
+ * others, so the sum is exactly 1. */
+export function rebalanceShares(shares, key, value, active) {
+  const act = active || [];
+  const r4 = (x) => Math.round(x * 10000) / 10000;
+  const cur = Object.fromEntries(act.map((g) => [g, Math.max(num((shares || {})[g]), 0)]));
+  if (!act.includes(key)) return cur;
+  const others = act.filter((g) => g !== key);
+  if (!others.length) return { [key]: 1 };
+  const v = r4(Math.min(Math.max(num(value), 0), 1));
+  const tot = others.reduce((s, g) => s + cur[g], 0);
+  const out = { [key]: v };
+  for (const g of others) out[g] = r4(tot > 0 ? (1 - v) * cur[g] / tot : (1 - v) / others.length);
+  const rem = r4(1 - v - others.reduce((s, g) => s + out[g], 0));
+  if (rem) {
+    const big = others.reduce((a, g) => (out[g] > out[a] ? g : a), others[0]);
+    out[big] = r4(out[big] + rem);
+  }
+  return out;
+}
+
 /* Each group's target units: its benchmark plus its share of the stretch (the
  * edition less the basket's median, negative when the basket reached more). A
  * cut a group cannot carry stops at zero and the rest falls on the others by

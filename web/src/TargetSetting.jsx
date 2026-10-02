@@ -28,7 +28,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { C, MINUS, fmt, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
 import { resolveProducts, releaseEconomics, LEGACY_KEYS } from "../../shared/economics.mjs";
-import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf } from "../../shared/benchmarkModel.mjs";
+import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf, rebalanceShares, stretchWeights } from "../../shared/benchmarkModel.mjs";
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -52,7 +52,7 @@ const GROUPS = [
 
 /* One field: the label, a source or unit caption beside it, the box, a
  * helper under. The tip sits on the label. */
-function Field({ label, src, tip, help, helpKind, children }) {
+export function Field({ label, src, tip, help, helpKind, children }) {
   return (
     <div className="ts-field">
       <div className="ts-label"><span title={tip}>{label}</span>{src ? <span className="src">{src}</span> : null}</div>
@@ -62,9 +62,9 @@ function Field({ label, src, tip, help, helpKind, children }) {
   );
 }
 
-const RoBox = ({ value, title }) => <div className="ts-box ro" title={title}><span className="txt">{value}</span></div>;
+export const RoBox = ({ value, title }) => <div className="ts-box ro" title={title}><span className="txt">{value}</span></div>;
 
-const TextBox = ({ value, onChange, placeholder, title, list }) => (
+export const TextBox = ({ value, onChange, placeholder, title, list }) => (
   <div className="ts-box" title={title}>
     <input value={value} onChange={onChange} placeholder={placeholder} list={list} />
   </div>
@@ -72,7 +72,7 @@ const TextBox = ({ value, onChange, placeholder, title, list }) => (
 
 /* A number box: what is being typed while it is typed ("5." on the way to
  * "5.5"), the model's figure once it is left, the unit inside the box. */
-function NumBox({ value, placeholder, unit, onCommit, title, disabled }) {
+export function NumBox({ value, placeholder, unit, onCommit, title, disabled }) {
   const [draft, setDraft] = useState(null);
   return (
     <div className={`ts-box num${disabled ? " dis" : ""}`} title={title}>
@@ -86,7 +86,7 @@ function NumBox({ value, placeholder, unit, onCommit, title, disabled }) {
 
 /* A switch: the control and its name; the clause on what it does is the
  * field's helper. */
-function Switch({ on, onChange, label, title }) {
+export function Switch({ on, onChange, label, title }) {
   return (
     <button type="button" className={`ts-switch${on ? " on" : ""}`} aria-pressed={on} onClick={() => onChange(!on)} title={title}>
       <span className="tr" />{label}
@@ -94,11 +94,11 @@ function Switch({ on, onChange, label, title }) {
   );
 }
 
-const Notice = ({ red, children, action }) => (
+export const Notice = ({ red, children, action }) => (
   <div className={`ts-notice${red ? " red" : ""}`}><span>{children}</span>{action || null}</div>
 );
 
-const CardHead = ({ dot, title, desc, right }) => (
+export const CardHead = ({ dot, title, desc, right }) => (
   <div className="ts-card-head">
     <span className="dot" style={{ background: dot }} /><span className="t">{title}</span>
     {desc ? <span className="d">{desc}</span> : null}
@@ -109,7 +109,7 @@ const CardHead = ({ dot, title, desc, right }) => (
 /* The Meta campaigns whose spend is this release's: the ones the spend feed
  * names for the campaign code, ticked or not, and any other campaign added by
  * name. The draw campaign is what the code matches on its own. */
-function Campaigns({ code, chosen, all, suggested, onChange }) {
+export function Campaigns({ code, chosen, all, suggested, onChange }) {
   const [adding, setAdding] = useState("");
   const byName = new Map((all || []).map((c) => [c.name, c]));
   const named = (all || []).filter((c) => code && c.name.startsWith(`${code} · `)).map((c) => c.name);
@@ -237,7 +237,9 @@ const cellText = (key, v, raw = false) => {
 /* The one-or-the-other rule: a product's deal is a revenue share or a profit
  * share, so while either holds a figure the other is closed; unticked
  * framing closes the two frame cells beside it. */
+const OFF_WHY = "Unticked: this work is not part of the release, so it counts nothing here. Tick it to count it again.";
 const closedFor = (p, key) => {
+  if (p.excluded) return true;   // unticked: every figure cell is closed
   if (key === "aa_revenue_share") return p.aa_profit_share !== null && p.aa_revenue_share === null;
   if (key === "aa_profit_share") return p.aa_revenue_share !== null && p.aa_profit_share === null;
   if (key === "frame_conversion" || key === "frame_profit_per_unit") return !p.framing_available;
@@ -274,13 +276,20 @@ function moveByRow(e) {
   }
 }
 
-function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, onAdd, onRemove, onReset, emptyNote }) {
+/* `columns` is the grid's column set, GRID for an LE; a timed launch's tab
+ * passes its own (TLTargets.jsx), with a units target per work in place of
+ * the sell-through. `caption` replaces the LE words under the grid. */
+function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, onAdd, onRemove, onReset, onInclude, emptyNote, columns = GRID, caption }) {
   // rows are keyed by the Airtable id, else the row's place in the list: a
   // manual product's name is typed in place, so it cannot be the key
   const rowKey = (p, i) => (p.airtable_id ? `a-${p.airtable_id}` : `m-${i}`);
+  // the works in the release: the totals and the set-all row read these; an
+  // unticked work stays on the grid, greyed, with every cell closed
+  const live = products.filter((p) => !p.excluded);
   const glyph = (c) => <span className="glyph" aria-hidden="true">{c.glyph}</span>;
   const srcTitle = (src) => (src === "airtable" ? "Airtable's figure - type over it to override" : src === "default" ? "The benchmark default - type over it to override" : src === "typed" ? "Typed here; clear to go back to Airtable's" : "Airtable holds none - type it");
   const cell = (p, c) => {
+    if (p.excluded) return <td key={c.key} className="closed" title={OFF_WHY} />;
     if (c.date) return <td key={c.key} className="calc" title={c.tip}>{p.launch_date ? fmtDate(p.launch_date) : ""}</td>;
     if (c.calc) return <td key={c.key} className="calc" title={c.tip}>{p.edition ? fmt(p.target_units) : ""}</td>;
     const typed = p.airtable_id && p.sources[c.key] === "typed";
@@ -318,6 +327,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
             ? <input className="cell name" size={1} value={p.name || ""} placeholder="Product name" onChange={(e) => onName(p, e.target.value)} />
             : <span className="nm" title={p.name || "unnamed"}>{p.name || "unnamed"}</span>}
           <span className="src" title={p.airtable_id ? `Airtable record ${p.project_code || p.airtable_id}` : "Added on this tab, not in Airtable"}>{p.airtable_id ? `Airtable ${p.project_code || p.airtable_id}` : "added by hand"}</span>
+          {p.excluded && <span className="src off" title={OFF_WHY}>unticked</span>}
           {editing && p.airtable_id && n > 0 && (
             <button type="button" className="ts-link" onClick={() => onReset(p)} title={`Back to Airtable's figures on this row (${n} typed)`}>Reset</button>
           )}
@@ -334,17 +344,18 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
     <tr className="setall">
       <td className="gut">↓</td>
       <td className="l primary">Set all<span className="src">type here to fill a column</span></td>
-      {GRID.map((c) => {
+      {columns.map((c) => {
         if (c.calc) return <td key={c.key} className="calc" />;
         if (c.check) {
           return (
             <td key={c.key} className="check">
-              <input type="checkbox" className="tick" checked={products.every((p) => p.framing_available)} title="Every product at once"
+              <input type="checkbox" className="tick" checked={live.every((p) => p.framing_available)} title="Every product at once"
                 onChange={(e) => onFieldAll(c.key, e.target.checked)} />
             </td>
           );
         }
         if (c.key === "edition") return <td key={c.key} className="closed" title="Editions differ by work: type each on its own row." />;
+        if (c.key === "units_target") return <td key={c.key} className="closed" title="Targets differ by work: type each on its own row." />;
         const vals = products.filter((p) => !closedFor(p, c.key)).map((p) => (p.sources[c.key] === "typed" ? p[c.key] : undefined));
         const same = vals.length > 0 && vals.every((v) => v !== undefined && v === vals[0]);
         return (
@@ -361,27 +372,33 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
   // sell-through and price weighted by target units, the profits and the
   // share per target unit, the framing uplift per target unit
   const weighted = (key) => {
-    const rows = products.filter((p) => p[key] !== null && p[key] !== undefined && p.target_units > 0);
+    const rows = live.filter((p) => p[key] !== null && p[key] !== undefined && p.target_units > 0);
     const tot = rows.reduce((s, p) => s + p.target_units, 0);
     return tot ? rows.reduce((s, p) => s + p.target_units * p[key], 0) / tot : null;
   };
   const aaBefore = (econ.ppu_aa || 0) - (econ.frame_uplift_per_unit || 0);
   const revShare = weighted("aa_revenue_share"), profShare = weighted("aa_profit_share");
+  const unitsTargetSum = live.reduce((t, p) => t + (p.units_target || 0), 0);
+  const sumCell = (c) => {
+    switch (c.key) {
+      case "edition": return <td key={c.key} title="The editions summed.">{fmt(econ.edition_total)}</td>;
+      case "target_sellthrough": return <td key={c.key} title="Target units over the editions.">{econ.edition_total ? Math.round((100 * econ.edition_size) / econ.edition_total) : ""}</td>;
+      case "unit_price": return <td key={c.key} title="Price per target unit, weighted by target units, in euros.">{econ.unit_price ? cellText("unit_price", econ.unit_price) : ""}</td>;
+      case "target_units": return <td key={c.key} title="The target units summed: the secured-units target.">{fmt(econ.edition_size)}</td>;
+      case "units_target": return <td key={c.key} title="The units targets summed over the ticked works: the launch's units target.">{unitsTargetSum > 0 ? fmt(unitsTargetSum) : ""}</td>;
+      case "artist_profit_per_unit": return <td key={c.key} title="Weighted over the target units.">{econ.ppu_artist > 0 ? cellText("artist_profit_per_unit", econ.ppu_artist) : ""}</td>;
+      case "aa_profit_per_unit": return <td key={c.key} title="Weighted over the target units, before framing.">{aaBefore > 0 ? cellText("aa_profit_per_unit", aaBefore) : ""}</td>;
+      case "aa_revenue_share": return <td key={c.key} title="Weighted over the target units of the products on a revenue share.">{revShare !== null ? cellText("aa_revenue_share", revShare) : ""}</td>;
+      case "aa_profit_share": return <td key={c.key} title="Weighted over the target units of the products on a profit share.">{profShare !== null ? cellText("aa_profit_share", profShare) : ""}</td>;
+      case "frame_profit_per_unit": return <td key={c.key} title="The framing uplift per target unit over every product: Avant Arte's alone.">{econ.frame_uplift_per_unit > 0 ? `+${cellText("frame_profit_per_unit", econ.frame_uplift_per_unit)}` : ""}</td>;
+      default: return <td key={c.key} />;
+    }
+  };
   const sum = () => (
     <tr className="sum">
       <td className="gut" />
-      <td className="l primary">Total · per target unit<span className="src">{products.length === 1 ? "the one product" : `the ${products.length} products together`}</span></td>
-      <td title="The editions summed.">{fmt(econ.edition_total)}</td>
-      <td title="Target units over the editions.">{econ.edition_total ? Math.round((100 * econ.edition_size) / econ.edition_total) : ""}</td>
-      <td title="Price per target unit, weighted by target units, in euros.">{econ.unit_price ? cellText("unit_price", econ.unit_price) : ""}</td>
-      <td title="The target units summed: the secured-units target.">{fmt(econ.edition_size)}</td>
-      <td title="Weighted over the target units.">{econ.ppu_artist > 0 ? cellText("artist_profit_per_unit", econ.ppu_artist) : ""}</td>
-      <td title="Weighted over the target units, before framing.">{aaBefore > 0 ? cellText("aa_profit_per_unit", aaBefore) : ""}</td>
-      <td title="Weighted over the target units of the products on a revenue share.">{revShare !== null ? cellText("aa_revenue_share", revShare) : ""}</td>
-      <td title="Weighted over the target units of the products on a profit share.">{profShare !== null ? cellText("aa_profit_share", profShare) : ""}</td>
-      <td />
-      <td />
-      <td title="The framing uplift per target unit over every product: Avant Arte's alone.">{econ.frame_uplift_per_unit > 0 ? `+${cellText("frame_profit_per_unit", econ.frame_uplift_per_unit)}` : ""}</td>
+      <td className="l primary">Total · per target unit<span className="src">{live.length === 1 ? "the one product" : `the ${live.length} products together`}{live.length < products.length ? `, ${products.length - live.length} unticked` : ""}</span></td>
+      {columns.map(sumCell)}
     </tr>
   );
   return (
@@ -391,24 +408,30 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
           <colgroup><col style={{ width: 32 }} /><col style={{ width: 230 }} /></colgroup>
           <thead>
             <tr>
-              <th className="gut" />
+              <th className="gut" title="Ticked: part of the release. Untick a work to leave it out; it stays here, greyed, and counts nothing." />
               <th className="l primary"><span className="glyph" aria-hidden="true">A</span>Product</th>
-              {GRID.map((c) => <th key={c.key} className={c.calc ? "calc" : undefined} title={c.tip}>{glyph(c)}{c.label}</th>)}
+              {columns.map((c) => <th key={c.key} className={c.calc ? "calc" : undefined} title={c.tip}>{glyph(c)}{c.label}</th>)}
             </tr>
           </thead>
           <tbody>
             {editing && products.length > 1 && setAll()}
             {products.map((p, i) => (
-              <tr key={rowKey(p, i)}>
-                <td className="gut">{i + 1}</td>
+              <tr key={rowKey(p, i)} className={p.excluded ? "off" : undefined}>
+                <td className="gut">
+                  <input type="checkbox" className="tick" checked={!p.excluded} disabled={!editing || !p.airtable_id}
+                    title={p.excluded ? "Unticked: not part of the release. Tick to count it again."
+                      : !p.airtable_id ? "Added by hand: Remove takes it off the release."
+                        : editing ? "Untick to leave this work out of the release: it stays here, greyed, and counts nothing." : "Part of the release. Switch on Edit figures to untick it."}
+                    onChange={(e) => onInclude(p, e.target.checked)} />
+                </td>
                 {nameCell(p, i)}
-                {GRID.map((c) => cell(p, c))}
+                {columns.map((c) => cell(p, c))}
               </tr>
             ))}
             {products.length === 0 && (
               <tr className="empty">
                 <td className="gut" />
-                <td className="l" colSpan={GRID.length + 1}>
+                <td className="l" colSpan={columns.length + 1}>
                   No products yet: Airtable has no record matched to this release{emptyNote ? ` (${emptyNote})` : ""}.
                   {editing ? " Add the works by hand until it does." : " Switch on Edit figures to add the works by hand until it does."}
                 </td>
@@ -418,7 +441,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
               <tr className="add">
                 <td className="gut">+</td>
                 <td className="l primary"><button type="button" className="ts-link" onClick={onAdd}>Add a product</button></td>
-                <td colSpan={GRID.length} />
+                <td colSpan={columns.length} />
               </tr>
             )}
             {products.length > 0 && sum()}
@@ -426,13 +449,16 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
         </table>
       </div>
       <div className="ts-caption">
-        The last row is the release as a whole: edition and target units summed, sell-through and price weighted by target units,
+        {caption || <>The last row is the release as a whole: edition and target units summed, sell-through and price weighted by target units,
         the profits and the share per target unit, and the framing uplift per target unit. A product has a revenue share or a
-        profit share, never both: fill one and the other closes. Framing profit is Avant Arte's alone.
+        profit share, never both: fill one and the other closes. Framing profit is Avant Arte's alone.</>}
       </div>
     </>
   );
 }
+
+// the grid, the basket table and the grid's rules, for the timed launches' tab (TLTargets.jsx)
+export { GRID, PCT, closedFor, typedKeys, BasketTable, ProductsGrid };
 
 /* ======================= the tab ======================= */
 
@@ -587,17 +613,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const bmUnits = profile && profile.units > 0 ? profile.units : null;
   const k = bmUnits ? (editionSize > 0 ? editionSize / bmUnits : bm ? bm.k : null) : null;
   /* where the stretch comes from (BENCHMARK_SPEC 4.4): a share per channel
-   * group, typed as whole percentages and kept as fractions; blank, or every
-   * cell blank, means the basket's own shares - the even uplift */
+   * group, set with coupled sliders below and kept as fractions that add to
+   * 1; null means the basket's own shares - the even uplift */
   const stretchFrom = inp.stretch_from && typeof inp.stretch_from === "object" && !Array.isArray(inp.stretch_from) ? inp.stretch_from : null;
   const stretchTyped = !!(stretchFrom && GROUPS.some((g) => !isOff(g.key) && Number(stretchFrom[g.key]) > 0));
-  const setStretch = (key) => (e) => {
-    const v = e.target.value;
-    const next = { ...(stretchFrom || {}) };
-    if (v === "" || v === null || v === undefined) delete next[key];
-    else next[key] = Math.max(Number(v), 0) / 100;
-    setInp({ ...inp, stretch_from: Object.keys(next).length ? next : null });
-  };
   const paidShare = profile ? profile.share_sessions.paid : null;
   // the price of a paid unit: the release's own, else the basket's median cost
   // per paid unit, else the panel's constant (shared/benchmarkModel.mjs)
@@ -657,11 +676,23 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     setInp({ ...inp, products: [...(inp.products || []), { manual: true, name: `Product ${n}` }] });
   };
   const onRemove = (p) => setInp({ ...inp, products: (inp.products || []).filter((t) => !(t.manual && norm(t.name) === norm(p.name))) });
-  // back to Airtable's figures: one product's typed entry dropped, or all of them
-  const onReset = (p) => setInp((prev) => ({ ...prev, products: (prev.products || []).filter((t) => !(p.airtable_id && String(t.airtable_id) === String(p.airtable_id))) }));
-  const onResetAll = () => setInp((prev) => ({ ...prev, products: (prev.products || []).filter((t) => !t.airtable_id) }));
+  // the tick: an unticked work stays on the grid with its typed figures and
+  // counts nothing; ticked again, an entry that carried nothing else goes
+  const bare = (t) => Object.entries(t).every(([k, v]) => k === "airtable_id" || k === "manual" || (k === "name" && !t.manual) || v === null || v === undefined || v === "");
+  const onInclude = (p, on) => setInp((prev) => {
+    const list = prev.products || [];
+    if (!on) return { ...prev, products: applyEntry(list, p, { excluded: true }) };
+    const out = list.map((t) => (sameEntry(t, p) ? Object.fromEntries(Object.entries(t).filter(([k]) => k !== "excluded")) : t));
+    return { ...prev, products: out.filter((t) => !(sameEntry(t, p) && t.airtable_id && bare(t))) };
+  });
+  // back to Airtable's figures: one product's typed entry dropped, or all of
+  // them; a tick left off stays off
+  const onReset = (p) => setInp((prev) => ({ ...prev, products: (prev.products || []).flatMap((t) => ((p.airtable_id && String(t.airtable_id) === String(p.airtable_id))
+    ? (t.excluded ? [{ airtable_id: t.airtable_id, excluded: true }] : []) : [t])) }));
+  const onResetAll = () => setInp((prev) => ({ ...prev, products: (prev.products || []).flatMap((t) => (!t.airtable_id ? [t] : t.excluded ? [{ airtable_id: t.airtable_id, excluded: true }] : [])) }));
   const typedCount = products.filter((p) => p.airtable_id).reduce((s, p) => s + typedKeys(p).length, 0);
   const manualCount = products.filter((p) => !p.airtable_id).length;
+  const excludedCount = products.filter((p) => p.excluded).length;
   // the picker asks for a target and a price when there are none: they land
   // on a product added by hand, so the basket follows the typing
   const onPickerInputs = (patch) => {
@@ -759,9 +790,16 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const stretchHelp = !T ? "Choose a basket first."
     : stretchTyped
       ? `The stretch of ${signed(Math.round(T.stretch_units))} units is asked of ${GROUPS.filter((g) => T.stretch_from[g.key] > 0).sort((a, b) => T.stretch_from[b.key] - T.stretch_from[a.key]).map((g) => `${g.name} ${Math.round(100 * T.stretch_from[g.key])}% (×${fmt(T.k_by_group[g.key], 2)})`).join(", ")}; the other channels stay at their benchmark.`
-      : `Blank: each channel takes its share of the ${signed(Math.round(T.stretch_units))}-unit stretch in proportion to its benchmark, the same uplift ×${fmt(k || 1, 2)} everywhere. Type shares to place it, most of it on paid, say.`;
+      : `Blank: each channel takes its share of the ${signed(Math.round(T.stretch_units))}-unit stretch in proportion to its benchmark, the same uplift ×${fmt(k || 1, 2)} everywhere. Drag a slider to place it, most of it on paid, say: the other channels follow, so the shares always add to 100%.`;
   const BM = T ? T.benchmark : null;
   const paidOff = isOff("paid");
+  /* the sliders: the shares in force (placed, else the basket's own) over the
+   * groups in plan with a benchmark to lift; moving one rescales the others so
+   * they always add to 100 (shared/benchmarkModel.mjs rebalanceShares) */
+  const activeGroups = profile ? GROUPS.map((g) => g.key).filter((g) => !isOff(g) && Number((profile.units_by_group || {})[g]) > 0) : [];
+  const evenShares = profile ? stretchWeights({ stretch_from: null }, profile.units_by_group) : {};
+  const shares = T && T.stretch_from ? T.stretch_from : evenShares;
+  const slideStretch = (key) => (e) => setInp({ ...inp, stretch_from: rebalanceShares(shares, key, Number(e.target.value) / 100, activeGroups) });
   const figure = (label, target, bmv, format, tip, opts = {}) => {
     let stretch = target === null || bmv === null ? null : target - bmv;
     if (stretch !== null && format(Math.abs(stretch)) === format(0)) stretch = 0;
@@ -788,7 +826,19 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
      launch is otherwise a page that runs to the wrong day */
   const driftOf = (f, value, src) => Object.entries({ airtable: (sourced.airtable || {})[f], clock: (sourced.clock || {})[f] })
     .filter(([name, d]) => d && d !== value && name !== src);
-  const workCloses = (sourced.airtable || {}).closes || [];
+  // the works' own closes as the build reads them (etl/build.py
+  // product_closes over the sized works in the release): an unticked work's
+  // day drops out, so the note beside Draw closes says what the page will
+  const workCloses = (() => {
+    const by = new Map();
+    for (const p of products) {
+      if (p.excluded || !p.edition || !p.launch_date) continue;
+      const d = String(p.launch_date).slice(0, 10);
+      if (!by.has(d)) by.set(d, []);
+      by.get(d).push(p.name || "");
+    }
+    return [...by.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, names]) => ({ date, works: names.length, names }));
+  })();
   const dateField = (label, f, value, src, tip) => {
     const drift = driftOf(f, value, src);
     const help = (
@@ -851,6 +901,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     editing ? "Editing" : atProducts.length ? "Figures from Airtable" : null,
     typedCount ? `${typedCount} figure${typedCount === 1 ? "" : "s"} typed over Airtable` : null,
     manualCount ? `${manualCount} product${manualCount === 1 ? "" : "s"} added by hand` : null,
+    excludedCount ? `${excludedCount} unticked` : null,
   ].filter(Boolean).join(" · ");
   const asPct = (v) => (v === null || v === undefined || v === "" ? "" : String(Math.round(Number(v) * 100)));
 
@@ -1026,26 +1077,27 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
           {profile && (
             <div className="ts-grid" style={{ marginTop: 20 }}>
               <Field label="Where the stretch comes from" help={stretchHelp}
-                tip="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions and entries lifted to match and conversion held. Blank: the basket's own shares, the same uplift in every channel.">
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 14px", alignItems: "flex-end" }}>
-                  {GROUPS.map((g) => {
-                    const gOff = isOff(g.key);
-                    const w = T && T.stretch_from ? T.stretch_from[g.key] : null;
-                    const typed = stretchFrom && stretchFrom[g.key] !== undefined && stretchFrom[g.key] !== null;
-                    return (
-                      <label key={g.key} style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: C.muted, minWidth: 118 }}>
-                        <span>{g.name}{gOff ? " · not in plan" : ""}</span>
-                        <div className={`ts-box num${gOff ? " dis" : ""}`} style={{ width: 118 }}>
-                          <input type="number" min="0" max="100" step="1" disabled={gOff}
-                            placeholder={w === null || w === undefined ? "" : fmt(100 * w, 0)}
-                            value={typed ? Math.round(100 * Number(stretchFrom[g.key])) : ""}
-                            onChange={setStretch(g.key)} />
-                          <span className="unit">%</span>
-                        </div>
-                      </label>
-                    );
-                  })}
-                  <div className="ts-row" style={{ gap: 8 }}>
+                tip="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions and entries lifted to match and conversion held. Even: the basket's own shares, the same uplift in every channel. Drag one channel's slider and the others rescale, so the shares always add to 100%.">
+                <div className="ts-stretch">
+                  <div className="ts-sliders">
+                    {GROUPS.map((g) => {
+                      const gOff = isOff(g.key);
+                      const active = activeGroups.includes(g.key);
+                      const pct = active ? Math.round(100 * Number(shares[g.key] || 0)) : 0;
+                      const basketPct = active ? Math.round(100 * Number(evenShares[g.key] || 0)) : 0;
+                      return (
+                        <label key={g.key} className={`ts-slider${active ? "" : " dis"}`}
+                          title={gOff ? "Not in plan: this channel takes none of the stretch." : !active ? "No benchmark in the basket to lift: nothing to place here."
+                            : "Drag to set this channel's share of the stretch; the others rescale so the shares add to 100."}>
+                          <span className="head"><span>{g.name}{gOff ? " · not in plan" : !active ? " · no benchmark" : ""}</span><b>{active ? `${pct}%` : "–"}</b></span>
+                          <input type="range" min="0" max="100" step="1" disabled={!active || activeGroups.length < 2} value={pct}
+                            aria-label={`${g.name}: share of the stretch`} onChange={slideStretch(g.key)} />
+                          <span className="note">{active && stretchTyped && basketPct !== pct ? `basket ${basketPct}%` : ""}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="ts-row" style={{ gap: 8, marginTop: 10 }}>
                     <button type="button" className="ts-btn secondary" disabled={!stretchTyped} onClick={() => setInp({ ...inp, stretch_from: null })}
                       title="Back to the basket's own shares: the same uplift in every channel.">Even</button>
                     <button type="button" className="ts-btn secondary" disabled={paidOff} onClick={() => setInp({ ...inp, stretch_from: { paid: 1 } })}
@@ -1107,7 +1159,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
             </Notice>
           )}
           <ProductsGrid products={products} econ={econ} editing={editing} onField={onField} onFieldAll={onFieldAll} onName={onName}
-            onAdd={onAdd} onRemove={onRemove} onReset={onReset} emptyNote={airtableNote} />
+            onAdd={onAdd} onRemove={onRemove} onReset={onReset} onInclude={onInclude} emptyNote={airtableNote} />
           <div className="ts-caption">
             Launch value <b>{fmtMoney(econ.launch_value, 0)}</b>
             {(econ.launch_currencies || []).some((c) => c !== "EUR") ? ` (from ${(econ.launch_currencies || []).join(", ")} at a fixed rate)` : ""}

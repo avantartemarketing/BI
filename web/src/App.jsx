@@ -32,6 +32,8 @@ import Waterfall from "./modules/Waterfall.jsx";
 import NoTargets from "./modules/NoTargets.jsx";
 import Upcoming from "./modules/Upcoming.jsx";
 import TargetSetting from "./TargetSetting.jsx";
+import TLTargets from "./TLTargets.jsx";
+import { TLOverview, TLChips } from "./TLPage.jsx";
 import Permissions from "./Permissions.jsx";
 import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
 import { ExplainProvider, ExplainHint, Ex } from "./explain/Explain.jsx";
@@ -316,6 +318,30 @@ function ReleaseRow({ r, asOf, active, onClick }) {
   if (status !== "closed" && Array.isArray(r.closes) && r.closes.length > 1) {
     when = `Closes ${r.closes.map((d) => on(new Date(d + "T00:00:00Z"))).join(" · ")}`;
   }
+  // a timed launch's row says its state in words (docs/TL_SPEC.md §9): the
+  // days to the sales open while signups are watched, the hours left while
+  // the window is open, settling or closed after it; read on the clock, since
+  // a window is hours long and the index is rebuilt every refresh
+  let unit = "d";
+  if (r.type === "TL") {
+    const nowMs = Date.now();
+    const label = r.tlLabel ? r.tlLabel.charAt(0).toUpperCase() + r.tlLabel.slice(1) : null;
+    if (r.tlState === "signups" || r.tlState === "upcoming") {
+      // the days to the sales open while signups are watched, to the announce before it
+      const toMs = r.tlState === "upcoming" && r.windowStart ? Date.parse(r.windowStart + "T00:00:00Z") : r.salesOpen ? Date.parse(r.salesOpen) : NaN;
+      when = label || when;
+      count = Number.isFinite(toMs) ? Math.max(Math.ceil((toMs - nowMs) / 86400000), 0) : null;
+    } else if (r.tlState === "window") {
+      const closeMs = r.windowClose ? Date.parse(r.windowClose) : NaN;
+      when = label || when;
+      count = Number.isFinite(closeMs) ? Math.max(Math.ceil((closeMs - nowMs) / 3600000), 0) : null;
+      unit = "h";
+    } else {
+      when = label || when;
+      count = null;
+    }
+    rows.splice(rows.findIndex((x) => x.label === "Status"), 1, { label: "Status", value: r.tlLabel || r.tlState });
+  }
   return (
     <button className={`release-row${active ? " active" : ""}`} onClick={onClick} {...t.props(content)}>
       {state
@@ -325,7 +351,7 @@ function ReleaseRow({ r, asOf, active, onClick }) {
         <span className="nm">{rowName(r.releaseName || r.name || r.artist)}</span>
         <span className="when">{when}</span>
       </span>
-      {count !== null && <span className="left">{count}<small>d</small></span>}
+      {count !== null && <span className="left">{count}<small>{unit}</small></span>}
       {clock && clock.opensIn > 0 && count === null && <span className="left none">·</span>}
     </button>
   );
@@ -493,8 +519,11 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   const targeted = snap.targeted !== false;
   const catalogue = !!snap.catalogue;
   const upcoming = !!snap.upcoming;
+  // a timed launch (docs/TL_SPEC.md): its own two page states, its own chips
+  // and target setting, no horizon toggle and no layout editing
+  const isTL = snap.type === "TL";
   // nothing to compare against without targets, and a catalogue page has no campaign
-  const showHorizon = targeted && !catalogue;
+  const showHorizon = targeted && !catalogue && !isTL;
 
   /* The page's arrangement is shared and editable (Layout.jsx), so the cards
    * are rendered by key in whatever order the layout says. A card a release has
@@ -542,10 +571,11 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         <div className="page-identity">
           <span className="name">{snap.artist} - {snap.title}</span>
           <span className={`badge ${String(snap.type || "LE").toLowerCase()}`}>{snap.type || "LE"}</span>
-          {catalogue && (
+          {isTL && <TLChips snap={snap} />}
+          {!isTL && catalogue && (
             <span className="chip" title="No campaign dates in the funnel export - showing the last 90 days of traffic">Catalogue · last 90 days</span>
           )}
-          {upcoming && (
+          {!isTL && upcoming && (
             <span className="chip" title="Known to Airtable; the funnel report has no rows for it yet">Upcoming · from Airtable</span>
           )}
           {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
@@ -554,7 +584,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
               Target <Ex k="release.target">{Number(snap.edition.target).toLocaleString("en-GB")}</Ex> · {Math.round((100 * snap.edition.target) / snap.edition.total)}% of {Number(snap.edition.total).toLocaleString("en-GB")} edition
             </span>
           )}
-          {!targeted && (
+          {!targeted && !isTL && (
             <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
               title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
           )}
@@ -577,13 +607,15 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
-        {!upcoming && <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>}
-        {tab === "overview" && !editing && !upcoming && <ExplainHint />}
-        {tab === "overview" && !editing && (
+        {!upcoming && !isTL && <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>}
+        {tab === "overview" && !editing && !upcoming && !isTL && <ExplainHint />}
+        {tab === "overview" && !editing && !isTL && (
           <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
         )}
       </nav>
-      {tab === "targets" ? <TargetSetting snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} /> : tab === "audit" && !upcoming ? <DrawAudit snap={snap} /> : upcoming ? (
+      {tab === "targets" ? (isTL ? <TLTargets snap={snap} onSaved={onSaved} /> : <TargetSetting snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} />)
+        : isTL ? <TLOverview snap={snap} onSetup={() => setTab("targets")} />
+        : tab === "audit" && !upcoming ? <DrawAudit snap={snap} /> : upcoming ? (
         <div style={{ maxWidth: 560, marginTop: 24 }}><Upcoming snap={snap} onSetup={() => setTab("targets")} /></div>
       ) : (
         <>

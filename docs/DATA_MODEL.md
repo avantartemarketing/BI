@@ -243,7 +243,13 @@ over the edition, else the expected sell-through, else 100%), unit price and cur
 artist's and Avant Arte's profit per unit, the deal's revenue share or profit share, the framing
 option and the framing take-up and profit. The figures typed on the tab lay over them per
 product (`products[]` entries with `airtable_id`, or `manual: true` for a work Airtable has no
-record for); blank means Airtable's. The release's figures follow:
+record for); blank means Airtable's. A work Airtable lists under the launch that is not
+part of the release is unticked on the grid (`excluded: true` on its entry): it stays on the
+grid, greyed, with any figures typed on it kept for when it is ticked again, and counts nothing
+below - not in the edition, the targets, the launch value, the works' closes, the sell-through
+card or the Slack rows (`excludedProducts` on the snapshot lists them). Its Airtable record
+stays with the release, so the upcoming list does not read it as a launch of its own. The
+release's figures follow:
 
 ```
 target units        = Σ round(edition × target sell-through)          # edition_size
@@ -392,8 +398,19 @@ was considered and why it was not given another name (the same words elsewhere w
 share of their entries in this window, the launch the matcher placed it on). The header's
 freshness line shows it in amber, "no funnel rows under this name", with the words in its
 popup, and the build's log prints them; a failure inside the adoption is a warning line, never
-a lost refresh. The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when
-`AIRTABLE_TOKEN` is set; without it the checked-in file stands.
+a lost refresh.
+
+A rename reaches the files through the pull, and the incremental pull keeps the rows older
+than its 45-day overlap as they were (README, Incremental): a renamed release's old name would
+stay on those rows, the funnel would seem to carry both names, and the release would be
+listed twice under each until the weekly full pull (Roy
+Lichtenstein Estate, 30 September 2026: one July row under the corrected-away 2027 Q4 beside
+the September rows under 2026 Q4). The pull now notices a name that has gone upstream, on
+every incremental pull from the overlap's own rows and once a day against upstream, and
+pulls in full instead.
+
+The Airtable pull (`etl/pull_airtable.py`) runs on every refresh when `AIRTABLE_TOKEN` is
+set; without it the checked-in file stands.
 
 ## 2. Source feeds
 
@@ -678,6 +695,16 @@ files and the claims name products this way (`product_names` in `orderLinesCtes`
 on the name; a file pulled before that, with one Shopify product under two titles, is named in
 the build log until the next pull.
 
+**Timed launches** read the same lines by the hour (docs/TL_SPEC.md §5): `data/tl_units_hourly.csv`
+is `typed` for every launch's lines from three days before its `launch_date` to sixteen after,
+per release x product x hour (UTC, the line's creation; a draft's at the draft) x channel (the
+order's purchase event in `TL_Funnel_Report_v2`, matched on the Shopify order id inside
+BigQuery, else Untracked) x status (paid, awaiting, refunded, cancelled, other): units, orders,
+private-room units, the prints a frame was on offer for and the frames bought with them, the
+lines' value. `data/tl_buyers.csv` counts, per release, the collectors with a paid order in the
+same band, how many took more than one piece, and the pieces between them. Both are written
+with the TL feeds (`node server/bigquery.js --write --tl`), aggregates only.
+
 ### Draw entries export (per-draw CSV)
 One row per entrant per draw (unique on Account ID within a draw). Semantics (pinned down
 empirically on the Mondrian and James Jean Blossom draws):
@@ -769,12 +796,18 @@ again, and a save drops them.
 The full lever arithmetic is in the repository history at that date, and in the workbook's
 `LE_Template - old` tab.
 
-## 3a. The TL target model, as the workbook computes it (recorded 2026-09-23, not built)
+## 3a. The TL target model, as the workbook computes it (recorded 2026-09-23)
 
-The dashboard has no timed-launch path yet: `type` is always `LE`, though the
-`TL_Funnel_Report_v2` feed exists (§2.5). When one is built, the workbook's TL_Template is the
-spec. Its September 2026 revision keeps orders and units apart, which the earlier tab did not.
-In its terms:
+Built on 1 October 2026 along the lines of `docs/TL_SPEC.md`, which is the spec for the
+timed-launch pages: two page states (signups before the window, units in it), the dates worked
+back from Airtable's launch date and window length, a TL panel of completed launches and
+baskets cut from it, the targets of §7 there. The pipeline is `server/bigquery.js` (the TL
+feeds), `etl/aggregate_tl.py` (counts per release, day, hour and channel), `etl/tl.py` (the
+release model, the panel, the baskets, the targets, the pages; `type: "TL"`, ids suffixed
+`_tl`) and `shared/tlModel.mjs` (the live header), with `tests/test_tl_model.py` holding the two
+sides to one figure. What follows is the workbook's own reading, kept as the background the
+spec was agreed against. Its September 2026 revision keeps orders and units apart, which the
+earlier tab did not. In its terms:
 
 ```
 total purchases      = edition target                     # ÷ (1 + 0.2 multiple adjustment) on a Multiple
@@ -1124,9 +1157,13 @@ diagnostics and the untracked-redistribution comparisons of §6.2 all keep worki
 `etl/build.py`; the release input `stretch_from`, a share per group, saved from the Target
 setting tab and validated by the server). The gap between the target and the basket's median
 is asked of the groups in shares: the basket's own unit shares by default, which is every
-group lifted by the same K (the even uplift), or the shares typed on the tab when the plan
+group lifted by the same K (the even uplift), or the shares set on the tab when the plan
 knows where the extra will come from - most of it from more paid spend, say, or an artist
-expected to outperform. A group set aside (`channels_off`) or with no benchmark to lift takes
+expected to outperform. The tab sets them with one slider per group, coupled: moving one
+group's share rescales the others so the shares always add to 100%, each keeping its
+proportion of the rest (`shared/benchmarkModel.mjs` `rebalanceShares`); a group set aside
+or with no benchmark has no slider, Even puts the basket's own shares back and All from paid
+places the whole stretch on paid. A group set aside (`channels_off`) or with no benchmark to lift takes
 none, and a share typed on it falls to the others; a negative stretch (a basket that reached
 more than the edition) is a cut placed the same way, and a cut bigger than a group's benchmark
 stops at zero with the rest falling on the others, so the groups always sum to the edition.

@@ -77,6 +77,25 @@ check(saved.releases[RELEASE].cannibalisation === 0.3 && saved.releases[RELEASE]
 const after = await get(`/api/inputs/${RELEASE}`);
 check(after.body.inputs.cannibalisation === 0.3, "and served back straight away");
 
+// the tick on the products grid: an unticked work is saved as excluded on its entry, with any
+// typed figure, and served back; ticked again the flag goes and the figure stays. The
+// release's own figures stay in force throughout, so the basket checks below read it as it was.
+const atIds = (((before.body.sourced || {}).airtable || {}).products || []).map((p) => String(p.airtable_id));
+if (atIds.length > 1) {
+  const off = await post(`/api/inputs/${RELEASE}`, { inputs: { products: [{ airtable_id: atIds[0], excluded: true, unit_price: 2500 }] } });
+  check(off.status === 200 && off.body.queued === true, `an unticked work saves: ${off.status} ${JSON.stringify(off.body).slice(0, 160)}`);
+  const onDisk = JSON.parse(fs.readFileSync(path.join(tmp, "inputs.saved.json"), "utf8")).releases[RELEASE];
+  const entry = (onDisk.products || []).find((p) => String(p.airtable_id) === atIds[0]);
+  check(entry && entry.excluded === true && entry.unit_price === 2500, `the tick is on disk with the typed figure: ${JSON.stringify(entry)}`);
+  const served = await get(`/api/inputs/${RELEASE}`);
+  check((served.body.inputs.products || []).some((p) => String(p.airtable_id) === atIds[0] && p.excluded === true), "and served back");
+  const back = await post(`/api/inputs/${RELEASE}`, { inputs: { products: [{ airtable_id: atIds[0], unit_price: 2500 }] } });
+  const again = JSON.parse(fs.readFileSync(path.join(tmp, "inputs.saved.json"), "utf8")).releases[RELEASE];
+  check(back.status === 200 && !(again.products || []).some((p) => p.excluded) && (again.products || []).some((p) => p.unit_price === 2500), "ticked again, the flag is gone and the figure stays");
+  const clean = await post(`/api/inputs/${RELEASE}`, { inputs: { products: null } });
+  check(clean.status === 200, `the typed products are cleared again: ${clean.status}`);
+} else check(false, "the test release has fewer than two Airtable products");
+
 // the build's status is polled; without a funnel export here it fails, and says so
 let st = null;
 for (let i = 0; i < 120; i++) {
@@ -143,6 +162,11 @@ if (bareId) {
 // and it can take the suggested basket at once, read on Airtable's products
 const upcomingId = Object.keys(inputsDoc.discovered || {}).find((id) => (inputsDoc.discovered[id].source === "airtable") && ((inputsDoc.sourced || {})[id] || {}).airtable && (inputsDoc.sourced[id].airtable.products || []).some((p) => p.edition && p.unit_price));
 if (upcomingId) {
+  // every work unticked leaves nothing to count: refused, and nothing saved for the release
+  const upIds = (inputsDoc.sourced[upcomingId].airtable.products || []).map((p) => ({ airtable_id: String(p.airtable_id), excluded: true }));
+  const allOff = await post(`/api/inputs/${upcomingId}`, { inputs: { cannibalisation: 0.25, benchmark_basket: { kind: "ready", id: "similar_size" }, products: upIds } });
+  check(allOff.status === 400 && /unticked/.test(allOff.body.error || ""), `every work unticked is refused: ${allOff.status} ${allOff.body.error}`);
+  check(!JSON.parse(fs.readFileSync(path.join(tmp, "inputs.saved.json"), "utf8")).releases[upcomingId], "and nothing is saved for it");
   const first = await post(`/api/inputs/${upcomingId}`, { inputs: { cannibalisation: 0.25, benchmark_basket: { kind: "ready", id: "similar_size" } } });
   check(first.status === 200 && first.body.queued === true && first.body.created === true && first.body.build.full === false,
     `a first save is queued as a one-release build: ${first.status} ${JSON.stringify(first.body).slice(0, 160)}`);

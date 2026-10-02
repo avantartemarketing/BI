@@ -209,6 +209,7 @@ function readInputsDoc() {
  * content feeds) plus the model's usual defaults. Economics have no sensible
  * default and stay null until someone types them. */
 function defaultsFor(id, disc) {
+  if (disc.type === "TL") return tlDefaultsFor(id, disc);
   return {
     id, release_name: disc.release_name, campaign_code: disc.campaign_code || "",
     campaign_names: disc.campaign_name ? [disc.campaign_name] : [], marketing_lead: null,
@@ -224,6 +225,27 @@ function defaultsFor(id, disc) {
     stretch_from: null,
   };
 }
+
+/* A timed launch's inputs (docs/TL_SPEC.md §7): the dates worked back from
+ * Airtable (the announce, the window's open and length), the units target
+ * (null: Airtable's, summed over the ticked works), the rates and the paid
+ * prices (null: the basket's medians), the channels, the stretch and the
+ * basket as for an LE. type marks the record so the build and this route
+ * read it as a TL. */
+function tlDefaultsFor(id, disc) {
+  return {
+    id, type: "TL", release_name: disc.release_name, campaign_code: disc.campaign_code || "",
+    campaign_names: disc.campaign_name ? [disc.campaign_name] : [], marketing_lead: null,
+    announce_date: disc.announce_date, launch_end: disc.launch_end, window_open: disc.window_open || null, window_hours: disc.window_hours || null,
+    products: [], airtable_release: disc.airtable_release || null, airtable_ids: disc.airtable_ids || null,
+    units_target: null, purchases_per_order: null, signup_order_rate: null, cost_per_signup: null, cost_per_purchase: null,
+    cannibalisation: null, channels_off: [], stretch_from: null, benchmark_basket: null,
+  };
+}
+// the TL fields a save may carry: [field, floor, ceiling, round to]
+const TL_NUMBERS = [["units_target", 1, null, 0], ["purchases_per_order", 0.5, 20, 3], ["signup_order_rate", 0.0001, 1, 4],
+  ["cost_per_signup", 0.01, null, 2], ["window_hours", 1, 24 * 60, 1]];
+const ISO_TS_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?Z$/;
 
 /* Where the saves land. Render resets the service's own disk on every deploy,
  * so a save is durable only when SAVED_INPUTS_PATH points somewhere else (a
@@ -273,6 +295,22 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   const errors = [];
   const sourced = sourcedFor(doc, id);
   const { resolveProducts, releaseEconomics } = await economicsPromise;
+  const isTL = current.type === "TL" || body.type === "TL";
+  if (isTL) {
+    next.type = "TL";
+    for (const [f, floor, ceil, places] of TL_NUMBERS) {
+      if (body[f] === undefined) continue;
+      if (body[f] === null || body[f] === "") { next[f] = null; continue; }
+      const v = Number(body[f]);
+      if (!Number.isFinite(v) || v < floor || (ceil !== null && v > ceil)) errors.push(`${f.replace(/_/g, " ")} must be ${ceil !== null ? `between ${floor} and ${ceil}` : `a number of at least ${floor}`}, or empty`);
+      else next[f] = Math.round(v * 10 ** places) / 10 ** places;
+    }
+    if (body.window_open !== undefined) {
+      if (body.window_open === null || body.window_open === "") next.window_open = null;
+      else if (!ISO_TS_RE.test(String(body.window_open))) errors.push("window_open must be an ISO timestamp in UTC (2026-10-13T16:00:00Z)");
+      else next.window_open = new Date(body.window_open).toISOString().replace(/\.\d{3}Z$/, "Z");
+    }
+  }
   // the release-level figures a release was set up with before the model went
   // per product: inputs saved under the old shape carry them at the top level,
   // and a save moves them under legacy_economics; null clears them, and the
@@ -287,7 +325,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   const dateOf = (f) => body[f] || current[f] || (sourced.notion || {})[f] || (sourced.clock || {})[f] || (sourced.airtable || {})[f];
   if (creating) {
     for (const f of ["announce_date", "launch_end"]) {
-      if (!dateOf(f)) errors.push(`${f} is needed to set targets - none in the Notion log, the funnel's clock or Airtable, so type it`);
+      if (!dateOf(f)) errors.push(`${f} is needed to set targets - none in the ${isTL ? "feed or Airtable" : "Notion log, the funnel's clock or Airtable"}, so type it`);
     }
   }
   // what a paid unit costs to buy, in euros: paid units x this is the paid budget.
@@ -391,7 +429,9 @@ app.post("/api/inputs/:id", route(async (req, res) => {
    * Airtable's: its edition, target sell-through, price and currency, the
    * artist's and Avant Arte's profit per unit, the deal's revenue or profit
    * share, the framing take-up and profit; empty means Airtable's, or the
-   * default. A draw entry (key = the draw id) is the sell-through card's: the
+   * default; excluded: true is the tick on the grid, a work left out of the
+   * release that stays on the grid and counts nothing (docs 1.6). A draw
+   * entry (key = the draw id) is the sell-through card's: the
    * name typed for the draw and its edition (docs §6.3). No page edits those
    * today; the tab sends them back as they came, and a draw with none takes
    * the Shopify title its winners bought. */
@@ -420,12 +460,14 @@ app.post("/api/inputs/:id", route(async (req, res) => {
         };
         if (airtableId || manual) {
           for (const [f, floor, ceil, integer] of PRODUCT_FIELDS) entry[f] = numField(f, floor, ceil, integer);
+          if (isTL) entry.units_target = numField("units_target", 1, null, false);
           if (p.currency !== undefined && p.currency !== null && p.currency !== "") {
             const c = String(p.currency).toUpperCase();
             if (!CURRENCIES.includes(c)) errors.push(`the currency of ${label} must be one of ${CURRENCIES.join("/")}`);
             else entry.currency = c;
           }
           if (p.framing_available !== undefined && p.framing_available !== null && p.framing_available !== "") entry.framing_available = !!p.framing_available;
+          if (p.excluded === true) entry.excluded = true;
           if (entry.aa_revenue_share !== null && entry.aa_profit_share !== null) errors.push(`${label} cannot carry both a revenue share and a profit share - the deal is one or the other`);
         } else {
           entry.edition = numField("edition", 0, null, true);
@@ -438,11 +480,21 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     }
   }
   // what the targets need: a product with an edition and a price, from
-  // Airtable or typed, or the release-level figures it still carries
-  if (creating || next.legacy_economics === null) {
+  // Airtable or typed, or the release-level figures it still carries. A
+  // timed launch needs a units target instead: Airtable's over the ticked
+  // works, or one typed here (docs/TL_SPEC.md §7)
+  if (isTL) {
+    const typed = Number(next.units_target) > 0 ? Number(next.units_target) : 0;
+    const excluded = new Set((next.products || []).filter((p) => p.excluded && p.airtable_id).map((p) => String(p.airtable_id)));
+    const typedTargets = Object.fromEntries((next.products || []).filter((p) => p.airtable_id && Number(p.units_target) > 0).map((p) => [String(p.airtable_id), Number(p.units_target)]));
+    const airtable = ((sourced.airtable || {}).products || []).filter((p) => !excluded.has(String(p.airtable_id)))
+      .reduce((sum, p) => sum + (typedTargets[String(p.airtable_id)] || Number(p.units_target) || 0), 0);
+    if (!(typed > 0) && !(airtable > 0)) errors.push("no units target: Airtable holds none for the ticked works, so type one");
+  } else if (creating || next.legacy_economics === null) {
     const products = resolveProducts((sourced.airtable || {}).products || [], next.products || [], doc.benchmarks || {});
     const econ = releaseEconomics(products, next.legacy_economics || null, doc.benchmarks || {});
-    if (!(econ.edition_size > 0)) errors.push("no product has an edition yet - Airtable holds none for this release, so type one on the products table");
+    if (products.length && products.every((p) => p.excluded)) errors.push("every product is unticked - tick at least one, or add a work by hand");
+    else if (!(econ.edition_size > 0)) errors.push("no product has an edition yet - Airtable holds none for this release, so type one on the products table");
     else if (!(econ.launch_value > 0)) errors.push("no product has a unit price yet - type one on the products table");
   }
   // the entry -> order rate the sell-through prediction converts entries in
@@ -474,7 +526,11 @@ app.post("/api/inputs/:id", route(async (req, res) => {
    * release is benchmarked against the suggested one again. Checked last, on
    * the release as this save leaves it - its products, edition, price,
    * recency preference and dates - which is what the build will pick on. */
-  if (body.benchmark_basket !== undefined) {
+  if (body.benchmark_basket !== undefined && isTL) {
+    const check = tlBasketCheck(body.benchmark_basket, id);
+    if (!check.ok) errors.push(check.error);
+    else next.benchmark_basket = check.normalised;
+  } else if (body.benchmark_basket !== undefined) {
     const check = await baskets.validateBasketSpec(body.benchmark_basket, id, { release: next });
     if (!check.ok) errors.push(check.error);
     else next.benchmark_basket = check.normalised;
@@ -506,6 +562,36 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   const build = startBuild(id, false, creating);
   res.json({ queued: true, created: creating, build: publicBuild(build), storage: storageInfo() });
 }));
+
+/* A timed launch's basket (docs/TL_SPEC.md §8): a ready basket the launch's
+ * page lists (etl/tl.py ready_baskets), or a bespoke list of launches the TL
+ * panel holds. null clears it. The panel is the build's tl_panel.csv. */
+function tlBasketCheck(spec, id) {
+  if (spec === null) return { ok: true, normalised: null };
+  if (!spec || typeof spec !== "object") return { ok: false, error: "benchmark_basket must be an object or null" };
+  const kind = String(spec.kind || "ready");
+  if (kind === "ready") {
+    const bid = String(spec.id || "");
+    const snap = readSnapshot(id);
+    const listed = ((snap && snap.baskets) || []).map((b) => b.id);
+    if (!listed.length) return { ok: true, normalised: { kind: "ready", id: bid } };   // no page yet: the build resolves it, falling back to the suggestion
+    if (!listed.includes(bid)) return { ok: false, error: `benchmark_basket: ${bid || "(none)"} is not one of this launch's baskets (${listed.join(", ")})` };
+    return { ok: true, normalised: { kind: "ready", id: bid } };
+  }
+  if (kind === "bespoke") {
+    let known = new Set();
+    try {
+      const rows = fs.readFileSync(path.join(DATA, "tl_panel.csv"), "utf8").split("\n").slice(1);
+      known = new Set(rows.map((r) => (r.startsWith('"') ? r.slice(1).split('",')[0].replace(/""/g, '"') : r.split(",")[0])).filter(Boolean));
+    } catch { /* no panel yet */ }
+    const members = [...new Set((Array.isArray(spec.members) ? spec.members : []).map((m) => String(m)).filter(Boolean))];
+    const unknown = members.filter((m) => known.size && !known.has(m));
+    if (!members.length) return { ok: false, error: "benchmark_basket: a bespoke basket needs at least one launch" };
+    if (unknown.length) return { ok: false, error: `benchmark_basket: not in the TL panel: ${unknown.slice(0, 3).join(", ")}` };
+    return { ok: true, normalised: { kind: "bespoke", members, name: String(spec.name || "Bespoke basket").slice(0, 80) } };
+  }
+  return { ok: false, error: `benchmark_basket: unknown kind ${kind}` };
+}
 
 /* The builds saves have started, one record per release, for the tab to poll. */
 const builds = new Map();
@@ -558,6 +644,12 @@ app.get("/api/baskets", route(async (req, res) => {
 app.get("/api/baskets/candidates", route(async (_req, res) => {
   res.json(await baskets.candidates());
 }));
+// the TL panel as the picker's candidate rows (etl/tl.py candidate_rows),
+// written by the build; empty until it has run on this checkout
+app.get("/api/tl/baskets/candidates", (_req, res) => {
+  try { res.json(JSON.parse(fs.readFileSync(path.join(DATA, "tl_basket_candidates.json"), "utf8"))); }
+  catch { res.json({ asOf: null, rows: [] }); }
+});
 
 app.post("/api/baskets", route(async (req, res) => {
   const body = req.body || {};
