@@ -130,7 +130,8 @@ PAID_COST_MIN_MEMBERS = 3   # a basket's median cost needs this many members wit
 RATE_MIN_SIGNUPS = 30       # a group's signup -> order rate is read from this many signups
 RATE_MIN_SESSIONS = 100     # a group's session -> signup rate from this many sessions
 RATE_MAX_PER_SESSION = 0.5  # ... and over this it is not a rate the feed measured
-RATE_MAX_UNITS_PER_SESSION = 1.0  # a funnel rate over this (units, or signups, per session) is unread: its gap reads as conversion
+RATE_MAX_UNITS_PER_SESSION = 1.0
+EMAIL_COHORT_MIN_DELIVERED = 100   # a launch's pre-window sends join the email cohort from this many delivered  # a funnel rate over this (units, or signups, per session) is unread: its gap reads as conversion
 RECENT_MONTHS = 18          # a comparable that closed within this many months ranks first (the LE baskets' RECENT_MONTHS)
 NEAR = 4.0                  # a comparable within this multiple on every axis is near
 ID_MAX_CHARS = 120
@@ -1430,6 +1431,72 @@ def _products(rec: dict) -> tuple[list[dict], dict]:
     return rows, {"match": at.get("match"), "note": at.get("note"), "economics": econ}
 
 
+def _sends_between(em: pd.DataFrame, lo: date | None, hi: date) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """One code's sends between two days inclusive (a `day` column added), and
+    the marketing ones among them: GEN, CUS and INS, else anything not
+    transactional or automated, as the LE email card reads them. The email card
+    and the email cohort both count through here, so a page's sends and the
+    references they are read against are the same kind of send."""
+    em = em.copy()
+    em["day"] = pd.to_datetime(em["sent_at"], errors="coerce").dt.date
+    em = em[em["day"].notna() & ((em["day"] >= lo) if lo else True) & (em["day"] <= hi)]
+    types = em["email_type"] if "email_type" in em.columns else pd.Series("", index=em.index)
+    core = em[types.isin(["GEN", "CUS", "INS"])]
+    if not len(core):
+        core = em[~types.isin(["TRNS", "AUT", "FREQ", "TEST"])]
+    return em, core
+
+
+def email_cohort(panel: pd.DataFrame, emails: pd.DataFrame | None, as_of: date) -> dict | None:
+    """The email references a TL page's funnel reads its sends against: the
+    LE's email_delivered_benchmark on the TL panel. One row per panel launch
+    whose code has marketing sends in its pre-window (the announce less seven
+    days to the sales open, the sends _email_card counts) delivering at least
+    EMAIL_COHORT_MIN_DELIVERED: the delivered total on the pre-window
+    delivery-timing curve (build.CURVE_GRID, the pre-window as the unit) and,
+    for a launch that closed within build.EMAIL_REF_MONTHS, its open, click and
+    clicks-per-open rates and its pre-window AA Email sessions per click. The
+    medians are build.email_medians'; a page reads them without its own row and
+    without the launches that closed after it (build.email_bench_for), so a
+    closed launch is never graded against itself. None until two launches
+    qualify."""
+    import build as B  # noqa: E402 - lazily: build imports this module
+    if emails is None or not len(emails) or panel is None or not len(panel) or "campaign" not in emails.columns:
+        return None
+    recent = as_of - timedelta(days=B.EMAIL_REF_MONTHS * 30)
+    codes = emails["campaign"].astype(str).str.strip()
+    rows = []
+    for r in panel.to_dict("records"):
+        code = r.get("campaign_code")
+        announce, sales_open, close = _day(r.get("announce")), _day(r.get("sales_open")), _day(r.get("close"))
+        if not isinstance(code, str) or not code or announce is None or sales_open is None:
+            continue
+        em = emails[codes == code]
+        if not len(em):
+            continue
+        _, core = _sends_between(em, announce - timedelta(days=7), sales_open)
+        total = float(pd.to_numeric(core["delivered"], errors="coerce").fillna(0).sum()) if len(core) else 0.0
+        if total < EMAIL_COHORT_MIN_DELIVERED:
+            continue
+        opened = float(pd.to_numeric(core["opened"], errors="coerce").fillna(0).sum())
+        clicked = float(pd.to_numeric(core["clicked"], errors="coerce").fillna(0).sum())
+        span = max((sales_open - announce).days, 1)
+        c = core.assign(pdsa=[(day - announce).days / span for day in core["day"]]).sort_values("pdsa")
+        cum = pd.to_numeric(c["delivered"], errors="coerce").fillna(0).cumsum() / total
+        shares = []
+        for t in B.CURVE_GRID:
+            sel = cum[c["pdsa"] <= t]
+            shares.append(float(sel.iloc[-1]) if len(sel) else 0.0)
+        sessions = _num(r.get("sessions_aa_email")) or 0.0
+        end = close or sales_open
+        rate = None
+        if end >= recent:
+            rate = (r["release_name"], end, opened / total, clicked / total, (clicked / opened) if opened > 0 else None,
+                    (sessions / clicked) if sessions > 0 and clicked > 0 else None)
+        rows.append({"id": r["release_name"], "name": r["release_name"], "code": code, "end": end, "total": total, "shares": shares, "rate": rate})
+    return B.email_medians(rows) if rows else None
+
+
 def _email_card(emails: pd.DataFrame | None, code: str | None, d: dict, daily: pd.DataFrame, as_of: date) -> dict | None:
     """The pre-window sends under the campaign code, the marketing sends (GEN,
     CUS, INS, else anything not transactional or automated, as the LE email
@@ -1437,19 +1504,14 @@ def _email_card(emails: pd.DataFrame | None, code: str | None, d: dict, daily: p
     automated flow (signup confirmations, welcomes) counted apart."""
     if emails is None or not len(emails) or not code:
         return None
-    em = emails[emails["campaign"].astype(str).str.strip() == code].copy() if "campaign" in emails.columns else emails.iloc[0:0]
+    em = emails[emails["campaign"].astype(str).str.strip() == code] if "campaign" in emails.columns else emails.iloc[0:0]
     # the last send anywhere in the file: a feed that stops before the launch is an ingestion gap, not silence
     feed_through = _iso(_day(pd.to_datetime(emails["sent_at"], errors="coerce").max())) if "sent_at" in emails.columns else None
     if not len(em):
         return {"code": code, "sends": 0, "sequence": [], "automated": 0, "totals": None, "delivered": 0, "opened": 0, "clicked": 0, "feedThrough": feed_through}
-    em["day"] = pd.to_datetime(em["sent_at"], errors="coerce").dt.date
     lo = (d["announce"] - timedelta(days=7)) if d["announce"] else None
     hi = d["sales_open"].date() if d["sales_open"] else as_of
-    em = em[em["day"].notna() & ((em["day"] >= lo) if lo else True) & (em["day"] <= hi)]
-    types = em["email_type"] if "email_type" in em.columns else pd.Series("", index=em.index)
-    core = em[types.isin(["GEN", "CUS", "INS"])]
-    if not len(core):
-        core = em[~types.isin(["TRNS", "AUT", "FREQ", "TEST"])]
+    em, core = _sends_between(em, lo, hi)
     automated = int(len(em) - len(core))
     email_daily = daily[daily["group"] == "aa_email"].groupby("day")["signups"].sum() if len(daily) else pd.Series(dtype=float)
     sends = []
@@ -1904,12 +1966,52 @@ def le_blocks(cx: dict) -> dict:
                       ("unitsByGroup" if in_window else "signupsByGroup"): {g: float(bm_by.get(g) or 0.0) for g in GROUPS},
                       ("units" if in_window else "signups"): bm_total, "n": profile.get("n"), "price": profile.get("price")})
     code, names = cx.get("code"), cx.get("names") or []
+
+    # ---- the email stages' references (the LE build's, on the TL email cohort)
+    # The card's sends are the pre-window sends, so the stages are the funnel's
+    # while the funnel reads the pre-window; inside the window the sessions are
+    # the window's and the sends do not explain them, so the stages step aside
+    # and AA Email reads as sessions and conversion like the other groups.
+    # The delivered target is the sends the plan's expected AA Email sessions by
+    # today imply at the cohort's open rate, clicks per open and sessions per
+    # click, the benchmark the same for the basket's sessions; until two
+    # launches give a sessions-per-click median, the cohort's median send on
+    # its delivery curve at today's point in the pre-window stands in.
+    eb = B.email_bench_for(cx.get("email_bench"), cx.get("release")) if cx.get("email_bench") else None
+    email = dict(snap["email"]) if isinstance(snap.get("email"), dict) else None
+    if email is None and in_window:
+        # no sends on file, but the card still has to know the stages are not the window's
+        email = {"code": code, "sends": 0, "sequence": [], "automated": 0, "totals": None, "delivered": 0, "opened": 0, "clicked": 0, "feedThrough": None}
+    if email is not None:
+        email["deliveredTarget"], email["deliveredBenchmark"], email["funnelStages"] = None, None, not in_window
+        if not in_window:
+            f_em = fbg.get("aa_email") or {}
+            chain = (eb["open_rate"] * eb["ctor_rate"] * eb["spc_rate"]) if eb and all(eb.get(k) for k in ("open_rate", "ctor_rate", "spc_rate")) else None
+            sess_plan, sess_bm = f_em.get("sessions_expected"), f_em.get("sessions_benchmark")
+            if chain and sess_plan:
+                email["deliveredTarget"] = round(sess_plan / chain, 1)
+            elif eb and eb.get("total") is not None:
+                email["deliveredTarget"] = round(eb["total"] * float(np.interp(frac_even, B.CURVE_GRID, eb["curve"])), 1)
+            if chain and sess_bm:
+                email["deliveredBenchmark"] = round(sess_bm / chain, 1)
+            elif email["deliveredTarget"] is not None and not chain:
+                email["deliveredBenchmark"] = email["deliveredTarget"]
+    benchmarks = {**(snap.get("benchmarks") or {}), **B.email_refs(eb)}
+
+    # ---- the post counts (the LE's social block over this state's span)
+    content, artist_posts = cx.get("content"), cx.get("artist_posts")
+    social = None
+    if content is not None:
+        span = (announce, min(as_of, open_day)) if not in_window else (day_steps[0], day_steps[-1])
+        social = B.social_block(content, artist_posts, code, span[0], span[1])
+
     out = {"hero": {**(snap.get("hero") or {}), **hero}, "channels": channels, "funnelByGroup": fbg, "waterfall": waterfall,
+           "email": email, "benchmarks": benchmarks,
            "paid": {**(snap.get("paid") or {}), **paid_extra}, "edition": edition,
            "clock": {"unit": step_unit, "start": clock_start, "of": of_n, "day": day_no, "complete": clock_complete},
            "of": of_n, "day": day_no, "asOfFraction": frac_day, "complete": complete, "unitsPerBuyer": upb,
            "sellthrough": sellthrough, "framing": framing, "unitsSource": "orders" if (in_window and win.get("o") is not None) else "funnel",
-           "campaignName": names[0] if names else (f"{code} · Sign-ups" if code else None), "social": None}
+           "campaignName": names[0] if names else (f"{code} · Sign-ups" if code else None), "social": social}
     if bench:
         out["benchmark"] = bench
     if targeted:
@@ -1919,8 +2021,11 @@ def le_blocks(cx: dict) -> dict:
 
 
 def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, spend: pd.DataFrame | None, emails: pd.DataFrame | None,
-             as_of: date, now: datetime, seen: float = 1.0, orders_data: dict | None = None) -> dict:
-    """The page snapshot of one TL (module docstring)."""
+             as_of: date, now: datetime, seen: float = 1.0, orders_data: dict | None = None, email_bench: dict | None = None,
+             content: pd.DataFrame | None = None, artist_posts: pd.DataFrame | None = None) -> dict:
+    """The page snapshot of one TL (module docstring). `email_bench` is the
+    run's email cohort (email_cohort), `content` the Emplifi post export and
+    `artist_posts` the Notion post log, for the funnel's email and post rows."""
     d = rec["dates"]
     inp = rec.get("inputs") or {}
     state = state_of(d, now)
@@ -2150,7 +2255,9 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
     snap.update(le_blocks({"state": state, "d": d, "as_of": as_of, "now": now, "seen": seen, "daily": daily, "hourly": hourly,
                            "profile": profile, "basket_n": basket["n"], "targets": targets if targeted else None, "off": off,
                            "spend_pre": spend_pre, "spend_win": spend_win, "sp": sp, "sales": sales, "win": win_cx,
-                           "products": products, "econ": econ, "snap": snap, "code": code, "names": names}))
+                           "products": products, "econ": econ, "snap": snap, "code": code, "names": names,
+                           "email_bench": email_bench, "content": content, "artist_posts": artist_posts,
+                           "release": {"id": rec["id"], "release_name": name, "campaign_code": code, "launch_end": release_for_basket["launch_end"]}}))
     return snap
 
 
@@ -2231,6 +2338,9 @@ def build_all(ctx: dict) -> dict:
     else:
         panel, curves = pd.DataFrame(), {}
     out["panel_n"] = len(panel)
+    # the email references every page's funnel reads its sends against (own and later launches set aside per page)
+    email_bench = email_cohort(panel, emails, as_of)
+    content, artist_posts = ctx.get("content"), ctx.get("artist_posts")
     if ctx.get("write", True):
         APP.mkdir(parents=True, exist_ok=True)
         tmp = PANEL.with_suffix(".tmp"); panel.to_csv(tmp, index=False); tmp.replace(PANEL)
@@ -2244,7 +2354,8 @@ def build_all(ctx: dict) -> dict:
         if only and rec["id"] != only:
             continue
         try:
-            snap = build_tl(rec, series, panel, curves, spend, emails, as_of, now, seen, orders_data)
+            snap = build_tl(rec, series, panel, curves, spend, emails, as_of, now, seen, orders_data,
+                            email_bench=email_bench, content=content, artist_posts=artist_posts)
         except Exception as e:  # noqa: BLE001 - one page's failure never stops the build
             out["failures"].append((rec["id"], f"{type(e).__name__}: {e}"))
             continue
@@ -2291,7 +2402,8 @@ if __name__ == "__main__":
     now = _ts(now_arg) or datetime.now(timezone.utc)
     as_of = date.fromisoformat(as_of_arg) if as_of_arg else now.date()
     res = build_all({"as_of": as_of, "now": now, "seen": 1.0, "launch_frame": B.load_launches(),
-                     "inputs": B.INPUTS["releases"], "spend": B.load_spend(), "emails": B.load_emails(), "write": "--write" in sys.argv})
+                     "inputs": B.INPUTS["releases"], "spend": B.load_spend(), "emails": B.load_emails(),
+                     "content": B.load_content(), "artist_posts": B.load_artist_posts(), "write": "--write" in sys.argv})
     print(res["note"])
     for row in res["rows"]:
         print(f"  {row['releaseName'][:48]:48s} {row['tlState']:9s} {row['tlLabel']:28s} pct={row['statusPct']}")

@@ -613,7 +613,8 @@ and writes a page per launch (`data/app/derived/<id>_tl.json`, the `_tl` suffix 
 artist can have an LE and a TL of one name in a quarter). The page is the LE page: the same
 cards in the shared layout, rendered off the LE-shaped blocks the build writes beside the TL
 ones (`etl/tl.py le_blocks`: channels with daily series, funnel contributions, the waterfall,
-the hero, paid pacing, sell-through rows and framing), in signups by day before the window
+the hero, paid pacing, sell-through rows and framing; the funnel's email stages read against
+the TL email cohort, `email_cohort`, the panel's launches' pre-window sends), in signups by day before the window
 opens and in units by hour inside it (`clock`), with `web/src/vocab.mjs` giving each card its
 words; what differs is only what a timed launch has no equivalent for (paid cost per signup or
 sale in place of ROI, budget pacing in place of the LE spend rules, a pre-window signups card

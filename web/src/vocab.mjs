@@ -18,6 +18,7 @@ const LE = {
   stepWord: "day", stepWordPlural: "days",
   outcomeWaterfall: "Actual vs target", projectionWaterfall: "Projection vs target",
   sellThroughTitle: "Sell-through by product",
+  launches: "draw launches",   // what a cohort of references is made of
 };
 
 const TL_SIGNUPS = {
@@ -30,6 +31,7 @@ const TL_SIGNUPS = {
   trajTitle: "Signup trajectory",
   conv: "Session → signup", convBuyer: "Session → signup", perBuyer: "Signups per person",
   paidCost: "Cost per signup", paidUnits: "Paid signups", paidTitle: "Paid cost per signup",
+  launches: "timed launches",
 };
 
 const TL_UNITS = {

@@ -20,6 +20,11 @@
  *   Paid      - Spend vs the budget's share of the days paid runs · Cost per
  *               unit (spend over paid secured units) vs the plan's cost per
  *               purchase (inverted)
+ *   On a timed launch the email block says whether its stages are the
+ *   funnel's (email.funnelStages): its sends are the pre-window sends, read
+ *   against the TL email cohort before the window opens; inside the window the
+ *   sessions are the window's and the sends do not explain them, so AA Email
+ *   reads as sessions and conversion like the other groups.
  *
  * The target runs down the centre of every rung, the dot is the actual, and the
  * benchmark is a dotted tick wherever the basket's own figure lands on the same
@@ -208,6 +213,10 @@ function chainSteps(factors) {
  * target is the cohort's median send and sessions per click falls back to the
  * plan's sessions over that send's expected clicks, which closes the chain
  * the same way. Percentages are 0-100 here. */
+/* Whether the AA Email stage rows belong in the funnel: always on an LE page;
+ * a timed launch's email block says (funnelStages false inside the window). */
+const stagesOn = (snap) => (snap?.email || {}).funnelStages !== false;
+
 function emailStages(snap) {
   const email = snap?.email || {};
   const b = snap?.benchmarks || {};
@@ -285,7 +294,7 @@ function groupWaterfall(g, snap, vsBm = false) {
   ]);
 
   let steps;
-  if (g.key === "aa_email") {
+  if (g.key === "aa_email" && stagesOn(snap)) {
     const em = emailStages(snap);
     const { delivA, opensA, clicksA } = em;
     const delivE = vsBm ? em.delivB : em.delivE, clicksE = vsBm ? em.clicksB : em.clicksE;
@@ -599,11 +608,11 @@ export function rungModel(snap) {
   const postsBm = of > 0 && social.artistPostsTarget ? (social.artistPostsTarget * day) / of : null;
   const cohort = snap?.benchmarks?.emailRefCohort;
   const REF_NOTE = cohort
-    ? `Reference: median pooled rate across ${cohort.n} completed draw launches with sends on file (closed ${cohort.from} to ${cohort.to})`
-    : "Reference: fixed default until two completed draw launches have sends on file";
+    ? `Reference: median pooled rate across ${cohort.n} completed ${W.launches} with sends on file (closed ${cohort.from} to ${cohort.to})`
+    : `Reference: fixed default until two completed ${W.launches} have sends on file`;
   const em = emailStages(snap);
   const SPC_NOTE = em.spcRef
-    ? `AA Email sessions per email click. Reference: the median sessions per click across ${cohort ? cohort.n + " " : ""}completed draw launches with sends on file - the traffic the clicks do not explain`
+    ? `AA Email sessions per email click. Reference: the median sessions per click across ${cohort ? cohort.n + " " : ""}completed ${W.launches} with sends on file - the traffic the clicks do not explain`
     : "AA Email sessions per email click. Reference: the plan's expected AA Email sessions by today over its expected clicks (delivered target × reference open rate × reference clicks per open) - the traffic the clicks do not explain";
 
   /* The email stage rates have no basket behind them: their reference is
@@ -612,7 +621,7 @@ export function rungModel(snap) {
   const groups = [
     {
       key: "aa_email", name: "AA Email", short: "Email",
-      rungs: [
+      rungs: !stagesOn(snap) ? [sess("aa_email"), conv("aa_email")] : [
         // benchmark = cohort median delivered total x pooled delivery-timing
         // curve at today's pdsa (computed in the ETL as email.deliveredTarget);
         // the target lifts it by K like any other volume

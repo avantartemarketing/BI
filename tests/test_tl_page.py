@@ -41,7 +41,7 @@ def near(a, b, tol):
 
 def pages(now: datetime) -> dict:
     res = tl.build_all({"as_of": now.date(), "now": now, "seen": 1.0, "launch_frame": B.load_launches(), "inputs": B.INPUTS["releases"],
-                        "spend": B.load_spend(), "emails": B.load_emails(), "write": False})
+                        "spend": B.load_spend(), "emails": B.load_emails(), "content": B.load_content(), "artist_posts": B.load_artist_posts(), "write": False})
     for rid, err in res["failures"]:
         check(False, f"{rid} failed to build: {err}")
     return res.get("snaps", {})
@@ -105,6 +105,24 @@ def check_page(s: dict, label: str) -> None:
     if not in_window:
         check(s.get("sellthrough") is None and s.get("framing") is None, f"{label}: no sales cards before the window")
     check(s["unitsPerBuyer"]["plan"] > 0 and s["unitsPerBuyer"]["actual"] > 0, f"{label}: pieces per buyer on both sides")
+    # the email stages: the funnel's before the window (the sends against the TL
+    # email cohort), aside inside it (the pre-window sends are not the window's traffic)
+    em, bmk = s.get("email"), s.get("benchmarks") or {}
+    if in_window:
+        check(isinstance(em, dict) and em.get("funnelStages") is False and em.get("deliveredTarget") is None, f"{label}: the email stages step aside inside the window")
+    elif em is not None:
+        check(em.get("funnelStages") is True, f"{label}: the email stages are the funnel's before the window")
+        refs = [bmk.get(k) for k in ("emailOpenRateRef", "emailClickToOpenRef", "emailSessionsPerClickRef")]
+        f_em = fbg.get("aa_email") or {}
+        if all(r is not None for r in refs) and f_em.get("sessions_expected") and em.get("deliveredTarget"):
+            chain = refs[0] / 100 * refs[1] / 100 * refs[2]
+            check(near(em["deliveredTarget"] * chain, f_em["sessions_expected"], max(0.02 * f_em["sessions_expected"], 1.0)),
+                  f"{label}: the delivered target multiplies out to the plan's AA Email sessions ({em['deliveredTarget']} x {chain:.4f} vs {f_em['sessions_expected']})")
+            if f_em.get("sessions_benchmark") and em.get("deliveredBenchmark"):
+                check(near(em["deliveredBenchmark"] * chain, f_em["sessions_benchmark"], max(0.02 * f_em["sessions_benchmark"], 1.0)),
+                      f"{label}: the delivered benchmark multiplies out to the basket's AA Email sessions")
+    so = s.get("social")
+    check(so is None or {"posts", "stories", "postsSource", "postsThrough", "artistPosts", "artistPostsTarget"} <= set(so), f"{label}: the social block carries the LE keys")
     bm = s.get("benchmark")
     if bm:
         check(set(bm.get("kByGroup") or {}) == set(tl.GROUPS) and bm.get("channelsOff") is not None, f"{label}: the benchmark block carries the LE keys")
@@ -122,6 +140,16 @@ for rid, s in live.items():
     states[s["tlState"]] = states.get(s["tlState"], 0) + 1
     check_page(s, f"{rid} ({s['tlState']})")
 check("signups" in states or "window" in states, f"a launch in flight on the build's day ({states})")
+
+# the TL email cohort: the panel's launches' pre-window sends, with rates from two or more
+import pandas as pd  # noqa: E402
+cohort = tl.email_cohort(pd.read_csv(tl.PANEL), B.load_emails(), NOW.date())
+check(cohort is not None and cohort.get("open_rate") is not None and cohort["cohort"]["n"] >= 2, "the email cohort has rate references")
+if cohort and cohort.get("open_rate") is not None:
+    check(0.03 < cohort["open_rate"] < 0.6 and 0.03 < cohort["ctor_rate"] < 0.6 and 0.3 < cohort["spc_rate"] < 5, f"the cohort's medians are rates a send can have ({cohort['open_rate']:.3f}, {cohort['ctor_rate']:.3f}, {cohort['spc_rate']:.2f})")
+pre = [s for s in live.values() if s["tlState"] == "signups" and (s.get("email") or {}).get("delivered")]
+check(all((s["email"].get("deliveredTarget") or 0) > 0 and (s["email"].get("deliveredBenchmark") or 0) > 0 for s in pre) and pre,
+      "a live pre-window page with sends reads its email chain against the cohort")
 
 # Gregory Crewdson's 2026 window, replayed at 20:00 UTC on 30 June: the hour clock and the sales cards
 REPLAY = datetime(2026, 6, 30, 20, 0, tzinfo=timezone.utc)

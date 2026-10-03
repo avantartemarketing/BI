@@ -6418,6 +6418,7 @@ def main(only: str | None = None):
         # a timed launch's page: the TL model builds it and patches its row
         res = tl.build_all({"as_of": as_of, "now": datetime.now(timezone.utc), "seen": seen, "launch_frame": launch_frame,
                             "inputs": INPUTS["releases"], "spend": spend, "emails": emails, "only": only,
+                            "content": content, "artist_posts": artist_posts,
                             "configured_ids": {r["id"] for r in INPUTS["releases"]}})
         if res["failures"]:
             raise SystemExit(f"build: {only} failed - {res['failures'][0][1]}")
@@ -6557,6 +6558,7 @@ def main(only: str | None = None):
     try:
         tl_out = tl.build_all({"as_of": as_of, "now": datetime.now(timezone.utc), "seen": seen, "launch_frame": launch_frame,
                                "inputs": INPUTS["releases"], "spend": spend, "emails": emails,
+                               "content": content, "artist_posts": artist_posts,
                                "configured_ids": {r["id"] for r in INPUTS["releases"]}})
     except Exception as e:  # noqa: BLE001 - the TL pages never stop the LE build
         tl_out["note"] = f"tl: the timed launches could not be built ({type(e).__name__}: {e})"
