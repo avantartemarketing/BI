@@ -795,16 +795,16 @@ above them, to the release's channel (see "Posting sell-through to Slack").
 headline counts the same units as the sell-through card, at the page's Today or At close:
 the paid prints and the frames bought with them, the drafts and the frames on them, and the
 draw's forecast conversions (at close the entries still to come) at the rate the entrants ask
-for, against the plan's frame conversion. Below it, two bars on one 0 to 100% scale carry its
+for. Below it, two bars on one 0 to 100% scale carry its
 two parts, the buyers (paid prints) and the entrants (the frames on the app's
-pre-authorisation drafts, which is what allocation brings), each with the plan as the pale
-fill and the basket's median as the dotted outline; the headline sits between them. Prints
-with no framing option (the Lifesize Brillo Box) are left out and counted in the key. Hover
+pre-authorisation drafts, which is what allocation brings), each with its number; the
+headline sits between them. The card carries no plan and no benchmark: nothing on it is a
+target. Prints with no framing option (the Lifesize Brillo Box) are left out and counted in the key. Hover
 the headline for the forecast by work and the buyers' bar for the paid rate by work. The card
 is off the page on a release nothing has been offered a frame on, and reads from the same
 orders feed as sell-through.
 
-Every card but sell-through carries both references at once: the target as a fill in two tints of the actual's
+Every card but sell-through and framing carries both references at once: the target as a fill in two tints of the actual's
 own blue (darker to whichever of target and benchmark is lower, lighter from the benchmark up
 to the target), the benchmark as a dotted outline over it, and the actual in front. A single
 `Compare Today | At close` toggle in the page header drives all of them, and the percentages and
