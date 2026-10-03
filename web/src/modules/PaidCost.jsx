@@ -1,16 +1,21 @@
-/* A timed launch's paid chart (docs/TL_SPEC.md §4, §5): the Paid ROI card's
+/* A timed launch's paid card (docs/TL_SPEC.md §4, §5): the Paid ROI card's
  * shape, in TL words. A timed launch's paid buys signups before the window
- * opens and sales inside it, and its products carry no profit split, so the
- * card reads the cost of what paid bought rather than a return: daily spend
- * bars on their own axis in the bottom band, the trailing three-day cost per
- * signup (or per sale, in the window) as the line, and the plan's cost - the
- * basket's median, or the figure typed on the Target setting tab - as the
- * reference line it is judged against. The headline is the last three full
- * days' cost; the totals beside it the whole period's cost and the paid
- * signups or units to date. Before the window the clock runs in days from
- * the announce, inside it in hours from the sales open, and a day's spend
- * then spans its hours. The words on the plot are set in clear space with a
- * leader to what they name, as the LE charts set theirs (labels.mjs). */
+ * opens and sales inside it. The ROI view reads what paid bought at what it
+ * is assumed to be worth to Avant Arte - a paid signup at the basket's paid
+ * signup -> order rate (or the typed rate), the pieces an order takes and
+ * AA's profit on a unit with the likely framing profit, net of
+ * cannibalisation; a paid sale the same without the conversion - over what it
+ * cost AA, its share of the spend (etl/tl.py tl_paid_value): the trailing
+ * three full days' ROI as the line against the target ROI, the daily spend as
+ * bars on their own axis in the bottom band. The cost view is the same chart
+ * in euros: the trailing cost per signup (or per sale) against the plan's
+ * cost - the basket's median, or the figure typed on the Target setting tab -
+ * and the cost at the target ROI. ROI needs AA's profit per unit (Airtable's,
+ * or typed on the Target setting tab's products grid); without it the card
+ * reads the cost alone and says so. Before the window the clock runs in days
+ * from the announce, inside it in hours from the sales open, and a day's
+ * spend then spans its hours. The words on the plot are set in clear space
+ * with a leader to what they name, as the LE charts set theirs (labels.mjs). */
 import React, { useState } from "react";
 import {
   Card, QBadge, GROUP_DOTS, C, fmt, fmtMoney, dayLabel, dayAxisLabel, textPx, timeAxis, nameLines, useBoxSize, LineNames, ChartTip,
@@ -19,9 +24,18 @@ import { wordsOf, hourClock } from "../vocab.mjs";
 
 const W = 480, H = 200, BAND_TOP = 132;
 const DAY_MS = 86400000, HOUR_MS = 3600000;
+const VIEW_PREF = "tl_paid_view";   // per-browser: the view the reader left the card in
+const readView = () => { try { return localStorage.getItem(VIEW_PREF) || null; } catch { return null; } };
+const has = (v) => v !== null && v !== undefined;
+const pct = (x) => (has(x) ? fmt(100 * x, Math.abs(x) < 0.1 ? 1 : 0) + "%" : "–");
+const ratio = (x) => (has(x) ? fmt(x, 2) : "–");
+const S2O_WORDS = { release: "the rate typed on the Target setting tab", basket_paid: "the basket's paid signup → order rate",
+  basket: "the basket's blended signup → order rate", none: "no rate on file" };
+const FRAME_WORDS = { release: "the works' own take-up", basket: "the basket's frames per print", default: "the default take-up" };
 
 export default function PaidCost({ snap }) {
   const [hover, setHover] = useState(null);   // a step of the clock
+  const [viewPref, setViewPref] = useState(readView);
   const [plotRef, plotW, plotH] = useBoxSize();
   const V = wordsOf(snap);
   const paid = snap.paid || {};
@@ -31,7 +45,13 @@ export default function PaidCost({ snap }) {
   const of = Math.max(1, snap.of || 1);
   const today = Math.max(0, Math.min(snap.day ?? 0, of));
   const unitWord = paid.unit === "sale" ? "sale" : "signup";
+  const period = V.state === "signups" ? "pre-window" : "window";
   const hasSpend = (paid.spendToDate ?? 0) > 0 || daily.some((d) => (d.spend ?? 0) > 0);
+  // ROI is readable once the works give Avant Arte a profit per unit
+  const roiOk = !!paid.roiReadable && (has(paid.l3dRoi) || has(paid.cumRoi));
+  const view = roiOk && viewPref !== "cost" ? "roi" : "cost";
+  const setView = (v) => { setViewPref(v); try { localStorage.setItem(VIEW_PREF, v); } catch { /* per-browser convenience only */ } };
+  const title = view === "roi" ? "Paid ROI" : V.paidTitle;
 
   if (!hasSpend) {
     return (
@@ -42,6 +62,15 @@ export default function PaidCost({ snap }) {
       </Card>
     );
   }
+  const needsProfit = "ROI needs Avant Arte's profit per unit: AA profit (and frame profit) per work on the Target setting tab's products grid, or in Airtable";
+  const right = (
+    <span className="seg compact" title={roiOk
+      ? `ROI: what paid bought at what it is worth to Avant Arte, over what it cost Avant Arte. Cost: the euros a paid ${unitWord} cost`
+      : needsProfit}>
+      <button className={view === "roi" ? "active" : ""} disabled={!roiOk} onClick={() => setView("roi")} style={roiOk ? undefined : { opacity: 0.45, cursor: "default" }}>ROI</button>
+      <button className={view === "cost" ? "active" : ""} onClick={() => setView("cost")}>Cost</button>
+    </span>
+  );
 
   // ----- each day of spend on the clock: a day is a step before the window, 24 steps inside it -----
   const start = hours ? Date.parse(snap.clock.start) : Date.parse(snap.windowStart + "T00:00:00Z");
@@ -53,23 +82,45 @@ export default function PaidCost({ snap }) {
   const span = hours ? 24 : 1;   // the steps a day covers
   const pts = daily.map((d) => ({ ...d, s0: stepOf(d.date) })).filter((p) => p.s0 !== null && p.s0 + span > 0 && p.s0 <= of)
     .map((p) => ({ ...p, a: Math.max(p.s0, 0), b: Math.min(p.s0 + span, of), mid: (Math.max(p.s0, 0) + Math.min(p.s0 + span, of)) / 2 }));
-  const costPts = pts.filter((p) => !p.partial && p.cost3 !== null && p.cost3 !== undefined);
-  const lastCost = costPts.length ? costPts[costPts.length - 1] : null;
+  const costPts = pts.filter((p) => !p.partial && has(p.cost3));
+  const roiPts = pts.filter((p) => !p.partial && has(p.roi));
   const plan = paid.costPlan ?? null;
   const bm = paid.costBm ?? null;
+  const atTarget = roiOk && has(paid.costAtTargetRoi) ? paid.costAtTargetRoi : null;
+  const roiTarget = has(paid.roiTarget) ? paid.roiTarget : null;
+  // the line and the reference lines of the view in force
+  const linePts = view === "roi" ? roiPts.map((p) => ({ ...p, v: p.roi })) : costPts.map((p) => ({ ...p, v: p.cost3 }));
+  const refs = view === "roi"
+    ? (roiTarget !== null ? [{ key: "target", v: roiTarget, text: `target ${ratio(roiTarget)}`, dash: false,
+        title: "The target ROI for Avant Arte's paid spend, the LE pages' (etl/benchmarks.json target_roi_aa)" }] : [])
+    : [
+      ...(plan !== null ? [{ key: "plan", v: plan, text: `plan ${fmtMoney(plan, 2)}`, dash: false,
+        title: `The plan's cost per ${unitWord} (${paid.costPlanSource === "release" ? "typed" : "the basket's median"}), the price the ${period} budget was set at` }] : []),
+      ...(bm !== null && plan !== null && Math.abs(bm - plan) > 0.005 ? [{ key: "bm", v: bm, text: null, dash: true, title: `The basket's median cost per ${unitWord}` }] : []),
+      ...(atTarget !== null ? [{ key: "roi", v: atTarget, text: `at target ROI ${fmtMoney(atTarget, 2)}`, dash: true,
+        title: `The most a paid ${unitWord} can cost Avant Arte at the ${ratio(roiTarget)} target ROI: its worth over AA's share of the spend and the target` }] : []),
+    ];
 
-  // ----- the cost axis: the line and the references, padded, from zero -----
-  const domVals = [...costPts.map((p) => p.cost3), ...(plan !== null ? [plan] : []), ...(bm !== null ? [bm] : [])];
-  let hi = 1;
+  // ----- the y axis: the line and the references, padded; ROI in quarters from a floor of zero, cost from zero -----
+  let lo = 0, hi = 1;
+  const domVals = [...linePts.map((p) => p.v), ...refs.map((r) => r.v)];
   if (domVals.length) {
-    const top = Math.max(...domVals);
-    hi = Math.ceil((top * 1.15) / 0.5) * 0.5 || 1;
+    if (view === "roi") {
+      const lo2 = Math.min(...domVals), hi2 = Math.max(...domVals);
+      const pad = (hi2 - lo2) * 0.12 || Math.abs(hi2) * 0.12 || 0.5;
+      lo = Math.max(0, Math.floor((lo2 - pad) / 0.25) * 0.25);
+      hi = Math.ceil((hi2 + pad) / 0.25) * 0.25;
+      if (hi <= lo) hi = lo + 1;
+    } else {
+      hi = Math.ceil((Math.max(...domVals) * 1.15) / 0.5) * 0.5 || 1;
+    }
   }
   const x = (st) => (st / of) * W;
-  const y = (v) => H - (Math.max(0, Math.min(v, hi)) / hi) * H;
+  const y = (v) => H - ((Math.max(lo, Math.min(v, hi)) - lo) / (hi - lo)) * H;
   const leftPct = (st) => ((x(st) / W) * 100).toFixed(2) + "%";
   const topPct = (v) => ((y(v) / H) * 100).toFixed(2) + "%";
-  const costPath = costPts.length >= 2 ? costPts.map((p, k) => (k ? "L" : "M") + x(p.mid).toFixed(1) + "," + y(p.cost3).toFixed(1)).join(" ") : "";
+  const linePath = linePts.length >= 2 ? linePts.map((p, k) => (k ? "L" : "M") + x(p.mid).toFixed(1) + "," + y(p.v).toFixed(1)).join(" ") : "";
+  const lastPt = linePts.length ? linePts[linePts.length - 1] : null;
 
   // ----- the spend bars: their own axis in the bottom band -----
   const spendPts = pts.filter((p) => p.spend > 0);
@@ -82,9 +133,13 @@ export default function PaidCost({ snap }) {
   });
 
   // ----- the words -----
-  const lead = complete ? paid.cumCost : paid.l3dCost;
-  const leadCaption = complete ? `cost per ${unitWord}, the whole ${V.state === "signups" ? "pre-window" : "window"}` : `cost per ${unitWord}, last 3 full days`;
-  const moreTip = {
+  const leadCost = complete ? paid.cumCost : paid.l3dCost;
+  const leadRoi = complete ? paid.cumRoi : paid.l3dRoi;
+  const lead = view === "roi" ? ratio(leadRoi) : (leadCost ? fmtMoney(leadCost, 2) : "–");
+  const leadCaption = view === "roi"
+    ? (complete ? `AA ROI, the whole ${period}` : "AA ROI, last 3 full days")
+    : (complete ? `cost per ${unitWord}, the whole ${period}` : `cost per ${unitWord}, last 3 full days`);
+  const costTip = {
     head: `Cost per ${unitWord} - how it is read`,
     rows: [
       { label: "Spend to date", value: fmtMoney(paid.spendToDate ?? 0, 0) },
@@ -92,19 +147,59 @@ export default function PaidCost({ snap }) {
       { label: `Cost per ${unitWord}, whole period`, value: paid.cumCost ? fmtMoney(paid.cumCost, 2) : "–" },
       { label: `Cost per ${unitWord}, last 3 full days`, value: paid.l3dCost ? fmtMoney(paid.l3dCost, 2) : "–" },
       { label: `Plan (${paid.costPlanSource === "release" ? "typed" : "the basket's median"})`, value: plan !== null ? fmtMoney(plan, 2) : "–" },
+      ...(roiOk ? [{ label: `At the ${ratio(roiTarget)} target ROI`, value: fmtMoney(atTarget, 2) }] : []),
     ],
-    body: V.state === "signups"
+    body: (V.state === "signups"
       ? "Meta's spend under the campaign code before the open, over the paid signups it bought on each day (the signups the feed attributes to paid, with untracked signups folded in at the tracked paid share). The line is the trailing three full days; the plan is the price the pre-window budget was set at."
-      : "Meta's spend under the campaign code inside the window, over the paid units sold on each day. The line is the trailing three full days; the plan is the price the window budget was set at.",
+      : "Meta's spend under the campaign code inside the window, over the paid units sold on each day. The line is the trailing three full days; the plan is the price the window budget was set at.")
+      + (roiOk ? ` The dotted line is the most a paid ${unitWord} can cost Avant Arte at the target ROI (the ROI view's working).` : ` ${needsProfit}.`),
   };
+  const roiTip = {
+    head: "AA ROI - how it is read",
+    rows: [
+      { label: "AA profit per unit", value: fmtMoney(paid.profitPerUnitAA ?? 0, 2) },
+      { label: `+ likely framing profit (${pct(paid.frameShare)} of units framed × ${pct(paid.frameRate)} take-up × ${fmtMoney(paid.frameProfit ?? 0, 0)} a frame)`, value: fmtMoney(paid.frameUpliftPerUnit ?? 0, 2) },
+      { label: "= worth of a unit sold", value: fmtMoney(paid.valuePerUnit ?? 0, 2) },
+      { label: "less cannibalisation", value: pct(paid.cannibalisation ?? 0) },
+      ...(unitWord === "signup" ? [
+        { label: "× pieces per order", value: fmt(paid.piecesPerOrder ?? 1, 2) },
+        { label: "× paid signup → order rate", value: pct(paid.signupOrderRate) },
+      ] : []),
+      { label: `= worth of a paid ${unitWord}`, value: fmtMoney(paid.value ?? 0, 2) },
+      { label: complete ? `÷ cost per ${unitWord}, whole ${period}` : `÷ cost per ${unitWord}, last 3 full days`, value: leadCost ? fmtMoney(leadCost, 2) : "–" },
+      { label: `÷ AA share of the spend${paid.aaBudgetShareAssumed ? " (assumed)" : ""}`, value: pct(paid.aaBudgetShare) },
+      { label: complete ? "= AA ROI" : "= AA ROI, last 3 full days", value: ratio(leadRoi) },
+      { label: "ROI total", value: ratio(paid.cumRoi) },
+      { label: "Target ROI", value: ratio(roiTarget) },
+      { label: `Cost per ${unitWord} at the target`, value: has(paid.costAtTargetRoi) ? fmtMoney(paid.costAtTargetRoi, 2) : "–" },
+      { label: `Break-even cost per ${unitWord}`, value: has(paid.breakEvenCost) ? fmtMoney(paid.breakEvenCost, 2) : "–" },
+    ],
+    body: `What paid bought, at what it is assumed to be worth to Avant Arte, over what it cost Avant Arte. A unit sold is worth AA's profit on it plus the likely framing profit; `
+      + (unitWord === "signup"
+        ? `a paid signup is worth that for the pieces an order takes, at the share of paid signups that go on to order (${S2O_WORDS[paid.signupOrderRateSource] || S2O_WORDS.none}), net of cannibalisation. `
+        : "a paid sale is worth that net of cannibalisation. ")
+      + `The frame take-up is ${FRAME_WORDS[paid.frameRateSource] || FRAME_WORDS.default}; AA's profit per unit and per frame, the pieces per order and the deal are the Target setting tab's (products and economics, assumptions; Airtable's figures where none is typed). `
+      + "The spend divides as the profit does: on a profit share Avant Arte carries its share of the ads, on a revenue share all of them"
+      + (paid.aaBudgetShareAssumed ? "; no work records its deal yet, so half is assumed." : "."),
+  };
+  const moreTip = view === "roi" ? roiTip : costTip;
+  const statVal = { fontSize: 13, fontWeight: 600, color: C.ink };
+  const statRow = { display: "flex", gap: 6, alignItems: "baseline", whiteSpace: "nowrap" };
   const totals = (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flex: "0 0 auto", fontSize: 12, color: C.muted }}>
-      <span style={{ display: "flex", gap: 6, alignItems: "baseline", whiteSpace: "nowrap" }}>
-        cost per {unitWord} total <span className="num" style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{paid.cumCost ? fmtMoney(paid.cumCost, 2) : "–"}</span>
+      <span style={statRow}>
+        cost per {unitWord} total <span className="num" style={statVal}>{paid.cumCost ? fmtMoney(paid.cumCost, 2) : "–"}</span>
       </span>
-      <span style={{ display: "flex", gap: 6, alignItems: "baseline", whiteSpace: "nowrap" }}>
-        paid {V.unit} <span className="num" style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{fmt(paid.unitsToDate ?? 0)}</span>
-      </span>
+      {view === "roi" ? (
+        <span style={statRow} title={`Cumulative AA ROI: what every paid ${unitWord} to date is worth to Avant Arte over what they cost it, the whole ${period}`}>
+          ROI total <span className="num" style={statVal}>{ratio(paid.cumRoi)}</span>
+        </span>
+      ) : (
+        <span style={statRow}>
+          paid {V.unit} <span className="num" style={statVal}>{fmt(paid.unitsToDate ?? 0)}</span>
+        </span>
+      )}
+      {!roiOk && <span style={{ ...statRow, fontSize: 11 }} title={needsProfit}>ROI needs AA profit per unit</span>}
     </div>
   );
 
@@ -116,8 +211,8 @@ export default function PaidCost({ snap }) {
   if (plotW > 0 && plotH > 0) {
     const sx = plotW / W, sy = plotH / H;
     const curves = [
-      ...(costPts.length >= 2 ? [{ pts: costPts.map((p) => ({ x: x(p.mid) * sx, y: y(p.cost3) * sy })) }] : []),
-      ...(plan !== null ? [{ pts: [{ x: 0, y: y(plan) * sy }, { x: plotW, y: y(plan) * sy }] }] : []),
+      ...(linePts.length >= 2 ? [{ pts: linePts.map((p) => ({ x: x(p.mid) * sx, y: y(p.v) * sy })) }] : []),
+      ...refs.map((r) => ({ pts: [{ x: 0, y: y(r.v) * sy }, { x: plotW, y: y(r.v) * sy }] })),
       ...(!complete ? [{ pts: [{ x: x(today) * sx, y: 0 }, { x: x(today) * sx, y: plotH }] }] : []),
     ];
     const blocks = bars.map((b) => ({ x0: +b.x * sx, y0: +b.y * sy, x1: (+b.x + +b.w) * sx, y1: plotH }));
@@ -125,7 +220,7 @@ export default function PaidCost({ snap }) {
     const standing = bars.filter((b) => !b.partial && +b.h * sy >= 3);
     const tops = (standing.length ? standing : bars).map((b) => ({ x: (+b.x + +b.w / 2) * sx, y: +b.y * sy, cost: 0 }));
     const labels = [
-      ...(plan !== null ? [label("plan", `plan ${fmtMoney(plan, 2)}`, moreTip.rows[4].label, [{ x: plotW * 0.3, y: y(plan) * sy, cost: 0 }, { x: plotW * 0.7, y: y(plan) * sy, cost: 1 }])] : []),
+      ...refs.filter((r) => r.text).map((r) => label(r.key, r.text, r.title, [{ x: plotW * 0.3, y: y(r.v) * sy, cost: 0 }, { x: plotW * 0.7, y: y(r.v) * sy, cost: 1 }])),
       ...(tops.length ? [label("spend", "daily spend", `Daily spend bars on their own axis: €0 to €${fmt(spendHi)}`, tops)] : []),
     ];
     names = nameLines({ labels, curves, blocks, bounds: { x0: 0, y0: 0, x1: plotW, y1: plotH } });
@@ -134,13 +229,14 @@ export default function PaidCost({ snap }) {
 
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const xLabel = { position: "absolute", top: "100%", paddingTop: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
+  const lastTitle = lastPt ? (view === "roi" ? `AA ROI, last 3 full days: ${ratio(lastPt.v)}` : `Cost per ${unitWord}, last 3 full days: ${fmtMoney(lastPt.v, 2)}`) : "";
 
   return (
-    <Card wide dot={GROUP_DOTS.paid} title={V.paidTitle}>
+    <Card wide dot={GROUP_DOTS.paid} title={title} right={right}>
       <div className="spacer-8" />
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flex: "0 0 auto" }}>
         <div className="lead">
-          <span>{lead ? fmtMoney(lead, 2) : "–"}</span>
+          <span>{lead}</span>
           <span style={{ fontSize: 12, fontWeight: 400, letterSpacing: 0, color: C.muted, whiteSpace: "nowrap" }}>{leadCaption}</span>
           <QBadge content={moreTip} />
         </div>
@@ -166,14 +262,12 @@ export default function PaidCost({ snap }) {
               {bars.map((b) => (
                 <rect key={b.key} x={b.x} y={b.y} width={b.w} height={b.h} rx="1" fill={C.track}><title>{b.tip}</title></rect>
               ))}
-              {plan !== null && (
-                <line x1="0" y1={y(plan).toFixed(1)} x2={W} y2={y(plan).toFixed(1)} stroke={C.refLine} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-              )}
-              {bm !== null && plan !== null && Math.abs(bm - plan) > 0.005 && (
-                <line x1="0" y1={y(bm).toFixed(1)} x2={W} y2={y(bm).toFixed(1)} stroke={C.refLine} strokeWidth="1.5" strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
-              )}
-              {costPath && (
-                <path d={costPath} fill="none" stroke={C.blue} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              {refs.map((r) => (
+                <line key={r.key} x1="0" y1={y(r.v).toFixed(1)} x2={W} y2={y(r.v).toFixed(1)} stroke={C.refLine} strokeWidth="1.5"
+                  strokeDasharray={r.dash ? "2 3" : undefined} vectorEffect="non-scaling-stroke"><title>{r.title}</title></line>
+              ))}
+              {linePath && (
+                <path d={linePath} fill="none" stroke={C.blue} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               )}
               {!complete && (
                 <line x1={x(today).toFixed(1)} y1="0" x2={x(today).toFixed(1)} y2={H} stroke={C.todayLine} strokeWidth="1" vectorEffect="non-scaling-stroke" />
@@ -183,30 +277,34 @@ export default function PaidCost({ snap }) {
             {hover !== null && (() => {
               const p = byStep(hover);
               if (!p) return null;
-              const cost = !p.partial && p.cost3 !== null && p.cost3 !== undefined ? p.cost3 : null;
+              const cost = !p.partial && has(p.cost3) ? p.cost3 : null;
+              const roi = !p.partial && has(p.roi) ? p.roi : null;
+              const mark = view === "roi" ? roi : cost;
               return (
                 <>
                   <div style={{ position: "absolute", left: leftPct(p.mid), top: 0, bottom: 0, width: 1, background: "#ddd9cf", pointerEvents: "none" }} />
-                  {cost !== null && (
-                    <div style={{ position: "absolute", left: leftPct(p.mid), top: topPct(cost), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: C.blue, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
+                  {mark !== null && (
+                    <div style={{ position: "absolute", left: leftPct(p.mid), top: topPct(mark), width: 7, height: 7, margin: "-3.5px 0 0 -3.5px", borderRadius: "50%", background: C.blue, boxShadow: "0 0 0 2px #fff", pointerEvents: "none" }} />
                   )}
                   <ChartTip left={leftPct(p.mid)}>
                     <div className="t-head">{hours ? p.date : dayLabel(snap, Math.round(p.mid), true)}{p.partial ? " · so far today" : ""}</div>
                     <div className="t-row"><span>Spend</span><span className="v">€{fmt(p.spend, 2)}</span></div>
                     <div className="t-row"><span>Paid {V.unit}</span><span className="v">{fmt(p.entries ?? 0)}</span></div>
+                    {roiOk && <div className="t-row"><span>AA ROI (3d)</span><span className="v">{ratio(roi)}</span></div>}
+                    {roiOk && has(p.roi1) && !p.partial && <div className="t-row"><span>AA ROI, the day</span><span className="v">{ratio(p.roi1)}</span></div>}
                     <div className="t-row"><span>Cost per {unitWord} (3d)</span><span className="v">{cost !== null ? fmtMoney(cost, 2) : "–"}</span></div>
-                    {p.cost1 !== null && p.cost1 !== undefined && <div className="t-row"><span>Cost per {unitWord}, the day</span><span className="v">{fmtMoney(p.cost1, 2)}</span></div>}
+                    {has(p.cost1) && <div className="t-row"><span>Cost per {unitWord}, the day</span><span className="v">{fmtMoney(p.cost1, 2)}</span></div>}
                   </ChartTip>
                 </>
               );
             })()}
 
-            {lastCost && (
-              <div title={`Cost per ${unitWord}, last 3 full days: ${fmtMoney(lastCost.cost3, 2)}`}
-                style={{ position: "absolute", left: leftPct(lastCost.mid), top: topPct(lastCost.cost3), width: 10, height: 10, margin: "-5px 0 0 -5px", borderRadius: "50%", background: C.blue, boxShadow: "0 0 0 2px #fff" }} />
+            {lastPt && (
+              <div title={lastTitle}
+                style={{ position: "absolute", left: leftPct(lastPt.mid), top: topPct(lastPt.v), width: 10, height: 10, margin: "-5px 0 0 -5px", borderRadius: "50%", background: C.blue, boxShadow: "0 0 0 2px #fff" }} />
             )}
-            {costPts.length > 0 && <div style={{ ...axisLabel, top: 0 }}>€{fmt(hi, hi < 10 ? 1 : 0)}</div>}
-            {costPts.length > 0 && <div style={{ ...axisLabel, top: "100%" }}>€0</div>}
+            {linePts.length > 0 && <div style={{ ...axisLabel, top: 0 }}>{view === "roi" ? ratio(hi) : `€${fmt(hi, hi < 10 ? 1 : 0)}`}</div>}
+            {linePts.length > 0 && <div style={{ ...axisLabel, top: "100%" }}>{view === "roi" ? ratio(lo) : "€0"}</div>}
             <LineNames names={names} />
             {xAxis.start && <div style={{ ...xLabel, left: 0 }} title={V.state === "signups" ? "the announce" : "the sales open"}>{startText}</div>}
             {!complete && (

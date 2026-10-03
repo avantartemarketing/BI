@@ -27,7 +27,8 @@ with tempfile.TemporaryDirectory() as tmp:
     check(bool(tail) and "wrote" in tail[-1], f"reported what it wrote: {tail}")
     pages = sorted(p.stem for p in (app / "derived").glob("*.json")) if (app / "derived").exists() else []
     after = json.loads((app / "index.json").read_text())
-    up_after = [r for r in after["releases"] if r.get("status") == "upcoming"]
+    # the LE rows: a timed launch's upcoming page is the TL build's (etl/tl.py), not --upcoming's
+    up_after = [r for r in after["releases"] if r.get("status") == "upcoming" and r.get("type") != "TL"]
     check(len(pages) > 0, f"upcoming pages written: {pages[:5]}")
     check(all(r["id"] in pages for r in up_after), "every upcoming row in the index has its page")
     check(after["asOf"] == before["asOf"], "the index keeps the last build's as-of")

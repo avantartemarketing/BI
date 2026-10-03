@@ -127,7 +127,7 @@ cards do; `web/src/vocab.mjs` gives each card its words.
 | Funnel by channel | the rungs per channel (delivered emails, opens, clicks, sessions per click, sessions, session -> signup; paid spend and cost per signup) and the waterfall from the benchmark through each channel's traffic and conversion to the signups today. The email stages read against the **TL email cohort** (`email_cohort`: the panel's launches' pre-window sends, as the LE's email cohort reads draw launches, a page's own launch and the launches that closed after it set aside): the delivered target is the sends the plan's expected AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click, the benchmark the same for the basket's sessions. The post rows read the Emplifi export and the Notion log over the pre-window, as the LE's do (a dot where the export stops before the campaign) |
 | Unit trajectory | **Signup trajectory**: cumulative signups from the announce against the target's pace and the benchmark's, the projection to the open, by channel |
 | Organic funnel | sessions and session -> signup over the organic channels; the drivers adding and costing signups |
-| Paid ROI | **Paid cost per signup**: daily spend bars, the trailing three-day cost per signup against the plan's (a timed launch's paid buys signups and its products carry no profit split, so there is no ROI to read) |
+| Paid ROI | **Paid ROI** on what a paid signup is assumed to be worth (`tl_paid_value`, §7): the trailing three-day AA ROI against the target ROI, the daily spend as bars; a cost view with the cost per signup against the plan's and against the most a signup can cost at the target ROI. ROI needs AA's profit per unit (Airtable's, or typed on the Target setting tab's products grid); without it the card is **Paid cost per signup** and says what it needs |
 | Paid spend / day | the daily spend that paces the pre-window budget left over the days to the open, the paid signups and the spend against the budget's share by today and the basket's; no rule engine yet, so the buttons wait |
 | Sell-through, Framing, Entries by country | not before the window: nothing has been sold |
 | Actual vs target | the waterfall from the target through the stretch and the benchmark, organic traffic and conversion, paid spend and efficiency, to the signups today |
@@ -163,7 +163,7 @@ running in hours from the sales open (`clock: {unit: "hour"}`; the day helpers i
 | Funnel by channel | the window's sessions by channel and the rate they bought at, held at the basket's window rates (`conv_window`, a panel measure), the buyers and the pieces per buyer split where they differ from the plan's; paid spend and cost per sale. The email stages step aside (`email.funnelStages` false): the sends on the card are the pre-window's and do not explain the window's sessions, so AA Email reads as sessions and conversion like the other groups |
 | Unit trajectory | cumulative units by hour from the sales open against the target's pace and the benchmark's (the basket's unit curve), the projection to the close, by channel |
 | Organic funnel | the window's sessions and session -> sale over the organic channels |
-| Paid ROI | **Paid cost per sale**: the window's daily spend, the cost per sale against the plan's |
+| Paid ROI | **Paid ROI** on a paid sale's worth (AA's profit on a unit with the likely framing profit, net of cannibalisation) over what it cost AA; the cost view the window's daily spend and the cost per sale against the plan's and the cost at the target ROI |
 | Paid spend / day | the spend that paces the window budget left over the hours left, paid units and spend against the budget's share by now and the basket's |
 | Sell-through by product | **Sell-through by work**: one row per work, paid and awaiting payment from the orders table against the work's units target (the bar runs past the target where the work has sold more), at close with the projection's still to come; the headline the launch's units over its target, uncapped |
 | Framing | frames per print on the window's paid prints and on the orders awaiting payment, by work, against the basket and Airtable's take-up |
@@ -214,6 +214,10 @@ orders needed         = units target / purchases per order
 signup target         = orders needed / signup -> order rate
 sessions needed       = per channel: signups share / session -> signup rate
 pre-window budget     = paid share of signups x signup target x cost per signup
+worth of a unit       = AA profit per unit + share of units framing x frame take-up x AA profit per frame
+worth of a paid sale  = worth of a unit x (1 - cannibalisation)
+worth of a paid signup = worth of a paid sale x pieces per order x paid signup -> order rate
+cost at an ROI        = worth / (AA's share of the spend x ROI)
 in-window budget      = paid share of units x units target x cost per sale
 ```
 

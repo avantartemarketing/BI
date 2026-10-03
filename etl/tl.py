@@ -1409,15 +1409,28 @@ def _products(rec: dict) -> tuple[list[dict], dict]:
     for p in products:
         t = typed.get(str(p.get("airtable_id")), {})
         edition = _num(t.get("edition")) or _num(p.get("edition"))
+
+        def over(key, t=t, p=p):   # typed over Airtable, None where neither has a figure
+            v = _num(t.get(key))
+            return v if v is not None else _num(p.get(key))
+        # a frame is on offer unless Airtable or the tab says not; with nothing
+        # said, a sculpture edition has none (etl/pricing.py framing_default)
+        fa = t.get("framing_available")
+        framing = bool(fa) if fa is not None else (bool(p.get("framing_available")) if p.get("framing_available") is not None else p.get("framing_default") is not False)
         rows.append({"airtable_id": p.get("airtable_id"), "name": p.get("name"), "edition": edition,
-                     "units_target": _num(t.get("units_target")) if _num(t.get("units_target")) is not None else _num(p.get("units_target")),
-                     "unit_price": _num(t.get("unit_price")) if _num(t.get("unit_price")) is not None else _num(p.get("unit_price")),
-                     "currency": t.get("currency") or p.get("currency") or "EUR", "framing_available": p.get("framing_available"),
-                     "frame_conversion": _num(t.get("frame_conversion")) if _num(t.get("frame_conversion")) is not None else _num(p.get("frame_conversion")),
-                     "excluded": bool(t.get("excluded")), "typed": {k: t.get(k) for k in ("edition", "units_target", "unit_price") if t.get(k) is not None}})
+                     "units_target": over("units_target"), "unit_price": over("unit_price"),
+                     "currency": t.get("currency") or p.get("currency") or "EUR", "framing_available": framing,
+                     "frame_conversion": over("frame_conversion"), "frame_profit_per_unit": over("frame_profit_per_unit"),
+                     "artist_profit_per_unit": over("artist_profit_per_unit"), "aa_profit_per_unit": over("aa_profit_per_unit"),
+                     "aa_revenue_share": over("aa_revenue_share"), "aa_profit_share": over("aa_profit_share"),
+                     "excluded": bool(t.get("excluded")), "typed": {k: t.get(k) for k in PRODUCT_TYPED_KEYS if t.get(k) is not None}})
     for m in manual:
         rows.append({"airtable_id": None, "manual": True, "name": m.get("name"), "edition": _num(m.get("edition")), "units_target": _num(m.get("units_target")),
-                     "unit_price": _num(m.get("unit_price")), "currency": m.get("currency") or "EUR", "framing_available": None,
+                     "unit_price": _num(m.get("unit_price")), "currency": m.get("currency") or "EUR",
+                     "framing_available": bool(m["framing_available"]) if m.get("framing_available") is not None else True,
+                     "frame_conversion": _num(m.get("frame_conversion")), "frame_profit_per_unit": _num(m.get("frame_profit_per_unit")),
+                     "artist_profit_per_unit": _num(m.get("artist_profit_per_unit")), "aa_profit_per_unit": _num(m.get("aa_profit_per_unit")),
+                     "aa_revenue_share": _num(m.get("aa_revenue_share")), "aa_profit_share": _num(m.get("aa_profit_share")),
                      "excluded": bool(m.get("excluded")), "typed": {}})
     live = [p for p in rows if not p["excluded"]]
     targets = [p["units_target"] for p in live if p["units_target"]]
@@ -1427,7 +1440,8 @@ def _products(rec: dict) -> tuple[list[dict], dict]:
     w = sum(u for u, _ in priced)
     price = (sum(u * pr for u, pr in priced) / w) if w > 0 else (float(np.mean([pr for _, pr in priced])) if priced else None)
     econ = {"units_target": units_target, "edition_size": edition, "unit_price_eur": price,
-            "launch_value_eur": (units_target or edition or 0) * price if price else None, "n_products": len(live), "n_excluded": len(rows) - len(live)}
+            "launch_value_eur": (units_target or edition or 0) * price if price else None, "n_products": len(live), "n_excluded": len(rows) - len(live),
+            **tl_economics(rows)}
     return rows, {"match": at.get("match"), "note": at.get("note"), "economics": econ}
 
 
@@ -1526,6 +1540,113 @@ def _email_card(emails: pd.DataFrame | None, code: str | None, d: dict, daily: p
             "delivered": tot["delivered"], "opened": tot["opened"], "clicked": tot["clicked"],
             "openRate": (tot["opened"] / tot["delivered"]) if tot["delivered"] else None,
             "clickRate": (tot["clicked"] / tot["delivered"]) if tot["delivered"] else None, "feedThrough": feed_through}
+
+
+PRODUCT_TYPED_KEYS = ("edition", "units_target", "unit_price", "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share",
+                      "frame_conversion", "frame_profit_per_unit")
+
+
+def tl_economics(rows: list[dict]) -> dict:
+    """The works' profit and framing figures as one release (shared/tlModel.mjs
+    tlEconomics, the same to the figure): over the ticked works, each weighted
+    by its units target, else its edition, else evenly. AA's and the artist's
+    profit per unit over the works with a figure (None when none has one); the
+    share of the units on works that frame, those works' own frame take-up and
+    AA's profit per frame (a framed work without a profit figure counts no
+    framing profit, as the LE reads it; None when no framed work has one); who
+    funds the ads from each work's deal (a profit share is AA's share of the
+    ads, a revenue share all of them), None when no work records a deal."""
+    live = [r for r in rows if not r.get("excluded")]
+
+    def w(r):
+        return _num(r.get("units_target")) or _num(r.get("edition")) or 1.0
+
+    def weighted(key, of):
+        use = [r for r in of if _num(r.get(key)) is not None]
+        tot = sum(w(r) for r in use)
+        return (sum(w(r) * float(r[key]) for r in use) / tot) if tot > 0 else None
+
+    def deal_share(r):
+        ps, rs = _num(r.get("aa_profit_share")), _num(r.get("aa_revenue_share"))
+        return min(max(ps, 0.0), 1.0) if ps is not None else (1.0 if rs is not None else None)
+    framed = [r for r in live if r.get("framing_available") is not False]
+    framed_w = sum(w(r) for r in framed)
+    framed_with = [r for r in framed if _num(r.get("frame_profit_per_unit")) is not None]
+    total = sum(w(r) for r in live)
+    dealt = [r for r in live if deal_share(r) is not None]
+    dealt_w = sum(w(r) for r in dealt)
+    return {"aa_profit_per_unit": weighted("aa_profit_per_unit", live), "artist_profit_per_unit": weighted("artist_profit_per_unit", live),
+            "frame_share": (framed_w / total) if total > 0 else 0.0,
+            "frame_conversion": weighted("frame_conversion", framed),
+            "frame_profit_per_unit": (sum(w(r) * (_num(r.get("frame_profit_per_unit")) or 0.0) for r in framed) / framed_w) if (framed_with and framed_w > 0) else None,
+            "aa_budget_share": (sum(w(r) * deal_share(r) for r in dealt) / dealt_w) if dealt_w > 0 else None,
+            "aa_budget_share_assumed": not dealt,
+            "deal": sorted({"profit share" if _num(r.get("aa_profit_share")) is not None else "revenue share" for r in dealt})}
+
+
+def tl_paid_value(inputs: dict | None, profile: dict | None, targets: dict | None, econ: dict | None, b: dict | None = None) -> dict:
+    """What a paid signup, and a paid sale, is worth to Avant Arte, and the
+    cost it can pay for one at the target ROI (docs/TL_SPEC.md §7;
+    shared/tlModel.mjs tlPaidValue, the same to the figure). A unit sold is
+    worth AA's profit on it plus the likely framing profit: the share of units
+    on works that frame x the frame take-up (the works' own figure, else the
+    basket's frames per print, else the default) x AA's profit per frame. Net
+    of cannibalisation that is a paid sale's value; a paid signup is worth that
+    x pieces per order x the share of paid signups that go on to order (the
+    typed signup -> order rate, else the basket's paid rate, else its blended
+    rate). The ads divide as the profit does (AA's budget share from the
+    works' deals; half, assumed, when none records one), so the cost AA can pay
+    at a given ROI is the value over the share and the ROI. Unreadable without
+    AA's profit per unit (Airtable's, or typed on the Target setting tab)."""
+    b = b or BENCH
+    inp, profile, targets, econ = inputs or {}, profile or {}, targets or {}, econ or {}
+    ppu = _num(econ.get("aa_profit_per_unit"))
+    frame_profit = _num(econ.get("frame_profit_per_unit"))
+    frame_share = _num(econ.get("frame_share")) or 0.0
+    own = _num(econ.get("frame_conversion"))
+    basket_rate = _num(profile.get("frames_per_print"))
+    if own is not None:
+        frame_rate, frame_src = min(max(own, 0.0), 1.0), "release"
+    elif basket_rate and basket_rate > 0:
+        frame_rate, frame_src = basket_rate, "basket"
+    else:
+        frame_rate, frame_src = float(b.get("frame_conversion") or 0.0), "default"
+    frame_uplift = frame_share * frame_rate * (frame_profit or 0.0)
+    readable = ppu is not None
+    value_unit = (ppu or 0.0) + frame_uplift
+    cann = _num(targets.get("cannibalisation"))
+    if cann is None:
+        cann = _num(inp.get("cannibalisation"))
+        cann = TL_CANNIBALISATION if cann is None else cann
+    value_sale = value_unit * (1.0 - cann)
+    s2o_typed = _num(inp.get("signup_order_rate"))
+    paid_rate = _num((profile.get("signup_order_rate_by_group") or {}).get("paid"))
+    blended = _num(targets.get("signup_order_rate"))
+    if s2o_typed and 0 < s2o_typed <= 1:
+        s2o, s2o_src = s2o_typed, "release"
+    elif paid_rate and paid_rate > 0:
+        s2o, s2o_src = paid_rate, "basket_paid"
+    elif blended and blended > 0:
+        s2o, s2o_src = blended, "basket"
+    else:
+        s2o, s2o_src = None, "none"
+    ppo = _num(targets.get("purchases_per_order")) or _num(profile.get("purchases_per_order")) or 1.0
+    value_signup = (s2o * ppo * value_sale) if s2o else None
+    share = _num(econ.get("aa_budget_share"))
+    assumed = share is None
+    share = 0.5 if share is None else share
+    roi_target = float(b.get("target_roi_aa") or 1.1)
+
+    def cost_at(value, roi):
+        return (value / (share * roi)) if (readable and value and value > 0 and share > 0 and roi > 0) else None
+    return {"readable": readable, "aa_profit_per_unit": ppu, "frame_share": frame_share, "frame_rate": frame_rate, "frame_rate_source": frame_src,
+            "frame_profit_per_unit": frame_profit, "frame_uplift_per_unit": frame_uplift, "value_per_unit": value_unit if readable else None,
+            "cannibalisation": cann, "value_per_sale": value_sale if readable else None,
+            "signup_order_rate": s2o, "signup_order_rate_source": s2o_src, "purchases_per_order": ppo,
+            "value_per_signup": value_signup if readable else None,
+            "aa_budget_share": share, "aa_budget_share_assumed": assumed, "roi_target": roi_target,
+            "break_even_cost_per_signup": cost_at(value_signup, 1.0), "cost_per_signup_at_target_roi": cost_at(value_signup, roi_target),
+            "break_even_cost_per_sale": cost_at(value_sale, 1.0), "cost_per_sale_at_target_roi": cost_at(value_sale, roi_target)}
 
 
 def _plan_frame_rate(products: list[dict]) -> float | None:
@@ -1898,12 +2019,34 @@ def le_blocks(cx: dict) -> dict:
         r.setdefault("cost1", None)
     tot_spend, tot_got = sum(r["spend"] for r in rows), sum(r["entries"] for r in rows)
     last_full = next((r for r in reversed(full) if r["spend"] > 0), None)
+    cum_cost = (tot_spend / tot_got) if (tot_spend > 0 and tot_got > 0) else None
+    l3d_cost, l1d_cost = (last_full["cost3"] if last_full else None), (last_full["cost1"] if last_full else None)
+    # the ROI reading (tl_paid_value): what a paid signup, or a paid sale, is
+    # worth to AA over what it cost AA, the cost at AA's share of the spend;
+    # the LE paid block's keys, so the card reads both pages the same way
+    pv = cx.get("paid_value") or {}
+    value = pv.get("value_per_sale") if in_window else pv.get("value_per_signup")
+    share = float(pv.get("aa_budget_share") or 0.5)
+    roi_ok = bool(pv.get("readable")) and value is not None and value > 0 and share > 0
+
+    def roi_of(c):
+        return round(value / (c * share), 3) if (roi_ok and c and c > 0) else None
+    for r in rows:
+        r["roi"], r["roi1"] = roi_of(r.get("cost3")), roi_of(r.get("cost1"))
     paid_extra = {"spendToDate": round(float(spend_to_date), 2), "spendBudget": budget, "paidStartDays": 0, "unitsToDate": paid_now,
                   "benchmarkBudget": (float(bm_by.get("paid") or 0.0) * cost) if (has_bm and cost) else None,
                   "unit": "signup" if not in_window else "sale", "costPlan": cost, "costPlanSource": cost_src,
                   "costBm": profile.get("cost_per_signup" if not in_window else "cost_per_sale") or None,
-                  "daily": rows, "cumCost": (tot_spend / tot_got) if (tot_spend > 0 and tot_got > 0) else None,
-                  "l3dCost": last_full["cost3"] if last_full else None, "l1dCost": last_full["cost1"] if last_full else None}
+                  "daily": rows, "cumCost": cum_cost, "l3dCost": l3d_cost, "l1dCost": l1d_cost,
+                  "roiReadable": roi_ok, "roiTarget": pv.get("roi_target"), "cumRoi": roi_of(cum_cost), "l3dRoi": roi_of(l3d_cost), "l1dRoi": roi_of(l1d_cost),
+                  "value": value if roi_ok else None, "valuePerUnit": pv.get("value_per_unit"), "profitPerUnitAA": pv.get("aa_profit_per_unit"),
+                  "frameUpliftPerUnit": pv.get("frame_uplift_per_unit"), "frameRate": pv.get("frame_rate"), "frameRateSource": pv.get("frame_rate_source"),
+                  "frameProfit": pv.get("frame_profit_per_unit"), "frameShare": pv.get("frame_share"),
+                  "signupOrderRate": pv.get("signup_order_rate"), "signupOrderRateSource": pv.get("signup_order_rate_source"),
+                  "piecesPerOrder": pv.get("purchases_per_order"), "cannibalisation": pv.get("cannibalisation"),
+                  "aaBudgetShare": share, "aaBudgetShareAssumed": bool(pv.get("aa_budget_share_assumed", True)),
+                  "breakEvenCost": pv.get("break_even_cost_per_sale" if in_window else "break_even_cost_per_signup"),
+                  "costAtTargetRoi": pv.get("cost_per_sale_at_target_roi" if in_window else "cost_per_signup_at_target_roi")}
 
     # ---- inside the window: the sell-through rows, the framing and the pieces per buyer
     sellthrough = framing = None
@@ -2046,6 +2189,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
     launch_value = (release_for_basket["units_target"] or 0) * price if price and release_for_basket["units_target"] else None
     targets = tl_targets(inp, airtable_units, profile, launch_value)
     targeted = targets is not None and targets.get("signup_target") is not None
+    paid_value = tl_paid_value(inp, profile, targets, econ)
 
     # ---- signups: the headline, by day and by group
     pre_to = d["sales_open"]
@@ -2229,7 +2373,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
         "airtable": {k: launch.get(k) for k in ("airtable_release", "airtable_ids", "titles", "n_products", "launch_type", "project_status", "edition_size",
                                                 "unit_price", "unit_price_eur", "currency", "launch_value_eur", "units_target", "launch_time", "tl_length",
                                                 "tl_end_date", "announce_dates", "price_match")} if launch else None,
-        "products": products, "productsNote": prod_info["note"], "economics": econ,
+        "products": products, "productsNote": prod_info["note"], "economics": econ, "paidValue": paid_value,
         "hero": {"now": now_signups, "unique": _num(feed_row.get("signups_unique")), "expectedToday": expected, "delta": (now_signups - expected) if expected is not None else None,
                  "projected": projected, "target": target, "statusPct": status_pct, "ok": (status_pct >= 0) if status_pct is not None else None,
                  "benchmark": (profile["signups"] if basket["n"] else None), "benchmarkToday": bm_today if basket["n"] else None, "benchmarkPct": bm_pct,
@@ -2256,7 +2400,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
                            "profile": profile, "basket_n": basket["n"], "targets": targets if targeted else None, "off": off,
                            "spend_pre": spend_pre, "spend_win": spend_win, "sp": sp, "sales": sales, "win": win_cx,
                            "products": products, "econ": econ, "snap": snap, "code": code, "names": names,
-                           "email_bench": email_bench, "content": content, "artist_posts": artist_posts,
+                           "email_bench": email_bench, "content": content, "artist_posts": artist_posts, "paid_value": paid_value,
                            "release": {"id": rec["id"], "release_name": name, "campaign_code": code, "launch_end": release_for_basket["launch_end"]}}))
     return snap
 

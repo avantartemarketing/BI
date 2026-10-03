@@ -25,7 +25,7 @@ import { C, MINUS, fmt, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
 import { Field, RoBox, TextBox, NumBox, Switch, Notice, CardHead, Campaigns, GRID, PCT, closedFor, typedKeys, ProductsGrid } from "./TargetSetting.jsx";
 import { resolveProducts, releaseEconomics } from "../../shared/economics.mjs";
-import { GROUPS as GROUP_KEYS, TL_CANNIBALISATION, applyChannelsOff, channelsOffOf, fullProfile, rebalanceShares, stretchWeights, tlTargets } from "../../shared/tlModel.mjs";
+import { GROUPS as GROUP_KEYS, TL_CANNIBALISATION, applyChannelsOff, channelsOffOf, fullProfile, rebalanceShares, stretchWeights, tlEconomics, tlPaidValue, tlTargets } from "../../shared/tlModel.mjs";
 
 // the five display groups, in the order the profile dicts are written
 const GROUPS = [
@@ -437,6 +437,15 @@ export default function TLTargets({ snap, onSaved }) {
   const paidOff = isOff("paid");
   const profile = prof ? applyChannelsOff(prof, off) : null;
   const T = profile ? tlTargets(inp, airtableUnits, profile, launchValue, b) : null;
+  // what a paid signup is worth to Avant Arte, on the works' profit and framing
+  // figures and the basket's paid conversion (shared/tlModel.mjs tlPaidValue,
+  // the figure the Overview's paid card reads its ROI against); a work's frame
+  // take-up is its own figure or none, the default being the model's to apply
+  const econRows = products.map((p) => ({ ...p, frame_conversion: p.sources && p.sources.frame_conversion === "default" ? null : p.frame_conversion }));
+  const PV = T ? tlPaidValue(inp, profile, T, tlEconomics(econRows), b) : null;
+  const pvOk = !!(PV && PV.readable && PV.value_per_signup !== null);
+  const S2O_PAID_WORDS = { release: "typed", basket_paid: "the basket's paid rate", basket: "the basket's blended rate", none: "no rate on file" };
+  const FRAME_WORDS = { release: "the works' own take-up", basket: "the basket's frames per print", default: "the default take-up" };
   const BM = T ? T.benchmark : null;
   const k = T ? T.k : null;
   const stretchTyped = !!(T && T.stretch_typed);
@@ -804,7 +813,8 @@ export default function TLTargets({ snap, onSaved }) {
                 onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); const v = c === "" ? null : clamp(parseFloat(c), 0, 95) / 100; setInp((prev) => ({ ...prev, cannibalisation: v === null || Number.isNaN(v) ? null : v })); }} />
             </Field>
             <Field label="Cost per signup"
-              src={basketCps > 0 ? `blank = the basket's median (${nCps} with spend)` : `blank = none on file (${nCps} of ${PAID_COST_MIN_MEMBERS} with spend)`}
+              src={(basketCps > 0 ? `blank = the basket's median (${nCps} with spend)` : `blank = none on file (${nCps} of ${PAID_COST_MIN_MEMBERS} with spend)`)
+                + (pvOk && PV.cost_per_signup_at_target_roi ? ` · ${fmtMoney(PV.cost_per_signup_at_target_roi, 2)} at the target ROI` : "")}
               help={basketCps > 0 ? `Paid signups at this price is the pre-window budget. Blank reads the basket: each launch's Sign-ups spend over the paid signups it bought, ${nCps} launches with spend on file.`
                 : `Paid signups at this price is the pre-window budget. Blank reads the basket once ${PAID_COST_MIN_MEMBERS} of its launches have spend on file (${nCps} do today); until then there is no pre-window budget.`}
               tip="What a paid signup costs to buy, in euros: each launch's Sign-ups campaign spend over the paid signups it bought, the untracked signups folded in at the paid share.">
@@ -818,6 +828,14 @@ export default function TLTargets({ snap, onSaved }) {
               tip="What a paid unit costs to buy in the window, in euros: each launch's Purchases campaign spend over the paid units its window sold.">
               <NumBox value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)} placeholder={basketCpu > 0 ? fmt(basketCpu, 0) : ""} unit="€"
                 onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); setInp((prev) => ({ ...prev, cost_per_purchase: c === "" ? null : c })); }} />
+            </Field>
+            <Field label="Worth of a paid signup"
+              src={pvOk ? (PV.aa_budget_share_assumed ? "AA's share of the spend assumed at 50%" : `AA carries ${Math.round(100 * PV.aa_budget_share)}% of the spend`) : "needs AA profit per unit"}
+              help={pvOk
+                ? `${fmtMoney(PV.value_per_unit, 0)} a unit sold (AA profit ${fmtMoney(PV.aa_profit_per_unit, 0)} + framing ${fmtMoney(PV.frame_uplift_per_unit, 0)}: ${fmtPct(PV.frame_share, 0)} of units framed at ${fmtPct(PV.frame_rate, 0)} take-up, ${FRAME_WORDS[PV.frame_rate_source]}, ${fmtMoney(PV.frame_profit_per_unit || 0, 0)} a frame), less ${fmtPct(PV.cannibalisation, 0)} cannibalisation, × ${fmt(PV.purchases_per_order, 2)} pieces an order × ${fmtPct(PV.signup_order_rate, 1)} of paid signups ordering (${S2O_PAID_WORDS[PV.signup_order_rate_source]}). At the ${fmt(PV.roi_target, 2)} target ROI a paid signup may cost ${fmtMoney(PV.cost_per_signup_at_target_roi, 2)}; break-even ${fmtMoney(PV.break_even_cost_per_signup, 2)}.`
+                : "The Overview's paid card reads its ROI against this. It needs Avant Arte's profit per unit: type AA profit (and frame profit) per work on the products grid above, or fill them in Airtable."}
+              tip="What a paid signup is assumed to be worth to Avant Arte: the chance it orders, the pieces it takes, AA's profit on each with the likely framing profit, net of cannibalisation.">
+              <RoBox value={pvOk ? fmtMoney(PV.value_per_signup, 2) : "–"} title="Computed from the products grid and the assumptions here" />
             </Field>
           </div>
           <div className="ts-caption">Spend is Meta's, billed in euros, and the page runs in euros: every figure here is euros.</div>

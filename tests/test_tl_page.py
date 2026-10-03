@@ -121,6 +121,19 @@ def check_page(s: dict, label: str) -> None:
             if f_em.get("sessions_benchmark") and em.get("deliveredBenchmark"):
                 check(near(em["deliveredBenchmark"] * chain, f_em["sessions_benchmark"], max(0.02 * f_em["sessions_benchmark"], 1.0)),
                       f"{label}: the delivered benchmark multiplies out to the basket's AA Email sessions")
+    # the paid ROI: a paid signup's (or sale's) worth over what it cost AA, where the works give AA a profit per unit
+    pd_ = s["paid"]
+    check(isinstance(pd_.get("roiReadable"), bool) and pd_.get("roiTarget") and "aaBudgetShare" in pd_, f"{label}: the paid block carries the ROI reading")
+    if pd_["roiReadable"]:
+        share = pd_["aaBudgetShare"]
+        if pd_.get("cumCost"):
+            check(near(pd_["cumRoi"], pd_["value"] / (pd_["cumCost"] * share), 2e-3), f"{label}: ROI total = worth over cost x AA's share")
+        for r in pd_["daily"]:
+            if r.get("cost3"):
+                check(near(r["roi"], pd_["value"] / (r["cost3"] * share), 2e-3), f"{label}: the day's ROI reads off its cost")
+        check(near(pd_["costAtTargetRoi"], pd_["value"] / (share * pd_["roiTarget"]), 1e-3), f"{label}: the cost at the target ROI is the worth over the share and the target")
+    else:
+        check(pd_.get("cumRoi") is None and all(r.get("roi") is None for r in pd_["daily"]), f"{label}: no ROI without AA's profit per unit")
     so = s.get("social")
     check(so is None or {"posts", "stories", "postsSource", "postsThrough", "artistPosts", "artistPostsTarget"} <= set(so), f"{label}: the social block carries the LE keys")
     bm = s.get("benchmark")
@@ -150,6 +163,23 @@ if cohort and cohort.get("open_rate") is not None:
 pre = [s for s in live.values() if s["tlState"] == "signups" and (s.get("email") or {}).get("delivered")]
 check(all((s["email"].get("deliveredTarget") or 0) > 0 and (s["email"].get("deliveredBenchmark") or 0) > 0 for s in pre) and pre,
       "a live pre-window page with sends reads its email chain against the cohort")
+
+# a launch whose works carry AA's profit, a frame profit and a deal reads an ROI (the figures typed on the tab)
+bisa = next((s for rid, s in live.items() if "bisa_butler" in rid), None)
+if bisa and bisa["tlState"] == "signups" and bisa["products"]:
+    typed = [{"airtable_id": p["airtable_id"], "aa_profit_per_unit": 180, "frame_profit_per_unit": 90, "aa_profit_share": 0.6} for p in bisa["products"] if p.get("airtable_id")]
+    extra = {"id": bisa["id"], "release_name": bisa["releaseName"], "type": "TL", "products": typed}
+    res = tl.build_all({"as_of": NOW.date(), "now": NOW, "seen": 1.0, "launch_frame": B.load_launches(), "inputs": [*B.INPUTS["releases"], extra],
+                        "spend": B.load_spend(), "emails": B.load_emails(), "write": False, "only": bisa["id"]})
+    b2 = res["snaps"].get(bisa["id"])
+    check(b2 is not None and b2["paid"]["roiReadable"] and b2["paid"]["cumRoi"] > 0 and b2["paid"]["l3dRoi"] > 0, "AA profit on the works gives the paid card an ROI")
+    if b2 and b2["paid"]["roiReadable"]:
+        check_page(b2, f"{bisa['id']} (signups, with AA profit)")
+        pv = b2["paidValue"]
+        check(near(pv["aa_profit_per_unit"], 180, 1e-6) and near(pv["aa_budget_share"], 0.6, 1e-6) and not pv["aa_budget_share_assumed"], "the works' profit and deal reach the model")
+        check(pv["frame_rate_source"] == "basket" and near(pv["frame_uplift_per_unit"], pv["frame_share"] * pv["frame_rate"] * 90, 1e-6), "the likely framing profit reads the basket's frames per print")
+        check(pv["signup_order_rate_source"] == "basket_paid" and near(pv["signup_order_rate"], b2["benchmark"]["profile"]["signup_order_rate_by_group"]["paid"], 1e-9), "a paid signup converts at the basket's paid rate")
+        check(near(b2["paid"]["value"], pv["value_per_signup"], 1e-9) and near(b2["paid"]["costAtTargetRoi"], pv["cost_per_signup_at_target_roi"], 1e-9), "the paid block reads the model's figures")
 
 # Gregory Crewdson's 2026 window, replayed at 20:00 UTC on 30 June: the hour clock and the sales cards
 REPLAY = datetime(2026, 6, 30, 20, 0, tzinfo=timezone.utc)

@@ -193,12 +193,65 @@ check(close(t2["signups_by_group"]["aa_email"] - PROFILE["signups_by_group"]["aa
       "the whole stretch lands on email when placed there")
 check(py_out[3] is None, "no units target: no targets")
 
+# ---- the value of a paid signup (tl_economics, tl_paid_value): the works' profit and
+# framing figures, the basket's paid signup -> order rate and frames per print, the deal
+ROWS = [
+    {"name": "A", "edition": 300, "units_target": 250, "unit_price": 750, "framing_available": True, "frame_conversion": None,
+     "aa_profit_per_unit": 180, "artist_profit_per_unit": 120, "aa_profit_share": 0.6, "aa_revenue_share": None, "frame_profit_per_unit": 90, "excluded": False},
+    {"name": "B", "edition": 300, "units_target": 150, "unit_price": 750, "framing_available": False, "frame_conversion": None,
+     "aa_profit_per_unit": 200, "artist_profit_per_unit": None, "aa_profit_share": None, "aa_revenue_share": None, "frame_profit_per_unit": None, "excluded": False},
+    {"name": "C", "edition": 100, "units_target": None, "unit_price": 500, "framing_available": True, "frame_conversion": 0.5,
+     "aa_profit_per_unit": 50, "aa_profit_share": None, "aa_revenue_share": 0.3, "frame_profit_per_unit": 40, "excluded": True},
+]
+PAID_PROFILE = {**PROFILE, "frames_per_print": 0.4}
+paid_cases = [
+    {"name": "the basket's rates", "inputs": {}, "rows": ROWS},
+    {"name": "typed rate, pieces and cannibalisation", "inputs": {"signup_order_rate": 0.09, "cannibalisation": 0.25, "purchases_per_order": 1.2}, "rows": ROWS},
+    {"name": "no AA profit", "inputs": {}, "rows": [{**r, "aa_profit_per_unit": None} for r in ROWS]},
+    {"name": "the works' own take-up", "inputs": {}, "rows": [{**r, "frame_conversion": 0.2 if r["framing_available"] else None} for r in ROWS]},
+    {"name": "a revenue share deal", "inputs": {}, "rows": [{**r, "aa_profit_share": None, "aa_revenue_share": 0.3} for r in ROWS]},
+    {"name": "no works", "inputs": {}, "rows": []},
+]
+py_paid = []
+for c in paid_cases:
+    read = tl.apply_channels_off(PAID_PROFILE, [])
+    T = tl.tl_targets(c["inputs"], 400.0, read, 300000.0)
+    py_paid.append(tl.tl_paid_value(c["inputs"], read, T, tl.tl_economics(c["rows"])))
+v0 = py_paid[0]
+ppu = (250 * 180 + 150 * 200) / 400
+value_unit = ppu + (250 / 400) * 0.4 * 90      # the framed work's units at the basket's take-up and its frame profit
+value_sale = value_unit * (1 - tl.TL_CANNIBALISATION)
+check(v0["readable"] and close(v0["value_per_unit"], value_unit) and v0["frame_rate_source"] == "basket", f"a unit is worth AA's profit plus the likely framing profit ({v0['value_per_unit']:.2f} vs {value_unit:.2f})")
+check(close(v0["value_per_sale"], value_sale), "a sale is worth that net of cannibalisation")
+check(v0["signup_order_rate_source"] == "basket_paid" and close(v0["signup_order_rate"], PROFILE["signup_order_rate_by_group"]["paid"]), "a paid signup converts at the basket's paid rate")
+check(close(v0["value_per_signup"], PROFILE["signup_order_rate_by_group"]["paid"] * PROFILE["purchases_per_order"] * value_sale), "a signup is worth a sale x pieces per order x the paid rate")
+check(close(v0["aa_budget_share"], 0.6) and not v0["aa_budget_share_assumed"], "the ads divide as the profit does: the work with a deal says 60%")
+check(close(v0["cost_per_signup_at_target_roi"], v0["value_per_signup"] / (0.6 * build.BENCH["target_roi_aa"])) and close(v0["break_even_cost_per_signup"], v0["value_per_signup"] / 0.6),
+      "the cost AA can pay is the value over its share and the ROI")
+v1 = py_paid[1]
+check(v1["signup_order_rate_source"] == "release" and close(v1["value_per_signup"], 0.09 * 1.2 * value_unit * 0.75), "typed rate, pieces and cannibalisation win")
+v2 = py_paid[2]
+check(not v2["readable"] and v2["value_per_signup"] is None and v2["cost_per_signup_at_target_roi"] is None, "no AA profit per unit: nothing to read")
+check(py_paid[3]["frame_rate_source"] == "release" and close(py_paid[3]["frame_rate"], 0.2), "the works' own take-up over the basket's")
+check(close(py_paid[4]["aa_budget_share"], 1.0), "on a revenue share AA carries the ads")
+check(not py_paid[5]["readable"] and py_paid[5]["aa_budget_share_assumed"] and close(py_paid[5]["aa_budget_share"], 0.5), "no works: half the spend assumed, nothing readable")
+
 # JS parity
 with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
-    json.dump({"bench": build.BENCH, "cases": [{**{k: v for k, v in c.items() if k != "profile"}, "profile": c.get("profile", PROFILE)} for c in cases]}, f)
+    json.dump({"bench": build.BENCH, "cases": [{**{k: v for k, v in c.items() if k != "profile"}, "profile": c.get("profile", PROFILE)} for c in cases],
+               "paid_cases": [{**c, "profile": PAID_PROFILE, "airtable_units": 400.0, "launch_value": 300000.0} for c in paid_cases]}, f)
     path = f.name
 res = subprocess.run(["node", str(ROOT / "tests" / "tl_model_parity.mjs"), "--cases", path], capture_output=True, text=True, check=True)
-js_out = json.loads(res.stdout)
+js_all = json.loads(res.stdout)
+js_out = js_all["targets"]
+PAID_KEYS = ["readable", "value_per_unit", "value_per_sale", "value_per_signup", "signup_order_rate", "frame_rate", "frame_uplift_per_unit", "purchases_per_order",
+             "cannibalisation", "aa_budget_share", "break_even_cost_per_signup", "cost_per_signup_at_target_roi", "cost_per_sale_at_target_roi"]
+for c, py, js in zip(paid_cases, py_paid, js_all["paid"]):
+    for k in PAID_KEYS:
+        a, b_ = py.get(k), js.get(k)
+        check((a == b_) if isinstance(a, bool) else close(a, b_), f"paid value, {c['name']}: {k} python {a} js {b_}")
+    check(py["signup_order_rate_source"] == js["signup_order_rate_source"] and py["frame_rate_source"] == js["frame_rate_source"] and py["aa_budget_share_assumed"] == js["aa_budget_share_assumed"],
+          f"paid value, {c['name']}: the sources agree")
 KEYS = ["units_target", "purchases_per_order", "signup_order_rate", "orders_needed", "signup_target", "k", "paid_signups", "paid_units",
         "cost_per_signup", "cost_per_sale", "budget_pre", "budget_window", "budget_total", "budget_pct_of_launch_value", "sessions_needed"]
 for c, py, js in zip(cases, py_out, js_out):
@@ -248,4 +301,4 @@ check(tl.tl_id("Ai Weiwei · Multiple · 2026 Q4") == "ai_weiwei_multiple_2026_q
 if failed:
     print(f"{failed} check(s) failed")
     sys.exit(1)
-print(f"tl model: ok ({len(cases)} target cases, python and js agree)")
+print(f"tl model: ok ({len(cases)} target cases and {len(paid_cases)} paid value cases, python and js agree)")

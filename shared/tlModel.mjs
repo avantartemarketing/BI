@@ -155,5 +155,100 @@ export function tlTargets(inp, airtableUnits, profile, launchValue, b = {}) {
   };
 }
 
+const nn = (v) => (v === null || v === undefined || v === "" ? null : Number.isFinite(Number(v)) ? Number(v) : null);
+
+/* The works' profit and framing figures as one release (etl/tl.py
+ * tl_economics, the same to the figure): over the ticked works, each weighted
+ * by its units target, else its edition, else evenly. AA's and the artist's
+ * profit per unit over the works with a figure (null when none has one); the
+ * share of the units on works that frame, those works' own frame take-up and
+ * AA's profit per frame (a framed work without a profit figure counts no
+ * framing profit; null when no framed work has one); who funds the ads from
+ * each work's deal (a profit share is AA's share of the ads, a revenue share
+ * all of them), null when no work records a deal. A row is a product as
+ * effectiveProduct resolves it, its frame_conversion the work's own figure or
+ * null (not the default). */
+export function tlEconomics(rows) {
+  const live = (rows || []).filter((r) => !r.excluded);
+  const w = (r) => nn(r.units_target) || nn(r.edition) || 1;
+  const weighted = (key, of) => {
+    const use = of.filter((r) => nn(r[key]) !== null);
+    const tot = use.reduce((s, r) => s + w(r), 0);
+    return tot > 0 ? use.reduce((s, r) => s + w(r) * Number(r[key]), 0) / tot : null;
+  };
+  const dealShare = (r) => { const ps = nn(r.aa_profit_share), rs = nn(r.aa_revenue_share); return ps !== null ? Math.min(Math.max(ps, 0), 1) : rs !== null ? 1 : null; };
+  const framed = live.filter((r) => r.framing_available !== false);
+  const framedW = framed.reduce((s, r) => s + w(r), 0);
+  const framedWith = framed.filter((r) => nn(r.frame_profit_per_unit) !== null);
+  const total = live.reduce((s, r) => s + w(r), 0);
+  const dealt = live.filter((r) => dealShare(r) !== null);
+  const dealtW = dealt.reduce((s, r) => s + w(r), 0);
+  return {
+    aa_profit_per_unit: weighted("aa_profit_per_unit", live), artist_profit_per_unit: weighted("artist_profit_per_unit", live),
+    frame_share: total > 0 ? framedW / total : 0,
+    frame_conversion: weighted("frame_conversion", framed),
+    frame_profit_per_unit: framedWith.length && framedW > 0 ? framed.reduce((s, r) => s + w(r) * (nn(r.frame_profit_per_unit) || 0), 0) / framedW : null,
+    aa_budget_share: dealtW > 0 ? dealt.reduce((s, r) => s + w(r) * dealShare(r), 0) / dealtW : null,
+    aa_budget_share_assumed: !dealt.length,
+    deal: [...new Set(dealt.map((r) => (nn(r.aa_profit_share) !== null ? "profit share" : "revenue share")))].sort(),
+  };
+}
+
+/* What a paid signup, and a paid sale, is worth to Avant Arte, and the cost it
+ * can pay for one at the target ROI (etl/tl.py tl_paid_value, the same to the
+ * figure; docs/TL_SPEC.md §7):
+ *
+ *   value of a unit    = AA profit per unit + share of units framing x frame take-up x AA profit per frame
+ *   value of a sale    = value of a unit x (1 - cannibalisation)
+ *   value of a signup  = value of a sale x pieces per order x paid signup -> order rate
+ *   cost at an ROI     = value / (AA's share of the spend x ROI)
+ *
+ * The frame take-up is the works' own figure, else the basket's frames per
+ * print, else the default; the rate is the typed signup -> order rate, else
+ * the basket's paid rate, else its blended rate. Unreadable without AA's
+ * profit per unit. */
+export function tlPaidValue(inp, profile, targets, econ, b = {}) {
+  inp = inp || {}; profile = profile || {}; targets = targets || {}; econ = econ || {};
+  const ppu = nn(econ.aa_profit_per_unit);
+  const frameProfit = nn(econ.frame_profit_per_unit);
+  const frameShare = nn(econ.frame_share) || 0;
+  const own = nn(econ.frame_conversion);
+  const basketRate = nn(profile.frames_per_print);
+  let frameRate, frameSrc;
+  if (own !== null) { frameRate = Math.min(Math.max(own, 0), 1); frameSrc = "release"; }
+  else if (basketRate > 0) { frameRate = basketRate; frameSrc = "basket"; }
+  else { frameRate = nn(b.frame_conversion) || 0; frameSrc = "default"; }
+  const frameUplift = frameShare * frameRate * (frameProfit || 0);
+  const readable = ppu !== null;
+  const valueUnit = (ppu || 0) + frameUplift;
+  let cann = nn(targets.cannibalisation);
+  if (cann === null) { cann = nn(inp.cannibalisation); if (cann === null) cann = TL_CANNIBALISATION; }
+  const valueSale = valueUnit * (1 - cann);
+  const s2oTyped = nn(inp.signup_order_rate);
+  const paidRate = nn((profile.signup_order_rate_by_group || {}).paid);
+  const blended = nn(targets.signup_order_rate);
+  let s2o = null, s2oSrc = "none";
+  if (s2oTyped > 0 && s2oTyped <= 1) { s2o = s2oTyped; s2oSrc = "release"; }
+  else if (paidRate > 0) { s2o = paidRate; s2oSrc = "basket_paid"; }
+  else if (blended > 0) { s2o = blended; s2oSrc = "basket"; }
+  const ppo = nn(targets.purchases_per_order) || nn(profile.purchases_per_order) || 1;
+  const valueSignup = s2o ? s2o * ppo * valueSale : null;
+  let share = nn(econ.aa_budget_share);
+  const assumed = share === null;
+  if (share === null) share = 0.5;
+  const roiTarget = nn(b.target_roi_aa) || 1.1;
+  const costAt = (value, roi) => (readable && value > 0 && share > 0 && roi > 0 ? value / (share * roi) : null);
+  return {
+    readable, aa_profit_per_unit: ppu, frame_share: frameShare, frame_rate: frameRate, frame_rate_source: frameSrc,
+    frame_profit_per_unit: frameProfit, frame_uplift_per_unit: frameUplift, value_per_unit: readable ? valueUnit : null,
+    cannibalisation: cann, value_per_sale: readable ? valueSale : null,
+    signup_order_rate: s2o, signup_order_rate_source: s2oSrc, purchases_per_order: ppo,
+    value_per_signup: readable ? valueSignup : null,
+    aa_budget_share: share, aa_budget_share_assumed: assumed, roi_target: roiTarget,
+    break_even_cost_per_signup: costAt(valueSignup, 1), cost_per_signup_at_target_roi: costAt(valueSignup, roiTarget),
+    break_even_cost_per_sale: costAt(valueSale, 1), cost_per_sale_at_target_roi: costAt(valueSale, roiTarget),
+  };
+}
+
 /* The Target setting tab's sliders, as shared/benchmarkModel.mjs rebalanceShares. */
 export { rebalanceShares } from "./benchmarkModel.mjs";

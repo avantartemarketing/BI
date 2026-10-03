@@ -616,8 +616,8 @@ ones (`etl/tl.py le_blocks`: channels with daily series, funnel contributions, t
 the hero, paid pacing, sell-through rows and framing; the funnel's email stages read against
 the TL email cohort, `email_cohort`, the panel's launches' pre-window sends), in signups by day before the window
 opens and in units by hour inside it (`clock`), with `web/src/vocab.mjs` giving each card its
-words; what differs is only what a timed launch has no equivalent for (paid cost per signup or
-sale in place of ROI, budget pacing in place of the LE spend rules, a pre-window signups card
+words; what differs is only what a timed launch has no equivalent for (the paid ROI read on what a
+paid signup is assumed to be worth, `tl_paid_value`, with a cost view, budget pacing in place of the LE spend rules, a pre-window signups card
 once the window has opened, no draw, no Slack posts yet). `tests/test_tl_page.py` holds the
 blocks to each other. A TL page runs on Airtable's
 units target and the suggested basket before anyone saves. **Target setting** is the LE
