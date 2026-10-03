@@ -40,6 +40,7 @@ import {
   Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, dayElapsed, textPx, timeAxis, nameLines, useBoxSize, LineNames, ChartTip,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import { wordsOf } from "../vocab.mjs";
 
 const X1 = 680, Y0 = 148, YTOP = 8;
 
@@ -109,7 +110,8 @@ function seriesFor(snap, sel) {
   // so this view cannot diverge from the channels module. The release cannot
   // sell more than its edition, so the line flattens at the sellout, where the
   // hero caps; a single channel's demand is its own and is not capped.
-  const cap = snap.edition && snap.edition.total > 0 ? snap.edition.total : null;
+  // a timed launch's edition is no ceiling on its units, so nothing is clamped there
+  const cap = snap.type !== "TL" && snap.edition && snap.edition.total > 0 ? snap.edition.total : null;
   const clamp = (v) => (v !== null && v !== undefined && cap !== null ? Math.min(v, cap) : v);
   const sliced = channels.map((c) => slicePts(c.daily, snap.windowStart, of));
   const n = sliced.reduce((m, s) => Math.max(m, s.length), 0);
@@ -149,6 +151,7 @@ export default function Trajectory({ snap }) {
   // in a percentage guessed from a card size that is free to change
   const [plotRef, plotW, plotH] = useBoxSize();
   const channels = snap.channels || [];
+  const W = wordsOf(snap);   // units, or a timed launch's signups; days, or its window's hours (vocab.mjs)
   const of = snap.of || 1;
   const day = Math.max(0, Math.min(snap.day ?? 0, of));
   const complete = !!snap.complete;
@@ -177,11 +180,11 @@ export default function Trajectory({ snap }) {
       )}
       <span className="seg compact" role="group" aria-label="What the trajectory shows">
         <button type="button" className={byChannel ? "" : "active"} onClick={() => setView("lines")}
-          title={targeted ? "The total against the target's pace and the benchmark's" : "The total secured, day by day"}>
+          title={targeted ? "The total against the target's pace and the benchmark's" : `The total ${W.securedLower}, ${W.stepWord} by ${W.stepWord}`}>
           {targeted ? "Against target" : "Total"}
         </button>
         <button type="button" className={byChannel ? "active" : ""} onClick={() => setView("channels")}
-          title="The total alone, with the channel groups shaded under it by the units each contributes">
+          title={`The total alone, with the channel groups shaded under it by the ${W.unit} each contributes`}>
           By channel
         </button>
       </span>
@@ -190,8 +193,8 @@ export default function Trajectory({ snap }) {
 
   if (!s.pts.length) {
     return (
-      <Card wide dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
-        <div className="empty-state">No daily series yet.</div>
+      <Card wide dot={GROUP_DOTS.volume} title={W.trajTitle} right={right}>
+        <div className="empty-state">No {W.stepWord}ly series yet.</div>
       </Card>
     );
   }
@@ -351,16 +354,16 @@ export default function Trajectory({ snap }) {
   const showAxisTop = clearOf(axisTop, 0);
   const showAxisMid = showAxisTop && clearOf(axisTop / 2, 0) && clearOf(axisTop, axisTop / 2);
   const pctColor = projPct !== null && projPct >= 100 ? C.ink : C.red;
-  const nowTip = byChannel ? fmt(s.now) + " units secured to date" :
-    fmt(s.now) + " units secured to date · " + fmt(planToday) + " target by day " + day +
+  const nowTip = byChannel ? `${fmt(s.now)} ${W.unit} ${W.securedLower} to date` :
+    `${fmt(s.now)} ${W.unit} ${W.securedLower} to date · ${fmt(planToday)} target by ${W.stepWord} ${day}` +
     (bmToday !== null && bmToday !== undefined ? " · " + fmt(bmToday) + " benchmark" : "");
   // by channel, the total's figure at the end of its line, in units
   const endVal = showProjSeg ? s.proj : nowVal;
-  const endTip = (showProjSeg ? "Projected " : complete ? "" : "Secured to date: ") + fmt(endVal) + " units" + (showProjSeg || complete ? " at close" : "");
+  const endTip = (showProjSeg ? "Projected " : complete ? "" : `${W.toDate}: `) + fmt(endVal) + ` ${W.unit}` + (showProjSeg || complete ? ` at the ${W.closeWord}` : "");
   const projTip = complete
-    ? fmt(s.now) + " units at close" + (projPct !== null ? " · " + projPct + "% of target" : "")
-    : "Projected " + fmt(s.proj) + " at close" + (projPct !== null ? " · " + projPct + "% of target" : "") +
-      (sel === "all" && projPct !== null && projPct > 100
+    ? `${fmt(s.now)} ${W.unit} at the ${W.closeWord}` + (projPct !== null ? " · " + projPct + "% of target" : "")
+    : `Projected ${fmt(s.proj)} at the ${W.closeWord}` + (projPct !== null ? " · " + projPct + "% of target" : "") +
+      (!W.tl && sel === "all" && projPct !== null && projPct > 100
         ? " · demand beyond the sellout cannot convert" : "");
   /* "today" always shows on a live release: it is the reading that matters, and
    * the line it names is otherwise just a line. The axis ends are the announce
@@ -434,18 +437,18 @@ export default function Trajectory({ snap }) {
     const label = (key, text, color, weight, title, anchors) => ({ key, text, color, weight, title, anchors, w: textPx(text, 12, weight), h: H });
     const labels = [
       // its leader stops short of the today dot it names
-      { ...label("now", "secured", C.ink, 600, nowTip, [{ x: ax, y: ayNow, cost: 0 }]), dot: 6.5 },
+      { ...label("now", W.securedLower, C.ink, 600, nowTip, [{ x: ax, y: ayNow, cost: 0 }]), dot: 6.5 },
       ...(showProjSeg && projRun.length > 1 ? [label("proj", "projected", C.muted, 500, projTip, projAnchors())] : []),
       label("target", "target", C.ink, 500,
-        `${fmt(planToday)} target by day ${day} · ${fmt(s.target)} at close`, anchorsOn(targetRuns, true)),
+        `${fmt(planToday)} target by ${W.stepWord} ${day} · ${fmt(s.target)} at the ${W.closeWord}`, anchorsOn(targetRuns, true)),
       ...(hasBm && has(bmToday) ? [label("bm", "benchmark", C.muted, 500,
-        `${fmt(bmToday)} benchmark by day ${day} · ${fmt(s.bm)} at close`, anchorsOn(bmRuns, true))] : []),
+        `${fmt(bmToday)} benchmark by ${W.stepWord} ${day} · ${fmt(s.bm)} at the ${W.closeWord}`, anchorsOn(bmRuns, true))] : []),
     ].filter((lb) => lb.anchors.length);
     names = nameLines({ labels, curves, blocks, bounds: { x0: 0, y0: -10, x1: plotW + 44, y1: plotH } });
   }
 
   return (
-    <Card wide dot={GROUP_DOTS.volume} title="Unit trajectory" right={right}>
+    <Card wide dot={GROUP_DOTS.volume} title={W.trajTitle} right={right}>
       <div className="spacer-16" />
       <div className="body">
         <div style={{ position: "relative", flex: 1 }}>
@@ -543,7 +546,7 @@ export default function Trajectory({ snap }) {
                   }} />
                   <ChartTip left={left}>
                     <div className="t-head">{dayLabel(snap, col.i, true)}</div>
-                    <div className="t-row"><span>{col.ahead ? "Projected" : "Secured"}</span><span className="v">{fmt(col.total)}</span></div>
+                    <div className="t-row"><span>{col.ahead ? "Projected" : W.secured}</span><span className="v">{fmt(col.total)}</span></div>
                     {rows.map(({ g, v }) => (
                       <div className="t-row" key={g.key}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
@@ -577,7 +580,7 @@ export default function Trajectory({ snap }) {
                   <ChartTip left={`${(hover.i / N) * 100}%`}>
                     <div className="t-head">{dayLabel(snap, hover.i, true)}</div>
                     {hp.actual !== null && hp.actual !== undefined && (
-                      <div className="t-row"><span>Secured</span><span className="v">{fmt(hp.actual)}</span></div>
+                      <div className="t-row"><span>{W.secured}</span><span className="v">{fmt(hp.actual)}</span></div>
                     )}
                     {hp.proj !== null && hp.proj !== undefined && hover.i > day && (
                       <div className="t-row"><span>Projected</span><span className="v">{fmt(hp.proj)}</span></div>
@@ -665,13 +668,13 @@ export default function Trajectory({ snap }) {
               </div>
             )}
             {showEndLabel && (
-              <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }} title={`close · day ${of}`}>{endText}</div>
+              <div style={{ ...xLabel, left: "100%", transform: "translateX(-100%)" }} title={`${W.closeWord} · ${W.stepWord} ${of}`}>{endText}</div>
             )}
           </div>
         </div>
         {stack && (
-          <div className="traj-legend" aria-label="Units by channel group">
-            <div className="cap">{showProjSeg ? "Projected at close" : complete ? "At close" : "Secured to date"}</div>
+          <div className="traj-legend" aria-label={`${W.Unit} by channel group`}>
+            <div className="cap">{showProjSeg ? `Projected at the ${W.closeWord}` : complete ? `At the ${W.closeWord}` : W.toDate}</div>
             <div className="its">
               {stack.groups.map((g, k) => ({ g, v: stack.last.vals[k] })).reverse().map(({ g, v }) => (
                 <span className="it" key={g.key}>

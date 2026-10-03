@@ -20,6 +20,7 @@ import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, BADGE_WORDS, C, QBadge, fmt, fmtSigned, useTip, LevelWaterfall, waterfallOpening, waterfallScale, HATCH, stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { channelWalk } from "../figures.mjs";
+import { wordsOf } from "../vocab.mjs";
 
 /* Demand the edition cannot hold: the last step of a walk on a sold-out
  * release, in the hero's over-sellout hatch, dropping to the capped figure
@@ -44,7 +45,8 @@ export default function Waterfall({ snap, horizon = "today" }) {
   // close shape rather than emptying the card out from under the page toggle
   const td = horizon === "today" && wf && wf.today ? wf.today : null;
   const isToday = !!td;
-  const title = isToday ? "Actual vs target" : "Projection vs target";
+  const W = wordsOf(snap);   // units, or a timed launch's signups (vocab.mjs)
+  const title = isToday ? W.outcomeWaterfall : W.projectionWaterfall;
 
   if (!wf) {
     return (
@@ -84,7 +86,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const closeWord = complete ? "Final" : "Projected";
   const outcomeLabel = isToday ? "Actual" : "Projection";
   const netTip = {
-    head: isToday ? "Secured to date" : closeWord,
+    head: isToday ? W.toDate : closeWord,
     rows: [
       { label: outcomeLabel, value: fmt(outcome) },
       { label: words.target, value: fmt(target) },
@@ -108,7 +110,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
         tip: {
           head: c.label,
           rows: [
-            { label: isToday ? "Secured to date" : "Projected", value: fmt(c.a) },
+            { label: isToday ? W.toDate : "Projected", value: fmt(c.a) },
             { label: hasBm ? words.bm : words.target, value: fmt(c.e) },
             { label: "Gap", value: fmtSigned(c.value), color: c.value >= 0 ? C.green : C.red },
             { label: "Running total", value: fmt(c.to) },
@@ -124,7 +126,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
           tip: {
             head: p.label,
             rows: [
-              { label: "Contribution", value: fmtSigned(v) + " units", color: v >= 0 ? C.green : C.red },
+              { label: "Contribution", value: fmtSigned(v) + " " + W.unit, color: v >= 0 ? C.green : C.red },
               { label: "Running total", value: fmt(p.to) },
             ],
           },
@@ -133,12 +135,12 @@ export default function Waterfall({ snap, horizon = "today" }) {
   // the channels add up to the demand; the cap is its own step down to the outcome
   if (by === "channels" && cw && cw.beyond < 0) stepRows.push(beyondStep(cw.beyond, cw.end, outcome, xClose));
   const rows = [
-    ...waterfallOpening({ hasBm, bm: benchmark, target, words, k, xArg: xHere, stretchNote: stretchWords(snap) }),
+    ...waterfallOpening({ hasBm, bm: benchmark, target, words, k, xArg: xHere, stretchNote: stretchWords(snap), unitWord: W.Unit }),
     ...stepRows,
     { kind: "level", key: "outcome", label: outcomeLabel, value: outcome, color: C.blue, x: { k: "hero.fill", arg: xHere },
       tip: {
-        head: isToday ? "Secured to date" : closeWord + " at close",
-        rows: [{ label: "Units", value: fmt(outcome) }],
+        head: isToday ? W.toDate : `${closeWord} at the ${W.closeWord}`,
+        rows: [{ label: W.Unit, value: fmt(outcome) }],
       } },
   ];
   const X = waterfallScale([outcome, target, ...path.map((p) => p.to), ...(by === "channels" ? chanPath.map((c) => c.to) : []), ...(hasBm ? [benchmark] : [])]);
@@ -159,7 +161,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
     <Card
       dot={GROUP_DOTS.outcome}
       title={title}
-      badge={<HorizonBadge horizon={isToday ? "today" : "close"} />}
+      badge={<HorizonBadge horizon={isToday ? "today" : "close"} closeLabel={W.closeLabel} />}
       wrapHead
       right={
         <span
@@ -194,10 +196,10 @@ export default function Waterfall({ snap, horizon = "today" }) {
           marginLeft: "auto", fontSize: 12, color: C.muted, whiteSpace: "nowrap",
           minWidth: 0, overflow: "hidden", textOverflow: "ellipsis",
         }}>
-          {isToday && snap?.day ? "day " + snap.day + " · " : ""}
+          {isToday && snap?.day ? `${W.stepWord} ` + snap.day + " · " : ""}
           {/* where there is no basket at all, the model that set the target instead */}
           {hasBm ? "" : "no comparable basket · "}
-          {isToday ? "secured units" : "units"}
+          {isToday ? W.securedUnits.toLowerCase() : W.unit}
         </span>
       </div>
     </Card>

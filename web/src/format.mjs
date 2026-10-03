@@ -64,21 +64,36 @@ export const fmtDay = (d, weekday = false) =>
  * as-of day, snap.of is the close, and the daily arrays are indexed the same
  * way, so day N is windowStart + N days. Null on a snapshot without a window. */
 export const windowDate = (snap, day) => {
-  if (!snap || !snap.windowStart || !(day >= 0)) return null;
+  if (!snap || !(day >= 0)) return null;
+  // a timed launch inside its window runs in hours from the sales open
+  // (snap.clock, docs/TL_SPEC.md §5): step N is that many hours on
+  if (snap.clock && snap.clock.unit === "hour" && snap.clock.start) {
+    const t0 = Date.parse(snap.clock.start);
+    return Number.isFinite(t0) ? new Date(t0 + day * 3600000) : null;
+  }
+  if (!snap.windowStart) return null;
   const t = Date.parse(snap.windowStart + "T00:00:00Z");
   return Number.isFinite(t) ? new Date(t + day * 86400000) : null;
 };
 
+const hourClock = (snap) => !!(snap && snap.clock && snap.clock.unit === "hour");
+/* "18:00" in Amsterdam time, the clock every window is set by. */
+const fmtHour = (d) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" });
+
 /* A day of the window named by its date, with the day number after it: a day
  * number alone only reads against the campaign clock, a date reads on its
- * own. "Mon 21 Sep · day 18"; "day 18" when the window has no start. */
+ * own. "Mon 21 Sep · day 18"; "day 18" when the window has no start. On an
+ * hour clock, the hour: "Tue 13 Oct 18:00 · hour 26". */
 export const dayLabel = (snap, day, weekday = false) => {
   const d = windowDate(snap, day);
+  if (hourClock(snap)) return d ? `${fmtDay(d, weekday)} ${fmtHour(d)} · hour ${day}` : `hour ${day}`;
   return d ? `${fmtDay(d, weekday)} · day ${day}` : `day ${day}`;
 };
 
-/* The date alone for an axis end, falling back to the day number. */
+/* The date alone for an axis end, falling back to the day number; the date
+ * and the hour on an hour clock. */
 export const dayAxisLabel = (snap, day) => {
   const d = windowDate(snap, day);
+  if (hourClock(snap)) return d ? `${fmtDay(d)} ${fmtHour(d)}` : `hour ${day}`;
   return d ? fmtDay(d) : `day ${day}`;
 };

@@ -61,6 +61,7 @@ import React, { useState } from "react";
 import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, useTip } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { inDraw } from "../../../shared/sellThrough.mjs";
+import { wordsOf } from "../vocab.mjs";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 /* One ramp of the page's blue, deepest to palest as the units get less
@@ -138,10 +139,14 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const [post, setPost] = useState({ state: "idle" });   // the Post to Slack button: idle | posting | done | error
   const st = snap?.sellthrough;
   const close = horizon === "close";
+  const W = wordsOf(snap);
+  // a timed launch (docs/TL_SPEC.md §5): one row per work against its units
+  // target, paid and awaiting payment from the orders table, no draw
+  const tl = !!(st && st.tl);
 
   if (!st) {
     return (
-      <Card dot={GROUP_DOTS.outcome} title="Sell-through by product" badge={<HorizonBadge horizon={horizon} />}>
+      <Card dot={GROUP_DOTS.outcome} title={W.sellThroughTitle} badge={<HorizonBadge horizon={horizon} />}>
         <div className="empty-state">No sell-through model yet</div>
       </Card>
     );
@@ -184,7 +189,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const maxFor = (r) => (byEdition ? Math.max(r.edition, demandOf(r)) : unitsMax);
 
   // the headline: what is spoken for today, or the prediction at close
-  const headPct = edition ? (close ? st.pct ?? 0 : Math.min((sold + (draftsAll ?? 0) + inHandAll) / edition, 1)) : null;
+  // a timed launch's units can pass its target, so its share is not capped at 100%
+  const headPct = edition ? (close ? st.pct ?? 0 : tl ? (sold + (draftsAll ?? 0) + inHandAll) / edition : Math.min((sold + (draftsAll ?? 0) + inHandAll) / edition, 1)) : null;
   const headUnits = sold + (draftsAll ?? 0) + inHandAll + futureAll;
   const headText = headPct !== null ? `${Math.round(headPct * 100)}%` : fmt(headUnits);
   /* The two figures a row carries, each in a column of its own: its units, of
@@ -199,7 +205,9 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const stampTip = incomplete.length ? {
     head: "Incomplete data",
     rows: incomplete.map((m) => ({ label: "Not in the feed yet", value: m })),
-    body: incomplete.includes("products")
+    body: incomplete.includes("orders table")
+      ? "The orders table has no lines for this launch yet, so its units are the feed's purchase events and the launch is one row. The rows by work appear once the orders land."
+      : incomplete.includes("products")
       ? "The event feed has no draws for this release yet, so the release is one row. The per-product rows appear after the next data refresh."
       : "Sales the draw cannot name a product for are split by edition size inside the sold segment until the sales feed carries the product; draft orders are not drawn until a feed carries them.",
   } : null;
@@ -220,11 +228,14 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const twoRates = preRateText !== null && preRateText !== rateText;
   const methodTip = {
     head: "How the card counts",
-    body: `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw winners (estimate) are the people still in the draw, counted at ${rateText}${twoRates ? `, or at ${preRateText} where they entered as a pre-order and their card is already authorised` : ""}. Winners who have not paid are not counted: the order sent after a failed payment is in Drafts for 72 hours, and after that it is out. ` +
-      "A draw round's winners whose claim the order feed has not caught up with yet still count, at the pre-order rate, until their orders land, so claiming pre-orders never reads as sell-through going down" +
-      (finite(st.claimsInFlight) && st.claimsInFlight > 0 ? ` (${fmt(st.claimsInFlight)} landing now). ` : ". ") +
-      "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them." +
-      (close ? " Still to come is the projection's further units, spread over the room left." : ""),
+    body: tl
+      ? "Paid is the orders table's paid lines in the window, by pieces. Awaiting payment is the orders raised in the window and not yet paid, pending and draft, which count as units sold until they lapse. Each row is a work against its units target, the launch's target split by work in Airtable, and the bar runs past the target where the work has sold more." +
+        (close ? " Still to come is the projection's further units, spread over the works in proportion to their sales." : "")
+      : `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw winners (estimate) are the people still in the draw, counted at ${rateText}${twoRates ? `, or at ${preRateText} where they entered as a pre-order and their card is already authorised` : ""}. Winners who have not paid are not counted: the order sent after a failed payment is in Drafts for 72 hours, and after that it is out. ` +
+        "A draw round's winners whose claim the order feed has not caught up with yet still count, at the pre-order rate, until their orders land, so claiming pre-orders never reads as sell-through going down" +
+        (finite(st.claimsInFlight) && st.claimsInFlight > 0 ? ` (${fmt(st.claimsInFlight)} landing now). ` : ". ") +
+        "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them." +
+        (close ? " Still to come is the projection's further units, spread over the room left." : ""),
   };
   /* No copy under the rows. The allocation's account lives in the popup of
      the draw-winners key, the split sales in the paid key's, and the
@@ -316,7 +327,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
       editions add to {fmt(st.editionSum)}
     </span>
   ) : null;
-  const slackButton = snap && snap.id ? (
+  // no Slack posts for timed launches yet (docs/TL_SPEC.md §10)
+  const slackButton = snap && snap.id && !tl ? (
     <button
       className="btn secondary small"
       disabled={!channel || post.state === "posting"}
@@ -334,7 +346,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   return (
     <Card
       dot={GROUP_DOTS.outcome}
-      title="Sell-through by product"
+      title={W.sellThroughTitle}
       badge={<HorizonBadge horizon={horizon} />}
       right={mismatchFlag ? <>{mismatchFlag}{slackButton}</> : slackButton}
       wrapHead={!!mismatchFlag}
@@ -346,7 +358,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
         <div className="lead" {...t.props(methodTip, 300)} style={{ lineHeight: "39px", whiteSpace: "nowrap", color: C.ink }}>
           <span><Ex k="st.head" arg={{ close }} focus>{headText}</Ex></span>
           <span style={{ fontSize: 12, fontWeight: 400, color: C.muted }}>
-            {edition ? `of ${fmt(edition)} units` : "units"}
+            {edition ? `of ${fmt(edition)} ${st.editionWord || "units"}` : "units"}
           </span>
         </div>
         {edition === null && <span className="lead-caption" style={{ marginTop: 0, whiteSpace: "nowrap" }}>no edition size set</span>}
@@ -371,6 +383,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
               ...(outside && outside.pending > 0 ? [{ label: `Paid since ${dayText(salesWindow.end)} (counts on the next refresh)`, value: fmt(outside.pending) }] : []),
             ],
             body: [
+              tl ? "Units paid in the window from the orders table, by pieces, from the sales open." : null,
               fromFeed && (st.unattributedSold ?? 0) > 0
                 ? "The draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size until the sales feed carries the product."
                 : null,
@@ -378,15 +391,16 @@ export default function SellThrough({ snap, horizon = "today" }) {
             ].filter(Boolean).join(" ") || undefined },
           })}
           {draftsAll !== null && draftsAll > 0 && legendChip({
-            key: "drafts", sw: <span style={swatch(SEG.drafts)} />, label: "Drafts", value: fmt(draftsAll), x: { k: "st.drafts" },
-            tip: { head: "Drafts", rows: [
+            key: "drafts", sw: <span style={swatch(SEG.drafts)} />, label: tl ? "Awaiting payment" : "Drafts", value: fmt(draftsAll), x: { k: "st.drafts" },
+            tip: { head: tl ? "Awaiting payment" : "Drafts", rows: [
               { label: "Units", value: fmt(draftsAll) },
               ...(winnerDraftsAll > 0 ? [{ label: "Of which winners' claims, under 72 hours old", value: fmt(winnerDraftsAll) }] : []),
               ...(winnerDraftsLapsedAll > 0 ? [{ label: "Winners' claims unpaid after 72 hours (not counted)", value: fmt(winnerDraftsLapsedAll) }] : []),
             ],
-            body: "Draft orders raised but not yet paid. They take room like a sale. The order an advisor sends a winner after a failed payment counts for 72 hours; unpaid after that, it is out." },
+            body: tl ? "Orders raised in the window and not yet paid, pending and draft, by pieces: they count as units sold until they lapse."
+              : "Draft orders raised but not yet paid. They take room like a sale. The order an advisor sends a winner after a failed payment counts for 72 hours; unpaid after that, it is out." },
           })}
-          {legendChip({
+          {!tl && legendChip({
             key: "inhand", sw: <span style={swatch(SEG.winners)} />, label: "Draw winners (estimate)", value: fmt(inHandAll), tip: inHandTip, x: { k: "st.draw" },
           })}
           {close && legendChip({
@@ -421,8 +435,8 @@ export default function SellThrough({ snap, horizon = "today" }) {
             {rows.map((r) => {
               const rowTip = { head: r.name, rows: [
                 { label: "Paid", value: fmt((r.sold ?? 0) + (r.soldAssumed ?? 0)) },
-                { label: "Drafts", value: fmt(r.drafts ?? 0) },
-                { label: "Draw winners (estimate)", value: fmt(r.shown ?? 0) },
+                { label: tl ? "Awaiting payment" : "Drafts", value: fmt(r.drafts ?? 0) },
+                ...(tl ? (finite(r.orders) ? [{ label: "Orders", value: fmt(r.orders) }] : []) : [{ label: "Draw winners (estimate)", value: fmt(r.shown ?? 0) }]),
               ] };
               const tips = {
                 sold: rowTip, drafts: rowTip, inHand: rowTip,
@@ -431,7 +445,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
                   body: "Entries in hand at the rate that this product has no room for." },
               };
               const nameTip = { head: r.name, rows: [
-                ...(finite(r.edition) ? [{ label: "Edition", value: fmt(r.edition) }] : [{ label: "Edition", value: "not set" }]),
+                ...(finite(r.edition) ? [{ label: tl ? "Units target" : "Edition", value: fmt(r.edition) }] : [{ label: tl ? "Units target" : "Edition", value: "not set" }]),
                 ...(finite(r.entrants) ? [{ label: "Eligible entrants", value: fmt(r.entrants) }] : []),
                 ...(r.draws && r.draws.length > 1 ? [{ label: "Draws", value: fmt(r.draws.length) }] : []),
               ] };

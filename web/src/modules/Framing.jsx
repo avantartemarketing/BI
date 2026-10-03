@@ -5,10 +5,12 @@
  * them, and the draw's forecast conversions at the rate the entrants ask
  * for. Below it, its two parts as bars on the dashboard's own scale, each
  * with its number: the paid prints, and the prints the people still in the
- * draw have pre-authorised. No plan and no benchmark: the card reads what
- * is, and nothing on it is a target (3 October 2026). A snapshot built
- * before the forecast heads the card with the paid prints' rate. The card
- * is off the page when nothing on the release has been offered a frame. */
+ * draw have pre-authorised (on a timed launch, docs/TL_SPEC.md §5, the
+ * window's orders awaiting payment). No plan and no benchmark: the card
+ * reads what is, and nothing on it is a target (3 October 2026). A snapshot
+ * built before the forecast heads the card with the paid prints' rate. The
+ * card is off the page when nothing on the release has been offered a
+ * frame. */
 import React from "react";
 import { Card, TrackBar, HorizonBadge, GROUP_DOTS, C, fmt, fmtPct, useTip } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
@@ -31,6 +33,9 @@ export default function Framing({ snap, horizon = "today" }) {
   const f = snap.framing;
   const t = useTip();
   if (!f || (!(f.prints > 0) && !f.entrants)) return null;
+  // a timed launch (docs/TL_SPEC.md §5): the window's paid prints and the
+  // orders awaiting payment, no draw and no forecast
+  const tl = !!f.tl;
   const close = horizon === "close";
   const rate = f.rate ?? null;   // the paid prints' own, the Buyers bar
   const ent = f.entrants;
@@ -58,11 +63,15 @@ export default function Framing({ snap, horizon = "today" }) {
     rows: (f.works || []).map((w) => ({ label: w.name, value: `${fmt(w.frames)} of ${fmt(w.prints)} · ${fmtPct(w.rate)}` })),
     body: notOffered.works.length ? `No frame on offer: ${notOffered.works.join(", ")}` : null,
   };
-  const entTip = ent ? {
+  const entTip = ent ? (tl ? {
+    head: "Awaiting payment",
+    rows: [{ label: "Prints on orders not yet paid", value: fmt(ent.prints) }, { label: "With a frame", value: fmt(ent.frames) }],
+    body: "The frames on the window's orders awaiting payment.",
+  } : {
     head: "Entrants still in the draw",
     rows: [{ label: "Prints pre-authorised", value: fmt(ent.prints) }, { label: "With a frame", value: fmt(ent.frames) }],
     body: "The frames on the draw's pre-authorisations.",
-  } : null;
+  }) : null;
 
   return (
     <Card dot={GROUP_DOTS.outcome} title="Framing" badge={head ? <HorizonBadge horizon={horizon} /> : null}>
@@ -84,7 +93,7 @@ export default function Framing({ snap, horizon = "today" }) {
           </Row>
         )}
         {ent && (
-          <Row label="Entrants" sub="pre-authorised" value={fmtPct(ent.rate)} tip={entTip} x="framing.entrants">
+          <Row label={f.entrantsLabel || "Entrants"} sub={f.entrantsSub || "pre-authorised"} value={fmtPct(ent.rate)} tip={entTip} x="framing.entrants">
             <TrackBar now={0} proj={ent.rate} max={1} />
           </Row>
         )}

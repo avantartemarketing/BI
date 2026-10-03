@@ -24,6 +24,7 @@ import {
 import { stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { paidUnits } from "../figures.mjs";
+import { wordsOf, hourClock } from "../vocab.mjs";
 
 const money = (v) => "€" + fmt(Math.round(v ?? 0));
 const hasNum = (v) => v !== null && v !== undefined && Number.isFinite(v);
@@ -32,6 +33,8 @@ const moneyK = (v) => "€" + fmtK(v ?? 0);
 export default function PaidSpend({ snap, horizon = "today" }) {
   const tipApi = useTip();
   const paid = snap.paid || {};
+  // a timed launch paces a budget rather than running the LE rule engine
+  if (snap.type === "TL") return <PaidSpendTL snap={snap} horizon={horizon} />;
   if (snap.targeted === false) return <PaidSpendActuals snap={snap} />;
   const budget = paid.budget || {};
   const close = horizon === "close";
@@ -418,6 +421,171 @@ function PaidSpendActuals({ snap }) {
         <div style={row}><span style={{ color: C.muted }}>Spend to date</span><span className="num"><Ex k="paid.spend" arg={{ close: false }}>{money(spend)}</Ex></span></div>
         <div style={row}><span style={{ color: C.muted }}>Paid entries to date</span><span className="num">{fmt(entries)}</span></div>
         <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }} title="Spend over the entries that become orders, whole campaign, full days">€ per converting entry, whole campaign</span><span className="num">{paid.cumCpe ? <Ex k="paid.cpe" arg={{ whole: true }}>{"€" + fmt(paid.cumCpe, 2)}</Ex> : "–"}</span></div>
+      </div>
+    </Card>
+  );
+}
+
+
+/* A timed launch's paid pacing (docs/TL_SPEC.md §7). No rule engine prices a
+ * timed launch's paid yet, so the lead is the daily spend that paces the
+ * budget left evenly over the time left - the pre-window budget to the open,
+ * the window budget to the close - beside the last full day's spend; the two
+ * bars read the paid signups (or units, inside the window) and the spend
+ * against the budget's share by now and the basket's, as the LE card's do.
+ * The buttons stay, disabled, until there is a recommendation to apply. */
+function PaidSpendTL({ snap, horizon = "today" }) {
+  const tipApi = useTip();
+  const V = wordsOf(snap);
+  const paid = snap.paid || {};
+  const close = horizon === "close";
+  const complete = !!snap.complete;
+  const targeted = snap.targeted !== false;
+  const hasBm = !!snap.benchmark;
+  const paidOff = hasBm && (snap.benchmark.channelsOff || []).includes("paid");
+  const noCampaign = !snap.campaignName;
+  const hours = hourClock(snap);
+  const daily = paid.daily || [];
+  const full = daily.filter((d) => !d.partial);
+  const cur = full.length ? full[full.length - 1].spend : null;   // the last full day's spend
+  const budget = targeted && hasNum(paid.spendBudget) ? paid.spendBudget : null;
+  const spent = paid.spendToDate ?? 0;
+  // what is left of the clock, as days: hours inside the window read as a daily rate
+  const left = Math.max((snap.of ?? 0) - dayElapsed(snap), 0);
+  const daysLeft = hours ? left / 24 : left;
+  const rec = budget !== null && !complete && daysLeft > 0 ? Math.max((budget - spent) / daysLeft, 0) : null;
+  const d = cur !== null && rec !== null ? Math.round(rec) - Math.round(cur) : null;
+  const period = V.state === "signups" ? "pre-window" : "window";
+  const lozTip = budget === null ? { head: noCampaign ? "No paid campaign matched yet" : "No budget to pace", body: "The budget comes from the Target setting tab: paid signups at the basket's cost per signup before the open, paid's share of the units target at its cost per sale inside the window." } : {
+    head: "Daily spend to pace the budget",
+    body: `The ${period} budget left, spread evenly over the ${hours ? "hours" : "days"} left to the ${V.closeWord}. No rule engine prices a timed launch's paid yet, so this is pacing, not a recommendation: cost per ${paid.unit || "signup"} against the plan is on the paid cost card.`,
+    rows: [
+      { label: `${period[0].toUpperCase()}${period.slice(1)} budget`, value: money(budget) },
+      { label: "Spent", value: money(spent) },
+      { label: "Left", value: money(budget - spent) },
+      { label: hours ? "Hours left" : "Days left", value: fmt(left, hours ? 0 : 1) },
+      { label: "Last full day's spend", value: cur === null ? "–" : money(cur) },
+      { label: "To pace, per day", value: rec === null ? "–" : money(rec) },
+    ],
+  };
+  const exhausted = budget !== null && !complete && spent >= budget;
+  const loz = exhausted ? (
+    <Lozenge dir="down" content={lozTip}>budget spent</Lozenge>
+  ) : d === null || d === 0 ? (
+    <Lozenge dir="neutral" content={lozTip}>{noCampaign ? "no campaign" : complete ? "closed" : rec === null ? "no budget" : cur === null ? "no full day yet" : "on pace"}</Lozenge>
+  ) : d > 0 ? (
+    <Lozenge dir="up" content={lozTip}>{"▲ +€" + fmt(d)}</Lozenge>
+  ) : (
+    <Lozenge dir="down" content={lozTip}>{"▼ " + MINUS + "€" + fmt(-d)}</Lozenge>
+  );
+
+  // the bars: paid signups or units against the budget's share by now, and the spend
+  const dayFrac = paidDayFrac(snap, close);
+  const targetWord = close ? "Target" : "Target today";
+  const bmWord = close ? "Benchmark" : "Benchmark today";
+  const pu = paidUnits(snap, close);
+  const unitsBm = hasBm ? pu.bm : null;
+  const unitsPct = pu.pct === null ? null : Math.round(pu.pct * 100);
+  const unitsTip = {
+    head: V.paidUnits,
+    rows: [
+      { label: "To date", value: fmt(pu.now) },
+      ...(complete || !close ? [] : [{ label: "Projected", value: fmt(pu.proj) }]),
+      { label: targetWord, value: fmt(pu.target) },
+      ...(unitsBm === null ? [] : [{ label: bmWord, value: fmt(unitsBm) }]),
+    ],
+  };
+  const spendProj = complete ? spent : rec !== null ? spent + rec * daysLeft : spent;
+  const spendFill = close ? spendProj : spent;
+  const spendTarget = (budget ?? 0) * dayFrac;
+  const spendBm = hasBm && hasNum(paid.benchmarkBudget) ? paid.benchmarkBudget * dayFrac : null;
+  const spendTip = {
+    head: "Spend",
+    rows: [
+      { label: "To date", value: moneyK(spent) },
+      ...(complete || !close ? [] : [{ label: "At the budget's pace", value: moneyK(spendProj) }]),
+      { label: close ? "Budget" : "Budget today", value: moneyK(spendTarget) },
+      ...(spendBm === null ? [] : [{ label: bmWord, value: moneyK(spendBm) }]),
+    ],
+  };
+  const k = snap.benchmark?.k ?? null;
+  const stretchTip = {
+    head: "Stretch",
+    rows: [
+      { label: bmWord, value: fmt(unitsBm ?? 0) },
+      { label: targetWord, value: fmt(pu.target) },
+      { label: "Stretch", value: fmtSigned(Math.round(pu.target - (unitsBm ?? 0))) + " " + V.unit },
+      ...(k ? [{ label: "Uplift", value: "×" + fmt(k, 2) }] : []),
+    ],
+    body: `What the business asked of paid over the basket's median - ${stretchWords(snap)}.`,
+  };
+  const rowGrid = { display: "grid", gridTemplateColumns: "104px 1fr 44px", gap: 12, alignItems: "center" };
+  const rowLabel = { fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
+  const rightLabel = { fontSize: 12, fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums" };
+  const legendItem = { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
+  const sw = (bg) => ({ width: 8, height: 8, borderRadius: 2, background: bg, flex: "0 0 8px" });
+  const btnStyle = { opacity: 0.45, cursor: "default" };
+  const btnTitle = "No paid rule engine for timed launches yet: the pacing above is a reading, not a recommendation to apply";
+
+  return (
+    <Card dot={GROUP_DOTS.paid} title="Paid spend / day" badge={<HorizonBadge horizon={horizon} closeLabel={V.closeLabel} />}>
+      <div className="spacer-8" />
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "0 0 auto" }}>
+        {complete ? (
+          <div className="lead" title="The window has closed" style={{ color: C.muted }}>-</div>
+        ) : (
+          <>
+            <div className="lead" style={rec === null ? { color: C.muted } : undefined}>{rec === null ? "–" : money(rec)}</div>
+            {loz}
+          </>
+        )}
+      </div>
+      <div style={{ height: 10, flex: "0 0 10px" }} />
+      {paidOff && (
+        <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, flex: "0 0 auto", marginBottom: 6 }}
+          title="Set on the Target setting tab. The benchmark reads the basket without its paid signups and the other channels carry the whole target.">
+          Paid is not in plan for this launch: no target and no budget. Any spend and {V.unit} below are what actually ran.
+        </div>
+      )}
+      {!complete && budget !== null && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" }}>
+          <span style={rowLabel}>Paced to</span>
+          <span style={{ minWidth: 0, overflow: "hidden", whiteSpace: "nowrap" }}><Lozenge color="blue" content={lozTip}>{period} budget</Lozenge></span>
+        </div>
+      )}
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
+        <div style={rowGrid}>
+          <span style={rowLabel}>{V.paidUnits}</span>
+          <TrackBar now={pu.now} proj={close ? pu.proj : null} target={pu.target} bm={unitsBm} height={20} radius={5}
+            tips={{ now: unitsTip, proj: unitsTip, target: { head: targetWord, rows: [{ label: V.paidUnits, value: fmt(pu.target) }, ...(unitsBm === null ? [] : [{ label: bmWord, value: fmt(unitsBm) }])] }, stretch: stretchTip }} />
+          <span {...tipApi.props(unitsTip)} style={{ ...rightLabel, color: unitsPct !== null && pu.fill >= pu.target ? C.green : C.red }}>
+            {unitsPct !== null ? unitsPct + "%" : "–"}
+          </span>
+        </div>
+        <div style={rowGrid}>
+          <span style={rowLabel}>Spend</span>
+          <TrackBar now={spent} proj={close ? spendProj : null} target={spendTarget} bm={spendBm} height={20} radius={5}
+            tips={{ now: spendTip, proj: spendTip, target: { head: close ? "Budget" : "Budget today", rows: [{ label: "Spend", value: moneyK(spendTarget) }, ...(spendBm === null ? [] : [{ label: bmWord, value: moneyK(spendBm) }])] } }} />
+          <span {...tipApi.props(spendTip)} style={rightLabel}>{moneyK(spendFill)}</span>
+        </div>
+        <div style={{ minHeight: 14, display: "flex", flexWrap: "wrap", gap: "4px 14px", alignItems: "center" }}>
+          <div style={legendItem}><span style={sw(C.blue)} />To date</div>
+          {close && <div style={legendItem}><span style={sw(C.blueLight)} />Projected</div>}
+          <div style={legendItem}><span style={sw(C.refBase)} />Target</div>
+          {unitsBm !== null && (
+            <div style={legendItem}>
+              <svg width="10" height="8" viewBox="0 0 10 8" style={{ flex: "0 0 10px" }} aria-hidden="true">
+                <path d="M1 8 V1.5 H9 V8" fill="none" stroke={C.refLine} strokeWidth="1.5" strokeDasharray="1.6 1.6" />
+              </svg>
+              Benchmark
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={{ height: 12, flex: "0 0 12px" }} />
+      <div className="btn-row" style={{ marginTop: 0 }}>
+        <button className="btn primary" disabled style={btnStyle} title={btnTitle}>Implement</button>
+        <button className="btn secondary" disabled style={btnStyle} title={btnTitle}>Ignore</button>
       </div>
     </Card>
   );

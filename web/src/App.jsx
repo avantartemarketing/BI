@@ -33,9 +33,10 @@ import NoTargets from "./modules/NoTargets.jsx";
 import Upcoming from "./modules/Upcoming.jsx";
 import TargetSetting from "./TargetSetting.jsx";
 import TLTargets from "./TLTargets.jsx";
-import { TLOverview, TLChips } from "./TLPage.jsx";
+import { TLChips, TLSignupsOutcome } from "./TLPage.jsx";
 import Permissions from "./Permissions.jsx";
 import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
+import { wordsOf } from "./vocab.mjs";
 import { ExplainProvider, ExplainHint, Ex } from "./explain/Explain.jsx";
 
 async function getJSON(url) {
@@ -463,7 +464,7 @@ function Freshness({ asOf, st, emailThrough, partial, builtAt, funnelNote }) {
  * benchmark for today; At close reads the projection against the target and
  * benchmark for the whole campaign. Cards with a single horizon - the funnels,
  * paid ROI, geo - ignore it and are not given it. */
-function HorizonToggle({ horizon, onChange }) {
+function HorizonToggle({ horizon, onChange, closeLabel = "At close" }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <span style={{ fontSize: 12, color: "#6c6b68" }}>Compare</span>
@@ -475,7 +476,7 @@ function HorizonToggle({ horizon, onChange }) {
         <button
           className={horizon === "close" ? "active" : ""}
           onClick={() => onChange("close")}
-          title="Projection at close against the target and benchmark for the campaign">At close</button>
+          title={`Projection ${closeLabel.toLowerCase()} against the target and benchmark for the campaign`}>{closeLabel}</button>
       </div>
     </div>
   );
@@ -519,11 +520,12 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
   const targeted = snap.targeted !== false;
   const catalogue = !!snap.catalogue;
   const upcoming = !!snap.upcoming;
-  // a timed launch (docs/TL_SPEC.md): its own two page states, its own chips
-  // and target setting, no horizon toggle and no layout editing
+  // a timed launch (docs/TL_SPEC.md §4, §5): the LE cards on the shared
+  // layout, in the state's words - signups before its window, units inside
+  // it - with its own chips, clock strip and target setting
   const isTL = snap.type === "TL";
   // nothing to compare against without targets, and a catalogue page has no campaign
-  const showHorizon = targeted && !catalogue && !isTL;
+  const showHorizon = targeted && !catalogue;
 
   /* The page's arrangement is shared and editable (Layout.jsx), so the cards
    * are rendered by key in whatever order the layout says. A card a release has
@@ -555,15 +557,17 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       case "drivers": return <KeyDrivers snap={view} />;
       case "paid_roi": return <PaidRoi snap={view} />;
       case "paid_spend": return <PaidSpend snap={view} horizon={horizon} />;
-      case "sell_through": return <SellThrough snap={view} horizon={horizon} />;
+      // a timed launch has no sales to show before its window opens
+      case "sell_through": return isTL && !view.sellthrough ? null : <SellThrough snap={view} horizon={horizon} />;
       case "framing": return <Framing snap={view} horizon={horizon} />;
-      case "geo": return <Geo snap={view} />;
+      case "geo": return isTL ? null : <Geo snap={view} />;
       case "waterfall": return <Waterfall snap={view} horizon={horizon} />;
+      case "tl_signups": return isTL && view.sales ? <TLSignupsOutcome snap={view} /> : null;
       default: return null;
     }
   };
   return (
-    <ExplainProvider snap={view} st={st} resetKey={`${snap.id}|${tab}`}>
+    <ExplainProvider snap={view} st={st} resetKey={`${snap.id}|${tab}`} enabled={!isTL}>
       {/* Two groups: what the release is, and the page's controls. When the row
           runs out of room the controls drop to a line of their own, whole; no
           name, chip, button or note ever breaks inside itself. */}
@@ -592,7 +596,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         <div className="page-controls">
           {(showHorizon || (variant && tab === "overview")) && (
             <div className="page-toggles">
-              {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} />}
+              {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} closeLabel={wordsOf(snap).closeLabel} />}
               {/* the switch lays the variant over the Overview's cards; the other
                   tabs read Direct as a channel, so it is not offered there */}
               {variant && tab === "overview" && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} />}
@@ -609,13 +613,12 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
         {!upcoming && !isTL && <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>}
         {tab === "overview" && !editing && !upcoming && !isTL && <ExplainHint />}
-        {tab === "overview" && !editing && !isTL && (
+        {tab === "overview" && !editing && (
           <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
         )}
       </nav>
       {tab === "targets" ? (isTL ? <TLTargets snap={snap} onSaved={onSaved} /> : <TargetSetting snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} />)
-        : isTL ? <TLOverview snap={snap} onSetup={() => setTab("targets")} />
-        : tab === "audit" && !upcoming ? <DrawAudit snap={snap} /> : upcoming ? (
+        : tab === "audit" && !upcoming && !isTL ? <DrawAudit snap={snap} /> : upcoming && !isTL ? (
         <div style={{ maxWidth: 560, marginTop: 24 }}><Upcoming snap={snap} onSetup={() => setTab("targets")} /></div>
       ) : (
         <>

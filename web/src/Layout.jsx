@@ -34,6 +34,8 @@ export const CARDS = [
   { key: "framing", title: "Framing", note: "shown only on a release with a frame on offer" },
   { key: "geo", title: "Entries by country" },
   { key: "waterfall", title: "Actual vs target" },
+  // a timed launch's pre-window, once its window has opened (docs/TL_SPEC.md §5)
+  { key: "tl_signups", title: "Pre-window signups", note: "shown only on a timed launch once its window has opened" },
 ];
 const BY_KEY = Object.fromEntries(CARDS.map((c) => [c.key, c]));
 const DEFAULT_KEYS = CARDS.filter((c) => !c.optional).map((c) => c.key);

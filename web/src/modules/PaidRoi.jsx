@@ -37,6 +37,7 @@ import {
   Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, textPx, timeAxis, nameLines, useBoxSize, LineNames, ChartTip,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
+import PaidCost from "./PaidCost.jsx";
 
 const W = 480, H = 200, BAND_TOP = 132;
 const DAY_MS = 86400000;
@@ -56,6 +57,13 @@ const readWindow = () => { try { return localStorage.getItem(WINDOW_PREF) === "1
 const pct = (x) => (x === null || x === undefined ? "–" : fmt(100 * x, 0) + "%");
 
 export default function PaidRoi({ snap }) {
+  // a timed launch's paid buys signups, then sales, and carries no profit
+  // split: the same card reads the cost of what it bought (PaidCost.jsx)
+  if (snap && snap.type === "TL") return <PaidCost snap={snap} />;
+  return <PaidRoiLE snap={snap} />;
+}
+
+function PaidRoiLE({ snap }) {
   const [hover, setHover] = useState(null);   // day number
   const [partyPref, setPartyPref] = useState(readParty);
   const [windowPref, setWindowPref] = useState(readWindow);
