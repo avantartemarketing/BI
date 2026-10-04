@@ -132,6 +132,18 @@ def check_page(s: dict, label: str) -> None:
             if r.get("cost3"):
                 check(near(r["roi"], pd_["value"] / (r["cost3"] * share), 2e-3), f"{label}: the day's ROI reads off its cost")
         check(near(pd_["costAtTargetRoi"], pd_["value"] / (share * pd_["roiTarget"]), 1e-3), f"{label}: the cost at the target ROI is the worth over the share and the target")
+        # the LE's zeros: a day with spend and nothing bought reads 0, a day with no spend reads nothing
+        for r in pd_["daily"]:
+            if r.get("partial"):
+                continue
+            if r["spend"] <= 0:
+                check(r["roi1"] is None, f"{label}: no spend on {r['date']}, no day ROI")
+            elif r["entries"] <= 0:
+                check(r["roi1"] == 0.0, f"{label}: spend and nothing bought on {r['date']} reads 0")
+        art = pd_["artist"]
+        check(set(art) >= {"cumRoi", "l3dRoi", "l1dRoi", "roiPath", "roiDeclineModel", "profitPerUnit", "budgetShare"}, f"{label}: the artist's reading carries the LE keys")
+        if art.get("value") and art["budgetShare"] > 0 and pd_.get("cumCost"):
+            check(near(art["cumRoi"], art["value"] / (pd_["cumCost"] * art["budgetShare"]), 2e-3), f"{label}: the artist's ROI total is their worth over the cost and their share")
     else:
         check(pd_.get("cumRoi") is None and all(r.get("roi") is None for r in pd_["daily"]), f"{label}: no ROI without AA's profit per unit")
     so = s.get("social")
@@ -167,7 +179,8 @@ check(all((s["email"].get("deliveredTarget") or 0) > 0 and (s["email"].get("deli
 # a launch whose works carry AA's profit, a frame profit and a deal reads an ROI (the figures typed on the tab)
 bisa = next((s for rid, s in live.items() if "bisa_butler" in rid), None)
 if bisa and bisa["tlState"] == "signups" and bisa["products"]:
-    typed = [{"airtable_id": p["airtable_id"], "aa_profit_per_unit": 180, "frame_profit_per_unit": 90, "aa_profit_share": 0.6} for p in bisa["products"] if p.get("airtable_id")]
+    typed = [{"airtable_id": p["airtable_id"], "aa_profit_per_unit": 180, "artist_profit_per_unit": 120, "frame_profit_per_unit": 90, "aa_profit_share": 0.6}
+             for p in bisa["products"] if p.get("airtable_id")]
     extra = {"id": bisa["id"], "release_name": bisa["releaseName"], "type": "TL", "products": typed}
     res = tl.build_all({"as_of": NOW.date(), "now": NOW, "seen": 1.0, "launch_frame": B.load_launches(), "inputs": [*B.INPUTS["releases"], extra],
                         "spend": B.load_spend(), "emails": B.load_emails(), "write": False, "only": bisa["id"]})
@@ -180,6 +193,14 @@ if bisa and bisa["tlState"] == "signups" and bisa["products"]:
         check(pv["frame_rate_source"] == "basket" and near(pv["frame_uplift_per_unit"], pv["frame_share"] * pv["frame_rate"] * 90, 1e-6), "the likely framing profit reads the basket's frames per print")
         check(pv["signup_order_rate_source"] == "basket_paid" and near(pv["signup_order_rate"], b2["benchmark"]["profile"]["signup_order_rate_by_group"]["paid"], 1e-9), "a paid signup converts at the basket's paid rate")
         check(near(b2["paid"]["value"], pv["value_per_signup"], 1e-9) and near(b2["paid"]["costAtTargetRoi"], pv["cost_per_signup_at_target_roi"], 1e-9), "the paid block reads the model's figures")
+        path = b2["paid"]["roiPath"]
+        check(len(path) > 0 and all(p["roi"] > 0 for p in path) and path[-1]["roi"] <= path[0]["roi"] + 1e-9 and path[-1]["date"] == b2["salesOpen"][:10],
+              f"the forward path runs to the open at today's spend, the ROI easing as the spend adds up ({len(path)} days)")
+        check(b2["paid"]["roiDeclineModel"]["start"] == b2["paid"]["l3dRoi"] and b2["paid"]["costTerms"]["wearout"] > 0, "the path starts on the line's last point, on the cost path's terms")
+        art = b2["paid"]["artist"]
+        check(art["budgetShare"] == 0.4 and (art["l3dRoi"] or 0) > 0 and len(art["roiPath"]) == len(path), "the artist's reading rides the same days and path")
+        check(near(art["l3dRoi"], art["value"] / (b2["paid"]["l3dCost"] * 0.4), 2e-3) and near(art["value"], pv["artist_value_per_signup"], 1e-9),
+              "the artist's ROI is their worth over the cost and their 40%")
 
 # Gregory Crewdson's 2026 window, replayed at 20:00 UTC on 30 June: the hour clock and the sales cards
 REPLAY = datetime(2026, 6, 30, 20, 0, tzinfo=timezone.utc)

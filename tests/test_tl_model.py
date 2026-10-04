@@ -226,6 +226,8 @@ check(close(v0["value_per_sale"], value_sale), "a sale is worth that net of cann
 check(v0["signup_order_rate_source"] == "basket_paid" and close(v0["signup_order_rate"], PROFILE["signup_order_rate_by_group"]["paid"]), "a paid signup converts at the basket's paid rate")
 check(close(v0["value_per_signup"], PROFILE["signup_order_rate_by_group"]["paid"] * PROFILE["purchases_per_order"] * value_sale), "a signup is worth a sale x pieces per order x the paid rate")
 check(close(v0["aa_budget_share"], 0.6) and not v0["aa_budget_share_assumed"], "the ads divide as the profit does: the work with a deal says 60%")
+check(close(v0["artist_budget_share"], 0.4) and close(v0["artist_value_per_signup"], PROFILE["signup_order_rate_by_group"]["paid"] * PROFILE["purchases_per_order"] * 120 * (1 - tl.TL_CANNIBALISATION)),
+      "the artist's reading: their profit per unit, no framing, over the rest of the spend")
 check(close(v0["cost_per_signup_at_target_roi"], v0["value_per_signup"] / (0.6 * build.BENCH["target_roi_aa"])) and close(v0["break_even_cost_per_signup"], v0["value_per_signup"] / 0.6),
       "the cost AA can pay is the value over its share and the ROI")
 v1 = py_paid[1]
@@ -245,7 +247,8 @@ res = subprocess.run(["node", str(ROOT / "tests" / "tl_model_parity.mjs"), "--ca
 js_all = json.loads(res.stdout)
 js_out = js_all["targets"]
 PAID_KEYS = ["readable", "value_per_unit", "value_per_sale", "value_per_signup", "signup_order_rate", "frame_rate", "frame_uplift_per_unit", "purchases_per_order",
-             "cannibalisation", "aa_budget_share", "break_even_cost_per_signup", "cost_per_signup_at_target_roi", "cost_per_sale_at_target_roi"]
+             "cannibalisation", "aa_budget_share", "break_even_cost_per_signup", "cost_per_signup_at_target_roi", "cost_per_sale_at_target_roi",
+             "artist_profit_per_unit", "artist_budget_share", "artist_value_per_sale", "artist_value_per_signup"]
 for c, py, js in zip(paid_cases, py_paid, js_all["paid"]):
     for k in PAID_KEYS:
         a, b_ = py.get(k), js.get(k)
