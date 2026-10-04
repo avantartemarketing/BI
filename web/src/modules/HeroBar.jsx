@@ -79,6 +79,13 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const oversub = hero.oversubscribedUnits ?? 0;
   const overPct = sellout > 0 ? Math.round((proj / sellout) * 100) : null;
 
+  // the band between the bar and the key: the other horizon's figure, and
+  // that figure as a share of its own target (4 October 2026). On Today, what
+  // the launch is on course for at the close and its share of the sellout; at
+  // close, what is secured so far and its share of the target for today.
+  const otherFill = close ? now : proj;
+  const otherTarget = close ? expToday : sellout;
+  const otherPct = otherTarget > 0 ? Math.round((otherFill / otherTarget) * 100) : null;
   const unitsTip = W.tl
     ? (close
       ? `${W.projected} = the ${W.unit} so far and what each channel is on course to add by the ${W.closeWord}, at its pace against the plan.`
@@ -143,7 +150,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
         </span>
       </div>
 
-      <div style={{ marginTop: 28, marginBottom: 22 }}>
+      <div style={{ marginTop: 28, marginBottom: 12 }}>
         <TrackBar
           now={close ? null : now}
           proj={close ? proj : null}
@@ -170,6 +177,23 @@ export default function HeroBar({ snap, horizon = "today" }) {
           }}
         />
       </div>
+
+      {Number.isFinite(otherFill) && otherTarget > 0 && (
+        <div className="hero-mid">
+          <div className="hero-tiles">
+            <div className="hero-tile" {...t.props({ head: close ? W.securedUnits : W.projected,
+              body: close ? securedTip(snap) + "." : "What the launch is on course for by the close: the units secured today and what each channel is on course to add, capped at the edition size." }, 300)}>
+              <div className="k">{close ? "Today" : "At close"}</div>
+              <div className="v"><Ex k="hero.fill" arg={{ close: !close }}>{fmt(otherFill)}</Ex></div>
+            </div>
+            <div className="hero-tile" {...t.props({ head: close ? `Share of the target by ${dayLabel(snap, day)}` : `Share of the ${partial ? "target" : "sellout"}`,
+              rows: [{ label: close ? "Secured today" : W.projected, value: fmt(otherFill) }, { label: close ? words.target : (partial ? "Target" : "Sellout"), value: fmt(otherTarget) }] })}>
+              <div className="k">of target</div>
+              <div className="v">{otherPct !== null ? `${otherPct}%` : "–"}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* one line of figures under the bar, in the bar's own marks: what is
           counted, the target, and the benchmark - or, at close with demand
