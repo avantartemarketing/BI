@@ -134,14 +134,15 @@ RATE_MAX_PER_SESSION = 0.5  # ... and over this it is not a rate the feed measur
 RATE_MAX_UNITS_PER_SESSION = 1.0
 EMAIL_COHORT_MIN_DELIVERED = 100   # a launch's pre-window sends join the email cohort from this many delivered
 # the sell-through forecast (docs/TL_SPEC.md §4b): how far the non-signup half
-# follows the signup window (the within-basket slope on 73 completed launches,
-# 0.22), the clip on that performance ratio, the keyed signups a work split
-# needs before the units-target split gives way, and where completed launches
-# landed around their forecast (actual over forecast, the middle half)
+# follows the signup window (the within-basket slope on 68 completed launches
+# read at their open against the basket their plan size gave them, 0.21), the
+# clip on that performance ratio, the keyed signups a work split needs before
+# the units-target split gives way, and where those launches landed around
+# their forecast (actual over forecast, the middle half)
 FORECAST_BETA = 0.2
 FORECAST_PERF_CLIP = (0.5, 2.0)
 FORECAST_MIN_KEYED = 20
-FORECAST_BAND = (0.63, 1.62)  # a funnel rate over this (units, or signups, per session) is unread: its gap reads as conversion
+FORECAST_BAND = (0.61, 1.64)  # a funnel rate over this (units, or signups, per session) is unread: its gap reads as conversion
 RECENT_MONTHS = 18          # a comparable that closed within this many months ranks first (the LE baskets' RECENT_MONTHS)
 NEAR = 4.0                  # a comparable within this multiple on every axis is near
 ID_MAX_CHARS = 120
