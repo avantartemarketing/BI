@@ -940,7 +940,8 @@ more are we asking for?** Everything below falls out of that one sentence.
 
 Both references are on every bar at once. The fill says what the business asked for and where
 the basket agrees with it; the outline says what the basket typically reaches. Percentages,
-RAG colours and the headline deltas read against the target: a funnel rung is green at or above
+RAG colours and the headline deltas read against the target (the hero's as a share of it, the
+units on hover): a funnel rung is green at or above
 it, amber less than 10% short and red 10% or more short, and the sidebar's dot is amber behind
 target only while the release is at or ahead of the benchmark's pace for today (spec §5, §7).
 Drawing grammar: spec §7.
@@ -2041,7 +2042,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 |---|---|---|
 | Hero "Entries vs targets" | to date | Σ channels cumulative eligible entries (LE currency) |
 | | expected today | Σ channels `target_total × curve(pdsa_today)` (§5) |
-| | delta | actual − expected (must equal Σ channel gaps = Σ funnel contributions) |
+| | delta | actual − expected (must equal Σ channel gaps = Σ funnel contributions); printed as a share of expected, the units on hover |
 | | projected at close | §5.4: organic follows the channel's historic shape curve scaled by demonstrated performance; paid = projected spend ÷ projected efficiency. Stored on the day's snapshot (never re-derived client-side) |
 | | target | §3 channel targets summed |
 | Sidebar status | on-pace % | `heroDelta / expectedToday(total)` |

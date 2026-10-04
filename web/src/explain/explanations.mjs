@@ -438,23 +438,28 @@ EXPLAIN["hero.bm"] = (a, { snap: s }) => {
   };
 };
 
-/* The lead's delta against the target. */
+/* The lead's delta against the target. The hero prints it as a share of the
+ * target (pct, 4 October 2026); the waterfall's net is the same gap in units. */
 EXPLAIN["hero.delta"] = (a, c) => {
   const s = c.snap, h = s.hero || {};
   const close = !!(a && a.close);
   const fill = close ? h.projected : h.now, target = close ? h.target : h.expectedToday;
   if (!finite(fill) || !finite(target)) return null;
   const d = fill - target;
+  const pct = !!(a && a.pct) && target > 0;
+  const units = signed(Math.round(fill) - Math.round(target));
+  const share = pct ? signed(Math.round((d / target) * 100)) + "%" : null;
   return {
     where: "Units vs target", when: close ? "At close" : "Today",
-    name: close ? "Projection against target" : "Against target today", value: signed(Math.round(fill) - Math.round(target)),
-    unit: close ? "units against the target" : "units against the target by today",
+    name: close ? "Projection against target" : "Against target today", value: pct ? share : units,
+    unit: pct ? (close ? "of the target" : "of the target by today") : (close ? "units against the target" : "units against the target by today"),
     say: close ? "How far the projection at close is from the target." : "How far units secured are from where the plan wanted them by today.",
     steps: [
       close ? seg`Take the ${drill(n(fill), "hero.proj", { close: true })} units projected at close.` : seg`Take the ${drill(n(fill), "hero.secured")} units secured so far.`,
       close ? seg`Take away the ${drill(n(target), "hero.target", { close: true })} unit target.` : seg`Take away the ${drill(n(target), "hero.target", { close: false })} units the plan asked for by today.`,
+      ...(pct ? [seg`${units} units over the ${n(target)} target = ${share}.`] : []),
     ],
-    total: { v: signed(Math.round(fill) - Math.round(target)), label: d >= 0 ? "ahead of target" : "behind target" },
+    total: { v: pct ? share : units, label: d >= 0 ? "ahead of target" : "behind target" },
     compare: hasBasket(s) && finite(close ? h.benchmark : h.benchmarkToday) ? [{
       label: close ? "Benchmark" : "Benchmark today", v: n(close ? h.benchmark : h.benchmarkToday), k: "hero.bm", arg: { close },
       note: `${close ? "The projection" : "Secured"} is ${n(Math.abs(fill - (close ? h.benchmark : h.benchmarkToday)))} ${fill >= (close ? h.benchmark : h.benchmarkToday) ? "ahead of" : "behind"} it.`,

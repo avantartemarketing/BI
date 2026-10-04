@@ -16,7 +16,8 @@
  * what is over). Redrawn this way on 4 October 2026 from the routes page;
  * before, the references were named on two rows above the bar with an axis
  * row below, and the overshoot was hatched inside the track. The headline
- * delta reads against the target: it is what the business committed to. */
+ * delta reads against the target, as a share of it (the units on hover): it is
+ * what the business committed to. */
 import React from "react";
 import { Card, TrackBar, GROUP_DOTS, HorizonBadge, C, fmt, fmtSigned, useTip, BADGE_WORDS, dayLabel } from "../ui.jsx";
 import { stretchWords } from "../ui.jsx";
@@ -73,6 +74,10 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const target = close ? sellout : expToday;
   const fill = close ? proj : now;
   const delta = fill - target;
+  // the headline reads the gap as a share of the target (4 October 2026):
+  // "-56%" where it printed "-1,371"; the units stay on hover and in the
+  // explanation, and a page with no target prints the units as before
+  const deltaPct = target > 0 ? Math.round((delta / target) * 100) : null;
   const stretch = bm === null ? null : target - bm;
 
   const over = proj - sellout;
@@ -140,10 +145,12 @@ export default function HeroBar({ snap, horizon = "today" }) {
       ) : null}
     >
       <div className="spacer-8" />
-      <div className="lead" {...t.props({ head: close ? W.projected : W.securedUnits, body: unitsTip }, 300)}>
+      <div className="lead" {...t.props({ head: close ? W.projected : W.securedUnits,
+        rows: [{ label: close ? (partial || W.tl ? "vs target" : "vs sellout") : "vs target by today", value: fmtSigned(delta) + " " + W.unit }],
+        body: unitsTip }, 300)}>
         <Ex k="hero.fill" arg={{ close }} focus>{fmt(fill)}</Ex>
         <span className="delta" style={{ color: delta >= 0 ? C.green : C.red }}>
-          <Ex k="hero.delta" arg={{ close }}>{fmtSigned(delta)}</Ex>
+          <Ex k="hero.delta" arg={{ close, pct: deltaPct !== null }}>{deltaPct !== null ? fmtSigned(deltaPct) + "%" : fmtSigned(delta)}</Ex>
         </span>
         <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
           {close && !partial && !W.tl ? "vs sellout" : "vs target"}

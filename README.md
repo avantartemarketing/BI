@@ -817,11 +817,12 @@ The hero (Units vs sellout) writes nothing around its bar: the fill prints its o
 track ends at the sellout with the room to it in plain grey, demand past the sellout runs on past the bar's
 end as the same solid fill, every mark says what it is and its figure on hover, and one line of figures
 under the bar names what is counted, the target and the benchmark, or what is over the sellout (4 October
-2026, from the routes page). Every card but sell-through and framing carries both references at once: the target as a fill in two tints of the actual's
+2026, from the routes page). Its headline delta is the gap to the target as a share of it ("−56% vs target"), the
+units on hover and in the explanation. Every card but sell-through and framing carries both references at once: the target as a fill in two tints of the actual's
 own blue (darker to whichever of target and benchmark is lower, lighter from the benchmark up
 to the target), the benchmark as a dotted outline over it, and the actual in front. A single
 `Compare Today | At close` toggle in the page header drives all of them, and the percentages and
-headline deltas read against the target. Plan curves are built from the release's own basket
+headline deltas read against the target (the hero's as a share of it). Plan curves are built from the release's own basket
 where it has enough members and fall back to the pooled panel curve per metric (docs §5.3).
 Paid ROI is the exception: no reference and no horizon.
 
