@@ -194,6 +194,14 @@ button[title], select[title] { cursor: pointer; }
 
 .hint-dotted { border-bottom: 1px dotted var(--dotted); }
 
+/* the hero's key: one line of figures under the bar, each in the bar's own
+   mark (4 October 2026), where three rows used to stand */
+.hero-stats { display: flex; margin-top: auto; border-top: 1px solid var(--hairline); padding-top: 14px; }
+.hero-stats .stat { flex: 1; min-width: 0; }
+.hero-stats .k { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-stats .v { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.hero-stats .swatch { width: 8px; height: 8px; flex: 0 0 8px; }
+
 /* footer legend rows */
 .legend-rows { margin-top: auto; }
 .legend-row {
