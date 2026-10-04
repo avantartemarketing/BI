@@ -498,6 +498,7 @@ export function BmOutline({ pct, column = false, inset = "0px", radius = 4 }) {
  * inset top and bottom so the tints still show on both sides of it. */
 export function TrackBar({
   now, proj, target, bm, full, max, hatchFrom, height = 20, radius = 4, tips = {}, projColor = C.blueLight,
+  bounded = false, label = null, inset: insetProp = null,
 }) {
   const t = useTip();
   const tp = (x) => t.props(typeof x === "string" ? { head: x } : x);
@@ -508,23 +509,34 @@ export function TrackBar({
   const maxData = Math.max(now ?? 0, proj ?? 0);
   // `max` is a hard ceiling for a bar on a bounded scale (a rate: the track
   // is exactly 0 to 100%, with no room drawn past it); `full` is a sellout,
-  // which a reference or a projection can run past and the bar should show
+  // which a reference or a projection can run past and the bar should show.
+  // `bounded` draws that sellout as the end of the track itself: the grey
+  // track runs from zero to the sellout and no further, the room left to it
+  // is the track's own grey, and a projection past it runs on past the
+  // track's end as the same solid fill, on nothing (the hero, 4 October
+  // 2026). Without it the track fills the row, the room to the sellout is
+  // the paler tint and the overshoot is hatched.
   const maxV = max > 0 ? max : full > 0
-    ? Math.max(full, refMax, maxData) * 1.02
+    ? Math.max(full, refMax, maxData) * (bounded ? 1 : 1.02)
     : Math.max(refMax > 0 ? refMax * 1.2 : 0, maxData * 1.04);
   const scale = maxV > 0 ? 100 / maxV : 0;
   const pct = (v) => Math.max(0, Math.min((v ?? 0) * scale, 100));
   const projW = pct(proj);
   const nowW = pct(now);
   const fillW = Math.max(projW, nowW);
-  const inset = Math.max(3, Math.round(height * 0.2));
+  const inset = insetProp !== null && insetProp !== undefined ? insetProp : Math.max(3, Math.round(height * 0.2));
   const innerR = Math.max(2, radius - 2);
   const stretch = hasBm && tgt > bm;
-  const hatchAt = hatchFrom === undefined || hatchFrom === null ? null : pct(hatchFrom);
+  const hatchAt = hatchFrom === undefined || hatchFrom === null || bounded ? null : pct(hatchFrom);
   const showHatch = hatchAt !== null && fillW > hatchAt;
+  const trackW = bounded && full > 0 ? pct(full) : 100;
+  // the fill's own figure, at its tip: inside the fill in white where it has
+  // the room, just past its end in ink where it has not
+  const labelInside = fillW >= 22;
   return (
-    <div style={{ position: "relative", height, background: C.track, borderRadius: radius }}>
-      {full > 0 && (
+    <div style={{ position: "relative", height }}>
+      <div {...(tips.track ? tp(tips.track) : {})} style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${trackW}%`, background: C.track, borderRadius: radius }} />
+      {full > 0 && !bounded && (
         /* the sellout is the end of the bar's meaning: room left over is the
            paler track, and anything drawn past it sits on the darker one, so a
            reference or a projection beyond the edition says so on sight */
@@ -562,6 +574,17 @@ export function TrackBar({
           background: HATCH,
           borderTopRightRadius: innerR, borderBottomRightRadius: innerR,
         }} />
+      )}
+      {label !== null && label !== undefined && label !== "" && (
+        <div style={labelInside
+          ? { position: "absolute", top: inset, bottom: inset, left: 0, width: `${fillW}%`, display: "flex", alignItems: "center",
+              justifyContent: "flex-end", paddingRight: 8, boxSizing: "border-box", pointerEvents: "none",
+              color: C.white, fontWeight: 600, fontSize: 12.5, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }
+          : { position: "absolute", top: inset, bottom: inset, left: `${fillW}%`, display: "flex", alignItems: "center",
+              paddingLeft: 8, pointerEvents: "none", color: C.ink, fontWeight: 600, fontSize: 12.5,
+              fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+          {label}
+        </div>
       )}
     </div>
   );

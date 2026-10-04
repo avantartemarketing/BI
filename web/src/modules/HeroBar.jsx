@@ -7,24 +7,23 @@
  * target - darker from zero to whichever of target and benchmark is lower,
  * lighter from the benchmark up to the target when the target is the higher -
  * the benchmark is the dotted outline over it, and the actual is the narrower
- * blue bar in front, on a track whose right edge is the sellout. The two
- * references are named above the bar on two rows of their own, the benchmark
- * above the target, so neither ever prints through the other however close
- * they sit. The headline delta reads against the target: it is what the
- * business committed to.
- *
- * At close the actual becomes the projection and the hatch carries the demand
- * past the sellout that cannot convert. */
+ * blue bar in front, carrying its own figure at its tip. The track is the
+ * sellout: it ends there, the room left to it is the track's grey, and demand
+ * past it runs on past the track's end as the same solid fill. Nothing is
+ * written above or below the bar: each mark says what it is and its figure on
+ * hover, and one line of figures under the bar names the three (to date or
+ * projected, target, benchmark - or, at close with demand past the sellout,
+ * what is over). Redrawn this way on 4 October 2026 from the routes page;
+ * before, the references were named on two rows above the bar with an axis
+ * row below, and the overshoot was hatched inside the track. The headline
+ * delta reads against the target: it is what the business committed to. */
 import React from "react";
-import {
-  Card, TrackBar, HATCH, GROUP_DOTS, HorizonBadge, C, fmt, fmtSigned, useTip, useWidth,
-  textPx, axisLabelLeft, BADGE_WORDS, dayLabel,
-} from "../ui.jsx";
+import { Card, TrackBar, GROUP_DOTS, HorizonBadge, C, fmt, fmtSigned, useTip, BADGE_WORDS, dayLabel } from "../ui.jsx";
 import { stretchWords } from "../ui.jsx";
-import { Ex } from "../explain/Explain.jsx";
 import { wordsOf } from "../vocab.mjs";
+import { Ex } from "../explain/Explain.jsx";
 
-/* The legend's outline swatch: the same dotted silhouette the bar carries. */
+/* The key's outline swatch: the same dotted silhouette the bar carries. */
 const OUTLINE_SWATCH = (
   <svg className="swatch" width="12" height="10" viewBox="0 0 12 10" style={{ flex: "0 0 12px", borderRadius: 0 }} aria-hidden="true">
     <path d="M1 10 V1.5 H11 V10" fill="none" stroke={C.refLine} strokeWidth="1.5" strokeDasharray="1.6 1.6" />
@@ -41,18 +40,6 @@ function securedTip(snap) {
   const pre = Number.isFinite(st.preorderConversion) && st.preorderConversion !== rate ? st.preorderConversion : null;
   return "Secured units = units paid (all routes incl. private room) + draft orders not yet paid + the orders " +
     `expected from the entries still in the draw, work by work, at ${pct(rate)}${pre !== null ? ` (${pct(pre)} for a pre-order)` : ""}`;
-}
-
-/* TrackBar's scale, repeated here so the floating labels land on the same one.
- * A label that drifts off the thing it names is worse than no label at all. */
-function trackScale({ now, proj, target, bm, full }) {
-  const maxData = Math.max(now ?? 0, proj ?? 0);
-  const refMax = Math.max(target ?? 0, bm ?? 0);
-  const maxV = full > 0
-    ? Math.max(full, refMax, maxData) * 1.02
-    : Math.max(refMax > 0 ? refMax * 1.2 : 0, maxData * 1.04);
-  const scale = maxV > 0 ? 100 / maxV : 0;
-  return (v) => Math.max(0, Math.min((v ?? 0) * scale, 100));
 }
 
 export default function HeroBar({ snap, horizon = "today" }) {
@@ -88,9 +75,6 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const delta = fill - target;
   const stretch = bm === null ? null : target - bm;
 
-  const pos = trackScale({
-    now: close ? null : now, proj: close ? proj : null, target, bm, full: sellout,
-  });
   const over = proj - sellout;
   const oversub = hero.oversubscribedUnits ?? 0;
   const overPct = sellout > 0 ? Math.round((proj / sellout) * 100) : null;
@@ -107,6 +91,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const refRows = [
     { label: words.target, value: fmt(target) },
     ...(bm !== null ? [{ label: words.bm, value: fmt(bm) }] : []),
+    ...(!close && sellout > 0 && !W.tl ? [{ label: "Sellout", value: fmt(sellout) }] : []),
   ];
   const targetTip = {
     // at close the target IS the sellout, so it is named as that
@@ -129,24 +114,6 @@ export default function HeroBar({ snap, horizon = "today" }) {
       ? `The median of the matched basket of timed launches - the ${W.unit} launches like this one typically reach${close ? "" : " by now"}.`
       : "The median of the matched basket - the demand launches like this one typically reach: units sold, plus what the entrants left without a unit would have bought at the entry rate.",
   };
-
-  const axisLabel = { position: "absolute", top: 4, fontSize: 12, whiteSpace: "nowrap" };
-
-  /* Two label rows above the bar, the benchmark on the upper and the target on
-     the lower, each centred on the thing it names and tucked against whichever
-     end it would otherwise run off. Two rows because the two figures are often
-     within a few pixels of each other, and a label printed through another
-     number says less than no label. The words are measured in the page's own
-     font, so a label tucked against an end stops at it. */
-  const [labRef, labW] = useWidth();
-  const labelAt = (text, v) => {
-    const left = axisLabelLeft({ pct: pos(v), rowW: labW, textW: textPx(text) });
-    return left === null
-      ? { position: "absolute", left: `${pos(v)}%`, bottom: 0, transform: "translateX(-50%)", fontSize: 12, whiteSpace: "nowrap" }
-      : { position: "absolute", left, bottom: 0, fontSize: 12, whiteSpace: "nowrap" };
-  };
-  const targetText = `${words.target.toLowerCase()} ${fmt(target)}`;
-  const bmText = bm === null ? "" : `${words.bm.toLowerCase()} ${fmt(bm)}`;
 
   return (
     <Card
@@ -176,18 +143,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
         </span>
       </div>
 
-      <div style={{ marginTop: 14 }}>
-        <div ref={labRef} style={{ position: "relative", height: 17 }}>
-          {bm !== null && bm > 0 && (
-            <div {...t.props(bmTip)} style={{ ...labelAt(bmText, bm), color: C.muted }}><Ex k="hero.bm" arg={{ close }}>{bmText}</Ex></div>
-          )}
-        </div>
-        <div style={{ position: "relative", height: 19, marginBottom: 6 }}>
-          {target > 0 && (
-            <div {...t.props(targetTip)} style={{ ...labelAt(targetText, target), color: C.ink }}><Ex k="hero.target" arg={{ close }}>{targetText}</Ex></div>
-          )}
-        </div>
-
+      <div style={{ marginTop: 28, marginBottom: 22 }}>
         <TrackBar
           now={close ? null : now}
           proj={close ? proj : null}
@@ -195,59 +151,49 @@ export default function HeroBar({ snap, horizon = "today" }) {
           target={target}
           bm={bm}
           full={sellout}
-          hatchFrom={close ? sellout : null}
-          height={24}
-          radius={5}
+          bounded
+          label={fmt(fill)}
+          height={40}
+          radius={8}
+          inset={10}
           tips={{
-            proj: { head: "Projected", rows: [
+            proj: { head: W.projected, rows: [
               { label: W.Unit, value: fmt(proj) },
               ...(overPct !== null ? [{ label: `vs ${W.sellout}`, value: overPct + "%" }] : []),
             ] },
             now: { head: W.toDate, rows: [{ label: W.Unit, value: fmt(now) }] },
-            overshoot: { head: "Oversubscribed", rows: [{ label: "Units", value: "+" + fmt(Math.abs(over)) }] },
+            track: { head: W.tl ? `${W.Unit} target` : partial ? "Target" : "Sellout", rows: [{ label: W.Unit, value: fmt(sellout) }],
+                     body: "The bar runs from zero to here; demand past it runs on past the bar's end." },
             target: targetTip,
             base: bm !== null && bm < target ? bmTip : targetTip,
             stretch: stretchTip,
           }}
         />
-
-        <div style={{ position: "relative", height: 20, marginTop: 8 }}>
-          <div style={{ ...axisLabel, left: 0, color: C.muted }}>0</div>
-          <div style={{ ...axisLabel, right: 0, color: C.muted }}>
-            {W.sellout} <Ex k="release.target">{fmt(sellout)}</Ex>
-          </div>
-        </div>
       </div>
 
-      {/* with the oversubscribed note the head can take a second line on a
-          narrow card, so the key's rows take the tighter step (as Framing's
-          do) rather than running into the card's bottom padding */}
-      <div className={"legend-rows" + (oversub > 0 ? " tight" : "")}>
-        <div className="legend-row">
-          <span className="swatch" style={{ background: C.blue }} />
-          <span style={{ color: C.muted }}>{close ? W.projected : "To date"}</span>
-          <span className="val"><Ex k="hero.fill" arg={{ close }}>{fmt(fill)}</Ex></span>
+      {/* one line of figures under the bar, in the bar's own marks: what is
+          counted, the target, and the benchmark - or, at close with demand
+          past the sellout, what is over, since the fill running past the
+          bar's end needs naming more than the outline does */}
+      <div className="hero-stats">
+        <div className="stat" {...t.props({ head: close ? W.projected : W.securedUnits, body: unitsTip }, 300)}>
+          <div className="k"><span className="swatch" style={{ background: C.blue }} />{close ? "Projected" : "To date"}</div>
+          <div className="v"><Ex k="hero.fill" arg={{ close }}>{fmt(fill)}</Ex></div>
         </div>
-        <div className="legend-row" {...t.props(stretchTip || targetTip)}>
-          <span className="swatch" style={{ background: C.refBase }} />
-          <span style={{ color: C.muted }}>{words.target}</span>
-          <span className="val"><Ex k="hero.target" arg={{ close }}>{fmt(target)}</Ex></span>
+        <div className="stat" {...t.props(stretchTip || targetTip)}>
+          <div className="k"><span className="swatch" style={{ background: C.refBase }} />Target</div>
+          <div className="v"><Ex k="hero.target" arg={{ close }}>{fmt(target)}</Ex></div>
         </div>
-        {/* Third row, and only a third: demand past the sellout when there is
-            any, because that is the more urgent fact and the hatch drawing it
-            needs naming; otherwise the benchmark, which the label above the bar
-            already places. */}
         {close && !W.tl && (oversub > 0 || over > 0) ? (
-          <div className="legend-row">
-            <span className="swatch" style={{ background: HATCH }} />
-            <span style={{ color: C.muted }}>Over sellout</span>
-            <span className="val"><Ex k="hero.over">{oversub > 0 ? "+" + fmt(oversub) : fmtSigned(over)}</Ex></span>
+          <div className="stat" {...t.props({ head: "Over sellout", rows: [{ label: "Units", value: "+" + fmt(oversub > 0 ? oversub : Math.abs(over)) }],
+                                               body: "Demand past the sellout, which cannot convert: the fill runs on past the bar's end." })}>
+            <div className="k"><span className="swatch" style={{ background: C.blue }} />Over sellout</div>
+            <div className="v"><Ex k="hero.over">{oversub > 0 ? "+" + fmt(oversub) : fmtSigned(over)}</Ex></div>
           </div>
         ) : bm !== null ? (
-          <div className="legend-row" {...t.props(bmTip)}>
-            {OUTLINE_SWATCH}
-            <span style={{ color: C.muted }}>{words.bm}</span>
-            <span className="val"><Ex k="hero.bm" arg={{ close }}>{fmt(bm)}</Ex></span>
+          <div className="stat" {...t.props(bmTip)}>
+            <div className="k">{OUTLINE_SWATCH}Benchmark</div>
+            <div className="v"><Ex k="hero.bm" arg={{ close }}>{fmt(bm)}</Ex></div>
           </div>
         ) : null}
       </div>
