@@ -43,6 +43,7 @@ function cases(s) {
   const out = [];
   const both = (k, extra = {}) => { out.push([k, { ...extra, close: false }]); out.push([k, { ...extra, close: true }]); };
   for (const k of ["hero.fill", "hero.target", "hero.bm", "hero.delta", "st.head", "framing.head", "paid.units", "paid.spend", "wf.stretch", "wf.net"]) both(k);
+  both("hero.delta", { pct: true });   // the hero prints the gap as a share of the target; the waterfall's net is the units
   for (const k of ["hero.secured", "hero.proj", "release.target", "release.edition", "hero.over", "k", "st.draw", "st.paid", "st.drafts", "st.future",
     "framing.buyers", "framing.entrants", "paid.rec", "paid.current", "launch.days"]) out.push([k, {}]);
   for (const party of ["aa", "artist"]) for (const whole of [false, true]) out.push(["paid.roi", { party, whole }]);
@@ -185,7 +186,11 @@ for (const f of files) {
           const steps = s.benchmark && Array.isArray(v.stepsBm) ? v.stepsBm : v.steps;
           return fmtSigned(steps.find((x) => x.key === arg.key).value);
         },
-        "hero.delta": () => fmtSigned(Math.round(close ? h.projected : h.now) - Math.round(close ? h.target : h.expectedToday)),
+        "hero.delta": () => {
+          const fill = close ? h.projected : h.now, target = close ? h.target : h.expectedToday;
+          if (arg.pct) return target > 0 ? fmtSigned(Math.round(((fill - target) / target) * 100)) + "%" : undefined;
+          return fmtSigned(Math.round(fill) - Math.round(target));
+        },
       }[k];
       let want;
       try { want = expect ? expect() : undefined; } catch { want = undefined; }   // the card shows no figure there

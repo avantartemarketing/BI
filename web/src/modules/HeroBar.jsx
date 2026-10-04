@@ -16,7 +16,8 @@
  * what is over). Redrawn this way on 4 October 2026 from the routes page;
  * before, the references were named on two rows above the bar with an axis
  * row below, and the overshoot was hatched inside the track. The headline
- * delta reads against the target: it is what the business committed to. */
+ * delta reads against the target, as a share of it (the units on hover): it is
+ * what the business committed to. */
 import React from "react";
 import { Card, TrackBar, GROUP_DOTS, HorizonBadge, C, fmt, fmtSigned, useTip, BADGE_WORDS, dayLabel } from "../ui.jsx";
 import { stretchWords } from "../ui.jsx";
@@ -73,12 +74,23 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const target = close ? sellout : expToday;
   const fill = close ? proj : now;
   const delta = fill - target;
+  // the headline reads the gap as a share of the target (4 October 2026):
+  // "-56%" where it printed "-1,371"; the units stay on hover and in the
+  // explanation, and a page with no target prints the units as before
+  const deltaPct = target > 0 ? Math.round((delta / target) * 100) : null;
   const stretch = bm === null ? null : target - bm;
 
   const over = proj - sellout;
   const oversub = hero.oversubscribedUnits ?? 0;
   const overPct = sellout > 0 ? Math.round((proj / sellout) * 100) : null;
 
+  // the band between the bar and the key: the other horizon's figure, and
+  // that figure as a share of its own target (4 October 2026). On Today, what
+  // the launch is on course for at the close and its share of the sellout; at
+  // close, what is secured so far and its share of the target for today.
+  const otherFill = close ? now : proj;
+  const otherTarget = close ? expToday : sellout;
+  const otherPct = otherTarget > 0 ? Math.round((otherFill / otherTarget) * 100) : null;
   const unitsTip = W.tl
     ? (close
       ? `${W.projected} = the ${W.unit} so far and what each channel is on course to add by the ${W.closeWord}, at its pace against the plan.`
@@ -133,17 +145,19 @@ export default function HeroBar({ snap, horizon = "today" }) {
       ) : null}
     >
       <div className="spacer-8" />
-      <div className="lead" {...t.props({ head: close ? W.projected : W.securedUnits, body: unitsTip }, 300)}>
+      <div className="lead" {...t.props({ head: close ? W.projected : W.securedUnits,
+        rows: [{ label: close ? (partial || W.tl ? "vs target" : "vs sellout") : "vs target by today", value: fmtSigned(delta) + " " + W.unit }],
+        body: unitsTip }, 300)}>
         <Ex k="hero.fill" arg={{ close }} focus>{fmt(fill)}</Ex>
         <span className="delta" style={{ color: delta >= 0 ? C.green : C.red }}>
-          <Ex k="hero.delta" arg={{ close }}>{fmtSigned(delta)}</Ex>
+          <Ex k="hero.delta" arg={{ close, pct: deltaPct !== null }}>{deltaPct !== null ? fmtSigned(deltaPct) + "%" : fmtSigned(delta)}</Ex>
         </span>
         <span style={{ fontSize: 12, fontWeight: 400, color: C.muted, whiteSpace: "nowrap" }}>
           {close && !partial && !W.tl ? "vs sellout" : "vs target"}
         </span>
       </div>
 
-      <div style={{ marginTop: 28, marginBottom: 22 }}>
+      <div style={{ marginTop: 28, marginBottom: 12 }}>
         <TrackBar
           now={close ? null : now}
           proj={close ? proj : null}
@@ -170,6 +184,23 @@ export default function HeroBar({ snap, horizon = "today" }) {
           }}
         />
       </div>
+
+      {Number.isFinite(otherFill) && otherTarget > 0 && (
+        <div className="hero-mid">
+          <div className="hero-tiles">
+            <div className="hero-tile" {...t.props({ head: close ? W.securedUnits : W.projected,
+              body: close ? securedTip(snap) + "." : "What the launch is on course for by the close: the units secured today and what each channel is on course to add, capped at the edition size." }, 300)}>
+              <div className="k">{close ? "Today" : "At close"}</div>
+              <div className="v"><Ex k="hero.fill" arg={{ close: !close }}>{fmt(otherFill)}</Ex></div>
+            </div>
+            <div className="hero-tile" {...t.props({ head: close ? `Share of the target by ${dayLabel(snap, day)}` : `Share of the ${partial ? "target" : "sellout"}`,
+              rows: [{ label: close ? "Secured today" : W.projected, value: fmt(otherFill) }, { label: close ? words.target : (partial ? "Target" : "Sellout"), value: fmt(otherTarget) }] })}>
+              <div className="k">of target</div>
+              <div className="v">{otherPct !== null ? `${otherPct}%` : "–"}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* one line of figures under the bar, in the bar's own marks: what is
           counted, the target, and the benchmark - or, at close with demand
