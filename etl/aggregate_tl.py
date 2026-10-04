@@ -12,10 +12,12 @@ Inputs, both written by server/bigquery.js (the TL feeds section):
 Outputs, counts only (no identifier leaves this script; the account id is
 used here to count distinct people and buyers of several pieces, then dropped):
   data/app/tl_daily.csv     per release x day x channel: sessions, page views,
-                            signups (and how many of them later converted, and
-                            how many were a release subscription against a
-                            product one), orders, units (pieces, cancelled
-                            orders out), private-room units
+                            signups (and how many of them later converted, how
+                            many were a release subscription against a product
+                            one, and the product ones with their conversions
+                            apart), orders, units (pieces, cancelled orders
+                            out), the units on orders placed by a signup,
+                            private-room units
   data/app/tl_hourly.csv    the same per release x hour (UTC) x channel inside
                             the band the browsing feed keeps the hour for: what
                             the in-window state reads
@@ -60,6 +62,7 @@ EVENT_COLS = ["event_timestamp", "event_date", "event_name", "aa_account_id", RE
               "aa_subscription_type", "converted_signup", "pre_post_launch_signup", "pre_post_launch_purchase",
               "order_type", "pr_order", "cancelled_order", "order_pieces", "purchase_with_signup", CH]
 METRICS = ["sessions", "page_views", "signups", "signups_converted", "signups_release", "signups_with_order",
+           "signups_product", "signups_product_converted", "units_with_signup",
            "orders", "units", "units_private", "orders_cancelled", "units_cancelled"]
 NAME_RE = re.compile(r"^(?P<artist>.+?) · (?P<title>.+) · (?P<quarter>\d{4} Q[1-4])$")
 
@@ -96,6 +99,9 @@ def load_events() -> pd.DataFrame:
     ev["purchase"] = ev["event_name"] == "purchase"
     ev["converted"] = ev["signup"] & flag(ev["converted_signup"])
     ev["release_sub"] = ev["signup"] & (ev["aa_subscription_type"].astype(str).str.strip().str.lower() == "release")
+    # a product subscription (a work's own notify-me) against a release one: the
+    # two convert at different rates, so the forecast reads them apart (docs §4b)
+    ev["product_sub"] = ev["signup"] & (ev["aa_subscription_type"].astype(str).str.strip().str.lower() == "product")
     ev["cancelled"] = ev["purchase"] & flag(ev["cancelled_order"])
     ev["pieces"] = pd.to_numeric(ev["order_pieces"], errors="coerce").fillna(0.0)
     ev["private"] = ev["purchase"] & flag(ev["pr_order"])
@@ -113,8 +119,13 @@ def metric_frame(ev: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
         "signups_converted": ev["converted"].astype(int),
         "signups_release": ev["release_sub"].astype(int),
         "signups_with_order": ev["with_signup"].astype(int),
+        "signups_product": ev["product_sub"].astype(int),
+        "signups_product_converted": (ev["product_sub"] & ev["converted"]).astype(int),
         "orders": live.astype(int),
         "units": ev["pieces"].where(live, 0.0),
+        # the pieces on orders placed by someone who had signed up: the signup-led
+        # half of a window's units, the rest being buyers who never signed up
+        "units_with_signup": ev["pieces"].where(live & ev["with_signup"], 0.0),
         "units_private": ev["pieces"].where(live & ev["private"], 0.0),
         "orders_cancelled": ev["cancelled"].astype(int),
         "units_cancelled": ev["pieces"].where(ev["cancelled"], 0.0),

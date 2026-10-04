@@ -833,6 +833,43 @@ const tlBuyersSql = () =>
 const TL_UNITS = path.join(ROOT, "data", "tl_units_hourly.csv");
 const TL_BUYERS = path.join(ROOT, "data", "tl_buyers.csv");
 
+/* A timed launch's signups by the work they were for (docs/TL_SPEC.md §4b):
+ * per release x day (UTC, from the event's timestamp) x the feed's pre/post
+ * flag x channel x subscription type x product page, the signups and how many
+ * of them went on to order. A signup row carries no page, so the work is the
+ * product page viewed last in the signup's own session before it: the join
+ * runs on the session id and timestamp inside BigQuery, and only counts come
+ * out (no id, address, session or url leaves; a product page's path and
+ * title are the work's, not a person's). Release-level signups and the
+ * product-level ones made outside a session (an app, an email form) have no
+ * page and are counted against an empty one: the build spreads them over the
+ * works pro rata. Pulled in full with the TL feeds, like the TL units. */
+const TL_SIGNUP_PRODUCTS_HEADER = ["release", "date", "stage", "channel", "sub_type", "page_path", "page_title", "signups", "converted"];
+const tlSignupProductsSql = () => {
+  const t = `\`${PROJECT}.${DATASET}.${TL_TABLE}\``;
+  const sql = "WITH su AS (\n" +
+    "  SELECT simple_release_name AS release, event_timestamp AS ts, ga_session_id AS sid, pre_post_launch_signup AS stage,\n" +
+    "    aa_subscription_type AS sub_type, CAST(converted_signup AS STRING) AS conv, AA_session_custom_channel_group_split_touch AS channel,\n" +
+    "    ROW_NUMBER() OVER () AS k\n" +
+    `  FROM ${t} WHERE event_name = 'signup' AND simple_release_name IS NOT NULL),\n` +
+    "pv AS (\n" +
+    "  SELECT ga_session_id AS sid, event_timestamp AS ts, page_path, page_title\n" +
+    `  FROM ${t} WHERE event_name = 'page_view' AND page_type = 'product page' AND ga_session_id IS NOT NULL),\n` +
+    "joined AS (\n" +
+    "  SELECT su.release, su.ts, su.stage, su.sub_type, su.conv, su.channel, pv.page_path, pv.page_title,\n" +
+    "    ROW_NUMBER() OVER (PARTITION BY su.k ORDER BY pv.ts DESC) AS rn\n" +
+    "  FROM su LEFT JOIN pv ON pv.sid = su.sid AND pv.ts <= su.ts)\n" +
+    "SELECT release, FORMAT_TIMESTAMP('%Y-%m-%d', ts) AS date, COALESCE(stage, '') AS stage, COALESCE(channel, '') AS channel,\n" +
+    "  COALESCE(sub_type, '') AS sub_type, COALESCE(page_path, '') AS page_path, COALESCE(page_title, '') AS page_title,\n" +
+    "  COUNT(*) AS signups, COUNTIF(conv IN ('1', 'true', '1.0')) AS converted\n" +
+    "FROM joined WHERE rn = 1 GROUP BY 1, 2, 3, 4, 5, 6, 7 ORDER BY 1, 2";
+  for (const f of FORBIDDEN_COLUMNS) {
+    if (sql.toLowerCase().includes(f)) throw new Error(`TL signup products query must not mention ${f}`);
+  }
+  return sql;
+};
+const TL_SIGNUP_PRODUCTS = path.join(ROOT, "data", "tl_signups_by_product.csv");
+
 /* A writer that keeps the columns as they come, once they are the expected
  * ones: these files are read by name in etl/build.py, so a column added or
  * renamed upstream is a failed pull, not a silently different file. */
@@ -1622,6 +1659,22 @@ async function pull({ write = true, full = false, events = true, only = null } =
         notes.push(`TL orders unavailable, keeping the last files (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`);
       }
     }
+    // the signups by the work they were for (the session's product page): one
+    // aggregate file, kept as it was when the query fails
+    {
+      const t3 = new Tmp(TL_SIGNUP_PRODUCTS, write);
+      try {
+        const c = await streamTable(token, tlSignupProductsSql(), SINCE, passthroughWriter(TL_SIGNUP_PRODUCTS_HEADER, "TL signup products"), t3);
+        if (c.rows < 10) throw new Error(`TL signup products query returned ${c.rows} rows - not overwriting`);
+        guardShrink("TL signup products query", c.rows, TL_SIGNUP_PRODUCTS);
+        if (write) t3.commit(TL_SIGNUP_PRODUCTS); else t3.discard();
+        notes.push(`TL signups by product ${c.rows} rows`);
+        tl = { rows: (tl ? tl.rows : 0), bytes: (tl ? tl.bytes : 0) + c.bytes, cached: (tl ? tl.cached : true) && c.cached, events: tl ? tl.events : null };
+      } catch (e) {
+        t3.discard();
+        notes.push(`TL signups by product unavailable, keeping the last file (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`);
+      }
+    }
     tlNote = notes.join(", ");
   }
 
@@ -1652,6 +1705,7 @@ module.exports = {
   TL_TABLE, TL_SINCE, TL_EVENTS, TL_EVENTS_META, TL_EVENT_COLUMNS, TL_EVENT_HEADER, tlEventsSql, tlEventsNamesSql, tlEventsWriter, TL_EVENTS_FEED,
   TL_BROWSING, TL_BROWSING_META, TL_BROWSING_HEADER, TL_HOUR_DAYS_BEFORE, TL_HOUR_DAYS_AFTER, tlBrowsingSql, tlBrowsingNamesSql, tlBrowsingWriter, TL_BROWSING_FEED,
   TL_UNITS, TL_UNITS_HEADER, TL_BUYERS, TL_BUYERS_HEADER, TL_BAND_DAYS_BEFORE, TL_BAND_DAYS_AFTER, tlUnitsSql, tlBuyersSql,
+  TL_SIGNUP_PRODUCTS, TL_SIGNUP_PRODUCTS_HEADER, tlSignupProductsSql,
   isoDate, eventsWriterFor, browsingWriterFor,
   PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
   schema, listSchema, schemaText,
@@ -1689,7 +1743,7 @@ if (require.main === module) {
     const wrote = [out.funnelRows !== null && ACROSS_TIME, out.spendRows !== null && SPEND_DAILY,
                    out.ordersRows !== null && `${ORDERS_BY_PRODUCT} + ${DRAW_PRODUCTS} + ${UNITS_PAID}`,
                    out.eventsRows !== null && LE_EVENTS, out.browsingRows !== null && LE_BROWSING,
-                   out.tlRows !== null && `${TL_EVENTS} + ${TL_BROWSING} + ${TL_UNITS} + ${TL_BUYERS}`].filter(Boolean);
+                   out.tlRows !== null && `${TL_EVENTS} + ${TL_BROWSING} + ${TL_UNITS} + ${TL_BUYERS} + ${TL_SIGNUP_PRODUCTS}`].filter(Boolean);
     console.log(write ? `wrote ${wrote.join(", ")}` : "dry run - pass --write to replace the CSVs");
   })().catch((e) => { console.error(String(e.message || e)); process.exit(1); });
 }

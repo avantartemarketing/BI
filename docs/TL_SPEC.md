@@ -88,6 +88,13 @@ day **and hour** (the hour is what the in-window state needs; the LE browsing fe
 in-window headline are the orders table's paid plus awaiting lines joined to the feed's purchase
 events on `shopify_order_id` for the channel; the feed's `order_pieces` is the cross-check.
 
+**Signups by work** (`data/tl_signups_by_product.csv`, `server/bigquery.js tlSignupProductsSql`): per
+release x day x the feed's pre/post flag x channel x subscription type x product page, the signups
+and how many of them went on to order. A signup row names no work; the work is the product page
+viewed last in the signup's own session before it, joined on the session id inside BigQuery, and
+only counts leave. Release-level signups and product-level ones made outside a session (an app, an
+email form) have no page and count against an empty one. Pulled in full with the TL feeds.
+
 **Airtable** (`data/release_pricing.csv`): `launch_type`, `launch_date`, `launch_time`,
 `tl_length`, `tl_end_date`, `announce_date`, `units_target`, `edition_size`, `unit_price`,
 `currency`, `framing`, `preorder_window`. **HubSpot** sends and **Meta** spend by campaign code
@@ -131,9 +138,64 @@ cards do; `web/src/vocab.mjs` gives each card its words.
 | Paid spend / day | the daily spend that paces the pre-window budget left over the days to the open, the paid signups and the spend against the budget's share by today and the basket's; no rule engine yet, so the buttons wait |
 | Sell-through, Framing, Entries by country | not before the window: nothing has been sold |
 | Actual vs target | the waterfall from the target through the stretch and the benchmark, organic traffic and conversion, paid spend and efficiency, to the signups today |
+| Sell-through forecast by work | a card of its own, timed launches only (§4b): the units each work is expected to sell in the window, from the signups and the basket, as a share of its edition, on the page's horizon |
 
 Sessions and signup rates by channel, the email sends and their signups, and the paid signups'
 cost are in the funnel card's rungs and popups, as they are on an LE page.
+
+## 4b. Sell-through forecast by work (pre-window)
+
+The question before the window opens is what it will sell, work by work. The card answers from
+two halves (`etl/tl.py sell_forecast`, the `sellForecast` block, `web/src/modules/SellForecast.jsx`):
+
+```
+signups(h, c, kind)     = this launch's pre-window signups by channel c and kind (product / release),
+                          today's, or projected to the open (h = open: each channel's projection on the page)
+work share w(p)         = the work's share of the signups keyed to a work (its product page), when
+                          FORECAST_MIN_KEYED (20) or more are keyed; else its share of the units target (else edition)
+signup-led units(p, h)  = sum over c of [keyed(p, c) x rate_prod(c) + w(p) x (unkeyed product(c) x rate_prod(c)
+                          + release(c) x rate_rel(c))] x pieces per signup-led order
+non-signup units(h)     = sum over c of basket median non-signup window units(c)
+                          x clip(signups(h, c) / basket signups(c), 0.5, 2) ^ FORECAST_BETA (0.2), plus the untracked median
+units(p, h)             = signup-led units(p, h) + w(p) x non-signup units(h)
+sell-through(p, h)      = units(p, h) / edition(p); the band is units x FORECAST_BAND (0.63 to 1.62)
+```
+
+The rates are the basket's medians by channel and kind (a product subscription is a work's own
+notify-me and converts at about twice a release subscription's rate: 18.9% against 9.6% in the
+median completed launch); a rate typed on the Target setting tab stands in for both. The pieces per
+order are the basket's on signup-led orders, or the typed figure. The non-signup half is what the
+basket's launches sold in their windows to buyers who had never signed up (48% of window units in
+the median launch), by channel; it follows this launch's signup window only a fifth of the way,
+because that is the relationship the completed launches show (a within-basket slope of 0.22; scaling
+it fully made the backtest worse).
+
+Why these choices, on the completed launches with signups and window purchases, each read at its
+open against the basket it could have had then (its plan size, Airtable's units target else edition,
+and price; launches that closed later left out; 68 of 73 have a plan size): the forecast's median
+error on a launch's window units is 41% (35% of launches within 25%, a 6% lean high); the
+signup-led half alone reads at 32%; converted signups times pieces per order reproduces the
+signup-led units to 2%. The product page keys 90% of a launch's product signups to a work (middle
+half 81 to 94%), and the split it gives is 6 share points off the window's, with the best seller
+right 87% of the time, against 8 points and 48% for Airtable's units-target split. Within a launch
+the works' own signup -> order rates differ by 5 points at the median, so the basket's rates by
+channel and kind are applied to each work's signups. Where those launches landed around this
+forecast is the band: the middle half between 0.61 and 1.64 times it.
+
+A launch far above its basket on signups does not get a new basket. Tested: picking the eight
+launches nearest on pre-window signups and price instead of on the plan's size reads the window
+50 to 55% off and 28 to 36% high, because the launches that drew many signups did not sell in
+proportion (those at 2 to 4 times their basket's signups sold 0.8 times its non-signup units and
+1.05 times its units; the three above 4 times, 1.1 and 1.3 times). The plan-size basket with the
+fifth-of-the-way adjustment stays. The panel carries the measures behind the medians
+(`signup_order_rate_prod_*`, `signup_order_rate_rel_*`, `nonsu_units_*`, `ppo_su`, from the feed's
+`signups_product`, `signups_product_converted` and `units_with_signup` columns, `etl/aggregate_tl.py`).
+
+The card is one row per work, the signup-led and non-signup units on the work's edition, the band
+behind them and the units target as a tick; the headline is the release's sell-through on the
+page's horizon with the band's ends beside it, and the foot says how the works were keyed. Decided
+on 4 October 2026: a fifth of the signup effect on the non-signup half, works split by signup
+interest, the page's horizon, a point with its range.
 
 ## 5. In-window state: sales
 
