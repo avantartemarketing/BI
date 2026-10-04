@@ -36,6 +36,8 @@ export const CARDS = [
   { key: "waterfall", title: "Actual vs target" },
   // a timed launch's pre-window, once its window has opened (docs/TL_SPEC.md §5)
   { key: "tl_signups", title: "Pre-window signups", note: "shown only on a timed launch once its window has opened" },
+  // a timed launch's forecast of the window's sales by work, before it opens (docs/TL_SPEC.md §4b)
+  { key: "tl_forecast", title: "Sell-through forecast by work", size: "wide", note: "shown only on a timed launch before its window opens" },
 ];
 const BY_KEY = Object.fromEntries(CARDS.map((c) => [c.key, c]));
 const DEFAULT_KEYS = CARDS.filter((c) => !c.optional).map((c) => c.key);

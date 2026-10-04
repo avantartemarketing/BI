@@ -34,6 +34,7 @@ import Upcoming from "./modules/Upcoming.jsx";
 import TargetSetting from "./TargetSetting.jsx";
 import TLTargets from "./TLTargets.jsx";
 import { TLChips, TLSignupsOutcome } from "./TLPage.jsx";
+import SellForecast from "./modules/SellForecast.jsx";
 import Permissions from "./Permissions.jsx";
 import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
 import { wordsOf } from "./vocab.mjs";
@@ -563,6 +564,8 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       case "geo": return isTL ? null : <Geo snap={view} />;
       case "waterfall": return <Waterfall snap={view} horizon={horizon} />;
       case "tl_signups": return isTL && view.sales ? <TLSignupsOutcome snap={view} /> : null;
+      // a timed launch's forecast of the window's sales by work, before it opens
+      case "tl_forecast": return isTL && view.sellForecast ? <SellForecast snap={view} horizon={horizon} /> : null;
       default: return null;
     }
   };

@@ -88,6 +88,7 @@ CURVES = APP / "tl_curves.json"
 CANDIDATES = APP / "tl_basket_candidates.json"   # the panel as the picker's rows (candidate_rows)
 # the windows hour by hour from the orders table and the buyers (server/bigquery.js tlUnitsSql, tlBuyersSql)
 TL_UNITS = DATA / "tl_units_hourly.csv"
+TL_SIGNUP_PRODUCTS = DATA / "tl_signups_by_product.csv"   # signups by the work they were for (server/bigquery.js tlSignupProductsSql)
 TL_BUYERS = DATA / "tl_buyers.csv"
 LIVE_STATUS = ("paid", "awaiting")      # the lines a window's units count: paid plus awaiting payment (decision 10)
 OUT_STATUS = ("cancelled", "refunded")
@@ -131,7 +132,16 @@ RATE_MIN_SIGNUPS = 30       # a group's signup -> order rate is read from this m
 RATE_MIN_SESSIONS = 100     # a group's session -> signup rate from this many sessions
 RATE_MAX_PER_SESSION = 0.5  # ... and over this it is not a rate the feed measured
 RATE_MAX_UNITS_PER_SESSION = 1.0
-EMAIL_COHORT_MIN_DELIVERED = 100   # a launch's pre-window sends join the email cohort from this many delivered  # a funnel rate over this (units, or signups, per session) is unread: its gap reads as conversion
+EMAIL_COHORT_MIN_DELIVERED = 100   # a launch's pre-window sends join the email cohort from this many delivered
+# the sell-through forecast (docs/TL_SPEC.md §4b): how far the non-signup half
+# follows the signup window (the within-basket slope on 73 completed launches,
+# 0.22), the clip on that performance ratio, the keyed signups a work split
+# needs before the units-target split gives way, and where completed launches
+# landed around their forecast (actual over forecast, the middle half)
+FORECAST_BETA = 0.2
+FORECAST_PERF_CLIP = (0.5, 2.0)
+FORECAST_MIN_KEYED = 20
+FORECAST_BAND = (0.63, 1.62)  # a funnel rate over this (units, or signups, per session) is unread: its gap reads as conversion
 RECENT_MONTHS = 18          # a comparable that closed within this many months ranks first (the LE baskets' RECENT_MONTHS)
 NEAR = 4.0                  # a comparable within this multiple on every axis is near
 ID_MAX_CHARS = 120
@@ -300,6 +310,51 @@ def load_orders() -> dict:
         out["buyers"] = b
         out["buyers_by_release"] = {str(r["release"]): r for r in b.to_dict("records")}
     return out
+
+
+def load_signup_products() -> dict[str, pd.DataFrame]:
+    """The signups by the work they were for, per release: the pull's counts
+    (release x day x pre/post flag x channel x subscription type x product
+    page), with the channel group, the day and the two flags read. Empty when
+    the pull has not written the file."""
+    if not TL_SIGNUP_PRODUCTS.exists():
+        return {}
+    f = pd.read_csv(TL_SIGNUP_PRODUCTS, low_memory=False, dtype={"page_path": str, "page_title": str, "stage": str, "sub_type": str, "channel": str})
+    if not len(f):
+        return {}
+    f["group"] = f["channel"].fillna("").replace("", "Untracked").map(GROUP_OF).fillna("untracked")
+    f["day"] = pd.to_datetime(f["date"], errors="coerce").dt.date
+    f["is_prod"] = f["sub_type"].fillna("").astype(str).str.strip().str.lower().eq("product")
+    f["pre"] = f["stage"].fillna("").astype(str).str.strip().str.lower().eq("pre-launch")
+    f["has_page"] = f["page_path"].fillna("").astype(str).str.strip().ne("")
+    for c in ("signups", "converted"):
+        f[c] = pd.to_numeric(f[c], errors="coerce").fillna(0.0)
+    return {n: g for n, g in f.groupby("release")}
+
+
+def work_for_page(page_title: str | None, page_path: str | None, works: list[dict]) -> dict | None:
+    """The work a product page is for: the page title's own part (before the
+    ' by Artist' the shop appends) against the works' names, equal or one
+    inside the other; else the slug's words, when they cover most of a name.
+    None when no work fits, and those signups are spread over the works."""
+    title = str(page_title or "").split(" | ")[0]
+    title = re.sub(r"\s+by\s+[^|]+$", "", title, flags=re.IGNORECASE)
+    key = pricing.norm(title)
+    if key:
+        for w in works:
+            wk = pricing.norm(str(w.get("name") or ""))
+            if wk and (wk == key or key in wk or wk in key):
+                return w
+    slug = set(pricing.norm(str(page_path or "").replace("/products/", "").replace("-", " ")).split())
+    best, score = None, 0.0
+    for w in works:
+        toks = set(pricing.norm(str(w.get("name") or "")).split())
+        if not toks:
+            continue
+        sc = len(toks & slug) / len(toks)
+        if sc > score:
+            best, score = w, sc
+    return best if score >= 0.6 else None
 
 
 def _orders_rows(orders: dict | None, name: str) -> pd.DataFrame | None:
@@ -680,7 +735,8 @@ def _pre_window(daily: pd.DataFrame, hourly: pd.DataFrame, sales_open: datetime,
     cut = to if to is not None and to < sales_open else sales_open
     before = daily[daily["day"] < cut.date()]
     same_day = hourly[(hourly["ts"].dt.date == cut.date()) & (hourly["ts"] < cut)] if len(hourly) else hourly
-    cols = ["group", "channel", "sessions", "page_views", "signups", "signups_converted", "orders", "units"]
+    cols = ["group", "channel", "sessions", "page_views", "signups", "signups_converted", "signups_product", "signups_product_converted",
+            "signups_with_order", "units_with_signup", "orders", "units"]
     frames = [f[[c for c in cols if c in f.columns]] for f in (before, same_day) if len(f)]
     return pd.concat(frames, ignore_index=True) if frames else daily.iloc[0:0]
 
@@ -788,6 +844,18 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
         sess_win = _by_group(win, "sessions")
         conv_win = {g: (ug[g] / sess_win[g] if sess_win[g] >= RATE_MIN_SESSIONS and ug[g] > 0 else float("nan")) for g in GROUPS}
         conv_g = _by_group(pre, "signups_converted")
+        # the two kinds of signup and their conversions (docs §4b): a work's own
+        # notify-me (product) against a release subscription
+        sg_prod, conv_prod = _by_group(pre, "signups_product"), _by_group(pre, "signups_product_converted")
+        sg_rel = {g: sg[g] - sg_prod[g] for g in sg}
+        conv_rel = {g: conv_g[g] - conv_prod[g] for g in sg}
+        # the window's units split by whether the buyer had signed up, from the
+        # feed's purchases (the flag is theirs), and the pieces a signup-led order took
+        su_units_g = _by_group(settled, "units_with_signup")
+        feed_units_g = _by_group(settled, "units")
+        nonsu_g = {g: max(feed_units_g[g] - su_units_g[g], 0.0) for g in feed_units_g}
+        su_orders = float(settled["signups_with_order"].sum()) if len(settled) and "signups_with_order" in settled.columns else 0.0
+        su_units = float(settled["units_with_signup"].sum()) if len(settled) and "units_with_signup" in settled.columns else 0.0
         ss, us, sess_s = _shares(sg), _shares(ug), _shares(sess)
         # a group's session -> signup rate needs sessions to read it from, and
         # the feed names the release on fewer sessions than signups for some
@@ -831,7 +899,19 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
             "paid_share_signups": ss["paid"], "paid_share_units": us["paid"], "untracked_share": untracked_share,
             "units_target": _num((launch or {}).get("units_target")), "edition_size": _num((launch or {}).get("edition_size")),
             "unit_price_eur": _num((launch or {}).get("unit_price_eur")), "launch_value_eur": _num((launch or {}).get("launch_value_eur")),
+            # the forecast's measures (docs §4b): the product signups' share, each kind's
+            # signup -> order rate, the signup-led and non-signup units of the window
+            "signups_prod_share": (sum(sg_prod[g] for g in GROUPS) / signups) if signups > 0 else float("nan"),
+            "signup_order_rate_prod": (sum(conv_prod[g] for g in GROUPS) / sum(sg_prod[g] for g in GROUPS)) if sum(sg_prod[g] for g in GROUPS) >= RATE_MIN_SIGNUPS else float("nan"),
+            "signup_order_rate_rel": (sum(conv_rel[g] for g in GROUPS) / sum(sg_rel[g] for g in GROUPS)) if sum(sg_rel[g] for g in GROUPS) >= RATE_MIN_SIGNUPS else float("nan"),
+            "units_su": su_units, "units_nonsu": max(float(settled["units"].sum()) - su_units, 0.0) if len(settled) else 0.0,
+            "ppo_su": (su_units / su_orders) if su_orders >= 5 else float("nan"),
         }
+        for g in GROUPS:
+            row[f"signup_order_rate_prod_{g}"] = (conv_prod[g] / sg_prod[g]) if sg_prod[g] >= RATE_MIN_SIGNUPS else float("nan")
+            row[f"signup_order_rate_rel_{g}"] = (conv_rel[g] / sg_rel[g]) if sg_rel[g] >= RATE_MIN_SIGNUPS else float("nan")
+            row[f"nonsu_units_{g}"] = nonsu_g[g]
+        row["nonsu_units_untracked"] = nonsu_g.get("untracked", 0.0)
         for g in GROUPS:
             row[f"signups_{g}"] = sg[g]; row[f"sess_share_{g}"] = sess_s[g]; row[f"signup_share_{g}"] = ss[g]
             row[f"unit_share_{g}"] = us[g]; row[f"conv_sess_signup_{g}"] = conv[g]; row[f"sessions_{g}"] = sess[g]
@@ -901,6 +981,18 @@ def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dic
         "conv_window": {g: _median(rows, f"conv_win_{g}", positive=True) for g in GROUPS},
         # each group's signup -> order rate: a paid signup converts at a fraction of an email one
         "signup_order_rate_by_group": {g: _median(rows, f"signup_order_rate_{g}", positive=True) for g in GROUPS},
+        # the forecast's medians (docs §4b): each kind of signup's rate by group and
+        # over the launch, the window's non-signup units by group, the pieces a
+        # signup-led order took, the product signups' share of a launch's signups
+        "signup_order_rate_prod_by_group": {g: _median(rows, f"signup_order_rate_prod_{g}", positive=True) for g in GROUPS},
+        "signup_order_rate_rel_by_group": {g: _median(rows, f"signup_order_rate_rel_{g}", positive=True) for g in GROUPS},
+        "signup_order_rate_prod": _median(rows, "signup_order_rate_prod", positive=True),
+        "signup_order_rate_rel": _median(rows, "signup_order_rate_rel", positive=True),
+        "nonsu_units_by_group": {g: _median(rows, f"nonsu_units_{g}") for g in GROUPS},
+        "nonsu_units_untracked": _median(rows, "nonsu_units_untracked"),
+        "nonsu_units": _median(rows, "units_nonsu"),
+        "ppo_su": _median(rows, "ppo_su", positive=True),
+        "signups_prod_share": _median(rows, "signups_prod_share"),
         "paid_share_signups": ss["paid"], "paid_share_units": us["paid"],
         "untracked_share": _median(rows, "untracked_share"),
         "cost_per_signup": _median(rows, "cost_per_signup", positive=True) if n_cps >= PAID_COST_MIN_MEMBERS else 0.0,
@@ -952,6 +1044,10 @@ def apply_channels_off(profile: dict, off: list[str]) -> dict:
     swg = profile.get("sessions_window_by_group") or {}
     out["sessions_window_by_group"] = {g: (swg.get(g, 0.0) if g in keep else 0.0) for g in GROUPS}
     out["sessions_window"] = sum(out["sessions_window_by_group"].values())
+    for key in ("signup_order_rate_prod_by_group", "signup_order_rate_rel_by_group", "nonsu_units_by_group"):
+        src = profile.get(key) or {}
+        out[key] = {g: (src.get(g, 0.0) if g in keep else 0.0) for g in GROUPS}
+    out["nonsu_units"] = sum(out["nonsu_units_by_group"].values()) + float(profile.get("nonsu_units_untracked") or 0.0)
     return out
 
 
@@ -1768,6 +1864,131 @@ def _curve_at(curve: list, f: float) -> float:
     return float(curve[i]) + (float(curve[j]) - float(curve[i])) * (pos - i)
 
 
+def sell_forecast(cx: dict, channels: list[dict], profile: dict, targets: dict | None, products: list[dict], sp: pd.DataFrame | None) -> dict | None:
+    """The sell-through forecast by work for a timed launch before its window
+    opens (docs/TL_SPEC.md §4b), on two horizons: today's signups, and the
+    signups projected to the open (each channel's projection on the page).
+
+    Signup-led units: each channel's signups, product subscriptions and
+    release ones apart, at the basket's signup -> order rate for that channel
+    and kind (the typed rate over both when one is typed), times the pieces a
+    signup-led order takes. A product signup is keyed to its work by the
+    product page of its session (the pull); the keyed shares split the
+    release signups and the unkeyed product ones pro rata. Non-signup units:
+    the basket's median window units from buyers who never signed up, by
+    channel, scaled by clip(signups over the basket's, 0.5 to 2) ** FORECAST_BETA,
+    and spread over the works by the same shares. Under FORECAST_MIN_KEYED
+    keyed signups the works split by their units target, else edition. The
+    band is where completed launches landed around their forecast
+    (FORECAST_BAND). None without works or a units target."""
+    works = [p for p in products if not p.get("excluded")]
+    units_target = (targets or {}).get("units_target") or _num((cx.get("econ") or {}).get("units_target"))
+    if not works:
+        if not units_target:
+            return None
+        works = [{"airtable_id": None, "name": cx.get("snap", {}).get("title") or "Release", "edition": None, "units_target": units_target}]
+    d, now = cx["d"], cx["now"]
+    pre = _pre_window(cx["daily"], cx["hourly"], d["sales_open"], now)
+    su_g = _spread(_by_group(pre, "signups"))
+    prod_g = _spread(_by_group(pre, "signups_product"))
+    prod_g = {g: min(prod_g.get(g, 0.0), su_g.get(g, 0.0)) for g in GROUPS}
+    rel_g = {g: max(su_g.get(g, 0.0) - prod_g[g], 0.0) for g in GROUPS}
+    ch = {c["key"]: c for c in channels}
+    # the keyed product signups per work and channel, from the pull's pre-window rows to date
+    keyed = {id(w): {g: 0.0 for g in GROUPS} for w in works}
+    keyed_total, unmatched = 0.0, 0.0
+    if sp is not None and len(sp):
+        rows = sp[sp["pre"] & sp["is_prod"] & sp["has_page"] & (sp["day"] <= cx["as_of"])]
+        for r in rows.itertuples(index=False):
+            w = work_for_page(r.page_title, r.page_path, works)
+            if w is None:
+                unmatched += float(r.signups)
+                continue
+            g = r.group if r.group in GROUPS else None
+            n = float(r.signups)
+            if g is None:   # untracked keyed signups: spread over the channels as the signups are
+                tot = sum(su_g.values()) or 1.0
+                for gg in GROUPS:
+                    keyed[id(w)][gg] += n * su_g[gg] / tot
+            else:
+                keyed[id(w)][g] += n
+            keyed_total += n
+    unkeyed_g = {g: max(prod_g[g] - sum(keyed[id(w)][g] for w in works), 0.0) for g in GROUPS}
+    # the works' shares: the keyed signups', else the units target's (else the edition's)
+    if keyed_total >= FORECAST_MIN_KEYED:
+        shares = {id(w): sum(keyed[id(w)].values()) / keyed_total for w in works}
+        source = "signup pages"
+    else:
+        key_of = lambda w: _num(w.get("units_target")) or _num(w.get("edition")) or 0.0
+        tot = sum(key_of(w) for w in works)
+        shares = {id(w): (key_of(w) / tot if tot > 0 else 1.0 / len(works)) for w in works}
+        source = "units target"
+    # the rates: the basket's by channel and kind, the typed rate over both when one is typed
+    typed_rate = (targets or {}).get("signup_order_rate") if (targets or {}).get("signup_order_rate_source") == "release" else None
+    def rate(kind, g):
+        if typed_rate:
+            return float(typed_rate)
+        by_g = profile.get(f"signup_order_rate_{kind}_by_group") or {}
+        v = by_g.get(g) or profile.get(f"signup_order_rate_{kind}") or (profile.get("signup_order_rate_by_group") or {}).get(g) or profile.get("signup_order_rate") or 0.0
+        return float(v)
+    r_prod, r_rel = {g: rate("prod", g) for g in GROUPS}, {g: rate("rel", g) for g in GROUPS}
+    ppo_typed = (targets or {}).get("purchases_per_order") if (targets or {}).get("purchases_per_order_source") == "release" else None
+    ppo = float(ppo_typed or profile.get("ppo_su") or profile.get("purchases_per_order") or 1.0)
+    ppo_src = "release" if ppo_typed else ("basket" if profile.get("ppo_su") else ("basket orders" if profile.get("purchases_per_order") else "default"))
+    bm_non = profile.get("nonsu_units_by_group") or {}
+    bm_non_untracked = float(profile.get("nonsu_units_untracked") or 0.0)
+    lo_c, hi_c = FORECAST_PERF_CLIP
+
+    def horizon(key):
+        # the scale from today's signups to the horizon's, per channel, and the
+        # performance against the basket the non-signup half reads
+        out_g, perf_g, scale_g = {}, {}, {}
+        for g in GROUPS:
+            c = ch.get(g) or {}
+            now_g = float(c.get("now") or su_g[g])
+            tgt = float(c.get("proj") or now_g) if key == "open" else now_g
+            scale_g[g] = (tgt / now_g) if now_g > 0 else 1.0
+            bm = c.get("bm") if key == "open" else c.get("bmExp")
+            perf_g[g] = (tgt / float(bm)) if bm and float(bm) > 0 else 1.0
+            out_g[g] = float(bm_non.get(g) or 0.0) * (min(max(perf_g[g], lo_c), hi_c) ** FORECAST_BETA)
+        tot_bm = sum(float((ch.get(g) or {}).get("bm" if key == "open" else "bmExp") or 0.0) for g in GROUPS)
+        perf_all = (sum(float((ch.get(g) or {}).get("proj" if key == "open" else "now") or 0.0) for g in GROUPS) / tot_bm) if tot_bm > 0 else 1.0
+        non_untracked = bm_non_untracked * (min(max(perf_all, lo_c), hi_c) ** FORECAST_BETA)
+        non_total = sum(out_g.values()) + non_untracked
+        works_out = []
+        for w in works:
+            sh = shares[id(w)]
+            su = sum(scale_g[g] * (keyed[id(w)][g] * r_prod[g] + sh * (unkeyed_g[g] * r_prod[g] + rel_g[g] * r_rel[g])) for g in GROUPS) * ppo
+            non = sh * non_total
+            units = su + non
+            edition, target = _num(w.get("edition")), _num(w.get("units_target"))
+            works_out.append({"key": str(w.get("airtable_id") or slugify(str(w.get("name") or "work"))), "name": w.get("name"), "edition": edition, "target": target,
+                              "keyed": round(sum(keyed[id(w)].values()), 1), "share": round(sh, 4),
+                              "su": round(su, 1), "non": round(non, 1), "units": round(units, 1),
+                              "lo": round(units * FORECAST_BAND[0], 1), "hi": round(units * FORECAST_BAND[1], 1),
+                              "pct": (units / edition) if edition else None, "pctTarget": (units / target) if target else None})
+        su_t, non_t = sum(x["su"] for x in works_out), sum(x["non"] for x in works_out)
+        ed_t = sum(x["edition"] for x in works_out if x["edition"]) or None
+        tg_t = sum(x["target"] for x in works_out if x["target"]) or None
+        return {"works": works_out, "signups": round(sum(float((ch.get(g) or {}).get("proj" if key == "open" else "now") or 0.0) for g in GROUPS), 1),
+                "su": round(su_t, 1), "non": round(non_t, 1), "units": round(su_t + non_t, 1),
+                "lo": round((su_t + non_t) * FORECAST_BAND[0], 1), "hi": round((su_t + non_t) * FORECAST_BAND[1], 1),
+                "edition": ed_t, "target": tg_t, "pct": ((su_t + non_t) / ed_t) if ed_t else None, "pctTarget": ((su_t + non_t) / tg_t) if tg_t else None,
+                "nonByGroup": {g: round(v, 1) for g, v in out_g.items()}, "nonUntracked": round(non_untracked, 1),
+                "perfByGroup": {g: round(v, 3) for g, v in perf_g.items()}, "perfAll": round(perf_all, 3)}
+    today, at_open = horizon("today"), horizon("open")
+    prod_total = sum(prod_g.values())
+    return {"tl": True, "source": source, "keyed": round(keyed_total, 1), "keyedShare": (keyed_total / prod_total) if prod_total > 0 else None,
+            "unmatched": round(unmatched, 1), "unkeyedProduct": round(sum(unkeyed_g.values()), 1), "releaseSignups": round(sum(rel_g.values()), 1),
+            "productSignups": round(prod_total, 1),
+            "rates": {"prod": {g: round(v, 4) for g, v in r_prod.items()}, "rel": {g: round(v, 4) for g, v in r_rel.items()},
+                      "source": "release" if typed_rate else "basket"},
+            "ppo": round(ppo, 4), "ppoSource": ppo_src, "beta": FORECAST_BETA, "perfClip": list(FORECAST_PERF_CLIP), "band": list(FORECAST_BAND),
+            "nonsuBm": {**{g: round(float(bm_non.get(g) or 0.0), 1) for g in GROUPS}, "untracked": round(bm_non_untracked, 1)},
+            "basketN": profile.get("n"), "minKeyed": FORECAST_MIN_KEYED,
+            "today": today, "open": at_open}
+
+
 def le_blocks(cx: dict) -> dict:
     """The LE cards' blocks for one TL page (the section note above): what
     build_tl lays over the snapshot. `cx` carries the state and dates, the
@@ -2200,8 +2421,12 @@ def le_blocks(cx: dict) -> dict:
         span = (announce, min(as_of, open_day)) if not in_window else (day_steps[0], day_steps[-1])
         social = B.social_block(content, artist_posts, code, span[0], span[1])
 
+    # the forecast by work: from the announce to the open (an unannounced launch has no signups to read)
+    forecast = None
+    if state == "signups":
+        forecast = sell_forecast(cx, channels, profile, targets, cx.get("products") or [], cx.get("signup_products"))
     out = {"hero": {**(snap.get("hero") or {}), **hero}, "channels": channels, "funnelByGroup": fbg, "waterfall": waterfall,
-           "email": email, "benchmarks": benchmarks,
+           "email": email, "benchmarks": benchmarks, "sellForecast": forecast,
            "paid": {**(snap.get("paid") or {}), **paid_extra}, "edition": edition,
            "clock": {"unit": step_unit, "start": clock_start, "of": of_n, "day": day_no, "complete": clock_complete},
            "of": of_n, "day": day_no, "asOfFraction": frac_day, "complete": complete, "unitsPerBuyer": upb,
@@ -2217,7 +2442,7 @@ def le_blocks(cx: dict) -> dict:
 
 def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, spend: pd.DataFrame | None, emails: pd.DataFrame | None,
              as_of: date, now: datetime, seen: float = 1.0, orders_data: dict | None = None, email_bench: dict | None = None,
-             content: pd.DataFrame | None = None, artist_posts: pd.DataFrame | None = None) -> dict:
+             content: pd.DataFrame | None = None, artist_posts: pd.DataFrame | None = None, signup_products: pd.DataFrame | None = None) -> dict:
     """The page snapshot of one TL (module docstring). `email_bench` is the
     run's email cohort (email_cohort), `content` the Emplifi post export and
     `artist_posts` the Notion post log, for the funnel's email and post rows."""
@@ -2453,6 +2678,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
                            "spend_pre": spend_pre, "spend_win": spend_win, "sp": sp, "sales": sales, "win": win_cx,
                            "products": products, "econ": econ, "snap": snap, "code": code, "names": names,
                            "email_bench": email_bench, "content": content, "artist_posts": artist_posts, "paid_value": paid_value,
+                           "signup_products": signup_products,
                            "release": {"id": rec["id"], "release_name": name, "campaign_code": code, "launch_end": release_for_basket["launch_end"]}}))
     return snap
 
@@ -2537,6 +2763,7 @@ def build_all(ctx: dict) -> dict:
     # the email references every page's funnel reads its sends against (own and later launches set aside per page)
     email_bench = email_cohort(panel, emails, as_of)
     content, artist_posts = ctx.get("content"), ctx.get("artist_posts")
+    signup_products = ctx["signup_products"] if "signup_products" in ctx else load_signup_products()
     if ctx.get("write", True):
         APP.mkdir(parents=True, exist_ok=True)
         tmp = PANEL.with_suffix(".tmp"); panel.to_csv(tmp, index=False); tmp.replace(PANEL)
@@ -2551,7 +2778,8 @@ def build_all(ctx: dict) -> dict:
             continue
         try:
             snap = build_tl(rec, series, panel, curves, spend, emails, as_of, now, seen, orders_data,
-                            email_bench=email_bench, content=content, artist_posts=artist_posts)
+                            email_bench=email_bench, content=content, artist_posts=artist_posts,
+                            signup_products=signup_products.get(rec["release_name"]))
         except Exception as e:  # noqa: BLE001 - one page's failure never stops the build
             out["failures"].append((rec["id"], f"{type(e).__name__}: {e}"))
             continue

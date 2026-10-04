@@ -146,6 +146,25 @@ def check_page(s: dict, label: str) -> None:
             check(near(art["cumRoi"], art["value"] / (pd_["cumCost"] * art["budgetShare"]), 2e-3), f"{label}: the artist's ROI total is their worth over the cost and their share")
     else:
         check(pd_.get("cumRoi") is None and all(r.get("roi") is None for r in pd_["daily"]), f"{label}: no ROI without AA's profit per unit")
+    # the sell-through forecast by work (docs/TL_SPEC.md §4b): before the window only, its works adding up on both horizons
+    fc = s.get("sellForecast")
+    if in_window:
+        check(fc is None, f"{label}: no forecast once the window has opened")
+    elif fc is not None:
+        check(fc["source"] in ("signup pages", "units target") and fc["beta"] == tl.FORECAST_BETA and fc["band"] == list(tl.FORECAST_BAND), f"{label}: the forecast names its source and settings")
+        for hz in ("today", "open"):
+            H = fc[hz]
+            check(near(sum(w["units"] for w in H["works"]), H["units"], 0.5 + 0.05 * len(H["works"])), f"{label}: the works' forecasts add up to the release's ({hz})")
+            check(near(sum(w["share"] for w in H["works"]), 1.0, 1e-3), f"{label}: the works' shares add to one ({hz})")
+            for w in H["works"]:
+                check(near(w["su"] + w["non"], w["units"], 0.15), f"{label}: {w['name']}: signup-led plus non-signup is the forecast ({hz})")
+                check(w["lo"] <= w["units"] <= w["hi"], f"{label}: {w['name']}: the band holds the forecast ({hz})")
+                if w["edition"]:
+                    check(near(w["pct"], w["units"] / w["edition"], 2e-3), f"{label}: {w['name']}: sell-through is units over the edition")
+            check(near(H["lo"], H["units"] * tl.FORECAST_BAND[0], 0.6) and near(H["hi"], H["units"] * tl.FORECAST_BAND[1], 0.6), f"{label}: the release's band ({hz})")
+        check(fc["open"]["signups"] >= fc["today"]["signups"] - 1e-6, f"{label}: the open's signups are today's or more")
+        if fc["source"] == "signup pages":
+            check(fc["keyed"] >= tl.FORECAST_MIN_KEYED and all(w["keyed"] >= 0 for w in fc["today"]["works"]), f"{label}: a signup-page split rests on enough keyed signups")
     so = s.get("social")
     check(so is None or {"posts", "stories", "postsSource", "postsThrough", "artistPosts", "artistPostsTarget"} <= set(so), f"{label}: the social block carries the LE keys")
     bm = s.get("benchmark")
@@ -175,6 +194,22 @@ if cohort and cohort.get("open_rate") is not None:
 pre = [s for s in live.values() if s["tlState"] == "signups" and (s.get("email") or {}).get("delivered")]
 check(all((s["email"].get("deliveredTarget") or 0) > 0 and (s["email"].get("deliveredBenchmark") or 0) > 0 for s in pre) and pre,
       "a live pre-window page with sends reads its email chain against the cohort")
+
+# the product page -> work matcher (the pull's page titles are "Title by Artist")
+works = [{"name": "Untitled (Dream House 1)", "airtable_id": "1"}, {"name": "Untitled (Dream House 5)", "airtable_id": "5"}, {"name": "Be Mine", "airtable_id": "9"}]
+check(tl.work_for_page("Untitled [Dream House 5] by Gregory Crewdson", "/products/gregory-crewdson-untitled-dream-house-5", works)["airtable_id"] == "5", "a page title keys its work")
+check(tl.work_for_page("", "/products/bisa-butler-be-mine", works)["airtable_id"] == "9", "the slug keys the work when the title is missing")
+check(tl.work_for_page("Something Else by Somebody", "/products/somebody-something-else", works) is None, "a page no work fits keys nothing")
+# the panel's forecast measures and the basket's medians are rates a launch can have
+pnl = pd.read_csv(tl.PANEL)
+check({"signup_order_rate_prod", "signup_order_rate_rel", "units_su", "units_nonsu", "ppo_su", "nonsu_units_paid", "signup_order_rate_prod_aa_email"} <= set(pnl.columns), "the panel carries the forecast's measures")
+rp, rr = pnl["signup_order_rate_prod"].dropna(), pnl["signup_order_rate_rel"].dropna()
+check(len(rp) >= 20 and 0.05 < rp.median() < 0.5 and len(rr) >= 20 and 0.02 < rr.median() < 0.4 and rp.median() > rr.median(), f"product signups convert more often than release ones ({rp.median():.3f} vs {rr.median():.3f})")
+check((pnl["units_nonsu"] >= 0).all() and (pnl["units_su"] + pnl["units_nonsu"] <= pnl["units"] * 1.5 + 5).all(), "the window's two halves are within its units")
+bisa_live = next((s for rid, s in live.items() if "bisa_butler" in rid), None)
+if bisa_live and bisa_live["tlState"] == "signups":
+    fc = bisa_live.get("sellForecast")
+    check(fc is not None and fc["source"] == "signup pages" and len(fc["today"]["works"]) == 2, "Bisa Butler's two works are forecast from their signup pages")
 
 # a launch whose works carry AA's profit, a frame profit and a deal reads an ROI (the figures typed on the tab)
 bisa = next((s for rid, s in live.items() if "bisa_butler" in rid), None)
