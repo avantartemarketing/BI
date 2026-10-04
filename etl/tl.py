@@ -1636,10 +1636,17 @@ def tl_paid_value(inputs: dict | None, profile: dict | None, targets: dict | Non
     assumed = share is None
     share = 0.5 if share is None else share
     roi_target = float(b.get("target_roi_aa") or 1.1)
+    # the artist's reading of the same signups: their profit per unit (the
+    # framing profit is AA's alone) over their share of the spend
+    ppu_artist = _num(econ.get("artist_profit_per_unit"))
+    a_share = round(1.0 - share, 4)
+    a_sale = (ppu_artist * (1.0 - cann)) if ppu_artist is not None else None
+    a_signup = (s2o * ppo * a_sale) if (s2o and a_sale is not None) else None
 
     def cost_at(value, roi):
         return (value / (share * roi)) if (readable and value and value > 0 and share > 0 and roi > 0) else None
     return {"readable": readable, "aa_profit_per_unit": ppu, "frame_share": frame_share, "frame_rate": frame_rate, "frame_rate_source": frame_src,
+            "artist_profit_per_unit": ppu_artist, "artist_budget_share": a_share, "artist_value_per_sale": a_sale, "artist_value_per_signup": a_signup,
             "frame_profit_per_unit": frame_profit, "frame_uplift_per_unit": frame_uplift, "value_per_unit": value_unit if readable else None,
             "cannibalisation": cann, "value_per_sale": value_sale if readable else None,
             "signup_order_rate": s2o, "signup_order_rate_source": s2o_src, "purchases_per_order": ppo,
@@ -2009,36 +2016,73 @@ def le_blocks(cx: dict) -> dict:
         rows.append({"date": day.isoformat(), "spend": round(float(by_day_spend.get(day, 0.0)), 2), "entries": round(float(paid_by_day.get(day, 0.0)), 1),
                      "partial": bool(day == as_of and not clock_complete and (frac_day < 1 or as_of >= now.date()))})
     full = [r for r in rows if not r["partial"]]
+    # the ROI reading (tl_paid_value): what a paid signup, or a paid sale, is
+    # worth to AA over what it cost AA, the cost at AA's share of the spend;
+    # the artist's reading of the same days at their profit and their share.
+    # The LE paid block's keys and its zeros: a window with spend but nothing
+    # bought reads 0, a window with no spend reads nothing.
+    pv = cx.get("paid_value") or {}
+    value = pv.get("value_per_sale") if in_window else pv.get("value_per_signup")
+    share = float(pv.get("aa_budget_share") or 0.5)
+    roi_ok = bool(pv.get("readable")) and value is not None and value > 0 and share > 0
+    a_value = pv.get("artist_value_per_sale") if in_window else pv.get("artist_value_per_signup")
+    a_share = float(pv.get("artist_budget_share") or 0.0)
+    a_ok = roi_ok and a_value is not None and a_value > 0 and a_share > 0
+
+    def roi_at(worth, part, s, e):
+        if not roi_ok or worth is None or worth <= 0 or part <= 0 or s <= 0:
+            return None
+        return 0.0 if e <= 0 else round(worth / ((s / e) * part), 3)
     for i, r in enumerate(full):
         last3 = full[max(0, i - 2):i + 1]
         s3, e3 = sum(x["spend"] for x in last3), sum(x["entries"] for x in last3)
         r["cost3"] = (s3 / e3) if (s3 > 0 and e3 > 0) else None
         r["cost1"] = (r["spend"] / r["entries"]) if (r["spend"] > 0 and r["entries"] > 0) else None
+        r["roi"], r["roi1"] = roi_at(value, share, s3, e3), roi_at(value, share, r["spend"], r["entries"])
+        r["roiArtist"] = roi_at(a_value, a_share, s3, e3) if a_ok else None
+        r["roiArtist1"] = roi_at(a_value, a_share, r["spend"], r["entries"]) if a_ok else None
     for r in rows:
-        r.setdefault("cost3", None)
-        r.setdefault("cost1", None)
+        for k in ("cost3", "cost1", "roi", "roi1", "roiArtist", "roiArtist1"):
+            r.setdefault(k, None)
     tot_spend, tot_got = sum(r["spend"] for r in rows), sum(r["entries"] for r in rows)
     last_full = next((r for r in reversed(full) if r["spend"] > 0), None)
     cum_cost = (tot_spend / tot_got) if (tot_spend > 0 and tot_got > 0) else None
     l3d_cost, l1d_cost = (last_full["cost3"] if last_full else None), (last_full["cost1"] if last_full else None)
-    # the ROI reading (tl_paid_value): what a paid signup, or a paid sale, is
-    # worth to AA over what it cost AA, the cost at AA's share of the spend;
-    # the LE paid block's keys, so the card reads both pages the same way
-    pv = cx.get("paid_value") or {}
-    value = pv.get("value_per_sale") if in_window else pv.get("value_per_signup")
-    share = float(pv.get("aa_budget_share") or 0.5)
-    roi_ok = bool(pv.get("readable")) and value is not None and value > 0 and share > 0
-
-    def roi_of(c):
-        return round(value / (c * share), 3) if (roi_ok and c and c > 0) else None
-    for r in rows:
-        r["roi"], r["roi1"] = roi_of(r.get("cost3")), roi_of(r.get("cost1"))
+    cum_roi = roi_at(value, share, tot_spend, tot_got)
+    cum_roi_a = roi_at(a_value, a_share, tot_spend, tot_got) if a_ok else None
+    # the forward path: the LE's cost path (docs §7) on the panel's priors, or
+    # the campaign's own fit once it has the days - the trailing price rising
+    # with the spend so far and the day's budget, read at today's spend over
+    # the days left to the open or the close; the ROI line's dotted end
+    roi_path, roi_path_a, decline, terms = [], [], {"start": None, "dailyFactor": None}, None
+    if roi_ok and last_full and last_full.get("cost3") and last_full.get("roi") is not None and not clock_complete:
+        terms = B.campaign_cost_terms(rows, BENCH)
+        before = [sum(x["spend"] for x in full[:j]) for j in range(len(full))]
+        clock3 = [(full[j]["spend"], before[j]) for j in range(max(0, len(full) - 3), len(full))]
+        spent_so_far = sum(r["spend"] for r in full)
+        w_spend = sum(sp for sp, _ in clock3)
+        spend_ref = (w_spend / max(sum(1 for sp, _ in clock3 if sp > 0), 1)) if w_spend > 0 else None
+        clock_ref = (sum(sp * c for sp, c in clock3) / w_spend) if w_spend > 0 else spent_so_far
+        last_day = date.fromisoformat(full[-1]["date"])
+        end_day = d["close"].date() if in_window else d["sales_open"].date()
+        future = [last_day + timedelta(days=i) for i in range(1, (end_day - last_day).days + 1)]
+        s0 = full[-1]["spend"] if full[-1]["spend"] > 0 else last_full["spend"]
+        if future and s0 > 0:
+            mult = B.CostPath(last_full["cost3"], spend_ref, clock_ref, spent_so_far, len(future),
+                              terms["elasticity"], terms["wearout"], terms["wearoutK"]).multipliers(s0)
+            roi_path = [{"date": fd.isoformat(), "roi": round(last_full["roi"] / f, 3)} for fd, f in zip(future, mult)]
+            decline = {"start": last_full["roi"], "dailyFactor": round((1 / mult[-1]) ** (1 / len(mult)), 4) if mult and mult[-1] > 0 else None}
+            if a_ok and last_full.get("roiArtist") is not None:
+                roi_path_a = [{"date": fd.isoformat(), "roi": round(last_full["roiArtist"] / f, 3)} for fd, f in zip(future, mult)]
     paid_extra = {"spendToDate": round(float(spend_to_date), 2), "spendBudget": budget, "paidStartDays": 0, "unitsToDate": paid_now,
                   "benchmarkBudget": (float(bm_by.get("paid") or 0.0) * cost) if (has_bm and cost) else None,
                   "unit": "signup" if not in_window else "sale", "costPlan": cost, "costPlanSource": cost_src,
                   "costBm": profile.get("cost_per_signup" if not in_window else "cost_per_sale") or None,
                   "daily": rows, "cumCost": cum_cost, "l3dCost": l3d_cost, "l1dCost": l1d_cost,
-                  "roiReadable": roi_ok, "roiTarget": pv.get("roi_target"), "cumRoi": roi_of(cum_cost), "l3dRoi": roi_of(l3d_cost), "l1dRoi": roi_of(l1d_cost),
+                  "roiReadable": roi_ok, "roiTarget": pv.get("roi_target"), "cumRoi": cum_roi,
+                  "l3dRoi": last_full["roi"] if last_full else None, "l1dRoi": last_full["roi1"] if last_full else None,
+                  "roiPath": roi_path, "roiDeclineModel": decline,
+                  "costTerms": {k: terms.get(k) for k in ("elasticity", "wearout", "wearoutK", "fitDays")} if terms else None,
                   "value": value if roi_ok else None, "valuePerUnit": pv.get("value_per_unit"), "profitPerUnitAA": pv.get("aa_profit_per_unit"),
                   "frameUpliftPerUnit": pv.get("frame_uplift_per_unit"), "frameRate": pv.get("frame_rate"), "frameRateSource": pv.get("frame_rate_source"),
                   "frameProfit": pv.get("frame_profit_per_unit"), "frameShare": pv.get("frame_share"),
@@ -2046,7 +2090,15 @@ def le_blocks(cx: dict) -> dict:
                   "piecesPerOrder": pv.get("purchases_per_order"), "cannibalisation": pv.get("cannibalisation"),
                   "aaBudgetShare": share, "aaBudgetShareAssumed": bool(pv.get("aa_budget_share_assumed", True)),
                   "breakEvenCost": pv.get("break_even_cost_per_sale" if in_window else "break_even_cost_per_signup"),
-                  "costAtTargetRoi": pv.get("cost_per_sale_at_target_roi" if in_window else "cost_per_signup_at_target_roi")}
+                  "costAtTargetRoi": pv.get("cost_per_sale_at_target_roi" if in_window else "cost_per_signup_at_target_roi"),
+                  # the artist's reading of the same days (the LE block's keys): their
+                  # profit per unit over their share of the spend; None throughout on a
+                  # deal where the artist carries none of it
+                  "artist": {"cumRoi": cum_roi_a, "l3dRoi": last_full["roiArtist"] if (last_full and a_ok) else None,
+                             "l1dRoi": last_full["roiArtist1"] if (last_full and a_ok) else None,
+                             "roiDeclineModel": {"start": last_full["roiArtist"] if (last_full and a_ok) else None, "dailyFactor": decline["dailyFactor"]},
+                             "roiPath": roi_path_a, "finalDayRoi": None,
+                             "profitPerUnit": pv.get("artist_profit_per_unit"), "budgetShare": a_share, "value": a_value if a_ok else None}}
 
     # ---- inside the window: the sell-through rows, the framing and the pieces per buyer
     sellthrough = framing = None

@@ -237,9 +237,16 @@ export function tlPaidValue(inp, profile, targets, econ, b = {}) {
   const assumed = share === null;
   if (share === null) share = 0.5;
   const roiTarget = nn(b.target_roi_aa) || 1.1;
+  // the artist's reading of the same signups: their profit per unit (the
+  // framing profit is AA's alone) over their share of the spend
+  const ppuArtist = nn(econ.artist_profit_per_unit);
+  const aShare = Math.round((1 - share) * 10000) / 10000;
+  const aSale = ppuArtist !== null ? ppuArtist * (1 - cann) : null;
+  const aSignup = s2o && aSale !== null ? s2o * ppo * aSale : null;
   const costAt = (value, roi) => (readable && value > 0 && share > 0 && roi > 0 ? value / (share * roi) : null);
   return {
     readable, aa_profit_per_unit: ppu, frame_share: frameShare, frame_rate: frameRate, frame_rate_source: frameSrc,
+    artist_profit_per_unit: ppuArtist, artist_budget_share: aShare, artist_value_per_sale: aSale, artist_value_per_signup: aSignup,
     frame_profit_per_unit: frameProfit, frame_uplift_per_unit: frameUplift, value_per_unit: readable ? valueUnit : null,
     cannibalisation: cann, value_per_sale: readable ? valueSale : null,
     signup_order_rate: s2o, signup_order_rate_source: s2oSrc, purchases_per_order: ppo,
