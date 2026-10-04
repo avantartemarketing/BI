@@ -11,11 +11,11 @@
  * sellout: it ends there, the room left to it is the track's grey, and demand
  * past it runs on past the track's end as the same solid fill. Nothing is
  * written above or below the bar: each mark says what it is and its figure on
- * hover, and one line of figures under the bar names the three (to date or
- * projected, target, benchmark - or, at close with demand past the sellout,
- * what is over). Redrawn this way on 4 October 2026 from the routes page;
- * before, the references were named on two rows above the bar with an axis
- * row below, and the overshoot was hatched inside the track. The headline
+ * hover, and three rows under the bar name the figures (to date or projected,
+ * the benchmark, the target). Redrawn this way on 4 October 2026 from the
+ * routes page; before, the references were named on two rows above the bar
+ * with an axis row below, and the overshoot was hatched inside the track; a
+ * one-line key and a band of two tiles were tried the same day. The headline
  * delta reads against the target, as a share of it (the units on hover): it is
  * what the business committed to. */
 import React from "react";
@@ -26,8 +26,8 @@ import { Ex } from "../explain/Explain.jsx";
 
 /* The key's outline swatch: the same dotted silhouette the bar carries. */
 const OUTLINE_SWATCH = (
-  <svg className="swatch" width="12" height="10" viewBox="0 0 12 10" style={{ flex: "0 0 12px", borderRadius: 0 }} aria-hidden="true">
-    <path d="M1 10 V1.5 H11 V10" fill="none" stroke={C.refLine} strokeWidth="1.5" strokeDasharray="1.6 1.6" />
+  <svg className="swatch" width="10" height="10" viewBox="0 0 10 10" style={{ flex: "0 0 10px", borderRadius: 0 }} aria-hidden="true">
+    <path d="M1 10 V1.5 H9 V10" fill="none" stroke={C.refLine} strokeWidth="1.5" strokeDasharray="1.6 1.6" />
   </svg>
 );
 
@@ -84,13 +84,6 @@ export default function HeroBar({ snap, horizon = "today" }) {
   const oversub = hero.oversubscribedUnits ?? 0;
   const overPct = sellout > 0 ? Math.round((proj / sellout) * 100) : null;
 
-  // the band between the bar and the key: the other horizon's figure, and
-  // that figure as a share of its own target (4 October 2026). On Today, what
-  // the launch is on course for at the close and its share of the sellout; at
-  // close, what is secured so far and its share of the target for today.
-  const otherFill = close ? now : proj;
-  const otherTarget = close ? expToday : sellout;
-  const otherPct = otherTarget > 0 ? Math.round((otherFill / otherTarget) * 100) : null;
   const unitsTip = W.tl
     ? (close
       ? `${W.projected} = the ${W.unit} so far and what each channel is on course to add by the ${W.closeWord}, at its pace against the plan.`
@@ -140,7 +133,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
           className="hint-dotted"
           {...t.props({ head: "Oversubscribed", rows: [{ label: "Surplus units", value: "+" + fmt(oversub) }] })}
         >
-          oversubscribed +{fmt(oversub)}
+          oversubscribed <Ex k="hero.over">+{fmt(oversub)}</Ex>
         </span>
       ) : null}
     >
@@ -157,7 +150,7 @@ export default function HeroBar({ snap, horizon = "today" }) {
         </span>
       </div>
 
-      <div style={{ marginTop: 28, marginBottom: 12 }}>
+      <div style={{ marginTop: 28, marginBottom: 20 }}>
         <TrackBar
           now={close ? null : now}
           proj={close ? proj : null}
@@ -185,48 +178,29 @@ export default function HeroBar({ snap, horizon = "today" }) {
         />
       </div>
 
-      {Number.isFinite(otherFill) && otherTarget > 0 && (
-        <div className="hero-mid">
-          <div className="hero-tiles">
-            <div className="hero-tile" {...t.props({ head: close ? W.securedUnits : W.projected,
-              body: close ? securedTip(snap) + "." : "What the launch is on course for by the close: the units secured today and what each channel is on course to add, capped at the edition size." }, 300)}>
-              <div className="k">{close ? "Today" : "At close"}</div>
-              <div className="v"><Ex k="hero.fill" arg={{ close: !close }}>{fmt(otherFill)}</Ex></div>
-            </div>
-            <div className="hero-tile" {...t.props({ head: close ? `Share of the target by ${dayLabel(snap, day)}` : `Share of the ${partial ? "target" : "sellout"}`,
-              rows: [{ label: close ? "Secured today" : W.projected, value: fmt(otherFill) }, { label: close ? words.target : (partial ? "Target" : "Sellout"), value: fmt(otherTarget) }] })}>
-              <div className="k">of target</div>
-              <div className="v">{otherPct !== null ? `${otherPct}%` : "–"}</div>
-            </div>
-          </div>
+      {/* three rows under the bar, in the bar's own marks: what is counted,
+          the benchmark and the target, the benchmark above the target so the
+          rows read in the order the marks stand on the bar (4 October 2026;
+          a one-line key and a band of tiles were tried the same day and
+          dropped). Demand past the sellout is named in the header's chip. */}
+      <div className="legend-rows">
+        <div className="legend-row" {...t.props({ head: close ? W.projected : W.securedUnits, body: unitsTip }, 300)}>
+          <span className="swatch" style={{ background: C.blue }} />
+          <span style={{ color: C.muted }}>{close ? "Projected" : "To date"}</span>
+          <span className="val"><Ex k="hero.fill" arg={{ close }}>{fmt(fill)}</Ex></span>
         </div>
-      )}
-
-      {/* one line of figures under the bar, in the bar's own marks: what is
-          counted, the target, and the benchmark - or, at close with demand
-          past the sellout, what is over, since the fill running past the
-          bar's end needs naming more than the outline does */}
-      <div className="hero-stats">
-        <div className="stat" {...t.props({ head: close ? W.projected : W.securedUnits, body: unitsTip }, 300)}>
-          <div className="k"><span className="swatch" style={{ background: C.blue }} />{close ? "Projected" : "To date"}</div>
-          <div className="v"><Ex k="hero.fill" arg={{ close }}>{fmt(fill)}</Ex></div>
-        </div>
-        <div className="stat" {...t.props(stretchTip || targetTip)}>
-          <div className="k"><span className="swatch" style={{ background: C.refBase }} />Target</div>
-          <div className="v"><Ex k="hero.target" arg={{ close }}>{fmt(target)}</Ex></div>
-        </div>
-        {close && !W.tl && (oversub > 0 || over > 0) ? (
-          <div className="stat" {...t.props({ head: "Over sellout", rows: [{ label: "Units", value: "+" + fmt(oversub > 0 ? oversub : Math.abs(over)) }],
-                                               body: "Demand past the sellout, which cannot convert: the fill runs on past the bar's end." })}>
-            <div className="k"><span className="swatch" style={{ background: C.blue }} />Over sellout</div>
-            <div className="v"><Ex k="hero.over">{oversub > 0 ? "+" + fmt(oversub) : fmtSigned(over)}</Ex></div>
+        {bm !== null && (
+          <div className="legend-row" {...t.props(bmTip)}>
+            {OUTLINE_SWATCH}
+            <span style={{ color: C.muted }}>{words.bm}</span>
+            <span className="val"><Ex k="hero.bm" arg={{ close }}>{fmt(bm)}</Ex></span>
           </div>
-        ) : bm !== null ? (
-          <div className="stat" {...t.props(bmTip)}>
-            <div className="k">{OUTLINE_SWATCH}Benchmark</div>
-            <div className="v"><Ex k="hero.bm" arg={{ close }}>{fmt(bm)}</Ex></div>
-          </div>
-        ) : null}
+        )}
+        <div className="legend-row" {...t.props(stretchTip || targetTip)}>
+          <span className="swatch" style={{ background: C.refBase }} />
+          <span style={{ color: C.muted }}>{words.target}</span>
+          <span className="val"><Ex k="hero.target" arg={{ close }}>{fmt(target)}</Ex></span>
+        </div>
       </div>
     </Card>
   );

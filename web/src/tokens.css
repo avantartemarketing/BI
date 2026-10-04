@@ -194,22 +194,6 @@ button[title], select[title] { cursor: pointer; }
 
 .hint-dotted { border-bottom: 1px dotted var(--dotted); }
 
-/* the band between the hero's bar and its key: two tiles with the other
-   horizon's figure and its share of its own target (4 October 2026) */
-.hero-mid { flex: 1; min-height: 0; display: flex; align-items: center; padding: 6px 0; }
-.hero-tiles { display: flex; gap: 12px; width: 100%; }
-.hero-tile { flex: 1; min-width: 0; background: var(--bg); border-radius: 8px; padding: 8px 12px; }
-.hero-tile .k { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hero-tile .v { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 1px; line-height: 1.2; }
-
-/* the hero's key: one line of figures under the bar, each in the bar's own
-   mark (4 October 2026), where three rows used to stand */
-.hero-stats { display: flex; margin-top: auto; border-top: 1px solid var(--hairline); padding-top: 14px; }
-.hero-stats .stat { flex: 1; min-width: 0; }
-.hero-stats .k { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hero-stats .v { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
-.hero-stats .swatch { width: 8px; height: 8px; flex: 0 0 8px; }
-
 /* footer legend rows */
 .legend-rows { margin-top: auto; }
 .legend-row {
