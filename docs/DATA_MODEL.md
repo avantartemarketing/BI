@@ -1801,16 +1801,18 @@ entrants had asked for frames on 73%, so the 68.5% headline is the two weighted 
 each brings. A snapshot built before the forecast heads the card with the buyers' rate, says
 "of paid prints", and the Slack table leaves its framing columns out.
 
-**References.** The plan is the release's frame conversion (`frame_terms`: the product's
-Airtable figure or the typed one, weighted over the products that frame, else the panel
-default `frame_conversion` in `etl/benchmarks.json`), drawn as the pale fill; a release whose
-products have no framing option has no plan mark. The benchmark is the basket's median
-frames per print, read from the same feed over the members with at least 30 prints on offer
-(`framing_benchmark`; none when fewer than three members qualify, since the feed starts at
-`BQ_SINCE`), drawn as the dotted outline. On the September 2026 panel the draw launches run
-at 0.54 frames per print, the timed launches at 0.35 (which is where the plan default came
-from), and the estate draws higher still (Mondrian 0.67, Warhol 0.67, Dali 0.58,
-Murakami 0.55).
+**References, kept off the card.** The plan is the release's frame conversion (`frame_terms`:
+the product's Airtable figure or the typed one, weighted over the products that frame, else the
+panel default `frame_conversion` in `etl/benchmarks.json`); a release whose products have no
+framing option has none. The benchmark is the basket's median frames per print, read from the
+same feed over the members with at least 30 prints on offer (`framing_benchmark`; none when
+fewer than three members qualify, since the feed starts at `BQ_SINCE`). On the September 2026
+panel the draw launches run at 0.54 frames per print, the timed launches at 0.35 (which is where
+the plan default came from), and the estate draws higher still (Mondrian 0.67, Warhol 0.67,
+Dali 0.58, Murakami 0.55). Both stay in the snapshot's `framing` block, and the plan's uplift is
+in the economics, but since 3 October 2026 the Framing card draws neither: it reads what is,
+the headline, the two bars with their numbers and the units with no frame on offer, and
+nothing on it is a target.
 
 The snapshot's `framing` block (`framing_block`): `prints`, `frames`, `rate` (the paid
 prints, the Buyers bar); `entrants` (`prints`, `frames`, `rate`, or null without entry
@@ -2054,7 +2056,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), paced by the spend rules, `cap` naming the rule that bound it; Implement → append-only decision log |
 | Sell-through by product | rows | §6.3: per product sold / entries in hand allocated by the maximum-quantity rule × the entry → order rate / (at close) units still to come, against the product's edition; no target or benchmark drawn |
 | Entries by country | top 5 | geo split of entries (requires country dim in the daily feed - **currently missing; needs adding to the BigQuery export**) |
-| Framing | buyers, entrants | §6.4: frames per print on the prints a frame was on offer for, paid orders and the app's pre-authorisation drafts, against the plan's frame conversion and the basket's median |
+| Framing | buyers, entrants | §6.4: frames per print on the prints a frame was on offer for, paid orders and the app's pre-authorisation drafts; no plan or benchmark on the card |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
 
 Every figure in the table can explain itself: shift-click it on the page and the explainer

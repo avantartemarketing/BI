@@ -1046,10 +1046,6 @@ EXPLAIN["framing.head"] = (a, { snap: s }) => {
     name: "Frames per print", value: pct(head.rate), unit: close ? "of prints framed at close" : "of prints framed",
     say: "Of the prints the sell-through counts that a frame is on offer for, the share going out with a frame.",
     steps, total: { v: pct(head.rate), label: "frames per print" },
-    compare: [
-      ...(finite(f.plan) ? [{ label: "Plan", v: pct(f.plan), k: "framing.plan", arg: {}, note: `The rate the economics assume. ${Math.round(head.rate * 100) - Math.round(f.plan * 100) >= 0 ? "+" : MINUS}${Math.abs(Math.round(head.rate * 100) - Math.round(f.plan * 100))} points against it.` }] : []),
-      ...(f.benchmark && finite(f.benchmark.rate) ? [{ label: "Benchmark", v: pct(f.benchmark.rate), k: "framing.bm", arg: {}, note: `The median of ${f.benchmark.n} of the basket's ${f.benchmark.of} launches.` }] : []),
-    ],
     sources: [
       { key: "orders", gave: "Prints sold, whether each could be framed, the frames on each order and on the draw's pre-authorisations" },
       { key: "entries", gave: "The orders expected from the draw" },
@@ -1096,43 +1092,6 @@ EXPLAIN["framing.entrants"] = (a, { snap: s }) => {
     total: { v: pct(e.rate), label: "frames per print" },
     sources: [{ key: "orders", gave: "The draw's pre-authorisation drafts and their frame lines" }],
     notes: ["A pre-authorisation is what an entrant agrees to pay if they win, so its frames are what allocation brings."],
-    method: "Data model 6.4",
-  };
-};
-
-EXPLAIN["framing.plan"] = (a, { snap: s }) => {
-  const f = s.framing;
-  if (!f || !finite(f.plan)) return null;
-  const e = s.economics || {};
-  const typed = (e.products || []).some((p) => p.sources && p.sources.frame_conversion);
-  return {
-    where: "Framing", when: null,
-    name: "Plan", value: pct(f.plan), unit: "of prints framed, as planned",
-    say: "The frames per print the release's economics assume.",
-    steps: [typed
-      ? seg`The works' framing take-up from Airtable or the Target setting tab, weighted by their target units: ${pct(f.plan)}.`
-      : seg`No framing take-up is set for these works in Airtable or on the Target setting tab, so the standard ${pct(f.plan)} applies.`],
-    total: { v: pct(f.plan), label: "planned frames per print" },
-    sources: [typed ? { key: "airtable", gave: "The works' framing take-up" } : { key: "settings", gave: "The standard framing take-up" }],
-    notes: ["The plan's framing uplift is in Avant Arte's profit per unit, and so in the paid ROI."],
-    method: "Data model 6.4",
-  };
-};
-
-EXPLAIN["framing.bm"] = (a, { snap: s }) => {
-  const b = s.framing && s.framing.benchmark;
-  if (!b || !finite(b.rate)) return null;
-  return {
-    where: "Framing", when: null,
-    name: "Benchmark", value: pct(b.rate), unit: "of prints framed in comparable launches",
-    say: "What launches like this one typically frame.",
-    steps: [
-      seg`Of the basket's ${n(b.of)} launches, ${n(b.n)} had 30 or more prints with a frame on offer in the orders feed.`,
-      seg`The median of their frames per print is ${pct(b.rate)}.`,
-    ],
-    total: { v: pct(b.rate), label: "frames per print" },
-    sources: [{ key: "basket", gave: "The launches" }, { key: "orders", gave: "Their prints and frames" }],
-    notes: ["A launch with fewer than 30 prints on offer says too little about take-up to count."],
     method: "Data model 6.4",
   };
 };
