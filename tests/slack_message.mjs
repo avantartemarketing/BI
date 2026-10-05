@@ -78,8 +78,14 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
 {
   const m = at({});
   const p = parts(m.blocks);
-  check(p.types === "header section section table context context", `the blocks: ${p.types}`);
+  check(p.types === "header section section table section context context", `the blocks: ${p.types}`);
   check(p.header.text.type === "plain_text" && p.header.text.text === "Test Artist", `the artist as the header: ${p.header.text.text}`);
+  // the close forecast under the table, at full size and marked beta: the "At close" view's
+  // headline figures, so the two never disagree
+  check(p.sections[2] === "Projected sell-through at close: *31%*, 186 of 600 units on current results `BETA`", `the beta close line: ${p.sections[2]}`);
+  const closeText = at({ horizon: "close" }).text;
+  const [, cp, cu, ce] = closeText.match(/(\d+)% projected at close, ([\d,]+) of ([\d,]+) units$/);
+  check(p.sections[2].includes(`*${cp}%*, ${cu} of ${ce} units`), `the line is the At close headline's figures: ${closeText}`);
   check(p.sections[0] === "Castles Burning (For Neil Young), day 11 of 24", `the works and the day above the table: ${p.sections[0]}`);
   const t = p.table;
   check(p.sections[1] === "*Sell-through by work*", `the table's title above it: ${p.sections[1]}`);
@@ -111,11 +117,18 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
   const m = at({ horizon: "close" });
   const p = parts(m.blocks);
   check(p.sections[1] === "*Projected at close by work*" && rowsOf(m.blocks)[0] === "Work|Units at close *|Target|% target|Framed units *|Framing conversion", `close header: ${rowsOf(m.blocks)[0]}`);
+  check(p.types === "header section section table context context" && !JSON.stringify(m.blocks).includes("BETA"), `no beta line on the At close update, whose table is the projection: ${p.types}`);
   check(rowsOf(m.blocks)[1] === "I|82|120|69%|44|54%", `close row, the forecast at close: ${rowsOf(m.blocks)[1]}`);
   check(rowsOf(m.blocks)[4] === "Total|186|353|53%|99|53%", `close total: ${rowsOf(m.blocks)[4]}`);
   check(p.contexts[0].includes("expected from the draw 27, still to come 60."), `close totals: ${p.contexts[0]}`);
   check(m.text === "Test Artist: 31% projected at close, 186 of 600 units", `close text: ${m.text}`);
 }
+
+// the beta line goes once the campaign is complete (today's figure is then the close's), and
+// without an edition it gives the units alone
+check(!JSON.stringify(at({}).blocks).includes("BETA") === false && !JSON.stringify(composeSellThroughBlocks({ ...snap, complete: true }, { today: "2026-09-17" }).blocks).includes("BETA"), "no beta line on a complete campaign");
+check(parts(composeSellThroughBlocks({ ...snap, sellthrough: { ...snap.sellthrough, edition: null, pct: null, products: [] } }, { today: "2026-09-17" }).blocks).sections[2]
+  === "Projected at close: *186 units* on current results `BETA`", "no edition at all: the units alone");
 
 // sent two days after the feeds' last complete day: the day moves on, the data day does not
 check(parts(at({ today: "2026-09-19" }).blocks).sections[0].endsWith("day 13 of 24") && parts(at({ today: "2026-09-19" }).blocks).contexts[0].startsWith("Figures to 17 Sep."), "the day moves on");
@@ -245,8 +258,9 @@ check(parts(at({ today: "2026-10-30" }).blocks).sections[0].endsWith("day 24 of 
     sellthrough: { edition: 100, sold: 12, drafts: 2, soldPredicted: 8, conversion: 0.8, incomplete: ["products"] } };
   const m = composeSellThroughBlocks(bare, { today: "2026-09-17" });
   const p = parts(m.blocks);
-  check(p.types === "header section section table context context context", `bare blocks: ${p.types}`);
+  check(p.types === "header section section table section context context context", `bare blocks: ${p.types}`);
   check(p.sections[0] === "Day 3 of 20" && p.contexts[1] === "_Incomplete data: products_", `bare lines: ${p.sections[0]} / ${p.contexts[1]}`);
+  check(p.sections[2] === "Projected sell-through at close: *22%*, 22 of 100 units on current results `BETA`", `bare beta line, nothing still to come: ${p.sections[2]}`);
   check(rowsOf(m.blocks).length === 2 && rowsOf(m.blocks)[1] === "X · Y · 2026 Q1|22|80|28%", `bare row, no Total, no framing block so no framing columns: ${rowsOf(m.blocks).join(" / ")}`);
   // with the framing block, the release's own forecast in the one row
   const framed = composeSellThroughBlocks({ ...bare, framing: { prints: 12, frames: 6, rate: 0.5, entrants: null, plan: 0.35, benchmark: null, works: [], notOffered: { units: 0, works: [] },

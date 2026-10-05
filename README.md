@@ -683,7 +683,11 @@ Framing card's headline; a dash for a work with no frame on offer; the two colum
 out on a release without a framing option), and a bold **Total** row adding them up (the
 framed units before rounding, so the Total is the card's own figure), the Work column
 wrapping rather than cropping and the figures right-aligned (Slack's `data_table` block takes
-no column settings and cut the names off); then, in small type, the day the figures run to
+no column settings and cut the names off); on a Today update, under the table at full size, the
+close forecast marked `BETA` ("Projected sell-through at close: 24%, 1,449 of 6,100 units on
+current results"): the figure the At close view's headline gives, words only until it has been
+checked against real closes (5 October 2026), nothing on an At close update or once the campaign
+is complete; then, in small type, the day the figures run to
 (the page's as-of day, "so far" while that day is only partly in), the attribution when the
 page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still to come)
 and the two framing readings behind the table's figure in plain sentences, and last the
