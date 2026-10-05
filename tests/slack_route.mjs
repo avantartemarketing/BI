@@ -115,7 +115,10 @@ check(seen[0].authorized, "the call carries the bot token");
 check(msg.channel === "#sales-updates", `to the channel by name: ${msg.channel}`);
 check(/^Julian Schnabel: \d+% sold through, [\d,]+ of [\d,]+ units$/.test(msg.text || ""), `the notification text: ${msg.text}`);
 const types = (msg.blocks || []).map((b) => b.type);
-check(types.join(" ") === "header section section table context context", `the blocks: ${types.join(" ")}`);
+check(types.join(" ") === "header section section table section context context", `the blocks: ${types.join(" ")}`);
+// the beta close forecast under the table on a Today update (5 October 2026), the notification text still today's
+const beta = (msg.blocks || []).filter((b) => b.type === "section").map((b) => b.text.text).find((t) => /BETA/.test(t)) || "";
+check(/^Projected sell-through at close: \*\d+%\*, [\d,]+ of [\d,]+ units on current results `BETA`$/.test(beta), `the beta close line: ${beta}`);
 const table = (msg.blocks || []).find((b) => b.type === "table");
 check(table && table.rows.length === 5 && table.rows.every((r) => r.length === 6), "three works and a Total row, six cells each");
 check(msg.unfurl_links === false && msg.unfurl_media === false, "no unfurling");

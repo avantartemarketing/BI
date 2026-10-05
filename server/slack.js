@@ -200,6 +200,17 @@ function model(snap, { horizon = "today", today, direct = false } = {}) {
     ? { bold: `${fmt(units)} units ${close ? "projected at close" : "spoken for"}`, rest: "" }
     : { bold: `${pct(headPct)} ${what}`, rest: `, ${fmt(units)} of ${fmt(edition)} units` };
 
+  // the close read on current results, for the beta line under the table of
+  // a Today update (5 October 2026): the same figures the "At close" view's
+  // headline prints, so the two never disagree - the parts with the entries
+  // still to come, the percentage the card's own at close. Nothing once the
+  // campaign is complete: today's figure is then the close's.
+  const closeUnits = sold + (drafts || 0) + inHand + num(st.futureEntriesPredicted);
+  const closePct = edition
+    ? (edition === num(st.edition) && finite(st.pct) ? num(st.pct) : Math.min(closeUnits / edition, 1))
+    : null;
+  const atClose = snap.complete ? null : { pct: closePct, units: closeUnits, edition };
+
   // the totals, in words
   const totals = [
     `Paid ${fmt(sold)}`,
@@ -266,7 +277,7 @@ function model(snap, { horizon = "today", today, direct = false } = {}) {
 
   return {
     close, artist, releaseName, prefix: prefix ? prefixWords(prefix) : null, day: of > 0 ? { day, of } : null, through, toWords,
-    direct: !!direct, worksLine, dayLine, headline, totals, framing, framingCols, rows, total,
+    direct: !!direct, worksLine, dayLine, headline, totals, framing, framingCols, rows, total, atClose,
     hasProducts: products.length > 0,
     incomplete: Array.isArray(st.incomplete) ? st.incomplete : [],
   };
@@ -324,6 +335,19 @@ const DIRECT_WORDS = "Attribution: Direct spread over the other channels.";
 /* The table's title, and the footnote the units column's asterisk points
  * to: what "units sold" counts, since the figure is more than the paid ones. */
 const tableCaption = (m) => (m.close ? "Projected at close by work" : "Sell-through by work");
+/* The close forecast under a Today update, at full size and marked beta (5
+ * October 2026): the sell-through at close on current results, the figure the
+ * "At close" view's headline gives, with its units over the edition; the units
+ * alone where the release has no edition. Words only until the forecast has
+ * been checked against closes; nothing on the "At close" update, whose whole
+ * table is the projection, or once the campaign is complete. */
+const closeLine = (m) => {
+  const c = m.atClose;
+  if (m.close || !c || !(c.units > 0)) return null;
+  return c.pct === null
+    ? `Projected at close: *${fmt(c.units)} units* on current results \`BETA\``
+    : `Projected sell-through at close: *${pct(c.pct)}*, ${fmt(c.units)} of ${fmt(c.edition)} units on current results \`BETA\``;
+};
 const unitsHeader = (m) => (m.close ? "Units at close *" : "Units sold *");
 const unitsFootnote = (m) => (m.close
   ? "* Includes paid units, drafts, forecast conversions from draw entries and the entries still to come."
@@ -370,7 +394,8 @@ function tableBlock(m) {
 
 /* The update as Block Kit: the artist as the header; the works' shared
  * title and the campaign day on one line; the table's title, then the
- * table; then, in small type, the day the figures run to (the page's as-of
+ * table; on a Today update the close forecast at full size, marked beta
+ * (closeLine); then, in small type, the day the figures run to (the page's as-of
  * day, "so far" while it is only partly in), which attribution they are on
  * when the page spreads Direct over the other channels, the totals and the
  * framing take-up in plain sentences, a note while a feed is missing, and
@@ -383,11 +408,13 @@ function composeSellThroughBlocks(snap, { horizon = "today", today, direct = fal
   const dayWords = m.day ? `day ${fmt(m.day.day)} of ${fmt(m.day.of)}` : null;
   const above = m.prefix && dayWords ? `${m.prefix}, ${dayWords}` : m.prefix || (dayWords ? dayWords[0].toUpperCase() + dayWords.slice(1) : null);
   const below = [m.toWords ? `Figures to ${m.toWords}.` : null, m.direct ? DIRECT_WORDS : null, m.totals, m.framing].filter(Boolean).join(" ");
+  const forecast = closeLine(m);
   const blocks = [
     { type: "header", text: { type: "plain_text", text: m.artist.slice(0, 150) } },
     ...(above ? [section(above)] : []),
     section(`*${tableCaption(m)}*`),
     tableBlock(m),
+    ...(forecast ? [section(forecast)] : []),
     context(below),
   ];
   if (m.incomplete.length) blocks.push(context(`_Incomplete data: ${m.incomplete.join(", ")}_`));
