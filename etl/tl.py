@@ -137,14 +137,14 @@ EMAIL_COHORT_MIN_DELIVERED = 100   # a launch's pre-window sends join the email 
 # follows the signup window (the within-basket slope on the 66 completed
 # launches with a plan size, read at their open against the basket that size
 # gave them, two launches whose campaigns brought low-quality signups set
-# aside from the fit: 0.24), the clip on that performance ratio, the keyed
+# aside from the fit: 0.25), the clip on that performance ratio, the keyed
 # signups a work split needs before the units-target split gives way, and
 # where those launches landed around their forecast (actual over forecast,
 # the middle half)
 FORECAST_BETA = 0.2
 FORECAST_PERF_CLIP = (0.5, 2.0)
 FORECAST_MIN_KEYED = 20
-FORECAST_BAND = (0.63, 1.63)  # a funnel rate over this (units, or signups, per session) is unread: its gap reads as conversion
+FORECAST_BAND = (0.63, 1.62)  # a funnel rate over this (units, or signups, per session) is unread: its gap reads as conversion
 RECENT_MONTHS = 18          # a comparable that closed within this many months ranks first (the LE baskets' RECENT_MONTHS)
 NEAR = 4.0                  # a comparable within this multiple on every axis is near
 ID_MAX_CHARS = 120

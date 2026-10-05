@@ -167,29 +167,31 @@ median completed launch); a rate typed on the Target setting tab stands in for b
 order are the basket's on signup-led orders, or the typed figure. The non-signup half is what the
 basket's launches sold in their windows to buyers who had never signed up (48% of window units in
 the median launch), by channel; it follows this launch's signup window only a fifth of the way,
-because that is the relationship the completed launches show (a within-basket slope of 0.22; scaling
+because that is the relationship the completed launches show (a within-basket slope of 0.25; scaling
 it fully made the backtest worse).
 
-Why these choices, on the completed launches with signups and window purchases, each read at its
-open against the basket it could have had then (its plan size, Airtable's units target else edition,
+Why these choices (`etl/analysis/tl_forecast_backtest.py`), on the completed launches with signups and
+window purchases, each read at its open against the basket it could have had then (its plan size, Airtable's units target else edition,
 and price; launches that closed later left out; 66 of 71 have a plan size). Two launches are set
 aside from this fit alone, at the owner's word on 4 October 2026, and stay on the panel and in the
 baskets: Danielle McKinney's Sandman (2025 Q1) and Parra's 2025 Q3 launch, whose pre-window
 campaigns brought a flood of signups that hardly ordered (6% and 2.5% signup -> order against the
-panel's 15%), so neither says how signups turn into sales. The figures: the forecast's median error on a launch's window units is 41% (33% of
-launches within 25%, a 4% lean high); the signup-led half alone reads at 32%; converted signups
-times pieces per order reproduces the signup-led units to 2%. The product page keys 90% of a launch's product signups to a work (middle
+panel's 15%), so neither says how signups turn into sales. Setting them aside moved nothing that
+matters: with them in the fit the figures below read 41%, 35%, 6% high, a band of 0.61 to 1.64 and a
+slope of 0.21 (`--keep` reruns that). The figures: the forecast's median error on a launch's window
+units is 41% (35% of launches within 25%, a 4% lean high); the signup-led half alone reads at 32%;
+converted signups times pieces per order reproduces the signup-led units to 2%. The product page keys 90% of a launch's product signups to a work (middle
 half 81 to 94%), and the split it gives is 6 share points off the window's, with the best seller
 right 87% of the time, against 8 points and 48% for Airtable's units-target split. Within a launch
 the works' own signup -> order rates differ by 5 points at the median, so the basket's rates by
 channel and kind are applied to each work's signups. Where those launches landed around this
-forecast is the band: the middle half between 0.63 and 1.63 times it.
+forecast is the band: the middle half between 0.63 and 1.62 times it.
 
 A launch far above its basket on signups does not get a new basket. Tested: picking the eight
 launches nearest on pre-window signups and price instead of on the plan's size reads the window
 42 to 55% off and 23 to 36% high, because the launches that drew many signups did not sell in
 proportion (those at 2 to 4 times their basket's signups sold 0.9 times its non-signup units and
-1.1 times its units; the two above 4 times, 1.0 and 1.4 times). The plan-size basket with the
+1.1 times its units; the two above 4 times, 1.0 and 1.3 times). The plan-size basket with the
 fifth-of-the-way adjustment stays. The panel carries the measures behind the medians
 (`signup_order_rate_prod_*`, `signup_order_rate_rel_*`, `nonsu_units_*`, `ppo_su`, from the feed's
 `signups_product`, `signups_product_converted` and `units_with_signup` columns, `etl/aggregate_tl.py`).
