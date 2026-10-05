@@ -100,6 +100,47 @@ email form) have no page and count against an empty one. Pulled in full with the
 `currency`, `framing`, `preorder_window`. **HubSpot** sends and **Meta** spend by campaign code
 as today.
 
+## 3b. Direct as a source (the Direct switch)
+
+The Overview's Direct switch (docs/METHODOLOGY.md §1.3) is on a timed launch's page too, in
+both states (5 October 2026). *Channel* reads Direct as the TL feed attributes it. *Spread*
+shares Direct's rows out over the other tracked channels in proportion to what each did in the
+same step - a day before the window, an hour inside it, an hour of one work in one order status
+on the orders table's lines, a day and a page on the signups by work - every measure alike
+(`etl/tl.py spread_direct`, the LE build's `redistribute_channel` on the TL frames). A step with
+nothing else to spread it over keeps its volume in place, split over the channels on the
+launch's overall mix, so a series keeps its shape; the untracked rows stay apart, as the TL
+cards hold them; totals by step are kept to the figure.
+
+The basket is read the same way: the panel is built a second time from the spread frames, so
+every by-channel median - signups, sessions and units by group, the session -> signup and
+session -> sale rates, the signup -> order rates by kind, the window's non-signup units - is on
+the basis the page is on (`direct_spread_data`, `panel_frame`, `spread_profile`). The money is
+held: paid takes its share of Direct's signups and units, so the same spend buys more of them,
+and the basket's cost per signup and per sale are the Channel view's rescaled by the paid
+group's change. The plan is the plan: the signup target, the units target, the rates and the
+budgets do not move with a display switch; each group's share of them follows the spread basket
+(`respread_targets`, the stretch placed as the inputs say), and the cost of a paid signup, and of
+a paid sale, is the budget over the paid signups, and units, the spread view gives paid - so
+paid reads the signups it is given at a cost rescaled to them. A paid signup's worth
+(`tl_paid_value`, §7) is read on the basket as the feed attributes it whichever view is on.
+
+One exception: the sell-through forecast by work (§4b) reads the feed's attribution whichever
+view the page is on. Its rates by channel and kind are measured on that attribution, and under
+the spread a launch whose own Direct share differs from its basket's would have its signups
+credited with Direct's conversion it did not have (Bisa Butler's read 7% higher, on 1% of its
+signups from Direct against the basket's 5%). A display switch should not move a sales forecast.
+
+The build makes every page both ways and the blocks that differ ride under
+`variants.direct_spread`, with Direct's share of the page's own signups, sessions and units
+before the spread under `directShare` for the switch's words; the dashboard lays the variant over
+the page as it does for an LE (`web/src/App.jsx`), and the Target setting tab reads Direct as a
+channel and says so when the Overview spreads it. Over the panel's launches Direct is 44% of the
+Search/direct/other group's pre-window signups, 65% of its sessions and 56% of its window units
+at the median (`direct_norm`, 71 launches; about 5% of a launch's signups and 18% of its units).
+Held to the page's identities both ways by `tests/test_tl_page.py`, and to its rule by
+`tests/test_tl_direct_spread.py`.
+
 ## 4. Pre-window state: signups
 
 **Headline: signups to date against the signup target**, with the benchmark underneath, as the
@@ -139,6 +180,7 @@ cards do; `web/src/vocab.mjs` gives each card its words.
 | Sell-through, Framing, Entries by country | not before the window: nothing has been sold |
 | Actual vs target | the waterfall from the target through the stretch and the benchmark, organic traffic and conversion, paid spend and efficiency, to the signups today |
 | Sell-through forecast by work | a card of its own, timed launches only (§4b): the units each work is expected to sell in the window, from the signups and the basket, as a share of its edition, on the page's horizon |
+| Direct switch | the same switch (§3b): Direct's signups and sessions spread over the other channels before the window, its units and sessions inside it, the basket read the same way; the forecast keeps the feed's attribution |
 
 Sessions and signup rates by channel, the email sends and their signups, and the paid signups'
 cost are in the funnel card's rungs and popups, as they are on an LE page.
@@ -417,6 +459,10 @@ What the data showed on the way, and how the build reads it:
   funnel's contributions and the waterfall's steps to their gaps, on the build's day and on the
   Crewdson replay). The explainer stays off on a timed launch until its explanations are
   written; Slack posts and the LE paid rule engine are not applied to timed launches.
+- **The Direct switch** (5 October 2026, §3b): every TL page is built both ways, the basket's
+  launches read the same way and the plan's budgets held; the sell-through forecast is the one
+  card that keeps the feed's attribution. The TL build takes about twice as long for it (59 s
+  against 32 s on the day).
 - **The Target setting tab is the LE tab in TL words** (2 October 2026). Its first cut was a
   compact form of its own, with a basket select and a plain products table; it now runs on the
   LE tab's components (the basket picker over the TL panel, the products grid with a units
@@ -454,3 +500,4 @@ What the data showed on the way, and how the build reads it:
 | 22 | Opening hour precedence | Airtable, then the feed's timestamp, then 14:00 CET |
 | 23 | Units target over several works | The sum of the targets present (400) |
 | 24 | Settling after the close | 7 days, then frozen |
+| 25 | Direct switch on TL pages | The LE switch in both states, the basket's launches read the same way, the plan and its budgets held; the sell-through forecast keeps the feed's attribution (5 October 2026) |

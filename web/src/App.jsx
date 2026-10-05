@@ -522,19 +522,27 @@ function HorizonToggle({ horizon, onChange, closeLabel = "At close" }) {
  * methodology choice, not a reading of one launch, so it sticks per browser. */
 const DIRECT_PREF = "directSpread";
 const readDirectPref = () => { try { return localStorage.getItem(DIRECT_PREF) === "1"; } catch { return false; } };
-function DirectToggle({ on, onChange, share }) {
+function DirectToggle({ on, onChange, share, snap }) {
   const pct = (x) => (x === null || x === undefined ? "–" : Math.round(100 * x) + "%");
-  const tip = `Direct is ${pct(share && share.entries)} of this release's entries and ${pct(share && share.units)} of its units as the funnel attributes them. `
-    + "Spread shares Direct out over the other channels in proportion to their own volumes, day by day, and reads the benchmark's channel split the same way. "
-    + "Totals, what has been sold and the paid budget do not move; the plan's pace and the projections can shift a little with the channel mix, and paid reads the entries it is given, at a cost per unit rescaled to them.";
+  const W = wordsOf(snap);
+  // a timed launch's switch speaks of signups before its window and units inside it (docs/TL_SPEC.md §3b)
+  const tip = W.tl
+    ? `Direct is ${pct(share && (W.state === "signups" ? share.signups : share.units))} of this launch's ${W.state === "signups" ? "signups" : "units"} and ${pct(share && share.sessions)} of its sessions as the feed attributes them. `
+      + `Spread shares Direct out over the other channels in proportion to their own volumes, ${W.stepWord} by ${W.stepWord}, and reads the basket's launches the same way. `
+      + "Totals, the signup target, what has been sold, the paid budget and the sell-through forecast do not move; the plan's split by channel follows the basket, and paid reads the signups it is given, at a cost rescaled to them."
+    : `Direct is ${pct(share && share.entries)} of this release's entries and ${pct(share && share.units)} of its units as the funnel attributes them. `
+      + "Spread shares Direct out over the other channels in proportion to their own volumes, day by day, and reads the benchmark's channel split the same way. "
+      + "Totals, what has been sold and the paid budget do not move; the plan's pace and the projections can shift a little with the channel mix, and paid reads the entries it is given, at a cost per unit rescaled to them.";
+  const spreadTitle = W.tl
+    ? "Direct's sessions, signups and units are shared out over the other channels in proportion to their own"
+    : "Direct's sessions, entries and units are shared out over the other channels in proportion to their own";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }} title={tip}>
       <span style={{ fontSize: 12, color: "#6c6b68" }}>Direct</span>
       <div className="seg" role="group" aria-label="Direct attribution">
         <button className={on ? "" : "active"} onClick={() => onChange(false)}
-          title="Direct stays a channel of its own, as the funnel export attributes it">Channel</button>
-        <button className={on ? "active" : ""} onClick={() => onChange(true)}
-          title="Direct's sessions, entries and units are shared out over the other channels in proportion to their own">Spread</button>
+          title={W.tl ? "Direct stays a channel of its own, as the TL feed attributes it" : "Direct stays a channel of its own, as the funnel export attributes it"}>Channel</button>
+        <button className={on ? "active" : ""} onClick={() => onChange(true)} title={spreadTitle}>Spread</button>
       </div>
     </div>
   );
@@ -634,7 +642,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
               {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} closeLabel={wordsOf(snap).closeLabel} />}
               {/* the switch lays the variant over the Overview's cards; the other
                   tabs read Direct as a channel, so it is not offered there */}
-              {variant && tab === "overview" && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} />}
+              {variant && tab === "overview" && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} snap={snap} />}
             </div>
           )}
           <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough} builtAt={snap.builtAt}
@@ -652,7 +660,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
           <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
         )}
       </nav>
-      {tab === "targets" ? (isTL ? <TLTargets snap={snap} onSaved={onSaved} /> : <TargetSetting snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} />)
+      {tab === "targets" ? (isTL ? <TLTargets snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} /> : <TargetSetting snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} />)
         : tab === "audit" && !upcoming && !isTL ? <DrawAudit snap={snap} /> : upcoming && !isTL ? (
         <div style={{ maxWidth: 560, marginTop: 24 }}><Upcoming snap={snap} onSetup={() => setTab("targets")} /></div>
       ) : (

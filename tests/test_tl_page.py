@@ -183,6 +183,11 @@ states = {}
 for rid, s in live.items():
     states[s["tlState"]] = states.get(s["tlState"], 0) + 1
     check_page(s, f"{rid} ({s['tlState']})")
+    # the Direct switch's view (docs/TL_SPEC.md §3b): the same identities on the page with the variant laid over it
+    v = (s.get("variants") or {}).get("direct_spread")
+    check(isinstance(v, dict), f"{rid}: built both ways, the spread view under variants.direct_spread")
+    if v:
+        check_page({**s, **v}, f"{rid} ({s['tlState']}, Direct spread)")
 check("signups" in states or "window" in states, f"a launch in flight on the build's day ({states})")
 
 # the TL email cohort: the panel's launches' pre-window sends, with rates from two or more
