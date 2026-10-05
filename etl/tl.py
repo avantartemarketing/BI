@@ -764,6 +764,153 @@ def _shares(d: dict[str, float]) -> dict[str, float]:
     return {g: (d.get(g, 0.0) / tot if tot > 0 else 0.0) for g in GROUPS}
 
 
+# ---------------------------------------------------------------- Direct as a source (spec §3b)
+
+DIRECT_CHANNEL = "Direct"
+# the columns of the TL frames that are not measures: the keys of a row and its labels
+_NON_METRIC = {"release", "channel", "group", "date", "day", "hour", "ts", "status", "product_title",
+               "stage", "sub_type", "page_path", "page_title", "pre", "is_prod", "has_page"}
+
+
+def _metric_cols(frame: pd.DataFrame, keys: list[str]) -> list[str]:
+    return [c for c in frame.columns if c not in keys and c not in _NON_METRIC
+            and pd.api.types.is_numeric_dtype(frame[c]) and not pd.api.types.is_bool_dtype(frame[c])]
+
+
+def spread_direct(frame: pd.DataFrame, steps: list[str], release_col: str = "release") -> pd.DataFrame:
+    """The frame with its Direct rows shared out over the other tracked channels
+    in proportion to what each did in the same step: the LE build's rule
+    (build.redistribute_channel, docs/METHODOLOGY.md §1.3) on the TL frames
+    (docs/TL_SPEC.md §3b). A step is whatever `steps` names - a day, an hour,
+    an hour of one work in one order status - and every measure moves alike. A
+    step with nothing else to spread it over keeps its volume in place, split
+    over the channels on the release's overall mix of that measure (else of its
+    rows), so a series keeps its shape. The untracked rows stay apart, as the TL
+    cards hold them, and a frame with no Direct rows, or nothing to spread them
+    over, comes back as it is. Totals by step are kept to the figure."""
+    if not len(frame) or "channel" not in frame.columns:
+        return frame
+    is_direct = frame["channel"].eq(DIRECT_CHANNEL)
+    if not is_direct.any():
+        return frame
+    groups = frame["channel"].map(GROUP_OF).fillna("untracked")
+    recv_mask = ~is_direct & groups.ne("untracked")
+    if not recv_mask.any():
+        return frame
+    rel = [release_col] if release_col in frame.columns and release_col not in steps else []
+    keys = rel + list(steps)
+    metrics = _metric_cols(frame, keys)
+    extra = [c for c in frame.columns if c not in keys and c not in metrics and c not in ("channel", "group")]
+    direct, recv, rest = frame[is_direct], frame[recv_mask], frame[~is_direct & ~recv_mask]
+    d = direct.melt(id_vars=keys, value_vars=metrics, var_name="_m", value_name="_v")
+    d = d[d["_v"].notna() & d["_v"].ne(0)]
+    r = recv.melt(id_vars=keys + ["channel"], value_vars=metrics, var_name="_m", value_name="_v")
+    r = r[r["_v"] > 0]
+    # the receivers' mix of each measure in the step
+    w = r.groupby(keys + ["_m", "channel"], dropna=False, as_index=False)["_v"].sum()
+    tot = w.groupby(keys + ["_m"], dropna=False, as_index=False)["_v"].sum().rename(columns={"_v": "_t"})
+    w = w.merge(tot, on=keys + ["_m"])
+    w["_w"] = w["_v"] / w["_t"]
+    got = d.merge(w[keys + ["_m", "channel", "_w"]], on=keys + ["_m"], how="left")
+    orphan = got[got["channel"].isna()].drop(columns=["channel", "_w"])
+    got = got[got["channel"].notna()].copy()
+    got["_v"] = got["_v"] * got["_w"]
+    parts = [got[keys + ["channel", "_m", "_v"]]]
+    if len(orphan):
+        # nothing else in the step: the release's overall mix of the measure, else of its rows
+        mix = r.groupby(rel + ["_m", "channel"], dropna=False, as_index=False)["_v"].sum()
+        have = recv.groupby(rel + ["channel"], dropna=False, as_index=False).size().rename(columns={"size": "_v"})
+        even = pd.concat([have.assign(_m=m) for m in metrics], ignore_index=True)
+        seen = set(map(tuple, mix[rel + ["_m"]].astype(object).itertuples(index=False, name=None)))
+        even = even[[tuple(x) not in seen for x in even[rel + ["_m"]].astype(object).itertuples(index=False, name=None)]]
+        mix = pd.concat([mix, even], ignore_index=True)
+        mt = mix.groupby(rel + ["_m"], dropna=False, as_index=False)["_v"].sum().rename(columns={"_v": "_t"})
+        mix = mix.merge(mt, on=rel + ["_m"])
+        mix["_w"] = mix["_v"] / mix["_t"]
+        o = orphan.merge(mix[rel + ["_m", "channel", "_w"]], on=rel + ["_m"], how="inner")
+        o["_v"] = o["_v"] * o["_w"]
+        parts.append(o[keys + ["channel", "_m", "_v"]])
+    moved = pd.concat(parts, ignore_index=True)
+    wide = moved.groupby(keys + ["channel", "_m"], dropna=False)["_v"].sum().unstack("_m").reset_index()
+    for m in metrics:
+        if m not in wide.columns:
+            wide[m] = 0.0
+    out = pd.concat([recv, rest, wide], ignore_index=True)
+    agg = {**{m: "sum" for m in metrics}, **{c: "first" for c in extra}}
+    out = out.groupby(keys + ["channel"], dropna=False, as_index=False).agg(agg)
+    out["group"] = out["channel"].map(GROUP_OF).fillna("untracked")
+    order = [c for c in frame.columns if c in out.columns] + [c for c in out.columns if c not in frame.columns]
+    return out[order]
+
+
+def direct_share(frame: pd.DataFrame | None, cols: tuple = ("signups", "sessions", "units")) -> dict:
+    """Direct's share of a frame's figures as the feed attributes them: the
+    switch's words. {col: share, or None with nothing to share}."""
+    out = {}
+    for c in cols:
+        if frame is None or not len(frame) or c not in frame.columns or "channel" not in frame.columns:
+            out[c] = None
+            continue
+        tot = float(frame[c].sum())
+        part = float(frame.loc[frame["channel"].eq(DIRECT_CHANNEL), c].sum())
+        out[c] = round(part / tot, 4) if tot > 0 else None
+    return out
+
+
+def direct_spread_data(series: dict | None, orders: dict | None, signup_products: dict | None) -> dict | None:
+    """Every TL frame read with Direct spread (spread_direct): the series by day
+    and by hour, the orders table's lines by hour, work and status, and the
+    signups by work by day and page, in the shapes load_series, load_orders and
+    load_signup_products give them. None without the series."""
+    if series is None:
+        return None
+    daily = spread_direct(series["daily"], ["day", "date"])
+    hourly = spread_direct(series["hourly"], ["ts", "hour"]) if len(series["hourly"]) else series["hourly"]
+    out_series = {**series, "daily": daily, "hourly": hourly,
+                  "by_release": {n: g for n, g in daily.groupby("release")} if len(daily) else {},
+                  "hourly_by_release": {n: g for n, g in hourly.groupby("release")} if len(hourly) else {}}
+    out_orders = None
+    if orders is not None:
+        h = orders["hourly"]
+        h2 = spread_direct(h, ["ts", "hour", "product_title", "status"]) if len(h) else h
+        out_orders = {**orders, "hourly": h2, "by_release": {n: g for n, g in h2.groupby("release")} if len(h2) else {}}
+    sp = {}
+    if signup_products:
+        f = pd.concat(list(signup_products.values()), ignore_index=True)
+        f2 = spread_direct(f, ["day", "date", "stage", "sub_type", "page_path", "page_title", "pre", "is_prod", "has_page"])
+        sp = {n: g for n, g in f2.groupby("release")}
+    return {"series": out_series, "orders": out_orders, "signup_products": sp}
+
+
+def direct_norm(series: dict | None, panel: pd.DataFrame) -> dict | None:
+    """What Direct normally is of the Search/direct/other group on a timed
+    launch: the panel launches' median share of the group's pre-window signups
+    and sessions, and of its window units at the settle (the LE build's
+    direct_share_norm, read off the TL series). Words for the switch; the
+    basket itself is read off the panel built with the spread."""
+    if series is None or not len(panel):
+        return None
+    shares: dict[str, list[float]] = {"signups": [], "sessions": [], "units": []}
+    for r in panel.to_dict("records"):
+        daily, hourly = _rel_rows(series, str(r["release_name"]))
+        so, cl = _ts(r.get("sales_open")), _ts(r.get("close"))
+        if so is None or cl is None or not len(daily):
+            continue
+        pre = _pre_window(daily, hourly, so)
+        settled = _window(hourly, so, cl + timedelta(days=TL_SETTLE_DAYS)) if len(hourly) else hourly
+        for frame, cols in ((pre, ("signups", "sessions")), (settled, ("units",))):
+            if not len(frame):
+                continue
+            grp = frame[frame["group"].eq("search_direct_other")]
+            for c in cols:
+                tot = float(grp[c].sum()) if c in grp.columns else 0.0
+                if tot > 0:
+                    shares[c].append(float(grp.loc[grp["channel"].eq(DIRECT_CHANNEL), c].sum()) / tot)
+    out: dict = {k: (round(float(np.median(v)), 4) if v else None) for k, v in shares.items()}
+    out["n"] = max((len(v) for v in shares.values()), default=0)
+    return out
+
+
 def signup_curve(daily: pd.DataFrame, hourly: pd.DataFrame, sales_open: datetime, total: float) -> tuple[list, list]:
     """Cumulative pre-window signups by day to the sales open (CURVE_DAYS): the
     count and its share of the pre-window total."""
@@ -1405,6 +1552,56 @@ def tl_targets(inputs: dict | None, airtable_units_target: float | None, profile
                       "units": float(profile.get("units") or 0.0), "paid_signups": bm_by_group["paid"],
                       "budget_pre": bm_by_group["paid"] * cps if cps > 0 else None},
     }
+
+
+def spread_profile(spread: dict, base: dict, norm: dict | None) -> dict:
+    """The basket's medians on the Direct switch's basis (docs §3b): the
+    profile read off the panel built with Direct spread (basket_profile), so
+    every by-channel median, rates included, is on the basis the page is on,
+    with the money held - paid takes its share of Direct's signups and units,
+    so the same spend buys more of them, and the cost of a paid signup, and of
+    a paid sale, is the Channel view's rescaled by the paid group's change
+    (the LE build's spread_profile rule): the benchmark's budget is the same
+    either way."""
+    out = dict(spread)
+    for key, cost in (("signups_by_group", "cost_per_signup"), ("units_by_group", "cost_per_sale")):
+        before = float((base.get(key) or {}).get("paid") or 0.0)
+        after = float((spread.get(key) or {}).get("paid") or 0.0)
+        c = float(base.get(cost) or 0.0)
+        out[cost] = (c * before / after) if (c > 0 and before > 0 and after > 0) else c
+        out[f"n_{cost}"] = base.get(f"n_{cost}")
+    out["direct_spread"] = norm or {}
+    return out
+
+
+def respread_targets(targets: dict | None, inputs: dict | None, profile: dict) -> dict | None:
+    """The plan re-split by channel on the spread basket (docs §3b). The signup
+    target, the units target, the rates and the budgets are the plan's and do
+    not move with a display switch; each group's share of them follows the
+    basket read with Direct spread (the stretch placed as the inputs say), the
+    sessions needed follow the spread rates, and the cost of a paid signup, and
+    of a paid sale, is the budget over the paid signups, and units, this view
+    gives paid - so paid reads the signups it is given at a cost rescaled to them."""
+    if targets is None:
+        return None
+    out = dict(targets)
+    bm_by = {g: float(profile["signups_by_group"].get(g, 0.0)) for g in GROUPS}
+    target = targets.get("signup_target")
+    weights = stretch_weights(inputs, bm_by)
+    groups = allocate_stretch(bm_by, target, weights) if target else {g: 0.0 for g in GROUPS}
+    conv = profile.get("conv") or {}
+    sessions = {g: (groups[g] / conv[g] if conv.get(g, 0) > 0 else None) for g in GROUPS}
+    paid_units = float((profile.get("share_units") or {}).get("paid", 0.0)) * float(targets["units_target"])
+    paid_off = "paid" in (profile.get("channels_off") or [])
+    cps = (targets["budget_pre"] / groups["paid"]) if (targets.get("budget_pre") and groups["paid"] > 0 and not paid_off) else targets.get("cost_per_signup")
+    cpu = (targets["budget_window"] / paid_units) if (targets.get("budget_window") and paid_units > 0 and not paid_off) else targets.get("cost_per_sale")
+    out.update({"signups_by_group": groups, "sessions_by_group": sessions, "stretch_from": weights,
+                "sessions_needed": sum(v for v in sessions.values() if v) if any(sessions.values()) else None,
+                "paid_signups": groups["paid"], "paid_units": paid_units,
+                "cost_per_signup": cps, "cost_per_sale": cpu,
+                "benchmark": {**targets["benchmark"], "signups_by_group": bm_by, "paid_signups": bm_by["paid"],
+                              "budget_pre": (bm_by["paid"] * cps) if cps else None}})
+    return out
 
 
 # ---------------------------------------------------------------- the TL releases
@@ -2445,10 +2642,15 @@ def le_blocks(cx: dict) -> dict:
 
 def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, spend: pd.DataFrame | None, emails: pd.DataFrame | None,
              as_of: date, now: datetime, seen: float = 1.0, orders_data: dict | None = None, email_bench: dict | None = None,
-             content: pd.DataFrame | None = None, artist_posts: pd.DataFrame | None = None, signup_products: pd.DataFrame | None = None) -> dict:
+             content: pd.DataFrame | None = None, artist_posts: pd.DataFrame | None = None, signup_products: pd.DataFrame | None = None,
+             direct: dict | None = None) -> dict:
     """The page snapshot of one TL (module docstring). `email_bench` is the
     run's email cohort (email_cohort), `content` the Emplifi post export and
-    `artist_posts` the Notion post log, for the funnel's email and post rows."""
+    `artist_posts` the Notion post log, for the funnel's email and post rows.
+    `direct` builds the Direct switch's view (docs §3b): `series`,
+    `orders_data` and `signup_products` are then the frames read with Direct
+    spread (direct_spread_data), `direct["panel"]` the panel built from them,
+    and the plan's headline and budgets stay, re-split by channel."""
     d = rec["dates"]
     inp = rec.get("inputs") or {}
     state = state_of(d, now)
@@ -2468,8 +2670,14 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
     profile = apply_channels_off(basket["profile"], off)
     launch_value = (release_for_basket["units_target"] or 0) * price if price and release_for_basket["units_target"] else None
     targets = tl_targets(inp, airtable_units, profile, launch_value)
-    targeted = targets is not None and targets.get("signup_target") is not None
+    # a paid signup's worth is the plan's, read on the basket as the feed attributes it, whichever view the page is on
     paid_value = tl_paid_value(inp, profile, targets, econ)
+    if direct:
+        # the Direct switch's view (docs §3b): the frames carry Direct spread over the other channels, the
+        # basket is read off the panel built the same way, and the plan is re-split on it with its budgets held
+        profile = apply_channels_off(spread_profile(basket_profile(direct["panel"], curves, basket["members"]), basket["profile"], direct.get("norm")), off)
+        targets = respread_targets(targets, inp, profile)
+    targeted = targets is not None and targets.get("signup_target") is not None
 
     # ---- signups: the headline, by day and by group
     pre_to = d["sales_open"]
@@ -2530,6 +2738,8 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
                        "bmSessions": profile["sessions_by_group"].get(g) if basket["n"] else None, "bmRate": profile["conv"].get(g) if basket["n"] else None,
                        "sessionsNeeded": targets["sessions_by_group"][g] if targeted else None})
     untracked = {"signups": sg.get("untracked", 0.0), "sessions": sess_g.get("untracked", 0.0)}
+    # Direct's share of the page's own figures as the feed attributes them, before the switch's spread moves it: the switch's words
+    dshare = None if direct else direct_share(pre if state not in ("upcoming", "signups") else daily, ("signups", "sessions"))
 
     # ---- paid: the signups it buys before the window
     code = rec.get("campaign_code")
@@ -2624,6 +2834,14 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
                               "cancelled": float(feed_win["units_cancelled"].sum()) if "units_cancelled" in feed_win.columns and len(feed_win) else None,
                               "note": "units are the feed's purchase events, pieces on orders not cancelled; the orders table has no lines for this launch yet"})
 
+    if dshare is not None:
+        dshare["units"] = None
+        if win_cx is not None and len(hourly):
+            w_feed = _window(hourly, d["sales_open"], win_cx["until"])
+            w_units = win_cx["o"]["live"] if win_cx["o"] is not None else w_feed
+            dshare["units"] = direct_share(w_units, ("units",))["units"]
+            dshare["sessions"] = direct_share(w_feed, ("sessions",))["sessions"]
+
     announce = d["announce"]
     close_day = d["close"].date()
     length_days = max((close_day - announce).days, 1) if announce else None
@@ -2654,6 +2872,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
                                                 "unit_price", "unit_price_eur", "currency", "launch_value_eur", "units_target", "launch_time", "tl_length",
                                                 "tl_end_date", "announce_dates", "price_match")} if launch else None,
         "products": products, "productsNote": prod_info["note"], "economics": econ, "paidValue": paid_value,
+        "directShare": dshare,
         "hero": {"now": now_signups, "unique": _num(feed_row.get("signups_unique")), "expectedToday": expected, "delta": (now_signups - expected) if expected is not None else None,
                  "projected": projected, "target": target, "statusPct": status_pct, "ok": (status_pct >= 0) if status_pct is not None else None,
                  "benchmark": (profile["signups"] if basket["n"] else None), "benchmarkToday": bm_today if basket["n"] else None, "benchmarkPct": bm_pct,
@@ -2767,6 +2986,13 @@ def build_all(ctx: dict) -> dict:
     email_bench = email_cohort(panel, emails, as_of)
     content, artist_posts = ctx.get("content"), ctx.get("artist_posts")
     signup_products = ctx["signup_products"] if "signup_products" in ctx else load_signup_products()
+    # the Direct switch's view (docs §3b): every frame read with Direct spread over the other
+    # channels, and the panel built from them, so a page is built both ways below
+    spread = direct_spread_data(series, orders_data, signup_products) if ctx.get("direct_spread", True) else None
+    direct_cx = None
+    if spread is not None:
+        panel_spread, _ = panel_frame(spread["series"], timed, spend, emails, as_of, now, spread["orders"])
+        direct_cx = {"panel": panel_spread, "norm": direct_norm(series, panel)}
     if ctx.get("write", True):
         APP.mkdir(parents=True, exist_ok=True)
         tmp = PANEL.with_suffix(".tmp"); panel.to_csv(tmp, index=False); tmp.replace(PANEL)
@@ -2786,6 +3012,19 @@ def build_all(ctx: dict) -> dict:
         except Exception as e:  # noqa: BLE001 - one page's failure never stops the build
             out["failures"].append((rec["id"], f"{type(e).__name__}: {e}"))
             continue
+        if direct_cx is not None:
+            # built both ways: the blocks that differ with Direct spread ride under variants.direct_spread
+            # and the dashboard's Direct switch lays them over the page (the LE build's with_direct_spread)
+            try:
+                alt = build_tl(rec, spread["series"], panel, curves, spend, emails, as_of, now, seen, spread["orders"],
+                               email_bench=email_bench, content=content, artist_posts=artist_posts,
+                               signup_products=spread["signup_products"].get(rec["release_name"]), direct=direct_cx)
+                # the sell-through forecast is the one exception: its rates by channel and kind are measured on the
+                # feed's attribution of signups, so it reads that whichever view the page is on (docs §3b)
+                snap["variants"] = {"direct_spread": {k: v for k, v in alt.items()
+                                                      if k not in ("variants", "directShare", "sellForecast") and _json_safe(v) != _json_safe(snap.get(k))}}
+            except Exception as e:  # noqa: BLE001 - the page stands without its spread view
+                out["failures"].append((f"{rec['id']} (Direct spread)", f"{type(e).__name__}: {e}"))
         where = (APP / "releases" if rec["id"] in configured or rec.get("inputs") else DERIVED) / f"{rec['id']}.json"
         if ctx.get("write", True):
             where.parent.mkdir(parents=True, exist_ok=True)

@@ -96,7 +96,8 @@ Search/direct/other group, spread over every group pro rata). Totals, what has
 been sold and the paid budget do not move - paid's cost per unit falls by the
 share of Direct it takes on - while the channel cards, the funnel and paid's
 units do, and the plan's pace shifts a little with the channel mix. The Target
-setting tab always reads Direct as a channel.
+setting tab always reads Direct as a channel. A timed launch's page has the same
+switch, in signups before its window and units inside it (docs/TL_SPEC.md §3b).
 
 ## 2. The inputs (Target setting tab)
 

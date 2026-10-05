@@ -205,7 +205,11 @@ function TLBasketTable({ profile, off, T }) {
 
 /* ======================= the tab ======================= */
 
-export default function TLTargets({ snap, onSaved }) {
+/* `directSpread`: the Overview is set to spread Direct over the other
+ * channels (docs/TL_SPEC.md §3b). The plan here always reads Direct as a
+ * channel of its own, so the tab says so rather than contradicting the
+ * Channels card silently - as the LE tab does. */
+export default function TLTargets({ snap, onSaved, directSpread = false }) {
   const [meta, setMeta] = useState(null);       // {inputs, sourced, benchmarks, meta_campaigns, derived, creating}
   const [inp, setInp] = useState(null);         // editable inputs
   const [pick, setPick] = useState(null);       // a basket chosen in the picker, not yet saved
@@ -757,6 +761,12 @@ export default function TLTargets({ snap, onSaved }) {
               : <>The signup target is the benchmark lifted by <b>×{k ? fmt(k, 2) : "–"}</b> in every channel. </>}
             Session → signup rates are held at the benchmark: the uplift is asked of traffic and spend only. The signup → order rate is the basket's, read at its mix of channels, since a paid signup converts at a fraction of an email one.
           </div>
+          {directSpread && (
+            <div className="ts-caption">
+              Direct is read as a channel of its own here, as the TL feed attributes it. The Overview is set to spread it over the other channels,
+              so its Channels card splits the same plan differently; the signup target and the paid budget are the same either way.
+            </div>
+          )}
         </section>
 
         <section className="ts-card" aria-label="Products and economics">

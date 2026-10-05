@@ -833,7 +833,11 @@ Beside it, a **Direct** switch (shown once the ETL has built the page both ways)
 reads Direct as the funnel attributes it; *Spread* shares Direct's sessions, entries and units
 out over the other channels in proportion to their own, day by day, and reads the benchmark's
 channel split the same way (docs/DATA_MODEL.md 1.3). Totals and what has been sold do not
-move; the plan's pace shifts a little with the mix. The choice sticks per browser.
+move; the plan's pace shifts a little with the mix. The choice sticks per browser. A timed
+launch's page has the same switch in both of its states: Direct's signups and sessions spread
+before the window, its units and sessions inside it, the basket's launches read the same way and
+the plan's budgets held; its sell-through forecast keeps the feed's attribution
+(docs/TL_SPEC.md 3b).
 
 ### Arranging the page
 
