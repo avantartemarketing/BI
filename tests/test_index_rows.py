@@ -102,6 +102,22 @@ check(horse["launch_end"] == "2026-10-15" and horse["quarter"] == "2027 Q1" and 
       f"the name, its quarter and the id stand: {horse['quarter']} {horse['id']}")
 check(horse["dates_note"] == "the name says 2027 Q1, but the campaign closes 2026-10-15 (2026 Q4)", f"the note: {horse['dates_note']}")
 check(print_["dates_note"] is None and print_["quarter"] == "2026 Q4", f"a name that agrees has no note: {print_['dates_note']}")
+# A timed launch's saved inputs (type TL, the TL page's id) are the TL build's:
+# the LE build leaves them out, and where an LE row and a TL row still meet on
+# one id the TL row stands (Bisa Butler, 5 October 2026: two sidebar rows)
+tl_rec = {"id": "bisa_butler_multiple_2026_q4_tl", "type": "TL", "release_name": "Bisa Butler · Multiple · 2026 Q4", "launch_end": "2026-10-15"}
+le_rec = {"id": "synthetic_le_26", "release_name": name, "launch_end": launch.isoformat()}
+kept = build.le_records([tl_rec, le_rec, {**le_rec, "id": "flagged", "tl": True}, {**le_rec, "id": "lower", "type": "tl"}])
+check([r["id"] for r in kept] == ["synthetic_le_26"], f"the LE build keeps only the records not typed TL: {[r['id'] for r in kept]}")
+le_row = {**row, "id": tl_rec["id"], "status": "live", "windowEnd": "2026-10-15"}
+tl_row = {**row, "id": tl_rec["id"], "type": "TL", "status": "upcoming", "windowEnd": "2026-10-15", "tlState": "signups"}
+once = build.sort_index([le_row, tl_row])
+check(len(once) == 1 and once[0]["type"] == "TL", f"one row per id, the TL row standing: {[(r['id'], r.get('type'), r['status']) for r in once]}")
+once = build.sort_index([tl_row, le_row])
+check(len(once) == 1 and once[0]["type"] == "TL", "the TL row stands whichever came first")
+two = build.sort_index([{**row, "id": "a", "status": "live"}, {**row, "id": "b", "status": "live"}])
+check(len(two) == 2, "two ids stay two rows")
+
 print(f"targeted row: quarter {row['quarter']}, sessions {row['sessions']}, last seen {row['lastSeen']}")
 print("FAILED" if failed else "ok: index rows", failed if failed else "")
 sys.exit(1 if failed else 0)

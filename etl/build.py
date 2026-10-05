@@ -6131,9 +6131,39 @@ def index_row(snap: dict, status: str) -> dict:
     }
 
 
+def le_records(records: list[dict]) -> list[dict]:
+    """The releases the LE build makes pages for: every record on file that is
+    not typed TL. A timed launch's inputs, saved from its Target setting tab,
+    carry type "TL" and the TL page's own id (tl.tl_id); the TL build reads
+    them, and the LE build must not, or the saved record gets an LE page beside
+    the TL page under the same id (Bisa Butler, 5 October 2026: two rows in the
+    sidebar, "signups · opens in 7 d" and "15 Oct")."""
+    return [r for r in records if not (str(r.get("type") or "").upper() == "TL" or bool(r.get("tl")))]
+
+
+def one_row_per_id(index: list[dict]) -> list[dict]:
+    """No two sidebar rows with one id: where two meet, the TL row stands
+    (the TL build writes the page last), else the later one."""
+    out: list[dict] = []
+    at: dict[str, int] = {}
+    for e in index:
+        rid = e.get("id")
+        if rid is None:                      # a row with no id is its own
+            out.append(e)
+            continue
+        i = at.get(str(rid))
+        if i is None:
+            at[str(rid)] = len(out)
+            out.append(e)
+        elif not (out[i].get("type") == "TL" and e.get("type") != "TL"):
+            out[i] = e
+    return out
+
+
 def sort_index(index: list[dict]) -> list[dict]:
     """Live first by window end, then closed most-recent-first, then catalogue
     by traffic. The sidebar's order, in one place for both build paths."""
+    index = one_row_per_id(index)
     live = [e for e in index if e["status"] == "live"]
     live.sort(key=lambda e: (e["windowEnd"] or "", -(e["sessions"] or 0)))
     upcoming = sorted([e for e in index if e["status"] == "upcoming"], key=lambda e: e["windowEnd"] or "")
@@ -6286,7 +6316,7 @@ def main(only: str | None = None):
     mark("load")
     launch_frame = load_launches()
     try:
-        adopted = adopt_funnel_names(INPUTS["releases"], discovered, launch_frame, at)
+        adopted = adopt_funnel_names(le_records(INPUTS["releases"]), discovered, launch_frame, at)
     except Exception as e:  # noqa: BLE001 - a page kept under its old name costs less than a lost refresh
         adopted = []
         print(f"warning: adopting the funnel's names failed ({e}) - every page keeps its name")
@@ -6383,7 +6413,9 @@ def main(only: str | None = None):
     else:
         print("email refs: none yet (fewer than 2 completed draw launches with sends on file) - UI defaults apply")
     by_name = {n: g for n, g in at.groupby("simple_release_name")}
-    configured = {r["release_name"]: r for r in INPUTS["releases"]}
+    # a record typed TL is the TL build's (le_records): tl.build_all below
+    # reads every record on file and builds the timed launches' pages itself
+    configured = {r["release_name"]: r for r in le_records(INPUTS["releases"])}
     # what an untracked share normally is, once, for every page's warning
     # (§1.3). A function of the export and the panel, not of any release's
     # inputs, so a single-release build reads the full build's figure back

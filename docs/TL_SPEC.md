@@ -329,6 +329,12 @@ path; a timed launch is no longer "not a draw, so not listed" but "a TL, so list
 The index row carries `type: "TL"` and `tlState`; the snapshot carries the state, the open and
 close timestamps and the hours left.
 
+A record saved from the TL Target setting tab (type `TL`, the TL page's id) is the TL build's alone:
+`build.py` leaves TL-typed records out of the LE loops (`le_records`) and keeps one sidebar row per
+id, the TL row where two meet (`one_row_per_id`). Before (5 October 2026) a saved TL record was
+also built as an LE page under the same id: Bisa Butler stood twice in the sidebar, "signups ·
+opens in 7 d" and "15 Oct".
+
 ## 10. Out of scope now
 
 Slack posts for TLs (pages only until asked); the denied aggregated TL export (not needed); a

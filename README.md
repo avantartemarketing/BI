@@ -620,7 +620,10 @@ words; what differs is only what a timed launch has no equivalent for (the paid 
 paid signup is assumed to be worth, `tl_paid_value`, with a cost view, budget pacing in place of the LE spend rules, a sell-through forecast by work before the window from the signups keyed to each work's product page and the basket's non-signup sales (`sell_forecast`, docs/TL_SPEC.md §4b, the signups-by-work pull `data/tl_signups_by_product.csv`), a pre-window signups card
 once the window has opened, no draw, no Slack posts yet). `tests/test_tl_page.py` holds the
 blocks to each other. A TL page runs on Airtable's
-units target and the suggested basket before anyone saves. **Target setting** is the LE
+units target and the suggested basket before anyone saves. A record saved from that tab is typed TL
+and is the TL build's alone: the LE build leaves TL-typed records out (`le_records`) and the index
+carries one row per id (`one_row_per_id`), since on 5 October 2026 Bisa Butler's saved targets had
+given her an LE page beside the TL page, two rows of one name in the sidebar. **Target setting** is the LE
 tab's own components in TL words (`web/src/TLTargets.jsx`): the release and its dates (the
 announce, the open in Amsterdam time, the window length, each with the other readings
 beside it and one click to take one), the basket picked on the LE map over the TL panel
@@ -815,9 +818,9 @@ orders feed as sell-through.
 
 The hero (Units vs sellout) writes nothing around its bar: the fill prints its own figure at its tip, the
 track ends at the sellout with the room to it in plain grey, demand past the sellout runs on past the bar's
-end as the same solid fill, every mark says what it is and its figure on hover, and one line of figures
-under the bar names what is counted, the target and the benchmark, or what is over the sellout (4 October
-2026, from the routes page). Its headline delta is the gap to the target as a share of it ("−56% vs target"), the
+end as the same solid fill, every mark says what it is and its figure on hover, and three rows under
+the bar name what is counted, the benchmark and the target, in that order (4 October 2026, from the
+routes page; a one-line key and a band of two tiles were tried the same day and dropped). Its headline delta is the gap to the target as a share of it ("−56% vs target"), the
 units on hover and in the explanation. Every card but sell-through and framing carries both references at once: the target as a fill in two tints of the actual's
 own blue (darker to whichever of target and benchmark is lower, lighter from the benchmark up
 to the target), the benchmark as a dotted outline over it, and the actual in front. A single
