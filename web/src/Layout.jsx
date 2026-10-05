@@ -38,6 +38,8 @@ export const CARDS = [
   { key: "tl_signups", title: "Pre-window signups", note: "shown only on a timed launch once its window has opened" },
   // a timed launch's forecast of the window's sales by work, before it opens (docs/TL_SPEC.md §4b)
   { key: "tl_forecast", title: "Sell-through forecast by work", size: "wide", note: "shown only on a timed launch before its window opens" },
+  // the launches the benchmark is read from, listed last so it joins a saved layout at the foot of the page
+  { key: "basket", title: "Benchmark basket", note: "the basket's launches with the units they sold and their price; each opens its own page" },
 ];
 const BY_KEY = Object.fromEntries(CARDS.map((c) => [c.key, c]));
 const DEFAULT_KEYS = CARDS.filter((c) => !c.optional).map((c) => c.key);

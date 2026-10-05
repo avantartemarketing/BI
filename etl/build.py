@@ -5700,6 +5700,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "basket": {"id": basket["id"], "kind": basket["kind"], "name": basket["name"],
                        "n": basket["n"], "thin": basket["thin"],
                        "suggestedId": basket["suggestedId"]},
+            # the launches the medians are read from, with units and price: the Benchmark basket card
+            "members": baskets.basket_members(panel, basket.get("members")),
             "units": round(profile["units"], 1),
             # units are demand (baskets.demand_columns): what the basket's
             # launches would have sold with enough supply; the sales beside

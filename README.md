@@ -843,6 +843,14 @@ before the window, its units and sessions inside it, the basket's launches read 
 the plan's budgets held; its sell-through forecast keeps the feed's attribution
 (docs/TL_SPEC.md 3b).
 
+**Benchmark basket** lists the launches the page's medians are read from, one per row with
+the units it sold and its unit price in euros, largest first, under the card's "Units" and
+"Price" columns; a timed launch's lists its basket of timed launches the same way. A row opens
+that launch's own page where it has one. Nothing else is on the card: the rule that picked
+the launches, their medians and the picker stay on the Target setting tab (docs/DATA_MODEL.md
+3, docs/TL_SPEC.md 8). It is last in the card registry, so it joins a layout saved before it
+at the foot of the page.
+
 ### Arranging the page
 
 **Edit layout**, at the right of the Overview / Target setting tabs, turns the page into a

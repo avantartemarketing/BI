@@ -1155,6 +1155,26 @@ def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dic
     }
 
 
+def basket_members(panel: pd.DataFrame | None, names: list[str] | None) -> list[dict]:
+    """The basket's launches with the two figures the Benchmark basket card
+    shows (the LE build's baskets.basket_members on the TL panel): the units
+    the window sold and the unit price in euros, in the basket's order, with
+    the name, artist, title and quarter the sidebar shows."""
+    if panel is None or not len(panel) or not names or "release_name" not in panel.columns:
+        return []
+    by = panel.drop_duplicates("release_name").set_index("release_name")
+    out = []
+    for n in names:
+        n = str(n)
+        if n not in by.index:
+            continue
+        r = by.loc[n]
+        price = _num(r.get("unit_price_eur"))
+        out.append({"name": n, "artist": str(r.get("artist") or ""), "title": str(r.get("title") or ""), "quarter": str(r.get("quarter") or ""),
+                    "units": _num(r.get("units")), "price": price if price and price > 0 else None})
+    return out
+
+
 def channels_off_of(inputs: dict | None) -> list[str]:
     raw = (inputs or {}).get("channels_off") or []
     if isinstance(raw, str):
@@ -2879,6 +2899,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
                  "daysToOpen": -dto_today, "shareToday": share_today, "preAnnounce": pre_announce},
         "targets": targets,
         "benchmark": {"basket": {k: basket.get(k) for k in ("id", "kind", "name", "desc", "n", "members", "thin", "fallback")},
+                      "members": basket_members(panel, basket.get("members")),
                       "suggested": rb["suggested"], "channelsOff": off, "k": targets["k"] if targeted else None,
                       "profile": profile} if basket["n"] else None,
         "baskets": [{**{k: b.get(k) for k in ("id", "kind", "name", "desc", "n", "members", "thin", "fallback", "disabled")},

@@ -133,6 +133,10 @@ direct_norm = {"units": 0.5, "sessions": 0.5, "entries": 0.5, "n": 10, "recentMo
 snap = build.with_direct_spread(build.build_release, copy.deepcopy(base), at, spend, emails, content, curves, TODAY,
                                 build.load_artist_posts(), {}, None, panel, people, full_through=TODAY, seen=1.0, direct_norm=direct_norm)
 build.check_snapshot(snap)
+# the Benchmark basket card: the basket's launches with units and price, the same in both views
+mem = (snap.get("benchmark") or {}).get("members")
+check(isinstance(mem, list) and len(mem) == snap["benchmark"]["basket"]["n"] and all(m.get("name") and "units" in m and "price" in m for m in mem),
+      f"the benchmark names its basket's launches with units and price ({mem if not isinstance(mem, list) else len(mem)})")
 var = snap["variants"]["direct_spread"]
 check("channels" in var and "funnelByGroup" in var and "paid" in var and "targets" in var and "groupTargets" in var,
       f"the differing blocks ride under the variant: {sorted(var)}")

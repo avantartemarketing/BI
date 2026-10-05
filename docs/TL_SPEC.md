@@ -181,6 +181,7 @@ cards do; `web/src/vocab.mjs` gives each card its words.
 | Actual vs target | the waterfall from the target through the stretch and the benchmark, organic traffic and conversion, paid spend and efficiency, to the signups today |
 | Sell-through forecast by work | a card of its own, timed launches only (§4b): the units each work is expected to sell in the window, from the signups and the basket, as a share of its edition, on the page's horizon |
 | Direct switch | the same switch (§3b): Direct's signups and sessions spread over the other channels before the window, its units and sessions inside it, the basket read the same way; the forecast keeps the feed's attribution |
+| Benchmark basket | the same card: the basket's timed launches with the units their windows sold and their price, each a link to its page; the medians and the rule stay on the Target setting tab (§8) |
 
 Sessions and signup rates by channel, the email sends and their signups, and the paid signups'
 cost are in the funnel card's rungs and popups, as they are on an LE page.
@@ -501,3 +502,4 @@ What the data showed on the way, and how the build reads it:
 | 23 | Units target over several works | The sum of the targets present (400) |
 | 24 | Settling after the close | 7 days, then frozen |
 | 25 | Direct switch on TL pages | The LE switch in both states, the basket's launches read the same way, the plan and its budgets held; the sell-through forecast keeps the feed's attribution (5 October 2026) |
+| 26 | Where the basket's launches show | A card in the Overview's grid, last by default: one launch per row with units and price, nothing else (5 October 2026) |
