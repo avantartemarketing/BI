@@ -104,8 +104,13 @@ The ETL builds a page for **every** release the funnel data mentions (`discover_
   **catalogue** - a work still drawing traffic - and is shown over its last 90 days.
 - **In flight** = has dates and today is before the close. The sidebar lists those, fewest
   days to launch first (a release whose window has not opened yet sits last, with its
-  opening date). Each row is the release's full name ("Ai Weiwei · Arm · Multiple · 2026
-  Q2", wrapping when long) over the launch date, with the days left on the right; a date
+  opening date). Each row is the artist on one line, a real title in grey after it
+  ("Loie Hollowell · Mother's Milk"; "Multiple" and the quarter are left to the hover, which
+  carries the full name), with the days left on the right and a grey verb before the count
+  where it is not to the section's own event ("opens 8 d" on a timed launch taking signups,
+  "closes 24 d" on an upcoming launch whose announce has passed); an artist with two rows
+  in a list keeps the whole name on them (5 October 2026, from the sidebar canvas; before,
+  the full name wrapped over two lines above the date). In the hover, the date; a date
   outside the page's year carries its year. The artist alone could not tell apart an
   artist's many launches. The row's tooltip carries the day of the window and the pace the
   dot means, so there is no key under the list. Every other release is reachable from the

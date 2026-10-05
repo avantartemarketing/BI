@@ -137,7 +137,12 @@ export default function App() {
     const upcoming = all.filter((r) => r.status === "upcoming").sort((a, b) => String(a.windowEnd || "").localeCompare(String(b.windowEnd || "")));
     return { live, upcoming, all };
   }, [index]);
+  // an artist with two rows among those listed (Ai Weiwei's LE and timed
+  // launch of one quarter; her seven launches in a search): their rows keep
+  // the rest of the name (rowWords)
+  const twins = useMemo(() => twinSet([...groups.live, ...groups.upcoming]), [groups]);
   const results = useMemo(() => searchReleases(groups.all, query), [groups, query]);
+  const resultTwins = useMemo(() => twinSet(results), [results]);
   const current = groups.all.find((r) => r.id === releaseId);
   const pinned = current && current.status !== "live" && current.status !== "upcoming" && view === "release" ? current : null;
 
@@ -153,13 +158,13 @@ export default function App() {
     <div className="app">
       <nav className="sidebar">
         <h1>Launch Performance</h1>
-        <div className="section-label split">In flight{groups.live.length > 0 && <small>days left</small>}</div>
+        <div className="section-label split">In flight{groups.live.length > 0 && <small>days to close</small>}</div>
         {groups.live.length === 0 && <div className="hint">Nothing in flight</div>}
-        {groups.live.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
+        {groups.live.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} twin={twins.has(artistOf(r))} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
         {groups.upcoming.length > 0 && (
           <>
-            <div className="section-label split" title="Launches Airtable knows and the funnel report does not yet - set their targets before they open">Upcoming<small>days to open / close</small></div>
-            {groups.upcoming.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
+            <div className="section-label split" title="Launches Airtable knows and the funnel report does not yet - set their targets before they open">Upcoming<small>days to open</small></div>
+            {groups.upcoming.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} twin={twins.has(artistOf(r))} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
           </>
         )}
         {pinned && (
@@ -178,7 +183,7 @@ export default function App() {
           aria-label="Search releases"
         />
         {query.trim() && results.length === 0 && <div className="hint">No release matches</div>}
-        {results.slice(0, 30).map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
+        {results.slice(0, 30).map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} twin={resultTwins.has(artistOf(r))} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
         {results.length > 30 && <div className="hint">{results.length - 30} more - keep typing</div>}
         {me?.admin && (
           <>
@@ -269,19 +274,39 @@ function releaseClock(r, asOf) {
   };
 }
 
-/* A release's name as a sidebar row sets it: where it wraps, the quarter
- * stays whole ("2026 Q3", never "2026" over "Q3") and a line never starts
- * with the separator, which ends the line before instead. */
-const rowName = (name) => String(name || "").replace(/ \u00b7 /g, "\u00a0\u00b7 ").replace(/(\d{4}) (Q\d)/g, "$1\u00a0$2");
+/* A release's name as a sidebar row sets it (5 October 2026): the artist,
+ * then a real title in grey; "Multiple" and the quarter are left to the
+ * hover, which carries the full name. An artist with two rows in the list
+ * (`twin`) keeps the rest of the name on those rows, "timed" added for a
+ * timed launch, since the artist alone would not say which launch a row was
+ * (Ai Weiwei's LE and TL of one quarter). Before, the full name wrapped over
+ * two lines above a date, and the list ran to two screens. */
+const QUARTER_RE = /^\d{4} Q\d$/;
+const nameParts = (r) => String(r.releaseName || r.name || r.artist || "").split(" \u00b7 ").map((p) => p.trim()).filter(Boolean);
+const artistOf = (r) => nameParts(r)[0] || "";
+/* the artists with more than one row in a list: their rows keep the whole name */
+function twinSet(rows) {
+  const n = new Map();
+  for (const r of rows) n.set(artistOf(r), (n.get(artistOf(r)) || 0) + 1);
+  return new Set([...n].filter(([, c]) => c > 1).map(([a]) => a));
+}
+function rowWords(r, twin) {
+  const [artist, ...rest] = nameParts(r);
+  const kept = twin ? [...(r.type === "TL" ? ["timed"] : []), ...rest] : rest.filter((p) => p !== "Multiple" && !QUARTER_RE.test(p));
+  return { artist: artist || "", rest: kept.join(" \u00b7 ") };
+}
 
-/* One release in the sidebar: the status dot, the release's full name
- * ("Ai Weiwei · Arm · Multiple · 2026 Q2", wrapping when long) over its date,
- * and the days left to it on the right. The artist alone told nobody which of
- * an artist's launches a row was, and a date without its year put a launch
- * of two Novembers ago beside this spring's: a date outside the page's year
- * carries its year. The tooltip keeps the day-of-window and the pace, and
- * the dot's meaning is its Pace row rather than a key under the list. */
-function ReleaseRow({ r, asOf, active, onClick }) {
+/* One release in the sidebar: the status dot, the artist (a real title in
+ * grey after it) on one line, and the days on the right, with a grey verb
+ * before the count where it does not run to the section's own event (the
+ * close in flight, the open upcoming): "opens" on a timed launch taking
+ * signups, "announces" on one before its announce, "closes" on an upcoming
+ * launch whose announce has passed. The date is in the hover with the
+ * day-of-window and the pace; a date outside the page's year carries its
+ * year, since a date without one put a launch of two Novembers ago beside
+ * this spring's. The dot's meaning is its Pace row rather than a key under
+ * the list. */
+function ReleaseRow({ r, asOf, active, onClick, twin = false }) {
   const t = useTip();
   const targeted = r.targeted !== false;
   const state = rowState(r);
@@ -308,14 +333,15 @@ function ReleaseRow({ r, asOf, active, onClick }) {
   const thisYear = asOf ? Number(String(asOf).slice(0, 4)) : new Date().getUTCFullYear();
   const on = (d) => (d.getUTCFullYear() === thisYear ? fmtDay(d) : `${fmtDay(d)} ${d.getUTCFullYear()}`);
 
-  // the second line and the figure on the right
-  let when, count = null;
+  // the figure on the right, the verb before it where the count is not to
+  // the section's own event, and the date for the hover
+  let when, count = null, verb = null;
   if (!clock) when = status === "closed" ? "Closed" : "Catalogue";
   else if (status === "upcoming" && clock.opensIn > 0) { when = `Opens ${on(clock.announce)}`; count = clock.opensIn; }
-  else if (status === "upcoming") { when = `Closes ${on(clock.launch)}`; count = Math.max(clock.daysLeft, 0); }
-  else if (clock.opensIn > 0) when = `Opens ${on(clock.announce)}`;
+  else if (status === "upcoming") { when = `Closes ${on(clock.launch)}`; count = Math.max(clock.daysLeft, 0); verb = "closes"; }
+  else if (clock.opensIn > 0) { when = `Opens ${on(clock.announce)}`; count = clock.opensIn; verb = "opens"; }
   else if (status === "closed") when = `Closed ${on(clock.launch)}`;
-  else { when = on(clock.launch); count = Math.max(clock.daysLeft, 0); }
+  else { when = `Closes ${on(clock.launch)}`; count = Math.max(clock.daysLeft, 0); }
   // a launch whose works close on different days names each close; the
   // count on the right is to the last (docs 1.6)
   if (status !== "closed" && Array.isArray(r.closes) && r.closes.length > 1) {
@@ -334,27 +360,33 @@ function ReleaseRow({ r, asOf, active, onClick }) {
       const toMs = r.tlState === "upcoming" && r.windowStart ? Date.parse(r.windowStart + "T00:00:00Z") : r.salesOpen ? Date.parse(r.salesOpen) : NaN;
       when = label || when;
       count = Number.isFinite(toMs) ? Math.max(Math.ceil((toMs - nowMs) / 86400000), 0) : null;
+      verb = r.tlState === "upcoming" ? "announces" : "opens";
     } else if (r.tlState === "window") {
       const closeMs = r.windowClose ? Date.parse(r.windowClose) : NaN;
       when = label || when;
       count = Number.isFinite(closeMs) ? Math.max(Math.ceil((closeMs - nowMs) / 3600000), 0) : null;
       unit = "h";
+      verb = "closes";
     } else {
       when = label || when;
       count = null;
     }
     rows.splice(rows.findIndex((x) => x.label === "Status"), 1, { label: "Status", value: r.tlLabel || r.tlState });
   }
+  // the date, under the status in the hover ("Closes 14 Oct"), now that the
+  // row no longer carries it; a timed launch's status row already has its words
+  if (clock && r.type !== "TL") {
+    const [word, ...date] = String(when).split(" ");
+    if (date.length) rows.splice(rows.findIndex((x) => x.label === "Status") + 1, 0, { label: word, value: date.join(" ") });
+  }
+  const words = rowWords(r, twin);
   return (
     <button className={`release-row${active ? " active" : ""}`} onClick={onClick} {...t.props(content)}>
       {state
         ? <span className="dot" style={{ background: STATE[state].color }} />
         : <span className="dot hollow" />}
-      <span className="who">
-        <span className="nm">{rowName(r.releaseName || r.name || r.artist)}</span>
-        <span className="when">{when}</span>
-      </span>
-      {count !== null && <span className="left">{count}<small>{unit}</small></span>}
+      <span className="nm">{words.artist}{words.rest && <span className="rest"> · {words.rest}</span>}</span>
+      {count !== null && <span className="left">{verb && <small className="verb">{verb}</small>}{count}<small>{unit}</small></span>}
       {clock && clock.opensIn > 0 && count === null && <span className="left none">·</span>}
     </button>
   );
