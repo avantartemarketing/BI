@@ -58,7 +58,7 @@
  * missing. Without the draw feed at all it is one row, the release, as
  * before. */
 import React, { useState } from "react";
-import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, useTip } from "../ui.jsx";
+import { Card, HorizonBadge, GROUP_DOTS, C, fmt, fmtDay, useTip , HATCH } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { inDraw } from "../../../shared/sellThrough.mjs";
 import { wordsOf } from "../vocab.mjs";
@@ -122,13 +122,16 @@ function ProductBar({ row, close, maxV, tips, height = 14, radius = 4 }) {
           }} />
         );
       })}
-      {/* demand with no room left: the winners' own tint, carrying on past
-          the point where the paler room stops - the change of ground under
-          the bar is what says it has nowhere to go */}
+      {/* demand with no room left, carrying on past the point where the
+          paler room stops, in the overshoot hatch the waterfall's "Beyond
+          sellout" step and the hero wear (HATCH): a texture, not a unit
+          tint, so it is not read as one more kind of unit (6 October 2026;
+          in the winners' tint it made the still-to-come segment look stuck
+          in the middle of the winners) */}
       {over > 0 && finite(edition) && (
         <div {...tp(tips.over)} style={{
           position: "absolute", top: inset, bottom: inset, left: `${pct(edition)}%`,
-          width: `${pct(edition + over) - pct(edition)}%`, background: SEG.winners,
+          width: `${pct(edition + over) - pct(edition)}%`, background: HATCH,
           borderTopRightRadius: innerR, borderBottomRightRadius: innerR,
         }} />
       )}
@@ -185,6 +188,10 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const soldOf = (r) => (r.sold ?? 0) + (r.soldAssumed ?? 0) + (finite(r.drafts) ? r.drafts : 0);
   const demandOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? (r.futurePredicted ?? 0) + (r.futureOversubscribed ?? 0) : 0) + (r.oversubscribed ?? 0);
   const unitsOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0);
+  // demand the works have no room for, for the key: entrants in hand past
+  // an edition and, at close, the further entrants a full work turns away
+  const futureOverAll = close ? rows.reduce((n, r) => n + (r.futureOversubscribed ?? 0), 0) : 0;
+  const overAll = rows.reduce((n, r) => n + (r.oversubscribed ?? 0), 0) + futureOverAll;
   // no headroom past the edition: the bar's end is the edition's, so the pale
   // room runs to the track's corner and no grey shows past it
   const unitsMax = Math.max(...rows.map((r) => Math.max(r.edition ?? 0, demandOf(r))), 1);
@@ -409,6 +416,14 @@ export default function SellThrough({ snap, horizon = "today" }) {
             key: "future", sw: <span style={swatch(SEG.future)} />, label: "Still to come", value: fmt(futureAll), x: { k: "st.future" },
             tip: { head: "Still to come", rows: [{ label: "Units", value: fmt(futureAll) }],
               body: "The projection's further units, spread over the products with room left." },
+          })}
+          {overAll > 0 && legendChip({
+            key: "over", sw: <span style={swatch(HATCH)} />, label: "Beyond the edition", value: "+" + fmt(overAll),
+            tip: { head: "Beyond the edition", rows: [
+              { label: "Units of demand", value: "+" + fmt(overAll) },
+              ...(close && futureOverAll > 0 ? [{ label: "Of which still to come, turned away", value: "+" + fmt(futureOverAll) }] : []),
+            ],
+              body: "Demand a full work has no room for: entrants in hand past its edition" + (close ? " and, at close, the projection's further entrants it turns away" : "") + ". Not counted in the units." },
           })}
         </div>
       </div>
