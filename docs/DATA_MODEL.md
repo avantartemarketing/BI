@@ -1713,12 +1713,11 @@ before any entrant is placed, so they take their room first; the row carries the
 
 **The card's colours are one ramp, and the message posted to Slack is the same rows.**
 Paid, drafts, the draw winners the entries imply and (at close) the units still to come are
-four tints of the page's blue, deepest to palest as the units get less certain. Demand past a
-product's edition (entrants in hand with no room and, at close, the further entrants a full
-work turns away) carries on where the paler room behind the bar stops, in the page's overshoot
-hatch rather than a unit tint, so it is not read as one more kind of unit, with a "Beyond the
-edition" entry in the key while there is any (6 October 2026; in the winners' tint it left the
-still-to-come segment looking stuck in the middle of the winners). `Post to Slack` sends those rows as a Slack message
+four tints of the page's blue, deepest to palest as the units get less certain, and nothing on
+the card is hatched. A product's bar is its edition: demand past it (entrants in hand with no
+room and, at close, the further entrants a full work turns away) is not drawn, it is a line in
+the row's hover, "Beyond the edition, no room" (6 October 2026; drawn past the sellout in the
+winners' tint it read as one more kind of unit). `Post to Slack` sends those rows as a Slack message
 composed on the server from the same snapshot (`server/slack.js`): the artist as a header;
 the works' shared title and the campaign day on one line; the table's title; Slack's `table`
 block (the Work column wrapping, the figures right-aligned), one row per work with its units
