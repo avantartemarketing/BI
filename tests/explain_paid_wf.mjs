@@ -33,6 +33,31 @@ assert.strictEqual(parts.reduce((a, b) => a + b, 0), Math.round(total), `the par
 assert.ok(text(sp).includes(`for each of the ${days} days after today`) && text(sp).includes("today still to come"), text(sp));
 assert.strictEqual(sp.value, "€" + fmt(total), "the figure printed");
 
+/* the run rate stopped where the build's limits say spending on is wasted (docs
+ * 5.4): the day the projection reaches the sellout, or the day the price of a
+ * unit passes the ROI floor; the flat run to the close beside it */
+{
+  const stopDay = "2026-09-26";
+  const stopped = w.paid.spendToDate + rate * 2;
+  const ic = { spendProjectedTotal: Math.round(total * 100) / 100, entriesProjected: w.paid.entriesProjected + 10, unitProjected: w.paid.unitProjected + 8 };
+  const st = { ...w, paid: { ...w.paid, spendProjectedTotal: Math.round(stopped * 100) / 100, stops: { sellout: stopDay, roiFloor: null, day: stopDay, rule: "sellout" }, ifContinued: ic } };
+  const ex = explain("paid.spend", { close: true }, { snap: st });
+  assert.ok(text(ex).includes(`${fmt(rate)}, over the days to 26 Sep, the day the projection reaches the sellout: €${fmt(Math.round(stopped) - Math.round(w.paid.spendToDate))}`), text(ex));
+  assert.ok(text(ex).includes("paid stops there"), text(ex));
+  assert.strictEqual(ex.value, "€" + fmt(stopped), "the stopped figure printed");
+  assert.ok(ex.compare.some((c) => c.label === "If it ran on" && c.v === "€" + fmt(total)), JSON.stringify(ex.compare));
+  const floor = explain("paid.spend", { close: true }, { snap: { ...st, paid: { ...st.paid, stops: { sellout: null, roiFloor: stopDay, day: stopDay, rule: "roi_floor" } } } });
+  assert.ok(text(floor).includes("over the days before 26 Sep, the day the price of a unit passes the ROI floor"), text(floor));
+  const now = explain("paid.spend", { close: true }, { snap: { ...st, paid: { ...st.paid, spendProjectedTotal: w.paid.spendToDate } } });
+  assert.ok(text(now).includes("26 Sep is the day the projection reaches the sellout, so paid stops now"), text(now));
+  assert.ok(!text(now).includes("Add the last full day"), "nothing added when it stops now");
+  // the units explanation says so too, and a snapshot without the fields reads as before
+  const un = explain("paid.units", { close: true }, { snap: st });
+  assert.ok(un.notes.some((n) => /stop on 26 Sep, the day the projection reaches the sellout/.test(n) && n.includes(`secure ${fmt(Math.round(ic.unitProjected))} units`)), un.notes.join(" | "));
+  assert.ok(!explain("paid.units", { close: true }, { snap: ws }).notes.some((n) => /stop on/.test(n)), "no stop, no note");
+  assert.ok(!text(explain("paid.spend", { close: true }, { snap: ws })).includes("stops"), "no stop, the run to the close as before");
+}
+
 /* the Paid spend step: the spend to date, today so far included */
 for (const close of [false, true]) {
   const ex = explain("wf.step", { key: "paid_spend", close }, { snap: w });

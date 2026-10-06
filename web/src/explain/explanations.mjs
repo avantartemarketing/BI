@@ -861,7 +861,10 @@ EXPLAIN["paid.units"] = (a, { snap: s }) => {
       { key: "funnel", gave: "Paid's entries still in the draw" },
       ...(hasBasket(s) ? [{ key: "basket", gave: "Paid's share of the target" }] : []),
     ],
-    notes: ["The same figure as the Paid column on the Channels card."],
+    notes: ["The same figure as the Paid column on the Channels card.",
+      ...(close && !s.complete && p.stops && p.stops.day && p.ifContinued && finite(p.ifContinued.unitProjected)
+        ? [`Paid's spend is projected to stop on ${dayOf(p.stops.day)}, ${p.stops.rule === "sellout" ? "the day the projection reaches the sellout" : "the day the price of a unit passes the ROI floor"}; had it run on to the close it would secure ${fmt(Math.round(p.ifContinued.unitProjected))} units.`]
+        : [])],
     method: "Data model 7",
   };
 };
@@ -880,6 +883,38 @@ EXPLAIN["paid.spend"] = (a, { snap: s }) => {
     const rate = finite(b.current) && b.current > 0 ? b.current
       : (finite(b.recommended) && b.daysLeft ? b.recommended : 0);
     const spent = p.spendToDate ?? 0;
+    // the run rate stops where the build's own limits say spending on is
+    // wasted (docs 5.4): the day the projection reaches the sellout, or the
+    // day the price of a unit passes the ROI floor; the flat run to the
+    // close is kept beside it
+    const stop = p.stops && p.stops.day ? p.stops : null;
+    const ic = p.ifContinued && finite(p.ifContinued.spendProjectedTotal) ? p.ifContinued : null;
+    if (stop) {
+      const added = Math.round(p.spendProjectedTotal) - Math.round(spent);
+      const why = stop.rule === "sellout" ? "the day the projection reaches the sellout" : "the day the price of a unit passes the ROI floor";
+      const upTo = stop.rule === "sellout" ? "to" : "before";
+      return {
+        where: "Paid spend / day", when: "At close",
+        name: "Spend projected at close", value: eur(p.spendProjectedTotal),
+        unit: "by the close",
+        say: "What the campaign will have spent by the close if the last full day's spend carries on for as long as spending is worth it.",
+        steps: [
+          seg`Start from the ${eur(spent)} spent so far${rest > 0 ? ", today so far included" : ""}.`,
+          ...(added > 0
+            ? [seg`Add the last full day's spend, ${eur(rate)}, over the days ${upTo} ${dayOf(stop.day)}, ${why}: ${eur(added)}.`,
+              seg`Nothing after it: paid stops there.`]
+            : [seg`Nothing more: ${dayOf(stop.day)} is ${why}, so paid stops now.`]),
+        ],
+        total: { v: eur(p.spendProjectedTotal), label: "projected spend" },
+        compare: [
+          ...(finite(p.spendBudget) ? [{ label: "Budget", v: eur(p.spendBudget), note: "The paid budget for the campaign." }] : []),
+          ...(ic ? [{ label: "If it ran on", v: eur(ic.spendProjectedTotal), note: "The same daily spend carried on to the close instead." }] : []),
+        ],
+        sources: [{ key: "meta", gave: "Daily spend" }, { key: "funnel", gave: "The organic channels' course" }],
+        notes: ["The recommendation on this card is not in it: it is the course the campaign is on today, stopped where spending on would be wasted."],
+        method: "Data model 5.4",
+      };
+    }
     const [fullPart, restPart] = roundParts([rate * days, rate * rest], Math.round(p.spendProjectedTotal) - Math.round(spent));
     return {
       where: "Paid spend / day", when: "At close",

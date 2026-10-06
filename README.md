@@ -692,7 +692,12 @@ no column settings and cut the names off); on a Today update, under the table at
 close forecast marked `BETA` ("Projected sell-through at close: 24%, 1,449 of 6,100 units on
 current results"): the figure the At close view's headline gives, words only until it has been
 checked against real closes (5 October 2026), nothing on an At close update or once the campaign
-is complete; then, in small type, the day the figures run to
+is complete; under it, while a paid campaign is running and has a recommendation, one line on the
+paid lever (6 October 2026): the forecast assumes paid at its current daily spend, and the line
+says whether there is room to scale paid further and the sell-through at close that might reach
+(the build's `paid.atRecommended`, the same projection with paid at the recommended spend), that
+there is no room, or that paid may need to decrease, or stop, and where that would leave the
+close; then, in small type, the day the figures run to
 (the page's as-of day, "so far" while that day is only partly in), the attribution when the
 page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still to come)
 and the two framing readings behind the table's figure in plain sentences, and last the

@@ -320,5 +320,35 @@ if (fs.existsSync(dir)) {
     if (print && /schnabel|warhol/.test(f)) console.log("\n" + asText(composeSellThroughBlocks(s)));
   }
 }
+// the paid lever under the beta line (6 October 2026): the forecast assumes paid at its
+// current daily spend, so the line says what the Paid card recommends instead and where
+// that might take the close - room to scale up, no room, a cut or a stop; nothing without
+// a running campaign, a recommendation, the figure at the recommended spend, on an At
+// close update or once the campaign is complete
+{
+  const withPaid = (current, recommended, pct, units, extra = {}) => ({ ...snap, ...extra,
+    paid: { budget: { current, recommended, cap: "pacing" }, atRecommended: recommended === null ? null : { spend: recommended, sellThrough: pct === null ? null : { pct, units } } } });
+  const sectionsOf = (s, o = {}) => parts(composeSellThroughBlocks(s, { today: "2026-09-17", ...o }).blocks).sections;
+  const line = (s, o) => sectionsOf(s, o)[3] ?? null;
+  const up = composeSellThroughBlocks(withPaid(1000, 1500, 0.36, 216), { today: "2026-09-17" });
+  check(parts(up.blocks).types === "header section section table section section context context", `the lever line is its own section under the beta line: ${parts(up.blocks).types}`);
+  check(parts(up.blocks).sections[2].endsWith("`BETA`"), "the beta line stays as it was");
+  check(line(withPaid(1000, 1500, 0.36, 216)) === "This assumes paid at current spend, €1,000 a day. It looks like there is room to scale paid further, to €1,500 a day, which might take sell-through at close to *36%*.",
+    `room to scale: ${line(withPaid(1000, 1500, 0.36, 216))}`);
+  check(line(withPaid(1000, 1500, 0.312, 187)) === "This assumes paid at current spend, €1,000 a day. It looks like there is room to scale paid further, to €1,500 a day, though it would make little difference to the sell-through at close.",
+    `room to scale, the same percentage: ${line(withPaid(1000, 1500, 0.312, 187))}`);
+  check(line(withPaid(1000, 1000, 0.31, 186)) === "This assumes paid at current spend, €1,000 a day. There is no room to scale paid further.",
+    `no room: ${line(withPaid(1000, 1000, 0.31, 186))}`);
+  check(line(withPaid(1000, 1000.4, 0.31, 186)) === "This assumes paid at current spend, €1,000 a day. There is no room to scale paid further.", "a move that rounds to nothing is no move");
+  check(line(withPaid(1000, 700, 0.28, 168)) === "This assumes paid at current spend, €1,000 a day. It looks like we might need to decrease paid spend, to €700 a day, which would leave us at *28%*.",
+    `a cut: ${line(withPaid(1000, 700, 0.28, 168))}`);
+  check(line(withPaid(1000, 0, 0.25, 150)) === "This assumes paid at current spend, €1,000 a day. It looks like we might need to stop paid spend, which would leave us at *25%*.",
+    `a stop: ${line(withPaid(1000, 0, 0.25, 150))}`);
+  check(line(withPaid(0, 1500, 0.36, 216)) === null && line(withPaid(null, 1500, 0.36, 216)) === null, "no line without a running campaign");
+  check(line(withPaid(1000, null, 0.36, 216)) === null && line(withPaid(1000, 1500, null, 216)) === null, "no line without a recommendation or its figure");
+  check(line(withPaid(1000, 1500, 0.36, 216, { complete: true })) === null, "no line once the campaign is complete");
+  check(!JSON.stringify(composeSellThroughBlocks(withPaid(1000, 1500, 0.36, 216), { today: "2026-09-17", horizon: "close" }).blocks).includes("assumes paid"), "no line on the At close update");
+  check(up.text === "Test Artist: 21% sold through, 126 of 600 units", `the notification text is still the headline: ${up.text}`);
+}
 console.log(failed ? `${failed} failure(s)` : "ok: slack message");
 process.exit(failed ? 1 : 0);

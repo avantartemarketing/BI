@@ -1359,7 +1359,8 @@ far included, against the same even share of the budget. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
-intervention shown alongside, never baked into the projection.
+intervention shown alongside, never baked into the projection. The trajectory does stop where
+the recommendation's own limits say spending on would be wasted (Paid, below).
 
 **Organic channels** - the remaining volume follows the channel's *historic shape curve*, the
 entry-timed one its plan reads (§5.3); its level scales with demonstrated performance, trusted in
@@ -1375,11 +1376,18 @@ has actually delivered.
 
 **Paid** - projection = **projected spend ÷ projected efficiency**, day by day:
 ```
-spend_fwd(d) = current daily spend run-rate            # not the recommendation
+spend_fwd(d) = current daily spend run-rate            # not the recommendation; nothing from the stop on
 cpe_fwd(d)   = trailing-3-day CPE × path(d)            # the cost path of §7: rises with spend so far, the close's lift on its last days
 entries_fwd  = Σ spend_fwd(d) / cpe_fwd(d)
+stop         = the first of two days (6 October 2026): the day Σ entries_fwd × rate reaches the
+               sellout gap of §7 (edition − secured − the organic channels' course; that day's
+               spend cut to the units still needed), and the day cpe_fwd(d) before the close's
+               lift passes the ROI floor's price (§7 cpe_max, read where the floor is). At the
+               recommended spend the stop lands on the close or not at all, which is what sized
+               it; a paced cut still above the floor's spend stops before the close.
 ```
-Fallback when no spend history exists yet: paid target × remaining share of the paid curve.
+Fallback when no spend history exists yet: paid target × remaining share of the paid curve,
+which nothing stops; with a price and no spend there is nothing to project.
 Projected *purchases* from any projected entries convert at the 0.8 eligible-entry→order rate.
 
 ---
@@ -1910,8 +1918,15 @@ the paid column of the channels card, so the Paid spend card's bar and that colu
 figure; `entriesToDate` and `entriesProjected` stay the paid campaign's draw entries, the
 quantity the CPE and the ROI are priced on. At close, `spendProjectedTotal` is `spendToDate`
 (today so far included) plus the last full day's spend over the full days after today and the
-share of today still to come, and `entriesProjected` is `entriesToDate` plus the entries that
-spend buys on the same days, so neither reads below its figure to date. `daily[]` runs over the full days the rules read;
+share of today still to come, up to the day the run rate stops (§5.4), and `entriesProjected` is
+`entriesToDate` plus the entries that spend buys on the same days, so neither reads below its
+figure to date. `stops` says where it stops: `sellout` and `roiFloor` (the day each would stop it,
+ISO dates or null), `day` the first of the two and `rule` which; `ifContinued` carries the flat
+run to the close beside it (`entriesProjected`, `unitProjected`, `spendProjectedTotal`), for the
+card's hover; `atRecommended` the same projection at the recommended daily spend (`spend`), with
+its own `stops` and `sellThrough` (`units`, `pct`: the sell-through at close with paid at that
+spend and the organic channels as they are, placed by the sell-through's own rule), the figure the
+Slack update's paid line prints. All three are null once the campaign is complete. `daily[]` runs over the full days the rules read;
 on a live day the as-of day so far rides at the end as one more row marked `partial: true`
 (its spend and entries, no ROI point), so the Paid ROI chart's bars sum to `spendToDate` and
 the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip that row.

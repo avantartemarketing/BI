@@ -359,7 +359,9 @@ plan by any day is the even daily share of its target (§6).
 ## 6. Forward projections
 
 Projections describe the **current trajectory** - the paid-spend recommendation
-is the intervention shown alongside, never baked into the projection.
+is the intervention shown alongside, never baked into the projection. The
+trajectory does stop where the recommendation's own limits say spending on
+would be wasted (Paid, below).
 
 **Organic channels.** The remaining volume follows the channel's historic
 entry-timed shape (§5); its level scales with demonstrated performance, trusted
@@ -384,6 +386,19 @@ until then; §7). Projected entries convert to units at 0.8.
 Today counts for what is left of it, so the spend projected at close is the spend
 to date, today so far included, plus the last full day's spend over the full days
 after today and the rest of today, and the entries in hand today stay in.
+The run rate does not run blindly to the close (6 October 2026): it stops where
+the recommendation's two limits (§7) say spending on would be wasted - on the day
+the units it buys close the gap the organic channels leave to the sellout (that
+day's spend cut to the units still needed), and before the first day the price of
+a converting unit on the cost path, read before the close's lift as the ROI floor
+is, passes the floor's price. So the spend projected at close runs to the stop or
+the close, whichever comes first, and the units beside it are what those days buy.
+At the recommended spend the stops land on the close or not at all, which is what
+sized it; a paced cut still above the floor's spend stops before the close. The
+flat run to the close stays beside the projection for the card's hover
+(`ifContinued`), and the same projection at the recommended spend
+(`atRecommended`, with the sell-through at close it would reach) gives the Slack
+update its line on the paid lever.
 Paid starts the day after the announce and runs to the close; its plan by today is the
 even daily budget's share of its target over those days, not the panel's historic paid
 shape, so every card reads the same paid plan.
