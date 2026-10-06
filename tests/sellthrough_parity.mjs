@@ -30,6 +30,7 @@ for (const c of fixtures.cases) {
     unattributedSold: out.unattributedSold,
     measure: out.measure,
     futurePredicted: out.products.map((p) => p.futurePredicted),
+    futureEntriesPredicted: out.futureEntriesPredicted,
     futureOversubscribed: out.products.map((p) => p.futureOversubscribed),
     futureRule: out.allocation.futureRule,
     futureEntrants: out.allocation.futureEntrants,

@@ -954,6 +954,27 @@ def _release_price(panel: pd.DataFrame, release: dict | None) -> float:
     return price * RATES_TO_EUR.get(str((release or {}).get("currency") or "EUR").upper(), 1.0)
 
 
+def basket_members(panel: pd.DataFrame | None, names: list[str] | None) -> list[dict]:
+    """The basket's launches with the two figures the Benchmark basket card
+    shows (README, What the dashboard shows): the units the launch sold and
+    its unit price in euros, in the basket's order, with the name, artist,
+    title and quarter the sidebar shows. A name the panel does not carry is
+    left out; a figure the panel lacks is None."""
+    if panel is None or not len(panel) or not names:
+        return []
+    by = panel.drop_duplicates("release_name").set_index("release_name")
+    out = []
+    for n in names:
+        n = str(n)
+        if n not in by.index:
+            continue
+        r = by.loc[n]
+        price = _num(r.get("unit_price_eur")) or _num(r.get("unit_price"))
+        out.append({"name": n, "artist": str(r.get("artist") or ""), "title": str(r.get("title") or ""), "quarter": str(r.get("quarter") or ""),
+                    "units": _num(r.get("tot_total_product_units")), "price": price if price and price > 0 else None})
+    return out
+
+
 def _ready(bid: str, name: str, desc: str, members: list[str], panel: pd.DataFrame) -> dict:
     return {
         "id": bid,

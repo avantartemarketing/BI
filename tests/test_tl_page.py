@@ -170,6 +170,12 @@ def check_page(s: dict, label: str) -> None:
     bm = s.get("benchmark")
     if bm:
         check(set(bm.get("kByGroup") or {}) == set(tl.GROUPS) and bm.get("channelsOff") is not None, f"{label}: the benchmark block carries the LE keys")
+        # the Benchmark basket card: the basket's launches with units and price, in its order
+        mem = bm.get("members")
+        check(isinstance(mem, list) and len(mem) == (bm.get("basket") or {}).get("n") and all(m.get("name") and "units" in m and "price" in m for m in mem),
+              f"{label}: the benchmark names its basket's launches with units and price ({len(mem) if isinstance(mem, list) else mem} vs {(bm.get('basket') or {}).get('n')})")
+        if isinstance(mem, list):
+            check([m["name"] for m in mem] == list((bm.get("basket") or {}).get("members") or []), f"{label}: the launches are the basket's, in its order")
 
 
 if not tl.PANEL.exists():

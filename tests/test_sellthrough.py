@@ -49,6 +49,7 @@ for c in fixtures["cases"]:
         "unattributedSold": out["unattributedSold"],
         "measure": out["measure"],
         "futurePredicted": [p["futurePredicted"] for p in out["products"]],
+        "futureEntriesPredicted": out["futureEntriesPredicted"],
         "futureOversubscribed": [p["futureOversubscribed"] for p in out["products"]],
         "futureRule": out["allocation"]["futureRule"],
         "futureEntrants": out["allocation"]["futureEntrants"],

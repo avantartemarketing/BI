@@ -237,7 +237,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
         "A draw round's winners whose claim the order feed has not caught up with yet still count, at the pre-order rate, until their orders land, so claiming pre-orders never reads as sell-through going down" +
         (finite(st.claimsInFlight) && st.claimsInFlight > 0 ? ` (${fmt(st.claimsInFlight)} landing now). ` : ". ") +
         "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them." +
-        (close ? " Still to come is the projection's further units, spread over the room left." : ""),
+        (close ? " Still to come is the projection's further entrants, taken to look like those so far and placed where there is room; a full work's share is turned away." : ""),
   };
   /* No copy under the rows. The allocation's account lives in the popup of
      the draw-winners key, the split sales in the paid key's, and the

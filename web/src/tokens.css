@@ -224,6 +224,23 @@ button[title], select[title] { cursor: pointer; }
 .chan-loz.search_direct_other { background: #ece9e1; color: #5c5849; }
 .chan-loz.paid { background: #e3ebf9; color: #2f5fb3; }
 
+/* ---------- benchmark basket card ---------- */
+/* the dotted benchmark swatch the legends use, as the card's mark */
+.swatch-bm { width: 10px; height: 10px; box-sizing: border-box; border: 1.5px dotted var(--ref-line); border-radius: 2px; flex: 0 0 10px; }
+.basket-cols, .basket-row { display: grid; grid-template-columns: minmax(0, 1fr) 56px 64px; gap: 12px; align-items: center; }
+.basket-cols { height: 22px; font-size: 11.5px; color: var(--muted); }
+.basket-cols span, .basket-row .num { text-align: right; font-variant-numeric: tabular-nums; }
+.basket-rows { flex: 1; min-height: 0; overflow-y: auto; }
+.basket-row {
+  height: 28px; width: 100%; padding: 0; border: none; border-top: 1px solid var(--hairline); border-radius: 0;
+  background: none; font-family: inherit; font-size: 12.5px; color: var(--ink); text-align: left;
+}
+button.basket-row { cursor: pointer; }
+button.basket-row:hover { background: var(--bg); }
+.basket-row .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.basket-row .units { font-weight: 500; }
+.basket-row .price { color: var(--muted); }
+
 /* segmented toggle */
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 .seg button {

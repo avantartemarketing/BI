@@ -61,6 +61,16 @@ sell-through(product) = units paid
                       + entries in hand counted on the product × 0.8
 ```
 
+At close the row adds the units the projection says are still to come that
+land on it: the entrants still to come are taken to look like the entrants so
+far (every entry pattern as a fresh entrant with the same works and quantity,
+scaled to the projection) and placed by the same allocation rule against the
+room left, so a popular work's run is never read as the quiet one's, a
+flexible entrant goes where there is room, and what a work that is nearly sold
+out cannot take is turned away rather than handed to the others (6 October
+2026). Without an entry pattern to read, the units follow the works' demand so
+far, each held to its room, the excess going on to the works with room.
+
 Until the feeds carry sales by product and draft orders, the card wears an
 **Incomplete data** stamp: the sales the draw cannot name a product for are
 split across the products by edition size, and drafts are not drawn.

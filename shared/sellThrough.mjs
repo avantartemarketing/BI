@@ -264,6 +264,53 @@ export function allocateEntries({ products, patterns, rate = 0.8, preorderRate =
   };
 }
 
+/* The units still to come where there is no entry pattern to read (a release
+ * without the draw feed): spread over the products by their demand so far
+ * (units paid, drafts and the draw winners the entries imply), each held to
+ * the room it has left, the excess going on to the products with room in the
+ * same proportion (docs §6.3; mirror of etl/sellthrough.py split_future).
+ * Room decides only where demand has nothing to say. `room` holds null for a
+ * product without an edition: it takes without limit. With patterns the
+ * entrants still to come are placed by the allocator instead (futureCohort). */
+export function splitFuture(future, demand, room) {
+  const n = demand.length;
+  if (n === 0 || !(future > 0)) return demand.map(() => 0);
+  const caps = room.map((r) => (r === null || r === undefined ? null : Math.max(Number(r), 0)));
+  const share = demand.map(() => 0);
+  let left = Number(future);
+  if (demand.reduce((t, v) => t + v, 0) > 0) {
+    let active = [];
+    for (let i = 0; i < n; i++) if (demand[i] > 0 && (caps[i] === null || caps[i] > 0)) active.push(i);
+    for (let round = 0; round <= n; round++) {
+      if (left <= 1e-9 || !active.length) break;
+      const w = active.reduce((t, i) => t + demand[i], 0);
+      let spilled = 0;
+      const next = [];
+      for (const i of active) {
+        const give = left * demand[i] / w;
+        const capLeft = caps[i] === null ? null : caps[i] - share[i];
+        if (capLeft !== null && give >= capLeft - 1e-9) { spilled += give - capLeft; share[i] = caps[i]; }
+        else { share[i] += give; next.push(i); }
+      }
+      left = spilled; active = next;
+    }
+  }
+  if (left > 1e-9) {
+    // nothing with demand can take it: the room left elsewhere, else the products without an edition
+    const roomy = [];
+    for (let i = 0; i < n; i++) if (caps[i] !== null && caps[i] - share[i] > 1e-9) roomy.push(i);
+    if (roomy.length) {
+      const w = roomy.reduce((t, i) => t + (caps[i] - share[i]), 0);
+      for (const i of roomy) share[i] += left * (caps[i] - share[i]) / w;
+    } else {
+      const free = [];
+      for (let i = 0; i < n; i++) if (caps[i] === null) free.push(i);
+      for (const i of free) share[i] += left / free.length;
+    }
+  }
+  return share;
+}
+
 /* The entrants still to come, taken to look like the entrants so far (6
  * October 2026): every pattern as a fresh entrant with the same products (the
  * ones entered, won or bought since or not) and the same quantity, scaled so their units add up to
@@ -337,9 +384,9 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
   // units still to come: the entrants still to come taken to look like the
   // entrants so far and placed by the same allocator against the room left
   // (futureCohort), so a full work's share is oversubscribed rather than
-  // handed to the work with room; over the room left where there is no
-  // pattern to read; by each product's share of the demand so far without
-  // editions. Before (to 6 October 2026) the units went over the room left,
+  // handed to the work with room; by each product's demand so far, held to
+  // its room, where there is no pattern to read (splitFuture). Before (to 6
+  // October 2026) the units went over the room left,
   // which put nearly all of them on the work with room once another was
   // full - Cattelan's Novecento read 88% at close on a third of the entries -
   // and read 15 points high on the works that ended below 90% of their
@@ -347,23 +394,18 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
   // for this rule, which also leans less high over every work (4 against 6).
   const future = Math.max(Number(futureUnits) || 0, 0);
   const roomAfter = alloc.products.map((a, i) => (a.room === null ? null : Math.max(a.room - a.shown, 0)));
-  const roomSum = allEditions ? roomAfter.reduce((t, v) => t + v, 0) : null;
   const draftsOf = (p) => (finite(p.drafts) ? Number(p.drafts) : 0);
   const demand = alloc.products.map((a, i) => (Number(products[i].sold) || 0) + assumed[i] + draftsOf(products[i]) + a.shown);
-  const demandSum = demand.reduce((t, v) => t + v, 0);
   const toSet = productSets(products);
   const cohort = allEditions && future > 0 ? futureCohort(patterns, future / alloc.rate, toSet) : null;
   const placed = cohort ? allocateEntries({
     products: products.map((p, i) => ({ ...p, sold: (Number(p.sold) || 0) + assumed[i] + draftsOf(p) + alloc.products[i].shown, drafts: 0, claimsInFlight: 0 })),
     patterns: cohort, rate: alloc.rate, preorderRate: alloc.rate,
   }) : null;
-  const futureShare = alloc.products.map((a, i) => {
-    if (placed) return placed.products[i].shown;
-    if (allEditions) return roomSum > 0 ? future * (roomAfter[i] / roomSum) : 0;
-    return demandSum > 0 ? future * (demand[i] / demandSum) : (products.length ? future / products.length : 0);
-  });
+  const split = placed ? null : splitFuture(future, demand, roomAfter);
+  const futureShare = alloc.products.map((a, i) => (placed ? placed.products[i].shown : split[i]));
   const futureOver = alloc.products.map((a, i) => (placed ? placed.products[i].oversubscribed : 0));
-  const futureRule = placed ? "cohort" : allEditions ? "room" : "demand";
+  const futureRule = placed ? "cohort" : "demand";
   // the references, as the release's pace applied to each product's edition:
   // a product is expected to sell through at the rate the release is
   const paceOf = (v) => (finite(v) && finite(edition) && Number(edition) > 0 ? Number(v) / Number(edition) : null);

@@ -35,6 +35,7 @@ import TargetSetting from "./TargetSetting.jsx";
 import TLTargets from "./TLTargets.jsx";
 import { TLChips, TLSignupsOutcome } from "./TLPage.jsx";
 import SellForecast from "./modules/SellForecast.jsx";
+import BasketCard from "./modules/BasketCard.jsx";
 import Permissions from "./Permissions.jsx";
 import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
 import { wordsOf } from "./vocab.mjs";
@@ -207,7 +208,7 @@ export default function App() {
       </nav>
       <main className="content">
         {view === "permissions" && me?.admin ? <Permissions me={me} /> :
-          snap ? <ReleasePage snap={snap} onSaved={onSaved} st={st} onRefreshed={onRefreshed} /> :
+          snap ? <ReleasePage snap={snap} onSaved={onSaved} st={st} onRefreshed={onRefreshed} index={groups.all} onOpen={pick} /> :
           snapError ? (
             <div style={{ color: "#6c6b68", maxWidth: 520, lineHeight: 1.5 }}>
               {snapError.pending
@@ -548,7 +549,7 @@ function DirectToggle({ on, onChange, share, snap }) {
   );
 }
 
-function ReleasePage({ snap, onSaved, st, onRefreshed }) {
+function ReleasePage({ snap, onSaved, st, onRefreshed, index, onOpen }) {
   const [tab, setTab] = useState("overview");
   const [horizon, setHorizon] = useState("today");
   const [directSpread, setDirectSpreadState] = useState(readDirectPref);
@@ -606,6 +607,8 @@ function ReleasePage({ snap, onSaved, st, onRefreshed }) {
       case "tl_signups": return isTL && view.sales ? <TLSignupsOutcome snap={view} /> : null;
       // a timed launch's forecast of the window's sales by work, before it opens
       case "tl_forecast": return isTL && view.sellForecast ? <SellForecast snap={view} horizon={horizon} /> : null;
+      // the launches the benchmark is read from; a row opens that launch's page
+      case "basket": return <BasketCard snap={view} index={index} onOpen={onOpen} />;
       default: return null;
     }
   };

@@ -15,8 +15,9 @@ This reads every closed draw with two or more works and known editions at a
 share of its window (25, 40, 60 and 80%), builds the entry patterns the page
 would have had at that day from the event feed, and runs the rule with the
 release's total entries still to come taken as known, so the test is the
-split alone. Each work's sell-through at close under the rule, and under the
-room rule it replaced, is read against the units finally paid. Aggregates
+split alone. Each work's sell-through at close under the rule, under the
+room rule it replaced and under the demand split the page falls back on
+without a pattern (split_future), is read against the units finally paid. Aggregates
 only: no account id or address is printed.
 
 Run from the repo root: python3 etl/analysis/split_backtest.py [--cut 0.4]
@@ -33,7 +34,7 @@ import pandas as pd
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "etl"))
-from sellthrough import sell_through_products  # noqa: E402
+from sellthrough import sell_through_products, split_future  # noqa: E402
 
 RATE, PRE_RATE = 0.8, 0.95
 CUTS = [0.25, 0.4, 0.6, 0.8]
@@ -127,10 +128,12 @@ def main() -> None:
             today = [r["sold"] + r["soldAssumed"] + (r["drafts"] or 0) + r["shown"] for r in out["products"]]
             room_after = [max(eds[i] - today[i], 0.0) for i in range(len(ps))]
             rs = sum(room_after)
+            # the demand split (split_future): the rule the page falls back on without a pattern to read
+            by_demand = split_future(future_units, today, room_after)
             for i, r in enumerate(out["products"]):
                 actual = min(float(final.get(i, 0)), eds[i])
                 old = min(today[i] + (future_units * room_after[i] / rs if rs > 0 else 0.0), eds[i])
-                for rule, pred in (("room (before)", old / eds[i]), ("cohort (now)", r["pctClose"])):
+                for rule, pred in (("room (before)", old / eds[i]), ("demand split", min(today[i] + by_demand[i], eds[i]) / eds[i]), ("cohort (now)", r["pctClose"])):
                     rows.append({"release": s["id"], "cut": f, "work": r["name"][:24], "rule": rule, "today": today[i] / eds[i],
                                  "pred": pred, "actual": actual / eds[i], "futureRule": out["allocation"]["futureRule"]})
     df = pd.DataFrame(rows)
@@ -145,7 +148,7 @@ def main() -> None:
         print(f"  at {cut:.0%}  every work: {line}\n          below 90%:  {lag_line} ({lag.groupby(['release', 'work']).ngroups} works)")
     show = kept[kept["cut"] == (0.4 if 0.4 in cuts else cuts[0])]
     piv = show.pivot_table(index=["release", "work", "today", "actual"], columns="rule", values="pred").reset_index()
-    for c in ["today", "actual", "room (before)", "cohort (now)"]:
+    for c in ["today", "actual", "room (before)", "demand split", "cohort (now)"]:
         piv[c] = (piv[c] * 100).round(0).astype(int)
     pd.set_option("display.width", 200)
     print(f"\nwork by work at {show['cut'].iloc[0]:.0%} of the window, in % of the edition")
