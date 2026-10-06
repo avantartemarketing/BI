@@ -223,7 +223,7 @@ function model(snap, { horizon = "today", today, direct = false } = {}) {
   const rec = finite(pb.recommended) ? num(pb.recommended) : null;
   const recPct = ar && ar.sellThrough && finite(ar.sellThrough.pct) ? num(ar.sellThrough.pct) : null;
   const lever = snap.complete || !(cur > 0) || rec === null || recPct === null || closePct === null ? null
-    : { current: cur, recommended: rec, move: Math.round(rec) - Math.round(cur), pct: recPct, nowPct: closePct };
+    : { current: cur, recommended: rec, move: Math.round(rec) - Math.round(cur), pct: recPct, units: num(ar.sellThrough.units) };
 
   // the totals, in words
   const totals = [
@@ -363,27 +363,24 @@ const closeLine = (m) => {
     : `Projected sell-through at close: *${pct(c.pct)}*, ${fmt(c.units)} of ${fmt(c.edition)} units on current results \`BETA\``;
 };
 /* The paid lever, the line under the close forecast (6 October 2026): the
- * forecast assumes paid at its current daily spend, so the line says what the
- * Paid card recommends instead and where that might take the close - room to
+ * forecast holds paid at its current daily spend, so the line says what the
+ * Paid card recommends instead and where that would take the close - room to
  * scale paid up and the sell-through at close it might reach, no room, or a
  * cut (a stop when the recommendation is nothing) and the sell-through it
- * would leave. A scale-up that rounds to the same percentage says so rather
- * than promising the figure the forecast already prints. Nothing without the
- * forecast line, a running campaign or a recommendation. */
+ * would leave. The sell-through is given to one decimal and in units, so a
+ * move the forecast's whole percentage hides still shows. Nothing without
+ * the forecast line, a running campaign or a recommendation. */
 const eur = (v) => `€${fmt(v)}`;
+const pct1 = (v) => `${(Math.round(num(v) * 1000) / 10).toFixed(1)}%`;
 const leverLine = (m) => {
   const l = m.lever;
   if (m.close || !l) return null;
-  const holds = `This assumes paid at current spend, ${eur(l.current)} a day.`;
-  if (l.move > 0) {
-    const to = pct(l.pct) === pct(l.nowPct)
-      ? "though it would make little difference to the sell-through at close"
-      : `which might take sell-through at close to *${pct(l.pct)}*`;
-    return `${holds} It looks like there is room to scale paid further, to ${eur(l.recommended)} a day, ${to}.`;
-  }
+  const holds = `This assumes paid stays at ${eur(l.current)} a day.`;
+  const at = `*${pct1(l.pct)}* (${fmt(l.units)} units)`;
+  if (l.move > 0) return `${holds} It looks like there is room to scale paid further, to ${eur(l.recommended)} a day, which might take sell-through at close to ${at}.`;
   if (l.move < 0) {
     const cut = l.recommended > 0 ? `decrease paid spend, to ${eur(l.recommended)} a day` : "stop paid spend";
-    return `${holds} It looks like we might need to ${cut}, which would leave us at *${pct(l.pct)}*.`;
+    return `${holds} It looks like we might need to ${cut}, which would leave us at ${at}.`;
   }
   return `${holds} There is no room to scale paid further.`;
 };
