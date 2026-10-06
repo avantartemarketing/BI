@@ -1549,9 +1549,15 @@ in hand       eligible draw entries still in the draw, ALLOCATED across the prod
               sets its own)
 ```
 
-plus, at close, the projection's further units spread over the products with room left.
-Everything is capped against the product's room (edition − sold) only where it is drawn; the
-uncapped demand is kept so an oversubscribed product stays visible as such.
+plus, at close, the projection's further units spread over the products by their demand so
+far (units paid, drafts and the draw winners the entries imply), each held to the room it has
+left after those, the excess going on to the products with room in the same proportion
+(`split_future`, `splitFuture`). Until 6 October 2026 the further units were spread over the
+room left, which handed the quiet work of a pair the larger share of the release's projection
+because the popular one had used its room: on Cattelan's Novecento and Not Afraid of Love it
+read 63/37 where the works' demand ran 31/69. Room decides only where demand has nothing to
+say. Everything is capped against the product's room (edition − sold) only where it is drawn;
+the uncapped demand is kept so an oversubscribed product stays visible as such.
 
 **Where the per-product data comes from.** A release runs **one draw per product**, so the
 event feed's `draw_id` is the product dimension (§2.2: exact against the multiset cap on 38 of

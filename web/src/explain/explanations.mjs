@@ -950,7 +950,7 @@ EXPLAIN["st.head"] = (a, { snap: s }) => {
   const steps = [seg`Units paid: ${n(rSold)}.`];
   if (rDrafts > 0) steps.push(seg`Add the draft orders awaiting payment: ${n(rDrafts)}.`);
   if (draw > 0) steps.push(seg`Add the orders expected from the draw: ${drill(n(rDraw), "st.draw")}.`);
-  if (close && future > 0) steps.push(seg`Add the units still to come by the close, the projection's further units spread over the room left: ${n(rFuture)}.`);
+  if (close && future > 0) steps.push(seg`Add the units still to come by the close, the projection's further units spread over the works by their demand so far, each held to its room: ${n(rFuture)}.`);
   // the units column of a release drawn as one row explains its units, not the %
   const asUnits = !!(a && a.as === "units");
   if (ed && !asUnits) steps.push(seg`${n(units)} of the ${n(ed)} units in the edition${head >= 1 && units > ed ? ", held at the whole edition" : ""}.`);
@@ -998,7 +998,7 @@ EXPLAIN["st.row"] = (a, { snap: s }) => {
     const held = finite(r.predicted) && r.predicted - shown >= 0.05;
     steps.push(seg`Add the ${n(r.allocated)} units the people still in the draw are counted on here, at ${pct(rate)}${finite(pre) && pre !== rate ? ` (${pct(pre)} for pre-order entries)` : ""}${held ? ", held to the room left" : ""}: ${n(rShown)}.`);
   }
-  if (close && future > 0) steps.push(seg`Add its share of the units still to come by the close: ${n(rFuture)}.`);
+  if (close && future > 0) steps.push(seg`Add its share of the units still to come by the close, by its demand so far against the other works' and held to its room: ${n(rFuture)}.`);
   const hasEd = finite(r.edition) && r.edition > 0;
   // the row's units column ("208 of 1,000") explains its units, closing on
   // them in the total line; the % column its %

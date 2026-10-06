@@ -61,6 +61,13 @@ sell-through(product) = units paid
                       + entries in hand counted on the product × 0.8
 ```
 
+At close the row adds its share of the units the projection says are still to
+come, split over the products by their demand so far (paid, drafts and the
+entries in hand) and held to each product's room, so a popular work's run is
+never read as the quiet one's: with a 70/30 split in demand the further units
+go 70/30, and what a work that is nearly sold out cannot take goes to the
+others with room.
+
 Until the feeds carry sales by product and draft orders, the card wears an
 **Incomplete data** stamp: the sales the draw cannot name a product for are
 split across the products by edition size, and drafts are not drawn.

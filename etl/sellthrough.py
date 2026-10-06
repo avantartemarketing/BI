@@ -255,6 +255,55 @@ def _r4(v: float) -> float:
     return round(v * 10000) / 10000
 
 
+def split_future(future: float, demand: list[float], room: list) -> list[float]:
+    """The units still to come by the close, spread over the products by their
+    demand so far - units paid, drafts and the draw winners the entries imply -
+    each held to the room it has left, the excess going on to the products
+    with room in the same proportion (docs §6.3; mirror of splitFuture). A
+    product's own demand says how likely it is to sell through: the room rule
+    this replaces handed a quiet work the larger share of the release's
+    projection because the popular one had used its room. Room decides only
+    where demand has nothing to say: with no demand on any product the units
+    spread over the room left (evenly without editions), and what every
+    product with demand cannot take goes to the room left elsewhere. `room`
+    holds None for a product without an edition: it takes without limit."""
+    n = len(demand)
+    if n == 0 or future <= 0:
+        return [0.0] * n
+    caps = [None if r is None else max(float(r), 0.0) for r in room]
+    share = [0.0] * n
+    left = float(future)
+    if sum(demand) > 0:
+        active = [i for i in range(n) if demand[i] > 0 and (caps[i] is None or caps[i] > 0)]
+        for _ in range(n + 1):
+            if left <= 1e-9 or not active:
+                break
+            w = sum(demand[i] for i in active)
+            give = {i: left * demand[i] / w for i in active}
+            spilled, nxt = 0.0, []
+            for i in active:
+                cap_left = None if caps[i] is None else caps[i] - share[i]
+                if cap_left is not None and give[i] >= cap_left - 1e-9:
+                    spilled += give[i] - cap_left
+                    share[i] = caps[i]
+                else:
+                    share[i] += give[i]
+                    nxt.append(i)
+            left, active = spilled, nxt
+    if left > 1e-9:
+        # nothing with demand can take it: the room left elsewhere, else the products without an edition
+        roomy = [i for i in range(n) if caps[i] is not None and caps[i] - share[i] > 1e-9]
+        if roomy:
+            w = sum(caps[i] - share[i] for i in roomy)
+            for i in roomy:
+                share[i] += left * (caps[i] - share[i]) / w
+        else:
+            free = [i for i in range(n) if caps[i] is None]
+            for i in free:
+                share[i] += left / len(free)
+    return share
+
+
 def sell_through_products(products: list[dict], patterns: list[dict], rate: float = 0.8, edition=None,
                           sold_total=None, future_units: float = 0.0, expected_today=None,
                           benchmark_today=None, benchmark_close=None, preorder_rate=None) -> dict:
@@ -275,21 +324,14 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
     with_assumed = [{**p, "sold": float(p.get("sold") or 0) + assumed[i]} for i, p in enumerate(products)]
     alloc = allocate_entries(with_assumed, patterns, rate, preorder_rate)
     future = max(float(future_units or 0), 0.0)
-    room_after = [None if a["room"] is None else max(a["room"] - a["shown"], 0.0) for a in alloc["products"]]
-    room_sum = sum(room_after) if all_editions else None
     def drafts_of(p):
         return float(p["drafts"]) if _finite(p.get("drafts")) else 0.0
+    # each product's demand so far, and the room it has left for more (docs §6.3)
     demand = [float(products[i].get("sold") or 0) + assumed[i] + drafts_of(products[i]) + a["shown"]
               for i, a in enumerate(alloc["products"])]
-    demand_sum = sum(demand)
-    future_share = []
-    for i, a in enumerate(alloc["products"]):
-        if all_editions:
-            future_share.append(future * (room_after[i] / room_sum) if room_sum > 0 else 0.0)
-        elif demand_sum > 0:
-            future_share.append(future * (demand[i] / demand_sum))
-        else:
-            future_share.append(future / len(products) if products else 0.0)
+    # a product's room already stands net of its drafts (allocate_entries): what is left after the draw's winners
+    room_after = [None if a["room"] is None else max(a["room"] - a["shown"], 0.0) for a in alloc["products"]]
+    future_share = split_future(future, demand, room_after)
 
     def pace_of(v):
         return float(v) / float(edition) if _finite(v) and _finite(edition) and float(edition) > 0 else None

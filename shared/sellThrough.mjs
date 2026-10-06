@@ -270,6 +270,51 @@ export function allocateEntries({ products, patterns, rate = 0.8, preorderRate =
  * the rest of the release's sold units (private room, pre-orders, re-offers)
  * that no product can be named for yet, and it is carried at release level
  * rather than guessed onto products. */
+/* The units still to come by the close, spread over the products by their
+ * demand so far (units paid, drafts and the draw winners the entries imply),
+ * each held to the room it has left, the excess going on to the products with
+ * room in the same proportion (docs §6.3; mirror of etl/sellthrough.py
+ * split_future). Room decides only where demand has nothing to say. `room`
+ * holds null for a product without an edition: it takes without limit. */
+export function splitFuture(future, demand, room) {
+  const n = demand.length;
+  if (n === 0 || !(future > 0)) return demand.map(() => 0);
+  const caps = room.map((r) => (r === null || r === undefined ? null : Math.max(Number(r), 0)));
+  const share = demand.map(() => 0);
+  let left = Number(future);
+  if (demand.reduce((t, v) => t + v, 0) > 0) {
+    let active = [];
+    for (let i = 0; i < n; i++) if (demand[i] > 0 && (caps[i] === null || caps[i] > 0)) active.push(i);
+    for (let round = 0; round <= n; round++) {
+      if (left <= 1e-9 || !active.length) break;
+      const w = active.reduce((t, i) => t + demand[i], 0);
+      let spilled = 0;
+      const next = [];
+      for (const i of active) {
+        const give = left * demand[i] / w;
+        const capLeft = caps[i] === null ? null : caps[i] - share[i];
+        if (capLeft !== null && give >= capLeft - 1e-9) { spilled += give - capLeft; share[i] = caps[i]; }
+        else { share[i] += give; next.push(i); }
+      }
+      left = spilled; active = next;
+    }
+  }
+  if (left > 1e-9) {
+    // nothing with demand can take it: the room left elsewhere, else the products without an edition
+    const roomy = [];
+    for (let i = 0; i < n; i++) if (caps[i] !== null && caps[i] - share[i] > 1e-9) roomy.push(i);
+    if (roomy.length) {
+      const w = roomy.reduce((t, i) => t + (caps[i] - share[i]), 0);
+      for (const i of roomy) share[i] += left * (caps[i] - share[i]) / w;
+    } else {
+      const free = [];
+      for (let i = 0; i < n; i++) if (caps[i] === null) free.push(i);
+      for (const i of free) share[i] += left / free.length;
+    }
+  }
+  return share;
+}
+
 export function sellThroughProducts({ products, patterns, rate = 0.8, edition = null, soldTotal = null, futureUnits = 0,
   expectedToday = null, benchmarkToday = null, benchmarkClose = null, preorderRate = null }) {
   const attributed = products.reduce((t, p) => t + (Number(p.sold) || 0), 0);
@@ -290,18 +335,14 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
     ? unattributed * (wSum > 0 ? weights[i] / wSum : 1 / products.length) : 0));
   const withAssumed = products.map((p, i) => ({ ...p, sold: (Number(p.sold) || 0) + assumed[i] }));
   const alloc = allocateEntries({ products: withAssumed, patterns, rate, preorderRate });
-  // units still to come: over the room left after what is in hand, else (no
-  // editions) by each product's share of the demand so far
+  // units still to come: by each product's demand so far, held to the room it
+  // has left, the excess on to the products with room (splitFuture, docs §6.3)
   const future = Math.max(Number(futureUnits) || 0, 0);
-  const roomAfter = alloc.products.map((a, i) => (a.room === null ? null : Math.max(a.room - a.shown, 0)));
-  const roomSum = allEditions ? roomAfter.reduce((t, v) => t + v, 0) : null;
   const draftsOf = (p) => (finite(p.drafts) ? Number(p.drafts) : 0);
   const demand = alloc.products.map((a, i) => (Number(products[i].sold) || 0) + assumed[i] + draftsOf(products[i]) + a.shown);
-  const demandSum = demand.reduce((t, v) => t + v, 0);
-  const futureShare = alloc.products.map((a, i) => {
-    if (allEditions) return roomSum > 0 ? future * (roomAfter[i] / roomSum) : 0;
-    return demandSum > 0 ? future * (demand[i] / demandSum) : (products.length ? future / products.length : 0);
-  });
+  // a product's room already stands net of its drafts (allocateEntries): what is left after the draw's winners
+  const roomAfter = alloc.products.map((a) => (a.room === null ? null : Math.max(a.room - a.shown, 0)));
+  const futureShare = splitFuture(future, demand, roomAfter);
   // the references, as the release's pace applied to each product's edition:
   // a product is expected to sell through at the rate the release is
   const paceOf = (v) => (finite(v) && finite(edition) && Number(edition) > 0 ? Number(v) / Number(edition) : null);

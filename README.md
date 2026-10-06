@@ -784,8 +784,8 @@ page's blue, deepest to palest as the units get less certain: units paid (deep b
 orders an advisor raised that are not yet paid (blue; the draw's own pre-authorisation
 drafts are the entries, not drafts), the draw entries in hand counted on the product at the
 entry → order rate, or at the pre-order rate where the entrant's card is already authorised
-(light blue), and at close the units still to come (palest), against the product's
-edition. Nothing is hatched: the four tints are the whole key, and demand a product has no
+(light blue), and at close the units still to come (palest), split over the products by their
+demand so far and held to each one's room, against the product's edition. Nothing is hatched: the four tints are the whole key, and demand a product has no
 room for simply carries on past the point where the paler room behind the bar stops. The card
 is one row of the grid whatever the count: the rows share a fixed height, the bars growing
 from 14px for seven products to a 30px cap for three or fewer, each row carrying its units of
