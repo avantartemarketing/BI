@@ -255,6 +255,49 @@ def _r4(v: float) -> float:
     return round(v * 10000) / 10000
 
 
+def future_cohort(patterns: list[dict], units: float, to_set) -> list[dict] | None:
+    """The entrants still to come, taken to look like the entrants so far
+    (mirror of futureCohort, 6 October 2026): every pattern as a fresh entrant
+    with the same products (entered, won or bought since or not) and quantity, scaled so
+    their units add up to `units` and rounded to whole people by the largest
+    remainders. None without a pattern or under one unit to place."""
+    base = []
+    for pat in patterns or []:
+        n = float(pat.get("n") or 0)
+        if n <= 0:
+            continue
+        # what these people entered, won or bought since or not: a fresh
+        # entrant with the same taste has every one of those open
+        seen: set[int] = set()
+        open_ = []
+        for d in list(pat.get("open") or []) + list(pat.get("won") or []) + list(pat.get("sold") or []):
+            s = to_set([d])
+            if s and s[0] not in seen:
+                seen.add(s[0])
+                open_.append(d)
+        if not open_:
+            continue
+        cap = max(float(pat["max"]), 1.0) if _finite(pat.get("max")) else None
+        per = float(len(open_)) if cap is None else min(cap, float(len(open_)))
+        base.append({"open": open_, "cap": cap, "n": n, "per": per})
+    have = sum(b["n"] * b["per"] for b in base)
+    if not units >= 1 or have <= 0:
+        return None
+    k = units / have
+    raw = [b["n"] * k for b in base]
+    counts = [math.floor(v) for v in raw]
+    placed = sum(counts[i] * b["per"] for i, b in enumerate(base))
+    order = sorted(range(len(base)), key=lambda i: (-(raw[i] - math.floor(raw[i])), i))
+    for i in order:
+        if placed >= units:
+            break
+        counts[i] += 1
+        placed += base[i]["per"]
+    out = [{"open": b["open"], "won": [], "sold": [], "pre": [], "bought": 0, "max": b["cap"], "n": counts[i]}
+           for i, b in enumerate(base) if counts[i] > 0]
+    return out or None
+
+
 def sell_through_products(products: list[dict], patterns: list[dict], rate: float = 0.8, edition=None,
                           sold_total=None, future_units: float = 0.0, expected_today=None,
                           benchmark_today=None, benchmark_close=None, preorder_rate=None) -> dict:
@@ -282,14 +325,26 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
     demand = [float(products[i].get("sold") or 0) + assumed[i] + drafts_of(products[i]) + a["shown"]
               for i, a in enumerate(alloc["products"])]
     demand_sum = sum(demand)
+    # the entrants still to come placed by the same allocator against the room
+    # left (future_cohort, mirror of sellThroughProducts); over the room left
+    # without a pattern to read; by demand share without editions
+    to_set = _product_sets(products)
+    cohort = future_cohort(patterns, future / alloc["rate"], to_set) if all_editions and future > 0 else None
+    placed = allocate_entries(
+        [{**p, "sold": float(p.get("sold") or 0) + assumed[i] + drafts_of(p) + alloc["products"][i]["shown"], "drafts": 0, "claimsInFlight": 0}
+         for i, p in enumerate(products)], cohort, alloc["rate"], alloc["rate"]) if cohort else None
     future_share = []
     for i, a in enumerate(alloc["products"]):
-        if all_editions:
+        if placed:
+            future_share.append(placed["products"][i]["shown"])
+        elif all_editions:
             future_share.append(future * (room_after[i] / room_sum) if room_sum > 0 else 0.0)
         elif demand_sum > 0:
             future_share.append(future * (demand[i] / demand_sum))
         else:
             future_share.append(future / len(products) if products else 0.0)
+    future_over = [placed["products"][i]["oversubscribed"] if placed else 0.0 for i in range(len(products))]
+    future_rule = "cohort" if placed else ("room" if all_editions else "demand")
 
     def pace_of(v):
         return float(v) / float(edition) if _finite(v) and _finite(edition) and float(edition) > 0 else None
@@ -312,7 +367,7 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
             "claims": a["claims"],
             "predicted": _r1(a["predicted"]), "shown": _r1(a["shown"]), "room": a["room"],
             "oversubscribed": _r1(a["oversubscribed"]),
-            "futurePredicted": _r1(future_share[i]),
+            "futurePredicted": _r1(future_share[i]), "futureOversubscribed": _r1(future_over[i]),
             "pct": _r4(min(today / e, 1.0)) if e else None,
             "pctClose": _r4(min(close / e, 1.0)) if e else None,
             "expectedToday": _r1(e * pace_exp) if e is not None and pace_exp is not None else None,
@@ -338,6 +393,8 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
             "entrants": alloc["entrants"], "flexibleEntrants": alloc["flexibleEntrants"],
             "surplusEntries": alloc["surplusEntries"], "uncapped": alloc["uncapped"],
             "unpaidWinners": alloc["unpaidWinners"], "flexibleUnits": sum(x["flexible"] for x in rows),
+            "futureRule": future_rule, "futureEntrants": placed["entrants"] if placed else 0,
+            "futureOversubscribed": _r1(sum(x["futureOversubscribed"] for x in rows)),
         },
     }
 

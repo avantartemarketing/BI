@@ -101,7 +101,9 @@ function ProductBar({ row, close, maxV, tips, height = 14, radius = 4 }) {
   const edition = row.edition;
   const inset = Math.max(2, Math.round(height * 0.14));
   const innerR = Math.max(2, radius - 2);
-  const over = row.oversubscribed ?? 0;
+  // at close the entrants still to come that a full work turns away join the
+  // demand past its edition (6 October 2026)
+  const over = (row.oversubscribed ?? 0) + (close ? row.futureOversubscribed ?? 0 : 0);
   const segs = segmentsOf(row, close).map((x) => ({ ...x, tip: tips[x.key === "sold" ? "sold" : x.key === "drafts" ? "drafts" : x.key === "future" ? "future" : "inHand"] }));
   let at = 0;
   return (
@@ -181,7 +183,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const byEdition = allEditions;
   // one scale when an edition is missing: the biggest edition, or the biggest demand
   const soldOf = (r) => (r.sold ?? 0) + (r.soldAssumed ?? 0) + (finite(r.drafts) ? r.drafts : 0);
-  const demandOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0) + (r.oversubscribed ?? 0);
+  const demandOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? (r.futurePredicted ?? 0) + (r.futureOversubscribed ?? 0) : 0) + (r.oversubscribed ?? 0);
   const unitsOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0);
   // no headroom past the edition: the bar's end is the edition's, so the pale
   // room runs to the track's corner and no grey shows past it
@@ -440,9 +442,11 @@ export default function SellThrough({ snap, horizon = "today" }) {
               ] };
               const tips = {
                 sold: rowTip, drafts: rowTip, inHand: rowTip,
-                future: { head: r.name, rows: [{ label: "Still to come", value: fmt(r.futurePredicted ?? 0) }] },
-                over: { head: r.name, rows: [{ label: "Demand beyond the edition", value: "+" + fmt(r.oversubscribed ?? 0) }],
-                  body: "Entries in hand at the rate that this product has no room for." },
+                future: { head: r.name, rows: [{ label: "Still to come", value: fmt(r.futurePredicted ?? 0) },
+                  ...((r.futureOversubscribed ?? 0) > 0 ? [{ label: "Turned away, no room", value: "+" + fmt(r.futureOversubscribed) }] : [])],
+                  body: "The entrants still to come, taken to look like those so far and placed where there is room." },
+                over: { head: r.name, rows: [{ label: "Demand beyond the edition", value: "+" + fmt((r.oversubscribed ?? 0) + (close ? r.futureOversubscribed ?? 0 : 0)) }],
+                  body: close ? "Entries in hand and still to come, at the rate, that this product has no room for." : "Entries in hand at the rate that this product has no room for." },
               };
               const nameTip = { head: r.name, rows: [
                 ...(finite(r.edition) ? [{ label: tl ? "Units target" : "Edition", value: fmt(r.edition) }] : [{ label: tl ? "Units target" : "Edition", value: "not set" }]),

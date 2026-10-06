@@ -786,7 +786,11 @@ drafts are the entries, not drafts), the draw entries in hand counted on the pro
 entry → order rate, or at the pre-order rate where the entrant's card is already authorised
 (light blue), and at close the units still to come (palest), against the product's
 edition. Nothing is hatched: the four tints are the whole key, and demand a product has no
-room for simply carries on past the point where the paler room behind the bar stops. The card
+room for simply carries on past the point where the paler room behind the bar stops. At close the
+units still to come are the projection's further entrants, taken to look like the entrants so far and
+placed by the same allocation rule against the room left, so a full work's share is turned away
+rather than handed to the work with room (6 October 2026; before, the units were spread over the room
+left, and a lagging work read far too high once its stablemate was full: docs §6.3). The card
 is one row of the grid whatever the count: the rows share a fixed height, the bars growing
 from 14px for seven products to a 30px cap for three or fewer, each row carrying its units of
 the edition and its percentage in columns of their own, with the key beside the headline. It is

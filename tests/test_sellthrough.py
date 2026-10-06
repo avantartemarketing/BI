@@ -48,6 +48,10 @@ for c in fixtures["cases"]:
         "surplusEntries": out["allocation"]["surplusEntries"],
         "unattributedSold": out["unattributedSold"],
         "measure": out["measure"],
+        "futurePredicted": [p["futurePredicted"] for p in out["products"]],
+        "futureOversubscribed": [p["futureOversubscribed"] for p in out["products"]],
+        "futureRule": out["allocation"]["futureRule"],
+        "futureEntrants": out["allocation"]["futureEntrants"],
     }
     for k, want in c["expect"].items():
         # whole numbers come out as floats here and as ints in JS; the check is on value

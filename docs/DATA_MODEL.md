@@ -1549,7 +1549,24 @@ in hand       eligible draw entries still in the draw, ALLOCATED across the prod
               sets its own)
 ```
 
-plus, at close, the projection's further units spread over the products with room left.
+plus, at close, the projection's further units placed by the same allocation rule: the entrants
+still to come are taken to look like the entrants so far (`future_cohort`: the entry patterns with an
+open entry, scaled to the projection's entries and rounded to whole people), and placed against the
+room left after what is in hand, so a flexible entrant goes where there is room as one in hand does
+and a full work's share falls out as oversubscribed (`futureOversubscribed`, drawn past the edition
+at close; `allocation.futureRule` says `cohort`, or `room` without a pattern to read, `demand`
+without editions). Until 6 October 2026 the units were spread over the room left, which handed
+nearly all of them to the work with room once another was full: Cattelan's Novecento read 88% at
+close on a third of the entries. `etl/analysis/split_backtest.py` reads fourteen closed multi-work
+draws (29 works, every work with a draw) at a share of their window, with the entry patterns
+rebuilt from the event feed as of that day and the total still to come taken as known, so the test
+is the split alone. Over every work the cohort rule misses by 5 points on average against 6 for the
+room rule, and leans 4 points high against 6; on the ten works that ended below 90% of their
+edition the room rule reads 15 points high at 40% of the window and 16 later, the cohort rule 9 to
+13. What is
+left on those works is not the split but the entrants still to come converting below the rate:
+Dali's Spectre of Sex Appeal reads 76% at 40% under the cohort rule and ended at 76, against 100
+under the room rule; En Iwamura's lagging Neo Jomon 67 against 95, having ended at 32.
 Everything is capped against the product's room (edition − sold) only where it is drawn; the
 uncapped demand is kept so an oversubscribed product stays visible as such.
 

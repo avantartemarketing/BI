@@ -1,646 +1,725 @@
 {
-  "_comment": "Fixtures for the per-product sell-through rule. Each case is run through shared/sellThrough.mjs and etl/sellthrough.py and the two outputs must match to the unit (tests/sellthrough_parity.mjs, tests/test_sellthrough.py). Patterns are aggregate: how many entrants share a combination of open entries, unpaid wins, paid wins, pieces bought and maximum quantity.",
-  "cases": [
+ "_comment": "Fixtures for the per-product sell-through rule. Each case is run through shared/sellThrough.mjs and etl/sellthrough.py and the two outputs must match to the unit (tests/sellthrough_parity.mjs, tests/test_sellthrough.py). Patterns are aggregate: how many entrants share a combination of open entries, unpaid wins, paid wins, pieces bought and maximum quantity.",
+ "cases": [
+  {
+   "name": "flexible entrants go to the product with the most room",
+   "rate": 0.8,
+   "edition": 600,
+   "soldTotal": 0,
+   "futureUnits": 0,
+   "products": [
     {
-      "name": "flexible entrants go to the product with the most room",
-      "rate": 0.8,
-      "edition": 600,
-      "soldTotal": 0,
-      "futureUnits": 0,
-      "products": [
-        {
-          "key": "A",
-          "name": "A",
-          "edition": 200,
-          "draws": [
-            "dA"
-          ],
-          "sold": 0
-        },
-        {
-          "key": "B",
-          "name": "B",
-          "edition": 200,
-          "draws": [
-            "dB"
-          ],
-          "sold": 0
-        },
-        {
-          "key": "C",
-          "name": "C",
-          "edition": 200,
-          "draws": [
-            "dC"
-          ],
-          "sold": 0
-        }
-      ],
-      "patterns": [
-        {
-          "open": [
-            "dA"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 150
-        },
-        {
-          "open": [
-            "dB"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 40
-        },
-        {
-          "open": [
-            "dC"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 10
-        },
-        {
-          "open": [
-            "dA",
-            "dB",
-            "dC"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 60
-        },
-        {
-          "open": [
-            "dA",
-            "dB",
-            "dC"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 2,
-          "n": 30
-        },
-        {
-          "open": [
-            "dA",
-            "dB"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": null,
-          "n": 5
-        }
-      ],
-      "expect": {
-        "allocated": [
-          155,
-          88,
-          87
-        ],
-        "flexibleEntrants": 90,
-        "surplusEntries": 150
-      },
-      "_why": "A: 150 fixed + 5 uncapped; B and C are topped up evenly by the 120 flexible units (60 entrants x 1, 30 x 2) before A, which is fuller, gets any"
+     "key": "A",
+     "name": "A",
+     "edition": 200,
+     "draws": [
+      "dA"
+     ],
+     "sold": 0
     },
     {
-      "name": "unpaid wins spend the appetite but count no units, paid wins are sold, appetite shrinks by pieces bought",
-      "rate": 0.8,
-      "edition": 100,
-      "soldTotal": 30,
-      "futureUnits": 10,
-      "products": [
-        {
-          "key": "A",
-          "name": "A",
-          "edition": 50,
-          "draws": [
-            "dA"
-          ],
-          "sold": 20
-        },
-        {
-          "key": "B",
-          "name": "B",
-          "edition": 50,
-          "draws": [
-            "dB"
-          ],
-          "sold": 4
-        }
-      ],
-      "patterns": [
-        {
-          "open": [],
-          "won": [
-            "dA"
-          ],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 10
-        },
-        {
-          "open": [
-            "dB"
-          ],
-          "won": [],
-          "sold": [
-            "dA"
-          ],
-          "bought": 1,
-          "max": 2,
-          "n": 4
-        },
-        {
-          "open": [
-            "dB"
-          ],
-          "won": [],
-          "sold": [
-            "dA"
-          ],
-          "bought": 1,
-          "max": 1,
-          "n": 6
-        },
-        {
-          "open": [
-            "dA",
-            "dB"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 12
-        }
-      ],
-      "expect": {
-        "allocated": [
-          0,
-          16
-        ],
-        "unattributedSold": 6,
-        "soldAssumed": [
-          3,
-          3
-        ],
-        "room": [
-          27,
-          43
-        ]
-      },
-      "_why": "the 10 unpaid wins on A spend their appetite but count nothing; A fills only through sales, so all 12 flexible units go to B, the emptier product"
+     "key": "B",
+     "name": "B",
+     "edition": 200,
+     "draws": [
+      "dB"
+     ],
+     "sold": 0
     },
     {
-      "name": "no editions: ranked on units, no room, no shares",
-      "rate": 0.75,
-      "edition": null,
-      "soldTotal": null,
-      "futureUnits": 0,
-      "products": [
-        {
-          "key": "A",
-          "name": "A",
-          "edition": null,
-          "draws": [
-            "dA",
-            "dA2"
-          ],
-          "sold": 0
-        },
-        {
-          "key": "B",
-          "name": "B",
-          "edition": null,
-          "draws": [
-            "dB"
-          ],
-          "sold": 0
-        }
-      ],
-      "patterns": [
-        {
-          "open": [
-            "dA",
-            "dA2"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 7
-        },
-        {
-          "open": [
-            "dA",
-            "dB"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 9
-        },
-        {
-          "open": [
-            "dB"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 3,
-          "n": 2
-        }
-      ],
-      "expect": {
-        "allocated": [
-          9,
-          9
-        ],
-        "measure": "units"
-      },
-      "_why": "the two draws of A count once per entrant; the 9 flexible entrants level A and B off at 9 each"
-    },
-    {
-      "name": "oversubscribed product is capped in the shown figure, not in the allocation",
-      "rate": 0.8,
-      "edition": 40,
-      "soldTotal": 25,
-      "futureUnits": 20,
-      "products": [
-        {
-          "key": "A",
-          "name": "A",
-          "edition": 20,
-          "draws": [
-            "dA"
-          ],
-          "sold": 15
-        },
-        {
-          "key": "B",
-          "name": "B",
-          "edition": 20,
-          "draws": [
-            "dB"
-          ],
-          "sold": 10
-        }
-      ],
-      "patterns": [
-        {
-          "open": [
-            "dA"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 30
-        },
-        {
-          "open": [
-            "dB"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 5
-        }
-      ],
-      "expect": {
-        "allocated": [
-          30,
-          5
-        ],
-        "shown": [
-          5,
-          4
-        ],
-        "oversubscribed": [
-          19,
-          0
-        ]
-      }
-    },
-    {
-      "name": "drafts take room like a sale and count in the share",
-      "rate": 0.8,
-      "edition": 100,
-      "soldTotal": 30,
-      "futureUnits": 0,
-      "products": [
-        {
-          "key": "A",
-          "name": "A",
-          "edition": 50,
-          "draws": [
-            "dA"
-          ],
-          "sold": 20,
-          "drafts": 25
-        },
-        {
-          "key": "B",
-          "name": "B",
-          "edition": 50,
-          "draws": [
-            "dB"
-          ],
-          "sold": 10,
-          "drafts": 0
-        }
-      ],
-      "patterns": [
-        {
-          "open": [
-            "dA"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 10
-        },
-        {
-          "open": [
-            "dB"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 10
-        },
-        {
-          "open": [
-            "dA",
-            "dB"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 6
-        }
-      ],
-      "expect": {
-        "allocated": [
-          10,
-          16
-        ],
-        "room": [
-          5,
-          40
-        ],
-        "shown": [
-          5,
-          12.8
-        ]
-      },
-      "_why": "A is nearly full once its 25 drafts are counted (45 of 50), so the 6 flexible entrants go to B; A's 10 entries show as the 5 units of room it has left"
-    },
-    {
-      "name": "flexible entrants over-allocate the priciest product to sell-out, then go by fill",
-      "rate": 0.8,
-      "edition": 410,
-      "soldTotal": 0,
-      "futureUnits": 0,
-      "products": [
-        {
-          "key": "A",
-          "name": "A",
-          "edition": 10,
-          "listPrice": 2500,
-          "draws": [
-            "dA"
-          ],
-          "sold": 0
-        },
-        {
-          "key": "B",
-          "name": "B",
-          "edition": 200,
-          "listPrice": 750,
-          "draws": [
-            "dB"
-          ],
-          "sold": 0
-        },
-        {
-          "key": "C",
-          "name": "C",
-          "edition": 200,
-          "listPrice": 750,
-          "draws": [
-            "dC"
-          ],
-          "sold": 0
-        }
-      ],
-      "patterns": [
-        {
-          "open": [
-            "dA",
-            "dB",
-            "dC"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 20
-        },
-        {
-          "open": [
-            "dB",
-            "dC"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 30
-        }
-      ],
-      "expect": {
-        "allocated": [
-          13,
-          19,
-          18
-        ],
-        "shown": [
-          10.0,
-          15.2,
-          14.4
-        ],
-        "oversubscribed": [
-          0.4,
-          0.0,
-          0.0
-        ],
-        "flexibleEntrants": 50,
-        "surplusEntries": 70
-      },
-      "_why": "A is the priciest and takes flexible entrants while its expected orders are short of its edition of 10: 13 at 80% expect 10.4, so it is shown sold out (capped at 10, 0.4 over-allocated for the payments expected to fail, where one fewer would leave it at 9.6); the other 7 of its entrants and the 30 B/C entrants then split B and C evenly by fill"
-    },
-    {
-      "name": "pre-order entries convert at the release pre-order rate, the same on every product",
-      "rate": 0.8,
-      "preorderRate": 0.95,
-      "edition": 200,
-      "soldTotal": 0,
-      "futureUnits": 0,
-      "products": [
-        {
-          "key": "A",
-          "name": "A",
-          "edition": 100,
-          "draws": [
-            "dA"
-          ],
-          "sold": 0
-        },
-        {
-          "key": "B",
-          "name": "B",
-          "edition": 100,
-          "draws": [
-            "dB"
-          ],
-          "sold": 0,
-          "preorderRate": 0.5
-        }
-      ],
-      "patterns": [
-        {
-          "open": [
-            "dA"
-          ],
-          "won": [],
-          "sold": [],
-          "pre": [
-            "dA"
-          ],
-          "bought": 0,
-          "max": 1,
-          "n": 10
-        },
-        {
-          "open": [
-            "dB"
-          ],
-          "won": [],
-          "sold": [],
-          "pre": [
-            "dB"
-          ],
-          "bought": 0,
-          "max": 1,
-          "n": 10
-        },
-        {
-          "open": [
-            "dA"
-          ],
-          "won": [],
-          "sold": [],
-          "pre": [],
-          "bought": 0,
-          "max": 1,
-          "n": 5
-        }
-      ],
-      "expect": {
-        "allocated": [
-          15,
-          10
-        ],
-        "shown": [
-          13.5,
-          9.5
-        ]
-      },
-      "_why": "A: 10 pre-orders at 0.95 and 5 plain at 0.8 = 13.5; B: 10 pre-orders at the release's 0.95 = 9.5. B carries a preorderRate of its own (0.5), which is no longer read: every product converts at the release's two rates, the ones the Target setting tab shows"
-    },
-    {
-      "name": "claims still landing count at the pre-order rate and take their room first",
-      "_why": "A has 10 sold of 20 and 5 claims a draw round has made that the order table has not caught up with: they count 5 x 0.95 = 4.75 on A before any entrant is placed, so A over-allocates 7 flexible entrants at 0.8 (4.75 + 5.6 = 10.35, shown at its 10 of room) and the other 3 go to B; without the claims A would have taken all 10 and read 8 short of sell-out while the orders landed",
-      "rate": 0.8,
-      "preorderRate": 0.95,
-      "edition": 120,
-      "soldTotal": 10,
-      "futureUnits": 0,
-      "products": [
-        {
-          "key": "A",
-          "name": "A",
-          "edition": 20,
-          "draws": [
-            "dA"
-          ],
-          "sold": 10,
-          "drafts": null,
-          "listPrice": 2500,
-          "claimsInFlight": 5
-        },
-        {
-          "key": "B",
-          "name": "B",
-          "edition": 100,
-          "draws": [
-            "dB"
-          ],
-          "sold": 0,
-          "drafts": null,
-          "listPrice": 750
-        }
-      ],
-      "patterns": [
-        {
-          "open": [
-            "dA",
-            "dB"
-          ],
-          "won": [],
-          "sold": [],
-          "bought": 0,
-          "max": 1,
-          "n": 10
-        }
-      ],
-      "expect": {
-        "allocated": [
-          7,
-          3
-        ],
-        "shown": [
-          10.0,
-          2.4
-        ],
-        "oversubscribed": [
-          0.4,
-          0.0
-        ],
-        "room": [
-          10.0,
-          100.0
-        ]
-      }
+     "key": "C",
+     "name": "C",
+     "edition": 200,
+     "draws": [
+      "dC"
+     ],
+     "sold": 0
     }
-  ]
+   ],
+   "patterns": [
+    {
+     "open": [
+      "dA"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 150
+    },
+    {
+     "open": [
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 40
+    },
+    {
+     "open": [
+      "dC"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 10
+    },
+    {
+     "open": [
+      "dA",
+      "dB",
+      "dC"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 60
+    },
+    {
+     "open": [
+      "dA",
+      "dB",
+      "dC"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 2,
+     "n": 30
+    },
+    {
+     "open": [
+      "dA",
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": null,
+     "n": 5
+    }
+   ],
+   "expect": {
+    "allocated": [
+     155,
+     88,
+     87
+    ],
+    "flexibleEntrants": 90,
+    "surplusEntries": 150
+   },
+   "_why": "A: 150 fixed + 5 uncapped; B and C are topped up evenly by the 120 flexible units (60 entrants x 1, 30 x 2) before A, which is fuller, gets any"
+  },
+  {
+   "name": "unpaid wins spend the appetite but count no units, paid wins are sold, appetite shrinks by pieces bought",
+   "rate": 0.8,
+   "edition": 100,
+   "soldTotal": 30,
+   "futureUnits": 10,
+   "products": [
+    {
+     "key": "A",
+     "name": "A",
+     "edition": 50,
+     "draws": [
+      "dA"
+     ],
+     "sold": 20
+    },
+    {
+     "key": "B",
+     "name": "B",
+     "edition": 50,
+     "draws": [
+      "dB"
+     ],
+     "sold": 4
+    }
+   ],
+   "patterns": [
+    {
+     "open": [],
+     "won": [
+      "dA"
+     ],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 10
+    },
+    {
+     "open": [
+      "dB"
+     ],
+     "won": [],
+     "sold": [
+      "dA"
+     ],
+     "bought": 1,
+     "max": 2,
+     "n": 4
+    },
+    {
+     "open": [
+      "dB"
+     ],
+     "won": [],
+     "sold": [
+      "dA"
+     ],
+     "bought": 1,
+     "max": 1,
+     "n": 6
+    },
+    {
+     "open": [
+      "dA",
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 12
+    }
+   ],
+   "expect": {
+    "allocated": [
+     0,
+     16
+    ],
+    "unattributedSold": 6,
+    "soldAssumed": [
+     3,
+     3
+    ],
+    "room": [
+     27,
+     43
+    ]
+   },
+   "_why": "the 10 unpaid wins on A spend their appetite but count nothing; A fills only through sales, so all 12 flexible units go to B, the emptier product"
+  },
+  {
+   "name": "no editions: ranked on units, no room, no shares",
+   "rate": 0.75,
+   "edition": null,
+   "soldTotal": null,
+   "futureUnits": 0,
+   "products": [
+    {
+     "key": "A",
+     "name": "A",
+     "edition": null,
+     "draws": [
+      "dA",
+      "dA2"
+     ],
+     "sold": 0
+    },
+    {
+     "key": "B",
+     "name": "B",
+     "edition": null,
+     "draws": [
+      "dB"
+     ],
+     "sold": 0
+    }
+   ],
+   "patterns": [
+    {
+     "open": [
+      "dA",
+      "dA2"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 7
+    },
+    {
+     "open": [
+      "dA",
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 9
+    },
+    {
+     "open": [
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 3,
+     "n": 2
+    }
+   ],
+   "expect": {
+    "allocated": [
+     9,
+     9
+    ],
+    "measure": "units"
+   },
+   "_why": "the two draws of A count once per entrant; the 9 flexible entrants level A and B off at 9 each"
+  },
+  {
+   "name": "oversubscribed product is capped in the shown figure, not in the allocation",
+   "rate": 0.8,
+   "edition": 40,
+   "soldTotal": 25,
+   "futureUnits": 20,
+   "products": [
+    {
+     "key": "A",
+     "name": "A",
+     "edition": 20,
+     "draws": [
+      "dA"
+     ],
+     "sold": 15
+    },
+    {
+     "key": "B",
+     "name": "B",
+     "edition": 20,
+     "draws": [
+      "dB"
+     ],
+     "sold": 10
+    }
+   ],
+   "patterns": [
+    {
+     "open": [
+      "dA"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 30
+    },
+    {
+     "open": [
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 5
+    }
+   ],
+   "expect": {
+    "allocated": [
+     30,
+     5
+    ],
+    "shown": [
+     5,
+     4
+    ],
+    "oversubscribed": [
+     19,
+     0
+    ]
+   }
+  },
+  {
+   "name": "drafts take room like a sale and count in the share",
+   "rate": 0.8,
+   "edition": 100,
+   "soldTotal": 30,
+   "futureUnits": 0,
+   "products": [
+    {
+     "key": "A",
+     "name": "A",
+     "edition": 50,
+     "draws": [
+      "dA"
+     ],
+     "sold": 20,
+     "drafts": 25
+    },
+    {
+     "key": "B",
+     "name": "B",
+     "edition": 50,
+     "draws": [
+      "dB"
+     ],
+     "sold": 10,
+     "drafts": 0
+    }
+   ],
+   "patterns": [
+    {
+     "open": [
+      "dA"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 10
+    },
+    {
+     "open": [
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 10
+    },
+    {
+     "open": [
+      "dA",
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 6
+    }
+   ],
+   "expect": {
+    "allocated": [
+     10,
+     16
+    ],
+    "room": [
+     5,
+     40
+    ],
+    "shown": [
+     5,
+     12.8
+    ]
+   },
+   "_why": "A is nearly full once its 25 drafts are counted (45 of 50), so the 6 flexible entrants go to B; A's 10 entries show as the 5 units of room it has left"
+  },
+  {
+   "name": "flexible entrants over-allocate the priciest product to sell-out, then go by fill",
+   "rate": 0.8,
+   "edition": 410,
+   "soldTotal": 0,
+   "futureUnits": 0,
+   "products": [
+    {
+     "key": "A",
+     "name": "A",
+     "edition": 10,
+     "listPrice": 2500,
+     "draws": [
+      "dA"
+     ],
+     "sold": 0
+    },
+    {
+     "key": "B",
+     "name": "B",
+     "edition": 200,
+     "listPrice": 750,
+     "draws": [
+      "dB"
+     ],
+     "sold": 0
+    },
+    {
+     "key": "C",
+     "name": "C",
+     "edition": 200,
+     "listPrice": 750,
+     "draws": [
+      "dC"
+     ],
+     "sold": 0
+    }
+   ],
+   "patterns": [
+    {
+     "open": [
+      "dA",
+      "dB",
+      "dC"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 20
+    },
+    {
+     "open": [
+      "dB",
+      "dC"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 30
+    }
+   ],
+   "expect": {
+    "allocated": [
+     13,
+     19,
+     18
+    ],
+    "shown": [
+     10.0,
+     15.2,
+     14.4
+    ],
+    "oversubscribed": [
+     0.4,
+     0.0,
+     0.0
+    ],
+    "flexibleEntrants": 50,
+    "surplusEntries": 70
+   },
+   "_why": "A is the priciest and takes flexible entrants while its expected orders are short of its edition of 10: 13 at 80% expect 10.4, so it is shown sold out (capped at 10, 0.4 over-allocated for the payments expected to fail, where one fewer would leave it at 9.6); the other 7 of its entrants and the 30 B/C entrants then split B and C evenly by fill"
+  },
+  {
+   "name": "pre-order entries convert at the release pre-order rate, the same on every product",
+   "rate": 0.8,
+   "preorderRate": 0.95,
+   "edition": 200,
+   "soldTotal": 0,
+   "futureUnits": 0,
+   "products": [
+    {
+     "key": "A",
+     "name": "A",
+     "edition": 100,
+     "draws": [
+      "dA"
+     ],
+     "sold": 0
+    },
+    {
+     "key": "B",
+     "name": "B",
+     "edition": 100,
+     "draws": [
+      "dB"
+     ],
+     "sold": 0,
+     "preorderRate": 0.5
+    }
+   ],
+   "patterns": [
+    {
+     "open": [
+      "dA"
+     ],
+     "won": [],
+     "sold": [],
+     "pre": [
+      "dA"
+     ],
+     "bought": 0,
+     "max": 1,
+     "n": 10
+    },
+    {
+     "open": [
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "pre": [
+      "dB"
+     ],
+     "bought": 0,
+     "max": 1,
+     "n": 10
+    },
+    {
+     "open": [
+      "dA"
+     ],
+     "won": [],
+     "sold": [],
+     "pre": [],
+     "bought": 0,
+     "max": 1,
+     "n": 5
+    }
+   ],
+   "expect": {
+    "allocated": [
+     15,
+     10
+    ],
+    "shown": [
+     13.5,
+     9.5
+    ]
+   },
+   "_why": "A: 10 pre-orders at 0.95 and 5 plain at 0.8 = 13.5; B: 10 pre-orders at the release's 0.95 = 9.5. B carries a preorderRate of its own (0.5), which is no longer read: every product converts at the release's two rates, the ones the Target setting tab shows"
+  },
+  {
+   "name": "claims still landing count at the pre-order rate and take their room first",
+   "_why": "A has 10 sold of 20 and 5 claims a draw round has made that the order table has not caught up with: they count 5 x 0.95 = 4.75 on A before any entrant is placed, so A over-allocates 7 flexible entrants at 0.8 (4.75 + 5.6 = 10.35, shown at its 10 of room) and the other 3 go to B; without the claims A would have taken all 10 and read 8 short of sell-out while the orders landed",
+   "rate": 0.8,
+   "preorderRate": 0.95,
+   "edition": 120,
+   "soldTotal": 10,
+   "futureUnits": 0,
+   "products": [
+    {
+     "key": "A",
+     "name": "A",
+     "edition": 20,
+     "draws": [
+      "dA"
+     ],
+     "sold": 10,
+     "drafts": null,
+     "listPrice": 2500,
+     "claimsInFlight": 5
+    },
+    {
+     "key": "B",
+     "name": "B",
+     "edition": 100,
+     "draws": [
+      "dB"
+     ],
+     "sold": 0,
+     "drafts": null,
+     "listPrice": 750
+    }
+   ],
+   "patterns": [
+    {
+     "open": [
+      "dA",
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 10
+    }
+   ],
+   "expect": {
+    "allocated": [
+     7,
+     3
+    ],
+    "shown": [
+     10.0,
+     2.4
+    ],
+    "oversubscribed": [
+     0.4,
+     0.0
+    ],
+    "room": [
+     10.0,
+     100.0
+    ]
+   }
+  },
+  {
+   "name": "the entrants still to come look like those so far: a full work's share is oversubscribed, a flexible one's goes where there is room",
+   "rate": 0.8,
+   "edition": 2000,
+   "soldTotal": 0,
+   "futureUnits": 400,
+   "products": [
+    {
+     "key": "A",
+     "name": "Not Afraid",
+     "edition": 1000,
+     "draws": [
+      "dA"
+     ],
+     "sold": 940
+    },
+    {
+     "key": "B",
+     "name": "Novecento",
+     "edition": 1000,
+     "draws": [
+      "dB"
+     ],
+     "sold": 300
+    }
+   ],
+   "patterns": [
+    {
+     "open": [
+      "dA"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 60
+    },
+    {
+     "open": [
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 30
+    },
+    {
+     "open": [
+      "dA",
+      "dB"
+     ],
+     "won": [],
+     "sold": [],
+     "bought": 0,
+     "max": 1,
+     "n": 10
+    }
+   ],
+   "expect": {
+    "allocated": [
+     60,
+     40
+    ],
+    "flexibleEntrants": 10,
+    "surplusEntries": 10,
+    "futurePredicted": [
+     12,
+     160
+    ],
+    "futureOversubscribed": [
+     228,
+     0
+    ],
+    "futureRule": "cohort",
+    "futureEntrants": 500
+   },
+   "_why": "In hand: A's 60 count 48 against its 60 of room, B's 30 count 24 and the 10 flexible go to B, the emptier. The 400 units still to come are 500 entrants who look like the 100 so far (300 on A, 150 on B, 50 on both): A has room for 12 more and turns the other 228 away, B takes its 150 and the 50 flexible, 160 units at the rate. The room rule would have given B 393 of the 400."
+  }
+ ]
 }

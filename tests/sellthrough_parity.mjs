@@ -29,6 +29,10 @@ for (const c of fixtures.cases) {
     surplusEntries: out.allocation.surplusEntries,
     unattributedSold: out.unattributedSold,
     measure: out.measure,
+    futurePredicted: out.products.map((p) => p.futurePredicted),
+    futureOversubscribed: out.products.map((p) => p.futureOversubscribed),
+    futureRule: out.allocation.futureRule,
+    futureEntrants: out.allocation.futureEntrants,
   };
   for (const [k, want] of Object.entries(c.expect)) {
     const have = got[k];
