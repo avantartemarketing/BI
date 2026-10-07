@@ -33,6 +33,7 @@ data/
   spend_daily.csv         extracted spend facts: Meta's spend, in euros, the page's currency
   content_posts.csv       extracted content facts (manual Emplifi export; see below)
   notion_posts.csv        posts by release, date and channel, from the Notion log (live)
+  notion_campaigns.csv    the campaign dates and the marketing lead per release, from the same log (live)
   release_clusters.csv    every release's campaign window, features, basket and edition pricing
                           (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
   release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
@@ -462,10 +463,18 @@ name / artist name found in any text column, and writes `data/notion_posts.csv`
 (`campaign_code,date,channel,posts`). `NOTION_ARTIST_POSTS_DB` overrides the database id.
 The same pass reads each row's words for the moment it records - an early-access email
 (which opens the private room), the announce, the launch or draw close - and writes
-`data/notion_campaigns.csv` (`campaign_code,private_room_open,announce_date,launch_end`),
-which the build reads before anything typed; `NOTION_CAMPAIGNS_DB` names a campaigns
-database whose date columns (matched by name: early access / private room, announce,
-launch / close) override those.
+`data/notion_campaigns.csv` (`campaign_code,release_name,private_room_open,announce_date,
+launch_end,marketing_lead,...`), which the build reads before anything typed;
+`NOTION_CAMPAIGNS_DB` names a campaigns database whose date columns (matched by name:
+early access / private room, announce, launch / close) override those. The **marketing
+lead** comes across in the same file: a column named for it (`Marketing lead`, `Campaign
+lead`, `Lead`, `Owner`; a people, select or text property) on the campaigns database's
+row, else the name most of a release's post rows carry. A people property is read for
+its display names only, never an email, so the integration needs the "read user
+information without email addresses" capability for the names to come through. The
+refresh status says which column it read (`marketing lead for 12 releases (from
+"Marketing Lead")`) or that it found none, and the Target setting tab marks the lead
+`Notion`, `Airtable` or `typed`, in that order of precedence.
 
 The channel comes from the database's Channel column - values are written by hand
 ("AA IG Main", "Artist post", "Partner post") so they are read by shape, not from a
@@ -580,8 +589,8 @@ shows its actuals. Almost nothing on the tab is typed (docs/DATA_MODEL.md
 target sell-through, price, profits per unit, the deal's revenue or profit
 share, framing), with a cell to type over any figure Airtable does not hold
 yet; the dates from the Notion log (the early-access email opens the private
-room), then the funnel's clock, then Airtable; the marketing lead from
-Airtable. What the page asks is which Meta campaigns are the release's, which
+room), then the funnel's clock, then Airtable; the marketing lead from the
+Notion log, then Airtable. What the page asks is which Meta campaigns are the release's, which
 channels are in plan - Running paid, the artist's own channels - and which
 basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 

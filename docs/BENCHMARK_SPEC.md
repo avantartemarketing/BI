@@ -557,7 +557,7 @@ carry `null` and fall back to a −10% band on `statusPct`.
   and returns it with `kind: "saved"`.
 - `GET /api/inputs/:id` returns the inputs as saved and, under `sourced`, what the feeds hold
   for the release (DATA_MODEL §1.6): Airtable's products, dates and marketing lead, the Notion
-  dates, the funnel clock's dates and the Meta campaigns named for the code.
+  dates and marketing lead, the funnel clock's dates and the Meta campaigns named for the code.
 - `POST /api/inputs/:id` accepts `campaign_names` (the Meta campaigns whose spend is the
   release's), `products[]` (per product, keyed by `airtable_id` or `manual: true`: the edition,
   target sell-through, price and currency, profits per unit, revenue or profit share, framing

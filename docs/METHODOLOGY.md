@@ -131,9 +131,10 @@ holds a figure, it can be typed over on the products table, and a work
 Airtable has no record for can be added by hand.
 
 **From the Notion log:** the private room opens with the early-access email,
-then the announce and the launch (the day the draw closes). Where the log has
-no date yet, what was typed stands, then the funnel export's own campaign
-clock, then Airtable's planned dates. **From Airtable:** the marketing lead.
+then the announce and the launch (the day the draw closes), and the marketing
+lead's name as the log records it. Where the log has no date yet, what was
+typed stands, then the funnel export's own campaign clock, then Airtable's
+planned dates; where it names no lead, Airtable's field, then what was typed.
 
 | Decision | What it does |
 | --- | --- |

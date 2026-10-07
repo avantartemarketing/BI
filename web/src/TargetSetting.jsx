@@ -12,8 +12,8 @@
  * is the input, locked until Edit figures is switched on, with a typed figure
  * marked and Airtable's underneath it. The dates come from the Notion log
  * (the early-access email opens the private room; the announce; the launch),
- * then the funnel's own clock, then Airtable; the marketing lead from
- * Airtable. What a person decides is which Meta campaigns are this
+ * then the funnel's own clock, then Airtable; the marketing lead from the
+ * Notion log, then Airtable. What a person decides is which Meta campaigns are this
  * release's, which channels it will not run, and which basket it is measured
  * against.
  *
@@ -594,7 +594,9 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const dateDiff = (a, c) => (a && c ? Math.round((new Date(a) - new Date(c)) / 86400000) : null);
   const days = dateDiff(closes, announce);
   const prDays = dateDiff(announce, prOpen);
-  const leadFromAirtable = (sourced.airtable || {}).marketing_lead || null;
+  // the marketing lead the feeds hold: the Notion log first (where the team records it), else Airtable's field
+  const leadSourced = (sourced.notion || {}).marketing_lead ? { value: sourced.notion.marketing_lead, from: "Notion" }
+    : (sourced.airtable || {}).marketing_lead ? { value: sourced.airtable.marketing_lead, from: "Airtable" } : null;
   const codeInForce = inp.campaign_code || (inp.campaign_names[0] ? inp.campaign_names[0].split(" · ")[0] : "") || dv.campaign_code || "";
 
   /* ---- the benchmark half of the form (§5, §8) ---- */
@@ -990,9 +992,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                 ? <RoBox value={codeInForce} title={inp.campaign_code ? "As saved" : "From the Meta campaign's name, else the email and content feeds"} />
                 : <TextBox value={inp.campaign_code || ""} onChange={set("campaign_code")} placeholder="Artist_LE_26" />}
             </Field>
-            <Field label="Marketing lead" src={leadFromAirtable ? "Airtable" : "typed"} help={leadFromAirtable ? null : "Not in Airtable yet: typed here until it is."}>
-              {leadFromAirtable
-                ? <RoBox value={leadFromAirtable} title="From Airtable" />
+            <Field label="Marketing lead" src={leadSourced ? leadSourced.from : "typed"} help={leadSourced ? null : "Not in the Notion log or Airtable yet: typed here until it is."}
+              tip="Who runs this launch. From the Notion log where it records a lead for the campaign, else Airtable's Marketing lead field, else typed here.">
+              {leadSourced
+                ? <RoBox value={leadSourced.value} title={`From ${leadSourced.from}`} />
                 : <TextBox value={inp.marketing_lead || ""} onChange={set("marketing_lead")} placeholder="Who runs this launch" />}
             </Field>
             <Field label="Slack channel" src="saved on its own"

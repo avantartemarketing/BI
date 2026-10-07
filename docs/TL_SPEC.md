@@ -318,6 +318,9 @@ unit, signups before the open where the LE reads units. It asks for:
   over.
 - **Products grid** as LE (the same grid with the TL column set), with the tick; a work unticked
   counts nothing (§1.6 of the data model).
+- **Marketing lead**, read rather than asked, as on the LE tab: the Notion log's name for the
+  campaign (by code, else by the launch's name), else Airtable's field on the launch's records,
+  else typed (`resolve_lead`; the snapshot's `marketingLead` and `inputSources.marketing_lead`).
 
 ```
 orders needed         = units target / purchases per order

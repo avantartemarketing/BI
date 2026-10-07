@@ -6,7 +6,7 @@
 import { createRequire } from "node:module";
 import assert from "node:assert";
 const require = createRequire(import.meta.url);
-const { stageOf, isEmailRow, matchRelease, inWindow, campaignDates, campaignRowDates, datesCsv } = require("../server/notion.js");
+const { stageOf, isEmailRow, matchRelease, inWindow, campaignDates, campaignRowDates, leadProp, leadNames, campaignLeads, datesCsv } = require("../server/notion.js");
 
 // the stage from the row's words: the early-access email, the announce, the launch
 assert.strictEqual(stageOf(["Early access email", "AA Email"]), "early_access");
@@ -29,6 +29,8 @@ assert.strictEqual(stageOf(["Early access ends tonight"]), "early_access");
 assert.strictEqual(isEmailRow(["Early/Exclusive access (LE)", "AA Email"]), true);
 assert.strictEqual(isEmailRow(["Coming Soon", "IG Main · Story"]), false);
 assert.strictEqual(isEmailRow(["Newsletter teaser"]), true);
+
+const sel = (name) => ({ type: "select", select: { name } });
 
 // which release a row belongs to
 const R = [
@@ -71,9 +73,39 @@ assert.deepStrictEqual(campaignRowDates({ "Early access send": d("2026-09-01T09:
 assert.deepStrictEqual(campaignRowDates({ "Draw closes": d("2026-09-30"), "Private room opens": d("2026-09-01") }), { launch_end: "2026-09-30", private_room_open: "2026-09-01" });
 assert.deepStrictEqual(campaignRowDates({ Name: { type: "title", title: [] } }), {});
 
-// the file the ETL reads: the code and the name, so a launch without a code is still found
+// the marketing lead's column: named for it, a people, select or text property; the
+// most specific name wins, and a "Lead time" or a date is not a lead
+const people = (...names) => ({ type: "people", people: names.map((name, i) => ({ object: "user", id: "u" + i, name, type: "person", person: { email: "nobody@example.com" } })) });
+assert.strictEqual(leadProp({ Name: { type: "title", title: [] }, "Marketing Lead": people("Maria"), Owner: people("Tom") }), "Marketing Lead");
+assert.strictEqual(leadProp({ Owner: people("Tom"), "Lead time": { type: "number", number: 3 } }), "Owner");
+assert.strictEqual(leadProp({ Lead: sel("Clare") }), "Lead");
+assert.strictEqual(leadProp({ "Campaign lead": { type: "rich_text", rich_text: [{ plain_text: "Clare" }] } }), "Campaign lead");
+assert.strictEqual(leadProp({ "Lead magnet": sel("yes"), "Lead date": d("2026-09-01") }), null);
+assert.strictEqual(leadProp({ Name: { type: "title", title: [] } }), null);
+// the names on the column: display names only, never the email the API carries beside them
+assert.deepStrictEqual(leadNames(people("Maria", "  Tom  Lloyd ")), ["Maria", "Tom Lloyd"]);
+assert.ok(!JSON.stringify(leadNames(people("Maria"))).includes("@"), "no email leaves the people property");
+assert.deepStrictEqual(leadNames(sel("Clare")), ["Clare"]);
+assert.deepStrictEqual(leadNames({ type: "formula", formula: { type: "string", string: "Maria" } }), ["Maria"]);
+assert.deepStrictEqual(leadNames({ type: "formula", formula: { type: "number", number: 3 } }), []);
+assert.deepStrictEqual(leadNames({ type: "rollup", rollup: { type: "array", array: [people("Maria"), { type: "rich_text", rich_text: [{ plain_text: "Tom" }] }] } }), ["Maria", "Tom"]);
+assert.strictEqual(leadProp({ Lead: { type: "formula", formula: { type: "string", string: "Maria" } } }), "Lead");
+assert.deepStrictEqual(leadNames({ type: "people", people: [{ object: "user", id: "u9" }] }), []);   // a person the integration cannot name
+assert.deepStrictEqual(leadNames(undefined), []);
+// one lead per release off the post rows: the commonest name, the alphabetical first on a tie
+assert.deepStrictEqual(campaignLeads(new Map([
+  ["A_LE_26", new Map([["Maria", 3], ["Clare", 1]])],
+  ["B_LE_26", new Map([["Tom", 2], ["Clare", 2]])],
+  ["C_LE_26", new Map()],
+])), { A_LE_26: "Maria", B_LE_26: "Clare" });
+
+// the file the ETL reads: the code and the name, so a launch without a code is still found,
+// and the lead beside the dates (an entry with a lead alone still lists)
+dates.A_LE_26.marketing_lead = "Maria";
+dates["name:D · Four · 2027 Q1"] = { code: "", name: "D · Four · 2027 Q1", rows: null, marketing_lead: "O'Brien, Tom" };
 const csv = datesCsv(dates).split("\n");
-assert.strictEqual(csv[0], "campaign_code,release_name,private_room_open,announce_date,launch_end,early_access_rows,early_access_email_rows,announce_rows,launch_rows,source");
-assert.strictEqual(csv[1], "A_LE_26,A · One · 2026 Q3,2026-09-03,2026-09-05,2026-09-30,2,1,2,2,posts");
-assert.strictEqual(csv[3], ",C · Three · 2027 Q1,2026-09-14,,,2,0,0,0,posts");
+assert.strictEqual(csv[0], "campaign_code,release_name,private_room_open,announce_date,launch_end,marketing_lead,early_access_rows,early_access_email_rows,announce_rows,launch_rows,source");
+assert.strictEqual(csv[1], "A_LE_26,A · One · 2026 Q3,2026-09-03,2026-09-05,2026-09-30,Maria,2,1,2,2,posts");
+assert.strictEqual(csv[3], ",C · Three · 2027 Q1,2026-09-14,,,,2,0,0,0,posts");
+assert.strictEqual(csv[4], ',D · Four · 2027 Q1,,,,"O\'Brien, Tom",,,,,posts');
 console.log("notion dates: ok");

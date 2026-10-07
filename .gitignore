@@ -14,6 +14,8 @@ data/decisions.log.jsonl
 data/layout.json
 data/artist_posts.csv
 data/notion_posts.csv
+# the campaign dates and marketing lead the same pull writes (server/notion.js), rebuilt on every refresh
+data/notion_campaigns.csv
 data/app/derived/
 data/inputs.saved.json
 data/email_content.csv

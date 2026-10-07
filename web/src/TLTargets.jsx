@@ -300,6 +300,9 @@ export default function TLTargets({ snap, onSaved, directSpread = false }) {
   const dv = meta.derived || {};
   const sd = snap.derived || {};
   const at = sourced.airtable || {}, feed = sourced.feed || {};
+  // the marketing lead the feeds hold: the Notion log first (where the team records it), else Airtable's field
+  const leadSourced = (sourced.notion || {}).marketing_lead ? { value: sourced.notion.marketing_lead, from: "Notion" }
+    : at.marketing_lead ? { value: at.marketing_lead, from: "Airtable" } : null;
   const dirty = !!pick || JSON.stringify(inp) !== JSON.stringify(meta.inputs);
 
   /* ---- the dates in force and the other readings (docs/TL_SPEC.md §2):
@@ -640,9 +643,10 @@ export default function TLTargets({ snap, onSaved, directSpread = false }) {
               tip="The code the Meta campaigns and the sends carry (BisaButler_TL_26): it joins the spend and the emails to the launch. Guessed from the codes moving around the announce; type over it where the guess is wrong.">
               <TextBox value={inp.campaign_code || ""} onChange={set("campaign_code")} placeholder={sd.campaign_code || dv.campaign_code || "Artist_TL_26"} />
             </Field>
-            <Field label="Marketing lead" src={at.marketing_lead ? "Airtable" : "typed"} help={at.marketing_lead ? null : "Not in Airtable yet: typed here until it is."}>
-              {at.marketing_lead
-                ? <RoBox value={at.marketing_lead} title="From Airtable" />
+            <Field label="Marketing lead" src={leadSourced ? leadSourced.from : "typed"} help={leadSourced ? null : "Not in the Notion log or Airtable yet: typed here until it is."}
+              tip="Who runs this launch. From the Notion log where it records a lead for the campaign, else Airtable's Marketing lead field, else typed here.">
+              {leadSourced
+                ? <RoBox value={leadSourced.value} title={`From ${leadSourced.from}`} />
                 : <TextBox value={inp.marketing_lead || ""} onChange={set("marketing_lead")} placeholder="Who runs this launch" />}
             </Field>
             <Field label="Meta campaigns" src="paid actuals are read from these"

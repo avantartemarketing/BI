@@ -299,8 +299,17 @@ date; the sell-through card counts each work at its own draw. Read as two launch
 took the nearer close alone and a second, "upcoming" page listed the rest (§1.7,
 §4a.2½).
 
-**The marketing lead** comes from Airtable's `Marketing lead` field (a colleague's display
-name; the pull never takes an email), else what was typed. **The campaign code** is what was
+**The marketing lead** comes from the Notion log first, where the team records it: the
+campaigns database's lead column (a people, select or text property named `Marketing lead`,
+`Campaign lead`, `Lead` or `Owner`, `leadProp`), else the name most of the release's matched
+post rows carry (`campaignLeads`), written to `notion_campaigns.csv` as `marketing_lead`
+beside the dates (a people property is read for its display names only, never an email).
+Then Airtable's `Marketing lead` field (a colleague's display name; the pull never takes an
+email), else what was typed. `inputSources.marketing_lead` names the source (`notion`,
+`airtable`, `typed`), the Target setting tab shows it beside the field, and the page header's
+chip carries it in its tooltip; a TL page resolves its lead the same way (`etl/tl.py`
+`resolve_lead`). Changed on 7 October 2026: the lead was Airtable's or typed before, and the
+log is where it is actually kept. **The campaign code** is what was
 saved, else the prefix of the first Meta campaign's name, else the guess from the email and
 content feeds. **The Meta campaigns** (`campaign_names`) are the list saved, else the draw
 campaign the spend feed names for the code; paid spend is summed over the list. The tab

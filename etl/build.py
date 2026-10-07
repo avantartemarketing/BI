@@ -3305,8 +3305,9 @@ def _num(v):
 
 
 def notion_dates_for(notion: dict | None, code: str | None, release_name: str | None) -> dict:
-    """The Notion log's dates for a release: by its campaign code, else by its
-    name - an upcoming launch has a page and a log before it has a code."""
+    """The Notion log's entry for a release (its dates and its marketing
+    lead): by its campaign code, else by its name - an upcoming launch has a
+    page and a log before it has a code."""
     n = notion or {}
     by_code = n.get(str(code)) if code else None
     by_name = n.get("name:" + str(release_name)) if release_name else None
@@ -3314,10 +3315,12 @@ def notion_dates_for(notion: dict | None, code: str | None, release_name: str | 
 
 
 def load_notion_campaigns() -> dict:
-    """Campaign dates from the Notion log (server/notion.js writes
-    data/notion_campaigns.csv on every refresh): per campaign code, the day
-    of the early-access email (the private room opening), the announce and
-    the launch. Empty until a NOTION_TOKEN is configured."""
+    """Campaign dates and the marketing lead from the Notion log
+    (server/notion.js writes data/notion_campaigns.csv on every refresh): per
+    campaign code, the day of the early-access email (the private room
+    opening), the announce, the launch and the lead's name as the log records
+    it. Empty until a NOTION_TOKEN is configured; a file written before the
+    lead column existed reads with no lead."""
     p = DATA / "notion_campaigns.csv"
     if not p.exists():
         return {}
@@ -3331,6 +3334,7 @@ def load_notion_campaigns() -> dict:
         code = str(r.get("campaign_code") or "").strip()
         name = str(r.get("release_name") or "").strip()
         vals = {k: (str(r.get(k) or "")[:10] or None) for k in ("private_room_open", "announce_date", "launch_end")}
+        vals["marketing_lead"] = str(r.get("marketing_lead") or "").strip() or None
         # keyed by the campaign code and by the release name, so a launch
         # without a code yet (notion_dates_for) is still found
         if code:
@@ -3495,7 +3499,7 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
     - dates: the Notion log first (the early-access email opens the private
       room; the announce; the launch), then what was typed, then the funnel's
       campaign clock, then Airtable's planned dates.
-    - the marketing lead: Airtable, else what was typed.
+    - the marketing lead: the Notion log, else Airtable, else what was typed.
     - the Meta campaigns: the list saved, else the draw campaign named for
       the code; the code itself is what was saved, else the campaigns' prefix.
     Returns a new dict; the input is not changed."""
@@ -3608,11 +3612,14 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         if others:
             drift[key] = {"inForce": here, "source": sources.get(key), **others}
     r["date_drift"] = drift
-    if at.get("marketing_lead"):
-        r["marketing_lead"], sources["marketing_lead"] = at["marketing_lead"], "airtable"
+    # the marketing lead: the Notion log (where the team records it), else
+    # Airtable's field, else what was typed on the tab
+    for src_name, v in (("notion", nd.get("marketing_lead")), ("airtable", at.get("marketing_lead")), ("typed", r.get("marketing_lead"))):
+        if v and str(v).strip():
+            r["marketing_lead"], sources["marketing_lead"] = str(v).strip(), src_name
+            break
     else:
-        r["marketing_lead"] = r.get("marketing_lead") or None
-        sources["marketing_lead"] = "typed" if r["marketing_lead"] else None
+        r["marketing_lead"], sources["marketing_lead"] = None, None
 
     # the Meta campaigns: the list saved, else the draw campaign for the code
     names = [str(n).strip() for n in (r.get("campaign_names") or []) if str(n).strip()]
@@ -3666,8 +3673,9 @@ def resolve_inputs(discovered: list[dict], spend: pd.DataFrame | None, notion: d
 
 def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -> dict:
     """What the feeds hold for a release, for the Target setting tab to show
-    beside what is typed: the Airtable products and dates, the Notion dates,
-    the marketing lead and the Meta campaigns named for the code."""
+    beside what is typed: the Airtable products, dates and marketing lead,
+    the Notion dates and marketing lead, and the Meta campaigns named for
+    the code."""
     at = pricing.release_products(rec)
     code = rec.get("campaign_code")
     nd = notion_dates_for(notion, code, rec.get("release_name"))
@@ -3684,7 +3692,7 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
                      "private_room_open": at["private_room_date"], "marketing_lead": at["marketing_lead"],
                      # the works' own closes, for a launch whose works close on different days
                      "closes": product_closes(at["products"])},
-        "notion": {k: nd.get(k) for k in ("private_room_open", "announce_date", "launch_end")},
+        "notion": {k: nd.get(k) for k in ("private_room_open", "announce_date", "launch_end", "marketing_lead")},
         "clock": {k: rec.get("clock_dates", {}).get(k) if rec.get("clock_dates") else None
                   for k in ("private_room_open", "announce_date", "launch_end")},
         "campaigns": match_campaigns(code, spend) if spend is not None and len(spend) else [],
@@ -5679,8 +5687,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "campaignNames": camps,
         "marketingLead": release.get("marketing_lead"),
         # where each input came from (docs §1.6): notion / typed / airtable /
-        # clock for the dates, airtable or typed for the lead, products or
-        # typed release-level figures for the economics
+        # clock for the dates, notion / airtable / typed for the lead,
+        # products or typed release-level figures for the economics
         "inputSources": release.get("input_sources") or {},
         # the works' own closes (§1.6) and a date Airtable or the funnel's
         # clock now puts elsewhere than the page runs on
@@ -6530,7 +6538,7 @@ def main(only: str | None = None):
         # a timed launch's page: the TL model builds it and patches its row
         res = tl.build_all({"as_of": as_of, "now": datetime.now(timezone.utc), "seen": seen, "launch_frame": launch_frame,
                             "inputs": INPUTS["releases"], "spend": spend, "emails": emails, "only": only,
-                            "content": content, "artist_posts": artist_posts,
+                            "content": content, "artist_posts": artist_posts, "notion": notion,
                             "configured_ids": {r["id"] for r in INPUTS["releases"]}})
         if res["failures"]:
             raise SystemExit(f"build: {only} failed - {res['failures'][0][1]}")
@@ -6670,7 +6678,7 @@ def main(only: str | None = None):
     try:
         tl_out = tl.build_all({"as_of": as_of, "now": datetime.now(timezone.utc), "seen": seen, "launch_frame": launch_frame,
                                "inputs": INPUTS["releases"], "spend": spend, "emails": emails,
-                               "content": content, "artist_posts": artist_posts,
+                               "content": content, "artist_posts": artist_posts, "notion": notion,
                                "configured_ids": {r["id"] for r in INPUTS["releases"]}})
     except Exception as e:  # noqa: BLE001 - the TL pages never stop the LE build
         tl_out["note"] = f"tl: the timed launches could not be built ({type(e).__name__}: {e})"

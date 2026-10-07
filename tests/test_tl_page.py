@@ -105,6 +105,9 @@ def check_page(s: dict, label: str) -> None:
     if not in_window:
         check(s.get("sellthrough") is None and s.get("framing") is None, f"{label}: no sales cards before the window")
     check(s["unitsPerBuyer"]["plan"] > 0 and s["unitsPerBuyer"]["actual"] > 0, f"{label}: pieces per buyer on both sides")
+    # the marketing lead and where it came from, as the LE page says it (notion / airtable / typed, or nobody)
+    lead_src = (s.get("inputSources") or {}).get("marketing_lead")
+    check("marketingLead" in s and (lead_src in ("notion", "airtable", "typed")) == bool(s["marketingLead"]), f"{label}: the lead's source matches the lead ({s.get('marketingLead')!r}, {lead_src!r})")
     # the email stages: the funnel's before the window (the sends against the TL
     # email cohort), aside inside it (the pre-window sends are not the window's traffic)
     em, bmk = s.get("email"), s.get("benchmarks") or {}

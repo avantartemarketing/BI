@@ -522,6 +522,8 @@ function HorizonToggle({ horizon, onChange, closeLabel = "At close" }) {
  * switch instant and puts every card on the same attribution. It is a
  * methodology choice, not a reading of one launch, so it sticks per browser. */
 const DIRECT_PREF = "directSpread";
+// where the header's marketing lead chip read the name from (the snapshot's inputSources, docs 1.6)
+const LEAD_FROM = { notion: " · from the Notion log", airtable: " · from Airtable", typed: " · typed on the Target setting tab" };
 const readDirectPref = () => { try { return localStorage.getItem(DIRECT_PREF) === "1"; } catch { return false; } };
 function DirectToggle({ on, onChange, share, snap }) {
   const pct = (x) => (x === null || x === undefined ? "–" : Math.round(100 * x) + "%");
@@ -628,7 +630,9 @@ function ReleasePage({ snap, onSaved, st, onRefreshed, index, onOpen }) {
           {!isTL && upcoming && (
             <span className="chip" title="Known to Airtable; the funnel report has no rows for it yet">Upcoming · from Airtable</span>
           )}
-          {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
+          {snap.marketingLead && (
+            <span className="chip" title={`Marketing lead${LEAD_FROM[(snap.inputSources || {}).marketing_lead] || ""}`}>{snap.marketingLead}</span>
+          )}
           {snap.edition && snap.edition.total > snap.edition.target && (
             <span className="chip" title="The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target">
               Target <Ex k="release.target">{Number(snap.edition.target).toLocaleString("en-GB")}</Ex> · {Math.round((100 * snap.edition.target) / snap.edition.total)}% of {Number(snap.edition.total).toLocaleString("en-GB")} edition
