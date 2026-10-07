@@ -33,6 +33,21 @@ export function channelsOffOf(inp) {
 }
 
 /* The full medians a snapshot's profile was read from, before any channel was set aside. */
+/* A basket whose launches carry no channel on a measure (the earliest feed
+ * named none on their units, or on their signups) takes another measure's mix
+ * for it, and an even split when it has none, so the channel figures add up
+ * to the headline: the mirror of etl/tl.py mix_fallbacks, for the tab's live
+ * preview of a hand-picked basket. */
+export function mixFallbacks(ss, sess, us) {
+  const sum = (o) => GROUPS.reduce((t, g) => t + num(o[g]), 0);
+  const pick = (own, ...alts) => {
+    if (sum(own) > 0) return own;
+    for (const a of alts) if (sum(a) > 0) return { ...a };
+    return Object.fromEntries(GROUPS.map((g) => [g, 1 / GROUPS.length]));
+  };
+  return [pick(ss, us, sess), pick(sess, ss, us), pick(us, ss, sess)];
+}
+
 export function fullProfile(profile) {
   if (!profile) return null;
   const p = { ...profile };

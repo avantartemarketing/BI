@@ -363,6 +363,13 @@ first, read on the page's day and a closed launch at its own close, so its baske
 once it closes. `tests/test_tl_basket_parity.py` holds the two sides to the same members in the
 same order, over the live launches, every closed launch on the panel and launches being planned.
 
+A basket whose launches carry no channel on a measure - the earliest feed named none on their
+units, or on their signups - takes another measure's mix for it (the signups' for the units, the
+units' for the signups, the sessions' next) and an even split when it has none (`mix_fallbacks`,
+`mixFallbacks`), so a page's channel figures add up to its headline and the waterfall's walks hold
+(`tests/walks.mjs`). It touches the ten earliest closed launches and no page in flight
+(7 October 2026).
+
 ## 9. Sidebar and index
 
 TL rows carry a `TL` badge and the state in words: "signups · opens in 12 d", "window open ·

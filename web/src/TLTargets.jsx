@@ -25,7 +25,7 @@ import { C, MINUS, fmt, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
 import { Field, RoBox, TextBox, NumBox, Switch, Notice, CardHead, Campaigns, GRID, PCT, closedFor, typedKeys, ProductsGrid } from "./TargetSetting.jsx";
 import { resolveProducts, releaseEconomics } from "../../shared/economics.mjs";
-import { GROUPS as GROUP_KEYS, TL_CANNIBALISATION, applyChannelsOff, channelsOffOf, fullProfile, rebalanceShares, stretchWeights, tlEconomics, tlPaidValue, tlTargets } from "../../shared/tlModel.mjs";
+import { GROUPS as GROUP_KEYS, TL_CANNIBALISATION, applyChannelsOff, channelsOffOf, fullProfile, mixFallbacks, rebalanceShares, stretchWeights, tlEconomics, tlPaidValue, tlTargets } from "../../shared/tlModel.mjs";
 
 // the five display groups, in the order the profile dicts are written
 const GROUPS = [
@@ -118,7 +118,7 @@ function tlLiveProfile(rows) {
     return Object.fromEntries(GROUP_KEYS.map((g) => [g, tot > 0 ? raw[g] / tot : 0]));
   };
   const byGroup = (sh, total) => Object.fromEntries(GROUP_KEYS.map((g) => [g, sh[g] * total]));
-  const ss = shares("signup_shares"), sess = shares("sess_shares"), us = shares("unit_shares");
+  const [ss, sess, us] = mixFallbacks(shares("signup_shares"), shares("sess_shares"), shares("unit_shares"));
   const nCps = rows.filter((r) => r.cost_per_signup > 0).length, nCpu = rows.filter((r) => r.cost_per_paid_unit > 0).length;
   return {
     n, members: rows.map((r) => r.release_name),

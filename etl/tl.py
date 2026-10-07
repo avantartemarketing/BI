@@ -1097,6 +1097,24 @@ def _median_curve(curves: dict, members: list[str], key: str, n: int) -> list[fl
     return [float(v) for v in np.median(np.array(arr, dtype=float), axis=0)]
 
 
+def mix_fallbacks(ss: dict, sess_s: dict, us: dict) -> tuple[dict, dict, dict]:
+    """A basket whose launches carry no channel on a measure - the earliest
+    feed named none on their units, or on their signups - takes another
+    measure's mix for it (the signups' for the units, the units' for the
+    signups, the sessions' next) and an even split when it has none, so a
+    page's channel figures still add up to its headline and the waterfall's
+    walks hold (tests/walks.mjs; mirror of shared/tlModel.mjs mixFallbacks).
+    Touches the earliest closed launches only."""
+    def pick(own, *alts):
+        if sum(own.values()) > 0:
+            return own
+        for a in alts:
+            if sum(a.values()) > 0:
+                return dict(a)
+        return {g: 1.0 / len(GROUPS) for g in GROUPS}
+    return pick(ss, us, sess_s), pick(sess_s, ss, us), pick(us, ss, sess_s)
+
+
 def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dict:
     """The medians for one TL basket (spec §8). JSON-ready."""
     wanted = [str(m) for m in (members or [])]
@@ -1106,6 +1124,7 @@ def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dic
     sessions = _median(rows, "sessions")
     units = _median(rows, "units")
     ss, sess_s, us = _median_shares(rows, "signup_share_"), _median_shares(rows, "sess_share_"), _median_shares(rows, "unit_share_")
+    ss, sess_s, us = mix_fallbacks(ss, sess_s, us)
     n_cps = int((pd.to_numeric(rows.get("cost_per_signup"), errors="coerce") > 0).sum()) if len(rows) else 0
     n_cpu = int((pd.to_numeric(rows.get("cost_per_sale"), errors="coerce") > 0).sum()) if len(rows) else 0
     return {
