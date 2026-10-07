@@ -6,7 +6,7 @@
 import { createRequire } from "node:module";
 import assert from "node:assert";
 const require = createRequire(import.meta.url);
-const { stageOf, isEmailRow, matchRelease, inWindow, campaignDates, campaignRowDates, leadProp, leadNames, campaignLeads, datesCsv } = require("../server/notion.js");
+const { stageOf, isEmailRow, matchRelease, inWindow, campaignDates, campaignRowDates, leadProp, leadRank, leadNames, campaignLeads, datesCsv } = require("../server/notion.js");
 
 // the stage from the row's words: the early-access email, the announce, the launch
 assert.strictEqual(stageOf(["Early access email", "AA Email"]), "early_access");
@@ -81,6 +81,12 @@ assert.strictEqual(leadProp({ Owner: people("Tom"), "Lead time": { type: "number
 assert.strictEqual(leadProp({ Lead: sel("Clare") }), "Lead");
 assert.strictEqual(leadProp({ "Campaign lead": { type: "rich_text", rich_text: [{ plain_text: "Clare" }] } }), "Campaign lead");
 assert.strictEqual(leadProp({ "Lead magnet": sel("yes"), "Lead date": d("2026-09-01") }), null);
+// a relation to a team page is the usual shape; the rank says how specific the name is
+assert.strictEqual(leadProp({ Release: { type: "title", title: [] }, "Marketing Lead": { type: "relation", relation: [{ id: "t1" }] } }), "Marketing Lead");
+assert.deepStrictEqual(leadRank({ Owner: people("Tom"), "Marketing Lead": { type: "relation", relation: [] } }), { name: "Marketing Lead", rank: 0 });
+assert.deepStrictEqual(leadRank({ Owner: people("Tom") }), { name: "Owner", rank: 4 });
+assert.strictEqual(leadRank({ Name: { type: "title", title: [] } }), null);
+assert.deepStrictEqual(leadNames({ type: "relation", relation: [{ id: "t1" }] }), [], "a relation needs the fetch (leadNamesAsync)");
 assert.strictEqual(leadProp({ Name: { type: "title", title: [] } }), null);
 // the names on the column: display names only, never the email the API carries beside them
 assert.deepStrictEqual(leadNames(people("Maria", "  Tom  Lloyd ")), ["Maria", "Tom Lloyd"]);

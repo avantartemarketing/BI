@@ -299,12 +299,15 @@ date; the sell-through card counts each work at its own draw. Read as two launch
 took the nearer close alone and a second, "upcoming" page listed the rest (§1.7,
 §4a.2½).
 
-**The marketing lead** comes from the Notion log first, where the team records it: the
-campaigns database's lead column (a people, select or text property named `Marketing lead`,
-`Campaign lead`, `Lead` or `Owner`, `leadProp`), else the name most of the release's matched
-post rows carry (`campaignLeads`), written to `notion_campaigns.csv` as `marketing_lead`
-beside the dates (a people property is read for its display names only, never an email).
-Then Airtable's `Marketing lead` field (a colleague's display name; the pull never takes an
+**The marketing lead** comes from the Notion log first, where the team records it: a lead
+column named `Marketing lead`, `Campaign lead`, `Lead` or `Owner` (`leadRank`), on the post
+row or on the release page the row links to in the campaigns database (`leadOf`, the most
+specific name winning), with a campaigns database named by `NOTION_CAMPAIGNS_DB` supplying its
+own column over both. In the team's database the column is a relation to a person's page, read
+for that page's title; a people property is read for its display names only, never an email;
+select, text, formula and rollup properties read as text. A release's lead is the name most of
+its rows carry (`campaignLeads`), written to `notion_campaigns.csv` as `marketing_lead` beside
+the dates. Then Airtable's `Marketing lead` field (a colleague's display name; the pull never takes an
 email), else what was typed. `inputSources.marketing_lead` names the source (`notion`,
 `airtable`, `typed`), the Target setting tab shows it beside the field, and the page header's
 chip carries it in its tooltip; a TL page resolves its lead the same way (`etl/tl.py`

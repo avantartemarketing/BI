@@ -467,13 +467,19 @@ The same pass reads each row's words for the moment it records - an early-access
 launch_end,marketing_lead,...`), which the build reads before anything typed;
 `NOTION_CAMPAIGNS_DB` names a campaigns database whose date columns (matched by name:
 early access / private room, announce, launch / close) override those. The **marketing
-lead** comes across in the same file: a column named for it (`Marketing lead`, `Campaign
-lead`, `Lead`, `Owner`; a people, select or text property) on the campaigns database's
-row, else the name most of a release's post rows carry. A people property is read for
-its display names only, never an email, so the integration needs the "read user
-information without email addresses" capability for the names to come through. The
-refresh status says which column it read (`marketing lead for 12 releases (from
-"Marketing Lead")`) or that it found none, and the Target setting tab marks the lead
+lead** comes across in the same file, from a column named for it (`Marketing lead`,
+`Campaign lead`, `Lead`, `Owner`): in the team's database it is a relation to a person's
+page, and the pull reads that page's title for the name; a people, select, text, formula
+or rollup property reads too. It looks on the post row itself and, one hop on, on the
+release page the row links to (the campaigns database, where the lead is actually kept),
+the most specific column name winning; a campaigns database named by `NOTION_CAMPAIGNS_DB`
+supplies its own lead column over both. A release's lead is the name most of its rows
+carry. A people property is read for display names only, never an email. For the names to
+come through, the linked databases (the campaigns database and the team database its lead
+pages live in) must be shared with the integration like the posts database is; the refresh
+status says which column it read (`marketing lead for 12 releases (from "Release →
+Marketing Lead")`), that it found a column but could read no names (with how many linked
+pages it could not open), or that it found none. The Target setting tab marks the lead
 `Notion`, `Airtable` or `typed`, in that order of precedence.
 
 The channel comes from the database's Channel column - values are written by hand
