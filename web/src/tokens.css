@@ -436,7 +436,8 @@ select.native {
 .ts-slider input[type=range] { width: 100%; margin: 0; height: 22px; accent-color: var(--blue); cursor: pointer; }
 .ts-slider input[type=range]:disabled { accent-color: #c8c5bc; cursor: default; }
 .ts-slider input[type=range]:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
-.ts-slider .note { font-size: 11px; color: #9a988f; min-height: 14px; }
+/* the units (or signups) of stretch the channel carries at the share set: read while dragging, so a step darker than a footnote */
+.ts-slider .note { font-size: 11.5px; color: var(--muted); min-height: 14px; font-variant-numeric: tabular-nums; }
 .ts-grid { display: grid; gap: 20px 24px; }
 .ts-grid > * { min-width: 0; }
 .ts-grid.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }

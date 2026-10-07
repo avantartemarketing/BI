@@ -798,6 +798,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
    * they always add to 100 (shared/benchmarkModel.mjs rebalanceShares) */
   const activeGroups = profile ? GROUPS.map((g) => g.key).filter((g) => !isOff(g) && Number((profile.units_by_group || {})[g]) > 0) : [];
   const evenShares = profile ? stretchWeights({ stretch_from: null }, profile.units_by_group) : {};
+  // the units of stretch a channel carries at the shares set: its target less its benchmark (benchmarkTargets)
+  const stretchOf = (key) => (T && T.units_by_group ? Number(T.units_by_group[key] || 0) - Number((profile.units_by_group || {})[key] || 0) : 0);
   const shares = T && T.stretch_from ? T.stretch_from : evenShares;
   const slideStretch = (key) => (e) => setInp({ ...inp, stretch_from: rebalanceShares(shares, key, Number(e.target.value) / 100, activeGroups) });
   const figure = (label, target, bmv, format, tip, opts = {}) => {
@@ -891,9 +893,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     paidOff ? "Paid off: benchmarked on what the basket did without paid, and the other channels carry the whole target." : null,
     isOff("referral_artist") ? "Artist off: no artist target and no posting benchmark, as for an estate or an artist who will not post." : null,
   ].filter(Boolean).join(" ") || "Off takes the channel's median out of the benchmark and its share out of the target; the other channels carry the whole sellout.";
-  const basketNote = basketDirty ? "Not saved yet: the figures below follow the launches ticked; save to rebuild the page on them."
-    : bm && bm.basket ? `Matched from ${fmt(bm.basket.n)} comparable launches${bm.basket.id === bm.basket.suggestedId ? ", the suggested basket for this release" : ", chosen by hand"}${bm.basket.thin ? ". Thin: under six launches, so the median moves easily." : "."}`
-      : null;
+  // the one thing the basket field has to say: that a new pick is not the page's yet
+  const basketNote = basketDirty ? "Not saved yet: the figures below follow the launches ticked; save to rebuild the page on them." : null;
   const productsDesc = airtableMatch !== "none"
     ? `${atProducts.length} product${atProducts.length === 1 ? "" : "s"} from Airtable, matched by ${airtableMatch}`
     : `Airtable has no record matched to this release${airtableNote ? ` - ${airtableNote}` : ""}`;
@@ -1024,35 +1025,12 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
         <section className="ts-card" aria-label="Benchmark basket">
           <CardHead dot={C.blue} title="Benchmark basket" desc="the median of launches like this one" />
           <div className="ts-grid c2">
-            <Field label="Basket" tip="The launches this release is benchmarked against. The benchmark is their median, per metric and per channel.">
+            <Field label="Basket" help={basketNote} tip="The launches this release is benchmarked against. The benchmark is their median, per metric and per channel.">
               <div className="ts-row">
                 <RoBox value={basketName || "none chosen yet"} />
                 <button type="button" className="ts-btn secondary" onClick={() => setPicking(true)}
                   title="Opens the basket picker: the ready-made baskets with their medians, or a bespoke selection.">Change basket</button>
               </div>
-            </Field>
-            <Field label="What the basket reaches" help={basketNote}>
-              {profile ? (
-                <div className="ts-chips">
-                  <span className="ts-chip" title="Launches in the basket. Under six and the median moves a lot on one launch.">{fmt(prof ? prof.n : bm && bm.basket ? bm.basket.n : null)} launches</span>
-                  <span className="ts-chip" title={(off.length ? "Median units of demand without the channels set aside, with the 25th to 75th percentile read the same way." : "Median units of demand, with the 25th to 75th percentile of the basket beside it.") + " Demand is what a launch would have sold with enough supply: its units sold, plus what the eligible entrants left without a unit, or whose payment failed, would have bought at the entry rate."}>
-                    median {fmt(profile.units)} units of demand · P25 {fmt(profile.units_p25)} to P75 {fmt(profile.units_p75)}
-                  </span>
-                  {profile.n_short > 0 && (
-                    <span className="ts-chip" title={`${fmt(profile.n_short)} of the basket's launches sold out with people left wanting. The benchmark counts the demand they had, not the edition they happened to have; on sales alone the basket's median is ${fmt(profile.units_sold)} units.`}>
-                      {fmt(profile.n_short)} sold out short · median sold {fmt(profile.units_sold)}
-                    </span>
-                  )}
-                  {profile.price > 0 && (
-                    <span className="ts-chip" title="Median unit price of the basket in euros (from Airtable), with its 25th to 75th percentile. The default basket matches on price as well as size (BENCHMARK_SPEC 3.1).">
-                      median price {fmtMoney(profile.price)} · {fmtMoney(profile.price_p25)} to {fmtMoney(profile.price_p75)}
-                    </span>
-                  )}
-                  <span className="ts-chip">{fmt(profile.sessions)} sessions</span>
-                  <span className="ts-chip" title={paidOff ? "Paid is not in plan for this release." : "Median share of sessions from paid."}>{paidOff ? "paid not in plan" : `paid ${fmtPct(paidShare, 0)} of sessions`}</span>
-                  <span className="ts-chip">{fmt(profile.campaign_days)} campaign days</span>
-                </div>
-              ) : <div className="ts-box dis">no basket yet</div>}
             </Field>
             <Field label="Channels in plan" help={channelsHelp}
               tip="A channel this release will not run leaves the benchmark and the target: the basket is read on its other channels, and they carry the whole sellout between them.">
@@ -1076,7 +1054,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
           </div>
           {profile && (
             <div className="ts-grid" style={{ marginTop: 20 }}>
-              <Field label="Where the stretch comes from" help={stretchHelp}
+              <Field label="Where the stretch comes from" help={stretchHelp} src={T ? `stretch ${signed(Math.round(T.stretch_units))} units` : undefined}
                 tip="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions and entries lifted to match and conversion held. Even: the basket's own shares, the same uplift in every channel. Drag one channel's slider and the others rescale, so the shares always add to 100%.">
                 <div className="ts-stretch">
                   <div className="ts-sliders">
@@ -1092,7 +1070,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                           <span className="head"><span>{g.name}{gOff ? " · not in plan" : !active ? " · no benchmark" : ""}</span><b>{active ? `${pct}%` : "–"}</b></span>
                           <input type="range" min="0" max="100" step="1" disabled={!active || activeGroups.length < 2} value={pct}
                             aria-label={`${g.name}: share of the stretch`} onChange={slideStretch(g.key)} />
-                          <span className="note">{active && stretchTyped && basketPct !== pct ? `basket ${basketPct}%` : ""}</span>
+                          <span className="note">{active ? `${signed(Math.round(stretchOf(g.key)))} units${stretchTyped && basketPct !== pct ? ` · basket ${basketPct}%` : ""}` : ""}</span>
                         </label>
                       );
                     })}
