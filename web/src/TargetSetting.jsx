@@ -509,9 +509,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
       // the defaults the ETL could derive - the form starts from those
       const raw = d.inputs || d.defaults;
       // inputs saved under earlier shapes: the Referral Artist row of the
-      // retired quality grid (N/A = the artist's own channels off; Low / High
-      // the posting tier), one Meta campaign, and the release-level economics
-      // at the top level (kept as legacy_economics until cleared)
+      // retired quality grid (N/A = the artist's own channels off), one Meta
+      // campaign, and the release-level economics at the top level (kept as
+      // legacy_economics until cleared); the posting tier that row became was
+      // retired on 7 October 2026 and is dropped on the next save
       const legacyTier = (raw.channel_quality_overrides || {})["Referral Artist"];
       const topLegacy = {};
       for (const k of LEGACY_KEYS) if (raw[k] !== undefined && raw[k] !== null) topLegacy[k] = raw[k];
@@ -519,7 +520,6 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
       for (const k of LEGACY_KEYS) delete start[k];
       Object.assign(start, {
         channels_off: raw.channels_off || (legacyTier === "N/A" ? ["referral_artist"] : []),
-        artist_posting_tier: raw.artist_posting_tier || (["Low", "Medium", "High"].includes(legacyTier) ? legacyTier : "Medium"),
         campaign_names: Array.isArray(raw.campaign_names) ? raw.campaign_names : (raw.campaign_name ? [raw.campaign_name] : []),
         products: Array.isArray(raw.products) ? raw.products : [],
         legacy_economics: raw.legacy_economics !== undefined ? raw.legacy_economics : (Object.keys(topLegacy).length ? topLegacy : null),
@@ -1039,16 +1039,6 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                   title="The basket keeps every launch, paid or not; with paid off each counts on its other channels only." />
                 <Switch on={!isOff("referral_artist")} onChange={(on) => setOff("referral_artist", on)} label="Artist's own channels"
                   title="Off for an estate, or a living artist with no channels of their own. The artist group leaves the benchmark and the funnel expects no posts." />
-              </div>
-            </Field>
-            <Field label="Artist posting tier" help={isOff("referral_artist") ? "Not applicable: the artist's own channels are off." : "The funnel's posting benchmark is the median of completed campaigns labelled with the same tier."}
-              tip="How much the artist will post, against the tiers past campaigns were labelled with.">
-              <div className={`ts-box${isOff("referral_artist") ? " dis" : ""}`}>
-                <select value={inp.artist_posting_tier || "Medium"} disabled={isOff("referral_artist")} onChange={(e) => setInp({ ...inp, artist_posting_tier: e.target.value })}>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
               </div>
             </Field>
           </div>

@@ -787,8 +787,8 @@ model.
 What stayed, and where it moved: the cost per purchase is a figure per release
 (`cost_per_purchase`, € per paid unit; blank means the basket's median cost per paid unit, else
 the panel's median, §4 E); the Referral
-Artist tier became the artist posting tier (`artist_posting_tier`, the cohort of the
-artist-posts benchmark); "N/A" on Referral Artist became the artist's own channels not in plan
+Artist tier became the artist posting tier (`artist_posting_tier`), itself retired on 7 October
+2026 when the artist-posts benchmark went to the all-campaign median; "N/A" on Referral Artist became the artist's own channels not in plan
 (`channels_off`, spec §4.3); and the order-split medians still place a group's target on its
 channels (§4a.3). Inputs saved under the old names are read by the build until they are saved
 again, and a save drops them.
@@ -2115,7 +2115,7 @@ data), `reOfferRecovery`.
 ```
 dim_release(release_name PK, campaign_code, type LE|TL, artist, announce_date,
             private_room_open, launch_end, campaign_length_days, edition_size, unit_price,
-            economics…, benchmark_basket, channels_off, artist_posting_tier, cost_per_purchase, cannibalisation)
+            economics…, benchmark_basket, channels_off, cost_per_purchase, cannibalisation)
 dim_product(release_name FK, product_name, edition)
 fact_funnel_daily(release_name, channel, event_date, sessions, page_views, draw_entries,
             eligible_entry_units, eligible_units_no_conv, units_total, units_by_route…,

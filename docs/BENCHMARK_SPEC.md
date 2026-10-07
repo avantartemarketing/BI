@@ -377,7 +377,7 @@ The basket keeps every member, paid or not; each simply counts on its other chan
 benchmark is what launches like this reached without paid, the group's target is zero, its
 budget is zero, and the other channels carry the whole sellout between them. An artist with
 no channels of their own is the same reading on `referral_artist`, and the funnel then expects
-no artist posts (`referral_artist_tier` is `N/A`).
+no artist posts (`artist_posts_off`).
 
 The basket's full medians ride on the profile as `units_all`, `units_by_group_all` and the
 rest, so the snapshot can say what was set aside and the browser can re-read the same basket
@@ -565,8 +565,8 @@ carry `null` and fall back to a −10% band on `statusPct`.
   and pre-order rate), `legacy_economics: null` to clear the release-level figures a release
   still carries, `marketing_lead` and the three dates (typed fallbacks, read after the feeds),
   `benchmark_basket: {kind: "ready"|"bespoke"|"saved", id?: string, members?: string[]}`,
-  `channels_off` (§4.3), `cost_per_purchase` (€ per paid unit; empty means the basket's median cost per paid unit, or the panel constant when fewer than three of its launches have spend on file)
-  and `artist_posting_tier` (Low / Medium / High). A release is set up only once a product
+  `channels_off` (§4.3) and `cost_per_purchase` (€ per paid unit; empty means the basket's median cost per paid unit, or the panel constant when fewer than three of its launches have spend on file).
+  A release is set up only once a product
   has an edition and a price and the dates resolve. Validation: `kind` in the three values; `id` must
   resolve; `members` must be known release names, at least 1 (a single launch is a basket:
   its own figures are the medians, and the picker flags it thin), and must not contain this
@@ -652,7 +652,7 @@ rather than as one mark per channel.
 | **Channels vs targets** | fill and outline per column, actual inside them, foot = % vs target with its own green/red; in the % view every target is 100% and, the uplift being one multiple, every outline sits at the same height too | same with the projected fill |
 | **Funnel by channel** / **Organic funnel** | always Today. **The target runs down the centre of every rung**, the benchmark is a **dotted tick** wherever the basket's figure lands on the same log scale, blue/red dot = actual; ×4 either way fills the rung (`›` marks beyond). Pale bar spans centre→dot. The % and its RAG colour are vs target: green at or above it, amber less than 10% short, red 10% or more short, a cost rung judged the other way round. Volume rungs carry the uplift, so the tick sits 1/K off the centre; rate rungs are held at the benchmark, so the tick sits on the centre line. The conversion rung reads the basket's conversion **by today** (`conv_benchmark_today`, the figure the waterfall walks against), never its conversion at close: a basket's sessions come earlier than its units, so the at-close rate would put every release behind for most of the campaign while the walk beside it said otherwise. | - |
 | **Actual / Projection vs target** (waterfall) | Target today → Stretch (a bar in the stretch tint from the target down, or up, to the benchmark: the part of the gap that is ambition beyond the basket, its popup naming the uplift) → Benchmark today (dotted tick) → the steps, each read against the basket (`waterfall.today.stepsBm`, summing to actual − benchmark) → Actual today; with the stretch they sum to the gap the header prints. Without a basket the list opens at the target and the steps read against it. A `Drivers | Channels` toggle in the card's header picks the steps: the four stored contributors, or each channel's units against its own benchmark in the page's order (they add up to the release's demand; on a sold-out release the last step, Beyond sellout, drops to the capped figure) | the same, ending at Projection (`waterfall.stepsBm`) |
-| **Funnel by channel**, waterfall view | opens at the benchmark's dotted tick, with the stretch beneath it as the band up to the target and the target's solid tick at its end (two rows, not three); then the per-stage rows, every reference read off the basket's pace by today (sessions, implied sends, the benchmark budget) so the rows sum to actual − benchmark, off the same snapshot figures. The channels are blocks of rows rather than rows of their own, and grey 1px drops carry the running level from each row to the next as on the outcome waterfall. The tall card prints no channel column and no figure column: its row labels carry the channel where the label alone would not say it (Email sessions, Paid spend), a row's figures are in its popup, on the bar or on its name, and the levels print theirs beside the label. Pointing at a name lights its bar and a bar its name | - |
+| **Funnel by channel**, waterfall view | opens as every waterfall does (7 October 2026): the target's solid tick, the stretch as the band down to the benchmark, the benchmark's dotted tick; then the per-stage rows, every reference read off the basket's pace by today (sessions, implied sends, the benchmark budget) so the rows sum to actual − benchmark, off the same snapshot figures. The channels are blocks of rows rather than rows of their own, and grey 1px drops carry the running level from each row to the next as on the outcome waterfall. The tall card prints no channel column and no figure column: its row labels carry the channel where the label alone would not say it (Email sessions, Paid spend), a row's figures are in its popup, on the bar or on its name, and the levels print theirs beside the label. Pointing at a name lights its bar and a bar its name | - |
 | **Funnel by channel**, 2 × 2 | the waterfall view with two columns by two rows of room: the channel names in a column to the left of their rows (a name lights all of its rows), the bars across the card on a unit axis (gridlines behind the rows, the figures at the foot), and the figures in a column of their own. Not on the page by default; added from the layout editor | - |
 | **Paid spend / day** | both track bars carry fill and outline; the units row's % reads against the target; the stretch is the band on the bars and its figures are in that band's popup, with no row of its own | same with the projected fill |
 | **Sell-through by product** | no reference at all, by decision (2026-09-17): one row per product, sold and entries in hand against the product's edition; the target and the benchmark are read on the hero and the channels | the same, with the units still to come |
@@ -707,8 +707,8 @@ apply is a disabled box, never a dash):
    holds them), the marketing lead, the Slack channel (saved on its own), the Meta campaigns
    as tick rows with an add box, and the three dates with their source under each.
 3. **Benchmark basket** card — the chosen basket with a `Change basket` button opening the
-   picker, its profile as chips, the **Channels in plan** switches (§4.3: Running paid; Artist's
-   own channels, with the posting tier beside them, disabled while the artist is off), and the
+   picker, the **Channels in plan** switches (§4.3: Running paid; Artist's own channels), the
+   stretch sliders with the units each channel carries, and the
    per-channel table `benchmark units | target units | benchmark sessions | target sessions |
    session → unit (held)`, where a group set aside reads `not in plan`. The held rate is the
    row's own benchmark units over its benchmark sessions, the rate the funnel holds
@@ -741,8 +741,9 @@ apply is a disabled box, never a dash):
 The paid-share overwrite, the paid channel size, private room share, paid conversion and the
 per-channel quality rows are gone: a save drops them from a release that still carries them.
 The paid share is the basket's, and a release that will not run paid says so with the switch
-rather than with a zero. The Referral Artist tier lives on as the posting tier beside the
-artist switch (`artist_posting_tier`).
+rather than with a zero. The Referral Artist tier lived on for a while as a posting tier beside
+the artist switch (`artist_posting_tier`); that too was retired on 7 October 2026, the
+artist-posts benchmark reading every completed campaign, and a save drops it.
 
 The header's benchmark figures take the basket's own median wherever the basket has one
 (`unitsByGroup.paid`, `sessions`, `paidBudget`, and `paidBudget ÷ basket launch value` for

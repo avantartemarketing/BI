@@ -431,12 +431,13 @@ export function buildWaterfall(snap, groups) {
   const nowTotal = snap?.hero?.now ?? 0;
   const day = snap?.day ?? 0;
 
-  /* Off the same snapshot figures as the outcome waterfall: the list opens at
-   * the benchmark, shows the stretch beneath it as the band up to the target
-   * with the target's tick at its end, and walks from the benchmark with every
-   * row read against the basket, so the rows sum to actual less benchmark and,
-   * with the stretch, to actual less target. Absent a benchmark the list opens
-   * at the target and the rows read against the plan, as everywhere else. */
+  /* Off the same snapshot figures as the outcome waterfall, and opening the
+   * same way (ui.jsx waterfallOpening): the target's tick, the stretch as the
+   * band down to the benchmark, the benchmark's dotted tick; the walk goes on
+   * from the benchmark with every row read against the basket, so the rows sum
+   * to actual less benchmark and, with the stretch, to actual less target.
+   * Absent a benchmark the list opens at the target and the rows read against
+   * the plan, as everywhere else. */
   const bmTotal = snap?.hero?.benchmarkToday ?? null;
   const hasBm = !!snap?.benchmark && bmTotal !== null && bmTotal !== undefined;
   const stretchTotal = hasBm ? expTotal - bmTotal : null;
@@ -780,9 +781,10 @@ export default function FunnelByChannel({ snap, horizon, only }) {
  * this size. */
 
 /* ---- the waterfall view, in both cards -----------------------------------
- * The walk opens at the benchmark, with the stretch beneath it as the band up
- * to the target and the target's tick at its end, and steps down every
- * channel's rows to the actual. Grey 1px drops carry the running level from
+ * The walk opens as every waterfall does, at the target, with the stretch as
+ * the band down to the benchmark and the benchmark's dotted tick under it
+ * (the order the outcome waterfall reads, 7 October 2026), and steps down
+ * every channel's rows from the benchmark to the actual. Grey 1px drops carry the running level from
  * each row to the next, so the walk reads as one line, as the outcome
  * waterfall draws it (BENCHMARK_SPEC 9). The channels are blocks of rows
  * rather than rows of their own: the 2 × 2 card names them in a column to
@@ -807,12 +809,14 @@ const withChannel = (r) => (SELF_NAMED.has(r.label) || !r.short ? r.label : `${r
  * drops are drawn from and to. */
 function walkBlocks(wf) {
   const { flat, expTotal, bmTotal, nowTotal, hasBm, words } = wf;
+  const here = { close: false, where: "Funnel by channel" };
   const open = hasBm ? [
-    { id: "bm", kind: "level", base: 26, label: words.bm, value: bmTotal, level: bmTotal, tip: bmTip(wf), color: C.refLine, dotted: true, x: { k: "hero.bm", arg: { close: false, where: "Funnel by channel" } } },
-    // the stretch: the band from the benchmark to the target, the target's tick
-    // at its end; the walk goes on from the benchmark
-    { id: "stretch", kind: "stretch", base: 24, label: "Stretch to target", from: bmTotal, to: expTotal, value: expTotal, level: bmTotal,
-      tip: wf.stretchTip, targetTip: targetTip(wf), x: { k: "hero.target", arg: { close: false, where: "Funnel by channel" } } },
+    { id: "target", kind: "level", base: 26, label: words.target, value: expTotal, level: expTotal, tip: targetTip(wf), color: C.refLine, x: { k: "hero.target", arg: here } },
+    // the stretch: the band from the target down to the benchmark, the part of
+    // the gap that is ambition; the walk goes on from the benchmark
+    { id: "stretch", kind: "stretch", base: 24, label: "Stretch", from: expTotal, to: bmTotal, value: bmTotal - expTotal, level: bmTotal,
+      tip: wf.stretchTip, x: { k: "wf.stretch", arg: here } },
+    { id: "bm", kind: "level", base: 26, label: words.bm, value: bmTotal, level: bmTotal, tip: bmTip(wf), color: C.refLine, dotted: true, x: { k: "hero.bm", arg: here } },
   ] : [
     { id: "target", kind: "level", base: 26, label: words.target, value: expTotal, level: expTotal, tip: targetTip(wf), color: C.refLine, x: { k: "hero.target", arg: { close: false, where: "Funnel by channel" } } },
   ];
@@ -893,7 +897,8 @@ function Walk({ wf, layout: L }) {
   // the label columns, and carries the figure where there is no column for it
   const levelRow = (row, gap = 0) => {
     const stretch = row.kind === "stretch";
-    const v = row.x ? <Ex k={row.x.k} arg={row.x.arg}>{fmt(row.value)}</Ex> : fmt(row.value);
+    const shown = stretch ? fmtSigned(row.value) : fmt(row.value);
+    const v = row.x ? <Ex k={row.x.k} arg={row.x.arg}>{shown}</Ex> : shown;
     return (
       <div key={row.id} style={grid(row.base, gap)}>
         <div {...point({ row: row.id }, row.tip)} style={{
@@ -905,12 +910,7 @@ function Walk({ wf, layout: L }) {
         </div>
         <div style={{ position: "relative", alignSelf: "stretch" }}>
           <Drops entry={row.entry} exit={row.exit} X={X} />
-          {stretch ? (
-            <>
-              {bar(row, row.from, row.to, C.refStretch, row.tip)}
-              {tick(row.to, C.refLine, false, row.targetTip)}
-            </>
-          ) : tick(row.value, row.color, !!row.dotted, row.tip)}
+          {stretch ? bar(row, row.from, row.to, C.refStretch, row.tip) : tick(row.value, row.color, !!row.dotted, row.tip)}
         </div>
         {L.delta ? <div className="num" style={ANCHOR_NUM}>{v}</div> : null}
       </div>
