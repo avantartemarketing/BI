@@ -74,8 +74,11 @@ Edition pricing and the per-product target economics (needs `AIRTABLE_TOKEN`, `A
 `AIRTABLE_TABLE` in the environment; the live refresh runs this every cycle when the token is set; like every script the refresh runs, it uses pandas and the standard library only, since
 that is all Render's Python has (a `requests` import there failed the Airtable step on every refresh
 until 24 September, and the header showed it only as "Sources stale");
-`AIRTABLE_FIELD_<column>` names a target field spelled another way, e.g.
-`AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner"`):
+`AIRTABLE_FIELD_<column>` names a field spelled another way, e.g.
+`AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner"` or `AIRTABLE_FIELD_EDITION_SIZE="Units"`; a
+required field is also looked for under the names it has carried before, `FORMER_NAMES` in the
+script, so the rename of "Units" to "Units [Edition Size]" on 7 October 2026, which stopped the
+pull for a day with "fields not in the table: 'Units'" in the header, is the last one to):
 
 ```bash
 python3 etl/pull_airtable.py --list-fields              # field names and types only
