@@ -90,10 +90,12 @@ const swatch = (bg) => ({ width: 9, height: 9, borderRadius: 2, background: bg, 
 const legendItem = { display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" };
 
 /* One product's bar. Layers, bottom to top: track → the paler room out to the
- * sellout → the segments inset → the winners' tint carrying on past the
- * sellout for demand with no room. `maxV` is the bar's scale in units; in
- * the % view it is the product's own edition (plus any overshoot), in the
- * Units view the same for every row. */
+ * sellout → the segments inset. The bar is the edition: demand the work has
+ * no room for (entrants in hand past its edition and, at close, the further
+ * entrants it turns away) is not drawn, it is in the row's hover (6 October
+ * 2026; drawn past the sellout it read as one more kind of unit). `maxV` is
+ * the bar's scale in units; in the % view it is the product's own edition,
+ * in the Units view the same for every row. */
 function ProductBar({ row, close, maxV, tips, height = 14, radius = 4 }) {
   const t = useTip();
   const tp = (x) => t.props(x);
@@ -101,7 +103,6 @@ function ProductBar({ row, close, maxV, tips, height = 14, radius = 4 }) {
   const edition = row.edition;
   const inset = Math.max(2, Math.round(height * 0.14));
   const innerR = Math.max(2, radius - 2);
-  const over = row.oversubscribed ?? 0;
   const segs = segmentsOf(row, close).map((x) => ({ ...x, tip: tips[x.key === "sold" ? "sold" : x.key === "drafts" ? "drafts" : x.key === "future" ? "future" : "inHand"] }));
   let at = 0;
   return (
@@ -120,16 +121,6 @@ function ProductBar({ row, close, maxV, tips, height = 14, radius = 4 }) {
           }} />
         );
       })}
-      {/* demand with no room left: the winners' own tint, carrying on past
-          the point where the paler room stops - the change of ground under
-          the bar is what says it has nowhere to go */}
-      {over > 0 && finite(edition) && (
-        <div {...tp(tips.over)} style={{
-          position: "absolute", top: inset, bottom: inset, left: `${pct(edition)}%`,
-          width: `${pct(edition + over) - pct(edition)}%`, background: SEG.winners,
-          borderTopRightRadius: innerR, borderBottomRightRadius: innerR,
-        }} />
-      )}
     </div>
   );
 }
@@ -181,12 +172,15 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const byEdition = allEditions;
   // one scale when an edition is missing: the biggest edition, or the biggest demand
   const soldOf = (r) => (r.sold ?? 0) + (r.soldAssumed ?? 0) + (finite(r.drafts) ? r.drafts : 0);
-  const demandOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0) + (r.oversubscribed ?? 0);
   const unitsOf = (r) => soldOf(r) + (r.shown ?? 0) + (close ? r.futurePredicted ?? 0 : 0);
-  // no headroom past the edition: the bar's end is the edition's, so the pale
-  // room runs to the track's corner and no grey shows past it
-  const unitsMax = Math.max(...rows.map((r) => Math.max(r.edition ?? 0, demandOf(r))), 1);
-  const maxFor = (r) => (byEdition ? Math.max(r.edition, demandOf(r)) : unitsMax);
+  // demand a work has no room for: entrants in hand past its edition and, at
+  // close, the further entrants it turns away - in the row's hover, not drawn
+  const overOf = (r) => (r.oversubscribed ?? 0) + (close ? r.futureOversubscribed ?? 0 : 0);
+  // the bar is the edition: its end is the edition's, so the pale room runs
+  // to the track's corner and no grey shows past it (a timed launch's units
+  // can pass its target, so those still set the scale where they do)
+  const unitsMax = Math.max(...rows.map((r) => Math.max(r.edition ?? 0, unitsOf(r))), 1);
+  const maxFor = (r) => (byEdition ? Math.max(r.edition, unitsOf(r)) : unitsMax);
 
   // the headline: what is spoken for today, or the prediction at close
   // a timed launch's units can pass its target, so its share is not capped at 100%
@@ -235,7 +229,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
         "A draw round's winners whose claim the order feed has not caught up with yet still count, at the pre-order rate, until their orders land, so claiming pre-orders never reads as sell-through going down" +
         (finite(st.claimsInFlight) && st.claimsInFlight > 0 ? ` (${fmt(st.claimsInFlight)} landing now). ` : ". ") +
         "Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them." +
-        (close ? " Still to come is the projection's further units, spread over the works by their demand so far and held to each one's room." : ""),
+        (close ? " Still to come is the projection's further entrants, taken to look like those so far and placed where there is room; a full work's share is turned away." : ""),
   };
   /* No copy under the rows. The allocation's account lives in the popup of
      the draw-winners key, the split sales in the paid key's, and the
@@ -433,16 +427,20 @@ export default function SellThrough({ snap, horizon = "today" }) {
             gridAutoRows: `${pitch}px`, columnGap: 14, alignItems: "center", alignContent: "start",
           }}>
             {rows.map((r) => {
+              // the demand the work has no room for rides in its hover, not on the bar
+              const over = overOf(r);
               const rowTip = { head: r.name, rows: [
                 { label: "Paid", value: fmt((r.sold ?? 0) + (r.soldAssumed ?? 0)) },
                 { label: tl ? "Awaiting payment" : "Drafts", value: fmt(r.drafts ?? 0) },
                 ...(tl ? (finite(r.orders) ? [{ label: "Orders", value: fmt(r.orders) }] : []) : [{ label: "Draw winners (estimate)", value: fmt(r.shown ?? 0) }]),
+                ...(close && (r.futurePredicted ?? 0) > 0 ? [{ label: "Still to come", value: fmt(r.futurePredicted) }] : []),
+                ...(over > 0 ? [{ label: "Beyond the edition, no room", value: "+" + fmt(over) }] : []),
               ] };
               const tips = {
                 sold: rowTip, drafts: rowTip, inHand: rowTip,
-                future: { head: r.name, rows: [{ label: "Still to come", value: fmt(r.futurePredicted ?? 0) }] },
-                over: { head: r.name, rows: [{ label: "Demand beyond the edition", value: "+" + fmt(r.oversubscribed ?? 0) }],
-                  body: "Entries in hand at the rate that this product has no room for." },
+                future: { head: r.name, rows: [{ label: "Still to come", value: fmt(r.futurePredicted ?? 0) },
+                  ...((r.futureOversubscribed ?? 0) > 0 ? [{ label: "Turned away, no room", value: "+" + fmt(r.futureOversubscribed) }] : [])],
+                  body: "The entrants still to come, taken to look like those so far and placed where there is room." },
               };
               const nameTip = { head: r.name, rows: [
                 ...(finite(r.edition) ? [{ label: tl ? "Units target" : "Edition", value: fmt(r.edition) }] : [{ label: tl ? "Units target" : "Edition", value: "not set" }]),

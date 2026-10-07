@@ -25,6 +25,7 @@ import { stretchWords } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { paidUnits } from "../figures.mjs";
 import { wordsOf, hourClock } from "../vocab.mjs";
+import { fmtDay } from "../format.mjs";
 
 const money = (v) => "€" + fmt(Math.round(v ?? 0));
 const hasNum = (v) => v !== null && v !== undefined && Number.isFinite(v);
@@ -218,11 +219,19 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const unitsTarget = pu.target;
   const unitsBm = hasBm ? pu.bm : null;
   const unitsPct = pu.pct === null ? null : Math.round(pu.pct * 100);
+  // where the run rate stops (docs 5.4): the projection holds the last full
+  // day's spend until the day it reaches the sellout or the day the price
+  // passes the ROI floor, and the flat run to the close sits beside it
+  const stop = !complete && close && paid.stops && paid.stops.day ? paid.stops : null;
+  const ranOn = stop && paid.ifContinued ? paid.ifContinued : null;
+  const stopRow = stop ? [{ label: "Spend stops", value: `${fmtDay(new Date(stop.day + "T00:00:00Z"))}, ${stop.rule === "sellout" ? (partial ? "target reached" : "sellout reached") : "ROI floor"}` }] : [];
   const unitsTip = {
     head: "Paid units",
     rows: [
       { label: "To date", value: fmt(unitsNow) },
       ...(complete || !close ? [] : [{ label: "Projected", value: fmt(unitsProj) }]),
+      ...stopRow,
+      ...(ranOn && hasNum(ranOn.unitProjected) ? [{ label: "If it ran on", value: fmt(ranOn.unitProjected) }] : []),
       { label: targetWord, value: fmt(unitsTarget) },
       ...(unitsBm === null ? [] : [{ label: bmWord, value: fmt(unitsBm) }]),
     ],
@@ -238,6 +247,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     rows: [
       { label: "To date", value: moneyK(spendNow) },
       ...(complete || !close ? [] : [{ label: "Projected", value: moneyK(spendProj) }]),
+      ...stopRow,
+      ...(ranOn && hasNum(ranOn.spendProjectedTotal) ? [{ label: "If it ran on", value: moneyK(ranOn.spendProjectedTotal) }] : []),
       { label: close ? "Budget" : "Budget today", value: moneyK(spendTarget) },
       ...(spendBm === null ? [] : [{ label: bmWord, value: moneyK(spendBm) }]),
     ],

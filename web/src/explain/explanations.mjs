@@ -861,7 +861,10 @@ EXPLAIN["paid.units"] = (a, { snap: s }) => {
       { key: "funnel", gave: "Paid's entries still in the draw" },
       ...(hasBasket(s) ? [{ key: "basket", gave: "Paid's share of the target" }] : []),
     ],
-    notes: ["The same figure as the Paid column on the Channels card."],
+    notes: ["The same figure as the Paid column on the Channels card.",
+      ...(close && !s.complete && p.stops && p.stops.day && p.ifContinued && finite(p.ifContinued.unitProjected)
+        ? [`Paid's spend is projected to stop on ${dayOf(p.stops.day)}, ${p.stops.rule === "sellout" ? "the day the projection reaches the sellout" : "the day the price of a unit passes the ROI floor"}; had it run on to the close it would secure ${fmt(Math.round(p.ifContinued.unitProjected))} units.`]
+        : [])],
     method: "Data model 7",
   };
 };
@@ -880,6 +883,38 @@ EXPLAIN["paid.spend"] = (a, { snap: s }) => {
     const rate = finite(b.current) && b.current > 0 ? b.current
       : (finite(b.recommended) && b.daysLeft ? b.recommended : 0);
     const spent = p.spendToDate ?? 0;
+    // the run rate stops where the build's own limits say spending on is
+    // wasted (docs 5.4): the day the projection reaches the sellout, or the
+    // day the price of a unit passes the ROI floor; the flat run to the
+    // close is kept beside it
+    const stop = p.stops && p.stops.day ? p.stops : null;
+    const ic = p.ifContinued && finite(p.ifContinued.spendProjectedTotal) ? p.ifContinued : null;
+    if (stop) {
+      const added = Math.round(p.spendProjectedTotal) - Math.round(spent);
+      const why = stop.rule === "sellout" ? "the day the projection reaches the sellout" : "the day the price of a unit passes the ROI floor";
+      const upTo = stop.rule === "sellout" ? "to" : "before";
+      return {
+        where: "Paid spend / day", when: "At close",
+        name: "Spend projected at close", value: eur(p.spendProjectedTotal),
+        unit: "by the close",
+        say: "What the campaign will have spent by the close if the last full day's spend carries on for as long as spending is worth it.",
+        steps: [
+          seg`Start from the ${eur(spent)} spent so far${rest > 0 ? ", today so far included" : ""}.`,
+          ...(added > 0
+            ? [seg`Add the last full day's spend, ${eur(rate)}, over the days ${upTo} ${dayOf(stop.day)}, ${why}: ${eur(added)}.`,
+              seg`Nothing after it: paid stops there.`]
+            : [seg`Nothing more: ${dayOf(stop.day)} is ${why}, so paid stops now.`]),
+        ],
+        total: { v: eur(p.spendProjectedTotal), label: "projected spend" },
+        compare: [
+          ...(finite(p.spendBudget) ? [{ label: "Budget", v: eur(p.spendBudget), note: "The paid budget for the campaign." }] : []),
+          ...(ic ? [{ label: "If it ran on", v: eur(ic.spendProjectedTotal), note: "The same daily spend carried on to the close instead." }] : []),
+        ],
+        sources: [{ key: "meta", gave: "Daily spend" }, { key: "funnel", gave: "The organic channels' course" }],
+        notes: ["The recommendation on this card is not in it: it is the course the campaign is on today, stopped where spending on would be wasted."],
+        method: "Data model 5.4",
+      };
+    }
     const [fullPart, restPart] = roundParts([rate * days, rate * rest], Math.round(p.spendProjectedTotal) - Math.round(spent));
     return {
       where: "Paid spend / day", when: "At close",
@@ -950,7 +985,7 @@ EXPLAIN["st.head"] = (a, { snap: s }) => {
   const steps = [seg`Units paid: ${n(rSold)}.`];
   if (rDrafts > 0) steps.push(seg`Add the draft orders awaiting payment: ${n(rDrafts)}.`);
   if (draw > 0) steps.push(seg`Add the orders expected from the draw: ${drill(n(rDraw), "st.draw")}.`);
-  if (close && future > 0) steps.push(seg`Add the units still to come by the close, the projection's further units spread over the works by their demand so far, each held to its room: ${n(rFuture)}.`);
+  if (close && future > 0) steps.push(seg`Add the units still to come by the close: the projection's further entrants, taken to look like those so far and placed where there is room, at the rate: ${n(rFuture)}.`);
   // the units column of a release drawn as one row explains its units, not the %
   const asUnits = !!(a && a.as === "units");
   if (ed && !asUnits) steps.push(seg`${n(units)} of the ${n(ed)} units in the edition${head >= 1 && units > ed ? ", held at the whole edition" : ""}.`);
@@ -998,7 +1033,7 @@ EXPLAIN["st.row"] = (a, { snap: s }) => {
     const held = finite(r.predicted) && r.predicted - shown >= 0.05;
     steps.push(seg`Add the ${n(r.allocated)} units the people still in the draw are counted on here, at ${pct(rate)}${finite(pre) && pre !== rate ? ` (${pct(pre)} for pre-order entries)` : ""}${held ? ", held to the room left" : ""}: ${n(rShown)}.`);
   }
-  if (close && future > 0) steps.push(seg`Add its share of the units still to come by the close, by its demand so far against the other works' and held to its room: ${n(rFuture)}.`);
+  if (close && future > 0) steps.push(seg`Add the units still to come by the close that land here: the entrants still to come are taken to look like those so far and placed where there is room${finite(r.futureOversubscribed) && r.futureOversubscribed > 0.05 ? `, so ${n(r.futureOversubscribed)} are turned away for want of room` : ""}: ${n(rFuture)}.`);
   const hasEd = finite(r.edition) && r.edition > 0;
   // the row's units column ("208 of 1,000") explains its units, closing on
   // them in the total line; the % column its %

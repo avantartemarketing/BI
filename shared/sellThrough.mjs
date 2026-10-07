@@ -264,18 +264,14 @@ export function allocateEntries({ products, patterns, rate = 0.8, preorderRate =
   };
 }
 
-/* The whole per-product block the card reads: the allocation above, the
- * units still to come spread over the room left, and the shares. `sold` on a
- * product is what the draw feed could attribute to it; `unattributedSold` is
- * the rest of the release's sold units (private room, pre-orders, re-offers)
- * that no product can be named for yet, and it is carried at release level
- * rather than guessed onto products. */
-/* The units still to come by the close, spread over the products by their
- * demand so far (units paid, drafts and the draw winners the entries imply),
- * each held to the room it has left, the excess going on to the products with
- * room in the same proportion (docs §6.3; mirror of etl/sellthrough.py
- * split_future). Room decides only where demand has nothing to say. `room`
- * holds null for a product without an edition: it takes without limit. */
+/* The units still to come where there is no entry pattern to read (a release
+ * without the draw feed): spread over the products by their demand so far
+ * (units paid, drafts and the draw winners the entries imply), each held to
+ * the room it has left, the excess going on to the products with room in the
+ * same proportion (docs §6.3; mirror of etl/sellthrough.py split_future).
+ * Room decides only where demand has nothing to say. `room` holds null for a
+ * product without an edition: it takes without limit. With patterns the
+ * entrants still to come are placed by the allocator instead (futureCohort). */
 export function splitFuture(future, demand, room) {
   const n = demand.length;
   if (n === 0 || !(future > 0)) return demand.map(() => 0);
@@ -315,6 +311,56 @@ export function splitFuture(future, demand, room) {
   return share;
 }
 
+/* The entrants still to come, taken to look like the entrants so far (6
+ * October 2026): every pattern as a fresh entrant with the same products (the
+ * ones entered, won or bought since or not) and the same quantity, scaled so their units add up to
+ * `units` (the forecast's entries still to come, before the rate), rounded to
+ * whole people by the largest remainders. They are placed by allocateEntries
+ * against the room left after what is in hand, so a flexible entrant goes
+ * where there is room, as one in hand does, and a full work's share falls out
+ * as oversubscribed. Nothing without a pattern or with less than one unit to
+ * place: the caller falls back to the room rule. */
+function futureCohort(patterns, units, toSet) {
+  const base = [];
+  for (const pat of patterns || []) {
+    const n = Number(pat.n) || 0;
+    if (n <= 0) continue;
+    // what these people entered, whether they have since won or bought: a
+    // fresh entrant with the same taste has every one of those open
+    const seen = new Set();
+    const open = [...(pat.open || []), ...(pat.won || []), ...(pat.sold || [])].filter((d) => {
+      const s = toSet([d]);
+      if (!s.length || seen.has(s[0])) return false;
+      seen.add(s[0]);
+      return true;
+    });
+    if (!open.length) continue;
+    const cap = finite(pat.max) ? Math.max(Number(pat.max), 1) : null;
+    const per = cap === null ? open.length : Math.min(cap, open.length);   // units one such entrant is counted for
+    base.push({ open, cap, n, per });
+  }
+  const have = base.reduce((t, b) => t + b.n * b.per, 0);
+  if (!(units >= 1) || have <= 0) return null;
+  const k = units / have;
+  const raw = base.map((b) => b.n * k);
+  const counts = raw.map((v) => Math.floor(v));
+  let placed = base.reduce((t, b, i) => t + counts[i] * b.per, 0);
+  // the largest remainders first, until the units are met
+  const order = raw.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  for (const [, i] of order) {
+    if (placed >= units) break;
+    counts[i] += 1; placed += base[i].per;
+  }
+  const out = base.map((b, i) => ({ open: b.open, won: [], sold: [], pre: [], bought: 0, max: b.cap, n: counts[i] })).filter((p) => p.n > 0);
+  return out.length ? out : null;
+}
+
+/* The whole per-product block the card reads: the allocation above, the
+ * units still to come placed by the same rule (futureCohort), and the shares. `sold` on a
+ * product is what the draw feed could attribute to it; `unattributedSold` is
+ * the rest of the release's sold units (private room, pre-orders, re-offers)
+ * that no product can be named for yet, and it is carried at release level
+ * rather than guessed onto products. */
 export function sellThroughProducts({ products, patterns, rate = 0.8, edition = null, soldTotal = null, futureUnits = 0,
   expectedToday = null, benchmarkToday = null, benchmarkClose = null, preorderRate = null }) {
   const attributed = products.reduce((t, p) => t + (Number(p.sold) || 0), 0);
@@ -335,14 +381,31 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
     ? unattributed * (wSum > 0 ? weights[i] / wSum : 1 / products.length) : 0));
   const withAssumed = products.map((p, i) => ({ ...p, sold: (Number(p.sold) || 0) + assumed[i] }));
   const alloc = allocateEntries({ products: withAssumed, patterns, rate, preorderRate });
-  // units still to come: by each product's demand so far, held to the room it
-  // has left, the excess on to the products with room (splitFuture, docs §6.3)
+  // units still to come: the entrants still to come taken to look like the
+  // entrants so far and placed by the same allocator against the room left
+  // (futureCohort), so a full work's share is oversubscribed rather than
+  // handed to the work with room; by each product's demand so far, held to
+  // its room, where there is no pattern to read (splitFuture). Before (to 6
+  // October 2026) the units went over the room left,
+  // which put nearly all of them on the work with room once another was
+  // full - Cattelan's Novecento read 88% at close on a third of the entries -
+  // and read 15 points high on the works that ended below 90% of their
+  // edition in the backtest (etl/analysis/split_backtest.py), against 9 to 13
+  // for this rule, which also leans less high over every work (4 against 6).
   const future = Math.max(Number(futureUnits) || 0, 0);
+  const roomAfter = alloc.products.map((a, i) => (a.room === null ? null : Math.max(a.room - a.shown, 0)));
   const draftsOf = (p) => (finite(p.drafts) ? Number(p.drafts) : 0);
   const demand = alloc.products.map((a, i) => (Number(products[i].sold) || 0) + assumed[i] + draftsOf(products[i]) + a.shown);
-  // a product's room already stands net of its drafts (allocateEntries): what is left after the draw's winners
-  const roomAfter = alloc.products.map((a) => (a.room === null ? null : Math.max(a.room - a.shown, 0)));
-  const futureShare = splitFuture(future, demand, roomAfter);
+  const toSet = productSets(products);
+  const cohort = allEditions && future > 0 ? futureCohort(patterns, future / alloc.rate, toSet) : null;
+  const placed = cohort ? allocateEntries({
+    products: products.map((p, i) => ({ ...p, sold: (Number(p.sold) || 0) + assumed[i] + draftsOf(p) + alloc.products[i].shown, drafts: 0, claimsInFlight: 0 })),
+    patterns: cohort, rate: alloc.rate, preorderRate: alloc.rate,
+  }) : null;
+  const split = placed ? null : splitFuture(future, demand, roomAfter);
+  const futureShare = alloc.products.map((a, i) => (placed ? placed.products[i].shown : split[i]));
+  const futureOver = alloc.products.map((a, i) => (placed ? placed.products[i].oversubscribed : 0));
+  const futureRule = placed ? "cohort" : "demand";
   // the references, as the release's pace applied to each product's edition:
   // a product is expected to sell through at the rate the release is
   const paceOf = (v) => (finite(v) && finite(edition) && Number(edition) > 0 ? Number(v) / Number(edition) : null);
@@ -362,7 +425,7 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
       winnerDraftsLapsed: finite(p.winnerDraftsLapsed) ? Number(p.winnerDraftsLapsed) : null,
       allocated: a.allocated, pinned: a.pinned, fixed: a.fixed, flexible: a.flexible, claims: a.claims,
       predicted: r1(a.predicted), shown: r1(a.shown), room: a.room, oversubscribed: r1(a.oversubscribed),
-      futurePredicted: r1(futureShare[i]),
+      futurePredicted: r1(futureShare[i]), futureOversubscribed: r1(futureOver[i]),
       pct: e ? r4(Math.min(today / e, 1)) : null,
       pctClose: e ? r4(Math.min(close / e, 1)) : null,
       expectedToday: e !== null && paceExp !== null ? r1(e * paceExp) : null,
@@ -388,6 +451,10 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
       entrants: alloc.entrants, flexibleEntrants: alloc.flexibleEntrants, surplusEntries: alloc.surplusEntries,
       uncapped: alloc.uncapped, unpaidWinners: alloc.unpaidWinners,
       flexibleUnits: rows.reduce((t, x) => t + x.flexible, 0),
+      // the entrants still to come as placed: how many were taken to come,
+      // how they were split (cohort, room, demand) and what a full work turned away
+      futureRule, futureEntrants: placed ? placed.entrants : 0,
+      futureOversubscribed: r1(rows.reduce((t, x) => t + x.futureOversubscribed, 0)),
     },
   };
 }

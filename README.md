@@ -74,8 +74,11 @@ Edition pricing and the per-product target economics (needs `AIRTABLE_TOKEN`, `A
 `AIRTABLE_TABLE` in the environment; the live refresh runs this every cycle when the token is set; like every script the refresh runs, it uses pandas and the standard library only, since
 that is all Render's Python has (a `requests` import there failed the Airtable step on every refresh
 until 24 September, and the header showed it only as "Sources stale");
-`AIRTABLE_FIELD_<column>` names a target field spelled another way, e.g.
-`AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner"`):
+`AIRTABLE_FIELD_<column>` names a field spelled another way, e.g.
+`AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner"` or `AIRTABLE_FIELD_EDITION_SIZE="Units"`; a
+required field is also looked for under the names it has carried before, `FORMER_NAMES` in the
+script, so the rename of "Units" to "Units [Edition Size]" on 7 October 2026, which stopped the
+pull for a day with "fields not in the table: 'Units'" in the header, is the last one to):
 
 ```bash
 python3 etl/pull_airtable.py --list-fields              # field names and types only
@@ -692,7 +695,15 @@ no column settings and cut the names off); on a Today update, under the table at
 close forecast marked `BETA` ("Projected sell-through at close: 24%, 1,449 of 6,100 units on
 current results"): the figure the At close view's headline gives, words only until it has been
 checked against real closes (5 October 2026), nothing on an At close update or once the campaign
-is complete; then, in small type, the day the figures run to
+is complete; under it, while a paid campaign is running and has a recommendation, one line on the
+paid lever (6 October 2026). The forecast holds paid at its current daily spend, so the line
+says what the Paid card recommends instead and where that would take the close, to one decimal
+and in units: "This assumes paid stays at €6,382 a day. It looks like there is room to scale paid
+further, to €8,297 a day, which might take sell-through at close to 19.4% (1,184 units)", or
+"There is no room to scale paid further", or "It looks like we might need to decrease paid spend,
+to €4,500 a day, which would leave us at 18.9% (1,150 units)" ("stop paid spend" when the
+recommendation is nothing); the figure is the build's `paid.atRecommended`, the same projection
+with paid at the recommended spend; then, in small type, the day the figures run to
 (the page's as-of day, "so far" while that day is only partly in), the attribution when the
 page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still to come)
 and the two framing readings behind the table's figure in plain sentences, and last the
@@ -784,9 +795,13 @@ page's blue, deepest to palest as the units get less certain: units paid (deep b
 orders an advisor raised that are not yet paid (blue; the draw's own pre-authorisation
 drafts are the entries, not drafts), the draw entries in hand counted on the product at the
 entry → order rate, or at the pre-order rate where the entrant's card is already authorised
-(light blue), and at close the units still to come (palest), split over the products by their
-demand so far and held to each one's room, against the product's edition. Nothing is hatched: the four tints are the whole key, and demand a product has no
-room for simply carries on past the point where the paler room behind the bar stops. The card
+(light blue), and at close the units still to come (palest), against the product's
+edition. Nothing is hatched: the four tints are the whole key, and demand a product has no
+room for simply carries on past the point where the paler room behind the bar stops. At close the
+units still to come are the projection's further entrants, taken to look like the entrants so far and
+placed by the same allocation rule against the room left, so a full work's share is turned away
+rather than handed to the work with room (6 October 2026; before, the units were spread over the room
+left, and a lagging work read far too high once its stablemate was full: docs §6.3). The card
 is one row of the grid whatever the count: the rows share a fixed height, the bars growing
 from 14px for seven products to a 30px cap for three or fewer, each row carrying its units of
 the edition and its percentage in columns of their own, with the key beside the headline. It is
@@ -847,14 +862,6 @@ launch's page has the same switch in both of its states: Direct's signups and se
 before the window, its units and sessions inside it, the basket's launches read the same way and
 the plan's budgets held; its sell-through forecast keeps the feed's attribution
 (docs/TL_SPEC.md 3b).
-
-**Benchmark basket** lists the launches the page's medians are read from, one per row with
-the units it sold and its unit price in euros, largest first, under the card's "Units" and
-"Price" columns; a timed launch's lists its basket of timed launches the same way. A row opens
-that launch's own page where it has one. Nothing else is on the card: the rule that picked
-the launches, their medians and the picker stay on the Target setting tab (docs/DATA_MODEL.md
-3, docs/TL_SPEC.md 8). It is last in the card registry, so it joins a layout saved before it
-at the foot of the page.
 
 ### Arranging the page
 

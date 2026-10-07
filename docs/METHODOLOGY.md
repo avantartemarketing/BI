@@ -61,12 +61,15 @@ sell-through(product) = units paid
                       + entries in hand counted on the product × 0.8
 ```
 
-At close the row adds its share of the units the projection says are still to
-come, split over the products by their demand so far (paid, drafts and the
-entries in hand) and held to each product's room, so a popular work's run is
-never read as the quiet one's: with a 70/30 split in demand the further units
-go 70/30, and what a work that is nearly sold out cannot take goes to the
-others with room.
+At close the row adds the units the projection says are still to come that
+land on it: the entrants still to come are taken to look like the entrants so
+far (every entry pattern as a fresh entrant with the same works and quantity,
+scaled to the projection) and placed by the same allocation rule against the
+room left, so a popular work's run is never read as the quiet one's, a
+flexible entrant goes where there is room, and what a work that is nearly sold
+out cannot take is turned away rather than handed to the others (6 October
+2026). Without an entry pattern to read, the units follow the works' demand so
+far, each held to its room, the excess going on to the works with room.
 
 Until the feeds carry sales by product and draft orders, the card wears an
 **Incomplete data** stamp: the sales the draw cannot name a product for are
@@ -356,7 +359,9 @@ plan by any day is the even daily share of its target (§6).
 ## 6. Forward projections
 
 Projections describe the **current trajectory** - the paid-spend recommendation
-is the intervention shown alongside, never baked into the projection.
+is the intervention shown alongside, never baked into the projection. The
+trajectory does stop where the recommendation's own limits say spending on
+would be wasted (Paid, below).
 
 **Organic channels.** The remaining volume follows the channel's historic
 entry-timed shape (§5); its level scales with demonstrated performance, trusted
@@ -381,6 +386,19 @@ until then; §7). Projected entries convert to units at 0.8.
 Today counts for what is left of it, so the spend projected at close is the spend
 to date, today so far included, plus the last full day's spend over the full days
 after today and the rest of today, and the entries in hand today stay in.
+The run rate does not run blindly to the close (6 October 2026): it stops where
+the recommendation's two limits (§7) say spending on would be wasted - on the day
+the units it buys close the gap the organic channels leave to the sellout (that
+day's spend cut to the units still needed), and before the first day the price of
+a converting unit on the cost path, read before the close's lift as the ROI floor
+is, passes the floor's price. So the spend projected at close runs to the stop or
+the close, whichever comes first, and the units beside it are what those days buy.
+At the recommended spend the stops land on the close or not at all, which is what
+sized it; a paced cut still above the floor's spend stops before the close. The
+flat run to the close stays beside the projection for the card's hover
+(`ifContinued`), and the same projection at the recommended spend
+(`atRecommended`, with the sell-through at close it would reach) gives the Slack
+update its line on the paid lever.
 Paid starts the day after the announce and runs to the close; its plan by today is the
 even daily budget's share of its target over those days, not the panel's historic paid
 shape, so every card reads the same paid plan.

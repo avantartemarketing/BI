@@ -210,6 +210,20 @@ function model(snap, { horizon = "today", today, direct = false } = {}) {
     ? (edition === num(st.edition) && finite(st.pct) ? num(st.pct) : Math.min(closeUnits / edition, 1))
     : null;
   const atClose = snap.complete ? null : { pct: closePct, units: closeUnits, edition };
+  // the paid lever under that line (6 October 2026): the forecast holds
+  // paid at its current daily spend (stopped where the Paid card's own
+  // limits say spending on is wasted, docs 5.4); the card's recommendation
+  // says whether there is room to scale it, and the build carries the
+  // sell-through at close with paid at the recommended spend instead
+  // (paid.atRecommended.sellThrough). Nothing without a running campaign, a
+  // recommendation or that figure, and nothing once the campaign is complete.
+  const pb = (snap.paid && snap.paid.budget) || {};
+  const ar = snap.paid && snap.paid.atRecommended;
+  const cur = finite(pb.current) ? num(pb.current) : 0;
+  const rec = finite(pb.recommended) ? num(pb.recommended) : null;
+  const recPct = ar && ar.sellThrough && finite(ar.sellThrough.pct) ? num(ar.sellThrough.pct) : null;
+  const lever = snap.complete || !(cur > 0) || rec === null || recPct === null || closePct === null ? null
+    : { current: cur, recommended: rec, move: Math.round(rec) - Math.round(cur), pct: recPct, units: num(ar.sellThrough.units) };
 
   // the totals, in words
   const totals = [
@@ -277,7 +291,7 @@ function model(snap, { horizon = "today", today, direct = false } = {}) {
 
   return {
     close, artist, releaseName, prefix: prefix ? prefixWords(prefix) : null, day: of > 0 ? { day, of } : null, through, toWords,
-    direct: !!direct, worksLine, dayLine, headline, totals, framing, framingCols, rows, total, atClose,
+    direct: !!direct, worksLine, dayLine, headline, totals, framing, framingCols, rows, total, atClose, lever,
     hasProducts: products.length > 0,
     incomplete: Array.isArray(st.incomplete) ? st.incomplete : [],
   };
@@ -348,6 +362,28 @@ const closeLine = (m) => {
     ? `Projected at close: *${fmt(c.units)} units* on current results \`BETA\``
     : `Projected sell-through at close: *${pct(c.pct)}*, ${fmt(c.units)} of ${fmt(c.edition)} units on current results \`BETA\``;
 };
+/* The paid lever, the line under the close forecast (6 October 2026): the
+ * forecast holds paid at its current daily spend, so the line says what the
+ * Paid card recommends instead and where that would take the close - room to
+ * scale paid up and the sell-through at close it might reach, no room, or a
+ * cut (a stop when the recommendation is nothing) and the sell-through it
+ * would leave. The sell-through is given to one decimal and in units, so a
+ * move the forecast's whole percentage hides still shows. Nothing without
+ * the forecast line, a running campaign or a recommendation. */
+const eur = (v) => `€${fmt(v)}`;
+const pct1 = (v) => `${(Math.round(num(v) * 1000) / 10).toFixed(1)}%`;
+const leverLine = (m) => {
+  const l = m.lever;
+  if (m.close || !l) return null;
+  const holds = `This assumes paid stays at ${eur(l.current)} a day.`;
+  const at = `*${pct1(l.pct)}* (${fmt(l.units)} units)`;
+  if (l.move > 0) return `${holds} It looks like there is room to scale paid further, to ${eur(l.recommended)} a day, which might take sell-through at close to ${at}.`;
+  if (l.move < 0) {
+    const cut = l.recommended > 0 ? `decrease paid spend, to ${eur(l.recommended)} a day` : "stop paid spend";
+    return `${holds} It looks like we might need to ${cut}, which would leave us at ${at}.`;
+  }
+  return `${holds} There is no room to scale paid further.`;
+};
 const unitsHeader = (m) => (m.close ? "Units at close *" : "Units sold *");
 const unitsFootnote = (m) => (m.close
   ? "* Includes paid units, drafts, forecast conversions from draw entries and the entries still to come."
@@ -395,7 +431,8 @@ function tableBlock(m) {
 /* The update as Block Kit: the artist as the header; the works' shared
  * title and the campaign day on one line; the table's title, then the
  * table; on a Today update the close forecast at full size, marked beta
- * (closeLine); then, in small type, the day the figures run to (the page's as-of
+ * (closeLine) and under it the line on the paid lever (leverLine); then, in
+ * small type, the day the figures run to (the page's as-of
  * day, "so far" while it is only partly in), which attribution they are on
  * when the page spreads Direct over the other channels, the totals and the
  * framing take-up in plain sentences, a note while a feed is missing, and
@@ -409,12 +446,14 @@ function composeSellThroughBlocks(snap, { horizon = "today", today, direct = fal
   const above = m.prefix && dayWords ? `${m.prefix}, ${dayWords}` : m.prefix || (dayWords ? dayWords[0].toUpperCase() + dayWords.slice(1) : null);
   const below = [m.toWords ? `Figures to ${m.toWords}.` : null, m.direct ? DIRECT_WORDS : null, m.totals, m.framing].filter(Boolean).join(" ");
   const forecast = closeLine(m);
+  const lever = forecast ? leverLine(m) : null;
   const blocks = [
     { type: "header", text: { type: "plain_text", text: m.artist.slice(0, 150) } },
     ...(above ? [section(above)] : []),
     section(`*${tableCaption(m)}*`),
     tableBlock(m),
     ...(forecast ? [section(forecast)] : []),
+    ...(lever ? [section(lever)] : []),
     context(below),
   ];
   if (m.incomplete.length) blocks.push(context(`_Incomplete data: ${m.incomplete.join(", ")}_`));

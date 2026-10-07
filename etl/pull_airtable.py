@@ -21,7 +21,10 @@ What it pulls, and what it refuses to
   lead. Those are pulled when the table has them and left blank when it does
   not, so the pull works while the fields are still being added; a field
   under another name is pointed at with AIRTABLE_FIELD_<column> in the
-  environment (AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner").
+  environment (AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner"). The same
+  override reaches the required fields, and each of those is also looked
+  for under the names it has carried before (FORMER_NAMES), so a rename in
+  Airtable does not stop the pull until someone notices the header.
 
   The table has four hundred fields, and many of the others are about people:
   collaborators, modifiers, Slack ids, and lookups of the artist's ethnicity
@@ -85,7 +88,7 @@ FIELDS: list[tuple[str, str]] = [
     ("Price bucket", "price_bucket"),
     ("Max revenue - fully sold out", "max_revenue"),
     # edition size
-    ("Units", "edition_size"),
+    ("Units [Edition Size]", "edition_size"),
     ("Unit status", "unit_status"),
     ("Units target", "units_target"),
     ("Max edition order quantity", "max_order_qty"),
@@ -123,6 +126,14 @@ FIELDS: list[tuple[str, str]] = [
     ("New / Repeat", "new_or_repeat"),
     ("Expected sell-through %", "expected_sellthrough"),
 ]
+# A required field's former names, by column: the pull takes the current name
+# where the table has it, else the first former one it finds, so the field
+# can be renamed in Airtable without stopping the pull. "Units" became
+# "Units [Edition Size]" on 7 October 2026, with "Units [Produced]" beside
+# it, and the pull refused the table for a day.
+FORMER_NAMES: dict[str, list[str]] = {
+    "edition_size": ["Units"],
+}
 # Airtable field -> CSV column, pulled only when the table has the field (a
 # missing one leaves its column blank and is named in the pull's report). The
 # per-product economics the Target setting tab reads, and the marketing lead.
@@ -140,6 +151,7 @@ LEAD_COL = "marketing_lead"
 # a percentage field arrives as 0.4 or, typed as a number, as 40: read either
 PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion"}
 PRICE_FIELD = "Total Unit Price (Retail)"
+PRICE_COL = "unit_price"
 DATE_COLS = {"launch_date", "announce_date", "private_room_date", "tl_end_date"}
 # the columns the join in release_clusters.py needs; a pull missing one of these
 # has not worked, whatever the API said
@@ -228,15 +240,35 @@ def optional_fields() -> list[tuple[str, str]]:
     return out
 
 
+def required_fields(fields: dict) -> list[tuple[str, str, list[str]]]:
+    """FIELDS resolved against the table: (the name to request, the column,
+    the names tried). An AIRTABLE_FIELD_<column> override is the one name
+    tried; otherwise the current name, then the field's former names
+    (FORMER_NAMES), the first the table has winning. A field under none of
+    them resolves to its current name, which check_schema reports missing
+    with the others tried."""
+    out = []
+    for name, col in FIELDS:
+        override = os.environ.get(f"AIRTABLE_FIELD_{col.upper()}", "").strip()
+        tried = [override] if override else [name] + FORMER_NAMES.get(col, [])
+        out.append((next((n for n in tried if n in fields), tried[0]), col, tried))
+    return out
+
+
 def check_schema(fields: dict) -> tuple[list[str], str, dict[str, str], list[str]]:
     """Every wanted field must exist and must not hold a person. Returns the
     field names to request, the price field's currency code, the optional
     fields found (name -> column) and the optional ones the table lacks."""
-    missing = [name for name, _ in FIELDS if name not in fields]
+    wanted = required_fields(fields)
+    missing = [(name, col, tried) for name, col, tried in wanted if name not in fields]
     if missing:
-        sys.exit("fields not in the table: " + ", ".join(repr(m) for m in missing))
+        sys.exit("fields not in the table: " + ", ".join(
+            repr(name) + (f" (also tried {', '.join(repr(t) for t in tried[1:])})" if len(tried) > 1 else "")
+            for name, _, tried in missing)
+            + " - a renamed field is pointed at with AIRTABLE_FIELD_<column> ("
+            + ", ".join(f"AIRTABLE_FIELD_{col.upper()}" for _, col, _ in missing) + ")")
     bad = []
-    for name, _ in FIELDS:
+    for name, _, _ in wanted:
         kind = field_kind(fields[name])
         if kind in PERSON_TYPES or fields[name].get("type") in PERSON_TYPES:
             bad.append(f"{name!r} ({kind})")
@@ -260,18 +292,19 @@ def check_schema(fields: dict) -> tuple[list[str], str, dict[str, str], list[str
         found[name] = col
     if bad:
         sys.exit("refusing to pull fields that hold a person: " + ", ".join(bad))
-    symbol = ((fields[PRICE_FIELD].get("options") or {}).get("symbol") or "").strip()
+    price_name = next(name for name, col, _ in wanted if col == PRICE_COL)
+    symbol = ((fields[price_name].get("options") or {}).get("symbol") or "").strip()
     currency = CURRENCY_OF_SYMBOL.get(symbol)
     if not currency:
         sys.exit(f"the price field's currency symbol {symbol!r} is not one this pull knows")
-    return [name for name, _ in FIELDS] + list(found), currency, found, absent
+    return [name for name, _, _ in wanted] + list(found), currency, found, absent
 
 
 def list_fields(fields: dict) -> None:
     """Names and types of every field in the table - nothing else. The
     wanted ones are marked, and the ones the guard would refuse are flagged."""
     print(f"{len(fields)} fields")
-    wanted = {name for name, _ in FIELDS} | {name for name, _ in optional_fields()}
+    wanted = {name for name, _, _ in required_fields(fields)} | {name for name, _ in optional_fields()}
     for name, f in fields.items():
         kind = field_kind(f)
         flags = []
@@ -364,7 +397,8 @@ def keep(row: dict, today: date, everything: bool) -> bool:
 
 def pull(tok: str, base: str, table: str, fields: dict, out: pathlib.Path, everything: bool) -> None:
     names, currency, found, absent = check_schema(fields)
-    by_name = {**dict(FIELDS), **found}
+    by_name = {name: col for name, col, _ in required_fields(fields)}
+    by_name.update(found)
     cols = [col for _, col in FIELDS]
     cols.insert(cols.index("unit_price") + 1, "currency")
     # the optional columns are always in the file, blank where the table has

@@ -256,10 +256,13 @@ def _r4(v: float) -> float:
 
 
 def split_future(future: float, demand: list[float], room: list) -> list[float]:
-    """The units still to come by the close, spread over the products by their
-    demand so far - units paid, drafts and the draw winners the entries imply -
-    each held to the room it has left, the excess going on to the products
-    with room in the same proportion (docs §6.3; mirror of splitFuture). A
+    """The units still to come where there is no entry pattern to read (a
+    release without the draw feed): spread over the products by their demand
+    so far - units paid, drafts and the draw winners the entries imply - each
+    held to the room it has left, the excess going on to the products with
+    room in the same proportion (docs §6.3; mirror of splitFuture). With
+    patterns the entrants still to come are placed by the allocator instead
+    (future_cohort). A
     product's own demand says how likely it is to sell through: the room rule
     this replaces handed a quiet work the larger share of the release's
     projection because the popular one had used its room. Room decides only
@@ -304,6 +307,49 @@ def split_future(future: float, demand: list[float], room: list) -> list[float]:
     return share
 
 
+def future_cohort(patterns: list[dict], units: float, to_set) -> list[dict] | None:
+    """The entrants still to come, taken to look like the entrants so far
+    (mirror of futureCohort, 6 October 2026): every pattern as a fresh entrant
+    with the same products (entered, won or bought since or not) and quantity, scaled so
+    their units add up to `units` and rounded to whole people by the largest
+    remainders. None without a pattern or under one unit to place."""
+    base = []
+    for pat in patterns or []:
+        n = float(pat.get("n") or 0)
+        if n <= 0:
+            continue
+        # what these people entered, won or bought since or not: a fresh
+        # entrant with the same taste has every one of those open
+        seen: set[int] = set()
+        open_ = []
+        for d in list(pat.get("open") or []) + list(pat.get("won") or []) + list(pat.get("sold") or []):
+            s = to_set([d])
+            if s and s[0] not in seen:
+                seen.add(s[0])
+                open_.append(d)
+        if not open_:
+            continue
+        cap = max(float(pat["max"]), 1.0) if _finite(pat.get("max")) else None
+        per = float(len(open_)) if cap is None else min(cap, float(len(open_)))
+        base.append({"open": open_, "cap": cap, "n": n, "per": per})
+    have = sum(b["n"] * b["per"] for b in base)
+    if not units >= 1 or have <= 0:
+        return None
+    k = units / have
+    raw = [b["n"] * k for b in base]
+    counts = [math.floor(v) for v in raw]
+    placed = sum(counts[i] * b["per"] for i, b in enumerate(base))
+    order = sorted(range(len(base)), key=lambda i: (-(raw[i] - math.floor(raw[i])), i))
+    for i in order:
+        if placed >= units:
+            break
+        counts[i] += 1
+        placed += base[i]["per"]
+    out = [{"open": b["open"], "won": [], "sold": [], "pre": [], "bought": 0, "max": b["cap"], "n": counts[i]}
+           for i, b in enumerate(base) if counts[i] > 0]
+    return out or None
+
+
 def sell_through_products(products: list[dict], patterns: list[dict], rate: float = 0.8, edition=None,
                           sold_total=None, future_units: float = 0.0, expected_today=None,
                           benchmark_today=None, benchmark_close=None, preorder_rate=None) -> dict:
@@ -324,14 +370,23 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
     with_assumed = [{**p, "sold": float(p.get("sold") or 0) + assumed[i]} for i, p in enumerate(products)]
     alloc = allocate_entries(with_assumed, patterns, rate, preorder_rate)
     future = max(float(future_units or 0), 0.0)
+    room_after = [None if a["room"] is None else max(a["room"] - a["shown"], 0.0) for a in alloc["products"]]
     def drafts_of(p):
         return float(p["drafts"]) if _finite(p.get("drafts")) else 0.0
-    # each product's demand so far, and the room it has left for more (docs §6.3)
     demand = [float(products[i].get("sold") or 0) + assumed[i] + drafts_of(products[i]) + a["shown"]
               for i, a in enumerate(alloc["products"])]
-    # a product's room already stands net of its drafts (allocate_entries): what is left after the draw's winners
-    room_after = [None if a["room"] is None else max(a["room"] - a["shown"], 0.0) for a in alloc["products"]]
-    future_share = split_future(future, demand, room_after)
+    # the entrants still to come placed by the same allocator against the room
+    # left (future_cohort, mirror of sellThroughProducts); by demand so far,
+    # held to the room, where there is no pattern to read (split_future)
+    to_set = _product_sets(products)
+    cohort = future_cohort(patterns, future / alloc["rate"], to_set) if all_editions and future > 0 else None
+    placed = allocate_entries(
+        [{**p, "sold": float(p.get("sold") or 0) + assumed[i] + drafts_of(p) + alloc["products"][i]["shown"], "drafts": 0, "claimsInFlight": 0}
+         for i, p in enumerate(products)], cohort, alloc["rate"], alloc["rate"]) if cohort else None
+    split = None if placed else split_future(future, demand, room_after)
+    future_share = [placed["products"][i]["shown"] if placed else split[i] for i in range(len(products))]
+    future_over = [placed["products"][i]["oversubscribed"] if placed else 0.0 for i in range(len(products))]
+    future_rule = "cohort" if placed else "demand"
 
     def pace_of(v):
         return float(v) / float(edition) if _finite(v) and _finite(edition) and float(edition) > 0 else None
@@ -354,7 +409,7 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
             "claims": a["claims"],
             "predicted": _r1(a["predicted"]), "shown": _r1(a["shown"]), "room": a["room"],
             "oversubscribed": _r1(a["oversubscribed"]),
-            "futurePredicted": _r1(future_share[i]),
+            "futurePredicted": _r1(future_share[i]), "futureOversubscribed": _r1(future_over[i]),
             "pct": _r4(min(today / e, 1.0)) if e else None,
             "pctClose": _r4(min(close / e, 1.0)) if e else None,
             "expectedToday": _r1(e * pace_exp) if e is not None and pace_exp is not None else None,
@@ -380,6 +435,8 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
             "entrants": alloc["entrants"], "flexibleEntrants": alloc["flexibleEntrants"],
             "surplusEntries": alloc["surplusEntries"], "uncapped": alloc["uncapped"],
             "unpaidWinners": alloc["unpaidWinners"], "flexibleUnits": sum(x["flexible"] for x in rows),
+            "futureRule": future_rule, "futureEntrants": placed["entrants"] if placed else 0,
+            "futureOversubscribed": _r1(sum(x["futureOversubscribed"] for x in rows)),
         },
     }
 

@@ -1359,7 +1359,8 @@ far included, against the same even share of the budget. (2026-09-23.)
 
 ### 5.4 Forward projection of entries
 Projections describe the **current trajectory**; the paid-spend recommendation is the
-intervention shown alongside, never baked into the projection.
+intervention shown alongside, never baked into the projection. The trajectory does stop where
+the recommendation's own limits say spending on would be wasted (Paid, below).
 
 **Organic channels** - the remaining volume follows the channel's *historic shape curve*, the
 entry-timed one its plan reads (§5.3); its level scales with demonstrated performance, trusted in
@@ -1375,11 +1376,18 @@ has actually delivered.
 
 **Paid** - projection = **projected spend ÷ projected efficiency**, day by day:
 ```
-spend_fwd(d) = current daily spend run-rate            # not the recommendation
+spend_fwd(d) = current daily spend run-rate            # not the recommendation; nothing from the stop on
 cpe_fwd(d)   = trailing-3-day CPE × path(d)            # the cost path of §7: rises with spend so far, the close's lift on its last days
 entries_fwd  = Σ spend_fwd(d) / cpe_fwd(d)
+stop         = the first of two days (6 October 2026): the day Σ entries_fwd × rate reaches the
+               sellout gap of §7 (edition − secured − the organic channels' course; that day's
+               spend cut to the units still needed), and the day cpe_fwd(d) before the close's
+               lift passes the ROI floor's price (§7 cpe_max, read where the floor is). At the
+               recommended spend the stop lands on the close or not at all, which is what sized
+               it; a paced cut still above the floor's spend stops before the close.
 ```
-Fallback when no spend history exists yet: paid target × remaining share of the paid curve.
+Fallback when no spend history exists yet: paid target × remaining share of the paid curve,
+which nothing stops; with a price and no spend there is nothing to project.
 Projected *purchases* from any projected entries convert at the 0.8 eligible-entry→order rate.
 
 ---
@@ -1549,15 +1557,30 @@ in hand       eligible draw entries still in the draw, ALLOCATED across the prod
               sets its own)
 ```
 
-plus, at close, the projection's further units spread over the products by their demand so
-far (units paid, drafts and the draw winners the entries imply), each held to the room it has
-left after those, the excess going on to the products with room in the same proportion
-(`split_future`, `splitFuture`). Until 6 October 2026 the further units were spread over the
-room left, which handed the quiet work of a pair the larger share of the release's projection
-because the popular one had used its room: on Cattelan's Novecento and Not Afraid of Love it
-read 63/37 where the works' demand ran 31/69. Room decides only where demand has nothing to
-say. Everything is capped against the product's room (edition − sold) only where it is drawn;
-the uncapped demand is kept so an oversubscribed product stays visible as such.
+plus, at close, the projection's further units placed by the same allocation rule: the entrants
+still to come are taken to look like the entrants so far (`future_cohort`: the entry patterns with an
+open entry, scaled to the projection's entries and rounded to whole people), and placed against the
+room left after what is in hand, so a flexible entrant goes where there is room as one in hand does
+and a full work's share falls out as oversubscribed (`futureOversubscribed`, drawn past the edition
+at close; `allocation.futureRule` says `cohort`). Without an entry pattern to read (a release the
+draw feed does not carry) the units follow the works' demand so far, each held to the room it has
+left, the excess going on to the works with room in the same proportion (`split_future`,
+`splitFuture`; `futureRule` `demand`). Until 6 October 2026 the units were spread over the room left, which handed
+nearly all of them to the work with room once another was full: Cattelan's Novecento read 88% at
+close on a third of the entries. `etl/analysis/split_backtest.py` reads fourteen closed multi-work
+draws (29 works, every work with a draw) at a share of their window, with the entry patterns
+rebuilt from the event feed as of that day and the total still to come taken as known, so the test
+is the split alone. Over every work the cohort rule misses by 5 points on average against 6 for the
+room rule, and leans 4 points high against 6; on the ten works that ended below 90% of their
+edition the room rule reads 15 points high at 40% of the window and 16 later, the cohort rule 9 to
+13. The demand split alone (the fallback, with a full work's excess handed on to the works with
+room) reads within a point of the room rule on those works, 15 and 16: once the popular work is
+full, moving its excess on is what the room rule did. What is
+left on those works is not the split but the entrants still to come converting below the rate:
+Dali's Spectre of Sex Appeal reads 76% at 40% under the cohort rule and ended at 76, against 100
+under the room rule; En Iwamura's lagging Neo Jomon 67 against 95, having ended at 32.
+Everything is capped against the product's room (edition − sold) only where it is drawn; the
+uncapped demand is kept so an oversubscribed product stays visible as such.
 
 **Where the per-product data comes from.** A release runs **one draw per product**, so the
 event feed's `draw_id` is the product dimension (§2.2: exact against the multiset cap on 38 of
@@ -1690,9 +1713,11 @@ before any entrant is placed, so they take their room first; the row carries the
 
 **The card's colours are one ramp, and the message posted to Slack is the same rows.**
 Paid, drafts, the draw winners the entries imply and (at close) the units still to come are
-four tints of the page's blue, deepest to palest as the units get less certain; nothing on
-the card is hatched, and demand past a product's edition is the winners' own tint carrying on
-where the paler room behind the bar stops. `Post to Slack` sends those rows as a Slack message
+four tints of the page's blue, deepest to palest as the units get less certain, and nothing on
+the card is hatched. A product's bar is its edition: demand past it (entrants in hand with no
+room and, at close, the further entrants a full work turns away) is not drawn, it is a line in
+the row's hover, "Beyond the edition, no room" (6 October 2026; drawn past the sellout in the
+winners' tint it read as one more kind of unit). `Post to Slack` sends those rows as a Slack message
 composed on the server from the same snapshot (`server/slack.js`): the artist as a header;
 the works' shared title and the campaign day on one line; the table's title; Slack's `table`
 block (the Work column wrapping, the figures right-aligned), one row per work with its units
@@ -1895,8 +1920,15 @@ the paid column of the channels card, so the Paid spend card's bar and that colu
 figure; `entriesToDate` and `entriesProjected` stay the paid campaign's draw entries, the
 quantity the CPE and the ROI are priced on. At close, `spendProjectedTotal` is `spendToDate`
 (today so far included) plus the last full day's spend over the full days after today and the
-share of today still to come, and `entriesProjected` is `entriesToDate` plus the entries that
-spend buys on the same days, so neither reads below its figure to date. `daily[]` runs over the full days the rules read;
+share of today still to come, up to the day the run rate stops (§5.4), and `entriesProjected` is
+`entriesToDate` plus the entries that spend buys on the same days, so neither reads below its
+figure to date. `stops` says where it stops: `sellout` and `roiFloor` (the day each would stop it,
+ISO dates or null), `day` the first of the two and `rule` which; `ifContinued` carries the flat
+run to the close beside it (`entriesProjected`, `unitProjected`, `spendProjectedTotal`), for the
+card's hover; `atRecommended` the same projection at the recommended daily spend (`spend`), with
+its own `stops` and `sellThrough` (`units`, `pct`: the sell-through at close with paid at that
+spend and the organic channels as they are, placed by the sell-through's own rule), the figure the
+Slack update's paid line prints. All three are null once the campaign is complete. `daily[]` runs over the full days the rules read;
 on a live day the as-of day so far rides at the end as one more row marked `partial: true`
 (its spend and entries, no ROI point), so the Paid ROI chart's bars sum to `spendToDate` and
 the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip that row.
