@@ -326,8 +326,8 @@ if (fs.existsSync(dir)) {
 // and in units; nothing without a running campaign, a recommendation, the figure at the
 // recommended spend, on an At close update or once the campaign is complete
 {
-  const withPaid = (current, recommended, pct, units, extra = {}) => ({ ...snap, ...extra,
-    paid: { budget: { current, recommended, cap: "pacing" }, atRecommended: recommended === null ? null : { spend: recommended, sellThrough: pct === null ? null : { pct, units } } } });
+  const withPaid = (current, recommended, pct, units, extra = {}, budget = {}) => ({ ...snap, ...extra,
+    paid: { budget: { current, recommended, cap: "pacing", floor: 1, ...budget }, atRecommended: recommended === null ? null : { spend: recommended, sellThrough: pct === null ? null : { pct, units } } } });
   const sectionsOf = (s, o = {}) => parts(composeSellThroughBlocks(s, { today: "2026-09-17", ...o }).blocks).sections;
   const line = (s, o) => sectionsOf(s, o)[3] ?? null;
   const up = composeSellThroughBlocks(withPaid(1000, 1500, 0.3605, 216.3), { today: "2026-09-17" });
@@ -340,10 +340,33 @@ if (fs.existsSync(dir)) {
   check(line(withPaid(1000, 1000, 0.31, 186)) === "This assumes paid stays at €1,000 a day. There is no room to scale paid further.",
     `no room: ${line(withPaid(1000, 1000, 0.31, 186))}`);
   check(line(withPaid(1000, 1000.4, 0.31, 186)) === "This assumes paid stays at €1,000 a day. There is no room to scale paid further.", "a move that rounds to nothing is no move");
-  check(line(withPaid(1000, 700, 0.28, 168)) === "This assumes paid stays at €1,000 a day. It looks like we might need to decrease paid spend, to €700 a day, which would leave us at *28.0%* (168 units).",
-    `a cut: ${line(withPaid(1000, 700, 0.28, 168))}`);
-  check(line(withPaid(1000, 0, 0.25, 150)) === "This assumes paid stays at €1,000 a day. It looks like we might need to stop paid spend, which would leave us at *25.0%* (150 units).",
-    `a stop: ${line(withPaid(1000, 0, 0.25, 150))}`);
+  // a cut or a stop says why (8 October 2026): what bound the recommendation, as the Paid card's chip names it
+  const cut = (cap, rec = 700, extra = {}, budget = {}) => line(withPaid(1000, rec, 0.28, 168, extra, { cap, ...budget }));
+  check(cut("roi_floor") === "This assumes paid stays at €1,000 a day. It looks like we might need to decrease paid spend, to €700 a day: at today's spend the ROI at close would fall below the floor of 1.0. That would leave us at *28.0%* (168 units).",
+    `a cut at the ROI floor: ${cut("roi_floor")}`);
+  check(cut("roi_floor", 700, {}, { paced: true, floor: 1.2 }) === "This assumes paid stays at €1,000 a day. It looks like we might need to decrease paid spend, to €700 a day: at today's spend the ROI at close would fall below the floor of 1.2, so it is cut by 30% a day. That would leave us at *28.0%* (168 units).",
+    `a paced cut at the floor: ${cut("roi_floor", 700, {}, { paced: true, floor: 1.2 })}`);
+  // the fixture's release has a target inside its edition, so supply reads "the target" there and "the sellout" on a whole edition
+  const whole = { edition: { target: 600, total: 600 } };
+  check(cut("supply", 700, whole) === "This assumes paid stays at €1,000 a day. It looks like we might need to decrease paid spend, to €700 a day: today's spend buys more than the sellout needs on current results. That would leave us at *28.0%* (168 units).",
+    `a cut for supply: ${cut("supply", 700, whole)}`);
+  check(cut("supply", 700, { edition: { target: 300, total: 600 } }) === "This assumes paid stays at €1,000 a day. It looks like we might need to decrease paid spend, to €700 a day: today's spend buys more than the target needs on current results. That would leave us at *28.0%* (168 units).",
+    `a cut for supply against a target: ${cut("supply", 700, { edition: { target: 300, total: 600 } })}`);
+  check(cut("roi_band_decrease") === "This assumes paid stays at €1,000 a day. It looks like we might need to decrease paid spend, to €700 a day: cumulative ROI is below 0.9, where the spend rules say decrease. That would leave us at *28.0%* (168 units).",
+    `a cut by the ROI band: ${cut("roi_band_decrease")}`);
+  check(cut("forced_decrease").includes(": the trailing 3-day ROI has been below target on each of the last three full days. That would"), `a forced cut: ${cut("forced_decrease")}`);
+  check(cut("zero_conversion").includes(": yesterday's spend bought no entries. That would"), `a zero-conversion cut: ${cut("zero_conversion")}`);
+  check(cut("pacing") === "This assumes paid stays at €1,000 a day. It looks like we might need to decrease paid spend, to €700 a day, which would leave us at *28.0%* (168 units).",
+    `a cut with no limit to name keeps the plain words: ${cut("pacing")}`);
+  const stop = (cap, extra = {}) => line(withPaid(1000, 0, 0.25, 150, extra, { cap }));
+  check(stop("supply", whole) === "This assumes paid stays at €1,000 a day. It looks like we might need to stop paid spend: the sellout is reached without it on current results. That would leave us at *25.0%* (150 units).",
+    `a stop for supply: ${stop("supply", whole)}`);
+  check(stop("supply", { edition: { target: 300, total: 600 } }).includes("stop paid spend: the target is reached without it on current results."), `a stop for supply against a target: ${stop("supply", { edition: { target: 300, total: 600 } })}`);
+  check(stop("roi_floor") === "This assumes paid stays at €1,000 a day. It looks like we might need to stop paid spend: at today's spend the ROI at close would fall below the floor of 1.0. That would leave us at *25.0%* (150 units).",
+    `a stop at the floor: ${stop("roi_floor")}`);
+  check(stop("zero_conversion_pause").includes("stop paid spend: paid has bought no entries for three days running. That would"), `a pause: ${stop("zero_conversion_pause")}`);
+  check(stop(null) === "This assumes paid stays at €1,000 a day. It looks like we might need to stop paid spend, which would leave us at *25.0%* (150 units).",
+    `a stop with no limit to name keeps the plain words: ${stop(null)}`);
   check(line(withPaid(0, 1500, 0.36, 216)) === null && line(withPaid(null, 1500, 0.36, 216)) === null, "no line without a running campaign");
   check(line(withPaid(1000, null, 0.36, 216)) === null && line(withPaid(1000, 1500, null, 216)) === null, "no line without a recommendation or its figure");
   check(line(withPaid(1000, 1500, 0.36, 216, { complete: true })) === null, "no line once the campaign is complete");
