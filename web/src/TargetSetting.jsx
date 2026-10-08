@@ -268,7 +268,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
           {editing && !p.airtable_id
             ? <input className="cell name" size={1} value={p.name || ""} placeholder="Product name" onChange={(e) => onName(p, e.target.value)} />
             : <span className="nm" title={p.name || "unnamed"}>{p.name || "unnamed"}</span>}
-          <span className="src" title={p.airtable_id ? `Airtable record ${p.project_code || p.airtable_id}` : "Added on this tab, not in Airtable"}>{p.airtable_id ? `Airtable ${p.project_code || p.airtable_id}` : "added by hand"}</span>
+          {!p.airtable_id && <span className="src" title="Added on this tab, not in Airtable">added by hand</span>}
           {p.excluded && <span className="src off" title={OFF_WHY}>unticked</span>}
           {editing && p.airtable_id && n > 0 && (
             <button type="button" className="ts-link" onClick={() => onReset(p)} title={`Back to Airtable's figures on this row (${n} typed)`}>Reset</button>
@@ -822,8 +822,6 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     excludedCount ? `${excludedCount} unticked` : null,
   ].filter(Boolean).join(" · ");
   const asPct = (v) => (v === null || v === undefined || v === "" ? "" : String(Math.round(Number(v) * 100)));
-  const ECON_COLS = GRID.filter((c) => !["framing_available", "frame_conversion", "frame_profit_per_unit"].includes(c.key));
-  const FRAME_COLS = GRID.filter((c) => ["framing_available", "frame_conversion", "frame_profit_per_unit"].includes(c.key));
   const cannDefault = Math.round(100 * (Number(b.cannibalisation) || 0.2));
   const e2oDefault = Math.round(100 * (Number(b.eligible_entry_to_order) || 0.8));
   const sense = T && T.paid ? T.paid.sense_check_breached : false;
@@ -983,14 +981,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                 <b>The works' editions add up to {fmt(editionNote.sum)}; the release's edition is {fmt(editionNote.release)}.</b> One of the two is wrong.
               </Notice>
             )}
-            <div className="ts2-sub">
-              <h3>Economics</h3>
-              <ProductsGrid {...gridHandlers} columns={ECON_COLS} />
-            </div>
-            <div className="ts2-sub">
-              <h3>Framing</h3>
-              <ProductsGrid {...gridHandlers} columns={FRAME_COLS} ticks={false} addRow={false} nameOnly />
-            </div>
+            <ProductsGrid {...gridHandlers} />
           </section>
 
           {/* 4 · assumptions */}
