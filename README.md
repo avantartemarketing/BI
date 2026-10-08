@@ -106,9 +106,12 @@ The ETL builds a page for **every** release the funnel data mentions (`discover_
   hand-entered releases), close = announce + length. A release seen only before its
   announce is reconstructed the other way and can be a day out. A release with no clock is
   **catalogue** - a work still drawing traffic - and is shown over its last 90 days.
-- **In flight** = has dates and today is before the close. The sidebar lists those, fewest
-  days to launch first (a release whose window has not opened yet sits last, with its
-  opening date). Each row is the artist alone on one line (the work's title, "Multiple" and
+- **In flight** = announced and today is before the close. The sidebar lists those, fewest
+  days to launch first. A release with dates whose announce is still ahead sits under
+  Upcoming with the days to it, whether or not the funnel has rows for it yet
+  (`web/src/sections.mjs`; 8 October 2026 - before, it sat last in flight with its opening
+  date, so Ai Weiwei's Lego draw read "opens 22 d" in flight three weeks before its
+  announce). Each row is the artist alone on one line (the work's title, "Multiple" and
   the quarter are left to the hover, which carries the full name; 8 October 2026, a title
   on some rows and not others read as inconsistent), with the days left on the right and a
   grey verb before the count where it is not to the section's own event ("opens 8 d" on a

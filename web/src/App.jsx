@@ -39,6 +39,7 @@ import BasketCard from "./modules/BasketCard.jsx";
 import Permissions from "./Permissions.jsx";
 import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
 import { wordsOf } from "./vocab.mjs";
+import { releaseClock, sectionOf } from "./sections.mjs";
 import { ExplainProvider, ExplainHint, Ex } from "./explain/Explain.jsx";
 
 async function getJSON(url) {
@@ -124,17 +125,25 @@ export default function App() {
 
   const groups = useMemo(() => {
     if (!index) return { live: [], upcoming: [], all: [] };
-    const all = index.releases.map((r) => ({ ...r, status: r.status || (r.complete ? "closed" : "live") }));
-    // in flight reads top to bottom by days to launch; a release whose window
-    // has not opened yet sits under the ones that have, soonest first
+    // the build's status, except that a live release still to announce sits under Upcoming (sections.mjs)
+    const all = index.releases.map((r) => ({ ...r, status: sectionOf(r, index.asOf) }));
+    // in flight reads top to bottom by days to launch
     const order = (r) => {
       const c = releaseClock(r, index.asOf);
       if (!c) return Infinity;
       return c.opensIn > 0 ? 1e6 + c.opensIn : c.daysLeft;
     };
     const live = all.filter((r) => r.status === "live").sort((a, b) => order(a) - order(b));
-    // the launches Airtable knows and the funnel does not yet, soonest close first
-    const upcoming = all.filter((r) => r.status === "upcoming").sort((a, b) => String(a.windowEnd || "").localeCompare(String(b.windowEnd || "")));
+    // upcoming reads soonest first by the days its rows show: to the announce
+    // where that is ahead, else to the close (a launch Airtable alone knows
+    // whose announce has passed); before 8 October 2026 it sorted by the
+    // close, so a row at 4 days sat under one at 28
+    const soon = (r) => {
+      const c = releaseClock(r, index.asOf);
+      if (!c) return Infinity;
+      return c.opensIn > 0 ? c.opensIn : c.daysLeft;
+    };
+    const upcoming = all.filter((r) => r.status === "upcoming").sort((a, b) => soon(a) - soon(b));
     return { live, upcoming, all };
   }, [index]);
   // an artist with two rows among those listed (Ai Weiwei's LE and timed
@@ -261,26 +270,14 @@ function rowState(r) {
  * the window's end, the announce date sits `of` days before it, and the build
  * date says how far each is. A release whose announce is still ahead has not
  * opened and lists after the ones in flight. */
-function releaseClock(r, asOf) {
-  if (!r.windowEnd || !(r.of > 0)) return null;
-  const launch = new Date(r.windowEnd + "T00:00:00Z");
-  const announce = new Date(launch.getTime() - r.of * 86400000);
-  const today = asOf ? new Date(asOf + "T00:00:00Z") : null;
-  const days = (a, b) => Math.round((a - b) / 86400000);
-  return {
-    launch, announce,
-    daysLeft: today ? days(launch, today) : r.of - (r.day || 0),
-    opensIn: today ? days(announce, today) : 0,
-  };
-}
-
-/* A release's name as a sidebar row sets it (5 October 2026): the artist,
- * then a real title in grey; "Multiple" and the quarter are left to the
- * hover, which carries the full name. An artist with two rows in the list
- * (`twin`) keeps the rest of the name on those rows, "timed" added for a
- * timed launch, since the artist alone would not say which launch a row was
- * (Ai Weiwei's LE and TL of one quarter). Before, the full name wrapped over
- * two lines above a date, and the list ran to two screens. */
+/* A release's name as a sidebar row sets it (rowWords): the artist alone;
+ * the title, "Multiple" and the quarter are left to the hover, which carries
+ * the full name. An artist with two rows in the list (`twin`) gets the
+ * quarter after the name, "timed" added for a timed launch, since the artist
+ * alone would not say which launch a row was (Ai Weiwei's LE and TL of one
+ * quarter). Before 5 October 2026 the full name wrapped over two lines above
+ * a date and the list ran to two screens; until 8 October a real title rode
+ * in grey after the artist, on some rows and not others. */
 const QUARTER_RE = /^\d{4} Q\d$/;
 const nameParts = (r) => String(r.releaseName || r.name || r.artist || "").split(" \u00b7 ").map((p) => p.trim()).filter(Boolean);
 const artistOf = (r) => nameParts(r)[0] || "";
