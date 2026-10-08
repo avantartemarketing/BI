@@ -720,8 +720,13 @@ says what the Paid card recommends instead and where that would take the close, 
 and in units: "This assumes paid stays at €6,382 a day. It looks like there is room to scale paid
 further, to €8,297 a day, which might take sell-through at close to 19.4% (1,184 units)", or
 "There is no room to scale paid further", or "It looks like we might need to decrease paid spend,
-to €4,500 a day, which would leave us at 18.9% (1,150 units)" ("stop paid spend" when the
-recommendation is nothing); the figure is the build's `paid.atRecommended`, the same projection
+to €4,500 a day: at today's spend the ROI at close would fall below the floor of 1.0. That would
+leave us at 18.9% (1,150 units)" ("stop paid spend" when the recommendation is nothing). A cut or
+a stop says why (8 October 2026), from what bound the recommendation (`paid.budget.cap`, the Paid
+card's Capped by chip): the sellout or the target reached without the spend, the ROI at close
+under the floor, or the spend rules (no entries bought yesterday or for three days, cumulative
+ROI below 0.9, three days below the target ROI), with "so it is cut by 30% a day" where the
+pacing rule holds the cut; the figure is the build's `paid.atRecommended`, the same projection
 with paid at the recommended spend; then, in small type, the day the figures run to
 (the page's as-of day, "so far" while that day is only partly in), the attribution when the
 page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still to come)

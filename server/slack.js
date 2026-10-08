@@ -222,8 +222,13 @@ function model(snap, { horizon = "today", today, direct = false } = {}) {
   const cur = finite(pb.current) ? num(pb.current) : 0;
   const rec = finite(pb.recommended) ? num(pb.recommended) : null;
   const recPct = ar && ar.sellThrough && finite(ar.sellThrough.pct) ? num(ar.sellThrough.pct) : null;
+  // what bound the recommendation (paid.budget.cap, the Paid card's "Capped
+  // by" chip) rides along, so a cut or a stop can say why (leverLine)
+  const ed = snap.edition || {};
   const lever = snap.complete || !(cur > 0) || rec === null || recPct === null || closePct === null ? null
-    : { current: cur, recommended: rec, move: Math.round(rec) - Math.round(cur), pct: recPct, units: num(ar.sellThrough.units) };
+    : { current: cur, recommended: rec, move: Math.round(rec) - Math.round(cur), pct: recPct, units: num(ar.sellThrough.units),
+        cap: pb.cap || null, paced: !!pb.paced, floor: finite(pb.floor) ? num(pb.floor) : null,
+        partial: finite(ed.total) && finite(ed.target) && num(ed.total) > num(ed.target) };
 
   // the totals, in words
   const totals = [
@@ -367,11 +372,32 @@ const closeLine = (m) => {
  * Paid card recommends instead and where that would take the close - room to
  * scale paid up and the sell-through at close it might reach, no room, or a
  * cut (a stop when the recommendation is nothing) and the sell-through it
- * would leave. The sell-through is given to one decimal and in units, so a
- * move the forecast's whole percentage hides still shows. Nothing without
- * the forecast line, a running campaign or a recommendation. */
+ * would leave. A cut or a stop says why (8 October 2026): which of the
+ * card's limits bound the recommendation - the sellout or the target reached
+ * without the spend, the ROI at close under the floor, or the spend rules on
+ * days that bought nothing or an ROI below the band - and that a cut is
+ * taken in 30% steps where the pacing rule holds it. The sell-through is
+ * given to one decimal and in units, so a move the forecast's whole
+ * percentage hides still shows. Nothing without the forecast line, a
+ * running campaign or a recommendation. */
 const eur = (v) => `€${fmt(v)}`;
 const pct1 = (v) => `${(Math.round(num(v) * 1000) / 10).toFixed(1)}%`;
+const floorWords = (l) => (l.floor !== null ? Number(l.floor).toFixed(1) : "1.0");
+function cutReason(l) {
+  const goal = l.partial ? "the target" : "the sellout";
+  const stop = !(l.recommended > 0);
+  let why = null;
+  switch (l.cap) {
+    case "supply": why = stop ? `${goal} is reached without it on current results` : `today's spend buys more than ${goal} needs on current results`; break;
+    case "roi_floor": why = `at today's spend the ROI at close would fall below the floor of ${floorWords(l)}`; break;
+    case "zero_conversion_pause": why = "paid has bought no entries for three days running"; break;
+    case "zero_conversion": why = "yesterday's spend bought no entries"; break;
+    case "roi_band_decrease": why = "cumulative ROI is below 0.9, where the spend rules say decrease"; break;
+    case "forced_decrease": why = "the trailing 3-day ROI has been below target on each of the last three full days"; break;
+    default: return null;
+  }
+  return l.paced && !stop ? `${why}, so it is cut by 30% a day` : why;
+}
 const leverLine = (m) => {
   const l = m.lever;
   if (m.close || !l) return null;
@@ -380,7 +406,10 @@ const leverLine = (m) => {
   if (l.move > 0) return `${holds} It looks like there is room to scale paid further, to ${eur(l.recommended)} a day, which might take sell-through at close to ${at}.`;
   if (l.move < 0) {
     const cut = l.recommended > 0 ? `decrease paid spend, to ${eur(l.recommended)} a day` : "stop paid spend";
-    return `${holds} It looks like we might need to ${cut}, which would leave us at ${at}.`;
+    const why = cutReason(l);
+    return why
+      ? `${holds} It looks like we might need to ${cut}: ${why}. That would leave us at ${at}.`
+      : `${holds} It looks like we might need to ${cut}, which would leave us at ${at}.`;
   }
   return `${holds} There is no room to scale paid further.`;
 };
