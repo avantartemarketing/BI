@@ -708,8 +708,8 @@ hover):
    per work, as wide as its target units (the columns share the width in proportion) and as
    tall as its price per unit on a euro scale, stacked from the foot by who gets what - costs
    and the rest, the artist's profit, Avant Arte's profit - with the framing uplift (frames per
-   print × frame profit) as a dashed band on top, so area is money. A work unticked, or with no
-   edition or no price yet, is a thin dashed outline; the label under a column is what differs
+   print × frame profit) as a dashed band on top, so area is money. A work with no edition or no price yet is a thin dashed outline; a work left out of the release
+   is not drawn, only named under the chart with `Include` beside it while editing; the label under a column is what differs
    between the works' names (the shared start and end dropped) and the target units. Selecting
    a column puts the work's figures beside the chart: edition, sell-through, target units, the
    close, price, the two profits per unit, `AA profit share` and `AA revenue share` (Avant
@@ -720,9 +720,8 @@ hover):
    of paid spend. The figures are locked to Airtable's until the `Edit figures` switch is on;
    then the figure itself is the input, selected whole on focus so typing replaces it, a typed
    figure tinted with Airtable's (or the default) faint beside it, and a figure typed on the
-   release as a whole lands on every work whose figure is open. The panel offers `Reset to
-   Airtable`, `Leave out of the release` or `Include in the release`, and `Remove` on a work
-   added by hand; the group's head counts the typed figures and offers `Reset all` and `Add a
+   release as a whole lands on every work whose figure is open. Its first row, `In the release`, is the switch that leaves the work out or counts it
+   again; the panel offers `Reset to Airtable`, and `Remove` on a work added by hand; the group's head counts the typed figures and offers `Reset all` and `Add a
    work`. The timed launches' tab keeps the Airtable-like grid (`ProductsGrid`).
 3. **Target** - the chosen basket with its launch count and a `Change basket` button opening
    the picker; the **Channels in plan** switches (§4.3: Running paid; Artist's own channels);

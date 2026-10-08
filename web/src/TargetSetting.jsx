@@ -415,8 +415,9 @@ export { GRID, PCT, closedFor, typedKeys, ProductsGrid };
  * column per work, as wide as its target units and as tall as its price per
  * unit, stacked by who gets what - the costs and the rest at the foot, the
  * artist's profit, Avant Arte's - with the framing uplift as the band on
- * top. Area is money. An unticked work is a thin dashed outline, so is one
- * with no edition or no price yet. The selected column's figures sit beside
+ * top. Area is money. A work with no edition or no price yet is a thin
+ * dashed outline; a work left out of the release is not drawn, only named
+ * under the chart, where Include puts it back. The selected column's figures sit beside
  * the chart; with Edit figures on the figure itself is the input, Airtable's
  * faint beside a typed one; nothing selected shows the release as a whole,
  * where a figure typed lands on every work. */
@@ -514,7 +515,9 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
   const atById = new Map((airtable || []).filter((p) => p.airtable_id).map((p) => [String(p.airtable_id), p]));
   const live = products.filter((p) => !p.excluded);
   const drawn = products.map((p, i) => ({ p, key: rowKey(p, i), parts: partsOf(p), sized: !!(p.edition && p.target_units > 0), priced: !!p.unit_price_eur }));
-  const maxTop = Math.max(0, ...drawn.filter((d) => !d.p.excluded).map((d) => d.parts.top));
+  // the works in the release are drawn; the ones left out are named under the chart
+  const shown = drawn.filter((d) => !d.p.excluded), left = drawn.filter((d) => d.p.excluded);
+  const maxTop = Math.max(0, ...shown.map((d) => d.parts.top));
   const step = niceStep(maxTop);
   const axisMax = Math.max(step, Math.ceil(maxTop / step - 1e-9) * step);
   const pct = (v) => Math.max(0, Math.min(100, (100 * v) / axisMax));
@@ -522,7 +525,7 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
   for (let t = 0; t <= axisMax + 1e-9; t += step) ticks.push(t);
   const sel = selected ? drawn.find((d) => d.key === selected) || null : null;
   const name = (p) => p.name || "unnamed";
-  const short = distinctNames(drawn.map((d) => name(d.p)));
+  const short = distinctNames(shown.map((d) => name(d.p)));
   const colTip = (d) => {
     const { p, parts } = d;
     if (p.excluded) return `${name(p)}: not in the release, counts nothing.`;
@@ -534,9 +537,9 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
     who.push(`${who.length ? "the rest" : "costs and the rest"} €${cellText("unit_price", parts.rest)}`);
     return `${name(p)}: ${fmt(p.target_units)} of ${fmt(p.edition)} at ${fmtMoney(parts.price, 0)} per unit · ${who.join(", ")}${parts.frame ? ` · framing +€${cellText("frame_profit_per_unit", parts.frame)} per unit` : ""}`;
   };
-  // a ticked, sized work is as wide as its target units; the rest are thin
-  const flexOf = (d) => (d.p.excluded || !d.sized ? "0 0 28px" : `${d.p.target_units} 1 0px`);
-  const heightOf = (d) => (d.p.excluded || !d.priced ? `max(24px, ${pct(d.parts.price)}%)` : `max(2px, ${pct(d.parts.top)}%)`);
+  // a sized work is as wide as its target units; one with no edition is thin
+  const flexOf = (d) => (!d.sized ? "0 0 28px" : `${d.p.target_units} 1 0px`);
+  const heightOf = (d) => (!d.priced ? `max(24px, ${pct(d.parts.price)}%)` : `max(2px, ${pct(d.parts.top)}%)`);
 
   const chart = (
     <div className="wa-plot">
@@ -551,13 +554,13 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
             {t > 0 && <i className="wa-grid" style={{ bottom: `${pct(t)}%` }} />}
           </React.Fragment>
         ))}
-        {drawn.map((d) => {
+        {shown.map((d) => {
           const on = d.key === selected;
-          const bare = d.p.excluded || !d.sized || !d.priced;
+          const bare = !d.sized || !d.priced;
           return (
             <button key={d.key} type="button" className={`wa-col${on ? " sel" : ""}${bare ? " bare" : ""}`}
               style={{ flex: flexOf(d), height: heightOf(d) }} title={colTip(d)}
-              aria-label={`${name(d.p)}${d.p.excluded ? ", not in the release" : ""}${on ? ", selected" : ""}`} aria-pressed={on}
+              aria-label={`${name(d.p)}${on ? ", selected" : ""}`} aria-pressed={on}
               onClick={() => onSelect(on ? null : d.key)}>
               {!bare && d.parts.rest > 0 && <i className="s rest" style={{ flex: `${d.parts.rest} 0 0px` }} />}
               {!bare && d.parts.artist > 0 && <i className="s artist" style={{ flex: `${d.parts.artist} 0 0px` }} />}
@@ -574,13 +577,25 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
         )}
       </div>
       <div className="wa-names">
-        {drawn.map((d, i) => (
-          <span key={d.key} className={`${d.key === selected ? "sel" : ""}${d.p.excluded ? " off" : ""}`} style={{ flex: flexOf(d) }} title={colTip(d)}>
-            <span className="n">{d.p.excluded ? "out" : !d.sized ? "no edition" : !d.priced ? `${fmt(d.p.target_units)} · no price` : fmt(d.p.target_units)}</span>
+        {shown.map((d, i) => (
+          <span key={d.key} className={d.key === selected ? "sel" : ""} style={{ flex: flexOf(d) }} title={colTip(d)}>
+            <span className="n">{!d.sized ? "no edition" : !d.priced ? `${fmt(d.p.target_units)} · no price` : fmt(d.p.target_units)}</span>
             <span className="nm">{short[i]}</span>
           </span>
         ))}
       </div>
+      {left.length > 0 && (
+        <div className="wa-out">
+          <span className="k">Left out of the release:</span>
+          {left.map((d) => (
+            <span key={d.key} className="w">
+              <button type="button" className={`nm${d.key === selected ? " sel" : ""}`} title={`${colTip(d)} Click for its figures.`}
+                onClick={() => onSelect(d.key === selected ? null : d.key)}>{name(d.p)}</button>
+              {editing && <button type="button" className="ts-link" onClick={() => onInclude(d.p, true)} title="Count this work again.">Include</button>}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -597,6 +612,10 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
   const row = (key, label, value, cls, title) => (
     <div key={key} className={`wa-r${cls ? ` ${cls}` : ""}`} title={title}><span className="k">{label}</span><span className="v">{value}</span></div>
   );
+  const inRow = (p) => (!p.airtable_id ? null : row("in_release", "In the release", editing
+    ? <Switch on={!p.excluded} onChange={(on) => onInclude(p, on)} label={p.excluded ? "No" : "Yes"}
+      title={p.excluded ? "Switch on to count this work again." : "Switch off to leave this work out of the release: it keeps its figures and counts nothing."} />
+    : <span className="wa-fig">{p.excluded ? "No" : "Yes"}</span>, null, p.excluded ? OFF_WHY : "Part of the release. Switch on Edit figures to leave it out."));
   const workRow = (p, r) => {
     const title = r.tip || TIPS[r.key];
     if (r.calc) {
@@ -702,9 +721,6 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
       {sel && sel.p.airtable_id && !sel.p.excluded && typedN > 0 && (
         <button type="button" className="ts-link muted" onClick={() => onReset(sel.p)} title={`Back to Airtable's figures on this work (${typedN} typed).`}>Reset to Airtable</button>
       )}
-      {sel && sel.p.airtable_id && (sel.p.excluded
-        ? <button type="button" className="ts-link" onClick={() => onInclude(sel.p, true)} title="Count this work again.">Include in the release</button>
-        : <button type="button" className="ts-link" onClick={() => onInclude(sel.p, false)} title="Leave this work out of the release: it stays here, greyed, and counts nothing.">Leave out of the release</button>)}
       {sel && !sel.p.airtable_id && (
         <button type="button" className="ts-link" onClick={() => { onRemove(sel.p); onSelect(null); }} title="Take this work off the release.">Remove</button>
       )}
@@ -714,7 +730,7 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
   const side = (
     <div className="wa-side" key={selected || "all"} aria-label={sel ? `${name(sel.p)}, the figures` : "The release, the figures"}>
       {head}
-      <div className="wa-rows">{sel ? ROWS.map((r) => workRow(sel.p, r)) : [...ROWS.map(allRow), aaShareRow]}</div>
+      <div className="wa-rows">{sel ? [inRow(sel.p), ...ROWS.map((r) => workRow(sel.p, r))] : [...ROWS.map(allRow), aaShareRow]}</div>
       {links}
     </div>
   );
