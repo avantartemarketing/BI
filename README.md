@@ -585,13 +585,22 @@ Airtable. What the page asks is which Meta campaigns are the release's, which
 channels are in plan - Running paid, the artist's own channels - and which
 basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 
-The target header - the secured-units target, its uplift over the basket, and six
-derived figures each with its benchmark and stretch - recomputes live in the browser via
-`shared/benchmarkModel.mjs` (the per-unit economics via `shared/economics.mjs`). The
-products sit on an Airtable-like grid, locked to Airtable's figures until **Edit figures** is
-switched on, each with a tick on its row (unticked, a work stays on the grid and counts nothing);
-where the stretch comes from is set with coupled sliders, one per channel group, so the shares
-always add to 100%;
+Since 8 October 2026 the tab is the form on the left and an outcome rail on the right
+(BENCHMARK_SPEC 8). The form is four groups of label-and-control rows, inputs first: **Launch**
+(the three dates, each with a one-word source tag in its box and a button for a date another
+feed has; the Meta campaigns; the campaign code only while no feed names one; the marketing
+lead; the Slack channel), **Target** (the basket with `Change basket`, the Channels in plan
+switches, and the stretch as a three-way choice, even across channels, all from paid or
+custom, the coupled sliders appearing under Custom), **Works** (two Airtable-like grids, one
+for the economics and one for framing, locked to Airtable's figures until **Edit figures** is
+on, with a tick per work on the first) and **Assumptions** (one line of the four figures with an
+Edit button). The rail recomputes live in the browser via `shared/benchmarkModel.mjs` (the
+per-unit economics via `shared/economics.mjs`): the target, the benchmark and the uplift, the
+stretch and where it comes from, the paid budget with its benchmark and share of launch value,
+the sell-through, each work's target, the launch value and the per-unit profits, then `Save
+targets` and `Discard` with the state under them. There is no header strip of derived figures,
+no channel table and no copy on the tab; the artist posting tier left it the same day (what was
+saved stays, a new release takes the build's default).
 **Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue, a first save included: the server removes the upcoming or actuals-only page the built one replaces) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
 
 ## Timed launches

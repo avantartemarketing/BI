@@ -25,7 +25,7 @@
  * until they are cleared here, and the products show what Airtable holds
  * beside them. */
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { C, MINUS, fmt, fmtMoney, fmtPct } from "./ui.jsx";
+import { C, MINUS, fmt, fmtK, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
 import { resolveProducts, releaseEconomics, LEGACY_KEYS } from "../../shared/economics.mjs";
 import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf, rebalanceShares, stretchWeights } from "../../shared/benchmarkModel.mjs";
@@ -149,66 +149,6 @@ export function Campaigns({ code, chosen, all, suggested, onChange }) {
   );
 }
 
-/* ======================= the basket's channel table ======================= */
-
-/* Nobody types into it: what the basket's median gives each channel and what
- * the target asks of it. Benchmark values are the basket's own medians; the
- * target is the benchmark lifted by K (§1). Conversion carries no uplift at
- * all - it is held at the benchmark (§4), which is why the column says so:
- * the row's benchmark units over its benchmark sessions, the rate the funnel
- * holds (funnelByGroup conv_benchmark), so target sessions at it give target
- * units. The basket's median entries per session (profile.conv) is another
- * quantity, entries rather than units, and no target is read from it. */
-function BasketTable({ profile, off, k, kg }) {
-  // each channel's own uplift (BENCHMARK_SPEC 4.4): K unless the stretch was placed
-  const kgOf = (key) => (kg && Number.isFinite(kg[key]) ? kg[key] : k);
-  const rows = GROUPS.map((g) => {
-    const bmS = profile.sessions_by_group[g.key] || 0, bmU = profile.units_by_group[g.key] || 0;
-    return { ...g, off: off.includes(g.key), bmS, bmU, conv: bmS > 0 ? bmU / bmS : null };
-  });
-  return (
-    <div className="ts-tblwrap">
-      <table className="ts-table">
-        <thead>
-          <tr>
-            <th className="l">Channel</th>
-            <th className="bm" title="The basket's median units of demand from this channel: units sold, plus what the eligible entrants left without a unit, or whose payment failed, would have bought at the entry rate.">Benchmark units</th>
-            <th title="The benchmark plus this channel's share of the stretch: lifted by K everywhere unless the stretch was placed below, then by the channel's own uplift.">Target units</th>
-            <th className="bm" title="The basket's median sessions from this channel.">Benchmark sessions</th>
-            <th title="The benchmark sessions at the channel's own uplift, conversion held.">Target sessions</th>
-            <th title="Benchmark units over benchmark sessions: the rate the target holds, so target sessions at it give target units. Conversion rates are held at the benchmark - the uplift is asked of traffic and spend only.">Session → unit (held)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => r.off ? (
-            <tr key={r.key}>
-              <td className="l" style={{ color: C.muted }}>{r.name}</td>
-              <td className="off" colSpan={5} title="Set aside on this tab: its median leaves the benchmark and the other channels carry the whole target.">not in plan</td>
-            </tr>
-          ) : (
-            <tr key={r.key}>
-              <td className="l">{r.name}</td>
-              <td className="bm">{fmt(r.bmU)}</td>
-              <td className="tg">{fmt(r.bmU * kgOf(r.key))}</td>
-              <td className="bm">{fmt(r.bmS)}</td>
-              <td className="tg">{fmt(r.bmS * kgOf(r.key))}</td>
-              <td>{r.conv === null ? "" : fmtPct(r.conv, 2)}</td>
-            </tr>
-          ))}
-          <tr className="foot">
-            <td className="l">Total</td>
-            <td className="bm">{fmt(profile.units)}</td>
-            <td>{fmt(profile.units * k)}</td>
-            <td className="bm">{fmt(profile.sessions)}</td>
-            <td>{fmt(GROUPS.reduce((s, g) => s + (profile.sessions_by_group[g.key] || 0) * kgOf(g.key), 0))}</td>
-            <td />
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 /* ======================= the products grid ======================= */
 
 /* Percentages are typed as whole numbers and kept as fractions. */
@@ -279,7 +219,8 @@ function moveByRow(e) {
 /* `columns` is the grid's column set, GRID for an LE; a timed launch's tab
  * passes its own (TLTargets.jsx), with a units target per work in place of
  * the sell-through. `caption` replaces the LE words under the grid. */
-function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, onAdd, onRemove, onReset, onInclude, emptyNote, columns = GRID, caption }) {
+function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, onAdd, onRemove, onReset, onInclude, emptyNote, columns = GRID, caption,
+  ticks = true, addRow = true, nameOnly = false }) {
   // rows are keyed by the Airtable id, else the row's place in the list: a
   // manual product's name is typed in place, so it cannot be the key
   const rowKey = (p, i) => (p.airtable_id ? `a-${p.airtable_id}` : `m-${i}`);
@@ -320,6 +261,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
   };
   const nameCell = (p, i) => {
     const n = typedKeys(p).length;
+    if (nameOnly) return <td className="l primary"><div className="pc"><span className="nm" title={p.name || "unnamed"}>{p.name || "unnamed"}</span></div></td>;
     return (
       <td className="l primary">
         <div className="pc">
@@ -397,7 +339,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
   const sum = () => (
     <tr className="sum">
       <td className="gut" />
-      <td className="l primary">Total · per target unit<span className="src">{live.length === 1 ? "the one product" : `the ${live.length} products together`}{live.length < products.length ? `, ${products.length - live.length} unticked` : ""}</span></td>
+      <td className="l primary">Total<span className="src">per target unit</span></td>
       {columns.map(sumCell)}
     </tr>
   );
@@ -418,11 +360,13 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
             {products.map((p, i) => (
               <tr key={rowKey(p, i)} className={p.excluded ? "off" : undefined}>
                 <td className="gut">
-                  <input type="checkbox" className="tick" checked={!p.excluded} disabled={!editing || !p.airtable_id}
-                    title={p.excluded ? "Unticked: not part of the release. Tick to count it again."
-                      : !p.airtable_id ? "Added by hand: Remove takes it off the release."
-                        : editing ? "Untick to leave this work out of the release: it stays here, greyed, and counts nothing." : "Part of the release. Switch on Edit figures to untick it."}
-                    onChange={(e) => onInclude(p, e.target.checked)} />
+                  {ticks && (
+                    <input type="checkbox" className="tick" checked={!p.excluded} disabled={!editing || !p.airtable_id}
+                      title={p.excluded ? "Unticked: not part of the release. Tick to count it again."
+                        : !p.airtable_id ? "Added by hand: Remove takes it off the release."
+                          : editing ? "Untick to leave this work out of the release: it stays here, greyed, and counts nothing." : "Part of the release. Switch on Edit figures to untick it."}
+                      onChange={(e) => onInclude(p, e.target.checked)} />
+                  )}
                 </td>
                 {nameCell(p, i)}
                 {columns.map((c) => cell(p, c))}
@@ -437,7 +381,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
                 </td>
               </tr>
             )}
-            {editing && (
+            {editing && addRow && (
               <tr className="add">
                 <td className="gut">+</td>
                 <td className="l primary"><button type="button" className="ts-link" onClick={onAdd}>Add a product</button></td>
@@ -448,23 +392,29 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
           </tbody>
         </table>
       </div>
-      <div className="ts-caption">
-        {caption || <>The last row is the release as a whole: edition and target units summed, sell-through and price weighted by target units,
-        the profits and the share per target unit, and the framing uplift per target unit. A product has a revenue share or a
-        profit share, never both: fill one and the other closes. Framing profit is Avant Arte's alone.</>}
-      </div>
+      {caption !== null && (
+        <div className="ts-caption">
+          {caption || <>The last row is the release as a whole: edition and target units summed, sell-through and price weighted by target units,
+          the profits and the share per target unit, and the framing uplift per target unit. A product has a revenue share or a
+          profit share, never both: fill one and the other closes. Framing profit is Avant Arte's alone.</>}
+        </div>
+      )}
     </>
   );
 }
 
-// the grid, the basket table and the grid's rules, for the timed launches' tab (TLTargets.jsx)
-export { GRID, PCT, closedFor, typedKeys, BasketTable, ProductsGrid };
+// the grid and its rules, for the timed launches' tab (TLTargets.jsx)
+export { GRID, PCT, closedFor, typedKeys, ProductsGrid };
 
 /* ======================= the tab ======================= */
 
-/* `directSpread`: the Overview is set to spread Direct over the other
- * channels. The plan here always reads Direct as a channel of its own, so
- * the tab says so rather than contradicting the Channels card silently. */
+/* The 8 October 2026 layout (the Route A design): the form on the left in
+ * four groups - Launch, Target, Works, Assumptions - inputs first, and a rail
+ * on the right that answers as the figures are typed: the target, the
+ * benchmark, the stretch, the paid budget, each work's target. No header
+ * strip of derived figures, no channel table, no copy: a figure's source is
+ * a one-word tag in its box. `directSpread` is accepted for the App's sake;
+ * the plan here reads Direct as a channel of its own either way. */
 export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const [meta, setMeta] = useState(null);       // {inputs, sourced, benchmarks, meta_campaigns, derived, creating}
   const [inp, setInp] = useState(null);         // editable inputs
@@ -474,10 +424,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const [savedFlash, setSavedFlash] = useState(false);
   const [error, setError] = useState(null);
   const [buildSecs, setBuildSecs] = useState(null);   // how long the background rebuild has run
-  const [editing, setEditing] = useState(false);      // the products card's figures unlocked
+  const [editing, setEditing] = useState(false);      // the works' figures unlocked
   const [whyOpen, setWhyOpen] = useState(false);      // the untracked notice's explanation
-  const [compact, setCompact] = useState(false);      // the header, once the page has scrolled past it
-  const sentinel = useRef(null);
+  const [stretchUi, setStretchUi] = useState(null);   // even | paid | custom, once chosen on this visit
+  const [assumeOpen, setAssumeOpen] = useState(false); // the assumptions' boxes open
   // the Slack channel the sell-through card posts to: its own small document
   // on the server (server/slack.js), saved on its own so a release without
   // targets can have one too
@@ -502,6 +452,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
 
   useEffect(() => {
     setMeta(null); setInp(null); setError(null); setPick(null); setPicking(false); setEditing(false); setWhyOpen(false);
+    setStretchUi(null); setAssumeOpen(false);
     setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null); setSlackNote(null);
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
@@ -519,6 +470,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
       for (const k of LEGACY_KEYS) delete start[k];
       Object.assign(start, {
         channels_off: raw.channels_off || (legacyTier === "N/A" ? ["referral_artist"] : []),
+        // the posting tier left the tab on 8 October 2026: what was saved
+        // rides along unchanged, a new release gets the build's default
         artist_posting_tier: raw.artist_posting_tier || (["Low", "Medium", "High"].includes(legacyTier) ? legacyTier : "Medium"),
         campaign_names: Array.isArray(raw.campaign_names) ? raw.campaign_names : (raw.campaign_name ? [raw.campaign_name] : []),
         products: Array.isArray(raw.products) ? raw.products : [],
@@ -540,16 +493,6 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const products = useMemo(() => (inp && b ? resolveProducts(atProducts, inp.products, b) : []), [inp, b, atProducts]);
   const econ = useMemo(() => (inp && b ? releaseEconomics(products, inp.legacy_economics, b) : null), [products, inp, b]);
   const ready = !!(inp && econ);
-
-  // the header compacts once the page has scrolled past where it started: a
-  // one-pixel sentinel above it says when
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!ready || !el || typeof IntersectionObserver === "undefined") return undefined;
-    const io = new IntersectionObserver(([en]) => setCompact(!en.isIntersecting && en.boundingClientRect.top < 0), { threshold: 0 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [ready]);
 
   // a rebuild still running from a save made before the reader left the
   // tab: pick it up again, counter and all, so coming back shows where it
@@ -591,9 +534,6 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const [prOpen, prSrc] = dateOf("private_room_open");
   const [announce, annSrc] = dateOf("announce_date");
   const [closes, closeSrc] = dateOf("launch_end");
-  const dateDiff = (a, c) => (a && c ? Math.round((new Date(a) - new Date(c)) / 86400000) : null);
-  const days = dateDiff(closes, announce);
-  const prDays = dateDiff(announce, prOpen);
   const leadFromAirtable = (sourced.airtable || {}).marketing_lead || null;
   const codeInForce = inp.campaign_code || (inp.campaign_names[0] ? inp.campaign_names[0].split(" · ")[0] : "") || dv.campaign_code || "";
 
@@ -613,11 +553,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const bmUnits = profile && profile.units > 0 ? profile.units : null;
   const k = bmUnits ? (editionSize > 0 ? editionSize / bmUnits : bm ? bm.k : null) : null;
   /* where the stretch comes from (BENCHMARK_SPEC 4.4): a share per channel
-   * group, set with coupled sliders below and kept as fractions that add to
-   * 1; null means the basket's own shares - the even uplift */
+   * group, kept as fractions that add to 1; null means the basket's own
+   * shares - the even uplift */
   const stretchFrom = inp.stretch_from && typeof inp.stretch_from === "object" && !Array.isArray(inp.stretch_from) ? inp.stretch_from : null;
   const stretchTyped = !!(stretchFrom && GROUPS.some((g) => !isOff(g.key) && Number(stretchFrom[g.key]) > 0));
-  const paidShare = profile ? profile.share_sessions.paid : null;
   // the price of a paid unit: the release's own, else the basket's median cost
   // per paid unit, else the panel's constant (shared/benchmarkModel.mjs)
   const basketCpp = profile && Number(profile.cost_per_purchase) > 0 ? Number(profile.cost_per_purchase) : 0;
@@ -754,6 +693,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const discard = () => {
     setInp({ ...meta.inputs });
     setPick(null);
+    setStretchUi(null);
   };
 
   /* Follow the rebuild running behind a save until it lands, counting the
@@ -778,7 +718,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     return snapshot;
   }
 
-  /* The header's figures (§8.3), from the same model the build runs: the
+  /* The rail's figures (§8.3), from the same model the build runs: the
    * target, the basket's benchmark and the stretch between them. */
   const T = profile ? benchmarkTargets(profile, {
     edition_size: editionSize, unit_price: econ.unit_price || 0, cost_per_purchase: cpp,
@@ -787,48 +727,32 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     stretch_from: stretchFrom,
   }, b) : null;
   const signed = (v) => (v < 0 ? MINUS : "+") + fmt(Math.abs(v), 0);
-  const stretchHelp = !T ? "Choose a basket first."
-    : stretchTyped
-      ? `The stretch of ${signed(Math.round(T.stretch_units))} units is asked of ${GROUPS.filter((g) => T.stretch_from[g.key] > 0).sort((a, b) => T.stretch_from[b.key] - T.stretch_from[a.key]).map((g) => `${g.name} ${Math.round(100 * T.stretch_from[g.key])}% (×${fmt(T.k_by_group[g.key], 2)})`).join(", ")}; the other channels stay at their benchmark.`
-      : `Blank: each channel takes its share of the ${signed(Math.round(T.stretch_units))}-unit stretch in proportion to its benchmark, the same uplift ×${fmt(k || 1, 2)} everywhere. Drag a slider to place it, most of it on paid, say: the other channels follow, so the shares always add to 100%.`;
   const BM = T ? T.benchmark : null;
   const paidOff = isOff("paid");
-  /* the sliders: the shares in force (placed, else the basket's own) over the
-   * groups in plan with a benchmark to lift; moving one rescales the others so
-   * they always add to 100 (shared/benchmarkModel.mjs rebalanceShares) */
+  /* the stretch: a three-way choice - the basket's own shares (the even
+   * uplift), all of it from paid, or custom shares on coupled sliders that
+   * always add to 100 (shared/benchmarkModel.mjs rebalanceShares) */
   const activeGroups = profile ? GROUPS.map((g) => g.key).filter((g) => !isOff(g) && Number((profile.units_by_group || {})[g]) > 0) : [];
   const evenShares = profile ? stretchWeights({ stretch_from: null }, profile.units_by_group) : {};
   const shares = T && T.stretch_from ? T.stretch_from : evenShares;
-  const slideStretch = (key) => (e) => setInp({ ...inp, stretch_from: rebalanceShares(shares, key, Number(e.target.value) / 100, activeGroups) });
-  const figure = (label, target, bmv, format, tip, opts = {}) => {
-    let stretch = target === null || bmv === null ? null : target - bmv;
-    if (stretch !== null && format(Math.abs(stretch)) === format(0)) stretch = 0;
-    const subs = opts.paid && paidOff ? ["not in plan"]
-      : opts.sense ? [`benchmark ${bmv === null ? "–" : format(bmv)}`, `${opts.sense.breached ? "over" : "under"} the 6% sense check`]
-        : [`benchmark ${bmv === null ? "–" : format(bmv)}`, `stretch ${stretch === null ? "–" : (stretch < 0 ? MINUS : "+") + format(Math.abs(stretch))}`];
-    return { label, tip, value: opts.paid && paidOff ? "–" : target === null ? "–" : format(target), subs, red: !!(opts.sense && opts.sense.breached), subRed: !!(opts.sense && opts.sense.breached) };
+  const allPaid = stretchTyped && Number(stretchFrom.paid || 0) >= 0.995;
+  const stretchMode = stretchUi || (!stretchTyped ? "even" : allPaid ? "paid" : "custom");
+  const chooseStretch = (mode) => {
+    setStretchUi(mode);
+    if (mode === "even") setInp({ ...inp, stretch_from: null });
+    else if (mode === "paid") setInp({ ...inp, stretch_from: { paid: 1 } });
+    else if (!stretchTyped) setInp({ ...inp, stretch_from: { ...evenShares } });
   };
-  const figures = T ? [
-    figure("Paid units", T.paid_units, BM.paid_units, (v) => fmt(v, 0), "The basket's median paid units plus paid's share of the stretch: lifted by K when the stretch is even, more when it is placed on paid.", { paid: true }),
-    figure("Buyers", T.buyers, BM.buyers, (v) => fmt(v, 0), `People, not pieces: the target divided by ${fmt(T.units_per_buyer, 3)} units per buyer.`),
-    figure("Eligible entries", T.entries_target, BM.entries, (v) => fmt(v, 0),
-      `Target units ÷ the ${T.entry_rate ? Math.round(T.entry_rate * 100) + "%" : "80%"} eligible-entry → order rate (the release's own where typed, else the panel's): every unit is asked for as an entry. The benchmark is the basket's median units asked for the same way.`),
-    figure("Sessions", T.total_sessions, BM.sessions, (v) => fmt(v, 0), "Each channel's benchmark sessions at its own uplift, conversion held: the basket's median sessions × K when the stretch is even."),
-    figure("Paid budget", T.paid.budget, BM.paid_budget, (v) => fmtMoney(v, 0), `Paid units × ${fmtMoney(cpp)} per unit.`, { paid: true }),
-    figure("Of launch value", T.paid.budget_pct_of_launch_value ?? 0, BM.budget_pct_of_launch_value ?? 0, (v) => fmtPct(v, 1),
-      "Sense check: paid budget should stay under 6% of launch value.", { paid: true, sense: { breached: !!T.paid.sense_check_breached } }),
-  ] : [];
+  const slideStretch = (key) => (e) => setInp({ ...inp, stretch_from: rebalanceShares(shares, key, Number(e.target.value) / 100, activeGroups) });
+  const stretchWords = T ? (stretchMode === "paid" ? "all from paid" : stretchMode === "even" ? "even across channels" : "custom shares") : null;
 
-  const DATE_WORDS = { notion: "from the Notion log", typed: "typed", clock: "from the funnel clock", airtable: "from Airtable" };
-  const OTHER_WORDS = { airtable: "Airtable now has", clock: "the funnel clock has" };
   /* a date another source puts elsewhere than the one in force (docs 1.6):
-     said beside it, with one click to take the other reading; a moved
-     launch is otherwise a page that runs to the wrong day */
+     a small button beside it with the other reading, one click to take it */
   const driftOf = (f, value, src) => Object.entries({ airtable: (sourced.airtable || {})[f], clock: (sourced.clock || {})[f] })
     .filter(([name, d]) => d && d !== value && name !== src);
   // the works' own closes as the build reads them (etl/build.py
   // product_closes over the sized works in the release): an unticked work's
-  // day drops out, so the note beside Draw closes says what the page will
+  // day drops out, so the line under Draw closes says what the page will
   const workCloses = (() => {
     const by = new Map();
     for (const p of products) {
@@ -839,27 +763,34 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     }
     return [...by.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, names]) => ({ date, works: names.length, names }));
   })();
-  const dateField = (label, f, value, src, tip) => {
+  const SRC_TAG = { notion: "Notion", typed: "typed", clock: "funnel", airtable: "Airtable" };
+  const dateRow = (label, f, value, src, tip) => {
     const drift = driftOf(f, value, src);
-    const help = (
-      <>
-        {src ? DATE_WORDS[src] : "not known yet: type it"}
-        {drift.map(([name, d]) => (
-          <span key={name}> · {OTHER_WORDS[name]} {fmtDate(d)}{src !== "notion" && (
-            <> <button type="button" className="ts-link" onClick={() => setInp({ ...inp, [f]: d })} title={`Type ${fmtDate(d)} here, the ${name === "airtable" ? "Airtable" : "funnel clock"} date.`}>use it</button></>
-          )}</span>
-        ))}
-        {f === "launch_end" && workCloses.length > 1 && (
-          <span> · the works close on different days: {workCloses.map((c) => `${fmtDate(c.date)} (${c.works === 1 && c.names && c.names[0] ? c.names[0] : `${c.works} works`})`).join(", ")}; the page runs to the last, the sell-through counts each at its own draw</span>
-        )}
-      </>
-    );
     return (
-      <Field key={f} label={label} tip={tip} help={help}>
-        {src === "notion"
-          ? <RoBox value={fmtDate(value)} title="From the Notion log" />
-          : <div className="ts-box"><input type="date" value={value || ""} onChange={set(f)} /></div>}
-      </Field>
+      <React.Fragment key={f}>
+        <label className="ts2-lbl" htmlFor={`ts-${f}`} title={tip}>{label}</label>
+        <div className="ts2-ctl">
+          {src === "notion"
+            ? <div className="ts-box ro" style={{ flex: "1 1 200px" }} title="From the Notion log"><span className="txt">{fmtDate(value)}</span><span className="ts2-tag">Notion</span></div>
+            : (
+              <div className="ts-box" style={{ flex: "1 1 200px" }}>
+                <input id={`ts-${f}`} type="date" value={value || ""} onChange={set(f)} />
+                {src ? <span className={`ts2-tag${src === "typed" ? " typed" : ""}`}>{SRC_TAG[src]}</span> : null}
+              </div>
+            )}
+          {src !== "notion" && drift.map(([name, d]) => (
+            <button key={name} type="button" className="ts-btn secondary sm" onClick={() => setInp({ ...inp, [f]: d })}
+              title={`Take the ${name === "airtable" ? "Airtable" : "funnel clock"} date, ${fmtDate(d)}.`}>
+              {name === "airtable" ? "Airtable" : "Funnel"}: {fmtDate(d)}
+            </button>
+          ))}
+          {f === "launch_end" && workCloses.length > 1 && (
+            <span className="ts2-tag" title="The works close on different days: the page runs to the last, the sell-through counts each at its own draw.">
+              {workCloses.map((c) => `${fmtDate(c.date)} ${c.works === 1 && c.names && c.names[0] ? c.names[0] : `${c.works} works`}`).join(" · ")}
+            </span>
+          )}
+        </div>
+      </React.Fragment>
     );
   };
   const legacy = inp.legacy_economics;
@@ -873,333 +804,306 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
 
   /* Untracked much higher than normal (DATA_MODEL 1.3): the build says which
    * of entries and units has a share over twice the panel's median and past
-   * its 90th percentile; the line quotes the share, the count behind it and
-   * the norm it is read against. */
+   * its 90th percentile; the line quotes the share and the norm. */
   const ut = snap.untracked || null;
   const untrackedHigh = ut && Array.isArray(ut.high) ? ut.high.filter((key) => ut[key] && ut[key].share !== null).map((key) => ({ key, v: ut[key], n: (ut.normal || {})[key] || {} })) : [];
-  const untrackedMonths = ut && ut.normal ? ut.normal.recentMonths : null;
 
-  /* ---- the header's words ---- */
-  const leadCap = editionSize <= 0 ? "target units: a product with an edition is needed"
-    : `${partialEdition ? `of ${fmt(econ.edition_total)} in the edition` : "units, the whole edition"} · ${k ? `×${fmt(k, 2)} the basket's median` : "no basket chosen yet"}`;
-  const saveLabel = saving ? (buildSecs !== null ? `Rebuilding the page… ${buildSecs}s` : "Saving…") : savedFlash ? "✓ Saved" : creating ? "Set targets" : "Save targets";
+  const saveLabel = saving ? (buildSecs !== null ? `Rebuilding… ${buildSecs}s` : "Saving…") : savedFlash ? "✓ Saved" : creating ? "Set targets" : "Save targets";
   const stateText = saving ? null
     : missing.length ? `Needs ${missing.join(", ")}`
-      : dirty ? (basketDirty ? "Unsaved changes · a new basket rebuilds from the panel, a longer save" : "Unsaved changes")
+      : dirty ? (basketDirty ? "Unsaved · a new basket is a longer save" : "Unsaved changes")
         : creating ? "Not set up yet" : null;
-  const channelsHelp = [
-    paidOff ? "Paid off: benchmarked on what the basket did without paid, and the other channels carry the whole target." : null,
-    isOff("referral_artist") ? "Artist off: no artist target and no posting benchmark, as for an estate or an artist who will not post." : null,
-  ].filter(Boolean).join(" ") || "Off takes the channel's median out of the benchmark and its share out of the target; the other channels carry the whole sellout.";
-  const basketNote = basketDirty ? "Not saved yet: the figures below follow the launches ticked; save to rebuild the page on them."
-    : bm && bm.basket ? `Matched from ${fmt(bm.basket.n)} comparable launches${bm.basket.id === bm.basket.suggestedId ? ", the suggested basket for this release" : ", chosen by hand"}${bm.basket.thin ? ". Thin: under six launches, so the median moves easily." : "."}`
-      : null;
-  const productsDesc = airtableMatch !== "none"
-    ? `${atProducts.length} product${atProducts.length === 1 ? "" : "s"} from Airtable, matched by ${airtableMatch}`
-    : `Airtable has no record matched to this release${airtableNote ? ` - ${airtableNote}` : ""}`;
-  const productsState = [
-    editing ? "Editing" : atProducts.length ? "Figures from Airtable" : null,
-    typedCount ? `${typedCount} figure${typedCount === 1 ? "" : "s"} typed over Airtable` : null,
-    manualCount ? `${manualCount} product${manualCount === 1 ? "" : "s"} added by hand` : null,
+  const worksDesc = [
+    airtableMatch !== "none" ? `${atProducts.length} from Airtable` : "none in Airtable",
+    typedCount ? `${typedCount} typed` : null,
+    manualCount ? `${manualCount} by hand` : null,
     excludedCount ? `${excludedCount} unticked` : null,
   ].filter(Boolean).join(" · ");
   const asPct = (v) => (v === null || v === undefined || v === "" ? "" : String(Math.round(Number(v) * 100)));
+  const ECON_COLS = GRID.filter((c) => !["framing_available", "frame_conversion", "frame_profit_per_unit"].includes(c.key));
+  const FRAME_COLS = GRID.filter((c) => ["framing_available", "frame_conversion", "frame_profit_per_unit"].includes(c.key));
+  const cannDefault = Math.round(100 * (Number(b.cannibalisation) || 0.2));
+  const e2oDefault = Math.round(100 * (Number(b.eligible_entry_to_order) || 0.8));
+  const sense = T && T.paid ? T.paid.sense_check_breached : false;
+  const gridHandlers = { products, econ, editing, onField, onFieldAll, onName, onAdd, onRemove, onReset, onInclude, emptyNote: airtableNote, caption: null };
 
   return (
     <>
-      <div ref={sentinel} style={{ height: 1, marginBottom: -1 }} aria-hidden="true" />
-      <div className={`ts-head${compact ? " compact" : ""}`}>
-        <div className="ts-head-top">
-          <div style={{ minWidth: 0 }}>
-            <div className="ts-eyebrow">Target · {snap.releaseName}</div>
-            <div className="ts-lead">
-              <span className="ts-big" title="Secured-units target: the hero target on the Overview tab, the products' editions at their target sell-through, summed.">{editionSize > 0 ? fmt(editionSize) : "–"}</span>
-              <span className="ts-lead-cap">{leadCap}</span>
-            </div>
-          </div>
-          <div className="ts-actions">
-            {stateText && <span className={`ts-state${missing.length ? " warn" : ""}`}>{stateText}</span>}
-            <button type="button" className="ts-btn secondary" onClick={discard} disabled={saving || !dirty} title="Back to what is saved.">Discard</button>
-            <button type="button" className="ts-btn primary" disabled={saving || missing.length > 0} onClick={save}
-              title={missing.length ? `Still needed: ${missing.join(", ")}` : creating ? "Saves the inputs and rebuilds this release with the full target model." : "Saves the inputs and recomputes this release's targets, plan curves and projections."}>
-              {saveLabel}
-            </button>
-          </div>
-        </div>
-        <div className="ts-figures">
-          {T ? figures.map((f) => (
-            <div key={f.label} className="ts-fig" title={f.tip}>
-              <span className="ts-fig-label">{f.label}</span>
-              <span className={`ts-fig-val${f.red ? " red" : ""}`}>{f.value}</span>
-              <span className="ts-fig-sub">{f.subs.map((s, i) => <span key={i} className={i === 1 && f.subRed ? "red" : undefined}>{s}</span>)}</span>
-            </div>
-          )) : (
-            <div className="ts-caption" style={{ padding: "8px 0 2px" }}>
-              Choose a basket to see the benchmark and the targets it gives. Saving without one benchmarks against the launches nearest this release's target and price.
-            </div>
+      <div className="ts2">
+        <div className="ts2-form">
+          {meta.storage && meta.storage.durable === false && (
+            <Notice red>
+              <span title={`Saves are written to ${meta.storage.path}`}><b>Targets saved here do not survive a deploy.</b> Point SAVED_INPUTS_PATH at a persistent disk (README, "Render's disk resets").</span>
+            </Notice>
           )}
-        </div>
-        {error && <div className="err">{error}</div>}
-      </div>
+          {creating && (
+            <Notice>
+              {snap.upcoming
+                ? <><b>Upcoming launch</b>, not in the funnel yet{dv.dates_note ? ` (${dv.dates_note})` : ""}. Check the dates, the campaigns and the basket, then save.</>
+                : <><b>No targets yet.</b> The page shows actuals only until you save.</>}
+            </Notice>
+          )}
+          {untrackedHigh.map((u) => (
+            <Notice key={u.key} action={<button type="button" className="why" onClick={() => setWhyOpen(!whyOpen)}>{whyOpen ? "Close" : "Why"}</button>}>
+              <b>Untracked is {fmtPct(u.v.share, 0)} of this release's {u.key}</b>, against {fmtPct(u.n.median, 0)} on a typical launch.
+              {whyOpen && (
+                <span> Untracked is the funnel export's channel for {u.key} that could not be attributed; the panel's 90th percentile is {fmtPct(u.n.p90, 0)}. The build spreads
+                  it across the tracked channels in proportion to what they did that day, so the channel split reads less certainly than usual.</span>
+              )}
+            </Notice>
+          ))}
 
-      <div className="ts" style={{ marginTop: 24 }}>
-        {creating && snap.upcoming && (
-          <Notice>
-            <b>Upcoming launch.</b> Known to Airtable, not yet to the funnel report. The dates{dv.dates_note ? ` (${dv.dates_note})` : ""} and
-            {atProducts.length ? ` the ${atProducts.length} work${atProducts.length === 1 ? "" : "s"} with their editions and prices` : " the works"} below
-            come from Airtable with their source shown. Check them, tick the Meta campaign, set the channels in plan, choose the basket
-            and save: the page then carries the plan, and the funnel's actuals attach to it once the report picks the launch up.
-          </Notice>
-        )}
-        {meta.storage && meta.storage.durable === false && (
-          <Notice red>
-            <span title={`Saves are written to ${meta.storage.path}`}><b>Targets saved here do not survive a deploy.</b> The service keeps them on its own disk, which Render resets on
-            every deploy. Point SAVED_INPUTS_PATH at a file on a persistent disk (README, "Render's disk resets") and they stay.</span>
-          </Notice>
-        )}
-        {creating && !snap.upcoming && (
-          <Notice>
-            <b>No targets yet.</b> The page currently shows actuals only.
-            {" "}The dates come from the Notion log where it has them, else the funnel export's campaign clock, else Airtable - check them.
-            {atProducts.length ? ` Airtable holds ${atProducts.length} product${atProducts.length === 1 ? "" : "s"} for this release.` : " Airtable has no product matched to this release yet: add the works by hand."}
-            {" "}Tick the Meta campaigns, set the channels in plan, and save: the page rebuilds with expected-today, projections, paid ROI and sell-through.
-          </Notice>
-        )}
-        {untrackedHigh.map((u) => (
-          <Notice key={u.key} action={<button type="button" className="why" onClick={() => setWhyOpen(!whyOpen)}>{whyOpen ? "Close" : "Why"}</button>}>
-            <b>Untracked is {fmtPct(u.v.share, 0)} of this release's {u.key}</b> ({fmt(u.v.count, 0)} of {fmt(u.v.total, 0)}), against {fmtPct(u.n.median, 0)} on a typical launch
-            {untrackedMonths ? ` of the last ${untrackedMonths} months` : ""}: the channel split reads less certainly than usual.
-            {whyOpen && (
-              <span> Untracked is the funnel export's channel for {u.key} that could not be attributed; the 90th percentile of the panel is {fmtPct(u.n.p90, 0)}. The build spreads
-                untracked across the tracked channels in proportion to what they did that day, so the channel split, the per-channel targets' progress and
-                the funnel read less certainly than usual. Worth checking the tracking before reading the channel figures.</span>
-            )}
-          </Notice>
-        ))}
+          {/* 1 · launch */}
+          <section className="ts2-sec" aria-label="Launch">
+            <div className="ts2-sec-head"><h2>Launch</h2></div>
+            <div className="ts2-rows">
+              {dateRow("Private room opens", "private_room_open", prOpen, prSrc, "The day of the early-access email, from the Notion log. Until the log has it: what is typed, else two weeks before the announce.")}
+              {dateRow("Announce", "announce_date", announce, annSrc, "From the Notion log; else what is typed, else the funnel export's campaign clock, else Airtable.")}
+              {dateRow("Draw closes", "launch_end", closes, closeSrc, "The launch: the day the draw closes and sales open. From the Notion log; else what is typed, else the funnel export's campaign clock, else Airtable.")}
 
-        <section className="ts-card" aria-label="Release and timeline">
-          <CardHead dot="#b8862d" title="Release & timeline" />
-          <div className="ts-grid c2">
-            <Field label="Release name" src="the join key across every feed" tip="Simple Release Name - the join key across every feed; changing it would orphan the actuals, so it is fixed here.">
-              <RoBox value={snap.releaseName} />
-            </Field>
-            <Field label="Campaign code" src={inp.campaign_code ? "typed" : codeInForce ? "matched to the Meta campaign" : "not found in any feed"}
-              tip="The code the email, Instagram and artist-post feeds tag this campaign with (e.g. GlennLigon_LE_26) - it joins those panels to the release. Read off the Meta campaign's name, or guessed from the feeds.">
-              {codeInForce
-                ? <RoBox value={codeInForce} title={inp.campaign_code ? "As saved" : "From the Meta campaign's name, else the email and content feeds"} />
-                : <TextBox value={inp.campaign_code || ""} onChange={set("campaign_code")} placeholder="Artist_LE_26" />}
-            </Field>
-            <Field label="Marketing lead" src={leadFromAirtable ? "Airtable" : "typed"} help={leadFromAirtable ? null : "Not in Airtable yet: typed here until it is."}>
-              {leadFromAirtable
-                ? <RoBox value={leadFromAirtable} title="From Airtable" />
-                : <TextBox value={inp.marketing_lead || ""} onChange={set("marketing_lead")} placeholder="Who runs this launch" />}
-            </Field>
-            <Field label="Slack channel" src="saved on its own"
-              tip="Where the Post to Slack button on the sell-through card sends this release's update. The channel name without the #; for a private channel, invite the Launch Performance bot to it first. Saved on its own, separately from the targets."
-              help={slackError || slackNote || (snap.slack && snap.slack.lastPostAt ? `last posted ${new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : null)}
-              helpKind={slackError ? "err" : slackNote ? "warn" : undefined}>
-              <div className="ts-row">
-                <TextBox value={slackDraft} onChange={(e) => setSlackDraft(e.target.value)} placeholder="launch-updates" />
-                <button type="button" className="ts-btn secondary" disabled={slackSaving || slackDraft.trim().replace(/^#/, "") === slackCurrent} onClick={saveSlack}>
-                  {slackSaving ? "Saving…" : "Save"}
+              <span className="ts2-lbl" title="Which Meta ad campaigns this release's paid actuals are read from - rows matching these names in the live spend feed, summed.">Meta campaigns</span>
+              <div className="ts2-ctl" style={{ display: "block" }}>
+                <Campaigns code={codeInForce} chosen={inp.campaign_names} all={meta.meta_campaigns} suggested={sourced.campaigns}
+                  onChange={(names) => setInp({ ...inp, campaign_names: names })} />
+              </div>
+
+              {!codeInForce && (
+                <>
+                  <label className="ts2-lbl" htmlFor="ts-code" title="The code the email, Instagram and artist-post feeds tag this campaign with (e.g. GlennLigon_LE_26). Read off the Meta campaign's name when one is ticked.">Campaign code</label>
+                  <div className="ts2-ctl"><div className="ts-box" style={{ flex: "1 1 200px" }}><input id="ts-code" value={inp.campaign_code || ""} onChange={set("campaign_code")} placeholder="Artist_LE_26" /></div></div>
+                </>
+              )}
+
+              <label className="ts2-lbl" htmlFor="ts-lead">Marketing lead</label>
+              <div className="ts2-ctl">
+                {leadFromAirtable
+                  ? <div className="ts-box ro" style={{ flex: "1 1 200px" }} title="From Airtable"><span className="txt">{leadFromAirtable}</span><span className="ts2-tag">Airtable</span></div>
+                  : <div className="ts-box" style={{ flex: "1 1 200px" }}><input id="ts-lead" value={inp.marketing_lead || ""} onChange={set("marketing_lead")} placeholder="Who runs this launch" /></div>}
+              </div>
+
+              <label className="ts2-lbl" htmlFor="ts-slack" title="Where Post to Slack on the sell-through card sends this release's update: the channel name without the #. For a private channel, invite the Launch Performance bot first. Saved on its own.">Slack channel</label>
+              <div className="ts2-ctl">
+                <div className="ts-box" style={{ flex: "1 1 200px" }}>
+                  <input id="ts-slack" value={slackDraft} onChange={(e) => setSlackDraft(e.target.value)} placeholder="launch-updates" />
+                  {slackError ? <span className="ts2-tag red" title={slackError}>not saved</span>
+                    : slackNote ? <span className="ts2-tag warn" title={slackNote}>saved, not for long</span>
+                      : snap.slack && snap.slack.lastPostAt ? <span className="ts2-tag" title={`Last posted ${new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}>posted</span> : null}
+                </div>
+                <button type="button" className="ts-btn secondary sm" disabled={slackSaving || slackDraft.trim().replace(/^#/, "") === slackCurrent} onClick={saveSlack}>
+                  {slackSaving ? "Saving…" : "Save channel"}
                 </button>
               </div>
-            </Field>
-            <Field label="Meta campaigns" src="paid actuals are read from these"
-              tip="Which Meta ad campaigns this release's paid actuals are read from - rows matching these names in the live spend feed, summed. The draw campaign named for the code is ticked on its own; add a purchases or sign-ups campaign when it belongs to this release.">
-              <Campaigns code={codeInForce} chosen={inp.campaign_names} all={meta.meta_campaigns} suggested={sourced.campaigns}
-                onChange={(names) => setInp({ ...inp, campaign_names: names })} />
-            </Field>
-            <div className="ts-grid c3" style={{ alignContent: "start" }}>
-              {dateField("Private room opens", "private_room_open", prOpen, prSrc, "The day of the early-access email, from the Notion log. Until the log has it: what is typed, else two weeks before the announce.")}
-              {dateField("Announce", "announce_date", announce, annSrc, "From the Notion log; else what is typed, else the funnel export's campaign clock, else Airtable.")}
-              {dateField("Draw closes", "launch_end", closes, closeSrc, "The launch: the day the draw closes and sales open. From the Notion log; else what is typed, else the funnel export's campaign clock, else Airtable.")}
             </div>
-          </div>
-          <div className="ts-caption">
-            Campaign <b>{days === null ? "–" : days}</b> days, announce to draw close · the private room opens <b>{prDays === null ? "–" : prDays}</b> days before the announce.
-          </div>
-        </section>
+          </section>
 
-        <section className="ts-card" aria-label="Benchmark basket">
-          <CardHead dot={C.blue} title="Benchmark basket" desc="the median of launches like this one" />
-          <div className="ts-grid c2">
-            <Field label="Basket" tip="The launches this release is benchmarked against. The benchmark is their median, per metric and per channel.">
-              <div className="ts-row">
-                <RoBox value={basketName || "none chosen yet"} />
-                <button type="button" className="ts-btn secondary" onClick={() => setPicking(true)}
-                  title="Opens the basket picker: the ready-made baskets with their medians, or a bespoke selection.">Change basket</button>
-              </div>
-            </Field>
-            <Field label="What the basket reaches" help={basketNote}>
-              {profile ? (
-                <div className="ts-chips">
-                  <span className="ts-chip" title="Launches in the basket. Under six and the median moves a lot on one launch.">{fmt(prof ? prof.n : bm && bm.basket ? bm.basket.n : null)} launches</span>
-                  <span className="ts-chip" title={(off.length ? "Median units of demand without the channels set aside, with the 25th to 75th percentile read the same way." : "Median units of demand, with the 25th to 75th percentile of the basket beside it.") + " Demand is what a launch would have sold with enough supply: its units sold, plus what the eligible entrants left without a unit, or whose payment failed, would have bought at the entry rate."}>
-                    median {fmt(profile.units)} units of demand · P25 {fmt(profile.units_p25)} to P75 {fmt(profile.units_p75)}
-                  </span>
-                  {profile.n_short > 0 && (
-                    <span className="ts-chip" title={`${fmt(profile.n_short)} of the basket's launches sold out with people left wanting. The benchmark counts the demand they had, not the edition they happened to have; on sales alone the basket's median is ${fmt(profile.units_sold)} units.`}>
-                      {fmt(profile.n_short)} sold out short · median sold {fmt(profile.units_sold)}
-                    </span>
-                  )}
-                  {profile.price > 0 && (
-                    <span className="ts-chip" title="Median unit price of the basket in euros (from Airtable), with its 25th to 75th percentile. The default basket matches on price as well as size (BENCHMARK_SPEC 3.1).">
-                      median price {fmtMoney(profile.price)} · {fmtMoney(profile.price_p25)} to {fmtMoney(profile.price_p75)}
-                    </span>
-                  )}
-                  <span className="ts-chip">{fmt(profile.sessions)} sessions</span>
-                  <span className="ts-chip" title={paidOff ? "Paid is not in plan for this release." : "Median share of sessions from paid."}>{paidOff ? "paid not in plan" : `paid ${fmtPct(paidShare, 0)} of sessions`}</span>
-                  <span className="ts-chip">{fmt(profile.campaign_days)} campaign days</span>
+          {/* 2 · target */}
+          <section className="ts2-sec" aria-label="Target">
+            <div className="ts2-sec-head"><h2>Target</h2></div>
+            <div className="ts2-rows">
+              <span className="ts2-lbl" title="The launches this release is benchmarked against. The benchmark is their median, per metric and per channel.">Basket</span>
+              <div className="ts2-ctl">
+                <div className="ts-box ro" style={{ flex: "1 1 240px" }} title={bm && bm.basket ? `${fmt(bm.basket.n)} launches${bm.basket.thin ? ", thin" : ""}` : undefined}>
+                  <span className="txt">{basketName || "none chosen yet"}</span>
+                  {basketDirty ? <span className="ts2-tag typed">unsaved</span> : bm && bm.basket ? <span className="ts2-tag">{fmt(bm.basket.n)} launches</span> : null}
                 </div>
-              ) : <div className="ts-box dis">no basket yet</div>}
-            </Field>
-            <Field label="Channels in plan" help={channelsHelp}
-              tip="A channel this release will not run leaves the benchmark and the target: the basket is read on its other channels, and they carry the whole sellout between them.">
-              <div className="ts-switches">
+                <button type="button" className="ts-btn secondary" onClick={() => setPicking(true)}
+                  title="The ready-made baskets with their medians, or a bespoke selection.">Change basket</button>
+              </div>
+
+              <span className="ts2-lbl" title="A channel this release will not run leaves the benchmark and the target: the basket is read on its other channels, and they carry the whole sellout between them.">Channels in plan</span>
+              <div className="ts2-ctl ts-switches" style={{ height: "auto", minHeight: 44 }}>
                 <Switch on={!paidOff} onChange={(on) => setOff("paid", on)} label="Running paid"
                   title="The basket keeps every launch, paid or not; with paid off each counts on its other channels only." />
                 <Switch on={!isOff("referral_artist")} onChange={(on) => setOff("referral_artist", on)} label="Artist's own channels"
-                  title="Off for an estate, or a living artist with no channels of their own. The artist group leaves the benchmark and the funnel expects no posts." />
+                  title="Off for an estate, or a living artist with no channels of their own: the artist group leaves the benchmark and the funnel expects no posts." />
               </div>
-            </Field>
-            <Field label="Artist posting tier" help={isOff("referral_artist") ? "Not applicable: the artist's own channels are off." : "The funnel's posting benchmark is the median of completed campaigns labelled with the same tier."}
-              tip="How much the artist will post, against the tiers past campaigns were labelled with.">
-              <div className={`ts-box${isOff("referral_artist") ? " dis" : ""}`}>
-                <select value={inp.artist_posting_tier || "Medium"} disabled={isOff("referral_artist")} onChange={(e) => setInp({ ...inp, artist_posting_tier: e.target.value })}>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </div>
-            </Field>
-          </div>
-          {profile && (
-            <div className="ts-grid" style={{ marginTop: 20 }}>
-              <Field label="Where the stretch comes from" help={stretchHelp}
-                tip="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions and entries lifted to match and conversion held. Even: the basket's own shares, the same uplift in every channel. Drag one channel's slider and the others rescale, so the shares always add to 100%.">
-                <div className="ts-stretch">
-                  <div className="ts-sliders">
+
+              <span className="ts2-lbl" title="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions and entries lifted to match; conversion is held.">Stretch from</span>
+              <div className="ts2-ctl" style={{ flexDirection: "column", alignItems: "stretch", gap: 14 }}>
+                <div className="ts2-ctl">
+                  <div className="seg" role="group" aria-label="Where the stretch comes from">
+                    <button type="button" className={stretchMode === "even" ? "active" : ""} disabled={!profile} onClick={() => chooseStretch("even")}
+                      title="The basket's own shares: the same uplift in every channel.">Even across channels</button>
+                    <button type="button" className={stretchMode === "paid" ? "active" : ""} disabled={!profile || paidOff} onClick={() => chooseStretch("paid")}
+                      title="The whole stretch from paid: the other channels stay at their benchmark.">All from paid</button>
+                    <button type="button" className={stretchMode === "custom" ? "active" : ""} disabled={!profile || activeGroups.length < 2} onClick={() => chooseStretch("custom")}
+                      title="Set each channel's share on a slider; the others rescale so the shares add to 100.">Custom</button>
+                  </div>
+                  {T && <span className="ts2-stretch num" title={`${stretchWords}: ×${fmt(k || 1, 2)} over the basket in all`}>{signed(Math.round(T.stretch_units))} <span>units</span></span>}
+                </div>
+                {stretchMode === "custom" && profile && (
+                  <div className="ts2-card ts-sliders" style={{ padding: "16px 20px" }}>
                     {GROUPS.map((g) => {
                       const gOff = isOff(g.key);
                       const active = activeGroups.includes(g.key);
                       const pct = active ? Math.round(100 * Number(shares[g.key] || 0)) : 0;
-                      const basketPct = active ? Math.round(100 * Number(evenShares[g.key] || 0)) : 0;
                       return (
                         <label key={g.key} className={`ts-slider${active ? "" : " dis"}`}
-                          title={gOff ? "Not in plan: this channel takes none of the stretch." : !active ? "No benchmark in the basket to lift: nothing to place here."
-                            : "Drag to set this channel's share of the stretch; the others rescale so the shares add to 100."}>
-                          <span className="head"><span>{g.name}{gOff ? " · not in plan" : !active ? " · no benchmark" : ""}</span><b>{active ? `${pct}%` : "–"}</b></span>
+                          title={gOff ? "Not in plan: this channel takes none of the stretch." : !active ? "No benchmark in the basket to lift." : "Drag to set this channel's share; the others rescale so the shares add to 100."}>
+                          <span className="head"><span>{g.name}</span><b>{active ? `${pct}%` : "–"}</b></span>
                           <input type="range" min="0" max="100" step="1" disabled={!active || activeGroups.length < 2} value={pct}
                             aria-label={`${g.name}: share of the stretch`} onChange={slideStretch(g.key)} />
-                          <span className="note">{active && stretchTyped && basketPct !== pct ? `basket ${basketPct}%` : ""}</span>
                         </label>
                       );
                     })}
                   </div>
-                  <div className="ts-row" style={{ gap: 8, marginTop: 10 }}>
-                    <button type="button" className="ts-btn secondary" disabled={!stretchTyped} onClick={() => setInp({ ...inp, stretch_from: null })}
-                      title="Back to the basket's own shares: the same uplift in every channel.">Even</button>
-                    <button type="button" className="ts-btn secondary" disabled={paidOff} onClick={() => setInp({ ...inp, stretch_from: { paid: 1 } })}
-                      title="The whole stretch from paid: the other channels stay at their benchmark.">All from paid</button>
-                  </div>
-                </div>
-              </Field>
+                )}
+              </div>
             </div>
-          )}
-          {profile ? <BasketTable profile={profile} off={off} k={k || 1} kg={T ? T.k_by_group : null} /> : (
-            <div className="ts-caption">
-              No basket yet. Choose one to see the benchmark and the targets it gives; a release saved without one is
-              benchmarked against the launches nearest its target and price.
-            </div>
-          )}
-          <div className="ts-caption">
-            {stretchTyped
-              ? <>The target is the benchmark plus the stretch, placed as above: each channel carries its own uplift on every day, <b>×{k ? fmt(k, 2) : "–"}</b> over the basket in all. </>
-              : <>The target is the benchmark lifted by <b>×{k ? fmt(k, 2) : "–"}</b> in every channel and on every day. </>}
-            Conversion rates are held at the benchmark: the uplift is asked of traffic and spend only.
-          </div>
-          {directSpread && (
-            <div className="ts-caption">
-              Direct is read as a channel of its own here, as the funnel attributes it. The Overview is set to spread it over the other channels,
-              so its Channels card splits the same plan differently; the paid budget is the same either way.
-            </div>
-          )}
-        </section>
+          </section>
 
-        <section className="ts-card" aria-label="Products and economics">
-          <CardHead dot="#8a7a52" title="Products & economics" desc={productsDesc}
-            right={(
-              <>
-                <span className="ts-state">
-                  {productsState}
-                  {editing && typedCount > 0 && <> · <button type="button" className="ts-link" onClick={onResetAll} title="Drop every typed figure: back to Airtable's on every product.">Reset all</button></>}
-                </span>
+          {/* 3 · works */}
+          <section className="ts2-sec" aria-label="Works">
+            <div className="ts2-sec-head">
+              <h2>Works</h2>
+              <span className="d">{worksDesc}</span>
+              <div className="right">
+                {editing && <button type="button" className="ts-btn secondary sm" onClick={onAdd}>Add a work</button>}
+                {editing && typedCount > 0 && <button type="button" className="ts-btn secondary sm" onClick={onResetAll} title="Drop every typed figure: back to Airtable's on every work.">Reset all</button>}
                 <button type="button" className={`ts-switch${editing ? " on" : ""}`} aria-pressed={editing} onClick={() => setEditing(!editing)}
                   title={editing ? "Lock the figures again; what was typed stays." : "Unlock the figures to type over Airtable's, or to add a work by hand."}>
                   <span className="tr" />Edit figures
                 </button>
-              </>
-            )} />
-          {legacy && (
-            <Notice action={(
-              <button type="button" className="ts-btn secondary" onClick={() => setInp({ ...inp, legacy_economics: null })}
-                title="Drop the release-level figures: the products' figures carry the totals from the next save.">Use the products' figures</button>
-            )}>
-              <b>Release-level figures still in force.</b> This release was set up before the model went per product: target {fmt(legacy.edition_size)}{legacy.edition_total > legacy.edition_size ? ` of ${fmt(legacy.edition_total)}` : ""} units at {fmtMoney(legacy.unit_price || 0, 0)},
-              artist {fmtMoney((legacy.artist_profit || 0) / (legacy.edition_size || 1), 0)} and AA {fmtMoney((legacy.aa_group_profit || 0) / (legacy.edition_size || 1), 0)} per unit.
-              The products below are what Airtable holds; the totals switch to them when these are cleared.
-            </Notice>
-          )}
-          {editionNote && (
-            <Notice>
-              <b>The works' editions add up to {fmt(editionNote.sum)}; the release's edition is {fmt(editionNote.release)}.</b> The page reads {fmt(editionNote.release)} as
-              the whole edition (the hero's sellout, the sell-through headline and the room left) while each work's row reads its own. One of the two is
-              wrong: check the works' editions below, and whether {fmt(editionNote.release)} is the whole edition or only the target.
-            </Notice>
-          )}
-          <ProductsGrid products={products} econ={econ} editing={editing} onField={onField} onFieldAll={onFieldAll} onName={onName}
-            onAdd={onAdd} onRemove={onRemove} onReset={onReset} onInclude={onInclude} emptyNote={airtableNote} />
-          <div className="ts-caption">
-            Launch value <b>{fmtMoney(econ.launch_value, 0)}</b>
-            {(econ.launch_currencies || []).some((c) => c !== "EUR") ? ` (from ${(econ.launch_currencies || []).join(", ")} at a fixed rate)` : ""}
-            {" · "}artist <b>{fmtMoney(econ.ppu_artist, 2)}</b> and AA <b>{fmtMoney(econ.ppu_aa, 2)}</b> per unit{econ.frame_uplift_per_unit > 0 ? ` (incl. ${fmtMoney(econ.frame_uplift_per_unit, 2)} framing)` : ""}
-            {" · "}AA carries <b>{fmtPct(econ.aa_budget_share, 0)}</b> of paid spend ({econ.aa_budget_share_assumed ? "no deal recorded, 50/50 assumed" : econ.deal && econ.deal.length ? econ.deal.join(" and ") : "as set up"})
-          </div>
-        </section>
+              </div>
+            </div>
+            {legacy && (
+              <Notice action={(
+                <button type="button" className="ts-btn secondary" onClick={() => setInp({ ...inp, legacy_economics: null })}
+                  title="Drop the release-level figures: the works' figures carry the totals from the next save.">Use the works' figures</button>
+              )}>
+                <b>Release-level figures still in force:</b> target {fmt(legacy.edition_size)}{legacy.edition_total > legacy.edition_size ? ` of ${fmt(legacy.edition_total)}` : ""} units at {fmtMoney(legacy.unit_price || 0, 0)},
+                artist {fmtMoney((legacy.artist_profit || 0) / (legacy.edition_size || 1), 0)} and AA {fmtMoney((legacy.aa_group_profit || 0) / (legacy.edition_size || 1), 0)} per unit.
+              </Notice>
+            )}
+            {editionNote && (
+              <Notice>
+                <b>The works' editions add up to {fmt(editionNote.sum)}; the release's edition is {fmt(editionNote.release)}.</b> One of the two is wrong.
+              </Notice>
+            )}
+            <div className="ts2-sub">
+              <h3>Economics</h3>
+              <ProductsGrid {...gridHandlers} columns={ECON_COLS} />
+            </div>
+            <div className="ts2-sub">
+              <h3>Framing</h3>
+              <ProductsGrid {...gridHandlers} columns={FRAME_COLS} ticks={false} addRow={false} nameOnly />
+            </div>
+          </section>
 
-        <section className="ts-card" aria-label="Assumptions">
-          <CardHead dot="#c96a3a" title="Assumptions" desc="blank means the panel's standard" />
-          <div className="ts-grid c4">
-            <Field label="Entry → order rate" help="Prices every entry on the page: secured units, the paid model's converting entries and the eligible-entries target."
-              tip="What share of eligible entries in hand become orders - the sell-through prediction counts entries in hand at this rate. Empty means the panel's 80%.">
-              <NumBox value={asPct(inp.entry_conversion_rate)} placeholder={String(Math.round(100 * (Number(b.eligible_entry_to_order) || 0.8)))} unit="%"
-                onCommit={(raw) => { const c = String(raw).replace(/[^0-9]/g, ""); setInp((prev) => ({ ...prev, entry_conversion_rate: c === "" ? null : clamp(parseInt(c, 10), 1, 100) / 100 })); }} />
-            </Field>
-            <Field label="Pre-order → order rate" help="A pre-order's card is already authorised, so it converts higher than a plain entry."
-              tip="What share of PRE-ORDER entries become orders. Their card is already authorised, so they are charged at the draw rather than invoiced. Empty means the panel's 95%.">
-              <NumBox value={asPct(inp.preorder_conversion_rate)} placeholder="95" unit="%"
-                onCommit={(raw) => { const c = String(raw).replace(/[^0-9]/g, ""); setInp((prev) => ({ ...prev, preorder_conversion_rate: c === "" ? null : clamp(parseInt(c, 10), 1, 100) / 100 })); }} />
-            </Field>
-            <Field label="Cost per paid unit"
-              src={basketCpp > 0 ? `blank = the basket's median (${profile.n_costed || 0} launches with spend)`
-                : `blank = the panel's median (the basket has ${(profile && profile.n_costed) || 0} of the 3 launches with spend it needs)`}
-              help={basketCpp > 0 ? `Paid units at this price is the paid budget. Blank reads the basket: its median is each launch's Meta spend over the paid units it sold, ${profile.n_costed || 0} launches with spend on file. Type a figure only to override that.`
-                : `Paid units at this price is the paid budget. Blank reads the basket once three of its launches have spend on file (${(profile && profile.n_costed) || 0} do today); until then the panel's median stands in. Type a figure only to override that.`}
-              tip="What a paid unit costs to buy. Blank = the basket's median cost per paid unit (each launch's Meta spend over the paid units it sold), or the panel's median when fewer than three of the basket's launches have spend on file.">
-              <NumBox value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)}
-                placeholder={fmt(basketCpp > 0 ? basketCpp : panelCpp)} unit="€"
-                onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); setInp((prev) => ({ ...prev, cost_per_purchase: c === "" ? null : c })); }} />
-            </Field>
-            <Field label="Paid cannibalisation" src={`blank = ${Math.round(100 * (Number(b.cannibalisation) || 0.2))}%`}
-              help={`The share of paid entries that would have come anyway. The ROI and the budget floor read profit net of it. Blank = the ${Math.round(100 * (Number(b.cannibalisation) || 0.2))}% standard.`}>
-              <NumBox value={inp.cannibalisation === null || inp.cannibalisation === undefined ? "" : String(Math.round(Number(inp.cannibalisation) * 1000) / 10)}
-                placeholder={String(Math.round(100 * (Number(b.cannibalisation) || 0.2)))} unit="%"
-                onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); const v = c === "" ? null : clamp(parseFloat(c), 0, 95) / 100; setInp((prev) => ({ ...prev, cannibalisation: v === null || Number.isNaN(v) ? null : v })); }} />
-            </Field>
+          {/* 4 · assumptions */}
+          <section className="ts2-sec" aria-label="Assumptions">
+            <div className="ts2-sec-head">
+              <h2>Assumptions</h2>
+              <div className="right">
+                <button type="button" className="ts-btn secondary sm" onClick={() => setAssumeOpen(!assumeOpen)}>{assumeOpen ? "Done" : "Edit"}</button>
+              </div>
+            </div>
+            {!assumeOpen ? (
+              <div className="ts2-sum">
+                <span><span className="k">Entry to order</span> <b>{inp.entry_conversion_rate ? `${asPct(inp.entry_conversion_rate)}%` : `${e2oDefault}%`}</b></span>
+                <span><span className="k">Pre-order to order</span> <b>{inp.preorder_conversion_rate ? `${asPct(inp.preorder_conversion_rate)}%` : "95%"}</b></span>
+                <span><span className="k">Cost per paid unit</span> <b>{fmtMoney(cpp, 0)}</b></span>
+                <span><span className="k">Paid cannibalisation</span> <b>{inp.cannibalisation !== null && inp.cannibalisation !== undefined ? `${Math.round(Number(inp.cannibalisation) * 100)}%` : `${cannDefault}%`}</b></span>
+              </div>
+            ) : (
+              <div className="ts2-rows">
+                <label className="ts2-lbl" title="What share of eligible entries in hand become orders. Blank is the panel's standard.">Entry to order</label>
+                <div className="ts2-ctl">
+                  <div style={{ width: 150 }}>
+                    <NumBox value={asPct(inp.entry_conversion_rate)} placeholder={String(e2oDefault)} unit="%"
+                      onCommit={(raw) => { const c = String(raw).replace(/[^0-9]/g, ""); setInp((prev) => ({ ...prev, entry_conversion_rate: c === "" ? null : clamp(parseInt(c, 10), 1, 100) / 100 })); }} />
+                  </div>
+                  {inp.entry_conversion_rate ? <span className="ts2-tag typed">typed</span> : <span className="ts2-tag">default</span>}
+                </div>
+                <label className="ts2-lbl" title="What share of pre-order entries become orders. Their card is already authorised, so they convert higher than a plain entry. Blank is 95%.">Pre-order to order</label>
+                <div className="ts2-ctl">
+                  <div style={{ width: 150 }}>
+                    <NumBox value={asPct(inp.preorder_conversion_rate)} placeholder="95" unit="%"
+                      onCommit={(raw) => { const c = String(raw).replace(/[^0-9]/g, ""); setInp((prev) => ({ ...prev, preorder_conversion_rate: c === "" ? null : clamp(parseInt(c, 10), 1, 100) / 100 })); }} />
+                  </div>
+                  {inp.preorder_conversion_rate ? <span className="ts2-tag typed">typed</span> : <span className="ts2-tag">default</span>}
+                </div>
+                <label className="ts2-lbl" title="What a paid unit costs to buy: paid units at this price is the paid budget. Blank is the basket's median cost per paid unit, or the panel's when fewer than three of the basket's launches have spend on file.">Cost per paid unit</label>
+                <div className="ts2-ctl">
+                  <div style={{ width: 150 }}>
+                    <NumBox value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)}
+                      placeholder={fmt(basketCpp > 0 ? basketCpp : panelCpp)} unit="€"
+                      onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); setInp((prev) => ({ ...prev, cost_per_purchase: c === "" ? null : c })); }} />
+                  </div>
+                  {Number(inp.cost_per_purchase) > 0 ? <span className="ts2-tag typed">typed</span> : <span className="ts2-tag">{basketCpp > 0 ? "basket" : "panel"}</span>}
+                </div>
+                <label className="ts2-lbl" title="The share of paid entries that would have come anyway. The ROI and the budget floor read profit net of it.">Paid cannibalisation</label>
+                <div className="ts2-ctl">
+                  <div style={{ width: 150 }}>
+                    <NumBox value={inp.cannibalisation === null || inp.cannibalisation === undefined ? "" : String(Math.round(Number(inp.cannibalisation) * 1000) / 10)}
+                      placeholder={String(cannDefault)} unit="%"
+                      onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); const v = c === "" ? null : clamp(parseFloat(c), 0, 95) / 100; setInp((prev) => ({ ...prev, cannibalisation: v === null || Number.isNaN(v) ? null : v })); }} />
+                  </div>
+                  {inp.cannibalisation !== null && inp.cannibalisation !== undefined ? <span className="ts2-tag typed">typed</span> : <span className="ts2-tag">default</span>}
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* the outcome rail: what the inputs give, live */}
+        <aside className="ts2-rail" aria-label="Outcome">
+          <div className="ts2-card">
+            <div className="ts2-fig" title="Secured-units target: the hero target on the Overview tab, the works' editions at their target sell-through, summed.">
+              <span className="k">Target</span>
+              <span className="v">{editionSize > 0 ? fmt(editionSize) : "–"}<small>{partialEdition ? `of ${fmt(econ.edition_total)}` : "units"}</small></span>
+            </div>
+            <div className="ts2-fig" title="The basket's median units of demand, the channels not in plan set aside.">
+              <span className="k">Benchmark</span>
+              <span className="v">{bmUnits ? fmt(bmUnits) : "–"}<small>{k ? `×${fmt(k, 2)}` : "no basket"}</small></span>
+            </div>
+            <div className="ts2-fig" title={T ? `The target less the benchmark, ${stretchWords}.` : "Choose a basket first."}>
+              <span className="k">Stretch</span>
+              <span className="v">{T ? signed(Math.round(T.stretch_units)) : "–"}{T && <small>{stretchWords}</small>}</span>
+            </div>
+            <div className="ts2-fig" title={paidOff ? "Paid is not in plan." : `Paid units × ${fmtMoney(cpp)} per unit; the benchmark is the basket's. ${sense ? "Over" : "Under"} the 6% of launch value sense check.`}>
+              <span className="k">Paid budget</span>
+              <span className={`v${sense ? " red" : ""}`}>{paidOff ? "–" : T ? fmtMoney(T.paid.budget, 0) : "–"}{T && !paidOff && <small>{BM && BM.paid_budget ? `benchmark €${fmtK(BM.paid_budget)}` : ""}{T.paid.budget_pct_of_launch_value ? ` · ${fmtPct(T.paid.budget_pct_of_launch_value, 1)} of launch value` : ""}</small>}</span>
+            </div>
+            <div className="ts2-fig" title="Target units over the editions.">
+              <span className="k">Sell-through</span>
+              <span className="v">{econ.edition_total ? `${Math.round((100 * editionSize) / econ.edition_total)}%` : "–"}</span>
+            </div>
           </div>
-          <div className="ts-caption">Spend is Meta's, billed in euros, and the page runs in euros: every figure here is euros.</div>
-        </section>
+          {products.filter((p) => !p.excluded && p.edition).length > 0 && (
+            <div className="ts2-card">
+              {products.filter((p) => !p.excluded && p.edition).map((p, i) => (
+                <div key={p.airtable_id || `m-${i}`} className="ts2-fig" title={`${fmt(p.edition)} in the edition at ${p.target_sellthrough !== null && p.target_sellthrough !== undefined ? Math.round(100 * p.target_sellthrough) : 100}% sell-through.`}>
+                  <span className="k">{p.name || "unnamed"}</span>
+                  <span className="v">{fmt(p.target_units)}<small>of {fmt(p.edition)}</small></span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="ts2-card">
+            <div className="ts2-fig" title={(econ.launch_currencies || []).some((c) => c !== "EUR") ? `From ${(econ.launch_currencies || []).join(", ")} at a fixed rate.` : "Target units at their prices."}>
+              <span className="k">Launch value</span><span className="v">{econ.launch_value > 0 ? fmtMoney(econ.launch_value, 0) : "–"}</span>
+            </div>
+            <div className="ts2-fig" title={econ.frame_uplift_per_unit > 0 ? `Including ${fmtMoney(econ.frame_uplift_per_unit, 2)} of framing per unit.` : "Avant Arte's profit on one target unit."}>
+              <span className="k">AA profit per unit</span><span className="v">{econ.ppu_aa > 0 ? fmtMoney(econ.ppu_aa, 0) : "–"}</span>
+            </div>
+            <div className="ts2-fig" title="The artist's profit on one target unit.">
+              <span className="k">Artist profit per unit</span><span className="v">{econ.ppu_artist > 0 ? fmtMoney(econ.ppu_artist, 0) : "–"}</span>
+            </div>
+            <div className="ts2-fig" title={econ.aa_budget_share_assumed ? "No deal recorded: 50/50 assumed." : econ.deal && econ.deal.length ? econ.deal.join(" and ") : "As set up."}>
+              <span className="k">AA share of paid spend</span><span className="v">{fmtPct(econ.aa_budget_share, 0)}{econ.aa_budget_share_assumed && <small>assumed</small>}</span>
+            </div>
+          </div>
+          <div className="ts2-actions">
+            <button type="button" className="ts-btn primary" disabled={saving || missing.length > 0} onClick={save}
+              title={missing.length ? `Still needed: ${missing.join(", ")}` : creating ? "Saves the inputs and rebuilds this release with the full target model." : "Saves the inputs and recomputes this release's targets, plan curves and projections."}>
+              {saveLabel}
+            </button>
+            <button type="button" className="ts-btn secondary" onClick={discard} disabled={saving || !dirty} title="Back to what is saved.">Discard</button>
+            {stateText && <span className={`ts2-state${missing.length ? " warn" : ""}`}>{stateText}</span>}
+            {error && <span className="ts2-state err">{error}</span>}
+          </div>
+        </aside>
       </div>
 
       {picking && (

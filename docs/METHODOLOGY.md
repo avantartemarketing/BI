@@ -614,8 +614,8 @@ recommendation is the ROI at the close at that spend level's cost per entry.
 - **Artist posts** pull live from the team's Notion log when connected. Their
   benchmark follows the same cohort approach as every other channel: expected
   posts = the median artist-post count among completed campaigns in the same
-  **posting tier** (Low / Medium / High beside the artist switch on the Target
-  setting tab), pro-rated by days elapsed. It stays blank until at least two completed
+  **posting tier** (Low / Medium / High: the tier saved for the release, else Medium;
+  it left the Target setting tab on 8 October 2026), pro-rated by days elapsed. It stays blank until at least two completed
   campaigns in the cohort have logged posts.
 - **Benchmarks** come from the release's basket, cut from the draw panel on every
   build. The few constants that remain (`etl/benchmarks.json`) are versioned and
