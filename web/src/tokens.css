@@ -699,12 +699,18 @@ select.native {
 .wa-col:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 .wa-empty { position: absolute; inset: 0 0 0 48px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; color: var(--muted); padding: 0 24px; line-height: 1.5; }
 .wa-names { display: flex; gap: 6px; padding-left: 48px; font-size: 12px; color: var(--muted); }
-.wa-names > span { min-width: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; overflow: hidden; }
+.wa-names > span { min-width: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; overflow: hidden; container-type: inline-size; }
 .wa-names .n { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wa-names .nm { max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; line-height: 1.25; }
+.wa-names .nm { max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: break-word; line-height: 1.25; }
+/* a column too narrow for a word keeps its units; the name is on the hover */
+@container (max-width: 56px) { .wa-names .nm { display: none; } }
 .wa-names .n { font-variant-numeric: tabular-nums; }
 .wa-names > span.sel { color: var(--ink); font-weight: 600; }
-.wa-names > span.off .nm { text-decoration: line-through; text-decoration-color: #c8c5bc; }
+.wa-out { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 12px; color: var(--muted); padding-left: 48px; }
+.wa-out .w { display: inline-flex; align-items: center; gap: 8px; }
+.wa-out .nm { background: none; border: 0; padding: 0; font: inherit; color: var(--muted); text-decoration: line-through; text-decoration-color: #c8c5bc; cursor: pointer; }
+.wa-out .nm.sel { color: var(--ink); font-weight: 600; }
+.wa-out .ts-link { font-size: 12px; }
 .wa-side { flex: 0 0 300px; display: flex; flex-direction: column; gap: 6px; padding-left: 24px; border-left: 1px solid var(--border); min-width: 0; }
 .wa-head { display: flex; align-items: center; gap: 10px; min-height: 32px; flex-wrap: wrap; }
 .wa-head h3 { margin: 0; font-size: 14px; font-weight: 600; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -719,13 +725,16 @@ select.native {
 .wa-r.total .v { font-weight: 600; }
 .wa-r.closed .v, .wa-r.off .v { color: #b3b1a8; }
 .wa-r.off .k { color: #b3b1a8; }
-.wa-fig.typed, .wa-ed.typed { background: var(--blue-tint); border-radius: 3px; padding: 0 4px; color: var(--blue-deep); }
+.wa-fig.typed { background: var(--blue-tint); border-radius: 3px; padding: 0 4px; color: var(--blue-deep); }
 .wa-at { color: #9a988f; font-size: 11px; }
-.wa-per { color: var(--muted); font-size: 12px; }
-.wa-ed { display: inline-flex; align-items: baseline; border-bottom: 1.5px solid var(--blue); padding-bottom: 1px; color: var(--blue-deep); font-weight: 600; }
-.wa-ed.typed { border-radius: 3px 3px 0 0; }
-.wa-ed .u { font-weight: 400; color: var(--muted); font-size: 12px; }
-.wa-ed input { width: 7ch; min-width: 48px; border: none; background: transparent; font: inherit; color: inherit; text-align: right; padding: 0; outline: none; font-variant-numeric: tabular-nums; font-weight: 600; }
+/* the figure as the input: one width for every box, so the figures make one
+   column at the panel's edge; the unit sits inside the box */
+.wa-ed { display: inline-flex; align-items: baseline; width: 96px; box-sizing: border-box; border-bottom: 1.5px solid var(--blue); padding: 0 4px 1px; color: var(--blue-deep); font-weight: 600; }
+.wa-ed.typed { background: var(--blue-tint); border-radius: 3px 3px 0 0; }
+.wa-ed .u { font-weight: 400; color: var(--muted); font-size: 12px; flex: 0 0 auto; }
+.wa-ed .u.pre { margin-right: 4px; }
+.wa-ed .u.post { margin-left: 2px; }
+.wa-ed input { flex: 1 1 auto; min-width: 0; width: 100%; border: none; background: transparent; font: inherit; color: inherit; text-align: right; padding: 0; outline: none; font-variant-numeric: tabular-nums; font-weight: 600; }
 .wa-ed input::placeholder { color: #b3b1a8; font-weight: 400; }
 .wa-ed:focus-within { border-bottom-color: var(--ink); }
 .wa-links { display: flex; justify-content: flex-end; gap: 16px; padding-top: 10px; flex-wrap: wrap; font-size: 13px; }

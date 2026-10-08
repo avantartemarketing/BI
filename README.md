@@ -611,16 +611,16 @@ each with its detail on hover - then the form in four groups of label-and-contro
 order the decisions are made, and the actions again at the foot. **Works** draws the works as
 one picture: a column per work, as wide as its target units and as tall as its price per unit,
 stacked by who gets what (costs and the rest, the artist's profit, Avant Arte's) with the
-framing uplift as the band on top, so area is money; an unticked work, or one with no edition
-or no price yet, is a thin dashed outline. Selecting a column puts that work's figures beside
+framing uplift as the band on top, so area is money; a work with no edition or no price yet is a thin dashed outline, and a work left out
+of the release is not drawn but named under the chart, with `Include` beside it while editing. Selecting a column puts that work's figures beside
 the chart (edition, sell-through, target units, the close, price, the profits per unit, the
 deal's share, framing, frames per print, frame profit, the launch value and Avant Arte's take
 with framing); with nothing selected the panel shows the release as a whole, weighted by
 target units, with AA's share of paid spend. The figures are locked to Airtable's until
 **Edit figures** is on; then the figure itself is the input, a typed one tinted with Airtable's
 (or the default) faint beside it, and a figure typed on the release as a whole lands on every
-work. The panel offers `Reset to Airtable`, `Leave out of the release` or `Include in the
-release`, and `Remove` on a work added by hand; the group's head offers `Add a work` and `Reset
+work. The panel's first row, `In the release`, is the switch that leaves a work out or
+counts it again; the panel also offers `Reset to Airtable`, and `Remove` on a work added by hand; the group's head offers `Add a work` and `Reset
 all`. **Target** holds the basket with `Change basket`, the Channels in plan switches, and the
 stretch as a three-way choice, even across channels, all from paid or custom, the coupled
 sliders appearing under Custom. **Launch** holds the three dates on one row, each with a
