@@ -725,17 +725,18 @@ current results"): the figure the At close view's headline gives, words only unt
 checked against real closes (5 October 2026), nothing on an At close update or once the campaign
 is complete; under it, while a paid campaign is running and has a recommendation, one line on the
 paid lever (6 October 2026). The forecast holds paid at its current daily spend, so the line
-says what the Paid card recommends instead and where that would take the close, to one decimal
-and in units: "This assumes paid stays at €6,382 a day. It looks like there is room to scale paid
-further, to €8,297 a day, which might take sell-through at close to 19.4% (1,184 units)", or
-"There is no room to scale paid further", or "It looks like we might need to decrease paid spend,
-to €4,500 a day: at today's spend the ROI at close would fall below the floor of 1.0. That would
-leave us at 18.9% (1,150 units)" ("stop paid spend" when the recommendation is nothing). A cut or
-a stop says why (8 October 2026), from what bound the recommendation (`paid.budget.cap`, the Paid
-card's Capped by chip): the sellout or the target reached without the spend, the ROI at close
-under the floor, or the spend rules (no entries bought yesterday or for three days, cumulative
-ROI below 0.9, three days below the target ROI), with "so it is cut by 30% a day" where the
-pacing rule holds the cut; the figure is the build's `paid.atRecommended`, the same projection
+says what the card's recommendation would mean for the close, to one decimal and in units, as an
+update rather than an instruction (the words agreed 8 October 2026): "This assumes paid stays at
+€6,382 a day. There may be room to increase paid spend, in which case the forecast sell-through
+rises to 19.4% (1,184 units)", or "There is no room to increase paid spend", or "We may have to
+decrease paid spend to stay ROI-positive, in which case the forecast sell-through drops to 18.9%
+(1,150 units)" ("stop" when the recommendation is nothing, "pause" on three days that bought no
+entries). The reason is what bound the recommendation (`paid.budget.cap`, the Paid card's Capped
+by chip): "to stay ROI-positive" ("to keep ROI above 1.2" on a release whose floor is not 1), "as
+we are on course to sell out anyway" or "without it" (where the line ends there, since the forecast
+does not move; "hit the target" when the target is part of the edition), "as it bought no entries
+yesterday", "as it has bought no entries for three days", "as cumulative ROI is under 0.9", "as ROI
+has been under target for three days"; the figure is the build's `paid.atRecommended`, the same projection
 with paid at the recommended spend; then, in small type, the day the figures run to
 (the page's as-of day, "so far" while that day is only partly in), the attribution when the
 page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still to come)

@@ -369,49 +369,46 @@ const closeLine = (m) => {
 };
 /* The paid lever, the line under the close forecast (6 October 2026): the
  * forecast holds paid at its current daily spend, so the line says what the
- * Paid card recommends instead and where that would take the close - room to
- * scale paid up and the sell-through at close it might reach, no room, or a
- * cut (a stop when the recommendation is nothing) and the sell-through it
- * would leave. A cut or a stop says why (8 October 2026): which of the
- * card's limits bound the recommendation - the sellout or the target reached
- * without the spend, the ROI at close under the floor, or the spend rules on
- * days that bought nothing or an ROI below the band - and that a cut is
- * taken in 30% steps where the pacing rule holds it. The sell-through is
- * given to one decimal and in units, so a move the forecast's whole
- * percentage hides still shows. Nothing without the forecast line, a
- * running campaign or a recommendation. */
+ * Paid card's recommendation would mean for the close - room to increase
+ * paid and the sell-through at close that might reach, no room, or a cut, a
+ * stop or a pause and the sell-through it would leave. It is an update, not
+ * an instruction, in the words agreed on 8 October 2026: "We may have to
+ * decrease paid spend to stay ROI-positive, in which case the forecast
+ * sell-through drops to 28.0% (168 units)". The reason is what bound the
+ * recommendation (paid.budget.cap, the card's Capped by chip): the ROI at
+ * close under the floor, the sellout or the target on course without the
+ * spend (where the line ends at the reason: the forecast does not move), or
+ * the spend rules on days that bought nothing or an ROI below the band. The
+ * sell-through is given to one decimal and in units, so a move the
+ * forecast's whole percentage hides still shows. Nothing without the
+ * forecast line, a running campaign or a recommendation. */
 const eur = (v) => `€${fmt(v)}`;
 const pct1 = (v) => `${(Math.round(num(v) * 1000) / 10).toFixed(1)}%`;
-const floorWords = (l) => (l.floor !== null ? Number(l.floor).toFixed(1) : "1.0");
-function cutReason(l) {
-  const goal = l.partial ? "the target" : "the sellout";
-  const stop = !(l.recommended > 0);
-  let why = null;
-  switch (l.cap) {
-    case "supply": why = stop ? `${goal} is reached without it on current results` : `today's spend buys more than ${goal} needs on current results`; break;
-    case "roi_floor": why = `at today's spend the ROI at close would fall below the floor of ${floorWords(l)}`; break;
-    case "zero_conversion_pause": why = "paid has bought no entries for three days running"; break;
-    case "zero_conversion": why = "yesterday's spend bought no entries"; break;
-    case "roi_band_decrease": why = "cumulative ROI is below 0.9, where the spend rules say decrease"; break;
-    case "forced_decrease": why = "the trailing 3-day ROI has been below target on each of the last three full days"; break;
-    default: return null;
-  }
-  return l.paced && !stop ? `${why}, so it is cut by 30% a day` : why;
-}
 const leverLine = (m) => {
   const l = m.lever;
   if (m.close || !l) return null;
   const holds = `This assumes paid stays at ${eur(l.current)} a day.`;
   const at = `*${pct1(l.pct)}* (${fmt(l.units)} units)`;
-  if (l.move > 0) return `${holds} It looks like there is room to scale paid further, to ${eur(l.recommended)} a day, which might take sell-through at close to ${at}.`;
+  if (l.move > 0) return `${holds} There may be room to increase paid spend, in which case the forecast sell-through rises to ${at}.`;
   if (l.move < 0) {
-    const cut = l.recommended > 0 ? `decrease paid spend, to ${eur(l.recommended)} a day` : "stop paid spend";
-    const why = cutReason(l);
-    return why
-      ? `${holds} It looks like we might need to ${cut}: ${why}. That would leave us at ${at}.`
-      : `${holds} It looks like we might need to ${cut}, which would leave us at ${at}.`;
+    const stop = !(l.recommended > 0);
+    const verb = l.cap === "zero_conversion_pause" ? "pause" : stop ? "stop" : "decrease";
+    const drops = `in which case the forecast sell-through drops to ${at}`;
+    switch (l.cap) {
+      case "supply":
+        return `${holds} We may be able to ${verb} paid spend, as we are on course to ${l.partial ? "hit the target" : "sell out"} ${stop ? "without it" : "anyway"}.`;
+      case "roi_floor": {
+        const roi = l.floor === null || Math.abs(l.floor - 1) < 1e-9 ? "to stay ROI-positive" : `to keep ROI above ${Number(l.floor).toFixed(1)}`;
+        return `${holds} We may have to ${verb} paid spend ${roi}, ${drops}.`;
+      }
+      case "zero_conversion_pause": return `${holds} We may have to ${verb} paid spend, as it has bought no entries for three days, ${drops}.`;
+      case "zero_conversion": return `${holds} We may have to ${verb} paid spend, as it bought no entries yesterday, ${drops}.`;
+      case "roi_band_decrease": return `${holds} We may have to ${verb} paid spend, as cumulative ROI is under 0.9, ${drops}.`;
+      case "forced_decrease": return `${holds} We may have to ${verb} paid spend, as ROI has been under target for three days, ${drops}.`;
+      default: return `${holds} We may have to ${verb} paid spend, ${drops}.`;
+    }
   }
-  return `${holds} There is no room to scale paid further.`;
+  return `${holds} There is no room to increase paid spend.`;
 };
 const unitsHeader = (m) => (m.close ? "Units at close *" : "Units sold *");
 const unitsFootnote = (m) => (m.close
