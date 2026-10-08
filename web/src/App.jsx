@@ -284,20 +284,25 @@ function releaseClock(r, asOf) {
 const QUARTER_RE = /^\d{4} Q\d$/;
 const nameParts = (r) => String(r.releaseName || r.name || r.artist || "").split(" \u00b7 ").map((p) => p.trim()).filter(Boolean);
 const artistOf = (r) => nameParts(r)[0] || "";
-/* the artists with more than one row in a list: their rows keep the whole name */
+/* the artists with more than one row in a list: their rows carry what tells them apart */
 function twinSet(rows) {
   const n = new Map();
   for (const r of rows) n.set(artistOf(r), (n.get(artistOf(r)) || 0) + 1);
   return new Set([...n].filter(([, c]) => c > 1).map(([a]) => a));
 }
+/* A row's words: the artist alone, the same on every row - the work's title
+ * and the quarter are the hover's, which carries the full name (8 October
+ * 2026: a title on some rows and not others read as inconsistent). An artist
+ * with two rows in a list gets the quarter after the name, and "timed" on a
+ * timed launch, so the two can be told apart; never the title. */
 function rowWords(r, twin) {
   const [artist, ...rest] = nameParts(r);
-  const kept = twin ? [...(r.type === "TL" ? ["timed"] : []), ...rest] : rest.filter((p) => p !== "Multiple" && !QUARTER_RE.test(p));
+  const kept = twin ? [...(r.type === "TL" ? ["timed"] : []), ...rest.filter((p) => QUARTER_RE.test(p))] : [];
   return { artist: artist || "", rest: kept.join(" \u00b7 ") };
 }
 
-/* One release in the sidebar: the status dot, the artist (a real title in
- * grey after it) on one line, and the days on the right, with a grey verb
+/* One release in the sidebar: the status dot, the artist on one line (the
+ * quarter in grey after it only where the artist has two rows), and the days on the right, with a grey verb
  * before the count where it does not run to the section's own event (the
  * close in flight, the open upcoming): "opens" on a timed launch taking
  * signups, "announces" on one before its announce, "closes" on an upcoming
