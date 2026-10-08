@@ -3682,7 +3682,7 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
     # the product fields the tab reads (shared/economics.mjs PRODUCT_KEYS and
     # the identity); the record's other columns stay in the pricing file
     keep = ("airtable_id", "name", "project_code", "edition", "target_sellthrough", "unit_price", "currency",
-            "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share",
+            "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "deal_type",
             "framing_available", "framing_default", "frame_conversion", "frame_profit_per_unit",
             "launch_date")
     products = [{k: p.get(k) for k in keep} for p in at["products"]]

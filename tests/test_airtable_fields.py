@@ -59,6 +59,39 @@ try:
 finally:
     os.environ.pop("AIRTABLE_FIELD_EDITION_SIZE", None)
 
+# the optional fields under the names the table carries them by (OPTIONAL_ALIASES, 8 October
+# 2026): the current name first, then the alias, the first the table has winning, with how the
+# field is read; an override is the one name tried; a column under no name is absent
+live = current + ["AA split", "Revenue Commission %", "Commission Type", "Profit per unit (excl paid ads)_marketing",
+                  "Artist profit per unit (excl. paid ads)_marketing", "Framing conversion"]
+res = {col: (name, reading) for name, col, reading in pa.resolve_optional(table(live))}
+check(res["aa_profit_share"] == ("AA split", None), f"AA split stands in for the profit share: {res['aa_profit_share']}")
+check(res["aa_revenue_share"] == ("Revenue Commission %", "complement"), f"the revenue commission is read as its complement: {res['aa_revenue_share']}")
+check(res["aa_profit_per_unit"] == ("Profit per unit (excl paid ads)_marketing", None) and res["artist_profit_per_unit"] == ("Artist profit per unit (excl. paid ads)_marketing", None), "the marketing profit fields")
+check(res["deal_type"] == ("Commission Type", None) and res["frame_conversion"] == ("Framing conversion", None), "the deal type and a field under its current name")
+check(res["frame_profit_per_unit"] == ("Framing profit per unit", None), "a field under no name keeps its current one")
+names, _, found, absent = pa.check_schema(table(live))
+check(found.get("AA split") == "aa_profit_share" and found.get("Revenue Commission %") == "aa_revenue_share" and "AA split" in names, f"the aliases are requested: {sorted(found)}")
+check("Framing profit per unit" in absent and "Target sell-through %" in absent and "AA profit share" not in absent, f"absent names the ones under no name: {absent}")
+both = pa.resolve_optional(table(live + ["AA profit share"]))
+check(dict((c, n) for n, c, _ in both)["aa_profit_share"] == "AA profit share", "the current name wins when the table has both")
+os.environ["AIRTABLE_FIELD_AA_PROFIT_SHARE"] = "Our split"
+try:
+    res = {col: (name, reading) for name, col, reading in pa.resolve_optional(table(live + ["Our split"]))}
+    check(res["aa_profit_share"] == ("Our split", None), f"an override is the one name tried: {res['aa_profit_share']}")
+finally:
+    os.environ.pop("AIRTABLE_FIELD_AA_PROFIT_SHARE", None)
+
+# a money figure typed as text (the _marketing fields are text): its number, in euros
+hits = [0]
+check(pa.flatten("€450", "aa_profit_per_unit", hits) == 450.0 and pa.flatten("€1,250.50", "artist_profit_per_unit", hits) == 1250.5, "euros as text")
+check(pa.flatten("450", "aa_profit_per_unit", hits) == 450.0 and pa.flatten(" 1,000 ", "aa_profit_per_unit", hits) == 1000.0, "a bare figure is euros")
+check(pa.flatten("£100", "aa_profit_per_unit", hits) == 118.0 and pa.flatten("100 GBP", "aa_profit_per_unit", hits) == 118.0, "pounds at the pricing rate")
+check(pa.flatten("tbc", "aa_profit_per_unit", hits) == "" and pa.flatten("", "aa_profit_per_unit", hits) == "", "no figure, nothing")
+check(pa.flatten(450, "aa_profit_per_unit", hits) == 450 and hits[0] == 0, "a number stays a number")
+# the reading applied in the pull: a 15% commission is an 85% share
+check(pa.flatten(0.15, "aa_revenue_share", hits) == 0.15, "the percent itself is read as it comes")
+
 # a column list unchanged by the rename: the CSV header is the columns, not the names
 cols = [c for _, c in pa.FIELDS]
 check("edition_size" in cols and cols.index("edition_size") == cols.index("unit_status") - 1, "the CSV column is edition_size, in its place")

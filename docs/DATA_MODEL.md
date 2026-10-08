@@ -1072,9 +1072,18 @@ units, launch type, launch date and medium, one record per product (a colourway,
 variant, a bundle). `etl/pull_airtable.py` pulls exactly the fields needed - identity, price,
 size, type, dates, medium, artist tier and genre bucket, and the per-product target economics
 of §1.6 (`Target sell-through %`, `Artist profit per unit`, `AA profit per unit`, `AA revenue
-share`, `AA profit share`, `Framing conversion`, `Framing profit per unit`) plus the
-`Marketing lead`, each pulled when the table has the field and left blank when it does not
-yet, with `AIRTABLE_FIELD_<column>` naming a field spelled another way - and nothing about
+share`, `AA profit share`, `Framing conversion`, `Framing profit per unit`, `Commission Type`)
+plus the `Marketing lead`, each pulled when the table has the field and left blank when it does
+not yet, with `AIRTABLE_FIELD_<column>` naming a field spelled another way. The table carries
+some of these under its own names (`OPTIONAL_ALIASES`, 8 October 2026), tried after the name
+above: `AA split` is the AA profit share; `Revenue Commission %` is the artist's or estate's cut
+of revenue, so the AA revenue share is read as one minus it; `Profit per unit (excl paid
+ads)_marketing` and `Artist profit per unit (excl. paid ads)_marketing` are the two profits per
+unit, typed as text ("€450", "€1,250") and read for their number in euros, a figure in pounds or
+dollars converted at the pricing rates. `Commission Type` (`Profit` or `Revenue`) says which share
+is a product's deal: on a revenue deal the AA split the record also carries is not its deal and is
+dropped, on a profit deal the revenue share is, and a record with no type keeps both, the target
+model reading the profit share first as before - and nothing about
 people: it refuses to run if a wanted field turns out to hold a collaborator, email or phone
 (the marketing lead excepted, read for its display name only), blanks any cell that looks like
 one, strips links out of rich text, and keeps only records with an artist, a title and a launch

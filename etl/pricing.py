@@ -598,8 +598,19 @@ PRODUCT_NUMERIC = ("edition_size", "units_target", "unit_price", "target_sellthr
                    "frame_conversion", "frame_profit_per_unit")
 PRODUCT_TEXT = ("airtable_id", "project_code", "title", "release", "currency", "framing", "launch_type",
                 "edition_type", "product_type", "price_status", "launch_date", "announce_date",
-                "private_room_date", "marketing_lead")
+                "private_room_date", "marketing_lead", "deal_type")
 _RECORDS: tuple[float, pd.DataFrame, pd.DataFrame] | None = None   # (mtime, records, launches)
+
+
+def deal_type(value) -> str | None:
+    """Airtable's Commission Type as the model's word: "profit" for a profit
+    split, "revenue" for a commission on revenue, None for anything else."""
+    v = _text(value).lower()
+    if v.startswith("profit"):
+        return "profit"
+    if v.startswith("rev"):
+        return "revenue"
+    return None
 
 
 def is_sculpture(edition_type, product_type) -> bool:
@@ -706,6 +717,16 @@ def release_products(release: dict, pricing_path: pathlib.Path | str | None = No
         if share is None:
             share = p["expected_sellthrough"]
         p["target_sellthrough"] = min(max(share, 0.0), 1.0) if share is not None else None
+        # the deal (Airtable's Commission Type) says which share is the
+        # product's: a profit split carries Avant Arte's share of the profit,
+        # a revenue deal its share of revenue, and the other is not its deal
+        # even when the record carries a figure for it. With no type on the
+        # record both stand and the target model reads the profit share first.
+        p["deal_type"] = deal_type(p.get("deal_type"))
+        if p["deal_type"] == "revenue":
+            p["aa_profit_share"] = None
+        elif p["deal_type"] == "profit":
+            p["aa_revenue_share"] = None
         # "Framed on order" is a framing option; "No framing option" is not
         fr = (p.get("framing") or "").lower()
         p["framing_available"] = (not fr.startswith("no framing")) if fr else None

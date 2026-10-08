@@ -246,6 +246,22 @@ def test_airtable_products_join() -> None:
         assert got["announce_date"] == "2026-09-02" and got["launch_date"] == "2026-09-30" and got["marketing_lead"] == "Clare"
         none = pricing.release_products({"release_name": "Nobody · Thing · 2026 Q3", "announce_date": "2026-09-01", "launch_end": "2026-09-28"}, path)
         assert none["match"] == "none" and none["products"] == []
+    # the deal type says which share is the product's (8 October 2026): a revenue deal drops the AA split it also carries,
+    # a profit deal drops the revenue share, and no type keeps both
+    with tempfile.TemporaryDirectory() as d:
+        path = pathlib.Path(d) / "pricing.csv"
+        pd.DataFrame([dict(rows[0], aa_revenue_share=0.85, aa_profit_share=0.5, deal_type="Revenue"),
+                      dict(rows[0], airtable_id=4, title="Blue", aa_revenue_share=0.85, aa_profit_share=0.5, deal_type="Profit"),
+                      dict(rows[0], airtable_id=5, title="Green", aa_revenue_share=0.85, aa_profit_share=0.5, deal_type="")]).to_csv(path, index=False)
+        by = {p["name"]: p for p in pricing.release_products({"release_name": "Test Artist · Multiple · 2026 Q3", "announce_date": "2026-09-01", "launch_end": "2026-09-28"}, path)["products"]}
+        assert by["Red"]["deal_type"] == "revenue" and by["Red"]["aa_profit_share"] is None and by["Red"]["aa_revenue_share"] == 0.85, by["Red"]
+        assert by["Blue"]["deal_type"] == "profit" and by["Blue"]["aa_revenue_share"] is None and by["Blue"]["aa_profit_share"] == 0.5, by["Blue"]
+        assert by["Green"]["deal_type"] is None and by["Green"]["aa_revenue_share"] == 0.85 and by["Green"]["aa_profit_share"] == 0.5, by["Green"]
+        red, blue, green = (build._effective_product(by[n], build.BENCH) for n in ("Red", "Blue", "Green"))
+        assert red["deal"] == "revenue share" and red["aa_budget_share"] == 1.0
+        assert blue["deal"] == "profit share" and blue["aa_budget_share"] == 0.5
+        assert green["deal"] == "profit share" and green["aa_budget_share"] == 0.5, "no type: the profit share first, as before"
+    assert pricing.deal_type("Profit") == "profit" and pricing.deal_type("Revenue") == "revenue" and pricing.deal_type("") is None and pricing.deal_type(None) is None
     assert pricing.is_sculpture("SE", "") and pricing.is_sculpture("CL", "Low cost 3D edition") and pricing.is_sculpture("TLC", "Mid cost 3D edition")
     assert not pricing.is_sculpture("PE", "Silkscreen print") and not pricing.is_sculpture("", "") and not pricing.is_sculpture("OG", "Unique work")
     with tempfile.TemporaryDirectory() as d:
