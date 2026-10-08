@@ -725,13 +725,16 @@ select.native {
 .wa-r.total .v { font-weight: 600; }
 .wa-r.closed .v, .wa-r.off .v { color: #b3b1a8; }
 .wa-r.off .k { color: #b3b1a8; }
-.wa-fig.typed, .wa-ed.typed { background: var(--blue-tint); border-radius: 3px; padding: 0 4px; color: var(--blue-deep); }
+.wa-fig.typed { background: var(--blue-tint); border-radius: 3px; padding: 0 4px; color: var(--blue-deep); }
 .wa-at { color: #9a988f; font-size: 11px; }
-.wa-per { color: var(--muted); font-size: 12px; }
-.wa-ed { display: inline-flex; align-items: baseline; border-bottom: 1.5px solid var(--blue); padding-bottom: 1px; color: var(--blue-deep); font-weight: 600; }
-.wa-ed.typed { border-radius: 3px 3px 0 0; }
-.wa-ed .u { font-weight: 400; color: var(--muted); font-size: 12px; }
-.wa-ed input { width: 7ch; min-width: 48px; border: none; background: transparent; font: inherit; color: inherit; text-align: right; padding: 0; outline: none; font-variant-numeric: tabular-nums; font-weight: 600; }
+/* the figure as the input: one width for every box, so the figures make one
+   column at the panel's edge; the unit sits inside the box */
+.wa-ed { display: inline-flex; align-items: baseline; width: 96px; box-sizing: border-box; border-bottom: 1.5px solid var(--blue); padding: 0 4px 1px; color: var(--blue-deep); font-weight: 600; }
+.wa-ed.typed { background: var(--blue-tint); border-radius: 3px 3px 0 0; }
+.wa-ed .u { font-weight: 400; color: var(--muted); font-size: 12px; flex: 0 0 auto; }
+.wa-ed .u.pre { margin-right: 4px; }
+.wa-ed .u.post { margin-left: 2px; }
+.wa-ed input { flex: 1 1 auto; min-width: 0; width: 100%; border: none; background: transparent; font: inherit; color: inherit; text-align: right; padding: 0; outline: none; font-variant-numeric: tabular-nums; font-weight: 600; }
 .wa-ed input::placeholder { color: #b3b1a8; font-weight: 400; }
 .wa-ed:focus-within { border-bottom-color: var(--ink); }
 .wa-links { display: flex; justify-content: flex-end; gap: 16px; padding-top: 10px; flex-wrap: wrap; font-size: 13px; }

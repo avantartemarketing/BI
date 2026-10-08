@@ -455,13 +455,13 @@ const ROWS = [
   { key: "target_units", label: "Target units", calc: true },
   { key: "launch_date", label: "Closes", calc: true },
   { key: "unit_price", label: "Price", kind: "money" },
-  { key: "artist_profit_per_unit", label: "Artist profit", kind: "money", per: "unit" },
-  { key: "aa_profit_per_unit", label: "Avant Arte profit", kind: "money", per: "unit" },
+  { key: "artist_profit_per_unit", label: "Artist profit per unit", kind: "money" },
+  { key: "aa_profit_per_unit", label: "Avant Arte profit per unit", kind: "money" },
   { key: "aa_profit_share", label: "AA profit share", kind: "pct" },
   { key: "aa_revenue_share", label: "AA revenue share", kind: "pct" },
   { key: "framing_available", label: "Framing", check: true },
   { key: "frame_conversion", label: "Frames per print", kind: "pct" },
-  { key: "frame_profit_per_unit", label: "Frame profit", kind: "money", per: "frame" },
+  { key: "frame_profit_per_unit", label: "Frame profit per frame", kind: "money" },
   { key: "launch_value", label: "Launch value", calc: true, total: true, tip: "Target units at the price." },
   { key: "aa_total", label: "Avant Arte, with framing", calc: true, total: true, tip: "Avant Arte's profit on the target units, the framing uplift included." },
 ];
@@ -489,22 +489,27 @@ const figText = (row, v, currency) => {
   if (row.kind === "money") return row.key === "unit_price" && currency && currency !== "EUR" ? `${cellText(row.key, v)} ${currency}` : `€${cellText(row.key, v)}`;
   return fmt(v);
 };
-const unitOf = (row, currency) => (row.kind === "pct" ? "%" : row.kind === "money" && !(row.key === "unit_price" && currency && currency !== "EUR") ? "€" : "");
-const suffixOf = (row, currency) => (row.per ? `/ ${row.per}` : row.key === "unit_price" && currency && currency !== "EUR" ? currency : null);
+/* the unit inside the box: € (the product's own currency on a price) before
+ * the figure, % after it, nothing on a count */
+const unitOf = (row, currency) => ({
+  pre: row.kind === "money" ? (row.key === "unit_price" && currency && currency !== "EUR" ? currency : "€") : "",
+  post: row.kind === "pct" ? "%" : "",
+});
 
 /* The figure as the input: the bare figure while it is typed in, the figure
- * with its thousands once left, the unit beside it; the whole figure is
- * selected on focus, so typing replaces it. */
+ * with its thousands once left, the unit inside the box; every box is the
+ * same width, so the figures make one column. The whole figure is selected
+ * on focus, so typing replaces it. */
 function FigInput({ shown, raw, placeholder, unit, onCommit, title, typed }) {
   const [draft, setDraft] = useState(null);
   return (
     <span className={`wa-ed${typed ? " typed" : ""}`} title={title}>
-      {unit === "€" && <span className="u">€</span>}
+      {unit.pre && <span className="u pre">{unit.pre}</span>}
       <input inputMode="decimal" value={draft !== null ? draft : shown} placeholder={placeholder}
         onFocus={(e) => { setDraft(raw); const el = e.target; setTimeout(() => el.select(), 0); }}
         onChange={(e) => { setDraft(e.target.value); onCommit(e.target.value); }}
         onBlur={() => setDraft(null)} />
-      {unit === "%" && <span className="u">%</span>}
+      {unit.post && <span className="u post">{unit.post}</span>}
     </span>
   );
 }
@@ -642,17 +647,17 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
       const why = r.key === "aa_revenue_share" ? "Closed: this work has an AA profit share." : r.key === "aa_profit_share" ? "Closed: this work has an AA revenue share." : "Closed: no frame is offered on this work.";
       return row(r.key, r.label, "–", "closed", why);
     }
+    // the figure a typed one replaced is said before it, when there was one
     const prior = typed ? priorOf(p, r.key) : null;
-    const suffix = suffixOf(r, p.currency);
+    const note = prior && prior.v !== null && Number(prior.v) !== Number(p[r.key]) ? `${prior.from} ${figText(r, prior.v, p.currency)}`
+      : !typed && src === "default" ? "default" : null;
     return row(r.key, r.label, (
       <>
+        {note && <span className="wa-at">{note}</span>}
         {editing
           ? <FigInput shown={cellText(r.key, p[r.key])} raw={cellText(r.key, p[r.key], true)} placeholder=""
             unit={unitOf(r, p.currency)} typed={typed} title={srcTitle(src)} onCommit={(raw) => onField(p, r.key, raw)} />
           : <span className={`wa-fig${typed ? " typed" : ""}`} title={srcTitle(src)}>{figText(r, p[r.key], p.currency) || "–"}</span>}
-        {suffix && <span className="wa-per">{suffix}</span>}
-        {prior && <span className="wa-at">{prior.from} {prior.v === null ? "none" : figText(r, prior.v, p.currency)}</span>}
-        {!typed && src === "default" && <span className="wa-at">default</span>}
       </>
     ), null, title);
   };
@@ -686,17 +691,13 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
     } : null;
     const v = r.key === "target_sellthrough" ? (econ.edition_total ? econ.edition_size / econ.edition_total : null)
       : r.key === "unit_price" ? (econ.unit_price || null) : fromLegacy ? fromLegacy[r.key] : weighted(r.key, of);
-    const suffix = suffixOf(r, "EUR");
-    if (!editing) return row(r.key, r.label, <><span className="wa-fig">{figText(r, v) || "–"}</span>{suffix && <span className="wa-per">{suffix}</span>}</>, null, `${title} Weighted by target units over the works in the release.`);
+    if (!editing) return row(r.key, r.label, <span className="wa-fig">{figText(r, v) || "–"}</span>, null, `${title} Weighted by target units over the works in the release.`);
     const vals = live.filter((p) => !closedFor(p, r.key)).map((p) => (p.sources[r.key] === "typed" ? p[r.key] : undefined));
     const same = vals.length > 0 && vals.every((x) => x !== undefined && x === vals[0]);
     return row(r.key, r.label, (
-      <>
-        <FigInput shown={same ? cellText(r.key, vals[0]) : ""} raw={same ? cellText(r.key, vals[0], true) : ""}
-          placeholder={vals.some((x) => x !== undefined) ? "varies" : cellText(r.key, v) || "0"} unit={unitOf(r, "EUR")} typed={same}
-          title="Every work at once: type here to set this figure on every work." onCommit={(raw) => onFieldAll(r.key, raw)} />
-        {suffix && <span className="wa-per">{suffix}</span>}
-      </>
+      <FigInput shown={same ? cellText(r.key, vals[0]) : ""} raw={same ? cellText(r.key, vals[0], true) : ""}
+        placeholder={vals.some((x) => x !== undefined) ? "varies" : cellText(r.key, v) || ""} unit={unitOf(r, "EUR")} typed={same}
+        title="Every work at once: type here to set this figure on every work." onCommit={(raw) => onFieldAll(r.key, raw)} />
     ), null, title);
   };
   const aaShareRow = row("aa_budget_share", "AA share of paid spend", (
