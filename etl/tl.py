@@ -1097,6 +1097,24 @@ def _median_curve(curves: dict, members: list[str], key: str, n: int) -> list[fl
     return [float(v) for v in np.median(np.array(arr, dtype=float), axis=0)]
 
 
+def mix_fallbacks(ss: dict, sess_s: dict, us: dict) -> tuple[dict, dict, dict]:
+    """A basket whose launches carry no channel on a measure - the earliest
+    feed named none on their units, or on their signups - takes another
+    measure's mix for it (the signups' for the units, the units' for the
+    signups, the sessions' next) and an even split when it has none, so a
+    page's channel figures still add up to its headline and the waterfall's
+    walks hold (tests/walks.mjs; mirror of shared/tlModel.mjs mixFallbacks).
+    Touches the earliest closed launches only."""
+    def pick(own, *alts):
+        if sum(own.values()) > 0:
+            return own
+        for a in alts:
+            if sum(a.values()) > 0:
+                return dict(a)
+        return {g: 1.0 / len(GROUPS) for g in GROUPS}
+    return pick(ss, us, sess_s), pick(sess_s, ss, us), pick(us, ss, sess_s)
+
+
 def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dict:
     """The medians for one TL basket (spec §8). JSON-ready."""
     wanted = [str(m) for m in (members or [])]
@@ -1106,6 +1124,7 @@ def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dic
     sessions = _median(rows, "sessions")
     units = _median(rows, "units")
     ss, sess_s, us = _median_shares(rows, "signup_share_"), _median_shares(rows, "sess_share_"), _median_shares(rows, "unit_share_")
+    ss, sess_s, us = mix_fallbacks(ss, sess_s, us)
     n_cps = int((pd.to_numeric(rows.get("cost_per_signup"), errors="coerce") > 0).sum()) if len(rows) else 0
     n_cpu = int((pd.to_numeric(rows.get("cost_per_sale"), errors="coerce") > 0).sum()) if len(rows) else 0
     return {
@@ -1758,7 +1777,7 @@ def _products(rec: dict) -> tuple[list[dict], dict]:
     econ = {"units_target": units_target, "edition_size": edition, "unit_price_eur": price,
             "launch_value_eur": (units_target or edition or 0) * price if price else None, "n_products": len(live), "n_excluded": len(rows) - len(live),
             **tl_economics(rows)}
-    return rows, {"match": at.get("match"), "note": at.get("note"), "economics": econ}
+    return rows, {"match": at.get("match"), "note": at.get("note"), "economics": econ, "marketing_lead": at.get("marketing_lead") or None}
 
 
 def _sends_between(em: pd.DataFrame, lo: date | None, hi: date) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -2660,13 +2679,32 @@ def le_blocks(cx: dict) -> dict:
 
 
 
+def notion_entry(notion: dict | None, code: str | None, name: str | None) -> dict:
+    """The Notion log's entry for a launch (etl/build.py load_notion_campaigns):
+    by its campaign code, else by its name, as the LE build's notion_dates_for
+    reads it - a launch has a page and a log before it has a code."""
+    n = notion or {}
+    return dict((n.get(str(code)) if code else None) or (n.get("name:" + str(name)) if name else None) or {})
+
+
+def resolve_lead(inp: dict, airtable_lead: str | None, notion: dict | None, code: str | None, name: str | None) -> tuple[str | None, str | None]:
+    """The marketing lead in force and where it came from, as the LE build
+    reads it (resolve_release): the Notion log, where the team records it,
+    else Airtable's field on the launch's records, else what was typed."""
+    for src, v in (("notion", notion_entry(notion, code, name).get("marketing_lead")), ("airtable", airtable_lead), ("typed", inp.get("marketing_lead"))):
+        if v and str(v).strip():
+            return str(v).strip(), src
+    return None, None
+
+
 def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, spend: pd.DataFrame | None, emails: pd.DataFrame | None,
              as_of: date, now: datetime, seen: float = 1.0, orders_data: dict | None = None, email_bench: dict | None = None,
              content: pd.DataFrame | None = None, artist_posts: pd.DataFrame | None = None, signup_products: pd.DataFrame | None = None,
-             direct: dict | None = None) -> dict:
+             direct: dict | None = None, notion: dict | None = None) -> dict:
     """The page snapshot of one TL (module docstring). `email_bench` is the
     run's email cohort (email_cohort), `content` the Emplifi post export and
-    `artist_posts` the Notion post log, for the funnel's email and post rows.
+    `artist_posts` the Notion post log, for the funnel's email and post rows;
+    `notion` the log's campaign entries (the marketing lead, resolve_lead).
     `direct` builds the Direct switch's view (docs §3b): `series`,
     `orders_data` and `signup_products` are then the frames read with Direct
     spread (direct_spread_data), `direct["panel"]` the panel built from them,
@@ -2678,6 +2716,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
     daily, hourly = _rel_rows(series, name) if series else (pd.DataFrame(), pd.DataFrame())
     products, prod_info = _products(rec)
     econ = prod_info["economics"]
+    lead, lead_src = resolve_lead(inp, prod_info.get("marketing_lead"), notion, rec.get("campaign_code"), name)
     airtable_units = econ["units_target"] if econ["units_target"] else _num((rec.get("launch") or {}).get("units_target"))
     price = econ["unit_price_eur"] or _num((rec.get("launch") or {}).get("unit_price_eur"))
     release_for_basket = {"release_name": name, "artist": rec["artist"], "window_open": _iso(d["open"]), "window_hours": d["hours"],
@@ -2875,7 +2914,9 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
     snap = {
         "id": rec["id"], "releaseName": name, "artist": rec["artist"], "title": rec["title"], "quarter": rec["quarter"], "type": "TL",
         "tlState": state, "tlLabel": tl_label(state, d, now), "tlSource": rec.get("source"),
-        "campaignCode": code, "campaignNames": names or ([f"{code} · Sign-ups"] if code else []), "marketingLead": inp.get("marketing_lead"),
+        "campaignCode": code, "campaignNames": names or ([f"{code} · Sign-ups"] if code else []), "marketingLead": lead,
+        # where the lead came from (notion / airtable / typed), as the LE page says it (docs 1.6)
+        "inputSources": {"marketing_lead": lead_src},
         "windowStart": _iso(announce), "windowEnd": _iso(close_day), "windowOpen": _iso(d["open"]), "windowClose": _iso(d["close"]),
         "salesOpen": _iso(d["sales_open"]), "earlyAccessOpen": _iso(d["early_access"]), "earlyAccessAssumed": d["early_access_assumed"],
         "settleEnd": _iso(d["settle"]), "windowHours": d["hours"], "hoursLeft": round(hours_left, 1) if hours_left is not None else None,
@@ -2888,9 +2929,10 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
                     "dates_note": "; ".join(reasons) or None, "dates_assumed": d["announce_assumed"] or d["open_source"] == "default" or d["hours_source"] == "default",
                     "readings": d["readings"], "campaign_code": code, "code_source": rec.get("code_source"),
                     "first_seen": feed_row.get("first_seen"), "last_seen": feed_row.get("last_seen")},
-        "airtable": {k: launch.get(k) for k in ("airtable_release", "airtable_ids", "titles", "n_products", "launch_type", "project_status", "edition_size",
-                                                "unit_price", "unit_price_eur", "currency", "launch_value_eur", "units_target", "launch_time", "tl_length",
-                                                "tl_end_date", "announce_dates", "price_match")} if launch else None,
+        "airtable": {**{k: launch.get(k) for k in ("airtable_release", "airtable_ids", "titles", "n_products", "launch_type", "project_status", "edition_size",
+                                                   "unit_price", "unit_price_eur", "currency", "launch_value_eur", "units_target", "launch_time", "tl_length",
+                                                   "tl_end_date", "announce_dates", "price_match")},
+                     "marketing_lead": prod_info.get("marketing_lead")} if launch else None,
         "products": products, "productsNote": prod_info["note"], "economics": econ, "paidValue": paid_value,
         "directShare": dshare,
         "hero": {"now": now_signups, "unique": _num(feed_row.get("signups_unique")), "expectedToday": expected, "delta": (now_signups - expected) if expected is not None else None,
@@ -2944,8 +2986,10 @@ def index_row(snap: dict) -> dict:
     }
 
 
-def sourced_for(rec: dict, snap: dict, spend: pd.DataFrame | None) -> dict:
-    """The inputs document's `sourced` block for a TL: what the feeds hold beside what is typed."""
+def sourced_for(rec: dict, snap: dict, spend: pd.DataFrame | None, notion: dict | None = None) -> dict:
+    """The inputs document's `sourced` block for a TL: what the feeds hold
+    beside what is typed - Airtable's products, dates, units target and
+    marketing lead, the feed's dates, the Notion log's marketing lead."""
     d = rec["dates"]
     campaigns = []
     if spend is not None and len(spend) and rec.get("campaign_code"):
@@ -2956,10 +3000,11 @@ def sourced_for(rec: dict, snap: dict, spend: pd.DataFrame | None) -> dict:
                      "products": snap.get("products") or [], "announce_date": d["readings"]["announce"]["airtable"],
                      "launch_end": _iso(d["close"].date()) if d["close"] else None, "window_open": d["readings"]["open"]["airtable"],
                      "window_hours": d["readings"]["hours"]["airtable"], "units_target": (rec.get("launch") or {}).get("units_target"),
-                     "private_room_open": None, "marketing_lead": None, "closes": []},
+                     "private_room_open": None, "marketing_lead": (snap.get("airtable") or {}).get("marketing_lead"), "closes": []},
         "feed": {"announce_date": d["readings"]["announce"]["feed"], "window_open": d["readings"]["open"]["feed"],
                  "window_open_adjusted": d["readings"]["open"]["feed_adjusted"]},
-        "notion": {}, "clock": {}, "campaigns": campaigns, "tl": True,
+        "notion": {"marketing_lead": notion_entry(notion, rec.get("campaign_code"), rec.get("release_name")).get("marketing_lead")},
+        "clock": {}, "campaigns": campaigns, "tl": True,
     }
 
 
@@ -2984,8 +3029,10 @@ def build_all(ctx: dict) -> dict:
     """Builds every TL page and the TL panel. `ctx`: as_of (date), now
     (datetime, UTC), seen (share of the as-of day seen), launch_frame
     (etl/pricing.py launches), inputs (the releases on file), spend, emails,
-    write (bool), only (a release id, for the single-release build),
-    configured_ids (ids with saved inputs: their pages go to APP/releases).
+    notion (the Notion log's campaign entries, etl/build.py
+    load_notion_campaigns: the marketing lead), write (bool), only (a release
+    id, for the single-release build), configured_ids (ids with saved inputs:
+    their pages go to APP/releases).
     Returns {rows, discovered, sourced, written, failures, note}."""
     as_of: date = ctx["as_of"]
     now: datetime = ctx.get("now") or datetime.now(timezone.utc)
@@ -2997,6 +3044,7 @@ def build_all(ctx: dict) -> dict:
         out["note"] = "tl: no TL feed aggregation and no timed launches in Airtable - no TL pages"
         return out
     spend, emails = ctx.get("spend"), ctx.get("emails")
+    notion = ctx.get("notion") or {}
     orders_data = ctx["orders"] if "orders" in ctx else load_orders()
     if series is not None:
         panel, curves = panel_frame(series, timed, spend, emails, as_of, now, orders_data)
@@ -3029,7 +3077,7 @@ def build_all(ctx: dict) -> dict:
         try:
             snap = build_tl(rec, series, panel, curves, spend, emails, as_of, now, seen, orders_data,
                             email_bench=email_bench, content=content, artist_posts=artist_posts,
-                            signup_products=signup_products.get(rec["release_name"]))
+                            signup_products=signup_products.get(rec["release_name"]), notion=notion)
         except Exception as e:  # noqa: BLE001 - one page's failure never stops the build
             out["failures"].append((rec["id"], f"{type(e).__name__}: {e}"))
             continue
@@ -3039,7 +3087,7 @@ def build_all(ctx: dict) -> dict:
             try:
                 alt = build_tl(rec, spread["series"], panel, curves, spend, emails, as_of, now, seen, spread["orders"],
                                email_bench=email_bench, content=content, artist_posts=artist_posts,
-                               signup_products=spread["signup_products"].get(rec["release_name"]), direct=direct_cx)
+                               signup_products=spread["signup_products"].get(rec["release_name"]), direct=direct_cx, notion=notion)
                 # the sell-through forecast is the one exception: its rates by channel and kind are measured on the
                 # feed's attribution of signups, so it reads that whichever view the page is on (docs §3b)
                 snap["variants"] = {"direct_spread": {k: v for k, v in alt.items()
@@ -3058,7 +3106,7 @@ def build_all(ctx: dict) -> dict:
         out["written"].add(f"{rec['id']}.json")
         out["rows"].append(_json_safe(index_row(snap)))
         out["discovered"][rec["id"]] = _json_safe(discovered_for(rec, snap))
-        out["sourced"][rec["id"]] = _json_safe(sourced_for(rec, snap, spend))
+        out["sourced"][rec["id"]] = _json_safe(sourced_for(rec, snap, spend, notion))
         out.setdefault("snaps", {})[rec["id"]] = _json_safe(snap)
     states = {}
     for r in out["rows"]:
@@ -3090,7 +3138,8 @@ if __name__ == "__main__":
     as_of = date.fromisoformat(as_of_arg) if as_of_arg else now.date()
     res = build_all({"as_of": as_of, "now": now, "seen": 1.0, "launch_frame": B.load_launches(),
                      "inputs": B.INPUTS["releases"], "spend": B.load_spend(), "emails": B.load_emails(),
-                     "content": B.load_content(), "artist_posts": B.load_artist_posts(), "write": "--write" in sys.argv})
+                     "content": B.load_content(), "artist_posts": B.load_artist_posts(), "notion": B.load_notion_campaigns(),
+                     "write": "--write" in sys.argv})
     print(res["note"])
     for row in res["rows"]:
         print(f"  {row['releaseName'][:48]:48s} {row['tlState']:9s} {row['tlLabel']:28s} pct={row['statusPct']}")

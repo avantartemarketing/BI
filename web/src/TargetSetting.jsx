@@ -12,8 +12,8 @@
  * is the input, locked until Edit figures is switched on, with a typed figure
  * marked and Airtable's underneath it. The dates come from the Notion log
  * (the early-access email opens the private room; the announce; the launch),
- * then the funnel's own clock, then Airtable; the marketing lead from
- * Airtable. What a person decides is which Meta campaigns are this
+ * then the funnel's own clock, then Airtable; the marketing lead from the
+ * Notion log, then Airtable. What a person decides is which Meta campaigns are this
  * release's, which channels it will not run, and which basket it is measured
  * against.
  *
@@ -460,9 +460,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
       // the defaults the ETL could derive - the form starts from those
       const raw = d.inputs || d.defaults;
       // inputs saved under earlier shapes: the Referral Artist row of the
-      // retired quality grid (N/A = the artist's own channels off; Low / High
-      // the posting tier), one Meta campaign, and the release-level economics
-      // at the top level (kept as legacy_economics until cleared)
+      // retired quality grid (N/A = the artist's own channels off), one Meta
+      // campaign, and the release-level economics at the top level (kept as
+      // legacy_economics until cleared); the posting tier that row became was
+      // retired on 7 October 2026 and is dropped on the next save
       const legacyTier = (raw.channel_quality_overrides || {})["Referral Artist"];
       const topLegacy = {};
       for (const k of LEGACY_KEYS) if (raw[k] !== undefined && raw[k] !== null) topLegacy[k] = raw[k];
@@ -470,9 +471,6 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
       for (const k of LEGACY_KEYS) delete start[k];
       Object.assign(start, {
         channels_off: raw.channels_off || (legacyTier === "N/A" ? ["referral_artist"] : []),
-        // the posting tier left the tab on 8 October 2026: what was saved
-        // rides along unchanged, a new release gets the build's default
-        artist_posting_tier: raw.artist_posting_tier || (["Low", "Medium", "High"].includes(legacyTier) ? legacyTier : "Medium"),
         campaign_names: Array.isArray(raw.campaign_names) ? raw.campaign_names : (raw.campaign_name ? [raw.campaign_name] : []),
         products: Array.isArray(raw.products) ? raw.products : [],
         legacy_economics: raw.legacy_economics !== undefined ? raw.legacy_economics : (Object.keys(topLegacy).length ? topLegacy : null),
@@ -534,7 +532,9 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const [prOpen, prSrc] = dateOf("private_room_open");
   const [announce, annSrc] = dateOf("announce_date");
   const [closes, closeSrc] = dateOf("launch_end");
-  const leadFromAirtable = (sourced.airtable || {}).marketing_lead || null;
+  // the marketing lead the feeds hold: the Notion log first (where the team records it), else Airtable's field
+  const leadSourced = (sourced.notion || {}).marketing_lead ? { value: sourced.notion.marketing_lead, from: "Notion" }
+    : (sourced.airtable || {}).marketing_lead ? { value: sourced.airtable.marketing_lead, from: "Airtable" } : null;
   const codeInForce = inp.campaign_code || (inp.campaign_names[0] ? inp.campaign_names[0].split(" · ")[0] : "") || dv.campaign_code || "";
 
   /* ---- the benchmark half of the form (§5, §8) ---- */
@@ -744,6 +744,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     else if (!stretchTyped) setInp({ ...inp, stretch_from: { ...evenShares } });
   };
   const slideStretch = (key) => (e) => setInp({ ...inp, stretch_from: rebalanceShares(shares, key, Number(e.target.value) / 100, activeGroups) });
+  // the units of stretch a channel carries at the shares set: its target less its benchmark (benchmarkTargets)
+  const stretchOf = (key) => (T && T.units_by_group ? Number(T.units_by_group[key] || 0) - Number((profile.units_by_group || {})[key] || 0) : 0);
   const stretchWords = T ? (stretchMode === "paid" ? "all from paid" : stretchMode === "even" ? "even across channels" : "custom shares") : null;
 
   /* a date another source puts elsewhere than the one in force (docs 1.6):
@@ -876,8 +878,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
 
               <label className="ts2-lbl" htmlFor="ts-lead">Marketing lead</label>
               <div className="ts2-ctl">
-                {leadFromAirtable
-                  ? <div className="ts-box ro" style={{ flex: "1 1 200px" }} title="From Airtable"><span className="txt">{leadFromAirtable}</span><span className="ts2-tag">Airtable</span></div>
+                {leadSourced
+                  ? <div className="ts-box ro" style={{ flex: "1 1 200px" }} title={`From ${leadSourced.from}`}><span className="txt">{leadSourced.value}</span><span className="ts2-tag">{leadSourced.from}</span></div>
                   : <div className="ts-box" style={{ flex: "1 1 200px" }}><input id="ts-lead" value={inp.marketing_lead || ""} onChange={set("marketing_lead")} placeholder="Who runs this launch" /></div>}
               </div>
 
@@ -943,6 +945,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                           <span className="head"><span>{g.name}</span><b>{active ? `${pct}%` : "–"}</b></span>
                           <input type="range" min="0" max="100" step="1" disabled={!active || activeGroups.length < 2} value={pct}
                             aria-label={`${g.name}: share of the stretch`} onChange={slideStretch(g.key)} />
+                          <span className="note">{active ? `${signed(Math.round(stretchOf(g.key)))} units` : ""}</span>
                         </label>
                       );
                     })}

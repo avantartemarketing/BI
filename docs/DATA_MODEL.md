@@ -299,8 +299,20 @@ date; the sell-through card counts each work at its own draw. Read as two launch
 took the nearer close alone and a second, "upcoming" page listed the rest (§1.7,
 §4a.2½).
 
-**The marketing lead** comes from Airtable's `Marketing lead` field (a colleague's display
-name; the pull never takes an email), else what was typed. **The campaign code** is what was
+**The marketing lead** comes from the Notion log first, where the team records it: a lead
+column named `Marketing lead`, `Campaign lead`, `Lead` or `Owner` (`leadRank`), on the post
+row or on the release page the row links to in the campaigns database (`leadOf`, the most
+specific name winning), with a campaigns database named by `NOTION_CAMPAIGNS_DB` supplying its
+own column over both. In the team's database the column is a relation to a person's page, read
+for that page's title; a people property is read for its display names only, never an email;
+select, text, formula and rollup properties read as text. A release's lead is the name most of
+its rows carry (`campaignLeads`), written to `notion_campaigns.csv` as `marketing_lead` beside
+the dates. Then Airtable's `Marketing lead` field (a colleague's display name; the pull never takes an
+email), else what was typed. `inputSources.marketing_lead` names the source (`notion`,
+`airtable`, `typed`), the Target setting tab shows it beside the field, and the page header's
+chip carries it in its tooltip; a TL page resolves its lead the same way (`etl/tl.py`
+`resolve_lead`). Changed on 7 October 2026: the lead was Airtable's or typed before, and the
+log is where it is actually kept. **The campaign code** is what was
 saved, else the prefix of the first Meta campaign's name, else the guess from the email and
 content feeds. **The Meta campaigns** (`campaign_names`) are the list saved, else the draw
 campaign the spend feed names for the code; paid spend is summed over the list. The tab
@@ -787,8 +799,8 @@ model.
 What stayed, and where it moved: the cost per purchase is a figure per release
 (`cost_per_purchase`, € per paid unit; blank means the basket's median cost per paid unit, else
 the panel's median, §4 E); the Referral
-Artist tier became the artist posting tier (`artist_posting_tier`, the cohort of the
-artist-posts benchmark); "N/A" on Referral Artist became the artist's own channels not in plan
+Artist tier became the artist posting tier (`artist_posting_tier`), itself retired on 7 October
+2026 when the artist-posts benchmark went to the all-campaign median; "N/A" on Referral Artist became the artist's own channels not in plan
 (`channels_off`, spec §4.3); and the order-split medians still place a group's target on its
 channels (§4a.3). Inputs saved under the old names are read by the build until they are saved
 again, and a save drops them.
@@ -2115,7 +2127,7 @@ data), `reOfferRecovery`.
 ```
 dim_release(release_name PK, campaign_code, type LE|TL, artist, announce_date,
             private_room_open, launch_end, campaign_length_days, edition_size, unit_price,
-            economics…, benchmark_basket, channels_off, artist_posting_tier, cost_per_purchase, cannibalisation)
+            economics…, benchmark_basket, channels_off, cost_per_purchase, cannibalisation)
 dim_product(release_name FK, product_name, edition)
 fact_funnel_daily(release_name, channel, event_date, sessions, page_views, draw_entries,
             eligible_entry_units, eligible_units_no_conv, units_total, units_by_route…,

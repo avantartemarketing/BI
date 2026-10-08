@@ -113,7 +113,7 @@ def test_targets_without_a_channel() -> None:
                 assert t["total_sessions"] < full["total_sessions"]
         if "referral_artist" in c["off"]:
             seen_artist_off = True
-            assert build.referral_artist_tier(r) == "N/A"
+            assert build.artist_posts_off(r)
             assert t["per_channel"]["Referral Artist"]["purchases"] == 0.0
     assert seen_paid_off and seen_artist_off
     # there is no other model: without a basket there are no targets
@@ -131,10 +131,9 @@ def test_targets_without_a_channel() -> None:
     assert build.cost_per_purchase_for({}) == build.BENCH["cost_per_purchase"]["Median"]
     assert build.cost_per_purchase_for({"cost_per_purchase": 210}) == 210.0
     assert build.cost_per_purchase_for({"cpp_pick": "High"}) == build.BENCH["cost_per_purchase"]["High"]
-    assert build.referral_artist_tier({"artist_posting_tier": "High"}) == "High"
-    assert build.referral_artist_tier({"channel_quality_overrides": {"Referral Artist": "Low"}}) == "Low"
-    assert build.referral_artist_tier({"channels_off": ["referral_artist"], "artist_posting_tier": "High"}) == "N/A"
-    assert build.referral_artist_tier({}) == "Medium"
+    # the funnel expects artist posts unless the artist's own channels are off (the posting tier is retired)
+    assert build.artist_posts_off({"channels_off": ["referral_artist"]})
+    assert not build.artist_posts_off({}) and not build.artist_posts_off({"channels_off": ["paid"]})
     print(f"targets without a channel: ok over {len(cases)} cases")
 
 

@@ -131,16 +131,16 @@ holds a figure, it can be typed over on the products table, and a work
 Airtable has no record for can be added by hand.
 
 **From the Notion log:** the private room opens with the early-access email,
-then the announce and the launch (the day the draw closes). Where the log has
-no date yet, what was typed stands, then the funnel export's own campaign
-clock, then Airtable's planned dates. **From Airtable:** the marketing lead.
+then the announce and the launch (the day the draw closes), and the marketing
+lead's name as the log records it. Where the log has no date yet, what was
+typed stands, then the funnel export's own campaign clock, then Airtable's
+planned dates; where it names no lead, Airtable's field, then what was typed.
 
 | Decision | What it does |
 | --- | --- |
 | Meta campaigns | Which ad campaigns the paid actuals are read from, summed. The draw campaign named for the code is ticked on its own |
 | Channels in plan | Running paid; the artist's own channels. A group switched off leaves the benchmark and the target, and the other channels carry the whole sellout |
 | Benchmark basket | The comparable past launches the release is measured against: the suggested basket (nearest in size and price, the artist's own launches first, recent ones preferred) or one picked by hand |
-| Artist posting tier (Low / Medium / High) | How much the artist will post: the cohort of past campaigns the artist-posts benchmark is read from |
 | Entry → order rate, pre-order → order rate | What share of entries in hand become orders on the sell-through card; empty means the panel's 80% and 95% |
 
 A release set up before the model went per product still carries the
@@ -612,11 +612,13 @@ recommendation is the ROI at the close at that spend level's cost per entry.
   says "emails through" a date whenever the feed falls more than a week behind the
   build. **Instagram content** (Emplifi) is an uploaded snapshot.
 - **Artist posts** pull live from the team's Notion log when connected. Their
-  benchmark follows the same cohort approach as every other channel: expected
-  posts = the median artist-post count among completed campaigns in the same
-  **posting tier** (Low / Medium / High: the tier saved for the release, else Medium;
-  it left the Target setting tab on 8 October 2026), pro-rated by days elapsed. It stays blank until at least two completed
-  campaigns in the cohort have logged posts.
+  benchmark is the median artist-post count among the completed campaigns on
+  file, pro-rated by days elapsed, and blank until at least two have logged
+  posts. Until 7 October 2026 the campaigns were pooled by a Low / Medium /
+  High posting tier typed on the Target setting tab; with a handful of
+  campaigns ever saved the tiers had nothing to pool and the all-campaign median
+  stood in anyway, so the tier went. An artist with no channels of their own
+  (the switch on the tab) is expected to post nothing.
 - **Benchmarks** come from the release's basket, cut from the draw panel on every
   build. The few constants that remain (`etl/benchmarks.json`) are versioned and
   dated; recomputing them is a deliberate act, not a side effect of new data.

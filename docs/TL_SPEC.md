@@ -318,6 +318,9 @@ unit, signups before the open where the LE reads units. It asks for:
   over.
 - **Products grid** as LE (the same grid with the TL column set), with the tick; a work unticked
   counts nothing (§1.6 of the data model).
+- **Marketing lead**, read rather than asked, as on the LE tab: the Notion log's name for the
+  campaign (by code, else by the launch's name), else Airtable's field on the launch's records,
+  else typed (`resolve_lead`; the snapshot's `marketingLead` and `inputSources.marketing_lead`).
 
 ```
 orders needed         = units target / purchases per order
@@ -362,6 +365,13 @@ nearest on the units the window sold and on price, those closed in the last eigh
 first, read on the page's day and a closed launch at its own close, so its basket stops moving
 once it closes. `tests/test_tl_basket_parity.py` holds the two sides to the same members in the
 same order, over the live launches, every closed launch on the panel and launches being planned.
+
+A basket whose launches carry no channel on a measure - the earliest feed named none on their
+units, or on their signups - takes another measure's mix for it (the signups' for the units, the
+units' for the signups, the sessions' next) and an even split when it has none (`mix_fallbacks`,
+`mixFallbacks`), so a page's channel figures add up to its headline and the waterfall's walks hold
+(`tests/walks.mjs`). It touches the ten earliest closed launches and no page in flight
+(7 October 2026).
 
 ## 9. Sidebar and index
 

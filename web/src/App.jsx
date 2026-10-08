@@ -39,6 +39,7 @@ import BasketCard from "./modules/BasketCard.jsx";
 import Permissions from "./Permissions.jsx";
 import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
 import { wordsOf } from "./vocab.mjs";
+import { releaseClock, sectionOf } from "./sections.mjs";
 import { ExplainProvider, ExplainHint, Ex } from "./explain/Explain.jsx";
 
 async function getJSON(url) {
@@ -124,17 +125,25 @@ export default function App() {
 
   const groups = useMemo(() => {
     if (!index) return { live: [], upcoming: [], all: [] };
-    const all = index.releases.map((r) => ({ ...r, status: r.status || (r.complete ? "closed" : "live") }));
-    // in flight reads top to bottom by days to launch; a release whose window
-    // has not opened yet sits under the ones that have, soonest first
+    // the build's status, except that a live release still to announce sits under Upcoming (sections.mjs)
+    const all = index.releases.map((r) => ({ ...r, status: sectionOf(r, index.asOf) }));
+    // in flight reads top to bottom by days to launch
     const order = (r) => {
       const c = releaseClock(r, index.asOf);
       if (!c) return Infinity;
       return c.opensIn > 0 ? 1e6 + c.opensIn : c.daysLeft;
     };
     const live = all.filter((r) => r.status === "live").sort((a, b) => order(a) - order(b));
-    // the launches Airtable knows and the funnel does not yet, soonest close first
-    const upcoming = all.filter((r) => r.status === "upcoming").sort((a, b) => String(a.windowEnd || "").localeCompare(String(b.windowEnd || "")));
+    // upcoming reads soonest first by the days its rows show: to the announce
+    // where that is ahead, else to the close (a launch Airtable alone knows
+    // whose announce has passed); before 8 October 2026 it sorted by the
+    // close, so a row at 4 days sat under one at 28
+    const soon = (r) => {
+      const c = releaseClock(r, index.asOf);
+      if (!c) return Infinity;
+      return c.opensIn > 0 ? c.opensIn : c.daysLeft;
+    };
+    const upcoming = all.filter((r) => r.status === "upcoming").sort((a, b) => soon(a) - soon(b));
     return { live, upcoming, all };
   }, [index]);
   // an artist with two rows among those listed (Ai Weiwei's LE and timed
@@ -261,43 +270,36 @@ function rowState(r) {
  * the window's end, the announce date sits `of` days before it, and the build
  * date says how far each is. A release whose announce is still ahead has not
  * opened and lists after the ones in flight. */
-function releaseClock(r, asOf) {
-  if (!r.windowEnd || !(r.of > 0)) return null;
-  const launch = new Date(r.windowEnd + "T00:00:00Z");
-  const announce = new Date(launch.getTime() - r.of * 86400000);
-  const today = asOf ? new Date(asOf + "T00:00:00Z") : null;
-  const days = (a, b) => Math.round((a - b) / 86400000);
-  return {
-    launch, announce,
-    daysLeft: today ? days(launch, today) : r.of - (r.day || 0),
-    opensIn: today ? days(announce, today) : 0,
-  };
-}
-
-/* A release's name as a sidebar row sets it (5 October 2026): the artist,
- * then a real title in grey; "Multiple" and the quarter are left to the
- * hover, which carries the full name. An artist with two rows in the list
- * (`twin`) keeps the rest of the name on those rows, "timed" added for a
- * timed launch, since the artist alone would not say which launch a row was
- * (Ai Weiwei's LE and TL of one quarter). Before, the full name wrapped over
- * two lines above a date, and the list ran to two screens. */
+/* A release's name as a sidebar row sets it (rowWords): the artist alone;
+ * the title, "Multiple" and the quarter are left to the hover, which carries
+ * the full name. An artist with two rows in the list (`twin`) gets the
+ * quarter after the name, "timed" added for a timed launch, since the artist
+ * alone would not say which launch a row was (Ai Weiwei's LE and TL of one
+ * quarter). Before 5 October 2026 the full name wrapped over two lines above
+ * a date and the list ran to two screens; until 8 October a real title rode
+ * in grey after the artist, on some rows and not others. */
 const QUARTER_RE = /^\d{4} Q\d$/;
 const nameParts = (r) => String(r.releaseName || r.name || r.artist || "").split(" \u00b7 ").map((p) => p.trim()).filter(Boolean);
 const artistOf = (r) => nameParts(r)[0] || "";
-/* the artists with more than one row in a list: their rows keep the whole name */
+/* the artists with more than one row in a list: their rows carry what tells them apart */
 function twinSet(rows) {
   const n = new Map();
   for (const r of rows) n.set(artistOf(r), (n.get(artistOf(r)) || 0) + 1);
   return new Set([...n].filter(([, c]) => c > 1).map(([a]) => a));
 }
+/* A row's words: the artist alone, the same on every row - the work's title
+ * and the quarter are the hover's, which carries the full name (8 October
+ * 2026: a title on some rows and not others read as inconsistent). An artist
+ * with two rows in a list gets the quarter after the name, and "timed" on a
+ * timed launch, so the two can be told apart; never the title. */
 function rowWords(r, twin) {
   const [artist, ...rest] = nameParts(r);
-  const kept = twin ? [...(r.type === "TL" ? ["timed"] : []), ...rest] : rest.filter((p) => p !== "Multiple" && !QUARTER_RE.test(p));
+  const kept = twin ? [...(r.type === "TL" ? ["timed"] : []), ...rest.filter((p) => QUARTER_RE.test(p))] : [];
   return { artist: artist || "", rest: kept.join(" \u00b7 ") };
 }
 
-/* One release in the sidebar: the status dot, the artist (a real title in
- * grey after it) on one line, and the days on the right, with a grey verb
+/* One release in the sidebar: the status dot, the artist on one line (the
+ * quarter in grey after it only where the artist has two rows), and the days on the right, with a grey verb
  * before the count where it does not run to the section's own event (the
  * close in flight, the open upcoming): "opens" on a timed launch taking
  * signups, "announces" on one before its announce, "closes" on an upcoming
@@ -522,6 +524,8 @@ function HorizonToggle({ horizon, onChange, closeLabel = "At close" }) {
  * switch instant and puts every card on the same attribution. It is a
  * methodology choice, not a reading of one launch, so it sticks per browser. */
 const DIRECT_PREF = "directSpread";
+// where the header's marketing lead chip read the name from (the snapshot's inputSources, docs 1.6)
+const LEAD_FROM = { notion: " · from the Notion log", airtable: " · from Airtable", typed: " · typed on the Target setting tab" };
 const readDirectPref = () => { try { return localStorage.getItem(DIRECT_PREF) === "1"; } catch { return false; } };
 function DirectToggle({ on, onChange, share, snap }) {
   const pct = (x) => (x === null || x === undefined ? "–" : Math.round(100 * x) + "%");
@@ -628,7 +632,9 @@ function ReleasePage({ snap, onSaved, st, onRefreshed, index, onOpen }) {
           {!isTL && upcoming && (
             <span className="chip" title="Known to Airtable; the funnel report has no rows for it yet">Upcoming · from Airtable</span>
           )}
-          {snap.marketingLead && <span className="chip" title="Marketing lead">{snap.marketingLead}</span>}
+          {snap.marketingLead && (
+            <span className="chip" title={`Marketing lead${LEAD_FROM[(snap.inputSources || {}).marketing_lead] || ""}`}>{snap.marketingLead}</span>
+          )}
           {snap.edition && snap.edition.total > snap.edition.target && (
             <span className="chip" title="The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target">
               Target <Ex k="release.target">{Number(snap.edition.target).toLocaleString("en-GB")}</Ex> · {Math.round((100 * snap.edition.target) / snap.edition.total)}% of {Number(snap.edition.total).toLocaleString("en-GB")} edition

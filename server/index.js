@@ -163,13 +163,12 @@ const route = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).ca
 // the display groups a release can set aside - "not running paid", "the
 // artist has no channels of their own" (BENCHMARK_SPEC 4.3; etl/baskets.py GROUPS)
 const CHANNEL_GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
-// how much the artist is expected to post: the cohort the artist-posts
-// benchmark pools completed campaigns by (etl/build.py referral_artist_tier)
-const POSTING_TIERS = ["Low", "Medium", "High"];
 // the inputs of the quartile-lever model, retired 2026-09-23 (docs/DATA_MODEL.md
-// §3): a save drops them from a release that still carries them
+// §3), and the artist posting tier, retired 2026-10-07 (the artist-posts
+// benchmark reads every completed campaign): a save drops them from a release
+// that still carries them
 const RETIRED_INPUTS = ["paid_channel_size", "reference_point", "paid_conv_quality", "cpp_pick",
-  "channel_quality_overrides", "paid_share_override", "stretch_mode", "budget_file"];
+  "channel_quality_overrides", "paid_share_override", "stretch_mode", "budget_file", "artist_posting_tier"];
 // the release-level economics a release was set up with before the model went
 // per product (docs §1.6): kept under legacy_economics until cleared on the tab
 const LEGACY_KEYS = ["edition_size", "edition_total", "unit_price", "artist_profit", "aa_group_profit",
@@ -221,7 +220,7 @@ function defaultsFor(id, disc) {
     airtable_release: disc.airtable_release || null, airtable_ids: disc.airtable_ids || null,
     preorder_conversion_rate: null,
     prefer_recent: true,
-    cost_per_purchase: null, cannibalisation: null, artist_posting_tier: "Medium", channels_off: [],
+    cost_per_purchase: null, cannibalisation: null, channels_off: [],
     stretch_from: null,
   };
 }
@@ -349,11 +348,6 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       else next.cannibalisation = Math.round(v * 10000) / 10000;
     }
   }
-  // how much the artist will post, the cohort of the artist-posts benchmark
-  if (body.artist_posting_tier !== undefined) {
-    if (!POSTING_TIERS.includes(body.artist_posting_tier)) errors.push(`artist_posting_tier must be one of ${POSTING_TIERS.join("/")}`);
-    else next.artist_posting_tier = body.artist_posting_tier;
-  }
   /* The Meta campaigns whose spend is this release's: names as the spend feed
    * spells them, the draw campaign first. campaign_name is kept as the first
    * for readers of the older field. */
@@ -418,10 +412,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       next.stretch_from = Object.values(out).some((v) => v > 0) ? out : null;
     }
   }
-  // the retired inputs leave a release the first time it is saved again; the
-  // posting tier they carried has its own field now, so it is carried over
-  const legacyTier = ((next.channel_quality_overrides || {})["Referral Artist"]);
-  if (next.artist_posting_tier === undefined && POSTING_TIERS.includes(legacyTier)) next.artist_posting_tier = legacyTier;
+  // the retired inputs leave a release the first time it is saved again
   for (const f of RETIRED_INPUTS) delete next[f];
   /* The products (docs §1.6, §6.3). Two kinds share the list. An economics
    * product carries airtable_id (Airtable's record for the work) or manual:

@@ -33,6 +33,7 @@ data/
   spend_daily.csv         extracted spend facts: Meta's spend, in euros, the page's currency
   content_posts.csv       extracted content facts (manual Emplifi export; see below)
   notion_posts.csv        posts by release, date and channel, from the Notion log (live)
+  notion_campaigns.csv    the campaign dates and the marketing lead per release, from the same log (live)
   release_clusters.csv    every release's campaign window, features, basket and edition pricing
                           (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
   release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
@@ -105,15 +106,19 @@ The ETL builds a page for **every** release the funnel data mentions (`discover_
   hand-entered releases), close = announce + length. A release seen only before its
   announce is reconstructed the other way and can be a day out. A release with no clock is
   **catalogue** - a work still drawing traffic - and is shown over its last 90 days.
-- **In flight** = has dates and today is before the close. The sidebar lists those, fewest
-  days to launch first (a release whose window has not opened yet sits last, with its
-  opening date). Each row is the artist on one line, a real title in grey after it
-  ("Loie Hollowell · Mother's Milk"; "Multiple" and the quarter are left to the hover, which
-  carries the full name), with the days left on the right and a grey verb before the count
-  where it is not to the section's own event ("opens 8 d" on a timed launch taking signups,
-  "closes 24 d" on an upcoming launch whose announce has passed); an artist with two rows
-  in a list keeps the whole name on them (5 October 2026, from the sidebar canvas; before,
-  the full name wrapped over two lines above the date). In the hover, the date; a date
+- **In flight** = announced and today is before the close. The sidebar lists those, fewest
+  days to launch first. A release with dates whose announce is still ahead sits under
+  Upcoming with the days to it, whether or not the funnel has rows for it yet
+  (`web/src/sections.mjs`; 8 October 2026 - before, it sat last in flight with its opening
+  date, so Ai Weiwei's Lego draw read "opens 22 d" in flight three weeks before its
+  announce). Each row is the artist alone on one line (the work's title, "Multiple" and
+  the quarter are left to the hover, which carries the full name; 8 October 2026, a title
+  on some rows and not others read as inconsistent), with the days left on the right and a
+  grey verb before the count where it is not to the section's own event ("opens 8 d" on a
+  timed launch taking signups, "closes 24 d" on an upcoming launch whose announce has
+  passed); an artist with two rows in a list gets the quarter in grey after the name, and
+  "timed" on a timed launch, so the rows can be told apart (5 October 2026, from the sidebar
+  canvas; before, the full name wrapped over two lines above the date). In the hover, the date; a date
   outside the page's year carries its year. The artist alone could not tell apart an
   artist's many launches. The row's tooltip carries the day of the window and the pace the
   dot means, so there is no key under the list. Every other release is reachable from the
@@ -462,10 +467,24 @@ name / artist name found in any text column, and writes `data/notion_posts.csv`
 (`campaign_code,date,channel,posts`). `NOTION_ARTIST_POSTS_DB` overrides the database id.
 The same pass reads each row's words for the moment it records - an early-access email
 (which opens the private room), the announce, the launch or draw close - and writes
-`data/notion_campaigns.csv` (`campaign_code,private_room_open,announce_date,launch_end`),
-which the build reads before anything typed; `NOTION_CAMPAIGNS_DB` names a campaigns
-database whose date columns (matched by name: early access / private room, announce,
-launch / close) override those.
+`data/notion_campaigns.csv` (`campaign_code,release_name,private_room_open,announce_date,
+launch_end,marketing_lead,...`), which the build reads before anything typed;
+`NOTION_CAMPAIGNS_DB` names a campaigns database whose date columns (matched by name:
+early access / private room, announce, launch / close) override those. The **marketing
+lead** comes across in the same file, from a column named for it (`Marketing lead`,
+`Campaign lead`, `Lead`, `Owner`): in the team's database it is a relation to a person's
+page, and the pull reads that page's title for the name; a people, select, text, formula
+or rollup property reads too. It looks on the post row itself and, one hop on, on the
+release page the row links to (the campaigns database, where the lead is actually kept),
+the most specific column name winning; a campaigns database named by `NOTION_CAMPAIGNS_DB`
+supplies its own lead column over both. A release's lead is the name most of its rows
+carry. A people property is read for display names only, never an email. For the names to
+come through, the linked databases (the campaigns database and the team database its lead
+pages live in) must be shared with the integration like the posts database is; the refresh
+status says which column it read (`marketing lead for 12 releases (from "Release →
+Marketing Lead")`), that it found a column but could read no names (with how many linked
+pages it could not open), or that it found none. The Target setting tab marks the lead
+`Notion`, `Airtable` or `typed`, in that order of precedence.
 
 The channel comes from the database's Channel column - values are written by hand
 ("AA IG Main", "Artist post", "Partner post") so they are read by shape, not from a
@@ -580,8 +599,8 @@ shows its actuals. Almost nothing on the tab is typed (docs/DATA_MODEL.md
 target sell-through, price, profits per unit, the deal's revenue or profit
 share, framing), with a cell to type over any figure Airtable does not hold
 yet; the dates from the Notion log (the early-access email opens the private
-room), then the funnel's clock, then Airtable; the marketing lead from
-Airtable. What the page asks is which Meta campaigns are the release's, which
+room), then the funnel's clock, then Airtable; the marketing lead from the
+Notion log, then Airtable. What the page asks is which Meta campaigns are the release's, which
 channels are in plan - Running paid, the artist's own channels - and which
 basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 
@@ -599,8 +618,8 @@ per-unit economics via `shared/economics.mjs`): the target, the benchmark and th
 stretch and where it comes from, the paid budget with its benchmark and share of launch value,
 the sell-through, each work's target, the launch value and the per-unit profits, then `Save
 targets` and `Discard` with the state under them. There is no header strip of derived figures,
-no channel table and no copy on the tab; the artist posting tier left it the same day (what was
-saved stays, a new release takes the build's default).
+no channel table and no copy on the tab, and no artist posting tier (retired on 7 October 2026: the
+artist-posts benchmark reads every completed campaign, and a save drops the field).
 **Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue, a first save included: the server removes the upcoming or actuals-only page the built one replaces) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
 
 ## Timed launches

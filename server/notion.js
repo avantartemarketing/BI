@@ -32,7 +32,14 @@ const OUT = path.join(ROOT, "data", "notion_posts.csv");
  * release, the day of the early-access email (the private room opening), the
  * announce and the launch - read off the rows' own words (stageOf), or off a
  * campaigns database's date columns when NOTION_CAMPAIGNS_DB names one. The
- * ETL reads them first, before anything typed (etl/build.py resolve_release). */
+ * marketing lead rides in the same file: the name in a lead column (a
+ * relation to a team page, a people, select or text property, named for it:
+ * leadProp) on the campaigns database's row, or on the release page a post
+ * row links to, else the row itself, the name most of the release's rows
+ * carry standing (leadOf, campaignLeads). A relation is read for the linked
+ * page's title and a people property for its display names, never an email
+ * (DATA_MODEL 1.6). The ETL reads them first, before anything typed
+ * (etl/build.py resolve_release). */
 const DATES_OUT = path.join(ROOT, "data", "notion_campaigns.csv");
 const CAMPAIGNS_DB_ID = process.env.NOTION_CAMPAIGNS_DB || "";
 const DB_ID = process.env.NOTION_ARTIST_POSTS_DB || "1b6e65265ca280a898d1e74c0661344c";
@@ -244,13 +251,109 @@ function campaignRowDates(props) {
   return out;
 }
 
+/* The column the marketing lead is recorded in: a people property (a
+ * colleague picked from the workspace), or a select or text one, named for it.
+ * The names are tried in order, so a "Marketing lead" wins over an "Owner"
+ * when a database has both, and a "Lead time" is not a lead. Nothing found:
+ * the status line says so, and the lead stays Airtable's or typed. */
+const LEAD_TYPES = new Set(["people", "relation", "select", "multi_select", "rich_text", "status", "formula", "rollup"]);
+const LEAD_NAMES = [/marketing\s*lead/i, /(campaign|launch|project)\s*lead/i, /^lead$/i, /\blead\b(?!\s*(time|magnet|gen))/i, /\bowner\b/i, /marketing\s*manager/i];
+
+/* The lead column among some properties and how specific its name is (its
+ * index in LEAD_NAMES, lower the more so), so a "Marketing Lead" on the
+ * release's page outranks an "Owner" on the post row that links to it. */
+function leadRank(props) {
+  const cands = Object.entries(props || {}).filter(([, p]) => p && LEAD_TYPES.has(p.type));
+  for (let i = 0; i < LEAD_NAMES.length; i++) {
+    const hit = cands.find(([name]) => LEAD_NAMES[i].test(name));
+    if (hit) return { name: hit[0], rank: i };
+  }
+  return null;
+}
+
+function leadProp(props) {
+  const r = leadRank(props);
+  return r ? r.name : null;
+}
+
+/* The names on a lead column that needs no fetching. A people value is read
+ * for each person's display name and nothing else: the API's user object also
+ * carries an email, which is left where it is (DATA_MODEL 1.6: a colleague's
+ * display name, never an address). A formula reads its string, a rollup each
+ * value it gathers, and any other type reads through propText; a relation
+ * reads nothing here (leadNamesAsync fetches the linked pages' titles). Empty
+ * names drop out. */
+const cleanNames = (vals) => vals.map((v) => String(v || "").replace(/\s+/g, " ").trim()).filter(Boolean);
+function leadNames(p) {
+  if (!p) return [];
+  let vals;
+  if (p.type === "people") vals = (p.people || []).map((u) => (u && u.name) || "");
+  else if (p.type === "formula") vals = p.formula && p.formula.type === "string" && p.formula.string ? [p.formula.string] : [];
+  else if (p.type === "rollup") vals = p.rollup && p.rollup.type === "array" ? (p.rollup.array || []).flatMap((v) => leadNames(v)) : [];
+  else if (p.type === "relation") vals = [];
+  else vals = propText(p);
+  return cleanNames(vals);
+}
+
+/* The same with the relations followed: a lead that is a relation to a team
+ * page (the usual shape - a person's page with their photo for its icon) is
+ * read for that page's title, and a rollup over one the same way. */
+async function leadNamesAsync(p, token) {
+  if (!p) return [];
+  if (p.type === "relation") return cleanNames((await relatedPages(p, token)).map((pg) => pg.title));
+  if (p.type === "rollup" && p.rollup && p.rollup.type === "array") {
+    const out = [];
+    for (const v of p.rollup.array || []) out.push(...await leadNamesAsync(v, token));
+    return cleanNames(out);
+  }
+  return leadNames(p);
+}
+
+/* The lead a row records, as {names, from} or null: its own lead column, or
+ * the one on a page it links to - a post row's release page in the campaigns
+ * database, where the team actually keeps the lead - with the most specific
+ * column name winning and the row's own on a tie. `from` names the column
+ * for the status line ("Release → Marketing Lead"). A column found whose
+ * names could not be read (the linked pages are not shared with the
+ * integration) comes back with no names, so the status can say so. */
+async function leadOf(props, token) {
+  const found = [];
+  const own = leadRank(props);
+  if (own) found.push({ ...own, names: await leadNamesAsync(props[own.name], token), from: own.name });
+  for (const [pname, p] of Object.entries(props || {})) {
+    if (!p || p.type !== "relation") continue;
+    for (const page of await relatedPages(p, token)) {
+      const r = leadRank(page.props);
+      if (r) found.push({ ...r, names: await leadNamesAsync(page.props[r.name], token), from: `${pname} → ${r.name}` });
+    }
+  }
+  const named = found.filter((f) => f.names.length).sort((a, b) => a.rank - b.rank);
+  return named[0] || (found.length ? { ...found[0], names: [] } : null);
+}
+
+/* Co-leads stay together: a row's lead is its names in one string. */
+const leadText = (names) => names.join(", ");
+
+/* One lead per release from the post rows' names: the name most rows carry,
+ * the alphabetical first on a tie, so the file is the same from one refresh
+ * to the next. A release whose rows name nobody has no lead here. */
+function campaignLeads(leadCounts) {
+  const out = {};
+  for (const [key, names] of leadCounts.entries()) {
+    const ranked = [...names.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    if (ranked.length) out[key] = ranked[0][0];
+  }
+  return out;
+}
+
 const csvField = (v) => (/[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
 function datesCsv(dates) {
-  const lines = ["campaign_code,release_name,private_room_open,announce_date,launch_end,early_access_rows,early_access_email_rows,announce_rows,launch_rows,source"];
+  const lines = ["campaign_code,release_name,private_room_open,announce_date,launch_end,marketing_lead,early_access_rows,early_access_email_rows,announce_rows,launch_rows,source"];
   for (const key of Object.keys(dates).sort()) {
     const d = dates[key];
     const code = d.code !== undefined ? d.code : (key.startsWith("name:") ? "" : key);
     lines.push([csvField(code || ""), csvField(d.name || (key.startsWith("name:") ? key.slice(5) : "")), d.private_room_open || "", d.announce_date || "", d.launch_end || "",
+      csvField(d.marketing_lead || ""),
       d.rows ? d.rows.early_access : "", d.rows ? (d.rows.early_access_email || 0) : "", d.rows ? d.rows.announce : "", d.rows ? d.rows.launch : "", d.source || "posts"].join(","));
   }
   return lines.join("\n") + "\n";
@@ -282,23 +385,36 @@ async function notionFetch(url, token, body) {
   return res.json();
 }
 
-const relationTitleCache = new Map();
-async function relationTitles(p, token) {
+/* The pages a relation property points to (the first three), each with its
+ * title and its properties, fetched once per page id and kept for the life
+ * of the process: a post row's release page is read for its title (the
+ * matcher's words) and for the lead column it carries (leadOf), a lead's own
+ * page for its title. A page the integration cannot read - its database is
+ * not shared with it - is left out and counted, and tried again next pull. */
+const pageCache = new Map();
+let pagesUnread = 0;
+async function relatedPages(p, token) {
   if (!p || p.type !== "relation") return [];
   const out = [];
   for (const rel of (p.relation || []).slice(0, 3)) {
-    if (!relationTitleCache.has(rel.id)) {
+    if (!pageCache.has(rel.id)) {
       try {
         const page = await notionFetch(`https://api.notion.com/v1/pages/${rel.id}`, token);
         const titleProp = Object.values(page.properties || {}).find((q) => q.type === "title");
-        relationTitleCache.set(rel.id, propText(titleProp).join(" "));
+        pageCache.set(rel.id, { id: rel.id, title: propText(titleProp).join(" ").trim(), props: page.properties || {} });
       } catch {
-        relationTitleCache.set(rel.id, "");
+        pageCache.set(rel.id, null);
+        pagesUnread++;
       }
     }
-    out.push(relationTitleCache.get(rel.id));
+    const page = pageCache.get(rel.id);
+    if (page) out.push(page);
   }
-  return out.filter(Boolean);
+  return out;
+}
+
+async function relationTitles(p, token) {
+  return (await relatedPages(p, token)).map((pg) => pg.title).filter(Boolean);
 }
 
 async function fetchPostsCsv() {
@@ -311,7 +427,12 @@ async function fetchPostsCsv() {
   const byChannel = new Map();   // channel -> n, for the status line
   const unnamed = new Map();     // an unclassified channel value -> n
   const stageDates = new Map();  // code -> {early_access: [dates], announce: [...], launch: [...]}
+  const leadCounts = new Map();  // release key -> Map(name -> rows naming it), off the rows' lead column or their release page's
+  const leadCols = new Set();    // the lead columns read, for the status line
   let matched = 0, unmatched = 0, cursor = undefined, propNames = null, chanProp = null;
+  // a page that could not be read last time is tried again: sharing it with the integration is the usual fix
+  for (const [id, page] of pageCache) if (page === null) pageCache.delete(id);
+  pagesUnread = 0;
   for (let page = 0; page < 40; page++) {
     const body = { page_size: 100, ...(cursor ? { start_cursor: cursor } : {}) };
     const res = await notionFetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, token, body);
@@ -348,6 +469,17 @@ async function fetchPostsCsv() {
         (st[stage] = st[stage] || []).push(date);
         if (stage === "early_access" && isEmailRow(texts)) (st.early_access_email = st.early_access_email || []).push(date);
       }
+      // the row's lead - its own column, or its release page's - counted towards the release's (campaignLeads picks the commonest)
+      const lead = await leadOf(props, token);
+      if (lead) {
+        leadCols.add(lead.from);
+        if (lead.names.length) {
+          if (!leadCounts.has(rel.key)) leadCounts.set(rel.key, new Map());
+          const names = leadCounts.get(rel.key);
+          const n = leadText(lead.names);
+          names.set(n, (names.get(n) || 0) + 1);
+        }
+      }
     }
     cursor = res.has_more ? res.next_cursor : null;
     if (!cursor) break;
@@ -365,7 +497,14 @@ async function fetchPostsCsv() {
   // the campaign dates: the rows' own words first, a campaigns database's
   // date columns over them where one is named
   const dates = campaignDates(stageDates);
+  // the marketing lead the post rows name per release (the campaigns database's own column wins below)
+  const leads = campaignLeads(leadCounts);
+  for (const [key, lead] of Object.entries(leads)) {
+    const rel = releases.find((r) => r.key === key);
+    dates[key] = { ...(dates[key] || { rows: null, code: rel ? rel.code : "", name: rel ? rel.name : "" }), marketing_lead: lead };
+  }
   let fromDb = 0;
+  const leadColsDb = new Set();
   if (CAMPAIGNS_DB_ID) {
     let dcursor = undefined;
     for (let page = 0; page < 10; page++) {
@@ -379,11 +518,17 @@ async function fetchPostsCsv() {
           texts.push(...await relationTitles(p, token));
         }
         const got = campaignRowDates(props);
-        if (!Object.keys(got).length) continue;
+        const lead = await leadOf(props, token);
+        if (lead) leadColsDb.add(lead.from);
+        const name = lead && lead.names.length ? leadText(lead.names) : "";
+        // a row with neither a date nor a lead says nothing about its release
+        if (!Object.keys(got).length && !name) continue;
         const rel = matchRelease(texts, releases, got.announce_date || got.private_room_open || got.launch_end || null);
         if (!rel) continue;
         fromDb++;
-        dates[rel.key] = { ...(dates[rel.key] || { rows: null }), code: rel.code, name: rel.name, ...got, source: "campaigns db" };
+        const before = dates[rel.key] || { rows: null };
+        dates[rel.key] = { ...before, code: rel.code, name: rel.name, ...got, source: Object.keys(got).length ? "campaigns db" : before.source || "campaigns db",
+          ...(name ? { marketing_lead: name } : {}) };
       }
       dcursor = res.has_more ? res.next_cursor : null;
       if (!dcursor) break;
@@ -393,11 +538,19 @@ async function fetchPostsCsv() {
   const strays = [...unnamed.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4)
     .map(([v, n]) => `"${v}" ${n}`).join(", ");
   const dated = Object.values(dates);
+  // the lead, for the status line: how many releases have one and which columns gave it, or why none did
+  const leadsFor = dated.filter((d) => d.marketing_lead).length;
+  const leadFrom = [...[...leadColsDb].map((c) => `${c} (campaigns database)`), ...leadCols];
+  const unread = pagesUnread ? `; ${pagesUnread} linked page${pagesUnread === 1 ? "" : "s"} could not be read (share the database it is in with the integration)` : "";
+  const leadNote = leadsFor ? `marketing lead for ${leadsFor} releases (from ${leadFrom.map((c) => `"${c}"`).join(", ")})${unread}`
+    : leadFrom.length ? `a marketing lead column (${leadFrom.map((c) => `"${c}"`).join(", ")}) but no names could be read from it${unread}`
+    : `no marketing lead column found${unread}`;
   return {
     csv: lines.join("\n") + "\n", matched, unmatched,
     schema: summariseSchema(schema), split, strays, chanProp,
-    datesCsv: datesCsv(dates), datesFor: dated.length, fromDb,
+    datesCsv: datesCsv(dates), datesFor: dated.filter((d) => d.private_room_open || d.announce_date || d.launch_end).length, fromDb,
     datesSplit: `private room ${dated.filter((d) => d.private_room_open).length}, announce ${dated.filter((d) => d.announce_date).length}, launch ${dated.filter((d) => d.launch_end).length}`,
+    leadsFor, leadFrom, leadNote, pagesUnread,
   };
 }
 
@@ -413,6 +566,7 @@ async function refreshArtistPosts() {
   fs.renameSync(DATES_OUT + ".tmp", DATES_OUT);
   return `notion ${out.matched} posts` + (out.unmatched ? ` (${out.unmatched} unmatched)` : "")
     + `; campaign dates for ${out.datesFor} releases (${out.datesSplit}` + (CAMPAIGNS_DB_ID ? `; ${out.fromDb} from the campaigns database` : "") + ")"
+    + `; ${out.leadNote}`
     + `; by channel: ${out.split || "none"}`
     + (out.chanProp ? ` (from "${out.chanProp}")` : " (no channel column found)")
     + (out.strays ? `; unrecognised channels: ${out.strays}` : "")
@@ -420,4 +574,4 @@ async function refreshArtistPosts() {
 }
 
 module.exports = { refreshArtistPosts, fetchPostsCsv, matchRelease, propText, propDate, noteSchema, summariseSchema, channelOf, channelProp, rowChannel,
-  stageOf, isEmailRow, campaignDates, campaignRowDates, datesCsv, inWindow, knownReleases };
+  stageOf, isEmailRow, campaignDates, campaignRowDates, leadProp, leadRank, leadNames, leadNamesAsync, leadOf, campaignLeads, datesCsv, inWindow, knownReleases };

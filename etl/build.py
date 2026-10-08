@@ -765,51 +765,33 @@ def untracked_block(win: pd.DataFrame, norms: dict | None) -> dict:
         "high": high,
     }
 
-POSTING_TIERS = ("Low", "Medium", "High")
-
-
-def referral_artist_tier(release: dict) -> str:
-    """How much the artist is expected to post: the tier the artist-posts
-    benchmark pools completed campaigns by. N/A for an artist with no channels
-    of their own (§4.3), else the release's artist_posting_tier, Medium by
-    default. Inputs saved before the tier had a field of its own carried it as
-    the Referral Artist row of the retired channel-quality grid, so that
-    spelling is still read."""
-    if "referral_artist" in baskets.channels_off_of(release):
-        return "N/A"
-    tier = release.get("artist_posting_tier")
-    if tier in POSTING_TIERS:
-        return tier
-    legacy = (release.get("channel_quality_overrides") or {}).get("Referral Artist")
-    return legacy if legacy in POSTING_TIERS else "Medium"
+def artist_posts_off(release: dict) -> bool:
+    """Whether the funnel expects no artist posts: the artist's own channels
+    are not in plan (§4.3), as for an estate or an artist who will not post."""
+    return "referral_artist" in baskets.channels_off_of(release)
 
 
 def artist_posts_benchmarks(ap: pd.DataFrame, as_of: date) -> dict:
-    """Referral-artist tier -> expected posts per campaign, the same quartile
-    approach as the other channels: pool completed campaigns in the same
-    Referral Artist tier and take the median post count (all-tier median while
-    per-tier history is thin, None until >= 2 completed campaigns have data)."""
+    """Expected artist posts per campaign: the median post count over the
+    completed campaigns on file whose artist had channels of their own, under
+    `_all`; empty until two have logged posts. Until 7 October 2026 the
+    campaigns were pooled by a Low / Medium / High posting tier typed on the
+    Target setting tab (artist_posting_tier, retired): with a handful of
+    campaigns ever saved the tiers had nothing to pool and the all-campaign
+    median stood in anyway, so the tier went and the median reads every
+    completed campaign."""
     if ap.empty:
         return {}
-    by_tier, totals = defaultdict(list), []
+    totals = []
     for r in INPUTS["releases"]:
-        end = date.fromisoformat(r["launch_end"])
-        if end >= as_of:
+        if not r.get("launch_end") or not r.get("private_room_open") or not r.get("campaign_code"):
             continue
-        tier = referral_artist_tier(r)
-        if tier == "N/A":
+        end = date.fromisoformat(r["launch_end"])
+        if end >= as_of or artist_posts_off(r):
             continue
         start = date.fromisoformat(r["private_room_open"])
-        n = float(posts_in(ap, r["campaign_code"], "artist", start, end))
-        by_tier[tier].append(n)
-        totals.append(n)
-    out = {}
-    for tier, xs in by_tier.items():
-        if len(xs) >= 2:
-            out[tier] = float(pd.Series(xs).median())
-    if len(totals) >= 2:
-        out["_all"] = float(pd.Series(totals).median())
-    return out
+        totals.append(float(posts_in(ap, r["campaign_code"], "artist", start, end)))
+    return {"_all": float(pd.Series(totals).median())} if len(totals) >= 2 else {}
 
 
 # ---------------------------------------------------------------- target model (docs §3)
@@ -3323,8 +3305,9 @@ def _num(v):
 
 
 def notion_dates_for(notion: dict | None, code: str | None, release_name: str | None) -> dict:
-    """The Notion log's dates for a release: by its campaign code, else by its
-    name - an upcoming launch has a page and a log before it has a code."""
+    """The Notion log's entry for a release (its dates and its marketing
+    lead): by its campaign code, else by its name - an upcoming launch has a
+    page and a log before it has a code."""
     n = notion or {}
     by_code = n.get(str(code)) if code else None
     by_name = n.get("name:" + str(release_name)) if release_name else None
@@ -3332,10 +3315,12 @@ def notion_dates_for(notion: dict | None, code: str | None, release_name: str | 
 
 
 def load_notion_campaigns() -> dict:
-    """Campaign dates from the Notion log (server/notion.js writes
-    data/notion_campaigns.csv on every refresh): per campaign code, the day
-    of the early-access email (the private room opening), the announce and
-    the launch. Empty until a NOTION_TOKEN is configured."""
+    """Campaign dates and the marketing lead from the Notion log
+    (server/notion.js writes data/notion_campaigns.csv on every refresh): per
+    campaign code, the day of the early-access email (the private room
+    opening), the announce, the launch and the lead's name as the log records
+    it. Empty until a NOTION_TOKEN is configured; a file written before the
+    lead column existed reads with no lead."""
     p = DATA / "notion_campaigns.csv"
     if not p.exists():
         return {}
@@ -3349,6 +3334,7 @@ def load_notion_campaigns() -> dict:
         code = str(r.get("campaign_code") or "").strip()
         name = str(r.get("release_name") or "").strip()
         vals = {k: (str(r.get(k) or "")[:10] or None) for k in ("private_room_open", "announce_date", "launch_end")}
+        vals["marketing_lead"] = str(r.get("marketing_lead") or "").strip() or None
         # keyed by the campaign code and by the release name, so a launch
         # without a code yet (notion_dates_for) is still found
         if code:
@@ -3513,7 +3499,7 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
     - dates: the Notion log first (the early-access email opens the private
       room; the announce; the launch), then what was typed, then the funnel's
       campaign clock, then Airtable's planned dates.
-    - the marketing lead: Airtable, else what was typed.
+    - the marketing lead: the Notion log, else Airtable, else what was typed.
     - the Meta campaigns: the list saved, else the draw campaign named for
       the code; the code itself is what was saved, else the campaigns' prefix.
     Returns a new dict; the input is not changed."""
@@ -3626,11 +3612,14 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         if others:
             drift[key] = {"inForce": here, "source": sources.get(key), **others}
     r["date_drift"] = drift
-    if at.get("marketing_lead"):
-        r["marketing_lead"], sources["marketing_lead"] = at["marketing_lead"], "airtable"
+    # the marketing lead: the Notion log (where the team records it), else
+    # Airtable's field, else what was typed on the tab
+    for src_name, v in (("notion", nd.get("marketing_lead")), ("airtable", at.get("marketing_lead")), ("typed", r.get("marketing_lead"))):
+        if v and str(v).strip():
+            r["marketing_lead"], sources["marketing_lead"] = str(v).strip(), src_name
+            break
     else:
-        r["marketing_lead"] = r.get("marketing_lead") or None
-        sources["marketing_lead"] = "typed" if r["marketing_lead"] else None
+        r["marketing_lead"], sources["marketing_lead"] = None, None
 
     # the Meta campaigns: the list saved, else the draw campaign for the code
     names = [str(n).strip() for n in (r.get("campaign_names") or []) if str(n).strip()]
@@ -3684,8 +3673,9 @@ def resolve_inputs(discovered: list[dict], spend: pd.DataFrame | None, notion: d
 
 def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -> dict:
     """What the feeds hold for a release, for the Target setting tab to show
-    beside what is typed: the Airtable products and dates, the Notion dates,
-    the marketing lead and the Meta campaigns named for the code."""
+    beside what is typed: the Airtable products, dates and marketing lead,
+    the Notion dates and marketing lead, and the Meta campaigns named for
+    the code."""
     at = pricing.release_products(rec)
     code = rec.get("campaign_code")
     nd = notion_dates_for(notion, code, rec.get("release_name"))
@@ -3702,7 +3692,7 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
                      "private_room_open": at["private_room_date"], "marketing_lead": at["marketing_lead"],
                      # the works' own closes, for a launch whose works close on different days
                      "closes": product_closes(at["products"])},
-        "notion": {k: nd.get(k) for k in ("private_room_open", "announce_date", "launch_end")},
+        "notion": {k: nd.get(k) for k in ("private_room_open", "announce_date", "launch_end", "marketing_lead")},
         "clock": {k: rec.get("clock_dates", {}).get(k) if rec.get("clock_dates") else None
                   for k in ("private_room_open", "announce_date", "launch_end")},
         "campaigns": match_campaigns(code, spend) if spend is not None and len(spend) else [],
@@ -5591,10 +5581,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     posts = ct[ct["Content type"].isin(["post", "collaboration", "reply", "shared"])]
     social_out = social_block(content, artist_posts, release["campaign_code"],
                               window_start, min(as_of, launch_end))
-    # the artist tier benchmark, None until two completed campaigns have data
-    tier = referral_artist_tier(release)
+    # the artist posts benchmark: the completed campaigns' median, None until two have data, none with the artist's channels off
     pb = posts_bench or {}
-    social_out["artistPostsTarget"] = None if tier == "N/A" else pb.get(tier, pb.get("_all"))
+    social_out["artistPostsTarget"] = None if artist_posts_off(release) else pb.get("_all")
 
     # ---- waterfall (docs §9): contributors to projection - target, in secured units
     organic_groups = [g for g in DISPLAY_GROUPS if g != "paid"]
@@ -5698,8 +5687,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "campaignNames": camps,
         "marketingLead": release.get("marketing_lead"),
         # where each input came from (docs §1.6): notion / typed / airtable /
-        # clock for the dates, airtable or typed for the lead, products or
-        # typed release-level figures for the economics
+        # clock for the dates, notion / airtable / typed for the lead,
+        # products or typed release-level figures for the economics
         "inputSources": release.get("input_sources") or {},
         # the works' own closes (§1.6) and a date Airtable or the funnel's
         # clock now puts elsewhere than the page runs on
@@ -6549,7 +6538,7 @@ def main(only: str | None = None):
         # a timed launch's page: the TL model builds it and patches its row
         res = tl.build_all({"as_of": as_of, "now": datetime.now(timezone.utc), "seen": seen, "launch_frame": launch_frame,
                             "inputs": INPUTS["releases"], "spend": spend, "emails": emails, "only": only,
-                            "content": content, "artist_posts": artist_posts,
+                            "content": content, "artist_posts": artist_posts, "notion": notion,
                             "configured_ids": {r["id"] for r in INPUTS["releases"]}})
         if res["failures"]:
             raise SystemExit(f"build: {only} failed - {res['failures'][0][1]}")
@@ -6689,7 +6678,7 @@ def main(only: str | None = None):
     try:
         tl_out = tl.build_all({"as_of": as_of, "now": datetime.now(timezone.utc), "seen": seen, "launch_frame": launch_frame,
                                "inputs": INPUTS["releases"], "spend": spend, "emails": emails,
-                               "content": content, "artist_posts": artist_posts,
+                               "content": content, "artist_posts": artist_posts, "notion": notion,
                                "configured_ids": {r["id"] for r in INPUTS["releases"]}})
     except Exception as e:  # noqa: BLE001 - the TL pages never stop the LE build
         tl_out["note"] = f"tl: the timed launches could not be built ({type(e).__name__}: {e})"

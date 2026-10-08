@@ -85,6 +85,19 @@ def test_products_and_totals() -> None:
         r2 = build.resolve_release(dict(base, clock_dates={"announce_date": "2026-09-04", "launch_end": "2026-09-29", "private_room_open": None}), None, n)
         assert r2["private_room_open"] == "2026-08-25" and r2["input_sources"]["private_room_open"] == "notion"
         assert r2["announce_date"] == "2026-09-01" and r2["input_sources"]["announce_date"] == "typed"
+        # the marketing lead the same way: the Notion log over Airtable over what was typed,
+        # by the code or by the name, and a log entry without a lead leaves Airtable's
+        n_lead = {"TestArtist_LE_26": {"private_room_open": None, "announce_date": None, "launch_end": None, "marketing_lead": " Maria "}}
+        rl = build.resolve_release(dict(base, marketing_lead="Someone"), None, n_lead)
+        assert rl["marketing_lead"] == "Maria" and rl["input_sources"]["marketing_lead"] == "notion", (rl["marketing_lead"], rl["input_sources"])
+        rl2 = build.resolve_release(dict(base, marketing_lead="Someone"), None, n)
+        assert rl2["marketing_lead"] == "Clare" and rl2["input_sources"]["marketing_lead"] == "airtable"
+        by_name = {"name:Test Artist · Multiple · 2026 Q3": {"marketing_lead": "Maria"}}
+        rl3 = build.resolve_release(dict(base, campaign_code=None), None, by_name)
+        assert rl3["marketing_lead"] == "Maria" and rl3["input_sources"]["marketing_lead"] == "notion"
+        # the sourced block the tab reads carries both readings
+        src = build.sourced_inputs(dict(base), None, n_lead)
+        assert src["notion"]["marketing_lead"] == " Maria " and src["airtable"]["marketing_lead"] == "Clare", src["notion"]
         r3 = build.resolve_release({k: v for k, v in base.items() if k not in ("announce_date", "launch_end")}
                                    | {"clock_dates": {"announce_date": "2026-09-04", "launch_end": "2026-09-29", "private_room_open": None}}, None, {})
         assert r3["announce_date"] == "2026-09-04" and r3["input_sources"]["announce_date"] == "clock"
@@ -155,6 +168,49 @@ def test_products_and_totals() -> None:
     finally:
         pricing.release_products = keep
     print("products and totals: ok")
+
+
+def test_notion_campaigns_file() -> None:
+    """The campaigns file the Notion pull writes reads by code and by name,
+    the lead beside the dates; a file from before the lead column reads with
+    none; a typed lead stands where neither feed has one."""
+    keep = build.DATA
+    with tempfile.TemporaryDirectory() as tmp:
+        build.DATA = pathlib.Path(tmp)
+        try:
+            (build.DATA / "notion_campaigns.csv").write_text(
+                "campaign_code,release_name,private_room_open,announce_date,launch_end,marketing_lead,early_access_rows,early_access_email_rows,announce_rows,launch_rows,source\n"
+                "A_LE_26,A · One · 2026 Q3,2026-09-03,2026-09-05,2026-09-30,Maria,2,1,2,2,posts\n"
+                ",C · Three · 2027 Q1,2026-09-14,,,,2,0,0,0,posts\n"
+                ',D · Four · 2027 Q1,,,,"O\'Brien, Tom",,,,,campaigns db\n')
+            n = build.load_notion_campaigns()
+            assert n["A_LE_26"] == {"private_room_open": "2026-09-03", "announce_date": "2026-09-05", "launch_end": "2026-09-30", "marketing_lead": "Maria"}, n["A_LE_26"]
+            assert n["name:A · One · 2026 Q3"] == n["A_LE_26"]
+            assert n["name:C · Three · 2027 Q1"]["marketing_lead"] is None and n["name:C · Three · 2027 Q1"]["private_room_open"] == "2026-09-14"
+            assert n["name:D · Four · 2027 Q1"]["marketing_lead"] == "O'Brien, Tom" and n["name:D · Four · 2027 Q1"]["launch_end"] is None
+            assert build.notion_dates_for(n, None, "D · Four · 2027 Q1")["marketing_lead"] == "O'Brien, Tom"
+            # the file as written before the lead column existed
+            (build.DATA / "notion_campaigns.csv").write_text(
+                "campaign_code,release_name,private_room_open,announce_date,launch_end,early_access_rows,early_access_email_rows,announce_rows,launch_rows,source\n"
+                "A_LE_26,A · One · 2026 Q3,2026-09-03,2026-09-05,2026-09-30,2,1,2,2,posts\n")
+            old = build.load_notion_campaigns()
+            assert old["A_LE_26"]["marketing_lead"] is None and old["A_LE_26"]["announce_date"] == "2026-09-05"
+        finally:
+            build.DATA = keep
+    # nothing from any feed: what was typed, else nobody
+    rp = pricing.release_products
+    pricing.release_products = lambda r, pricing_path=None: {"match": "none", "note": "", "products": [], "launch_date": None,
+                                                              "announce_date": None, "private_room_date": None, "marketing_lead": None}
+    try:
+        base = {"id": "t", "release_name": "Test Artist · Multiple · 2026 Q3", "campaign_code": "TestArtist_LE_26",
+                "announce_date": "2026-09-01", "launch_end": "2026-09-28"}
+        typed = build.resolve_release(dict(base, marketing_lead="Someone"), None, {})
+        assert typed["marketing_lead"] == "Someone" and typed["input_sources"]["marketing_lead"] == "typed"
+        nobody = build.resolve_release(dict(base), None, {})
+        assert nobody["marketing_lead"] is None and nobody["input_sources"]["marketing_lead"] is None
+    finally:
+        pricing.release_products = rp
+    print("notion campaigns file: ok")
 
 
 def test_airtable_products_join() -> None:
@@ -271,5 +327,6 @@ def test_js_agrees() -> None:
 if __name__ == "__main__":
     # the resolver must not read the real Airtable pull in the first test: it is patched there
     test_products_and_totals()
+    test_notion_campaigns_file()
     test_airtable_products_join()
     test_js_agrees()
