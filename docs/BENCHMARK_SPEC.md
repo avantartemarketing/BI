@@ -689,47 +689,56 @@ sent nothing", which is a third thing entirely.
 The quartile levers are gone from the page and, since 2026-09-23, from the build (DATA_MODEL
 §3). In their place:
 
-The tab (relaid on 8 October 2026) is a form on the left and an outcome rail on the right,
-in one form language (`web/src/tokens.css`, the `.ts-` and `.ts2-` rules: a label in the left
-column, a 44px box with a 6px radius, a figure's source as a one-word tag inside the box, never
-a caption beside it and never a sentence under it; a figure that does not apply is a disabled
-box, never a dash):
+The tab (relaid on 8 October 2026) is one column: the actions, the outcome as one strip, then
+the form in the order the decisions are made, in one form language (`web/src/tokens.css`, the
+`.ts-`, `.ts2-` and `.wa-` rules: a label in the left column, a 44px box with a 6px radius, a
+figure's source as a one-word tag inside the box, never a caption beside it and never a
+sentence under it; a figure that does not apply is a closed box or a dash with the reason on
+hover):
 
-1. **Launch** - the three dates, each with its source tag (Notion, typed, funnel, Airtable) and,
-   where another feed puts the date elsewhere, a small button with that reading that takes it in
-   one click; the Meta campaigns as tick rows with an add box; the campaign code, only while no
-   feed names one; the marketing lead (Airtable's, else typed); the Slack channel, saved on its
-   own.
-2. **Target** - the chosen basket with its launch count and a `Change basket` button opening
+1. **The actions and the strip** - `Save targets` and `Discard`, with the state beside them
+   ("Unsaved changes", or the input still needed), at the top and again at the foot; under the
+   top pair, five figures computed in the browser from the basket's medians
+   (`shared/benchmarkModel.mjs`) as the works, the assumptions and the switches change: the
+   secured-units target, the benchmark, the stretch in units, the paid budget (red past the 6%
+   sense check) and the launch value. Each figure's detail - "of N" when the target is part of
+   the edition, the uplift `×K`, where the stretch comes from, the budget's benchmark and share
+   of launch value - is on hover, never printed under it.
+2. **Works** - the works as one picture (`WorksArea` in `web/src/TargetSetting.jsx`): a column
+   per work, as wide as its target units (the columns share the width in proportion) and as
+   tall as its price per unit on a euro scale, stacked from the foot by who gets what - costs
+   and the rest, the artist's profit, Avant Arte's profit - with the framing uplift (frames per
+   print × frame profit) as a dashed band on top, so area is money. A work unticked, or with no
+   edition or no price yet, is a thin dashed outline; the label under a column is what differs
+   between the works' names (the shared start and end dropped) and the target units. Selecting
+   a column puts the work's figures beside the chart: edition, sell-through, target units, the
+   close, price, the two profits per unit, `AA profit share` and `AA revenue share` (Avant
+   Arte's own share, not the artist's; two figures that close each other), framing (a switch;
+   unticked closes the two frame figures), frames per print, frame profit, then the launch
+   value and Avant Arte's take with framing. With nothing selected the panel is the release as
+   a whole: editions and target units summed, the rest weighted by target units, and AA's share
+   of paid spend. The figures are locked to Airtable's until the `Edit figures` switch is on;
+   then the figure itself is the input, selected whole on focus so typing replaces it, a typed
+   figure tinted with Airtable's (or the default) faint beside it, and a figure typed on the
+   release as a whole lands on every work whose figure is open. The panel offers `Reset to
+   Airtable`, `Leave out of the release` or `Include in the release`, and `Remove` on a work
+   added by hand; the group's head counts the typed figures and offers `Reset all` and `Add a
+   work`. The timed launches' tab keeps the Airtable-like grid (`ProductsGrid`).
+3. **Target** - the chosen basket with its launch count and a `Change basket` button opening
    the picker; the **Channels in plan** switches (§4.3: Running paid; Artist's own channels);
    and **Stretch from** (§4.4) as a three-way choice: even across channels (the basket's own
    shares, the same uplift everywhere), all from paid, or custom, which opens the coupled
    sliders, one per channel group in plan, rescaling each other so the shares add to 100. The
    stretch in units sits beside the choice.
-3. **Works** - two grids drawn the way Airtable draws one, Economics (edition, sell-through,
-   price, target units, closes, the profits and the share) and Framing (frame offered, frames per
-   print, frame profit): the cell is the input, a glyph on every header carries the unit (`#` a
-   count, `%` and `€`, `ƒ` computed, a tick), headers never wrap and a grid scrolls sideways with
-   the product staying put. The figures are locked to Airtable's until the `Edit figures` switch
-   is on; a typed figure gets an amber corner mark and a `Reset` beside the product, the group's
-   head counts them and offers `Reset all` and `Add a work`. While editing a `Set all` row at the
-   top fills a column for every product. `AA revenue share` and `AA profit share` (Avant Arte's
-   own share, not the artist's) are two cells that close each other; unticking framing closes
-   the two frame cells. Target units and the last row, `Total`, are computed cells: edition and
-   target units summed, sell-through and price weighted by target units, the profits and the
-   share per target unit, the framing uplift per target unit.
-4. **Assumptions** - one line of the four figures in force (the entry → order rate and the
+4. **Launch** - the three dates on one row, each with its source tag (Notion, typed, funnel,
+   Airtable) and, where another feed puts the date elsewhere, a small button with that reading
+   that takes it in one click; the Meta campaigns as tick rows with an add box; the campaign
+   code, only while no feed names one; the marketing lead (the Notion log's, else Airtable's,
+   else typed) and the Slack channel, saved on its own, on one row.
+5. **Assumptions** - one line of the four figures in force (the entry → order rate and the
    pre-order → order rate that price every entry, the **cost per paid unit**, blank meaning the
    basket's median, else the panel's, paid units × it being the paid budget, and the paid
    cannibalisation) with an `Edit` button that opens their boxes, each tagged typed or default.
-5. **The rail** - computed in the browser from the basket's medians (`shared/benchmarkModel.mjs`)
-   as the works, the assumptions and the switches change: the secured-units target ("of N" when
-   it is part of the edition), the benchmark with the uplift `×K`, the stretch in units and
-   where it comes from, the paid budget with its benchmark and its share of launch value (red
-   past the 6% sense check), the sell-through; each work's target units; the launch value, the
-   per-unit profits and AA's share of paid spend; then `Save targets` and `Discard`, with the
-   state under them ("Unsaved changes", or the input still needed). The rail stays in view as
-   the form scrolls.
 
 The six-figure header strip, the per-channel benchmark table and the captions the tab carried
 until 8 October 2026 are gone; the model behind them is unchanged, and the Overview's cards
@@ -742,9 +751,9 @@ rather than with a zero. The Referral Artist tier lived on for a while as a post
 the artist switch (`artist_posting_tier`); that too was retired on 7 October 2026, the
 artist-posts benchmark reading every completed campaign, and a save drops it.
 
-The rail's benchmark figures take the basket's own median wherever the basket has one
+The strip's benchmark figures take the basket's own median wherever the basket has one
 (`unitsByGroup.paid`, `sessions`, `paidBudget`, and `paidBudget ÷ basket launch value` for
-the percentage figure), so the rail and the Overview quote the same figures;
+the percentage figure), so the strip and the Overview quote the same figures;
 the entries figure the model carries shows the basket's median units asked for as entries at 0.8, the way the
 target is, so that row keeps the K ratio too (the measured median entries stay on the
 snapshot as `benchmark.entries`). The draw / private-room rows it used to carry went with

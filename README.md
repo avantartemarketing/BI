@@ -604,22 +604,34 @@ Notion log, then Airtable. What the page asks is which Meta campaigns are the re
 channels are in plan - Running paid, the artist's own channels - and which
 basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 
-Since 8 October 2026 the tab is the form on the left and an outcome rail on the right
-(BENCHMARK_SPEC 8). The form is four groups of label-and-control rows, inputs first: **Launch**
-(the three dates, each with a one-word source tag in its box and a button for a date another
-feed has; the Meta campaigns; the campaign code only while no feed names one; the marketing
-lead; the Slack channel), **Target** (the basket with `Change basket`, the Channels in plan
-switches, and the stretch as a three-way choice, even across channels, all from paid or
-custom, the coupled sliders appearing under Custom), **Works** (two Airtable-like grids, one
-for the economics and one for framing, locked to Airtable's figures until **Edit figures** is
-on, with a tick per work on the first) and **Assumptions** (one line of the four figures with an
-Edit button). The rail recomputes live in the browser via `shared/benchmarkModel.mjs` (the
-per-unit economics via `shared/economics.mjs`): the target, the benchmark and the uplift, the
-stretch and where it comes from, the paid budget with its benchmark and share of launch value,
-the sell-through, each work's target, the launch value and the per-unit profits, then `Save
-targets` and `Discard` with the state under them. There is no header strip of derived figures,
-no channel table and no copy on the tab, and no artist posting tier (retired on 7 October 2026: the
-artist-posts benchmark reads every completed campaign, and a save drops the field).
+Since 8 October 2026 the tab is one column (BENCHMARK_SPEC 8): `Save targets` and `Discard`
+with the state beside them, then the outcome as one strip of five figures - the target, the
+benchmark, the stretch, the paid budget (red past the 6% sense check) and the launch value,
+each with its detail on hover - then the form in four groups of label-and-control rows in the
+order the decisions are made, and the actions again at the foot. **Works** draws the works as
+one picture: a column per work, as wide as its target units and as tall as its price per unit,
+stacked by who gets what (costs and the rest, the artist's profit, Avant Arte's) with the
+framing uplift as the band on top, so area is money; an unticked work, or one with no edition
+or no price yet, is a thin dashed outline. Selecting a column puts that work's figures beside
+the chart (edition, sell-through, target units, the close, price, the profits per unit, the
+deal's share, framing, frames per print, frame profit, the launch value and Avant Arte's take
+with framing); with nothing selected the panel shows the release as a whole, weighted by
+target units, with AA's share of paid spend. The figures are locked to Airtable's until
+**Edit figures** is on; then the figure itself is the input, a typed one tinted with Airtable's
+(or the default) faint beside it, and a figure typed on the release as a whole lands on every
+work. The panel offers `Reset to Airtable`, `Leave out of the release` or `Include in the
+release`, and `Remove` on a work added by hand; the group's head offers `Add a work` and `Reset
+all`. **Target** holds the basket with `Change basket`, the Channels in plan switches, and the
+stretch as a three-way choice, even across channels, all from paid or custom, the coupled
+sliders appearing under Custom. **Launch** holds the three dates on one row, each with a
+one-word source tag in its box and a button for a date another feed has; the Meta campaigns;
+the campaign code only while no feed names one; the marketing lead and the Slack channel on
+one row. **Assumptions** is one line of the four figures with an Edit button. The strip and
+the chart recompute live in the browser via `shared/benchmarkModel.mjs` and
+`shared/economics.mjs`. There is no header strip of derived figures, no channel table and no
+copy on the tab, and no artist posting tier (retired on 7 October 2026: the artist-posts
+benchmark reads every completed campaign, and a save drops the field). The timed launches'
+tab keeps the Airtable-like grid of works.
 **Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue, a first save included: the server removes the upcoming or actuals-only page the built one replaces) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
 
 ## Timed launches
