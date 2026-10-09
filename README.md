@@ -745,8 +745,11 @@ decrease paid spend to stay ROI-positive, in which case the forecast sell-throug
 (1,150 units)" ("stop" when the recommendation is nothing, "pause" on three days that bought no
 entries). The reason is what bound the recommendation (`paid.budget.cap`, the Paid card's Capped
 by chip): "to stay ROI-positive" ("to keep ROI above 1.2" on a release whose floor is not 1), "as
-we are on course to sell out anyway" or "without it" (where the line ends there, since the forecast
-does not move; "hit the target" when the target is part of the edition), "as it bought no entries
+we are on course to sell out anyway" (where the line ends there, since the forecast does not
+move) or, for a stop, "This assumes paid stops now, as we are on course to sell out without it.
+Paid is at €875 a day" (the forecast already has paid stopped, the gap to the edition being
+closed; a target that is part of the edition changes nothing, since paid runs to the sellout),
+"as it bought no entries
 yesterday", "as it has bought no entries for three days", "as cumulative ROI is under 0.9", "as ROI
 has been under target for three days"; the figure is the build's `paid.atRecommended`, the same projection
 with paid at the recommended spend; then, in small type, the day the figures run to

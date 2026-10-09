@@ -805,8 +805,8 @@ EXPLAIN["paid.rec"] = (a, { snap: s }) => {
   if (finite(cur)) steps.push(seg`Today's daily spend is ${eur(cur)}: the last full day's spend on the campaign.`);
   if (finite(b.supplySpend)) {
     steps.push(finite(b.selloutGap) && finite(b.entriesNeeded)
-      ? seg`The spend that would reach the target by the close is ${eur(b.supplySpend)} a day: after units secured and what the organic channels are on course to bring, ${n(b.selloutGap)} units are still needed, ${n(b.entriesNeeded)} entries at the ${pct(rateOf(s))} rate, bought at the cost per entry that spend implies.`
-      : seg`The spend that would reach the target by the close is ${eur(b.supplySpend)} a day.`);
+      ? seg`The spend that would sell the edition out by the close is ${eur(b.supplySpend)} a day: after units secured and what the organic channels are on course to bring, ${n(b.selloutGap)} units are still needed, ${n(b.entriesNeeded)} entries at the ${pct(rateOf(s))} rate, bought at the cost per entry that spend implies.`
+      : seg`The spend that would sell the edition out by the close is ${eur(b.supplySpend)} a day.`);
   }
   if (finite(b.roiSpend)) steps.push(seg`The spend at which the ROI at the close ends on the floor of ${n(b.floor ?? 1, 1)} is ${eur(b.roiSpend)} a day: ${cost.step}.`);
   if (finite(b.supplySpend) && finite(b.roiSpend)) steps.push(seg`The lower of the two, ${eur(Math.min(b.supplySpend, b.roiSpend))} a day, is as far as it is worth going.`);
@@ -816,7 +816,7 @@ EXPLAIN["paid.rec"] = (a, { snap: s }) => {
   return {
     where: "Paid spend / day", when: null,
     name: "Recommended daily budget", value: eur(rec), unit: "a day",
-    say: "The daily spend worth running from here: enough to reach the target, never past the point where the ROI at the close drops under the floor, moved within the spend rules.",
+    say: "The daily spend worth running from here: enough to sell the edition out, never past the point where the ROI at the close drops under the floor, moved within the spend rules.",
     steps, total: { v: eur(rec), label: "a day" },
     compare: move !== null ? [{ label: "Change", v: move === 0 ? "none" : (move > 0 ? "+" : MINUS) + "€" + n(Math.abs(move)), note: `Against today's ${eur(cur)}.` }] : [],
     sources: [

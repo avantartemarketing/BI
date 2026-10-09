@@ -4968,7 +4968,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             w_g = curve_value(rcurves, og, UNIT_PLAN_CURVE, pdsa_now)   # the channel loop's w
             r_perf = min(max((now_g / (tgt_g * w_g)) if tgt_g * w_g > 0 else 1.0, 0.25), 2.5)
             organic_future += tgt_g * (1 - w_g) * (1 + w_g * (r_perf - 1))
-    sellout_gap = max(release["edition_size"] - secured_now - organic_future, 0.0)
+    # the gap is to the whole edition, never to the target (9 October 2026): a
+    # launch is always run to sell out, the target being the plan, so paid
+    # keeps going past a target that is only part of the edition
+    sellout_gap = max(edition_total(release) - secured_now - organic_future, 0.0)
     entries_needed = sellout_gap / (1 - drop)      # every unit is asked for as an entry at the rate
     days_left = max((launch_end - full_through).days, 0)
     past_spend = spend_day[spend_day.index <= full_through]

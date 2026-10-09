@@ -224,11 +224,9 @@ function model(snap, { horizon = "today", today, direct = false } = {}) {
   const recPct = ar && ar.sellThrough && finite(ar.sellThrough.pct) ? num(ar.sellThrough.pct) : null;
   // what bound the recommendation (paid.budget.cap, the Paid card's "Capped
   // by" chip) rides along, so a cut or a stop can say why (leverLine)
-  const ed = snap.edition || {};
   const lever = snap.complete || !(cur > 0) || rec === null || recPct === null || closePct === null ? null
     : { current: cur, recommended: rec, move: Math.round(rec) - Math.round(cur), pct: recPct, units: num(ar.sellThrough.units),
-        cap: pb.cap || null, paced: !!pb.paced, floor: finite(pb.floor) ? num(pb.floor) : null,
-        partial: finite(ed.total) && finite(ed.target) && num(ed.total) > num(ed.target) };
+        cap: pb.cap || null, paced: !!pb.paced, floor: finite(pb.floor) ? num(pb.floor) : null };
 
   // the totals, in words
   const totals = [
@@ -376,9 +374,12 @@ const closeLine = (m) => {
  * decrease paid spend to stay ROI-positive, in which case the forecast
  * sell-through drops to 28.0% (168 units)". The reason is what bound the
  * recommendation (paid.budget.cap, the card's Capped by chip): the ROI at
- * close under the floor, the sellout or the target on course without the
- * spend (where the line ends at the reason: the forecast does not move), or
- * the spend rules on days that bought nothing or an ROI below the band. The
+ * close under the floor, the sellout on course without the spend (where the
+ * line ends at the reason: the forecast does not move, and a stop says the
+ * forecast already assumes it, since the gap to the edition is closed and the
+ * paid path stops at once; the target being part of the edition changes
+ * nothing, paid runs to the sellout, 9 October 2026), or the spend rules on
+ * days that bought nothing or an ROI below the band. The
  * sell-through is given to one decimal and in units, so a move the
  * forecast's whole percentage hides still shows. Nothing without the
  * forecast line, a running campaign or a recommendation. */
@@ -396,7 +397,9 @@ const leverLine = (m) => {
     const drops = `in which case the forecast sell-through drops to ${at}`;
     switch (l.cap) {
       case "supply":
-        return `${holds} We may be able to ${verb} paid spend, as we are on course to ${l.partial ? "hit the target" : "sell out"} ${stop ? "without it" : "anyway"}.`;
+        return stop
+          ? `This assumes paid stops now, as we are on course to sell out without it. Paid is at ${eur(l.current)} a day.`
+          : `${holds} We may be able to ${verb} paid spend, as we are on course to sell out anyway.`;
       case "roi_floor": {
         const roi = l.floor === null || Math.abs(l.floor - 1) < 1e-9 ? "to stay ROI-positive" : `to keep ROI above ${Number(l.floor).toFixed(1)}`;
         return `${holds} We may have to ${verb} paid spend ${roi}, ${drops}.`;

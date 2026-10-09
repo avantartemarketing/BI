@@ -1952,7 +1952,7 @@ not on course to fill:
 ```
 secured_now       = units paid + draft orders + the draw's expected orders, work by work, capped at the edition   # the hero's secured units (§6.3½)
 organic_future    = Σ over organic groups of (proj − now)       # §5.4 projection
-sellout_gap       = max(edition_size − secured_now − organic_future, 0)
+sellout_gap       = max(edition_total − secured_now − organic_future, 0)     # the whole edition, never the target
 entries_needed    = sellout_gap / (1 − drop_off)                # every unit asked for as an entry at the rate
 cpe(d, s)         = cpe_window × lift_window × (s / spend_window)^eps × ((K + C_d) / (K + C_window))^w ÷ lift(d)
                     # C_d = spent before day d at a flat s from today; lift(d) the close's; see the cost terms below
@@ -1963,6 +1963,9 @@ roi_spend         = s where cpe(close, s) = cpe_max            # at the close un
 recommended       = min(supply_spend, roi_spend), then the pacing rules below
 ROI_close_party   = (1 − cannibalisation) × profit_per_unit_party / (cpe(close, recommended) × budget_share_party)
 ```
+The gap is to the whole edition (`edition_total`, the editions summed), never to the target: a
+launch is always run to sell out, the target being the plan (9 October 2026; until then it read
+`edition_size`, and a target inside the edition stopped paid once it was covered).
 `cpe_now` is the trailing-3-day adjusted CPE and `s_now` the last full day's spend;
 `supply_spend` is the daily spend whose entries fill the gap by the close, `roi_spend` the one
 whose ROI at close is the floor, and `eps` and `drift` are the campaign's own

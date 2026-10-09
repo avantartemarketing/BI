@@ -116,11 +116,12 @@ print(f"N: day {N['day']}/{N['of']} edition={N['edition']['target']} cur={b['cur
 flat_units = p["ifContinued"]["unitProjected"] - p["unitsToDate"]
 aim = flat_units / 2
 def gap_raw(snap, E): return E - snap["hero"]["now"] - snap["paid"]["budget"]["organicFuture"]
-pts = [(float(N["edition"]["target"]), gap_raw(N, float(N["edition"]["target"])))]
+E0 = float((N.get("edition") or {}).get("total") or N["edition"]["target"])   # the edition the gap read
+pts = [(E0, gap_raw(N, E0))]
 E1 = round(pts[0][0] - pts[0][1] + aim, 1)
 S = None
 for _ in range(5):
-    cfgS = dict(cfg, edition_size=E1)
+    cfgS = dict(cfg, edition_size=E1, edition_total=E1)   # the target the whole edition
     S = with_floor(0.5, lambda: run(cfgS))
     pts.append((E1, gap_raw(S, E1)))
     if 0.2 * flat_units < S["paid"]["budget"]["selloutGap"] < 0.8 * flat_units:
@@ -154,6 +155,21 @@ check(ar["stops"]["roiFloor"] is None and (ar["stops"]["day"] is None or ar["sto
       f"at the recommended spend the sellout lands on the close or not at all (a paced cut earlier): {ar['stops']} paced={b['paced']}")
 check(ar["sellThrough"]["pct"] <= 1 and close(ar["sellThrough"]["units"], S["hero"]["projected"], 1.5),
       f"and the sell-through at close is the sellout still: {ar['sellThrough']} vs {S['hero']['projected']}")
+# ---- the gap is to the whole edition, never the target (9 October 2026):
+# with the target at 80% of the same edition the organic course shrinks with
+# it, and paid is still sized to the edition: the run rate stops where it
+# fills the edition and the projection at close is the edition
+cfgT = dict(cfgS, edition_size=round(E1 * 0.8), edition_total=E1)
+T = with_floor(0.5, lambda: run(cfgT))
+pt, bt = T["paid"], T["paid"]["budget"]
+print(f"T: target={cfgT['edition_size']} of {cfgT['edition_total']} gap={bt['selloutGap']} organic={bt['organicFuture']} stops={pt['stops']} "
+      f"hero proj={T['hero']['projected']} rec={bt['recommended']} ({bt['cap']})")
+check(T["edition"]["target"] == cfgT["edition_size"] and close(float(T["edition"]["total"]), E1, 1), f"the target inside the edition: {T['edition']}")
+check(close(bt["selloutGap"], gap_raw(T, E1), 1),
+      f"the gap reads the whole edition: {bt['selloutGap']} vs {gap_raw(T, E1):.2f} (to the target it would be {gap_raw(T, cfgT['edition_size']):.2f})")
+check(bt["selloutGap"] > gap_raw(T, cfgT["edition_size"]) + 1, "and not the target")
+check(pt["stops"]["rule"] == "sellout" and close(T["hero"]["projected"], E1, 1.5),
+      f"the run rate stops at the edition and the projection at close is the edition: {pt['stops']} {T['hero']['projected']} vs {E1}")
 # the same on a part day: today counts for what is left of it, in the flat run
 # and the stopped one alike
 P = with_floor(0.5, lambda: run(cfgS, through=TODAY, part=0.4, full_through=TODAY - timedelta(days=1), seen=0.4375))
