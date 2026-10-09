@@ -125,10 +125,15 @@ the framing take-up and profit per frame. The release's target is the
 products' editions at their target sell-through, summed; its launch value the
 target units at their prices, in euros; its profits per unit the products'
 weighted by target units; and the paid-budget split follows from the deal -
-on a profit-share deal Avant Arte carries its share of the profit, on a
-revenue-share (royalty) deal it carries the ads outright. Until Airtable
-holds a figure, it can be typed over on the products table, and a work
-Airtable has no record for can be added by hand.
+on a profit-share deal Avant Arte carries its share of the profit (Airtable's
+`AA split`), on a revenue-share (royalty) deal, where the artist or estate
+takes a commission on revenue (`Revenue Commission %`), it carries the ads
+outright; which deal a work is on is Airtable's `Commission Type`. A
+profit-share deal can carry a revenue cut too: the artist's commission is
+taken first and the profit split after, so the split still says who funds
+the ads, and the cut is shown beside it. Until
+Airtable holds a figure, it can be typed over on the products table, and a
+work Airtable has no record for can be added by hand.
 
 **From the Notion log:** the private room opens with the early-access email,
 then the announce and the launch (the day the draw closes), and the marketing

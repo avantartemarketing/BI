@@ -146,10 +146,32 @@ OPTIONAL_FIELDS: list[tuple[str, str]] = [
     ("Framing conversion", "frame_conversion"),
     ("Framing profit per unit", "frame_profit_per_unit"),
     ("Marketing lead", "marketing_lead"),
+    # the deal: "Profit" (a split of the profit) or "Revenue" (the artist or
+    # estate paid a commission on revenue); etl/pricing.py reads it to say
+    # which share is the product's deal
+    ("Commission Type", "deal_type"),
+    # the artist's or estate's cut of revenue, taken before any profit is
+    # split: the whole deal on a revenue deal (Avant Arte's revenue share is
+    # the rest), a component beside the AA split on a profit deal that has one
+    ("Revenue Commission %", "artist_revenue_cut"),
 ]
+# The names the table actually carries these under (8 October 2026), tried
+# after the current name, the first the table has winning; an
+# AIRTABLE_FIELD_<column> override is still the one name tried.
+OPTIONAL_ALIASES: dict[str, list[str]] = {
+    "aa_profit_share": ["AA split"],
+    "aa_profit_per_unit": ["Profit per unit (excl paid ads)_marketing"],
+    "artist_profit_per_unit": ["Artist profit per unit (excl. paid ads)_marketing"],
+}
 LEAD_COL = "marketing_lead"
 # a percentage field arrives as 0.4 or, typed as a number, as 40: read either
-PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion"}
+PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion", "artist_revenue_cut"}
+# a money figure typed as text ("€450", "€1,250"): read for its number, in
+# euros - the page's currency and the one the price field carries - with a
+# figure in another currency converted at etl/pricing.py's rates
+MONEY_COLS = {"artist_profit_per_unit", "aa_profit_per_unit", "frame_profit_per_unit"}
+MONEY_RE = re.compile(r"-?\d[\d,]*(?:\.\d+)?")
+MONEY_SYMBOLS = {"€": "EUR", "£": "GBP", "$": "USD", "EUR": "EUR", "GBP": "GBP", "USD": "USD"}
 PRICE_FIELD = "Total Unit Price (Retail)"
 PRICE_COL = "unit_price"
 DATE_COLS = {"launch_date", "announce_date", "private_room_date", "tl_end_date"}
@@ -240,6 +262,20 @@ def optional_fields() -> list[tuple[str, str]]:
     return out
 
 
+def resolve_optional(fields: dict) -> list[tuple[str, str]]:
+    """The optional fields against the table: (the name to request, the
+    column). An override is the one name tried; otherwise the current name,
+    then the column's other names (OPTIONAL_ALIASES), the first the table has
+    winning. A column under none of them keeps its current name, which
+    check_schema lists as absent."""
+    out = []
+    for name, col in OPTIONAL_FIELDS:
+        override = os.environ.get(f"AIRTABLE_FIELD_{col.upper()}", "").strip()
+        tried = [override] if override else [name] + OPTIONAL_ALIASES.get(col, [])
+        out.append((next((n for n in tried if n in fields), tried[0]), col))
+    return out
+
+
 def required_fields(fields: dict) -> list[tuple[str, str, list[str]]]:
     """FIELDS resolved against the table: (the name to request, the column,
     the names tried). An AIRTABLE_FIELD_<column> override is the one name
@@ -274,7 +310,7 @@ def check_schema(fields: dict) -> tuple[list[str], str, dict[str, str], list[str
             bad.append(f"{name!r} ({kind})")
     found: dict[str, str] = {}
     absent: list[str] = []
-    for name, col in optional_fields():
+    for name, col in resolve_optional(fields):
         if name not in fields:
             absent.append(name)
             continue
@@ -304,7 +340,7 @@ def list_fields(fields: dict) -> None:
     """Names and types of every field in the table - nothing else. The
     wanted ones are marked, and the ones the guard would refuse are flagged."""
     print(f"{len(fields)} fields")
-    wanted = {name for name, _, _ in required_fields(fields)} | {name for name, _ in optional_fields()}
+    wanted = {name for name, _, _ in required_fields(fields)} | {name for name, _ in resolve_optional(fields)}
     for name, f in fields.items():
         kind = field_kind(f)
         flags = []
@@ -375,12 +411,34 @@ def flatten(value, col: str, hits: list[int]) -> object:
         if col != "launch_time" and "T" in text:
             text = text.split("T")[0]
         return text
+    if col in MONEY_COLS:
+        return money(text)
     # rich text arrives as markdown: links to shared drives are not part of a
     # medium line, and neither is the markup around them
     text = re.sub(r"<?https?://\S+>?", "", text)
     text = re.sub(r"[*_`#>]+", "", text)
     text = re.sub(r"\s+", " ", text).strip()
     return scrub(text, hits)
+
+
+def money(text: str) -> object:
+    """A money figure typed as text, as a number in euros: "€450" -> 450,
+    "€1,250.50" -> 1250.5, "£100" -> 118 at etl/pricing.py's rate; nothing
+    where there is no figure ("tbc"). A figure with no symbol is taken as
+    euros, the currency the table's price field carries."""
+    m = MONEY_RE.search(text)
+    if not m:
+        return ""
+    value = float(m.group(0).replace(",", ""))
+    head = text[:m.start()].upper()
+    symbol = next((MONEY_SYMBOLS[s] for s in ("€", "£", "$", "EUR", "GBP", "USD") if s in head or s in text[m.end():].upper()), "EUR")
+    if symbol != "EUR":
+        try:
+            from pricing import RATES_TO_EUR
+        except ImportError:  # the pull run from elsewhere: the price stays in its own currency
+            RATES_TO_EUR = {}
+        value *= RATES_TO_EUR.get(symbol, 1.0)
+    return round(value, 2)
 
 
 def keep(row: dict, today: date, everything: bool) -> bool:

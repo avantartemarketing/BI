@@ -246,6 +246,29 @@ def test_airtable_products_join() -> None:
         assert got["announce_date"] == "2026-09-02" and got["launch_date"] == "2026-09-30" and got["marketing_lead"] == "Clare"
         none = pricing.release_products({"release_name": "Nobody · Thing · 2026 Q3", "announce_date": "2026-09-01", "launch_end": "2026-09-28"}, path)
         assert none["match"] == "none" and none["products"] == []
+    # the deal (8 October 2026): the artist's cut of revenue (Revenue Commission %) is taken before any profit is split.
+    # On a revenue deal it is the whole deal (the AA revenue share is the rest, an AA split the record carries is not its
+    # deal); on a profit deal the AA split is the deal and the cut rides beside it, since a release can be both; with no
+    # type a cut alone is a revenue deal, a split alone a profit deal, both a profit deal with a cut
+    with tempfile.TemporaryDirectory() as d:
+        path = pathlib.Path(d) / "pricing.csv"
+        pd.DataFrame([dict(rows[0], aa_revenue_share="", aa_profit_share=0.5, artist_revenue_cut=0.15, deal_type="Revenue"),
+                      dict(rows[0], airtable_id=4, title="Blue", aa_revenue_share="", aa_profit_share=0.5, artist_revenue_cut=0.15, deal_type="Profit"),
+                      dict(rows[0], airtable_id=5, title="Green", aa_revenue_share="", aa_profit_share=0.5, artist_revenue_cut=0.15, deal_type=""),
+                      dict(rows[0], airtable_id=6, title="Gold", aa_revenue_share="", aa_profit_share="", artist_revenue_cut=0.15, deal_type=""),
+                      dict(rows[0], airtable_id=7, title="Pink", aa_revenue_share="", aa_profit_share=0.5, artist_revenue_cut="", deal_type="Profit")]).to_csv(path, index=False)
+        by = {p["name"]: p for p in pricing.release_products({"release_name": "Test Artist · Multiple · 2026 Q3", "announce_date": "2026-09-01", "launch_end": "2026-09-28"}, path)["products"]}
+        assert by["Red"]["deal_type"] == "revenue" and by["Red"]["aa_profit_share"] is None and close(by["Red"]["aa_revenue_share"], 0.85) and by["Red"]["artist_revenue_cut"] == 0.15, by["Red"]
+        assert by["Blue"]["deal_type"] == "profit" and by["Blue"]["aa_revenue_share"] is None and by["Blue"]["aa_profit_share"] == 0.5 and by["Blue"]["artist_revenue_cut"] == 0.15, by["Blue"]
+        assert by["Green"]["deal_type"] is None and by["Green"]["aa_revenue_share"] is None and by["Green"]["aa_profit_share"] == 0.5 and by["Green"]["artist_revenue_cut"] == 0.15, by["Green"]
+        assert by["Gold"]["aa_profit_share"] is None and close(by["Gold"]["aa_revenue_share"], 0.85) and by["Gold"]["artist_revenue_cut"] == 0.15, by["Gold"]
+        assert by["Pink"]["aa_profit_share"] == 0.5 and by["Pink"]["artist_revenue_cut"] is None and by["Pink"]["aa_revenue_share"] is None, by["Pink"]
+        red, blue, green, gold = (build._effective_product(by[n], build.BENCH) for n in ("Red", "Blue", "Green", "Gold"))
+        assert red["deal"] == "revenue share" and red["aa_budget_share"] == 1.0 and red["artist_revenue_cut"] == 0.15
+        assert blue["deal"] == "profit share" and blue["aa_budget_share"] == 0.5 and blue["artist_revenue_cut"] == 0.15, "a profit deal with a cut: the split funds the ads, the cut rides beside it"
+        assert green["deal"] == "profit share" and green["aa_budget_share"] == 0.5
+        assert gold["deal"] == "revenue share" and gold["aa_budget_share"] == 1.0
+    assert pricing.deal_type("Profit") == "profit" and pricing.deal_type("Revenue") == "revenue" and pricing.deal_type("") is None and pricing.deal_type(None) is None
     assert pricing.is_sculpture("SE", "") and pricing.is_sculpture("CL", "Low cost 3D edition") and pricing.is_sculpture("TLC", "Mid cost 3D edition")
     assert not pricing.is_sculpture("PE", "Silkscreen print") and not pricing.is_sculpture("", "") and not pricing.is_sculpture("OG", "Unique work")
     with tempfile.TemporaryDirectory() as d:
@@ -277,6 +300,8 @@ def test_js_agrees() -> None:
             dict(AT[1], airtable_id="13", name="Print", framing=None, framing_available=None, framing_default=True, frame_profit_per_unit=None)],
          "typed": [], "legacy": None},
         {"name": "a work unticked", "airtable": AT, "typed": [{"airtable_id": "12", "excluded": True, "unit_price": 2500}], "legacy": None},
+        {"name": "a profit deal with a revenue cut beside it, the cut typed over on one work", "airtable": [dict(AT[0], artist_revenue_cut=0.15), dict(AT[1], artist_revenue_cut=0.1)],
+         "typed": [{"airtable_id": "12", "artist_revenue_cut": 0.2}], "legacy": None},
     ]
     payload = {"bench": {k: b[k] for k in ("frame_conversion",)}, "cases": cases}
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
@@ -296,7 +321,7 @@ def test_js_agrees() -> None:
         assert [p["name"] for p in py_products] == [p["name"] for p in js["products"]], (c["name"], [p["name"] for p in js["products"]])
         for pp, jp in zip(py_products, js["products"]):
             for key in ("edition", "target_sellthrough", "target_units", "unit_price", "unit_price_eur", "artist_profit_per_unit",
-                        "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "frame_conversion", "frame_profit_per_unit",
+                        "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "frame_conversion", "frame_profit_per_unit",
                         "frame_uplift_per_unit", "aa_budget_share"):
                 a, bb = pp.get(key), jp.get(key)
                 ok = (a is None and bb is None) or (a is not None and bb is not None and close(a, bb))

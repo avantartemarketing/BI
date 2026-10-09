@@ -1072,9 +1072,24 @@ units, launch type, launch date and medium, one record per product (a colourway,
 variant, a bundle). `etl/pull_airtable.py` pulls exactly the fields needed - identity, price,
 size, type, dates, medium, artist tier and genre bucket, and the per-product target economics
 of §1.6 (`Target sell-through %`, `Artist profit per unit`, `AA profit per unit`, `AA revenue
-share`, `AA profit share`, `Framing conversion`, `Framing profit per unit`) plus the
-`Marketing lead`, each pulled when the table has the field and left blank when it does not
-yet, with `AIRTABLE_FIELD_<column>` naming a field spelled another way - and nothing about
+share`, `AA profit share`, `Framing conversion`, `Framing profit per unit`, `Commission Type`)
+plus the `Marketing lead` and `Revenue Commission %` (`artist_revenue_cut`), each pulled when
+the table has the field and left blank when it does not yet, with `AIRTABLE_FIELD_<column>`
+naming a field spelled another way. The table carries some of these under its own names
+(`OPTIONAL_ALIASES`, 8 October 2026), tried after the name above: `AA split` is the AA profit
+share; `Profit per unit (excl paid ads)_marketing` and `Artist profit per unit (excl. paid
+ads)_marketing` are the two profits per unit, typed as text ("€450", "€1,250") and read for their
+number in euros, a figure in pounds or dollars converted at the pricing rates. **The deal.** The
+artist's or estate's cut of revenue (`Revenue Commission %`) is taken before any profit is split,
+and `Commission Type` (`Profit` or `Revenue`) says what the deal is (`etl/pricing.py
+release_products`). On a revenue deal the cut is the whole deal: the AA revenue share is read as
+one minus it, Avant Arte carries the ads outright, and an AA split the record also carries is not
+its deal. On a profit deal the AA split is the deal and funds the ads at that share, and the cut,
+where the record has one, rides beside it as a component of the deal (a release can be both, 9
+October 2026); there is no AA revenue share then. A record with no type reads a cut alone as a
+revenue deal, a split alone as a profit deal, and both as a profit deal with a cut. The cut shows
+on the products grid and the rail beside the two shares and changes no figure of its own: the
+profits per unit come from Airtable's fields already net of it - and nothing about
 people: it refuses to run if a wanted field turns out to hold a collaborator, email or phone
 (the marketing lead excepted, read for its display name only), blanks any cell that looks like
 one, strips links out of rich text, and keeps only records with an artist, a title and a launch

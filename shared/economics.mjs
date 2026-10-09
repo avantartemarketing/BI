@@ -18,7 +18,7 @@
 export const PAGE_CURRENCY = "EUR";
 export const RATES_TO_EUR = { EUR: 1.0, GBP: 1.18, USD: 0.92 };
 export const PRODUCT_KEYS = ["edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
-  "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "framing_available", "frame_conversion",
+  "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "framing_available", "frame_conversion",
   "frame_profit_per_unit", "units_target"];
 export const LEGACY_KEYS = ["edition_size", "edition_total", "unit_price", "artist_profit", "aa_group_profit",
   "artist_profit_share", "framing_available", "frame_conversion", "frame_profit_per_unit", "aa_budget_share"];
@@ -93,6 +93,9 @@ export function effectiveProduct(p, b) {
   e.aa_profit_per_unit = num(pick("aa_profit_per_unit"));
   e.aa_revenue_share = num(pick("aa_revenue_share"));
   e.aa_profit_share = num(pick("aa_profit_share"));
+  // the artist's cut of revenue before the profit is split: a component of the deal beside the shares
+  const cut = num(pick("artist_revenue_cut"));
+  e.artist_revenue_cut = cut === null ? null : Math.min(Math.max(cut, 0), 1);
   // a frame is on offer unless Airtable or the tab says not; with nothing
   // said, a sculpture edition has none (etl/pricing.py framing_default)
   const fa = pick("framing_available", null, p.framing_default !== false);

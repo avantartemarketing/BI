@@ -1757,7 +1757,7 @@ def _products(rec: dict) -> tuple[list[dict], dict]:
                      "currency": t.get("currency") or p.get("currency") or "EUR", "framing_available": framing,
                      "frame_conversion": over("frame_conversion"), "frame_profit_per_unit": over("frame_profit_per_unit"),
                      "artist_profit_per_unit": over("artist_profit_per_unit"), "aa_profit_per_unit": over("aa_profit_per_unit"),
-                     "aa_revenue_share": over("aa_revenue_share"), "aa_profit_share": over("aa_profit_share"),
+                     "aa_revenue_share": over("aa_revenue_share"), "aa_profit_share": over("aa_profit_share"), "artist_revenue_cut": over("artist_revenue_cut"),
                      "excluded": bool(t.get("excluded")), "typed": {k: t.get(k) for k in PRODUCT_TYPED_KEYS if t.get(k) is not None}})
     for m in manual:
         rows.append({"airtable_id": None, "manual": True, "name": m.get("name"), "edition": _num(m.get("edition")), "units_target": _num(m.get("units_target")),
@@ -1765,7 +1765,7 @@ def _products(rec: dict) -> tuple[list[dict], dict]:
                      "framing_available": bool(m["framing_available"]) if m.get("framing_available") is not None else True,
                      "frame_conversion": _num(m.get("frame_conversion")), "frame_profit_per_unit": _num(m.get("frame_profit_per_unit")),
                      "artist_profit_per_unit": _num(m.get("artist_profit_per_unit")), "aa_profit_per_unit": _num(m.get("aa_profit_per_unit")),
-                     "aa_revenue_share": _num(m.get("aa_revenue_share")), "aa_profit_share": _num(m.get("aa_profit_share")),
+                     "aa_revenue_share": _num(m.get("aa_revenue_share")), "aa_profit_share": _num(m.get("aa_profit_share")), "artist_revenue_cut": _num(m.get("artist_revenue_cut")),
                      "excluded": bool(m.get("excluded")), "typed": {}})
     live = [p for p in rows if not p["excluded"]]
     targets = [p["units_target"] for p in live if p["units_target"]]
@@ -1878,7 +1878,7 @@ def _email_card(emails: pd.DataFrame | None, code: str | None, d: dict, daily: p
 
 
 PRODUCT_TYPED_KEYS = ("edition", "units_target", "unit_price", "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share",
-                      "frame_conversion", "frame_profit_per_unit")
+                      "artist_revenue_cut", "frame_conversion", "frame_profit_per_unit")
 
 
 def tl_economics(rows: list[dict]) -> dict:
