@@ -700,28 +700,59 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   // on the server (server/slack.js), saved on its own so a release without
   // targets can have one too
   const [slackDraft, setSlackDraft] = useState((snap.slack && snap.slack.channel) || "");
+  // the project manager who confirms the unit economics (Send for
+  // confirmation, under Works): a Slack member ID, @handle or email, saved
+  // with the channel
+  const [pmDraft, setPmDraft] = useState((snap.slack && snap.slack.pm) || "");
   const [slackSaving, setSlackSaving] = useState(false);
   const [slackError, setSlackError] = useState(null);
   const [slackNote, setSlackNote] = useState(null);   // the server saved, but somewhere that will not last
   const slackCurrent = (snap.slack && snap.slack.channel) || "";
+  const pmCurrent = (snap.slack && snap.slack.pm) || "";
+  const slackDirty = slackDraft.trim().replace(/^#/, "") !== slackCurrent || pmDraft.trim().replace(/^@/, "") !== pmCurrent;
   const saveSlack = async () => {
     setSlackSaving(true); setSlackError(null); setSlackNote(null);
     try {
       const res = await fetch(`/api/releases/${snap.id}/slack-channel`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: slackDraft }),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: slackDraft, pm: pmDraft }),
       });
       const d = await res.json();
       if (!res.ok) { setSlackError(d.error || `save failed (${res.status})`); return; }
       setSlackDraft((d.slack && d.slack.channel) || "");
+      setPmDraft((d.slack && d.slack.pm) || "");
       setSlackNote(d.warning || null);
       onSaved({ ...snap, slack: d.slack });
     } catch (e) { setSlackError(String(e)); } finally { setSlackSaving(false); }
+  };
+  /* "Send for confirmation" (under Works): the unit economics as saved and
+     built, to the release's channel with the project manager mentioned
+     (server/slack.js composeEconomicsBlocks). The figures set the Paid ROI,
+     so the person who knows the deal is asked to check them where they will
+     see it. The button keeps one width through its states, as the
+     sell-through card's does; what happened is on its hover. */
+  const [econPost, setEconPost] = useState({ state: "idle" });
+  const econReady = !!(snap.slack && snap.slack.channel && snap.slack.pm);
+  const sendEconomics = async () => {
+    setEconPost({ state: "posting" });
+    try {
+      const r = await fetch(`/api/releases/${snap.id}/slack-economics`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `Slack post failed (${r.status})`);
+      setEconPost({ state: "done", channel: d.channel, to: d.to });
+      if (d.slack) onSaved({ ...snap, slack: d.slack });
+      setTimeout(() => setEconPost((p) => (p.state === "done" ? { state: "idle" } : p)), 6000);
+    } catch (e) {
+      setEconPost({ state: "error", message: String(e.message || e) });
+    }
   };
 
   useEffect(() => {
     setMeta(null); setInp(null); setError(null); setPick(null); setPicking(false); setEditing(false); setWhyOpen(false);
     setStretchUi(null); setAssumeOpen(false);
-    setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null); setSlackNote(null);
+    setSlackDraft((snap.slack && snap.slack.channel) || ""); setPmDraft((snap.slack && snap.slack.pm) || ""); setSlackError(null); setSlackNote(null);
+    setEconPost({ state: "idle" });
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
       // a release nobody has set targets for comes back with inputs: null and
@@ -785,6 +816,11 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const set = (k) => (e) => setInp({ ...inp, [k]: e.target.value });
   const dv = meta.derived || {};
   const dirty = !!pick || JSON.stringify(inp) !== JSON.stringify(meta.inputs);
+  const econTitle = econPost.state === "error" ? `Not sent: ${econPost.message}`
+    : econPost.state === "done" ? `Sent to #${econPost.channel}, ${econPost.to} asked to confirm`
+    : !econReady ? "Set the Slack channel and the project manager under Lead and Slack first."
+    : dirty ? "Save first: the message carries the figures as saved and built."
+    : "Post the unit economics to the release's Slack channel and ask the project manager to confirm them: they set the Paid ROI.";
 
   /* ---- the dates, by source: the Notion log, then what was typed, then the
    * funnel's clock, then Airtable (resolve_release reads them the same way) */
@@ -1158,6 +1194,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
               <h2>Works</h2>
               <span className="d">{worksDesc}</span>
               <div className="right">
+                <button type="button" className="ts-btn secondary sm" title={econTitle}
+                  disabled={!econReady || dirty || econPost.state === "posting"} onClick={sendEconomics}>
+                  {econPost.state === "posting" ? "Sending…" : econPost.state === "done" ? "Sent" : econPost.state === "error" ? "Failed" : "Send for confirmation"}
+                </button>
                 {editing && <button type="button" className="ts-btn secondary sm" onClick={onAdd}>Add a work</button>}
                 {editing && typedCount > 0 && <button type="button" className="ts-btn secondary sm" onClick={onResetAll} title="Drop every typed figure: back to Airtable's on every work.">Reset all</button>}
                 <button type="button" className={`ts-switch${editing ? " on" : ""}`} aria-pressed={editing} onClick={() => setEditing(!editing)}
@@ -1284,8 +1324,20 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                         : slackNote ? <span className="ts2-tag warn" title={slackNote}>saved, not for long</span>
                           : snap.slack && snap.slack.lastPostAt ? <span className="ts2-tag" title={`Last posted ${new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}>posted</span> : null}
                     </div>
-                    <button type="button" className="ts-btn secondary sm" disabled={slackSaving || slackDraft.trim().replace(/^#/, "") === slackCurrent} onClick={saveSlack}>
-                      {slackSaving ? "Saving…" : "Save channel"}
+                  </div>
+                  <label className="sub" htmlFor="ts-pm" style={{ marginTop: 8 }}
+                    title="Who confirms the unit economics: Send for confirmation, under Works, posts them to the channel and mentions this person. Their Slack member ID (profile menu, Copy member ID), @handle or email; a handle or an email needs the Slack app to carry the users:read or users:read.email scope. Saved with the channel.">
+                    Project manager (Slack)
+                  </label>
+                  <div className="ts2-ctl" style={{ minHeight: 0 }}>
+                    <div className="ts-box" style={{ flex: "1 1 150px" }}>
+                      <input id="ts-pm" value={pmDraft} onChange={(e) => setPmDraft(e.target.value)} placeholder="@handle, email or member ID" />
+                      {snap.slack && snap.slack.lastEconomicsAt
+                        ? <span className="ts2-tag" title={`Economics sent for confirmation ${new Date(snap.slack.lastEconomicsAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}${snap.slack.lastEconomicsBy ? ` by ${snap.slack.lastEconomicsBy}` : ""}`}>sent</span>
+                        : null}
+                    </div>
+                    <button type="button" className="ts-btn secondary sm" disabled={slackSaving || !slackDirty} onClick={saveSlack}>
+                      {slackSaving ? "Saving…" : "Save"}
                     </button>
                   </div>
                 </div>

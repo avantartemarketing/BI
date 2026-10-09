@@ -34,6 +34,22 @@ check(slack.stateFor("rel_a") && slack.stateFor("rel_a").channel === "launch-upd
 check(slack.recordPost("rel_a", "someone").lastPostAt, "a post is recorded through the fallback too");
 check(slack.setChannel("rel_a", "") === null && slack.stateFor("rel_a") === null, "an empty name clears the channel");
 
+// the project manager who confirms the unit economics: saved with the
+// channel as typed without its @, changed alone or with the channel, cleared
+// alone, and gone with the channel
+const withPm = slack.setSlack("rel_b", { channel: "#launch-updates", pm: "@clare" }, "someone");
+check(withPm && withPm.channel === "launch-updates" && withPm.pm === "clare", "saved with the channel, without its @: " + JSON.stringify(withPm));
+check(slack.setSlack("rel_b", { pm: "U0PMTEST01" }, "someone").pm === "U0PMTEST01" && slack.stateFor("rel_b").channel === "launch-updates", "the project manager changes alone, the channel stays");
+check(slack.setSlack("rel_b", { channel: "launch-updates-2" }, "someone").pm === "U0PMTEST01", "the channel changes alone, the project manager stays");
+check(slack.recordEconomicsPost("rel_b", "someone").lastEconomicsAt && slack.stateFor("rel_b").lastPostAt === undefined, "an economics post is recorded apart from the sell-through ones");
+check(!("pm" in slack.setSlack("rel_b", { pm: "" }, "someone")), "an empty project manager clears it");
+let threw = null;
+try { slack.setSlack("rel_b", { pm: "two words" }, "someone"); } catch (e) { threw = e.message; }
+check(/no spaces/.test(threw || ""), "a project manager with spaces is refused: " + threw);
+check(slack.setSlack("rel_b", { channel: "" }, "someone") === null && slack.stateFor("rel_b") === null, "clearing the channel clears the release, project manager and all");
+check(slack.pmKind("U05LE1G3AJC") === "id" && slack.pmKind("W012ABCDEFG") === "id" && slack.pmKind("clare@example.com") === "email"
+  && slack.pmKind("@clare") === "handle" && slack.pmKind("clare.f") === "handle" && slack.pmKind("") === null, "the kind is read off the shape");
+
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(failed ? `${failed} check(s) failed` : "ok: slack state falls back with a warning");
 process.exit(failed ? 1 : 0);

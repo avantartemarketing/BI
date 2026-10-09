@@ -796,15 +796,46 @@ app.post("/api/layout", route(async (req, res) => {
 }));
 
 // ---- sell-through updates to Slack (server/slack.js) ----
+/* The release's channel, and the project manager who confirms its unit
+ * economics ({channel, pm}: a Slack member ID, @handle or email; pm left
+ * out keeps the one saved). */
 app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   if (!req.body || req.body.channel === undefined) return res.status(400).json({ error: "channel required (empty clears it)" });
   const s = auth.sessionFrom(req);
   try {
-    const state = slack.setChannel(id, req.body.channel, s && s.email);
+    const state = slack.setSlack(id, { channel: req.body.channel, pm: req.body.pm }, s && s.email);
     res.json({ slack: state, warning: slack.stateWarning() });
   } catch (e) {
     res.status(400).json({ error: String(e.message || e) });
+  }
+}));
+/* The unit economics to the release's channel, with the project manager
+ * mentioned, for them to confirm (server/slack.js composeEconomicsBlocks):
+ * the Target setting tab's "Send for confirmation" button. The message is
+ * composed from the snapshot on disk, the figures as last saved and built.
+ * {dryRun: true} returns the message and looks nobody up. */
+app.post("/api/releases/:id/slack-economics", route(async (req, res) => {
+  const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
+  const snap = readSnapshot(id);
+  if (!snap) return res.status(404).json({ error: "unknown release" });
+  const st = slack.stateFor(id);
+  if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
+  if (!st.pm) return res.status(400).json({ error: "Set the project manager for this release on the Target setting tab first: their Slack member ID, @handle or email." });
+  const dryRun = !!(req.body && req.body.dryRun);
+  const s = auth.sessionFrom(req);
+  const link = `${(process.env.PUBLIC_URL || `${req.protocol}://${req.get("host")}`).replace(/\/+$/, "")}/?release=${encodeURIComponent(id)}`;
+  let who = { mention: `@${st.pm}`, label: st.pm };
+  if (!dryRun) {
+    try { who = await slack.resolveMention(st.pm); } catch (e) { return res.status(400).json({ error: String(e.message || e) }); }
+  }
+  const { text, blocks } = slack.composeEconomicsBlocks(snap, { mention: who.mention, mentionLabel: who.label, by: s && s.email, link });
+  if (dryRun) return res.json({ channel: st.channel, to: who.label, text, blocks });
+  try {
+    await slack.postMessage(st.channel, text, blocks);
+    res.json({ ok: true, channel: st.channel, to: who.label, slack: slack.recordEconomicsPost(id, s && s.email) });
+  } catch (e) {
+    res.status(502).json({ error: String(e.message || e) });
   }
 }));
 /* The card to Slack, as a Block Kit message composed from the snapshot on
