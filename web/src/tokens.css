@@ -674,76 +674,45 @@ select.native {
   .ts2-dates, .ts2-two { grid-template-columns: 1fr; }
 }
 
-/* ---------- the works as one picture (the Works group) ----------
-   A column per work, as wide as its target units and as tall as its price,
-   stacked by who gets what with the framing uplift as the band on top; the
-   selected work's figures beside it, where the figure itself is the input. */
-.wa { display: flex; gap: 28px; align-items: stretch; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px 16px; min-width: 0; }
-.wa-plot { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.wa-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); align-items: center; }
-.wa-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-.wa-legend .hint { margin-left: auto; }
-.wa i.rest { background: #ece9e1; }
-.wa i.artist { background: #2f5fb3; }
-.wa i.aa { background: #4f80d6; }
-.wa i.frame { background: #a3bfeb; }
-.wa-cols { flex: 1 1 auto; min-height: 380px; display: flex; align-items: flex-end; gap: 6px; border-bottom: 1px solid var(--border); position: relative; padding-left: 48px; }
-.wa-ax { position: absolute; left: 0; font-size: 11px; color: #9a988f; font-variant-numeric: tabular-nums; transform: translateY(50%); line-height: 1; pointer-events: none; }
-.wa-grid { position: absolute; left: 48px; right: 0; border-top: 1px solid var(--hairline); pointer-events: none; }
-.wa-col { display: flex; flex-direction: column-reverse; min-width: 6px; cursor: pointer; border-radius: 4px 4px 0 0; overflow: hidden; background: none; border: 0; padding: 0; position: relative; z-index: 1; box-sizing: border-box; }
-.wa-col .s { display: block; width: 100%; min-height: 0; }
-.wa-col .s.artist, .wa-col .s.aa { box-shadow: inset 0 1px 0 var(--card); }
-.wa-col .s.frame { border-top: 2px dashed var(--card); }
-.wa-col.sel { outline: 2px solid var(--ink); outline-offset: 2px; }
-.wa-col.bare { border: 1px dashed #c8c5bc; border-bottom: 0; background: #fbfaf7; }
-.wa-col:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-.wa-empty { position: absolute; inset: 0 0 0 48px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; color: var(--muted); padding: 0 24px; line-height: 1.5; }
-.wa-names { display: flex; gap: 6px; padding-left: 48px; font-size: 12px; color: var(--muted); }
-.wa-names > span { min-width: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; overflow: hidden; container-type: inline-size; }
-.wa-names .n { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wa-names .nm { max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: break-word; line-height: 1.25; }
-/* a column too narrow for a word keeps its units; the name is on the hover */
-@container (max-width: 56px) { .wa-names .nm { display: none; } }
-.wa-names .n { font-variant-numeric: tabular-nums; }
-.wa-names > span.sel { color: var(--ink); font-weight: 600; }
-.wa-out { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 12px; color: var(--muted); padding-left: 48px; }
-.wa-out .w { display: inline-flex; align-items: center; gap: 8px; }
-.wa-out .nm { background: none; border: 0; padding: 0; font: inherit; color: var(--muted); text-decoration: line-through; text-decoration-color: #c8c5bc; cursor: pointer; }
-.wa-out .nm.sel { color: var(--ink); font-weight: 600; }
-.wa-out .ts-link { font-size: 12px; }
-.wa-side { flex: 0 0 300px; display: flex; flex-direction: column; gap: 6px; padding-left: 24px; border-left: 1px solid var(--border); min-width: 0; }
-.wa-head { display: flex; align-items: center; gap: 10px; min-height: 32px; flex-wrap: wrap; }
-.wa-head h3 { margin: 0; font-size: 14px; font-weight: 600; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wa-head h3.off { color: var(--muted); text-decoration: line-through; text-decoration-color: #c8c5bc; }
-.wa-head .ts-link { font-size: 12.5px; flex: 0 0 auto; margin-left: auto; }
-.wa-name { flex: 1 1 auto; min-width: 0; height: 32px; border: 1px solid var(--border); border-radius: 6px; padding: 0 10px; font: inherit; font-weight: 600; font-size: 14px; color: var(--ink); background: var(--card); }
-.wa-rows { display: grid; }
-.wa-r { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; min-height: 31px; padding: 1px 0; border-bottom: 1px solid var(--hairline); }
-.wa-r:last-child { border-bottom: 0; }
-.wa-r .k { color: var(--muted); flex: 1 1 auto; min-width: 0; }
-.wa-r .v { display: flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; flex: 0 0 auto; }
-.wa-r.total .v { font-weight: 600; }
-.wa-r.closed .v, .wa-r.off .v { color: #b3b1a8; }
-.wa-r.off .k { color: #b3b1a8; }
-.wa-fig.typed { background: var(--blue-tint); border-radius: 3px; padding: 0 4px; color: var(--blue-deep); }
-.wa-at { color: #9a988f; font-size: 11px; }
-/* the figure as the input: one width for every box, so the figures make one
-   column at the panel's edge; the unit sits inside the box */
-.wa-ed { display: inline-flex; align-items: baseline; width: 96px; box-sizing: border-box; border-bottom: 1.5px solid var(--blue); padding: 0 4px 1px; color: var(--blue-deep); font-weight: 600; }
-.wa-ed.typed { background: var(--blue-tint); border-radius: 3px 3px 0 0; }
-.wa-ed .u { font-weight: 400; color: var(--muted); font-size: 12px; flex: 0 0 auto; }
-.wa-ed .u.pre { margin-right: 4px; }
-.wa-ed .u.post { margin-left: 2px; }
-.wa-ed input { flex: 1 1 auto; min-width: 0; width: 100%; border: none; background: transparent; font: inherit; color: inherit; text-align: right; padding: 0; outline: none; font-variant-numeric: tabular-nums; font-weight: 600; }
-.wa-ed input::placeholder { color: #b3b1a8; font-weight: 400; }
-.wa-ed:focus-within { border-bottom-color: var(--ink); }
-.wa-links { display: flex; justify-content: flex-end; gap: 16px; padding-top: 10px; flex-wrap: wrap; font-size: 13px; }
-.wa-links .ts-link.muted { color: var(--muted); }
-.wa-side .ts-switch { font-size: 13px; }
-@media (max-width: 900px) {
-  .wa { flex-direction: column; }
-  .wa-side { flex: 1 1 auto; padding-left: 0; border-left: 0; padding-top: 16px; border-top: 1px solid var(--border); }
-}
+/* ---------- the works as a sheet (the Works group, 9 October 2026) ----------
+   The figures down the side, one column per work with the whole name on up
+   to two lines, All works first; the labels hold while the table scrolls
+   sideways; a column's edge drags. The cell is the input while editing. */
+.ws-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--card); min-width: 0; max-width: 100%; }
+.ws { display: grid; font-size: 13px; font-variant-numeric: tabular-nums; width: max-content; min-width: 100%; }
+.ws-c { min-height: 40px; display: flex; align-items: center; justify-content: flex-end; text-align: right; gap: 6px; padding: 0 10px; border-top: 1px solid var(--hairline); border-right: 1px solid #f2f0ea; box-sizing: border-box; min-width: 0; white-space: nowrap; background: var(--card); }
+.ws-c.ws-l { justify-content: flex-start; text-align: left; color: var(--muted); position: sticky; left: 0; z-index: 2; box-shadow: 1px 0 0 var(--border); overflow: hidden; text-overflow: ellipsis; }
+.ws-c.all { background: #fbfaf6; font-weight: 600; }
+.ws-c.sec { border-top-color: var(--border); }
+.ws-c.out { color: #b3b1a8; background: #fbfaf7; }
+.ws-c.total { font-weight: 600; }
+.ws-c.closed { color: #c8c5bc; }
+.ws-c.ws-h { min-height: 50px; border-top: 0; border-bottom: 1px solid var(--border); font-weight: 600; position: relative; white-space: normal; line-height: 1.25; flex-direction: column; align-items: flex-end; justify-content: flex-end; gap: 4px; padding-top: 8px; padding-bottom: 9px; }
+.ws-c.ws-h .nm { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; max-width: 100%; }
+.ws-c.ws-h.ws-l { z-index: 3; font-weight: 500; align-items: flex-start; }
+.ws-c.ws-h.out .nm { color: #9a988f; text-decoration: line-through; text-decoration-color: #c8c5bc; }
+.ws-c.ws-h .tags { display: flex; gap: 4px; }
+.ws-c.ws-h .ts2-tag { max-width: none; }
+.ws-name { width: 100%; min-width: 0; height: 30px; border: 1px solid var(--border); border-radius: 4px; padding: 0 8px; font: inherit; font-weight: 600; font-size: 13px; color: var(--ink); background: var(--card); text-align: right; box-sizing: border-box; }
+.ws-rz { position: absolute; top: 0; right: -5px; width: 10px; height: 100%; cursor: col-resize; background: none; border: 0; padding: 0; touch-action: none; z-index: 4; }
+.ws-rz::after { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 2px; border-radius: 1px; background: #c8c5bc; opacity: 0; }
+.ws-c.ws-h:hover .ws-rz::after, .ws-rz:focus-visible::after, .ws-rz:active::after { opacity: 1; }
+.ws-in { width: 100%; min-width: 0; height: 30px; border: 1px solid transparent; border-radius: 4px; background: transparent; text-align: right; padding: 0 6px; outline: none; font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.ws-in:hover { border-color: var(--border); background: var(--card); }
+.ws-in:focus { border-color: var(--blue); background: var(--card); }
+.ws-in.typed { background: var(--blue-tint); color: var(--blue-deep); font-weight: 600; }
+.ws-in.typed:hover { background: #dfe9f8; }
+.ws-in::placeholder { color: #b3b1a8; font-weight: 400; }
+.ws-c.all .ws-in { font-weight: 600; }
+.ws-v.typed { background: var(--blue-tint); color: var(--blue-deep); font-weight: 600; border-radius: 3px; padding: 0 4px; }
+.ws-note { color: #9a988f; font-size: 11px; font-weight: 400; margin-left: 6px; }
+.ws-tick { appearance: none; -webkit-appearance: none; width: 15px; height: 15px; border: 1px solid #c8c5bc; border-radius: 3px; background: var(--card); margin: 0; position: relative; cursor: pointer; flex: 0 0 15px; }
+.ws-tick:checked { background: var(--ink); border-color: var(--ink); }
+.ws-tick:checked::after { content: ""; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.ws-tick:disabled { cursor: default; }
+.ws-tick:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.ws-c .ts-link { font-size: 12.5px; }
+.ws-empty { border: 1px solid var(--border); border-radius: 10px; background: var(--card); padding: 20px 24px; font-size: 13px; color: var(--muted); line-height: 1.5; }
 /* the product cell: the name gives way first, then its Airtable code; the
    Reset or Remove link at its end always stays in view */
 .sheet td.primary .pc { display: flex; align-items: center; gap: 8px; min-width: 0; }

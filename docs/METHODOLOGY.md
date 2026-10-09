@@ -463,14 +463,16 @@ by itself:
 secured now     = units paid + draft orders + orders expected from the draw, work by work,
                   capped at the edition        (the hero's secured units, §1)
 organic to come = shape-following organic projection of further secured units (§6)
-sell-out gap    = max(edition size − secured now − organic to come, 0)
+sell-out gap    = max(whole edition − secured now − organic to come, 0)
 entries needed  = sell-out gap ÷ rate       (every unit asked for as an entry, as in the targets)
 supply spend    = the daily spend whose entries fill the gap by the close, at the price below
 budget          = supply spend × days left
 ```
 
-A launch pacing well ahead organically can therefore read a recommendation of
-€0/day: nothing extra is needed to secure sell-out, whatever the current ROI.
+The gap is to the whole edition, never to the target: a launch is always run
+to sell out, the target being the plan (9 October 2026). A launch pacing well
+ahead organically can therefore read a recommendation of €0/day: nothing extra
+is needed to secure sell-out, whatever the current ROI.
 
 **Price rises as the spend adds up.** Within a campaign, what a euro buys falls
 as the campaign's total spend grows: each doubling of what it has spent makes

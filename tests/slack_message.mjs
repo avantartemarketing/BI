@@ -348,13 +348,13 @@ if (fs.existsSync(dir)) {
   check(cut("roi_floor") === H + "We may have to decrease paid spend to stay ROI-positive, " + D, `a cut for ROI: ${cut("roi_floor")}`);
   check(cut("roi_floor", {}, { floor: 1.2 }) === H + "We may have to decrease paid spend to keep ROI above 1.2, " + D, `a cut for a floor above 1: ${cut("roi_floor", {}, { floor: 1.2 })}`);
   check(stop("roi_floor") === H + "We may have to stop paid spend to stay ROI-positive, in which case the forecast sell-through drops to *25.0%* (150 units).", `a stop for ROI: ${stop("roi_floor")}`);
-  // on course to sell out: the line ends at the reason, since the forecast does not move;
-  // the fixture's release has a target inside its edition, so it reads "hit the target" there
+  // on course to sell out: the line ends at the reason, since the forecast does not move; a
+  // stop says the forecast already assumes it (the gap to the edition is closed, so the paid
+  // path stops at once); the fixture's target inside its edition changes nothing (9 October 2026)
+  check(cut("supply") === H + "We may be able to decrease paid spend, as we are on course to sell out anyway.", `a cut, selling out anyway: ${cut("supply")}`);
+  check(stop("supply") === "This assumes paid stops now, as we are on course to sell out without it. Paid is at €1,000 a day.", `a stop, selling out without it: ${stop("supply")}`);
   const whole = { edition: { target: 600, total: 600 } };
-  check(cut("supply", whole) === H + "We may be able to decrease paid spend, as we are on course to sell out anyway.", `a cut, selling out anyway: ${cut("supply", whole)}`);
-  check(stop("supply", whole) === H + "We may be able to stop paid spend, as we are on course to sell out without it.", `a stop, selling out anyway: ${stop("supply", whole)}`);
-  check(cut("supply") === H + "We may be able to decrease paid spend, as we are on course to hit the target anyway.", `a cut, hitting the target anyway: ${cut("supply")}`);
-  check(stop("supply") === H + "We may be able to stop paid spend, as we are on course to hit the target without it.", `a stop, hitting the target anyway: ${stop("supply")}`);
+  check(cut("supply", whole) === cut("supply") && stop("supply", whole) === stop("supply"), "the same with the target the whole edition");
   check(stop("zero_conversion_pause") === H + "We may have to pause paid spend, as it has bought no entries for three days, in which case the forecast sell-through drops to *25.0%* (150 units).", `a pause: ${stop("zero_conversion_pause")}`);
   check(cut("zero_conversion") === H + "We may have to decrease paid spend, as it bought no entries yesterday, " + D, `a cut, nothing bought yesterday: ${cut("zero_conversion")}`);
   check(cut("roi_band_decrease") === H + "We may have to decrease paid spend, as cumulative ROI is under 0.9, " + D, `a cut by the ROI band: ${cut("roi_band_decrease")}`);

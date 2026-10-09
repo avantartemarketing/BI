@@ -705,25 +705,24 @@ hover):
    sense check) and the launch value. Each figure's detail - "of N" when the target is part of
    the edition, the uplift `×K`, where the stretch comes from, the budget's benchmark and share
    of launch value - is on hover, never printed under it.
-2. **Works** - the works as one picture (`WorksArea` in `web/src/TargetSetting.jsx`): a column
-   per work, as wide as its target units (the columns share the width in proportion) and as
-   tall as its price per unit on a euro scale, stacked from the foot by who gets what - costs
-   and the rest, the artist's profit, Avant Arte's profit - with the framing uplift (frames per
-   print × frame profit) as a dashed band on top, so area is money. A work with no edition or no price yet is a thin dashed outline; a work left out of the release
-   is not drawn, only named under the chart with `Include` beside it while editing; the label under a column is what differs
-   between the works' names (the shared start and end dropped) and the target units. Selecting
-   a column puts the work's figures beside the chart: edition, sell-through, target units, the
-   close, price, the two profits per unit, `AA profit share` and `AA revenue share` (Avant
-   Arte's own share, not the artist's; two figures that close each other), framing (a switch;
-   unticked closes the two frame figures), frames per print, frame profit, then the launch
-   value and Avant Arte's take with framing. With nothing selected the panel is the release as
-   a whole: editions and target units summed, the rest weighted by target units, and AA's share
-   of paid spend. The figures are locked to Airtable's until the `Edit figures` switch is on;
-   then the figure itself is the input, selected whole on focus so typing replaces it, a typed
-   figure tinted with Airtable's (or the default) faint beside it, and a figure typed on the
-   release as a whole lands on every work whose figure is open. Its first row, `In the release`, is the switch that leaves the work out or counts it
-   again; the panel offers `Reset to Airtable`, and `Remove` on a work added by hand; the group's head counts the typed figures and offers `Reset all` and `Add a
-   work`. The timed launches' tab keeps the Airtable-like grid (`ProductsGrid`).
+2. **Works** - the works as one sheet (`WorksSheet` in `web/src/TargetSetting.jsx`): the figures
+   down the side, in the order the deal is read - in the release (a tick), edition, sell-through,
+   target units, the close, price, the two profits per unit, the artist's revenue cut, `AA profit
+   share` and `AA revenue share` (Avant Arte's own share, not the artist's; two cells that close
+   each other), framing (a tick; unticked closes the two frame cells), frames per print, frame
+   profit, then the launch value, Avant Arte's take with framing and AA's share of paid spend -
+   one column per work with its whole name on up to two lines, and All works as the first column:
+   editions and target units summed, the rest weighted by target units. The figure labels hold
+   while the sheet scrolls sideways; a column's edge drags to widen it (72px at least) and a
+   double-click puts it back. The figures are locked to Airtable's until the `Edit figures`
+   switch is on; then the cell is the input, selected whole on focus so typing replaces it,
+   Enter moving down the column and Tab along the row, a typed figure tinted with Airtable's (or
+   the default) on hover, and a figure typed under All works landing on every work whose cell is
+   open. The tick on the first row leaves a work out or counts it again: it keeps its column,
+   greyed. While editing a last row counts each work's typed figures with `Reset` beside them, or
+   `Remove` on a work added by hand, whose name is typed in its header; the group's head counts
+   the typed figures and offers `Reset all` and `Add a work`. The timed launches' tab keeps the
+   Airtable-like grid (`ProductsGrid`).
 3. **Target** - the chosen basket with its launch count and a `Change basket` button opening
    the picker; the **Channels in plan** switches (§4.3: Running paid; Artist's own channels);
    and **Stretch from** (§4.4) as a three-way choice: even across channels (the basket's own

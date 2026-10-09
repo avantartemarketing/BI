@@ -8,12 +8,11 @@
  * Almost nothing here is typed. The products and their economics come from
  * Airtable, per work (edition, target sell-through, price, the artist's and
  * Avant Arte's profit per unit, the deal's revenue or profit share, the
- * framing assumptions), drawn as one picture: a column per work, as wide as
- * its target units and as tall as its price, split by who gets what, with
- * the framing uplift as the band on top. The selected work's figures sit
- * beside the chart, locked until Edit figures is switched on; then the
- * figure itself is the input, a typed one marked with Airtable's faint
- * beside it. The dates come from the Notion log (the early-access email
+ * framing assumptions), laid out as one sheet: the figures down the side,
+ * a column per work, All works first, the labels held while it scrolls
+ * sideways. The figures are locked until Edit figures is switched on; then
+ * the cell is the input, a typed one tinted with Airtable's figure on
+ * hover. The dates come from the Notion log (the early-access email
  * opens the private room; the announce; the launch), then the funnel's own
  * clock, then Airtable; the marketing lead from the Notion log, then
  * Airtable. What a person decides is which Meta campaigns are this
@@ -410,46 +409,21 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
 // the grid and its rules, for the timed launches' tab (TLTargets.jsx)
 export { GRID, PCT, closedFor, typedKeys, ProductsGrid };
 
-/* ======================= the launch as an area ======================= */
+/* ======================= the works as a sheet ======================= */
 
-/* The works as one picture (the 8 October 2026 design, its option C): a
- * column per work, as wide as its target units and as tall as its price per
- * unit, stacked by who gets what - the costs and the rest at the foot, the
- * artist's profit, Avant Arte's - with the framing uplift as the band on
- * top. Area is money. A work with no edition or no price yet is a thin
- * dashed outline; a work left out of the release is not drawn, only named
- * under the chart, where Include puts it back. The selected column's figures sit beside
- * the chart; with Edit figures on the figure itself is the input, Airtable's
- * faint beside a typed one; nothing selected shows the release as a whole,
- * where a figure typed lands on every work. */
-const SEGMENTS = [
-  { key: "frame", name: "Framing uplift", tip: "Avant Arte's framing profit per unit sold: the profit on a frame at the take-up." },
-  { key: "aa", name: "Avant Arte profit", tip: "Avant Arte's profit on one unit, before framing." },
-  { key: "artist", name: "Artist profit", tip: "The artist's profit on one unit." },
-  { key: "rest", name: "Costs and the rest", tip: "What is left of the price after the two profits." },
-];
+/* The works as one table (the 9 October 2026 design, its option A with the
+ * second of its headers): the figures down the side, one column per work
+ * with the whole name on up to two lines, All works as the first column.
+ * The figure labels hold while the table scrolls sideways; a column's edge
+ * drags, and a double-click on it puts the width back. With Edit figures on
+ * the cell is the input, selected whole on focus so typing replaces it, a
+ * typed one tinted with Airtable's figure on hover; a figure typed under
+ * All works lands on every work whose cell is open. A work left out keeps
+ * its column, greyed, its tick off; a work added by hand types its name in
+ * its header. */
 const blankV = (v) => v === null || v === undefined || v === "";
 const TIPS = Object.fromEntries(GRID.map((c) => [c.key, c.tip]));
-/* the € scale: a step of 1, 2, 2.5 or 5 at the right magnitude, four or so
- * ticks up the side */
-const niceStep = (max) => {
-  if (!(max > 0)) return 250;
-  const raw = max / 4;
-  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-  for (const m of [1, 2, 2.5, 5, 10]) if (m * mag >= raw) return m * mag;
-  return 10 * mag;
-};
-/* one unit's money in euros, as the column stacks it; a profit over the
- * price is drawn as typed and the rest is nothing */
-const partsOf = (p) => {
-  const price = p.unit_price_eur || 0;
-  const artist = Math.max(0, Number(p.artist_profit_per_unit) || 0);
-  const aa = Math.max(0, Number(p.aa_profit_per_unit) || 0);
-  const rest = Math.max(0, price - artist - aa);
-  const frame = Math.max(0, Number(p.frame_uplift_per_unit) || 0);
-  return { price, artist, aa, rest, frame, top: Math.max(price, artist + aa) + frame };
-};
-// the figures beside the chart, in the order the deal is read
+// the figures down the side, in the order the deal is read
 const ROWS = [
   { key: "edition", label: "Edition", kind: "count" },
   { key: "target_sellthrough", label: "Sell-through", kind: "pct" },
@@ -467,146 +441,81 @@ const ROWS = [
   { key: "launch_value", label: "Launch value", calc: true, total: true, tip: "Target units at the price." },
   { key: "aa_total", label: "Avant Arte, with framing", calc: true, total: true, tip: "Avant Arte's profit on the target units, the framing uplift included." },
 ];
-/* Works of one launch are often named alike ("Brillo Box Collectable (Green
- * Portrait)", "... (Lifesize)"): under the columns the start and the end
- * they share are dropped, so each label says what differs; the full name
- * stays on the hover and beside the chart. Names cut only at a space or a
- * bracket, and names that would vanish are kept whole. */
-const BOUND = /[\s()[\],:·-]/;
-const distinctNames = (names) => {
-  const list = names.map((n) => String(n || ""));
-  if (list.length < 2) return list;
-  let pre = 0;
-  while (list.every((n) => n.length > pre && n[pre] === list[0][pre])) pre++;
-  while (pre > 0 && !BOUND.test(list[0][pre - 1])) pre--;
-  let suf = 0;
-  while (list.every((n) => n.length - suf > pre && n[n.length - 1 - suf] === list[0][list[0].length - 1 - suf])) suf++;
-  while (suf > 0 && !BOUND.test(list[0][list[0].length - suf])) suf--;
-  const out = list.map((n) => n.slice(pre, n.length - suf).replace(/^[\s()[\],:·-]+|[\s()[\],:·-]+$/g, ""));
-  return out.every((n) => n) ? out : list;
-};
 const figText = (row, v, currency) => {
   if (blankV(v)) return "";
   if (row.kind === "pct") return `${cellText(row.key, v)}%`;
   if (row.kind === "money") return row.key === "unit_price" && currency && currency !== "EUR" ? `${cellText(row.key, v)} ${currency}` : `€${cellText(row.key, v)}`;
   return fmt(v);
 };
-/* the unit inside the box: € (the product's own currency on a price) before
- * the figure, % after it, nothing on a count */
-const unitOf = (row, currency) => ({
-  pre: row.kind === "money" ? (row.key === "unit_price" && currency && currency !== "EUR" ? currency : "€") : "",
-  post: row.kind === "pct" ? "%" : "",
-});
+const SHEET_W = { lbl: 224, all: 118, work: 176, min: 72 };
+// the rows that open a section of the sheet: a heavier rule above them
+const SECTION = new Set(["edition", "unit_price", "framing_available", "launch_value"]);
 
-/* The figure as the input: the bare figure while it is typed in, the figure
- * with its thousands once left, the unit inside the box; every box is the
- * same width, so the figures make one column. The whole figure is selected
- * on focus, so typing replaces it. */
-function FigInput({ shown, raw, placeholder, unit, onCommit, title, typed }) {
+/* The cell as the input: the figure with its unit while it is not being
+ * typed in, the bare figure while it is, selected whole on focus so typing
+ * replaces it. */
+function SheetInput({ shown, raw, placeholder, onCommit, title, typed, row, col, label }) {
   const [draft, setDraft] = useState(null);
   return (
-    <span className={`wa-ed${typed ? " typed" : ""}`} title={title}>
-      {unit.pre && <span className="u pre">{unit.pre}</span>}
-      <input inputMode="decimal" value={draft !== null ? draft : shown} placeholder={placeholder}
-        onFocus={(e) => { setDraft(raw); const el = e.target; setTimeout(() => el.select(), 0); }}
-        onChange={(e) => { setDraft(e.target.value); onCommit(e.target.value); }}
-        onBlur={() => setDraft(null)} />
-      {unit.post && <span className="u post">{unit.post}</span>}
-    </span>
+    <input className={`ws-in${typed ? " typed" : ""}`} inputMode="decimal" title={title} aria-label={label} data-row={row} data-col={col}
+      value={draft !== null ? draft : shown} placeholder={placeholder}
+      onFocus={(e) => { setDraft(raw); const el = e.target; setTimeout(() => el.select(), 0); }}
+      onChange={(e) => { setDraft(e.target.value); onCommit(e.target.value); }}
+      onBlur={() => setDraft(null)} />
   );
 }
 
-function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, onField, onFieldAll, onName, onAdd, onRemove, onReset, onInclude, emptyNote }) {
+function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll, onName, onRemove, onReset, onInclude, emptyNote }) {
   // a column is keyed by the Airtable id, else the work's place in the list
   const rowKey = (p, i) => (p.airtable_id ? `a-${p.airtable_id}` : `m-${i}`);
   const atById = new Map((airtable || []).filter((p) => p.airtable_id).map((p) => [String(p.airtable_id), p]));
   const live = products.filter((p) => !p.excluded);
-  const drawn = products.map((p, i) => ({ p, key: rowKey(p, i), parts: partsOf(p), sized: !!(p.edition && p.target_units > 0), priced: !!p.unit_price_eur }));
-  // the works in the release are drawn; the ones left out are named under the chart
-  const shown = drawn.filter((d) => !d.p.excluded), left = drawn.filter((d) => d.p.excluded);
-  const maxTop = Math.max(0, ...shown.map((d) => d.parts.top));
-  const step = niceStep(maxTop);
-  const axisMax = Math.max(step, Math.ceil(maxTop / step - 1e-9) * step);
-  const pct = (v) => Math.max(0, Math.min(100, (100 * v) / axisMax));
-  const ticks = [];
-  for (let t = 0; t <= axisMax + 1e-9; t += step) ticks.push(t);
-  const sel = selected ? drawn.find((d) => d.key === selected) || null : null;
   const name = (p) => p.name || "unnamed";
-  const short = distinctNames(shown.map((d) => name(d.p)));
-  const colTip = (d) => {
-    const { p, parts } = d;
-    if (p.excluded) return `${name(p)}: not in the release, counts nothing.`;
-    if (!d.sized) return `${name(p)}: no edition yet, so no target units.`;
-    if (!d.priced) return `${name(p)}: ${fmt(p.target_units)} of ${fmt(p.edition)}, no price yet.`;
-    const who = [];
-    if (parts.artist) who.push(`artist €${cellText("artist_profit_per_unit", parts.artist)}`);
-    if (parts.aa) who.push(`Avant Arte €${cellText("aa_profit_per_unit", parts.aa)}`);
-    who.push(`${who.length ? "the rest" : "costs and the rest"} €${cellText("unit_price", parts.rest)}`);
-    return `${name(p)}: ${fmt(p.target_units)} of ${fmt(p.edition)} at ${fmtMoney(parts.price, 0)} per unit · ${who.join(", ")}${parts.frame ? ` · framing +€${cellText("frame_profit_per_unit", parts.frame)} per unit` : ""}`;
+  // the column widths: dragged at a header's edge, kept for the visit
+  const [widths, setWidths] = useState({});
+  const drag = useRef(null);
+  const wOf = (key) => widths[key] || (key === "lbl" ? SHEET_W.lbl : key === "all" ? SHEET_W.all : SHEET_W.work);
+  const resizer = (key) => ({
+    onPointerDown: (e) => {
+      e.preventDefault();
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* no capture */ }
+      drag.current = { key, x: e.clientX, w: wOf(key) };
+    },
+    onPointerMove: (e) => {
+      const d = drag.current;
+      if (!d || d.key !== key) return;
+      const w = Math.max(SHEET_W.min, Math.round(d.w + e.clientX - d.x));
+      setWidths((prev) => (prev[key] === w ? prev : { ...prev, [key]: w }));
+    },
+    onPointerUp: (e) => {
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* no capture */ }
+      drag.current = null;
+    },
+    onDoubleClick: () => setWidths((prev) => { const next = { ...prev }; delete next[key]; return next; }),
+  });
+  const gridTemplateColumns = ["lbl", "all", ...products.map(rowKey)].map((k) => `${wOf(k)}px`).join(" ");
+  // Enter moves down the column (Shift+Enter up); Tab moves along the row on its own
+  const onKeyDown = (e) => {
+    if (e.key !== "Enter" || e.target.tagName !== "INPUT" || e.target.type === "checkbox") return;
+    const col = e.target.dataset.col, row = Number(e.target.dataset.row);
+    if (!col || !Number.isFinite(row)) return;
+    e.preventDefault();
+    const dir = e.shiftKey ? -1 : 1;
+    const next = [...e.currentTarget.querySelectorAll("input[data-col]")]
+      .filter((el) => el.dataset.col === col && !el.disabled && (Number(el.dataset.row) - row) * dir > 0)
+      .sort((x, y) => (Number(x.dataset.row) - Number(y.dataset.row)) * dir)[0];
+    if (next) next.focus();
   };
-  // a sized work is as wide as its target units; one with no edition is thin
-  const flexOf = (d) => (!d.sized ? "0 0 28px" : `${d.p.target_units} 1 0px`);
-  const heightOf = (d) => (!d.priced ? `max(24px, ${pct(d.parts.price)}%)` : `max(2px, ${pct(d.parts.top)}%)`);
 
-  const chart = (
-    <div className="wa-plot">
-      <div className="wa-legend" aria-label="Legend">
-        {SEGMENTS.map((s) => <span key={s.key} title={s.tip}><i className={s.key} />{s.name}</span>)}
-        <span className="hint">width: target units · height: price per unit · area: money</span>
+  if (products.length === 0) {
+    return (
+      <div className="ws-empty">
+        No works yet: Airtable has no record matched to this release{emptyNote ? ` (${emptyNote})` : ""}.
+        {editing ? " Add the works by hand until it does." : " Switch on Edit figures to add the works by hand until it does."}
       </div>
-      <div className="wa-cols">
-        {ticks.map((t) => (
-          <React.Fragment key={t}>
-            <span className="wa-ax" style={{ bottom: `${pct(t)}%` }}>€{fmtK(t)}</span>
-            {t > 0 && <i className="wa-grid" style={{ bottom: `${pct(t)}%` }} />}
-          </React.Fragment>
-        ))}
-        {shown.map((d) => {
-          const on = d.key === selected;
-          const bare = !d.sized || !d.priced;
-          return (
-            <button key={d.key} type="button" className={`wa-col${on ? " sel" : ""}${bare ? " bare" : ""}`}
-              style={{ flex: flexOf(d), height: heightOf(d) }} title={colTip(d)}
-              aria-label={`${name(d.p)}${on ? ", selected" : ""}`} aria-pressed={on}
-              onClick={() => onSelect(on ? null : d.key)}>
-              {!bare && d.parts.rest > 0 && <i className="s rest" style={{ flex: `${d.parts.rest} 0 0px` }} />}
-              {!bare && d.parts.artist > 0 && <i className="s artist" style={{ flex: `${d.parts.artist} 0 0px` }} />}
-              {!bare && d.parts.aa > 0 && <i className="s aa" style={{ flex: `${d.parts.aa} 0 0px` }} />}
-              {!bare && d.parts.frame > 0 && <i className="s frame" style={{ flex: `${d.parts.frame} 0 0px` }} />}
-            </button>
-          );
-        })}
-        {products.length === 0 && (
-          <div className="wa-empty">
-            No works yet: Airtable has no record matched to this release{emptyNote ? ` (${emptyNote})` : ""}.
-            {editing ? " Add the works by hand until it does." : " Switch on Edit figures to add the works by hand until it does."}
-          </div>
-        )}
-      </div>
-      <div className="wa-names">
-        {shown.map((d, i) => (
-          <span key={d.key} className={d.key === selected ? "sel" : ""} style={{ flex: flexOf(d) }} title={colTip(d)}>
-            <span className="n">{!d.sized ? "no edition" : !d.priced ? `${fmt(d.p.target_units)} · no price` : fmt(d.p.target_units)}</span>
-            <span className="nm">{short[i]}</span>
-          </span>
-        ))}
-      </div>
-      {left.length > 0 && (
-        <div className="wa-out">
-          <span className="k">Left out of the release:</span>
-          {left.map((d) => (
-            <span key={d.key} className="w">
-              <button type="button" className={`nm${d.key === selected ? " sel" : ""}`} title={`${colTip(d)} Click for its figures.`}
-                onClick={() => onSelect(d.key === selected ? null : d.key)}>{name(d.p)}</button>
-              {editing && <button type="button" className="ts-link" onClick={() => onInclude(d.p, true)} title="Count this work again.">Include</button>}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+    );
+  }
 
-  /* ---- the figures beside the chart ---- */
   // the figure a work carries without the typed one: Airtable's, else the default
   const priorOf = (p, key) => {
     const at = atById.get(String(p.airtable_id)) || {};
@@ -615,129 +524,155 @@ function WorksArea({ products, econ, airtable, b, editing, selected, onSelect, o
     if (key === "frame_conversion") return { from: "default", v: Number(b.frame_conversion) };
     return { from: "Airtable", v: null };
   };
-  const srcTitle = (src) => (src === "typed" ? "Typed here; clear it to go back to Airtable's" : src === "airtable" ? "Airtable's figure: type over it to override" : src === "default" ? "The benchmark default: type over it to override" : "Airtable holds none: type it");
-  const row = (key, label, value, cls, title) => (
-    <div key={key} className={`wa-r${cls ? ` ${cls}` : ""}`} title={title}><span className="k">{label}</span><span className="v">{value}</span></div>
-  );
-  const inRow = (p) => (!p.airtable_id ? null : row("in_release", "In the release", editing
-    ? <Switch on={!p.excluded} onChange={(on) => onInclude(p, on)} label={p.excluded ? "No" : "Yes"}
-      title={p.excluded ? "Switch on to count this work again." : "Switch off to leave this work out of the release: it keeps its figures and counts nothing."} />
-    : <span className="wa-fig">{p.excluded ? "No" : "Yes"}</span>, null, p.excluded ? OFF_WHY : "Part of the release. Switch on Edit figures to leave it out."));
-  const workRow = (p, r) => {
-    const title = r.tip || TIPS[r.key];
-    if (r.calc) {
-      const v = r.key === "target_units" ? (p.edition ? fmt(p.target_units) : "–")
-        : r.key === "launch_date" ? (p.launch_date ? fmtDate(p.launch_date) : "–")
-          : r.key === "launch_value" ? (p.target_units && p.unit_price_eur ? fmtMoney(p.target_units * p.unit_price_eur, 0) : "–")
-            : (p.target_units && (Number(p.aa_profit_per_unit) > 0 || p.frame_uplift_per_unit > 0) ? fmtMoney(p.target_units * ((Number(p.aa_profit_per_unit) || 0) + (p.frame_uplift_per_unit || 0)), 0) : "–");
-      return row(r.key, r.label, v, `${r.total ? "total" : ""}${p.excluded ? " off" : ""}`, title);
-    }
-    if (p.excluded) return row(r.key, r.label, r.check ? (p.framing_available ? "Offered" : "Not offered") : figText(r, p[r.key], p.currency) || "–", "off", OFF_WHY);
-    const typed = !!(p.airtable_id && p.sources[r.key] === "typed");
-    const src = p.sources[r.key] || (r.key === "frame_conversion" ? "default" : null);
-    if (r.check) {
-      return row(r.key, r.label, (
-        <>
-          {editing
-            ? <Switch on={!!p.framing_available} onChange={(on) => onField(p, r.key, on)} label={p.framing_available ? "Offered" : "Not offered"} title={typed ? "Typed here" : src === "default" ? "Airtable's Framing is blank: a sculpture edition defaults to no frame, a print to one" : "Airtable's framing option"} />
-            : <span className={`wa-fig${typed ? " typed" : ""}`}>{p.framing_available ? "Offered" : "Not offered"}</span>}
-          {typed ? <span className="wa-at">typed</span> : src === "default" ? <span className="wa-at">default</span> : null}
-        </>
-      ), null, title);
-    }
-    if (closedFor(p, r.key)) {
-      const why = r.key === "aa_revenue_share" ? "Closed: this work has an AA profit share." : r.key === "aa_profit_share" ? "Closed: this work has an AA revenue share." : "Closed: no frame is offered on this work.";
-      return row(r.key, r.label, "–", "closed", why);
-    }
-    // the figure a typed one replaced is said before it, when there was one
-    const prior = typed ? priorOf(p, r.key) : null;
-    const note = prior && prior.v !== null && Number(prior.v) !== Number(p[r.key]) ? `${prior.from} ${figText(r, prior.v, p.currency)}`
-      : !typed && src === "default" ? "default" : null;
-    return row(r.key, r.label, (
-      <>
-        {note && <span className="wa-at">{note}</span>}
-        {editing
-          ? <FigInput shown={cellText(r.key, p[r.key])} raw={cellText(r.key, p[r.key], true)} placeholder=""
-            unit={unitOf(r, p.currency)} typed={typed} title={srcTitle(src)} onCommit={(raw) => onField(p, r.key, raw)} />
-          : <span className={`wa-fig${typed ? " typed" : ""}`} title={srcTitle(src)}>{figText(r, p[r.key], p.currency) || "–"}</span>}
-      </>
-    ), null, title);
-  };
-  // the release as a whole: sums and figures weighted by target units; a
-  // figure typed here lands on every work whose cell is open
+  const srcTitle = (src) => (src === "airtable" ? "Airtable's figure: type over it to override." : src === "default" ? "The benchmark default: type over it to override." : "Airtable holds none: type it.");
+  const sec = (key) => (SECTION.has(key) ? " sec" : "");
+  const cell = (key, cls, node, title) => <div key={key} className={`ws-c${cls ? ` ${cls}` : ""}`} title={title}>{node}</div>;
+  const handle = (key, what) => <button type="button" className="ws-rz" aria-label={`Resize the ${what} column; double-click to put it back`} title="Drag to widen; double-click to put it back" {...resizer(key)} />;
+
+  /* ---- the header: the figure corner, All works, a work per column ---- */
+  const headRow = () => [
+    <div key="l" className="ws-c ws-h ws-l"><span className="nm">Figure</span>{handle("lbl", "figure")}</div>,
+    <div key="all" className="ws-c ws-h all"><span className="nm">All works</span>{handle("all", "All works")}</div>,
+    ...products.map((p, i) => {
+      const key = rowKey(p, i);
+      return (
+        <div key={key} className={`ws-c ws-h${p.excluded ? " out" : ""}`} title={p.excluded ? `${name(p)}: not in the release, counts nothing.` : name(p)}>
+          {editing && !p.airtable_id
+            ? <input className="ws-name" value={p.name || ""} placeholder="Name of the work" aria-label="Name of the work" onChange={(e) => onName(p, e.target.value)} />
+            : <span className="nm">{name(p)}</span>}
+          {(!p.airtable_id || p.excluded) && (
+            <span className="tags">
+              {!p.airtable_id && <span className="ts2-tag" title="Added on this tab, not in Airtable">by hand</span>}
+              {p.excluded && <span className="ts2-tag warn" title={OFF_WHY}>left out</span>}
+            </span>
+          )}
+          {handle(key, name(p))}
+        </div>
+      );
+    }),
+  ];
+  /* ---- in the release: the tick per work ---- */
+  const inRow = () => [
+    cell("l", "ws-l", "In the release", "Ticked: part of the release. Untick a work to leave it out; it stays here, greyed, and counts nothing."),
+    cell("all", "all", `${live.length} of ${products.length}`, "The works in the release."),
+    ...products.map((p, i) => cell(rowKey(p, i), p.excluded ? "out" : "", p.airtable_id
+      ? <input type="checkbox" className="ws-tick" checked={!p.excluded} disabled={!editing} aria-label={`${name(p)}: in the release`}
+          title={p.excluded ? "Unticked: not in the release. Tick to count it again." : editing ? "Untick to leave this work out of the release: it stays here, greyed, and counts nothing." : "Part of the release. Switch on Edit figures to untick it."}
+          onChange={(e) => onInclude(p, e.target.checked)} />
+      : <span className="ws-v" title="Added by hand: Remove takes it off the release.">–</span>)),
+  ];
+  /* ---- a figure: the label, the release as a whole, a cell per work ---- */
   const weighted = (key, of) => {
     const rows = (of || live).filter((p) => !blankV(p[key]) && p.target_units > 0);
     const tot = rows.reduce((s, p) => s + p.target_units, 0);
     return tot ? rows.reduce((s, p) => s + p.target_units * p[key], 0) / tot : null;
   };
-  const allRow = (r) => {
+  // while a release still carries its release-level figures, the release as a whole reads them, as the build does
+  const fromLegacy = econ.mode === "release" ? {
+    artist_profit_per_unit: econ.ppu_artist || null, aa_profit_per_unit: (econ.ppu_aa - econ.frame_uplift_per_unit) || null,
+    aa_profit_share: econ.aa_budget_share_assumed ? null : econ.aa_budget_share, aa_revenue_share: null,
+    frame_conversion: econ.framing_available ? econ.frame_conversion : null, frame_profit_per_unit: econ.framing_available ? econ.frame_profit_per_unit : null,
+  } : null;
+  // the release closes with the last of its works' draws (etl/build.py product_closes)
+  const lastClose = live.map((p) => (p.edition && p.launch_date ? String(p.launch_date).slice(0, 10) : null)).filter(Boolean).sort().pop() || null;
+  const figRow = (r, ri) => {
     const title = r.tip || TIPS[r.key];
-    if (r.key === "launch_date") return null;
-    if (r.key === "edition") return row(r.key, r.label, econ.edition_total ? fmt(econ.edition_total) : "–", null, "The editions summed over the works in the release.");
-    if (r.calc) {
-      const v = r.key === "target_units" ? (econ.edition_size ? fmt(econ.edition_size) : "–")
-        : r.key === "launch_value" ? (econ.launch_value > 0 ? fmtMoney(econ.launch_value, 0) : "–")
-          : (econ.ppu_aa > 0 && econ.edition_size ? fmtMoney(econ.ppu_aa * econ.edition_size, 0) : "–");
-      return row(r.key, r.label, v, r.total ? "total" : null, r.key === "target_units" ? "The target units summed: the secured-units target." : title);
-    }
-    if (r.check) {
+    const cls = `${sec(r.key)}${r.total ? " total" : ""}`;
+    let allNode, allTitle = title;
+    if (r.key === "edition") { allNode = econ.edition_total ? fmt(econ.edition_total) : "–"; allTitle = "The editions summed over the works in the release."; }
+    else if (r.calc) {
+      allNode = r.key === "target_units" ? (econ.edition_size ? fmt(econ.edition_size) : "–")
+        : r.key === "launch_date" ? (lastClose ? fmtDate(lastClose) : "–")
+          : r.key === "launch_value" ? (econ.launch_value > 0 ? fmtMoney(econ.launch_value, 0) : "–")
+            : (econ.ppu_aa > 0 && econ.edition_size ? fmtMoney(econ.ppu_aa * econ.edition_size, 0) : "–");
+      if (r.key === "target_units") allTitle = "The target units summed: the secured-units target.";
+      if (r.key === "launch_date") allTitle = "The last of the works' closes: the day the page runs to.";
+    } else if (r.check) {
       const all = econ.mode === "release" ? econ.framing_available : live.length > 0 && live.every((p) => p.framing_available);
       const text = econ.mode === "release" ? (all ? "Offered" : "Not offered") : !live.length ? "–" : all ? "Offered" : live.every((p) => !p.framing_available) ? "Not offered" : "Varies";
-      return row(r.key, r.label, editing ? <Switch on={all} onChange={(on) => onFieldAll(r.key, on)} label={text} title="Every work at once" /> : <span className="wa-fig">{text}</span>, null, title);
+      allNode = editing
+        ? <input type="checkbox" className="ws-tick" checked={all} aria-label="All works: framing" title="Every work at once" onChange={(e) => onFieldAll(r.key, e.target.checked)} />
+        : text;
+    } else {
+      const of = r.key === "frame_conversion" || r.key === "frame_profit_per_unit" ? live.filter((p) => p.framing_available) : live;
+      const v = r.key === "target_sellthrough" ? (econ.edition_total ? econ.edition_size / econ.edition_total : null)
+        : r.key === "unit_price" ? (econ.unit_price || null) : fromLegacy ? fromLegacy[r.key] : weighted(r.key, of);
+      if (!editing) { allNode = figText(r, v) || "–"; allTitle = `${title} Weighted by target units over the works in the release.`; }
+      else {
+        const vals = live.filter((p) => !closedFor(p, r.key)).map((p) => (p.sources[r.key] === "typed" ? p[r.key] : undefined));
+        const same = vals.length > 0 && vals.every((x) => x !== undefined && x === vals[0]);
+        allNode = <SheetInput shown={same ? figText(r, vals[0]) : ""} raw={same ? cellText(r.key, vals[0], true) : ""} placeholder={vals.some((x) => x !== undefined) ? "varies" : figText(r, v) || ""}
+          typed={same} title="Every work at once: type here to set this figure on every work." row={ri} col="all" label={`All works: ${r.label}`} onCommit={(raw) => onFieldAll(r.key, raw)} />;
+        allTitle = undefined;
+      }
     }
-    const of = r.key === "frame_conversion" || r.key === "frame_profit_per_unit" ? live.filter((p) => p.framing_available) : live;
-    const fromLegacy = econ.mode === "release" ? {
-      artist_profit_per_unit: econ.ppu_artist || null, aa_profit_per_unit: (econ.ppu_aa - econ.frame_uplift_per_unit) || null,
-      aa_profit_share: econ.aa_budget_share_assumed ? null : econ.aa_budget_share, aa_revenue_share: null,
-      frame_conversion: econ.framing_available ? econ.frame_conversion : null, frame_profit_per_unit: econ.framing_available ? econ.frame_profit_per_unit : null,
-    } : null;
-    const v = r.key === "target_sellthrough" ? (econ.edition_total ? econ.edition_size / econ.edition_total : null)
-      : r.key === "unit_price" ? (econ.unit_price || null) : fromLegacy ? fromLegacy[r.key] : weighted(r.key, of);
-    if (!editing) return row(r.key, r.label, <span className="wa-fig">{figText(r, v) || "–"}</span>, null, `${title} Weighted by target units over the works in the release.`);
-    const vals = live.filter((p) => !closedFor(p, r.key)).map((p) => (p.sources[r.key] === "typed" ? p[r.key] : undefined));
-    const same = vals.length > 0 && vals.every((x) => x !== undefined && x === vals[0]);
-    return row(r.key, r.label, (
-      <FigInput shown={same ? cellText(r.key, vals[0]) : ""} raw={same ? cellText(r.key, vals[0], true) : ""}
-        placeholder={vals.some((x) => x !== undefined) ? "varies" : cellText(r.key, v) || ""} unit={unitOf(r, "EUR")} typed={same}
-        title="Every work at once: type here to set this figure on every work." onCommit={(raw) => onFieldAll(r.key, raw)} />
-    ), null, title);
+    return [
+      cell("l", `ws-l${cls}`, r.label, title),
+      cell("all", `all${cls}`, allNode, allTitle),
+      ...products.map((p, i) => {
+        const key = rowKey(p, i);
+        if (r.calc) {
+          const v = r.key === "target_units" ? (p.edition ? fmt(p.target_units) : "–")
+            : r.key === "launch_date" ? (p.launch_date ? fmtDate(p.launch_date) : "–")
+              : r.key === "launch_value" ? (p.target_units && p.unit_price_eur ? fmtMoney(p.target_units * p.unit_price_eur, 0) : "–")
+                : (p.target_units && (Number(p.aa_profit_per_unit) > 0 || p.frame_uplift_per_unit > 0) ? fmtMoney(p.target_units * ((Number(p.aa_profit_per_unit) || 0) + (p.frame_uplift_per_unit || 0)), 0) : "–");
+          return cell(key, `${cls}${p.excluded ? " out" : ""}`, v, title);
+        }
+        if (p.excluded) return cell(key, `${cls} out`, r.check ? (p.framing_available ? "Offered" : "Not offered") : figText(r, p[r.key], p.currency) || "–", OFF_WHY);
+        const typed = !!(p.airtable_id && p.sources[r.key] === "typed");
+        const src = p.sources[r.key] || (r.key === "frame_conversion" ? "default" : null);
+        if (r.check) {
+          return cell(key, cls, <input type="checkbox" className="ws-tick" checked={!!p.framing_available} disabled={!editing} aria-label={`${name(p)}: framing`}
+            title={typed ? "Typed here" : src === "default" ? "Airtable's Framing is blank: a sculpture edition defaults to no frame, a print to one" : "Airtable's framing option"}
+            onChange={(e) => onField(p, r.key, e.target.checked)} />, title);
+        }
+        if (closedFor(p, r.key)) {
+          const why = r.key === "aa_revenue_share" ? "Closed: this work has an AA profit share." : r.key === "aa_profit_share" ? "Closed: this work has an AA revenue share." : "Closed: no frame is offered on this work.";
+          return cell(key, `${cls} closed`, "–", why);
+        }
+        // the figure a typed one replaced is on the hover, when there was one
+        const prior = typed ? priorOf(p, r.key) : null;
+        const note = prior && prior.v !== null && Number(prior.v) !== Number(p[r.key]) ? `${prior.from} ${figText(r, prior.v, p.currency)}` : null;
+        const cellTitle = typed ? `Typed here${note ? `; ${note}` : ""}. Clear it to go back.` : srcTitle(src);
+        const text = figText(r, p[r.key], p.currency);
+        return cell(key, cls, editing
+          ? <SheetInput shown={text} raw={cellText(r.key, p[r.key], true)} placeholder="" typed={typed} title={cellTitle} row={ri} col={key} label={`${name(p)}: ${r.label}`} onCommit={(raw) => onField(p, r.key, raw)} />
+          : <span className={`ws-v${typed ? " typed" : ""}`} title={cellTitle}>{text || "–"}</span>);
+      }),
+    ];
   };
-  const aaShareRow = row("aa_budget_share", "AA share of paid spend", (
-    <><span className="wa-fig">{fmtPct(econ.aa_budget_share, 0)}</span>{econ.aa_budget_share_assumed && <span className="wa-at">assumed</span>}</>
-  ), null, econ.aa_budget_share_assumed ? "No deal recorded: 50/50 assumed." : econ.deal && econ.deal.length ? `From the deal: ${econ.deal.join(" and ")}.` : "As set up.");
-
-  const head = sel
-    ? (
-      <div className="wa-head">
-        {editing && !sel.p.airtable_id
-          ? <input className="wa-name" value={sel.p.name || ""} placeholder="Name of the work" aria-label="Name of the work" onChange={(e) => onName(sel.p, e.target.value)} />
-          : <h3 className={sel.p.excluded ? "off" : ""} title={name(sel.p)}>{name(sel.p)}</h3>}
-        {sel.p.excluded && <span className="ts2-tag warn" title={OFF_WHY}>not in the release</span>}
-        {!sel.p.airtable_id && <span className="ts2-tag" title="Added on this tab, not in Airtable">by hand</span>}
-        <button type="button" className="ts-link" onClick={() => onSelect(null)} title="The release as a whole.">All works</button>
+  /* ---- the deal's share of the paid spend, per work and as a whole ---- */
+  const aaRow = () => [
+    cell("l", "ws-l", "AA share of paid spend", "Avant Arte's share of the paid budget, from the deal: its profit share on a profit-share deal, all of it on a revenue share."),
+    cell("all", "all", <>{fmtPct(econ.aa_budget_share, 0)}{econ.aa_budget_share_assumed && <span className="ws-note">assumed</span>}</>,
+      econ.aa_budget_share_assumed ? "No deal recorded: 50/50 assumed." : econ.deal && econ.deal.length ? `From the deal: ${econ.deal.join(" and ")}.` : "As set up."),
+    ...products.map((p, i) => cell(rowKey(p, i), p.excluded ? "out" : "", !blankV(p.aa_budget_share) ? fmtPct(p.aa_budget_share, 0) : "–",
+      p.deal ? `From the ${p.deal}.` : "No deal recorded on this work: the release assumes 50/50.")),
+  ];
+  /* ---- while editing: the typed figures and the way back, per work ---- */
+  const actRow = () => [
+    cell("l", "ws-l", "Typed figures", "The figures typed over Airtable's on each work."),
+    cell("all", "all", ""),
+    ...products.map((p, i) => {
+      const n = typedKeys(p).length;
+      return cell(rowKey(p, i), p.excluded ? "out" : "", p.airtable_id
+        ? (n > 0 ? <>{n} typed{!p.excluded && <button type="button" className="ts-link" onClick={() => onReset(p)} title={`Back to Airtable's figures on this work (${n} typed).`}>Reset</button>}</> : "none")
+        : <button type="button" className="ts-link" onClick={() => onRemove(p)} title="Take this work off the release.">Remove</button>);
+    }),
+  ];
+  const rows = [
+    ["head", headRow()], ["in_release", inRow()],
+    ...ROWS.map((r, ri) => [r.key, figRow(r, ri + 1)]),
+    ["aa_budget_share", aaRow()],
+    ...(editing ? [["typed", actRow()]] : []),
+  ];
+  return (
+    <div className="ws-wrap">
+      <div className="ws" style={{ gridTemplateColumns }} onKeyDown={onKeyDown} aria-label="The works and their figures">
+        {rows.map(([id, cells]) => <React.Fragment key={id}>{cells}</React.Fragment>)}
       </div>
-    )
-    : <div className="wa-head"><h3>All works</h3></div>;
-  const typedN = sel ? typedKeys(sel.p).length : 0;
-  const links = editing ? (
-    <div className="wa-links">
-      {sel && sel.p.airtable_id && !sel.p.excluded && typedN > 0 && (
-        <button type="button" className="ts-link muted" onClick={() => onReset(sel.p)} title={`Back to Airtable's figures on this work (${typedN} typed).`}>Reset to Airtable</button>
-      )}
-      {sel && !sel.p.airtable_id && (
-        <button type="button" className="ts-link" onClick={() => { onRemove(sel.p); onSelect(null); }} title="Take this work off the release.">Remove</button>
-      )}
-      {!sel && <button type="button" className="ts-link" onClick={onAdd} title="A work Airtable has no record for, typed here.">Add a work</button>}
-    </div>
-  ) : null;
-  const side = (
-    <div className="wa-side" key={selected || "all"} aria-label={sel ? `${name(sel.p)}, the figures` : "The release, the figures"}>
-      {head}
-      <div className="wa-rows">{sel ? [inRow(sel.p), ...ROWS.map((r) => workRow(sel.p, r))] : [...ROWS.map(allRow), aaShareRow]}</div>
-      {links}
     </div>
   );
-  return <div className="wa">{chart}{side}</div>;
 }
 
 /* ======================= the tab ======================= */
@@ -761,7 +696,6 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const [whyOpen, setWhyOpen] = useState(false);      // the untracked notice's explanation
   const [stretchUi, setStretchUi] = useState(null);   // even | paid | custom, once chosen on this visit
   const [assumeOpen, setAssumeOpen] = useState(false); // the assumptions' boxes open
-  const [selected, setSelected] = useState(null);     // the work whose figures sit beside the chart
   // the Slack channel the sell-through card posts to: its own small document
   // on the server (server/slack.js), saved on its own so a release without
   // targets can have one too
@@ -786,7 +720,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
 
   useEffect(() => {
     setMeta(null); setInp(null); setError(null); setPick(null); setPicking(false); setEditing(false); setWhyOpen(false);
-    setStretchUi(null); setAssumeOpen(false); setSelected(null);
+    setStretchUi(null); setAssumeOpen(false);
     setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null); setSlackNote(null);
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
@@ -1159,9 +1093,6 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const cannDefault = Math.round(100 * (Number(b.cannibalisation) || 0.2));
   const e2oDefault = Math.round(100 * (Number(b.eligible_entry_to_order) || 0.8));
   const sense = T && T.paid ? T.paid.sense_check_breached : false;
-  // a work added by hand lands at the end of the list, selected so its name
-  // can be typed
-  const addWork = () => { onAdd(); setSelected(`m-${products.length}`); };
   const actions = (cls) => (
     <div className={cls}>
       {stateText && <span className={`ts2-state${missing.length ? " warn" : ""}`}>{stateText}</span>}
@@ -1227,7 +1158,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
               <h2>Works</h2>
               <span className="d">{worksDesc}</span>
               <div className="right">
-                {editing && <button type="button" className="ts-btn secondary sm" onClick={addWork}>Add a work</button>}
+                {editing && <button type="button" className="ts-btn secondary sm" onClick={onAdd}>Add a work</button>}
                 {editing && typedCount > 0 && <button type="button" className="ts-btn secondary sm" onClick={onResetAll} title="Drop every typed figure: back to Airtable's on every work.">Reset all</button>}
                 <button type="button" className={`ts-switch${editing ? " on" : ""}`} aria-pressed={editing} onClick={() => setEditing(!editing)}
                   title={editing ? "Lock the figures again; what was typed stays." : "Unlock the figures to type over Airtable's, or to add a work by hand."}>
@@ -1249,8 +1180,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                 <b>The works' editions add up to {fmt(editionNote.sum)}; the release's edition is {fmt(editionNote.release)}.</b> One of the two is wrong.
               </Notice>
             )}
-            <WorksArea products={products} econ={econ} airtable={atProducts} b={b} editing={editing} selected={selected} onSelect={setSelected}
-              onField={onField} onFieldAll={onFieldAll} onName={onName} onAdd={addWork} onRemove={onRemove} onReset={onReset} onInclude={onInclude} emptyNote={airtableNote} />
+            <WorksSheet products={products} econ={econ} airtable={atProducts} b={b} editing={editing}
+              onField={onField} onFieldAll={onFieldAll} onName={onName} onRemove={onRemove} onReset={onReset} onInclude={onInclude} emptyNote={airtableNote} />
           </section>
 
           {/* 2 · target */}

@@ -48,9 +48,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const d = cur !== null && rec !== null ? Math.round(rec) - Math.round(cur) : null;
   const floorF = fmt(budget.floor ?? 1, 1);
   const noPrice = !noCampaign && rec === null;   // spend exists but no cost-per-entry history yet
-  // the gap is measured to the target (edition_size, docs 7); where the target
-  // is only part of the edition (Warhol: 2,440 of 6,100) that is not a sellout
-  const partial = !!(snap.edition && snap.edition.total > snap.edition.target);
+  // the gap is measured to the whole edition (docs 7): paid runs until the
+  // edition sells out, the target being the plan (9 October 2026)
 
   // ----- lozenge (recommended vs current), voice per §6.3 / §4.7 -----
   const lozTip = noCampaign ? { head: "No paid campaign live yet" } : noPrice ? {
@@ -65,10 +64,10 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cost / unit at recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at recommended", value: fmt(budget.finalDayRoi, 2) },
       { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
-      { label: partial ? "Spend to reach target / day" : "Spend to sell out / day", value: budget.supplySpend !== null && budget.supplySpend !== undefined ? money(budget.supplySpend) : "–" },
+      { label: "Spend to sell out / day", value: budget.supplySpend !== null && budget.supplySpend !== undefined ? money(budget.supplySpend) : "–" },
       { label: "Spend at ROI floor / day", value: budget.roiSpend !== null && budget.roiSpend !== undefined ? money(budget.roiSpend) : "–" },
       ...(typeof budget.selloutGap === "number"
-        ? [{ label: partial ? "Target gap (units)" : "Sell-out gap (units)", value: fmt(budget.selloutGap) }]
+        ? [{ label: "Sell-out gap (units)", value: fmt(budget.selloutGap) }]
         : []),
       { label: "ROI floor", value: floorF },
     ],
@@ -87,7 +86,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   // One word on the chip, the rule in full at the head of its popup.
   const showCap = !complete && !noCampaign && rec !== null && !!budget.cap;
   const CAPS = {
-    supply: partial ? ["Target", "Supply - target"] : ["Sellout", "Supply - sell-out"],
+    supply: ["Sellout", "Supply - sell-out"],
     roi_floor: ["Floor", "ROI floor"],
     pacing: ["Pacing", "Pacing ±30% / day"],
     roi_band_hold: ["Hold", "ROI band - hold"],
@@ -168,9 +167,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   };
   const capTip = !["supply", "roi_floor"].includes(budget.cap) ? bandTip : budget.cap === "roi_floor" ? floorTip : budget.cap === "supply" ? {
     head: capLabel,
-    body: partial
-      ? "The spend that reaches the target by launch, at the cost per entry that spend implies - more would buy entries the target does not need."
-      : "The spend that sells the edition out by launch, at the cost per entry that spend implies - more would buy entries the edition cannot hold.",
+    body: "The spend that sells the edition out by launch, at the cost per entry that spend implies - more would buy entries the edition cannot hold.",
     rows: [
       { label: "Spend cap", value: hasNum(budget.supplySpend) ? money(budget.supplySpend) + " / day" : "–" },
       ...recPacedRow,
@@ -224,7 +221,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   // passes the ROI floor, and the flat run to the close sits beside it
   const stop = !complete && close && paid.stops && paid.stops.day ? paid.stops : null;
   const ranOn = stop && paid.ifContinued ? paid.ifContinued : null;
-  const stopRow = stop ? [{ label: "Spend stops", value: `${fmtDay(new Date(stop.day + "T00:00:00Z"))}, ${stop.rule === "sellout" ? (partial ? "target reached" : "sellout reached") : "ROI floor"}` }] : [];
+  const stopRow = stop ? [{ label: "Spend stops", value: `${fmtDay(new Date(stop.day + "T00:00:00Z"))}, ${stop.rule === "sellout" ? "sellout reached" : "ROI floor"}` }] : [];
   const unitsTip = {
     head: "Paid units",
     rows: [
