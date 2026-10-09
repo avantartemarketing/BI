@@ -128,7 +128,10 @@ weighted by target units; and the paid-budget split follows from the deal -
 on a profit-share deal Avant Arte carries its share of the profit (Airtable's
 `AA split`), on a revenue-share (royalty) deal, where the artist or estate
 takes a commission on revenue (`Revenue Commission %`), it carries the ads
-outright; which deal a work is on is Airtable's `Commission Type`. Until
+outright; which deal a work is on is Airtable's `Commission Type`. A
+profit-share deal can carry a revenue cut too: the artist's commission is
+taken first and the profit split after, so the split still says who funds
+the ads, and the cut is shown beside it. Until
 Airtable holds a figure, it can be typed over on the products table, and a
 work Airtable has no record for can be added by hand.
 

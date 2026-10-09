@@ -560,7 +560,8 @@ carry `null` and fall back to a −10% band on `statusPct`.
   dates and marketing lead, the funnel clock's dates and the Meta campaigns named for the code.
 - `POST /api/inputs/:id` accepts `campaign_names` (the Meta campaigns whose spend is the
   release's), `products[]` (per product, keyed by `airtable_id` or `manual: true`: the edition,
-  target sell-through, price and currency, profits per unit, revenue or profit share, framing
+  target sell-through, price and currency, profits per unit, revenue or profit share, the
+  artist's revenue cut, framing
   take-up and profit typed over Airtable's; a draw entry keyed by `key` keeps its name, edition
   and pre-order rate), `legacy_economics: null` to clear the release-level figures a release
   still carries, `marketing_lead` and the three dates (typed fallbacks, read after the feeds),

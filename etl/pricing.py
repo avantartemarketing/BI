@@ -595,7 +595,7 @@ if __name__ == "__main__":
 # pull found the field (etl/pull_airtable.py OPTIONAL_FIELDS); blank otherwise
 PRODUCT_NUMERIC = ("edition_size", "units_target", "unit_price", "target_sellthrough", "expected_sellthrough",
                    "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share",
-                   "frame_conversion", "frame_profit_per_unit")
+                   "artist_revenue_cut", "frame_conversion", "frame_profit_per_unit")
 PRODUCT_TEXT = ("airtable_id", "project_code", "title", "release", "currency", "framing", "launch_type",
                 "edition_type", "product_type", "price_status", "launch_date", "announce_date",
                 "private_room_date", "marketing_lead", "deal_type")
@@ -717,15 +717,23 @@ def release_products(release: dict, pricing_path: pathlib.Path | str | None = No
         if share is None:
             share = p["expected_sellthrough"]
         p["target_sellthrough"] = min(max(share, 0.0), 1.0) if share is not None else None
-        # the deal (Airtable's Commission Type) says which share is the
-        # product's: a profit split carries Avant Arte's share of the profit,
-        # a revenue deal its share of revenue, and the other is not its deal
-        # even when the record carries a figure for it. With no type on the
-        # record both stand and the target model reads the profit share first.
+        # the deal (Airtable's Commission Type, 8 October 2026). The artist's
+        # cut of revenue (Revenue Commission %) is taken before any profit is
+        # split. On a revenue deal it is the whole deal: Avant Arte's revenue
+        # share is the rest, it carries the ads outright, and an AA split the
+        # record also carries is not its deal. On a profit deal the AA split is
+        # the deal and the cut, where there is one, rides beside it as a
+        # component (a release can be both); no revenue share then. With no
+        # type on the record a cut alone reads as a revenue deal, a split alone
+        # as a profit deal, and both as a profit deal with a cut.
         p["deal_type"] = deal_type(p.get("deal_type"))
-        if p["deal_type"] == "revenue":
+        cut = p.get("artist_revenue_cut")
+        kind = p["deal_type"] or ("profit" if p.get("aa_profit_share") is not None else "revenue" if cut is not None or p.get("aa_revenue_share") is not None else None)
+        if kind == "revenue":
+            if p.get("aa_revenue_share") is None and cut is not None:
+                p["aa_revenue_share"] = round(1.0 - cut, 6)
             p["aa_profit_share"] = None
-        elif p["deal_type"] == "profit":
+        elif kind == "profit":
             p["aa_revenue_share"] = None
         # "Framed on order" is a framing option; "No framing option" is not
         fr = (p.get("framing") or "").lower()

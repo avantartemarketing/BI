@@ -155,7 +155,7 @@ export function Campaigns({ code, chosen, all, suggested, onChange }) {
 /* ======================= the products grid ======================= */
 
 /* Percentages are typed as whole numbers and kept as fractions. */
-const PCT = new Set(["target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion"]);
+const PCT = new Set(["target_sellthrough", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "frame_conversion"]);
 // the grid's columns after the product: the header on one line, a glyph
 // carrying the unit (# a count, % and € units, ƒ computed, ✓ on or off)
 const GRID = [
@@ -166,6 +166,7 @@ const GRID = [
   { key: "launch_date", label: "Closes", glyph: "", calc: true, date: true, tip: "The day this work's draw closes, from Airtable. Works of one launch can close on different days: the page runs to the last, the sell-through card counts each work at its own draw." },
   { key: "artist_profit_per_unit", label: "Artist profit", glyph: "€", tip: "The artist's profit on one unit sold." },
   { key: "aa_profit_per_unit", label: "AA profit", glyph: "€", tip: "Avant Arte's profit on one unit sold, before framing." },
+  { key: "artist_revenue_cut", label: "Artist revenue cut", glyph: "%", tip: "The artist's or estate's commission on revenue, taken before any profit is split (Airtable's Revenue Commission %). On a revenue deal it is the whole deal; a profit-share deal can carry one beside the AA profit share." },
   { key: "aa_revenue_share", label: "AA revenue share", glyph: "%", tip: "Avant Arte's own share of revenue on a royalty deal (not the artist's), where Avant Arte carries the ads outright. Closed while the product has an AA profit share." },
   { key: "aa_profit_share", label: "AA profit share", glyph: "%", tip: "Avant Arte's own share of the profit on a profit-share deal (not the artist's), which is also its share of the paid budget. Closed while the product has an AA revenue share." },
   { key: "framing_available", label: "Framing", glyph: "✓", check: true, tip: "Whether a frame is offered on this work. Unticked closes the two frame cells. Where Airtable's Framing is blank, a sculpture edition has no frame and a print has one." },
@@ -457,6 +458,7 @@ const ROWS = [
   { key: "unit_price", label: "Price", kind: "money" },
   { key: "artist_profit_per_unit", label: "Artist profit per unit", kind: "money" },
   { key: "aa_profit_per_unit", label: "Avant Arte profit per unit", kind: "money" },
+  { key: "artist_revenue_cut", label: "Artist revenue cut", kind: "pct" },
   { key: "aa_profit_share", label: "AA profit share", kind: "pct" },
   { key: "aa_revenue_share", label: "AA revenue share", kind: "pct" },
   { key: "framing_available", label: "Framing", check: true },

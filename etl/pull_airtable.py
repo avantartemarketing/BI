@@ -148,24 +148,24 @@ OPTIONAL_FIELDS: list[tuple[str, str]] = [
     ("Marketing lead", "marketing_lead"),
     # the deal: "Profit" (a split of the profit) or "Revenue" (the artist or
     # estate paid a commission on revenue); etl/pricing.py reads it to say
-    # which of the two shares below is the product's
+    # which share is the product's deal
     ("Commission Type", "deal_type"),
+    # the artist's or estate's cut of revenue, taken before any profit is
+    # split: the whole deal on a revenue deal (Avant Arte's revenue share is
+    # the rest), a component beside the AA split on a profit deal that has one
+    ("Revenue Commission %", "artist_revenue_cut"),
 ]
 # The names the table actually carries these under (8 October 2026), tried
 # after the current name, the first the table has winning; an
-# AIRTABLE_FIELD_<column> override is still the one name tried. Each carries
-# how the field is read: "complement" for the revenue commission, which is
-# the artist's or estate's cut of revenue, so Avant Arte's own share is the
-# rest (DATA_MODEL 1.6: aa_revenue_share is Avant Arte's share).
-OPTIONAL_ALIASES: dict[str, list[tuple[str, str | None]]] = {
-    "aa_profit_share": [("AA split", None)],
-    "aa_revenue_share": [("Revenue Commission %", "complement")],
-    "aa_profit_per_unit": [("Profit per unit (excl paid ads)_marketing", None)],
-    "artist_profit_per_unit": [("Artist profit per unit (excl. paid ads)_marketing", None)],
+# AIRTABLE_FIELD_<column> override is still the one name tried.
+OPTIONAL_ALIASES: dict[str, list[str]] = {
+    "aa_profit_share": ["AA split"],
+    "aa_profit_per_unit": ["Profit per unit (excl paid ads)_marketing"],
+    "artist_profit_per_unit": ["Artist profit per unit (excl. paid ads)_marketing"],
 }
 LEAD_COL = "marketing_lead"
 # a percentage field arrives as 0.4 or, typed as a number, as 40: read either
-PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion"}
+PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion", "artist_revenue_cut"}
 # a money figure typed as text ("€450", "€1,250"): read for its number, in
 # euros - the page's currency and the one the price field carries - with a
 # figure in another currency converted at etl/pricing.py's rates
@@ -262,18 +262,17 @@ def optional_fields() -> list[tuple[str, str]]:
     return out
 
 
-def resolve_optional(fields: dict) -> list[tuple[str, str, str | None]]:
+def resolve_optional(fields: dict) -> list[tuple[str, str]]:
     """The optional fields against the table: (the name to request, the
-    column, how it is read). An override is the one name tried; otherwise
-    the current name, then the column's other names (OPTIONAL_ALIASES), the
-    first the table has winning. A column under none of them keeps its
-    current name, which check_schema lists as absent."""
+    column). An override is the one name tried; otherwise the current name,
+    then the column's other names (OPTIONAL_ALIASES), the first the table has
+    winning. A column under none of them keeps its current name, which
+    check_schema lists as absent."""
     out = []
     for name, col in OPTIONAL_FIELDS:
         override = os.environ.get(f"AIRTABLE_FIELD_{col.upper()}", "").strip()
-        tried = [(override, None)] if override else [(name, None)] + OPTIONAL_ALIASES.get(col, [])
-        hit = next(((n, r) for n, r in tried if n in fields), None)
-        out.append((hit[0], col, hit[1]) if hit else (tried[0][0], col, None))
+        tried = [override] if override else [name] + OPTIONAL_ALIASES.get(col, [])
+        out.append((next((n for n in tried if n in fields), tried[0]), col))
     return out
 
 
@@ -311,7 +310,7 @@ def check_schema(fields: dict) -> tuple[list[str], str, dict[str, str], list[str
             bad.append(f"{name!r} ({kind})")
     found: dict[str, str] = {}
     absent: list[str] = []
-    for name, col, _ in resolve_optional(fields):
+    for name, col in resolve_optional(fields):
         if name not in fields:
             absent.append(name)
             continue
@@ -341,7 +340,7 @@ def list_fields(fields: dict) -> None:
     """Names and types of every field in the table - nothing else. The
     wanted ones are marked, and the ones the guard would refuse are flagged."""
     print(f"{len(fields)} fields")
-    wanted = {name for name, _, _ in required_fields(fields)} | {name for name, _, _ in resolve_optional(fields)}
+    wanted = {name for name, _, _ in required_fields(fields)} | {name for name, _ in resolve_optional(fields)}
     for name, f in fields.items():
         kind = field_kind(f)
         flags = []
@@ -458,8 +457,6 @@ def pull(tok: str, base: str, table: str, fields: dict, out: pathlib.Path, every
     names, currency, found, absent = check_schema(fields)
     by_name = {name: col for name, col, _ in required_fields(fields)}
     by_name.update(found)
-    # how a column is read off the field it was found under (OPTIONAL_ALIASES)
-    readings = {col: reading for name, col, reading in resolve_optional(fields) if name in found and reading}
     cols = [col for _, col in FIELDS]
     cols.insert(cols.index("unit_price") + 1, "currency")
     # the optional columns are always in the file, blank where the table has
@@ -473,10 +470,6 @@ def pull(tok: str, base: str, table: str, fields: dict, out: pathlib.Path, every
         f = rec.get("fields", {})
         row = {col: "" for col in cols}
         row.update({by_name[name]: flatten(f.get(name), by_name[name], hits) for name in names})
-        for col, reading in readings.items():
-            # the revenue commission is the artist's cut: Avant Arte's share is the rest
-            if reading == "complement" and isinstance(row.get(col), (int, float)) and not isinstance(row.get(col), bool):
-                row[col] = round(1 - row[col], 6)
         row["currency"] = currency if row.get("unit_price") not in ("", None) else ""
         if keep(row, today, everything):
             rows.append(row)
@@ -501,8 +494,7 @@ def pull(tok: str, base: str, table: str, fields: dict, out: pathlib.Path, every
     print(f"of the kept rows: {priced} priced ({currency}), {sized} with an edition size, {dated} with a launch date")
     if found:
         filled = {col: sum(1 for r in rows if r.get(col) not in ("", None)) for col in found.values()}
-        how = {col: " as 1 - the field" if reading == "complement" else "" for col, reading in readings.items()}
-        print("target fields pulled: " + ", ".join(f"{name!r} -> {col}{how.get(col, '')} ({filled[col]} filled)" for name, col in found.items()))
+        print("target fields pulled: " + ", ".join(f"{name!r} -> {col} ({filled[col]} filled)" for name, col in found.items()))
     if absent:
         print("target fields not in the table yet (columns left blank): " + ", ".join(repr(a) for a in absent)
               + " - name a field that holds one with AIRTABLE_FIELD_<column>")

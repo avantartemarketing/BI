@@ -3292,7 +3292,7 @@ LEGACY_KEYS = ("edition_size", "edition_total", "unit_price", "artist_profit", "
                "aa_budget_share")
 # a product's figures, typed on the Target setting tab over what Airtable holds
 PRODUCT_KEYS = ("units_target", "edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
-                "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "framing_available",
+                "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "framing_available",
                 "frame_conversion", "frame_profit_per_unit")
 
 
@@ -3436,6 +3436,10 @@ def _effective_product(p: dict, b: dict) -> dict:
     e["aa_profit_per_unit"] = _num(pick("aa_profit_per_unit"))
     e["aa_revenue_share"] = _num(pick("aa_revenue_share"))
     e["aa_profit_share"] = _num(pick("aa_profit_share"))
+    # the artist's cut of revenue before the profit is split (etl/pricing.py):
+    # a component of the deal, shown beside the shares, not a share of the ads
+    cut = _num(pick("artist_revenue_cut"))
+    e["artist_revenue_cut"] = min(max(cut, 0.0), 1.0) if cut is not None else None
     # a frame is on offer unless Airtable or the tab says not; with nothing
     # said, a sculpture edition has none (etl/pricing.py framing_default)
     fa = pick("framing_available", default=p.get("framing_default") is not False)
@@ -3682,7 +3686,7 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
     # the product fields the tab reads (shared/economics.mjs PRODUCT_KEYS and
     # the identity); the record's other columns stay in the pricing file
     keep = ("airtable_id", "name", "project_code", "edition", "target_sellthrough", "unit_price", "currency",
-            "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "deal_type",
+            "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "deal_type",
             "framing_available", "framing_default", "frame_conversion", "frame_profit_per_unit",
             "launch_date")
     products = [{k: p.get(k) for k in keep} for p in at["products"]]

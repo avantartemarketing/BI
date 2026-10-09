@@ -176,7 +176,7 @@ const LEGACY_KEYS = ["edition_size", "edition_total", "unit_price", "artist_prof
 // a product's figures as typed over Airtable's: [field, floor, ceiling, integer?]
 const PRODUCT_FIELDS = [["edition", 1, null, true], ["target_sellthrough", 0, 1, false], ["unit_price", 0.01, null, false],
   ["artist_profit_per_unit", 0, null, false], ["aa_profit_per_unit", 0, null, false], ["aa_revenue_share", 0, 1, false],
-  ["aa_profit_share", 0, 1, false], ["frame_conversion", 0, 1, false], ["frame_profit_per_unit", 0, null, false]];
+  ["aa_profit_share", 0, 1, false], ["artist_revenue_cut", 0, 1, false], ["frame_conversion", 0, 1, false], ["frame_profit_per_unit", 0, null, false]];
 const CURRENCIES = ["GBP", "EUR", "USD"];
 const economicsPromise = import("../shared/economics.mjs");
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
