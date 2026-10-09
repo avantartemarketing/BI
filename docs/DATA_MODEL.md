@@ -1079,7 +1079,10 @@ naming a field spelled another way. The table carries some of these under its ow
 (`OPTIONAL_ALIASES`, 8 October 2026), tried after the name above: `AA split` is the AA profit
 share; `Profit per unit (excl paid ads)_marketing` and `Artist profit per unit (excl. paid
 ads)_marketing` are the two profits per unit, typed as text ("€450", "€1,250") and read for their
-number in euros, a figure in pounds or dollars converted at the pricing rates. **The deal.** The
+number in euros, a figure in pounds or dollars converted at the pricing rates; `Blended frame
+margin` is the frame profit per unit, Avant Arte's profit on a frame blended over the frame
+options on offer (a rollup over the record's frame products, in euros, reading 0 where none are
+linked, which the pull leaves blank: no figure, not a frame sold at no profit). **The deal.** The
 artist's or estate's cut of revenue (`Revenue Commission %`) is taken before any profit is split,
 and `Commission Type` (`Profit` or `Revenue`) says what the deal is (`etl/pricing.py
 release_products`). On a revenue deal the cut is the whole deal: the AA revenue share is read as
