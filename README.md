@@ -608,20 +608,19 @@ Since 8 October 2026 the tab is one column (BENCHMARK_SPEC 8): `Save targets` an
 with the state beside them, then the outcome as one strip of five figures - the target, the
 benchmark, the stretch, the paid budget (red past the 6% sense check) and the launch value,
 each with its detail on hover - then the form in four groups of label-and-control rows in the
-order the decisions are made, and the actions again at the foot. **Works** draws the works as
-one picture: a column per work, as wide as its target units and as tall as its price per unit,
-stacked by who gets what (costs and the rest, the artist's profit, Avant Arte's) with the
-framing uplift as the band on top, so area is money; a work with no edition or no price yet is a thin dashed outline, and a work left out
-of the release is not drawn but named under the chart, with `Include` beside it while editing. Selecting a column puts that work's figures beside
-the chart (edition, sell-through, target units, the close, price, the profits per unit, the
-deal's share, framing, frames per print, frame profit, the launch value and Avant Arte's take
-with framing); with nothing selected the panel shows the release as a whole, weighted by
-target units, with AA's share of paid spend. The figures are locked to Airtable's until
-**Edit figures** is on; then the figure itself is the input, a typed one tinted with Airtable's
-(or the default) faint beside it, and a figure typed on the release as a whole lands on every
-work. The panel's first row, `In the release`, is the switch that leaves a work out or
-counts it again; the panel also offers `Reset to Airtable`, and `Remove` on a work added by hand; the group's head offers `Add a work` and `Reset
-all`. **Target** holds the basket with `Change basket`, the Channels in plan switches, and the
+order the decisions are made, and the actions again at the foot. **Works** is one sheet: the figures down the side (in the
+release, edition, sell-through, target units, the close, price, the profits per unit, the
+artist's revenue cut, the deal's shares, framing, frames per print, frame profit, the launch
+value, Avant Arte's take with framing and AA's share of paid spend), one column per work with
+its whole name on up to two lines, and All works as the first column, the release as a whole
+weighted by target units. The figure labels hold while the sheet scrolls sideways; a column's
+edge drags to widen it and a double-click puts it back. The figures are locked to Airtable's
+until **Edit figures** is on; then the cell is the input, selected whole on focus so typing
+replaces it, a typed one tinted with Airtable's figure on hover, and a figure typed under All
+works lands on every work. The tick on the first row leaves a work out or counts it again (it
+keeps its column, greyed); while editing a last row counts each work's typed figures with
+`Reset` beside them, or `Remove` on a work added by hand, whose name is typed in its header;
+the group's head offers `Add a work` and `Reset all`. **Target** holds the basket with `Change basket`, the Channels in plan switches, and the
 stretch as a three-way choice, even across channels, all from paid or custom, the coupled
 sliders appearing under Custom. **Launch** holds the three dates on one row, each with a
 one-word source tag in its box and a button for a date another feed has; the Meta campaigns;
