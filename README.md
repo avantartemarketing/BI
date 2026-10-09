@@ -608,7 +608,8 @@ Since 8 October 2026 the tab is one column (BENCHMARK_SPEC 8): `Save targets` an
 with the state beside them, then the outcome as one strip of five figures - the target, the
 benchmark, the stretch, the paid budget (red past the 6% sense check) and the launch value,
 each with its detail on hover - then the form in four groups of label-and-control rows in the
-order the decisions are made, and the actions again at the foot. **Works** is one sheet: the figures down the side (in the
+order the decisions are made, each group a white card with its title inside, and the actions
+again at the foot. **Works** is one sheet: the figures down the side (in the
 release, edition, sell-through, target units, the close, price, the profits per unit, the
 artist's revenue cut, the deal's shares, framing, frames per print, frame profit, the launch
 value, Avant Arte's take with framing and AA's share of paid spend), one column per work with

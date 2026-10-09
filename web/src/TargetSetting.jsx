@@ -525,18 +525,18 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
     return { from: "Airtable", v: null };
   };
   const srcTitle = (src) => (src === "airtable" ? "Airtable's figure: type over it to override." : src === "default" ? "The benchmark default: type over it to override." : "Airtable holds none: type it.");
-  const sec = (key) => (SECTION.has(key) ? " sec" : "");
+  const sec = (key) => (SECTION.has(key) ? " ws-sec" : "");
   const cell = (key, cls, node, title) => <div key={key} className={`ws-c${cls ? ` ${cls}` : ""}`} title={title}>{node}</div>;
   const handle = (key, what) => <button type="button" className="ws-rz" aria-label={`Resize the ${what} column; double-click to put it back`} title="Drag to widen; double-click to put it back" {...resizer(key)} />;
 
   /* ---- the header: the figure corner, All works, a work per column ---- */
   const headRow = () => [
     <div key="l" className="ws-c ws-h ws-l"><span className="nm">Figure</span>{handle("lbl", "figure")}</div>,
-    <div key="all" className="ws-c ws-h all"><span className="nm">All works</span>{handle("all", "All works")}</div>,
+    <div key="all" className="ws-c ws-h ws-all"><span className="nm">All works</span>{handle("all", "All works")}</div>,
     ...products.map((p, i) => {
       const key = rowKey(p, i);
       return (
-        <div key={key} className={`ws-c ws-h${p.excluded ? " out" : ""}`} title={p.excluded ? `${name(p)}: not in the release, counts nothing.` : name(p)}>
+        <div key={key} className={`ws-c ws-h${p.excluded ? " ws-out" : ""}`} title={p.excluded ? `${name(p)}: not in the release, counts nothing.` : name(p)}>
           {editing && !p.airtable_id
             ? <input className="ws-name" value={p.name || ""} placeholder="Name of the work" aria-label="Name of the work" onChange={(e) => onName(p, e.target.value)} />
             : <span className="nm">{name(p)}</span>}
@@ -554,8 +554,8 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
   /* ---- in the release: the tick per work ---- */
   const inRow = () => [
     cell("l", "ws-l", "In the release", "Ticked: part of the release. Untick a work to leave it out; it stays here, greyed, and counts nothing."),
-    cell("all", "all", `${live.length} of ${products.length}`, "The works in the release."),
-    ...products.map((p, i) => cell(rowKey(p, i), p.excluded ? "out" : "", p.airtable_id
+    cell("all", "ws-all", `${live.length} of ${products.length}`, "The works in the release."),
+    ...products.map((p, i) => cell(rowKey(p, i), p.excluded ? "ws-out" : "", p.airtable_id
       ? <input type="checkbox" className="ws-tick" checked={!p.excluded} disabled={!editing} aria-label={`${name(p)}: in the release`}
           title={p.excluded ? "Unticked: not in the release. Tick to count it again." : editing ? "Untick to leave this work out of the release: it stays here, greyed, and counts nothing." : "Part of the release. Switch on Edit figures to untick it."}
           onChange={(e) => onInclude(p, e.target.checked)} />
@@ -577,7 +577,7 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
   const lastClose = live.map((p) => (p.edition && p.launch_date ? String(p.launch_date).slice(0, 10) : null)).filter(Boolean).sort().pop() || null;
   const figRow = (r, ri) => {
     const title = r.tip || TIPS[r.key];
-    const cls = `${sec(r.key)}${r.total ? " total" : ""}`;
+    const cls = `${sec(r.key)}${r.total ? " ws-total" : ""}`;
     let allNode, allTitle = title;
     if (r.key === "edition") { allNode = econ.edition_total ? fmt(econ.edition_total) : "–"; allTitle = "The editions summed over the works in the release."; }
     else if (r.calc) {
@@ -608,7 +608,7 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
     }
     return [
       cell("l", `ws-l${cls}`, r.label, title),
-      cell("all", `all${cls}`, allNode, allTitle),
+      cell("all", `ws-all${cls}`, allNode, allTitle),
       ...products.map((p, i) => {
         const key = rowKey(p, i);
         if (r.calc) {
@@ -616,9 +616,9 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
             : r.key === "launch_date" ? (p.launch_date ? fmtDate(p.launch_date) : "–")
               : r.key === "launch_value" ? (p.target_units && p.unit_price_eur ? fmtMoney(p.target_units * p.unit_price_eur, 0) : "–")
                 : (p.target_units && (Number(p.aa_profit_per_unit) > 0 || p.frame_uplift_per_unit > 0) ? fmtMoney(p.target_units * ((Number(p.aa_profit_per_unit) || 0) + (p.frame_uplift_per_unit || 0)), 0) : "–");
-          return cell(key, `${cls}${p.excluded ? " out" : ""}`, v, title);
+          return cell(key, `${cls}${p.excluded ? " ws-out" : ""}`, v, title);
         }
-        if (p.excluded) return cell(key, `${cls} out`, r.check ? (p.framing_available ? "Offered" : "Not offered") : figText(r, p[r.key], p.currency) || "–", OFF_WHY);
+        if (p.excluded) return cell(key, `${cls} ws-out`, r.check ? (p.framing_available ? "Offered" : "Not offered") : figText(r, p[r.key], p.currency) || "–", OFF_WHY);
         const typed = !!(p.airtable_id && p.sources[r.key] === "typed");
         const src = p.sources[r.key] || (r.key === "frame_conversion" ? "default" : null);
         if (r.check) {
@@ -628,7 +628,7 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
         }
         if (closedFor(p, r.key)) {
           const why = r.key === "aa_revenue_share" ? "Closed: this work has an AA profit share." : r.key === "aa_profit_share" ? "Closed: this work has an AA revenue share." : "Closed: no frame is offered on this work.";
-          return cell(key, `${cls} closed`, "–", why);
+          return cell(key, `${cls} ws-closed`, "–", why);
         }
         // the figure a typed one replaced is on the hover, when there was one
         const prior = typed ? priorOf(p, r.key) : null;
@@ -644,18 +644,18 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
   /* ---- the deal's share of the paid spend, per work and as a whole ---- */
   const aaRow = () => [
     cell("l", "ws-l", "AA share of paid spend", "Avant Arte's share of the paid budget, from the deal: its profit share on a profit-share deal, all of it on a revenue share."),
-    cell("all", "all", <>{fmtPct(econ.aa_budget_share, 0)}{econ.aa_budget_share_assumed && <span className="ws-note">assumed</span>}</>,
+    cell("all", "ws-all", <>{fmtPct(econ.aa_budget_share, 0)}{econ.aa_budget_share_assumed && <span className="ws-note">assumed</span>}</>,
       econ.aa_budget_share_assumed ? "No deal recorded: 50/50 assumed." : econ.deal && econ.deal.length ? `From the deal: ${econ.deal.join(" and ")}.` : "As set up."),
-    ...products.map((p, i) => cell(rowKey(p, i), p.excluded ? "out" : "", !blankV(p.aa_budget_share) ? fmtPct(p.aa_budget_share, 0) : "–",
+    ...products.map((p, i) => cell(rowKey(p, i), p.excluded ? "ws-out" : "", !blankV(p.aa_budget_share) ? fmtPct(p.aa_budget_share, 0) : "–",
       p.deal ? `From the ${p.deal}.` : "No deal recorded on this work: the release assumes 50/50.")),
   ];
   /* ---- while editing: the typed figures and the way back, per work ---- */
   const actRow = () => [
     cell("l", "ws-l", "Typed figures", "The figures typed over Airtable's on each work."),
-    cell("all", "all", ""),
+    cell("all", "ws-all", ""),
     ...products.map((p, i) => {
       const n = typedKeys(p).length;
-      return cell(rowKey(p, i), p.excluded ? "out" : "", p.airtable_id
+      return cell(rowKey(p, i), p.excluded ? "ws-out" : "", p.airtable_id
         ? (n > 0 ? <>{n} typed{!p.excluded && <button type="button" className="ts-link" onClick={() => onReset(p)} title={`Back to Airtable's figures on this work (${n} typed).`}>Reset</button>}</> : "none")
         : <button type="button" className="ts-link" onClick={() => onRemove(p)} title="Take this work off the release.">Remove</button>);
     }),

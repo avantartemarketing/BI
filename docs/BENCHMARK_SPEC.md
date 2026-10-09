@@ -691,7 +691,8 @@ The quartile levers are gone from the page and, since 2026-09-23, from the build
 §3). In their place:
 
 The tab (relaid on 8 October 2026) is one column: the actions, the outcome as one strip, then
-the form in the order the decisions are made, in one form language (`web/src/tokens.css`, the
+the form in the order the decisions are made, each group a card with its title and controls on
+its first line (9 October 2026), in one form language (`web/src/tokens.css`, the
 `.ts-`, `.ts2-` and `.wa-` rules: a label in the left column, a 44px box with a 6px radius, a
 figure's source as a one-word tag inside the box, never a caption beside it and never a
 sentence under it; a figure that does not apply is a closed box or a dash with the reason on
