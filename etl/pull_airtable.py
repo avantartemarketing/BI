@@ -162,7 +162,13 @@ OPTIONAL_ALIASES: dict[str, list[str]] = {
     "aa_profit_share": ["AA split"],
     "aa_profit_per_unit": ["Profit per unit (excl paid ads)_marketing"],
     "artist_profit_per_unit": ["Artist profit per unit (excl. paid ads)_marketing"],
+    # Avant Arte's profit on a frame, blended over the frame options on offer
+    # (a rollup over the record's frame products, in euros)
+    "frame_profit_per_unit": ["Blended frame margin"],
 }
+# a rollup reads 0 where the record links to no frame products: no figure,
+# not a frame sold at no profit (the tab then shows nothing to type over)
+ZERO_IS_BLANK = {"frame_profit_per_unit"}
 LEAD_COL = "marketing_lead"
 # a percentage field arrives as 0.4 or, typed as a number, as 40: read either
 PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion", "artist_revenue_cut"}
@@ -390,6 +396,8 @@ def flatten(value, col: str, hits: list[int]) -> object:
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, (int, float)):
+        if col in ZERO_IS_BLANK and value <= 0:
+            return ""
         if col in PERCENT_COLS and value > 1:
             # a percentage typed as a whole number (40 for 40%): a fraction everywhere here
             value = value / 100

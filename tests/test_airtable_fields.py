@@ -70,9 +70,15 @@ check(res["artist_revenue_cut"] == "Revenue Commission %" and res["aa_revenue_sh
 check(res["aa_profit_per_unit"] == "Profit per unit (excl paid ads)_marketing" and res["artist_profit_per_unit"] == "Artist profit per unit (excl. paid ads)_marketing", "the marketing profit fields")
 check(res["deal_type"] == "Commission Type" and res["frame_conversion"] == "Framing conversion", "the deal type and a field under its current name")
 check(res["frame_profit_per_unit"] == "Framing profit per unit", "a field under no name keeps its current one")
+res2 = {col: name for name, col in pa.resolve_optional(table(live + ["Blended frame margin"]))}
+check(res2["frame_profit_per_unit"] == "Blended frame margin", f"the blended frame margin stands in for the frame profit: {res2['frame_profit_per_unit']}")
+# the rollup reads 0 with no frame products linked: no figure
+check(pa.flatten(0, "frame_profit_per_unit", [0]) == "" and pa.flatten(0.0, "frame_profit_per_unit", [0]) == "" and pa.flatten(85.5, "frame_profit_per_unit", [0]) == 85.5, "a zero frame margin is no figure")
+check(pa.flatten(0, "aa_profit_share", [0]) == 0, "a zero elsewhere stays a zero")
 names, _, found, absent = pa.check_schema(table(live))
 check(found.get("AA split") == "aa_profit_share" and found.get("Revenue Commission %") == "artist_revenue_cut" and "AA split" in names, f"the aliases are requested: {sorted(found)}")
 check("Framing profit per unit" in absent and "Target sell-through %" in absent and "AA revenue share" in absent and "AA profit share" not in absent, f"absent names the ones under no name: {absent}")
+check("Framing profit per unit" not in pa.check_schema(table(live + ["Blended frame margin"]))[3], "found under its alias, the frame profit is not absent")
 both = pa.resolve_optional(table(live + ["AA profit share"]))
 check(dict((c, n) for n, c in both)["aa_profit_share"] == "AA profit share", "the current name wins when the table has both")
 os.environ["AIRTABLE_FIELD_AA_PROFIT_SHARE"] = "Our split"
