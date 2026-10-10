@@ -61,16 +61,31 @@ paid prints took a frame over all, 43% in 2026):
   five units, and frames bought on a later order (one in fourteen frames)
   are the draws', not the timed launches'. The kind is left out of the
   combined read as asked; the gap stands in the data.
+- Estates (asked the same day; Airtable's Artist type, pulled since, names
+  them, the feed's names catch the rest): 41 works in 8 launches, 56% of
+  paid prints framed against 35% for living artists, the median work 52%
+  against 37%. It holds in both kinds (draws 57% against 42%, timed 43%
+  against 32%) and inside the ratio bands (a third to a half of the print:
+  60% against 33%; half or more: 45% against 32%), and it holds although an
+  estate's works carry every trait that otherwise lowers the rate (cheaper,
+  600 against 1,000 euros; frames at half the print; bigger editions; more
+  works; more paid). With the ratio, price, area, works, paid share and
+  year held, an estate's work reads 52% and a living artist's 35%. Launch
+  by launch: Lucian Freud's first timed launch (2025) framed at 33% and the
+  other seven at 47% to 68%, every 2026 estate launch at 47% or more. Eight
+  launches is few, but the pattern is consistent.
 - Artist tier and product type (silkscreen, hybrid, digital) make no
   difference.
 For a default (frame_conversion on the Target setting tab, the benchmark
-constant today), the 2026 launches by the frame's price against the print's:
-under a fifth 57%, a fifth to a third 52%, a third to a half 45%, half or
-more 38%; all together 43% pooled, 46% the median work.
+constant today): an estate's launch about 55% (the 2026 ones 47% to 68%).
+A living artist's by the frame's price against the print's, 2026: under a
+fifth 57%, a fifth to a third 52%, a third to a half 38%, half or more
+36% (over all years 44%, 43%, 33%, 32%).
 """
 from __future__ import annotations
 
 import math
+import os
 import pathlib
 import re
 import sys
@@ -80,7 +95,11 @@ import pandas as pd
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 DATA = ROOT / "data"
+PRICING = pathlib.Path(os.environ.get("PRICING_PATH") or (DATA / "release_pricing.csv"))
 MIN_PRINTS_WORK, MIN_PRINTS_LAUNCH = 10, 20
+# an estate's launch: Airtable's Artist type says so (artist_type, pulled since 10 October 2026), else the
+# artist's name in the feed does (Estate, Foundation)
+ESTATE_RE = re.compile(r"estate|foundation", re.I)
 
 
 def norm(s) -> str:
@@ -159,7 +178,10 @@ def main() -> None:
     ], ignore_index=True).drop_duplicates("release_name")
 
     # ---- Airtable's records: dimensions, framing, type, tier; joined per work by title within the launch
-    rp = pd.read_csv(DATA / "release_pricing.csv", dtype=str).fillna("")
+    rp = pd.read_csv(PRICING, dtype=str).fillna("")
+    if "artist_type" not in rp.columns:
+        rp["artist_type"] = ""
+    estate_artists = set(rp.loc[rp["artist_type"].str.contains("estate", case=False), "artist"])
     rp["h"], rp["w"] = zip(*rp["dimensions"].map(dims_cm))
     rp["area"] = rp["h"] * rp["w"]
     rp["long_side"] = rp[["h", "w"]].max(axis=1)
@@ -196,6 +218,7 @@ def main() -> None:
             "framing": framing, "area": area, "long_side": long_side,
             "product_type": rec["product_type"] if rec is not None else (recs["product_type"].mode().iloc[0] if len(recs) and recs["product_type"].mode().size else ""),
             "artist_tier": rec["artist_tier"] if rec is not None else (recs["artist_tier"].mode().iloc[0] if len(recs) and recs["artist_tier"].mode().size else ""),
+            "estate": bool(ESTATE_RE.search(str(r.release).split(" · ")[0])) or (len(recs) > 0 and bool(set(recs["artist"]) & estate_artists)),
             "matched": rec is not None,
         })
     w = pd.DataFrame(rows)
@@ -379,6 +402,52 @@ def main() -> None:
         timed_rate = 1 / (1 + math.exp(-(fitk[0][1] + b_t * (1 - muk[-1]) / sdk[-1])))
         draw_rate = 1 / (1 + math.exp(-(fitk[0][1] - b_t * muk[-1] / sdk[-1])))
         print(f"with the ratio, price, area, works, paid share and year held: a draw {draw_rate:.1%}, a timed launch {timed_rate:.1%} (z {b_t / se_t:+.1f})")
+
+    # ---- estates apart (asked 10 October 2026: the team's sense is that an estate's launch frames higher)
+    e = w.copy(); e["who"] = np.where(e["estate"], "estate", "living artist")
+    print(f"\nestates: {int(e['estate'].sum())} works in {e[e['estate']]['release'].nunique()} launches "
+          f"({', '.join(sorted(set(e[e['estate']]['release'].str.split(' · ').str[0]))[:12])})")
+    print("estate against living artist (works): n, pooled rate, median work, quartiles")
+    print(e.groupby("who").apply(lambda s: pd.Series({"n": len(s), "pooled": s["frames"].sum() / s["offered"].sum(), "median": s["conv"].median(), "q25": s["conv"].quantile(.25), "q75": s["conv"].quantile(.75)})).round(3).to_string())
+    print("by year (pooled rate, n works):")
+    print(e.dropna(subset=["year"]).groupby([pd.cut(e["year"], [2021.5, 2023.5, 2024.5, 2025.5, 2026.5], labels=["to 2023", "2024", "2025", "2026"]), "who"], observed=True)
+          .apply(lambda s: f"{s['frames'].sum() / s['offered'].sum():.1%} ({len(s)})").unstack().to_string())
+    print("by kind (pooled rate, n works):")
+    print(e.groupby(["kind", "who"]).apply(lambda s: f"{s['frames'].sum() / s['offered'].sum():.1%} ({len(s)})").unstack().to_string())
+    ee = e[e["frame_ratio"].notna()]
+    if len(ee):
+        print("by the frame's price against the print's (pooled rate, n works):")
+        print(ee.groupby([pd.cut(ee["frame_ratio"], [0, 0.2, 0.35, 0.5, 10], labels=["under 20%", "20-35%", "35-50%", "50%+"]), "who"], observed=True)
+              .apply(lambda s: f"{s['frames'].sum() / s['offered'].sum():.1%} ({len(s)})").unstack().to_string())
+        print("what an estate's works look like (medians):")
+        print(ee.groupby("who").agg(price=("price", "median"), frame_ratio=("frame_ratio", "median"), edition=("edition_size", "median"), works_in_launch=("works_in_launch", "median"), paid_share=("paid_share", "median")).round(2).to_string())
+        # net of the year, and the regression with an estate term
+        ey = ee.dropna(subset=["year"]).copy()
+        ey["resid"] = ey["conv"] - ey.groupby(ey["year"].round())["conv"].transform("mean")
+        print(f"net of the year: estates {ey[ey['estate']]['resid'].mean():+.1%} against the year's mean, living artists {ey[~ey['estate']]['resid'].mean():+.1%}")
+        me = ee.dropna(subset=["log_price", "log_area", "paid_share", "year"]).copy()
+        me["log_ratio"] = np.log(me["frame_ratio"]); me["estate_f"] = me["estate"].astype(float)
+        cols_e = ["log_ratio", "log_price", "log_area", "works_in_launch", "paid_share", "year", "estate_f"]
+        Xe = me[cols_e].to_numpy(float); mue, sde = Xe.mean(axis=0), Xe.std(axis=0)
+        scale = np.minimum(1.0, 100.0 / me["offered"])
+        fite = logistic((Xe - mue) / sde, (me["frames"] * scale).to_numpy(float), (me["offered"] * scale).to_numpy(float), cols_e)
+        b_e, se_e = fite[-1][1], fite[-1][2]
+        est_rate = 1 / (1 + math.exp(-(fite[0][1] + b_e * (1 - mue[-1]) / sde[-1])))
+        liv_rate = 1 / (1 + math.exp(-(fite[0][1] - b_e * mue[-1] / sde[-1])))
+        print(f"with the ratio, price, area, works, paid share and year held: an estate's work {est_rate:.1%}, a living artist's {liv_rate:.1%} (z {b_e / se_e:+.1f})")
+    # each estate launch on its own: eight launches is few enough to look at
+    el = e[e["estate"]].groupby("release").agg(year=("year", "first"), kind=("kind", "first"), works=("work", "size"), prints=("offered", "sum"), frames=("frames", "sum"),
+                                              ratio=("frame_ratio", "median")).reset_index()
+    el["rate"] = el["frames"] / el["prints"]
+    el["launch"] = el["release"].str.split(" · ").str[0] + " · " + el["release"].str.split(" · ").str[-1]
+    print("each estate launch (works with 10+ paid prints):")
+    print(el[["launch", "kind", "works", "prints", "rate", "ratio"]].sort_values("rate").round(2).to_string(index=False))
+    # the ratio table for living artists alone, the clean read for a default
+    lv = ee[~ee["estate"]]
+    print("living artists only, by the frame's price against the print's (works): n, pooled rate, median work")
+    print(band_table(lv, "frame_ratio", [0, 0.2, 0.35, 0.5, 10], ["under 20%", "20-35%", "35-50%", "50%+"]).to_string())
+    print("living artists, 2026 only:")
+    print(band_table(lv[lv["year"] >= 2026], "frame_ratio", [0, 0.2, 0.35, 0.5, 10], ["under 20%", "20-35%", "35-50%", "50%+"]).to_string())
 
     # ---- within a launch: the work against its siblings (artist, moment and audience held)
     multi = w[w["works_in_launch"] >= 2].copy()

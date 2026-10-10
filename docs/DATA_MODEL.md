@@ -1073,9 +1073,10 @@ variant, a bundle). `etl/pull_airtable.py` pulls exactly the fields needed - ide
 size, type, dates, medium, artist tier and genre bucket, and the per-product target economics
 of §1.6 (`Target sell-through %`, `Artist profit per unit`, `AA profit per unit`, `AA revenue
 share`, `AA profit share`, `Framing conversion`, `Framing profit per unit`, `Commission Type`)
-plus the `Marketing lead` and `Revenue Commission %` (`artist_revenue_cut`), each pulled when
-the table has the field and left blank when it does not yet, with `AIRTABLE_FIELD_<column>`
-naming a field spelled another way. The table carries some of these under its own names
+plus the `Marketing lead`, `Revenue Commission %` (`artist_revenue_cut`) and `Artist type`
+(`artist_type`: `ESTATE`, `PHOTOGRAPHY` and the like, a lookup, for the framing study and the
+baskets), each pulled when the table has the field and left blank when it does not yet, with
+`AIRTABLE_FIELD_<column>` naming a field spelled another way. The table carries some of these under its own names
 (`OPTIONAL_ALIASES`, 8 October 2026), tried after the name above: `AA split` is the AA profit
 share; `Profit per unit (excl paid ads)_marketing` and `Artist profit per unit (excl. paid
 ads)_marketing` are the two profits per unit, typed as text ("€450", "€1,250") and read for their

@@ -165,6 +165,9 @@ OPTIONAL_FIELDS: list[tuple[str, str]] = [
     # split: the whole deal on a revenue deal (Avant Arte's revenue share is
     # the rest), a component beside the AA split on a profit deal that has one
     ("Revenue Commission %", "artist_revenue_cut"),
+    # what kind of artist the work's is (a lookup: "Estate", "Living artist"
+    # and the like), for the framing study and the baskets, never a person
+    ("Artist type", "artist_type"),
 ]
 # The names the table actually carries these under (8 October 2026), tried
 # after the current name, the first the table has winning; an
