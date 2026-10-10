@@ -63,6 +63,10 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cost / unit now", value: budget.cpeNow ? "€" + fmt(budget.cpeNow) : "–" },
       { label: "Cost / unit at recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at recommended", value: fmt(budget.finalDayRoi, 2) },
+      // a work spoken for turns paid entries away (docs 7): the share of an entry that still buys a unit
+      ...(typeof budget.yieldNow === "number" && budget.yieldNow < 0.999
+        ? [{ label: "Entries that buy a unit", value: `${Math.round(budget.yieldNow * 100)}%${Array.isArray(budget.fullWorks) && budget.fullWorks.length ? ` · ${budget.fullWorks.join(", ")} full` : ""}` }]
+        : []),
       { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
       { label: "Spend to sell out / day", value: budget.supplySpend !== null && budget.supplySpend !== undefined ? money(budget.supplySpend) : "–" },
       { label: "Spend at ROI floor / day", value: budget.roiSpend !== null && budget.roiSpend !== undefined ? money(budget.roiSpend) : "–" },
