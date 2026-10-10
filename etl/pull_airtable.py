@@ -153,7 +153,7 @@ OPTIONAL_FIELDS: list[tuple[str, str]] = [
     ("Framing profit per unit", "frame_profit_per_unit"),
     ("Marketing lead", "marketing_lead"),
     # the project manager who confirms the unit economics, and their Slack
-    # member ID, whom Send for confirmation mentions (README, "Confirming the
+    # member ID, whom Send unit economics to PM mentions (README, "Confirming the
     # unit economics"): the display name only, and the ID only in its shape
     ("Project Manager", "project_manager"),
     ("PM Slack ID", "pm_slack_id"),

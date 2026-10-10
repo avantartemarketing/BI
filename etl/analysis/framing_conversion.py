@@ -47,13 +47,29 @@ What it found, 10 October 2026 (281 works with ten or more paid prints, in
   coefficient is zero once the big launches are capped. A draw-only
   correlation with the paid social share of sessions (+0.38) was the year:
   the 2026 draws lean on paid social and frame more for other reasons.
+- The frame's price against the print's (etl/analysis/frame_prices.js,
+  asked the same day) is the one lever that holds up. The median frame
+  sold for 375 euros, 45% of its print's price (quartiles 26% to 50%).
+  Works whose frame cost under 20% of the print framed at 44% (57% in
+  2026), 20% to 35% at 43% (52%), 35% to 50% at 38% (45%), 50% and over
+  at 33% (38%): rank correlation -0.22, the same net of year and kind. The
+  frame's own price in euros does not matter (+0.08); it is the ratio.
+  With the ratio in the regression the price's coefficient goes to nothing
+  (-0.06, z -1.8): a print's price mattered because frames cost much the
+  same in euros whatever the print, so a dearer print carries a cheaper
+  frame relative to itself. Within one launch the ratio does not separate
+  the works (-0.00), as the price did not: the read is between launches.
+  A work with more frame price points on offer frames a little more
+  (+0.14).
 - Also: bigger editions frame less (-0.26 net of year and kind, with price
   and kind behind it); artist tier and product type (silkscreen, hybrid,
   digital) make no difference.
 For a default (frame_conversion on the Target setting tab, the benchmark
 constant today): the 2026 launches say about 50% on a draw (median work
 52%, quartiles 43% to 62%) and about 35% to 40% on a timed launch (median
-40%, quartiles 29% to 46%), a draw under 1,000 euros nearer 42%.
+40%, quartiles 29% to 46%); a draw whose frame costs half the print or
+more nearer 38%, one whose frame costs under a third of the print nearer
+52% to 57%.
 """
 from __future__ import annotations
 
@@ -188,6 +204,18 @@ def main() -> None:
     w = pd.DataFrame(rows)
     # works in the launch: the works a frame was on offer for, from the orders themselves
     w["works_in_launch"] = w.groupby("release")["work"].transform("nunique")
+    # the frame's price against the print's (etl/analysis/frame_prices.js): joined by the work's SKU code
+    w["work_code"] = o["skus"].map(lambda v: str(v or "").split("|")[0].upper().split("-")[:2]).map(lambda parts: "-".join(parts) if len(parts) == 2 else None).to_numpy()
+    fp_path = DATA / "frame_prices.csv"
+    if fp_path.exists():
+        fp = pd.read_csv(fp_path)
+        fp = fp[fp["frame_price_median"].notna() & (fp["print_price"] > 0)].drop_duplicates(["release", "work_code"])
+        w = w.merge(fp[["release", "work_code", "print_price", "frame_price_median", "frame_price_min", "frame_price_points"]], on=["release", "work_code"], how="left")
+        w["frame_ratio"] = w["frame_price_median"] / w["print_price"]
+        w["frame_ratio_min"] = w["frame_price_min"] / w["print_price"]
+    else:
+        w["frame_ratio"] = w["frame_ratio_min"] = w["frame_price_median"] = np.nan
+        print("no data/frame_prices.csv: run node etl/analysis/frame_prices.js for the frame price read")
     full = w["framing"].str.startswith("Full Edition")
     print(f"works with a frame on offer: {len(w)} in {w['release'].nunique()} launches; Airtable record matched for {int(w['matched'].sum())}; "
           f"framed as a whole (left out): {int(full.sum())}")
@@ -284,6 +312,51 @@ def main() -> None:
     print(band_table(recent, "price", [0, 1000, 2000, 1e9], ["under 1,000", "1,000-2,000", "2,000+"]).to_string())
     print("2026, by paid social share of sessions, draw launches: n, pooled, median")
     print(band_table(recent[recent["paid_social_sessions"].notna()], "paid_social_sessions", [-0.01, 0.1, 0.2, 1.0], ["under 10%", "10-20%", "20%+"]).to_string())
+
+    # ---- the frame's price against the print's
+    fr = w[w["frame_ratio"].notna()].copy()
+    if len(fr):
+        print(f"\nframe price (works with a frame price, n={len(fr)}): median frame {fr['frame_price_median'].median():.0f} EUR, "
+              f"frame over print price median {fr['frame_ratio'].median():.0%} (quartiles {fr['frame_ratio'].quantile(.25):.0%} to {fr['frame_ratio'].quantile(.75):.0%}); "
+              f"price points per work median {fr['frame_price_points'].median():.0f}")
+        print("Spearman with the work's framing rate (n):")
+        for col, label in (("frame_ratio", "frame price over print price (median frame sold)"), ("frame_ratio_min", "the same with the cheapest frame"),
+                           ("frame_price_median", "frame price itself (EUR)"), ("frame_price_points", "frame price points on offer")):
+            rho, n = spearman(fr[col], fr["conv"])
+            print(f"  {label:48s} {rho:+.2f}  (n={n})")
+        fy = fr.dropna(subset=["year"]).copy()
+        fy["resid"] = fy["conv"] - fy.groupby([fy["year"].round(), "kind"])["conv"].transform("mean")
+        print("net of the year-and-kind mean:")
+        for col, label in (("frame_ratio", "frame price over print price"), ("frame_ratio_min", "the same with the cheapest frame"), ("frame_price_median", "frame price itself (EUR)")):
+            rho, n = spearman(fy[col], fy["resid"])
+            print(f"  {label:48s} {rho:+.2f}  (n={n})")
+        print("by the ratio of the frame's price to the print's (works): n, pooled rate, median work")
+        print(band_table(fr, "frame_ratio", [0, 0.2, 0.35, 0.5, 10], ["under 20%", "20-35%", "35-50%", "50%+"]).to_string())
+        print("2026 only, by the ratio: n, pooled rate, median work")
+        print(band_table(fr[fr["year"] >= 2026], "frame_ratio", [0, 0.2, 0.35, 0.5, 10], ["under 20%", "20-35%", "35-50%", "50%+"]).to_string())
+        print("by the frame's own price (works): n, pooled rate, median work")
+        print(band_table(fr, "frame_price_median", [0, 300, 450, 700, 1e9], ["under 300", "300-450", "450-700", "700+"]).to_string())
+        # within a launch: the work whose frame is dearer against the print, beside its siblings
+        d = fr[fr["works_in_launch"] >= 2].copy()
+        g = d.groupby("release")
+        d["dx"] = d["frame_ratio"] - g["frame_ratio"].transform("mean"); d["dy"] = d["conv"] - g["conv"].transform("mean")
+        d = d[d.groupby("release")["work"].transform("count") >= 2]
+        rho, n = spearman(d["dx"], d["dy"])
+        print(f"within a launch, the ratio against the launch's other works: Spearman {rho:+.2f} (n={n} works in {d['release'].nunique()} launches)")
+        # the regression again with the ratio in it
+        mr = fr.dropna(subset=["log_price", "log_area", "paid_share", "year"]).copy()
+        mr["timed"] = (mr["kind"] == "timed").astype(float)
+        mr["log_ratio"] = np.log(mr["frame_ratio"])
+        cols_r = ["log_ratio", "log_price", "log_area", "works_in_launch", "paid_share", "year", "timed"]
+        Xr = mr[cols_r].to_numpy(float)
+        mur, sdr = Xr.mean(axis=0), Xr.std(axis=0)
+        scale = np.minimum(1.0, 100.0 / mr["offered"])
+        fitr = logistic((Xr - mur) / sdr, (mr["frames"] * scale).to_numpy(float), (mr["offered"] * scale).to_numpy(float), cols_r)
+        base_r = 1 / (1 + math.exp(-fitr[0][1]))
+        print(f"logistic regression with the ratio, {len(mr)} works, prints capped at 100 a work; the rate at the average work {base_r:.1%}")
+        for (name, b, se), sdev in zip(fitr[1:], sdr):
+            up = 1 / (1 + math.exp(-(fitr[0][1] + b)))
+            print(f"  {name:22s} {b:+.3f} (s.e. {se:.3f}, z {b / se:+4.1f})   one s.d. up ({'x%.2f' % math.exp(sdev) if name.startswith('log') else '+%.2f' % sdev}): {up:.1%}")
 
     # ---- within a launch: the work against its siblings (artist, moment and audience held)
     multi = w[w["works_in_launch"] >= 2].copy()

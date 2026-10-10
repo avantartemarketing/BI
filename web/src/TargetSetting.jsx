@@ -724,7 +724,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
       onSaved({ ...snap, slack: d.slack });
     } catch (e) { setSlackError(String(e)); } finally { setSlackSaving(false); }
   };
-  /* "Send for confirmation" (under Works): the unit economics as saved and
+  /* "Send unit economics to PM" (under Works): the unit economics as saved and
      built, to the release's channel with the project manager mentioned
      (server/slack.js composeEconomicsBlocks). The figures set the Paid ROI,
      so the person who knows the deal is asked to check them where they will
@@ -1201,7 +1201,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
               <div className="right">
                 <button type="button" className="ts-btn secondary sm" title={econTitle}
                   disabled={!econReady || dirty || econPost.state === "posting"} onClick={sendEconomics}>
-                  {econPost.state === "posting" ? "Sending…" : econPost.state === "done" ? "Sent" : econPost.state === "error" ? "Failed" : "Send for confirmation"}
+                  {econPost.state === "posting" ? "Sending…" : econPost.state === "done" ? "Sent" : econPost.state === "error" ? "Failed" : "Send unit economics to PM"}
                 </button>
                 {editing && <button type="button" className="ts-btn secondary sm" onClick={onAdd}>Add a work</button>}
                 {editing && typedCount > 0 && <button type="button" className="ts-btn secondary sm" onClick={onResetAll} title="Drop every typed figure: back to Airtable's on every work.">Reset all</button>}
@@ -1331,7 +1331,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                     </div>
                   </div>
                   <label className="sub" htmlFor="ts-pm" style={{ marginTop: 8 }}
-                    title="Who confirms the unit economics: Send for confirmation, under Works, posts them to the channel and mentions this person. Airtable's Project Manager (the Pipeline table, with its PM Slack ID) unless someone is typed here: a Slack member ID (profile menu, Copy member ID), @handle or email; a handle or an email needs the Slack app to carry the users:read or users:read.email scope. Saved with the channel.">
+                    title="Who confirms the unit economics: Send unit economics to PM, under Works, posts them to the channel and mentions this person. Airtable's Project Manager (the Pipeline table, with its PM Slack ID) unless someone is typed here: a Slack member ID (profile menu, Copy member ID), @handle or email; a handle or an email needs the Slack app to carry the users:read or users:read.email scope. Saved with the channel.">
                     Project manager (Slack)
                   </label>
                   <div className="ts2-ctl" style={{ minHeight: 0 }}>

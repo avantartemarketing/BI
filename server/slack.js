@@ -514,7 +514,7 @@ function composeSellThroughBlocks(snap, { horizon = "today", today, direct = fal
 // ---------------------------------------------------------------- the unit economics, for confirmation
 
 /* The unit economics to the release's channel, for the project manager to
- * confirm: the Target setting tab's "Send for confirmation" button. These
+ * confirm: the Target setting tab's "Send unit economics to PM" button. These
  * are the figures the Paid ROI reads (docs 7), so a wrong one moves every
  * ROI on the page, and the person who knows the deal is asked to check them
  * where they will see it. Per work: the edition, the target units, the
@@ -586,8 +586,11 @@ function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, by 
   const when = today || new Date().toISOString().slice(0, 10);
   const sent = `Sent by ${by || "the dashboard"} on ${fmtDay(when)}${link ? ` · <${link}|Target setting>` : ""}.`;
   const blocks = [
-    { type: "header", text: { type: "plain_text", text: artist.slice(0, 150) } },
-    section(`*Unit economics${title ? ` · ${title}` : ""}*`),
+    // headed by what it is, so it never reads as the sell-through card's
+    // post (whose header is the artist's name): a separate message from a
+    // separate button, sharing only the channel
+    { type: "header", text: { type: "plain_text", text: `Unit economics to confirm · ${artist}`.slice(0, 150) } },
+    section(`*${artist}${title ? ` · ${title}` : ""}*`),
     table,
     ...(value ? [section(value)] : []),
     section(`${split} ${rates} ${framing}`),

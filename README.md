@@ -808,11 +808,14 @@ address bar follows the sidebar (`?release=<id>`), so a release can be linked to
 
 ### Confirming the unit economics
 
-The Target setting tab's Works section has a **Send for confirmation** button. It posts the
+The Target setting tab's Works section has a **Send unit economics to PM** button. It posts the
 unit economics, as saved and built, to the release's Slack channel, mentions the release's
 project manager and asks them to confirm the figures or reply with corrections, because they
 set the Paid ROI (profit per unit, net of cannibalisation, over the cost of a converting entry
-and that party's share of the spend, docs 7). The message (`composeEconomicsBlocks`): per work
+and that party's share of the spend, docs 7). It is its own post, headed `Unit economics to
+confirm · <artist>`, apart from the sell-through card's Post to Slack (the results update, headed
+by the artist's name), which keeps its own button and message; the two share only the channel.
+The message (`composeEconomicsBlocks`): per work
 the edition, the target units, the price, the artist's and Avant Arte's profit per unit and the
 deal, with a Total row carrying the release's figures per target unit (a page with no sized
 works is one row); under the table the launch value and the profit at the target, both on the

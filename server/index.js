@@ -812,7 +812,7 @@ app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
 }));
 /* The unit economics to the release's channel, with the project manager
  * mentioned, for them to confirm (server/slack.js composeEconomicsBlocks):
- * the Target setting tab's "Send for confirmation" button. The message is
+ * the Target setting tab's "Send unit economics to PM" button. The message is
  * composed from the snapshot on disk, the figures as last saved and built.
  * {dryRun: true} returns the message and looks nobody up. */
 app.post("/api/releases/:id/slack-economics", route(async (req, res) => {
