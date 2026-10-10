@@ -121,7 +121,11 @@ basket; it takes a few seconds.
 **From Airtable, per product** (the Pipeline table, one record per work):
 the edition size, the target sell-through, the unit price, the artist's and
 Avant Arte's profit per unit, the deal's revenue share or profit share, and
-the framing take-up and profit per frame. The release's target is the
+the framing take-up and profit per frame (a work with no take-up of its own
+takes the share of paid prints that took a frame over the last twelve
+months' launches whose frames cost a like share of the print's price, read
+from the orders on every build; the frame's price comes from Airtable's
+Framing table, or the work's own orders once it has sold). The release's target is the
 products' editions at their target sell-through, summed; its launch value the
 target units at their prices, in euros; its profits per unit the products'
 weighted by target units; and the paid-budget split follows from the deal -
@@ -184,8 +188,9 @@ Medium / High chosen per channel from the whole historical panel. That model was
 retired: it asked a question about the panel rather than about this launch, and
 nobody used it once baskets existed. What survives of it is a handful of
 constants (`etl/benchmarks.json`): the 0.8 eligible-entry → order rate (0.95 for
-pre-orders), the 20% cannibalisation, the 35% frame take-up (the profit per frame is
-always the product's own), the 6% budget sense
+pre-orders), the 20% cannibalisation, the 35% frame take-up, since 10 October 2026 only
+the fallback behind the last twelve months' take-up by the frame's price against the
+print's (the profit per frame is always the product's own), the 6% budget sense
 check, the paid spend rules, and two tables read at the median only - the
 channel order split, which places a channel group's target on its individual
 channels, and the cost per purchase, the price of a paid unit when neither the

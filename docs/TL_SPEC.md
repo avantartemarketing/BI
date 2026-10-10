@@ -334,6 +334,11 @@ cost at an ROI        = worth / (AA's share of the spend x ROI)
 in-window budget      = paid share of units x units target x cost per sale
 ```
 
+The frame take-up is the works' own (Airtable's or typed), else the basket's frames per print,
+else the last twelve months' frames per print in the band of each work's frame price against
+its print's, weighted over the works that frame (`tl_economics`, `shared/tlModel.mjs`
+`tlEconomics`; `DATA_MODEL.md` §1.6), else the constant in `etl/benchmarks.json`.
+
 The header shows the units target, the signup target, the two budgets and their uplift over
 the basket, recomputed live in the browser as the LE header is (`shared/benchmarkModel.mjs`),
 with the Python build agreeing to the figure (a parity test as for LE).

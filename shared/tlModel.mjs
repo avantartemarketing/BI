@@ -18,6 +18,8 @@
  * as etl/tl.py basket_profile writes them (the snapshot carries it under
  * benchmark.profile, already read with the channels off applied; the *_all
  * fields hold the full medians). */
+import { RATES_TO_EUR, frameBandRate } from "./economics.mjs";
+
 export const GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
 export const TL_CANNIBALISATION = 0.1;
 export const TL_PAID_SPLIT_PRE = 0.7;
@@ -183,8 +185,13 @@ const nn = (v) => (v === null || v === undefined || v === "" ? null : Number.isF
  * all of them), null when no work records a deal. A row is a product as
  * effectiveProduct resolves it, its frame_conversion the work's own figure or
  * null (not the default). */
-export function tlEconomics(rows) {
+export function tlEconomics(rows, b = {}) {
   const live = (rows || []).filter((r) => !r.excluded);
+  const bandDefault = (r) => {
+    const price = nn(r.unit_price), fp = nn(r.frame_price);
+    const eur = price ? price * (RATES_TO_EUR[String(r.currency || "EUR").toUpperCase()] ?? 1) : null;
+    return frameBandRate(fp && fp > 0 && eur && eur > 0 ? fp / eur : null, b).rate;
+  };
   const w = (r) => nn(r.units_target) || nn(r.edition) || 1;
   const weighted = (key, of) => {
     const use = of.filter((r) => nn(r[key]) !== null);
@@ -202,6 +209,7 @@ export function tlEconomics(rows) {
     aa_profit_per_unit: weighted("aa_profit_per_unit", live), artist_profit_per_unit: weighted("artist_profit_per_unit", live),
     frame_share: total > 0 ? framedW / total : 0,
     frame_conversion: weighted("frame_conversion", framed),
+    frame_conversion_default: framedW > 0 && nn((b || {}).frame_conversion) !== null ? framed.reduce((s, r) => s + w(r) * bandDefault(r), 0) / framedW : null,
     frame_profit_per_unit: framedWith.length && framedW > 0 ? framed.reduce((s, r) => s + w(r) * (nn(r.frame_profit_per_unit) || 0), 0) / framedW : null,
     aa_budget_share: dealtW > 0 ? dealt.reduce((s, r) => s + w(r) * dealShare(r), 0) / dealtW : null,
     aa_budget_share_assumed: !dealt.length,
@@ -232,6 +240,8 @@ export function tlPaidValue(inp, profile, targets, econ, b = {}) {
   let frameRate, frameSrc;
   if (own !== null) { frameRate = Math.min(Math.max(own, 0), 1); frameSrc = "release"; }
   else if (basketRate > 0) { frameRate = basketRate; frameSrc = "basket"; }
+  // the last twelve months' take-up in the band of each work's frame price against its print's (tlEconomics)
+  else if (nn(econ.frame_conversion_default) !== null) { frameRate = Math.min(Math.max(Number(econ.frame_conversion_default), 0), 1); frameSrc = "default"; }
   else { frameRate = nn(b.frame_conversion) || 0; frameSrc = "default"; }
   const frameUplift = frameShare * frameRate * (frameProfit || 0);
   const readable = ppu !== null;

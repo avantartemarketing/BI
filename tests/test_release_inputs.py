@@ -281,7 +281,13 @@ def test_airtable_products_join() -> None:
     print("airtable products join: ok")
 
 
+BANDS = [{"lo": 0.0, "hi": 0.2, "rate": 0.6}, {"lo": 0.2, "hi": 0.35, "rate": 0.5}, {"lo": 0.35, "hi": 0.5, "rate": None}, {"lo": 0.5, "hi": None, "rate": 0.3}]
+
+
 def test_js_agrees() -> None:
+    # the benchmarks as a build leaves them: the twelve-month rate with its bands (set_framing_default);
+    # the module's own copy, which resolve_release reads
+    build.BENCH["frame_conversion_bands"] = BANDS
     b = build.BENCH
     cases = [
         {"name": "airtable only", "airtable": AT, "typed": [], "legacy": None},
@@ -304,8 +310,15 @@ def test_js_agrees() -> None:
         {"name": "a work unticked", "airtable": AT, "typed": [{"airtable_id": "12", "excluded": True, "unit_price": 2500}], "legacy": None},
         {"name": "a profit deal with a revenue cut beside it, the cut typed over on one work", "airtable": [dict(AT[0], artist_revenue_cut=0.15), dict(AT[1], artist_revenue_cut=0.1)],
          "typed": [{"airtable_id": "12", "artist_revenue_cut": 0.2}], "legacy": None},
+        {"name": "frame prices: the default take-up by the band of the frame's price against the print's, a typed price moving the band", "airtable": [
+            dict(AT[0], frame_conversion=None, frame_price=150.0),                                                     # 15%: the cheapest band
+            dict(AT[1], framing="Framed on order", framing_available=True, frame_price=1200.0),                         # 60% in Airtable, 25% once typed
+            dict(AT[1], airtable_id="13", name="Green", framing="Framed on order", framing_available=True, frame_price=800.0),   # 40%: a band without a rate
+            dict(AT[0], airtable_id="14", name="Pound", currency="GBP", frame_conversion=None, frame_price=150.0),   # against the print's price in euros
+            dict(AT[0], airtable_id="15", name="Unpriced", frame_conversion=None, frame_price=None)],                 # no frame price: the overall rate
+         "typed": [{"airtable_id": "12", "frame_price": 500.0}], "legacy": None},
     ]
-    payload = {"bench": {k: b[k] for k in ("frame_conversion",)}, "cases": cases}
+    payload = {"bench": {k: b[k] for k in ("frame_conversion", "frame_conversion_bands")}, "cases": cases}
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
         json.dump(payload, f)
         path = f.name
@@ -323,8 +336,8 @@ def test_js_agrees() -> None:
         assert [p["name"] for p in py_products] == [p["name"] for p in js["products"]], (c["name"], [p["name"] for p in js["products"]])
         for pp, jp in zip(py_products, js["products"]):
             for key in ("edition", "target_sellthrough", "target_units", "unit_price", "unit_price_eur", "artist_profit_per_unit",
-                        "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "frame_conversion", "frame_profit_per_unit",
-                        "frame_uplift_per_unit", "aa_budget_share"):
+                        "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "frame_price", "frame_ratio", "frame_conversion",
+                        "frame_profit_per_unit", "frame_uplift_per_unit", "aa_budget_share"):
                 a, bb = pp.get(key), jp.get(key)
                 ok = (a is None and bb is None) or (a is not None and bb is not None and close(a, bb))
                 if not ok:
@@ -347,6 +360,7 @@ def test_js_agrees() -> None:
             if bool(r.get("aa_budget_share_assumed")) != bool(je.get("aa_budget_share_assumed")):
                 bad.append((c["name"], "-", "aa_budget_share_assumed", r.get("aa_budget_share_assumed"), je.get("aa_budget_share_assumed")))
     pricing.release_products = keep
+    build.BENCH.pop("frame_conversion_bands", None)
     assert not bad, "\n".join(str(x) for x in bad[:12])
     print(f"js agrees: ok over {len(cases)} cases")
 

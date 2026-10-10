@@ -24,7 +24,7 @@ import build  # noqa: E402
 COLS = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
         "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts",
         "units_winner_drafts_lapsed", "units_from_drafts", "units_private_room", "list_price_eur", "first_order",
-        "last_order", "last_draft", "prints_offered_paid", "frames_paid", "prints_offered_entry_drafts", "frames_entry_drafts",
+        "last_order", "last_draft", "frame_price_eur", "prints_offered_paid", "frames_paid", "prints_offered_entry_drafts", "frames_entry_drafts",
         "prints_offered_awaiting", "frames_awaiting"]
 REL = "Andy Warhol Estate · Multiple · 2026 Q3"
 
@@ -57,6 +57,90 @@ def load(rows, cols=COLS):
             build.DATA, build._ORDERS_FEED = keep
 
 
+def test_default() -> None:
+    """The assumed take-up (framing_default): the share of paid prints that took a
+    frame over the works that first sold in the last twelve months, every launch
+    together, pooled over prints; None, the constant standing, while the feed is
+    thin; and set_framing_default puts it in both builds' benchmarks."""
+    import datetime as dt
+    as_of = dt.date(2026, 10, 10)
+    big = []
+    # six recent launches of 200 prints at 50%, one old launch of 2,000 prints at 10% that must not count,
+    # one recent launch with its first order a day outside the window
+    for i in range(6):
+        r = row(f"Recent {i}", 200, 200, 100, last_order="2026-09-01")
+        r.update({"release": f"Artist {i} · Multiple · 2026 Q3", "first_order": f"2026-0{i + 1}-15"})
+        big.append(r)
+    old_r = row("Old", 2000, 2000, 200, last_order="2025-09-01"); old_r.update({"release": "Old Artist · Multiple · 2025 Q3", "first_order": "2025-06-01"}); big.append(old_r)
+    edge = row("Edge", 400, 400, 0, last_order="2025-10-20"); edge.update({"release": "Edge Artist · Multiple · 2025 Q4", "first_order": "2025-10-09"}); big.append(edge)
+    feed = load(big)
+    fd = build.framing_default(as_of, feed)
+    assert fd is not None and fd["launches"] == 6 and fd["prints"] == 1200 and fd["frames"] == 600 and fd["rate"] == 0.5, fd
+    assert fd["since"] == "2025-10-10" and fd["works"] == 6, fd
+    # the day the window opens counts; the day before does not
+    edge2 = dict(edge, first_order="2025-10-10"); feed2 = load(big[:-1] + [edge2])
+    fd2 = build.framing_default(as_of, feed2)
+    assert fd2["launches"] == 7 and fd2["prints"] == 1600 and abs(fd2["rate"] - 600 / 1600) < 1e-9, fd2
+    # pooled over prints: a big launch weighs as its buyers did
+    huge = row("Huge", 3000, 3000, 300, last_order="2026-09-01"); huge.update({"release": "Huge Artist · Multiple · 2026 Q3", "first_order": "2026-08-01"})
+    fd3 = build.framing_default(as_of, load(big + [huge]))
+    assert abs(fd3["rate"] - round(900 / 4200, 4)) < 1e-9, fd3
+    # thin: too few prints, or too few launches, and the constant stands
+    assert build.framing_default(as_of, load(big[:4])) is None, "four launches of 200 prints are too few prints"
+    few = [dict(r, prints_offered_paid=600, frames_paid=300, units_paid=600) for r in big[:4]]
+    assert build.framing_default(as_of, load(few)) is None, "2,400 prints over four launches are too few launches"
+    assert build.framing_default(as_of, {}) is None
+    # no frame prices on file: the four bands are there, none with a rate
+    assert [(x["lo"], x["hi"]) for x in fd["bands"]] == list(build.pricing.FRAMING_BANDS) and all(x["rate"] is None and x["prints"] == 0 for x in fd["bands"]), fd["bands"]
+    # by the frame's price against the print's (list price 500): two launches of
+    # 200 prints in each band but the 35-50% one, which has one, too few prints
+    # for a rate of its own; a launch with no frame price counts overall only
+    spec = [("Cheap A", 50, 120), ("Cheap B", 60, 120),       # under 20%: 60%
+            ("Mid A", 100, 100), ("Mid B", 150, 100),         # 20-35% (100 is exactly 20%, and in): 50%
+            ("Thin", 200, 60),                                # 35-50%: 200 prints, too few
+            ("Dear A", 250, 60), ("Dear B", 300, 60),         # 50% and over (250 is exactly 50%, and in): 30%
+            ("Unpriced", "", 100)]                            # no frame price: overall only
+    banded = []
+    for nm, fp, frames in spec:
+        r = row(nm, 200, 200, frames, last_order="2026-09-01")
+        r.update({"release": f"{nm} Artist · Multiple · 2026 Q3", "first_order": "2026-06-15", "frame_price_eur": fp})
+        banded.append(r)
+    fb = build.framing_default(as_of, load(banded))
+    assert fb["launches"] == 8 and fb["prints"] == 1600 and fb["frames"] == 720 and fb["rate"] == 0.45, fb
+    assert [x["rate"] for x in fb["bands"]] == [0.6, 0.5, None, 0.3], fb["bands"]
+    assert [x["prints"] for x in fb["bands"]] == [400, 400, 200, 400] and [x["launches"] for x in fb["bands"]] == [2, 2, 1, 2], fb["bands"]
+    # set into both builds' benchmarks, and the constant restored where the feed is thin
+    import tl
+    keep = build.BENCH["frame_conversion"], tl.BENCH["frame_conversion"]
+    try:
+        got = build.set_framing_default(as_of, feed)
+        assert got["rate"] == 0.5 and build.BENCH["frame_conversion"] == 0.5 and tl.BENCH["frame_conversion"] == 0.5
+        assert build.BENCH["frame_conversion_source"]["kind"] == "last_12_months" and tl.BENCH["frame_conversion_source"]["launches"] == 6
+        conv, _ = build.frame_terms({"frame_conversion": None, "frame_profit_per_unit": 80}, build.BENCH)
+        assert conv == 0.5, "frame_terms reads the rate set"
+        assert build.frame_terms({"frame_conversion": None}, build.BENCH, ratio=0.1)[0] == 0.5, "no band has a rate: the overall rate for any ratio"
+        # the rate a work is read at: its band's, the overall one where the band is thin or the frame price unknown
+        build.set_framing_default(as_of, load(banded))
+        assert build.BENCH["frame_conversion"] == 0.45 and [x["rate"] for x in tl.BENCH["frame_conversion_bands"]] == [0.6, 0.5, None, 0.3]
+        assert build.BENCH["frame_conversion_source"]["prints"] == 1600 and "bands" not in build.BENCH["frame_conversion_source"]
+        for ratio, want in {None: 0.45, 0.1: 0.6, 0.2: 0.5, 0.3499: 0.5, 0.35: 0.45, 0.5: 0.3, 2.0: 0.3, -1: 0.45}.items():
+            conv, _ = build.frame_terms({"frame_conversion": None}, build.BENCH, ratio=ratio)
+            assert conv == want, (ratio, conv, want)
+        assert build.frame_terms({"frame_conversion": 0.7}, build.BENCH, ratio=0.1)[0] == 0.7, "a work's own figure over its band's"
+        rate, band = build.pricing.frame_band_rate(0.4, build.BENCH)
+        assert rate == 0.45 and band["lo"] == 0.35, "a thin band reads the overall rate, and says which band it is"
+        assert build.pricing.frame_band_rate("x", build.BENCH) == (0.45, None)
+        build.BENCH["frame_conversion"] = tl.BENCH["frame_conversion"] = 0.35
+        assert build.set_framing_default(as_of, {}) is None and build.BENCH["frame_conversion"] == 0.35
+        assert build.BENCH["frame_conversion_source"] == {"kind": "constant", "rate": 0.35} and tl.BENCH["frame_conversion_bands"] == []
+        assert build.frame_terms({"frame_conversion": None}, build.BENCH, ratio=0.1)[0] == 0.35, "thin feed: the constant for any ratio"
+    finally:
+        build.BENCH["frame_conversion"], tl.BENCH["frame_conversion"] = keep
+        for bb in (build.BENCH, tl.BENCH):
+            bb.pop("frame_conversion_source", None); bb.pop("frame_conversion_bands", None)
+    print("framing default: ok")
+
+
 def test_feed() -> None:
     feed = load([
         row("Brillo Box Collectable (White Portrait)", 169, 169, 98, e_prints=120, e_frames=90),
@@ -69,7 +153,7 @@ def test_feed() -> None:
     assert p["printsOffered"] == 45.0 and p["frames"] == 37.5 and p["entrantPrints"] == 0.0 and p["unitsPaid"] == 45.0
     assert p["draftPrints"] == 0.0 and p["draftFrames"] == 0.0
     # a feed pulled before the drafts' pair reads them as unknown, not as none
-    older = load([row("Brillo Box Collectable (White Portrait)", 169, 169, 98, drafts=4)], cols=COLS[:23])
+    older = load([row("Brillo Box Collectable (White Portrait)", 169, 169, 98, drafts=4)], cols=[c for c in COLS if c not in ("prints_offered_awaiting", "frames_awaiting")])
     wp = older[REL]["products"]["Brillo Box Collectable (White Portrait)"]
     assert wp["draftPrints"] is None and wp["draftFrames"] is None and wp["drafts"] == 4.0, wp
     # a feed pulled before the columns existed reads as no framing at all
@@ -188,7 +272,7 @@ def test_forecast() -> None:
     assert buyers < fc["today"]["rate"] < entrants, (buyers, fc["today"]["rate"], entrants)
 
     # a feed without the drafts' pair: the drafts take the work's buyers' rate
-    older = forecast_feed(cols=COLS[:23])
+    older = forecast_feed(cols=[c for c in COLS if c not in ("prints_offered_awaiting", "frames_awaiting")])
     wo = next(r for r in build.framing_forecast(older, sell_rows())["products"] if r["key"] == "dW")
     assert wo["today"]["frames"] == 50 + 4 * 0.5 + 20 * 0.75, wo
 
@@ -230,5 +314,6 @@ def test_forecast() -> None:
 
 if __name__ == "__main__":
     test_feed()
+    test_default()
     test_block()
     test_forecast()

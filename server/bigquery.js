@@ -449,7 +449,7 @@ const spendSql = () =>
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
-  "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts", "units_winner_drafts_lapsed", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft",
+  "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts", "units_winner_drafts_lapsed", "units_from_drafts", "units_private_room", "list_price_eur", "first_order", "last_order", "last_draft", "frame_price_eur",
   "prints_offered_paid", "frames_paid", "prints_offered_entry_drafts", "frames_entry_drafts",
   "prints_offered_awaiting", "frames_awaiting"];
 const DRAW_PRODUCTS_HEADER = ["release", "draw_id", "product_title", "orders", "share"];
@@ -527,7 +527,10 @@ const orderLinesCtes = () =>
   // same upsell orders left out
   "frame_lines AS (\n" +
   "  SELECT order_source_type, shopify_order_id AS order_id, quantity,\n" +
-  "    REGEXP_EXTRACT(UPPER(COALESCE(sku, '')), r'^([^-]+-[^-]+)-') AS work_code\n" +
+  "    REGEXP_EXTRACT(UPPER(COALESCE(sku, '')), r'^([^-]+-[^-]+)-') AS work_code,\n" +
+  // the frame's price and whether it was paid for, for the work's frame price below
+  "    CAST(shopify_product_variant_price AS FLOAT64) AS price,\n" +
+  "    order_source_type = 'Order' AND cancelled_order = 0 AND COALESCE(order_financial_status, '') NOT IN ('refunded', 'pending') AS paid\n" +
   `  FROM \`${PROJECT}.${DATASET}.${ORDERS_TABLE}\`\n` +
   "  WHERE is_test_order = 0 AND shopify_product_type = 'Frame' AND shopify_order_id IS NOT NULL\n" +
   "    AND (shopify_order_created_date_CET >= @since OR DATE(shopify_draft_order_created_at) >= @since)\n" +
@@ -550,6 +553,12 @@ const orderLinesCtes = () =>
   "  SELECT f.order_source_type, f.order_id, SUM(f.quantity) AS frame_units\n" +
   "  FROM frame_lines f LEFT JOIN code_prints c ON c.order_source_type = f.order_source_type AND c.order_id = f.order_id AND c.work_code = f.work_code AND c.offered_units > 0\n" +
   "  WHERE c.order_id IS NULL GROUP BY 1, 2),\n" +
+  // a work's frame price: the median paid price of the frames whose SKU names
+  // it (DATA_MODEL 6.4; the assumed take-up reads it against the print's
+  // price, etl/build.py framing_default), in the shop's euros like the prints
+  "frame_prices AS (\n" +
+  "  SELECT work_code, APPROX_QUANTILES(price, 2)[OFFSET(1)] AS frame_price\n" +
+  "  FROM frame_lines WHERE paid AND price > 0 AND work_code IS NOT NULL GROUP BY 1),\n" +
   // the app that pre-authorises a draw entry writes its drafts under one
   // facilitator account: any account whose drafts are nearly all on the DRAW
   // SKU is the app, and every draft it writes (some land on the base SKU) is
@@ -629,6 +638,8 @@ const ordersSql = () =>
   "  MIN(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS first_order,\n" +
   "  MAX(IF(l.order_source_type = 'Order', l.order_date, NULL)) AS last_order,\n" +
   "  MAX(l.draft_date) AS last_draft,\n" +
+  // the work's frame price (frame_prices), the same on every line of the work
+  "  ANY_VALUE(fz.frame_price) AS frame_price_eur,\n" +
   // framing (docs/DATA_MODEL.md 6.4): the paid prints a frame was on offer
   // for and the frames bought with them; the same on the app's entry drafts,
   // and on the orders awaiting payment (the drafts the sell-through counts)
@@ -639,6 +650,7 @@ const ordersSql = () =>
   "  SUM(IF(l.awaiting AND l.offered, l.quantity, 0)) AS prints_offered_awaiting,\n" +
   "  ROUND(SUM(IF(l.awaiting, l.frames_line, 0)), 2) AS frames_awaiting\n" +
   "FROM typed l LEFT JOIN paid_customers p ON p.release = l.release AND p.customer_id = l.customer_id\n" +
+  "  LEFT JOIN frame_prices fz ON fz.work_code = l.work_code\n" +
   "GROUP BY l.release, l.product_title\nORDER BY l.release, l.product_title";
 
 /* units_paid.csv: the units a page counts (docs/DATA_MODEL.md 2.4), per

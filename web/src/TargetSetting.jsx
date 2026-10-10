@@ -29,7 +29,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { C, MINUS, fmt, fmtK, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
-import { resolveProducts, releaseEconomics, LEGACY_KEYS } from "../../shared/economics.mjs";
+import { resolveProducts, releaseEconomics, frameBandRate, LEGACY_KEYS } from "../../shared/economics.mjs";
 import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf, rebalanceShares, stretchWeights } from "../../shared/benchmarkModel.mjs";
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -168,8 +168,9 @@ const GRID = [
   { key: "artist_revenue_cut", label: "Artist revenue cut", glyph: "%", tip: "The artist's or estate's commission on revenue, taken before any profit is split (Airtable's Revenue Commission %). On a revenue deal it is the whole deal; a profit-share deal can carry one beside the AA profit share." },
   { key: "aa_revenue_share", label: "AA revenue share", glyph: "%", tip: "Avant Arte's own share of revenue on a royalty deal (not the artist's), where Avant Arte carries the ads outright. Closed while the product has an AA profit share." },
   { key: "aa_profit_share", label: "AA profit share", glyph: "%", tip: "Avant Arte's own share of the profit on a profit-share deal (not the artist's), which is also its share of the paid budget. Closed while the product has an AA revenue share." },
-  { key: "framing_available", label: "Framing", glyph: "✓", check: true, tip: "Whether a frame is offered on this work. Unticked closes the two frame cells. Where Airtable's Framing is blank, a sculpture edition has no frame and a print has one." },
-  { key: "frame_conversion", label: "Frames per print", glyph: "%", tip: "The share of buyers expected to take a frame. Blank = the benchmark default." },
+  { key: "framing_available", label: "Framing", glyph: "✓", check: true, tip: "Whether a frame is offered on this work. Unticked closes the three frame cells. Where Airtable's Framing is blank, a sculpture edition has no frame and a print has one." },
+  { key: "frame_price", label: "Frame price", glyph: "€", tip: "The price of the cheapest frame offered on this work (Airtable's Frame products). It sets the band the default frames per print is read from: the frame's price against the print's." },
+  { key: "frame_conversion", label: "Frames per print", glyph: "%", tip: "The share of buyers expected to take a frame. Blank = the default: the share of paid prints that took a frame over the last twelve months' launches, in the band of the frame's price against the print's (under 20%, 20-35%, 35-50%, 50% and over) where the frame price is known, else over every launch." },
   { key: "frame_profit_per_unit", label: "Frame profit", glyph: "€", tip: "Avant Arte's profit on each frame sold, which is Avant Arte's alone. There is no default: blank counts no framing profit." },
 ];
 const cellText = (key, v, raw = false) => {
@@ -179,13 +180,13 @@ const cellText = (key, v, raw = false) => {
 };
 /* The one-or-the-other rule: a product's deal is a revenue share or a profit
  * share, so while either holds a figure the other is closed; unticked
- * framing closes the two frame cells beside it. */
+ * framing closes the three frame cells beside it. */
 const OFF_WHY = "Unticked: this work is not part of the release, so it counts nothing here. Tick it to count it again.";
 const closedFor = (p, key) => {
   if (p.excluded) return true;   // unticked: every figure cell is closed
   if (key === "aa_revenue_share") return p.aa_profit_share !== null && p.aa_revenue_share === null;
   if (key === "aa_profit_share") return p.aa_revenue_share !== null && p.aa_profit_share === null;
-  if (key === "frame_conversion" || key === "frame_profit_per_unit") return !p.framing_available;
+  if (key === "frame_price" || key === "frame_conversion" || key === "frame_profit_per_unit") return !p.framing_available;
   return false;
 };
 const typedKeys = (p) => Object.keys(p.sources || {}).filter((k) => k !== "currency" && p.sources[k] === "typed");
@@ -231,7 +232,7 @@ function ProductsGrid({ products, econ, editing, onField, onFieldAll, onName, on
   // unticked work stays on the grid, greyed, with every cell closed
   const live = products.filter((p) => !p.excluded);
   const glyph = (c) => <span className="glyph" aria-hidden="true">{c.glyph}</span>;
-  const srcTitle = (src) => (src === "airtable" ? "Airtable's figure - type over it to override" : src === "default" ? "The benchmark default - type over it to override" : src === "typed" ? "Typed here; clear to go back to Airtable's" : "Airtable holds none - type it");
+  const srcTitle = (src) => (src === "airtable" ? "Airtable's figure - type over it to override" : src === "default" ? "The default, the last twelve months' frames per print - type over it to override" : src === "typed" ? "Typed here; clear to go back to Airtable's" : "Airtable holds none - type it");
   const cell = (p, c) => {
     if (p.excluded) return <td key={c.key} className="closed" title={OFF_WHY} />;
     if (c.date) return <td key={c.key} className="calc" title={c.tip}>{p.launch_date ? fmtDate(p.launch_date) : ""}</td>;
@@ -436,6 +437,7 @@ const ROWS = [
   { key: "aa_profit_share", label: "AA profit share", kind: "pct" },
   { key: "aa_revenue_share", label: "AA revenue share", kind: "pct" },
   { key: "framing_available", label: "Framing", check: true },
+  { key: "frame_price", label: "Frame price", kind: "money" },
   { key: "frame_conversion", label: "Frames per print", kind: "pct" },
   { key: "frame_profit_per_unit", label: "Frame profit per frame", kind: "money" },
   { key: "launch_value", label: "Launch value", calc: true, total: true, tip: "Target units at the price." },
@@ -521,10 +523,10 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
     const at = atById.get(String(p.airtable_id)) || {};
     if (!blankV(at[key])) return { from: "Airtable", v: at[key] };
     if (key === "target_sellthrough") return { from: "default", v: 1 };
-    if (key === "frame_conversion") return { from: "default", v: Number(b.frame_conversion) };
+    if (key === "frame_conversion") return { from: "default", v: frameBandRate(p.frame_ratio, b).rate };
     return { from: "Airtable", v: null };
   };
-  const srcTitle = (src) => (src === "airtable" ? "Airtable's figure: type over it to override." : src === "default" ? "The benchmark default: type over it to override." : "Airtable holds none: type it.");
+  const srcTitle = (src) => (src === "airtable" ? "Airtable's figure: type over it to override." : src === "default" ? "The default, the last twelve months' frames per print in the band of the frame's price against the print's: type over it to override." : "Airtable holds none: type it.");
   const sec = (key) => (SECTION.has(key) ? " ws-sec" : "");
   const cell = (key, cls, node, title) => <div key={key} className={`ws-c${cls ? ` ${cls}` : ""}`} title={title}>{node}</div>;
   const handle = (key, what) => <button type="button" className="ws-rz" aria-label={`Resize the ${what} column; double-click to put it back`} title="Drag to widen; double-click to put it back" {...resizer(key)} />;
@@ -594,7 +596,7 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
         ? <input type="checkbox" className="ws-tick" checked={all} aria-label="All works: framing" title="Every work at once" onChange={(e) => onFieldAll(r.key, e.target.checked)} />
         : text;
     } else {
-      const of = r.key === "frame_conversion" || r.key === "frame_profit_per_unit" ? live.filter((p) => p.framing_available) : live;
+      const of = r.key === "frame_price" || r.key === "frame_conversion" || r.key === "frame_profit_per_unit" ? live.filter((p) => p.framing_available) : live;
       const v = r.key === "target_sellthrough" ? (econ.edition_total ? econ.edition_size / econ.edition_total : null)
         : r.key === "unit_price" ? (econ.unit_price || null) : fromLegacy ? fromLegacy[r.key] : weighted(r.key, of);
       if (!editing) { allNode = figText(r, v) || "–"; allTitle = `${title} Weighted by target units over the works in the release.`; }

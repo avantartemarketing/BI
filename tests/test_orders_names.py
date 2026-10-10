@@ -27,7 +27,7 @@ REL = "Test Artist · Multiple · 2026 Q2"
 COLS = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
         "units_draft_pending", "draft_customers", "units_entrant_drafts", "units_entry_drafts", "units_winner_drafts",
         "units_winner_drafts_lapsed", "units_from_drafts", "units_private_room", "list_price_eur", "first_order",
-        "last_order", "last_draft", "prints_offered_paid", "frames_paid", "prints_offered_entry_drafts", "frames_entry_drafts",
+        "last_order", "last_draft", "frame_price_eur", "prints_offered_paid", "frames_paid", "prints_offered_entry_drafts", "frames_entry_drafts",
         "prints_offered_awaiting", "frames_awaiting"]
 failed = 0
 

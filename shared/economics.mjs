@@ -19,11 +19,27 @@ export const PAGE_CURRENCY = "EUR";
 export const RATES_TO_EUR = { EUR: 1.0, GBP: 1.18, USD: 0.92 };
 export const PRODUCT_KEYS = ["edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
   "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "framing_available", "frame_conversion",
-  "frame_profit_per_unit", "units_target"];
+  "frame_profit_per_unit", "frame_price", "units_target"];
 export const LEGACY_KEYS = ["edition_size", "edition_total", "unit_price", "artist_profit", "aa_group_profit",
   "artist_profit_share", "framing_available", "frame_conversion", "frame_profit_per_unit", "aa_budget_share"];
 
 const num = (v) => { if (v === null || v === undefined || v === "") return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
+
+/* The assumed frame take-up for a work whose frame costs `ratio` of its print
+ * (null: unknown): its band's rate where the benchmarks carry one with enough
+ * prints behind it (b.frame_conversion_bands, read from the last twelve
+ * months' orders on every build), else the overall rate (b.frame_conversion).
+ * etl/pricing.py frame_band_rate is the same to the figure. */
+export function frameBandRate(ratio, b) {
+  const overall = Number((b || {}).frame_conversion) || 0;
+  const r = num(ratio);
+  if (r === null || r < 0) return { rate: overall, band: null };
+  for (const band of (b || {}).frame_conversion_bands || []) {
+    const lo = Number(band.lo) || 0, hi = band.hi === null || band.hi === undefined ? null : Number(band.hi);
+    if (r >= lo && (hi === null || r < hi)) return { rate: band.rate === null || band.rate === undefined ? overall : Number(band.rate), band };
+  }
+  return { rate: overall, band: null };
+}
 const blank = (v) => v === null || v === undefined || v === "";
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const round2 = (v) => Math.round(v * 100) / 100;
@@ -100,10 +116,14 @@ export function effectiveProduct(p, b) {
   // said, a sculpture edition has none (etl/pricing.py framing_default)
   const fa = pick("framing_available", null, p.framing_default !== false);
   e.framing_available = fa !== false;
-  // the take-up falls back to the benchmark default; the profit per frame is
-  // the product's own or nothing (etl/build.py frame_terms): no uplift without it
+  // the standard frame's price against the print's: the band the default take-up is read in
+  const fp = num(pick("frame_price"));
+  e.frame_price = fp && fp > 0 ? fp : null;
+  e.frame_ratio = e.frame_price && e.unit_price_eur ? Math.round((e.frame_price / e.unit_price_eur) * 10000) / 10000 : null;
+  // the take-up falls back to the default of its band, else the overall one; the profit per frame
+  // is the product's own or nothing (etl/build.py frame_terms): no uplift without it
   const conv = num(pick("frame_conversion")), profit = num(pick("frame_profit_per_unit"));
-  e.frame_conversion = Math.min(Math.max(conv === null ? Number(b.frame_conversion) : conv, 0), 1);
+  e.frame_conversion = Math.min(Math.max(conv === null ? frameBandRate(e.frame_ratio, b).rate : conv, 0), 1);
   e.frame_profit_per_unit = profit === null ? null : Math.max(profit, 0);
   e.frame_uplift_per_unit = e.framing_available && e.frame_profit_per_unit !== null ? round2(e.frame_conversion * e.frame_profit_per_unit) : 0;
   if (e.aa_profit_share !== null) { e.aa_budget_share = Math.min(Math.max(e.aa_profit_share, 0), 1); e.deal = "profit share"; }

@@ -53,7 +53,8 @@ Derived economics:
 `frame_conversion` (the share of buyers taking a frame) and `frame_profit_per_unit` (AA's
 profit per frame, €) are **per-product inputs**: Airtable's Framing profit per unit, or typed on
 the Target setting tab, shown when framing is available. The take-up left blank falls back to
-the benchmark constant below; the profit per frame has **no default** (the workbook's €94 was
+the default below, the last twelve months' frames per print in the band of the frame's price
+against the print's; the profit per frame has **no default** (the workbook's €94 was
 retired on 26 September 2026, since every framed product carries its own): a framed product
 without one adds no uplift and the tab shows the cell empty (`frame_terms` in
 `etl/build.py`, mirrored in `shared/economics.mjs`). Whether a frame is on offer is
@@ -68,8 +69,25 @@ artist's. The snapshot's `economics` block publishes the terms in force
 it is not fed into the calculation automatically.
 
 Global constants (from the workbook's "PROFIT CALC - DO NOT CHANGE" block):
-`frame_conversion = 0.35`, `cannibalisation = 0.2` (the workbook's `frame_profit = €94/unit`
-is no longer used: the profit per frame is per product)
+`cannibalisation = 0.2`, and `frame_conversion = 0.35` as the fallback only: since 10 October
+2026 the assumed frames per print is read from the orders feed on every build, the share of
+paid prints that took a frame over the works that first sold in the last twelve months, every
+launch and artist together, overall and in four bands of the frame's price against the print's
+(under 20%, 20-35%, 35-50%, 50% and over; `pricing.FRAMING_BANDS`), since the study in
+`etl/analysis/framing_conversion.py` found that ratio the one driver that holds (57%, 52%, 45%
+and 38% on the 2026 launches) and the rate moving from 30% in 2024 to 43% in 2026, so a
+constant went stale; the owner chose the bands over a split by launch kind or by estate
+(`framing_default`, `set_framing_default`). A work reads its band's rate where its frame price
+is known (the orders feed's `frame_price_eur` once it has sold, Airtable's Frame products
+before that, or a price typed on the tab, against its price in euros; `frame_terms`,
+`pricing.frame_band_rate`, mirrored in `shared/economics.mjs` `frameBandRate`), the overall
+rate where it is not known or its band holds fewer than 300 prints, and the constant stands
+when the feed holds fewer than 1,000 such prints or 5 launches. The rates in force and their
+reading ride in `inputs.json` as `benchmarks.frame_conversion`,
+`benchmarks.frame_conversion_bands` (each band's `lo`, `hi` and `rate`, with the prints,
+frames, launches and works behind it) and `benchmarks.frame_conversion_source`, which the
+Target setting tab's blank cell and the TL paid value read. (The workbook's `frame_profit = €94/unit` is no longer used: the profit per
+frame is per product.)
 (the LE standard per the spend rules. The 2026-08-28 tab revision left several
 per-release cannibalisation cells reading 0 via the broken template reference
 (issue 14, §11) - those cells are display artefacts, not the constant. The TL
@@ -636,7 +654,7 @@ them alone; `BQ_ORDERS=off` skips them; `BQ_ORDERS_TABLE` renames the table; all
 
 | file | grain | columns |
 |---|---|---|
-| `data/orders_by_product.csv` | release × product (one name per product, below) | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), and no line of an order tagged `upsell_order_merged` (an upsell bought after an order is folded into it, and the upsell's own order stays in the table with the same lines: counting it counts them twice; the data team's Metabase questions leave it out too), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts` and `units_private_room` (the paid units placed from a draft and through the private room: parts of `units_paid`, the paid lines as `units_paid.csv` counts them, never a refunded or pending order's), `list_price_eur` (median list price), `product_ids`, `skus`, `first_order` and `last_order` (the first and last day of any order line, cancelled and refunded included: how far the feed runs, the `ordersAsOf` stamp, not when anything sold), `last_draft`; and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, each to the work its SKU names, else shared across the order's prints, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts), `prints_offered_awaiting` and `frames_awaiting` (the same on the orders awaiting payment, the lines `units_draft_pending` counts, for the Framing forecast) |
+| `data/orders_by_product.csv` | release × product (one name per product, below) | `units_paid` (order lines, not cancelled, not pending, not of an order refunded in full; a partly refunded order's lines stay paid, because `refund_id` sits on every line of an order with any refund and cannot say which line came back, and the partial refund is nearly always a frame or the shipping; Shopify's own net items sold agreed on five of the six such lines on the Warhol launch), `units_refunded` (lines of orders refunded in full), one row per line id (the table holds some lines twice, as a plain copy or once per refund on the order), and no line of an order tagged `upsell_order_merged` (an upsell bought after an order is folded into it, and the upsell's own order stays in the table with the same lines: counting it counts them twice; the data team's Metabase questions leave it out too), `units_draft_pending` (draft orders an advisor raised that have no order yet, the orders advisors have out for winners who have not paid while they are under 72 hours old, and orders still pending payment), `draft_customers` (the collectors those are out to who have not paid for anything on the release, for information), `units_winner_drafts` (the winners' part of the pending drafts, for information), `units_winner_drafts_lapsed` (winners' orders unpaid after 72 hours: out of the count, shown for information), `units_entrant_drafts` (a person's drafts for collectors still in a draw, counted apart because the entry is already counted), `units_entry_drafts` (the draw's own pre-authorisation drafts, see below), `units_from_drafts` and `units_private_room` (the paid units placed from a draft and through the private room: parts of `units_paid`, the paid lines as `units_paid.csv` counts them, never a refunded or pending order's), `list_price_eur` (median list price), `product_ids`, `skus`, `first_order` and `last_order` (the first and last day of any order line, cancelled and refunded included: how far the feed runs, the `ordersAsOf` stamp, not when anything sold), `last_draft`, `frame_price_eur` (the median price paid for a frame on the work's paid orders, in euros, blank where none was bought: the band the default frames per print is read in, §1.6); and the framing (§6.4): `prints_offered_paid` (paid units a frame was on offer for), `frames_paid` (the frames bought with them, each to the work its SKU names, else shared across the order's prints, a frame per print at most), `prints_offered_entry_drafts` and `frames_entry_drafts` (the same on the app's pre-authorisation drafts), `prints_offered_awaiting` and `frames_awaiting` (the same on the orders awaiting payment, the lines `units_draft_pending` counts, for the Framing forecast) |
 | `data/draw_products.csv` | release × draw | `product_title`: the product the draw's winners bought most, by the same names, else, before the draw has winners, the one its entrants hold the app's pre-authorisation drafts for most; `orders` (the people that reading counted), `share` (their share of it) |
 | `data/draw_claims.csv` | release × draw, only draws with any | claims a draw round has made that the order table has not caught up with: `claims` (winners the event feed flags who still hold an open pre-authorisation draft, the app's entry draft, on the draw's own product and have no paid order for it), `units` (on those drafts), and `product_title` (the draw's product: the one its winners have paid orders for most, else the one its entrants hold drafts for most). Written with the orders files, empty when its query fails, never committed: a claims file from another moment than the orders would count a sale twice (§6.3) |
 | `data/units_paid.csv` | release × product (the same names) × order day (CET) × channel × `purchase_event` | `units_paid`, `units_private_room`, `prints_offered_paid`, `frames_paid`: the paid lines of `orders_by_product.csv` by the same rule (one set of CTEs, `orderLinesCtes`), each order on the channel of its earliest purchase event in the event feed (`AA_session_custom_channel_group_split_touch`, joined on the Shopify order id alone), `Untracked` with `purchase_event` false where the event feed has no purchase for the order. Summed over its days and channels it is `units_paid` per product. The units every card counts (§6.3); written beside the other two in the same commit, so a deploy resets all three to one committed copy, and `etl/build.py` reads a release whose units here do not add up to its `units_paid` in `orders_by_product.csv` as out of step (two pulls), counting the funnel's units for it until the next pull |
@@ -1083,7 +1101,12 @@ ads)_marketing` are the two profits per unit, typed as text ("€450", "€1,250
 number in euros, a figure in pounds or dollars converted at the pricing rates; `Blended frame
 margin` is the frame profit per unit, Avant Arte's profit on a frame blended over the frame
 options on offer (a rollup over the record's frame products, in euros, reading 0 where none are
-linked, which the pull leaves blank: no figure, not a frame sold at no profit). **The deal.** The
+linked, which the pull leaves blank: no figure, not a frame sold at no profit). The frame's
+price comes through the record's `Frame products` links into the Framing table
+(`AIRTABLE_FRAMES_TABLE`, `Framing` by default): the cheapest `Standard plexi PRICE` among
+them is `frame_price` and the cheapest `Optium plexi PRICE` is `frame_price_premium`, in euros,
+blank where nothing is linked; the standard one sets the band the default frames per print is
+read in (§1.6 above), and the tab shows it as the Frame price cell. **The deal.** The
 artist's or estate's cut of revenue (`Revenue Commission %`) is taken before any profit is split,
 and `Commission Type` (`Profit` or `Revenue`) says what the deal is (`etl/pricing.py
 release_products`). On a revenue deal the cut is the whole deal: the AA revenue share is read as
@@ -1867,7 +1890,9 @@ each brings. A snapshot built before the forecast heads the card with the buyers
 
 **References, kept off the card.** The plan is the release's frame conversion (`frame_terms`:
 the product's Airtable figure or the typed one, weighted over the products that frame, else the
-panel default `frame_conversion` in `etl/benchmarks.json`); a release whose products have no
+last twelve months' frames per print in the band of the frame's price against the print's,
+`framing_default` (§1.6), the constant in `etl/benchmarks.json` only where the feed is thin); a
+release whose products have no
 framing option has none. The benchmark is the basket's median frames per print, read from the
 same feed over the members with at least 30 prints on offer (`framing_benchmark`; none when
 fewer than three members qualify, since the feed starts at `BQ_SINCE`). On the September 2026

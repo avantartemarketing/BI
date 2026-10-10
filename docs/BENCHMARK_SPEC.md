@@ -710,7 +710,8 @@ hover):
    down the side, in the order the deal is read - in the release (a tick), edition, sell-through,
    target units, the close, price, the two profits per unit, the artist's revenue cut, `AA profit
    share` and `AA revenue share` (Avant Arte's own share, not the artist's; two cells that close
-   each other), framing (a tick; unticked closes the two frame cells), frames per print, frame
+   each other), framing (a tick; unticked closes the three frame cells), frame price (Airtable's
+   Framing table, which sets the band the blank frames per print reads), frames per print, frame
    profit, then the launch value, Avant Arte's take with framing and AA's share of paid spend -
    one column per work with its whole name on up to two lines, and All works as the first column:
    editions and target units summed, the rest weighted by target units. The figure labels hold

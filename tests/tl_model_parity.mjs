@@ -15,6 +15,6 @@ const targets = cases.map((c) => {
 const paid = (paidCases || []).map((c) => {
   const read = applyChannelsOff(c.profile, channelsOffOf(c.inputs));
   const T = tlTargets(c.inputs, c.airtable_units, read, c.launch_value, bench);
-  return tlPaidValue(c.inputs, read, T, tlEconomics(c.rows), bench);
+  return tlPaidValue(c.inputs, read, T, tlEconomics(c.rows, bench), bench);
 });
 process.stdout.write(JSON.stringify({ targets, paid }));

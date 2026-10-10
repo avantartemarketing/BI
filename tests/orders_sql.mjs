@@ -26,8 +26,12 @@ check(/LEAST\(l\.quantity,/.test(orders) && /fn\.frame_units/.test(orders) && /f
 check(/SUM\(IF\(l\.paid, l\.frames_line, 0\)\)/.test(orders) && /SUM\(IF\(l\.entry_draft, l\.frames_line, 0\)\)/.test(orders), "frames counted on paid prints and on entry drafts");
 check(/SUM\(IF\(l\.awaiting AND l\.offered, l\.quantity, 0\)\) AS prints_offered_awaiting/.test(orders) && /SUM\(IF\(l\.awaiting, l\.frames_line, 0\)\)/.test(orders),
   "and on the orders awaiting payment, the drafts the sell-through counts");
-check(bq.ORDERS_HEADER.length === 25 && bq.ORDERS_HEADER.slice(-2).join(",") === "prints_offered_awaiting,frames_awaiting"
+check(bq.ORDERS_HEADER.length === 26 && bq.ORDERS_HEADER.slice(-2).join(",") === "prints_offered_awaiting,frames_awaiting"
   && bq.ORDERS_HEADER.includes("frames_paid") && bq.ORDERS_HEADER.includes("prints_offered_paid"), `the file's columns, the awaiting pair last (${bq.ORDERS_HEADER.length})`);
+// the work's frame price: the median paid frame whose SKU names the work, beside the last draft day
+check(/frame_prices AS \(/.test(orders) && /WHERE paid AND price > 0 AND work_code IS NOT NULL GROUP BY 1/.test(orders) && /ANY_VALUE\(fz\.frame_price\) AS frame_price_eur/.test(orders)
+  && /LEFT JOIN frame_prices fz ON fz\.work_code = l\.work_code/.test(orders) && bq.ORDERS_HEADER[bq.ORDERS_HEADER.indexOf("last_draft") + 1] === "frame_price_eur",
+  "the work's frame price rides with the product");
 // every column the header names is one the query selects
 check(bq.ORDERS_HEADER.every((c) => new RegExp(`(AS ${c}\\b|\\bl\\.${c}\\b)`).test(orders)), "the header's columns are all selected");
 check(!/user_email|customer_email/.test(orders) && !/user_email|customer_email/.test(draws), "no address column is named");
