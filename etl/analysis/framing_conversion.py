@@ -442,6 +442,16 @@ def main() -> None:
     el["launch"] = el["release"].str.split(" · ").str[0] + " · " + el["release"].str.split(" · ").str[-1]
     print("each estate launch (works with 10+ paid prints):")
     print(el[["launch", "kind", "works", "prints", "rate", "ratio"]].sort_values("rate").round(2).to_string(index=False))
+    # estates and living artists at each band: the frame's price against the print's, and the print's price
+    def cross(df, col, edges, labels, title):
+        b = pd.cut(df[col], edges, labels=labels, include_lowest=True)
+        cell = lambda g: f"{g['frames'].sum() / g['offered'].sum():.0%} / {g['conv'].median():.0%} ({len(g)})"
+        print(title + " - pooled rate / median work (n works):")
+        print(df.groupby([b, "who"], observed=True).apply(cell).unstack().fillna("-").to_string())
+    cross(ee, "frame_ratio", [0, 0.2, 0.35, 0.5, 10], ["under 20%", "20-35%", "35-50%", "50%+"], "by the frame's price against the print's, all years")
+    cross(ee[ee["year"] >= 2026], "frame_ratio", [0, 0.2, 0.35, 0.5, 10], ["under 20%", "20-35%", "35-50%", "50%+"], "the same, 2026 only")
+    cross(e, "price", [0, 500, 1000, 2000, 1e9], ["under 500", "500-1,000", "1,000-2,000", "2,000+"], "by the print's price, all years")
+    cross(e[e["year"] >= 2026], "price", [0, 500, 1000, 2000, 1e9], ["under 500", "500-1,000", "1,000-2,000", "2,000+"], "the same, 2026 only")
     # the ratio table for living artists alone, the clean read for a default
     lv = ee[~ee["estate"]]
     print("living artists only, by the frame's price against the print's (works): n, pooled rate, median work")
