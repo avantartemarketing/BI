@@ -172,7 +172,7 @@ const setPm = (pm) => jsonPost(`/api/releases/${RELEASE}/slack-channel`, { chann
 seen.length = 0;
 r = await econ();
 d = await r.json().catch(() => ({}));
-check(r.status === 400 && /project manager/.test(d.error || "") && /Target setting/.test(d.error || ""), `no project manager, no post: ${r.status} ${d.error}`);
+check(r.status === 400 && /No project manager for this release/.test(d.error || "") && /Target setting/.test(d.error || ""), `no project manager, no post: ${r.status} ${d.error}`);
 check(seen.length === 0, "and Slack is not called");
 r = await setPm("@U0PMTEST01");
 d = await r.json().catch(() => ({}));
@@ -195,6 +195,42 @@ check(etable && etable.rows[0].length === 7 && etable.rows.length >= 3 && etable
   `the table: ${etable && etable.rows.length} rows of ${etable && etable.rows[0].length}`);
 const ctx = (em.blocks || []).filter((b) => b.type === "context").map((b) => b.elements[0].text).join(" ");
 check(/Sent by tom\.lloyd@avantarte\.com/.test(ctx) && /release=julianschnabel_le_26\|Target setting>/.test(ctx), `the context says who sent it and links the tab: ${ctx}`);
+// Airtable's project manager (snap.projectManager, the Pipeline table's Project
+// Manager and PM Slack ID) is mentioned when nobody is typed, by member ID
+// without a lookup; a typed one is mentioned instead; a name without an ID says so
+const PMREL = "pm_airtable_26";
+const pmPage = { ...JSON.parse(fs.readFileSync(path.join(ROOT, "data", "app", "releases", `${RELEASE}.json`), "utf8")), id: PMREL,
+  projectManager: { name: "Claudia Hall", slackId: "U0AIRTABLE1" } };
+fs.mkdirSync(path.join(tmp, "app", "releases"), { recursive: true });
+fs.writeFileSync(path.join(tmp, "app", "releases", `${PMREL}.json`), JSON.stringify(pmPage));
+const econPm = (payload = {}) => jsonPost(`/api/releases/${PMREL}/slack-economics`, payload);
+await jsonPost(`/api/releases/${PMREL}/slack-channel`, { channel: "sales-updates" });
+seen.length = 0;
+r = await econPm();
+d = await r.json().catch(() => ({}));
+check(r.ok && d.ok === true && d.to === "Claudia Hall", `Airtable's project manager is mentioned, by name: ${r.status} ${JSON.stringify(d).slice(0, 160)}`);
+check(seen.length === 1 && seen[0].path === "/api/chat.postMessage" && /^<@U0AIRTABLE1> Please confirm/.test(((seen[0].json || {}).blocks || []).filter((b) => b.type === "section").at(-1).text.text),
+  `by member ID, without a lookup: ${seen.map((s) => s.path).join(" ")}`);
+check(/Claudia Hall please$/.test((seen[0].json || {}).text || ""), `the notification names them: ${(seen[0].json || {}).text}`);
+r = await econPm({ dryRun: true });
+d = await r.json().catch(() => ({}));
+check(r.ok && d.to === "Claudia Hall" && /<@U0AIRTABLE1>/.test(JSON.stringify(d.blocks)), "the dry run mentions them too");
+await jsonPost(`/api/releases/${PMREL}/slack-channel`, { channel: "sales-updates", pm: "U0TYPED0001" });
+seen.length = 0;
+r = await econPm();
+d = await r.json().catch(() => ({}));
+check(r.ok && d.to === "U0TYPED0001" && /<@U0TYPED0001>/.test(JSON.stringify((seen[0] || {}).json || {})) && !/U0AIRTABLE1/.test(JSON.stringify((seen[0] || {}).json || {})),
+  `a typed project manager is mentioned instead of Airtable's: ${d.to}`);
+await jsonPost(`/api/releases/${PMREL}/slack-channel`, { channel: "sales-updates", pm: "" });
+fs.writeFileSync(path.join(tmp, "app", "releases", `${PMREL}.json`), JSON.stringify({ ...pmPage, projectManager: { name: "Ruth O'Sullivan", slackId: null } }));
+seen.length = 0;
+r = await econPm();
+d = await r.json().catch(() => ({}));
+check(r.status === 400 && /Airtable names Ruth O'Sullivan as the project manager but has no PM Slack ID/.test(d.error || "") && seen.length === 0, `a name without an ID is said, nothing posted: ${r.status} ${d.error}`);
+fs.writeFileSync(path.join(tmp, "app", "releases", `${PMREL}.json`), JSON.stringify({ ...pmPage, projectManager: null }));
+r = await econPm();
+d = await r.json().catch(() => ({}));
+check(r.status === 400 && /No project manager for this release: fill Airtable's Project Manager field/.test(d.error || ""), `nobody anywhere: ${r.status} ${d.error}`);
 // an email is looked up, and the name comes back
 await setPm("clare@example.com");
 seen.length = 0;

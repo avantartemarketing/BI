@@ -731,7 +731,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
      see it. The button keeps one width through its states, as the
      sell-through card's does; what happened is on its hover. */
   const [econPost, setEconPost] = useState({ state: "idle" });
-  const econReady = !!(snap.slack && snap.slack.channel && snap.slack.pm);
+  // Airtable's project manager and their Slack member ID (snap.projectManager,
+  // from the Pipeline table); the typed one, when there is one, is mentioned instead
+  const pmAirtable = snap.projectManager || null;
+  const econReady = !!(snap.slack && snap.slack.channel && (snap.slack.pm || (pmAirtable && pmAirtable.slackId)));
   const sendEconomics = async () => {
     setEconPost({ state: "posting" });
     try {
@@ -818,7 +821,9 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const dirty = !!pick || JSON.stringify(inp) !== JSON.stringify(meta.inputs);
   const econTitle = econPost.state === "error" ? `Not sent: ${econPost.message}`
     : econPost.state === "done" ? `Sent to #${econPost.channel}, ${econPost.to} asked to confirm`
-    : !econReady ? "Set the Slack channel and the project manager under Lead and Slack first."
+    : !econReady ? (!(snap.slack && snap.slack.channel) ? "Set the Slack channel under Lead and Slack first."
+      : pmAirtable && pmAirtable.name ? `Airtable names ${pmAirtable.name} as the project manager but has no PM Slack ID for them: type their member ID, @handle or email under Lead and Slack.`
+        : "No project manager: Airtable's Project Manager field is empty for this release, so type one under Lead and Slack.")
     : dirty ? "Save first: the message carries the figures as saved and built."
     : "Post the unit economics to the release's Slack channel and ask the project manager to confirm them: they set the Paid ROI.";
 
@@ -1326,12 +1331,18 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                     </div>
                   </div>
                   <label className="sub" htmlFor="ts-pm" style={{ marginTop: 8 }}
-                    title="Who confirms the unit economics: Send for confirmation, under Works, posts them to the channel and mentions this person. Their Slack member ID (profile menu, Copy member ID), @handle or email; a handle or an email needs the Slack app to carry the users:read or users:read.email scope. Saved with the channel.">
+                    title="Who confirms the unit economics: Send for confirmation, under Works, posts them to the channel and mentions this person. Airtable's Project Manager (the Pipeline table, with its PM Slack ID) unless someone is typed here: a Slack member ID (profile menu, Copy member ID), @handle or email; a handle or an email needs the Slack app to carry the users:read or users:read.email scope. Saved with the channel.">
                     Project manager (Slack)
                   </label>
                   <div className="ts2-ctl" style={{ minHeight: 0 }}>
                     <div className="ts-box" style={{ flex: "1 1 150px" }}>
-                      <input id="ts-pm" value={pmDraft} onChange={(e) => setPmDraft(e.target.value)} placeholder="@handle, email or member ID" />
+                      <input id="ts-pm" value={pmDraft} onChange={(e) => setPmDraft(e.target.value)}
+                        placeholder={pmAirtable && pmAirtable.slackId ? `${pmAirtable.name || "Airtable's project manager"} (Airtable) - type to override` : "@handle, email or member ID"} />
+                      {pmAirtable && !pmDraft.trim()
+                        ? (pmAirtable.slackId
+                          ? <span className="ts2-tag" title={`Airtable's Project Manager${pmAirtable.name ? `, ${pmAirtable.name}` : ""}, with their PM Slack ID: the mention goes to them unless someone is typed here.`}>Airtable</span>
+                          : <span className="ts2-tag warn" title={`Airtable names ${pmAirtable.name} as the project manager but has no PM Slack ID for them: type their Slack member ID, @handle or email here.`}>no Slack ID</span>)
+                        : null}
                       {snap.slack && snap.slack.lastEconomicsAt
                         ? <span className="ts2-tag" title={`Economics sent for confirmation ${new Date(snap.slack.lastEconomicsAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}${snap.slack.lastEconomicsBy ? ` by ${snap.slack.lastEconomicsBy}` : ""}`}>sent</span>
                         : null}

@@ -30,19 +30,19 @@ AT = [   # what etl/pricing.py release_products hands back for one launch
      "target_sellthrough": 0.4, "unit_price": 1000.0, "currency": "EUR", "artist_profit_per_unit": 300.0,
      "aa_profit_per_unit": 400.0, "aa_revenue_share": None, "aa_profit_share": 0.5, "frame_conversion": 0.5,
      "frame_profit_per_unit": 100.0, "framing": "Framed on order", "framing_available": True,
-     "launch_date": "2026-09-30", "announce_date": "2026-09-02", "private_room_date": None, "marketing_lead": "Clare"},
+     "launch_date": "2026-09-30", "announce_date": "2026-09-02", "private_room_date": None, "marketing_lead": "Clare", "project_manager": "Claud", "pm_slack_id": "U0AIRTABLE1"},
     {"airtable_id": "12", "name": "Blue", "project_code": "TEST-12", "edition": 50, "edition_size": 50.0, "units_target": None,
      "target_sellthrough": None, "unit_price": 2000.0, "currency": "EUR", "artist_profit_per_unit": None,
      "aa_profit_per_unit": None, "aa_revenue_share": 0.3, "aa_profit_share": None, "frame_conversion": None,
      "frame_profit_per_unit": None, "framing": "No framing option", "framing_available": False,
-     "launch_date": "2026-09-30", "announce_date": "2026-09-03", "private_room_date": "2026-08-20", "marketing_lead": "Clare"},
+     "launch_date": "2026-09-30", "announce_date": "2026-09-03", "private_room_date": "2026-08-20", "marketing_lead": "Clare", "project_manager": "Claud", "pm_slack_id": "U0AIRTABLE1"},
 ]
 
 
 def test_products_and_totals() -> None:
     b = build.BENCH
     at = {"match": "exact", "note": "", "products": [dict(p) for p in AT], "launch_date": "2026-09-30",
-          "announce_date": "2026-09-02", "private_room_date": "2026-08-20", "marketing_lead": "Clare"}
+          "announce_date": "2026-09-02", "private_room_date": "2026-08-20", "marketing_lead": "Clare", "project_manager": "Claud", "pm_slack_id": "U0AIRTABLE1"}
     keep = pricing.release_products
     pricing.release_products = lambda r, pricing_path=None: at
     try:
@@ -79,6 +79,7 @@ def test_products_and_totals() -> None:
         assert r["announce_date"] == "2026-09-01" and r["input_sources"]["announce_date"] == "typed"
         assert r["private_room_open"] == "2026-08-20" and r["input_sources"]["private_room_open"] == "airtable"
         assert r["marketing_lead"] == "Clare" and r["input_sources"]["marketing_lead"] == "airtable"
+        assert r["project_manager"] == "Claud" and r["pm_slack_id"] == "U0AIRTABLE1" and r["input_sources"]["project_manager"] == "airtable"
 
         # Notion first, then typed, then the funnel's clock, then Airtable
         n = {"TestArtist_LE_26": {"private_room_open": "2026-08-25", "announce_date": None, "launch_end": None}}
@@ -152,7 +153,7 @@ def test_products_and_totals() -> None:
 
         # nothing sized anywhere: no economics, no target
         pricing.release_products = lambda r, pricing_path=None: {"match": "none", "note": "artist not in the Airtable pull", "products": [],
-                                                                  "launch_date": None, "announce_date": None, "private_room_date": None, "marketing_lead": None}
+                                                                  "launch_date": None, "announce_date": None, "private_room_date": None, "marketing_lead": None, "project_manager": None, "pm_slack_id": None}
         r7 = build.resolve_release(dict(base), None, {})
         assert r7["economics_mode"] == "none" and r7.get("edition_size") is None
         # campaigns: the list saved, else the draw campaign for the code
@@ -200,7 +201,7 @@ def test_notion_campaigns_file() -> None:
     # nothing from any feed: what was typed, else nobody
     rp = pricing.release_products
     pricing.release_products = lambda r, pricing_path=None: {"match": "none", "note": "", "products": [], "launch_date": None,
-                                                              "announce_date": None, "private_room_date": None, "marketing_lead": None}
+                                                              "announce_date": None, "private_room_date": None, "marketing_lead": None, "project_manager": None, "pm_slack_id": None}
     try:
         base = {"id": "t", "release_name": "Test Artist · Multiple · 2026 Q3", "campaign_code": "TestArtist_LE_26",
                 "announce_date": "2026-09-01", "launch_end": "2026-09-28"}
@@ -221,17 +222,17 @@ def test_airtable_products_join() -> None:
          "currency": "EUR", "edition_size": 100, "units_target": 40, "launch_type": "Draw", "edition_type": "PE", "launch_date": "2026-09-30",
          "announce_date": "2026-09-02", "private_room_date": "", "quarter": "2026-Q3", "framing": "Framed on order", "target_sellthrough": "",
          "expected_sellthrough": "", "artist_profit_per_unit": 300, "aa_profit_per_unit": "", "aa_revenue_share": "", "aa_profit_share": 0.5,
-         "frame_conversion": "", "frame_profit_per_unit": "", "marketing_lead": "Clare", "price_status": "Confirmed", "product_type": "Print"},
+         "frame_conversion": "", "frame_profit_per_unit": "", "marketing_lead": "Clare", "price_status": "Confirmed", "product_type": "Print", "project_manager": "Claud", "pm_slack_id": "U0AIRTABLE1"},
         {"airtable_id": 2, "project_code": "P-2", "artist": "Test Artist", "title": "Red [Set of 2]", "release": "TestArtistLE26", "unit_price": 1900,
          "currency": "EUR", "edition_size": "", "units_target": "", "launch_type": "Draw", "edition_type": "PE", "launch_date": "2026-09-30",
          "announce_date": "", "private_room_date": "", "quarter": "2026-Q3", "framing": "", "target_sellthrough": "", "expected_sellthrough": "",
          "artist_profit_per_unit": "", "aa_profit_per_unit": "", "aa_revenue_share": "", "aa_profit_share": "", "frame_conversion": "",
-         "frame_profit_per_unit": "", "marketing_lead": "", "price_status": "", "product_type": "Bundle"},
+         "frame_profit_per_unit": "", "marketing_lead": "", "price_status": "", "product_type": "Bundle", "project_manager": "Claud", "pm_slack_id": ""},
         {"airtable_id": 3, "project_code": "P-3", "artist": "Other Artist", "title": "Green", "release": "OtherLE26", "unit_price": 500,
          "currency": "EUR", "edition_size": 10, "units_target": "", "launch_type": "Draw", "edition_type": "PE", "launch_date": "2026-09-30",
          "announce_date": "", "private_room_date": "", "quarter": "2026-Q3", "framing": "", "target_sellthrough": "", "expected_sellthrough": "",
          "artist_profit_per_unit": "", "aa_profit_per_unit": "", "aa_revenue_share": "", "aa_profit_share": "", "frame_conversion": "",
-         "frame_profit_per_unit": "", "marketing_lead": "", "price_status": "", "product_type": "Print"},
+         "frame_profit_per_unit": "", "marketing_lead": "", "price_status": "", "product_type": "Print", "project_manager": "Ruth", "pm_slack_id": "U0RUTH00001"},
     ]
     with tempfile.TemporaryDirectory() as d:
         path = pathlib.Path(d) / "pricing.csv"
@@ -244,6 +245,7 @@ def test_airtable_products_join() -> None:
         assert p["artist_profit_per_unit"] == 300.0 and p["aa_profit_share"] == 0.5 and p["framing_available"] is True
         assert p["framing_default"] is True, "a print frames by default"
         assert got["announce_date"] == "2026-09-02" and got["launch_date"] == "2026-09-30" and got["marketing_lead"] == "Clare"
+        assert got["project_manager"] == "Claud" and got["pm_slack_id"] == "U0AIRTABLE1", "the launch's project manager, not the other artist's"
         none = pricing.release_products({"release_name": "Nobody · Thing · 2026 Q3", "announce_date": "2026-09-01", "launch_end": "2026-09-28"}, path)
         assert none["match"] == "none" and none["products"] == []
     # the deal (8 October 2026): the artist's cut of revenue (Revenue Commission %) is taken before any profit is split.
@@ -313,7 +315,7 @@ def test_js_agrees() -> None:
     keep = pricing.release_products
     current = {"products": []}
     pricing.release_products = lambda r, pricing_path=None: {"match": "exact" if current["products"] else "none", "note": "", "products": current["products"],
-                                                              "launch_date": None, "announce_date": None, "private_room_date": None, "marketing_lead": None}
+                                                              "launch_date": None, "announce_date": None, "private_room_date": None, "marketing_lead": None, "project_manager": None, "pm_slack_id": None}
     for c in cases:
         current["products"] = [dict(p) for p in c["airtable"]]
         py_products = [build._effective_product(p, b) for p in build._merge_products(c["airtable"], c["typed"])]

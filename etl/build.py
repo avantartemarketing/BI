@@ -3624,6 +3624,10 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
             break
     else:
         r["marketing_lead"], sources["marketing_lead"] = None, None
+    # the project manager who confirms the unit economics, with their Slack
+    # member ID: Airtable's alone here (one typed over it lives in slack.json)
+    r["project_manager"], r["pm_slack_id"] = at.get("project_manager") or None, at.get("pm_slack_id") or None
+    sources["project_manager"] = "airtable" if (r["project_manager"] or r["pm_slack_id"]) else None
 
     # the Meta campaigns: the list saved, else the draw campaign for the code
     names = [str(n).strip() for n in (r.get("campaign_names") or []) if str(n).strip()]
@@ -3694,6 +3698,7 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
         "airtable": {"match": at["match"], "note": at["note"], "products": products,
                      "announce_date": at["announce_date"], "launch_end": at["launch_date"],
                      "private_room_open": at["private_room_date"], "marketing_lead": at["marketing_lead"],
+                     "project_manager": at.get("project_manager"), "pm_slack_id": at.get("pm_slack_id"),
                      # the works' own closes, for a launch whose works close on different days
                      "closes": product_closes(at["products"])},
         "notion": {k: nd.get(k) for k in ("private_room_open", "announce_date", "launch_end", "marketing_lead")},
@@ -4308,7 +4313,7 @@ def build_upcoming(rec: dict, as_of: date, email_bench: dict | None = None, full
     return {
         "id": rec["id"], "releaseName": rec["release_name"],
         "artist": rec["artist"], "title": rec["title"], "quarter": rec["quarter"], "type": "LE",
-        "campaignCode": rec["campaign_code"], "campaignName": None, "marketingLead": None,
+        "campaignCode": rec["campaign_code"], "campaignName": None, "marketingLead": None, "projectManager": None,
         "privateRoomOpen": rec["private_room_open"],
         "windowStart": rec["announce_date"], "windowEnd": rec["launch_end"],
         "campaignLengthDays": L, "day": max(min((as_of - announce).days, L), 0), "of": L,
@@ -4569,7 +4574,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "id": rec["id"], "releaseName": name,
         "artist": rec["artist"], "title": rec["title"], "quarter": rec["quarter"],
         "type": rec["type"],
-        "campaignCode": code, "campaignName": camp, "marketingLead": None, "privateRoomOpen": None,
+        "campaignCode": code, "campaignName": camp, "marketingLead": None, "projectManager": None, "privateRoomOpen": None,
         "windowStart": rec["announce_date"] if dated else window_start.isoformat(),
         "windowEnd": launch_end.isoformat() if dated else None,
         "campaignLengthDays": L if dated else None, "day": day_n, "of": L,
@@ -5693,6 +5698,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "campaignCode": release["campaign_code"], "campaignName": camp,
         "campaignNames": camps,
         "marketingLead": release.get("marketing_lead"),
+        # Airtable's project manager and their Slack member ID, whom Send for
+        # confirmation mentions unless one is typed on the tab (README)
+        "projectManager": ({"name": release.get("project_manager"), "slackId": release.get("pm_slack_id")}
+                           if release.get("project_manager") or release.get("pm_slack_id") else None),
         # where each input came from (docs §1.6): notion / typed / airtable /
         # clock for the dates, notion / airtable / typed for the lead,
         # products or typed release-level figures for the economics
