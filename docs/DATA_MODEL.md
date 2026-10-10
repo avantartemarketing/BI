@@ -1409,13 +1409,14 @@ has actually delivered.
 spend_fwd(d) = current daily spend run-rate            # not the recommendation; nothing from the stop on
 cpe_fwd(d)   = trailing-3-day CPE × path(d)            # the cost path of §7: rises with spend so far, the close's lift on its last days
 entries_fwd  = Σ spend_fwd(d) / cpe_fwd(d)
-stop         = the first of two days (6 October 2026): the day paid_units(Σ entries_fwd) reaches the
-               sellout gap of §7 (edition − secured − the organic course held to the works' room; that
-               day's spend cut to the units still needed), and the day cpe_fwd(d) before the close's
-               lift, over paid_frac (the share of an entry that still buys a unit, §7), passes the ROI
-               floor's price (§7 cpe_max, read where the floor is). At the
-               recommended spend the stop lands on the close or not at all, which is what sized
-               it; a paced cut still above the floor's spend stops before the close.
+stop         = the first of two days (6 October 2026; day by day since 11 October 2026): the day the
+               entrants placed so far, the organic course along its curves and paid's entries on top,
+               each placed work by work by the cohort rule (§7 placed), fill the room (edition − secured;
+               that day's spend cut to what the day's organic leaves still needed), and the day cpe_fwd(d)
+               before the close's lift, over the share of that day's entries that converts (§7 converts),
+               passes the ROI floor's price (§7 cpe_max, read where the floor is). At the recommended
+               spend the stop lands on the close or not at all, which is what sized it; a paced cut
+               still above the floor's spend stops before the close.
 ```
 Fallback when no spend history exists yet: paid target × remaining share of the paid curve,
 which nothing stops; with a price and no spend there is nothing to project.
@@ -1971,21 +1972,28 @@ not on course to fill:
 ```
 secured_now       = units paid + draft orders + the draw's expected orders, work by work, capped at the edition   # the hero's secured units (§6.3½)
 organic_future    = Σ over organic groups of (proj − now)       # §5.4 projection
-organic_units     = organic_future placed work by work by the cohort rule (§6.3), held to each work's room
-sellout_gap       = max(edition_total − secured_now − organic_units, 0)      # the whole edition, never the target
-paid_units(E)     = the units E further paid entries secure on top of the organic course, the entrants paid
-                    brings taken to look like the entrants so far and placed against the room left: an entry
-                    for a work already full buys nothing (10 October 2026; read off the sell-through block on
-                    a grid of E and interpolated; without a per-work feed, min(E × rate, sellout_gap))
-paid_frac(E)      = the slope of paid_units at E over the rate: the share of one more entry that converts
-entries_needed    = E where paid_units(E) = sellout_gap          # ∞ when the room left is on works nobody enters
+room              = edition_total − secured_now                            # the room the entrants still to come place into
+placed(D)         = the units the sell-through block secures for D further units of demand, organic and paid
+                    alike: the entrants taken to look like the entrants so far and placed work by work against
+                    the room by the cohort rule (§6.3), so an entrant for a work already full buys nothing. Read
+                    off the block where each work fills (bisection on the block's own test) and linear between
+                    those corners (10 and 11 October 2026); without a per-work feed, min(D, room)
+organic_units     = placed(organic_future)
+sellout_gap       = max(room − organic_units, 0)                           # the whole edition, never the target
+organic_by_day(d) = Σ over organic groups of future_g × (curve_g(pdsa_d) − w_g) / (1 − w_g)   # the course along its curves
+converts(d)       = (placed(D_d) − placed(D_d−1)) / (D_d − D_d−1), with D_d = organic_by_day(d) + rate × paid entries by d
+                    # the share of the day's entries that buys a unit: 1 while every work entered has room, the
+                    # entering share of the works still open once one is full, 0 once the room is gone
+demand_all        = the smallest D with placed(D) = room                  # ∞ when the room left is on works nobody enters
+entries_needed    = max(demand_all − organic_future, 0) / rate
 cpe(d, s)         = cpe_window × lift_window × (s / spend_window)^eps × ((K + C_d) / (K + C_window))^w ÷ lift(d)
                     # C_d = spent before day d at a flat s from today; lift(d) the close's; see the cost terms below
 supply_spend      = s where Σ over the days left of s / cpe(d, s) = entries_needed × rate
 budget_to_sellout = supply_spend × days_left
 cpe_max           = (1 − cannibalisation) × profit_per_unit_AA / (roi_floor × budget_share_AA)
-roi_spend         = s where cpe(close, s) / paid_frac(entries bought by the close at s) = cpe_max
-                    # at the close underneath its lift: the worst day, the entries that buy nothing priced in
+roi_spend         = s where cpe(close, s) / converts(close at s) = cpe_max
+                    # at the close underneath its lift: the worst day, the entries that buy nothing priced
+                    # in; the share read just short of the sellout, so a spend past it reads the last work's
 recommended       = min(supply_spend, roi_spend), then the pacing rules below
 ROI_close_party   = (1 − cannibalisation) × profit_per_unit_party / (cpe(close, recommended) × budget_share_party)
 ```
@@ -2001,9 +2009,12 @@ either never binds or stops the spend. The gap is priced in converting units at 
 CPE, which is the same money as `entries_needed` at the raw cost per entry. `paid.budget` publishes `selloutGap`, `organicFuture`, `entriesNeeded`,
 `supplySpend`, `budgetToSellOut`, `roiSpend`, `cpeNow`, `cpeAtClose`, `cpeAtRecommended`,
 `driftToClose` and `finalDayRoi` (AA's; the artist's is `paid.artist.finalDayRoi`), and since
-10 October 2026 `organicUnits`, `yieldNow` and `yieldAtClose` (paid_frac now and at the end of the
-run rate's run), `wastedEntries` (the entries that run sends to works already full) and
-`fullWorks` (those works' names); `cpeAtRecommended` and the ROI path ahead read over paid_frac.
+10 October 2026 `organicUnits`, `yieldNow` and `yieldAtClose` (the share of a day's entries that
+converts on the run rate's first day and on its last), `wastedEntries` (the entries that run sends to
+works already full) and `fullWorks` (the works the run fills, each `{name, date}`: the day it is full
+from, null for a work full already); `cpeAtRecommended` and the ROI path ahead read over `converts`,
+and a point of `paid.roiPath` on a day a work fills names it (`full`), so the chart marks the step
+(11 October 2026).
 A launch pacing well ahead organically reads a recommendation of €0/day -
 nothing extra is needed to secure sell-out, whatever the current ROI.
 

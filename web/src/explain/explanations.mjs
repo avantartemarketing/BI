@@ -666,6 +666,12 @@ EXPLAIN["paid.cpe"] = (a, { snap: s }) => {
   };
 };
 
+// the works the paid projection fills (docs 7): full already, or full from a
+// day of the run rate's run; an older snapshot names them without a day
+const fullWorksOf = (b) => (Array.isArray(b.fullWorks) ? b.fullWorks : [])
+  .map((w) => (typeof w === "string" ? { name: w, date: null } : w)).filter((w) => w && w.name);
+const fullWords = (list) => list.map((w) => (w.date ? `${w.name} is full from ${fmtDay(new Date(w.date + "T00:00:00Z"))}` : `${w.name} is full already`)).join(", ");
+
 EXPLAIN["paid.roi"] = (a, c) => {
   const s = c.snap, p = s.paid || {};
   const artist = !!(a && a.party === "artist");
@@ -685,11 +691,12 @@ EXPLAIN["paid.roi"] = (a, c) => {
   const net = ppu * (1 - cann);
   const notes = [];
   if (!artist && p.aaBudgetShareAssumed) notes.push("No product records its deal yet, so half the spend is assumed to be Avant Arte's. Type each product's AA profit share (or AA revenue share) on the Target setting tab: the spend divides as the profit does.");
-  // a work spoken for turns paid entries away (docs 7, 10 October 2026): the line ahead reads on the share that converts
+  // a work spoken for turns paid entries away (docs 7, 10 October 2026): the line ahead reads on the share that converts, day by day
   const yb = p.budget || {};
-  if (!whole && finite(yb.yieldNow) && yb.yieldNow < 0.999) {
-    const full = Array.isArray(yb.fullWorks) && yb.fullWorks.length ? ` (${yb.fullWorks.join(", ")} ${yb.fullWorks.length > 1 ? "are" : "is"} spoken for)` : "";
-    notes.push(`From here only an entry for a work with room buys a unit: ${pct(yb.yieldNow)} of a paid entry does${full}, so the ROI line ahead reads on that share and falls as the works fill.`);
+  const fullNow = fullWorksOf(yb);
+  if (!whole && finite(yb.yieldNow) && (yb.yieldNow < 0.999 || fullNow.length)) {
+    const full = fullNow.length ? ` (${fullWords(fullNow)})` : "";
+    notes.push(`Only an entry for a work with room buys a unit: ${pct(yb.yieldNow)} of a paid entry does today${full}. The entrants still to come are placed work by work day by day, so the line ahead reads on that share and steps down on the day a work fills, to the share for the works still open.`);
   }
   // only where there is an uplift: a sculpture edition has no frame on offer
   if (!artist && ((s.economics || {}).frameUpliftPerUnit ?? 0) > 0) notes.push("Avant Arte's profit per unit includes the framing uplift, which is Avant Arte's alone.");
@@ -815,9 +822,10 @@ EXPLAIN["paid.rec"] = (a, { snap: s }) => {
       : seg`The spend that would sell the edition out by the close is ${eur(b.supplySpend)} a day.`);
   }
   // a work spoken for turns paid entries away (docs 7, 10 October 2026)
-  if (finite(b.yieldNow) && b.yieldNow < 0.999) {
-    const full = Array.isArray(b.fullWorks) && b.fullWorks.length ? ` (${b.fullWorks.join(", ")} ${b.fullWorks.length > 1 ? "are" : "is"} spoken for)` : "";
-    steps.push(seg`Only an entry for a work with room buys a unit: ${pct(b.yieldNow)} of a paid entry does now${full}. The entries needed are placed work by work, the price of a converting unit at the close reads over that share, and the ROI ahead falls as the works fill.`);
+  const fullRec = fullWorksOf(b);
+  if (finite(b.yieldNow) && (b.yieldNow < 0.999 || fullRec.length)) {
+    const full = fullRec.length ? ` (${fullWords(fullRec)})` : "";
+    steps.push(seg`Only an entry for a work with room buys a unit: ${pct(b.yieldNow)} of a paid entry does today${full}. The entrants still to come, organic and paid, are placed work by work day by day, so the entries needed close the gap over the share that converts, the price of a converting unit at the close reads over the share left then, and the ROI ahead steps down on the day a work fills.`);
   }
   if (finite(b.roiSpend)) steps.push(seg`The spend at which the ROI at the close ends on the floor of ${n(b.floor ?? 1, 1)} is ${eur(b.roiSpend)} a day: ${cost.step}.`);
   if (finite(b.supplySpend) && finite(b.roiSpend)) steps.push(seg`The lower of the two, ${eur(Math.min(b.supplySpend, b.roiSpend))} a day, is as far as it is worth going.`);

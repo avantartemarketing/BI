@@ -474,16 +474,24 @@ to sell out, the target being the plan (9 October 2026). A launch pacing well
 ahead organically can therefore read a recommendation of €0/day: nothing extra
 is needed to secure sell-out, whatever the current ROI.
 
-**A work spoken for turns paid entries away** (10 October 2026). The entrants
-paid brings are taken to look like the entrants so far, the sell-through's
-cohort rule (§6), and placed work by work against the room the organic course
-leaves: an entrant for a work already full buys nothing. So the entries needed
-are the ones that close the gap placed that way, the price of a converting
-unit at the close is the entry's price over the share of an entry that still
-converts, and the floor, the two stops and the ROI line ahead read that price:
-on the Cattelan multiple, with Not Afraid of Love spoken for, only the
-Novecento entries paid brings count, and the ROI ahead falls to their share.
-Without a per-work feed every entry converts until the gap is closed, as before.
+**A work spoken for turns paid entries away** (10 October 2026, day by day
+since 11 October 2026). The entrants still to come, organic and paid alike,
+are taken to look like the entrants so far, the sell-through's cohort rule
+(§6), and placed work by work against the room, day by day: the organic
+course lands along each channel's curve, paid's entries on top, and an
+entrant for a work already full buys nothing. So until a work fills every
+entry converts, and from the day it fills only the share of entrants for the
+works still open does: on the Cattelan multiple, once Not Afraid of Love is
+full, only the Novecento entries paid brings count. The ROI line ahead steps
+down on that day rather than sloping, the chart marks and names the day, the
+Paid card dates it, and the entries needed, the price of a converting unit at
+the close, the floor and the two stops all read the same placement: paid
+stops on the day the room runs out, organic and paid together, or before the
+first day the price over the share that converts passes the floor. A paid
+entry that wins a unit before a work fills counts in full, though the organic
+course might have filled the work later: the sale is real, the fill a
+forecast. Without a per-work feed every entry converts until the gap is
+closed, as before.
 
 **Price rises as the spend adds up.** Within a campaign, what a euro buys falls
 as the campaign's total spend grows: each doubling of what it has spent makes

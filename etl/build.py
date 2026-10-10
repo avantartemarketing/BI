@@ -4961,9 +4961,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # units paid, drafts raised and the winners the entries in hand imply -
     # the figure the hero adopts once the channels are built, so paid is
     # sized against the same count the page prints
-    secured_now = spoken_for(sellthrough_block(release, name, units_sold, entries_banked, inventory_left,
-                                               orders=of_win, closed=closed))
+    st_zero = sellthrough_block(release, name, units_sold, entries_banked, inventory_left, orders=of_win, closed=closed)
+    secured_now = spoken_for(st_zero)
     organic_future = 0.0
+    organic_groups: dict[str, tuple[float, float]] = {}   # group -> (its units still to come, its curve's share by now)
     if not complete:
         pdsa_now = pdsa_today
         obs = by_group_day[by_group_day["event_date"] <= min(as_of, launch_end)]
@@ -4976,83 +4977,157 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             tgt_g = gtargets[og]["units"]
             w_g = curve_value(rcurves, og, UNIT_PLAN_CURVE, pdsa_now)   # the channel loop's w
             r_perf = min(max((now_g / (tgt_g * w_g)) if tgt_g * w_g > 0 else 1.0, 0.25), 2.5)
-            organic_future += tgt_g * (1 - w_g) * (1 + w_g * (r_perf - 1))
+            fut_g = tgt_g * (1 - w_g) * (1 + w_g * (r_perf - 1))
+            organic_future += fut_g
+            organic_groups[og] = (fut_g, w_g)
+    # the organic course day by day (11 October 2026): each group's units
+    # still to come land along its own entry-timed curve, a day's share
+    # being the curve's rise over that day, so a work fills on a date and
+    # not all at once; by the close the whole course is in
+    organic_by_day: dict[date, float] = {}
+    if not complete:
+        for d in future_days:
+            tot = 0.0
+            for og, (fut_g, w_g) in organic_groups.items():
+                cv = curve_value(rcurves, og, UNIT_PLAN_CURVE, pdsa_for(release, d))
+                tot += fut_g * (min(max((cv - w_g) / (1 - w_g), 0.0), 1.0) if 1 - w_g > 1e-9 else 1.0)
+            organic_by_day[d] = tot
+        if future_days:
+            organic_by_day[future_days[-1]] = organic_future
     days_left = max((launch_end - full_through).days, 0)
     past_spend = spend_day[spend_day.index <= full_through]
     current_daily = float(past_spend.get(full_through, past_spend.iloc[-1] if len(past_spend) else 0.0))
-    # ---- what a paid entry buys once a work is spoken for (10 October 2026).
-    # The entrants paid brings are taken to look like the entrants so far, the
-    # sell-through's cohort rule, and placed work by work against the room the
-    # organic course leaves; an entrant for a work already full buys nothing
-    # (Cattelan: with Not Afraid of Love spoken for, only the Novecento entries
-    # paid brings secure a unit). paid_units(E) is the units E further paid
-    # entries secure on top of the organic course, read off the sell-through
-    # block on a grid and interpolated; paid_frac(E) its slope over the rate,
-    # the share of one more entry that converts. Without a per-work feed the
+    # ---- what a paid entry buys once a work is spoken for (10 October 2026;
+    # day by day since 11 October 2026). The entrants still to come, organic
+    # and paid alike, are taken to look like the entrants so far, the
+    # sell-through's cohort rule, and placed work by work against the room:
+    # an entrant for a work already full buys nothing (Cattelan: once Not
+    # Afraid of Love is full, only the Novecento entries paid brings secure
+    # a unit). placed(D) is the units the block secures for D further units
+    # of demand, read off the block where each work fills (found by
+    # bisection on the block's own test) and linear between those points,
+    # so a work filling is a corner and not a slope. The organic course
+    # lands along its curve (organic_by_day) with paid's entries on top, day
+    # by day, and the share of a day's entries that converts is the block's
+    # rise over that day's demand: 1 while every work entered has room, the
+    # entering share of the works still open once one is full, 0 once the
+    # room is gone. A paid entry that wins a unit before a work fills counts
+    # in full though the organic course might have filled the work later:
+    # the sale is real, the fill a forecast. Without a per-work feed the
     # block holds the course to the release's room alone, so every entry
     # converts until the gap is closed, as before.
     rate_u = entry_rate(release)
 
+    def st_future(units: float) -> dict:
+        return sellthrough_block(release, name, units_sold, entries_banked, inventory_left,
+                                 future_entries=max(units, 0.0), orders=of_win, closed=closed)
+
     def st_future_units(units: float) -> float:
-        st_ = sellthrough_block(release, name, units_sold, entries_banked, inventory_left,
-                                future_entries=max(units, 0.0), orders=of_win, closed=closed)
-        return float(st_.get("futureEntriesPredicted") or 0.0)
-    st_org = (sellthrough_block(release, name, units_sold, entries_banked, inventory_left,
-                                future_entries=max(organic_future, 0.0), orders=of_win, closed=closed) if not complete else {})
-    organic_units = float(st_org.get("futureEntriesPredicted") or 0.0)
-    per_work = bool(st_org.get("products"))    # a per-work feed: the cohort rule places the entrants
+        return float(st_future(units).get("futureEntriesPredicted") or 0.0)
+    room_total = max(edition_total(release) - secured_now, 0.0)   # the room the entrants still to come place into
+    per_work = bool(st_zero.get("products")) and not complete    # a per-work feed: the cohort rule places the entrants
+    organic_units = st_future_units(organic_future) if not complete else 0.0
     # the gap is to the whole edition, never to the target (9 October 2026): a
     # launch is always run to sell out, the target being the plan, so paid
     # keeps going past a target that is only part of the edition
-    sellout_gap = max(edition_total(release) - secured_now - organic_units, 0.0)
-    e_max = max(2.0 * sellout_gap / rate_u, (2.0 * cost.units(current_daily) / rate_u) if (cost and current_daily > 0) else 0.0, 50.0)
-    yield_grid = None
-    if not complete and per_work and sellout_gap > 0:
-        top = max(st_future_units(organic_future + e_max * rate_u) - organic_units, 0.0)
-        if top < min(e_max * rate_u, sellout_gap) - 0.05:   # some entries buy nothing: read the curve
-            xs = [e_max * k / 16 for k in range(17)]
-            yield_grid = [(x, max(st_future_units(organic_future + x * rate_u) - organic_units, 0.0)) for x in xs]
+    sellout_gap = max(room_total - organic_units, 0.0)
     # the block prints units to a tenth, so a curve read off it reaches the
-    # gap within that; the straight line is exact
-    gap_tol = 0.15 if yield_grid is not None else 1e-9
+    # room within that; the straight line is exact
+    gap_tol = 0.15 if per_work else 1e-9
 
-    def paid_units(entries: float) -> float:
-        """Units `entries` further paid entries secure on top of the organic course."""
-        e = max(float(entries), 0.0)
-        if yield_grid is None:
-            return min(e * rate_u, sellout_gap)
-        for (x0, y0), (x1, y1) in zip(yield_grid, yield_grid[1:]):
-            if e <= x1:
-                return min(y0 + (y1 - y0) * (e - x0) / (x1 - x0), sellout_gap) if x1 > x0 else min(y0, sellout_gap)
-        (x0, y0), (x1, y1) = yield_grid[-2], yield_grid[-1]
-        return min(y1 + (y1 - y0) / (x1 - x0) * (e - x1), sellout_gap) if x1 > x0 else min(y1, sellout_gap)
+    def is_full(p_: dict) -> bool:
+        """The block's own reading of a work with no room left: what is in
+        hand and still to come fills it, or is already past it."""
+        if p_.get("room") is None:
+            return False
+        left = float(p_["room"]) - float(p_.get("shown") or 0) - float(p_.get("futurePredicted") or 0)
+        return left <= 0.5 or float(p_.get("oversubscribed") or 0) > 0 or float(p_.get("futureOversubscribed") or 0) > 0
+    # where each work fills: the further demand at which the block reads it
+    # full, by bisection (0 for a work full already; none for a work no
+    # demand the model can see fills), and the units placed at those points,
+    # the corners of placed(D)
+    fill_at: dict[str, float] = {}
+    knots: list[tuple[float, float]] = [(0.0, 0.0)]
+    if per_work and room_total > 0:
+        d_far = max(20.0 * room_total, 50.0)
+        far = st_future(d_far).get("products") or []
+        for i_, p_ in enumerate(st_zero.get("products") or []):
+            nm = str(p_.get("name") or "")
+            if p_.get("room") is None or not nm or nm in fill_at:
+                continue
+            if is_full(p_):
+                fill_at[nm] = 0.0
+                continue
+            if i_ >= len(far) or not is_full(far[i_]):
+                continue
+            lo, hi = 0.0, d_far
+            for _ in range(20):
+                mid = (lo + hi) / 2
+                prods = st_future(mid).get("products") or []
+                if i_ < len(prods) and is_full(prods[i_]):
+                    hi = mid
+                else:
+                    lo = mid
+            fill_at[nm] = hi
+        for x_ in sorted(set(v for v in fill_at.values() if v > 0)):
+            knots.append((x_, st_future_units(x_)))
+        knots.append((d_far, st_future_units(d_far)))
+    elif not complete and room_total > 0:
+        knots += [(room_total, room_total), (2.0 * room_total, room_total)]
+    # rising demand, units never falling, held to the room
+    kn: list[tuple[float, float]] = []
+    for x_, y_ in sorted(knots):
+        y_ = min(max(y_, kn[-1][1] if kn else 0.0), room_total)
+        if kn and x_ <= kn[-1][0] + 1e-9:
+            kn[-1] = (kn[-1][0], y_)
+        else:
+            kn.append((x_, y_))
+    knots = kn
 
-    def paid_frac(entries: float) -> float:
-        """The share of one more paid entry, past `entries`, that converts: the
-        slope of paid_units over the rate, 1 while every entry lands on a work
-        with room, 0 once the gap is closed."""
-        e = max(float(entries), 0.0)
-        if paid_units(e) >= sellout_gap - gap_tol:
+    def placed(demand: float) -> float:
+        """The units the block secures for `demand` further units of demand,
+        organic and paid together, placed work by work."""
+        dd = max(float(demand), 0.0)
+        if len(knots) < 2:
             return 0.0
-        if yield_grid is None:
-            return 1.0
-        d = max(e_max / 16, 1.0)
-        return min(max((paid_units(e + d) - paid_units(e)) / (d * rate_u), 0.0), 1.0)
-    # the entries that close the gap, each placed by the rule: none that any
-    # spend can buy when the room left is on works nobody enters
-    if sellout_gap <= 0:
-        entries_needed = 0.0
-    elif paid_units(e_max * 8) >= sellout_gap - gap_tol:
-        lo, hi = 0.0, e_max * 8
-        for _ in range(60):
-            mid = (lo + hi) / 2
-            if paid_units(mid) >= sellout_gap - gap_tol:
-                hi = mid
-            else:
-                lo = mid
-        entries_needed = hi
+        for (x0, y0), (x1, y1) in zip(knots, knots[1:]):
+            if dd <= x1:
+                return min(y0 + (y1 - y0) * (dd - x0) / (x1 - x0), room_total)
+        (x0, y0), (x1, y1) = knots[-2], knots[-1]
+        return min(y1 + (y1 - y0) / (x1 - x0) * (dd - x1), room_total)
+
+    def converts(demand: float) -> float:
+        """The share of one more unit of demand past `demand` that the block
+        places: 1 while every work entered has room, the entering share of
+        the works still open once one is full, 0 once the room is gone."""
+        dd = max(float(demand), 0.0)
+        if len(knots) < 2 or placed(dd) >= room_total - gap_tol:
+            return 0.0
+        for (x0, y0), (x1, y1) in zip(knots, knots[1:]):
+            if dd < x1:
+                return min(max((y1 - y0) / (x1 - x0), 0.0), 1.0)
+        (x0, y0), (x1, y1) = knots[-2], knots[-1]
+        return min(max((y1 - y0) / (x1 - x0), 0.0), 1.0)
+
+    def day_share(before: float, after: float) -> float:
+        """The share of the demand landing between two points that converts,
+        the block's rise over it: a day that fills a work reads the blend of
+        before and after."""
+        if after > before + 1e-12:
+            return min(max((placed(after) - placed(before)) / (after - before), 0.0), 1.0)
+        return converts(before)
+    # the further demand that fills the room, each unit placed by the rule:
+    # none when the room left is on works nobody enters
+    demand_all = math.inf
+    if room_total <= gap_tol:
+        demand_all = 0.0
     else:
-        entries_needed = math.inf
+        for (x0, y0), (x1, y1) in zip(knots, knots[1:]):
+            if y1 >= room_total - gap_tol:
+                demand_all = x0 + (x1 - x0) * (room_total - gap_tol - y0) / (y1 - y0) if y1 > y0 else x1
+                break
+    # the paid entries that close the gap by the close, the organic course in
+    entries_needed = math.inf if demand_all == math.inf else max(demand_all - organic_future, 0.0) / rate_u
 
     def frac_at_close(s: float) -> float:
         """The share of an entry that converts at the close at a flat daily
@@ -5060,20 +5135,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         last work's share rather than nothing."""
         if not cost:
             return 1.0
-        e = cost.units(s) / rate_u
-        if entries_needed not in (None, math.inf) and entries_needed > 0:
-            e = min(e, entries_needed * 0.999)
-        return max(paid_frac(e), 1e-6)
-    # the works the organic course leaves no room on: the ones paid's entries
-    # for them are wasted on, named for the card and the explainer
-    full_works: list[str] = []
-    if not complete and yield_grid is not None:
-        for p_ in st_org.get("products") or []:
-            if p_.get("room") is None:
-                continue
-            left = float(p_["room"]) - float(p_.get("shown") or 0) - float(p_.get("futurePredicted") or 0)
-            if left <= 0.5 or float(p_.get("oversubscribed") or 0) > 0 or float(p_.get("futureOversubscribed") or 0) > 0:
-                full_works.append(str(p_.get("name") or ""))
+        dd = organic_future + cost.units(s)
+        if demand_all not in (None, math.inf) and demand_all > 0:
+            dd = min(dd, demand_all * 0.999)
+        return max(converts(dd), 1e-6)
 
     # ---- the recommendation (docs §7).
     # Price: the entries a recommendation asks for are priced on the cost path
@@ -5165,16 +5230,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # the chart's line: ROI at today's spend along the cost path, each party
     # on the same path (a window that bought nothing reads 0 all the way)
     path_now = cost.multipliers(s0) if cost else [1.0] * len(future_days)
-    # the entries the run rate has bought by each day, so the line reads the
-    # share of one more that still buys a unit (paid_frac) as the works fill
-    fracs, cum_e = [], 0.0
-    for m in path_now:
-        fracs.append(paid_frac(cum_e))
-        cum_e += (s0 / (l3d_raw_cpe * m)) if (l3d_raw_cpe and s0 > 0) else 0.0
-    roi_path = ([{"date": d.isoformat(), "roi": round(l3d_roi / f * fr, 3)} for d, f, fr in zip(future_days, path_now, fracs)]
-                if l3d_roi is not None and not complete else [])
-    roi_path_artist = ([{"date": d.isoformat(), "roi": round(l3d_roi_artist / f * fr, 3)} for d, f, fr in zip(future_days, path_now, fracs)]
-                       if l3d_roi_artist is not None and not complete else [])
+    # the chart's line ahead is built once the projection is (roi_path, below paid_forward)
     # the rise to the close underneath the close's lift: the worst day, where
     # the floor is read (cpeAtClose), and the fallback factor's fall
     wear_end = cost.multipliers(s0, lifted=False)[-1] if (cost and future_days) else 1.0
@@ -5203,63 +5259,108 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
 
     def paid_forward(spend: float) -> dict:
         """The paid projection at a flat daily spend (docs §5.4): the entries
-        each future day buys at the cost path's price for that spend, with the
-        two stops the recommendation is sized by. Spend ends on the day the
-        units bought close the gap the organic channels leave to the sellout
-        (sellout_gap; that day's spend is cut to the units still needed), and
-        before the first day the price of a converting unit on the path,
-        read before the close's lift as the floor is (cpe_close), passes the
-        ROI floor's price (cpe_max). At the recommended spend the stops land
-        on the close or not at all, which is what sized it. The flat run to
-        the close is kept beside the stopped one (flatEntries, flatSpend).
-        Without a price yet (no spend history) the paid target's own
-        trajectory stands in, and nothing stops it; with a price and no spend
-        there is nothing to project."""
+        each future day buys at the cost path's price for that spend, placed
+        day by day with the organic course against the works' room (placed,
+        the cohort rule), with the two stops the recommendation is sized by.
+        Spend ends on the day the units placed, organic and paid together,
+        fill the room (that day's spend cut to what the day's organic leaves
+        still needed), and before the first day the price of a converting
+        unit on the path, read before the close's lift as the floor is
+        (cpe_close) over the share of that day's entries that converts,
+        passes the ROI floor's price (cpe_max). At the recommended spend the
+        stops land on the close or not at all, which is what sized it. The
+        flat run to the close is kept beside the stopped one (flatEntries,
+        flatSpend), with the share of each day's entries that converts on it
+        (fracs, the ROI line ahead) and the day each work fills on either run
+        (fill, fillFlat: None for a work full already). Without a price yet
+        (no spend history) the paid target's own trajectory stands in, and
+        nothing stops it; with a price and no spend there is nothing to
+        project, and the organic course alone fills the works."""
         out = {"spend": spend or 0.0, "entries": 0.0, "future": {}, "spendFuture": 0.0,
                "stops": {"sellout": None, "roi_floor": None}, "flatEntries": 0.0,
-               "flatSpend": (spend or 0.0) * rest_days}
+               "flatSpend": (spend or 0.0) * rest_days, "units": 0.0, "wasted": 0.0,
+               "fracs": [], "fill": {}, "fillFlat": {}, "fracAtStop": None}
         if complete:
             return out
         path = cost.multipliers(spend) if (cost and spend) else []
         floor_path = cost.multipliers(spend, lifted=False) if path else []
+        priced = bool(l3d_raw_cpe)
         prev_curve = curve_value(rcurves, "paid", "entries", pdsa_today)
-        cum = spent = flat = 0.0
+
+        def mark(into: dict, before: float, after: float, d) -> None:
+            for w, at in fill_at.items():
+                if w not in into and (at <= 0.0 or before < at <= after + 1e-9):
+                    into[w] = None if at <= 0.0 else d
+        cum = spent = flat = units = 0.0
+        d_run = d_flat = o_prev = 0.0      # the demand placed so far on the stopped run and the flat run; the organic landed
         stopped = False
+        mark(out["fill"], 0.0, 0.0, None)
+        mark(out["fillFlat"], 0.0, 0.0, None)
         for i, d in enumerate(future_days):
             # the part day counts for what is left of it
             share = (1 - seen) if (d == as_of and as_of > full_through) else 1.0
-            if l3d_raw_cpe and path:
-                bought = share * spend / (l3d_raw_cpe * path[i])
-                flat += bought
-                # the price of a converting unit this day is the entry's over
-                # the share of one more that still buys a unit (paid_frac): the
-                # floor reads that price, and an entry that buys nothing at
-                # all is past any floor; the sellout reads the units placed
-                fr, before = paid_frac(cum), paid_units(cum)
-                if not stopped and before < sellout_gap - gap_tol and (fr <= 0 or l3d_cpe * floor_path[i] / fr > cpe_max * (1 + 1e-9)):
-                    out["stops"]["roi_floor"], stopped = d, True
-                if not stopped:
-                    room = max(sellout_gap - before, 0.0)        # units still to buy
-                    gain = paid_units(cum + bought) - before
-                    if gain >= room - gap_tol:
-                        f = (room / gain) if gain > 0 else 0.0
-                        cum += bought * f
-                        spent += share * spend * f
-                        out["stops"]["sellout"], stopped = d, True
-                    else:
-                        cum += bought
-                        spent += share * spend
-            elif not l3d_raw_cpe:
+            o_d = max(organic_by_day.get(d, o_prev), o_prev)
+            d_org, o_prev = o_d - o_prev, o_d
+            if priced:
+                bought = (share * spend / (l3d_raw_cpe * path[i])) if path else 0.0
+            else:
                 # no spend history yet: fall back to the paid target trajectory
                 cv = curve_value(rcurves, "paid", "entries", pdsa_for(release, d))
-                add = gtargets["paid"]["entries"] * max(cv - prev_curve, 0.0)
-                cum += add
-                flat += add
+                bought = gtargets["paid"]["entries"] * max(cv - prev_curve, 0.0)
                 prev_curve = cv
+            flat += bought
+            # the flat run: the share of the day's demand, organic and paid,
+            # that the block places, and the works it fills
+            d_new = d_flat + d_org + bought * rate_u
+            out["fracs"].append(day_share(d_flat, d_new))
+            mark(out["fillFlat"], d_flat, d_new, d)
+            d_flat = d_new
+            # the stopped run: the day's paid entries, unless a stop takes them
+            take = bought
+            if priced and path:
+                if stopped:
+                    take = 0.0
+                else:
+                    d_after = d_run + d_org + bought * rate_u
+                    fr = day_share(d_run, d_after)
+                    # the price of a converting unit this day is the entry's
+                    # over the share of the day's entries that converts: the
+                    # floor reads that price, and a day whose entries buy
+                    # nothing at all is past any floor
+                    if placed(d_run) < room_total - gap_tol and (fr <= 0 or l3d_cpe * floor_path[i] / fr > cpe_max * (1 + 1e-9)):
+                        out["stops"]["roi_floor"], stopped, take = d, True, 0.0
+                    elif placed(d_after) >= room_total - gap_tol:
+                        # the room runs out today: paid is cut to what the
+                        # day's organic leaves still needed
+                        lo_f, hi_f = 0.0, 1.0
+                        if placed(d_run + d_org) >= room_total - gap_tol:
+                            hi_f = 0.0
+                        else:
+                            for _ in range(40):
+                                mid = (lo_f + hi_f) / 2
+                                if placed(d_run + d_org + mid * bought * rate_u) >= room_total - gap_tol:
+                                    hi_f = mid
+                                else:
+                                    lo_f = mid
+                        take = bought * hi_f
+                        out["stops"]["sellout"], stopped = d, True
+            # placed with the day's organic, each entrant by the cohort rule,
+            # so paid's units are its share of what the day places
+            d_after = d_run + d_org + take * rate_u
+            if take > 0:
+                units += (placed(d_after) - placed(d_run)) * (take * rate_u) / (d_after - d_run)
+                out["fracAtStop"] = day_share(d_run, d_after)
+                cum += take
+                if priced and path:
+                    spent += share * spend * (take / bought)
+            mark(out["fill"], d_run, d_after, d)
+            d_run = d_after
             out["future"][d] = cum
+        if out["fracAtStop"] is None:
+            out["fracAtStop"] = out["fracs"][-1] if out["fracs"] else converts(0.0)
         # the units those entries secure, and the entries that buy nothing
-        out.update(entries=cum, spendFuture=spent, flatEntries=flat, units=paid_units(cum),
-                   wasted=max(cum - paid_units(cum) / rate_u, 0.0))
+        out.update(entries=cum, spendFuture=spent, flatEntries=flat, units=units,
+                   wasted=max(cum - units / rate_u, 0.0))
         return out
 
     fwd = paid_forward(planned_spend)
@@ -5269,6 +5370,33 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # line on the paid lever (paid.atRecommended)
     fwd_rec = (paid_forward(recommended) if (recommended is not None and recommended != math.inf
                                              and not complete) else None)
+    # the chart's line ahead: ROI at today's spend along the cost path, each
+    # party on the same path, over the share of each day's entries that still
+    # buys a unit on the flat run at that spend (fracs), so it steps down on
+    # the day a work fills; the works that fill on a day are named on its
+    # point (full) for the chart to mark. A window that bought nothing reads
+    # 0 all the way.
+    fwd_line = fwd if planned_spend == s0 else paid_forward(s0)
+    fracs = fwd_line["fracs"] if len(fwd_line["fracs"]) == len(path_now) else [1.0] * len(path_now)
+    full_on: dict[str, list[str]] = {}
+    for w_, d_ in fwd_line["fillFlat"].items():
+        if d_ is not None:
+            full_on.setdefault(d_.isoformat(), []).append(w_)
+
+    def roi_point(d, f: float, fr: float, base: float) -> dict:
+        pt = {"date": d.isoformat(), "roi": round(base / f * fr, 3)}
+        if d.isoformat() in full_on:
+            pt["full"] = full_on[d.isoformat()]
+        return pt
+    roi_path = ([roi_point(d, f, fr, l3d_roi) for d, f, fr in zip(future_days, path_now, fracs)]
+                if l3d_roi is not None and not complete else [])
+    roi_path_artist = ([roi_point(d, f, fr, l3d_roi_artist) for d, f, fr in zip(future_days, path_now, fracs)]
+                       if l3d_roi_artist is not None and not complete else [])
+    # the works the projection fills, and when (docs 7): full already (no
+    # date), or full from the day the run rate's run fills them, organic and
+    # paid together
+    full_works = [{"name": w_, "date": d_.isoformat() if d_ else None}
+                  for w_, d_ in sorted(fwd["fill"].items(), key=lambda kv: (kv[1] is not None, kv[1] or date.min, kv[0]))]
 
     channels_out = []
     hero_now = hero_exp = hero_target = hero_proj = 0.0
@@ -5445,7 +5573,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # so the Slack update can say where the paid lever might take the close
     at_rec = None
     if fwd_rec is not None and not complete:
-        future_rec = max(hero_proj - hero_now + (paid_units(fwd_rec["entries"]) - paid_units(future_cum)), 0.0)
+        # the demand at the recommended spend: the organic course with paid's
+        # entries at that spend in place of the run rate's, which the block
+        # places work by work itself
+        future_rec = max(hero_proj - hero_now + (fwd_rec["entries"] - future_cum) * rate_u, 0.0)
         st_rec = sellthrough_block(release, name, units_sold, unconverted, inventory_left, future_rec,
                                    expected_today=hero_exp, bm_today=hero_bm_today if bench else None,
                                    bm_close=hero_bm if bench else None, orders=of_win, closed=closed)
@@ -5534,12 +5665,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "organicFuture": round(organic_future, 1),
             # the organic course held to the works' room, and what a paid
             # entry buys once a work is spoken for (10 October 2026): the
-            # share of one more entry that converts now and at the end of the
-            # run rate's run, the entries that run wastes on works already
-            # full, and those works
+            # share of a day's entries that converts on the run rate's first
+            # day and on its last, the entries that run wastes on works
+            # already full, and the works it fills, each with the day it is
+            # full from (no day: full already)
             "organicUnits": round(organic_units, 1),
-            "yieldNow": round(paid_frac(0.0), 4) if not complete else None,
-            "yieldAtClose": round(paid_frac(min(future_cum, entries_needed * 0.999) if entries_needed not in (None, math.inf) and entries_needed > 0 else future_cum), 4) if not complete else None,
+            "yieldNow": round(fwd["fracs"][0] if fwd["fracs"] else converts(0.0), 4) if not complete else None,
+            "yieldAtClose": round(fwd["fracAtStop"], 4) if not complete and fwd["fracAtStop"] is not None else None,
             "wastedEntries": round(fwd["wasted"], 1) if not complete else None,
             "fullWorks": full_works,
             "daysLeft": days_left,
@@ -5571,7 +5703,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "atRecommended": None if (fwd_rec is None or complete) else {
             "spend": round(fwd_rec["spend"], 2),
             "entriesProjected": round(cum_pentries + part_entries + fwd_rec["entries"], 1),
-            "unitProjected": round(unit_proj + (paid_units(fwd_rec["entries"]) - paid_units(future_cum)), 1),
+            "unitProjected": round(unit_proj + (fwd_rec["units"] - fwd["units"]), 1),
             "spendProjectedTotal": round(cum_spend + part_spend + fwd_rec["spendFuture"], 2),
             "stops": paid_stops(fwd_rec),
             "sellThrough": at_rec,

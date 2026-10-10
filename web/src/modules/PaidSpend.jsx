@@ -48,6 +48,13 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const d = cur !== null && rec !== null ? Math.round(rec) - Math.round(cur) : null;
   const floorF = fmt(budget.floor ?? 1, 1);
   const noPrice = !noCampaign && rec === null;   // spend exists but no cost-per-entry history yet
+  // the works the projection fills (docs 7): full already, or full from a
+  // day of the run rate's run; an older snapshot names them without a day
+  const fullWorks = (Array.isArray(budget.fullWorks) ? budget.fullWorks : [])
+    .map((w) => (typeof w === "string" ? { name: w, date: null } : w)).filter((w) => w && w.name);
+  const yieldNow = typeof budget.yieldNow === "number" ? Math.round(budget.yieldNow * 100) : null;
+  const yieldEnd = typeof budget.yieldAtClose === "number" ? Math.round(budget.yieldAtClose * 100) : null;
+  const yieldText = yieldNow === null ? "–" : yieldEnd !== null && yieldEnd !== yieldNow ? `${yieldNow}% today, ${yieldEnd}% by the end of the run` : `${yieldNow}%`;
   // the gap is measured to the whole edition (docs 7): paid runs until the
   // edition sells out, the target being the plan (9 October 2026)
 
@@ -63,9 +70,12 @@ export default function PaidSpend({ snap, horizon = "today" }) {
       { label: "Cost / unit now", value: budget.cpeNow ? "€" + fmt(budget.cpeNow) : "–" },
       { label: "Cost / unit at recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },
       { label: "ROI at recommended", value: fmt(budget.finalDayRoi, 2) },
-      // a work spoken for turns paid entries away (docs 7): the share of an entry that still buys a unit
-      ...(typeof budget.yieldNow === "number" && budget.yieldNow < 0.999
-        ? [{ label: "Entries that buy a unit", value: `${Math.round(budget.yieldNow * 100)}%${Array.isArray(budget.fullWorks) && budget.fullWorks.length ? ` · ${budget.fullWorks.join(", ")} full` : ""}` }]
+      // a work spoken for turns paid entries away (docs 7): the share of an
+      // entry that still buys a unit, today and by the end of the run, and
+      // the works that are full already or fill on a day of it
+      ...(yieldNow !== null && (budget.yieldNow < 0.999 || fullWorks.length)
+        ? [{ label: "Entries that buy a unit", value: yieldText },
+           ...fullWorks.map((w) => ({ label: w.name, value: w.date ? `full from ${fmtDay(new Date(w.date + "T00:00:00Z"))}` : "full now" }))]
         : []),
       { label: "Cumulative ROI", value: budget.cumRoi ? fmt(budget.cumRoi, 2) : "–" },
       { label: "Spend to sell out / day", value: budget.supplySpend !== null && budget.supplySpend !== undefined ? money(budget.supplySpend) : "–" },

@@ -24,7 +24,11 @@
  * The words on the plot ("daily spend", "paid off") are set in clear space
  * with a thin leader to what they name, as the unit trajectory names its
  * lines, and "today" always shows on a live release, the axis end giving way
- * to it where they would print into each other (labels.mjs).
+ * to it where they would print into each other (labels.mjs). A day a work
+ * fills (docs 7, 11 October 2026) is marked where the projection steps down:
+ * the ETL names the work on that day's point (roiPath[].full), and the chart
+ * draws a white-cored dot there, a faint rule down the plot and the work's
+ * name beside it, so the step is read for what it is.
  *
  * The ROI is a party's (docs §7): profit per unit net of cannibalisation over
  * the cost of a converting entry and that party's share of the spend, both
@@ -161,6 +165,14 @@ function PaidRoiLE({ snap }) {
     ? [{ d: anchor.d, v: anchor.v }, ...pathPts.filter((p) => p.d > anchor.d)]
     : Array.from({ length: of - anchor.d + 1 }, (_, i) => ({ d: anchor.d + i, v: anchor.v * Math.pow(factor, i) }));
   const declineEnd = decline.length ? decline[decline.length - 1].v : null;
+  // the days a work fills on the line's run (docs 7): the ETL names the work
+  // on that day's point, so the step the line takes there is marked and
+  // named rather than left for the reader to guess at
+  const fillMarks = !showModel ? [] : view.path
+    .filter((p) => Array.isArray(p.full) && p.full.length && p.roi !== null && p.roi !== undefined)
+    .map((p) => ({ d: dayIndex(p.date, snap.windowStart, null), v: p.roi * pathScale, names: p.full }))
+    .filter((p) => p.d !== null && p.d > anchor.d && p.d <= of);
+  const fullByDay = new Map(fillMarks.map((f) => [f.d, f.names]));
 
   // ----- ROI y-domain: series ∪ target ± 12%, snapped to 0.25, clamped at 0 -----
   const domVals = [
@@ -325,6 +337,7 @@ function PaidRoiLE({ snap }) {
       ...bars.map((b) => ({ x0: +b.x * sx, y0: +b.y * sy, x1: (+b.x + bw) * sx, y1: plotH })),
       ...(!complete && anchor !== null ? [dot(anchor.d, anchor.v)] : []),
       ...(complete && lastRoiPt ? [dot(lastRoiPt.d, lastRoiPt.roi)] : []),
+      ...fillMarks.map((f) => dot(f.d, f.v)),
       ...(showModel && declineEnd !== null ? [dot(of, declineEnd),
         { x0: plotW + 8, y0: py(declineEnd) - 8, x1: plotW + 12 + textPx("projected"), y1: py(declineEnd) + 8 }] : []),
     ];
@@ -340,6 +353,10 @@ function PaidRoiLE({ snap }) {
         `No paid spend since day ${lastSpendDay}: the line ends where the spend did`,
         [{ x: px(anchor.d), y: py(anchor.v), cost: 0 }], { dot: 7.5 })] : []),
       ...(tops.length ? [label("spend", "daily spend", spendTitle, tops.map((t) => ({ ...t, cost: Math.abs(t.x - mid) * 0.02 })))] : []),
+      // the day a work fills, named at the step the line takes there
+      ...fillMarks.map((f, i) => label("full" + i, f.names.join(", ") + " full",
+        "From " + dayLabel(snap, f.d) + " an entry for " + f.names.join(" or ") + " buys nothing, the work being full: only entries for the works still open count, so the projection steps down here",
+        [{ x: px(f.d), y: py(f.v), cost: 0 }], { dot: 5 })),
     ];
     names = nameLines({ labels, curves, blocks, bounds: { x0: 0, y0: 0, x1: plotW, y1: plotH } });
   }
@@ -402,6 +419,10 @@ function PaidRoiLE({ snap }) {
                 <line x1={x(today).toFixed(1)} y1="0" x2={x(today).toFixed(1)} y2={H}
                   stroke={C.todayLine} strokeWidth="1" vectorEffect="non-scaling-stroke" />
               )}
+              {fillMarks.map((f) => (
+                <line key={"fl" + f.d} x1={x(f.d).toFixed(1)} y1="0" x2={x(f.d).toFixed(1)} y2={H}
+                  stroke={C.blueLight} strokeWidth="1" strokeDasharray="2 4" vectorEffect="non-scaling-stroke" />
+              ))}
             </svg>
 
             {/* hover: guide line + marker + light popup */}
@@ -423,6 +444,7 @@ function PaidRoiLE({ snap }) {
                     {roiV === null && projV !== undefined && <div className="t-row"><span>ROI projected</span><span className="v">{fmt(projV, 2)}</span></div>}
                     {p && <div className="t-row"><span>Spend</span><span className="v">€{fmt(p.spend, 2)}</span></div>}
                     {p && <div className="t-row"><span>Entries</span><span className="v">{fmt(p.entries ?? 0)}</span></div>}
+                    {fullByDay.has(hover) && <div className="t-row"><span>Full from this day</span><span className="v">{fullByDay.get(hover).join(", ")}</span></div>}
                   </ChartTip>
                 </>
               );
@@ -472,6 +494,18 @@ function PaidRoiLE({ snap }) {
                 </div>
               </>
             )}
+
+            {/* the day a work fills: a white-cored dot on the projection, named in clear space (LineNames) */}
+            {fillMarks.map((f) => (
+              <div key={"fd" + f.d}
+                title={f.names.join(", ") + " full from " + dayLabel(snap, f.d) + ": from here only entries for the works still open buy a unit"}
+                style={{
+                  position: "absolute", left: leftPct(f.d), top: topPct(f.v),
+                  width: 9, height: 9, margin: "-4.5px 0 0 -4.5px", borderRadius: "50%",
+                  background: "#fff", border: `2px solid ${C.blueLight}`, boxSizing: "border-box",
+                }}
+              />
+            ))}
 
             {/* y axis (snapped to 0.25) - meaningless without an ROI series */}
             {roiPts.length > 0 && <div style={{ ...axisLabel, top: 0 }}>{hi.toFixed(2)}</div>}
