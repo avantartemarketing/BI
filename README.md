@@ -41,8 +41,9 @@ data/
                           manager's display names and the latter's Slack member ID, for the
                           mention (etl/pull_airtable.py)
   orders_by_product.csv   per release x Shopify product: units paid, awaiting payment (draft orders),
-                          list price, prints with a frame on offer and the frames bought with them
-                          (docs 6.4) - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
+                          list price, the price paid for a frame, prints with a frame on offer and
+                          the frames bought with them (docs 6.4) - aggregates from Order_Line_Concept
+                          (server/bigquery.js, docs 2.4)
   draw_products.csv       the product each draw's winners bought, or its entrants hold
                           pre-authorisation drafts for until it has winners: the draw to product map
   draw_claims.csv         per draw, the claims a draw round has made that the order table has not
@@ -188,7 +189,8 @@ on every refresh and needs nothing.
 ## Refreshing data
 
 **Live (production):** on boot and every hour the server rewrites
-`sources/across_time.csv` and `data/spend_daily.csv`, pulls Airtable's Pipeline table to
+`sources/across_time.csv` and `data/spend_daily.csv`, pulls Airtable's Pipeline table (and its
+Framing table, for the frames' prices) to
 `data/release_pricing.csv` when `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID` and `AIRTABLE_TABLE`
 are set (the launches ahead of the funnel appear in the sidebar as Upcoming, docs
 `DATA_MODEL.md` 1.7), and reruns the ETL in place - no redeploy needed. Force a pull with `POST /api/refresh` or `GET /api/refresh/status?run=1`
@@ -311,7 +313,8 @@ it leaves the server with an identifier column.
 
 **Orders and drafts by product.** The pull also reads `Order_Line_Concept`, the Shopify order
 lines, into three aggregate files, written together or not at all: `data/orders_by_product.csv` (per release and product: units
-paid, orders awaiting payment, list price; the draw's own pre-authorisation drafts, one per
+paid, orders awaiting payment, list price, the median price paid for a frame (the band the
+assumed frames per print is read in, docs 1.6); the draw's own pre-authorisation drafts, one per
 live entry, are counted apart and never shown as drafts; and the framing, the prints a frame
 was on offer for and the frames bought with them, on the paid orders, the pre-authorisation
 drafts and the orders awaiting payment, joined to the prints through the order, docs 6.4) and `data/draw_products.csv` (the product each
@@ -613,7 +616,7 @@ each with its detail on hover - then the form in four groups of label-and-contro
 order the decisions are made, each group a white card with its title inside, and the actions
 again at the foot. **Works** is one sheet: the figures down the side (in the
 release, edition, sell-through, target units, the close, price, the profits per unit, the
-artist's revenue cut, the deal's shares, framing, frames per print, frame profit, the launch
+artist's revenue cut, the deal's shares, framing, frame price, frames per print, frame profit, the launch
 value, Avant Arte's take with framing and AA's share of paid spend), one column per work with
 its whole name on up to two lines, and All works as the first column, the release as a whole
 weighted by target units. The figure labels hold while the sheet scrolls sideways; a column's

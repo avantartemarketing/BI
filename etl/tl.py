@@ -1758,6 +1758,7 @@ def _products(rec: dict) -> tuple[list[dict], dict]:
                      "frame_conversion": over("frame_conversion"), "frame_profit_per_unit": over("frame_profit_per_unit"),
                      "artist_profit_per_unit": over("artist_profit_per_unit"), "aa_profit_per_unit": over("aa_profit_per_unit"),
                      "aa_revenue_share": over("aa_revenue_share"), "aa_profit_share": over("aa_profit_share"), "artist_revenue_cut": over("artist_revenue_cut"),
+                     "frame_price": over("frame_price"),
                      "excluded": bool(t.get("excluded")), "typed": {k: t.get(k) for k in PRODUCT_TYPED_KEYS if t.get(k) is not None}})
     for m in manual:
         rows.append({"airtable_id": None, "manual": True, "name": m.get("name"), "edition": _num(m.get("edition")), "units_target": _num(m.get("units_target")),
@@ -1766,6 +1767,7 @@ def _products(rec: dict) -> tuple[list[dict], dict]:
                      "frame_conversion": _num(m.get("frame_conversion")), "frame_profit_per_unit": _num(m.get("frame_profit_per_unit")),
                      "artist_profit_per_unit": _num(m.get("artist_profit_per_unit")), "aa_profit_per_unit": _num(m.get("aa_profit_per_unit")),
                      "aa_revenue_share": _num(m.get("aa_revenue_share")), "aa_profit_share": _num(m.get("aa_profit_share")), "artist_revenue_cut": _num(m.get("artist_revenue_cut")),
+                     "frame_price": _num(m.get("frame_price")),
                      "excluded": bool(m.get("excluded")), "typed": {}})
     live = [p for p in rows if not p["excluded"]]
     targets = [p["units_target"] for p in live if p["units_target"]]
@@ -1878,19 +1880,23 @@ def _email_card(emails: pd.DataFrame | None, code: str | None, d: dict, daily: p
 
 
 PRODUCT_TYPED_KEYS = ("edition", "units_target", "unit_price", "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share",
-                      "artist_revenue_cut", "frame_conversion", "frame_profit_per_unit")
+                      "artist_revenue_cut", "frame_conversion", "frame_profit_per_unit", "frame_price")
 
 
-def tl_economics(rows: list[dict]) -> dict:
+def tl_economics(rows: list[dict], b: dict | None = None) -> dict:
     """The works' profit and framing figures as one release (shared/tlModel.mjs
     tlEconomics, the same to the figure): over the ticked works, each weighted
     by its units target, else its edition, else evenly. AA's and the artist's
     profit per unit over the works with a figure (None when none has one); the
     share of the units on works that frame, those works' own frame take-up and
     AA's profit per frame (a framed work without a profit figure counts no
-    framing profit, as the LE reads it; None when no framed work has one); who
+    framing profit, as the LE reads it; None when no framed work has one), and
+    the default take-up the works would carry without one (the last twelve
+    months' frames per print in the band of each work's frame price against
+    its print's, pricing.frame_band_rate; None without the benchmarks); who
     funds the ads from each work's deal (a profit share is AA's share of the
     ads, a revenue share all of them), None when no work records a deal."""
+    b = b or BENCH
     live = [r for r in rows if not r.get("excluded")]
 
     def w(r):
@@ -1910,9 +1916,14 @@ def tl_economics(rows: list[dict]) -> dict:
     total = sum(w(r) for r in live)
     dealt = [r for r in live if deal_share(r) is not None]
     dealt_w = sum(w(r) for r in dealt)
+    def band_default(r):
+        price, fp = _num(r.get("unit_price")), _num(r.get("frame_price"))
+        eur = price * pricing.RATES_TO_EUR.get(str(r.get("currency") or "EUR").upper(), 1.0) if price else None
+        return pricing.frame_band_rate((fp / eur) if (fp and fp > 0 and eur and eur > 0) else None, b)[0]
     return {"aa_profit_per_unit": weighted("aa_profit_per_unit", live), "artist_profit_per_unit": weighted("artist_profit_per_unit", live),
             "frame_share": (framed_w / total) if total > 0 else 0.0,
             "frame_conversion": weighted("frame_conversion", framed),
+            "frame_conversion_default": (sum(w(r) * band_default(r) for r in framed) / framed_w) if (framed_w > 0 and b.get("frame_conversion") is not None) else None,
             "frame_profit_per_unit": (sum(w(r) * (_num(r.get("frame_profit_per_unit")) or 0.0) for r in framed) / framed_w) if (framed_with and framed_w > 0) else None,
             "aa_budget_share": (sum(w(r) * deal_share(r) for r in dealt) / dealt_w) if dealt_w > 0 else None,
             "aa_budget_share_assumed": not dealt,
@@ -1944,6 +1955,9 @@ def tl_paid_value(inputs: dict | None, profile: dict | None, targets: dict | Non
         frame_rate, frame_src = min(max(own, 0.0), 1.0), "release"
     elif basket_rate and basket_rate > 0:
         frame_rate, frame_src = basket_rate, "basket"
+    elif _num(econ.get("frame_conversion_default")) is not None:
+        # the last twelve months' take-up in the band of each work's frame price against its print's (tl_economics)
+        frame_rate, frame_src = min(max(float(econ["frame_conversion_default"]), 0.0), 1.0), "default"
     else:
         frame_rate, frame_src = float(b.get("frame_conversion") or 0.0), "default"
     frame_uplift = frame_share * frame_rate * (frame_profit or 0.0)

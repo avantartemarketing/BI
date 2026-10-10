@@ -449,10 +449,10 @@ export default function TLTargets({ snap, onSaved, directSpread = false }) {
   // the figure the Overview's paid card reads its ROI against); a work's frame
   // take-up is its own figure or none, the default being the model's to apply
   const econRows = products.map((p) => ({ ...p, frame_conversion: p.sources && p.sources.frame_conversion === "default" ? null : p.frame_conversion }));
-  const PV = T ? tlPaidValue(inp, profile, T, tlEconomics(econRows), b) : null;
+  const PV = T ? tlPaidValue(inp, profile, T, tlEconomics(econRows, b), b) : null;
   const pvOk = !!(PV && PV.readable && PV.value_per_signup !== null);
   const S2O_PAID_WORDS = { release: "typed", basket_paid: "the basket's paid rate", basket: "the basket's blended rate", none: "no rate on file" };
-  const FRAME_WORDS = { release: "the works' own take-up", basket: "the basket's frames per print", default: "the default take-up" };
+  const FRAME_WORDS = { release: "the works' own take-up", basket: "the basket's frames per print", default: "the last twelve months' take-up for frames priced like these" };
   const BM = T ? T.benchmark : null;
   const k = T ? T.k : null;
   const stretchTyped = !!(T && T.stretch_typed);

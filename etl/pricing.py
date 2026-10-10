@@ -595,11 +595,39 @@ if __name__ == "__main__":
 # pull found the field (etl/pull_airtable.py OPTIONAL_FIELDS); blank otherwise
 PRODUCT_NUMERIC = ("edition_size", "units_target", "unit_price", "target_sellthrough", "expected_sellthrough",
                    "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share",
-                   "artist_revenue_cut", "frame_conversion", "frame_profit_per_unit")
+                   "artist_revenue_cut", "frame_conversion", "frame_profit_per_unit", "frame_price")
 PRODUCT_TEXT = ("airtable_id", "project_code", "title", "release", "currency", "framing", "launch_type",
                 "edition_type", "product_type", "price_status", "launch_date", "announce_date",
                 "private_room_date", "marketing_lead", "deal_type")
 _RECORDS: tuple[float, pd.DataFrame, pd.DataFrame] | None = None   # (mtime, records, launches)
+
+
+# The assumed frame take-up by the frame's price against the print's (10
+# October 2026, etl/analysis/framing_conversion.py): the bands, lower edge
+# inclusive, the last open-ended; the rates per band are read from the last
+# twelve months' orders on every build (etl/build.py framing_default) and ride
+# in the benchmarks as frame_conversion_bands beside the overall rate.
+FRAMING_BANDS: tuple[tuple[float, float | None], ...] = ((0.0, 0.2), (0.2, 0.35), (0.35, 0.5), (0.5, None))
+
+
+def frame_band_rate(ratio, b: dict) -> tuple[float, dict | None]:
+    """The take-up for a work whose frame costs `ratio` of its print (None:
+    unknown): its band's rate where the benchmarks carry one with enough
+    prints behind it, else the overall rate; with the band read, or None.
+    shared/economics.mjs frameBandRate is the same to the figure."""
+    overall = float(b.get("frame_conversion") or 0.0)
+    try:
+        r = float(ratio) if ratio is not None else None
+    except (TypeError, ValueError):
+        r = None
+    if r is None or r < 0:
+        return overall, None
+    for band in b.get("frame_conversion_bands") or []:
+        lo, hi = float(band.get("lo") or 0.0), band.get("hi")
+        if r >= lo and (hi is None or r < float(hi)):
+            rate = band.get("rate")
+            return (float(rate), band) if rate is not None else (overall, band)
+    return overall, None
 
 
 def deal_type(value) -> str | None:

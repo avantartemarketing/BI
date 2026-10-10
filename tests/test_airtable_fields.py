@@ -98,6 +98,12 @@ check(pa.flatten(450, "aa_profit_per_unit", hits) == 450 and hits[0] == 0, "a nu
 # the commission is a percent like the shares: 15 typed as a whole number is 0.15
 check(pa.flatten(0.15, "artist_revenue_cut", hits) == 0.15 and pa.flatten(15, "artist_revenue_cut", hits) == 0.15, "the cut as a fraction")
 
+# the frame's price through the record's links: the cheapest standard and premium frame among those priced
+prices = {"recA": {"frame_price": 420.0, "frame_price_premium": 650.0}, "recB": {"frame_price": 380.0}, "recC": {"frame_price_premium": 600.0}}
+check(pa.link_prices("recA | recB | recC", prices) == {"frame_price": 380.0, "frame_price_premium": 600.0}, "the cheapest of each kind over the linked frames")
+check(pa.link_prices("recB", prices) == {"frame_price": 380.0, "frame_price_premium": ""}, "a kind none of the links carries is blank")
+check(pa.link_prices("", prices) == {"frame_price": "", "frame_price_premium": ""} and pa.link_prices("recZ", prices) == {"frame_price": "", "frame_price_premium": ""}, "no links, or links to frames with no price: blank")
+
 # a column list unchanged by the rename: the CSV header is the columns, not the names
 cols = [c for _, c in pa.FIELDS]
 check("edition_size" in cols and cols.index("edition_size") == cols.index("unit_status") - 1, "the CSV column is edition_size, in its place")

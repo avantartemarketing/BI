@@ -165,6 +165,9 @@ OPTIONAL_FIELDS: list[tuple[str, str]] = [
     # split: the whole deal on a revenue deal (Avant Arte's revenue share is
     # the rest), a component beside the AA split on a profit deal that has one
     ("Revenue Commission %", "artist_revenue_cut"),
+    # what kind of artist the work's is (a lookup: "Estate", "Living artist"
+    # and the like), for the framing study and the baskets, never a person
+    ("Artist type", "artist_type"),
 ]
 # The names the table actually carries these under (8 October 2026), tried
 # after the current name, the first the table has winning; an
@@ -180,6 +183,16 @@ OPTIONAL_ALIASES: dict[str, list[str]] = {
 # a rollup reads 0 where the record links to no frame products: no figure,
 # not a frame sold at no profit (the tab then shows nothing to type over)
 ZERO_IS_BLANK = {"frame_profit_per_unit"}
+# The frame's price, read through the record's Frame products links from the
+# Framing table (10 October 2026): the cheapest standard frame on offer for
+# the work (frame_price) and the cheapest premium one (frame_price_premium),
+# in the base's euros. The assumed take-up reads the frame's price against
+# the print's (etl/build.py framing_default). Missing table, field or links:
+# the columns stay blank and the report says so.
+FRAMES_TABLE = os.environ.get("AIRTABLE_FRAMES_TABLE", "Framing").strip()
+FRAME_LINK_FIELD = os.environ.get("AIRTABLE_FIELD_FRAME_PRODUCTS", "Frame products").strip()
+FRAME_PRICE_FIELDS: list[tuple[str, str]] = [("Standard plexi PRICE", "frame_price"), ("Optium plexi PRICE", "frame_price_premium")]
+FRAME_COLS = [col for _, col in FRAME_PRICE_FIELDS]
 # a colleague's display name, never an address (check_schema, flatten)
 NAME_COLS = {"marketing_lead", "project_manager"}
 # the project manager's Slack member ID, kept only in that shape
@@ -456,6 +469,47 @@ def flatten(value, col: str, hits: list[int]) -> object:
     return scrub(text, hits)
 
 
+def frame_prices(tok: str, base: str) -> tuple[dict, str]:
+    """{frame record id: {column: price}} off the Framing table's price fields,
+    with a note for the report. Nothing, with the reason, where the table or
+    both fields are missing; a price field that holds a person stops the pull
+    like any other."""
+    doc = get(f"{API}/meta/bases/{base}/tables", tok)
+    hit = next((t for t in doc.get("tables", []) if t.get("name") == FRAMES_TABLE or t.get("id") == FRAMES_TABLE), None)
+    if hit is None:
+        return {}, f"no {FRAMES_TABLE!r} table in the base: frame prices left blank (AIRTABLE_FRAMES_TABLE names it)"
+    fields = {f["name"]: f for f in hit.get("fields", [])}
+    wanted = [(name, col) for name, col in FRAME_PRICE_FIELDS if name in fields]
+    bad = [name for name, _ in wanted if field_kind(fields[name]) in PERSON_TYPES or fields[name].get("type") in PERSON_TYPES]
+    if bad:
+        sys.exit("refusing to pull fields that hold a person: " + ", ".join(repr(b) for b in bad))
+    if not wanted:
+        return {}, f"{FRAMES_TABLE!r} has none of {', '.join(repr(n) for n, _ in FRAME_PRICE_FIELDS)}: frame prices left blank"
+    out: dict = {}
+    for rec in records(tok, base, hit["id"], [name for name, _ in wanted]):
+        f = rec.get("fields", {})
+        prices = {col: float(f[name]) for name, col in wanted
+                  if isinstance(f.get(name), (int, float)) and not isinstance(f.get(name), bool) and f[name] > 0}
+        if prices:
+            out[rec["id"]] = prices
+    absent = [name for name, _ in FRAME_PRICE_FIELDS if name not in fields]
+    return out, f"{len(out)} frames priced from {FRAMES_TABLE!r}" + (f" (no {', '.join(repr(a) for a in absent)})" if absent else "")
+
+
+def link_prices(ids_text: str, prices: dict) -> dict:
+    """The cheapest price of each kind over the frames a record links to
+    (ids_text as flatten joins a record-link list, "rec1 | rec2"): the
+    standard frame most buyers take, and the premium one; blank where none
+    of the linked frames carries one."""
+    ids = [i.strip() for i in str(ids_text or "").split("|") if i.strip()]
+    out: dict = {col: "" for col in FRAME_COLS}
+    for col in FRAME_COLS:
+        have = [prices[i][col] for i in ids if i in prices and col in prices[i]]
+        if have:
+            out[col] = round(min(have), 2)
+    return out
+
+
 def money(text: str) -> object:
     """A money figure typed as text, as a number in euros: "€450" -> 450,
     "€1,250.50" -> 1250.5, "£100" -> 118 at etl/pricing.py's rate; nothing
@@ -497,14 +551,21 @@ def pull(tok: str, base: str, table: str, fields: dict, out: pathlib.Path, every
     # the optional columns are always in the file, blank where the table has
     # no such field yet, so a reader can rely on the header
     cols += [col for _, col in OPTIONAL_FIELDS]
+    cols += FRAME_COLS
+    # the frame's price through the record's links to the Framing table
+    link = FRAME_LINK_FIELD if fields.get(FRAME_LINK_FIELD, {}).get("type") == "multipleRecordLinks" else None
+    prices, frames_note = (frame_prices(tok, base) if link else ({}, f"no {FRAME_LINK_FIELD!r} link field on the table: frame prices left blank"))
+    req = names + ([link] if link else [])
+    by_name = dict(by_name, **({link: "_frame_ids"} if link else {}))
     hits = [0]
     rows, seen, dropped = [], 0, 0
     today = date.today()
-    for rec in records(tok, base, table, names):
+    for rec in records(tok, base, table, req):
         seen += 1
         f = rec.get("fields", {})
         row = {col: "" for col in cols}
-        row.update({by_name[name]: flatten(f.get(name), by_name[name], hits) for name in names})
+        row.update({by_name[name]: flatten(f.get(name), by_name[name], hits) for name in req})
+        row.update(link_prices(row.pop("_frame_ids", ""), prices))
         row["currency"] = currency if row.get("unit_price") not in ("", None) else ""
         if keep(row, today, everything):
             rows.append(row)
@@ -533,6 +594,7 @@ def pull(tok: str, base: str, table: str, fields: dict, out: pathlib.Path, every
     if absent:
         print("target fields not in the table yet (columns left blank): " + ", ".join(repr(a) for a in absent)
               + " - name a field that holds one with AIRTABLE_FIELD_<column>")
+    print(f"frame prices: {frames_note}; {sum(1 for r in rows if r.get('frame_price') not in ('', None))} kept rows carry a standard frame price")
     if hits[0]:
         print(f"blanked {hits[0]} cells that held something email- or phone-shaped")
     print(f"wrote {out} ({len(cols)} columns)")

@@ -1096,18 +1096,21 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
     return out
 
 
-def frame_terms(release: dict, b: dict = BENCH) -> tuple[float, float | None]:
+def frame_terms(release: dict, b: dict = BENCH, ratio: float | None = None) -> tuple[float, float | None]:
     """The framing uplift's two terms for one release or product: the share of
-    buyers expected to take a frame, its own figure else the benchmark default
-    (benchmarks.json frame_conversion), and AA's profit per frame, its own
-    figure only. There is no default profit per frame: every framed product
-    carries its own (Airtable's Framing profit per unit, or typed on the
-    Target setting tab), so a product without one adds no uplift and the tab
-    shows the cell empty rather than a constant (the workbook's €94, retired
-    on 26 September 2026). The profit is None when there is none."""
+    buyers expected to take a frame, its own figure else the default (the last
+    twelve months' frames per print in the band of the frame's price against
+    the print's, `ratio`, where known, else overall: set_framing_default,
+    pricing.frame_band_rate; the benchmarks file's constant where the feed is
+    thin), and AA's profit per frame, its own figure only. There is no default
+    profit per frame: every framed product carries its own (Airtable's Blended
+    frame margin, or typed on the Target setting tab), so a product without one
+    adds no uplift and the tab shows the cell empty rather than a constant (the
+    workbook's €94, retired on 26 September 2026). The profit is None when
+    there is none."""
     conv = release.get("frame_conversion")
     profit = release.get("frame_profit_per_unit")
-    conv = float(b["frame_conversion"]) if conv is None or conv == "" else float(conv)
+    conv = pricing.frame_band_rate(ratio, b)[0] if conv is None or conv == "" else float(conv)
     profit = None if profit is None or profit == "" else max(float(profit), 0.0)
     return min(max(conv, 0.0), 1.0), profit
 
@@ -1956,6 +1959,9 @@ def load_orders_feed() -> dict:
                     "refunded": num(r.units_refunded),
                     "fromDrafts": num(r.units_from_drafts), "privateRoom": num(r.units_private_room),
                     "listPrice": price if price > 0 else None, "edition": editions(r.release, r.product_title),
+                    "firstOrder": str(getattr(r, "first_order", "") or "") or None,
+                    # the work's frame price (the median paid frame, euros), for its ratio to the print's
+                    "framePrice": num(getattr(r, "frame_price_eur", "")) or None,
                     "lastOrder": r.last_order or None, "lastDraft": r.last_draft or None,
                 }
                 rel["drafts"] += drafts
@@ -2464,6 +2470,78 @@ def framing_benchmark(basket: dict | None, feed: dict | None = None) -> dict | N
     if len(rates) < FRAMING_MIN_MEMBERS:
         return None
     return {"rate": round(float(np.median(rates)), 4), "n": len(rates), "of": len(members)}
+
+
+FRAMING_DEFAULT_DAYS = 365        # the assumed take-up reads the launches of the last twelve months
+FRAMING_DEFAULT_MIN_PRINTS = 1000  # ... from this many paid prints a frame was on offer for
+FRAMING_DEFAULT_MIN_LAUNCHES = 5   # ... across this many launches, else the benchmarks file's constant stands
+FRAMING_BAND_MIN_PRINTS = 300      # a band's own rate needs this many prints behind it, else the overall rate stands in
+
+
+def framing_default(as_of: date, feed: dict | None = None) -> dict | None:
+    """The assumed frames-per-print for a work with no figure of its own (the
+    Target setting tab's blank cell, frame_terms): over the works that first
+    sold in the last FRAMING_DEFAULT_DAYS days, every launch and artist
+    together, the share of paid prints that took a frame, overall and by the
+    frame's price against the print's (pricing.FRAMING_BANDS; the study in
+    etl/analysis/framing_conversion.py found the ratio the one driver that
+    holds, and the rate moving year on year, 30% in 2024 to 43% in 2026, so a
+    constant went stale; the owner chose the bands over a split by kind or by
+    estate, 10 October 2026). Pooled over prints, so a big launch weighs as
+    its buyers did; a band with fewer than FRAMING_BAND_MIN_PRINTS prints
+    carries no rate of its own and the overall rate stands in. None when the
+    feed is thin (FRAMING_DEFAULT_MIN_PRINTS, FRAMING_DEFAULT_MIN_LAUNCHES),
+    and the constant in etl/benchmarks.json stands."""
+    feed = load_orders_feed() if feed is None else feed
+    since = (as_of - timedelta(days=FRAMING_DEFAULT_DAYS)).isoformat()
+    tot = {"prints": 0.0, "frames": 0.0, "launches": set(), "works": 0}
+    bands = [{"lo": lo, "hi": hi, "prints": 0.0, "frames": 0.0, "launches": set(), "works": 0} for lo, hi in pricing.FRAMING_BANDS]
+    for name, rel in (feed or {}).items():
+        for prod in (rel.get("products") or {}).values():
+            first = prod.get("firstOrder")
+            offered = float(prod.get("printsOffered") or 0)
+            if not first or str(first)[:10] < since or offered <= 0:
+                continue
+            frames = float(prod.get("frames") or 0)
+            for acc in (tot,):
+                acc["prints"] += offered; acc["frames"] += frames; acc["works"] += 1; acc["launches"].add(name)
+            fp, lp = prod.get("framePrice"), prod.get("listPrice")
+            if fp and lp and float(fp) > 0 and float(lp) > 0:
+                _, band = pricing.frame_band_rate(float(fp) / float(lp), {"frame_conversion_bands": bands})
+                if band is not None:
+                    band["prints"] += offered; band["frames"] += frames; band["works"] += 1; band["launches"].add(name)
+    if tot["prints"] < FRAMING_DEFAULT_MIN_PRINTS or len(tot["launches"]) < FRAMING_DEFAULT_MIN_LAUNCHES:
+        return None
+    out_bands = [{"lo": b["lo"], "hi": b["hi"], "rate": round(b["frames"] / b["prints"], 4) if b["prints"] >= FRAMING_BAND_MIN_PRINTS else None,
+                  "prints": int(b["prints"]), "frames": int(b["frames"]), "launches": len(b["launches"]), "works": b["works"]} for b in bands]
+    return {"rate": round(tot["frames"] / tot["prints"], 4), "prints": int(tot["prints"]), "frames": int(tot["frames"]), "launches": len(tot["launches"]),
+            "works": tot["works"], "since": since, "through": as_of.isoformat(), "bands": out_bands}
+
+
+def set_framing_default(as_of: date, feed: dict | None = None) -> dict | None:
+    """Reads framing_default and puts the rates where every reader of the
+    benchmark finds them: this module's BENCH and etl/tl.py's own copy, under
+    frame_conversion (overall) and frame_conversion_bands, with the reading
+    beside them (frame_conversion_source) for inputs.json and the tab. Says
+    what it did; leaves the constant, and no bands, where the feed is thin."""
+    fd = framing_default(as_of, feed)
+    import tl  # noqa: PLC0415 - the TL build keeps its own copy of the benchmarks
+    for b in (BENCH, tl.BENCH):
+        if fd:
+            b["frame_conversion"] = fd["rate"]
+            b["frame_conversion_bands"] = fd["bands"]
+            b["frame_conversion_source"] = {"kind": "last_12_months", **{k: v for k, v in fd.items() if k != "bands"}}
+        else:
+            b["frame_conversion_bands"] = []
+            b["frame_conversion_source"] = {"kind": "constant", "rate": b["frame_conversion"]}
+    if fd:
+        words = ", ".join(f"{int(x['lo'] * 100)}{'-' + str(int(x['hi'] * 100)) + '%' if x['hi'] is not None else '%+'} {x['rate']:.0%} ({x['prints']})" if x["rate"] is not None
+                          else f"{int(x['lo'] * 100)}{'-' + str(int(x['hi'] * 100)) + '%' if x['hi'] is not None else '%+'} thin ({x['prints']})" for x in fd["bands"])
+        print(f"framing default: {fd['rate']:.1%} of paid prints took a frame over {fd['launches']} launches since {fd['since']} ({fd['prints']} prints); "
+              f"by the frame's price against the print's: {words}")
+    else:
+        print(f"framing default: the feed is thin, the constant {BENCH['frame_conversion']:.0%} stands")
+    return fd
 
 
 def framing_block(release: dict, of: dict | None, basket: dict | None, b: dict = BENCH,
@@ -3293,7 +3371,7 @@ LEGACY_KEYS = ("edition_size", "edition_total", "unit_price", "artist_profit", "
 # a product's figures, typed on the Target setting tab over what Airtable holds
 PRODUCT_KEYS = ("units_target", "edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
                 "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "framing_available",
-                "frame_conversion", "frame_profit_per_unit")
+                "frame_conversion", "frame_profit_per_unit", "frame_price")
 
 
 def _num(v):
@@ -3444,7 +3522,12 @@ def _effective_product(p: dict, b: dict) -> dict:
     # said, a sculpture edition has none (etl/pricing.py framing_default)
     fa = pick("framing_available", default=p.get("framing_default") is not False)
     e["framing_available"] = fa is not False
-    conv, profit = frame_terms({"frame_conversion": pick("frame_conversion"), "frame_profit_per_unit": pick("frame_profit_per_unit")}, b)
+    # the standard frame's price (Airtable's Framing table, or typed) against the
+    # print's: the band the default take-up is read in (frame_terms)
+    fp = _num(pick("frame_price"))
+    e["frame_price"] = fp if fp and fp > 0 else None
+    e["frame_ratio"] = round(e["frame_price"] / e["unit_price_eur"], 4) if e["frame_price"] and e["unit_price_eur"] else None
+    conv, profit = frame_terms({"frame_conversion": pick("frame_conversion"), "frame_profit_per_unit": pick("frame_profit_per_unit")}, b, ratio=e["frame_ratio"])
     e["frame_conversion"], e["frame_profit_per_unit"] = conv, profit
     e["frame_uplift_per_unit"] = round(conv * profit, 2) if e["framing_available"] and profit is not None else 0.0
     # who funds the ads: on a profit-share deal Avant Arte carries its share of
@@ -3690,7 +3773,7 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
     # the product fields the tab reads (shared/economics.mjs PRODUCT_KEYS and
     # the identity); the record's other columns stay in the pricing file
     keep = ("airtable_id", "name", "project_code", "edition", "target_sellthrough", "unit_price", "currency",
-            "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "deal_type",
+            "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "deal_type", "frame_price",
             "framing_available", "framing_default", "frame_conversion", "frame_profit_per_unit",
             "launch_date")
     products = [{k: p.get(k) for k in keep} for p in at["products"]]
@@ -6560,6 +6643,10 @@ def build_upcoming_pages() -> int:
         print("upcoming: no Airtable launches on file - nothing to build")
         return 0
     as_of = date.today()
+    try:
+        set_framing_default(as_of)
+    except Exception as e:  # noqa: BLE001 - the constant stands; the pages still build
+        print(f"warning: the framing default could not be read ({e}) - the constant {BENCH['frame_conversion']:.0%} stands")
     existing: list[dict] = []
     try:
         doc = json.loads((APP / "inputs.json").read_text())
@@ -6652,6 +6739,12 @@ def main(only: str | None = None):
     as_of, full_through, seen = observation_clock(at["event_date"].max())
     print(f"clock: data through {as_of}" + (f", {seen:.0%} of the day seen; full days through {full_through}"
                                           if full_through < as_of else ", a full day"))
+    # the assumed frames per print, read from the last twelve months of orders
+    # before any release's economics are resolved (frame_terms, tl.tl_economics)
+    try:
+        set_framing_default(as_of)
+    except Exception as e:  # noqa: BLE001 - the constant stands; the refresh goes on
+        print(f"warning: the framing default could not be read ({e}) - the constant {BENCH['frame_conversion']:.0%} stands")
     spend = load_spend()
     emails = load_emails()
     people = load_people()

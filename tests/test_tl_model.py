@@ -204,6 +204,13 @@ ROWS = [
      "aa_profit_per_unit": 50, "aa_profit_share": None, "aa_revenue_share": 0.3, "frame_profit_per_unit": 40, "excluded": True},
 ]
 PAID_PROFILE = {**PROFILE, "frames_per_print": 0.4}
+# the benchmarks as a build leaves them: the twelve-month frames per print with its bands by the frame's
+# price against the print's (build.set_framing_default); both builds' copies, the JS side reads build's
+BANDS = [{"lo": 0.0, "hi": 0.2, "rate": 0.6}, {"lo": 0.2, "hi": 0.35, "rate": 0.5}, {"lo": 0.35, "hi": 0.5, "rate": None}, {"lo": 0.5, "hi": None, "rate": 0.3}]
+build.BENCH["frame_conversion_bands"] = tl.BENCH["frame_conversion_bands"] = BANDS
+PRICED = [{**ROWS[0], "frame_price": 100.0},                                                              # 13%: 60%
+          {**ROWS[1], "framing_available": True, "frame_price": 300.0, "frame_profit_per_unit": 50},     # 40%: a band without a rate, the overall rate
+          ROWS[2]]
 paid_cases = [
     {"name": "the basket's rates", "inputs": {}, "rows": ROWS},
     {"name": "typed rate, pieces and cannibalisation", "inputs": {"signup_order_rate": 0.09, "cannibalisation": 0.25, "purchases_per_order": 1.2}, "rows": ROWS},
@@ -211,10 +218,13 @@ paid_cases = [
     {"name": "the works' own take-up", "inputs": {}, "rows": [{**r, "frame_conversion": 0.2 if r["framing_available"] else None} for r in ROWS]},
     {"name": "a revenue share deal", "inputs": {}, "rows": [{**r, "aa_profit_share": None, "aa_revenue_share": 0.3} for r in ROWS]},
     {"name": "no works", "inputs": {}, "rows": []},
+    {"name": "no basket rate: the default take-up by the works' frame prices", "inputs": {}, "rows": PRICED, "profile": PROFILE},
+    {"name": "no basket rate, no frame prices: the overall default", "inputs": {}, "rows": ROWS, "profile": PROFILE},
+    {"name": "the basket's rate over the works' frame prices", "inputs": {}, "rows": PRICED},
 ]
 py_paid = []
 for c in paid_cases:
-    read = tl.apply_channels_off(PAID_PROFILE, [])
+    read = tl.apply_channels_off(c.get("profile", PAID_PROFILE), [])
     T = tl.tl_targets(c["inputs"], 400.0, read, 300000.0)
     py_paid.append(tl.tl_paid_value(c["inputs"], read, T, tl.tl_economics(c["rows"])))
 v0 = py_paid[0]
@@ -237,11 +247,18 @@ check(not v2["readable"] and v2["value_per_signup"] is None and v2["cost_per_sig
 check(py_paid[3]["frame_rate_source"] == "release" and close(py_paid[3]["frame_rate"], 0.2), "the works' own take-up over the basket's")
 check(close(py_paid[4]["aa_budget_share"], 1.0), "on a revenue share AA carries the ads")
 check(not py_paid[5]["readable"] and py_paid[5]["aa_budget_share_assumed"] and close(py_paid[5]["aa_budget_share"], 0.5), "no works: half the spend assumed, nothing readable")
+v6 = py_paid[6]
+band_rate = (250 * 0.6 + 150 * build.BENCH["frame_conversion"]) / 400
+check(v6["frame_rate_source"] == "default" and close(v6["frame_rate"], band_rate) and close(v6["frame_share"], 1.0),
+      f"no basket rate: the twelve-month take-up in each work's band, weighted by its units ({v6['frame_rate']:.4f} vs {band_rate:.4f})")
+check(close(v6["frame_uplift_per_unit"], band_rate * (250 * 90 + 150 * 50) / 400), "the uplift reads that rate against the works' frame profit")
+check(py_paid[7]["frame_rate_source"] == "default" and close(py_paid[7]["frame_rate"], build.BENCH["frame_conversion"]), "no frame prices: the overall twelve-month rate")
+check(py_paid[8]["frame_rate_source"] == "basket" and close(py_paid[8]["frame_rate"], 0.4), "the basket's own rate still comes before the default")
 
 # JS parity
 with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
     json.dump({"bench": build.BENCH, "cases": [{**{k: v for k, v in c.items() if k != "profile"}, "profile": c.get("profile", PROFILE)} for c in cases],
-               "paid_cases": [{**c, "profile": PAID_PROFILE, "airtable_units": 400.0, "launch_value": 300000.0} for c in paid_cases]}, f)
+               "paid_cases": [{**c, "profile": c.get("profile", PAID_PROFILE), "airtable_units": 400.0, "launch_value": 300000.0} for c in paid_cases]}, f)
     path = f.name
 res = subprocess.run(["node", str(ROOT / "tests" / "tl_model_parity.mjs"), "--cases", path], capture_output=True, text=True, check=True)
 js_all = json.loads(res.stdout)
