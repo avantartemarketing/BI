@@ -37,7 +37,9 @@ data/
   release_clusters.csv    every release's campaign window, features, basket and edition pricing
                           (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
   release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
-                          dates, medium - no personal data (etl/pull_airtable.py)
+                          dates, medium; of people only the marketing lead's and project
+                          manager's display names and the latter's Slack member ID, for the
+                          mention (etl/pull_airtable.py)
   orders_by_product.csv   per release x Shopify product: units paid, awaiting payment (draft orders),
                           list price, prints with a frame on offer and the frames bought with them
                           (docs 6.4) - aggregates from Order_Line_Concept (server/bigquery.js, docs 2.4)
@@ -822,15 +824,21 @@ typed over), who sent it and a link to the tab (`PUBLIC_URL`, else the request's
 button is disabled while the tab has unsaved edits, since the message carries the figures as
 saved.
 
-The project manager is set beside the channel under Lead and Slack and saved with it (`pm` on
-the release's entry in `data/slack.json`): a Slack member ID (profile menu, Copy member ID), an
-@handle or an email. A member ID is used as typed. An email or a handle is looked up when the
-button is pressed (`users.lookupByEmail`, `users.list`), which needs the Slack app to carry the
-`users:read.email` or `users:read` scope: add it under OAuth & Permissions, reinstall the app
-and replace `SLACK_BOT_TOKEN`. Without the scope the button says so, and the member ID always
-works. `POST /api/releases/:id/slack-economics` is the route (`{dryRun: true}` returns the
-message and looks nobody up); the post is recorded on the entry as `lastEconomicsAt` and
-`lastEconomicsBy`, apart from the sell-through posts.
+The project manager comes from Airtable: the Pipeline table's **Project Manager** field (its
+display name) and **PM Slack ID** formula (their Slack member ID), which `etl/pull_airtable.py`
+pulls into `data/release_pricing.csv` as `project_manager` and `pm_slack_id` and the build
+carries on the snapshot as `projectManager: {name, slackId}` (the commonest across the launch's
+records). The mention uses the member ID as it is: no lookup, no extra Slack scope. The Project
+manager field under Lead and Slack shows an `Airtable` tag while that stands, `no Slack ID` when
+Airtable names someone whose PM Slack ID is empty, and whoever is typed there is mentioned instead
+(`pm` on the release's entry in `data/slack.json`): a Slack member ID (profile menu, Copy member
+ID), an @handle or an email. A typed email or handle is looked up when the button is pressed
+(`users.lookupByEmail`, `users.list`), which needs the Slack app to carry the `users:read.email`
+or `users:read` scope: add it under OAuth & Permissions, reinstall the app and replace
+`SLACK_BOT_TOKEN`. Without the scope the button says so, and a member ID always works.
+`POST /api/releases/:id/slack-economics` is the route (`{dryRun: true}` returns the message and
+looks nobody up); the post is recorded on the entry as `lastEconomicsAt` and `lastEconomicsBy`,
+apart from the sell-through posts.
 
 ## Deploying on Render
 

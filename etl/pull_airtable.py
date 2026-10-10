@@ -17,10 +17,12 @@ What it pulls, and what it refuses to
   edition type, its launch dates and its medium. Then the OPTIONAL_FIELDS: the
   per-product target economics the dashboard's Target setting tab reads
   (target sell-through, the artist's and Avant Arte's profit per unit, the
-  deal's revenue or profit share, the framing assumptions) and the marketing
-  lead. Those are pulled when the table has them and left blank when it does
-  not, so the pull works while the fields are still being added; a field
-  under another name is pointed at with AIRTABLE_FIELD_<column> in the
+  deal's revenue or profit share, the framing assumptions), the marketing
+  lead, and the project manager who confirms the release's unit economics,
+  with their Slack member ID. Those are pulled when the table has them and
+  left blank when it does not, so the pull works while the fields are still
+  being added; a field under another name is pointed at with
+  AIRTABLE_FIELD_<column> in the
   environment (AIRTABLE_FIELD_MARKETING_LEAD="Marketing owner"). The same
   override reaches the required fields, and each of those is also looked
   for under the names it has carried before (FORMER_NAMES), so a rename in
@@ -31,11 +33,15 @@ What it pulls, and what it refuses to
   and gender. None of that is needed, so none of it is requested, and the
   guard in `check_schema` refuses to run if a wanted field turns out to hold
   a person (a collaborator, email, phone, or lookup of one) - a field can be
-  retyped in Airtable without anyone here noticing. The one exception is the
-  marketing lead, a colleague's name the dashboard shows beside the release:
-  from a collaborator field only the display name is taken, never the email,
-  and an email- or phone-typed field is still refused. Cell values are
-  scanned for anything email- or phone-shaped and blanked if found.
+  retyped in Airtable without anyone here noticing. The exceptions are the
+  two colleagues the dashboard names beside the release, the marketing lead
+  and the project manager: from a collaborator field only the display name
+  is taken, never the email, and an email- or phone-typed field is still
+  refused; and the project manager's Slack member ID (the table's "PM Slack
+  ID" formula), which is what a Slack mention of them needs - a cell is kept
+  only when it has a member ID's shape (U or W, then letters and digits).
+  Cell values are scanned for anything email- or phone-shaped and blanked
+  if found.
 
 Credentials come from the environment only (AIRTABLE_TOKEN, a read-only
 personal access token; AIRTABLE_BASE_ID; AIRTABLE_TABLE). They are never
@@ -146,6 +152,11 @@ OPTIONAL_FIELDS: list[tuple[str, str]] = [
     ("Framing conversion", "frame_conversion"),
     ("Framing profit per unit", "frame_profit_per_unit"),
     ("Marketing lead", "marketing_lead"),
+    # the project manager who confirms the unit economics, and their Slack
+    # member ID, whom Send for confirmation mentions (README, "Confirming the
+    # unit economics"): the display name only, and the ID only in its shape
+    ("Project Manager", "project_manager"),
+    ("PM Slack ID", "pm_slack_id"),
     # the deal: "Profit" (a split of the profit) or "Revenue" (the artist or
     # estate paid a commission on revenue); etl/pricing.py reads it to say
     # which share is the product's deal
@@ -169,7 +180,11 @@ OPTIONAL_ALIASES: dict[str, list[str]] = {
 # a rollup reads 0 where the record links to no frame products: no figure,
 # not a frame sold at no profit (the tab then shows nothing to type over)
 ZERO_IS_BLANK = {"frame_profit_per_unit"}
-LEAD_COL = "marketing_lead"
+# a colleague's display name, never an address (check_schema, flatten)
+NAME_COLS = {"marketing_lead", "project_manager"}
+# the project manager's Slack member ID, kept only in that shape
+SLACK_ID_COL = "pm_slack_id"
+SLACK_ID_RE = re.compile(r"^[UW][A-Z0-9]{8,}$")
 # a percentage field arrives as 0.4 or, typed as a number, as 40: read either
 PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion", "artist_revenue_cut"}
 # a money figure typed as text ("€450", "€1,250"): read for its number, in
@@ -322,11 +337,17 @@ def check_schema(fields: dict) -> tuple[list[str], str, dict[str, str], list[str
             continue
         kind = field_kind(fields[name])
         ftype = fields[name].get("type")
-        if col == LEAD_COL:
+        if col in NAME_COLS:
             # a colleague's name, never an address: a collaborator field is
             # read for its display name only, an email or phone field is refused
             if kind in ("email", "phoneNumber") or ftype in ("email", "phoneNumber", "multipleAttachments"):
                 bad.append(f"{name!r} ({kind})")
+                continue
+        elif col == SLACK_ID_COL:
+            # the member ID a mention needs, from a text or formula field only;
+            # flatten keeps a cell only in a member ID's shape
+            if kind not in ("singleLineText", "multilineText", "formula"):
+                bad.append(f"{name!r} ({kind}, not a text field)")
                 continue
         elif kind in PERSON_TYPES or ftype in PERSON_TYPES:
             bad.append(f"{name!r} ({kind})")
@@ -346,13 +367,15 @@ def list_fields(fields: dict) -> None:
     """Names and types of every field in the table - nothing else. The
     wanted ones are marked, and the ones the guard would refuse are flagged."""
     print(f"{len(fields)} fields")
-    wanted = {name for name, _, _ in required_fields(fields)} | {name for name, _ in resolve_optional(fields)}
+    wanted = {**{name: col for name, col, _ in required_fields(fields)}, **dict(resolve_optional(fields))}
     for name, f in fields.items():
         kind = field_kind(f)
         flags = []
         if name in wanted:
-            flags.append("pulled")
-        if kind in PERSON_TYPES or f.get("type") in PERSON_TYPES or PERSON_NAME.search(name):
+            col = wanted[name]
+            flags.append("pulled, the display name only" if col in NAME_COLS
+                         else "pulled, a member ID only" if col == SLACK_ID_COL else "pulled")
+        elif kind in PERSON_TYPES or f.get("type") in PERSON_TYPES or PERSON_NAME.search(name):
             flags.append("person-shaped, never pulled")
         print(f"  {name!r}: {f.get('type')}" + (f" -> {kind}" if kind != f.get('type') else "")
               + (f"   [{'; '.join(flags)}]" if flags else ""))
@@ -409,8 +432,8 @@ def flatten(value, col: str, hits: list[int]) -> object:
         return " | ".join(dict.fromkeys(parts))
     if isinstance(value, dict):
         # attachments and collaborators come back as objects; neither is wanted,
-        # except the marketing lead's display name (never the email beside it)
-        if col == LEAD_COL:
+        # except a colleague's display name (never the email beside it)
+        if col in NAME_COLS:
             return scrub(re.sub(r"\s+", " ", str(value.get("name") or "")).strip(), hits)
         return ""
     text = str(value)
@@ -426,6 +449,10 @@ def flatten(value, col: str, hits: list[int]) -> object:
     text = re.sub(r"<?https?://\S+>?", "", text)
     text = re.sub(r"[*_`#>]+", "", text)
     text = re.sub(r"\s+", " ", text).strip()
+    if col == SLACK_ID_COL:
+        # a member ID or nothing: an empty formula, a name typed in its place
+        # or anything else does not travel
+        return text if SLACK_ID_RE.match(text) else ""
     return scrub(text, hits)
 
 

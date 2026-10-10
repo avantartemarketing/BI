@@ -821,13 +821,25 @@ app.post("/api/releases/:id/slack-economics", route(async (req, res) => {
   if (!snap) return res.status(404).json({ error: "unknown release" });
   const st = slack.stateFor(id);
   if (!st || !st.channel) return res.status(400).json({ error: "Set a Slack channel for this release on the Target setting tab first." });
-  if (!st.pm) return res.status(400).json({ error: "Set the project manager for this release on the Target setting tab first: their Slack member ID, @handle or email." });
   const dryRun = !!(req.body && req.body.dryRun);
   const s = auth.sessionFrom(req);
   const link = `${(process.env.PUBLIC_URL || `${req.protocol}://${req.get("host")}`).replace(/\/+$/, "")}/?release=${encodeURIComponent(id)}`;
-  let who = { mention: `@${st.pm}`, label: st.pm };
-  if (!dryRun) {
-    try { who = await slack.resolveMention(st.pm); } catch (e) { return res.status(400).json({ error: String(e.message || e) }); }
+  // who to mention: the project manager typed on the tab, else Airtable's
+  // (the Pipeline table's Project Manager and PM Slack ID, on the snapshot
+  // as projectManager); a member ID is used as it is
+  const airtable = snap.projectManager || {};
+  let who;
+  if (st.pm) {
+    who = { mention: `@${st.pm}`, label: st.pm };
+    if (!dryRun) {
+      try { who = await slack.resolveMention(st.pm); } catch (e) { return res.status(400).json({ error: String(e.message || e) }); }
+    }
+  } else if (airtable.slackId) {
+    who = { mention: `<@${airtable.slackId}>`, id: airtable.slackId, label: airtable.name || airtable.slackId };
+  } else {
+    return res.status(400).json({ error: airtable.name
+      ? `Airtable names ${airtable.name} as the project manager but has no PM Slack ID for them: type their Slack member ID, @handle or email on the Target setting tab.`
+      : "No project manager for this release: fill Airtable's Project Manager field (its PM Slack ID follows), or type one on the Target setting tab." });
   }
   const { text, blocks } = slack.composeEconomicsBlocks(snap, { mention: who.mention, mentionLabel: who.label, by: s && s.email, link });
   if (dryRun) return res.json({ channel: st.channel, to: who.label, text, blocks });

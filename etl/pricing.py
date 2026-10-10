@@ -675,12 +675,14 @@ def release_products(release: dict, pricing_path: pathlib.Path | str | None = No
     """The Airtable products of one release: the sized, non-bundle records of
     the launch `match` picks for it, by the same rules as the panel's pricing,
     each as a product dict the target model reads, with the launch-level
-    figures Airtable holds beside them (dates, the marketing lead).
+    figures Airtable holds beside them (dates, the marketing lead, the
+    project manager).
 
     Returns {"match": how it matched ("none" when it did not), "note": the
     matcher's note, "products": [...], "launch_date", "announce_date",
     "private_room_date" (the earliest announce and private-room dates and the
-    latest launch date across the products), "marketing_lead"}. A record's
+    latest launch date across the products), "marketing_lead",
+    "project_manager", "pm_slack_id"}. A record's
     numbers are None where Airtable has none, never zero; the currency is the
     pull's (EUR) and a price is not converted here."""
     records, lf = records_and_launches(pricing_path)
@@ -689,7 +691,8 @@ def release_products(release: dict, pricing_path: pathlib.Path | str | None = No
     if launch_frame is not None:
         lf = launch_frame
     out = {"match": "none", "note": "no Airtable pull on file" if records.empty else "", "products": [],
-           "launch_date": None, "announce_date": None, "private_room_date": None, "marketing_lead": None}
+           "launch_date": None, "announce_date": None, "private_room_date": None, "marketing_lead": None,
+           "project_manager": None, "pm_slack_id": None}
     if records.empty or not release.get("release_name"):
         return out
     res = match(_release_row(release), lf).iloc[0]
@@ -750,4 +753,12 @@ def release_products(release: dict, pricing_path: pathlib.Path | str | None = No
     out["launch_date"] = max(dates) if dates else None
     leads = [p.get("marketing_lead") for p in out["products"] if p.get("marketing_lead")]
     out["marketing_lead"] = max(set(leads), key=leads.count) if leads else None
+    # the project manager who confirms the unit economics, with their Slack
+    # member ID (etl/pull_airtable.py), off every record of the launch, a
+    # bundle's too: the commonest ID, and the name on a record that carries it
+    pms = [(_text(getattr(r, "pm_slack_id", "")) or None, _text(getattr(r, "project_manager", "")) or None) for r in got.itertuples(index=False)]
+    ids = [i for i, _ in pms if i]
+    out["pm_slack_id"] = max(set(ids), key=ids.count) if ids else None
+    names = [n for i, n in pms if n and (not out["pm_slack_id"] or i == out["pm_slack_id"])] or [n for _, n in pms if n]
+    out["project_manager"] = max(set(names), key=names.count) if names else None
     return out
