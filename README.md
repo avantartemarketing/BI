@@ -608,7 +608,8 @@ Since 8 October 2026 the tab is one column (BENCHMARK_SPEC 8): `Save targets` an
 with the state beside them, then the outcome as one strip of five figures - the target, the
 benchmark, the stretch, the paid budget (red past the 6% sense check) and the launch value,
 each with its detail on hover - then the form in four groups of label-and-control rows in the
-order the decisions are made, and the actions again at the foot. **Works** is one sheet: the figures down the side (in the
+order the decisions are made, each group a white card with its title inside, and the actions
+again at the foot. **Works** is one sheet: the figures down the side (in the
 release, edition, sell-through, target units, the close, price, the profits per unit, the
 artist's revenue cut, the deal's shares, framing, frames per print, frame profit, the launch
 value, Avant Arte's take with framing and AA's share of paid spend), one column per work with
@@ -802,6 +803,34 @@ Setup, once:
 Slack's refusals come back on the button's hover in words (a channel name Slack cannot
 find, the bot not invited to a private channel, the token revoked, a missing scope). The
 address bar follows the sidebar (`?release=<id>`), so a release can be linked to directly.
+
+### Confirming the unit economics
+
+The Target setting tab's Works section has a **Send for confirmation** button. It posts the
+unit economics, as saved and built, to the release's Slack channel, mentions the release's
+project manager and asks them to confirm the figures or reply with corrections, because they
+set the Paid ROI (profit per unit, net of cannibalisation, over the cost of a converting entry
+and that party's share of the spend, docs 7). The message (`composeEconomicsBlocks`): per work
+the edition, the target units, the price, the artist's and Avant Arte's profit per unit and the
+deal, with a Total row carrying the release's figures per target unit (a page with no sized
+works is one row); under the table the launch value and the profit at the target, both on the
+release's target with the works' own targets added up beside it when they differ, how the paid
+spend divides
+and whether that is assumed, the cannibalisation and the entry → order rates, the framing
+uplift; then the ask with the mention; last where the figures came from (Airtable, how many
+typed over), who sent it and a link to the tab (`PUBLIC_URL`, else the request's host). The
+button is disabled while the tab has unsaved edits, since the message carries the figures as
+saved.
+
+The project manager is set beside the channel under Lead and Slack and saved with it (`pm` on
+the release's entry in `data/slack.json`): a Slack member ID (profile menu, Copy member ID), an
+@handle or an email. A member ID is used as typed. An email or a handle is looked up when the
+button is pressed (`users.lookupByEmail`, `users.list`), which needs the Slack app to carry the
+`users:read.email` or `users:read` scope: add it under OAuth & Permissions, reinstall the app
+and replace `SLACK_BOT_TOKEN`. Without the scope the button says so, and the member ID always
+works. `POST /api/releases/:id/slack-economics` is the route (`{dryRun: true}` returns the
+message and looks nobody up); the post is recorded on the entry as `lastEconomicsAt` and
+`lastEconomicsBy`, apart from the sell-through posts.
 
 ## Deploying on Render
 

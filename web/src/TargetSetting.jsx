@@ -525,18 +525,18 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
     return { from: "Airtable", v: null };
   };
   const srcTitle = (src) => (src === "airtable" ? "Airtable's figure: type over it to override." : src === "default" ? "The benchmark default: type over it to override." : "Airtable holds none: type it.");
-  const sec = (key) => (SECTION.has(key) ? " sec" : "");
+  const sec = (key) => (SECTION.has(key) ? " ws-sec" : "");
   const cell = (key, cls, node, title) => <div key={key} className={`ws-c${cls ? ` ${cls}` : ""}`} title={title}>{node}</div>;
   const handle = (key, what) => <button type="button" className="ws-rz" aria-label={`Resize the ${what} column; double-click to put it back`} title="Drag to widen; double-click to put it back" {...resizer(key)} />;
 
   /* ---- the header: the figure corner, All works, a work per column ---- */
   const headRow = () => [
     <div key="l" className="ws-c ws-h ws-l"><span className="nm">Figure</span>{handle("lbl", "figure")}</div>,
-    <div key="all" className="ws-c ws-h all"><span className="nm">All works</span>{handle("all", "All works")}</div>,
+    <div key="all" className="ws-c ws-h ws-all"><span className="nm">All works</span>{handle("all", "All works")}</div>,
     ...products.map((p, i) => {
       const key = rowKey(p, i);
       return (
-        <div key={key} className={`ws-c ws-h${p.excluded ? " out" : ""}`} title={p.excluded ? `${name(p)}: not in the release, counts nothing.` : name(p)}>
+        <div key={key} className={`ws-c ws-h${p.excluded ? " ws-out" : ""}`} title={p.excluded ? `${name(p)}: not in the release, counts nothing.` : name(p)}>
           {editing && !p.airtable_id
             ? <input className="ws-name" value={p.name || ""} placeholder="Name of the work" aria-label="Name of the work" onChange={(e) => onName(p, e.target.value)} />
             : <span className="nm">{name(p)}</span>}
@@ -554,8 +554,8 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
   /* ---- in the release: the tick per work ---- */
   const inRow = () => [
     cell("l", "ws-l", "In the release", "Ticked: part of the release. Untick a work to leave it out; it stays here, greyed, and counts nothing."),
-    cell("all", "all", `${live.length} of ${products.length}`, "The works in the release."),
-    ...products.map((p, i) => cell(rowKey(p, i), p.excluded ? "out" : "", p.airtable_id
+    cell("all", "ws-all", `${live.length} of ${products.length}`, "The works in the release."),
+    ...products.map((p, i) => cell(rowKey(p, i), p.excluded ? "ws-out" : "", p.airtable_id
       ? <input type="checkbox" className="ws-tick" checked={!p.excluded} disabled={!editing} aria-label={`${name(p)}: in the release`}
           title={p.excluded ? "Unticked: not in the release. Tick to count it again." : editing ? "Untick to leave this work out of the release: it stays here, greyed, and counts nothing." : "Part of the release. Switch on Edit figures to untick it."}
           onChange={(e) => onInclude(p, e.target.checked)} />
@@ -577,7 +577,7 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
   const lastClose = live.map((p) => (p.edition && p.launch_date ? String(p.launch_date).slice(0, 10) : null)).filter(Boolean).sort().pop() || null;
   const figRow = (r, ri) => {
     const title = r.tip || TIPS[r.key];
-    const cls = `${sec(r.key)}${r.total ? " total" : ""}`;
+    const cls = `${sec(r.key)}${r.total ? " ws-total" : ""}`;
     let allNode, allTitle = title;
     if (r.key === "edition") { allNode = econ.edition_total ? fmt(econ.edition_total) : "–"; allTitle = "The editions summed over the works in the release."; }
     else if (r.calc) {
@@ -608,7 +608,7 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
     }
     return [
       cell("l", `ws-l${cls}`, r.label, title),
-      cell("all", `all${cls}`, allNode, allTitle),
+      cell("all", `ws-all${cls}`, allNode, allTitle),
       ...products.map((p, i) => {
         const key = rowKey(p, i);
         if (r.calc) {
@@ -616,9 +616,9 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
             : r.key === "launch_date" ? (p.launch_date ? fmtDate(p.launch_date) : "–")
               : r.key === "launch_value" ? (p.target_units && p.unit_price_eur ? fmtMoney(p.target_units * p.unit_price_eur, 0) : "–")
                 : (p.target_units && (Number(p.aa_profit_per_unit) > 0 || p.frame_uplift_per_unit > 0) ? fmtMoney(p.target_units * ((Number(p.aa_profit_per_unit) || 0) + (p.frame_uplift_per_unit || 0)), 0) : "–");
-          return cell(key, `${cls}${p.excluded ? " out" : ""}`, v, title);
+          return cell(key, `${cls}${p.excluded ? " ws-out" : ""}`, v, title);
         }
-        if (p.excluded) return cell(key, `${cls} out`, r.check ? (p.framing_available ? "Offered" : "Not offered") : figText(r, p[r.key], p.currency) || "–", OFF_WHY);
+        if (p.excluded) return cell(key, `${cls} ws-out`, r.check ? (p.framing_available ? "Offered" : "Not offered") : figText(r, p[r.key], p.currency) || "–", OFF_WHY);
         const typed = !!(p.airtable_id && p.sources[r.key] === "typed");
         const src = p.sources[r.key] || (r.key === "frame_conversion" ? "default" : null);
         if (r.check) {
@@ -628,7 +628,7 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
         }
         if (closedFor(p, r.key)) {
           const why = r.key === "aa_revenue_share" ? "Closed: this work has an AA profit share." : r.key === "aa_profit_share" ? "Closed: this work has an AA revenue share." : "Closed: no frame is offered on this work.";
-          return cell(key, `${cls} closed`, "–", why);
+          return cell(key, `${cls} ws-closed`, "–", why);
         }
         // the figure a typed one replaced is on the hover, when there was one
         const prior = typed ? priorOf(p, r.key) : null;
@@ -644,18 +644,18 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
   /* ---- the deal's share of the paid spend, per work and as a whole ---- */
   const aaRow = () => [
     cell("l", "ws-l", "AA share of paid spend", "Avant Arte's share of the paid budget, from the deal: its profit share on a profit-share deal, all of it on a revenue share."),
-    cell("all", "all", <>{fmtPct(econ.aa_budget_share, 0)}{econ.aa_budget_share_assumed && <span className="ws-note">assumed</span>}</>,
+    cell("all", "ws-all", <>{fmtPct(econ.aa_budget_share, 0)}{econ.aa_budget_share_assumed && <span className="ws-note">assumed</span>}</>,
       econ.aa_budget_share_assumed ? "No deal recorded: 50/50 assumed." : econ.deal && econ.deal.length ? `From the deal: ${econ.deal.join(" and ")}.` : "As set up."),
-    ...products.map((p, i) => cell(rowKey(p, i), p.excluded ? "out" : "", !blankV(p.aa_budget_share) ? fmtPct(p.aa_budget_share, 0) : "–",
+    ...products.map((p, i) => cell(rowKey(p, i), p.excluded ? "ws-out" : "", !blankV(p.aa_budget_share) ? fmtPct(p.aa_budget_share, 0) : "–",
       p.deal ? `From the ${p.deal}.` : "No deal recorded on this work: the release assumes 50/50.")),
   ];
   /* ---- while editing: the typed figures and the way back, per work ---- */
   const actRow = () => [
     cell("l", "ws-l", "Typed figures", "The figures typed over Airtable's on each work."),
-    cell("all", "all", ""),
+    cell("all", "ws-all", ""),
     ...products.map((p, i) => {
       const n = typedKeys(p).length;
-      return cell(rowKey(p, i), p.excluded ? "out" : "", p.airtable_id
+      return cell(rowKey(p, i), p.excluded ? "ws-out" : "", p.airtable_id
         ? (n > 0 ? <>{n} typed{!p.excluded && <button type="button" className="ts-link" onClick={() => onReset(p)} title={`Back to Airtable's figures on this work (${n} typed).`}>Reset</button>}</> : "none")
         : <button type="button" className="ts-link" onClick={() => onRemove(p)} title="Take this work off the release.">Remove</button>);
     }),
@@ -700,28 +700,59 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   // on the server (server/slack.js), saved on its own so a release without
   // targets can have one too
   const [slackDraft, setSlackDraft] = useState((snap.slack && snap.slack.channel) || "");
+  // the project manager who confirms the unit economics (Send for
+  // confirmation, under Works): a Slack member ID, @handle or email, saved
+  // with the channel
+  const [pmDraft, setPmDraft] = useState((snap.slack && snap.slack.pm) || "");
   const [slackSaving, setSlackSaving] = useState(false);
   const [slackError, setSlackError] = useState(null);
   const [slackNote, setSlackNote] = useState(null);   // the server saved, but somewhere that will not last
   const slackCurrent = (snap.slack && snap.slack.channel) || "";
+  const pmCurrent = (snap.slack && snap.slack.pm) || "";
+  const slackDirty = slackDraft.trim().replace(/^#/, "") !== slackCurrent || pmDraft.trim().replace(/^@/, "") !== pmCurrent;
   const saveSlack = async () => {
     setSlackSaving(true); setSlackError(null); setSlackNote(null);
     try {
       const res = await fetch(`/api/releases/${snap.id}/slack-channel`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: slackDraft }),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: slackDraft, pm: pmDraft }),
       });
       const d = await res.json();
       if (!res.ok) { setSlackError(d.error || `save failed (${res.status})`); return; }
       setSlackDraft((d.slack && d.slack.channel) || "");
+      setPmDraft((d.slack && d.slack.pm) || "");
       setSlackNote(d.warning || null);
       onSaved({ ...snap, slack: d.slack });
     } catch (e) { setSlackError(String(e)); } finally { setSlackSaving(false); }
+  };
+  /* "Send for confirmation" (under Works): the unit economics as saved and
+     built, to the release's channel with the project manager mentioned
+     (server/slack.js composeEconomicsBlocks). The figures set the Paid ROI,
+     so the person who knows the deal is asked to check them where they will
+     see it. The button keeps one width through its states, as the
+     sell-through card's does; what happened is on its hover. */
+  const [econPost, setEconPost] = useState({ state: "idle" });
+  const econReady = !!(snap.slack && snap.slack.channel && snap.slack.pm);
+  const sendEconomics = async () => {
+    setEconPost({ state: "posting" });
+    try {
+      const r = await fetch(`/api/releases/${snap.id}/slack-economics`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `Slack post failed (${r.status})`);
+      setEconPost({ state: "done", channel: d.channel, to: d.to });
+      if (d.slack) onSaved({ ...snap, slack: d.slack });
+      setTimeout(() => setEconPost((p) => (p.state === "done" ? { state: "idle" } : p)), 6000);
+    } catch (e) {
+      setEconPost({ state: "error", message: String(e.message || e) });
+    }
   };
 
   useEffect(() => {
     setMeta(null); setInp(null); setError(null); setPick(null); setPicking(false); setEditing(false); setWhyOpen(false);
     setStretchUi(null); setAssumeOpen(false);
-    setSlackDraft((snap.slack && snap.slack.channel) || ""); setSlackError(null); setSlackNote(null);
+    setSlackDraft((snap.slack && snap.slack.channel) || ""); setPmDraft((snap.slack && snap.slack.pm) || ""); setSlackError(null); setSlackNote(null);
+    setEconPost({ state: "idle" });
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
       if (d.error) { setError(d.error); return; }
       // a release nobody has set targets for comes back with inputs: null and
@@ -785,6 +816,11 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const set = (k) => (e) => setInp({ ...inp, [k]: e.target.value });
   const dv = meta.derived || {};
   const dirty = !!pick || JSON.stringify(inp) !== JSON.stringify(meta.inputs);
+  const econTitle = econPost.state === "error" ? `Not sent: ${econPost.message}`
+    : econPost.state === "done" ? `Sent to #${econPost.channel}, ${econPost.to} asked to confirm`
+    : !econReady ? "Set the Slack channel and the project manager under Lead and Slack first."
+    : dirty ? "Save first: the message carries the figures as saved and built."
+    : "Post the unit economics to the release's Slack channel and ask the project manager to confirm them: they set the Paid ROI.";
 
   /* ---- the dates, by source: the Notion log, then what was typed, then the
    * funnel's clock, then Airtable (resolve_release reads them the same way) */
@@ -1158,6 +1194,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
               <h2>Works</h2>
               <span className="d">{worksDesc}</span>
               <div className="right">
+                <button type="button" className="ts-btn secondary sm" title={econTitle}
+                  disabled={!econReady || dirty || econPost.state === "posting"} onClick={sendEconomics}>
+                  {econPost.state === "posting" ? "Sending…" : econPost.state === "done" ? "Sent" : econPost.state === "error" ? "Failed" : "Send for confirmation"}
+                </button>
                 {editing && <button type="button" className="ts-btn secondary sm" onClick={onAdd}>Add a work</button>}
                 {editing && typedCount > 0 && <button type="button" className="ts-btn secondary sm" onClick={onResetAll} title="Drop every typed figure: back to Airtable's on every work.">Reset all</button>}
                 <button type="button" className={`ts-switch${editing ? " on" : ""}`} aria-pressed={editing} onClick={() => setEditing(!editing)}
@@ -1284,8 +1324,20 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                         : slackNote ? <span className="ts2-tag warn" title={slackNote}>saved, not for long</span>
                           : snap.slack && snap.slack.lastPostAt ? <span className="ts2-tag" title={`Last posted ${new Date(snap.slack.lastPostAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}>posted</span> : null}
                     </div>
-                    <button type="button" className="ts-btn secondary sm" disabled={slackSaving || slackDraft.trim().replace(/^#/, "") === slackCurrent} onClick={saveSlack}>
-                      {slackSaving ? "Saving…" : "Save channel"}
+                  </div>
+                  <label className="sub" htmlFor="ts-pm" style={{ marginTop: 8 }}
+                    title="Who confirms the unit economics: Send for confirmation, under Works, posts them to the channel and mentions this person. Their Slack member ID (profile menu, Copy member ID), @handle or email; a handle or an email needs the Slack app to carry the users:read or users:read.email scope. Saved with the channel.">
+                    Project manager (Slack)
+                  </label>
+                  <div className="ts2-ctl" style={{ minHeight: 0 }}>
+                    <div className="ts-box" style={{ flex: "1 1 150px" }}>
+                      <input id="ts-pm" value={pmDraft} onChange={(e) => setPmDraft(e.target.value)} placeholder="@handle, email or member ID" />
+                      {snap.slack && snap.slack.lastEconomicsAt
+                        ? <span className="ts2-tag" title={`Economics sent for confirmation ${new Date(snap.slack.lastEconomicsAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}${snap.slack.lastEconomicsBy ? ` by ${snap.slack.lastEconomicsBy}` : ""}`}>sent</span>
+                        : null}
+                    </div>
+                    <button type="button" className="ts-btn secondary sm" disabled={slackSaving || !slackDirty} onClick={saveSlack}>
+                      {slackSaving ? "Saving…" : "Save"}
                     </button>
                   </div>
                 </div>

@@ -73,29 +73,50 @@ function stateWarning() {
     ? `Saved, but not on the persistent disk: ${STATE_PATH} cannot be written (${fallback.reason}), so this resets on the next deploy. Mount the disk there or unset SLACK_STATE_PATH.`
     : null;
 }
-/* {channel, updatedAt, updatedBy, lastPostAt, lastPostBy} or null */
+/* {channel, pm, updatedAt, updatedBy, lastPostAt, lastPostBy,
+ * lastEconomicsAt, lastEconomicsBy} or null. `pm` is the project manager who
+ * confirms the unit economics, as typed on the Target setting tab: a Slack
+ * member ID, an @handle or an email (resolveMention). */
 function stateFor(id) {
   const st = readState()[id];
   return st && typeof st === "object" ? st : null;
 }
-/* A channel name as typed, without its #; an empty name clears it. Returns
- * the release's state, or throws on a name Slack could not take. */
-function setChannel(id, channel, by) {
-  const name = String(channel ?? "").trim().replace(/^#/, "");
+/* The release's channel and project manager, as typed: the channel without
+ * its #, the project manager without a leading @; a field left undefined
+ * keeps its value, an empty channel clears the release (nothing to post to,
+ * so the project manager goes with it). Returns the release's state, or
+ * throws on a value Slack could not take. */
+function setSlack(id, { channel, pm } = {}, by) {
+  const doc = readState();
+  const prev = doc[id] && typeof doc[id] === "object" ? doc[id] : {};
+  const name = channel === undefined ? String(prev.channel || "") : String(channel ?? "").trim().replace(/^#/, "");
   if (name && !CHANNEL_RE.test(name)) {
     throw new Error("a Slack channel name is letters, digits, dots, dashes and underscores (no spaces, no #)");
   }
-  const doc = readState();
-  const prev = doc[id] && typeof doc[id] === "object" ? doc[id] : {};
+  const who = pm === undefined ? String(prev.pm || "") : String(pm ?? "").trim().replace(/^@/, "");
+  if (who && (who.length > 120 || /[\s<>]/.test(who))) {
+    throw new Error("the project manager is one Slack member ID, @handle or email address, with no spaces");
+  }
   if (!name) { delete doc[id]; writeState(doc); return null; }
   doc[id] = { ...prev, channel: name, updatedAt: new Date().toISOString(), updatedBy: by || null };
+  if (who) doc[id].pm = who; else delete doc[id].pm;
   writeState(doc);
   return doc[id];
+}
+function setChannel(id, channel, by) {
+  return setSlack(id, { channel }, by);
 }
 function recordPost(id, by) {
   const doc = readState();
   if (!doc[id]) return null;
   doc[id] = { ...doc[id], lastPostAt: new Date().toISOString(), lastPostBy: by || null };
+  writeState(doc);
+  return doc[id];
+}
+function recordEconomicsPost(id, by) {
+  const doc = readState();
+  if (!doc[id]) return null;
+  doc[id] = { ...doc[id], lastEconomicsAt: new Date().toISOString(), lastEconomicsBy: by || null };
   writeState(doc);
   return doc[id];
 }
@@ -490,6 +511,155 @@ function composeSellThroughBlocks(snap, { horizon = "today", today, direct = fal
   return { text: `${m.artist}: ${m.headline.bold}${m.headline.rest}`, blocks };
 }
 
+// ---------------------------------------------------------------- the unit economics, for confirmation
+
+/* The unit economics to the release's channel, for the project manager to
+ * confirm: the Target setting tab's "Send for confirmation" button. These
+ * are the figures the Paid ROI reads (docs 7), so a wrong one moves every
+ * ROI on the page, and the person who knows the deal is asked to check them
+ * where they will see it. Per work: the edition, the target units, the
+ * price, the artist's and Avant Arte's profit per unit and the deal, with a
+ * Total row weighted as the tab's; under the table the launch value and the
+ * profit at the target, how the paid spend divides, the cannibalisation and
+ * the entry → order rates, the framing uplift; then the ask with the project
+ * manager mentioned, and last where the figures came from and who sent them.
+ * `mention` is the Slack mention ("<@U…>", resolveMention) or null, and
+ * `mentionLabel` the person's name for the notification text. A page still
+ * carrying release-level figures (economics.mode "release") is one row. */
+function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, by = null, link = null, today } = {}) {
+  const e = (snap && snap.economics) || {};
+  const paid = (snap && snap.paid) || {};
+  const st = (snap && snap.sellthrough) || {};
+  const artist = String(snap.artist || snap.releaseName || snap.id || "Release");
+  const title = String(snap.title || "");
+  const eur = (v, dp = 0) => "€" + num(v).toLocaleString("en-GB", { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  const price = (p, v) => (!finite(v) ? "-" : p.currency && p.currency !== "EUR" ? `${num(v).toLocaleString("en-GB")} ${p.currency}` : eur(v));
+  const dealWords = (p) => (finite(p.aa_revenue_share) ? `AA ${pct(p.aa_revenue_share)} of revenue`
+    : finite(p.aa_profit_share) ? `AA ${pct(p.aa_profit_share)} of profit` : "-");
+  const sized = (Array.isArray(e.products) ? e.products : []).filter((p) => p && num(p.edition) > 0);
+  const edition = snap.edition || {};
+  // the target the page runs on (edition.target, what the launch value and
+  // the profit at target are built on); the works' own targets add up beside
+  // it, and the message says so when they differ
+  const worksTarget = sized.reduce((s, p) => s + num(p.target_units), 0);
+  const targetUnits = finite(edition.target) && num(edition.target) > 0 ? num(edition.target) : worksTarget;
+  const editionSum = sized.length ? sized.reduce((s, p) => s + num(p.edition), 0) : num(edition.total || edition.target);
+  const names = shortNames(sized.map((p) => String(p.name || "Product")));
+  const rows = sized.map((p, i) => [
+    raw(names[i]), raw(fmt(p.edition)), raw(fmt(p.target_units)), raw(price(p, p.unit_price)),
+    raw(finite(p.artist_profit_per_unit) ? eur(p.artist_profit_per_unit) : "-"),
+    raw(finite(p.aa_profit_per_unit) ? eur(p.aa_profit_per_unit) : "-"),
+    raw(dealWords(p)),
+  ]);
+  const deal = Array.isArray(e.deal) && e.deal.length ? e.deal.join(", ") : "-";
+  const releaseRow = (label) => [bold(label), bold(fmt(editionSum)), bold(fmt(targetUnits)), bold(finite(e.unitPrice) ? eur(e.unitPrice) : "-"),
+    bold(finite(e.artistProfitPerUnit) ? eur(e.artistProfitPerUnit) : "-"), bold(finite(e.aaProfitPerUnit) ? eur(e.aaProfitPerUnit) : "-"), bold(deal)];
+  if (sized.length > 1) rows.push(releaseRow("Total · per target unit"));
+  if (!sized.length) rows.push(releaseRow(title || "Release"));
+  const table = {
+    type: "table",
+    column_settings: [{ is_wrapped: true, align: "left" }, ...Array.from({ length: 6 }, () => ({ align: "right" }))],
+    rows: [[raw("Work"), raw("Edition"), raw("Target units"), raw("Price"), raw("Artist profit / unit"), raw("AA profit / unit"), raw("Deal")], ...rows],
+  };
+
+  const value = [
+    finite(e.launchValue) ? `Launch value ${eur(e.launchValue)}: ${fmt(targetUnits)} target units${editionSum > targetUnits ? ` of ${fmt(editionSum)}` : ""} at the prices above` +
+      (sized.length && worksTarget !== targetUnits ? ` (the works' own targets add to ${fmt(worksTarget)}).` : ".") : null,
+    finite(e.artistProfitPerUnit) || finite(e.aaProfitPerUnit)
+      ? `At the target that is ${finite(e.artistProfitPerUnit) ? eur(e.artistProfitPerUnit * targetUnits) : "-"} of profit to the artist and ${finite(e.aaProfitPerUnit) ? eur(e.aaProfitPerUnit * targetUnits) : "-"} to Avant Arte.` : null,
+  ].filter(Boolean).join(" ");
+  const share = finite(e.aaBudgetShare) ? num(e.aaBudgetShare) : null;
+  const split = share === null ? "Paid spend: who carries it is not on file."
+    : `Paid spend: Avant Arte carries ${pct(share)}${share < 1 ? `, the artist ${pct(1 - share)}` : ""}` +
+      (e.aaBudgetShareAssumed ? " (assumed: no work records its deal, so half is taken)." : " (as the profit divides).");
+  const rates = `Cannibalisation ${pct(finite(paid.cannibalisation) ? paid.cannibalisation : 0.2)}. Entry → order rate ${pct(finite(st.conversion) ? st.conversion : 0.8)}` +
+    (finite(st.preorderConversion) ? `, pre-orders ${pct(st.preorderConversion)}.` : ".");
+  const framing = e.framingAvailable === false ? "No framing option."
+    : finite(e.frameConversion) && finite(e.frameProfitPerUnit)
+      ? `Framing: ${pct(e.frameConversion)} of buyers take a frame at ${eur(e.frameProfitPerUnit)} profit each, ${eur(e.frameUpliftPerUnit, 2)} a unit inside Avant Arte's profit per unit.`
+      : "Framing: on offer, no profit per frame on file.";
+  const ask = `${mention ? mention + " " : ""}Please confirm these figures are right, or reply with the corrections. ` +
+    "They set the Paid ROI: profit per unit, net of cannibalisation, over what a converting entry costs and that party's share of the spend.";
+  const typed = sized.reduce((n, p) => n + Object.values(p.sources || {}).filter((s) => s === "typed").length, 0);
+  const source = e.mode === "release" ? "Release-level figures typed on the Target setting tab stand over the works'."
+    : typed ? `Figures from Airtable, ${typed} typed over on the Target setting tab.` : "Figures from Airtable.";
+  const when = today || new Date().toISOString().slice(0, 10);
+  const sent = `Sent by ${by || "the dashboard"} on ${fmtDay(when)}${link ? ` · <${link}|Target setting>` : ""}.`;
+  const blocks = [
+    { type: "header", text: { type: "plain_text", text: artist.slice(0, 150) } },
+    section(`*Unit economics${title ? ` · ${title}` : ""}*`),
+    table,
+    ...(value ? [section(value)] : []),
+    section(`${split} ${rates} ${framing}`),
+    section(ask),
+    context(`${source} ${sent}`),
+  ];
+  return { text: `${artist}: unit economics to confirm${mentionLabel ? `, ${mentionLabel} please` : ""}`, blocks };
+}
+
+// ---------------------------------------------------------------- who to mention
+
+const MEMBER_ID_RE = /^[UW][A-Z0-9]{8,}$/;
+/* What the project manager field holds: a Slack member ID (used as is), an
+ * email (users.lookupByEmail) or a handle (users.list). */
+function pmKind(pm) {
+  const s = String(pm || "").trim().replace(/^@/, "");
+  if (!s) return null;
+  if (MEMBER_ID_RE.test(s)) return "id";
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)) return "email";
+  return "handle";
+}
+/* One Web API method beside chat.postMessage (the same base, so the tests'
+ * stand-in serves it too), with the bot token; throws with Slack's error
+ * code on `code`. */
+async function slackApi(method, params) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  if (!token) throw new Error("Slack is not connected - set SLACK_BOT_TOKEN to the app's bot token (README: Posting sell-through to Slack)");
+  const url = API.replace(/chat\.postMessage$/, "") + method + "?" + new URLSearchParams(params).toString();
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.ok) {
+    const code = json.error || `HTTP ${res.status}`;
+    throw Object.assign(new Error(`Slack refused ${method} (${code})`), { code });
+  }
+  return json;
+}
+/* The project manager as a Slack mention. A member ID is used as typed and
+ * costs no call; an email is looked up (the app needs the users:read.email
+ * scope), a handle is found in the member list by its username or display
+ * name (users:read). A failure says what to do: add the scope and reinstall
+ * the app, or paste the member ID, which Slack gives under the profile menu
+ * as Copy member ID. Returns {mention, id, label}. */
+async function resolveMention(pm) {
+  const s = String(pm || "").trim().replace(/^@/, "");
+  const kind = pmKind(s);
+  if (!kind) throw new Error("Set the project manager for this release on the Target setting tab first: their Slack member ID, @handle or email.");
+  if (kind === "id") return { mention: `<@${s}>`, id: s, label: s };
+  const paste = "or paste their member ID instead (Slack profile menu, Copy member ID)";
+  try {
+    if (kind === "email") {
+      const j = await slackApi("users.lookupByEmail", { email: s });
+      return { mention: `<@${j.user.id}>`, id: j.user.id, label: j.user.real_name || j.user.name || s };
+    }
+    const want = s.toLowerCase();
+    let cursor = "";
+    do {
+      const j = await slackApi("users.list", { limit: "200", ...(cursor ? { cursor } : {}) });
+      const hit = (j.members || []).find((u) => u && !u.deleted && [u.name, u.profile && u.profile.display_name, u.profile && u.profile.display_name_normalized]
+        .filter(Boolean).some((n) => String(n).toLowerCase() === want));
+      if (hit) return { mention: `<@${hit.id}>`, id: hit.id, label: hit.real_name || (hit.profile && hit.profile.real_name) || hit.name || s };
+      cursor = (j.response_metadata && j.response_metadata.next_cursor) || "";
+    } while (cursor);
+    throw Object.assign(new Error(`no Slack member is @${s} - check the handle, ${paste}`), { code: "no_match" });
+  } catch (e) {
+    if (e.code === "missing_scope") {
+      throw new Error(`the Slack app cannot look people up: add the ${kind === "email" ? "users:read.email" : "users:read"} scope and reinstall it, ${paste}`);
+    }
+    if (e.code === "users_not_found") throw new Error(`no Slack member has the email ${s}, ${paste}`);
+    throw e;
+  }
+}
+
 // ---------------------------------------------------------------- posting
 
 const HINTS = {
@@ -529,6 +699,6 @@ async function postMessage(channel, text, blocks = null) {
 const channelNameOk = (name) => CHANNEL_RE.test(String(name ?? "").trim().replace(/^#/, ""));
 
 module.exports = {
-  stateFor, setChannel, recordPost, stateWarning, channelNameOk, composeSellThroughBlocks, shortNames, sharedPrefix,
-  postMessage, STATE_PATH,
+  stateFor, setChannel, setSlack, recordPost, recordEconomicsPost, stateWarning, channelNameOk, composeSellThroughBlocks,
+  composeEconomicsBlocks, pmKind, resolveMention, shortNames, sharedPrefix, postMessage, STATE_PATH,
 };

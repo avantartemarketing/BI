@@ -40,6 +40,14 @@ const slackStub = http.createServer(async (req, res) => {
     if (refuse) return answer({ ok: false, error: refuse });
     return answer({ ok: true, ts: "1.1", channel: "C0SALESUPD1" });
   }
+  // the project manager looked up for the economics message: one email is
+  // known, and this app has not been granted users:read for handles
+  if (url.pathname === "/api/users.lookupByEmail") {
+    return answer(url.searchParams.get("email") === "clare@example.com"
+      ? { ok: true, user: { id: "U0EMAIL001", name: "clare", real_name: "Clare Ferris" } }
+      : { ok: false, error: "users_not_found" });
+  }
+  if (url.pathname === "/api/users.list") return answer({ ok: false, error: "missing_scope" });
   res.writeHead(404); res.end("no");
 });
 await new Promise((r) => slackStub.listen(0, "127.0.0.1", r));
@@ -155,6 +163,66 @@ if (variant && variant.sellthrough) {
   check(asBuilt !== spread, `the fixture tells the two apart (${asBuilt} vs ${spread})`);
   check(seen.length === 0, "dry runs call nothing");
 }
+
+// ---- the unit economics for confirmation: posted to the channel with the
+// project manager mentioned, who is set beside the channel
+const jsonPost = (url, payload) => send(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+const econ = (payload = {}) => jsonPost(`/api/releases/${RELEASE}/slack-economics`, payload);
+const setPm = (pm) => jsonPost(`/api/releases/${RELEASE}/slack-channel`, { channel: "sales-updates", pm });
+seen.length = 0;
+r = await econ();
+d = await r.json().catch(() => ({}));
+check(r.status === 400 && /project manager/.test(d.error || "") && /Target setting/.test(d.error || ""), `no project manager, no post: ${r.status} ${d.error}`);
+check(seen.length === 0, "and Slack is not called");
+r = await setPm("@U0PMTEST01");
+d = await r.json().catch(() => ({}));
+check(r.ok && d.slack && d.slack.pm === "U0PMTEST01" && d.slack.channel === "sales-updates", `the project manager is saved with the channel, without its @: ${JSON.stringify(d.slack)}`);
+seen.length = 0;
+r = await econ();
+d = await r.json().catch(() => ({}));
+check(r.ok && d.ok === true && d.to === "U0PMTEST01" && d.channel === "sales-updates", `posted (${r.status} ${JSON.stringify(d).slice(0, 200)})`);
+check(d.slack && d.slack.lastEconomicsAt && d.slack.lastEconomicsBy === "tom.lloyd@avantarte.com", "recorded as an economics post");
+check(seen.length === 1 && seen[0].path === "/api/chat.postMessage", `a member ID costs no lookup: ${seen.map((s) => s.path).join(" ")}`);
+const em = seen[0].json || {};
+check(em.channel === "#sales-updates" && /^Julian Schnabel: unit economics to confirm, U0PMTEST01 please$/.test(em.text || ""), `to the channel, named for what it is: ${em.text}`);
+const etypes = (em.blocks || []).map((b) => b.type).join(" ");
+check(etypes === "header section table section section section context", `the blocks: ${etypes}`);
+const sections = (em.blocks || []).filter((b) => b.type === "section").map((b) => b.text.text);
+check(sections.some((t) => /^<@U0PMTEST01> Please confirm these figures are right/.test(t) && /Paid ROI/.test(t)), `the ask mentions the project manager and says what the figures set: ${sections.at(-1)}`);
+check(sections.some((t) => /^Paid spend: Avant Arte carries \d+%/.test(t) && /Cannibalisation \d+%/.test(t) && /Entry → order rate \d+%/.test(t)), "the terms the Paid ROI reads are under the table");
+const etable = (em.blocks || []).find((b) => b.type === "table");
+check(etable && etable.rows[0].length === 7 && etable.rows.length >= 3 && etable.rows[0][0].text === "Work" && etable.rows[0][6].text === "Deal",
+  `the table: ${etable && etable.rows.length} rows of ${etable && etable.rows[0].length}`);
+const ctx = (em.blocks || []).filter((b) => b.type === "context").map((b) => b.elements[0].text).join(" ");
+check(/Sent by tom\.lloyd@avantarte\.com/.test(ctx) && /release=julianschnabel_le_26\|Target setting>/.test(ctx), `the context says who sent it and links the tab: ${ctx}`);
+// an email is looked up, and the name comes back
+await setPm("clare@example.com");
+seen.length = 0;
+r = await econ();
+d = await r.json().catch(() => ({}));
+check(r.ok && d.to === "Clare Ferris", `an email is looked up: ${r.status} ${d.to || d.error}`);
+check(seen.length === 2 && seen[0].path === "/api/users.lookupByEmail" && seen[0].authorized && seen[1].path === "/api/chat.postMessage",
+  `one lookup with the token, then one post: ${seen.map((s) => s.path).join(" ")}`);
+check(JSON.stringify((seen[1].json || {}).blocks || []).includes("<@U0EMAIL001>") && /Clare Ferris please$/.test((seen[1].json || {}).text || ""), "the mention is the member found, the text their name");
+// an email nobody has, and a handle the app has no scope to look up: refused in words, nothing posted
+await setPm("nobody@example.com");
+seen.length = 0;
+r = await econ();
+d = await r.json().catch(() => ({}));
+check(r.status === 400 && /no Slack member has the email nobody@example\.com/.test(d.error || "") && /Copy member ID/.test(d.error || ""), `an unknown email: ${r.status} ${d.error}`);
+check(!seen.some((s) => s.path === "/api/chat.postMessage"), "nothing posted");
+await setPm("@clare");
+seen.length = 0;
+r = await econ();
+d = await r.json().catch(() => ({}));
+check(r.status === 400 && /users:read scope/.test(d.error || "") && /reinstall/.test(d.error || ""), `a handle without the scope names the scope: ${r.status} ${d.error}`);
+check(!seen.some((s) => s.path === "/api/chat.postMessage"), "nothing posted either");
+// a dry run composes the message and looks nobody up
+seen.length = 0;
+r = await econ({ dryRun: true });
+d = await r.json().catch(() => ({}));
+check(r.ok && Array.isArray(d.blocks) && d.to === "clare" && d.channel === "sales-updates" && seen.length === 0, `a dry run returns the message and calls nothing (${r.status})`);
+await setPm("U0PMTEST01");
 
 // ---- a refusal from Slack is a failed post, said in words
 seen.length = 0;

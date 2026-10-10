@@ -56,7 +56,7 @@ services:
         sync: false
       - key: NOTION_TOKEN   # Notion internal-integration secret (share the artist-posts database with it) - live artist posts
         sync: false
-      - key: SLACK_BOT_TOKEN   # Slack app bot token (chat:write, chat:write.public) - the sell-through card's Post to Slack button
+      - key: SLACK_BOT_TOKEN   # Slack app bot token (chat:write, chat:write.public; users:read and users:read.email to mention the project manager by handle or email) - Post to Slack and Send for confirmation
         sync: false
       - key: SLACK_ALERT_CHANNEL   # where a failing refresh is reported (README, "Alerts"); nothing is posted without it
         sync: false
