@@ -25,51 +25,48 @@ moment and the audience fixed).
   python3 etl/analysis/framing_conversion.py
 
 What it found, 10 October 2026 (281 works with ten or more paid prints, in
-134 launches, 2023 to 2026; 37% of paid prints took a frame over all):
-- The year and the kind of launch dominate. Draw launches went from 26% of
-  paid prints framed in 2024 to 45% in 2025 and 53% in 2026; timed launches
-  held at 31% to 35% throughout. The rise is the draw's, not a change in
-  what was sold.
-- Price moves it a little, between launches only: net of year and kind
-  +0.12 rank correlation, about two or three points per doubling of price
-  in the regression; in 2026 works under 1,000 euros framed at 42%, works
-  above at 50% to 52%. Within one launch the pricier work frames no more
-  than its siblings (+0.4 points), so the price reads as the audience a
-  pricier launch draws, not the print itself.
-- Dimensions do not drive it: nothing within a launch (-0.04), nothing net
-  of year and kind (-0.05), a weak negative in the regression (bigger
-  prints a touch less, their frames costing more).
-- The number of works in the launch: flat in the raw bands (36% to 40% from
-  one work to five or more); net of year and kind a mild negative (-0.16,
-  three or four points per four extra works in the regression).
-- Reliance on paid: nothing. The raw rank correlation with the paid share
-  of units is +0.02, net of year and kind -0.12, and the regression's
-  coefficient is zero once the big launches are capped. A draw-only
-  correlation with the paid social share of sessions (+0.38) was the year:
-  the 2026 draws lean on paid social and frame more for other reasons.
-- The frame's price against the print's (etl/analysis/frame_prices.js,
-  asked the same day) is the one lever that holds up. The median frame
-  sold for 375 euros, 45% of its print's price (quartiles 26% to 50%).
-  Works whose frame cost under 20% of the print framed at 44% (57% in
-  2026), 20% to 35% at 43% (52%), 35% to 50% at 38% (45%), 50% and over
-  at 33% (38%): rank correlation -0.22, the same net of year and kind. The
-  frame's own price in euros does not matter (+0.08); it is the ratio.
-  With the ratio in the regression the price's coefficient goes to nothing
-  (-0.06, z -1.8): a print's price mattered because frames cost much the
-  same in euros whatever the print, so a dearer print carries a cheaper
-  frame relative to itself. Within one launch the ratio does not separate
-  the works (-0.00), as the price did not: the read is between launches.
-  A work with more frame price points on offer frames a little more
-  (+0.14).
-- Also: bigger editions frame less (-0.26 net of year and kind, with price
-  and kind behind it); artist tier and product type (silkscreen, hybrid,
-  digital) make no difference.
+134 launches, 2023 to 2026, draws and timed launches read together; 37% of
+paid prints took a frame over all, 43% in 2026):
+- The frame's price against the print's is the driver (frame_prices.js).
+  The median frame sold for 375 euros, 45% of its print's price (quartiles
+  26% to 50%). Net of the year, the rank correlation with the framing rate
+  is -0.36. In 2026, works whose frame cost under a fifth of the print
+  framed at 57%, a fifth to a third at 52%, a third to a half at 45%, half
+  or more at 38%; over all years 44%, 43%, 38%, 33%. The frame's own price
+  in euros does not matter (+0.08): it is the ratio. In the regression the
+  ratio carries the price's whole effect (log ratio -0.23, z -7; the print
+  price then reads slightly negative), since frames cost much the same in
+  euros whatever the print, so a dearer print carries a cheaper frame
+  relative to itself. Within one launch the ratio does not separate the
+  works (-0.00), as the price does not: the read is between launches.
+- The year: 30% of paid prints framed in 2024, 35% in 2025, 43% in 2026,
+  the strongest single term in every regression (+0.35 standardised).
+- Dimensions do not drive it (+0.12 net of year, +0.02 with the ratio in).
+- The works in the launch, the paid share and the edition size all read
+  negative net of the year (-0.25, -0.25, -0.35) but they move together
+  with the ratio (a cheap print in a big edition with many works, bought on
+  paid, with a frame costing half its price), and with the ratio in the
+  regression they shrink to a few points each (works -0.12, paid -0.05).
+- Draws and timed launches, kept as a check: the timed launches' works are
+  cheaper (median 750 against 1,500 euros) with frames much the same
+  (330 against 395), so their frame costs half the print where a draw's
+  costs a quarter, and that is part of their lower rate (36% median work
+  against 43%; 35% against 53% pooled in 2026). Not all of it: inside the
+  same ratio band a timed launch still frames lower (a third to a half of
+  the print: 34% against 47%, in 2026 38% against 55%), and with the ratio,
+  price, area, works, paid share and year held the model reads a draw at
+  40% and a timed launch at 34%. Nothing in the orders explains that away:
+  the timed prints say a frame was on offer as often as the draws' (94% of
+  units "Optional framing on order"), framed variants sold as products are
+  five units, and frames bought on a later order (one in fourteen frames)
+  are the draws', not the timed launches'. The kind is left out of the
+  combined read as asked; the gap stands in the data.
+- Artist tier and product type (silkscreen, hybrid, digital) make no
+  difference.
 For a default (frame_conversion on the Target setting tab, the benchmark
-constant today): the 2026 launches say about 50% on a draw (median work
-52%, quartiles 43% to 62%) and about 35% to 40% on a timed launch (median
-40%, quartiles 29% to 46%); a draw whose frame costs half the print or
-more nearer 38%, one whose frame costs under a third of the print nearer
-52% to 57%.
+constant today), the 2026 launches by the frame's price against the print's:
+under a fifth 57%, a fifth to a third 52%, a third to a half 45%, half or
+more 38%; all together 43% pooled, 46% the median work.
 """
 from __future__ import annotations
 
@@ -267,8 +264,7 @@ def main() -> None:
 
     # ---- the regression: every driver at once, the prints as trials
     m = w.dropna(subset=["log_price", "log_area", "paid_share", "year"]).copy()
-    m["timed"] = (m["kind"] == "timed").astype(float)
-    cols = ["log_price", "log_area", "works_in_launch", "paid_share", "year", "timed"]
+    cols = ["log_price", "log_area", "works_in_launch", "paid_share", "year"]
     X = m[cols].to_numpy(float)
     mu, sd = X.mean(axis=0), X.std(axis=0)
     fit = logistic((X - mu) / sd, m["frames"].to_numpy(float), m["offered"].to_numpy(float), cols)
@@ -278,7 +274,7 @@ def main() -> None:
     for (name, b, se), s in zip(fit[1:], sd):
         up = 1 / (1 + math.exp(-(fit[0][1] + b)))
         unit = {"log_price": f"(x{math.exp(s):.2f} on price)", "log_area": f"(x{math.exp(s):.2f} on area)", "works_in_launch": f"(+{s:.1f} works)",
-                "paid_share": f"(+{s:.0%} paid)", "year": f"(+{s:.1f} years)", "timed": ""}[name]
+                "paid_share": f"(+{s:.0%} paid)", "year": f"(+{s:.1f} years)"}[name]
         print(f"  {name:22s} {b:+.3f}       {se:.3f}  {b / se:+5.1f}   {up:.1%} {unit}")
 
     # ---- year and kind apart: the rate by year within each kind, since the timed launches are the older ones
@@ -286,10 +282,11 @@ def main() -> None:
     yk = w.dropna(subset=["year"]).groupby([pd.cut(w["year"], [2021.5, 2023.5, 2024.5, 2025.5, 2026.5], labels=["to 2023", "2024", "2025", "2026"]), "kind"], observed=True)
     print(yk.apply(lambda s: f"{s['frames'].sum() / s['offered'].sum():.1%} ({len(s)})").unstack().to_string())
 
-    # ---- the drivers with the year taken out: each work's rate against its year-and-kind mean
+    # ---- the drivers with the year taken out: each work's rate against its year's mean, draws and timed
+    # launches together (10 October 2026: the two are read as one population; the kind is a check below)
     ym = w.dropna(subset=["year"]).copy()
-    ym["resid"] = ym["conv"] - ym.groupby([ym["year"].round(), "kind"])["conv"].transform("mean")
-    print("\nSpearman with the work's rate net of its year-and-kind mean (n):")
+    ym["resid"] = ym["conv"] - ym.groupby(ym["year"].round())["conv"].transform("mean")
+    print("\nSpearman with the work's rate net of its year's mean, all launches together (n):")
     for col, label in (("price", "price (EUR)"), ("area", "area (cm2)"), ("works_in_launch", "works in the launch"), ("paid_share", "paid share of the launch's units"),
                        ("paid_social_sessions", "paid social share of sessions (draw launches)"), ("edition_size", "edition size")):
         rho, n = spearman(ym[col], ym["resid"])
@@ -325,8 +322,8 @@ def main() -> None:
             rho, n = spearman(fr[col], fr["conv"])
             print(f"  {label:48s} {rho:+.2f}  (n={n})")
         fy = fr.dropna(subset=["year"]).copy()
-        fy["resid"] = fy["conv"] - fy.groupby([fy["year"].round(), "kind"])["conv"].transform("mean")
-        print("net of the year-and-kind mean:")
+        fy["resid"] = fy["conv"] - fy.groupby(fy["year"].round())["conv"].transform("mean")
+        print("net of the year's mean:")
         for col, label in (("frame_ratio", "frame price over print price"), ("frame_ratio_min", "the same with the cheapest frame"), ("frame_price_median", "frame price itself (EUR)")):
             rho, n = spearman(fy[col], fy["resid"])
             print(f"  {label:48s} {rho:+.2f}  (n={n})")
@@ -345,9 +342,8 @@ def main() -> None:
         print(f"within a launch, the ratio against the launch's other works: Spearman {rho:+.2f} (n={n} works in {d['release'].nunique()} launches)")
         # the regression again with the ratio in it
         mr = fr.dropna(subset=["log_price", "log_area", "paid_share", "year"]).copy()
-        mr["timed"] = (mr["kind"] == "timed").astype(float)
         mr["log_ratio"] = np.log(mr["frame_ratio"])
-        cols_r = ["log_ratio", "log_price", "log_area", "works_in_launch", "paid_share", "year", "timed"]
+        cols_r = ["log_ratio", "log_price", "log_area", "works_in_launch", "paid_share", "year"]
         Xr = mr[cols_r].to_numpy(float)
         mur, sdr = Xr.mean(axis=0), Xr.std(axis=0)
         scale = np.minimum(1.0, 100.0 / mr["offered"])
@@ -357,6 +353,32 @@ def main() -> None:
         for (name, b, se), sdev in zip(fitr[1:], sdr):
             up = 1 / (1 + math.exp(-(fitr[0][1] + b)))
             print(f"  {name:22s} {b:+.3f} (s.e. {se:.3f}, z {b / se:+4.1f})   one s.d. up ({'x%.2f' % math.exp(sdev) if name.startswith('log') else '+%.2f' % sdev}): {up:.1%}")
+
+    # ---- the kind as a check: the two populations side by side, and the gap inside each ratio band
+    print("\ndraws and timed launches side by side (medians over works): ")
+    desc = w.groupby("kind").agg(works=("work", "size"), rate=("conv", "median"), price=("price", "median"), area=("area", "median"),
+                                 works_in_launch=("works_in_launch", "median"), paid_share=("paid_share", "median"), edition=("edition_size", "median"),
+                                 frame_ratio=("frame_ratio", "median"), frame_price=("frame_price_median", "median"), price_points=("frame_price_points", "median"))
+    print(desc.round(2).to_string())
+    if len(fr):
+        print("pooled rate by the ratio band and the kind (n works):")
+        rb = pd.cut(fr["frame_ratio"], [0, 0.2, 0.35, 0.5, 10], labels=["under 20%", "20-35%", "35-50%", "50%+"])
+        print(fr.groupby([rb, "kind"], observed=True).apply(lambda s: f"{s['frames'].sum() / s['offered'].sum():.1%} ({len(s)})").unstack().to_string())
+        print("2026 only:")
+        r26 = fr[fr["year"] >= 2026]
+        print(r26.groupby([pd.cut(r26["frame_ratio"], [0, 0.2, 0.35, 0.5, 10], labels=["under 20%", "20-35%", "35-50%", "50%+"]), "kind"], observed=True)
+              .apply(lambda s: f"{s['frames'].sum() / s['offered'].sum():.1%} ({len(s)})").unstack().to_string())
+        # the regression once more with the kind in it, so the gap can be read net of everything else
+        mk = mr.copy(); mk["timed"] = (mk["kind"] == "timed").astype(float)
+        cols_k = cols_r + ["timed"]
+        Xk = mk[cols_k].to_numpy(float); muk, sdk = Xk.mean(axis=0), Xk.std(axis=0)
+        scale = np.minimum(1.0, 100.0 / mk["offered"])
+        fitk = logistic((Xk - muk) / sdk, (mk["frames"] * scale).to_numpy(float), (mk["offered"] * scale).to_numpy(float), cols_k)
+        b_t, se_t = fitk[-1][1], fitk[-1][2]
+        base_k = 1 / (1 + math.exp(-fitk[0][1]))
+        timed_rate = 1 / (1 + math.exp(-(fitk[0][1] + b_t * (1 - muk[-1]) / sdk[-1])))
+        draw_rate = 1 / (1 + math.exp(-(fitk[0][1] - b_t * muk[-1] / sdk[-1])))
+        print(f"with the ratio, price, area, works, paid share and year held: a draw {draw_rate:.1%}, a timed launch {timed_rate:.1%} (z {b_t / se_t:+.1f})")
 
     # ---- within a launch: the work against its siblings (artist, moment and audience held)
     multi = w[w["works_in_launch"] >= 2].copy()
