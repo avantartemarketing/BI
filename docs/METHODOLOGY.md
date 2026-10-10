@@ -474,6 +474,17 @@ to sell out, the target being the plan (9 October 2026). A launch pacing well
 ahead organically can therefore read a recommendation of €0/day: nothing extra
 is needed to secure sell-out, whatever the current ROI.
 
+**A work spoken for turns paid entries away** (10 October 2026). The entrants
+paid brings are taken to look like the entrants so far, the sell-through's
+cohort rule (§6), and placed work by work against the room the organic course
+leaves: an entrant for a work already full buys nothing. So the entries needed
+are the ones that close the gap placed that way, the price of a converting
+unit at the close is the entry's price over the share of an entry that still
+converts, and the floor, the two stops and the ROI line ahead read that price:
+on the Cattelan multiple, with Not Afraid of Love spoken for, only the
+Novecento entries paid brings count, and the ROI ahead falls to their share.
+Without a per-work feed every entry converts until the gap is closed, as before.
+
 **Price rises as the spend adds up.** Within a campaign, what a euro buys falls
 as the campaign's total spend grows: each doubling of what it has spent makes
 the next entry about 18% dearer (15% fewer entries a euro). A bigger day costs

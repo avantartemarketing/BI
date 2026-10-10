@@ -170,6 +170,34 @@ check(close(bt["selloutGap"], gap_raw(T, E1), 1),
 check(bt["selloutGap"] > gap_raw(T, cfgT["edition_size"]) + 1, "and not the target")
 check(pt["stops"]["rule"] == "sellout" and close(T["hero"]["projected"], E1, 1.5),
       f"the run rate stops at the edition and the projection at close is the edition: {pt['stops']} {T['hero']['projected']} vs {E1}")
+# ---- a work spoken for turns paid entries away (10 October 2026): a per-work
+# feed whose entrants mostly want a work already full. The entrants paid
+# brings look like them, so only the share for the other work buys a unit:
+# the yield reads that share, the entries needed close the gap over it, the
+# ROI line ahead falls by it, and the run rate wastes the rest
+nameY = cfg0["release_name"]
+E1i = int(round(E1))
+feedY = {"draws": [{"id": "dA", "first": announce.isoformat(), "last": None, "entrants": 100, "eligible": 100, "winners": 0, "sold": 0, "open": 100, "wonUnpaid": 0, "purchaseUnits": 0.0},
+                   {"id": "dB", "first": announce.isoformat(), "last": None, "entrants": 40, "eligible": 40, "winners": 0, "sold": 0, "open": 40, "wonUnpaid": 0, "purchaseUnits": 0.0}],
+         "entrants": 140, "eligible": 140, "allocated": False,
+         "patterns": [{"open": ["dA"], "won": [], "sold": [], "max": 1, "n": 100}, {"open": ["dB"], "won": [], "sold": [], "max": 1, "n": 40}]}
+cfgY = dict(cfgS, products=list(cfgS.get("products") or []) + [{"key": "dA", "name": "Work A", "edition": 30}, {"key": "dB", "name": "Work B", "edition": E1i - 30}])
+keep_feed = build._PRODUCTS_FEED
+build._PRODUCTS_FEED = {nameY: feedY}
+try:
+    Y = with_floor(0.2, lambda: run(cfgY))
+finally:
+    build._PRODUCTS_FEED = keep_feed
+py, by = Y["paid"], Y["paid"]["budget"]
+print(f"Y: yield now={by['yieldNow']} at close={by['yieldAtClose']} full={by['fullWorks']} gap={by['selloutGap']} entries needed={by['entriesNeeded']} "
+      f"rec={by['recommended']} ({by['cap']}) stops={py['stops']} wasted={by['wastedEntries']} roi ahead={py['roiPath'][:1]} l3d={py['l3dRoi']}")
+check(by["fullWorks"] == ["Work A"], f"the full work is named: {by['fullWorks']}")
+check(0.15 < (by["yieldNow"] or 0) < 0.45, f"two entrants in seven want the work with room: yield {by['yieldNow']}")
+check(by["entriesNeeded"] is not None and 2 * by["selloutGap"] / e2o < by["entriesNeeded"] < by["selloutGap"] / (e2o * 0.15),
+      f"the entries needed close the gap over that share, well over the gap at the rate: {by['entriesNeeded']} vs {by['selloutGap'] / e2o:.1f}")
+check(bool(py["roiPath"]) and py["l3dRoi"] is not None and py["roiPath"][0]["roi"] < 0.6 * py["l3dRoi"],
+      f"the ROI line ahead falls by the share: {py['roiPath'][:1]} vs {py['l3dRoi']}")
+check((by["wastedEntries"] or 0) > 0, f"the run rate's entries for the full work buy nothing: {by['wastedEntries']}")
 # the same on a part day: today counts for what is left of it, in the flat run
 # and the stopped one alike
 P = with_floor(0.5, lambda: run(cfgS, through=TODAY, part=0.4, full_through=TODAY - timedelta(days=1), seen=0.4375))

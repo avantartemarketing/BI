@@ -1409,10 +1409,11 @@ has actually delivered.
 spend_fwd(d) = current daily spend run-rate            # not the recommendation; nothing from the stop on
 cpe_fwd(d)   = trailing-3-day CPE × path(d)            # the cost path of §7: rises with spend so far, the close's lift on its last days
 entries_fwd  = Σ spend_fwd(d) / cpe_fwd(d)
-stop         = the first of two days (6 October 2026): the day Σ entries_fwd × rate reaches the
-               sellout gap of §7 (edition − secured − the organic channels' course; that day's
-               spend cut to the units still needed), and the day cpe_fwd(d) before the close's
-               lift passes the ROI floor's price (§7 cpe_max, read where the floor is). At the
+stop         = the first of two days (6 October 2026): the day paid_units(Σ entries_fwd) reaches the
+               sellout gap of §7 (edition − secured − the organic course held to the works' room; that
+               day's spend cut to the units still needed), and the day cpe_fwd(d) before the close's
+               lift, over paid_frac (the share of an entry that still buys a unit, §7), passes the ROI
+               floor's price (§7 cpe_max, read where the floor is). At the
                recommended spend the stop lands on the close or not at all, which is what sized
                it; a paced cut still above the floor's spend stops before the close.
 ```
@@ -1970,14 +1971,21 @@ not on course to fill:
 ```
 secured_now       = units paid + draft orders + the draw's expected orders, work by work, capped at the edition   # the hero's secured units (§6.3½)
 organic_future    = Σ over organic groups of (proj − now)       # §5.4 projection
-sellout_gap       = max(edition_total − secured_now − organic_future, 0)     # the whole edition, never the target
-entries_needed    = sellout_gap / (1 − drop_off)                # every unit asked for as an entry at the rate
+organic_units     = organic_future placed work by work by the cohort rule (§6.3), held to each work's room
+sellout_gap       = max(edition_total − secured_now − organic_units, 0)      # the whole edition, never the target
+paid_units(E)     = the units E further paid entries secure on top of the organic course, the entrants paid
+                    brings taken to look like the entrants so far and placed against the room left: an entry
+                    for a work already full buys nothing (10 October 2026; read off the sell-through block on
+                    a grid of E and interpolated; without a per-work feed, min(E × rate, sellout_gap))
+paid_frac(E)      = the slope of paid_units at E over the rate: the share of one more entry that converts
+entries_needed    = E where paid_units(E) = sellout_gap          # ∞ when the room left is on works nobody enters
 cpe(d, s)         = cpe_window × lift_window × (s / spend_window)^eps × ((K + C_d) / (K + C_window))^w ÷ lift(d)
                     # C_d = spent before day d at a flat s from today; lift(d) the close's; see the cost terms below
-supply_spend      = s where Σ over the days left of s / cpe(d, s) = sellout_gap
+supply_spend      = s where Σ over the days left of s / cpe(d, s) = entries_needed × rate
 budget_to_sellout = supply_spend × days_left
 cpe_max           = (1 − cannibalisation) × profit_per_unit_AA / (roi_floor × budget_share_AA)
-roi_spend         = s where cpe(close, s) = cpe_max            # at the close underneath its lift: the worst day
+roi_spend         = s where cpe(close, s) / paid_frac(entries bought by the close at s) = cpe_max
+                    # at the close underneath its lift: the worst day, the entries that buy nothing priced in
 recommended       = min(supply_spend, roi_spend), then the pacing rules below
 ROI_close_party   = (1 − cannibalisation) × profit_per_unit_party / (cpe(close, recommended) × budget_share_party)
 ```
@@ -1992,7 +2000,10 @@ flat in spend: `supply_spend = sellout_gap × cpe_now / Σ_t (1 + drift)^−t`, 
 either never binds or stops the spend. The gap is priced in converting units at the adjusted
 CPE, which is the same money as `entries_needed` at the raw cost per entry. `paid.budget` publishes `selloutGap`, `organicFuture`, `entriesNeeded`,
 `supplySpend`, `budgetToSellOut`, `roiSpend`, `cpeNow`, `cpeAtClose`, `cpeAtRecommended`,
-`driftToClose` and `finalDayRoi` (AA's; the artist's is `paid.artist.finalDayRoi`).
+`driftToClose` and `finalDayRoi` (AA's; the artist's is `paid.artist.finalDayRoi`), and since
+10 October 2026 `organicUnits`, `yieldNow` and `yieldAtClose` (paid_frac now and at the end of the
+run rate's run), `wastedEntries` (the entries that run sends to works already full) and
+`fullWorks` (those works' names); `cpeAtRecommended` and the ROI path ahead read over paid_frac.
 A launch pacing well ahead organically reads a recommendation of €0/day -
 nothing extra is needed to secure sell-out, whatever the current ROI.
 
@@ -2211,8 +2222,8 @@ actuals-only page omits it.
 | `sellthrough.unitsOutsideWindow` | `{before, after, pending}`: units paid before the window opened and after it shut, counted on no card, and units paid after the as-of day while it is open, which count on the next build (present when `unitsSource` is `orders`) |
 | `untracked.noEvent` | `{count, total, share, high}`: the window's paid units with no purchase event, which count on Untracked; `high` shows the banner (§1.3) |
 | `framing` | `{prints, frames, rate, entrants: {prints, frames, rate} or null, plan, benchmark: {rate, n, of} or null, works: [...], notOffered: {units, works}, asOf}` - frames per print for the Framing card (§6.4); null when nothing on the release has been offered a frame |
-| `projectManager` | `{name, slackId}` or null: Airtable's project manager for the release and their Slack member ID, from the Pipeline table's Project Manager field (display name only) and PM Slack ID formula, pulled by `etl/pull_airtable.py` into `data/release_pricing.csv` as `project_manager` and `pm_slack_id` and read per launch by `etl/pricing.py release_products` (the commonest ID across the launch's records, and the name on a record carrying it). Send for confirmation mentions `slackId` unless `slack.pm` is typed; `inputSources.project_manager` is `airtable` or null |
-| `slack` | added by the server when it serves the snapshot, not by the ETL: `{channel, pm, updatedAt, updatedBy, lastPostAt, lastPostBy, lastEconomicsAt, lastEconomicsBy}` from `data/slack.json`, or null. The sell-through card's Post to Slack button posts to `channel`; the Target setting tab sets it and `pm`, a project manager typed over Airtable's `projectManager` (a Slack member ID, @handle or email) whom its Send for confirmation button mentions when it posts the unit economics for them to confirm (`server/slack.js`, README "Confirming the unit economics") |
+| `projectManager` | `{name, slackId}` or null: Airtable's project manager for the release and their Slack member ID, from the Pipeline table's Project Manager field (display name only) and PM Slack ID formula, pulled by `etl/pull_airtable.py` into `data/release_pricing.csv` as `project_manager` and `pm_slack_id` and read per launch by `etl/pricing.py release_products` (the commonest ID across the launch's records, and the name on a record carrying it). Send unit economics to PM mentions `slackId` unless `slack.pm` is typed; `inputSources.project_manager` is `airtable` or null |
+| `slack` | added by the server when it serves the snapshot, not by the ETL: `{channel, pm, updatedAt, updatedBy, lastPostAt, lastPostBy, lastEconomicsAt, lastEconomicsBy}` from `data/slack.json`, or null. The sell-through card's Post to Slack button posts to `channel`; the Target setting tab sets it and `pm`, a project manager typed over Airtable's `projectManager` (a Slack member ID, @handle or email) whom its Send unit economics to PM button mentions when it posts the unit economics for them to confirm (`server/slack.js`, README "Confirming the unit economics") |
 | `sellthrough.ordersByProduct`, `drawProducts`, `soldSource` | the orders feed for the release (per product title: units paid, drafts, list price, edition) and the product each draw sold, carried so a save re-runs the rule on the server; which rule the sold figures came from (§6.3) |
 | `sellthrough.allocation`, `measure`, `editionSum`, `editionMismatch`, `allocationStarted` | the rule's bookkeeping, whether fill is over editions or in units, the typed editions' sum against the release's, and whether winners have been drawn |
 | `sellthrough.draws`, `patterns` | the draw feed as reduced by `products_file`, so a save re-runs the rule on the server without the feed |
