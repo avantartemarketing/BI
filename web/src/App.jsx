@@ -86,6 +86,17 @@ export default function App() {
   const [me, setMe] = useState(null); // { email, admin }
   const [view, setView] = useState("release"); // "release" | "permissions" (app-level, not per-release)
   const [query, setQuery] = useState("");
+  // the release list as a drawer on a phone (tokens.css, "a phone or a
+  // narrow tablet"): open from the top bar, closed by a pick, the scrim,
+  // its own x or Escape. Above 900px the flag does nothing.
+  const [nav, setNav] = useState(false);
+  useEffect(() => {
+    document.body.classList.toggle("nav-open", nav);
+    if (!nav) return undefined;
+    const key = (e) => { if (e.key === "Escape") setNav(false); };
+    window.addEventListener("keydown", key);
+    return () => { window.removeEventListener("keydown", key); document.body.classList.remove("nav-open"); };
+  }, [nav]);
   const st = useRefreshStatus();
 
   useEffect(() => {
@@ -157,16 +168,36 @@ export default function App() {
 
   if (error) return <div style={{ padding: 40 }}>Failed to load: {error}</div>;
   const pick = (id) => {
-    setReleaseId(id); setView("release");
+    setReleaseId(id); setView("release"); setNav(false);
     // keep the address in step so the page can be shared or reloaded on this release
     try { window.history.replaceState(null, "", `?release=${encodeURIComponent(id)}`); } catch { /* not important */ }
   };
 
+  // what the phone's top bar says the page is on: the release, with its dot, or the settings page
+  const hereState = current ? rowState(current) : null;
+  const hereName = view === "permissions" ? "Permissions" : current ? (current.releaseName || current.name) : snapError ? (current?.name || "Release") : "Loading\u2026";
   return (
     <TipProvider>
     <div className="app">
-      <nav className="sidebar">
-        <h1>Launch Performance</h1>
+      <header className="topbar">
+        <button className="menu" onClick={() => setNav(true)} aria-label="Open the release list" aria-expanded={nav} aria-controls="release-list">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            <path d="M3 5.5h14M3 10h14M3 14.5h14" />
+          </svg>
+        </button>
+        <div className="here">
+          <span className="app-name">Launch Performance</span>
+          <span className="now">
+            {view !== "permissions" && current && (hereState
+              ? <span className="dot" style={{ background: STATE[hereState].color }} />
+              : <span className="dot hollow" />)}
+            {hereName}
+          </span>
+        </div>
+      </header>
+      {nav && <button className="sidebar-scrim" onClick={() => setNav(false)} aria-label="Close the release list" tabIndex={-1} />}
+      <nav className={`sidebar${nav ? " open" : ""}`} id="release-list">
+        <h1>Launch Performance<button className="sidebar-close" onClick={() => setNav(false)} aria-label="Close the release list">&#215;</button></h1>
         <div className="section-label split">In flight{groups.live.length > 0 && <small>days to close</small>}</div>
         {groups.live.length === 0 && <div className="hint">Nothing in flight</div>}
         {groups.live.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} twin={twins.has(artistOf(r))} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
@@ -199,7 +230,7 @@ export default function App() {
             <div className="section-label">Settings</div>
             <button
               className={`release-row${view === "permissions" ? " active" : ""}`}
-              onClick={() => setView("permissions")}
+              onClick={() => { setView("permissions"); setNav(false); }}
               title="Manage who can sign in to the dashboard"
             >
               <span className="nm">Permissions</span>

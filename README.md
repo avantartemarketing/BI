@@ -881,6 +881,20 @@ snapshot fields the card reads, and the source catalogue in `web/src/explain/sou
 a card marks a figure with `<Ex k="…" arg={…}>`. `tests/explain.mjs` runs every builder
 against every snapshot on file and checks each lands on the figure its card prints.
 
+**On a phone or a tablet.** The same page, at the width there is: up to 900px the release
+list is a drawer opened from the menu button in the top bar (which names the release on
+screen, with its dot), the cards run two to a row on a tablet and one under the other on a
+phone, at their usual height, and a card's controls take a line of their own under its title
+where they do not fit beside it. The target-setting form goes to one field a row and its
+tables scroll sideways. On a touch screen a tap does what a hover does: a tap on a plot
+brings up its readout, which stays until the next tap elsewhere; a tap on a figure opens its
+explanation (there is no Shift to hold), and the panel is the whole screen; a tap on an
+element that only carries information shows its popup, while a button just does what it
+does. The layout editor is desktop-only (the arrangement is shared, and drag and drop does
+not run on a touch screen). Fields render at 16px on a touch screen so iOS does not zoom
+into one on focus. All of it is `tokens.css` ("a phone or a narrow tablet", "a touch
+screen"), the drawer in `App.jsx`, the touch readout in `hoverAt` (`ui.jsx`).
+
 **Sell-through by product** (docs §6.3) is one row per product, drawn in one ramp of the
 page's blue, deepest to palest as the units get less certain: units paid (deep blue), draft
 orders an advisor raised that are not yet paid (blue; the draw's own pre-authorisation

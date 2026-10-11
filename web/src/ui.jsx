@@ -50,17 +50,39 @@ export function TipProvider({ children }) {
   const [pos, setPos] = useState(null);
   const box = useRef(null);
   const timer = useRef(null);
+  // On a touch screen a tap plays as a mouseenter, so an element that only
+  // carries information shows its popup on a tap; one that acts (a button,
+  // a link) does what it does, and the popup stays out of the way. The
+  // popup goes on the next tap elsewhere, and on a scroll on any screen,
+  // since it is fixed to where its element was.
+  const touched = useRef(0);
+  const anchorEl = useRef(null);
   const api = useMemo(() => ({
     show(el, content, delay) {
       clearTimeout(timer.current);
+      if (Date.now() - touched.current < 700 && el.closest("button, a, input, select")) return;
+      anchorEl.current = el;
       timer.current = setTimeout(() => {
         const r = el.getBoundingClientRect();
         setPos(null);
         setTip({ anchor: { left: r.left, right: r.right, top: r.top, bottom: r.bottom }, content });
       }, delay);
     },
-    hide() { clearTimeout(timer.current); setTip(null); },
+    hide() { clearTimeout(timer.current); anchorEl.current = null; setTip(null); },
   }), []);
+  useEffect(() => {
+    const touch = (e) => {
+      touched.current = Date.now();
+      if (anchorEl.current && !anchorEl.current.contains(e.target)) api.hide();
+    };
+    const scroll = () => { if (anchorEl.current) api.hide(); };
+    document.addEventListener("touchstart", touch, { passive: true, capture: true });
+    window.addEventListener("scroll", scroll, true);
+    return () => {
+      document.removeEventListener("touchstart", touch, { capture: true });
+      window.removeEventListener("scroll", scroll, true);
+    };
+  }, [api]);
   useLayoutEffect(() => {
     if (!tip || !box.current) return;
     const { width: w, height: h } = box.current.getBoundingClientRect();
@@ -128,6 +150,34 @@ export function ChartTip({ left, children }) {
       )}
     </>
   );
+}
+
+/* A plot's readout follows the pointer along its width: `set` is given the
+ * fraction of the way across, or null when the pointer leaves. A finger does
+ * the same as a mouse - the readout stays up when it lifts, and goes on the
+ * next touch outside the plot, since a finger cannot hover. Spread on the
+ * plot element, with the plot's own onMouseLeave if it has one. */
+export function hoverAt(set) {
+  const at = (el, x) => {
+    const r = el.getBoundingClientRect();
+    set(Math.min(Math.max((x - r.left) / r.width, 0), 1));
+  };
+  return {
+    onMouseMove: (e) => at(e.currentTarget, e.clientX),
+    onMouseLeave: () => set(null),
+    onTouchStart: (e) => {
+      const el = e.currentTarget;
+      if (!e.touches.length) return;
+      at(el, e.touches[0].clientX);
+      const off = (ev) => {
+        if (el.contains(ev.target)) return;
+        document.removeEventListener("touchstart", off, { capture: true });
+        set(null);
+      };
+      document.addEventListener("touchstart", off, { passive: true, capture: true });
+    },
+    onTouchMove: (e) => { if (e.touches.length) at(e.currentTarget, e.touches[0].clientX); },
+  };
 }
 
 export function useTip() {

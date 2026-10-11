@@ -815,3 +815,117 @@ body.x-open .content { margin-right: 404px; padding-left: 32px; padding-right: 3
   body.x-open .content { margin-right: 0; container-type: normal; }
   .xp { width: min(404px, 100vw); box-shadow: -16px 0 40px rgba(20, 20, 19, .16); }
 }
+
+/* ---------- a phone or a narrow tablet ----------
+   Up to 900px the page is one column under a top bar, and the release list
+   is a drawer the bar's menu button opens (App.jsx, .topbar and .sidebar.open).
+   Nothing is redesigned: the same cards, at the same height, one under the
+   other; the tables keep their columns and scroll sideways. The layout editor
+   is desktop-only (HTML drag and drop does not run on a touch screen, and the
+   arrangement is shared by everyone), as is the Shift-click hint. */
+.topbar { display: none; }
+.sidebar-scrim { display: none; }
+.sidebar-close { display: none; }
+@media (max-width: 900px) {
+  .app { display: block; }
+  .topbar {
+    display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 12px 0 8px;
+    position: sticky; top: 0; z-index: 25;
+    background: var(--card); border-bottom: 1px solid var(--border);
+  }
+  .topbar .menu {
+    width: 40px; height: 40px; border: none; border-radius: 8px; background: none; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; color: var(--ink); flex: 0 0 40px;
+  }
+  .topbar .menu:hover { background: var(--hairline); }
+  .topbar .menu svg { width: 20px; height: 20px; }
+  .topbar .here { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+  .topbar .here .app-name { font-size: 11px; color: var(--muted); font-weight: 500; line-height: 1.2; }
+  .topbar .here .now { font-size: 13.5px; font-weight: 600; letter-spacing: -0.005em; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar .here .now .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin: 0 7px 1px 0; }
+  .topbar .here .now .dot.hollow { background: transparent; border: 1.5px solid #b8b5ad; box-sizing: border-box; }
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; height: 100dvh; z-index: 35;
+    width: min(320px, 88vw); flex: none;
+    transform: translateX(-100%); visibility: hidden;
+    transition: transform 180ms ease, visibility 0s linear 180ms;
+    box-shadow: none; padding-top: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sidebar.open { transform: none; visibility: visible; transition: transform 180ms ease; box-shadow: 12px 0 36px rgba(20, 20, 19, .18); }
+  .sidebar h1 { display: flex; align-items: center; justify-content: space-between; padding-right: 4px; }
+  .sidebar-close {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border: none; border-radius: 8px; background: none; cursor: pointer;
+    color: var(--muted); font-size: 20px; line-height: 1;
+  }
+  .sidebar-close:hover { background: var(--hairline); color: var(--ink); }
+  .sidebar-scrim { display: block; position: fixed; inset: 0; z-index: 34; background: rgba(20, 20, 19, .32); border: none; padding: 0; cursor: pointer; }
+  .release-row { padding: 9px 12px; }
+  body.nav-open { overflow: hidden; }
+
+  .content { padding: 16px 16px 48px; max-width: none; }
+  body.x-open .content { padding-left: 16px; padding-right: 16px; }
+  .page-header { gap: 8px 16px; margin-bottom: 16px; }
+  .page-header .name { font-size: 18px; white-space: normal; }
+  .page-controls { justify-content: flex-start; margin-left: 0; flex: 1 1 100%; }
+  .page-controls .freshness { margin-left: 0; white-space: normal; }
+  /* the tab row scrolls sideways rather than wrapping its underline */
+  .tabs { gap: 18px; overflow-x: auto; scrollbar-width: none; margin-bottom: 18px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { white-space: nowrap; }
+  .tabs .x-hint, .tabs .edit-link { display: none; }
+
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .layout { gap: 16px; }
+  .section-head { margin-bottom: -4px; }
+  .card { padding: 16px 18px; }
+  /* a card's head wraps: its controls take a line of their own under the
+     title rather than running out of the card */
+  .mod-head { flex-wrap: wrap; height: auto; min-height: 20px; flex: 0 0 auto; row-gap: 8px; }
+  .mod-head .title { white-space: nowrap; }
+  .mod-head .right { flex: 0 0 auto; max-width: 100%; flex-wrap: wrap; justify-content: flex-end; row-gap: 6px; }
+  .launch-strip { height: auto; min-height: 52px; padding: 10px 16px; flex-wrap: wrap; gap: 8px 14px; }
+  .launch-strip .track { flex: 1 1 100%; order: 3; }
+
+  /* Target setting: one field to a row, the sticky name column narrower */
+  .ts-card { padding: 18px 16px 20px; }
+  .ts-grid.c2, .ts-grid.c3, .ts-grid.c4 { grid-template-columns: minmax(0, 1fr); }
+  .ts-sliders { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .sheet th.primary, .sheet td.primary { min-width: 150px; }
+  .sheet td.primary { max-width: 220px; }
+  .sheet input.cell.name { min-width: 80px; }
+  .ts2-sec { padding: 16px; }
+  .ts2-strip .f { flex: 1 1 120px; padding: 12px 14px; }
+
+  /* the explain panel is the whole screen */
+  .xp { width: 100vw; border-left: none; }
+}
+/* a phone: one column */
+@media (max-width: 600px) {
+  .content { padding: 12px 12px 48px; }
+  .card { padding: 14px 14px; }
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .slot.wide, .slot.big { grid-column: auto; }
+}
+/* a tablet in landscape: two columns, the sidebar in place */
+@media (min-width: 901px) and (max-width: 1180px) {
+  .sidebar { width: 240px; flex: 0 0 240px; }
+  .content { padding: 24px 24px 56px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  .slot.wide, .slot.big { grid-column: span 2; }
+}
+
+/* ---------- a touch screen ----------
+   Fields at 16px so iOS does not zoom into one on focus; the segmented
+   controls and the small buttons at a finger's height; a figure's
+   explanation on a plain tap (Explain.jsx), since there is no Shift. */
+@media (pointer: coarse) {
+  input, select, textarea, .control, .sidebar-search, .sheet input.cell, .ws-in, .ws-name, .section-input, .layout-bar .add-card { font-size: 16px; }
+  .seg button { padding: 6px 12px; font-size: 12.5px; }
+  .seg.compact button { padding: 5px 9px; font-size: 11.5px; }
+  .btn { padding: 9px 14px; }
+  .tab { padding: 10px 2px 12px; }
+  .basket-row { height: 36px; }
+  .x { cursor: pointer; text-decoration: underline dotted 2px var(--blue-light); text-underline-offset: 5px; }
+}

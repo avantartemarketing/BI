@@ -38,6 +38,7 @@
 import React, { useMemo, useState } from "react";
 import {
   Card, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, dayElapsed, textPx, timeAxis, nameLines, useBoxSize, LineNames, ChartTip,
+  hoverAt,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import { wordsOf } from "../vocab.mjs";
@@ -455,12 +456,7 @@ export default function Trajectory({ snap }) {
           <div
             ref={plotRef}
             style={{ position: "absolute", left: 40, right: 48, top: 0, bottom: 24 }}
-            onMouseMove={(e) => {
-              const r = e.currentTarget.getBoundingClientRect();
-              const frac = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1);
-              setHover({ i: Math.round(frac * N), frac });
-            }}
-            onMouseLeave={() => setHover(null)}
+            {...hoverAt((frac) => setHover(frac === null ? null : { i: Math.round(frac * N), frac }))}
           >
             <svg
               viewBox={`0 0 ${X1} ${Y0}`}

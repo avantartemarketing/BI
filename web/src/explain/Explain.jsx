@@ -128,7 +128,8 @@ export function Ex({ k, arg, focus = false, children, className, style }) {
       aria-keyshortcuts={focus ? "Shift+Enter" : undefined}
       // Shift on a mouse button extends the text selection: not here
       onMouseDown={(e) => { if (e.shiftKey) e.preventDefault(); }}
-      onClick={(e) => { if (e.shiftKey) go(e, e.currentTarget); else x.nudge(); }}
+      // a touch screen has no Shift: a plain tap opens the explanation there
+      onClick={(e) => { if (e.shiftKey || coarsePointer()) go(e, e.currentTarget); else x.nudge(); }}
       onKeyDown={(e) => { if (e.key === "Enter" && e.shiftKey) go(e, e.currentTarget); }}
     >
       {children}
@@ -143,10 +144,15 @@ export function ExplainHint() {
   if (!x || x.off || x.uses >= HINT_UNTIL) return null;
   return (
     <span className={"x-hint" + (x.nudged ? " nudge" : "")} aria-hidden="true">
-      <kbd>⇧ Shift</kbd> + click any number to see how it is worked out
+      {coarsePointer()
+        ? <>Tap any underlined number to see how it is worked out</>
+        : <><kbd>⇧ Shift</kbd> + click any number to see how it is worked out</>}
     </span>
   );
 }
+
+/* a touch screen as the main pointer (a phone, a tablet without a mouse) */
+const coarsePointer = () => typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
 
 const dayText = (iso) => (iso ? fmtDay(new Date(String(iso).slice(0, 10) + "T00:00:00Z")) : "");
 
