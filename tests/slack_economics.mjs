@@ -36,19 +36,19 @@ const table = msg.blocks[2];
 const sized = w.economics.products.filter((p) => p.edition > 0);
 check(table.rows.length === sized.length + 2, `one row per work and a Total: ${table.rows.length} rows for ${sized.length} works`);
 check(table.rows.every((r) => r.length === 7), "seven cells in every row");
-check(table.rows[0].map(cellText).join("|") === "Work|Edition|Target units|Price|Artist profit / unit|AA profit / unit|Deal", `the header: ${table.rows[0].map(cellText).join("|")}`);
+check(table.rows[0].map(cellText).join("|") === "Work|Edition|Target units|Price|Artist profit / unit|AA group profit / unit|Deal", `the header: ${table.rows[0].map(cellText).join("|")}`);
 check(table.column_settings.length === 7 && table.column_settings[0].is_wrapped === true && table.column_settings[1].align === "right", "the work column wraps, the figures sit right");
 const first = table.rows[1].map(cellText);
 check(first[0] === "Green Landscape" && first[1] === "1,000" && first[2] === "325" && first[3] === "€750", `a work's row, named without the shared part: ${first.join("|")}`);
 check(first[4] === "-" && first[5] === "-", "no profit per unit on a work while the release-level figures stand");
 const total = table.rows[table.rows.length - 1].map(cellText);
-check(total[0] === "Total · per target unit" && total[1] === "6,100" && total[2] === "2,440" && total[3] === "€1,000" && total[4] === "€507" && total[5] === "€842" && total[6] === "-",
-  `the Total row carries the release's figures per target unit: ${total.join("|")}`);
+check(total[0] === "Total · per target unit" && total[1] === "6,100" && total[2] === "2,440" && total[3] === "€1,000" && total[4] === "€507" && total[5] === "€809" && total[6] === "-",
+  `the Total row carries the release's figures per target unit, AA's before framing as the rows read: ${total.join("|")}`);
 const sections = msg.blocks.filter((b) => b.type === "section").map((b) => b.text.text);
 check(sections.some((t) => /^Launch value €2,440,000: 2,440 target units of 6,100 at the prices above \(the works' own targets add to 2,050\)\./.test(t)),
   `the launch value on the release target, the works' own sum beside it: ${sections[1]}`);
-check(sections.some((t) => /At the target that is €1,235,884 of profit to the artist and €2,053,528 to Avant Arte\./.test(t)), `the profit at the target: ${sections[1]}`);
-check(sections.some((t) => /^Paid spend: Avant Arte carries 50%, the artist 50% \(as the profit divides\)\. Cannibalisation 20%\. Entry → order rate 80%, pre-orders 95%\. Framing: 35% of buyers take a frame at €94 profit each, €32\.90 a unit inside Avant Arte's profit per unit\.$/.test(t)),
+check(sections.some((t) => /At the target that is €1,235,884 of profit to the artist and €2,053,528 to Avant Arte, framing included\./.test(t)), `the profit at the target: ${sections[1]}`);
+check(sections.some((t) => /^Paid spend: Avant Arte carries 50%, the artist 50% \(as the profit divides\)\. Cannibalisation 20%\. Entry → order rate 80%, pre-orders 95%\. Framing: 35% of buyers take a frame at €94 profit each, €32\.90 a unit on top of Avant Arte's group profit per unit\.$/.test(t)),
   `the terms: ${sections[2]}`);
 check(sections.at(-1).startsWith("<@U0PMTEST01> Please confirm these figures are right, or reply with the corrections. They set the Paid ROI: profit per unit, net of cannibalisation"), `the ask: ${sections.at(-1)}`);
 const ctx = msg.blocks.at(-1).elements[0].text;

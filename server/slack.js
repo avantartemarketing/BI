@@ -518,8 +518,9 @@ function composeSellThroughBlocks(snap, { horizon = "today", today, direct = fal
  * are the figures the Paid ROI reads (docs 7), so a wrong one moves every
  * ROI on the page, and the person who knows the deal is asked to check them
  * where they will see it. Per work: the edition, the target units, the
- * price, the artist's and Avant Arte's profit per unit and the deal, with a
- * Total row weighted as the tab's; under the table the launch value and the
+ * price, the artist's and Avant Arte's group profit per unit (before framing,
+ * as the works' rows and Airtable carry it) and the deal, with a Total row
+ * weighted as the tab's; under the table the launch value and the
  * profit at the target, how the paid spend divides, the cannibalisation and
  * the entry → order rates, the framing uplift; then the ask with the project
  * manager mentioned, and last where the figures came from and who sent them.
@@ -552,21 +553,28 @@ function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, by 
     raw(dealWords(p)),
   ]);
   const deal = Array.isArray(e.deal) && e.deal.length ? e.deal.join(", ") : "-";
+  // the release's AA figure carries the framing uplift (economics
+  // frameUpliftPerUnit); the works' rows and Airtable read before framing,
+  // so the Total row reads the same way and the framing line puts the
+  // uplift on top (12 October 2026: a total that read €787 over rows of
+  // €644 was the uplift folded into the one and not the others)
+  const uplift = finite(e.frameUpliftPerUnit) ? num(e.frameUpliftPerUnit) : 0;
+  const aaBefore = finite(e.aaProfitPerUnit) ? num(e.aaProfitPerUnit) - uplift : null;
   const releaseRow = (label) => [bold(label), bold(fmt(editionSum)), bold(fmt(targetUnits)), bold(finite(e.unitPrice) ? eur(e.unitPrice) : "-"),
-    bold(finite(e.artistProfitPerUnit) ? eur(e.artistProfitPerUnit) : "-"), bold(finite(e.aaProfitPerUnit) ? eur(e.aaProfitPerUnit) : "-"), bold(deal)];
+    bold(finite(e.artistProfitPerUnit) ? eur(e.artistProfitPerUnit) : "-"), bold(finite(aaBefore) ? eur(aaBefore) : "-"), bold(deal)];
   if (sized.length > 1) rows.push(releaseRow("Total · per target unit"));
   if (!sized.length) rows.push(releaseRow(title || "Release"));
   const table = {
     type: "table",
     column_settings: [{ is_wrapped: true, align: "left" }, ...Array.from({ length: 6 }, () => ({ align: "right" }))],
-    rows: [[raw("Work"), raw("Edition"), raw("Target units"), raw("Price"), raw("Artist profit / unit"), raw("AA profit / unit"), raw("Deal")], ...rows],
+    rows: [[raw("Work"), raw("Edition"), raw("Target units"), raw("Price"), raw("Artist profit / unit"), raw("AA group profit / unit"), raw("Deal")], ...rows],
   };
 
   const value = [
     finite(e.launchValue) ? `Launch value ${eur(e.launchValue)}: ${fmt(targetUnits)} target units${editionSum > targetUnits ? ` of ${fmt(editionSum)}` : ""} at the prices above` +
       (sized.length && worksTarget !== targetUnits ? ` (the works' own targets add to ${fmt(worksTarget)}).` : ".") : null,
     finite(e.artistProfitPerUnit) || finite(e.aaProfitPerUnit)
-      ? `At the target that is ${finite(e.artistProfitPerUnit) ? eur(e.artistProfitPerUnit * targetUnits) : "-"} of profit to the artist and ${finite(e.aaProfitPerUnit) ? eur(e.aaProfitPerUnit * targetUnits) : "-"} to Avant Arte.` : null,
+      ? `At the target that is ${finite(e.artistProfitPerUnit) ? eur(e.artistProfitPerUnit * targetUnits) : "-"} of profit to the artist and ${finite(e.aaProfitPerUnit) ? eur(e.aaProfitPerUnit * targetUnits) : "-"} to Avant Arte${uplift > 0 ? ", framing included" : ""}.` : null,
   ].filter(Boolean).join(" ");
   const share = finite(e.aaBudgetShare) ? num(e.aaBudgetShare) : null;
   const split = share === null ? "Paid spend: who carries it is not on file."
@@ -576,7 +584,7 @@ function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, by 
     (finite(st.preorderConversion) ? `, pre-orders ${pct(st.preorderConversion)}.` : ".");
   const framing = e.framingAvailable === false ? "No framing option."
     : finite(e.frameConversion) && finite(e.frameProfitPerUnit)
-      ? `Framing: ${pct(e.frameConversion)} of buyers take a frame at ${eur(e.frameProfitPerUnit)} profit each, ${eur(e.frameUpliftPerUnit, 2)} a unit inside Avant Arte's profit per unit.`
+      ? `Framing: ${pct(e.frameConversion)} of buyers take a frame at ${eur(e.frameProfitPerUnit)} profit each, ${eur(e.frameUpliftPerUnit, 2)} a unit on top of Avant Arte's group profit per unit.`
       : "Framing: on offer, no profit per frame on file.";
   const ask = `${mention ? mention + " " : ""}Please confirm these figures are right, or reply with the corrections. ` +
     "They set the Paid ROI: profit per unit, net of cannibalisation, over what a converting entry costs and that party's share of the spend.";

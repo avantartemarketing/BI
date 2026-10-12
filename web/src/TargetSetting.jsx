@@ -7,7 +7,7 @@
  *
  * Almost nothing here is typed. The products and their economics come from
  * Airtable, per work (edition, target sell-through, price, the artist's and
- * Avant Arte's profit per unit, the deal's revenue or profit share, the
+ * Avant Arte's group profit per unit, the deal's revenue or profit share, the
  * framing assumptions), laid out as one sheet: the figures down the side,
  * a column per work, All works first, the labels held while it scrolls
  * sideways. The figures are locked until Edit figures is switched on; then
@@ -164,7 +164,7 @@ const GRID = [
   { key: "target_units", label: "Target units", glyph: "ƒ", calc: true, tip: "Computed: edition × sell-through." },
   { key: "launch_date", label: "Closes", glyph: "", calc: true, date: true, tip: "The day this work's draw closes, from Airtable. Works of one launch can close on different days: the page runs to the last, the sell-through card counts each work at its own draw." },
   { key: "artist_profit_per_unit", label: "Artist profit", glyph: "€", tip: "The artist's profit on one unit sold." },
-  { key: "aa_profit_per_unit", label: "AA profit", glyph: "€", tip: "Avant Arte's profit on one unit sold, before framing." },
+  { key: "aa_profit_per_unit", label: "AA group profit", glyph: "€", tip: "Avant Arte's group profit on one unit sold, before framing." },
   { key: "artist_revenue_cut", label: "Artist revenue cut", glyph: "%", tip: "The artist's or estate's commission on revenue, taken before any profit is split (Airtable's Revenue Commission %). On a revenue deal it is the whole deal; a profit-share deal can carry one beside the AA profit share." },
   { key: "aa_revenue_share", label: "AA revenue share", glyph: "%", tip: "Avant Arte's own share of revenue on a royalty deal (not the artist's), where Avant Arte carries the ads outright. Closed while the product has an AA profit share." },
   { key: "aa_profit_share", label: "AA profit share", glyph: "%", tip: "Avant Arte's own share of the profit on a profit-share deal (not the artist's), which is also its share of the paid budget. Closed while the product has an AA revenue share." },
@@ -432,7 +432,7 @@ const ROWS = [
   { key: "launch_date", label: "Closes", calc: true },
   { key: "unit_price", label: "Price", kind: "money" },
   { key: "artist_profit_per_unit", label: "Artist profit per unit", kind: "money" },
-  { key: "aa_profit_per_unit", label: "Avant Arte profit per unit", kind: "money" },
+  { key: "aa_profit_per_unit", label: "AA group profit per unit", kind: "money" },
   { key: "artist_revenue_cut", label: "Artist revenue cut", kind: "pct" },
   { key: "aa_profit_share", label: "AA profit share", kind: "pct" },
   { key: "aa_revenue_share", label: "AA revenue share", kind: "pct" },
@@ -441,7 +441,7 @@ const ROWS = [
   { key: "frame_conversion", label: "Frames per print", kind: "pct" },
   { key: "frame_profit_per_unit", label: "Frame profit per frame", kind: "money" },
   { key: "launch_value", label: "Launch value", calc: true, total: true, tip: "Target units at the price." },
-  { key: "aa_total", label: "Avant Arte, with framing", calc: true, total: true, tip: "Avant Arte's profit on the target units, the framing uplift included." },
+  { key: "aa_total", label: "AA group profit, with framing", calc: true, total: true, tip: "Avant Arte's group profit on the target units, the framing uplift included." },
 ];
 const figText = (row, v, currency) => {
   if (blankV(v)) return "";

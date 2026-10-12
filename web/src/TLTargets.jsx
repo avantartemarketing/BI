@@ -786,7 +786,7 @@ export default function TLTargets({ snap, onSaved, directSpread = false }) {
             Units target <b>{unitsTarget ? fmt(unitsTarget) : "–"}</b>{releaseUnits ? " typed for the launch" : airtableUnits ? ` over ${live.length} ticked work${live.length === 1 ? "" : "s"}` : " (none yet)"}
             {editionSize ? <> · edition <b>{fmt(editionSize)}</b></> : null}
             {" · "}launch value <b>{fmtMoney(launchValue, 0)}</b>{price > 0 ? ` at ${fmtMoney(price, 0)} a unit` : ""}
-            {econ.ppu_artist > 0 || econ.ppu_aa > 0 ? <> · artist <b>{fmtMoney(econ.ppu_artist, 2)}</b> and AA <b>{fmtMoney(econ.ppu_aa, 2)}</b> per unit{econ.frame_uplift_per_unit > 0 ? ` (incl. ${fmtMoney(econ.frame_uplift_per_unit, 2)} framing)` : ""}</> : null}
+            {econ.ppu_artist > 0 || econ.ppu_aa > 0 ? <> · artist <b>{fmtMoney(econ.ppu_artist, 2)}</b> and AA group <b>{fmtMoney(econ.ppu_aa, 2)}</b> per unit{econ.frame_uplift_per_unit > 0 ? ` (incl. ${fmtMoney(econ.frame_uplift_per_unit, 2)} framing)` : ""}</> : null}
           </div>
         </section>
 
@@ -828,10 +828,10 @@ export default function TLTargets({ snap, onSaved, directSpread = false }) {
                 onCommit={(raw) => { const c = String(raw).replace(/[^0-9.]/g, ""); setInp((prev) => ({ ...prev, cost_per_purchase: c === "" ? null : c })); }} />
             </Field>
             <Field label="Worth of a paid signup"
-              src={pvOk ? (PV.aa_budget_share_assumed ? "AA's share of the spend assumed at 50%" : `AA carries ${Math.round(100 * PV.aa_budget_share)}% of the spend`) : "needs AA profit per unit"}
+              src={pvOk ? (PV.aa_budget_share_assumed ? "AA's share of the spend assumed at 50%" : `AA carries ${Math.round(100 * PV.aa_budget_share)}% of the spend`) : "needs AA group profit per unit"}
               help={pvOk
-                ? `${fmtMoney(PV.value_per_unit, 0)} a unit sold (AA profit ${fmtMoney(PV.aa_profit_per_unit, 0)} + framing ${fmtMoney(PV.frame_uplift_per_unit, 0)}: ${fmtPct(PV.frame_share, 0)} of units framed at ${fmtPct(PV.frame_rate, 0)} take-up, ${FRAME_WORDS[PV.frame_rate_source]}, ${fmtMoney(PV.frame_profit_per_unit || 0, 0)} a frame), less ${fmtPct(PV.cannibalisation, 0)} cannibalisation, × ${fmt(PV.purchases_per_order, 2)} pieces an order × ${fmtPct(PV.signup_order_rate, 1)} of paid signups ordering (${S2O_PAID_WORDS[PV.signup_order_rate_source]}). At the ${fmt(PV.roi_target, 2)} target ROI a paid signup may cost ${fmtMoney(PV.cost_per_signup_at_target_roi, 2)}; break-even ${fmtMoney(PV.break_even_cost_per_signup, 2)}.`
-                : "The Overview's paid card reads its ROI against this. It needs Avant Arte's profit per unit: type AA profit (and frame profit) per work on the products grid above, or fill them in Airtable."}
+                ? `${fmtMoney(PV.value_per_unit, 0)} a unit sold (AA group profit ${fmtMoney(PV.aa_profit_per_unit, 0)} + framing ${fmtMoney(PV.frame_uplift_per_unit, 0)}: ${fmtPct(PV.frame_share, 0)} of units framed at ${fmtPct(PV.frame_rate, 0)} take-up, ${FRAME_WORDS[PV.frame_rate_source]}, ${fmtMoney(PV.frame_profit_per_unit || 0, 0)} a frame), less ${fmtPct(PV.cannibalisation, 0)} cannibalisation, × ${fmt(PV.purchases_per_order, 2)} pieces an order × ${fmtPct(PV.signup_order_rate, 1)} of paid signups ordering (${S2O_PAID_WORDS[PV.signup_order_rate_source]}). At the ${fmt(PV.roi_target, 2)} target ROI a paid signup may cost ${fmtMoney(PV.cost_per_signup_at_target_roi, 2)}; break-even ${fmtMoney(PV.break_even_cost_per_signup, 2)}.`
+                : "The Overview's paid card reads its ROI against this. It needs Avant Arte's group profit per unit: type AA group profit (and frame profit) per work on the products grid above, or fill them in Airtable."}
               tip="What a paid signup is assumed to be worth to Avant Arte: the chance it orders, the pieces it takes, AA's profit on each with the likely framing profit, net of cannibalisation.">
               <RoBox value={pvOk ? fmtMoney(PV.value_per_signup, 2) : "–"} title="Computed from the products grid and the assumptions here" />
             </Field>

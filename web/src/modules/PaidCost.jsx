@@ -13,7 +13,7 @@
  * the spend did once paid is off. The cost view is the same chart in euros:
  * the trailing cost per signup (or per sale) against the plan's cost - the
  * basket's median, or the figure typed on the Target setting tab - and the
- * cost at the target ROI. ROI needs AA's profit per unit (Airtable's, or typed
+ * cost at the target ROI. ROI needs AA's group profit per unit (Airtable's, or typed
  * on the Target setting tab's products grid); without it the card reads the
  * cost alone and says so. Before the window the clock runs in days from the
  * announce, inside it in hours from the sales open, and a day's spend then
@@ -94,7 +94,7 @@ export default function PaidCost({ snap }) {
       </Card>
     );
   }
-  const needsProfit = "ROI needs Avant Arte's profit per unit: AA profit (and frame profit) per work on the Target setting tab's products grid, or in Airtable";
+  const needsProfit = "ROI needs Avant Arte's group profit per unit: AA group profit (and frame profit) per work on the Target setting tab's products grid, or in Airtable";
   const right = (
     <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
       <span className="seg compact" title="The days the headline and the line read: the last three full days, or the last full day alone">
@@ -105,7 +105,7 @@ export default function PaidCost({ snap }) {
       </span>
       {roiOk && artist ? (
         <span className="seg compact" title="Whose ROI: Avant Arte's or the artist's, each their profit per unit over their share of the spend">
-          <button className={party === "aa" ? "active" : ""} onClick={() => setParty("aa")} title="Avant Arte's ROI: its profit per unit, framing included, over its share of the paid spend">AA</button>
+          <button className={party === "aa" ? "active" : ""} onClick={() => setParty("aa")} title="Avant Arte's ROI: its group profit per unit, framing included, over its share of the paid spend">AA</button>
           <button className={party === "artist" ? "active" : ""} disabled={!artistOk} onClick={() => setParty("artist")}
             style={artistOk ? undefined : { opacity: 0.45, cursor: "default" }}
             title={artistOk ? "The artist's ROI: their profit per unit over their share of the paid spend" : artistReason}>Artist</button>
@@ -205,7 +205,7 @@ export default function PaidCost({ snap }) {
   const lead = view === "roi" ? ratio(leadVal) : (leadVal ? fmtMoney(leadVal, 2) : "–");
   const leadCaption = view === "roi"
     ? (complete ? `${P.label} ROI, the whole ${period}` : `${P.label} ROI, ${winWords}`)
-    : (complete ? `cost per ${unitWord}, the whole ${period}` : `cost per ${unitWord}, ${winWords}`) + (roiOk ? "" : " - ROI needs AA profit per unit");
+    : (complete ? `cost per ${unitWord}, the whole ${period}` : `cost per ${unitWord}, ${winWords}`) + (roiOk ? "" : " - ROI needs AA group profit per unit");
   const costUsed = complete ? paid.cumCost : costRecent;
   const splitAssumed = roiOk && paid.aaBudgetShareAssumed === true;
   const costTip = {

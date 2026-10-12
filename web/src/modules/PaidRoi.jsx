@@ -241,7 +241,7 @@ function PaidRoiLE({ snap }) {
   } : {
     head: `${view.label} ROI - how it is read`,
     rows: [
-      { label: `${view.label} profit per unit`, value: "€" + fmt(view.ppu, 2) },
+      { label: `${party === "artist" ? "Artist" : "AA group"} profit per unit`, value: "€" + fmt(view.ppu, 2) },
       { label: "less cannibalisation", value: pct(paid.cannibalisation ?? 0.2) },
       { label: complete ? "÷ € per converting entry, whole campaign" : `÷ € per converting entry, ${winWords}`, value: fmt(cpeUsed, 2) },
       { label: `÷ ${view.label} share of the spend${splitAssumed ? " (assumed)" : ""}`, value: pct(view.share) },
@@ -277,7 +277,7 @@ function PaidRoiLE({ snap }) {
   const partySeg = targeted && artist ? (
     <span className="seg compact" title="Whose ROI: Avant Arte's or the artist's, each their profit per unit over their share of the spend">
       <button className={party === "aa" ? "active" : ""} onClick={() => setParty("aa")}
-        title="Avant Arte's ROI: its profit per unit over its share of the paid spend">AA</button>
+        title="Avant Arte's ROI: its group profit per unit over its share of the paid spend">AA</button>
       <button className={party === "artist" ? "active" : ""} disabled={!artistOk} onClick={() => setParty("artist")}
         style={artistOk ? undefined : { opacity: 0.45, cursor: "default" }}
         title={artistOk ? "The artist's ROI: their profit per unit over their share of the paid spend" : artistReason}>Artist</button>

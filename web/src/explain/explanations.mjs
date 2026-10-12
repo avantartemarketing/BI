@@ -699,7 +699,7 @@ EXPLAIN["paid.roi"] = (a, c) => {
     notes.push(`Only an entry for a work with room buys a unit: ${pct(yb.yieldNow)} of a paid entry does today${full}. The entrants still to come are placed work by work day by day, so the line ahead reads on that share and steps down on the day a work fills, to the share for the works still open.`);
   }
   // only where there is an uplift: a sculpture edition has no frame on offer
-  if (!artist && ((s.economics || {}).frameUpliftPerUnit ?? 0) > 0) notes.push("Avant Arte's profit per unit includes the framing uplift, which is Avant Arte's alone.");
+  if (!artist && ((s.economics || {}).frameUpliftPerUnit ?? 0) > 0) notes.push("Avant Arte's group profit per unit includes the framing uplift, which is Avant Arte's alone.");
   notes.push(whole ? "The whole campaign's full days."
     : one ? "The last full day alone: the quickest read and the noisiest, one day's spend over that day's entries."
     : "The last three full days, so the figure moves with the latest spend rather than the campaign's average.");
@@ -709,7 +709,7 @@ EXPLAIN["paid.roi"] = (a, c) => {
     value: n(v, 2), unit: `profit back per euro ${who} spends`,
     say: `What ${who} makes on the units paid brings in, for each euro of ${artist ? "their" : "its"} share of the spend.`,
     steps: [
-      seg`Start with ${who}'s profit per unit: ${eur(ppu, 2)}.`,
+      seg`Start with ${who}'s ${artist ? "" : "group "}profit per unit: ${eur(ppu, 2)}.`,
       seg`Take off ${pct(cann)} for sales that would have come anyway: ${eur(net, 2)}.`,
       seg`Divide by what paid spent for each entry that becomes an order, ${drill(eur(cpe, 2), "paid.cpe", { whole, window })}: ${n(net / cpe, 2)}.`,
       seg`Divide by ${who}'s share of the spend, ${pct(share)}: ${n(net / cpe / share, 2)}.`,
