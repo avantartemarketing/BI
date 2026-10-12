@@ -881,6 +881,15 @@ snapshot fields the card reads, and the source catalogue in `web/src/explain/sou
 a card marks a figure with `<Ex k="…" arg={…}>`. `tests/explain.mjs` runs every builder
 against every snapshot on file and checks each lands on the figure its card prints.
 
+**The page header.** The release's name with its type badge and any warning chip (no
+targets, a date assumed) on the left, the page's controls on the right, then a strip of
+labelled facts under a rule: Status with the sidebar's dot, Target and Edition where the
+release has them, and for a timed launch Opens, Closes and Window as well, then the Lead as
+an initial and a first name, with the freshness note at the strip's end. One value to a
+column, nothing in small print under it; the countdown, the time zone and where a name came
+from are in the hover. Chosen on the header's design canvas on 12 October 2026 (option A,
+the facts strip); until then the facts were grey chips after the name, two to a chip.
+
 **On a phone or a tablet.** The same page, at the width there is: up to 900px the release
 list is a drawer opened from the menu button in the top bar (which names the release on
 screen, with its dot), the cards run two to a row on a tablet and one under the other on a

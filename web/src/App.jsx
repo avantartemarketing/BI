@@ -15,7 +15,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { initial as watchInitial, step as watchStep } from "../../shared/refreshWatch.mjs";
 import { freshness, TONE_COLOR } from "../../shared/freshness.mjs";
-import { C, fmt, fmtSigned, fmtPct, fmtDay, TipProvider, useTip } from "./ui.jsx";
+import { C, fmt, fmtSigned, fmtPct, fmtDay, TipProvider, useTip, Fact } from "./ui.jsx";
 import HeroBar from "./modules/HeroBar.jsx";
 import LaunchStrip from "./modules/LaunchStrip.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
@@ -33,7 +33,7 @@ import NoTargets from "./modules/NoTargets.jsx";
 import Upcoming from "./modules/Upcoming.jsx";
 import TargetSetting from "./TargetSetting.jsx";
 import TLTargets from "./TLTargets.jsx";
-import { TLChips, TLSignupsOutcome } from "./TLPage.jsx";
+import { TLFacts, TLFlags, TLSignupsOutcome } from "./TLPage.jsx";
 import SellForecast from "./modules/SellForecast.jsx";
 import BasketCard from "./modules/BasketCard.jsx";
 import Permissions from "./Permissions.jsx";
@@ -248,7 +248,7 @@ export default function App() {
       </nav>
       <main className="content">
         {view === "permissions" && me?.admin ? <Permissions me={me} /> :
-          snap ? <ReleasePage snap={snap} onSaved={onSaved} st={st} onRefreshed={onRefreshed} index={groups.all} onOpen={pick} /> :
+          snap ? <ReleasePage snap={snap} onSaved={onSaved} st={st} onRefreshed={onRefreshed} index={groups.all} row={current} onOpen={pick} /> :
           snapError ? (
             <div style={{ color: "#6c6b68", maxWidth: 520, lineHeight: 1.5 }}>
               {snapError.pending
@@ -584,7 +584,43 @@ function DirectToggle({ on, onChange, share, snap }) {
   );
 }
 
-function ReleasePage({ snap, onSaved, st, onRefreshed, index, onOpen }) {
+/* The header's strip for a release that is not a timed launch: its status
+ * with the sidebar's dot, its target and edition where it has them, its lead.
+ * `row` is the release's index row, which carries the status and the pace the
+ * dot reads (rowState); without one the snapshot's own flags say the status. */
+function LEFacts({ snap, row, lead }) {
+  const status = snap.catalogue ? "catalogue" : snap.upcoming ? "upcoming" : row ? row.status : snap.complete ? "closed" : "live";
+  const state = row && snap.targeted !== false ? rowState(row) : null;
+  const word = (STATUS_LABEL[status] || status).replace(/^./, (c) => c.toUpperCase());
+  const content = snap.catalogue
+    ? { head: "Catalogue", body: "No campaign dates in the funnel export - showing the last 90 days of traffic" }
+    : snap.upcoming
+      ? { head: "Upcoming", body: "Known to Airtable; the funnel report has no rows for it yet" }
+      : { head: word, rows: [
+          ...(row && row.day ? [{ label: "Day", value: `${row.day} of ${row.of}` }] : []),
+          ...(state ? [{ label: "Pace", value: STATE[state].word, color: STATE[state].color }] : []),
+          ...(snap.targeted === false ? [{ label: "Targets", value: "not set - actuals only" }] : []),
+        ] };
+  const ed = snap.edition || {};
+  return (
+    <>
+      <Fact label="Status" dot={state ? STATE[state].color : null} content={content}>{word}</Fact>
+      {snap.targeted !== false && ed.target > 0 && (
+        <Fact label="Target" tip={ed.total > ed.target
+          ? "The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target"
+          : "The units target"}>
+          <span><Ex k="release.target">{fmt(ed.target)}</Ex> units</span>
+        </Fact>
+      )}
+      {snap.targeted !== false && ed.total > ed.target && (
+        <Fact label="Edition" tip={`The whole edition; the target is ${Math.round((100 * ed.target) / ed.total)}% of it`}>{fmt(ed.total)}</Fact>
+      )}
+      {lead}
+    </>
+  );
+}
+
+function ReleasePage({ snap, onSaved, st, onRefreshed, index, row, onOpen }) {
   const [tab, setTab] = useState("overview");
   const [horizon, setHorizon] = useState("today");
   const [directSpread, setDirectSpreadState] = useState(readDirectPref);
@@ -649,42 +685,39 @@ function ReleasePage({ snap, onSaved, st, onRefreshed, index, onOpen }) {
   };
   return (
     <ExplainProvider snap={view} st={st} resetKey={`${snap.id}|${tab}`} enabled={!isTL}>
-      {/* Two groups: what the release is, and the page's controls. When the row
-          runs out of room the controls drop to a line of their own, whole; no
-          name, chip, button or note ever breaks inside itself. */}
+      {/* The header (its design canvas, option A, 12 October 2026): the name
+          and the page's controls on one line, then a strip of labelled facts
+          with the freshness note at its end. Short of room the controls drop
+          under the name and the facts wrap; nothing breaks inside itself. A
+          warning (no targets, a date assumed) stays a tinted chip by the name.
+          Until then the facts were chips after the name, two to a chip. */}
       <header className="page-header" style={{ marginBottom: 0 }}>
-        <div className="page-identity">
-          <span className="name">{snap.artist} - {snap.title}</span>
-          <span className={`badge ${String(snap.type || "LE").toLowerCase()}`}>{snap.type || "LE"}</span>
-          {isTL && <TLChips snap={snap} />}
-          {!isTL && catalogue && (
-            <span className="chip" title="No campaign dates in the funnel export - showing the last 90 days of traffic">Catalogue · last 90 days</span>
-          )}
-          {!isTL && upcoming && (
-            <span className="chip" title="Known to Airtable; the funnel report has no rows for it yet">Upcoming · from Airtable</span>
-          )}
-          {snap.marketingLead && (
-            <span className="chip" title={`Marketing lead${LEAD_FROM[(snap.inputSources || {}).marketing_lead] || ""}`}>{snap.marketingLead}</span>
-          )}
-          {snap.edition && snap.edition.total > snap.edition.target && (
-            <span className="chip" title="The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target">
-              Target <Ex k="release.target">{Number(snap.edition.target).toLocaleString("en-GB")}</Ex> · {Math.round((100 * snap.edition.target) / snap.edition.total)}% of {Number(snap.edition.total).toLocaleString("en-GB")} edition
-            </span>
-          )}
-          {!targeted && !isTL && (
-            <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
-              title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
-          )}
-        </div>
-        <div className="page-controls">
+        <div className="page-top">
+          <div className="page-identity">
+            <span className="name">{snap.artist} - {snap.title}</span>
+            <span className={`badge ${String(snap.type || "LE").toLowerCase()}`}>{snap.type || "LE"}</span>
+            {isTL && <TLFlags snap={snap} />}
+            {!targeted && !isTL && (
+              <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
+                title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
+            )}
+          </div>
           {(showHorizon || (variant && tab === "overview")) && (
-            <div className="page-toggles">
+            <div className="page-controls">
               {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} closeLabel={wordsOf(snap).closeLabel} />}
               {/* the switch lays the variant over the Overview's cards; the other
                   tabs read Direct as a channel, so it is not offered there */}
               {variant && tab === "overview" && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} snap={snap} />}
             </div>
           )}
+        </div>
+        <div className="page-facts">
+          {(() => {
+            const lead = snap.marketingLead
+              ? <Fact label="Lead" person={snap.marketingLead} tip={`Marketing lead${LEAD_FROM[(snap.inputSources || {}).marketing_lead] || ""}${String(snap.marketingLead).includes("@") ? ` · ${snap.marketingLead}` : ""}`} />
+              : null;
+            return isTL ? <TLFacts snap={snap} lead={lead} /> : <LEFacts snap={snap} row={row} lead={lead} />;
+          })()}
           <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough} builtAt={snap.builtAt}
             partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} funnelNote={snap.funnelNote} />
         </div>

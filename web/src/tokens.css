@@ -114,17 +114,29 @@ html, body {
 
 /* ---------- page ---------- */
 .content { flex: 1; padding: 28px 48px 64px; max-width: 1344px; }
-/* the page head: what the release is on the left, the page's controls on the
-   right. Nothing breaks inside itself. Short of room, first the freshness
-   note drops under the toggles (which stay together), then the controls
-   take a line of their own, and only then do the identity's chips drop
-   under the name */
-.page-header { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px 24px; margin-bottom: 24px; }
+/* the page head (its design canvas, option A): the name with its badge and
+   any warning chip on the left and the page's controls on the right, then
+   a strip of labelled facts, the freshness note at its end. Nothing breaks
+   inside itself: short of room the controls take a line of their own under
+   the name, and the facts wrap. */
+.page-header { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+.page-top { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px 24px; }
 .page-header .name { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
 .page-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; flex: 0 0 auto; max-width: 100%; min-height: 26px; }
 .page-controls { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px 16px; flex: 1 1 0; min-width: min-content; margin-left: auto; padding-top: 1px; }
-.page-toggles { display: flex; align-items: center; gap: 16px; flex: 0 0 auto; }
-.page-controls .freshness { margin-left: 0; }
+/* the facts: a column each, a label in small capitals over the value, a
+   hairline between neighbours; no small print under a value */
+.page-facts { display: flex; align-items: stretch; flex-wrap: wrap; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.fact { display: flex; flex-direction: column; gap: 4px; padding: 12px 24px 12px 0; margin-right: 24px; border-right: 1px solid var(--hairline); }
+.fact .k { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.fact .v { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; line-height: 20px; }
+.fact .fdot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.fact .fdot.hollow { border: 1.5px solid #b8b5ad; box-sizing: border-box; }
+.fact .avatar {
+  width: 20px; height: 20px; border-radius: 50%; background: var(--badge-tl-bg); color: var(--badge-tl-fg);
+  font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 20px;
+}
+.page-facts .freshness { margin-left: auto; align-self: flex-end; padding: 12px 0; }
 .badge {
   font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
   padding: 2px 7px; border-radius: 5px; white-space: nowrap;
@@ -866,10 +878,14 @@ body.x-open .content { margin-right: 404px; padding-left: 32px; padding-right: 3
 
   .content { padding: 16px 16px 48px; max-width: none; }
   body.x-open .content { padding-left: 16px; padding-right: 16px; }
-  .page-header { gap: 8px 16px; margin-bottom: 16px; }
+  .page-header { gap: 12px; margin-bottom: 16px; }
+  .page-top { gap: 8px 16px; }
   .page-header .name { font-size: 18px; white-space: normal; }
   .page-controls { justify-content: flex-start; margin-left: 0; flex: 1 1 100%; }
-  .page-controls .freshness { margin-left: 0; white-space: normal; }
+  /* the facts wrap as a plain row, the freshness note on a line of its own under them */
+  .page-facts { gap: 0 20px; }
+  .fact { border-right: none; margin-right: 0; padding: 10px 0 8px; }
+  .page-facts .freshness { flex: 1 1 100%; align-self: auto; padding: 4px 0 10px; white-space: normal; }
   /* the tab row scrolls sideways rather than wrapping its underline */
   .tabs { gap: 18px; overflow-x: auto; scrollbar-width: none; margin-bottom: 18px; }
   .tabs::-webkit-scrollbar { display: none; }

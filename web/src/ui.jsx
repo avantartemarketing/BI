@@ -286,6 +286,28 @@ export function QBadge({ tip, content }) {
   return <span className="qbadge" title={tip}>?</span>;
 }
 
+/* One fact of the page header's strip: a small label over a value (the
+ * header's design canvas, option A, 12 October 2026). The value is the whole
+ * of it - no small print under it; what a chip's middle dot once joined is a
+ * column of its own, and the rest is in the hover (`content` for the popup
+ * layer, `tip` for a plain title). `dot` colours a status dot before the
+ * value, null for a hollow one; `person` puts the initial in a disc. */
+export function Fact({ label, children, tip, content, dot, person, color }) {
+  const t = useTip();
+  const name = person ? String(person) : "";
+  // an address as a name reads as the part before the @, the address in the hover
+  const shown = name.includes("@") ? name.split("@")[0] : name;
+  return (
+    <div className="fact" title={content ? undefined : tip} {...(content ? t.props(content) : {})}>
+      <span className="k">{label}</span>
+      <span className="v" style={color ? { color } : undefined}>
+        {dot !== undefined && <span className={`fdot${dot ? "" : " hollow"}`} style={dot ? { background: dot } : undefined} aria-hidden="true" />}
+        {person ? <><span className="avatar" aria-hidden="true">{(shown[0] || "?").toUpperCase()}</span>{shown}</> : children}
+      </span>
+    </div>
+  );
+}
+
 /* The 135° overshoot hatch, shared so the hero legend swatch and the bar itself
  * are cut from the same cloth. */
 export const HATCH = `repeating-linear-gradient(135deg, ${C.blue} 0 1.5px, ${C.blueLight} 1.5px 5px)`;

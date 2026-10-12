@@ -6,7 +6,7 @@
  * strip that runs announce -> open -> close with hours inside the window, and
  * the pre-window's result once the window has opened. */
 import React from "react";
-import { Card, C, GROUP_DOTS, fmt, fmtPct, fmtDay, useTip } from "./ui.jsx";
+import { Card, C, GROUP_DOTS, fmt, fmtPct, fmtDay, useTip, Fact } from "./ui.jsx";
 
 const DAY_MS = 86400000;
 const when = (iso, withTime = true) => {
@@ -23,10 +23,15 @@ const STATE_WORDS = {
   upcoming: "Upcoming", signups: "Signups", window: "Window open", settling: "Settling", closed: "Closed",
 };
 
-/* ---------------------------------------------------------------- header chips */
+/* ---------------------------------------------------------------- header facts */
 
-export function TLChips({ snap }) {
-  const t = useTip();
+/* The header's strip for a timed launch (the header's design canvas, option
+ * A): the state with its dot, the open, the close, the window's length, the
+ * units target and the edition, the lead. Each a labelled column; the state's
+ * full timetable and the time zone are in the hovers. Before 12 October 2026
+ * these were chips, two facts to a chip joined by a middle dot. */
+const STATE_DOT = { upcoming: C.blue, signups: C.blue, window: C.green, settling: C.muted, closed: C.muted };
+export function TLFacts({ snap, lead }) {
   const st = snap.tlState;
   const rows = [
     { label: "Announced", value: when(snap.windowStart, false) },
@@ -37,20 +42,28 @@ export function TLChips({ snap }) {
     { label: "Settles", value: when(snap.settleEnd, false) },
   ];
   const note = (snap.derived || {}).dates_note;
+  const tz = "Amsterdam time: Airtable's launch date at its launch time, else the feed's timestamp, else 14:00";
+  const econ = snap.economics || {};
   return (
     <>
-      <span className="chip" {...t.props({ head: `${STATE_WORDS[st] || st} · ${snap.tlLabel || ""}`, rows, body: note || undefined })}
-        style={st === "window" ? { background: "#e4f3ec", color: C.green } : undefined}>
+      <Fact label="Status" dot={STATE_DOT[st] || C.muted}
+        content={{ head: `${STATE_WORDS[st] || st} · ${snap.tlLabel || ""}`, rows, body: note || undefined }}>
         {snap.tlLabel || STATE_WORDS[st]}
-      </span>
-      <span className="chip" title="The public window, Amsterdam time: Airtable's launch date at its launch time, else the feed's timestamp, else 14:00">
-        {st === "window" ? `Closes ${when(snap.windowClose)}` : st === "settling" || st === "closed" ? `Closed ${when(snap.windowClose)}` : `Opens ${when(snap.windowOpen)}`} · {hours(snap.windowHours)}
-      </span>
-      {snap.economics && snap.economics.units_target > 0 && (
-        <span className="chip" title={`Airtable's units target summed over the ticked works${snap.economics.edition_size ? `, of an edition of ${fmt(snap.economics.edition_size)}` : ""}`}>
-          Target {fmt(snap.economics.units_target)} units{snap.economics.edition_size ? ` · ${fmt(snap.economics.edition_size)} edition` : ""}
-        </span>
-      )}
+      </Fact>
+      <Fact label="Opens" tip={`When the public window opens, ${tz}`}>{when(snap.windowOpen)}</Fact>
+      <Fact label={st === "settling" || st === "closed" ? "Closed" : "Closes"} tip={`When the public window closes, ${tz}`}>{when(snap.windowClose)}</Fact>
+      {hours(snap.windowHours) && <Fact label="Window" tip="How long the public window is open">{hours(snap.windowHours)}</Fact>}
+      {econ.units_target > 0 && <Fact label="Target" tip="Airtable's units target summed over the ticked works">{fmt(econ.units_target)} units</Fact>}
+      {econ.units_target > 0 && econ.edition_size > 0 && <Fact label="Edition" tip="The edition size over the ticked works">{fmt(econ.edition_size)}</Fact>}
+      {lead}
+    </>
+  );
+}
+/* the header's warnings, beside the name: no target, a date assumed */
+export function TLFlags({ snap }) {
+  const note = (snap.derived || {}).dates_note;
+  return (
+    <>
       {!snap.targeted && (
         <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
           title="No units target in Airtable and none typed, so there is no signup target - the page shows actuals and the basket">No target</span>
@@ -121,4 +134,4 @@ export function TLSignupsOutcome({ snap }) {
   );
 }
 
-export default TLChips;
+export default TLFacts;
