@@ -75,7 +75,7 @@ export function roundParts(values, total) {
 }
 
 /* ---- what the page is ---- */
-const CHANNEL_NAMES = { aa_email: "AA Email", aa_social: "AA Meta", referral_artist: "Artist", search_direct_other: "Direct etc.", paid: "Paid" };
+const CHANNEL_NAMES = { aa_email: "AA Email", aa_social: "AA Meta", referral_artist: "Artist", search_direct_other: "Search etc.", paid: "Paid" };
 const channelOf = (s, key) => (s.channels || []).find((c) => c.key === key) || null;
 const chName = (s, key) => (channelOf(s, key) || {}).name || CHANNEL_NAMES[key] || key;
 const ORGANIC = ["aa_email", "aa_social", "referral_artist", "search_direct_other"];

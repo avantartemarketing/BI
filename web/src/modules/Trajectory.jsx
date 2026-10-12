@@ -48,11 +48,11 @@ const X1 = 680, Y0 = 148, YTOP = 8;
 /* By channel: the groups bottom to top, in a fixed order so a band keeps its
  * place and colour from release to release. Paid sits on the baseline, where
  * a share reads most exactly, then AA Email, Artist, AA Meta, and the
- * catch-all Direct etc. on top, under the total's line. The four hues follow
+ * catch-all Search etc. on top, under the total's line. The four hues follow
  * each group's colour elsewhere on the page (Paid's section orange, the
  * email blue, the artist green, the Meta violet) and pass the categorical
  * checks against their neighbours in this order: lightness band, chroma,
- * colour-blind and normal-vision separation, 3:1 on the card. Direct etc. is
+ * colour-blind and normal-vision separation, 3:1 on the card. Search etc. is
  * a warm grey, as a catch-all is, light enough to stay clear of the violet
  * below it; its figures are in the legend and the hover. Ahead of today the
  * bands drop back to half strength, as the projection's line does. */

@@ -130,7 +130,7 @@ else:
         view_by = {c["key"]: c["now"] for c in view["channels"]}
         share = (s["directShare"] or {}).get("units" if s["tlState"] in ("window", "settling", "closed") else "signups") or 0.0
         if share > 0.002:
-            check(view_by["search_direct_other"] <= base_by["search_direct_other"] + 0.06, f"{label}: Direct etc. gives Direct up ({base_by['search_direct_other']} -> {view_by['search_direct_other']})")
+            check(view_by["search_direct_other"] <= base_by["search_direct_other"] + 0.06, f"{label}: Search etc. gives Direct up ({base_by['search_direct_other']} -> {view_by['search_direct_other']})")
             check(all(view_by[g] >= base_by[g] - 0.06 for g in tl.GROUPS if g != "search_direct_other"), f"{label}: the other groups take it ({base_by} -> {view_by})")
         if s.get("targets"):
             t0, t1 = s["targets"], view["targets"]
