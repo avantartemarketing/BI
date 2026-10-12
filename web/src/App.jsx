@@ -533,8 +533,8 @@ function Freshness({ asOf, st, emailThrough, partial, builtAt, funnelNote }) {
  * paid ROI, geo - ignore it and are not given it. */
 function HorizonToggle({ horizon, onChange, closeLabel = "At close" }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: 12, color: "#6c6b68" }}>Compare</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ fontSize: 12.5, color: "#6c6b68" }}>Compare</span>
       <div className="seg" role="group" aria-label="Comparison horizon">
         <button
           className={horizon === "today" ? "active" : ""}
@@ -573,8 +573,8 @@ function DirectToggle({ on, onChange, share, snap }) {
     ? "Direct's sessions, signups and units are shared out over the other channels in proportion to their own"
     : "Direct's sessions, entries and units are shared out over the other channels in proportion to their own";
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }} title={tip}>
-      <span style={{ fontSize: 12, color: "#6c6b68" }}>Direct</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }} title={tip}>
+      <span style={{ fontSize: 12.5, color: "#6c6b68" }}>Direct</span>
       <div className="seg" role="group" aria-label="Direct attribution">
         <button className={on ? "" : "active"} onClick={() => onChange(false)}
           title={W.tl ? "Direct stays a channel of its own, as the TL feed attributes it" : "Direct stays a channel of its own, as the funnel export attributes it"}>Channel</button>

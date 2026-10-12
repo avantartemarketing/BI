@@ -123,7 +123,7 @@ html, body {
 .page-top { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px 24px; }
 .page-header .name { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
 .page-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; flex: 0 0 auto; max-width: 100%; min-height: 26px; }
-.page-controls { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px 16px; flex: 1 1 0; min-width: min-content; margin-left: auto; padding-top: 1px; }
+.page-controls { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px 24px; flex: 1 1 0; min-width: min-content; margin-left: auto; }
 /* the facts: a column each, a label in small capitals over the value, a
    hairline between neighbours; no small print under a value */
 .page-facts { display: flex; align-items: stretch; flex-wrap: wrap; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -178,10 +178,10 @@ html, body {
 }
 .card.tall { grid-row: span 2; }
 .card.wide { grid-column: span 2; }
-.mod-head { display: flex; align-items: center; gap: 8px; height: 20px; flex: 0 0 20px; }
+.mod-head { display: flex; align-items: center; gap: 8px; min-height: 20px; flex: 0 0 auto; }
 .mod-head .gdot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
 .mod-head .title { font-size: 13.5px; font-weight: 600; letter-spacing: -0.005em; }
-.mod-head .right { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+.mod-head .right { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); }
 /* a head that wraps (Card wrapHead): short of room the right slot drops to a
    line of its own, right-aligned, and the head grows to hold it, rather than
    the card's overflow clipping a figure mid-number or the title breaking */
@@ -255,13 +255,16 @@ button.basket-row:hover { background: var(--bg); }
 
 /* segmented toggle */
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+/* a finger's height and a little air (12 October 2026: 3px by 10px read as cramped) */
 .seg button {
-  font-family: inherit; font-size: 12px; font-weight: 500; padding: 3px 10px;
+  font-family: inherit; font-size: 12.5px; font-weight: 500; padding: 6px 14px; line-height: 16px;
   background: var(--card); color: var(--muted); border: none; cursor: pointer; white-space: nowrap;
 }
 .seg button.active { background: var(--ink); color: #fff; }
+/* in a card's head a step smaller, so "Funnel | Waterfall" still sits beside its title in a one-column card */
+.mod-head .seg button { font-size: 12px; padding: 5px 11px; }
 /* two segs in one card header (channels vs targets) need to fit 352px */
-.seg.compact button { font-size: 11px; padding: 2px 8px; }
+.seg.compact button, .mod-head .seg.compact button { font-size: 11.5px; padding: 4px 10px; }
 
 /* buttons (paid spend) */
 .btn-row { display: flex; gap: 8px; margin-top: auto; }
@@ -938,8 +941,9 @@ body.x-open .content { margin-right: 404px; padding-left: 32px; padding-right: 3
    explanation on a plain tap (Explain.jsx), since there is no Shift. */
 @media (pointer: coarse) {
   input, select, textarea, .control, .sidebar-search, .sheet input.cell, .ws-in, .ws-name, .section-input, .layout-bar .add-card { font-size: 16px; }
-  .seg button { padding: 6px 12px; font-size: 12.5px; }
-  .seg.compact button { padding: 5px 9px; font-size: 11.5px; }
+  .seg button { padding: 8px 14px; }
+  .mod-head .seg button { padding: 7px 11px; }
+  .seg.compact button, .mod-head .seg.compact button { padding: 6px 10px; }
   .btn { padding: 9px 14px; }
   .tab { padding: 10px 2px 12px; }
   .basket-row { height: 36px; }
