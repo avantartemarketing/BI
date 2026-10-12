@@ -53,44 +53,51 @@ const slackStub = http.createServer(async (req, res) => {
 await new Promise((r) => slackStub.listen(0, "127.0.0.1", r));
 const slackBase = `http://127.0.0.1:${slackStub.address().port}`;
 
-// ---- the service
+// ---- the service. Nobody besides the project manager is asked to confirm
+// the unit economics here (ECONOMICS_MENTIONS empty; the standing reviewer
+// has a section of its own at the end, on a second start with one set).
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "slack-route-"));
 const PORT = 10175;
-const app = spawn(process.execPath, [path.join(ROOT, "server", "index.js")], {
-  cwd: ROOT,
-  env: {
-    ...process.env,
-    PORT: String(PORT), SHEETS_REFRESH: "off", BIGQUERY: "off", BQ_EVENTS: "off",
-    LOGIN_PASSWORD: "test-pass-1234", LOGIN_USERS: "tom.lloyd@avantarte.com",
-    SESSION_SECRET: "test-secret", USERS_PATH: path.join(tmp, "users.json"),
-    LAYOUT_PATH: path.join(tmp, "layout.json"), SAVED_INPUTS_PATH: path.join(tmp, "inputs.saved.json"),
-    TARGETS_LOG: path.join(tmp, "targets.log"), DECISIONS_PATH: path.join(tmp, "decisions.log"),
-    SLACK_STATE_PATH: path.join(tmp, "slack.json"), SLACK_STATE_FALLBACK_PATH: path.join(tmp, "slack.json"),
-    SLACK_BOT_TOKEN: "xoxb-test", SLACK_API: `${slackBase}/api/chat.postMessage`,
-    // the build a boot or a save runs writes its pages here, not into the checkout
-    APP_DATA_PATH: path.join(tmp, "app"),
-  },
-  stdio: ["ignore", "pipe", "pipe"],
-});
-let log = "";
-app.stdout.on("data", (d) => { log += d; });
-app.stderr.on("data", (d) => { log += d; });
-const stop = () => { app.kill(); slackStub.close(); };
-process.on("exit", stop);
-
+let app = null, log = "", cookie = "";
 const base = `http://127.0.0.1:${PORT}`;
-for (let i = 0; i < 40; i++) {
-  try { if ((await fetch(`${base}/healthz`)).ok) break; } catch { /* still starting */ }
-  await sleep(250);
-}
-
-// ---- sign in
-const login = await fetch(`${base}/auth/login`, {
-  method: "POST", headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email: "tom.lloyd@avantarte.com", password: "test-pass-1234" }),
-});
-check(login.ok, `signed in (${login.status}${login.ok ? "" : " - " + log.slice(-300)})`);
-const cookie = (login.headers.get("set-cookie") || "").split(";")[0];
+const start = async (extraEnv = {}) => {
+  if (app) { app.kill(); await sleep(300); }
+  log = "";
+  app = spawn(process.execPath, [path.join(ROOT, "server", "index.js")], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      PORT: String(PORT), SHEETS_REFRESH: "off", BIGQUERY: "off", BQ_EVENTS: "off",
+      LOGIN_PASSWORD: "test-pass-1234", LOGIN_USERS: "tom.lloyd@avantarte.com",
+      SESSION_SECRET: "test-secret", USERS_PATH: path.join(tmp, "users.json"),
+      LAYOUT_PATH: path.join(tmp, "layout.json"), SAVED_INPUTS_PATH: path.join(tmp, "inputs.saved.json"),
+      TARGETS_LOG: path.join(tmp, "targets.log"), DECISIONS_PATH: path.join(tmp, "decisions.log"),
+      SLACK_STATE_PATH: path.join(tmp, "slack.json"), SLACK_STATE_FALLBACK_PATH: path.join(tmp, "slack.json"),
+      SLACK_BOT_TOKEN: "xoxb-test", SLACK_API: `${slackBase}/api/chat.postMessage`,
+      ECONOMICS_MENTIONS: "",
+      // the build a boot or a save runs writes its pages here, not into the checkout
+      APP_DATA_PATH: path.join(tmp, "app"),
+      ...extraEnv,
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  app.stdout.on("data", (d) => { log += d; });
+  app.stderr.on("data", (d) => { log += d; });
+  for (let i = 0; i < 40; i++) {
+    try { if ((await fetch(`${base}/healthz`)).ok) break; } catch { /* still starting */ }
+    await sleep(250);
+  }
+  // ---- sign in
+  const login = await fetch(`${base}/auth/login`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "tom.lloyd@avantarte.com", password: "test-pass-1234" }),
+  });
+  check(login.ok, `signed in (${login.status}${login.ok ? "" : " - " + log.slice(-300)})`);
+  cookie = (login.headers.get("set-cookie") || "").split(";")[0];
+};
+const stop = () => { if (app) app.kill(); slackStub.close(); };
+process.on("exit", stop);
+await start();
 const send = (url, opts = {}) => fetch(base + url, { ...opts, headers: { Cookie: cookie, ...(opts.headers || {}) } });
 const post = (id, payload) => send(`/api/releases/${id}/slack`, {
   method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
@@ -191,7 +198,7 @@ const sections = (em.blocks || []).filter((b) => b.type === "section").map((b) =
 check(sections.some((t) => /^<@U0PMTEST01> Please confirm these figures are right/.test(t) && /Paid ROI/.test(t)), `the ask mentions the project manager and says what the figures set: ${sections.at(-1)}`);
 check(sections.some((t) => /^Paid spend: Avant Arte carries \d+%/.test(t) && /Cannibalisation \d+%/.test(t) && /Entry → order rate \d+%/.test(t)), "the terms the Paid ROI reads are under the table");
 const etable = (em.blocks || []).find((b) => b.type === "table");
-check(etable && etable.rows[0].length === 7 && etable.rows.length >= 3 && etable.rows[0][0].text === "Work" && etable.rows[0][6].text === "Deal",
+check(etable && etable.rows[0].length === 8 && etable.rows.length >= 3 && etable.rows[0][0].text === "Work" && etable.rows[0][4].text === "Frame price" && etable.rows[0][7].text === "Deal",
   `the table: ${etable && etable.rows.length} rows of ${etable && etable.rows[0].length}`);
 const ctx = (em.blocks || []).filter((b) => b.type === "context").map((b) => b.elements[0].text).join(" ");
 check(/Sent by tom\.lloyd@avantarte\.com/.test(ctx) && /release=julianschnabel_le_26\|Target setting>/.test(ctx), `the context says who sent it and links the tab: ${ctx}`);
@@ -271,6 +278,30 @@ r = await post(RELEASE, { horizon: "today" });
 d = await r.json().catch(() => ({}));
 check(r.status === 502 && /chat:write/.test(d.error || ""), `a missing scope names the scope: ${r.status} ${d.error}`);
 refuse = null;
+
+// ---- the people asked on every release besides the project manager
+// (ECONOMICS_MENTIONS): each looked up when the button is pressed and tagged
+// beside the project manager; one who cannot be found is left out with a
+// note in the response rather than holding the post back; a dry run lists
+// them as typed and looks nobody up; the project manager is not asked twice
+await start({ ECONOMICS_MENTIONS: "clare@example.com, nobody@example.com, @U0PMTEST01" });
+await setPm("U0PMTEST01");
+seen.length = 0;
+r = await econ();
+d = await r.json().catch(() => ({}));
+check(r.ok && d.ok === true && d.to === "U0PMTEST01, Clare Ferris", `the reviewer found is asked beside the project manager: ${r.status} ${d.to || d.error}`);
+check(/nobody@example\.com not tagged: no Slack member has the email/.test(d.warning || ""), `the one not found is said in the response: ${d.warning}`);
+check(seen.map((x) => x.path).join(" ") === "/api/users.lookupByEmail /api/users.lookupByEmail /api/chat.postMessage",
+  `one lookup per reviewer, then one post: ${seen.map((x) => x.path).join(" ")}`);
+const rm = (seen.at(-1) || {}).json || {};
+check(/^Julian Schnabel: unit economics to confirm, U0PMTEST01 and Clare Ferris please$/.test(rm.text || ""), `the text names them both: ${rm.text}`);
+const rask = (rm.blocks || []).filter((b) => b.type === "section").map((b) => b.text.text).find((t) => /Please confirm/.test(t)) || "";
+check(/^<@U0PMTEST01> <@U0EMAIL001> Please confirm/.test(rask) && !/nobody/.test(rask), `both are tagged, the one not found is not: ${rask}`);
+check((rm.text.match(/U0PMTEST01/g) || []).length === 1 && (rask.match(/U0PMTEST01/g) || []).length === 1, "the project manager listed as a reviewer too is asked once");
+seen.length = 0;
+r = await econ({ dryRun: true });
+d = await r.json().catch(() => ({}));
+check(r.ok && d.to === "U0PMTEST01, clare@example.com, nobody@example.com" && seen.length === 0, `a dry run lists the reviewers as typed and looks nobody up: ${d.to} (${seen.length} calls)`);
 
 stop();
 console.log(failed ? `${failed} failure(s)` : "ok: the Slack route");
