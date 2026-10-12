@@ -3646,10 +3646,6 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         r["framing_available"] = bool(framed)
         r["frame_conversion"] = weighted("frame_conversion", framed) if framed else None
         r["frame_profit_per_unit"] = weighted("frame_profit_per_unit", framed) if framed else None
-        # the frame's price blended over the works that offer one, by target
-        # units (the Slack unit economics table's Total row, 12 October 2026)
-        priced_frames = [p for p in framed if p.get("frame_price")]
-        r["frame_price"] = weighted("frame_price", priced_frames) if priced_frames else None
         # the framing uplift over every target unit: the products that frame,
         # each at its own take-up and profit, spread over the whole target
         uplift = sum(p["target_units"] * p["frame_uplift_per_unit"] for p in framed) / targets
@@ -6086,8 +6082,6 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # default, the profit per frame only its own, None without one)
             "framingAvailable": release.get("framing_available") is not False,
             "frameConversion": frame_conv, "frameProfitPerUnit": frame_profit,
-            # the frame's price, blended over the works that offer one
-            "framePrice": round(float(release["frame_price"]), 2) if release.get("frame_price") else None,
             "frameUpliftPerUnit": (round(float(release["frame_uplift_per_unit"]), 2) if release.get("frame_uplift_per_unit") is not None
                                    else round(frame_conv * (frame_profit or 0.0), 2) if release.get("framing_available") is not False else 0.0),
         },

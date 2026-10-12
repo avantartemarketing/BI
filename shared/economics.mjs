@@ -185,9 +185,6 @@ export function releaseEconomics(products, legacy, b) {
   const share = weighted("aa_budget_share");
   const aaShare = share === null ? 0.5 : share;
   const uplift = framed.length ? weighted("frame_uplift_per_unit", framed) * (framed.reduce((s, p) => s + p.target_units, 0) / targets) : 0;
-  // the frame's price blended over the works that offer one, by target units
-  const framePriced = framed.filter((p) => p.frame_price > 0);
-  const framePrice = framePriced.length ? weighted("frame_price", framePriced) : null;
   return {
     mode: "products", edition_size: targets, edition_total: sized.reduce((s, p) => s + p.edition, 0),
     unit_price: pricedUnits ? round2(value / pricedUnits) : 0, currency: PAGE_CURRENCY,
@@ -197,7 +194,7 @@ export function releaseEconomics(products, legacy, b) {
     // over the target plus the framing uplift over the products that frame
     ppu_aa: (ppuAA === null ? 0 : ppuAA) + uplift,
     framing_available: framed.length > 0, frame_conversion: frameConv, frame_profit_per_unit: frameProfit,
-    frame_uplift_per_unit: uplift, frame_price: framePrice,
+    frame_uplift_per_unit: uplift,
     aa_budget_share: aaShare, aa_budget_share_assumed: share === null,
     artist_profit_share: Math.round((1 - aaShare) * 10000) / 10000,
     deal: [...new Set(sized.map((p) => p.deal).filter(Boolean))].sort(),

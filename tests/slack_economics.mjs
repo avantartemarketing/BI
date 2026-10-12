@@ -27,7 +27,7 @@ const msg = composeEconomicsBlocks(w, { mention: "<@U0PMTEST01>", mentionLabel: 
 if (print) console.log(JSON.stringify(msg, null, 1));
 check(msg.text === `${w.artist}: unit economics to confirm, Clare Ferris please`, `the notification text: ${msg.text}`);
 const types = msg.blocks.map((b) => b.type).join(" ");
-check(types === "header section table section section section context", `the blocks: ${types}`);
+check(types === "header section table section context", `the blocks: the table, the ask and where the figures came from, nothing else under the table: ${types}`);
 check(msg.blocks[0].text.text === `Unit economics to confirm · ${w.artist}`, `headed by what it is: ${msg.blocks[0].text.text}`);
 check(msg.blocks[1].text.text === `*${w.artist} · ${w.title}*`, `then the release: ${msg.blocks[1].text.text}`);
 const sell = composeSellThroughBlocks(w, { today: "2026-10-09" });
@@ -36,22 +36,19 @@ const table = msg.blocks[2];
 const sized = w.economics.products.filter((p) => p.edition > 0);
 check(table.rows.length === sized.length + 2, `one row per work and a Total: ${table.rows.length} rows for ${sized.length} works`);
 check(table.rows.every((r) => r.length === 8), "eight cells in every row");
-check(table.rows[0].map(cellText).join("|") === "Work|Edition|Target units|Price|Frame price|Artist profit / unit|AA group profit / unit|Deal", `the header: ${table.rows[0].map(cellText).join("|")}`);
+check(table.rows[0].map(cellText).join("|") === "Work|Edition|Target units|Price|Artist profit / unit|AA group profit / unit|Blended frame profit / unit|Deal", `the header: ${table.rows[0].map(cellText).join("|")}`);
 check(table.column_settings.length === 8 && table.column_settings[0].is_wrapped === true && table.column_settings[1].align === "right", "the work column wraps, the figures sit right");
 const first = table.rows[1].map(cellText);
 check(first[0] === "Green Landscape" && first[1] === "1,000" && first[2] === "325" && first[3] === "€750", `a work's row, named without the shared part: ${first.join("|")}`);
-check(first[5] === "-" && first[6] === "-", "no profit per unit on a work while the release-level figures stand");
-check(first[4] === "-", "no frame price on file reads as a dash");
+check(first[4] === "-" && first[5] === "-", "no profit per unit on a work while the release-level figures stand");
+check(first[6] === "€33", `the work's blended frame profit per unit, its take-up times its profit per frame: ${first[6]}`);
+const lifesize = table.rows.map((r) => r.map(cellText)).find((r) => r[0] === "Lifesize");
+check(lifesize && lifesize[6] === "-", `a work with no frame on offer reads a dash: ${lifesize && lifesize.join("|")}`);
 const total = table.rows[table.rows.length - 1].map(cellText);
-check(total[0] === "Total · per target unit" && total[1] === "6,100" && total[2] === "2,440" && total[3] === "€1,000" && total[4] === "-" && total[5] === "€507" && total[6] === "€809" && total[7] === "-",
+check(total[0] === "Total · per target unit" && total[1] === "6,100" && total[2] === "2,440" && total[3] === "€1,000" && total[4] === "€507" && total[5] === "€809" && total[6] === "€33" && total[7] === "-",
   `the Total row carries the release's figures per target unit, AA's before framing as the rows read: ${total.join("|")}`);
 const sections = msg.blocks.filter((b) => b.type === "section").map((b) => b.text.text);
-check(sections.some((t) => /^Launch value €2,440,000: 2,440 target units of 6,100 at the prices above \(the works' own targets add to 2,050\)\./.test(t)),
-  `the launch value on the release target, the works' own sum beside it: ${sections[1]}`);
-check(sections.some((t) => /At the target that is €1,235,884 of profit to the artist and €2,053,528 to Avant Arte, framing included\./.test(t)), `the profit at the target: ${sections[1]}`);
-check(sections.some((t) => /^Paid spend: Avant Arte carries 50%, the artist 50% \(as the profit divides\)\. Cannibalisation 20%\. Entry → order rate 80%, pre-orders 95%\. Framing: 35% of buyers take a frame at €94 profit each, €32\.90 a unit on top of Avant Arte's group profit per unit\.$/.test(t)),
-  `the terms: ${sections[2]}`);
-check(sections.at(-1).startsWith("<@U0PMTEST01> Please confirm these figures are right, or reply with the corrections. They set the Paid ROI: profit per unit, net of cannibalisation"), `the ask: ${sections.at(-1)}`);
+check(sections.length === 2 && sections[1] === "<@U0PMTEST01> please check and confirm in thread. They inform our paid ROI model.", `the ask, and nothing else under the table: ${sections.slice(1).join(" || ")}`);
 const ctx = msg.blocks.at(-1).elements[0].text;
 check(/^Release-level figures typed on the Target setting tab stand over the works'\. Sent by tom\.lloyd@avantarte\.com on 9 Oct · <https:\/\/bi\.example\/\?release=warhol_le_26\|Target setting>\.$/.test(ctx), `the context: ${ctx}`);
 
@@ -61,27 +58,25 @@ const perWork = {
   economics: {
     ...w.economics, mode: "products", aaBudgetShareAssumed: true, deal: ["profit share"],
     products: [
-      { ...w.economics.products[0], artist_profit_per_unit: 300, aa_profit_per_unit: 420.5, aa_profit_share: 0.5, currency: "GBP", unit_price: 650, frame_price: 250,
+      { ...w.economics.products[0], artist_profit_per_unit: 300, aa_profit_per_unit: 420.5, aa_profit_share: 0.5, currency: "GBP", unit_price: 650,
         sources: { ...w.economics.products[0].sources, artist_profit_per_unit: "typed", aa_profit_per_unit: "typed" } },
-      { ...w.economics.products[1], artist_profit_per_unit: 310, aa_profit_per_unit: 400, aa_revenue_share: 0.3, frame_price: 300,
+      { ...w.economics.products[1], artist_profit_per_unit: 310, aa_profit_per_unit: 400, aa_revenue_share: 0.3, frame_conversion: 0.5, frame_profit_per_unit: 80, frame_uplift_per_unit: 40,
         sources: { ...w.economics.products[1].sources, artist_profit_per_unit: "airtable", aa_profit_per_unit: "typed" } },
     ],
   },
 };
 const m2 = composeEconomicsBlocks(perWork, { mention: null, by: null, today: "2026-10-09" });
 const t2 = m2.blocks[2].rows.map((r) => r.map(cellText));
-check(t2.length === 4 && t2[1][3] === "650 GBP" && t2[1][4] === "€250" && t2[1][5] === "€300" && t2[1][6] === "€421" && t2[1][7] === "AA 50% of profit", `a work priced in pounds, its frame in euros, its deal a profit share: ${t2[1].join("|")}`);
-check(t2[2][7] === "AA 30% of revenue", `a revenue share reads as one: ${t2[2].join("|")}`);
-check(t2[3][7] === "profit share", `the Total row carries the deals in force: ${t2[3].join("|")}`);
-check(t2[3][4] === "€275", `and the frame price blended over the works that offer one, by target units: ${t2[3].join("|")}`);
+check(t2.length === 4 && t2[1][3] === "650 GBP" && t2[1][4] === "€300" && t2[1][5] === "€421" && t2[1][6] === "€33" && t2[1][7] === "AA 50% of profit", `a work priced in pounds, its deal a profit share: ${t2[1].join("|")}`);
+check(t2[2][6] === "€40" && t2[2][7] === "AA 30% of revenue", `a work's own framing terms, and a revenue share reads as one: ${t2[2].join("|")}`);
+check(t2[3][6] === "€33" && t2[3][7] === "profit share", `the Total row carries the release's blended frame profit and the deals in force: ${t2[3].join("|")}`);
 // ---- more than one person asked: the project manager and the standing reviewer, in that order
 const m4 = composeEconomicsBlocks(w, { mentions: [{ mention: "<@U0PMTEST01>", label: "Clare Ferris" }, { mention: "<@U0REVIEW01>", label: "Sam Reviewer" }], today: "2026-10-09" });
 check(m4.text === `${w.artist}: unit economics to confirm, Clare Ferris and Sam Reviewer please`, `two names in the notification text: ${m4.text}`);
-check(m4.blocks.filter((b) => b.type === "section").at(-1).text.text.startsWith("<@U0PMTEST01> <@U0REVIEW01> Please confirm"), "both mentioned in the ask, the project manager first");
-check(t2[3][2] === "2,440" && m2.blocks[3].text.text.includes("(the works' own targets add to 650)"), `the release target stands, the works' sum beside it: ${m2.blocks[3].text.text}`);
+check(m4.blocks.filter((b) => b.type === "section").at(-1).text.text.startsWith("<@U0PMTEST01> <@U0REVIEW01> please check and confirm in thread."), "both mentioned in the ask, the project manager first");
+check(t2[3][2] === "2,440", `the release target stands: ${t2[3].join("|")}`);
 const s2 = m2.blocks.filter((b) => b.type === "section").map((b) => b.text.text);
-check(s2.some((t) => /\(assumed: no work records its deal, so half is taken\)/.test(t)), "an assumed split says so");
-check(s2.at(-1).startsWith("Please confirm"), "no mention, no stray space");
+check(s2.at(-1) === "Please check and confirm in thread. They inform our paid ROI model.", `no mention, no stray space, a capital to open: ${s2.at(-1)}`);
 check(/^Figures from Airtable, 3 typed over on the Target setting tab\. Sent by the dashboard on 9 Oct\.$/.test(m2.blocks.at(-1).elements[0].text), `the context counts the typed figures: ${m2.blocks.at(-1).elements[0].text}`);
 check(m2.text === `${w.artist}: unit economics to confirm`, `no name, no plea: ${m2.text}`);
 
@@ -90,7 +85,7 @@ const bare = { ...w, economics: { ...w.economics, products: [] } };
 const m3 = composeEconomicsBlocks(bare, { today: "2026-10-09" });
 const t3 = m3.blocks[2].rows.map((r) => r.map(cellText));
 check(t3.length === 2 && t3[1][0] === w.title && t3[1][1] === "6,100" && t3[1][2] === "2,440", `one row for the release: ${t3[1].join("|")}`);
-check(/^Launch value €2,440,000: 2,440 target units of 6,100 at the prices above\. At the target/.test(m3.blocks[3].text.text), `no works, no note on their targets: ${m3.blocks[3].text.text}`);
+check(t3[1][4] === "€507" && t3[1][5] === "€809" && t3[1][6] === "€33", `the release's own figures on its one row: ${t3[1].join("|")}`);
 
 // ---- who to mention: the kinds, and the lookups against a stand-in Slack
 check(pmKind("U0PMTEST01") === "id" && pmKind("@U0PMTEST01") === "id" && pmKind("clare@example.com") === "email" && pmKind("@clare") === "handle" && pmKind(" ") === null, "the kind off the shape");

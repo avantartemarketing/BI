@@ -64,7 +64,7 @@ are one), typed over on the tab; where Airtable's Framing is blank, a **sculptur
 (`pricing.is_sculpture`, carried to the tab as `framing_default`). Frame profit is Avant
 Arte's alone, so a framed product lifts AA's profit per unit and its paid ROI, never the
 artist's. The snapshot's `economics` block publishes the terms in force
-(`frameConversion`, `frameProfitPerUnit`, `frameUpliftPerUnit`, and `framePrice`, the frame's price blended over the works that offer one). The draw export's per-entry
+(`frameConversion`, `frameProfitPerUnit`, `frameUpliftPerUnit`). The draw export's per-entry
 "Framed" flag (`framed_share` in the draw block) is the observed take-up where the export exists;
 it is not fed into the calculation automatically.
 
