@@ -50,17 +50,39 @@ export function TipProvider({ children }) {
   const [pos, setPos] = useState(null);
   const box = useRef(null);
   const timer = useRef(null);
+  // On a touch screen a tap plays as a mouseenter, so an element that only
+  // carries information shows its popup on a tap; one that acts (a button,
+  // a link) does what it does, and the popup stays out of the way. The
+  // popup goes on the next tap elsewhere, and on a scroll on any screen,
+  // since it is fixed to where its element was.
+  const touched = useRef(0);
+  const anchorEl = useRef(null);
   const api = useMemo(() => ({
     show(el, content, delay) {
       clearTimeout(timer.current);
+      if (Date.now() - touched.current < 700 && el.closest("button, a, input, select")) return;
+      anchorEl.current = el;
       timer.current = setTimeout(() => {
         const r = el.getBoundingClientRect();
         setPos(null);
         setTip({ anchor: { left: r.left, right: r.right, top: r.top, bottom: r.bottom }, content });
       }, delay);
     },
-    hide() { clearTimeout(timer.current); setTip(null); },
+    hide() { clearTimeout(timer.current); anchorEl.current = null; setTip(null); },
   }), []);
+  useEffect(() => {
+    const touch = (e) => {
+      touched.current = Date.now();
+      if (anchorEl.current && !anchorEl.current.contains(e.target)) api.hide();
+    };
+    const scroll = () => { if (anchorEl.current) api.hide(); };
+    document.addEventListener("touchstart", touch, { passive: true, capture: true });
+    window.addEventListener("scroll", scroll, true);
+    return () => {
+      document.removeEventListener("touchstart", touch, { capture: true });
+      window.removeEventListener("scroll", scroll, true);
+    };
+  }, [api]);
   useLayoutEffect(() => {
     if (!tip || !box.current) return;
     const { width: w, height: h } = box.current.getBoundingClientRect();
@@ -128,6 +150,34 @@ export function ChartTip({ left, children }) {
       )}
     </>
   );
+}
+
+/* A plot's readout follows the pointer along its width: `set` is given the
+ * fraction of the way across, or null when the pointer leaves. A finger does
+ * the same as a mouse - the readout stays up when it lifts, and goes on the
+ * next touch outside the plot, since a finger cannot hover. Spread on the
+ * plot element, with the plot's own onMouseLeave if it has one. */
+export function hoverAt(set) {
+  const at = (el, x) => {
+    const r = el.getBoundingClientRect();
+    set(Math.min(Math.max((x - r.left) / r.width, 0), 1));
+  };
+  return {
+    onMouseMove: (e) => at(e.currentTarget, e.clientX),
+    onMouseLeave: () => set(null),
+    onTouchStart: (e) => {
+      const el = e.currentTarget;
+      if (!e.touches.length) return;
+      at(el, e.touches[0].clientX);
+      const off = (ev) => {
+        if (el.contains(ev.target)) return;
+        document.removeEventListener("touchstart", off, { capture: true });
+        set(null);
+      };
+      document.addEventListener("touchstart", off, { passive: true, capture: true });
+    },
+    onTouchMove: (e) => { if (e.touches.length) at(e.currentTarget, e.touches[0].clientX); },
+  };
 }
 
 export function useTip() {
@@ -234,6 +284,28 @@ export function QBadge({ tip, content }) {
   const t = useTip();
   if (content) return <span className="qbadge" {...t.props(content, 300)}>?</span>;
   return <span className="qbadge" title={tip}>?</span>;
+}
+
+/* One fact of the page header's strip: a small label over a value (the
+ * header's design canvas, option A, 12 October 2026). The value is the whole
+ * of it - no small print under it; what a chip's middle dot once joined is a
+ * column of its own, and the rest is in the hover (`content` for the popup
+ * layer, `tip` for a plain title). `dot` colours a status dot before the
+ * value, null for a hollow one; `person` puts the initial in a disc. */
+export function Fact({ label, children, tip, content, dot, person, color }) {
+  const t = useTip();
+  const name = person ? String(person) : "";
+  // an address as a name reads as the part before the @, the address in the hover
+  const shown = name.includes("@") ? name.split("@")[0] : name;
+  return (
+    <div className="fact" title={content ? undefined : tip} {...(content ? t.props(content) : {})}>
+      <span className="k">{label}</span>
+      <span className="v" style={color ? { color } : undefined}>
+        {dot !== undefined && <span className={`fdot${dot ? "" : " hollow"}`} style={dot ? { background: dot } : undefined} aria-hidden="true" />}
+        {person ? <><span className="avatar" aria-hidden="true">{(shown[0] || "?").toUpperCase()}</span>{shown}</> : children}
+      </span>
+    </div>
+  );
 }
 
 /* The 135° overshoot hatch, shared so the hero legend swatch and the bar itself

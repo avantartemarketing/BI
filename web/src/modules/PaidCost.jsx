@@ -22,6 +22,7 @@
 import React, { useState } from "react";
 import {
   Card, QBadge, GROUP_DOTS, C, fmt, fmtMoney, dayLabel, dayAxisLabel, textPx, timeAxis, nameLines, useBoxSize, LineNames, ChartTip,
+  hoverAt,
 } from "../ui.jsx";
 import { wordsOf, hourClock } from "../vocab.mjs";
 
@@ -339,12 +340,7 @@ export default function PaidCost({ snap }) {
           <div
             ref={plotRef}
             style={{ position: "absolute", left: 56, right: 56, top: 0, bottom: 24 }}
-            onMouseMove={(e) => {
-              const r = e.currentTarget.getBoundingClientRect();
-              const frac = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1);
-              setHover(Math.min(Math.max(frac * of, 0), of));
-            }}
-            onMouseLeave={() => setHover(null)}
+            {...hoverAt((frac) => setHover(frac === null ? null : Math.min(Math.max(frac * of, 0), of)))}
           >
             <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", overflow: "visible" }}>

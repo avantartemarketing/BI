@@ -39,6 +39,7 @@
 import React, { useState } from "react";
 import {
   Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, textPx, timeAxis, nameLines, useBoxSize, LineNames, ChartTip,
+  hoverAt,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
 import PaidCost from "./PaidCost.jsx";
@@ -370,7 +371,8 @@ function PaidRoiLE({ snap }) {
   return (
     <Card wide dot={GROUP_DOTS.paid} title="Paid ROI" right={right}>
       <div className="spacer-8" />
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flex: "0 0 auto" }}>
+      {/* the totals drop under the lead figure on a card too narrow for both (a phone) */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px 16px", flex: "0 0 auto", flexWrap: "wrap" }}>
         <div className="lead">
           <span><Ex k="paid.roi" arg={{ party, whole: complete, window: win }} focus>{fmt(leadVal, 2)}</Ex></span>
           <span style={{ fontSize: 12, fontWeight: 400, letterSpacing: 0, color: C.muted, whiteSpace: "nowrap" }}>{leadCaption}</span>
@@ -388,12 +390,7 @@ function PaidRoiLE({ snap }) {
           <div
             ref={plotRef}
             style={{ position: "absolute", left: 48, right: 56, top: 0, bottom: 24 }}
-            onMouseMove={(e) => {
-              const r = e.currentTarget.getBoundingClientRect();
-              const frac = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1);
-              setHover(Math.min(Math.max(Math.round(frac * DAYS) + 1, 1), of));
-            }}
-            onMouseLeave={() => setHover(null)}
+            {...hoverAt((frac) => setHover(frac === null ? null : Math.min(Math.max(Math.round(frac * DAYS) + 1, 1), of)))}
           >
             <svg
               viewBox={`0 0 ${W} ${H}`}
