@@ -35,14 +35,15 @@ check(sell.blocks[0].text.text === w.artist && sell.blocks[0].text.text !== msg.
 const table = msg.blocks[2];
 const sized = w.economics.products.filter((p) => p.edition > 0);
 check(table.rows.length === sized.length + 2, `one row per work and a Total: ${table.rows.length} rows for ${sized.length} works`);
-check(table.rows.every((r) => r.length === 7), "seven cells in every row");
-check(table.rows[0].map(cellText).join("|") === "Work|Edition|Target units|Price|Artist profit / unit|AA group profit / unit|Deal", `the header: ${table.rows[0].map(cellText).join("|")}`);
-check(table.column_settings.length === 7 && table.column_settings[0].is_wrapped === true && table.column_settings[1].align === "right", "the work column wraps, the figures sit right");
+check(table.rows.every((r) => r.length === 8), "eight cells in every row");
+check(table.rows[0].map(cellText).join("|") === "Work|Edition|Target units|Price|Frame price|Artist profit / unit|AA group profit / unit|Deal", `the header: ${table.rows[0].map(cellText).join("|")}`);
+check(table.column_settings.length === 8 && table.column_settings[0].is_wrapped === true && table.column_settings[1].align === "right", "the work column wraps, the figures sit right");
 const first = table.rows[1].map(cellText);
 check(first[0] === "Green Landscape" && first[1] === "1,000" && first[2] === "325" && first[3] === "€750", `a work's row, named without the shared part: ${first.join("|")}`);
-check(first[4] === "-" && first[5] === "-", "no profit per unit on a work while the release-level figures stand");
+check(first[5] === "-" && first[6] === "-", "no profit per unit on a work while the release-level figures stand");
+check(first[4] === "-", "no frame price on file reads as a dash");
 const total = table.rows[table.rows.length - 1].map(cellText);
-check(total[0] === "Total · per target unit" && total[1] === "6,100" && total[2] === "2,440" && total[3] === "€1,000" && total[4] === "€507" && total[5] === "€809" && total[6] === "-",
+check(total[0] === "Total · per target unit" && total[1] === "6,100" && total[2] === "2,440" && total[3] === "€1,000" && total[4] === "-" && total[5] === "€507" && total[6] === "€809" && total[7] === "-",
   `the Total row carries the release's figures per target unit, AA's before framing as the rows read: ${total.join("|")}`);
 const sections = msg.blocks.filter((b) => b.type === "section").map((b) => b.text.text);
 check(sections.some((t) => /^Launch value €2,440,000: 2,440 target units of 6,100 at the prices above \(the works' own targets add to 2,050\)\./.test(t)),
@@ -60,18 +61,23 @@ const perWork = {
   economics: {
     ...w.economics, mode: "products", aaBudgetShareAssumed: true, deal: ["profit share"],
     products: [
-      { ...w.economics.products[0], artist_profit_per_unit: 300, aa_profit_per_unit: 420.5, aa_profit_share: 0.5, currency: "GBP", unit_price: 650,
+      { ...w.economics.products[0], artist_profit_per_unit: 300, aa_profit_per_unit: 420.5, aa_profit_share: 0.5, currency: "GBP", unit_price: 650, frame_price: 250,
         sources: { ...w.economics.products[0].sources, artist_profit_per_unit: "typed", aa_profit_per_unit: "typed" } },
-      { ...w.economics.products[1], artist_profit_per_unit: 310, aa_profit_per_unit: 400, aa_revenue_share: 0.3,
+      { ...w.economics.products[1], artist_profit_per_unit: 310, aa_profit_per_unit: 400, aa_revenue_share: 0.3, frame_price: 300,
         sources: { ...w.economics.products[1].sources, artist_profit_per_unit: "airtable", aa_profit_per_unit: "typed" } },
     ],
   },
 };
 const m2 = composeEconomicsBlocks(perWork, { mention: null, by: null, today: "2026-10-09" });
 const t2 = m2.blocks[2].rows.map((r) => r.map(cellText));
-check(t2.length === 4 && t2[1][3] === "650 GBP" && t2[1][4] === "€300" && t2[1][5] === "€421" && t2[1][6] === "AA 50% of profit", `a work priced in pounds, its deal a profit share: ${t2[1].join("|")}`);
-check(t2[2][6] === "AA 30% of revenue", `a revenue share reads as one: ${t2[2].join("|")}`);
-check(t2[3][6] === "profit share", `the Total row carries the deals in force: ${t2[3].join("|")}`);
+check(t2.length === 4 && t2[1][3] === "650 GBP" && t2[1][4] === "€250" && t2[1][5] === "€300" && t2[1][6] === "€421" && t2[1][7] === "AA 50% of profit", `a work priced in pounds, its frame in euros, its deal a profit share: ${t2[1].join("|")}`);
+check(t2[2][7] === "AA 30% of revenue", `a revenue share reads as one: ${t2[2].join("|")}`);
+check(t2[3][7] === "profit share", `the Total row carries the deals in force: ${t2[3].join("|")}`);
+check(t2[3][4] === "€275", `and the frame price blended over the works that offer one, by target units: ${t2[3].join("|")}`);
+// ---- more than one person asked: the project manager and the standing reviewer, in that order
+const m4 = composeEconomicsBlocks(w, { mentions: [{ mention: "<@U0PMTEST01>", label: "Clare Ferris" }, { mention: "<@U0REVIEW01>", label: "Sam Reviewer" }], today: "2026-10-09" });
+check(m4.text === `${w.artist}: unit economics to confirm, Clare Ferris and Sam Reviewer please`, `two names in the notification text: ${m4.text}`);
+check(m4.blocks.filter((b) => b.type === "section").at(-1).text.text.startsWith("<@U0PMTEST01> <@U0REVIEW01> Please confirm"), "both mentioned in the ask, the project manager first");
 check(t2[3][2] === "2,440" && m2.blocks[3].text.text.includes("(the works' own targets add to 650)"), `the release target stands, the works' sum beside it: ${m2.blocks[3].text.text}`);
 const s2 = m2.blocks.filter((b) => b.type === "section").map((b) => b.text.text);
 check(s2.some((t) => /\(assumed: no work records its deal, so half is taken\)/.test(t)), "an assumed split says so");

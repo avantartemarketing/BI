@@ -226,7 +226,8 @@ function PaidRoiLE({ snap }) {
   // order they are applied, so the basis is on the card and not in a doc
   const cpeUsed = complete ? paid.cumCpe : cpeRecent;
   const dropOff = paid.dropOff ?? 0.2;
-  // AA's profit per unit carries a framing uplift only where there is one
+  // AA's group profit per unit reads before framing; the framing uplift,
+  // Avant Arte's alone, is its own line where there is one
   // (a sculpture edition has no frame on offer)
   const frameUplift = (snap.economics?.frameUpliftPerUnit ?? 0) > 0;
   // the spend feed is Meta's, billed in euros; the build converts it once
@@ -242,7 +243,12 @@ function PaidRoiLE({ snap }) {
   } : {
     head: `${view.label} ROI - how it is read`,
     rows: [
-      { label: `${party === "artist" ? "Artist" : "AA group"} profit per unit`, value: "€" + fmt(view.ppu, 2) },
+      ...(party === "artist" ? [{ label: "Artist profit per unit", value: "€" + fmt(view.ppu, 2) }]
+        : frameUplift ? [
+          { label: "AA group profit per unit", value: "€" + fmt(view.ppu - (snap.economics?.frameUpliftPerUnit ?? 0), 2) },
+          { label: "+ framing uplift per unit", value: "€" + fmt(snap.economics?.frameUpliftPerUnit ?? 0, 2) },
+          { label: "= profit per unit, framing included", value: "€" + fmt(view.ppu, 2) },
+        ] : [{ label: "AA group profit per unit", value: "€" + fmt(view.ppu, 2) }]),
       { label: "less cannibalisation", value: pct(paid.cannibalisation ?? 0.2) },
       { label: complete ? "÷ € per converting entry, whole campaign" : `÷ € per converting entry, ${winWords}`, value: fmt(cpeUsed, 2) },
       { label: `÷ ${view.label} share of the spend${splitAssumed ? " (assumed)" : ""}`, value: pct(view.share) },
@@ -252,7 +258,7 @@ function PaidRoiLE({ snap }) {
       { label: "€/converting entry total", value: fmt(paid.cumCpe, 2) },
     ],
     body: "Profit per unit, the share of the spend and the cannibalisation are the Target setting tab's (products and economics, paid assumptions"
-      + (frameUplift ? "; the AA figure includes the framing uplift, which is Avant Arte's alone). " : "). ")
+      + (frameUplift ? "; the framing uplift, Avant Arte's alone, is added to the AA group profit per unit). " : "). ")
       + "The spend divides as the profit does: on a profit share each side carries its share of the profit, on a revenue share Avant Arte carries it all"
       + (splitAssumed ? "; no product records its deal yet, so half is assumed. " : ". ")
       + "A converting entry is one that becomes an order, " + pct(1 - dropOff) + " of entries." + spendNote,

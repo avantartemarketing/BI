@@ -254,7 +254,9 @@ const projParts = proj.steps.map(segText).map((t) => Number((t.match(/[\d,]+/) |
 assert.strictEqual(projParts.reduce((a, b) => a + b, 0), 1449, `the projection's steps add up: ${projParts}`);
 const roi = explain("paid.roi", { party: "aa" }, wctx);
 assert.strictEqual(roi.value, "1.79");
-assert.ok(segText(roi.steps[2]).includes("€751.34"), "the ROI divides by the last three days' cost per converting entry");
+assert.ok(roi.steps.some((st) => /^Divide by what paid spent/.test(segText(st)) && segText(st).includes("€751.34")), "the ROI divides by the last three days' cost per converting entry");
+assert.ok(/^Start with Avant Arte's group profit per unit: €/.test(segText(roi.steps[0])) && /^Add the framing uplift, €32\.90 a unit/.test(segText(roi.steps[1])),
+  `the group profit per unit reads before framing, the uplift its own step: ${roi.steps.slice(0, 2).map(segText).join(" | ")}`);
 const cpe = explain("paid.cpe", {}, wctx);
 assert.ok(segText(cpe.steps[0]).includes("21 Sep to 23 Sep"), "the last three full days");
 
@@ -270,7 +272,7 @@ assert.ok(segText(cpe.steps[0]).includes("21 Sep to 23 Sep"), "the last three fu
   const one = explain("paid.roi", { party: "aa", window: "1d" }, ctx1);
   assert.ok(one && one.name.endsWith(", last full day"), `the 1d reading is named for its day: ${one && one.name}`);
   assert.strictEqual(one.value, fmt(w1.paid.l1dRoi, 2), "the 1d reading is the published figure");
-  assert.ok(segText(one.steps[2]).includes("€" + fmt(w1.paid.l1dCpe, 2)), "and divides by the last full day's cost per converting entry");
+  assert.ok(one.steps.some((st) => /^Divide by what paid spent/.test(segText(st)) && segText(st).includes("€" + fmt(w1.paid.l1dCpe, 2))), "and divides by the last full day's cost per converting entry");
   const cpeOne = explain("paid.cpe", { window: "1d" }, ctx1);
   assert.ok(segText(cpeOne.steps[0]).includes("on 23 Sep") && !segText(cpeOne.steps[0]).includes("21 Sep"), "the 1d cost reads one day");
   assert.ok(one.compare.some((c) => c.label === "Last 3 days" && c.arg.window === "3d"), "the 1d reading points at the three-day one");

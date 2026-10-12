@@ -106,7 +106,7 @@ export default function PaidCost({ snap }) {
       </span>
       {roiOk && artist ? (
         <span className="seg compact" title="Whose ROI: Avant Arte's or the artist's, each their profit per unit over their share of the spend">
-          <button className={party === "aa" ? "active" : ""} onClick={() => setParty("aa")} title="Avant Arte's ROI: its group profit per unit, framing included, over its share of the paid spend">AA</button>
+          <button className={party === "aa" ? "active" : ""} onClick={() => setParty("aa")} title="Avant Arte's ROI: its group profit per unit plus the likely framing profit, over its share of the paid spend">AA</button>
           <button className={party === "artist" ? "active" : ""} disabled={!artistOk} onClick={() => setParty("artist")}
             style={artistOk ? undefined : { opacity: 0.45, cursor: "default" }}
             title={artistOk ? "The artist's ROI: their profit per unit over their share of the paid spend" : artistReason}>Artist</button>

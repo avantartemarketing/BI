@@ -816,6 +816,10 @@ app.post("/api/releases/:id/slack-channel", route(async (req, res) => {
  * the Target setting tab's "Send unit economics to PM" button. The message is
  * composed from the snapshot on disk, the figures as last saved and built.
  * {dryRun: true} returns the message and looks nobody up. */
+// who is asked to confirm the unit economics on every release, besides the
+// project manager: Slack member IDs, @handles or emails, comma-separated
+const ECONOMICS_MENTIONS = String(process.env.ECONOMICS_MENTIONS ?? "orla@avantarte.com")
+  .split(",").map((s) => s.trim().replace(/^@/, "")).filter(Boolean);
 app.post("/api/releases/:id/slack-economics", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
   const snap = readSnapshot(id);
@@ -842,11 +846,30 @@ app.post("/api/releases/:id/slack-economics", route(async (req, res) => {
       ? `Airtable names ${airtable.name} as the project manager but has no PM Slack ID for them: type their Slack member ID, @handle or email on the Target setting tab.`
       : "No project manager for this release: fill Airtable's Project Manager field (its PM Slack ID follows), or type one on the Target setting tab." });
   }
-  const { text, blocks } = slack.composeEconomicsBlocks(snap, { mention: who.mention, mentionLabel: who.label, by: s && s.email, link });
-  if (dryRun) return res.json({ channel: st.channel, to: who.label, text, blocks });
+  // the people asked on every release besides the project manager
+  // (ECONOMICS_MENTIONS: member IDs, @handles or emails, comma-separated;
+  // the finance side's reviewer by default): looked up when the button is
+  // pressed, and one who cannot be found is left out with a note rather
+  // than holding the post back
+  const people = [who];
+  const warnings = [];
+  for (const extra of ECONOMICS_MENTIONS) {
+    if (!extra || (who.id && who.id === extra) || (who.label || "").toLowerCase() === extra.toLowerCase()) continue;
+    if (dryRun) { people.push({ mention: `@${extra}`, label: extra }); continue; }
+    try {
+      const found = await slack.resolveMention(extra);
+      if (!found.id || found.id !== who.id) people.push(found);
+    } catch (e) {
+      warnings.push(`${extra} not tagged: ${String(e.message || e)}`);
+    }
+  }
+  const to = people.map((p) => p.label).join(", ");
+  const { text, blocks } = slack.composeEconomicsBlocks(snap, { mentions: people, by: s && s.email, link });
+  if (dryRun) return res.json({ channel: st.channel, to, text, blocks });
   try {
     await slack.postMessage(st.channel, text, blocks);
-    res.json({ ok: true, channel: st.channel, to: who.label, slack: slack.recordEconomicsPost(id, s && s.email) });
+    res.json({ ok: true, channel: st.channel, to, warning: warnings.length ? warnings.join("; ") : undefined,
+               slack: slack.recordEconomicsPost(id, s && s.email) });
   } catch (e) {
     res.status(502).json({ error: String(e.message || e) });
   }

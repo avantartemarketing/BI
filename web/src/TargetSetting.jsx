@@ -441,7 +441,7 @@ const ROWS = [
   { key: "frame_conversion", label: "Frames per print", kind: "pct" },
   { key: "frame_profit_per_unit", label: "Frame profit per frame", kind: "money" },
   { key: "launch_value", label: "Launch value", calc: true, total: true, tip: "Target units at the price." },
-  { key: "aa_total", label: "AA group profit, with framing", calc: true, total: true, tip: "Avant Arte's group profit on the target units, the framing uplift included." },
+  { key: "aa_total", label: "AA group profit + framing", calc: true, total: true, tip: "Avant Arte's group profit on the target units plus the framing uplift, which is Avant Arte's alone." },
 ];
 const figText = (row, v, currency) => {
   if (blankV(v)) return "";

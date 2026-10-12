@@ -786,7 +786,7 @@ export default function TLTargets({ snap, onSaved, directSpread = false }) {
             Units target <b>{unitsTarget ? fmt(unitsTarget) : "–"}</b>{releaseUnits ? " typed for the launch" : airtableUnits ? ` over ${live.length} ticked work${live.length === 1 ? "" : "s"}` : " (none yet)"}
             {editionSize ? <> · edition <b>{fmt(editionSize)}</b></> : null}
             {" · "}launch value <b>{fmtMoney(launchValue, 0)}</b>{price > 0 ? ` at ${fmtMoney(price, 0)} a unit` : ""}
-            {econ.ppu_artist > 0 || econ.ppu_aa > 0 ? <> · artist <b>{fmtMoney(econ.ppu_artist, 2)}</b> and AA group <b>{fmtMoney(econ.ppu_aa, 2)}</b> per unit{econ.frame_uplift_per_unit > 0 ? ` (incl. ${fmtMoney(econ.frame_uplift_per_unit, 2)} framing)` : ""}</> : null}
+            {econ.ppu_artist > 0 || econ.ppu_aa > 0 ? <> · artist <b>{fmtMoney(econ.ppu_artist, 2)}</b> and AA group <b>{fmtMoney((econ.ppu_aa || 0) - (econ.frame_uplift_per_unit || 0), 2)}</b> per unit{econ.frame_uplift_per_unit > 0 ? ` (plus ${fmtMoney(econ.frame_uplift_per_unit, 2)} framing)` : ""}</> : null}
           </div>
         </section>
 

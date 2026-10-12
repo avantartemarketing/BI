@@ -525,10 +525,21 @@ function composeSellThroughBlocks(snap, { horizon = "today", today, direct = fal
  * the entry → order rates, the framing uplift; then the ask with the project
  * manager mentioned, and last where the figures came from and who sent them.
  * `mention` is the Slack mention ("<@U…>", resolveMention) or null, and
- * `mentionLabel` the person's name for the notification text. A page still
- * carrying release-level figures (economics.mode "release") is one row. */
-function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, by = null, link = null, today } = {}) {
+ * `mentionLabel` the person's name for the notification text; `mentions`
+ * is a list of such {mention, label} pairs when more than one person is
+ * asked (the project manager and whoever ECONOMICS_MENTIONS names, 12
+ * October 2026), mentioned in that order. A page still carrying
+ * release-level figures (economics.mode "release") is one row. The frame's
+ * price sits in the table beside the print's: each work's, and in the Total
+ * row the price blended over the works that offer a frame, by target units
+ * (economics.framePrice on a built page, worked from the rows here). */
+function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, mentions = null, by = null, link = null, today } = {}) {
   const e = (snap && snap.economics) || {};
+  const people = (Array.isArray(mentions) && mentions.length ? mentions : mention || mentionLabel ? [{ mention, label: mentionLabel }] : [])
+    .filter((m) => m && (m.mention || m.label));
+  const mentionText = people.map((m) => m.mention).filter(Boolean).join(" ");
+  const labels = people.map((m) => m.label).filter(Boolean);
+  const labelText = labels.length <= 1 ? labels.join("") : `${labels.slice(0, -1).join(", ")} and ${labels.at(-1)}`;
   const paid = (snap && snap.paid) || {};
   const st = (snap && snap.sellthrough) || {};
   const artist = String(snap.artist || snap.releaseName || snap.id || "Release");
@@ -546,8 +557,15 @@ function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, by 
   const targetUnits = finite(edition.target) && num(edition.target) > 0 ? num(edition.target) : worksTarget;
   const editionSum = sized.length ? sized.reduce((s, p) => s + num(p.edition), 0) : num(edition.total || edition.target);
   const names = shortNames(sized.map((p) => String(p.name || "Product")));
+  // a work's frame price, euros as Airtable prices frames; blended over
+  // the works that offer one in the Total row
+  const framePrice = (p) => (p.framing_available !== false && finite(p.frame_price) && num(p.frame_price) > 0 ? eur(p.frame_price) : "-");
+  const framedPriced = sized.filter((p) => p.framing_available !== false && finite(p.frame_price) && num(p.frame_price) > 0 && num(p.target_units) > 0);
+  const framedUnits = framedPriced.reduce((s, p) => s + num(p.target_units), 0);
+  const blendedFrame = framedUnits > 0 ? framedPriced.reduce((s, p) => s + num(p.target_units) * num(p.frame_price), 0) / framedUnits
+    : finite(e.framePrice) && num(e.framePrice) > 0 ? num(e.framePrice) : null;
   const rows = sized.map((p, i) => [
-    raw(names[i]), raw(fmt(p.edition)), raw(fmt(p.target_units)), raw(price(p, p.unit_price)),
+    raw(names[i]), raw(fmt(p.edition)), raw(fmt(p.target_units)), raw(price(p, p.unit_price)), raw(framePrice(p)),
     raw(finite(p.artist_profit_per_unit) ? eur(p.artist_profit_per_unit) : "-"),
     raw(finite(p.aa_profit_per_unit) ? eur(p.aa_profit_per_unit) : "-"),
     raw(dealWords(p)),
@@ -561,13 +579,14 @@ function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, by 
   const uplift = finite(e.frameUpliftPerUnit) ? num(e.frameUpliftPerUnit) : 0;
   const aaBefore = finite(e.aaProfitPerUnit) ? num(e.aaProfitPerUnit) - uplift : null;
   const releaseRow = (label) => [bold(label), bold(fmt(editionSum)), bold(fmt(targetUnits)), bold(finite(e.unitPrice) ? eur(e.unitPrice) : "-"),
+    bold(blendedFrame !== null ? eur(blendedFrame) : "-"),
     bold(finite(e.artistProfitPerUnit) ? eur(e.artistProfitPerUnit) : "-"), bold(finite(aaBefore) ? eur(aaBefore) : "-"), bold(deal)];
   if (sized.length > 1) rows.push(releaseRow("Total · per target unit"));
   if (!sized.length) rows.push(releaseRow(title || "Release"));
   const table = {
     type: "table",
-    column_settings: [{ is_wrapped: true, align: "left" }, ...Array.from({ length: 6 }, () => ({ align: "right" }))],
-    rows: [[raw("Work"), raw("Edition"), raw("Target units"), raw("Price"), raw("Artist profit / unit"), raw("AA group profit / unit"), raw("Deal")], ...rows],
+    column_settings: [{ is_wrapped: true, align: "left" }, ...Array.from({ length: 7 }, () => ({ align: "right" }))],
+    rows: [[raw("Work"), raw("Edition"), raw("Target units"), raw("Price"), raw("Frame price"), raw("Artist profit / unit"), raw("AA group profit / unit"), raw("Deal")], ...rows],
   };
 
   const value = [
@@ -586,7 +605,7 @@ function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, by 
     : finite(e.frameConversion) && finite(e.frameProfitPerUnit)
       ? `Framing: ${pct(e.frameConversion)} of buyers take a frame at ${eur(e.frameProfitPerUnit)} profit each, ${eur(e.frameUpliftPerUnit, 2)} a unit on top of Avant Arte's group profit per unit.`
       : "Framing: on offer, no profit per frame on file.";
-  const ask = `${mention ? mention + " " : ""}Please confirm these figures are right, or reply with the corrections. ` +
+  const ask = `${mentionText ? mentionText + " " : ""}Please confirm these figures are right, or reply with the corrections. ` +
     "They set the Paid ROI: profit per unit, net of cannibalisation, over what a converting entry costs and that party's share of the spend.";
   const typed = sized.reduce((n, p) => n + Object.values(p.sources || {}).filter((s) => s === "typed").length, 0);
   const source = e.mode === "release" ? "Release-level figures typed on the Target setting tab stand over the works'."
@@ -605,7 +624,7 @@ function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, by 
     section(ask),
     context(`${source} ${sent}`),
   ];
-  return { text: `${artist}: unit economics to confirm${mentionLabel ? `, ${mentionLabel} please` : ""}`, blocks };
+  return { text: `${artist}: unit economics to confirm${labelText ? `, ${labelText} please` : ""}`, blocks };
 }
 
 // ---------------------------------------------------------------- who to mention
