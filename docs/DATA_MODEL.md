@@ -322,7 +322,10 @@ column named `Marketing lead`, `Campaign lead`, `Lead` or `Owner` (`leadRank`), 
 row or on the release page the row links to in the campaigns database (`leadOf`, the most
 specific name winning), with a campaigns database named by `NOTION_CAMPAIGNS_DB` supplying its
 own column over both. In the team's database the column is a relation to a person's page, read
-for that page's title; a people property is read for its display names only, never an email;
+for the person's name (`personName`: a `Full name`, `Display name` or `Name` text property, a
+first and last name, the title where it reads as a name, the Notion account beside a title that
+is only a handle such as `clare.ferris`, else that handle spelled as a name, the part before any
+@ only); a people property is read for its display names only, never an email;
 select, text, formula and rollup properties read as text. A release's lead is the name most of
 its rows carry (`campaignLeads`), written to `notion_campaigns.csv` as `marketing_lead` beside
 the dates. Then Airtable's `Marketing lead` field (a colleague's display name; the pull never takes an

@@ -6,7 +6,7 @@
 import { createRequire } from "node:module";
 import assert from "node:assert";
 const require = createRequire(import.meta.url);
-const { stageOf, isEmailRow, matchRelease, inWindow, campaignDates, campaignRowDates, leadProp, leadRank, leadNames, campaignLeads, datesCsv } = require("../server/notion.js");
+const { stageOf, isEmailRow, matchRelease, inWindow, campaignDates, campaignRowDates, leadProp, leadRank, leadNames, campaignLeads, personName, datesCsv } = require("../server/notion.js");
 
 // the stage from the row's words: the early-access email, the announce, the launch
 assert.strictEqual(stageOf(["Early access email", "AA Email"]), "early_access");
@@ -94,6 +94,23 @@ assert.ok(!JSON.stringify(leadNames(people("Maria"))).includes("@"), "no email l
 assert.deepStrictEqual(leadNames(sel("Clare")), ["Clare"]);
 assert.deepStrictEqual(leadNames({ type: "formula", formula: { type: "string", string: "Maria" } }), ["Maria"]);
 assert.deepStrictEqual(leadNames({ type: "formula", formula: { type: "number", number: 3 } }), []);
+// the person on a team page: the name property beside a handle title, else the title where it is a
+// name, else the account beside the handle, else the handle spelled out (never an address)
+const rt = (t) => ({ type: "rich_text", rich_text: [{ plain_text: t }] });
+const page = (t, props = {}) => ({ id: "x", title: t, props: { Name: { type: "title", title: [{ plain_text: t }] }, ...props } });
+assert.strictEqual(personName(page("clare.ferris", { "Full name": rt("Clare Ferris") })), "Clare Ferris");
+assert.strictEqual(personName(page("clare.ferris", { "Display Name": { type: "formula", formula: { type: "string", string: "Clare F" } } })), "Clare F");
+assert.strictEqual(personName({ id: "x", title: "clare.ferris", props: { Handle: { type: "title", title: [{ plain_text: "clare.ferris" }] }, Name: rt("Clare Ferris") } }), "Clare Ferris", "a Name property that is not the title");
+assert.strictEqual(personName(page("maria.g", { "First name": rt("Maria"), "Last name": rt("Gonzalez") })), "Maria Gonzalez");
+assert.strictEqual(personName(page("Clare Ferris", { Manager: people("Boss") })), "Clare Ferris", "a title that is a name stands, whatever people columns sit beside it");
+assert.strictEqual(personName(page("Clare")), "Clare");
+assert.strictEqual(personName(page("tom.lloyd", { Person: people("Tom Lloyd") })), "Tom Lloyd", "the account beside a handle");
+assert.strictEqual(personName(page("tom.lloyd", { Manager: people("Boss") })), "Tom Lloyd", "a manager is not the person: the handle spelled out");
+assert.strictEqual(personName(page("iz_k")), "Iz K");
+assert.strictEqual(personName(page("clare.ferris@example.com")), "Clare Ferris", "an address for a title: the part before the @ only");
+assert.ok(!personName(page("clare.ferris@example.com", { Person: people("Clare Ferris") })).includes("@"));
+assert.strictEqual(personName(page("")), "");
+assert.strictEqual(personName(page("clare.ferris", { "Full name": rt("  "), Nickname: rt("CF") })), "Clare Ferris", "a blank name property does not count, nor a nickname");
 assert.deepStrictEqual(leadNames({ type: "rollup", rollup: { type: "array", array: [people("Maria"), { type: "rich_text", rich_text: [{ plain_text: "Tom" }] }] } }), ["Maria", "Tom"]);
 assert.strictEqual(leadProp({ Lead: { type: "formula", formula: { type: "string", string: "Maria" } } }), "Lead");
 assert.deepStrictEqual(leadNames({ type: "people", people: [{ object: "user", id: "u9" }] }), []);   // a person the integration cannot name

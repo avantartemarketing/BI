@@ -478,8 +478,10 @@ launch_end,marketing_lead,...`), which the build reads before anything typed;
 early access / private room, announce, launch / close) override those. The **marketing
 lead** comes across in the same file, from a column named for it (`Marketing lead`,
 `Campaign lead`, `Lead`, `Owner`): in the team's database it is a relation to a person's
-page, and the pull reads that page's title for the name; a people, select, text, formula
-or rollup property reads too. It looks on the post row itself and, one hop on, on the
+page, and the pull reads the person's name off that page: a `Full name`, `Display name` or
+`Name` property, a first and last name, the title where it is a name, or the Notion account
+beside a title that is only a handle (`clare.ferris`), else that handle spelled as a name; a
+people, select, text, formula or rollup property reads too. It looks on the post row itself and, one hop on, on the
 release page the row links to (the campaigns database, where the lead is actually kept),
 the most specific column name winning; a campaigns database named by `NOTION_CAMPAIGNS_DB`
 supplies its own lead column over both. A release's lead is the name most of its rows

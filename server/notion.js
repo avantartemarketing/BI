@@ -37,9 +37,10 @@ const OUT = path.join(ROOT, "data", "notion_posts.csv");
  * leadProp) on the campaigns database's row, or on the release page a post
  * row links to, else the row itself, the name most of the release's rows
  * carry standing (leadOf, campaignLeads). A relation is read for the linked
- * page's title and a people property for its display names, never an email
- * (DATA_MODEL 1.6). The ETL reads them first, before anything typed
- * (etl/build.py resolve_release). */
+ * page's person (personName: the name property beside a title that is only
+ * a handle, else the title) and a people property for its display names,
+ * never an email (DATA_MODEL 1.6). The ETL reads them first, before anything
+ * typed (etl/build.py resolve_release). */
 const DATES_OUT = path.join(ROOT, "data", "notion_campaigns.csv");
 const CAMPAIGNS_DB_ID = process.env.NOTION_CAMPAIGNS_DB || "";
 const DB_ID = process.env.NOTION_ARTIST_POSTS_DB || "1b6e65265ca280a898d1e74c0661344c";
@@ -281,8 +282,8 @@ function leadProp(props) {
  * carries an email, which is left where it is (DATA_MODEL 1.6: a colleague's
  * display name, never an address). A formula reads its string, a rollup each
  * value it gathers, and any other type reads through propText; a relation
- * reads nothing here (leadNamesAsync fetches the linked pages' titles). Empty
- * names drop out. */
+ * reads nothing here (leadNamesAsync fetches the linked pages and reads each
+ * for its person, personName). Empty names drop out. */
 const cleanNames = (vals) => vals.map((v) => String(v || "").replace(/\s+/g, " ").trim()).filter(Boolean);
 function leadNames(p) {
   if (!p) return [];
@@ -295,12 +296,47 @@ function leadNames(p) {
   return cleanNames(vals);
 }
 
+/* The person a team page is about. The page's title is often not their name
+ * but a handle, the workspace's account name ("clare.ferris"), with the name
+ * in another property, so the name is read in this order: a text property
+ * named for it (Full name, Display name, or Name where the title is called
+ * something else), a first and last name pair, the title where it reads as a
+ * name (it has a space, or a capital and no dots), a people property pointing
+ * at their account (Person, User, Member, Account: its display name, never
+ * the email beside it; a Manager or any other people column is not them),
+ * and last the handle's own parts spelled as a name ("Clare Ferris"), the
+ * part before any @ only, so an address never leaves the page. */
+const NAME_TEXT = [/^(full|display|real|whole|complete)\s*name$/i, /^name$/i, /^(person|team\s*member|member|colleague|who)$/i];
+const NAME_PEOPLE = /^(person|user|member|team\s*member|people|account|notion|who|colleague)\b|name/i;
+const NAME_TYPES = new Set(["rich_text", "formula", "select", "title"]);
+const textOf = (p) => (p && p.type === "formula" ? (p.formula && p.formula.type === "string" && p.formula.string ? [p.formula.string] : []) : propText(p));
+const isHandle = (t) => !/\s/.test(t) && (/[._@-]/.test(t) || t === t.toLowerCase());
+const handleWords = (t) => String(t || "").split("@")[0].split(/[._-]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
+function personName(page) {
+  const props = (page && page.props) || {};
+  const title = String((page && page.title) || "").trim();
+  const entries = Object.entries(props).filter(([, p]) => p && p.type !== "title");
+  const text = (p) => (NAME_TYPES.has(p.type) ? cleanNames(textOf(p)).join(" ") : "");
+  for (const re of NAME_TEXT) {
+    const hit = entries.find(([n, p]) => re.test(n) && text(p));
+    if (hit) return text(hit[1]);
+  }
+  const first = entries.find(([n, p]) => /^(first|given)\s*name$/i.test(n) && text(p));
+  const last = entries.find(([n, p]) => /^(last|family|sur)\s*name$/i.test(n) && text(p));
+  if (first || last) return cleanNames([first && text(first[1]), last && text(last[1])]).join(" ");
+  if (title && !isHandle(title)) return title;
+  const account = entries.find(([n, p]) => NAME_PEOPLE.test(n) && p.type === "people" && leadNames(p).length);
+  if (account) return leadNames(account[1]).join(", ");
+  return handleWords(title);
+}
+
 /* The same with the relations followed: a lead that is a relation to a team
  * page (the usual shape - a person's page with their photo for its icon) is
- * read for that page's title, and a rollup over one the same way. */
+ * read for that page's person (personName), and a rollup over one the same
+ * way. */
 async function leadNamesAsync(p, token) {
   if (!p) return [];
-  if (p.type === "relation") return cleanNames((await relatedPages(p, token)).map((pg) => pg.title));
+  if (p.type === "relation") return cleanNames((await relatedPages(p, token)).map((pg) => personName(pg)));
   if (p.type === "rollup" && p.rollup && p.rollup.type === "array") {
     const out = [];
     for (const v of p.rollup.array || []) out.push(...await leadNamesAsync(v, token));
@@ -574,4 +610,4 @@ async function refreshArtistPosts() {
 }
 
 module.exports = { refreshArtistPosts, fetchPostsCsv, matchRelease, propText, propDate, noteSchema, summariseSchema, channelOf, channelProp, rowChannel,
-  stageOf, isEmailRow, campaignDates, campaignRowDates, leadProp, leadRank, leadNames, leadNamesAsync, leadOf, campaignLeads, datesCsv, inWindow, knownReleases };
+  stageOf, isEmailRow, campaignDates, campaignRowDates, leadProp, leadRank, leadNames, leadNamesAsync, leadOf, campaignLeads, personName, datesCsv, inWindow, knownReleases };
