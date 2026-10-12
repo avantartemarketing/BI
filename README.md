@@ -821,15 +821,14 @@ paid ROI model (profit per unit, net of cannibalisation, over the cost of a conv
 and that party's share of the spend, docs 7). It is its own post, headed `Unit economics to
 confirm · <artist>`, apart from the sell-through card's Post to Slack (the results update, headed
 by the artist's name), which keeps its own button and message; the two share only the channel.
-The message (`composeEconomicsBlocks`): per work
-the edition, the target units, the price, the artist's and Avant Arte's group profit per unit
-(before framing, as the works' rows and Airtable carry it), the blended frame profit per unit (the
-take-up times the profit per frame, Avant Arte's alone) and the deal, with a Total row carrying
-the release's figures per target unit (a page with no sized works is one row); then the ask with
-the mentions, to check and confirm in thread; last where the figures came from (Airtable, how
-many typed over), who sent it and a link to the tab (`PUBLIC_URL`, else the request's host). The
-button is disabled while the tab has unsaved edits, since the message carries the figures as
-saved.
+The message (`composeEconomicsBlocks`): a line saying the figures are all per unit, then per
+work the price, the artist's and Avant Arte's group profit (before framing, as the works' rows
+and Airtable carry it), the blended frame profit (the take-up times the profit per frame, Avant
+Arte's alone) and the split, with an All works row carrying the release's figures per target unit
+(a page with no sized works is one row); then the ask with the mentions, to check and confirm in
+thread; last where the figures came from (Airtable, how many typed over), who sent it and a link
+to the tab (`PUBLIC_URL`, else the request's host). The button is disabled while the tab has
+unsaved edits, since the message carries the figures as saved.
 
 The project manager comes from Airtable: the Pipeline table's **Project Manager** field (its
 display name) and **PM Slack ID** formula (their Slack member ID), which `etl/pull_airtable.py`

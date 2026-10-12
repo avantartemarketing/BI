@@ -524,14 +524,15 @@ function composeSellThroughBlocks(snap, { horizon = "today", today, direct = fal
  * confirm: the Target setting tab's "Send unit economics to PM" button. These
  * are the figures the Paid ROI reads (docs 7), so a wrong one moves every
  * ROI on the page, and the person who knows the deal is asked to check them
- * where they will see it. Per work: the edition, the target units, the
- * price, the artist's and Avant Arte's group profit per unit (before framing,
- * as the works' rows and Airtable carry it), the blended frame profit per
- * unit (the take-up times the profit per frame, Avant Arte's alone) and the
- * deal, with a Total row weighted as the tab's; then the ask, to check and
- * confirm in thread, with the project manager mentioned, and last where the
- * figures came from and who sent them (12 October 2026: the launch value,
- * the profit at the target and the terms under the table came out, and the
+ * where they will see it. Per work, every figure per unit (a line above the
+ * table says so): the price, the artist's and Avant Arte's group profit
+ * (before framing, as the works' rows and Airtable carry it), the blended
+ * frame profit (the take-up times the profit per frame, Avant Arte's alone)
+ * and the split, with an All works row weighted by target units as the
+ * tab's; then the ask, to check and confirm in thread, with the project
+ * manager mentioned, and last where the figures came from and who sent them
+ * (12 October 2026: the edition and target columns, the launch value, the
+ * profit at the target and the terms under the table came out, and the
  * frame's price gave way to the frame profit).
  * `mention` is the Slack mention ("<@U…>", resolveMention) or null, and
  * `mentionLabel` the person's name for the notification text; `mentions`
@@ -553,20 +554,13 @@ function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, men
   const dealWords = (p) => (finite(p.aa_revenue_share) ? `AA ${pct(p.aa_revenue_share)} of revenue`
     : finite(p.aa_profit_share) ? `AA ${pct(p.aa_profit_share)} of profit` : "-");
   const sized = (Array.isArray(e.products) ? e.products : []).filter((p) => p && num(p.edition) > 0);
-  const edition = snap.edition || {};
-  // the target the page runs on (edition.target, what the launch value and
-  // the profit at target are built on); the works' own targets add up beside
-  // it, and the message says so when they differ
-  const worksTarget = sized.reduce((s, p) => s + num(p.target_units), 0);
-  const targetUnits = finite(edition.target) && num(edition.target) > 0 ? num(edition.target) : worksTarget;
-  const editionSum = sized.length ? sized.reduce((s, p) => s + num(p.edition), 0) : num(edition.total || edition.target);
   const names = shortNames(sized.map((p) => String(p.name || "Product")));
   // the frame profit blended into a unit sold: the take-up times the profit
   // per frame (frame_uplift_per_unit), Avant Arte's alone, each work's own
   // and in the Total row the release's over every target unit
   const frameProfit = (p) => (p.framing_available !== false && finite(p.frame_uplift_per_unit) ? eur(p.frame_uplift_per_unit) : "-");
   const rows = sized.map((p, i) => [
-    raw(names[i]), raw(fmt(p.edition)), raw(fmt(p.target_units)), raw(price(p, p.unit_price)),
+    raw(names[i]), raw(price(p, p.unit_price)),
     raw(finite(p.artist_profit_per_unit) ? eur(p.artist_profit_per_unit) : "-"),
     raw(finite(p.aa_profit_per_unit) ? eur(p.aa_profit_per_unit) : "-"),
     raw(frameProfit(p)),
@@ -580,15 +574,17 @@ function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, men
   // €644 was the uplift folded into the one and not the others)
   const uplift = finite(e.frameUpliftPerUnit) ? num(e.frameUpliftPerUnit) : 0;
   const aaBefore = finite(e.aaProfitPerUnit) ? num(e.aaProfitPerUnit) - uplift : null;
-  const releaseRow = (label) => [bold(label), bold(fmt(editionSum)), bold(fmt(targetUnits)), bold(finite(e.unitPrice) ? eur(e.unitPrice) : "-"),
+  const releaseRow = (label) => [bold(label), bold(finite(e.unitPrice) ? eur(e.unitPrice) : "-"),
     bold(finite(e.artistProfitPerUnit) ? eur(e.artistProfitPerUnit) : "-"), bold(finite(aaBefore) ? eur(aaBefore) : "-"),
     bold(e.framingAvailable === false || !finite(e.frameUpliftPerUnit) ? "-" : eur(e.frameUpliftPerUnit)), bold(deal)];
-  if (sized.length > 1) rows.push(releaseRow("Total · per target unit"));
+  // the release's figures per target unit, every work weighted by its target
+  // units, as the tab's All works column reads
+  if (sized.length > 1) rows.push(releaseRow("All works"));
   if (!sized.length) rows.push(releaseRow(title || "Release"));
   const table = {
     type: "table",
-    column_settings: [{ is_wrapped: true, align: "left" }, ...Array.from({ length: 7 }, () => ({ align: "right" }))],
-    rows: [[raw("Work"), raw("Edition"), raw("Target units"), raw("Price"), raw("Artist profit / unit"), raw("AA group profit / unit"), raw("Blended frame profit / unit"), raw("Deal")], ...rows],
+    column_settings: [{ is_wrapped: true, align: "left" }, ...Array.from({ length: 5 }, () => ({ align: "right" }))],
+    rows: [[raw("Work"), raw("Price"), raw("Artist profit"), raw("AA group profit"), raw("Blended frame profit"), raw("Split")], ...rows],
   };
 
   const ask = `${mentionText ? mentionText + " please" : "Please"} check and confirm in thread. They inform our paid ROI model.`;
@@ -603,6 +599,7 @@ function composeEconomicsBlocks(snap, { mention = null, mentionLabel = null, men
     // separate button, sharing only the channel
     { type: "header", text: { type: "plain_text", text: `Unit economics to confirm · ${artist}`.slice(0, 150) } },
     section(`*${artist}${title ? ` · ${title}` : ""}*`),
+    section("These numbers are all per unit:"),
     table,
     section(ask),
     context(`${source} ${sent}`),
