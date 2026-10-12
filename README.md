@@ -478,8 +478,10 @@ launch_end,marketing_lead,...`), which the build reads before anything typed;
 early access / private room, announce, launch / close) override those. The **marketing
 lead** comes across in the same file, from a column named for it (`Marketing lead`,
 `Campaign lead`, `Lead`, `Owner`): in the team's database it is a relation to a person's
-page, and the pull reads that page's title for the name; a people, select, text, formula
-or rollup property reads too. It looks on the post row itself and, one hop on, on the
+page, and the pull reads the person's name off that page: a `Full name`, `Display name` or
+`Name` property, a first and last name, the title where it is a name, or the Notion account
+beside a title that is only a handle (`clare.ferris`), else that handle spelled as a name; a
+people, select, text, formula or rollup property reads too. It looks on the post row itself and, one hop on, on the
 release page the row links to (the campaigns database, where the lead is actually kept),
 the most specific column name winning; a campaigns database named by `NOTION_CAMPAIGNS_DB`
 supplies its own lead column over both. A release's lead is the name most of its rows
@@ -729,12 +731,13 @@ The sell-through card has a **Post to Slack** button. It sends the card as a Blo
 message to the channel set for that release: the artist as the header; the works' shared
 title and the campaign day on one line ("Brillo Box Collectable, day 20 of 27"); the table's
 title; Slack's `table` block, one row per work with its units sold (at close, the projection),
-its target, how far along the target it is, its framed units and its framing conversion
+its target, how far along the target it is, its total units (the edition) and its sell-through
+on them (capped at 100%, as the headline is), its frames and its frame %
 (frames per print on the same units as the units column: the paid prints and their frames,
 the drafts and theirs, the draw's forecast conversions at the rate the entrants ask for; the
 Framing card's headline; a dash for a work with no frame on offer; the two columns are left
 out on a release without a framing option), and a bold **Total** row adding them up (the
-framed units before rounding, so the Total is the card's own figure), the Work column
+frames before rounding, so the Total is the card's own figure), the Work column
 wrapping rather than cropping and the figures right-aligned (Slack's `data_table` block takes
 no column settings and cut the names off); on a Today update, under the table at full size, the
 close forecast marked `BETA` ("Projected sell-through at close: 24%, 1,449 of 6,100 units on

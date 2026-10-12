@@ -183,7 +183,7 @@ function FunnelView({ snap }) {
         tier="Mid funnel" metric="Sessions" r={midR} bench={bench}
         x={{ card: "Organic funnel", group: "Organic channels", label: "Sessions", kind: "vol", unit: "count",
              v: sessA, target: midR.target, bm: midR.bm, k,
-             note: "The four organic channels together: AA Email, AA Meta, Artist and Direct etc." }}
+             note: "The four organic channels together: AA Email, AA Meta, Artist and Search etc." }}
         tip={{
           head: "Mid funnel · Sessions",
           body: bench

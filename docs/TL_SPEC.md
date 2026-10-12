@@ -457,7 +457,7 @@ What the data showed on the way, and how the build reads it:
   cost per signup prices the untracked ones in at the tracked paid share, as the LE panel
   folds its untracked units.
 - **A paid signup converts at a fraction of an email one** (the panel's medians: paid 8%,
-  AA Email 29%, Direct etc. 30%). The signup target's rate is the basket's rates by channel
+  AA Email 29%, Search etc. 30%). The signup target's rate is the basket's rates by channel
   weighted at its mix of signups, so a paid-led plan needs more signups per order; a typed
   rate still wins.
 - **The feed names the release on fewer sessions than signups for some launches**, so a

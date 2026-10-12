@@ -100,7 +100,7 @@ DISPLAY_GROUPS = {
     "aa_email": {"name": "AA Email", "channels": ["AA Email Auto", "AA Email Man"]},
     "aa_social": {"name": "AA Meta", "channels": ["AA Meta", "AA X"]},
     "referral_artist": {"name": "Artist", "channels": ["Referral Artist"]},
-    "search_direct_other": {"name": "Direct etc.",
+    "search_direct_other": {"name": "Search etc.",
                             "channels": ["Direct", "Organic Search", "Other", "AA Other", "Referral Meta", "Referral Other", "Referral X"]},
     "paid": {"name": "Paid", "channels": ["Paid Social", "Paid Search"]},
 }

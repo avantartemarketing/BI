@@ -147,7 +147,7 @@ DISPLAY_GROUPS = {
     "aa_social": {"name": "AA Meta", "channels": ["AA Meta", "AA X"]},
     "referral_artist": {"name": "Artist", "channels": ["Referral Artist"]},
     "search_direct_other": {
-        "name": "Direct etc.",
+        "name": "Search etc.",
         "channels": ["Direct", "Organic Search", "Other", "AA Other",
                      "Referral Meta", "Referral Other", "Referral X"],
     },

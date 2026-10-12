@@ -672,7 +672,7 @@ export function rungModel(snap) {
       ],
     },
     {
-      key: "search_direct_other", name: "Search / direct / other", short: "Direct etc.",
+      key: "search_direct_other", name: "Search / direct / other", short: "Search etc.",
       rungs: [sess("search_direct_other"), conv("search_direct_other")],
     },
     {

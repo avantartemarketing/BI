@@ -32,6 +32,8 @@ const rel = (...ids) => ({ type: "relation", relation: ids.map((id) => ({ id }))
 const sel = (name) => ({ type: "select", select: { name } });
 const when = (d) => ({ type: "date", date: { start: d } });
 const status = (name) => ({ type: "status", status: { name } });
+const rt = (t) => ({ type: "rich_text", rich_text: [{ plain_text: t }] });
+const people = (...names) => ({ type: "people", people: names.map((name, i) => ({ object: "user", id: "u" + i, name, type: "person", person: { email: "nobody@example.com" } })) });
 
 // the pages behind the relations: release pages (the campaigns database) and team pages
 const pages = {
@@ -40,6 +42,11 @@ const pages = {
   r_dali: { Release: title("Salvador Dali Estate - TBC"), Status: status("7. In Flight"), "Marketing Lead": rel("t_missing") },   // a team page not shared with the integration
   t_maria: { Name: title("Maria"), Email: { type: "email", email: "nobody@example.com" } },
   t_clare: { Name: title("Clare") },
+  // team pages titled with the account's handle, the person's name in another property, or nowhere
+  r_handle: { Release: title("Some Artist - Work"), Status: status("7. In Flight"), "Marketing Lead": rel("t_handle") },
+  t_handle: { Name: title("clare.ferris"), "Full name": rt("Clare Ferris"), Email: { type: "email", email: "nobody@example.com" } },
+  t_acct: { Name: title("tom.lloyd"), Person: people("Tom Lloyd") },
+  t_bare: { Name: title("iz_k") },
 };
 const post = (id, name, date, channel, release) => ({ id, created_time: `${date}T10:00:00.000Z`, properties: { Name: title(name), "Live Date": when(date), Channel: sel(channel), Release: rel(release) } });
 const postRows = [
@@ -71,9 +78,13 @@ globalThis.fetch = async (url, opts) => {
 
 const { fetchPostsCsv, leadOf, leadNamesAsync, leadRank } = require("../server/notion.js");
 
-// a relation lead reads the linked page's title; the row's own column by rank, the linked page's over a weaker one
+// a relation lead reads the person on the linked page (its title, or the name beside a handle title);
+// the row's own column by rank, the linked page's over a weaker one
 assert.deepStrictEqual(await leadNamesAsync(rel("t_maria", "t_clare"), "stand-in"), ["Maria", "Clare"]);
+assert.deepStrictEqual(await leadNamesAsync(rel("t_handle", "t_acct", "t_bare"), "stand-in"), ["Clare Ferris", "Tom Lloyd", "Iz K"]);
 assert.deepStrictEqual(await leadNamesAsync(rel("t_missing"), "stand-in"), []);
+const viaHandle = await leadOf({ Name: title("x"), Release: rel("r_handle") }, "stand-in");
+assert.deepStrictEqual([viaHandle.names, viaHandle.from], [["Clare Ferris"], "Release → Marketing Lead"], JSON.stringify(viaHandle));
 assert.deepStrictEqual(leadRank(pages.r_bisa), { name: "Marketing Lead", rank: 0 });
 let lead = await leadOf(postRows[0].properties, "stand-in");
 assert.deepStrictEqual(lead, { name: "Marketing Lead", rank: 0, names: ["Maria"], from: "Release → Marketing Lead" }, JSON.stringify(lead));
