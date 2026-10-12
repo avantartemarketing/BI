@@ -128,7 +128,7 @@ check(types.join(" ") === "header section section table section context context"
 const beta = (msg.blocks || []).filter((b) => b.type === "section").map((b) => b.text.text).find((t) => /BETA/.test(t)) || "";
 check(/^Projected sell-through at close: \*\d+%\*, [\d,]+ of [\d,]+ units on current results `BETA`$/.test(beta), `the beta close line: ${beta}`);
 const table = (msg.blocks || []).find((b) => b.type === "table");
-check(table && table.rows.length === 5 && table.rows.every((r) => r.length === 6), "three works and a Total row, six cells each");
+check(table && table.rows.length === 5 && table.rows.every((r) => r.length === 8), "three works and a Total row, eight cells each");
 check(msg.unfurl_links === false && msg.unfurl_media === false, "no unfurling");
 check(!/at close/.test(msg.text), "today's horizon says nothing about close");
 
