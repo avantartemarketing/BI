@@ -756,7 +756,13 @@ by chip): "to stay ROI-positive" ("to keep ROI above 1.2" on a release whose flo
 we are on course to sell out anyway" (where the line ends there, since the forecast does not
 move) or, for a stop, "This assumes paid stops now, as we are on course to sell out without it.
 Paid is at €875 a day" (the forecast already has paid stopped, the gap to the edition being
-closed; a target that is part of the edition changes nothing, since paid runs to the sellout),
+closed; a target that is part of the edition changes nothing, since paid runs to the sellout).
+When paid has been switched off today (`paid.budget.offToday`: well into the day, the spend
+feed's day so far carries spend on other campaigns and none on this one, 13 October 2026) the
+figure is the last day paid ran and the line says so: "Paid is off today, after €1,288 a day
+until yesterday. The forecast assumes it runs again at that rate." before the recommendation, or
+for a stop "Paid is off today, after €1,288 a day until yesterday, and we are on course to sell
+out without it"; the Paid card's Current row reads "off today" beside the figure. Then
 "as it bought no entries
 yesterday", "as it has bought no entries for three days", "as cumulative ROI is under 0.9", "as ROI
 has been under target for three days"; the figure is the build's `paid.atRecommended`, the same projection

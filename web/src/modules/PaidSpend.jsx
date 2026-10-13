@@ -65,7 +65,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     head: "Daily budget",
     body: "Entries are priced at the cost per entry the recommended spend implies (cost rises with the day's budget and as the spend adds up), then paced by the workbook's rules: ±30% a day, hold while cumulative ROI sits between 0.9 and 1.3, cut below 0.9.",
     rows: [
-      { label: "Current", value: money(cur) },
+      { label: "Current", value: budget.offToday ? `${money(cur)} · off today` : money(cur) },
       { label: "Recommended", value: money(rec) },
       { label: "Cost / unit now", value: budget.cpeNow ? "€" + fmt(budget.cpeNow) : "–" },
       { label: "Cost / unit at recommended", value: budget.cpeAtRecommended ? "€" + fmt(budget.cpeAtRecommended) : "–" },

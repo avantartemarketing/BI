@@ -247,7 +247,10 @@ function model(snap, { horizon = "today", today, direct = false } = {}) {
   // by" chip) rides along, so a cut or a stop can say why (leverLine)
   const lever = snap.complete || !(cur > 0) || rec === null || recPct === null || closePct === null ? null
     : { current: cur, recommended: rec, move: Math.round(rec) - Math.round(cur), pct: recPct, units: num(ar.sellThrough.units),
-        cap: pb.cap || null, paced: !!pb.paced, floor: finite(pb.floor) ? num(pb.floor) : null };
+        cap: pb.cap || null, paced: !!pb.paced, floor: finite(pb.floor) ? num(pb.floor) : null,
+        // paid switched off today while the feed shows other campaigns
+        // spending: the current figure is the last day it ran (13 October 2026)
+        offToday: !!pb.offToday };
 
   // the totals, in words
   const totals = [
@@ -412,7 +415,12 @@ const pct1 = (v) => `${(Math.round(num(v) * 1000) / 10).toFixed(1)}%`;
 const leverLine = (m) => {
   const l = m.lever;
   if (m.close || !l) return null;
-  const holds = `This assumes paid stays at ${eur(l.current)} a day.`;
+  // paid off today: the figure is the last day it ran, and the forecast's
+  // run rate is that day's, so the line says so rather than "stays at"
+  const off = !!l.offToday;
+  const holds = off
+    ? `Paid is off today, after ${eur(l.current)} a day until yesterday. The forecast assumes it runs again at that rate.`
+    : `This assumes paid stays at ${eur(l.current)} a day.`;
   const at = `*${pct1(l.pct)}* (${fmt(l.units)} units)`;
   if (l.move > 0) return `${holds} There may be room to increase paid spend, in which case the forecast sell-through rises to ${at}.`;
   if (l.move < 0) {
@@ -422,7 +430,8 @@ const leverLine = (m) => {
     switch (l.cap) {
       case "supply":
         return stop
-          ? `This assumes paid stops now, as we are on course to sell out without it. Paid is at ${eur(l.current)} a day.`
+          ? (off ? `Paid is off today, after ${eur(l.current)} a day until yesterday, and we are on course to sell out without it.`
+            : `This assumes paid stops now, as we are on course to sell out without it. Paid is at ${eur(l.current)} a day.`)
           : `${holds} We may be able to ${verb} paid spend, as we are on course to sell out anyway.`;
       case "roi_floor": {
         const roi = l.floor === null || Math.abs(l.floor - 1) < 1e-9 ? "to stay ROI-positive" : `to keep ROI above ${Number(l.floor).toFixed(1)}`;

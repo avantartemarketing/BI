@@ -5080,6 +5080,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     days_left = max((launch_end - full_through).days, 0)
     past_spend = spend_day[spend_day.index <= full_through]
     current_daily = float(past_spend.get(full_through, past_spend.iloc[-1] if len(past_spend) else 0.0))
+    # paid switched off today (13 October 2026): well into the day, the feed's
+    # day so far carries spend on other campaigns and none on this one. The
+    # run rate still reads the last full day, the last day paid ran, and the
+    # card and the Slack update say paid is off today beside it
+    feed_today = float(spend[spend["spend_date"] == as_of]["spend"].sum()) if (as_of > full_through and len(spend)) else 0.0
+    paid_off_today = bool(not complete and as_of > full_through and seen >= 0.25 and current_daily > 0
+                          and part_spend <= 0 and feed_today > 0)
     # ---- what a paid entry buys once a work is spoken for (10 October 2026;
     # day by day since 11 October 2026). The entrants still to come, organic
     # and paid alike, are taken to look like the entrants so far, the
@@ -5714,6 +5721,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "roiTarget": b["target_roi_aa"],
         "budget": {
             "current": round(current_daily, 2),
+            # the day so far: its spend, and whether paid is off today while
+            # the feed shows other campaigns spending (the run rate above is
+            # then the last day paid ran)
+            "spendToday": round(part_spend, 2),
+            "offToday": paid_off_today,
             "recommended": round(recommended, 2) if recommended is not None and recommended != math.inf else None,
             "cap": cap, "finalDayRoi": round(final_day_roi, 3) if final_day_roi else None,
             "floor": b["roi_floor"],

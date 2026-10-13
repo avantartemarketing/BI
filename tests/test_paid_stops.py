@@ -308,6 +308,25 @@ check(ar["stops"]["day"] is None or ar["stops"]["day"] == launch.isoformat(),
 check(ar["spendProjectedTotal"] > p["spendProjectedTotal"] and ar["unitProjected"] > p["unitProjected"],
       f"and the lower spend, run to the close, buys more than the higher one stopped: {ar['spendProjectedTotal']} / {ar['unitProjected']} vs {p['spendProjectedTotal']} / {p['unitProjected']}")
 
+# ---- paid switched off today (13 October 2026): nothing spent on this
+# campaign so far today while another campaign in the feed has spent, well
+# into the day: the run rate still reads the last day paid ran, and the page
+# says paid is off today. With no other campaign spending today the feed may
+# simply not have the day yet, so nothing is said
+sf_off = pd.concat([spend_frame(TODAY, part=0.0),
+                    pd.DataFrame([{"campaign_name": "Other · Enter draw", "spend_date": TODAY, "impressions": 100, "reach": 80, "link_clicks": 4, "spend": 120.0}])],
+                   ignore_index=True)
+O = build.build_release(cfg, frame(TODAY, 0.4), sf_off, emails, content, curves, TODAY, artist_posts, {}, None, panel, people,
+                        full_through=TODAY - timedelta(days=1), seen=0.4375)
+build.check_snapshot(O)
+bo = O["paid"]["budget"]
+check(bo["offToday"] is True and bo["spendToday"] == 0.0 and bo["current"] == 500.0,
+      f"paid off today: the run rate is the last day it ran, today reads nothing: {bo['offToday']} {bo['spendToday']} {bo['current']}")
+Q = build.build_release(cfg, frame(TODAY, 0.4), spend_frame(TODAY, part=0.0), emails, content, curves, TODAY, artist_posts, {}, None, panel, people,
+                        full_through=TODAY - timedelta(days=1), seen=0.4375)
+check(Q["paid"]["budget"]["offToday"] is False, f"no other campaign spending today: nothing is said: {Q['paid']['budget']['offToday']}")
+check(P["paid"]["budget"]["offToday"] is False and P["paid"]["budget"]["spendToday"] == 200.0, f"a part day with spend is not off: {P['paid']['budget']['offToday']} {P['paid']['budget']['spendToday']}")
+
 # ---- a complete campaign has no stops and no flat run to show
 C = run(cfg, through=launch)
 check(C["complete"] and C["paid"]["stops"]["day"] is None and C["paid"]["ifContinued"] is None and C["paid"]["atRecommended"] is None,

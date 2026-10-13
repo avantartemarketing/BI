@@ -2035,7 +2035,7 @@ whose ROI at close is the floor, and `eps` and `drift` are the campaign's own
 (`campaign_cost_terms`, below). With `eps` 0, or no spend on the last full day, the price is
 flat in spend: `supply_spend = sellout_gap × cpe_now / Σ_t (1 + drift)^−t`, and the floor
 either never binds or stops the spend. The gap is priced in converting units at the adjusted
-CPE, which is the same money as `entries_needed` at the raw cost per entry. `paid.budget` publishes `selloutGap`, `organicFuture`, `entriesNeeded`,
+CPE, which is the same money as `entries_needed` at the raw cost per entry. `paid.budget` publishes `current` (the last full day's spend, the run rate), `spendToday` (the day so far) and `offToday` (paid switched off today: well into the day, the feed's day so far carries spend on other campaigns and none on this one, so `current` is the last day paid ran; 13 October 2026), `selloutGap`, `organicFuture`, `entriesNeeded`,
 `supplySpend`, `budgetToSellOut`, `roiSpend`, `cpeNow`, `cpeAtClose`, `cpeAtRecommended`,
 `driftToClose` and `finalDayRoi` (AA's; the artist's is `paid.artist.finalDayRoi`), and since
 10 October 2026 `organicUnits`, `yieldNow` and `yieldAtClose` (the share of a day's entries that

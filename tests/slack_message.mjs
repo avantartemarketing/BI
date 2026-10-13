@@ -355,6 +355,12 @@ if (fs.existsSync(dir)) {
   check(stop("supply") === "This assumes paid stops now, as we are on course to sell out without it. Paid is at €1,000 a day.", `a stop, selling out without it: ${stop("supply")}`);
   const whole = { edition: { target: 600, total: 600 } };
   check(cut("supply", whole) === cut("supply") && stop("supply", whole) === stop("supply"), "the same with the target the whole edition");
+  // paid switched off today (13 October 2026): the figure is the last day it ran, and the line says so
+  const offUp = line(withPaid(1288, 1500, 0.3605, 216.3, {}, { offToday: true }));
+  check(offUp === "Paid is off today, after €1,288 a day until yesterday. The forecast assumes it runs again at that rate. There may be room to increase paid spend, in which case the forecast sell-through rises to *36.1%* (216 units).",
+    `off today, room to run more: ${offUp}`);
+  const offStop = line(withPaid(1288, 0, 0.25, 150, {}, { cap: "supply", offToday: true }));
+  check(offStop === "Paid is off today, after €1,288 a day until yesterday, and we are on course to sell out without it.", `off today, selling out without it: ${offStop}`);
   check(stop("zero_conversion_pause") === H + "We may have to pause paid spend, as it has bought no entries for three days, in which case the forecast sell-through drops to *25.0%* (150 units).", `a pause: ${stop("zero_conversion_pause")}`);
   check(cut("zero_conversion") === H + "We may have to decrease paid spend, as it bought no entries yesterday, " + D, `a cut, nothing bought yesterday: ${cut("zero_conversion")}`);
   check(cut("roi_band_decrease") === H + "We may have to decrease paid spend, as cumulative ROI is under 0.9, " + D, `a cut by the ROI band: ${cut("roi_band_decrease")}`);
