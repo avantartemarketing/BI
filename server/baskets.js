@@ -179,11 +179,11 @@ function releaseName(releaseId) {
  * prefer_recent, channels_off and the dates off the result. */
 const economicsPromise = import("../shared/economics.mjs");
 const DATE_KEYS = ["private_room_open", "announce_date", "launch_end"];
-async function resolveRelease(rec, releaseId, doc) {
+async function resolveRelease(rec, releaseId, doc, line) {
   if (!rec || typeof rec !== "object") return null;
   const id = String(releaseId || rec.id || "").replace(/[^a-z0-9_]/g, "");
   doc = doc || readJson(INPUTS_PATH, {});
-  const { resolveProducts, releaseEconomics, LEGACY_KEYS } = await economicsPromise;
+  const { resolveProducts, releaseEconomics, releaseLines, LEGACY_KEYS } = await economicsPromise;
   const sourced = (doc.sourced && doc.sourced[id]) || {};
   const at = sourced.airtable || {};
   const bench = doc.benchmarks || {};
@@ -192,7 +192,19 @@ async function resolveRelease(rec, releaseId, doc) {
   if ((legacy === null || legacy === undefined) && LEGACY_KEYS.some((k) => r[k] !== undefined && r[k] !== null && r[k] !== "")) {
     legacy = Object.fromEntries(LEGACY_KEYS.filter((k) => k in r).map((k) => [k, r[k]]));
   }
-  const econ = releaseEconomics(resolveProducts(at.products || [], Array.isArray(r.products) ? r.products : [], bench), legacy || null, bench);
+  const products = resolveProducts(at.products || [], Array.isArray(r.products) ? r.products : [], bench);
+  let econ = releaseEconomics(products, legacy || null, bench);
+  // one line of a release selling two (docs/LINES_PLAN.md): the line's own
+  // size and price are what its basket is picked on; the record's own line
+  // settings carry its saved basket, so a line id names a line or nothing
+  if (line) {
+    const ln = (econ.mode === "products" ? releaseLines(products, r.line_settings, bench) : []).find((l) => l.key === String(line));
+    if (!ln) return null;
+    econ = ln;
+    r.line = ln.key;
+    r.benchmark_basket = ln.benchmark_basket;
+    r.stretch_from = ln.stretch_from;
+  }
   if (econ.mode === "release") {
     // the typed figures, the price in the record's own currency as the build reads it
     r.edition_size = econ.edition_size;
@@ -233,14 +245,15 @@ function buildAsOf() {
  * answer is part of the cache key. */
 async function readyBaskets(releaseId, opts = {}) {
   const doc = readJson(INPUTS_PATH, {});
-  let release = await resolveRelease(opts.release || releaseFor(releaseId, doc), releaseId, doc);
+  let release = await resolveRelease(opts.release || releaseFor(releaseId, doc), releaseId, doc, opts.line);
+  if (opts.line && !release) return { suggested: null, baskets: [], saved: [], error: `no line ${opts.line}` };
   if (release) {
     if (opts.preferRecent !== undefined) release.prefer_recent = !!opts.preferRecent;
     if (opts.units > 0) release.edition_size = opts.units;
     if (opts.price > 0) { release.unit_price = opts.price; release.currency = "EUR"; }
   }
   const asOf = buildAsOf();
-  const key = "baskets:" + JSON.stringify([asOf, release && [release.release_name || "", release.prefer_recent === false,
+  const key = "baskets:" + JSON.stringify([asOf, opts.line || null, release && [release.release_name || "", release.prefer_recent === false,
     Number(release.edition_size) || 0, Number(release.unit_price) || 0, release.currency || "EUR",
     ...DATE_KEYS.map((k) => release[k] || null), release.channels_off || [], release.artist || "", release.nearest_cluster ?? null]]);
   return cached(key, () => runBaskets({ op: "baskets", release, as_of: asOf }));

@@ -19,7 +19,7 @@ export const PAGE_CURRENCY = "EUR";
 export const RATES_TO_EUR = { EUR: 1.0, GBP: 1.18, USD: 0.92 };
 export const PRODUCT_KEYS = ["edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
   "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "framing_available", "frame_conversion",
-  "frame_profit_per_unit", "frame_price", "units_target"];
+  "frame_profit_per_unit", "frame_price", "line", "units_target"];
 export const LEGACY_KEYS = ["edition_size", "edition_total", "unit_price", "artist_profit", "aa_group_profit",
   "artist_profit_share", "framing_available", "frame_conversion", "frame_profit_per_unit", "aa_budget_share"];
 
@@ -86,7 +86,10 @@ export function effectiveProduct(p, b) {
     return dflt === undefined ? null : dflt;
   };
   const e = { airtable_id: p.airtable_id || null, name: typed.name !== undefined ? typed.name : p.name || "Product", project_code: p.project_code || null,
-              excluded: !!p.excluded };
+              excluded: !!p.excluded,
+              // the line of work the product sells on (docs/LINES_PLAN.md): Airtable's
+              // release code, or the line typed for a work added by hand
+              line: (typed.line !== undefined && typed.line !== null && String(typed.line).trim() !== "" ? String(typed.line).trim() : null) || p.release || null };
   const edition = num(pick("edition"));
   e.edition = edition && edition > 0 ? Math.round(edition) : null;
   // the day this work's draw closes (Airtable): one launch's works can close
@@ -199,4 +202,54 @@ export function releaseEconomics(products, legacy, b) {
     artist_profit_share: Math.round((1 - aaShare) * 10000) / 10000,
     deal: [...new Set(sized.map((p) => p.deal).filter(Boolean))].sort(),
   };
+}
+
+/* ---- lines of work (docs/LINES_PLAN.md; etl/build.py release_lines) ----
+ * A release whose products carry two or more Airtable release codes sells two
+ * lines of work on one page: each line is the products under one code, with
+ * the release's own economics arithmetic (releaseEconomics) over them, and
+ * whatever the Target setting tab saved for it under line_settings, keyed by
+ * the code. Fewer than two codes: no lines, []. Products with no code form
+ * the "_other" line beside two coded ones. */
+export const OTHER_LINE = "_other";
+export const productKey = (p) => String(p.airtable_id || p.name || "");
+
+export function lineName(products, code) {
+  const titles = products.map((p) => String(p.name || "").trim()).filter(Boolean);
+  if (titles.length === 1) return titles[0];
+  const words = titles.map((t) => t.split(/\s*[([]/)[0].trim().split(/\s+/));
+  const common = [];
+  const n = words.length ? Math.min(...words.map((w) => w.length)) : 0;
+  for (let i = 0; i < n; i++) {
+    if (new Set(words.map((w) => w[i].toLowerCase())).size === 1) common.push(words[0][i]); else break;
+  }
+  if (common.length && new Set(titles.map((t) => t.toLowerCase())).size > 1) return common.join(" ");
+  return String(code || "Other works");
+}
+
+export function releaseLines(products, settings, b) {
+  const sized = (products || []).filter((p) => p.edition && !p.excluded);
+  const byCode = new Map();
+  for (const p of sized) {
+    const code = String(p.line || "").trim() || OTHER_LINE;
+    if (!byCode.has(code)) byCode.set(code, []);
+    byCode.get(code).push(p);
+  }
+  if ([...byCode.keys()].filter((c) => c !== OTHER_LINE).length < 2) return [];
+  const cfg = settings && typeof settings === "object" ? settings : {};
+  const out = [];
+  for (const [code, ps] of byCode) {
+    const c = cfg[code] && typeof cfg[code] === "object" ? cfg[code] : {};
+    const econ = releaseEconomics(ps, null, b);
+    const typed = String(c.name || "").trim();
+    out.push({
+      key: code, code: code === OTHER_LINE ? null : code,
+      name: typed || lineName(ps, code === OTHER_LINE ? null : code), nameTyped: !!typed,
+      products: ps.map(productKey), productNames: ps.map((p) => p.name),
+      ...econ,
+      benchmark_basket: c.benchmark_basket || null, stretch_from: c.stretch_from || null,
+      adsets: Array.isArray(c.adsets) ? c.adsets.map((a) => String(a).trim()).filter(Boolean) : [],
+    });
+  }
+  return out;
 }
