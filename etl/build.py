@@ -1105,8 +1105,10 @@ def line_summary(snap: dict) -> dict:
                     "costPerPurchase": (t.get("paid") or {}).get("cost_per_purchase"),
                     "costPerPurchaseSource": (t.get("paid") or {}).get("cost_per_purchase_source")},
         "groupTargets": snap.get("groupTargets"),
-        "paid": {k: paid.get(k) for k in ("spendToDate", "entriesToDate", "unitsToDate", "cumRoi", "cumRoiArtist", "l3dRoi", "l3dCpe",
-                                          "cumCpe", "unitTarget", "spendBudget", "unitProjected", "entriesProjected", "spendProjectedTotal")},
+        "paid": {**{k: paid.get(k) for k in ("spendToDate", "entriesToDate", "unitsToDate", "cumRoi", "l3dRoi", "l3dCpe",
+                                             "cumCpe", "unitTarget", "spendBudget", "unitProjected", "entriesProjected", "spendProjectedTotal")},
+                 # the artist's reading of the same days (the paid block's own)
+                 "artist": paid.get("artist")},
         "sellthrough": {k: (snap.get("sellthrough") or {}).get(k) for k in ("sold", "drafts", "soldPredicted", "futureEntriesPredicted", "pct", "edition")},
         "status": {"pct": (snap.get("hero") or {}).get("statusPct"), "ok": (snap.get("hero") or {}).get("ok"),
                    "benchmarkPct": (snap.get("hero") or {}).get("benchmarkPct")},

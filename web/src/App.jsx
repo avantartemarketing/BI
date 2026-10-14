@@ -584,6 +584,44 @@ function DirectToggle({ on, onChange, share, snap }) {
   );
 }
 
+/* A release selling two lines of work on one page (docs/LINES_PLAN.md): the
+ * page read for all of it, or for one line. The ETL builds each line's page
+ * (variants.lines, and variants.lines_direct with Direct spread) and the
+ * switch lays it over the snapshot. On a line's page the entries, units,
+ * sell-through and paid are the line's own; the sessions are the shared
+ * page's, since one email and one post reach one audience. */
+function LineToggle({ lines, value, onChange }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}
+      title="The page for the whole release, or for one line of work. A line's page reads its own draws, works and ad set; the sessions are the shared page's.">
+      <span style={{ fontSize: 12.5, color: "#6c6b68" }}>Line</span>
+      <div className="seg" role="group" aria-label="Line of work">
+        <button className={value ? "" : "active"} onClick={() => onChange(null)} title="Every line together: the release's page">All</button>
+        {lines.map((l) => (
+          <button key={l.key} className={value === l.key ? "active" : ""} onClick={() => onChange(l.key)}
+            title={`${l.name}: ${(l.products || []).join(", ")}`}>{l.name}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LineBanner({ line, lines }) {
+  if (!line) return null;
+  const meta = (lines || []).find((l) => l.key === line.key) || {};
+  const basis = line.entriesBasis === "draws" ? "its entries are its own draws' by day and channel"
+    : line.entriesBasis === "share" ? "its entries are the release's shared out by its draws' entrants, until the event feed carries the draws by day"
+      : "no draw of its own is in the event feed yet, so it shows no entries";
+  const units = line.unitsBasis === "orders" || !line.unitsBasis ? "its units are its own works' orders" : `its units are the release's shared out by ${line.unitsBasis}`;
+  const paid = (line.adsets || []).length ? `paid is its ad set${line.adsets.length > 1 ? "s" : ""} (${line.adsets.join(", ")})` : "no ad set is named for it on the Target setting tab, so paid reads nothing";
+  return (
+    <div className="chip" style={{ display: "block", margin: "12px 0 0", padding: "8px 12px", background: "#f3f2ee", color: "#45433f", fontSize: 12.5, lineHeight: 1.45 }}>
+      <b>{line.name || meta.name || line.key}</b>: {basis}; {units}; {paid}. The sessions and the organic traffic are the shared page's, so its conversion is read on them.
+      {meta.benchmarkUnits ? ` Benchmarked on its own basket (${fmt(meta.benchmarkUnits)} units of demand).` : ""}
+    </div>
+  );
+}
+
 /* The header's strip for a release that is not a timed launch: its status
  * with the sidebar's dot, its target and edition where it has them, its lead.
  * `row` is the release's index row, which carries the status and the pace the
@@ -626,10 +664,18 @@ function ReleasePage({ snap, onSaved, st, onRefreshed, index, row, onOpen }) {
   const [directSpread, setDirectSpreadState] = useState(readDirectPref);
   const setDirectSpread = (v) => { setDirectSpreadState(v); try { localStorage.setItem(DIRECT_PREF, v ? "1" : "0"); } catch { /* per-browser convenience only */ } };
   const variant = snap.variants && snap.variants.direct_spread;
-  // the page the cards read: the snapshot, or the snapshot with Direct spread
-  const view = useMemo(() => (directSpread && variant ? { ...snap, ...variant } : snap), [snap, variant, directSpread]);
+  // the lines of work the release sells (docs/LINES_PLAN.md), and the one the
+  // page is read for; a line is a reading of one launch, so it does not stick
+  const lines = Array.isArray(snap.lines) && snap.lines.length && snap.variants && snap.variants.lines ? snap.lines : null;
+  const [lineKey, setLineKey] = useState(null);
+  const lineVariant = lines && lineKey
+    ? ((directSpread && snap.variants.lines_direct && snap.variants.lines_direct[lineKey]) || snap.variants.lines[lineKey] || null)
+    : null;
+  // the page the cards read: the snapshot, or the snapshot with Direct spread, or one line's page
+  const view = useMemo(() => (lineVariant ? { ...snap, ...lineVariant } : directSpread && variant ? { ...snap, ...variant } : snap),
+    [snap, variant, directSpread, lineVariant]);
   // a new release is a new reading: start it on the tab and the horizon everyone shares
-  useEffect(() => { setTab("overview"); setHorizon("today"); }, [snap.id]);
+  useEffect(() => { setTab("overview"); setHorizon("today"); setLineKey(null); }, [snap.id]);
   const targeted = snap.targeted !== false;
   const catalogue = !!snap.catalogue;
   const upcoming = !!snap.upcoming;
@@ -702,9 +748,10 @@ function ReleasePage({ snap, onSaved, st, onRefreshed, index, row, onOpen }) {
                 title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
             )}
           </div>
-          {(showHorizon || (variant && tab === "overview")) && (
+          {(showHorizon || ((variant || lines) && tab === "overview")) && (
             <div className="page-controls">
               {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} closeLabel={wordsOf(snap).closeLabel} />}
+              {lines && tab === "overview" && <LineToggle lines={lines} value={lineKey} onChange={setLineKey} />}
               {/* the switch lays the variant over the Overview's cards; the other
                   tabs read Direct as a channel, so it is not offered there */}
               {variant && tab === "overview" && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} snap={snap} />}
@@ -724,6 +771,7 @@ function ReleasePage({ snap, onSaved, st, onRefreshed, index, row, onOpen }) {
       </header>
       <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
       <CoverageBanner noEvent={snap.untracked && snap.untracked.noEvent} />
+      {tab === "overview" && lineVariant && <LineBanner line={view.line} lines={lines} />}
       <nav className="tabs" style={{ marginTop: 20 }}>
         <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
         <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>

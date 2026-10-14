@@ -38,7 +38,7 @@
  * no profit per unit recorded. The ? popup shows the working. */
 import React, { useState } from "react";
 import {
-  Card, QBadge, GROUP_DOTS, C, fmt, dayLabel, dayAxisLabel, textPx, timeAxis, nameLines, useBoxSize, LineNames, ChartTip,
+  Card, QBadge, GROUP_DOTS, C, fmt, fmtMoney, dayLabel, dayAxisLabel, textPx, timeAxis, nameLines, useBoxSize, LineNames, ChartTip,
   hoverAt,
 } from "../ui.jsx";
 import { Ex } from "../explain/Explain.jsx";
@@ -374,9 +374,30 @@ function PaidRoiLE({ snap }) {
   const axisLabel = { position: "absolute", left: 0, transform: "translate(-100%,-50%)", paddingRight: 8, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
   const xLabel = { position: "absolute", top: "100%", paddingTop: 6, fontSize: 12, color: C.muted, whiteSpace: "nowrap" };
 
+  /* A release selling two lines of work, each on its own ad set
+     (docs/LINES_PLAN.md): on the combined page, each line's spend, cost per
+     entry and ROI from its own build, so the two ad sets read side by side;
+     the Line switch opens each one's full page. */
+  const byLine = !snap.line && Array.isArray(snap.lines) && snap.lines.length > 1
+    ? snap.lines.filter((l) => l.paid && (l.paid.spendToDate ?? 0) > 0) : [];
+  const lineStrip = byLine.length ? (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", fontSize: 11.5, color: C.muted, marginTop: 6 }}>
+      <span style={{ fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", fontSize: 10.5 }}>By ad set</span>
+      {byLine.map((l) => {
+        const roi = party === "artist" ? (l.paid.artist || {}).cumRoi : l.paid.cumRoi;
+        return (
+          <span key={l.key} title={`${l.name}: ${(l.adsets || []).join(", ") || "no ad set named"}. Spend ${fmtMoney(l.paid.spendToDate, 0)}, ${fmt(l.paid.entriesToDate ?? 0)} entries, cost per converting entry ${l.paid.cumCpe ? fmtMoney(l.paid.cumCpe) : "–"}, ROI to date ${roi !== null && roi !== undefined ? fmt(roi, 2) : "–"} on the profit of what its entries are for.`}>
+            <b style={{ color: C.ink }}>{l.name}</b> {fmtMoney(l.paid.spendToDate, 0)} · {l.paid.cumCpe ? fmtMoney(l.paid.cumCpe) : "–"}/entry · ROI <b className="num" style={{ color: C.ink }}>{roi !== null && roi !== undefined ? fmt(roi, 2) : "–"}</b>
+          </span>
+        );
+      })}
+    </div>
+  ) : null;
+
   return (
     <Card wide dot={GROUP_DOTS.paid} title="Paid ROI" right={right}>
       <div className="spacer-8" />
+      {lineStrip}
       {/* the totals drop under the lead figure on a card too narrow for both (a phone) */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px 16px", flex: "0 0 auto", flexWrap: "wrap" }}>
         <div className="lead">

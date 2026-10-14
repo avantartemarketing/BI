@@ -29,7 +29,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { C, MINUS, fmt, fmtK, fmtMoney, fmtPct } from "./ui.jsx";
 import BasketPicker from "./BasketPicker.jsx";
-import { resolveProducts, releaseEconomics, frameBandRate, LEGACY_KEYS } from "../../shared/economics.mjs";
+import { resolveProducts, releaseEconomics, releaseLines, frameBandRate, LEGACY_KEYS } from "../../shared/economics.mjs";
 import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf, rebalanceShares, stretchWeights } from "../../shared/benchmarkModel.mjs";
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
@@ -685,6 +685,114 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
  * strip of derived figures, no channel table, no copy: a figure's source is
  * a one-word tag in its box. `directSpread` is accepted for the App's sake;
  * the plan here reads Direct as a channel of its own either way. */
+/* Where the stretch comes from (BENCHMARK_SPEC 4.4): a three-way choice -
+ * the basket's own shares (the even uplift), all of it from paid, or custom
+ * shares on coupled sliders that always add to 100
+ * (shared/benchmarkModel.mjs rebalanceShares). `value` is the saved shares
+ * or null, `T` the targets at them, `profile` the basket's. One control for
+ * the release, and one per line of work on a release that sells two
+ * (docs/LINES_PLAN.md). `resetKey` puts the mode back when a draft is
+ * discarded. */
+export function stretchWordsOf(value, isOff) {
+  const typed = !!(value && GROUPS.some((g) => !isOff(g.key) && Number(value[g.key]) > 0));
+  return !typed ? "even across channels" : Number(value.paid || 0) >= 0.995 ? "all from paid" : "custom shares";
+}
+function StretchPicker({ profile, value, onChange, isOff, T, k, resetKey, signed }) {
+  const [ui, setUi] = useState(null);
+  useEffect(() => { setUi(null); }, [resetKey]);
+  const paidOff = isOff("paid");
+  const activeGroups = profile ? GROUPS.map((g) => g.key).filter((g) => !isOff(g) && Number((profile.units_by_group || {})[g]) > 0) : [];
+  const evenShares = profile ? stretchWeights({ stretch_from: null }, profile.units_by_group) : {};
+  const stretchFrom = value && typeof value === "object" && !Array.isArray(value) ? value : null;
+  const stretchTyped = !!(stretchFrom && GROUPS.some((g) => !isOff(g.key) && Number(stretchFrom[g.key]) > 0));
+  const shares = T && T.stretch_from ? T.stretch_from : evenShares;
+  const allPaid = stretchTyped && Number(stretchFrom.paid || 0) >= 0.995;
+  const mode = ui || (!stretchTyped ? "even" : allPaid ? "paid" : "custom");
+  const choose = (m) => {
+    setUi(m);
+    if (m === "even") onChange(null);
+    else if (m === "paid") onChange({ paid: 1 });
+    else if (!stretchTyped) onChange({ ...evenShares });
+  };
+  const slide = (key) => (e) => onChange(rebalanceShares(shares, key, Number(e.target.value) / 100, activeGroups));
+  const stretchOf = (key) => (T && T.units_by_group ? Number(T.units_by_group[key] || 0) - Number((profile.units_by_group || {})[key] || 0) : 0);
+  const words = mode === "paid" ? "all from paid" : mode === "even" ? "even across channels" : "custom shares";
+  return (
+    <div className="ts2-ctl" style={{ flexDirection: "column", alignItems: "stretch", gap: 14 }}>
+      <div className="ts2-ctl">
+        <div className="seg" role="group" aria-label="Where the stretch comes from">
+          <button type="button" className={mode === "even" ? "active" : ""} disabled={!profile} onClick={() => choose("even")}
+            title="The basket's own shares: the same uplift in every channel.">Even across channels</button>
+          <button type="button" className={mode === "paid" ? "active" : ""} disabled={!profile || paidOff} onClick={() => choose("paid")}
+            title="The whole stretch from paid: the other channels stay at their benchmark.">All from paid</button>
+          <button type="button" className={mode === "custom" ? "active" : ""} disabled={!profile || activeGroups.length < 2} onClick={() => choose("custom")}
+            title="Set each channel's share on a slider; the others rescale so the shares add to 100.">Custom</button>
+        </div>
+        {T && <span className="ts2-stretch num" title={`${words}: ×${fmt(k || 1, 2)} over the basket in all`}>{signed(Math.round(T.stretch_units))} <span>units</span></span>}
+      </div>
+      {mode === "custom" && profile && (
+        <div className="ts2-card ts-sliders" style={{ padding: "16px 20px", maxWidth: 640 }}>
+          {GROUPS.map((g) => {
+            const gOff = isOff(g.key);
+            const active = activeGroups.includes(g.key);
+            const pct = active ? Math.round(100 * Number(shares[g.key] || 0)) : 0;
+            return (
+              <label key={g.key} className={`ts-slider${active ? "" : " dis"}`}
+                title={gOff ? "Not in plan: this channel takes none of the stretch." : !active ? "No benchmark in the basket to lift." : "Drag to set this channel's share; the others rescale so the shares add to 100."}>
+                <span className="head"><span>{g.name}</span><b>{active ? `${pct}%` : "–"}</b></span>
+                <input type="range" min="0" max="100" step="1" disabled={!active || activeGroups.length < 2} value={pct}
+                  aria-label={`${g.name}: share of the stretch`} onChange={slide(g.key)} />
+                <span className="note">{active ? `${signed(Math.round(stretchOf(g.key)))} units` : ""}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* The ad sets a line's paid actuals are read from (docs/LINES_PLAN.md): the
+ * ones the spend feed lists under the release's campaigns to click on, and a
+ * box for one the feed does not carry yet. */
+function AdSets({ value, known, onChange }) {
+  const [draft, setDraft] = useState("");
+  const chosen = Array.isArray(value) ? value : [];
+  const add = (names) => {
+    const next = [...chosen];
+    for (const n of names.map((x) => String(x).trim()).filter(Boolean)) if (!next.some((c) => c.toLowerCase() === n.toLowerCase())) next.push(n);
+    onChange(next);
+  };
+  const commit = () => { if (draft.trim()) { add(draft.split(",")); setDraft(""); } };
+  const offer = known.filter((k) => !chosen.some((c) => c.toLowerCase() === k.name.toLowerCase()));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: "1 1 320px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+        {chosen.map((c) => (
+          <span key={c} className="ts2-tag typed" style={{ display: "inline-flex", gap: 6, alignItems: "center" }} title="This ad set's spend and paid entries are the line's.">
+            {c}<button type="button" className="ts-link" onClick={() => onChange(chosen.filter((x) => x !== c))} aria-label={`Remove ${c}`} title="Take this ad set off the line.">×</button>
+          </span>
+        ))}
+        {!chosen.length && <span style={{ fontSize: 12, color: C.muted }}>none named: this line reads no spend</span>}
+      </div>
+      {offer.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+          <span style={{ fontSize: 11.5, color: C.muted }}>In the feed:</span>
+          {offer.map((k) => (
+            <button key={k.name} type="button" className="ts-btn secondary sm" onClick={() => add([k.name])}
+              title={`${k.campaign}: ${fmtMoney(k.spend, 0)} spent. Click to read it as this line's.`}>{k.name}</button>
+          ))}
+        </div>
+      )}
+      <div className="ts-box" style={{ maxWidth: 360 }}>
+        <input value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={commit}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+          placeholder="An ad set's name, as Meta names it" title="An ad set the spend feed does not list yet: type its name exactly as Meta names it and press Enter." />
+      </div>
+    </div>
+  );
+}
+
 export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const [meta, setMeta] = useState(null);       // {inputs, sourced, benchmarks, meta_campaigns, derived, creating}
   const [inp, setInp] = useState(null);         // editable inputs
@@ -696,7 +804,9 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const [buildSecs, setBuildSecs] = useState(null);   // how long the background rebuild has run
   const [editing, setEditing] = useState(false);      // the works' figures unlocked
   const [whyOpen, setWhyOpen] = useState(false);      // the untracked notice's explanation
-  const [stretchUi, setStretchUi] = useState(null);   // even | paid | custom, once chosen on this visit
+  const [stretchReset, setStretchReset] = useState(0);   // bumps when a draft is discarded: the stretch controls go back to the saved mode
+  const [linePicks, setLinePicks] = useState({});         // a basket chosen in the picker for a line of work, not yet saved
+  const [pickingLine, setPickingLine] = useState(null);   // the line whose picker is open
   const [assumeOpen, setAssumeOpen] = useState(false); // the assumptions' boxes open
   // the Slack channel the sell-through card posts to: its own small document
   // on the server (server/slack.js), saved on its own so a release without
@@ -755,7 +865,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
 
   useEffect(() => {
     setMeta(null); setInp(null); setError(null); setPick(null); setPicking(false); setEditing(false); setWhyOpen(false);
-    setStretchUi(null); setAssumeOpen(false);
+    setStretchReset((n) => n + 1); setAssumeOpen(false); setLinePicks({}); setPickingLine(null);
     setSlackDraft((snap.slack && snap.slack.channel) || ""); setPmDraft((snap.slack && snap.slack.pm) || ""); setSlackError(null); setSlackNote(null);
     setEconPost({ state: "idle" });
     fetch(`/api/inputs/${snap.id}`).then((r) => r.json()).then((d) => {
@@ -794,6 +904,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   // typed (shared/economics.mjs mirrors resolve_release in the build)
   const products = useMemo(() => (inp && b ? resolveProducts(atProducts, inp.products, b) : []), [inp, b, atProducts]);
   const econ = useMemo(() => (inp && b ? releaseEconomics(products, inp.legacy_economics, b) : null), [products, inp, b]);
+  // the lines of work the release sells on one page (docs/LINES_PLAN.md):
+  // two or more Airtable release codes among the works, each line with its
+  // own basket, stretch and ad sets under line_settings; [] for every other release
+  const lines = useMemo(() => (inp && b && econ && econ.mode === "products" ? releaseLines(products, inp.line_settings, b) : []), [products, inp, b, econ]);
   const ready = !!(inp && econ);
 
   // a rebuild still running from a save made before the reader left the
@@ -820,7 +934,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
 
   const set = (k) => (e) => setInp({ ...inp, [k]: e.target.value });
   const dv = meta.derived || {};
-  const dirty = !!pick || JSON.stringify(inp) !== JSON.stringify(meta.inputs);
+  const dirty = !!pick || Object.keys(linePicks).length > 0 || JSON.stringify(inp) !== JSON.stringify(meta.inputs);
   const econTitle = econPost.state === "error" ? `Not sent: ${econPost.message}`
     : econPost.state === "done" ? `Sent to #${econPost.channel}, ${econPost.to} asked to confirm`
     : !econReady ? (!(snap.slack && snap.slack.channel) ? "Set the Slack channel under Lead and Slack first."
@@ -992,7 +1106,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
       if (d.warning) setError(d.warning);
       // the inputs are saved at this point, whatever the rebuild does next
       setMeta({ ...meta, creating: false, inputs: { ...inp }, storage: d.storage || meta.storage });
-      setPick(null);
+      setPick(null); setLinePicks({});
       // the page is rebuilt behind the answer; the tab follows the build so
       // the new figures land here too, and the browser is never held on it
       let snapshot = d.snapshot || null;
@@ -1003,8 +1117,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   };
   const discard = () => {
     setInp({ ...meta.inputs });
-    setPick(null);
-    setStretchUi(null);
+    setPick(null); setLinePicks({});
+    setStretchReset((n) => n + 1);
   };
 
   /* Follow the rebuild running behind a save until it lands, counting the
@@ -1038,26 +1152,54 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
     stretch_from: stretchFrom,
   }, b) : null;
   const signed = (v) => (v < 0 ? MINUS : "+") + fmt(Math.abs(v), 0);
-  const BM = T ? T.benchmark : null;
   const paidOff = isOff("paid");
-  /* the stretch: a three-way choice - the basket's own shares (the even
-   * uplift), all of it from paid, or custom shares on coupled sliders that
-   * always add to 100 (shared/benchmarkModel.mjs rebalanceShares) */
-  const activeGroups = profile ? GROUPS.map((g) => g.key).filter((g) => !isOff(g) && Number((profile.units_by_group || {})[g]) > 0) : [];
-  const evenShares = profile ? stretchWeights({ stretch_from: null }, profile.units_by_group) : {};
-  const shares = T && T.stretch_from ? T.stretch_from : evenShares;
-  const allPaid = stretchTyped && Number(stretchFrom.paid || 0) >= 0.995;
-  const stretchMode = stretchUi || (!stretchTyped ? "even" : allPaid ? "paid" : "custom");
-  const chooseStretch = (mode) => {
-    setStretchUi(mode);
-    if (mode === "even") setInp({ ...inp, stretch_from: null });
-    else if (mode === "paid") setInp({ ...inp, stretch_from: { paid: 1 } });
-    else if (!stretchTyped) setInp({ ...inp, stretch_from: { ...evenShares } });
+  /* A release selling lines of work (docs/LINES_PLAN.md): each line's basket
+   * (the one picked here, else the one its last build used, under
+   * snap.variants.lines), its targets at its own K and stretch, and the
+   * release's figures as the lines' summed - which is how the build reads
+   * them (etl/build.py combine_targets). */
+  const lineRows = lines.map((ln) => {
+    const settings = ((inp.line_settings || {})[ln.key]) || {};
+    const built = snap.variants && snap.variants.lines && snap.variants.lines[ln.key] ? snap.variants.lines[ln.key] : null;
+    const lbm = built && built.benchmark ? built.benchmark : null;
+    const picked = linePicks[ln.key] || null;
+    const lprof = picked && picked.profile ? applyChannelsOff(picked.profile, off) : lbm ? applyChannelsOff(profileOf(lbm), off) : null;
+    const lcpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : lprof && Number(lprof.cost_per_purchase) > 0 ? Number(lprof.cost_per_purchase) : panelCpp;
+    const lT = lprof && lprof.units > 0 ? benchmarkTargets(lprof, {
+      edition_size: ln.edition_size, unit_price: ln.unit_price || 0, cost_per_purchase: lcpp,
+      units_per_buyer: 0, entry_conversion_rate: inp.entry_conversion_rate, stretch_from: settings.stretch_from || null,
+    }, b) : null;
+    const summary = (snap.lines || []).find((x) => x.key === ln.key) || null;
+    const basketName = picked ? picked.name : lbm && lbm.basket ? lbm.basket.name : settings.benchmark_basket && settings.benchmark_basket.name ? settings.benchmark_basket.name : "";
+    const basketN = picked ? (picked.members || []).length : lbm && lbm.basket ? lbm.basket.n : null;
+    const savedSpec = ((meta.inputs.line_settings || {})[ln.key] || {}).benchmark_basket || null;
+    return { line: ln, settings, profile: lprof, T: lT, k: lprof && lprof.units > 0 ? ln.edition_size / lprof.units : null,
+             basketName, basketN, basketDirty: JSON.stringify(settings.benchmark_basket || null) !== JSON.stringify(savedSpec) || !!picked,
+             summary, cpp: lcpp };
+  });
+  const setLine = (key, patch) => setInp((prev) => ({ ...prev, line_settings: { ...(prev.line_settings || {}), [key]: { ...((prev.line_settings || {})[key] || {}), ...patch } } }));
+  // the release's reading on the tab: the lines summed when there are lines
+  const agg = lineRows.length ? {
+    units: lineRows.reduce((s, r) => s + (r.profile ? r.profile.units : 0), 0),
+    stretch_units: lineRows.reduce((s, r) => s + (r.T ? r.T.stretch_units : 0), 0),
+    budget: lineRows.reduce((s, r) => s + (r.T ? r.T.paid.budget : 0), 0),
+    all: lineRows.every((r) => r.T),
+  } : null;
+  const stripT = agg ? (agg.all ? { stretch_units: agg.stretch_units, paid: { budget: agg.budget, budget_pct_of_launch_value: econ.launch_value > 0 ? agg.budget / econ.launch_value : null, sense_check_breached: econ.launch_value > 0 && agg.budget / econ.launch_value > Number(b.budget_sense_check_max_pct_of_launch_value || 0.06) } } : null) : T;
+  const stripBm = agg ? (agg.units > 0 ? agg.units : null) : bmUnits;
+  const stripK = agg ? (stripBm ? editionSize / stripBm : null) : k;
+  const BM = T ? T.benchmark : null;
+  const stretchWords = lineRows.length ? "per line" : T ? stretchWordsOf(stretchFrom, isOff) : null;
+  // the ad sets the spend feed lists under the release's campaigns (etl/build.py meta_campaigns)
+  const knownAdsets = (meta.meta_campaigns || []).filter((c) => (inp.campaign_names || []).includes(c.name))
+    .flatMap((c) => (c.adsets || []).map((a) => ({ ...a, campaign: c.name })));
+  const onPickLine = (key) => (chosen) => {
+    setLinePicks((prev) => ({ ...prev, [key]: chosen }));
+    setPickingLine(null);
+    setLine(key, { benchmark_basket: chosen.kind === "bespoke" ? { kind: "bespoke", members: chosen.members, name: chosen.name } : { kind: chosen.kind, id: chosen.id } });
+    setInp((prev) => ({ ...prev, prefer_recent: chosen.preferRecent !== false }));
   };
-  const slideStretch = (key) => (e) => setInp({ ...inp, stretch_from: rebalanceShares(shares, key, Number(e.target.value) / 100, activeGroups) });
-  // the units of stretch a channel carries at the shares set: its target less its benchmark (benchmarkTargets)
-  const stretchOf = (key) => (T && T.units_by_group ? Number(T.units_by_group[key] || 0) - Number((profile.units_by_group || {})[key] || 0) : 0);
-  const stretchWords = T ? (stretchMode === "paid" ? "all from paid" : stretchMode === "even" ? "even across channels" : "custom shares") : null;
+  const pickingRow = pickingLine ? lineRows.find((r) => r.line.key === pickingLine) : null;
 
   /* a date another source puts elsewhere than the one in force (docs 1.6):
      a small button beside it with the other reading, one click to take it */
@@ -1135,7 +1277,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   const asPct = (v) => (v === null || v === undefined || v === "" ? "" : String(Math.round(Number(v) * 100)));
   const cannDefault = Math.round(100 * (Number(b.cannibalisation) || 0.2));
   const e2oDefault = Math.round(100 * (Number(b.eligible_entry_to_order) || 0.8));
-  const sense = T && T.paid ? T.paid.sense_check_breached : false;
+  const sense = stripT && stripT.paid ? stripT.paid.sense_check_breached : false;
   const actions = (cls) => (
     <div className={cls}>
       {stateText && <span className={`ts2-state${missing.length ? " warn" : ""}`}>{stateText}</span>}
@@ -1180,14 +1322,14 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
           <div className="f" title={`Secured-units target: the hero target on the Overview tab, the works' editions at their target sell-through, summed${partialEdition ? ` - ${fmt(editionSize)} of the ${fmt(econ.edition_total)} in the editions` : ""}.`}>
             <span className="k">Target</span><span className="v">{editionSize > 0 ? fmt(editionSize) : "–"}</span>
           </div>
-          <div className="f" title={bmUnits ? `The basket's median units of demand, the channels not in plan set aside${k ? `: ×${fmt(k, 2)} to the target` : ""}.` : "Choose a basket first."}>
-            <span className="k">Benchmark</span><span className="v">{bmUnits ? fmt(bmUnits) : "–"}</span>
+          <div className="f" title={stripBm ? `${lineRows.length ? "The lines' baskets' median units of demand, summed" : "The basket's median units of demand"}, the channels not in plan set aside${stripK ? `: ×${fmt(stripK, 2)} to the target` : ""}.` : "Choose a basket first."}>
+            <span className="k">Benchmark</span><span className="v">{stripBm ? fmt(stripBm) : "–"}</span>
           </div>
-          <div className="f" title={T ? `The target less the benchmark, ${stretchWords}.` : "Choose a basket first."}>
-            <span className="k">Stretch</span><span className="v">{T ? signed(Math.round(T.stretch_units)) : "–"}</span>
+          <div className="f" title={stripT ? `The target less the benchmark, ${stretchWords}.` : "Choose a basket first."}>
+            <span className="k">Stretch</span><span className="v">{stripT ? signed(Math.round(stripT.stretch_units)) : "–"}</span>
           </div>
-          <div className={`f${sense ? " red" : ""}`} title={paidOff ? "Paid is not in plan." : T ? `Paid units × ${fmtMoney(cpp)} per unit${BM && BM.paid_budget ? `; the benchmark's is ${fmtMoney(BM.paid_budget, 0)}` : ""}${T.paid.budget_pct_of_launch_value ? `; ${fmtPct(T.paid.budget_pct_of_launch_value, 1)} of the launch value` : ""}. ${sense ? "Over" : "Under"} the 6% of launch value sense check.` : "Choose a basket first."}>
-            <span className="k">Paid budget</span><span className="v">{paidOff ? "–" : T ? fmtMoney(T.paid.budget, 0) : "–"}</span>
+          <div className={`f${sense ? " red" : ""}`} title={paidOff ? "Paid is not in plan." : stripT ? `${lineRows.length ? "Each line's paid units at its own cost per unit, summed" : `Paid units × ${fmtMoney(cpp)} per unit`}${BM && BM.paid_budget && !lineRows.length ? `; the benchmark's is ${fmtMoney(BM.paid_budget, 0)}` : ""}${stripT.paid.budget_pct_of_launch_value ? `; ${fmtPct(stripT.paid.budget_pct_of_launch_value, 1)} of the launch value` : ""}. ${sense ? "Over" : "Under"} the 6% of launch value sense check.` : "Choose a basket first."}>
+            <span className="k">Paid budget</span><span className="v">{paidOff ? "–" : stripT ? fmtMoney(stripT.paid.budget, 0) : "–"}</span>
           </div>
           <div className="f" title={(econ.launch_currencies || []).some((c) => c !== "EUR") ? `Target units at their prices, from ${(econ.launch_currencies || []).join(", ")} at a fixed rate.` : "Target units at their prices."}>
             <span className="k">Launch value</span><span className="v">{econ.launch_value > 0 ? fmtMoney(econ.launch_value, 0) : "–"}</span>
@@ -1233,9 +1375,56 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
 
           {/* 2 · target */}
           <section className="ts2-sec" aria-label="Target">
-            <div className="ts2-sec-head"><h2>Target</h2></div>
+            <div className="ts2-sec-head"><h2>Target</h2>{lineRows.length > 0 && <span className="d">{lineRows.length} lines of work: each benchmarked on its own basket, the release on the two together</span>}</div>
+            {lineRows.length > 0 && (
+              <Notice>
+                <b>Two lines of work on one page.</b> Each line is benchmarked on launches of its own size and price and targeted with its own uplift; the release's units, entries and paid budget are the lines added up.
+                One email and one post reach one audience, so the organic sessions are the larger line's, not the sum, and each line's conversion is read on the shared traffic. Paid runs an ad set per line: name them here, and each line's spend, cost per entry and ROI read its own.
+              </Notice>
+            )}
+            {lineRows.map(({ line: ln, settings, profile: lprof, T: lT, k: lk, basketName: lName, basketN, basketDirty: lDirty, summary }) => (
+              <div key={ln.key} className="ts2-card" style={{ padding: "14px 20px", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+                  <div className="ts-box" style={{ flex: "0 1 260px" }} title="The line's name on the page. Blank: the words its works' titles share, else its Airtable release code.">
+                    <input value={settings.name || ""} placeholder={ln.name} onChange={(e) => setLine(ln.key, { name: e.target.value })} aria-label="Line name" />
+                    {ln.code && <span className="ts2-tag" title="Airtable's release code for these works">{ln.code}</span>}
+                  </div>
+                  <span style={{ fontSize: 12.5, color: C.muted }} title={ln.productNames.join(", ")}>
+                    {ln.productNames.length} work{ln.productNames.length === 1 ? "" : "s"} · target {fmt(ln.edition_size)}{ln.edition_total > ln.edition_size ? ` of ${fmt(ln.edition_total)}` : ""} at {fmtMoney(ln.unit_price || 0, 0)} · {fmtMoney(ln.launch_value || 0, 0)}
+                  </span>
+                  {lprof && lprof.units > 0 && <span className="ts2-stretch num" title={`The line's basket: ${fmt(lprof.units)} median units of demand, ×${fmt(lk || 1, 2)} to its target`}>×{fmt(lk || 1, 2)}</span>}
+                </div>
+                <div className="ts2-rows">
+                  <span className="ts2-lbl" title="The launches this line is benchmarked against: those nearest its own size and price, the artist's own first.">Basket</span>
+                  <div className="ts2-ctl">
+                    <div className="ts-box ro" style={{ flex: "1 1 240px", maxWidth: 480 }} title={basketN ? `${fmt(basketN)} launches` : undefined}>
+                      <span className="txt">{lName || "suggested on save"}</span>
+                      {lDirty ? <span className="ts2-tag typed">unsaved</span> : basketN ? <span className="ts2-tag">{fmt(basketN)} launches</span> : null}
+                    </div>
+                    <button type="button" className="ts-btn secondary" onClick={() => setPickingLine(ln.key)}
+                      title="The ready-made baskets for this line's size and price, or a bespoke selection.">Change basket</button>
+                  </div>
+                  <span className="ts2-lbl" title="How this line's gap to its basket's median is shared out across the channels. Each channel's target is its benchmark plus its share of the stretch.">Stretch from</span>
+                  <StretchPicker profile={lprof} value={settings.stretch_from || null} onChange={(v) => setLine(ln.key, { stretch_from: v })}
+                    isOff={isOff} T={lT} k={lk} resetKey={stretchReset} signed={signed} />
+                  <span className="ts2-lbl" title="The Meta ad sets this line's paid actuals are read from: their spend and the line's paid entries give its cost per entry and ROI. Under the campaigns ticked below.">Ad sets</span>
+                  <div className="ts2-ctl" style={{ alignItems: "flex-start" }}>
+                    <AdSets value={settings.adsets || []} known={knownAdsets} onChange={(v) => setLine(ln.key, { adsets: v })} />
+                  </div>
+                  {summary && summary.hero && (
+                    <>
+                      <span className="ts2-lbl" title="The line's own page as last built: secured units against its target, and its paid spend.">Last build</span>
+                      <div className="ts2-ctl" style={{ fontSize: 12.5, color: C.muted }}>
+                        {fmt(summary.hero.now)} of {fmt(summary.hero.target)} secured{summary.paid && summary.paid.spendToDate ? ` · ${fmtMoney(summary.paid.spendToDate, 0)} paid spend` : ""}{summary.paid && summary.paid.cumRoi ? ` · ROI ${fmt(summary.paid.cumRoi, 2)}` : ""}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
             <div className="ts2-rows">
-              <span className="ts2-lbl" title="The launches this release is benchmarked against. The benchmark is their median, per metric and per channel.">Basket</span>
+              {!lineRows.length && <span className="ts2-lbl" title="The launches this release is benchmarked against. The benchmark is their median, per metric and per channel.">Basket</span>}
+              {!lineRows.length && (
               <div className="ts2-ctl">
                 <div className="ts-box ro" style={{ flex: "1 1 240px", maxWidth: 480 }} title={bm && bm.basket ? `${fmt(bm.basket.n)} launches${bm.basket.thin ? ", thin" : ""}` : undefined}>
                   <span className="txt">{basketName || "none chosen yet"}</span>
@@ -1244,6 +1433,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                 <button type="button" className="ts-btn secondary" onClick={() => setPicking(true)}
                   title="The ready-made baskets with their medians, or a bespoke selection.">Change basket</button>
               </div>
+              )}
 
               <span className="ts2-lbl" title="A channel this release will not run leaves the benchmark and the target: the basket is read on its other channels, and they carry the whole sellout between them.">Channels in plan</span>
               <div className="ts2-ctl ts-switches" style={{ height: "auto", minHeight: 44 }}>
@@ -1253,38 +1443,13 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                   title="Off for an estate, or a living artist with no channels of their own: the artist group leaves the benchmark and the funnel expects no posts." />
               </div>
 
-              <span className="ts2-lbl" title="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions and entries lifted to match; conversion is held.">Stretch from</span>
-              <div className="ts2-ctl" style={{ flexDirection: "column", alignItems: "stretch", gap: 14 }}>
-                <div className="ts2-ctl">
-                  <div className="seg" role="group" aria-label="Where the stretch comes from">
-                    <button type="button" className={stretchMode === "even" ? "active" : ""} disabled={!profile} onClick={() => chooseStretch("even")}
-                      title="The basket's own shares: the same uplift in every channel.">Even across channels</button>
-                    <button type="button" className={stretchMode === "paid" ? "active" : ""} disabled={!profile || paidOff} onClick={() => chooseStretch("paid")}
-                      title="The whole stretch from paid: the other channels stay at their benchmark.">All from paid</button>
-                    <button type="button" className={stretchMode === "custom" ? "active" : ""} disabled={!profile || activeGroups.length < 2} onClick={() => chooseStretch("custom")}
-                      title="Set each channel's share on a slider; the others rescale so the shares add to 100.">Custom</button>
-                  </div>
-                  {T && <span className="ts2-stretch num" title={`${stretchWords}: ×${fmt(k || 1, 2)} over the basket in all`}>{signed(Math.round(T.stretch_units))} <span>units</span></span>}
-                </div>
-                {stretchMode === "custom" && profile && (
-                  <div className="ts2-card ts-sliders" style={{ padding: "16px 20px", maxWidth: 640 }}>
-                    {GROUPS.map((g) => {
-                      const gOff = isOff(g.key);
-                      const active = activeGroups.includes(g.key);
-                      const pct = active ? Math.round(100 * Number(shares[g.key] || 0)) : 0;
-                      return (
-                        <label key={g.key} className={`ts-slider${active ? "" : " dis"}`}
-                          title={gOff ? "Not in plan: this channel takes none of the stretch." : !active ? "No benchmark in the basket to lift." : "Drag to set this channel's share; the others rescale so the shares add to 100."}>
-                          <span className="head"><span>{g.name}</span><b>{active ? `${pct}%` : "–"}</b></span>
-                          <input type="range" min="0" max="100" step="1" disabled={!active || activeGroups.length < 2} value={pct}
-                            aria-label={`${g.name}: share of the stretch`} onChange={slideStretch(g.key)} />
-                          <span className="note">{active ? `${signed(Math.round(stretchOf(g.key)))} units` : ""}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              {!lineRows.length && (
+                <>
+                  <span className="ts2-lbl" title="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions and entries lifted to match; conversion is held.">Stretch from</span>
+                  <StretchPicker profile={profile} value={stretchFrom} onChange={(v) => setInp({ ...inp, stretch_from: v })}
+                    isOff={isOff} T={T} k={k} resetKey={stretchReset} signed={signed} />
+                </>
+              )}
             </div>
           </section>
 
@@ -1417,9 +1582,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
         </div>
       </div>
 
-      {picking && (
-        <BasketPicker releaseId={snap.id} releaseName={snap.releaseName} current={spec}
-          targetUnits={editionSize} unitPrice={econ.unit_price || 0}
+      {(picking || pickingRow) && (
+        <BasketPicker releaseId={snap.id} releaseName={snap.releaseName} current={pickingRow ? (pickingRow.settings.benchmark_basket || null) : spec}
+          // a line's picker ranks on the line's own target and price (docs/LINES_PLAN.md)
+          targetUnits={pickingRow ? pickingRow.line.edition_size : editionSize} unitPrice={pickingRow ? (pickingRow.line.unit_price || 0) : (econ.unit_price || 0)}
           preferRecent={inp.prefer_recent !== false} channelsOff={off}
           // what the rule needs to find the artist's own earlier launches and
           // to read the typed price in its currency (shared/basketRule.mjs)
@@ -1430,8 +1596,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
           launchEnd={closes || null} asOf={snap.asOf || null}
           // the picker asks for a target and a price when there are none, and
           // writes them onto a product added by hand so the basket follows
-          onInputs={onPickerInputs}
-          onPick={onPick} onClose={() => setPicking(false)} />
+          onInputs={pickingRow ? undefined : onPickerInputs}
+          onPick={pickingRow ? onPickLine(pickingRow.line.key) : onPick} onClose={() => { setPicking(false); setPickingLine(null); }} />
       )}
     </>
   );
