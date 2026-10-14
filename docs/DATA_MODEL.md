@@ -1255,6 +1255,79 @@ evaluated twice with different members, not the maths.
 
 ---
 
+## 4b. Lines of work: two kinds of edition on one page (14 October 2026)
+
+A release whose Airtable products carry two or more release codes (`release` in
+`data/release_pricing.csv`, carried on each product as `line`, or typed for a work added by
+hand) sells **lines of work** on one page: the products under one code are a line
+(`etl/build.py release_lines`; `shared/economics.mjs releaseLines` is the tab's mirror,
+held to it by `tests/test_lines.py`). Fewer than two codes: `lines` is `[]` and the page is
+built exactly as before. Products with no code form the `_other` line beside two coded
+ones. A line is named by the words its works' titles share ("Toy Brick Middle Finger" over
+four colourways), else its code, unless a name is typed.
+
+**Economics.** `products_economics(sized)` is the release's arithmetic of §1.6 (the target
+as editions at their target sell-through, the price per target unit, the launch value, the
+profits per unit and framing uplift weighted by target units, the paid-budget split),
+factored so a line's figures are the same arithmetic over its own products and the release's
+the same over all of them. `line_release(release, line)` is the release read as one line:
+the line's products and economics in place of the release's, its own basket, stretch and
+ad sets, the release's dates, campaigns and rates.
+
+**Inputs.** `line_settings`, keyed by the line's code: `{name, benchmark_basket, stretch_from,
+adsets}`. The save route validates each (a basket on the line's own size and price, via
+`GET /api/baskets?release=<id>&line=<code>`; stretch shares as the release's; up to 20 ad set
+names) and merges per code. The release-level `benchmark_basket` and `stretch_from` are not
+read on a release with lines.
+
+**Baskets and targets** (`combine_profiles`, `combined_basket`, `combine_targets`,
+`shared_sessions`, `apply_shared_sessions`). Each line's basket is resolved on its own
+`line_release` (`resolve_basket`, channels off and the Direct spread applied as for a
+release). The combined page's basket block is the lines' profiles read together: `units`,
+`units_sold`, `entries`, the middle half and `units_by_group` summed; `sessions_by_group`
+the **larger line's per group** and `sessions` their sum; `conv` per group the lines'
+entries (each line's rate times its sessions) over the shared sessions; prices and rates
+weighted by units; the cost per paid unit weighted by benchmark paid units; `members` the
+union, `n` the smaller; `benchmark.lines` names each line's basket. Each line's targets are
+`benchmark_targets` on its own profile and stretch; the release's are the lines' summed
+(`per_channel` purchases and entries, paid units and budget, `entries_target`), with
+`k_by_group` the ratio of the sums, `stretch_from` the lines' weighted by their stretch, the
+paid `cost_per_purchase` the budget over the units (`cost_per_purchase_source` "lines"),
+and `targets.lines[key]` each line's K, units, entries and paid figures. On every view the
+sessions targets are the shared ones (`apply_shared_sessions`): per channel the larger
+line's, `session_to_entry` derived as the entries asked for over them, and
+`targets.sessions_shared` true. A line's own page reads the same shared sessions, and its
+profile's `sessions_by_group` and `conv` are re-read on them.
+
+**A line's page** (`build_release(..., line=key)`): `line_actuals` replaces the funnel rows'
+two entry columns with the line's draws' daily series from `release_products.json` (each
+draw's `daily`: `[day, channel, eligible, open]`, one unit per eligible entry on the draw,
+dated and attributed as its first row; `aggregate_events.products_file`), adding rows for
+channel-days the funnel has none on; the sessions stay the shared page's. A draw is the
+line's when the name typed against it, or the product the orders feed pairs it with, names
+one of the line's works (`line_draws`, the sell-through card's `_names_title` rule). Without
+daily series on the draws the release's entries are scaled by the line's share of eligible
+entrants (`entriesBasis` "share"); without draws, zero. The units are the line's own works'
+rows of the units feed (`line_units`, through `swap_units`), or, on a page reading the
+funnel's units, the release's scaled by the line's share of the draws' sales, else of the
+edition (`unitsBasis`). The spend is the line's ad sets' (`release_spend`: the release's
+campaigns filtered on `adset_name`, case aside; a line with none named reads none). A paid
+entry's profit is its product's: `with_entry_profit` sets the line's `aa_ppu_resolved` and
+artist profit to its works' figures weighted by the paid entries on each (`ppuBasis` "paid
+entries"), else target-weighted. The sell-through block runs the allocation over every work
+and keeps the line's rows (`restrict_products`), its headline the kept rows summed.
+
+**The spend feed.** `data/spend_daily.csv` gained `adset_name` (server/sheets.js spendWriter
+reads `adset_name` or `ad_set_name` from the export, blank on a campaign-level one;
+`with_adsets` adds the column to an older file); everything that sums by campaign is
+unchanged. `meta_campaigns` lists each campaign's ad sets with their spend for the tab.
+
+**The snapshot.** The combined page carries `lines[]` and `variants.lines[key]` /
+`variants.lines_direct[key]` (each line's page as the blocks that differ, as
+`direct_spread` does; the Overview's Line switch lays one over the page); a line's page
+carries `line`. `line_summary` fills each `lines[]` entry from the line's own build (hero,
+edition, targets, basket, paid, sell-through, status). §10a lists the fields.
+
 ## 5. Targets across time (the new capability)
 
 The sheet distributes nothing over days (its only daily notion is a run-rate: remaining units ÷
@@ -2271,6 +2344,11 @@ actuals-only page omits it.
 | `waterfall.benchmark`, `stretch`, `target`, `projection` | the at-close waterfall's left-hand columns; `steps` are unchanged and `stepsBm` are the same four contributors against the basket, summing to `projection − benchmark` |
 | `waterfall.closeScale`, `closeScaleBm` | the factor the at-close `steps` (`stepsBm`) are the steps to date times; null where they are copied (a closed release) or where the rest of the gap is shared out by size (below) |
 | `waterfall.today` | `{benchmark, stretch, target, actual, steps, stepsBm}` - the same four contributors measured **to date**, against the target and against the basket |
+| `lines[]` | on the combined page of a release selling lines of work (§4b): per line `key` (the Airtable release code), `code`, `name`, `nameTyped`, `products` (names), `productKeys`, `adsets`, `basketSpec`, `stretchFrom`, and from the line's own build `hero`, `edition`, `economics`, `basket`, `k`, `kByGroup`, `benchmarkUnits`, `targets` (units, entries, paid units and budget, the cost per purchase and its source), `groupTargets`, `paid` (spend, entries and units to date, the ROIs and costs, the budget and projections, `artist`), `sellthrough` (the headline figures), `status`, `actuals` (the line's `line` block); null on every other release |
+| `line` | on a line's own page: `key`, `name`, `products`, `adsets`, `entriesBasis` (`draws`, `share`, `none`), `unitsBasis` (`orders`, `sales share`, `edition share`), `draws` (its draw ids), `sessionsShared` (always true), `ppuBasis` (`paid entries` or `target units`); null on the combined page |
+| `variants.lines[key]`, `variants.lines_direct[key]` | each line's page as the top-level blocks that differ from the combined page, as the funnel attributes Direct and with it spread; the Overview's Line switch lays one over the page (§4b) |
+| `benchmark.sessionsShared`, `benchmark.lines` | whether the sessions are the larger line's rather than summed (true on a release with lines), and each line's basket `{id, kind, name, n, thin, suggestedId, members, scaleMismatch}` on the combined page |
+| `targets.lines[key]`, `targets.sessions_shared` | each line's K, `k_by_group`, units, entries, paid units, budget and cost per purchase on the combined page; and that every sessions target is the shared one (§4b) |
 
 `waterfall.today.steps` are not the close steps scaled down: they are the contributions as
 measured so far, and they must sum exactly to `actual − target`, with the rounding residual

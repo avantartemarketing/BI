@@ -622,6 +622,55 @@ of its tooltip and the unconstrained figures beneath. With no spend yet there is
 first day starts at the plan's daily rate. ROI shown against the
 recommendation is the ROI at the close at that spend level's cost per entry.
 
+## 7b. A release selling two lines of work on one page
+
+Some releases sell two kinds of edition at once: Ai Weiwei's three prints at
+EUR 2,500 beside four toy-brick colourways at EUR 550, on one release page,
+with one email, one post and one Meta campaign. The model reads such a
+release as **lines of work**: the products under one Airtable release code
+are one line, and a release whose products carry two or more codes has a
+line per code. Every other release has one line and nothing on its page
+moves. (Built 14 October 2026; the design is in `docs/LINES_PLAN.md`.)
+
+**Each line is benchmarked and targeted on its own.** A line's target is its
+products' editions at their target sell-through, its price the average of
+its target units, and its basket the eight launches nearest *its* size and
+price (section 3), the artist's own first. Its K is its target over its
+basket's median demand, and where its stretch comes from is set per line on
+the Target setting tab. A blended basket matched on the whole release would
+compare a EUR 2,500 print and a EUR 550 brick against the same launches, and
+nothing on file is 3,300 units; two baskets, each read where it belongs, is
+the honest reading.
+
+**The page is the lines added up, except for traffic.** The release's units,
+entries and paid budget are the lines' summed, and each channel group's
+uplift is the ratio of those sums. Its organic sessions are not summed: one
+email reaches one audience, so for each organic group the sessions target
+is the larger line's reading (its basket's sessions at its own K), the
+sessions benchmark the larger line's median, and the release's conversion is
+the lines' entries over those shared sessions. A line's conversion on the
+shared page is derived the same way, its entries over the shared sessions,
+never read from a basket. The entries curve of each line is its own
+basket's; the sessions curve the larger line's.
+
+**Each line has a page.** The Line switch on the Overview reads the page for
+one line: its entries are its own draws' by day and channel (the event feed
+records one draw per product), its units its own works' orders, its
+sell-through rows its works, and its sessions the shared page's, said so on
+the page. Paid is the one thing with comms of its own: a line names its Meta
+ad set(s) on the Target setting tab, and its spend, cost per entry, ROI,
+run-rate projection and recommendation run on them alone, while the
+combined page's paid cards read the whole campaign. A paid entry's profit is
+the product it entered for: a line's ROI reads its works' profit per unit
+weighted by the paid entries on each, so the prints' ad set and the
+bricks' are judged on what they actually sell.
+
+**Two things to know.** The allocator awards a flexible entrant the priciest
+work they entered first, so someone in both lines' draws is counted on the
+prints until a work fills. And the sell-through card's allocation runs over
+every work on every view: a line's page shows its works' rows out of the
+same allocation, never one run on its works alone.
+
 ## 8. Where the numbers come from
 
 - **Units sold** come from the Shopify orders table in BigQuery, per product, day

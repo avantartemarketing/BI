@@ -52,12 +52,17 @@ target, not its edition. Two baskets, summed, is the design.
 | Question | Decision |
 | --- | --- |
 | Identity in the feeds | One funnel release name, one Meta campaign, one ad set per line |
-| Baskets | One basket per line, suggested by the existing rule on the line's size and price; the release benchmark is the two profiles summed |
-| Stretch | K per line; where the stretch comes from is set per line |
-| Sessions | Each line's sessions and conversion are its basket's; release sessions target is the sum and release conversion the blended rate; actual sessions stay release-level |
-| Paid | Read Meta at ad set grain and map ad sets to lines, so spend, cost per entry and the recommendation run per line |
-| Page | A line switch on the Overview like the Direct switch: Combined, Prints, Toy bricks |
+| Baskets | One basket per line, suggested by the existing rule on the line's size and price; each line its own K and stretch |
+| Organic traffic | Not summed: one email and one post reach one audience. Per channel group the sessions target is the larger line's reading at its own K, the benchmark the larger line's median, and each line's conversion on the shared page is derived (its entries over the shared sessions) |
+| Units, entries, paid budget | The lines summed |
+| Paid | An ad set per line, read at ad set grain: spend, cost per entry, ROI, projection and recommendation per line; the combined page reads the whole campaign |
+| ROI | A paid entry's profit is the product it entered for: a line's profit per unit is its works' weighted by the paid entries on each |
+| Page | A Line switch on the Overview like the Direct switch: All, then each line |
 | Targets | Airtable's target sell-through per product |
+
+Decided 13 and 14 October 2026 with the repository owner. The first draft of this
+plan summed the organic sessions across the lines; that was wrong, since the comms
+are shared, and was replaced by the rule above before the build.
 
 ## 5. The model, per line
 
@@ -159,41 +164,35 @@ product; paid sessions stay release-level. Per line the Paid module runs as
 now: spend to date, cost per entry, trailing-3-day CPE and drift, the
 run-rate projection and the recommendation.
 
-## 7. Build order
+## 7. What was built (14 October 2026)
 
-1. **Pricing and the line key.** `etl/pricing.py` keeps merging the two
-   codes into one launch for the panel, and additionally emits the lines
-   (code, products, units, value-weighted price, target units). Products on
-   the snapshot carry `line`. Tests: a two-code release yields two lines; a
-   one-code release yields one and an unchanged snapshot.
-2. **Baskets and target maths per line.** `etl/baskets.py` profiles per
-   line; `etl/build.py` sums the profiles, computes K, stretch, entries and
-   paid budget per line and for the release. `tests/basket_parity.mjs` and
-   `tests/channels_off_parity.mjs` extended with a two-line fixture; a
-   one-line fixture must come out identical to today, to the unit.
-3. **Curves, actuals and projections per line.** Entries by draw and units
-   by product rolled to lines by day; line curves; release curve as the
-   weighted sum; projections per line. Test: the line projections sum to
-   the release projection on every day.
-4. **Paid at ad set grain.** Schema check, pull, `adset_name` column, the
-   ad set to line mapping in the inputs, Paid module per line.
-5. **Target setting tab.** Products grouped by line, one basket picker per
-   line, stretch sliders per line, the ad set mapping, derived release K.
-   Save re-runs per line on the server as it does for the release now.
-6. **Overview.** The line switch beside the Direct switch; cards re-read for
-   the line; the sessions card's shared-traffic note; sell-through grouped
-   by line. The switch is hidden on a one-line release.
-7. **Docs and the explain popups.** METHODOLOGY gains a section on lines;
-   DATA_MODEL records the line key, the summed profile, the per-line inputs
-   and the ad set column; shift-click working shows the line's figures.
-
-Steps 1 to 3 are ETL and run offline against the panel on file. Step 4
-depends on the schema check. Steps 5 and 6 need the snapshot shape from
-steps 2 and 3 settled first.
+The model, the server and the page, in `etl/build.py` (release_lines,
+line_release, combine_profiles, combine_targets, shared_sessions,
+line_actuals, with_entry_profit, restrict_products, build_release's `line`),
+`etl/aggregate_events.py` (each draw's daily entries by channel),
+`server/sheets.js` and `etl/build.py` (adset_name on the spend feed),
+`shared/economics.mjs` (releaseLines, the tab's mirror), `server/index.js`
+and `server/baskets.js` (line_settings on the save route, `?line=` on the
+picker API), `web/src/App.jsx` (the Line switch and its note),
+`web/src/TargetSetting.jsx` (a card per line: name, basket, stretch, ad
+sets), `web/src/modules/SellThrough.jsx` (rows under a header per line) and
+`web/src/modules/PaidRoi.jsx` (each ad set side by side). `tests/test_lines.py`
+builds a two-line release on the synthetic harness and holds the rules above
+to it, and a one-line release to the page as it was. The methodology is in
+`docs/METHODOLOGY.md` section 7b and the data model in `docs/DATA_MODEL.md`
+section 4b.
 
 ## 8. Open checks
 
-- Whether `meta_ads_insights_export` carries ad set columns (section 6).
+- Whether `meta_ads_insights_export` carries ad set columns. The pull reads
+  `adset_name` (or `ad_set_name`) when the table has it and writes it to
+  `data/spend_daily.csv`; on a campaign-level export the column is blank and
+  a line reads no spend until an ad-set-level export exists (the data team,
+  or `BQ_SPEND_TABLE` pointed at one). BigQuery credentials were not
+  available in the session that built this, so the schema was not read.
+- The draws' daily series land in `data/app/release_products.json` on the
+  next run of the events aggregation; until then a line's entries are the
+  release's shared out by its draws' entrants, and the page says so.
 - The toy-brick target sell-through, to be entered in Airtable on the four
   records; the line's basket and K wait on it.
 - The units-per-buyer rate for this release, from the brief.
