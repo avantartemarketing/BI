@@ -72,6 +72,7 @@ import tl   # timed launches: the release model, the panel and the pages (docs/T
 # across the products the way the allocator would place them. The same rule
 # lives in shared/sellThrough.mjs for the server and the web app, and
 # tests/test_sellthrough.py holds the two to the unit.
+import sellthrough
 from sellthrough import attach_orders, products_from_draws, sell_through_products
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -288,7 +289,38 @@ def convert_spend(df: pd.DataFrame) -> pd.DataFrame:
 def load_spend() -> pd.DataFrame:
     df = pd.read_csv(DATA / "spend_daily.csv")
     df["spend_date"] = pd.to_datetime(df["spend_date"]).dt.date
-    return convert_spend(df)
+    return convert_spend(with_adsets(df))
+
+
+def with_adsets(df: pd.DataFrame) -> pd.DataFrame:
+    """The spend frame with its `adset_name` column, blank on a feed pulled at
+    campaign level: a release that runs an ad set per line of work reads each
+    line's spend off it (release_spend), and everything else sums over it."""
+    if "adset_name" not in df.columns:
+        df = df.assign(adset_name="")
+    else:
+        df = df.assign(adset_name=df["adset_name"].fillna("").astype(str).str.strip())
+    return df
+
+
+def release_spend(spend: pd.DataFrame, release: dict) -> pd.DataFrame:
+    """The spend rows a release's paid actuals are read from: its Meta
+    campaigns (campaign_names), and, on a line of a release (line_release),
+    the line's own ad sets among them, matched on the name case aside. A
+    line with no ad set named reads nothing: its paid cards then say so,
+    rather than carrying the whole campaign's spend on each line."""
+    if spend is None or spend.empty or "campaign_name" not in spend.columns:
+        return (spend if spend is not None else pd.DataFrame(columns=["campaign_name", "spend_date", "spend"])).iloc[0:0]
+    camp = release.get("campaign_name")
+    camps = [c for c in (release.get("campaign_names") or ([camp] if camp else [])) if c]
+    out = spend[spend["campaign_name"].isin(camps)] if camps else spend.iloc[0:0]
+    if release.get("line"):
+        wanted = {str(a).strip().lower() for a in (release.get("adsets") or []) if str(a).strip()}
+        if not wanted:
+            return out.iloc[0:0]
+        names = with_adsets(out)["adset_name"].str.lower()
+        out = out[names.isin(wanted).to_numpy()]
+    return out
 
 
 def load_emails() -> pd.DataFrame:
@@ -682,8 +714,404 @@ def with_direct_spread(build, *args, **kwargs) -> dict:
     them over the page without another build."""
     snap = build(*args, **kwargs)
     alt = build(*args, **kwargs, direct_spread=True)
-    snap["variants"] = {"direct_spread": {k: v for k, v in alt.items() if k != "variants" and v != snap.get(k)}}
+
+    def diff(a: dict) -> dict:
+        return {k: v for k, v in a.items() if k not in ("variants", "lines") and v != snap.get(k)}
+    snap["variants"] = {"direct_spread": diff(alt)}
+    # a release selling lines of work (docs/LINES_PLAN.md): each line's page
+    # both ways too, under variants.lines[key] and variants.lines_direct[key],
+    # and what the combined page says about each line (snap.lines[]) from
+    # the line's own build
+    if snap.get("lines") and snap.get("benchmark"):
+        snap["variants"]["lines"], snap["variants"]["lines_direct"] = {}, {}
+        for ln in snap["lines"]:
+            lb = build(*args, **kwargs, line=ln["key"])
+            ld = build(*args, **kwargs, line=ln["key"], direct_spread=True)
+            snap["variants"]["lines"][ln["key"]] = diff(lb)
+            snap["variants"]["lines_direct"][ln["key"]] = diff(ld)
+            ln.update(line_summary(lb))
     return snap
+
+
+# ---------------------------------------------------------------- lines of work: the model (docs/LINES_PLAN.md)
+#
+# A release that sells two lines of work on one page - Ai Weiwei's three
+# prints at EUR 2,500 beside four toy-brick colourways at EUR 550 - is one
+# release in the funnel, one page, one email and one post, and one Meta
+# campaign with an ad set per line. Each line is benchmarked on its own
+# basket (its own size and price) and targeted with its own K; the page's
+# units, entries and paid budget are the lines' added up. Its organic traffic
+# is not: one email reaches one audience, so the organic sessions the
+# release plans on are the larger line's reading per channel group, and each
+# line's conversion on the shared page is derived (its entries over the
+# shared sessions) rather than read from a basket. Paid is the one thing
+# with comms of its own, so spend, cost per entry, ROI and the
+# recommendation run per ad set, and a paid entry's profit is the product it
+# entered for.
+
+_SUM_KEYS = ("units", "units_sold", "n_short", "units_p25", "units_p75", "entries", "n_priced",
+             "edition_size", "units_all", "units_sold_all", "entries_all", "units_p25_all", "units_p75_all")
+_SUM_GROUP_KEYS = ("units_by_group", "units_by_group_all")
+_MAX_GROUP_KEYS = ("sessions_by_group", "sessions_by_group_all")
+
+
+def _wmean(pairs: list[tuple[float, float]]) -> float:
+    """A weighted mean over (value, weight), 0 with no weight."""
+    tot = sum(w for _, w in pairs)
+    return (sum(v * w for v, w in pairs) / tot) if tot > 0 else 0.0
+
+
+def combine_profiles(profiles: list[dict]) -> dict:
+    """The benchmark of a release read as its lines' baskets together
+    (docs/LINES_PLAN.md): units, entries and the middle half summed, the
+    sessions of each channel group the larger line's, the conversion the
+    lines' entries over those shared sessions, the prices and rates weighted
+    by units. The same keys as basket_profile (with apply_channels_off's and
+    spread_profile's where the parts carry them), so everything downstream
+    reads it as one basket's profile."""
+    if not profiles:
+        return {}
+    out: dict = {}
+    for k in _SUM_KEYS:
+        if any(k in pr for pr in profiles):
+            out[k] = _num(sum(_num(pr.get(k)) for pr in profiles))
+    for k in _SUM_GROUP_KEYS:
+        if any(k in pr for pr in profiles):
+            out[k] = {g: _num(sum(_num((pr.get(k) or {}).get(g)) for pr in profiles)) for g in baskets.GROUPS}
+    for k in _MAX_GROUP_KEYS:
+        if any(k in pr for pr in profiles):
+            out[k] = {g: _num(max(_num((pr.get(k) or {}).get(g)) for pr in profiles)) for g in baskets.GROUPS}
+    out["sessions"] = _num(sum(out.get("sessions_by_group", {}).values()))
+    if "sessions_by_group_all" in out:
+        out["sessions_all"] = _num(sum(out["sessions_by_group_all"].values()))
+    for key, src in (("share_units", "units_by_group"), ("share_sessions", "sessions_by_group")):
+        tot = sum(out.get(src, {}).values())
+        out[key] = {g: (_num(out[src][g] / tot) if tot > 0 else 0.0) for g in baskets.GROUPS}
+    # conversion on the shared page: the entries each line's basket drew per
+    # group (its rate times its sessions) over the shared sessions
+    for ck, sk in (("conv", "sessions_by_group"), ("conv_all", "sessions_by_group_all")):
+        if any(ck in pr for pr in profiles):
+            out[ck] = {}
+            for g in baskets.GROUPS:
+                drawn = sum(_num((pr.get(ck) or {}).get(g)) * _num((pr.get(sk) or {}).get(g)) for pr in profiles)
+                shared = _num(out.get(sk, {}).get(g))
+                out[ck][g] = _num(drawn / shared) if shared > 0 else 0.0
+    w_units = [_num(pr.get("units")) for pr in profiles]
+    for k in ("price", "price_p25", "price_p75", "private_room_share", "units_per_buyer"):
+        out[k] = _num(_wmean([(_num(pr.get(k)), w) for pr, w in zip(profiles, w_units) if _num(pr.get(k)) > 0]))
+    out["campaign_days"] = _num(max(_num(pr.get("campaign_days")) for pr in profiles))
+    out["products"] = _num(sum(_num(pr.get("products")) for pr in profiles))
+    # what a paid unit costs over the lines: each line's reading weighted by
+    # its benchmark paid units, over the lines that have one
+    paid_w = [(_num(pr.get("cost_per_purchase")), _num((pr.get("units_by_group") or {}).get("paid"))) for pr in profiles]
+    out["cost_per_purchase"] = _num(_wmean([(c, w) for c, w in paid_w if c > 0]))
+    out["n_costed"] = int(min(int(pr.get("n_costed") or 0) for pr in profiles))
+    if any("cost_scale" in pr for pr in profiles):
+        out["cost_scale"] = _num(_wmean([(_num(pr.get("cost_scale") or 1.0), w) for pr, w in zip(profiles, w_units)]))
+    if any("direct_spread" in pr for pr in profiles):
+        out["direct_spread"] = next((pr["direct_spread"] for pr in profiles if pr.get("direct_spread")), None)
+    out["channels_off"] = list(profiles[0].get("channels_off") or [])
+    members: list[str] = []
+    for pr in profiles:
+        members += [m for m in (pr.get("members") or []) if m not in members]
+    out["members"] = members
+    out["n"] = int(min(int(pr.get("n") or 0) for pr in profiles))
+    return out
+
+
+def combined_basket(line_builds: dict[str, dict]) -> dict:
+    """The release's basket block when it sells lines: the lines' baskets
+    read together (combine_profiles), one block shaped like resolve_basket's
+    so the build reads it as it reads any basket, with each line's own under
+    `lines`."""
+    parts = list(line_builds.values())
+    profile = combine_profiles([lb["basket"]["profile"] for lb in parts])
+    unspread = combine_profiles([lb["basket"].get("unspread") or lb["basket"]["profile"] for lb in parts])
+    return {
+        "id": "lines", "kind": "lines", "name": "Per line of work",
+        "n": profile.get("n", 0), "thin": any(lb["basket"].get("thin") for lb in parts),
+        "scaleMismatch": any(lb["basket"].get("scaleMismatch") for lb in parts),
+        "members": profile.get("members") or [], "profile": profile, "unspread": unspread,
+        "suggestedId": "lines",
+        "lines": {k: {kk: lb["basket"].get(kk) for kk in ("id", "kind", "name", "n", "thin", "suggestedId", "members", "scaleMismatch")}
+                  for k, lb in line_builds.items()},
+    }
+
+
+def shared_sessions(line_targets: dict[str, dict]) -> dict[str, dict[str, float]]:
+    """The organic sessions a release with lines plans on, per channel: the
+    larger line's target (its basket's sessions at its own K), and the same
+    for paid's sessions. One email reaches one audience, so the lines'
+    sessions are not added."""
+    out: dict = {"per_channel": {}, "paid": 0.0}
+    for t in line_targets.values():
+        for c, pc in (t.get("per_channel") or {}).items():
+            out["per_channel"][c] = max(out["per_channel"].get(c, 0.0), float(pc.get("sessions") or 0.0))
+        out["paid"] = max(out["paid"], float((t.get("paid") or {}).get("sessions") or 0.0))
+    return out
+
+
+def apply_shared_sessions(targets: dict, shared: dict) -> dict:
+    """A targets dict re-read on the shared sessions (docs/LINES_PLAN.md):
+    each channel's sessions target is the shared one and its conversion the
+    entries it is asked for over those sessions, so a line's conversion on
+    the shared page is derived, never a basket's rate."""
+    out = {**targets, "per_channel": {}, "paid": dict(targets["paid"])}
+    for c, pc in targets["per_channel"].items():
+        sess = float(shared["per_channel"].get(c, pc.get("sessions") or 0.0))
+        out["per_channel"][c] = {**pc, "sessions": sess,
+                                 "session_to_entry": (float(pc["eligible_entries"]) / sess) if sess > 0 else 0.0}
+    psess = float(shared.get("paid") or out["paid"].get("sessions") or 0.0)
+    out["paid"]["sessions"] = psess
+    out["paid"]["session_to_entry"] = (float(out["paid"]["eligible_entries"]) / psess) if psess > 0 else 0.0
+    out["organic_sessions"] = sum(pc["sessions"] for pc in out["per_channel"].values())
+    out["total_sessions"] = out["organic_sessions"] + psess
+    out["sessions_shared"] = True
+    return out
+
+
+def combine_targets(line_targets: dict[str, dict], release: dict, profile: dict) -> dict:
+    """The release's targets from its lines' (docs/LINES_PLAN.md): units,
+    entries and the paid budget summed, the sessions shared (the larger
+    line's per channel), K and each group's uplift the ratio of the sums,
+    the stretch placed where the lines placed theirs. Shaped as
+    benchmark_targets shapes a release's, so group_targets and the page read
+    it unchanged; the lines' own targets ride under `lines`."""
+    parts = list(line_targets.values())
+    size = float(release["edition_size"])
+    e2o = entry_rate(release)
+    per_channel: dict = {}
+    for t in parts:
+        for c, pc in t["per_channel"].items():
+            cur = per_channel.setdefault(c, {"quality": "benchmark", "purchases": 0.0, "eligible_entries": 0.0, "sessions": 0.0})
+            cur["purchases"] += float(pc["purchases"])
+            cur["eligible_entries"] += float(pc["eligible_entries"])
+    paid_units = sum(float(t["paid"]["units"]) for t in parts)
+    budget = sum(float(t["paid"]["budget"]) for t in parts)
+    organic_units = size - paid_units
+    for c, pc in per_channel.items():
+        pc["order_split"] = (pc["purchases"] / organic_units) if organic_units else 0.0
+    launch_value = sum(float(t.get("launch_value") or 0.0) for t in parts)
+    upb = _wmean([(float(t.get("units_per_buyer") or 1.0), float(t["edition_size"])) for t in parts]) or 1.0
+    bm_units = profile["units_by_group"]
+    units_g = {g: 0.0 for g in baskets.GROUPS}
+    for t in parts:
+        for g, v in group_targets(t).items():
+            units_g[g] += float(v["units"])
+    kg = {g: (units_g[g] / bm_units[g]) if bm_units.get(g, 0.0) > 0 else 0.0 for g in baskets.GROUPS}
+    stretch_total = sum(float(t.get("stretch_units") or 0.0) for t in parts)
+    stretch_from = {g: 0.0 for g in baskets.GROUPS}
+    for t in parts:
+        for g, w in (t.get("stretch_from") or {}).items():
+            stretch_from[g] += float(w) * float(t.get("stretch_units") or 0.0)
+    stretch_from = ({g: v / stretch_total for g, v in stretch_from.items()} if stretch_total
+                    else {g: _wmean([(float((t.get("stretch_from") or {}).get(g, 0.0)), float(t["edition_size"])) for t in parts]) for g in baskets.GROUPS})
+    out = {
+        "edition_size": release["edition_size"],
+        "paid_pct": (paid_units / size) if size else 0.0, "paid_units": paid_units,
+        "organic_units": organic_units,
+        "per_channel": per_channel,
+        "paid": {
+            "units": paid_units, "eligible_entries": paid_units / e2o, "sessions": 0.0, "session_to_entry": 0.0,
+            "cost_per_purchase": (budget / paid_units) if paid_units > 0 else 0.0,
+            "cost_per_purchase_source": "lines", "budget": budget,
+            "budget_pct_of_launch_value": budget / launch_value if launch_value else None,
+            "sense_check_breached": (budget / launch_value) > BENCH["budget_sense_check_max_pct_of_launch_value"] if launch_value else False,
+        },
+        "launch_value": launch_value,
+        "units_per_buyer": upb, "units_per_buyer_source": "lines",
+        "buyers": size / upb, "buyers_by_group": {g: units_g[g] / upb for g in baskets.GROUPS},
+        "organic_sessions": 0.0, "total_sessions": 0.0,
+        "entries_target": sum(float(t["entries_target"]) for t in parts),
+        "entry_rate": e2o,
+        "buffer": BENCH["target_buffer"],
+        "k": size / profile["units"] if profile.get("units") else 0.0, "k_by_group": kg, "stretch_from": stretch_from,
+        "stretch_typed": any(t.get("stretch_typed") for t in parts),
+        "stretch_units": size - float(profile.get("units") or 0.0),
+        "lines": {k: {"k": t["k"], "k_by_group": t["k_by_group"], "units": t["edition_size"],
+                      "entries": t["entries_target"], "paid_units": t["paid"]["units"], "paid_budget": t["paid"]["budget"],
+                      "cost_per_purchase": t["paid"]["cost_per_purchase"], "cost_per_purchase_source": t["paid"]["cost_per_purchase_source"],
+                      "stretch_from": t.get("stretch_from"), "stretch_typed": bool(t.get("stretch_typed"))}
+                  for k, t in line_targets.items()},
+    }
+    return apply_shared_sessions(out, shared_sessions(line_targets))
+
+
+def line_draws(feed: dict | None, release: dict, orders: dict | None) -> tuple[list[str], list[str], dict[str, str]]:
+    """Which of a release's draws sell the line's works, and which sell
+    something else: a draw is the line's when the name typed against it, or
+    the product the orders feed pairs it with, names one of the line's works
+    (the sell-through card's own rule, _names_title). Also each draw's
+    title as read, for the profit a paid entry on it carries."""
+    names = [str(n) for n in (release.get("line_products") or []) if n]
+    paired = {str(k): str(v) for k, v in ((orders or {}).get("draws") or {}).items() if v}
+    typed = {str(t.get("key")): str(t.get("name") or "") for t in draw_products_typed(release) if t.get("key")}
+    mine, other, titles = [], [], {}
+    for d in (feed or {}).get("draws") or []:
+        did = str(d.get("id"))
+        title = typed.get(did) or paired.get(did) or ""
+        titles[did] = title or did
+        (mine if title and any(sellthrough._names_title(n, title) for n in names) else other).append(did)
+    return mine, other, titles
+
+
+def line_actuals(rat: pd.DataFrame, release: dict, name: str, units_feed: bool = True,
+                 edition_share: float | None = None) -> tuple[pd.DataFrame, dict]:
+    """The funnel's rows read for one line of a release (docs/LINES_PLAN.md):
+    the sessions as they are (the page is shared), the entries those of the
+    line's own draws by day and channel from the event feed
+    (aggregate_events.products_file `daily`), the units left for swap_units
+    to fill from the line's own orders. Where the feed's draws carry no
+    daily series yet, the release's entries are scaled by the line's share
+    of eligible entrants over its draws, and the page says so (`basis`).
+    Also returns the paid entries by product the line's ROI reads its profit
+    off (with_entry_profit)."""
+    feed = load_products_feed().get(name) or {}
+    orders = load_orders_feed().get(name)
+    mine, other, titles = line_draws(feed, release, orders)
+    draws = {str(d.get("id")): d for d in feed.get("draws") or []}
+    info: dict = {"basis": "none", "draws": mine, "otherDraws": other, "paidByProduct": {}}
+    ecols = ["Draw_Entries_Eligible_Units", "Draw_Entries_Total_Units_No_Conv"]
+    out = rat.copy()
+    for c in ecols:
+        if c not in out.columns:
+            out[c] = 0.0
+    if mine and all(isinstance(draws[d].get("daily"), list) for d in mine):
+        rows = []
+        for did in mine:
+            title = titles.get(did) or did
+            for day, ch, elig, open_ in draws[did]["daily"]:
+                rows.append({"channel": str(ch), "event_date": date.fromisoformat(str(day)[:10]),
+                             "elig": float(elig), "open": float(open_), "title": title})
+        ent = pd.DataFrame(rows, columns=["channel", "event_date", "elig", "open", "title"])
+        paid = ent[ent["channel"].map(GROUP_OF).eq("paid")]
+        info["paidByProduct"] = {t: float(v) for t, v in paid.groupby("title")["elig"].sum().items()}
+        by = ent.groupby(["channel", "event_date"], as_index=False)[["elig", "open"]].sum()
+        out["Draw_Entries_Eligible_Units"] = 0.0
+        out["Draw_Entries_Total_Units_No_Conv"] = 0.0
+        key = out[["channel", "event_date"]].astype(str).agg("|".join, axis=1) if len(out) else pd.Series(dtype=str)
+        have = dict(zip(key, out.index))
+        extra = []
+        for r in by.itertuples(index=False):
+            k = f"{r.channel}|{r.event_date}"
+            if k in have:
+                out.loc[have[k], "Draw_Entries_Eligible_Units"] = r.elig
+                out.loc[have[k], "Draw_Entries_Total_Units_No_Conv"] = r.open
+            else:
+                extra.append({"channel": r.channel, "event_date": r.event_date, "simple_release_name": name,
+                              "Draw_Entries_Eligible_Units": r.elig, "Draw_Entries_Total_Units_No_Conv": r.open})
+        if extra:
+            add = pd.DataFrame(extra)
+            for c in out.columns:
+                if c not in add.columns:
+                    add[c] = np.nan if c in _CLOCK_COLS else (0.0 if pd.api.types.is_numeric_dtype(out[c]) else None)
+            out = pd.concat([out, add[out.columns]], ignore_index=True)
+            for c in out.columns:
+                if c not in ("channel", "simple_release_name", "campaign_stage", "group", "event_date") and out[c].dtype == object:
+                    out[c] = pd.to_numeric(out[c], errors="coerce")
+        info["basis"] = "draws"
+    elif mine:
+        tot = sum(float(draws[d].get("eligible") or 0) for d in draws)
+        share = (sum(float(draws[d].get("eligible") or 0) for d in mine) / tot) if tot > 0 else 0.0
+        for c in ecols:
+            out[c] = out[c].astype(float) * share
+        info["basis"] = "share"
+        info["share"] = round(share, 4)
+    else:
+        for c in ecols:
+            out[c] = 0.0
+    # the units: the line's own orders where the units feed covers the
+    # release (swap_units, line_units); else the funnel's units scaled by the
+    # line's share of the draws' sales, or of the edition before any sale
+    info["unitsBasis"] = "orders"
+    if not units_feed:
+        sold_all = sum(float(d.get("sold") or 0) for d in draws.values())
+        sold_mine = sum(float(draws[d].get("sold") or 0) for d in mine)
+        share_u = (sold_mine / sold_all) if sold_all > 0 else float(edition_share or 0.0)
+        for c in ("Total_Product_Units", "Product_Units_Private_Room"):
+            if c in out.columns:
+                out[c] = out[c].astype(float) * share_u
+        info["unitsBasis"] = "sales share" if sold_all > 0 else "edition share"
+        info["unitsShare"] = round(share_u, 4)
+    return out, info
+
+
+def line_units(rows: pd.DataFrame | None, release: dict) -> pd.DataFrame | None:
+    """The units feed's rows for the line's works alone (the orders feed
+    names each line's product), so swap_units counts the line's sales."""
+    if rows is None or not len(rows):
+        return rows
+    names = [str(n) for n in (release.get("line_products") or []) if n]
+    keep = rows["product_title"].map(lambda t: any(sellthrough._names_title(n, t) for n in names))
+    return rows[keep.to_numpy()].reset_index(drop=True)
+
+
+def with_entry_profit(release: dict, paid_by_product: dict) -> dict:
+    """The line's profit per unit read as the product each paid entry was for
+    (docs/LINES_PLAN.md): the works' profits per unit (framing uplift
+    included) weighted by their paid entries, in place of the target-weighted
+    figure, once paid has bought an entry. The ROI then reads the margin of
+    what the ad set actually sells."""
+    prods = [p for p in (release.get("economics_products") or []) if p.get("edition")]
+    weights = []
+    for p in prods:
+        w = sum(float(v) for t, v in paid_by_product.items() if sellthrough._names_title(p.get("name"), t))
+        if w > 0:
+            weights.append((p, w))
+    if not weights:
+        return release
+    tot = sum(w for _, w in weights)
+    aa = sum(((float(p.get("aa_profit_per_unit") or 0.0) + float(p.get("frame_uplift_per_unit") or 0.0)) * w) for p, w in weights) / tot
+    artist = sum(float(p.get("artist_profit_per_unit") or 0.0) * w for p, w in weights) / tot
+    r = dict(release)
+    r["aa_ppu_resolved"] = round(aa, 4)
+    r["artist_profit"] = round(artist * float(release.get("edition_size") or 0.0), 2)
+    r["ppu_basis"] = "paid entries"
+    return r
+
+
+def restrict_products(pp: dict, names: list[str]) -> dict:
+    """The per-product sell-through block kept to the line's works, its
+    headline figures the kept rows added up: the allocation ran over every
+    work (an entrant in both lines is placed once), only the reading is the
+    line's."""
+    rows = [r for r in pp.get("products") or [] if any(sellthrough._names_title(n, r.get("name")) for n in names)]
+    out = dict(pp, products=rows)
+    out["attributedSold"] = sum(float(r.get("sold") or 0) for r in rows)
+    out["unattributedSold"] = sum(float(r.get("soldAssumed") or 0) for r in rows)
+    drafts = [r.get("drafts") for r in rows]
+    out["drafts"] = sum(float(d) for d in drafts if d is not None) if any(d is not None for d in drafts) else None
+    out["soldPredicted"] = round(sum(float(r.get("predicted") or 0) for r in rows), 1)
+    out["futureEntriesPredicted"] = round(sum(float(r.get("futurePredicted") or 0) for r in rows), 1)
+    eds = [r.get("edition") for r in rows]
+    out["editionSum"] = sum(float(e) for e in eds) if rows and all(e is not None for e in eds) else None
+    return out
+
+
+def line_summary(snap: dict) -> dict:
+    """What the combined page carries about each line (snap.lines[]): its
+    hero, targets, basket and paid reading, from the line's own build."""
+    t = snap.get("targets") or {}
+    bm = snap.get("benchmark") or {}
+    paid = snap.get("paid") or {}
+    return {
+        "hero": snap.get("hero"),
+        "edition": snap.get("edition"),
+        "economics": {k: (snap.get("economics") or {}).get(k) for k in ("unitPrice", "launchValue", "aaProfitPerUnit", "artistProfitPerUnit")},
+        "basket": bm.get("basket"), "k": bm.get("k"), "kByGroup": bm.get("kByGroup"),
+        "benchmarkUnits": bm.get("units"),
+        "targets": {"units": t.get("edition_size"), "entries": t.get("entries_target"),
+                    "paidUnits": (t.get("paid") or {}).get("units"), "paidBudget": (t.get("paid") or {}).get("budget"),
+                    "costPerPurchase": (t.get("paid") or {}).get("cost_per_purchase"),
+                    "costPerPurchaseSource": (t.get("paid") or {}).get("cost_per_purchase_source")},
+        "groupTargets": snap.get("groupTargets"),
+        "paid": {k: paid.get(k) for k in ("spendToDate", "entriesToDate", "unitsToDate", "cumRoi", "cumRoiArtist", "l3dRoi", "l3dCpe",
+                                          "cumCpe", "unitTarget", "spendBudget", "unitProjected", "entriesProjected", "spendProjectedTotal")},
+        "sellthrough": {k: (snap.get("sellthrough") or {}).get(k) for k in ("sold", "drafts", "soldPredicted", "futureEntriesPredicted", "pct", "edition")},
+        "status": {"pct": (snap.get("hero") or {}).get("statusPct"), "ok": (snap.get("hero") or {}).get("ok"),
+                   "benchmarkPct": (snap.get("hero") or {}).get("benchmarkPct")},
+        "actuals": snap.get("line"),
+    }
 
 
 # ---- untracked share (docs §1.3): how much of a release has no channel -----
@@ -2876,6 +3304,9 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     pp = sell_through_products(products, patterns, rate=rate, edition=edition,
                                sold_total=units_sold, future_units=future_entries, expected_today=expected_today,
                                benchmark_today=bm_today, benchmark_close=bm_close, preorder_rate=pre_rate)
+    if release.get("line_products"):
+        # one line's page: the rows of its works, the allocation over every work
+        pp = restrict_products(pp, list(release["line_products"]))
     st.update({k: pp[k] for k in ("products", "attributedSold", "unattributedSold", "allocation", "measure",
                                   "editionSum", "editionMismatch")})
     st["soldSource"] = source
@@ -3371,7 +3802,7 @@ LEGACY_KEYS = ("edition_size", "edition_total", "unit_price", "artist_profit", "
 # a product's figures, typed on the Target setting tab over what Airtable holds
 PRODUCT_KEYS = ("units_target", "edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
                 "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "framing_available",
-                "frame_conversion", "frame_profit_per_unit", "frame_price")
+                "frame_conversion", "frame_profit_per_unit", "frame_price", "line")
 
 
 def _num(v):
@@ -3493,6 +3924,10 @@ def _effective_product(p: dict, b: dict) -> dict:
 
     e: dict = {"airtable_id": p.get("airtable_id"), "name": typed.get("name") or p.get("name") or "Product",
                "project_code": p.get("project_code"), "excluded": bool(p.get("excluded")),
+               # the line of work the product sells on (docs/LINES_PLAN.md):
+               # Airtable's release code, or the line typed for a work added by
+               # hand; a release whose products carry two codes is two lines
+               "line": (str(typed.get("line")).strip() if typed.get("line") not in (None, "") else None) or p.get("release") or None,
                # the day this work's draw closes (Airtable): one launch's works can
                # close on different days, and the page runs to the last (§1.6)
                "launch_date": str(p.get("launch_date"))[:10] if p.get("launch_date") else None}
@@ -3541,6 +3976,144 @@ def _effective_product(p: dict, b: dict) -> dict:
         e["aa_budget_share"], e["deal"] = None, None
     e["sources"] = src
     return e
+
+
+ECONOMICS_KEYS = ("edition_total", "edition_size", "unit_price", "currency", "launch_value", "launch_currencies",
+                  "artist_profit", "aa_group_profit", "framing_available", "frame_conversion", "frame_profit_per_unit",
+                  "frame_uplift_per_unit", "aa_ppu_resolved", "aa_budget_share", "aa_budget_share_assumed",
+                  "artist_profit_share", "deal")
+
+
+def products_economics(sized: list[dict]) -> dict:
+    """The figures a set of sized products adds up to (docs §1.6): the target
+    (the editions at their target sell-through), the whole edition, the price
+    of the average target unit, the launch value, the profits per unit and the
+    framing uplift weighted by target units, and the paid-budget split. One
+    rule for the release and for each line of work it sells (release_lines),
+    so a line's figures are the release's arithmetic over its own products."""
+    targets = sum(p["target_units"] for p in sized)
+    r: dict = {}
+    r["edition_total"] = sum(p["edition"] for p in sized)
+    r["edition_size"] = targets
+    priced = [p for p in sized if p["unit_price_eur"]]
+    value = sum(p["target_units"] * p["unit_price_eur"] for p in priced)
+    r["unit_price"] = round(value / sum(p["target_units"] for p in priced), 2) if priced and sum(p["target_units"] for p in priced) else None
+    r["currency"] = pricing.PAGE_CURRENCY
+    r["launch_value"] = round(value, 2)
+    r["launch_currencies"] = sorted({p["currency"] for p in priced})
+
+    def weighted(key, of=None):
+        rows = [p for p in (of or sized) if p.get(key) is not None and p["target_units"] > 0]
+        tot = sum(p["target_units"] for p in rows)
+        return (sum(p["target_units"] * p[key] for p in rows) / tot) if tot else None
+    ppu_artist = weighted("artist_profit_per_unit")
+    ppu_aa = weighted("aa_profit_per_unit")
+    r["artist_profit"] = round(ppu_artist * targets, 2) if ppu_artist is not None else 0.0
+    r["aa_group_profit"] = round(ppu_aa * targets, 2) if ppu_aa is not None else 0.0
+    framed = [p for p in sized if p["framing_available"]]
+    r["framing_available"] = bool(framed)
+    r["frame_conversion"] = weighted("frame_conversion", framed) if framed else None
+    r["frame_profit_per_unit"] = weighted("frame_profit_per_unit", framed) if framed else None
+    # the framing uplift over every target unit: the products that frame,
+    # each at its own take-up and profit, spread over the whole target
+    uplift = (sum(p["target_units"] * p["frame_uplift_per_unit"] for p in framed) / targets) if targets else 0.0
+    r["frame_uplift_per_unit"] = round(uplift, 4)
+    r["aa_ppu_resolved"] = round((ppu_aa or 0.0) + uplift, 4)
+    share = weighted("aa_budget_share")
+    r["aa_budget_share"] = share if share is not None else 0.5
+    # no product records its deal: half, and the page says it is assumed
+    r["aa_budget_share_assumed"] = share is None
+    r["artist_profit_share"] = round(1.0 - r["aa_budget_share"], 4)
+    r["deal"] = sorted({p["deal"] for p in sized if p["deal"]})
+    return r
+
+
+# ---------------------------------------------------------------- lines of work (docs/LINES_PLAN.md)
+
+OTHER_LINE = "_other"   # the line of products Airtable gives no release code
+
+
+def product_key(p: dict) -> str:
+    """How a product is named in a line's product list: its Airtable id, else
+    its name (a work added by hand)."""
+    return str(p.get("airtable_id") or p.get("name") or "")
+
+
+def line_name(products: list[dict], code: str | None) -> str:
+    """A line's name when none is typed: the words its works' titles share
+    ("Toy Brick Middle Finger" over four colourways), the one work's title
+    when it is alone, else the Airtable release code."""
+    titles = [str(p.get("name") or "").strip() for p in products if p.get("name")]
+    if len(titles) == 1:
+        return titles[0]
+    words = [re.split(r"\s+", re.split(r"\s*[\(\[]", t)[0].strip()) for t in titles]
+    common: list[str] = []
+    for i in range(min(len(w) for w in words) if words else 0):
+        if len({w[i].lower() for w in words}) == 1:
+            common.append(words[0][i])
+        else:
+            break
+    if common and len(set(t.lower() for t in titles)) > 1:
+        return " ".join(common)
+    return str(code or "Other works")
+
+
+def release_lines(sized: list[dict], config: dict | None = None) -> list[dict]:
+    """The lines of work a release sells (docs/LINES_PLAN.md): its sized
+    products grouped by their Airtable release code, each line with the
+    release's own economics arithmetic over its products (products_economics)
+    and whatever the Target setting tab saved for it under `line_settings`
+    (its name, basket, stretch and ad sets, keyed by the code). A release
+    whose products carry fewer than two codes has no lines: [] here, and
+    nothing else on its page moves. Products with no code at all form the
+    `_other` line when there are two coded lines beside them."""
+    by_code: dict[str, list[dict]] = {}
+    for p in sized:
+        by_code.setdefault(str(p.get("line") or "").strip() or OTHER_LINE, []).append(p)
+    if len([c for c in by_code if c != OTHER_LINE]) < 2:
+        return []
+    cfg = config if isinstance(config, dict) else {}
+    out = []
+    for code, ps in by_code.items():
+        c = cfg.get(code) if isinstance(cfg.get(code), dict) else {}
+        econ = products_economics(ps)
+        typed = str(c.get("name") or "").strip()
+        out.append({
+            "key": code,
+            "code": None if code == OTHER_LINE else code,
+            "name": typed or line_name(ps, None if code == OTHER_LINE else code),
+            "nameTyped": bool(typed),
+            "products": [product_key(p) for p in ps],
+            "productNames": [p.get("name") for p in ps],
+            **{k: econ.get(k) for k in ECONOMICS_KEYS},
+            "benchmark_basket": c.get("benchmark_basket"),
+            "stretch_from": c.get("stretch_from"),
+            "adsets": [str(a).strip() for a in (c.get("adsets") or []) if str(a).strip()],
+        })
+    return out
+
+
+def line_release(release: dict, line: dict) -> dict:
+    """The release read as one of its lines (docs/LINES_PLAN.md): the line's
+    products and economics in place of the release's, its own basket, stretch
+    and ad sets, the release's dates, campaigns, rates and everything else.
+    What build_release is handed to build the line's page."""
+    r = dict(release)
+    ids = set(line.get("products") or [])
+    prods = [p for p in (release.get("economics_products") or []) if product_key(p) in ids]
+    r["economics_products"] = prods
+    for k in ECONOMICS_KEYS:
+        if k in line:
+            r[k] = line[k]
+    r["line"] = line["key"]
+    r["line_name"] = line.get("name")
+    r["benchmark_basket"] = line.get("benchmark_basket")
+    r["stretch_from"] = line.get("stretch_from")
+    r["adsets"] = list(line.get("adsets") or [])
+    r["legacy_economics"] = None
+    r["closes"] = product_closes([p for p in prods if p.get("edition")])
+    r["staggered"] = len(r["closes"]) > 1
+    return r
 
 
 def legacy_budget_share(artist_profit_share) -> tuple[float, bool]:
@@ -3625,40 +4198,13 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         sources["economics"] = "typed release-level figures"
     elif sized and targets > 0:
         r["economics_mode"] = "products"
-        r["edition_total"] = sum(p["edition"] for p in sized)
-        r["edition_size"] = targets
-        priced = [p for p in sized if p["unit_price_eur"]]
-        value = sum(p["target_units"] * p["unit_price_eur"] for p in priced)
-        r["unit_price"] = round(value / sum(p["target_units"] for p in priced), 2) if priced and sum(p["target_units"] for p in priced) else None
-        r["currency"] = pricing.PAGE_CURRENCY
-        r["launch_value"] = round(value, 2)
-        r["launch_currencies"] = sorted({p["currency"] for p in priced})
-
-        def weighted(key, of=None):
-            rows = [p for p in (of or sized) if p.get(key) is not None and p["target_units"] > 0]
-            tot = sum(p["target_units"] for p in rows)
-            return (sum(p["target_units"] * p[key] for p in rows) / tot) if tot else None
-        ppu_artist = weighted("artist_profit_per_unit")
-        ppu_aa = weighted("aa_profit_per_unit")
-        r["artist_profit"] = round(ppu_artist * targets, 2) if ppu_artist is not None else 0.0
-        r["aa_group_profit"] = round(ppu_aa * targets, 2) if ppu_aa is not None else 0.0
-        framed = [p for p in sized if p["framing_available"]]
-        r["framing_available"] = bool(framed)
-        r["frame_conversion"] = weighted("frame_conversion", framed) if framed else None
-        r["frame_profit_per_unit"] = weighted("frame_profit_per_unit", framed) if framed else None
-        # the framing uplift over every target unit: the products that frame,
-        # each at its own take-up and profit, spread over the whole target
-        uplift = sum(p["target_units"] * p["frame_uplift_per_unit"] for p in framed) / targets
-        r["frame_uplift_per_unit"] = round(uplift, 4)
-        r["aa_ppu_resolved"] = round((ppu_aa or 0.0) + uplift, 4)
-        share = weighted("aa_budget_share")
-        r["aa_budget_share"] = share if share is not None else 0.5
-        # no product records its deal: half, and the page says it is assumed
-        r["aa_budget_share_assumed"] = share is None
-        r["artist_profit_share"] = round(1.0 - r["aa_budget_share"], 4)
-        r["deal"] = sorted({p["deal"] for p in sized if p["deal"]})
+        r.update(products_economics(sized))
         r["legacy_economics"] = None
         sources["economics"] = "products"
+        # a release selling two lines of work on one page (docs/LINES_PLAN.md):
+        # each line's own economics, read by the arithmetic above over its
+        # own products; [] for the one-line release, which is every other
+        r["lines"] = release_lines(sized, r.get("line_settings"))
     else:
         r["economics_mode"] = "none"
         sources["economics"] = None
@@ -3818,8 +4364,19 @@ def meta_campaigns(spend: pd.DataFrame) -> list[dict]:
     camp["last"] = camp["campaign_name"].map(last)
     camp["_day"] = pd.to_datetime(camp["last"], errors="coerce")
     camp = camp.sort_values(["_day", "spend"], ascending=False, na_position="last")
+    # the ad sets the feed carries under each campaign, with their spend (a
+    # campaign-level feed carries none): the Target setting tab maps a
+    # release's lines of work to them (docs/LINES_PLAN.md)
+    adsets: dict[str, list] = {}
+    sa = with_adsets(spend)
+    sa = sa[sa["adset_name"] != ""]
+    if len(sa):
+        by = sa.groupby(["campaign_name", "adset_name"]).agg(spend=("spend", "sum")).reset_index()
+        for r in by.sort_values(["campaign_name", "spend"], ascending=[True, False]).itertuples():
+            adsets.setdefault(r.campaign_name, []).append({"name": r.adset_name, "spend": round(float(r.spend), 2)})
     return [{"name": r.campaign_name, "spend": round(float(r.spend), 2),
-             "last": r.last.isoformat() if pd.notna(r.last) else None}
+             "last": r.last.isoformat() if pd.notna(r.last) else None,
+             "adsets": adsets.get(r.campaign_name, [])}
             for r in camp.itertuples()]
 
 
@@ -4728,13 +5285,18 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   people: pd.DataFrame | None = None,
                   full_through: date | None = None, seen: float = 1.0,
                   untracked_norms: dict | None = None, direct_spread: bool = False,
-                  direct_norm: dict | None = None) -> dict:
+                  direct_norm: dict | None = None, line: str | None = None) -> dict:
     b = BENCH
     # a release handed in unresolved (a test, a script) is resolved here the way
     # main() resolves every configured release: its products, dates and
     # campaigns from the feeds and the typed inputs (resolve_release)
     if "economics_mode" not in release:
         release = resolve_release(release, spend, load_notion_campaigns())
+    # the lines of work the release sells on one page (docs/LINES_PLAN.md), and
+    # the one this build is for (`line`): the page read for that line alone
+    lines = [ln for ln in (release.get("lines") or []) if ln.get("edition_size")]
+    if line is not None and not any(ln["key"] == line for ln in lines):
+        raise ValueError(f"{release['id']}: no line {line!r} ({[ln['key'] for ln in lines]})")
     # one fit per build, over every release whose product count is recorded (§4.2)
     upb_slope = units_per_buyer_curve(people)
     name = release["release_name"]
@@ -4750,19 +5312,39 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # first. There is no other model: without a basket to read, the release
     # keeps its actuals-only page (docs/DATA_MODEL.md §3).
     basket = profile = unspread = None
+    line_builds: dict[str, dict] = {}
     if panel is not None and len(panel):
-        basket = baskets.resolve_basket(release.get("benchmark_basket"), panel, release, as_of)
         # the channels this release will not run leave the basket's medians
         # before anything reads them: K, the per-group targets, every
         # benchmark mark on the page (BENCHMARK_SPEC §4.3)
         off = baskets.channels_off_of(release)
-        basket["profile"] = baskets.apply_channels_off(basket["profile"], off)
-        # as the funnel attributes it, before the Direct switch's spread: the
-        # email plan's sends are read on these sessions (email block below)
-        unspread = basket["profile"]
-        if direct_spread:
-            # the benchmark's channel split read the same way as the actuals
-            basket["profile"] = spread_profile(basket["profile"], direct_norm)
+
+        def resolve_for(rel: dict) -> dict:
+            bk = baskets.resolve_basket(rel.get("benchmark_basket"), panel, rel, as_of)
+            bk["profile"] = baskets.apply_channels_off(bk["profile"], off)
+            # as the funnel attributes it, before the Direct switch's spread: the
+            # email plan's sends are read on these sessions (email block below)
+            bk["unspread"] = bk["profile"]
+            if direct_spread:
+                # the benchmark's channel split read the same way as the actuals
+                bk["profile"] = spread_profile(bk["profile"], direct_norm)
+            return bk
+        if lines:
+            # each line on its own basket (its own size and price); the
+            # release on the lines' baskets read together, or, building one
+            # line's page, on that line's alone (docs/LINES_PLAN.md)
+            for ln in lines:
+                lr = line_release(release, ln)
+                lr["line_products"] = list(ln.get("productNames") or [])
+                line_builds[ln["key"]] = {"line": ln, "release": lr, "basket": resolve_for(lr)}
+            if line is not None:
+                release = line_builds[line]["release"]
+                basket = line_builds[line]["basket"]
+            else:
+                basket = combined_basket(line_builds)
+        else:
+            basket = resolve_for(release)
+        unspread = basket["unspread"]
         if basket["profile"]["units"] <= 0:
             print(f"{release['id']}: basket {basket['id']} has no median units on the channels in plan")
             basket = None
@@ -4804,7 +5386,27 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             _n = _pr.iloc[0].get("product_count")
             if _n is not None and not pd.isna(_n) and float(_n) >= 1:
                 release = {**release, "product_count": float(_n)}
-    targets = compute_targets(release, profile, upb_slope)
+    if lines:
+        # each line's targets off its own basket and K; the release's are the
+        # sum, and the sessions of every view the shared ones (combine_targets)
+        line_targets = {k: compute_targets(lb["release"], lb["basket"]["profile"], upb_slope) for k, lb in line_builds.items()}
+        shared = shared_sessions(line_targets)
+        if line is not None:
+            targets = apply_shared_sessions(line_targets[line], shared)
+            # the line's benchmark sessions are the shared ones too: the larger
+            # line's basket reading per group, and its conversion its own
+            # basket's entries over them
+            bm_sess = {g: max(float((lb["basket"]["profile"].get("sessions_by_group") or {}).get(g) or 0.0) for lb in line_builds.values())
+                       for g in baskets.GROUPS}
+            own = profile.get("sessions_by_group") or {}
+            profile = dict(profile, sessions_by_group=bm_sess, sessions=sum(bm_sess.values()),
+                           conv={g: ((float((profile.get("conv") or {}).get(g) or 0.0) * float(own.get(g) or 0.0) / bm_sess[g]) if bm_sess[g] > 0 else 0.0)
+                                 for g in baskets.GROUPS})
+            basket["profile"] = profile
+        else:
+            targets = combine_targets(line_targets, release, profile)
+    else:
+        targets = compute_targets(release, profile, upb_slope)
     # what the plan assumes each buyer takes, and what they have actually taken
     # so far. The actual is the release's own distinct buyer count, which is the
     # only one that is not double-counted across channels and days; with no row
@@ -4831,12 +5433,24 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     rcurves = basket_curves(at, basket, curves) if bench else curves
 
     rat = at[at["simple_release_name"] == name].copy()
+    line_info: dict | None = None
+    if line is not None:
+        # one line's page: the entries of its own draws, the units of its own
+        # works, the sessions of the shared page (docs/LINES_PLAN.md)
+        tot_ed = sum(float(ln.get("edition_total") or 0) for ln in lines)
+        rat, line_info = line_actuals(rat, release, name, units_feed=units_rows(name) is not None,
+                                      edition_share=(float(release.get("edition_total") or 0) / tot_ed) if tot_ed else None)
     rat["group"] = rat["channel"].map(GROUP_OF)
     # the days the page counts sales over, on every card alike (docs 6.3): the
     # private room or the announce, or the first paid order when it came
     # earlier, to two days after the close; the units in it are the orders
     # table's, each on its own purchase event's channel
     urows = units_rows(name)
+    if line is not None:
+        urows = line_units(urows, release)
+        if line_info.get("paidByProduct"):
+            # a paid entry's profit is the product it entered for
+            release = with_entry_profit(release, line_info["paidByProduct"])
     # a draw that ran past the typed close has its winners pay when it ends:
     # the window counts to the draw's end (sales_close), folded into the
     # close day below, while the plan keeps the typed dates
@@ -4901,8 +5515,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # is projected spend ÷ projected cost-per-entry, not a trajectory curve (docs §5.4)
     camp = release.get("campaign_name")
     camps = [c for c in (release.get("campaign_names") or ([camp] if camp else [])) if c]
-    psp = spend[spend["campaign_name"].isin(camps)] if camps else spend.iloc[0:0]
-    psp = psp[(psp["spend_date"] >= window_start) & (psp["spend_date"] <= min(as_of, launch_end))]
+    # the release's campaigns; on a line, the line's own ad sets among them
+    rsp = release_spend(spend, release)
+    psp = rsp[(rsp["spend_date"] >= window_start) & (rsp["spend_date"] <= min(as_of, launch_end))]
     paid_entries_day = (win[win["channel"] == "Paid Social"]
                         .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
     spend_day = psp.groupby("spend_date")["spend"].sum()
@@ -4943,8 +5558,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     win3: list[tuple[float, float]] = []
     # the clock the cost path runs on (docs §7): what the release's campaigns
     # had spent before each day, any spend ahead of the window included
-    spent_before_window = float(spend[spend["campaign_name"].isin(camps)
-                                      & (spend["spend_date"] < window_start)]["spend"].sum()) if camps else 0.0
+    spent_before_window = float(rsp[rsp["spend_date"] < window_start]["spend"].sum()) if len(rsp) else 0.0
     # the close's lift as fitted: the window's price is read underneath it
     # and the campaign's own terms are fitted with it held (campaign_cost_terms).
     # The path lifts its own last days by it with cpe_close_lift_applied on,
@@ -6039,6 +6653,20 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "derived": {"last_seen": rat["event_date"].max().isoformat() if len(rat) else None},
         "campaignCode": release["campaign_code"], "campaignName": camp,
         "campaignNames": camps,
+        # one line's page (docs/LINES_PLAN.md): which, its works, its ad sets,
+        # and what its entries were read from; the sessions are the shared
+        # page's on every line
+        "line": ({"key": release["line"], "name": release.get("line_name"), "products": list(release.get("line_products") or []),
+                  "adsets": list(release.get("adsets") or []), "entriesBasis": (line_info or {}).get("basis"),
+                  "draws": (line_info or {}).get("draws") or [], "sessionsShared": True,
+                  "ppuBasis": release.get("ppu_basis") or "target units"} if line is not None else None),
+        # the lines the release sells, on the combined page (with_direct_spread
+        # fills in each line's own reading)
+        "lines": ([{"key": ln["key"], "code": ln.get("code"), "name": ln.get("name"), "nameTyped": bool(ln.get("nameTyped")),
+                    "products": list(ln.get("productNames") or []), "productKeys": list(ln.get("products") or []),
+                    "adsets": list(ln.get("adsets") or []),
+                    "basketSpec": ln.get("benchmark_basket"), "stretchFrom": ln.get("stretch_from")}
+                   for ln in lines] if line is None and lines else None),
         "marketingLead": release.get("marketing_lead"),
         # Airtable's project manager and their Slack member ID, whom Send for
         # confirmation mentions unless one is typed on the tab (README)
@@ -6198,6 +6826,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # falls on the buyer count and benchmark x K is the target (§4.2)
             "unitsPerBuyer": round(upb, 4),
             "buyers": round(profile["units"] / upb, 1) if upb else None,
+            # the sessions are shared across the lines (docs/LINES_PLAN.md)
+            "sessionsShared": bool(lines),
+            "lines": basket.get("lines"),
         }
         # in whole units as the page rounds benchmark.units (whole), the
         # waterfall's figures; the stretch is the difference of the two printed

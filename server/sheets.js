@@ -169,12 +169,16 @@ function spendWriter(headerRow) {
     name: col("campaign_name"), date: col("spend_date"),
     imp: col("impressions"), reach: col("reachs", "reach"),
     clicks: col("link_clicks"), spend: col("spend"),
+    // the ad set, where the export carries it (a release selling two lines
+    // of work on one page runs an ad set per line, docs/LINES_PLAN.md);
+    // blank on a campaign-level export, and the build sums over it
+    adset: col("adset_name", "ad_set_name"),
   };
   if (ci.name < 0 || ci.date < 0 || ci.spend < 0) {
     throw new Error(`spend header not recognised: ${header.join(", ")}`);
   }
   const w = {
-    header: "campaign_name,spend_date,impressions,reach,link_clicks,spend",
+    header: "campaign_name,spend_date,impressions,reach,link_clicks,spend,adset_name",
     dateIndex: -1,
     dropped: 0,
     row(cells) {
@@ -185,6 +189,7 @@ function spendWriter(headerRow) {
         csvCell(cells[ci.name]), fmtISO(d),
         Number(cells[ci.imp]) || 0, Number(cells[ci.reach]) || 0,
         Number(cells[ci.clicks]) || 0, Number(cells[ci.spend]) || 0,
+        ci.adset >= 0 ? csvCell(cells[ci.adset]) : "",
       ].join(",");
     },
   };
