@@ -11,6 +11,7 @@
 
 ## Conventions
 - Develop and push on `claude/bi-dashboard-data-model-d6czue`; Render deploys from it on push. Do not open pull requests unless asked.
+- Push live straight away: when a session is given another working branch, every push to it is also pushed to `claude/bi-dashboard-data-model-d6czue` in the same step (a fast-forward, `git push origin HEAD:claude/bi-dashboard-data-model-d6czue`), so the dashboard always runs the latest commit. The repository owner asked for this on 15 October 2026; no need to ask each time.
 - No em dashes anywhere (code, docs, commits, chat): use a plain hyphen.
 - No model identifiers in commits, code comments or anything pushed.
 - Methodology and data model: `docs/METHODOLOGY.md`, `docs/DATA_MODEL.md`. Operational notes: `README.md`.
