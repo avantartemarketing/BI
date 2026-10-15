@@ -586,6 +586,51 @@ EXPLAIN["funnel.rung"] = (a, { snap: s }) => {
   };
 };
 
+/* A rung of the Page funnel card: one side's share of sessions through one
+ * step of the pages, against the basket's median by today (docs 2.6). */
+const PAGE_STAGES = {
+  clickThrough: { name: "Release page → product page", from: "saw the release page", to: "went on to a product page" },
+  entry: { name: "Product page → draw entry", from: "saw a product page", to: "entered the draw" },
+};
+EXPLAIN["pages.rung"] = (a, { snap: s }) => {
+  const pf = s.pageFunnel;
+  const st = PAGE_STAGES[a && a.stage];
+  const x = pf && st && pf[a.side] && pf[a.side][a.stage];
+  if (!x || !finite(x.rate)) return null;
+  const sideName = a.side === "paid" ? "Paid" : "Organic";
+  const min = pf.minSessions ?? 30;
+  const hasBm = finite(x.bm) && x.bm > 0;
+  const rel = hasBm ? (x.rate / x.bm - 1) * 100 : null;
+  const value = hasBm ? (rel >= 0 ? "+" : MINUS) + Math.abs(Math.round(rel)) + "%" : pct(x.rate, 1);
+  const steps = [
+    seg`${n(x.sessions)} ${sideName.toLowerCase()} sessions ${st.from} between ${dayOf(pf.from)} and ${dayOf(pf.through)}, and ${n(x.through)} of them ${st.to} in the same session: ${pct(x.rate, 1)}.`,
+  ];
+  if (hasBm) {
+    steps.push(seg`The basket's launches, read the same way to the same point of their campaigns, put the median at ${pct(x.bm, 1)}: ${n(x.bmN)} of ${basketName(s)} with ${n(min)} or more sessions on the step.`);
+    steps.push(seg`${pct(x.rate, 1)} against ${pct(x.bm, 1)} is ${value}.`);
+  } else if (pf.bench) {
+    steps.push(seg`None of ${basketName(s)} has ${n(min)} or more sessions on this step, so there is no benchmark to read against.`);
+  } else {
+    steps.push(seg`This page has no basket, so there is no benchmark to read against.`);
+  }
+  const notes = [
+    `Paid is the paid channels; organic the four organic groups, Direct among them whichever way the Direct switch is set. ` +
+    `A session counts once, on the side and the day of its first page on the release; an entry made with no session cannot be placed and is not counted.`,
+  ];
+  if (pf.feedThrough && pf.through && String(pf.feedThrough) < String(pf.through)) notes.push(`The page sessions run to ${dayOf(pf.feedThrough)}.`);
+  return {
+    where: "Page funnel", when: "Today",
+    name: `${sideName} · ${st.name}`, value, unit: hasBm ? "against benchmark" : "of sessions",
+    say: hasBm
+      ? `How far the ${sideName.toLowerCase()} share of sessions that ${st.to} is from the basket's, as a share of the basket's.`
+      : `The ${sideName.toLowerCase()} share of sessions that ${st.to}.`,
+    steps, total: { v: value, label: hasBm ? "against benchmark" : "of sessions" },
+    sources: [{ key: "pages", gave: "Sessions through the pages by channel and day" },
+              ...(hasBm ? [{ key: "basket", gave: "The benchmark by today" }] : [])],
+    notes, method: "Data model 2.6",
+  };
+};
+
 /* A contributor on the organic funnel card's Adding and Costing lists. */
 EXPLAIN["drivers.step"] = (a, { snap: s }) => {
   const g = (s.funnelByGroup || {})[a && a.key];

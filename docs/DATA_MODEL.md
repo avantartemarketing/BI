@@ -776,6 +776,7 @@ production model has to serve. Everything else in a table is never selected.
 |---|---|---|---|
 | `le_funnel_report_split_touch_export` | `server/bigquery.js` (funnel feed, incremental) | all 34 (no personal data; §2.2) | `sources/across_time.csv`: sessions, entries, units by channel × day × release, the campaign clock |
 | `LE_Funnel_Report` | `server/bigquery.js` (events and browsing feeds) | the event columns named in `EVENT_COLUMNS`: event, date, release, pseudonymous account id, signup, draw entry, winner and purchase flags, order counts, channel groups, locales; never `user_email` | `sources/le_events.csv` and `sources/le_browsing.csv`: the rebuilt export, people per release, the draws and entry patterns behind the per-product sell-through |
+| `LE_Funnel_Report` | `server/bigquery.js` (pages feed, §2.6) | event_name, page_type, ga_session_id (grouped on inside BigQuery; never selected out), event_timestamp, event_date, simple_release_name, AA_session_custom_channel_group_split_touch | `sources/le_pages.csv`: sessions through the release page, a product page and the draw entry per channel × day × release, the Page funnel card |
 | `LE_Funnel_Report` | `server/bigquery.js` (draw map, §2.4) | event_name, winner, draw_id, aa_account_id, simple_release_name, event_date; the collectors table's aa_account_id and shopify_customer_id (joined on inside BigQuery; neither leaves) | `data/draw_products.csv` |
 | `LE_Funnel_Report` | `server/bigquery.js` (units feed, §2.4) | event_name, shopify_order_id, event_timestamp, AA_session_custom_channel_group_split_touch | `data/units_paid.csv`: the channel of each paid order's earliest purchase event, which sets the channel split of units sold on every card |
 | `LE_Funnel_Report` | `server/bigquery.js` (orders and units feeds: the live entries behind a person's draft, §2.4) | event_name, simple_release_name, aa_account_id, draw_id, draw_with_purchase, draw_entry_eligible, winner, event_date | `data/orders_by_product.csv`, `data/units_paid.csv` (only through which drafts count; aggregates only) |
@@ -791,6 +792,53 @@ accounts, 2022 to date - a cross-platform paid feed to replace the Meta-only one
 answers: only ever aggregates such as marketable contacts by tier and budget band, never a
 row), `TL_Funnel_Report_v2` (the timed-launch event feed, 81 launches: what a TL page would
 read). `tl_funnel_report_split_touch_export` was still denied when this was written.
+
+### 2.6 Sessions through the pages (`le_pages.csv`, the Page funnel card)
+
+The event table types every page view (`page_type`: `release page`, `product page`, `private
+room`, or none - 1.25M, 2.25M, 0.14M and 0.04M rows since 2025), and every page view and draw
+entry carries the session it was made in (`ga_session_id`; 2 page views in 2.25M and 2.5% of
+entries since 2023 have none). So the path through a release's pages can be read per session,
+inside BigQuery, and only counts brought out (`server/bigquery.js pagesSql`,
+`sources/le_pages.csv`, `--pages` pulls it alone, `BQ_PAGES=off` skips it): per channel × day ×
+release, the sessions that saw the release page, how many of them went on to a product page,
+the sessions that saw a product page, and how many of those entered the draw.
+
+Definitions. A session is keyed by its first of these events on the release: that event's day
+is the row's day and its channel (`AA_session_custom_channel_group_split_touch`) the row's
+channel - 0.7% of sessions carry two channel values and the first stands. A step counts only
+when it comes at or after the first view of the step before it, in the same session: a product
+page viewed before the release page is not a click-through from it, and an entry counts
+against the product page only when the session saw one first (every entry session did, on the
+releases checked). An entry made with no session id cannot be placed and is not counted, so
+the entry rate reads a touch under, the same way on every release and in the basket. The feed
+runs from `BQ_SINCE`, keeps the identifier inside BigQuery (the session id is grouped on and
+never selected out), and is pulled, merged, rename-checked and guarded exactly as the browsing
+feed is (§2.3).
+
+The card (`web/src/modules/PageFunnel.jsx`, the Funnel view of the key drivers card on a draw
+launch; a timed launch keeps its organic funnel) reads two rates on each of two sides over the
+page's window (`pageFunnel.from` to `through`, the sales window to today):
+
+| side | channels |
+|---|---|
+| paid | Paid Social, Paid Search |
+| organic | the four organic display groups (§1.3), Direct among them whichever way the Overview's Direct switch is set |
+
+Untracked is on neither side. **Release page → product page** is `release_product_sessions /
+release_sessions`; **product page → draw entry** is `product_entry_sessions / product_sessions`.
+A rate is read over at least 30 sessions (`PAGE_FUNNEL_MIN_SESSIONS`); under that the rung
+has no figure and says how many sessions it has.
+
+The benchmark is the basket's median of the same rate over its members, each read from its own
+window's start to the day at the same share of its campaign as today is of this one (its whole
+window once this campaign is complete), over the members with 30 or more sessions on the step
+(`page_funnel_benchmark`; `bmN` says how many of the basket's `basketN` counted). A rate is held
+at the benchmark (BENCHMARK_SPEC §1), so the benchmark is the rung's centre line and the printed
+figure is the actual against it. On a page with no basket the rung is neutral and prints the
+rate itself. Measured on Zeng Fanzhi · Multiple · 2026 Q3 over its window: paid 9.6% of 6,759
+release-page sessions went on to a product page and 1.6% of 881 product-page sessions entered;
+organic 25.2% of 1,372 and 1.6% of 2,019.
 
 ## 3. The quartile-lever model (retired 2026-09-23)
 
@@ -2172,8 +2220,9 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | | actual line | daily cumulative actuals |
 | | projection | linear from today's actual to projected-at-close |
 | Channels vs targets | per group | now / expected / projected / target per display group (§1.3) |
-| Funnel by channel | rungs | email: Delivered/Open/Click vs reference; social: posts, sessions/post; all: session → sale (units secured per session; session → buyer where units per buyer differ from the plan's) vs benchmark (§4B), the rate the Organic funnel's low rung reads for the four organic channels together; paid: spend & cost/entry vs plan |
+| Funnel by channel | rungs | email: Delivered/Open/Click vs reference; social: posts, sessions/post; all: session → sale (units secured per session; session → buyer where units per buyer differ from the plan's) vs benchmark (§4B), the rate a timed launch's Organic funnel reads for the four organic channels together; paid: spend & cost/entry vs plan |
 | | contribution | units vs expected, repriced one-at-a-time; per-channel contributions sum to that channel's gap |
+| Page funnel | rungs | §2.6: paid and organic release page → product page (`release_product_sessions / release_sessions`) and product page → draw entry (`product_entry_sessions / product_sessions`) over the window to today, each against the basket's median by the same point of its launches' campaigns; a rate over fewer than 30 sessions is not read. On a timed launch the card is the Organic funnel: sessions and session → sale over the organic channels |
 | Key drivers | top movers | rank funnel steps by |contribution|, Adding vs Costing |
 | Paid ROI | series | §7 daily ROI (AA); decline model start = today's ROI |
 | Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), paced by the spend rules, `cap` naming the rule that bound it; Implement → append-only decision log |
@@ -2251,7 +2300,8 @@ actuals-only page omits it.
 | `channels[].bm`, `bmExp` | per group: benchmark at close, benchmark by today |
 | `channels[].daily[].bm` | the benchmark plan for that day, beside `actual` / `plan` / `proj` |
 | `funnelByGroup[g].sessions_benchmark`, `conv_benchmark` | the basket's sessions by today (the sessions rung's reference) and its conversion at close (the conversion rung's fallback on a snapshot without `conv_benchmark_today`) |
-| `funnelByGroup[g].conv_benchmark_today`, `contrib_traffic_bm`, `contrib_conversion_bm`, `contrib_buyers_bm`, `contrib_per_buyer_bm` | the same three-factor decomposition against the basket's pace by today, summing to the group's actual − its benchmark today; the waterfalls' walk from the benchmark, and the conversion rungs' reference (Funnel by channel, Organic funnel), so a rung and the step beside it read the same figure |
+| `funnelByGroup[g].conv_benchmark_today`, `contrib_traffic_bm`, `contrib_conversion_bm`, `contrib_buyers_bm`, `contrib_per_buyer_bm` | the same three-factor decomposition against the basket's pace by today, summing to the group's actual − its benchmark today; the waterfalls' walk from the benchmark, and the conversion rungs' reference (Funnel by channel; a timed launch's Organic funnel), so a rung and the step beside it read the same figure |
+| `pageFunnel` | the Page funnel card (§2.6): `from`, `through` (the window read, the sales window to today), `feedThrough` (the pages feed's newest day), `minSessions`, `bench` (a basket was read), `basketN`, and per side (`paid`, `organic`) per step (`clickThrough`: release page → product page; `entry`: product page → draw entry) `{sessions, through, rate, bm, bmN}`: the sessions on the step's first page, how many went on, the share (null under `minSessions`), the basket's median by today (null without a basket or a member with enough sessions) and the members it was read over. Null on a page built without the feed; the card then says so. The same in both Direct views |
 | `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median. Read on the sessions as the funnel attributes them, so the same in both Direct views (§8) |
 | `sellthrough.benchmarkUnits` | the benchmark on the sell-through prediction |
 | `sellthrough.conversion`, `inHandUnits` | the entry → order rate the prediction runs at, and the entries in hand before it (§6.3) |

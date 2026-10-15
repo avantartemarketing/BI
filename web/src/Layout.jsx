@@ -27,7 +27,8 @@ export const CARDS = [
   { key: "funnel", title: "Funnel by channel, 1 × 2", size: "tall", note: "the funnel and the waterfall, one at a time" },
   { key: "funnel_wide", title: "Funnel by channel, 2 × 2", size: "big", optional: true, note: "the waterfall across two columns by two rows, on a unit axis" },
   { key: "trajectory", title: "Unit trajectory", size: "wide" },
-  { key: "drivers", title: "Funnel key drivers" },
+  // the key is the card's original name: a saved layout keeps its place under it
+  { key: "drivers", title: "Page funnel", note: "release page → product page → draw entry, paid and organic, against the basket; the Adding and Costing lists of the funnel's key drivers beside it (a timed launch keeps its organic funnel)" },
   { key: "paid_roi", title: "Paid ROI", size: "wide" },
   { key: "paid_spend", title: "Paid spend / day" },
   { key: "sell_through", title: "Sell-through by product", size: "wide" },

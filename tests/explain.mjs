@@ -9,7 +9,7 @@ import { EXPLAIN, explain, asText, roundParts } from "../web/src/explain/explana
 import { SOURCES, sourceRow } from "../web/src/explain/sources.mjs";
 import { preorderUnits } from "../web/src/explain/explanations.mjs";
 import { inDraw, sellThroughProducts } from "../shared/sellThrough.mjs";
-import { fmt, fmtPct, fmtSigned } from "../web/src/format.mjs";
+import { MINUS, fmt, fmtPct, fmtSigned } from "../web/src/format.mjs";
 import { channelWalk, paidUnits } from "../web/src/figures.mjs";
 
 const root = new URL("../data/app/", import.meta.url);
@@ -63,6 +63,8 @@ function cases(s) {
     if (g && s.benchmark) out.push(["funnel.rung", { group: c.name, label: "Sessions", kind: "vol", unit: "count", v: g.sessions_actual, target: g.sessions_benchmark * k, bm: g.sessions_benchmark, k }]);
   }
   out.push(["traj.end", { sel: "all" }]);
+  // the page funnel's four rungs (PageFunnel.jsx)
+  for (const side of ["paid", "organic"]) for (const stage of ["clickThrough", "entry"]) out.push(["pages.rung", { side, stage }]);
   for (const p of (s.sellthrough && s.sellthrough.products) || []) {
     both("st.row", { key: p.key });
     both("st.row", { key: p.key, as: "units" });   // the row's units column
@@ -185,6 +187,14 @@ for (const f of files) {
           const wf = s.waterfall, v = !close && wf.today ? wf.today : wf;
           const steps = s.benchmark && Array.isArray(v.stepsBm) ? v.stepsBm : v.steps;
           return fmtSigned(steps.find((x) => x.key === arg.key).value);
+        },
+        // the page funnel's rung: the gap to the benchmark, or the rate itself without one (PageFunnel.jsx buildPageRung)
+        "pages.rung": () => {
+          const x = s.pageFunnel && s.pageFunnel[arg.side] && s.pageFunnel[arg.side][arg.stage];
+          if (!x || x.rate === null || x.rate === undefined) return undefined;
+          if (!(x.bm > 0)) return fmtPct(x.rate, 1);
+          const rel = (x.rate / x.bm - 1) * 100;
+          return (rel >= 0 ? "+" : MINUS) + Math.abs(Math.round(rel)) + "%";
         },
         "hero.delta": () => {
           const fill = close ? h.projected : h.now, target = close ? h.target : h.expectedToday;

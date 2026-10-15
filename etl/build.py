@@ -2178,6 +2178,173 @@ def units_rows(name: str) -> pd.DataFrame | None:
     return pd.DataFrame(columns=_UNITS_COLS) if o is not None and not float(o.get("unitsPaid") or 0.0) > 0.5 else None
 
 
+# ---------------------------------------------------------------- the page funnel (docs 2.6)
+
+# sources/le_pages.csv (server/bigquery.js pagesSql): per channel x day x
+# release, the sessions that saw the release page, how many of them went on
+# to a product page, the sessions that saw a product page, and how many of
+# those entered the draw - counted at session grain inside BigQuery, counts
+# only. The Page funnel card reads two rates on each side: paid and organic.
+PAGES_FILE = "le_pages.csv"
+PAGES_COUNTS = ["release_sessions", "release_product_sessions", "product_sessions", "product_entry_sessions"]
+PAGE_FUNNEL_SIDES = ("paid", "organic")
+# a rate is read over at least this many sessions: under it the rung has no
+# figure, and a basket member under it does not count towards the median
+PAGE_FUNNEL_MIN_SESSIONS = 30
+_PAGES_FEED: dict | None = None
+
+
+def parse_pages(df: pd.DataFrame) -> dict:
+    """The pages feed as the build reads it: {"by": {release: frame}, "through":
+    the feed's newest day}. Each frame carries the row's day as a date and its
+    side, paid for the paid channels and organic for the four organic groups;
+    Untracked is on neither side and is left out."""
+    df = df.rename(columns={"AA_session_custom_channel_group_split_touch": "channel"})
+    df = df[df["simple_release_name"].notna()].copy()
+    df["event_date"] = pd.to_datetime(df["event_date"], format="%d/%m/%Y", errors="coerce").dt.date
+    df = df[df["event_date"].notna()]
+    for c in PAGES_COUNTS:
+        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
+    group = df["channel"].astype(str).str.strip().map(GROUP_OF)
+    df["side"] = np.where(group == "paid", "paid", np.where(group.notna(), "organic", None))
+    df = df[df["side"].notna()]
+    through = max(df["event_date"]) if len(df) else None
+    return {"by": {str(n): g for n, g in df.groupby("simple_release_name", sort=False)}, "through": through}
+
+
+def load_pages() -> dict | None:
+    """The pages feed on disk, parsed once per build; None when it is not
+    there (every page's card then says the feed has not been pulled)."""
+    global _PAGES_FEED
+    if _PAGES_FEED is not None:
+        return _PAGES_FEED or None
+    f = source_file(PAGES_FILE)
+    if not f.exists():
+        _PAGES_FEED = {}
+        print(f"pages: no {PAGES_FILE} - the Page funnel card waits for the feed")
+        return None
+    try:
+        df = pd.read_csv(f, usecols=lambda c: c in ["AA_session_custom_channel_group_split_touch", "event_date",
+                                                     "simple_release_name"] + PAGES_COUNTS,
+                         dtype={"AA_session_custom_channel_group_split_touch": str, "simple_release_name": str})
+        _PAGES_FEED = parse_pages(df)
+        print(f"pages: {sum(len(g) for g in _PAGES_FEED['by'].values())} rows over "
+              f"{len(_PAGES_FEED['by'])} releases, through {_PAGES_FEED['through']}")
+    except (OSError, ValueError, KeyError) as e:
+        _PAGES_FEED = {}
+        print(f"pages: {PAGES_FILE} could not be read ({e}) - the Page funnel card waits for the feed")
+        return None
+    return _PAGES_FEED
+
+
+def page_funnel_counts(pages: dict, name: str, start: date, through: date) -> dict:
+    """The four counts per side over a release's days from `start` to
+    `through`, both inclusive."""
+    frame = (pages.get("by") or {}).get(name)
+    out = {side: {c: 0 for c in PAGES_COUNTS} for side in PAGE_FUNNEL_SIDES}
+    if frame is None or not len(frame):
+        return out
+    rows = frame[(frame["event_date"] >= start) & (frame["event_date"] <= through)]
+    for side in PAGE_FUNNEL_SIDES:
+        sub = rows[rows["side"] == side]
+        for c in PAGES_COUNTS:
+            out[side][c] = int(sub[c].sum())
+    return out
+
+
+def page_funnel_rate(through_n: int, sessions: int) -> float | None:
+    """A share of sessions, read only over enough of them."""
+    return (through_n / sessions) if sessions >= PAGE_FUNNEL_MIN_SESSIONS else None
+
+
+# the two steps the card reads, each a numerator over a denominator of sessions
+PAGE_FUNNEL_STAGES = {
+    "clickThrough": ("release_product_sessions", "release_sessions"),   # release page -> product page
+    "entry": ("product_entry_sessions", "product_sessions"),            # product page -> draw entry
+}
+
+
+def page_funnel_member_window(row: pd.Series, pdsa_today: float) -> tuple[date, date] | None:
+    """A basket member's days to count: from its window's start to the day at
+    the same share of its campaign as today is of this one, or to its window's
+    end once this campaign is complete - so the benchmark reads the basket by
+    today, as the other rungs do, never a closed campaign against an open one."""
+    ann, close = row.get("announce"), row.get("close")
+    if pd.isna(ann) or pd.isna(close):
+        return None
+    ann, close = pd.Timestamp(ann).date(), pd.Timestamp(close).date()
+    ws, we = row.get("window_start"), row.get("window_end")
+    start = pd.Timestamp(ws).date() if pd.notna(ws) else ann - timedelta(days=PR_LEAD_DAYS)
+    end = pd.Timestamp(we).date() if pd.notna(we) else close + timedelta(days=UNITS_GRACE_DAYS)
+    L = (close - ann).days
+    if pdsa_today >= 1.0 or L <= 0:
+        return start, end
+    through = ann + timedelta(days=int(round(max(pdsa_today, 0.0) * L)))
+    return start, min(max(through, start), end)
+
+
+def page_funnel_benchmark(pages: dict, panel: pd.DataFrame | None, members: list[str], pdsa_today: float) -> dict:
+    """Per side and stage, the median of the members' rates by the same point
+    of their campaigns, and how many members had enough sessions to count."""
+    out = {side: {st: {"bm": None, "bmN": 0} for st in PAGE_FUNNEL_STAGES} for side in PAGE_FUNNEL_SIDES}
+    if panel is None or not len(panel) or not members:
+        return out
+    by = panel.drop_duplicates("release_name").set_index("release_name")
+    rates = {side: {st: [] for st in PAGE_FUNNEL_STAGES} for side in PAGE_FUNNEL_SIDES}
+    for m in members:
+        m = str(m)
+        if m not in by.index:
+            continue
+        win = page_funnel_member_window(by.loc[m], pdsa_today)
+        if win is None:
+            continue
+        counts = page_funnel_counts(pages, m, win[0], win[1])
+        for side in PAGE_FUNNEL_SIDES:
+            for st, (num, den) in PAGE_FUNNEL_STAGES.items():
+                r = page_funnel_rate(counts[side][num], counts[side][den])
+                if r is not None:
+                    rates[side][st].append(r)
+    for side in PAGE_FUNNEL_SIDES:
+        for st in PAGE_FUNNEL_STAGES:
+            xs = rates[side][st]
+            if xs:
+                out[side][st] = {"bm": float(np.median(xs)), "bmN": len(xs)}
+    return out
+
+
+def page_funnel_block(pages: dict | None, name: str, start: date, through: date,
+                      members: list[str] | None = None, panel: pd.DataFrame | None = None,
+                      pdsa_today: float = 1.0) -> dict | None:
+    """The Page funnel card's block (docs 2.6, 10a): per side, the two rates
+    with the sessions behind them and, where the release has a basket, the
+    basket's median by today. None when the feed is not on disk."""
+    if pages is None:
+        return None
+    counts = page_funnel_counts(pages, name, start, through)
+    bm = page_funnel_benchmark(pages, panel, members or [], pdsa_today) if members else None
+    out = {
+        "from": start.isoformat(), "through": through.isoformat(),
+        "feedThrough": pages["through"].isoformat() if pages.get("through") else None,
+        "minSessions": PAGE_FUNNEL_MIN_SESSIONS,
+        "bench": bool(members),
+        # the sides share one frame and one feed: Direct reads as organic
+        # whichever way the Overview's Direct switch is set
+        "basketN": len(members or []),
+    }
+    for side in PAGE_FUNNEL_SIDES:
+        block = {}
+        for st, (num, den) in PAGE_FUNNEL_STAGES.items():
+            c = counts[side]
+            rate = page_funnel_rate(c[num], c[den])
+            ref = (bm or {}).get(side, {}).get(st, {"bm": None, "bmN": 0})
+            block[st] = {"sessions": c[den], "through": c[num],
+                         "rate": round(rate, 6) if rate is not None else None,
+                         "bm": round(ref["bm"], 6) if ref["bm"] is not None else None,
+                         "bmN": int(ref["bmN"])}
+        out[side] = block
+    return out
+
+
 def sales_window(rows: pd.DataFrame | None, campaign_start: date, announce: date | None,
                  launch_end: date, as_of: date) -> tuple[date, date, date | None]:
     """[start, end] the page counts sales over, the same days on every card
@@ -4482,6 +4649,8 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     window_start, window_end, first_paid = sales_window(
         urows, window_start, date.fromisoformat(rec["announce_date"]) if dated else None, launch_end, as_of)
     closed = dated and as_of > launch_end + timedelta(days=UNITS_GRACE_DAYS)
+    # the sessions through the pages over the same window; no basket, so no benchmark
+    page_funnel = page_funnel_block(load_pages(), name, window_start, min(as_of, window_end))
     rat = rat.copy()
     rat["group"] = rat["channel"].map(GROUP_OF)
     win = rat[(rat["event_date"] >= window_start) & (rat["event_date"] <= window_end)]
@@ -4685,7 +4854,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
                  "target": None, "oversubscribedUnits": 0, "statusPct": None, "ok": None},
         "targets": None, "groupTargets": None,
         "channels": channels_out,
-        "funnelByGroup": funnel_by_group, "paid": paid_out,
+        "funnelByGroup": funnel_by_group, "pageFunnel": page_funnel, "paid": paid_out,
         "email": email_out, "social": social_out,
         "sellthrough": sellthrough,
         "framing": framing_block(rec, of_win, None, b, st=sellthrough),
@@ -4889,6 +5058,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     pdsa_today = pdsa_for(release, min(as_of, launch_end))
     if as_of <= launch_end and L > 0:
         pdsa_today = max(pdsa_today - (1 - seen) / L, 0.0)
+    # the sessions through the pages over the same window, against the
+    # basket's members by the same point of their campaigns (docs 2.6)
+    page_funnel = page_funnel_block(load_pages(), name, window_start, min(as_of, window_end),
+                                    basket["members"] if bench else None, panel, pdsa_today)
 
     by_group_day = (win.groupby(["group", "event_date"])
                     .agg(sessions=("Sessions_Total", "sum"),
@@ -6110,6 +6283,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "targets": targets, "groupTargets": gtargets,
         "channels": channels_out,
         "funnelByGroup": funnel_by_group,
+        # the sessions through the release page, a product page and the draw
+        # entry, paid and organic, against the basket (the Page funnel card)
+        "pageFunnel": page_funnel,
         "paid": paid_out,
         # what the plan assumes each buyer takes and what they have taken so
         # far, so the funnel can split its conversion step in two (§4.2)

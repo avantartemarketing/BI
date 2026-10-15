@@ -151,7 +151,7 @@ Render's disk resets on every deploy. Seven things live on it and are lost witho
 | What | Symptom when lost | Fix |
 |---|---|---|
 | Session secret | everyone is signed out after each deploy | set `SESSION_SECRET` (any long random string) under Environment |
-| `sources/` - the pulled feeds: the funnel export, the events and browsing feeds and their incremental bookmarks, the HubSpot sends | every deploy starts with no feed, so the boot refresh is a full multi-year pull plus the whole ETL, and until it finishes the page serves the snapshots committed in the repo, however old their data; a second deploy in that time kills the refresh and starts it over | `SOURCES_PATH` on the disk: the boot refresh is then an incremental pull |
+| `sources/` - the pulled feeds: the funnel export, the events, browsing and pages feeds and their incremental bookmarks, the HubSpot sends | every deploy starts with no feed, so the boot refresh is a full multi-year pull plus the whole ETL, and until it finishes the page serves the snapshots committed in the repo, however old their data; a second deploy in that time kills the refresh and starts it over | `SOURCES_PATH` on the disk: the boot refresh is then an incremental pull |
 | `data/app/` - the built pages, the index and the inputs document (the 350-odd actuals-only and upcoming pages are not in the repo) | after a deploy every page not in the repo reads "not built yet" until the boot refresh has pulled the feeds and built the catalogue, minutes at best; the upcoming pages alone are rebuilt from Airtable within seconds of the start | `APP_DATA_PATH` on the disk: the last run's pages serve at once and the refresh updates them; the repo's copies seed an empty disk |
 | `data/users.json` | roles set in Permissions reset; people are re-added as users on their next Google sign-in | `USERS_PATH` on a persistent disk |
 | `data/inputs.saved.json` | targets edited in the dashboard revert to the repo defaults | `SAVED_INPUTS_PATH` on the disk |
@@ -352,6 +352,16 @@ to 96. The build reads the rebuilt file
 (`sources/across_time.rebuilt.csv`); `FUNNEL_SOURCE=export` makes it read the export
 instead. A missing or stale rebuilt file makes the build fall back to the export and say so. The aggregation peaks at about 330 MB, in line with the build;
 `AGG_PROFILE=1` prints its memory after each stage.
+
+**Sessions through the pages.** The pull also counts, at session grain inside BigQuery, the
+sessions that saw a release's release page, how many of them went on to a product page, the
+sessions that saw a product page and how many of those entered the draw, per channel × day ×
+release (`sources/le_pages.csv`, `--pages` pulls it alone, `BQ_PAGES=off` skips it; the same
+incremental merge, rename check and guards as the browsing feed, and no identifier leaves).
+The build reads it into every page's `pageFunnel` block, the Page funnel card's four rates -
+paid and organic release page → product page, paid and organic product page → draw entry -
+against the basket's median by the same point of its launches' campaigns (docs/DATA_MODEL.md
+§2.6). Without the file the card says the feed has not been pulled.
 
 **Memory on the 512 MB starter instance.** Results are streamed to disk a page at a time
 and the start script caps Node's heap at 192 MB, so the pull itself is flat (~150 MB)
@@ -868,8 +878,9 @@ set `DECISIONS_PATH` if the log must survive deploys.
 One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
 trajectory vs the across-time plan curve (or, switched to By channel, the projection alone with
 each channel group shaded under it by the units it contributes), funnel diagnostics with contribution
-decomposition, paid ROI + recommended daily spend (supply-cap vs ROI-floor), sell-through
-by product, projection-vs-target waterfall. Formulas for every module: docs §9. The
+decomposition, the page funnel (paid and organic release page → product page and product page →
+draw entry, each against the basket's median; docs §2.6), paid ROI + recommended daily spend
+(supply-cap vs ROI-floor), sell-through by product, projection-vs-target waterfall. Formulas for every module: docs §9. The
 Overview opens with the campaign clock, a thin strip from announcement to launch, blue to
 today and the days to launch on the right (the day of the window is in the strip's popup);
 it is a card like the others and moves with them.

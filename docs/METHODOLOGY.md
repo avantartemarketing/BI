@@ -287,9 +287,10 @@ beside each release in the sidebar is green at or ahead of target, amber behind
 target but at or ahead of the benchmark's pace for today, red behind the
 benchmark as well, and hollow when no targets are set; where there is no
 benchmark pace to read, amber is anything no more than 10% behind target. The
-rungs of Funnel by channel and the Organic funnel are green at or above their
+rungs of Funnel by channel and the Page funnel are green at or above their
 target, amber when less than 10% short of it and red when 10% or more short,
-with a cost rung judged the other way round. The LE workbook's 25% buffer
+with a cost rung judged the other way round (the Page funnel's rates are held
+at the benchmark, so their target is the benchmark itself). The LE workbook's 25% buffer
 (`target inc. buffer = 0.75 × target`) colours nothing on the page.
 
 ### Worked example - an illustrative release

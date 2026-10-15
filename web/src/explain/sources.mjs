@@ -52,6 +52,11 @@ export const SOURCES = {
     name: "Draw entries", via: "BigQuery · LE Funnel Report events", feed: "bigquery",
     fresh: (s) => (s.asOf ? `to ${day(s.asOf)}` : null),
   },
+  pages: {
+    name: "Page sessions", via: "BigQuery · LE Funnel Report sessions", feed: "bigquery",
+    // the pages feed is pulled on every refresh; it reads to its own last day
+    fresh: (s) => (s.pageFunnel && s.pageFunnel.feedThrough ? `to ${day(s.pageFunnel.feedThrough)}` : s.asOf ? `to ${day(s.asOf)}` : null),
+  },
   meta: {
     name: "Meta ads", via: "BigQuery · Meta ads insights", feed: "bigquery",
     // the spend feed is pulled on every refresh; the last day with spend on

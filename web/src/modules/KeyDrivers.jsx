@@ -1,9 +1,15 @@
-/* Organic funnel / funnel key drivers (spec §4.5, LE relabel per §6). Three-state
+/* Page funnel / funnel key drivers (spec §4.5, LE relabel per §6). Three-state
  * seg: Funnel (default) | Adding | Costing. Always the Today horizon, so the page
  * toggle is accepted and ignored.
  *
- * Funnel - the organic funnel at a grouped level (the four non-paid display
- * groups combined) as deviation rungs, per the agreed design:
+ * Funnel, on a draw launch - the sessions through the release's pages, paid
+ * and organic, against the basket (PageFunnel.jsx, docs/DATA_MODEL.md 2.6):
+ * release page → product page and product page → draw entry, each read on
+ * each side. It took the place of the organic funnel below on 15 October
+ * 2026.
+ *
+ * Funnel, on a timed launch - the organic funnel at a grouped level (the four
+ * non-paid display groups combined) as deviation rungs, per the agreed design:
  *   Top of funnel  - emails delivered + posts/stories; no reference yet, so the
  *                    rung is neutral and the counts live in the hover popup
  *   Mid funnel     - sessions, a volume: the target carries the even uplift, so
@@ -31,6 +37,7 @@ import {
 import { Ex } from "../explain/Explain.jsx";
 import { postsCover } from "../figures.mjs";
 import { wordsOf } from "../vocab.mjs";
+import { PageFunnelView } from "./PageFunnel.jsx";
 
 const GROUPS = [
   { key: "aa_email", name: "AA Email", short: "Email" },
@@ -231,6 +238,9 @@ export default function KeyDrivers({ snap, horizon }) {
 
   const fbg = snap?.funnelByGroup || {};
   const isPos = view === "pos";
+  // a timed launch keeps the organic funnel (docs/TL_SPEC.md §5); a draw
+  // launch's Funnel view is the page funnel
+  const isTL = snap?.type === "TL";
 
   const all = [];
   GROUPS.forEach((g) => {
@@ -247,7 +257,7 @@ export default function KeyDrivers({ snap, horizon }) {
   return (
     <Card
       dot={GROUP_DOTS.funnel}
-      title={view === "funnel" ? "Organic funnel" : "Funnel key drivers"}
+      title={view === "funnel" ? (isTL ? "Organic funnel" : "Page funnel") : "Funnel key drivers"}
       // on a one-column card at 1280 the title and three choices do not fit
       // on one line: the choices take a line of their own rather than the
       // title breaking into three against the card's top edge
@@ -259,7 +269,9 @@ export default function KeyDrivers({ snap, horizon }) {
         <span className="seg compact">
           <button
             className={view === "funnel" ? "active" : ""}
-            title="Organic funnel at a grouped level: target down the centre, benchmark as a dotted tick, actual as a dot"
+            title={isTL
+              ? "Organic funnel at a grouped level: target down the centre, benchmark as a dotted tick, actual as a dot"
+              : "Sessions through the release page, a product page and the draw entry, paid and organic, against the basket's median"}
             onClick={() => setView("funnel")}
           >
             Funnel
@@ -284,7 +296,7 @@ export default function KeyDrivers({ snap, horizon }) {
       <div className="spacer-16" />
       <div className="body">
         {view === "funnel" ? (
-          <FunnelView snap={snap} />
+          isTL ? <FunnelView snap={snap} /> : <PageFunnelView snap={snap} />
         ) : rows.length === 0 ? (
           <div className="empty-state">
             {snap?.targeted === false

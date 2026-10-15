@@ -14,6 +14,9 @@
  *                         data/units_paid.csv (the units a page counts, per
  *                         product, CET day and the channel of each order's
  *                         purchase event)
+ * And the sessions through a release's pages, counted at session grain inside
+ * BigQuery, the feed behind the Page funnel card (the pages section):
+ *   LE_Funnel_Report                    -> sources/le_pages.csv
  * And the timed launches' pair, from TL_Funnel_Report_v2 under the same rules
  * (the TL feeds section, docs/TL_SPEC.md §3):
  *   TL_Funnel_Report_v2 -> sources/tl_events.csv, sources/tl_browsing.csv
@@ -1086,6 +1089,71 @@ const browsingWriter = browsingWriterFor(BROWSING_HEADER, "browsing");
 const BROWSING_FEED = { label: "browsing", file: LE_BROWSING, meta: BROWSING_META, sql: browsingSql, namesSql: browsingNamesSql,
                         makeWriter: browsingWriter };
 
+// ---------------------------------------------------------------- pages feed (counts only)
+
+/* Sessions through the pages of a release - its release page, a product page,
+ * the draw entry - per channel x day x release, counted at session grain
+ * inside BigQuery (docs/DATA_MODEL.md #2.6): the feed behind the Page funnel
+ * card. Of the sessions that saw the release page, how many went on to a
+ * product page; of the sessions that saw a product page, how many entered the
+ * draw. The page views are the event table's rows typed `release page` and
+ * `product page` (page_type), the entry is the draw entry intent event, and a
+ * step counts only when it comes at or after the first view of the step
+ * before it, in the same session. A session is keyed by its first of these
+ * events on the release: that event's day is the row's day and its channel the
+ * row's channel (0.7% of sessions carry two channel values, measured 15
+ * October 2026; the first stands). An entry made with no session id (2.5% of
+ * entries over 2023-2026) cannot be placed in a session and is not counted -
+ * the rate reads a touch under, the same way on every release and in the
+ * basket. No identifier leaves: the session id is grouped on inside BigQuery
+ * and only the four counts travel, under the same incremental merge, rename
+ * check and guards as the browsing feed. */
+const LE_PAGES = path.join(SOURCES, "le_pages.csv");
+const PAGES_META = path.join(SOURCES, "le_pages.meta.json");
+const PAGES_KEYS = ["AA_session_custom_channel_group_split_touch", "event_date", "simple_release_name"];
+const PAGES_COUNTS = ["release_sessions", "release_product_sessions", "product_sessions", "product_entry_sessions"];
+const PAGES_HEADER = PAGES_KEYS.concat(PAGES_COUNTS);
+const PAGES_ROW_FILTER = "((event_name = 'page_view' AND page_type IN ('release page', 'product page')) OR event_name = 'draw entry intent')";
+
+function pagesSql() {
+  const t = `\`${PROJECT}.${DATASET}.${EVENTS_TABLE}\``;
+  const sql = "WITH ev AS (\n" +
+    "  SELECT simple_release_name AS release, ga_session_id AS sid, event_timestamp AS ts, event_date,\n" +
+    "    AA_session_custom_channel_group_split_touch AS channel,\n" +
+    "    event_name = 'page_view' AND page_type = 'release page' AS on_release,\n" +
+    "    event_name = 'page_view' AND page_type = 'product page' AS on_product,\n" +
+    "    event_name = 'draw entry intent' AS entered\n" +
+    `  FROM ${t}\n` +
+    `  WHERE ${PAGES_ROW_FILTER} AND event_date >= @since AND ga_session_id IS NOT NULL AND simple_release_name IS NOT NULL),\n` +
+    "per_session AS (\n" +
+    "  SELECT release, sid,\n" +
+    "    MIN(IF(on_release, ts, NULL)) AS first_release,\n" +
+    "    MIN(IF(on_product, ts, NULL)) AS first_product,\n" +
+    "    MAX(IF(on_product, ts, NULL)) AS last_product,\n" +
+    "    MAX(IF(entered, ts, NULL)) AS last_entry,\n" +
+    "    ARRAY_AGG(STRUCT(event_date, channel) ORDER BY ts LIMIT 1)[OFFSET(0)] AS first\n" +
+    "  FROM ev GROUP BY 1, 2)\n" +
+    "SELECT first.channel AS AA_session_custom_channel_group_split_touch, first.event_date AS event_date, release AS simple_release_name,\n" +
+    "  COUNTIF(first_release IS NOT NULL) AS release_sessions,\n" +
+    "  COUNTIF(first_release IS NOT NULL AND last_product >= first_release) AS release_product_sessions,\n" +
+    "  COUNTIF(first_product IS NOT NULL) AS product_sessions,\n" +
+    "  COUNTIF(first_product IS NOT NULL AND last_entry >= first_product) AS product_entry_sessions\n" +
+    "FROM per_session GROUP BY 1, 2, 3 ORDER BY event_date";
+  for (const f of FORBIDDEN_COLUMNS) {
+    if (sql.toLowerCase().includes(f)) throw new Error(`pages query must not mention ${f}`);
+  }
+  return sql;
+}
+function pagesNamesSql() {
+  return `SELECT DISTINCT simple_release_name FROM \`${PROJECT}.${DATASET}.${EVENTS_TABLE}\`\n` +
+    `WHERE ${PAGES_ROW_FILTER} AND event_date >= @since AND event_date < @before\n` +
+    "  AND simple_release_name IS NOT NULL";
+}
+// the browsing writer's guards: the declared header, the address scan, the date DD/MM/YYYY
+const pagesWriter = browsingWriterFor(PAGES_HEADER, "pages");
+const PAGES_FEED = { label: "pages", file: LE_PAGES, meta: PAGES_META, sql: pagesSql, namesSql: pagesNamesSql,
+                     makeWriter: pagesWriter };
+
 // ---------------------------------------------------------------- timed-launch feeds (docs/TL_SPEC.md §3)
 
 /* TL_Funnel_Report_v2 is the timed launches' event table: the shape of
@@ -1635,6 +1703,22 @@ async function pull({ write = true, full = false, events = true, only = null } =
     }
   }
 
+  // the sessions through the pages (the Page funnel card): incremental like
+  // the browsing feed, optional like spend
+  let pg = null, pagesNote;
+  if (skip("pages")) {
+    pagesNote = `pages not pulled (--${only})`;
+  } else if (process.env.BQ_PAGES === "off" || process.env.BQ_EVENTS === "off") {
+    pagesNote = "pages skipped (BQ_PAGES=off)";
+  } else {
+    try {
+      pg = await pullIncremental(token, write, full, PAGES_FEED);
+      pagesNote = pg.note;
+    } catch (e) {
+      pagesNote = `pages unavailable, keeping the last file (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`;
+    }
+  }
+
   // the timed launches' pair: incremental like the browsing feed, optional
   // like spend, each file kept when its pull fails
   let tl = null, tlNote;
@@ -1690,7 +1774,7 @@ async function pull({ write = true, full = false, events = true, only = null } =
     tlNote = notes.join(", ");
   }
 
-  const parts = [funnel, spend, orders, ev, br, tl].filter(Boolean);
+  const parts = [funnel, spend, orders, ev, br, pg, tl].filter(Boolean);
   const bytes = parts.reduce((n, x) => n + x.bytes, 0);
   const gb = (bytes / 1e9).toFixed(2);
   const cached = parts.every((x) => x.cached) ? ", cache hit" : "";
@@ -1699,9 +1783,9 @@ async function pull({ write = true, full = false, events = true, only = null } =
   return {
     funnelRows: funnel ? funnel.rows : null, spendRows: spend ? spend.rows : null,
     ordersRows: orders ? orders.rows : null,
-    eventsRows: ev ? ev.rows : null, browsingRows: br ? br.rows : null, tlRows: tl ? tl.rows : null,
+    eventsRows: ev ? ev.rows : null, browsingRows: br ? br.rows : null, pagesRows: pg ? pg.rows : null, tlRows: tl ? tl.rows : null,
     mode: funnel ? funnel.mode : (only || "events"),
-    summary: `${funnelNote}${spendNote}, ${ordersNote}, ${eventsNote}, ${browsingNote}, ${tlNote}, since ${SINCE} ` +
+    summary: `${funnelNote}${spendNote}, ${ordersNote}, ${eventsNote}, ${browsingNote}, ${pagesNote}, ${tlNote}, since ${SINCE} ` +
       `(${gb} GB scanned${cached}, ${sa._env})`,
   };
 }
@@ -1714,6 +1798,7 @@ module.exports = {
   UNITS_PAID, UNITS_PAID_HEADER, unitsPaidSql, orderLinesCtes,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
   LE_BROWSING, BROWSING_META, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
+  LE_PAGES, PAGES_META, PAGES_HEADER, PAGES_COUNTS, pagesSql, pagesNamesSql, pagesWriter, PAGES_FEED,
   TL_TABLE, TL_SINCE, TL_EVENTS, TL_EVENTS_META, TL_EVENT_COLUMNS, TL_EVENT_HEADER, tlEventsSql, tlEventsNamesSql, tlEventsWriter, TL_EVENTS_FEED,
   TL_BROWSING, TL_BROWSING_META, TL_BROWSING_HEADER, TL_HOUR_DAYS_BEFORE, TL_HOUR_DAYS_AFTER, tlBrowsingSql, tlBrowsingNamesSql, tlBrowsingWriter, TL_BROWSING_FEED,
   TL_UNITS, TL_UNITS_HEADER, TL_BUYERS, TL_BUYERS_HEADER, TL_BAND_DAYS_BEFORE, TL_BAND_DAYS_AFTER, tlUnitsSql, tlBuyersSql,
@@ -1724,9 +1809,9 @@ module.exports = {
 };
 
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;
-// --write replaces the CSVs, --full forces a full pull, --events or --browsing
-// pulls that one feed alone (--orders the orders-by-product pair and the units
-// paid by day and channel, --tl the timed launches' pair), --schema
+// --write replaces the CSVs, --full forces a full pull, --events, --browsing
+// or --pages pulls that one feed alone (--orders the orders-by-product pair and
+// the units paid by day and channel, --tl the timed launches' pair), --schema
 // lists what the account can see (names only, no rows). Handy from a Render shell.
 if (require.main === module) {
   (async () => {
@@ -1742,9 +1827,11 @@ if (require.main === module) {
     const write = process.argv.includes("--write");
     const full = process.argv.includes("--full");
     const only = process.argv.includes("--events") ? "events" : process.argv.includes("--browsing") ? "browsing"
+      : process.argv.includes("--pages") ? "pages"
       : process.argv.includes("--orders") ? "orders" : process.argv.includes("--tl") ? "tl" : null;
     if (only !== "events" && only !== "orders") {
-      const feeds = only === "browsing" ? [BROWSING_FEED] : only === "tl" ? [TL_EVENTS_FEED, TL_BROWSING_FEED] : [FUNNEL_FEED];
+      const feeds = only === "browsing" ? [BROWSING_FEED] : only === "pages" ? [PAGES_FEED]
+        : only === "tl" ? [TL_EVENTS_FEED, TL_BROWSING_FEED] : [FUNNEL_FEED];
       for (const feed of feeds) {
         const p = plan(full, feed);
         console.log(`plan (${feed.label}): ${p.mode}${p.reason ? ` (${p.reason})` : ""}`);
@@ -1755,6 +1842,7 @@ if (require.main === module) {
     const wrote = [out.funnelRows !== null && ACROSS_TIME, out.spendRows !== null && SPEND_DAILY,
                    out.ordersRows !== null && `${ORDERS_BY_PRODUCT} + ${DRAW_PRODUCTS} + ${UNITS_PAID}`,
                    out.eventsRows !== null && LE_EVENTS, out.browsingRows !== null && LE_BROWSING,
+                   out.pagesRows !== null && LE_PAGES,
                    out.tlRows !== null && `${TL_EVENTS} + ${TL_BROWSING} + ${TL_UNITS} + ${TL_BUYERS} + ${TL_SIGNUP_PRODUCTS}`].filter(Boolean);
     console.log(write ? `wrote ${wrote.join(", ")}` : "dry run - pass --write to replace the CSVs");
   })().catch((e) => { console.error(String(e.message || e)); process.exit(1); });
