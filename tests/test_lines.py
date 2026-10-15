@@ -82,6 +82,25 @@ check(lr["edition_size"] == 900 and lr["unit_price"] == 550 and len(lr["economic
 build.pricing.release_products = fake_products(ONE_CODE)
 one = build.resolve_release(copy.deepcopy(base), None, {})
 check(one["lines"] == [] and one["edition_size"] == 1200, f"one code, no lines: {one['lines']}")
+
+# ---- the lines typed on the works (one release code across both lines, the
+# real case): the typed names make the lines, a work with none typed goes to
+# Other works, and the typed split wins over the codes
+typed_all = [{"airtable_id": a, "line": "Prints"} for _, a in PRINTS] + [{"airtable_id": a, "line": "Toy bricks"} for _, a in BRICKS]
+t = build.resolve_release(dict(copy.deepcopy(base), products=typed_all), None, {})
+tk = {l["key"]: l for l in t["lines"]}
+check(set(tk) == {"prints", "toy_bricks"} and tk["prints"]["name"] == "Prints" and tk["toy_bricks"]["name"] == "Toy bricks" and tk["toy_bricks"]["edition_size"] == 900,
+      f"typed lines on one code: {[(l['key'], l['name'], l['edition_size']) for l in t['lines']]}")
+check(all(l["code"] is None and l["lineTyped"] for l in t["lines"]), "a typed line carries no code")
+part = build.resolve_release(dict(copy.deepcopy(base), products=[{"airtable_id": a, "line": "Prints"} for _, a in PRINTS]), None, {})
+pk = {l["key"]: l for l in part["lines"]}
+check(set(pk) == {"prints", "_other"} and pk["_other"]["name"] == "Other works" and pk["_other"]["edition_size"] == 900,
+      f"one line typed: the rest is Other works: {[(l['key'], l['name']) for l in part['lines']]}")
+same = build.resolve_release(dict(copy.deepcopy(base), products=[{"airtable_id": a, "line": "  prints "} for _, a in PRINTS + BRICKS]), None, {})
+check(same["lines"] == [], f"one line typed on every work: one release: {same['lines']}")
+build.pricing.release_products = fake_products(PRODUCTS)
+mixed = build.resolve_release(dict(copy.deepcopy(base), products=[{"airtable_id": "p1", "line": "Solo"}]), None, {})
+check({l["key"] for l in mixed["lines"]} == {"solo", "_other"}, f"a typed line wins over the codes: {[l['key'] for l in mixed['lines']]}")
 build.pricing.release_products = fake_products(PRODUCTS)
 
 # ---- the feeds: a funnel frame, spend with an ad set per line, the draws

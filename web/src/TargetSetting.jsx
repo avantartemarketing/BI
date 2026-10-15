@@ -426,6 +426,10 @@ const blankV = (v) => v === null || v === undefined || v === "";
 const TIPS = Object.fromEntries(GRID.map((c) => [c.key, c.tip]));
 // the figures down the side, in the order the deal is read
 const ROWS = [
+  // the line of work a product sells on (docs/LINES_PLAN.md): a name typed
+  // here; two names split the release into lines, each with its own
+  // basket, stretch and ad sets under Target
+  { key: "line", label: "Line", text: true, tip: "The line of work this product sells on, for a release selling two kinds of edition on one page (prints beside toy bricks, say). Type a name on each work: two names split the release into lines, each benchmarked and targeted on its own under Target. A work with no line typed goes to Other works. Blank on every work: one release, as usual." },
   { key: "edition", label: "Edition", kind: "count" },
   { key: "target_sellthrough", label: "Sell-through", kind: "pct" },
   { key: "target_units", label: "Target units", calc: true },
@@ -445,6 +449,7 @@ const ROWS = [
 ];
 const figText = (row, v, currency) => {
   if (blankV(v)) return "";
+  if (row.text) return String(v);
   if (row.kind === "pct") return `${cellText(row.key, v)}%`;
   if (row.kind === "money") return row.key === "unit_price" && currency && currency !== "EUR" ? `${cellText(row.key, v)} ${currency}` : `€${cellText(row.key, v)}`;
   return fmt(v);
@@ -589,6 +594,15 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
             : (econ.ppu_aa > 0 && econ.edition_size ? fmtMoney(econ.ppu_aa * econ.edition_size, 0) : "–");
       if (r.key === "target_units") allTitle = "The target units summed: the secured-units target.";
       if (r.key === "launch_date") allTitle = "The last of the works' closes: the day the page runs to.";
+    } else if (r.text) {
+      const vals = live.map((p) => (p.sources[r.key] === "typed" ? String(p[r.key] || "") : ""));
+      const names = [...new Set(vals.filter(Boolean))];
+      allNode = editing
+        ? <input className="ws-in" type="text" title="Every work at once: type a line here to put every work on it." aria-label={`All works: ${r.label}`} data-row={ri} data-col="all"
+            placeholder={names.length > 1 ? "varies" : names[0] || "one release"} defaultValue="" onBlur={(e) => { if (e.target.value.trim()) { onFieldAll(r.key, e.target.value); e.target.value = ""; } }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (e.target.value.trim()) { onFieldAll(r.key, e.target.value); e.target.value = ""; } } }} />
+        : (names.length > 1 ? `${names.length} lines` : names[0] || "one release");
+      allTitle = names.length > 1 ? `Lines: ${names.join(", ")}.` : names[0] ? `Every work is on ${names[0]}: one release.` : "No line typed: one release.";
     } else if (r.check) {
       const all = econ.mode === "release" ? econ.framing_available : live.length > 0 && live.every((p) => p.framing_available);
       const text = econ.mode === "release" ? (all ? "Offered" : "Not offered") : !live.length ? "–" : all ? "Offered" : live.every((p) => !p.framing_available) ? "Not offered" : "Varies";
@@ -623,6 +637,15 @@ function WorksSheet({ products, econ, airtable, b, editing, onField, onFieldAll,
         if (p.excluded) return cell(key, `${cls} ws-out`, r.check ? (p.framing_available ? "Offered" : "Not offered") : figText(r, p[r.key], p.currency) || "–", OFF_WHY);
         const typed = !!(p.airtable_id && p.sources[r.key] === "typed");
         const src = p.sources[r.key] || (r.key === "frame_conversion" ? "default" : null);
+        if (r.text) {
+          const lineTyped = p.sources[r.key] === "typed" ? String(p[r.key] || "") : "";
+          const lineTitle = lineTyped ? "Typed here. Clear it to take the work off its line." : "No line typed: with lines typed on other works, this one is on Other works.";
+          return cell(key, cls, editing
+            ? <input className={`ws-in${lineTyped ? " typed" : ""}`} type="text" title={lineTitle} aria-label={`${name(p)}: ${r.label}`} data-row={ri} data-col={key}
+                defaultValue={lineTyped} placeholder="" key={`${key}:${lineTyped}`} onBlur={(e) => { if (e.target.value.trim() !== lineTyped) onField(p, r.key, e.target.value); }}
+                onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }} />
+            : <span className={`ws-v${lineTyped ? " typed" : ""}`} title={lineTitle}>{lineTyped || "–"}</span>);
+        }
         if (r.check) {
           return cell(key, cls, <input type="checkbox" className="ws-tick" checked={!!p.framing_available} disabled={!editing} aria-label={`${name(p)}: framing`}
             title={typed ? "Typed here" : src === "default" ? "Airtable's Framing is blank: a sculpture edition defaults to no frame, a print to one" : "Airtable's framing option"}
@@ -1003,6 +1026,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
   // number for an edition, null for a cleared box, undefined for nonsense
   const parseField = (key, raw) => {
     if (key === "framing_available") return !!raw;
+    if (key === "line") { const t = String(raw ?? "").trim(); return t === "" ? null : t.slice(0, 80); }
     const clean = String(raw).replace(/[^0-9.]/g, "");
     if (clean === "") return null;
     let v = parseFloat(clean);
@@ -1375,7 +1399,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
 
           {/* 2 · target */}
           <section className="ts2-sec" aria-label="Target">
-            <div className="ts2-sec-head"><h2>Target</h2>{lineRows.length > 0 && <span className="d">{lineRows.length} lines of work: each benchmarked on its own basket, the release on the two together</span>}</div>
+            <div className="ts2-sec-head"><h2>Target</h2><span className="d">{lineRows.length > 0 ? `${lineRows.length} lines of work: each benchmarked on its own basket, the release on them together` : "To split a release selling two kinds of edition into lines, type a line on each work under Works (Edit figures, the Line row)."}</span></div>
             {lineRows.length > 0 && (
               <Notice>
                 <b>Two lines of work on one page.</b> Each line is benchmarked on launches of its own size and price and targeted with its own uplift; the release's units, entries and paid budget are the lines added up.

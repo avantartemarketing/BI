@@ -1257,14 +1257,22 @@ evaluated twice with different members, not the maths.
 
 ## 4b. Lines of work: two kinds of edition on one page (14 October 2026)
 
-A release whose Airtable products carry two or more release codes (`release` in
-`data/release_pricing.csv`, carried on each product as `line`, or typed for a work added by
-hand) sells **lines of work** on one page: the products under one code are a line
-(`etl/build.py release_lines`; `shared/economics.mjs releaseLines` is the tab's mirror,
-held to it by `tests/test_lines.py`). Fewer than two codes: `lines` is `[]` and the page is
-built exactly as before. Products with no code form the `_other` line beside two coded
-ones. A line is named by the words its works' titles share ("Toy Brick Middle Finger" over
-four colourways), else its code, unless a name is typed.
+A release sells **lines of work** on one page when its works are split into them
+(`etl/build.py release_lines`; `shared/economics.mjs releaseLines` is the tab's mirror, held
+to it by `tests/test_lines.py`). The split is typed: `line` is a product key (`PRODUCT_KEYS`),
+a name typed on the works sheet of the Target setting tab and saved on the product's entry
+(`products[].line`, up to 80 characters; `_effective_product` carries it as `line` with
+`line_typed` true and `sources.line` "typed"). With any line typed, the lines are the typed
+names, each keyed by `line_key` (the name lowered, runs of anything but letters and digits
+as one underscore: "Toy bricks" is `toy_bricks`), and a work with none typed is on the
+`_other` line, "Other works"; so typing one line splits the release in two, and one name on
+every work is one release. With none typed, the Airtable release code (`release` in
+`data/release_pricing.csv`, on the product as `line` with `sources.line` "airtable") stands in:
+two or more codes make a line per code, products with no code the `_other` line, and a line
+is named by the words its works' titles share ("Toy Brick Middle Finger" over four
+colourways), else its code. Fewer than two lines either way: `lines` is `[]` and the page is
+built exactly as before. The real case is one release code across both lines, so the typed
+split is the rule and the codes the fallback.
 
 **Economics.** `products_economics(sized)` is the release's arithmetic of §1.6 (the target
 as editions at their target sell-through, the price per target unit, the launch value, the
@@ -1274,7 +1282,7 @@ the same over all of them. `line_release(release, line)` is the release read as 
 the line's products and economics in place of the release's, its own basket, stretch and
 ad sets, the release's dates, campaigns and rates.
 
-**Inputs.** `line_settings`, keyed by the line's code: `{name, benchmark_basket, stretch_from,
+**Inputs.** `products[].line` (above) and `line_settings`, keyed by the line's key: `{name, benchmark_basket, stretch_from,
 adsets}`. The save route validates each (a basket on the line's own size and price, via
 `GET /api/baskets?release=<id>&line=<code>`; stretch shares as the release's; up to 20 ad set
 names) and merges per code. The release-level `benchmark_basket` and `stretch_from` are not
@@ -2344,7 +2352,7 @@ actuals-only page omits it.
 | `waterfall.benchmark`, `stretch`, `target`, `projection` | the at-close waterfall's left-hand columns; `steps` are unchanged and `stepsBm` are the same four contributors against the basket, summing to `projection − benchmark` |
 | `waterfall.closeScale`, `closeScaleBm` | the factor the at-close `steps` (`stepsBm`) are the steps to date times; null where they are copied (a closed release) or where the rest of the gap is shared out by size (below) |
 | `waterfall.today` | `{benchmark, stretch, target, actual, steps, stepsBm}` - the same four contributors measured **to date**, against the target and against the basket |
-| `lines[]` | on the combined page of a release selling lines of work (§4b): per line `key` (the Airtable release code), `code`, `name`, `nameTyped`, `products` (names), `productKeys`, `adsets`, `basketSpec`, `stretchFrom`, and from the line's own build `hero`, `edition`, `economics`, `basket`, `k`, `kByGroup`, `benchmarkUnits`, `targets` (units, entries, paid units and budget, the cost per purchase and its source), `groupTargets`, `paid` (spend, entries and units to date, the ROIs and costs, the budget and projections, `artist`), `sellthrough` (the headline figures), `status`, `actuals` (the line's `line` block); null on every other release |
+| `lines[]` | on the combined page of a release selling lines of work (§4b): per line `key` (the typed name's `line_key`, else the Airtable release code), `code` (the Airtable code, null on a typed line), `name`, `nameTyped`, `lineTyped` (the split is typed), `products` (names), `productKeys`, `adsets`, `basketSpec`, `stretchFrom`, and from the line's own build `hero`, `edition`, `economics`, `basket`, `k`, `kByGroup`, `benchmarkUnits`, `targets` (units, entries, paid units and budget, the cost per purchase and its source), `groupTargets`, `paid` (spend, entries and units to date, the ROIs and costs, the budget and projections, `artist`), `sellthrough` (the headline figures), `status`, `actuals` (the line's `line` block); null on every other release |
 | `line` | on a line's own page: `key`, `name`, `products`, `adsets`, `entriesBasis` (`draws`, `share`, `none`), `unitsBasis` (`orders`, `sales share`, `edition share`), `draws` (its draw ids), `sessionsShared` (always true), `ppuBasis` (`paid entries` or `target units`); null on the combined page |
 | `variants.lines[key]`, `variants.lines_direct[key]` | each line's page as the top-level blocks that differ from the combined page, as the funnel attributes Direct and with it spread; the Overview's Line switch lays one over the page (§4b) |
 | `benchmark.sessionsShared`, `benchmark.lines` | whether the sessions are the larger line's rather than summed (true on a release with lines), and each line's basket `{id, kind, name, n, thin, suggestedId, members, scaleMismatch}` on the combined page |

@@ -59,6 +59,7 @@ target, not its edition. Two baskets, summed, is the design.
 | ROI | A paid entry's profit is the product it entered for: a line's profit per unit is its works' weighted by the paid entries on each |
 | Page | A Line switch on the Overview like the Direct switch: All, then each line |
 | Targets | Airtable's target sell-through per product |
+| The split | Typed on the works sheet (a Line per work), since the release code is the same across both lines; the Airtable codes only where nothing is typed |
 
 Decided 13 and 14 October 2026 with the repository owner. The first draft of this
 plan summed the organic sessions across the lines; that was wrong, since the comms
@@ -66,12 +67,14 @@ are shared, and was replaced by the rule above before the build.
 
 ## 5. The model, per line
 
-**Line key.** A line is the set of a release's products that share an Airtable
-release code (`release` in `data/release_pricing.csv`, carried on each
-product as `project_code` today and to be carried as `line` on the snapshot).
-A release whose products carry one code has one line and behaves exactly as
-today; nothing moves for the 360 releases on file. A manually added product
-goes on the line typed for it, else the release's first line.
+**Line key.** A line is the set of a release's works that carry one Line on
+the Target setting tab's works sheet: the split is typed, work by work,
+because the release code is one code across both lines on the real release
+(15 October 2026; the first draft read the split off the Airtable codes,
+which stand in only where nothing is typed and the works carry two codes).
+Two names make two lines; a work with none typed goes to Other works. A
+release with no line typed has one line and behaves exactly as today;
+nothing moves for the 360 releases on file.
 
 **Targets.** Line target = sum over its products of edition x target
 sell-through, the same rule as the release target now. Release target = the

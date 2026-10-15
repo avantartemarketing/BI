@@ -511,6 +511,9 @@ app.post("/api/inputs/:id", route(async (req, res) => {
             else entry.currency = c;
           }
           if (p.framing_available !== undefined && p.framing_available !== null && p.framing_available !== "") entry.framing_available = !!p.framing_available;
+          // the line of work this product sells on (docs/LINES_PLAN.md): a
+          // name typed on the works sheet; two names split the release into lines
+          if (p.line !== undefined && p.line !== null && String(p.line).trim() !== "") entry.line = String(p.line).slice(0, 80).trim();
           if (p.excluded === true) entry.excluded = true;
           if (entry.aa_revenue_share !== null && entry.aa_profit_share !== null) errors.push(`${label} cannot carry both a revenue share and a profit share - the deal is one or the other`);
         } else {

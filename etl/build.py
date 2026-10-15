@@ -3930,6 +3930,7 @@ def _effective_product(p: dict, b: dict) -> dict:
                # Airtable's release code, or the line typed for a work added by
                # hand; a release whose products carry two codes is two lines
                "line": (str(typed.get("line")).strip() if typed.get("line") not in (None, "") else None) or p.get("release") or None,
+               "line_typed": typed.get("line") not in (None, "") and bool(str(typed.get("line")).strip()),
                # the day this work's draw closes (Airtable): one launch's works can
                # close on different days, and the page runs to the last (§1.6)
                "launch_date": str(p.get("launch_date"))[:10] if p.get("launch_date") else None}
@@ -3976,6 +3977,7 @@ def _effective_product(p: dict, b: dict) -> dict:
         e["aa_budget_share"], e["deal"] = 1.0, "revenue share"
     else:
         e["aa_budget_share"], e["deal"] = None, None
+    src["line"] = "typed" if e["line_typed"] else "airtable" if p.get("release") else None
     e["sources"] = src
     return e
 
@@ -4060,31 +4062,54 @@ def line_name(products: list[dict], code: str | None) -> str:
     return str(code or "Other works")
 
 
+def line_key(name: str) -> str:
+    """A typed line's key: its name lowered, runs of anything but letters and
+    digits as one underscore ("Toy bricks" is toy_bricks), so the same line
+    typed with a capital or a space more is the same line, and the key is
+    safe in a JSON object, a URL and the variants block."""
+    k = re.sub(r"[^a-z0-9]+", "_", str(name or "").strip().lower()).strip("_")
+    return k or OTHER_LINE
+
+
 def release_lines(sized: list[dict], config: dict | None = None) -> list[dict]:
     """The lines of work a release sells (docs/LINES_PLAN.md): its sized
-    products grouped by their Airtable release code, each line with the
-    release's own economics arithmetic over its products (products_economics)
-    and whatever the Target setting tab saved for it under `line_settings`
-    (its name, basket, stretch and ad sets, keyed by the code). A release
-    whose products carry fewer than two codes has no lines: [] here, and
-    nothing else on its page moves. Products with no code at all form the
-    `_other` line when there are two coded lines beside them."""
-    by_code: dict[str, list[dict]] = {}
+    products grouped by the line typed on each work on the Target setting
+    tab (the release code is one code across both lines on a real release,
+    so the split is a decision, typed), else by their Airtable release code.
+    Each line carries the release's own economics arithmetic over its
+    products (products_economics) and whatever the tab saved for it under
+    `line_settings` (its name, basket, stretch and ad sets, keyed by the
+    line's key). Fewer than two lines: [] here, and nothing else on the page
+    moves. With lines typed, a work with none typed is on the `_other` line
+    ("Other works"), so typing one line splits the release in two; with
+    none typed, products with no code form `_other` beside two coded lines."""
+    typed_any = any(p.get("line_typed") for p in sized)
+    groups: dict[str, dict] = {}
     for p in sized:
-        by_code.setdefault(str(p.get("line") or "").strip() or OTHER_LINE, []).append(p)
-    if len([c for c in by_code if c != OTHER_LINE]) < 2:
+        if typed_any:
+            raw = str(p.get("line") or "").strip() if p.get("line_typed") else ""
+            key = line_key(raw) if raw else OTHER_LINE
+            g = groups.setdefault(key, {"code": None, "typed": raw or None, "products": []})
+        else:
+            code = str(p.get("line") or "").strip() or OTHER_LINE
+            g = groups.setdefault(code, {"code": None if code == OTHER_LINE else code, "typed": None, "products": []})
+        g["products"].append(p)
+    coded = len([k for k in groups if k != OTHER_LINE])
+    if len(groups) < 2 or coded < 1 or (not typed_any and coded < 2):
         return []
     cfg = config if isinstance(config, dict) else {}
     out = []
-    for code, ps in by_code.items():
-        c = cfg.get(code) if isinstance(cfg.get(code), dict) else {}
+    for key, g in groups.items():
+        ps = g["products"]
+        c = cfg.get(key) if isinstance(cfg.get(key), dict) else {}
         econ = products_economics(ps)
-        typed = str(c.get("name") or "").strip()
+        typed = str(c.get("name") or "").strip() or (g["typed"] or "")
         out.append({
-            "key": code,
-            "code": None if code == OTHER_LINE else code,
-            "name": typed or line_name(ps, None if code == OTHER_LINE else code),
+            "key": key,
+            "code": g["code"],
+            "name": typed or ("Other works" if key == OTHER_LINE else line_name(ps, g["code"])),
             "nameTyped": bool(typed),
+            "lineTyped": typed_any,
             "products": [product_key(p) for p in ps],
             "productNames": [p.get("name") for p in ps],
             **{k: econ.get(k) for k in ECONOMICS_KEYS},

@@ -89,7 +89,8 @@ export function effectiveProduct(p, b) {
               excluded: !!p.excluded,
               // the line of work the product sells on (docs/LINES_PLAN.md): Airtable's
               // release code, or the line typed for a work added by hand
-              line: (typed.line !== undefined && typed.line !== null && String(typed.line).trim() !== "" ? String(typed.line).trim() : null) || p.release || null };
+              line: (typed.line !== undefined && typed.line !== null && String(typed.line).trim() !== "" ? String(typed.line).trim() : null) || p.release || null,
+              line_typed: typed.line !== undefined && typed.line !== null && String(typed.line).trim() !== "" };
   const edition = num(pick("edition"));
   e.edition = edition && edition > 0 ? Math.round(edition) : null;
   // the day this work's draw closes (Airtable): one launch's works can close
@@ -132,6 +133,7 @@ export function effectiveProduct(p, b) {
   if (e.aa_profit_share !== null) { e.aa_budget_share = Math.min(Math.max(e.aa_profit_share, 0), 1); e.deal = "profit share"; }
   else if (e.aa_revenue_share !== null) { e.aa_budget_share = 1.0; e.deal = "revenue share"; }
   else { e.aa_budget_share = null; e.deal = null; }
+  src.line = e.line_typed ? "typed" : p.release ? "airtable" : null;
   e.sources = src;
   return e;
 }
@@ -227,24 +229,37 @@ export function lineName(products, code) {
   return String(code || "Other works");
 }
 
+export const lineKey = (name) => String(name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || OTHER_LINE;
+
 export function releaseLines(products, settings, b) {
   const sized = (products || []).filter((p) => p.edition && !p.excluded);
-  const byCode = new Map();
+  const typedAny = sized.some((p) => p.line_typed);
+  const groups = new Map();
   for (const p of sized) {
-    const code = String(p.line || "").trim() || OTHER_LINE;
-    if (!byCode.has(code)) byCode.set(code, []);
-    byCode.get(code).push(p);
+    let key, g;
+    if (typedAny) {
+      const raw = p.line_typed ? String(p.line || "").trim() : "";
+      key = raw ? lineKey(raw) : OTHER_LINE;
+      g = { code: null, typed: raw || null };
+    } else {
+      key = String(p.line || "").trim() || OTHER_LINE;
+      g = { code: key === OTHER_LINE ? null : key, typed: null };
+    }
+    if (!groups.has(key)) groups.set(key, { ...g, products: [] });
+    groups.get(key).products.push(p);
   }
-  if ([...byCode.keys()].filter((c) => c !== OTHER_LINE).length < 2) return [];
+  const coded = [...groups.keys()].filter((k) => k !== OTHER_LINE).length;
+  if (groups.size < 2 || coded < 1 || (!typedAny && coded < 2)) return [];
   const cfg = settings && typeof settings === "object" ? settings : {};
   const out = [];
-  for (const [code, ps] of byCode) {
-    const c = cfg[code] && typeof cfg[code] === "object" ? cfg[code] : {};
+  for (const [key, g] of groups) {
+    const ps = g.products;
+    const c = cfg[key] && typeof cfg[key] === "object" ? cfg[key] : {};
     const econ = releaseEconomics(ps, null, b);
-    const typed = String(c.name || "").trim();
+    const typed = String(c.name || "").trim() || g.typed || "";
     out.push({
-      key: code, code: code === OTHER_LINE ? null : code,
-      name: typed || lineName(ps, code === OTHER_LINE ? null : code), nameTyped: !!typed,
+      key, code: g.code,
+      name: typed || (key === OTHER_LINE ? "Other works" : lineName(ps, g.code)), nameTyped: !!typed, lineTyped: typedAny,
       products: ps.map(productKey), productNames: ps.map((p) => p.name),
       ...econ,
       benchmark_basket: c.benchmark_basket || null, stretch_from: c.stretch_from || null,

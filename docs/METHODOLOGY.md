@@ -627,10 +627,14 @@ recommendation is the ROI at the close at that spend level's cost per entry.
 Some releases sell two kinds of edition at once: Ai Weiwei's three prints at
 EUR 2,500 beside four toy-brick colourways at EUR 550, on one release page,
 with one email, one post and one Meta campaign. The model reads such a
-release as **lines of work**: the products under one Airtable release code
-are one line, and a release whose products carry two or more codes has a
-line per code. Every other release has one line and nothing on its page
-moves. (Built 14 October 2026; the design is in `docs/LINES_PLAN.md`.)
+release as **lines of work**. The split is typed: on the Target setting
+tab's works sheet each work carries a Line, and two names (Prints, Toy
+bricks) make two lines, a work with none typed going to Other works. The
+release code is one code across both lines on a real release, so Airtable
+cannot draw the split; where nothing is typed and the works carry two
+release codes, the codes stand in. Every other release has one line and
+nothing on its page moves. (Built 14 and 15 October 2026; the design is in
+`docs/LINES_PLAN.md`.)
 
 **Each line is benchmarked and targeted on its own.** A line's target is its
 products' editions at their target sell-through, its price the average of
