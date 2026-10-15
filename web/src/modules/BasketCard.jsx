@@ -21,29 +21,53 @@ export default function BasketCard({ snap, index, onOpen }) {
   raw.forEach((m) => { times[m.artist] = (times[m.artist] || 0) + 1; });
   const label = (m) => (m.artist && times[m.artist] > 1 && m.quarter ? `${m.artist} · ${m.quarter}` : m.artist || m.name);
   const idOf = (name) => { const r = (index || []).find((x) => x.releaseName === name); return r ? r.id : null; };
+  /* A release selling lines of work (docs/LINES_PLAN.md): on the combined
+     page each line has a basket of its own, so the launches sit under a
+     heading per line, with the line's basket named and its median units;
+     a launch in both baskets is listed under both. A line's own page lists
+     its basket plain. */
+  const lineBaskets = bm.lines && typeof bm.lines === "object" && !snap.line ? bm.lines : null;
+  const lineDefs = Array.isArray(snap.lines) ? snap.lines : [];
+  const groups = lineBaskets ? Object.entries(lineBaskets).map(([key, b]) => {
+    const def = lineDefs.find((l) => l.key === key) || {};
+    const names = new Set(b.members || []);
+    return { key, name: def.name || key, basket: b, median: def.benchmarkUnits, rows: members.filter((m) => names.has(m.name)) };
+  }).filter((g) => g.rows.length) : null;
+  const row = (m, g) => {
+    const id = idOf(m.name);
+    const cells = (
+      <>
+        <span className="nm">{label(m)}</span>
+        <span className="num units">{m.units === null || m.units === undefined ? "–" : fmt(m.units)}</span>
+        <span className="num price">{fmtMoney(m.price)}</span>
+      </>
+    );
+    const k = g ? `${g.key}:${m.name}` : m.name;
+    return id && onOpen
+      ? <button key={k} type="button" className="basket-row" title={`${m.name} · opens its page`} onClick={() => onOpen(id)}>{cells}</button>
+      : <div key={k} className="basket-row" title={m.name}>{cells}</div>;
+  };
   return (
     <div className="card">
       <div className="mod-head">
         <span className="swatch-bm" />
-        <span className="title">Benchmark basket</span>
-        <span className="right">{members.length} {W.launches}</span>
+        <span className="title">{groups ? "Benchmark baskets" : "Benchmark basket"}</span>
+        <span className="right">{groups ? `${groups.length} lines` : `${members.length} ${W.launches}`}</span>
       </div>
       <div className="spacer-8" />
       <div className="basket-cols" aria-hidden="true"><span /><span>Units</span><span>Price</span></div>
       <div className="basket-rows">
-        {members.map((m) => {
-          const id = idOf(m.name);
-          const cells = (
-            <>
-              <span className="nm">{label(m)}</span>
-              <span className="num units">{m.units === null || m.units === undefined ? "–" : fmt(m.units)}</span>
-              <span className="num price">{fmtMoney(m.price)}</span>
-            </>
-          );
-          return id && onOpen
-            ? <button key={m.name} type="button" className="basket-row" title={`${m.name} · opens its page`} onClick={() => onOpen(id)}>{cells}</button>
-            : <div key={m.name} className="basket-row" title={m.name}>{cells}</div>;
-        })}
+        {groups ? groups.map((g) => (
+          <React.Fragment key={g.key}>
+            <div className="basket-row" style={{ cursor: "default" }}
+              title={`${g.name}: benchmarked on ${g.basket.name || g.basket.id}${g.basket.thin ? " (thin)" : ""}${g.median ? `, a median of ${fmt(g.median)} units of demand` : ""}. The launches under it are its basket's.`}>
+              <span className="nm" style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", fontSize: 11 }}>{g.name}</span>
+              <span className="num units" style={{ fontSize: 11.5 }}>{g.median ? fmt(g.median) : ""}</span>
+              <span className="num price" style={{ fontSize: 11 }}>{g.rows.length} {W.launches}</span>
+            </div>
+            {g.rows.map((m) => row(m, g))}
+          </React.Fragment>
+        )) : members.map((m) => row(m, null))}
       </div>
     </div>
   );

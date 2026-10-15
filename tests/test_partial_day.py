@@ -46,7 +46,7 @@ def spend_frame(through, part=1.0):
         rows.append({"campaign_name": cfg["campaign_name"], "spend_date": d, "impressions": 1000, "reach": 800,
                      "link_clicks": 40, "spend": 500.0 * (part if d == through else 1.0)})
         d += timedelta(days=1)
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=["campaign_name", "spend_date", "impressions", "reach", "link_clicks", "spend"])
 
 emails, content, people = build.load_emails(), build.load_content(), build.load_people()
 artist_posts = build.load_artist_posts()
@@ -167,5 +167,15 @@ for key, budget in (("steps", H["paid"]["spendBudget"]), ("stepsBm", H["paid"]["
     want = (H["paid"]["spendToDate"] - budget * frac) / cpp
     check(abs(step - want) <= 1.5 and abs(step - (full_h - budget * frac) / cpp) > 5,
           f"today's {key} Paid spend on the spend to date: {step} vs {want:.1f} (full days alone {(full_h - budget * frac) / cpp:.1f})")
+
+# ---- a day before the announce (15 October 2026): nothing is expected yet.
+# The clock used to floor at the announce, so a release two weeks short of it
+# read the announce day's plan as expected by today and showed -100% vs target
+EARLY = announce - timedelta(days=7)
+E = run(EARLY, 1.0, EARLY, EARLY, 1.0)
+check(E["hero"]["expectedToday"] == 0 and E["hero"]["statusPct"] == 0 and E["hero"]["ok"] is True,
+      f"before the announce nothing is expected: expected {E['hero']['expectedToday']}, status {E['hero']['statusPct']}")
+check(E["hero"]["target"] == A["hero"]["target"], "the target at close is unchanged")
+check(all((c.get("exp") or 0) == 0 for c in E["channels"]), f"no channel expects anything yet: {[(c['key'], c.get('exp')) for c in E['channels']]}")
 print("FAILED" if failed else "ok: part-day clock", failed if failed else "")
 sys.exit(1 if failed else 0)
