@@ -252,9 +252,36 @@ export default function SellThrough({ snap, horizon = "today" }) {
       : undefined,
   };
 
+  /* A release selling two lines of work (docs/LINES_PLAN.md): on the
+     combined page the rows sit under a header per line with the line's own
+     reading, a work named by its line's product list (the build's own
+     matching rule, a name that is the other or starts it). On a line's own
+     page the rows are already the line's. */
+  const lineDefs = !snap.line && Array.isArray(snap.lines) && snap.lines.length > 1 && fromFeed ? snap.lines : null;
+  const namesTitle = (name, title) => {
+    const a = String(name || "").trim().toLowerCase(), b = String(title || "").trim().toLowerCase();
+    return !!a && !!b && (a === b || (a.length >= 4 && b.length >= 4 && (b.startsWith(a) || a.startsWith(b))));
+  };
+  const groups = lineDefs ? (() => {
+    const out = lineDefs.map((l) => ({ key: l.key, name: l.name, rows: [] }));
+    const rest = { key: "_rest", name: "Other works", rows: [] };
+    for (const r of rows) {
+      const g = out.find((l) => (lineDefs.find((d) => d.key === l.key).products || []).some((n) => namesTitle(n, r.name)));
+      (g || rest).rows.push(r);
+    }
+    if (rest.rows.length) out.push(rest);
+    return out.filter((g) => g.rows.length);
+  })() : null;
+  const lineHead = (g) => {
+    const ed = g.rows.every((r) => finite(r.edition) && r.edition > 0) ? g.rows.reduce((s, r) => s + r.edition, 0) : null;
+    const u = g.rows.reduce((s, r) => s + unitsOf(r), 0);
+    const pct = ed ? Math.min(u / ed, 1) : null;
+    return { units: ed ? `${fmt(u)} of ${fmt(ed)}` : fmt(u), pct: pct === null ? null : `${Math.round(pct * 100)}%` };
+  };
+
   /* One rule for the rows: the pitch is the height they share divided by the
      count, capped, and the bar is half of it. */
-  const n = Math.max(rows.length, 1);
+  const n = Math.max(rows.length + (groups ? groups.length : 0), 1);
   const pitch = Math.min(PITCH_MAX, Math.floor(ROWS_H / n));
   const barH = Math.floor(pitch / 2);
   const barR = Math.max(4, Math.round(barH / 5));
@@ -426,7 +453,19 @@ export default function SellThrough({ snap, horizon = "today" }) {
             minHeight: 0, overflowY: "auto", display: "grid", gridTemplateColumns: "fit-content(260px) minmax(0, 1fr) 92px 56px",
             gridAutoRows: `${pitch}px`, columnGap: 14, alignItems: "center", alignContent: "start",
           }}>
-            {rows.map((r) => {
+            {(groups ? groups.flatMap((g) => [{ _head: g }, ...g.rows]) : rows).map((r) => {
+              if (r._head) {
+                const g = r._head, h = lineHead(g);
+                return (
+                  <React.Fragment key={`line:${g.key}`}>
+                    <div style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                      title={`${g.name}: ${g.rows.length} work${g.rows.length === 1 ? "" : "s"}, read together`}>{g.name}</div>
+                    <div style={{ borderTop: `1px solid ${C.hairline}` }} />
+                    <div className="num" style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 12, color: C.muted }}>{h.units}</div>
+                    <div className="num" style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 12.5, fontWeight: 600, color: C.muted }}>{h.pct}</div>
+                  </React.Fragment>
+                );
+              }
               // the demand the work has no room for rides in its hover, not on the bar
               const over = overOf(r);
               const rowTip = { head: r.name, rows: [

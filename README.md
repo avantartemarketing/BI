@@ -609,6 +609,21 @@ the benchmark. The basket is picked in a modal (ready-made clusters, or a
 bespoke tick-list of past launches that can be saved); a release is never in
 its own basket.
 
+**A release selling two lines of work** (prints beside toy bricks on one
+page; `docs/METHODOLOGY.md` 7b, `docs/LINES_PLAN.md`) is split on this tab:
+with Edit figures on, the works sheet's Line row takes a name per work, and
+two names make two lines (a work with none typed goes to Other works; the
+release code is the same across both lines, so the split is typed, not read
+from Airtable). The tab then shows a card per line instead of one basket and
+one stretch: the line's name, its own basket (picked on its size and
+price), where its stretch comes from, and the Meta ad sets its paid actuals
+are read from (the ones the spend feed lists under the ticked campaigns, or a
+name typed exactly as Meta spells it). The Overview gets a **Line** switch
+beside the Direct one: All, then each line. A line's page reads its own
+draws, works and ad set; the sessions are the shared page's, and a note under
+the tabs says what is the line's own. The paid budget and the stretch on the
+outcome strip are the lines summed.
+
 The older quartile levers (docs/DATA_MODEL.md §3) are gone from the page and,
 since September 2026, from the build: a release that cannot be benchmarked
 shows its actuals. Almost nothing on the tab is typed (docs/DATA_MODEL.md

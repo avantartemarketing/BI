@@ -396,6 +396,58 @@ app.post("/api/inputs/:id", route(async (req, res) => {
    * group, any non-negative numbers, read over the groups in plan and
    * renormalised by the model; null (or all blank) means the basket's own
    * shares, the even uplift. */
+  /* The lines of work a release sells (docs/LINES_PLAN.md), keyed by the
+   * Airtable release code: a name, a basket of the line's own (checked on the
+   * line's size and price), where its stretch comes from, and the Meta ad
+   * sets its paid actuals are read from. null clears everything; a line not
+   * named keeps what it had. */
+  if (body.line_settings !== undefined) {
+    const raw = body.line_settings;
+    if (raw === null) next.line_settings = null;
+    else if (typeof raw !== "object" || Array.isArray(raw)) errors.push("line_settings must be an object keyed by the line's code, or null");
+    else {
+      const out = { ...(current.line_settings && typeof current.line_settings === "object" ? current.line_settings : {}) };
+      for (const [code, cfg] of Object.entries(raw)) {
+        const key = String(code).slice(0, 80);
+        if (cfg === null) { delete out[key]; continue; }
+        if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) { errors.push(`line_settings.${key} must be an object or null`); continue; }
+        const cur = { ...(out[key] || {}) };
+        if (cfg.name !== undefined) cur.name = cfg.name === null ? null : String(cfg.name).slice(0, 80).trim() || null;
+        if (cfg.adsets !== undefined) {
+          if (cfg.adsets === null) cur.adsets = [];
+          else if (!Array.isArray(cfg.adsets) || cfg.adsets.length > 20) errors.push(`line_settings.${key}.adsets is a list of up to 20 ad set names`);
+          else cur.adsets = [...new Set(cfg.adsets.map((a) => String(a).slice(0, 200).trim()).filter(Boolean))];
+        }
+        if (cfg.stretch_from !== undefined) {
+          const sf = cfg.stretch_from;
+          if (sf === null) cur.stretch_from = null;
+          else if (typeof sf !== "object" || Array.isArray(sf)) errors.push(`line_settings.${key}.stretch_from must be an object of channel group shares, or null`);
+          else {
+            const unknown = Object.keys(sf).filter((g) => !CHANNEL_GROUPS.includes(g));
+            if (unknown.length) errors.push(`line_settings.${key}.stretch_from: unknown channel group ${unknown.join(", ")}`);
+            const shares = {};
+            for (const g of CHANNEL_GROUPS) {
+              if (sf[g] === undefined || sf[g] === null || sf[g] === "") continue;
+              const v = Number(sf[g]);
+              if (!Number.isFinite(v) || v < 0) { errors.push(`line_settings.${key}.stretch_from.${g} must be a share of 0 or more`); continue; }
+              shares[g] = Math.round(v * 10000) / 10000;
+            }
+            cur.stretch_from = Object.values(shares).some((v) => v > 0) ? shares : null;
+          }
+        }
+        if (cfg.benchmark_basket !== undefined) {
+          if (cfg.benchmark_basket === null) cur.benchmark_basket = null;
+          else {
+            const check = await baskets.validateBasketSpec(cfg.benchmark_basket, id, { release: { ...next, line_settings: { ...out, [key]: cur } }, line: key });
+            if (!check.ok) errors.push(`line ${key}: ${check.error}`);
+            else cur.benchmark_basket = check.normalised;
+          }
+        }
+        out[key] = cur;
+      }
+      next.line_settings = Object.keys(out).length ? out : null;
+    }
+  }
   if (body.stretch_from !== undefined) {
     const raw = body.stretch_from;
     if (raw === null) next.stretch_from = null;
@@ -459,6 +511,9 @@ app.post("/api/inputs/:id", route(async (req, res) => {
             else entry.currency = c;
           }
           if (p.framing_available !== undefined && p.framing_available !== null && p.framing_available !== "") entry.framing_available = !!p.framing_available;
+          // the line of work this product sells on (docs/LINES_PLAN.md): a
+          // name typed on the works sheet; two names split the release into lines
+          if (p.line !== undefined && p.line !== null && String(p.line).trim() !== "") entry.line = String(p.line).slice(0, 80).trim();
           if (p.excluded === true) entry.excluded = true;
           if (entry.aa_revenue_share !== null && entry.aa_profit_share !== null) errors.push(`${label} cannot carry both a revenue share and a profit share - the deal is one or the other`);
         } else {
@@ -630,6 +685,8 @@ app.get("/api/baskets", route(async (req, res) => {
   const units = Number(req.query.units), price = Number(req.query.price);
   if (Number.isFinite(units) && units > 0 && units < 1e7) opts.units = Math.round(units);
   if (Number.isFinite(price) && price > 0 && price < 1e7) opts.price = Math.round(price);
+  // ?line=<code>: the baskets for one line of a release selling two (docs/LINES_PLAN.md)
+  if (req.query.line) opts.line = String(req.query.line).slice(0, 80);
   res.json(await baskets.readyBaskets(req.query.release, opts));
 }));
 

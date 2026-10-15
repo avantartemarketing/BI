@@ -19,7 +19,7 @@ export const PAGE_CURRENCY = "EUR";
 export const RATES_TO_EUR = { EUR: 1.0, GBP: 1.18, USD: 0.92 };
 export const PRODUCT_KEYS = ["edition", "target_sellthrough", "unit_price", "currency", "artist_profit_per_unit",
   "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "framing_available", "frame_conversion",
-  "frame_profit_per_unit", "frame_price", "units_target"];
+  "frame_profit_per_unit", "frame_price", "line", "units_target"];
 export const LEGACY_KEYS = ["edition_size", "edition_total", "unit_price", "artist_profit", "aa_group_profit",
   "artist_profit_share", "framing_available", "frame_conversion", "frame_profit_per_unit", "aa_budget_share"];
 
@@ -86,7 +86,11 @@ export function effectiveProduct(p, b) {
     return dflt === undefined ? null : dflt;
   };
   const e = { airtable_id: p.airtable_id || null, name: typed.name !== undefined ? typed.name : p.name || "Product", project_code: p.project_code || null,
-              excluded: !!p.excluded };
+              excluded: !!p.excluded,
+              // the line of work the product sells on (docs/LINES_PLAN.md): Airtable's
+              // release code, or the line typed for a work added by hand
+              line: (typed.line !== undefined && typed.line !== null && String(typed.line).trim() !== "" ? String(typed.line).trim() : null) || p.release || null,
+              line_typed: typed.line !== undefined && typed.line !== null && String(typed.line).trim() !== "" };
   const edition = num(pick("edition"));
   e.edition = edition && edition > 0 ? Math.round(edition) : null;
   // the day this work's draw closes (Airtable): one launch's works can close
@@ -129,6 +133,7 @@ export function effectiveProduct(p, b) {
   if (e.aa_profit_share !== null) { e.aa_budget_share = Math.min(Math.max(e.aa_profit_share, 0), 1); e.deal = "profit share"; }
   else if (e.aa_revenue_share !== null) { e.aa_budget_share = 1.0; e.deal = "revenue share"; }
   else { e.aa_budget_share = null; e.deal = null; }
+  src.line = e.line_typed ? "typed" : p.release ? "airtable" : null;
   e.sources = src;
   return e;
 }
@@ -199,4 +204,67 @@ export function releaseEconomics(products, legacy, b) {
     artist_profit_share: Math.round((1 - aaShare) * 10000) / 10000,
     deal: [...new Set(sized.map((p) => p.deal).filter(Boolean))].sort(),
   };
+}
+
+/* ---- lines of work (docs/LINES_PLAN.md; etl/build.py release_lines) ----
+ * A release whose products carry two or more Airtable release codes sells two
+ * lines of work on one page: each line is the products under one code, with
+ * the release's own economics arithmetic (releaseEconomics) over them, and
+ * whatever the Target setting tab saved for it under line_settings, keyed by
+ * the code. Fewer than two codes: no lines, []. Products with no code form
+ * the "_other" line beside two coded ones. */
+export const OTHER_LINE = "_other";
+export const productKey = (p) => String(p.airtable_id || p.name || "");
+
+export function lineName(products, code) {
+  const titles = products.map((p) => String(p.name || "").trim()).filter(Boolean);
+  if (titles.length === 1) return titles[0];
+  const words = titles.map((t) => t.split(/\s*[([]/)[0].trim().split(/\s+/));
+  const common = [];
+  const n = words.length ? Math.min(...words.map((w) => w.length)) : 0;
+  for (let i = 0; i < n; i++) {
+    if (new Set(words.map((w) => w[i].toLowerCase())).size === 1) common.push(words[0][i]); else break;
+  }
+  if (common.length && new Set(titles.map((t) => t.toLowerCase())).size > 1) return common.join(" ");
+  return String(code || "Other works");
+}
+
+export const lineKey = (name) => String(name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || OTHER_LINE;
+
+export function releaseLines(products, settings, b) {
+  const sized = (products || []).filter((p) => p.edition && !p.excluded);
+  const typedAny = sized.some((p) => p.line_typed);
+  const groups = new Map();
+  for (const p of sized) {
+    let key, g;
+    if (typedAny) {
+      const raw = p.line_typed ? String(p.line || "").trim() : "";
+      key = raw ? lineKey(raw) : OTHER_LINE;
+      g = { code: null, typed: raw || null };
+    } else {
+      key = String(p.line || "").trim() || OTHER_LINE;
+      g = { code: key === OTHER_LINE ? null : key, typed: null };
+    }
+    if (!groups.has(key)) groups.set(key, { ...g, products: [] });
+    groups.get(key).products.push(p);
+  }
+  const coded = [...groups.keys()].filter((k) => k !== OTHER_LINE).length;
+  if (groups.size < 2 || coded < 1 || (!typedAny && coded < 2)) return [];
+  const cfg = settings && typeof settings === "object" ? settings : {};
+  const out = [];
+  for (const [key, g] of groups) {
+    const ps = g.products;
+    const c = cfg[key] && typeof cfg[key] === "object" ? cfg[key] : {};
+    const econ = releaseEconomics(ps, null, b);
+    const typed = String(c.name || "").trim() || g.typed || "";
+    out.push({
+      key, code: g.code,
+      name: typed || (key === OTHER_LINE ? "Other works" : lineName(ps, g.code)), nameTyped: !!typed, lineTyped: typedAny,
+      products: ps.map(productKey), productNames: ps.map((p) => p.name),
+      ...econ,
+      benchmark_basket: c.benchmark_basket || null, stretch_from: c.stretch_from || null,
+      adsets: Array.isArray(c.adsets) ? c.adsets.map((a) => String(a).trim()).filter(Boolean) : [],
+    });
+  }
+  return out;
 }

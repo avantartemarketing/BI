@@ -564,9 +564,11 @@ def products_file(ev: pd.DataFrame) -> dict:
     convert at their own rate.
     """
     cols = ["simple_release_name", "aa_account_id", "draw_id", "event_date", "draw_entry_eligible", "winner",
-            "draw_with_purchase", "pre_order", "draw_entry_multiset_preference_max_quantity"]
+            "draw_with_purchase", "pre_order", "draw_entry_multiset_preference_max_quantity", CH]
     de = ev[(ev["event_name"] == "draw entry intent") & ev["draw_id"].notna() & ev["aa_account_id"].notna()]
     de = de[[c for c in cols if c in de.columns]].copy()
+    if CH not in de.columns:   # a feed without the channel: the daily series below carries none
+        de[CH] = "Untracked"
     if "pre_order" not in de.columns:   # a feed from before the flag was carried
         de["pre_order"] = False
     de["draw_id"] = de["draw_id"].astype(str).str.strip()
@@ -577,10 +579,15 @@ def products_file(ev: pd.DataFrame) -> dict:
         de["pre_order"] = False
     de["mq"] = pd.to_numeric(de["draw_entry_multiset_preference_max_quantity"], errors="coerce")
     de["simple_release_name"] = de["simple_release_name"].astype(str)
+    # the channel of the entry's first row: where the entrant came from the day
+    # they entered, the way the export dates and attributes an entry
+    de = de.sort_values(["simple_release_name", "aa_account_id", "draw_id", "event_date"], kind="stable")
+    de["channel"] = de[CH].astype(str)
     per_entry = (de.groupby(["simple_release_name", "aa_account_id", "draw_id"], observed=True)
                    .agg(eligible=("draw_entry_eligible", "any"), winner=("winner", "any"),
                         bought=("draw_with_purchase", "any"), pre=("pre_order", "any"),
-                        first=("event_date", "min"), last=("event_date", "max"))
+                        first=("event_date", "min"), last=("event_date", "max"),
+                        channel=("channel", "first"))
                    .reset_index())
     per_entrant_mq = de.groupby(["simple_release_name", "aa_account_id"], observed=True)["mq"].max()
     pu = ev[(ev["event_name"] == "purchase") & ev["draw_id"].notna()]
@@ -598,11 +605,22 @@ def products_file(ev: pd.DataFrame) -> dict:
         draws = []
         t = tagged[tagged["simple_release_name"] == rel].set_index("draw_id")["units"] if len(tagged) else pd.Series(dtype=float)
         for did, d in sub.groupby("draw_id", observed=True):
+            # the draw's eligible entries by the day they were made and the
+            # channel they came from, with the ones still open among them: a
+            # release that sells two lines of work on one page reads each
+            # line's entries off its own draws (docs/LINES_PLAN.md), one unit
+            # per entry on the draw, dated and attributed as the export does
+            el = d[d["eligible"]]
+            daily = (el.assign(day=el["first"].dt.date.astype(str))
+                       .groupby(["day", "channel"], observed=True)
+                       .agg(eligible=("eligible", "size"), open=("open", "sum")).reset_index()
+                       .sort_values(["day", "channel"]))
             draws.append({
                 "id": str(did), "first": d["first"].min().date().isoformat(), "last": d["last"].max().date().isoformat(),
                 "entrants": int(len(d)), "eligible": int(d["eligible"].sum()), "winners": int(d["winner"].sum()),
                 "sold": int(d["sold"].sum()), "open": int(d["open"].sum()), "wonUnpaid": int(d["won_unpaid"].sum()),
                 "purchaseUnits": float(t.get(str(did), 0.0)) if len(t) else 0.0,
+                "daily": [[r.day, str(r.channel), int(r.eligible), int(r.open)] for r in daily.itertuples(index=False)],
             })
         draws.sort(key=lambda d: (d["first"], d["id"]))
         patterns: dict[tuple, int] = {}
