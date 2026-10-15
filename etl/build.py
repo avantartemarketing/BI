@@ -5529,7 +5529,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # where today sits on the campaign clock, at the share of it seen
     pdsa_today = pdsa_for(release, min(as_of, launch_end))
     if as_of <= launch_end and L > 0:
-        pdsa_today = max(pdsa_today - (1 - seen) / L, 0.0)
+        # the part of today not yet seen comes off the clock, never past the
+        # announce; a day before the announce stays where it is (15 October
+        # 2026: floored at the announce, a release two weeks short of it read
+        # the announce day's plan, 22% of the target, as expected by today)
+        pdsa_today = max(pdsa_today - (1 - seen) / L, min(pdsa_today, 0.0))
 
     by_group_day = (win.groupby(["group", "event_date"])
                     .agg(sessions=("Sessions_Total", "sum"),
