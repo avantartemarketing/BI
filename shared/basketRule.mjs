@@ -1,6 +1,6 @@
 /* The basket rule, JS side: the SIMILAR_N launches nearest a release on units
- * and unit price, the artist's own earlier launches first, recent ones ahead
- * of older among the comparable when asked.
+ * of demand and unit price, the artist's own earlier launches first, recent
+ * ones ahead of older among the comparable when asked.
  *
  * This mirrors etl/baskets.py (similar_members, own_members, _distances,
  * _release_start, _release_price) to the member and to the reach, and
@@ -13,8 +13,10 @@
  * half-CPU box made that seconds per keystroke; it is now a few milliseconds.
  *
  * Rows are the candidate rows (etl/baskets.py candidate_rows): release_name,
- * artist, title, window_start, window_end (ISO days), units, price (EUR, 0
- * when Airtable has none), sessions, paid_share, campaign_days, edition_size.
+ * artist, title, window_start, window_end (ISO days), demand (the units the
+ * launch would have sold with enough supply, the size axis), units (sold),
+ * price (EUR, 0 when Airtable has none), sessions, paid_share, campaign_days,
+ * edition_size.
  * `L` is the release: {name, artist, target, price, currency?,
  * private_room_open?, announce_date?, launch_end?}. `opts.asOf` is the day
  * the basket is read on, the snapshot's asOf (the build's); without it, today.
@@ -100,16 +102,21 @@ export function releaseArtist(rows, L) {
   return String(L.name || "").split(" · ")[0].trim();
 }
 
-/* How far every launch in the pool is from this one: the larger of its units
+/* The size axis: a launch's demand, what it would have sold with enough
+ * supply (etl/baskets.py demand_columns), the figure the benchmark reads it
+ * at; a row without it reads its sales, as the Python side does. */
+export const sizeOf = (r) => (num(r.demand) > 0 ? num(r.demand) : num(r.units));
+
+/* How far every launch in the pool is from this one: the larger of its demand
  * multiple and its price multiple, each taken above 1 whichever side it falls,
  * so a launch is only as near as its worse axis. A launch Airtable could not
- * price is ranked on units alone rather than dropped over a missing field. */
+ * price is ranked on demand alone rather than dropped over a missing field. */
 export function distances(pool, L, price) {
   const target = num(L.target);
   const usePrice = price > 0 && pool.length > 0;
   const mult = (v, ref) => (v > 0 && ref > 0 ? Math.max(v / ref, ref / v) : Infinity);
   const d = pool.map((r) => {
-    let x = mult(num(r.units), target);
+    let x = mult(sizeOf(r), target);
     if (usePrice) {
       const dp = mult(num(r.price), price);
       x = Math.max(x, Number.isFinite(dp) ? dp : 1.0);

@@ -69,7 +69,7 @@ A release is **never a member of its own benchmark** — always drop its own
 `release_name` from any basket.
 
 `similar_size` is the suggested basket and the one every release lands on. It is the
-**`SIMILAR_N` = 8 launches nearest this one on units and unit price**, in this order:
+**`SIMILAR_N` = 8 launches nearest this one on units of demand and unit price**, in this order:
 
 1. **The artist's own earlier launches first** (`own_members`): same artist, closed before this
    launch opened, and within `OWN_MAX` = ×3 on both axes. There is no better comparable than the
@@ -97,6 +97,19 @@ Distance is the larger of the two multiples, each taken so it reads above 1 whic
 falls: a launch is only as near as its worse axis, because matched on size at four times the
 price is not a comparable. That is the figure the picker shows in its two columns, so the
 basket is the top of the list the picker is already ordered by.
+
+**The size axis is demand** (§3.2, `demand_columns`): this edition's size against each launch's
+units of demand, what it would have sold with enough supply, which is also the figure the
+benchmark reads it at. So a launch that sold out short is a comparable for the editions its
+demand would have filled, not for the one it happened to have. Since 16 October 2026; before
+that the axis was units sold, which put Woo Kuk Won's 2024 draw (100 offered, 85 sold, 249 of
+demand) first in the basket of every 100-unit edition at its price and read it there at 249.
+Leave-one-out over the 104 priced draw launches, predicting each launch's demand from its edition
+size and price with the eight nearest, says the two axes are as accurate as each other: on units
+sold a median error of ×1.37, 58% within ×1.5 and 72% within ×2; on demand ×1.40, 57% and 74%.
+What moves is the uplift: K lands near 1 (median 0.98 across the panel against 0.81 on sales),
+since a basket is now the launches that reached about this edition rather than the ones that
+sold it.
 
 Size carries the units benchmark; price carries the conversion benchmarks, the sessions and
 entries targets being the units target over the basket's conversion rates, and those move with
@@ -137,8 +150,8 @@ size band barely moves a median. It still names the baskets in §3.1 and still f
 
 The basket says which axes ranked it (`matchedOn`), how far the furthest member is
 (`reach`) and which members are the artist's own (`own`), and its description reads them back:
-"The 8 launches nearest on units of this edition's 300 and on its unit price of €552, starting
-with Cattelan's own 2 - all within ×1.9 of it." A reach past `SCALE_MISMATCH_FACTOR` says so
+"The 8 launches nearest on demand to this edition's 300 units and on unit price to its €552,
+starting with Cattelan's own 2 - all within ×1.9 of it." A reach past `SCALE_MISMATCH_FACTOR` says so
 instead: nothing on file is close, the benchmark is what the nearest launches on record reached,
 and the uplift says how far past them this edition is being asked to go.
 
@@ -240,7 +253,8 @@ units sold plus what the eligible entrants left without a unit, and the entrants
 failed, would have bought at the eligible-entry → order rate; eligible winners who did not pay
 add nothing. `share_units` is the demand's split (`demand_share_<g>`: the sold part where the
 units were, the unmet part where the eligible entries came from), and the cost per paid unit
-is spend over paid demand. The similarity rule (§3.1) still matches on units sold.
+is spend over paid demand. The similarity rule (§3.1) matches on demand too, since 16 October
+2026: the edition's size against the comparables' demand.
 
 Per-channel benchmarks are **median share × median total**, never the median of the
 per-channel column - so they sum exactly to the headline median. Medians over an empty or

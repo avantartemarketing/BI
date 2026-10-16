@@ -240,6 +240,8 @@ button[title], select[title] { cursor: pointer; }
 /* the dotted benchmark swatch the legends use, as the card's mark */
 .swatch-bm { width: 10px; height: 10px; box-sizing: border-box; border: 1.5px dotted var(--ref-line); border-radius: 2px; flex: 0 0 10px; }
 .basket-cols, .basket-row { display: grid; grid-template-columns: minmax(0, 1fr) 56px 64px; gap: 12px; align-items: center; }
+/* rows that carry demand beside the units sold (BasketCard.jsx) */
+.basket-cols.four, .basket-row.four { grid-template-columns: minmax(0, 1fr) 56px 44px 64px; }
 .basket-cols { height: 22px; font-size: 11.5px; color: var(--muted); }
 .basket-cols span, .basket-row .num { text-align: right; font-variant-numeric: tabular-nums; }
 .basket-rows { flex: 1; min-height: 0; overflow-y: auto; }
@@ -251,7 +253,7 @@ button.basket-row { cursor: pointer; }
 button.basket-row:hover { background: var(--bg); }
 .basket-row .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .basket-row .units { font-weight: 500; }
-.basket-row .price { color: var(--muted); }
+.basket-row .sold, .basket-row .price { color: var(--muted); }
 
 /* segmented toggle */
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }

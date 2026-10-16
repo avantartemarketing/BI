@@ -149,7 +149,7 @@ planned dates; where it names no lead, Airtable's field, then what was typed.
 | --- | --- |
 | Meta campaigns | Which ad campaigns the paid actuals are read from, summed. The draw campaign named for the code is ticked on its own |
 | Channels in plan | Running paid; the artist's own channels. A group switched off leaves the benchmark and the target, and the other channels carry the whole sellout |
-| Benchmark basket | The comparable past launches the release is measured against: the suggested basket (nearest in size and price, the artist's own launches first, recent ones preferred) or one picked by hand |
+| Benchmark basket | The comparable past launches the release is measured against: the suggested basket (the launches whose demand is nearest this edition's size, at a price nearest its own; the artist's own launches first, recent ones preferred) or one picked by hand |
 | Entry → order rate, pre-order → order rate | What share of entries in hand become orders on the sell-through card; empty means the panel's 80% and 95% |
 
 A release set up before the model went per product still carries the
@@ -301,8 +301,8 @@ on its Target setting tab, and shift-clicking a figure on its page shows the
 working with them.
 
 An edition of 300 at €1,500 a unit, so the launch value is €450,000. Its basket
-is the 8 launches nearest in size and price, whose median launch sold 240
-units: **K = 300 ÷ 240 = 1.25**. Each group's benchmark is its median share of
+is the 8 launches whose demand and price are nearest its 300 units at €1,500,
+and their median demand is 240 units: **K = 300 ÷ 240 = 1.25**. Each group's benchmark is its median share of
 units times those 240, and its target is that times K:
 
 | Group | Median share of units | Benchmark | Target (× 1.25) |
@@ -639,8 +639,8 @@ nothing on its page moves. (Built 14 and 15 October 2026; the design is in
 
 **Each line is benchmarked and targeted on its own.** A line's target is its
 products' editions at their target sell-through, its price the average of
-its target units, and its basket the eight launches nearest *its* size and
-price (section 3), the artist's own first. Its K is its target over its
+its target units, and its basket the eight launches whose demand and price
+are nearest *its* size and price (section 3), the artist's own first. Its K is its target over its
 basket's median demand, and where its stretch comes from is set per line on
 the Target setting tab. A blended basket matched on the whole release would
 compare a EUR 2,500 print and a EUR 550 brick against the same launches, and

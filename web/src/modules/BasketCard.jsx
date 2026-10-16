@@ -1,7 +1,11 @@
 /* The Benchmark basket card (README, What the dashboard shows): the launches
- * the page's medians are read from, one per row with the two figures the
- * picker shows, the units it sold and its unit price, largest first. A row
- * opens that launch's own page where the index has one. Nothing else lives
+ * the page's medians are read from, one per row with the figures the picker
+ * ranks on, its units of demand (what it would have sold with enough supply,
+ * the figure the rule matched it on and the benchmark reads it at) and its
+ * unit price, with the units it sold beside them, largest demand first. A
+ * page built before the rows carried demand, and a timed launch's page, show
+ * the units sold and the price alone. A row opens that launch's own page
+ * where the index has one. Nothing else lives
  * here: the rule that picked the launches, their medians and the picker are
  * the Target setting tab's (docs/DATA_MODEL.md 3, docs/TL_SPEC.md 8). The
  * build writes the rows under benchmark.members, the same on both Direct
@@ -15,7 +19,13 @@ export default function BasketCard({ snap, index, onOpen }) {
   const raw = Array.isArray(bm.members) ? bm.members : [];
   if (!raw.length) return null;
   const W = wordsOf(snap);
-  const members = raw.slice().sort((a, b) => (b.units || 0) - (a.units || 0));
+  // the rows carry demand since the rule ranks on it (etl/baskets.py
+  // basket_members); older pages and timed launches carry units sold alone
+  const hasDemand = raw.some((m) => m.demand !== undefined && m.demand !== null);
+  const size = (m) => (hasDemand ? (m.demand ?? m.units) : m.units);
+  const members = raw.slice().sort((a, b) => (size(b) || 0) - (size(a) || 0));
+  const rowClass = hasDemand ? "basket-row four" : "basket-row";
+  const figure = (v) => (v === null || v === undefined ? "–" : fmt(v));
   // an artist with more than one launch in the basket is told apart by the quarter
   const times = {};
   raw.forEach((m) => { times[m.artist] = (times[m.artist] || 0) + 1; });
@@ -38,14 +48,18 @@ export default function BasketCard({ snap, index, onOpen }) {
     const cells = (
       <>
         <span className="nm">{label(m)}</span>
-        <span className="num units">{m.units === null || m.units === undefined ? "–" : fmt(m.units)}</span>
+        <span className="num units">{figure(size(m))}</span>
+        {hasDemand && <span className="num sold">{figure(m.units)}</span>}
         <span className="num price">{fmtMoney(m.price)}</span>
       </>
     );
     const k = g ? `${g.key}:${m.name}` : m.name;
+    const what = hasDemand
+      ? `${m.name} · demand for ${figure(size(m))} units${m.demand > (m.units || 0) ? ` (sold ${figure(m.units)}, the rest wanted by entrants left without a unit)` : " (all of it sold)"}`
+      : m.name;
     return id && onOpen
-      ? <button key={k} type="button" className="basket-row" title={`${m.name} · opens its page`} onClick={() => onOpen(id)}>{cells}</button>
-      : <div key={k} className="basket-row" title={m.name}>{cells}</div>;
+      ? <button key={k} type="button" className={rowClass} title={`${what} · opens its page`} onClick={() => onOpen(id)}>{cells}</button>
+      : <div key={k} className={rowClass} title={what}>{cells}</div>;
   };
   return (
     <div className="card">
@@ -55,14 +69,15 @@ export default function BasketCard({ snap, index, onOpen }) {
         <span className="right">{groups ? `${groups.length} lines` : `${members.length} ${W.launches}`}</span>
       </div>
       <div className="spacer-8" />
-      <div className="basket-cols" aria-hidden="true"><span /><span>Units</span><span>Price</span></div>
+      <div className={hasDemand ? "basket-cols four" : "basket-cols"} aria-hidden="true"><span />{hasDemand ? <><span title="What the launch would have sold with enough supply: the figure the rule matched it on">Demand</span><span>Sold</span></> : <span>Units</span>}<span>Price</span></div>
       <div className="basket-rows">
         {groups ? groups.map((g) => (
           <React.Fragment key={g.key}>
-            <div className="basket-row" style={{ cursor: "default" }}
+            <div className={rowClass} style={{ cursor: "default" }}
               title={`${g.name}: benchmarked on ${g.basket.name || g.basket.id}${g.basket.thin ? " (thin)" : ""}${g.median ? `, a median of ${fmt(g.median)} units of demand` : ""}. The launches under it are its basket's.`}>
               <span className="nm" style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", fontSize: 11 }}>{g.name}</span>
               <span className="num units" style={{ fontSize: 11.5 }}>{g.median ? fmt(g.median) : ""}</span>
+              {hasDemand && <span className="num sold" />}
               <span className="num price" style={{ fontSize: 11 }}>{g.rows.length} {W.launches}</span>
             </div>
             {g.rows.map((m) => row(m, g))}

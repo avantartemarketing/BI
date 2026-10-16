@@ -4,8 +4,8 @@
  * so choosing the basket is the single most consequential thing anyone does on
  * the Target setting tab - it moves every reference mark on every card. This
  * modal is where that choice is made, and it is built so the choice can be
- * seen: every launch on file is a dot on a map of units against unit price,
- * this launch is the ring, and the basket is what is nearest to it. The basket
+ * seen: every launch on file is a dot on a map of units of demand against
+ * unit price, this launch is the ring, and the basket is what is nearest to it. The basket
  * is a picture before it is a list, because "these are the eight nearest" is
  * something a person can check with their eyes and argue with.
  *
@@ -15,8 +15,10 @@
  * the recency switch - tests/test_basket_parity.py holds the two to the same
  * eight in the same order. The rows come from one file the build writes, so
  * opening the picker is one small fetch and no Python process. The rule: the
- * artist's own earlier launches first, then the nearest on units and price,
- * with launches closed in the last eighteen months ranked ahead of older ones
+ * artist's own earlier launches first, then the nearest on units of demand
+ * (what a launch would have sold with enough supply, the figure the benchmark
+ * reads it at; shared/basketRule.mjs sizeOf) and on unit price, with launches
+ * closed in the last eighteen months ranked ahead of older ones
  * among the comparable when "prefer recent" is on. It is read on the page's
  * day (asOf), and a release that has closed at its own close, leaving out
  * the launches that closed after it.
@@ -34,7 +36,7 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { C, fmt, fmtK, fmtMoney, fmtPct } from "./ui.jsx";
-import { similarMembers, ownMembers, releasePrice, releaseArtist, basketClock, MIN_MEMBERS, THIN_MEMBERS, NEAR, RECENT_MONTHS } from "../../shared/basketRule.mjs";
+import { similarMembers, ownMembers, releasePrice, releaseArtist, basketClock, sizeOf, MIN_MEMBERS, THIN_MEMBERS, NEAR, RECENT_MONTHS } from "../../shared/basketRule.mjs";
 import { GROUPS, applyChannelsOff } from "../../shared/benchmarkModel.mjs";
 
 const SIMILAR_NAME = "Similar size and shape";   // etl/baskets.py SIMILAR_NAME: the basket with id similar_size
@@ -113,9 +115,9 @@ function Switch({ id, on, onChange, label, sub, off, why }) {
   );
 }
 
-/* One distance, as a bar from the centre of its track: a launch that sold
- * fewer units, or was priced lower, than this one extends left; one that sold
- * more, or was priced higher, extends right. The length is log-scaled so ×2
+/* One distance, as a bar from the centre of its track: a launch with less
+ * demand, or priced lower, than this one extends left; one with more demand,
+ * or priced higher, extends right. The length is log-scaled so ×2
  * fills a third of its side and ×8 all of it, which is the range that matters.
  * An exact match is a tick on the centre line rather than an empty track, so
  * nothing reads as missing, and a bar never shrinks below the tick. Dimmed
@@ -160,7 +162,7 @@ function Scatter({ rows, L, ticked, isOwn, reach, hover, setHover }) {
   const hov = hover ? rows.find((r) => r.release_name === hover) : null;
   return (
     <div style={{ position: "relative", width: "100%" }}>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Every launch on file by units sold and unit price, this launch marked, the basket highlighted"
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Every launch on file by units of demand and unit price, this launch marked, the basket highlighted"
         style={{ display: "block", width: "100%", height: "auto", overflow: "visible" }}>
         {[10, 30, 100, 300, 1000, 3000].map((t) => (
           <g key={"x" + t}>
@@ -174,14 +176,14 @@ function Scatter({ rows, L, ticked, isOwn, reach, hover, setHover }) {
             <text x={m.l - 6} y={sy(t) + 3.5} textAnchor="end" fontSize="10.5" fill={C.muted}>{t >= 1000 ? "€" + t / 1000 + "k" : "€" + t}</text>
           </g>
         ))}
-        <text x={W - m.r} y={H - 4} textAnchor="end" fontSize="10.5" fill={C.muted}>units sold</text>
+        <text x={W - m.r} y={H - 4} textAnchor="end" fontSize="10.5" fill={C.muted}>units of demand</text>
         {box && (
           <rect x={box.x0} y={box.y0} width={Math.max(0, box.x1 - box.x0)} height={Math.max(0, box.y1 - box.y0)}
             fill={C.refBase} fillOpacity="0.45" stroke={C.refLine} strokeWidth="1" strokeDasharray="3 3" />
         )}
         {ordered.map((r) => {
-          if (!(r.units > 0 && r.price > 0)) return null;
-          const on = ticked.has(r.release_name), own = isOwn(r), cx = sx(r.units), cy = sy(r.price), h = hover === r.release_name;
+          if (!(sizeOf(r) > 0 && r.price > 0)) return null;
+          const on = ticked.has(r.release_name), own = isOwn(r), cx = sx(sizeOf(r)), cy = sy(r.price), h = hover === r.release_name;
           const common = { style: { cursor: "pointer" }, onMouseEnter: () => setHover(r.release_name), onMouseLeave: () => setHover(null) };
           if (on && own) return <rect key={r.release_name} {...common} x={cx - 6.5} y={cy - 6.5} width="13" height="13" transform={`rotate(45 ${cx} ${cy})`} fill={C.blueDeep} stroke={C.white} strokeWidth={h ? 3 : 2} />;
           if (on) return <circle key={r.release_name} {...common} cx={cx} cy={cy} r={h ? 7.5 : 6} fill={C.blue} stroke={C.white} strokeWidth="2" />;
@@ -299,20 +301,22 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
   const LM = useMemo(() => ({ ...L, price: priceUsed }), [L, priceUsed]);
   const isOwn = (r) => !!ownArtist && r.artist === ownArtist && r.release_name !== releaseName;
 
-  // each launch's two distances, and its worse one
+  // each launch's two distances, and its worse one: its demand against this
+  // launch's target, its price against the price the rule ranks on
   const scored = useMemo(() => (rows || []).filter((r) => r.release_name !== releaseName).map((r) => {
-    const du = ratio(r.units, L.target), dp = ratio(r.price, priceUsed);
+    const du = ratio(sizeOf(r), L.target), dp = ratio(r.price, priceUsed);
     return { ...r, du, dp, d: du === null || dp === null ? null : Math.max(du, dp) };
   }).sort((a, b) => (a.d ?? Infinity) - (b.d ?? Infinity)), [rows, releaseName, L]);
 
-  // what a bar says when pointed at: the figure, which way it falls and by how much
-  // a launch that sold out short says what it would have sold: the figure
-  // the benchmark counts it at (etl/baskets.py demand_columns)
-  const demandNote = (r) => (r.sold_short && r.demand > r.units
-    ? `; it sold out with ${fmt((r.unmet_units || 0) + (r.payment_failed_units || 0))} more units wanted, so the benchmark counts its demand of ${fmt(r.demand)}`
-    : "");
-  const unitsHint = (r) => (r.units === L.target ? `Sold ${fmt(r.units)} units in its window, the same as this launch's target`
-    : `Sold ${fmt(r.units)} units in its window, ${x(r.du)} ${r.units < L.target ? "fewer" : "more"} than this launch's target of ${fmt(L.target)}`) + demandNote(r);
+  // what a bar says when pointed at: the figure, which way it falls and by how
+  // much. The figure is the launch's demand, what it would have sold with
+  // enough supply (etl/baskets.py demand_columns): a launch that sold out
+  // short says what it sold and how many more units were wanted
+  const soldNote = (r) => (r.demand > r.units
+    ? ` (sold ${fmt(r.units)}, ${fmt((r.unmet_units || 0) + (r.payment_failed_units || 0))} more units wanted)`
+    : ` (all of it sold)`);
+  const unitsHint = (r) => (sizeOf(r) === L.target ? `Demand for ${fmt(sizeOf(r))} units in its window${soldNote(r)}, the same as this launch's target`
+    : `Demand for ${fmt(sizeOf(r))} units in its window${soldNote(r)}, ${x(r.du)} ${sizeOf(r) < L.target ? "fewer" : "more"} than this launch's target of ${fmt(L.target)}`);
   const priceHint = (r) => !(r.price > 0) ? "Airtable has no unit price for it, so it is ranked on units alone"
     : r.dp !== null && r.dp <= 1 ? `Priced at ${fmtMoney(r.price)}, the same as this launch`
     : `Priced at ${fmtMoney(r.price)}, ${x(r.dp)} ${r.price < priceUsed ? "lower" : "higher"} than this launch's ${fmtMoney(priceUsed)}`;
@@ -387,7 +391,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
     const n = members.length, who = ownArtist.split(" ").slice(-1)[0];
     const priced = priceUsed > 0 && unitPrice > 0 && Math.round(priceUsed) !== Math.round(unitPrice)
       ? <span style={{ color: C.muted }}> (the {fmtMoney(priceUsed)} Airtable has for it, not the {fmtMoney(unitPrice)} typed)</span> : null;
-    let s = <>The <b>{n}</b> launches nearest to <b>{fmt(L.target)} units at {fmtMoney(priceUsed)}</b>{priced}{ownIn ? <>, starting with {who}'s own {ownIn === 1 ? "one" : ownIn}</> : null}</>;
+    let s = <>The <b>{n}</b> launches nearest to <b>{fmt(L.target)} units of demand at {fmtMoney(priceUsed)}</b>{priced}{ownIn ? <>, starting with {who}'s own {ownIn === 1 ? "one" : ownIn}</> : null}</>;
     const older = passedOver ? <> <span style={{ color: C.amber }}>{passedOver === 1 ? "One nearer launch was" : `${passedOver} nearer launches were`} passed over for being older than {RECENT_MONTHS} months.</span></> : null;
     const later = closedAfter ? <> <span style={{ color: C.muted }}>{closedAfter === 1 ? "One nearer launch closed" : `${closedAfter} nearer launches closed`} after this one and {closedAfter === 1 ? "is" : "are"} left out.</span></> : null;
     const cost = older || later ? <>{older}{later}</> : null;
@@ -480,7 +484,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "22px minmax(0, 1fr) 190px 190px", gap: "0 14px", fontSize: 11, color: C.muted, paddingBottom: 6, borderBottom: `1px solid ${C.border}` }}>
                       <span /><span>Launch</span>
-                      {["Units", "Price"].map((h) => (
+                      {["Demand", "Price"].map((h) => (
                         // over the centre line of its bars, which is where this launch sits
                         <span key={h} style={{ display: "grid", gridTemplateColumns: "44px 1fr 40px", gap: "0 8px" }}><span /><span style={{ textAlign: "center" }}>{h}</span><span /></span>
                       ))}
@@ -498,7 +502,7 @@ export default function BasketPicker({ releaseId, releaseName, artist, currency,
                             {r.artist} · {r.title} <span style={{ color: C.muted, fontSize: 11.5 }}>{String(r.window_end || "").slice(0, 4)}</span>
                             {own && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 600, letterSpacing: ".03em", padding: "1px 6px", borderRadius: 4, background: C.blueDeep, color: C.white, verticalAlign: 1 }}>own</span>}
                           </div>
-                          <Bar v={r.du} under={r.units < L.target} on={on} prefix={fmt(r.units)} hint={unitsHint(r)} />
+                          <Bar v={r.du} under={sizeOf(r) < L.target} on={on} prefix={fmt(sizeOf(r))} hint={unitsHint(r)} />
                           <Bar v={r.dp} under={r.price > 0 && r.price < priceUsed} on={on} prefix={r.price > 0 ? fmtMoney(r.price) : "–"} hint={priceHint(r)} />
                         </div>
                       );

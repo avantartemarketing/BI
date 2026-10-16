@@ -113,6 +113,12 @@ extra["title"] = "Later Launch"
 extra["window_start"] = jj_end - pd.Timedelta(days=40)
 extra["window_end"] = jj_end + pd.Timedelta(days=21)
 extra["tot_total_product_units"] = float(live_rel["jamesjean_blossom_26"]["edition_size"])
+# the rule ranks on demand: the added launch sold its edition with nobody
+# left wanting, so its demand is its sales
+extra["demand_units"] = float(live_rel["jamesjean_blossom_26"]["edition_size"])
+extra["unmet_units"] = 0.0
+extra["payment_failed_units"] = 0.0
+extra["sold_short"] = False
 extra["unit_price_eur"] = float(live_rel["jamesjean_blossom_26"]["unit_price"])
 refreshed = pd.concat([panel, extra], ignore_index=True)
 refreshed_rows = B.candidate_rows(refreshed)

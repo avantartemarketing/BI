@@ -148,7 +148,7 @@ OWN_MAX = 3.0
 NEAR = 4.0
 RECENT_MONTHS = 18
 
-# Distance is on two axes, units and unit price (etl/pricing.py,
+# Distance is on two axes, units of demand and unit price (etl/pricing.py,
 # unit_price_eur), and a launch is only as near as its worse one: matched on
 # size at four times the price is not a comparable, and a single figure taken
 # over both axes says so without saying which. Size carries the units
@@ -955,11 +955,13 @@ def _release_price(panel: pd.DataFrame, release: dict | None) -> float:
 
 
 def basket_members(panel: pd.DataFrame | None, names: list[str] | None) -> list[dict]:
-    """The basket's launches with the two figures the Benchmark basket card
-    shows (README, What the dashboard shows): the units the launch sold and
-    its unit price in euros, in the basket's order, with the name, artist,
-    title and quarter the sidebar shows. A name the panel does not carry is
-    left out; a figure the panel lacks is None."""
+    """The basket's launches with the figures the Benchmark basket card shows
+    (README, What the dashboard shows): the units of demand the launch was
+    matched on (demand_columns, the figure the benchmark reads it at), the
+    units it sold and its unit price in euros, in the basket's order, with
+    the name, artist, title and quarter the sidebar shows. A name the panel
+    does not carry is left out; a figure the panel lacks is None, and a
+    frame without the demand column reads its sales as its demand."""
     if panel is None or not len(panel) or not names:
         return []
     by = panel.drop_duplicates("release_name").set_index("release_name")
@@ -970,8 +972,10 @@ def basket_members(panel: pd.DataFrame | None, names: list[str] | None) -> list[
             continue
         r = by.loc[n]
         price = _num(r.get("unit_price_eur")) or _num(r.get("unit_price"))
+        units = _num(r.get("tot_total_product_units"))
+        demand = _num(r.get("demand_units")) if "demand_units" in by.columns else 0.0
         out.append({"name": n, "artist": str(r.get("artist") or ""), "title": str(r.get("title") or ""), "quarter": str(r.get("quarter") or ""),
-                    "units": _num(r.get("tot_total_product_units")), "price": price if price and price > 0 else None})
+                    "demand": demand if demand > 0 else units, "units": units, "price": price if price and price > 0 else None})
     return out
 
 
@@ -990,12 +994,21 @@ def _ready(bid: str, name: str, desc: str, members: list[str], panel: pd.DataFra
 
 def _distances(pool: pd.DataFrame, release: dict | None, panel: pd.DataFrame) -> tuple[np.ndarray, tuple[str, ...]]:
     """How far every launch in the pool is from this one: the larger of its
-    units multiple and its price multiple, each taken above 1 whichever side
+    demand multiple and its price multiple, each taken above 1 whichever side
     it falls, so a launch is only as near as its worse axis. A launch Airtable
-    could not price is ranked on units alone rather than dropped over a
-    missing field. Returns the distances and the axes that set them."""
+    could not price is ranked on demand alone rather than dropped over a
+    missing field. Returns the distances and the axes that set them.
+
+    The size axis is each launch's demand (demand_columns): what it would have
+    sold with enough supply, the figure the benchmark reads it at. So a launch
+    that sold out short is a comparable for the editions its demand would have
+    filled, not for the one it happened to have. Since 16 October 2026; before
+    that the axis was units sold, which put a 100-unit sell-out with 249 units
+    of demand in the basket of every 100-unit edition and read it there at
+    249. A frame without the column reads its sales, as demand_columns does."""
     size = _num((release or {}).get("edition_size"))
-    units = pool["tot_total_product_units"].map(_num).astype(float).to_numpy()
+    col = "demand_units" if "demand_units" in pool.columns else "tot_total_product_units"
+    units = pool[col].map(_num).astype(float).to_numpy()
     price = _release_price(panel, release)
     prices = (pd.to_numeric(pool["unit_price_eur"], errors="coerce").to_numpy()
               if "unit_price_eur" in pool.columns else np.full(len(pool), np.nan))
@@ -1039,7 +1052,8 @@ def own_members(panel: pd.DataFrame, release: dict | None, as_of: date | None = 
 
 
 def similar_members(panel: pd.DataFrame, release: dict | None, as_of: date | None = None) -> tuple[list[str], float | None, tuple[str, ...]]:
-    """The SIMILAR_N launches nearest this one on units and unit price.
+    """The SIMILAR_N launches nearest this one on units of demand and unit
+    price (_distances).
 
     The artist's own earlier launches go in first (own_members), then the
     nearest of everything else fills the basket. With prefer_recent on - the
@@ -1112,9 +1126,9 @@ def similar_desc(members: list[str], reach: float | None, on: tuple[str, ...], s
     """
     if not members:
         return "No launch on file to compare this edition against."
-    axes = f"units of this edition's {size:,.0f}"
+    axes = f"demand to this edition's {size:,.0f} units"
     if "price" in on:
-        axes += f" and on its unit price of €{price:,.0f}"
+        axes += f" and on unit price to its €{price:,.0f}"
     near = f"The {len(members)} launches nearest on {axes}"
     if own and artist:
         near += f", starting with {artist}'s own {own}"

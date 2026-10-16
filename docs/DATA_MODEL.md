@@ -1106,15 +1106,17 @@ the nine releases benchmarked on 29 September 2026 it lowered K by 4-30% (Warhol
 Demand is per release, not per product: Murakami 2026 Q2's unmet demand sat on the products
 that sold out while others did not, and a comparable's demand is read as the reach its
 marketing produced; the sell-through card handles the product mix of a live release. The
-similarity rule below still matches on units sold, the edition's size against the
-comparables'; only the medians are read on demand.
+similarity rule below matches on demand too (since 16 October 2026; units sold before that):
+the edition's size against the comparables' demand, so a launch that sold out short is a
+comparable for the editions its demand would have filled, not for the one it happened to have
+(`docs/BENCHMARK_SPEC.md` §3.1 has the leave-one-out check).
 
 The suggested basket, `similar_size` ("Similar size and shape"), is the **`SIMILAR_N` = 8
-launches nearest this one on units and unit price** (`similar_members`): the artist's own
+launches nearest this one on units of demand and unit price** (`similar_members`): the artist's own
 earlier launches first, when within ×3 on both axes, then the nearest of everything else, with
 launches closed in the last 18 months ranked ahead of older ones among those within ×4 while
-`prefer_recent` is on (the default). A launch's distance is the larger of its units multiple and
-its price multiple. The rule, why eight and not a widening band, and the test that put price in
+`prefer_recent` is on (the default). A launch's distance is the larger of its demand multiple
+and its price multiple. The rule, why eight and not a widening band, and the test that put price in
 it (price predicts session-to-entry conversion beyond size on five of eight benchmarked
 metrics) are in `docs/BENCHMARK_SPEC.md` §3.1 and §3.1.1; `shared/basketRule.mjs` mirrors it for
 the picker. The picker reads the basket's `reach`, how far its furthest member is: past ×4 it

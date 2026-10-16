@@ -1419,7 +1419,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false }) {
                   {lprof && lprof.units > 0 && <span className="ts2-stretch num" title={`The line's basket: ${fmt(lprof.units)} median units of demand, ×${fmt(lk || 1, 2)} to its target`}>×{fmt(lk || 1, 2)}</span>}
                 </div>
                 <div className="ts2-rows">
-                  <span className="ts2-lbl" title="The launches this line is benchmarked against: those nearest its own size and price, the artist's own first.">Basket</span>
+                  <span className="ts2-lbl" title="The launches this line is benchmarked against: those whose demand is nearest its own size, at a price nearest its own, the artist's own first.">Basket</span>
                   <div className="ts2-ctl">
                     <div className="ts-box ro" style={{ flex: "1 1 240px", maxWidth: 480 }} title={basketN ? `${fmt(basketN)} launches` : undefined}>
                       <span className="txt">{lName || "suggested on save"}</span>
