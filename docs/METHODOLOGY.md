@@ -420,23 +420,50 @@ Daily, per release, with spend read from the matched Meta campaign and entries
 from the Paid Social channel:
 
 ```
-adjusted CPE = spend / (entries × rate)               cost per expected-converting unit
-ROI          = (1 − cannibalisation) × profit per unit / (adjusted CPE × budget share)
+converting units = units bought by paid entrants whose claim has been tried
+                 + pre-order entry units still waiting on a draw × pre-order rate
+                 + other entry units still waiting on a draw × entry rate
+adjusted CPE     = spend / converting units           cost per converting unit
+ROI              = (1 − cannibalisation) × profit per unit / (adjusted CPE × budget share)
 ```
 
-The rate is the release's entry → order rate and the cannibalisation the release's
-own, both from the Target setting tab (0.8 and 20% unless typed): the same rate the
-secured units and the targets' eligible entries are read at.
+**Claims tried read as they came out** (20 October 2026). An entrant's claim has
+been tried once one of their entries won, they bought, or the draw they entered
+has been run (it has a winner): from then on what they paid for is the answer -
+the pieces they bought in the release, nothing for a loser or a winner who did
+not pay. What still waits on a draw not yet run reads at the rates: the
+pre-order → order rate for entries made as pre-orders (0.95, the card already
+authorised) and the entry → order rate for the rest (0.8), both the Target
+setting tab's when typed. The waiting units are the entrant's open entries, one
+unit each on the draw, capped at the eligible units the funnel credits them
+(their maximum quantity) less what they bought. Each entrant's figures land on
+the day and channel of their eligible entry (`etl/aggregate_events.py`
+`conversion_parts`, columns `Conv_Units_*` in the rebuilt funnel), so the Direct
+switch and the Untracked fold spread them as they spread the entries. Before
+this every paid entry read at 0.8 whatever became of it, which undercounted a
+launch whose paid entries were mostly pre-orders (Andy Warhol Estate 2026: 589
+converting entries on the card against 631 paid units on the channels card)
+and overcounted an oversubscribed one, whose losing entries convert to nothing.
+A draw with no winner flags on file (the older feed) reads at the rates
+throughout, and a funnel without the columns (`FUNNEL_SOURCE=export`) reads
+every entry at the entry rate, as before. The forward cost path still prices
+future entries at the entry rate (below): they have not been drawn yet.
+
+The cannibalisation is the release's own from the Target setting tab (20% unless
+typed).
 
 The headline and the chart line are the **trailing-3-calendar-day** rolling
 version of this: a window with spend but no entries reads as ROI 0 (money out,
-nothing in), and CPE is treated as unknown until entries return. The card's
+nothing in), and CPE is treated as unknown until entries return. A window
+whose entries all lost their draws reads 0 the same way. The card's
 3d / 1d switch reads the last full day alone instead: the quickest read and
 the noisiest, and the dotted projection then starts from that day's price.
 
 The units the Paid spend card draws are the paid group's secured units (§1), the
-same figure as its column on the channels card; the entries above are what the
-cost per entry and the ROI are priced on. The Paid ROI chart's bars are the full
+same figure as its column on the channels card; the converting units above
+are what the cost per entry and the ROI are priced on. The two come close once
+the draws have run but are not the same count: the channels card credits a sale
+to the channel of its purchase, the ROI to the channel the entrant entered from. The Paid ROI chart's bars are the full
 days plus the day so far, which is drawn but carries no ROI point, so the bars
 sum to the spend to date.
 

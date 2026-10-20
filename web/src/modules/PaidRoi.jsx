@@ -226,6 +226,11 @@ function PaidRoiLE({ snap }) {
   // order they are applied, so the basis is on the card and not in a doc
   const cpeUsed = complete ? paid.cumCpe : cpeRecent;
   const dropOff = paid.dropOff ?? 0.2;
+  // what a converting entry is (docs 7): the claims tried read as they came
+  // out, the rates on what still waits; a snapshot from before 20 October
+  // 2026 read every entry at the entry rate
+  const claims = (paid.daily || []).some((d) => d.converting !== undefined);
+  const convWords = claims ? "what paid entrants bought where their draw has been run, and " + pct(paid.preorderRate ?? 0.95) + " of pre-order and " + pct(1 - dropOff) + " of other entries still waiting on a draw" : pct(1 - dropOff) + " of entries";
   // AA's group profit per unit reads before framing; the framing uplift,
   // Avant Arte's alone, is its own line where there is one
   // (a sculpture edition has no frame on offer)
@@ -239,7 +244,7 @@ function PaidRoiLE({ snap }) {
       { label: `€/converting entry ${winShort}`, value: fmt(cpeRecent, 2) },
       { label: "€/converting entry total", value: fmt(paid.cumCpe, 2) },
     ],
-    body: "Cost per converting entry: spend over the entries that become orders (" + pct(1 - dropOff) + " of them). ROI needs the profit split from the Target setting tab." + spendNote,
+    body: "Cost per converting entry: spend over the entries that become orders (" + convWords + "). ROI needs the profit split from the Target setting tab." + spendNote,
   } : {
     head: `${view.label} ROI - how it is read`,
     rows: [
@@ -261,7 +266,7 @@ function PaidRoiLE({ snap }) {
       + (frameUplift ? "; the framing uplift, Avant Arte's alone, is added to the AA group profit per unit). " : "). ")
       + "The spend divides as the profit does: on a profit share each side carries its share of the profit, on a revenue share Avant Arte carries it all"
       + (splitAssumed ? "; no product records its deal yet, so half is assumed. " : ". ")
-      + "A converting entry is one that becomes an order, " + pct(1 - dropOff) + " of entries." + spendNote,
+      + "A converting entry is one that becomes an order: " + convWords + "." + spendNote,
   };
   const todayTip = `${view.label} ROI ${winWords} ` + fmt(view.recent, 2) + targetLine;
   const projTip = `Projected ${view.label} ROI at close ` + fmt(declineEnd, 2)
@@ -300,7 +305,7 @@ function PaidRoiLE({ snap }) {
   const totals = (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flex: "0 0 auto" }}>
       <span
-        title={"Cost per converting entry, whole campaign: spend ÷ the entries that become orders (" + pct(1 - dropOff) + " of entries)"}
+        title={"Cost per converting entry, whole campaign: spend ÷ the entries that become orders (" + convWords + ")"}
         style={statRow}
       >
         €/converting entry total <span className="num" style={statVal}><Ex k="paid.cpe" arg={{ whole: true }}>{fmt(paid.cumCpe, 2)}</Ex></span>
