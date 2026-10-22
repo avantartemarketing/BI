@@ -82,9 +82,11 @@ METRICS = [c for c in EXPORT_COLUMNS if c not in KEY]
 # #7). The export has no such columns: they ride after its 34 in the rebuilt
 # file and the build falls back to entries x the rate without them. Claimed:
 # the pieces bought by entrants we have tried to claim (won, bought, or in a
-# draw that has been run). Pending: the entry units still waiting on a draw
-# not yet run, by whether the open
-# entries were pre-orders (charged at the draw, 0.95) or plain entries (0.8).
+# draw that is settled: it has a winner and has taken no entries for
+# SETTLED_DAYS, since a draw still taking entries is being run as they come
+# in and an entry not drawn yet is waiting, not lost). Pending: the entry
+# units still waiting on a draw, by whether the open entries were pre-orders
+# (charged at the draw, 0.95) or plain entries (0.8).
 CONV_COLUMNS = ["Conv_Units_Claimed", "Conv_Units_Pending_Preorder", "Conv_Units_Pending_Draw"]
 # route of a purchase: first match wins (docs #2.2)
 ROUTES = [("purchase_with_preorder_app", "Preorder_App"), ("purchase_with_presale", "Presale_Offered"),
@@ -161,16 +163,24 @@ def units(sub: pd.DataFrame, col: str, name: str) -> pd.DataFrame:
     return sub.groupby(KEY, dropna=False, observed=True)[col].sum().rename(name).reset_index()
 
 
-def conversion_parts(de: pd.DataFrame, pu: pd.DataFrame) -> list[pd.DataFrame]:
+def conversion_parts(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | None = None) -> list[pd.DataFrame]:
     """The CONV_COLUMNS, on the eligible entry rows' own day and channel.
 
     Per entrant of a release (people are account ids, as everywhere here):
     claimed once we have tried to claim one of their entries - it won, they
-    bought, or its draw has been run (has a winner), which settles a losing
-    entry too - so what they paid for is the answer: the pieces they bought
-    in the release, 0 for a loser or a winner who did not pay. Pending is the
+    bought, or its draw is settled, which settles a losing entry too - so
+    what they paid for is the answer: the pieces they bought in the release,
+    0 for a loser or a winner who did not pay. A draw is settled once it has
+    a winner and has taken no entries (eligible or not) for SETTLED_DAYS
+    before `as_of`, the feed's last day: a draw with winners that still takes
+    entries is being run as they come in (the 2026 Q4 launches draw daily),
+    so an entry not drawn yet waits like any other. Until 22 October 2026 a
+    winner alone settled the draw, and the latest days of every live launch
+    read their undrawn entries as losers. A draw run at the close reads its
+    losers a week after its last entry; until then they wait at the rates.
+    Pending is the
     demand still waiting on a draw: their open entries (eligible, not won, not
-    bought, in a draw not yet run), one unit each on the draw, capped at the eligible units the export credits them (their
+    bought, in a draw not settled), one unit each on the draw, capped at the eligible units the export credits them (their
     maximum quantity, counted once) less what they bought, and split by the
     share of those open entries made as pre-orders. Each entrant's figures
     land on their eligible rows in proportion to the units the export puts
@@ -183,10 +193,20 @@ def conversion_parts(de: pd.DataFrame, pu: pd.DataFrame) -> list[pd.DataFrame]:
     draws = el.assign(draw=el["draw_id"].astype(str))
     per_draw = (draws.groupby(k + ["draw"], observed=True)
                      .agg(w=("winner", "any"), b=("draw_with_purchase", "any"), p=("pre_order", "any")).reset_index())
-    # a draw with a winner has been run: every entry in it has had its claim
-    # tried, the losers' included (they will not convert)
-    ran = per_draw.groupby(["simple_release_name", "draw"], observed=True)["w"].transform("any")
-    per_draw["ran"] = ran
+    # a settled draw - a winner, and no entry on any of its rows for
+    # SETTLED_DAYS - has tried every claim in it, the losers' included (they
+    # will not convert); a draw with winners still taking entries is being
+    # run as they come in, so its open entries wait
+    if as_of is None:
+        as_of = de["event_date"].max()
+    last = (de.assign(draw=de["draw_id"].astype(str))
+              .groupby(["simple_release_name", "draw"], observed=True)["event_date"].max()
+              .rename("last_entry").reset_index())
+    last["quiet"] = (as_of - last["last_entry"]).dt.days >= SETTLED_DAYS
+    per_draw = per_draw.merge(last[["simple_release_name", "draw", "quiet"]], on=["simple_release_name", "draw"], how="left")
+    won = per_draw.groupby(["simple_release_name", "draw"], observed=True)["w"].transform("any")
+    per_draw["ran"] = won & per_draw["quiet"].fillna(False).astype(bool)
+    ran = per_draw["ran"]
     per_draw["open"] = ~per_draw["w"] & ~per_draw["b"] & ~ran
     per_draw["open_pre"] = per_draw["open"] & per_draw["p"]
     per_draw["tried"] = per_draw["w"] | per_draw["b"] | ran
@@ -220,7 +240,7 @@ def rebuild(browsing: pd.DataFrame, ev: pd.DataFrame) -> pd.DataFrame:
         units(de, "units_once", "Draw_Entries_Total_Units"), units(de[E], "units_once", "Draw_Entries_Eligible_Units"),
         units(de[E & ~W & ~C], "units_once", "Draw_Entries_Total_Units_No_Conv"),
         units(pu, "order_pieces", "Total_Product_Units"), people(pu, "Unique_Customers"),
-    ] + conversion_parts(de, pu)
+    ] + conversion_parts(de, pu, as_of=ev["event_date"].max())
     pu["route"] = "Other"
     for col, route in reversed(ROUTES):          # earlier in ROUTES wins, so assign last
         pu.loc[pu[col], "route"] = route

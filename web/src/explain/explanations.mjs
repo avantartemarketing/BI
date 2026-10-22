@@ -703,7 +703,7 @@ EXPLAIN["paid.cpe"] = (a, { snap: s }) => {
       seg`Add up the spend on the paid campaign ${span}: ${eur(spend)}.`,
       seg`Count the paid entries ${one ? "that day" : "on those days"}: ${n(entries, 1)}.`,
       claimed !== null
-        ? seg`Where a draw has been run, count what those entrants actually bought (a loser counts nothing); where it has not, ${pct(p.preorderRate ?? 0.95)} of pre-order entries and ${pct(1 - drop)} of other entries: ${n(conv, 1)} converting entries.`
+        ? seg`Where a draw is done (it has winners and has stopped taking entries), count what those entrants actually bought (a loser counts nothing); where it is still taking entries, ${pct(p.preorderRate ?? 0.95)} of pre-order entries and ${pct(1 - drop)} of other entries: ${n(conv, 1)} converting entries.`
         : seg`${pct(1 - drop)} of entries become orders, so ${n(entries, 1)} × ${pct(1 - drop)} = ${n(conv, 1)} converting entries.`,
       seg`${eur(spend)} ÷ ${n(conv, 1)} = ${eur(v, 2)}.`,
     ],

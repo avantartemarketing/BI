@@ -3027,7 +3027,8 @@ def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: dat
 def converting_units_day(frame: pd.DataFrame, channel: str, release: dict) -> pd.Series:
     """A channel's converting units by day (docs 7), what the paid ROI is
     priced on: the units bought by entrants whose claim has been tried (they
-    won, bought, or their draw has run, so a loser counts 0), plus the entry
+    won, bought, or their draw is settled - it has a winner and has stopped
+    taking entries - so a loser counts 0), plus the entry
     units still waiting on a draw at the release's rates - pre-order entries
     at the pre-order rate (0.95), the rest at the entry rate (0.8). A frame
     without the claim columns (the upstream export) reads every eligible

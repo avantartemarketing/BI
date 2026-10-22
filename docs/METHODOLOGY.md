@@ -429,9 +429,18 @@ ROI              = (1 − cannibalisation) × profit per unit / (adjusted CPE ×
 
 **Claims tried read as they came out** (20 October 2026). An entrant's claim has
 been tried once one of their entries won, they bought, or the draw they entered
-has been run (it has a winner): from then on what they paid for is the answer -
-the pieces they bought in the release, nothing for a loser or a winner who did
-not pay. What still waits on a draw not yet run reads at the rates: the
+is settled - it has a winner and has taken no entries for seven days
+(`SETTLED_DAYS` in `etl/aggregate_events.py`, counted to the feed's last day):
+from then on what they paid for is the answer - the pieces they bought in the
+release, nothing for a loser or a winner who did not pay. A draw with winners
+that is still taking entries is being run as the entries come in (every 2026
+Q4 launch draws winners daily), so an entry not drawn yet waits like any other.
+Until 22 October 2026 a winner alone settled the draw, and the latest days of
+every live launch read their undrawn entries as losers (Cai Guo-Qiang 2026 Q4
+read 0 ROI on 21 October on four paid entries and €1,481 of spend). A draw run
+at the close reads its losers a week after its last entry; until then they wait
+at the rates, as every entry did before 20 October. What still waits on a draw
+not yet settled reads at the rates: the
 pre-order → order rate for entries made as pre-orders (0.95, the card already
 authorised) and the entry → order rate for the rest (0.8), both the Target
 setting tab's when typed. The waiting units are the entrant's open entries, one
