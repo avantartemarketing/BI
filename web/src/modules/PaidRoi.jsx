@@ -230,7 +230,7 @@ function PaidRoiLE({ snap }) {
   // out, the rates on what still waits; a snapshot from before 20 October
   // 2026 read every entry at the entry rate
   const claims = (paid.daily || []).some((d) => d.converting !== undefined);
-  const convWords = claims ? "what paid entrants bought where their draw is done (it has winners and takes no more entries), and " + pct(paid.preorderRate ?? 0.95) + " of pre-order and " + pct(1 - dropOff) + " of other entries still waiting on a draw" : pct(1 - dropOff) + " of entries";
+  const convWords = claims ? "what paid entrants bought once given a pre-order or drawn on launch day, and " + pct(paid.preorderRate ?? 0.95) + " of pre-order and " + pct(1 - dropOff) + " of other entries still waiting" : pct(1 - dropOff) + " of entries";
   // AA's group profit per unit reads before framing; the framing uplift,
   // Avant Arte's alone, is its own line where there is one
   // (a sculpture edition has no frame on offer)

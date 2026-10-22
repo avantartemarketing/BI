@@ -81,12 +81,11 @@ METRICS = [c for c in EXPORT_COLUMNS if c not in KEY]
 # What the eligible entry units turn into, for the paid ROI (docs METHODOLOGY
 # #7). The export has no such columns: they ride after its 34 in the rebuilt
 # file and the build falls back to entries x the rate without them. Claimed:
-# the pieces bought by entrants we have tried to claim (won, bought, or in a
-# draw that is settled: it has a winner and has taken no entries for
-# SETTLED_DAYS, since a draw still taking entries is being run as they come
-# in and an entry not drawn yet is waiting, not lost). Pending: the entry
-# units still waiting on a draw, by whether the open entries were pre-orders
-# (charged at the draw, 0.95) or plain entries (0.8).
+# the pieces bought by entrants we have tried to claim (won - a pre-order
+# given through the window, or drawn on launch day - bought, or in a release
+# whose launch day has passed, so an entry still open has lost). Pending: the
+# entry units still waiting, by whether the open entries were pre-orders
+# (charged when given, 0.95) or plain entries (drawn on launch day, 0.8).
 CONV_COLUMNS = ["Conv_Units_Claimed", "Conv_Units_Pending_Preorder", "Conv_Units_Pending_Draw"]
 # route of a purchase: first match wins (docs #2.2)
 ROUTES = [("purchase_with_preorder_app", "Preorder_App"), ("purchase_with_presale", "Presale_Offered"),
@@ -122,7 +121,7 @@ def flag(s: pd.Series) -> pd.Series:
 
 FLAGS = ["draw_entry_eligible", "winner", "pre_order", "draw_with_purchase",
          "purchase_with_preorder_app", "purchase_with_presale", "pr_order", "purchase_with_draw_entry"]
-EVENT_COLS = [CH, "event_date", "event_name", "aa_account_id", "simple_release_name", "announcement_date",
+EVENT_COLS = [CH, "event_date", "event_name", "aa_account_id", "simple_release_name", "announcement_date", "launch_date",
               "draw_entry_multiset_preference_max_quantity_once", "order_pieces",
               # the multiset cap and the draw id, the two product-count signals
               "draw_entry_multiset_preference_max_quantity", "draw_id",
@@ -149,6 +148,9 @@ def load_events() -> pd.DataFrame:
     ev["event_date"] = pd.to_datetime(ev["event_date"])
     for c in FLAGS:
         ev[c] = flag(ev[c])
+    # the launch day, the draw's day (conversion_parts): a timestamp in the
+    # feed (17:00 UTC on the day), read as the day
+    ev["launch_date"] = pd.to_datetime(ev["launch_date"], errors="coerce", utc=True).dt.tz_convert(None).dt.normalize()
     ev["units_once"] = ev["draw_entry_multiset_preference_max_quantity_once"].fillna(0).astype("float32")
     ev["order_pieces"] = ev["order_pieces"].fillna(0).astype("float32")
     ev.drop(columns=["draw_entry_multiset_preference_max_quantity_once"], inplace=True)
@@ -166,21 +168,21 @@ def units(sub: pd.DataFrame, col: str, name: str) -> pd.DataFrame:
 def conversion_parts(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | None = None) -> list[pd.DataFrame]:
     """The CONV_COLUMNS, on the eligible entry rows' own day and channel.
 
+    Pre-orders are given through the window as they come in (the entry wins
+    and is charged); the draw is held on launch day, when the entries stop.
     Per entrant of a release (people are account ids, as everywhere here):
     claimed once we have tried to claim one of their entries - it won, they
-    bought, or its draw is settled, which settles a losing entry too - so
-    what they paid for is the answer: the pieces they bought in the release,
-    0 for a loser or a winner who did not pay. A draw is settled once it has
-    a winner and has taken no entries (eligible or not) for SETTLED_DAYS
-    before `as_of`, the feed's last day: a draw with winners that still takes
-    entries is being run as they come in (the 2026 Q4 launches draw daily),
-    so an entry not drawn yet waits like any other. Until 22 October 2026 a
-    winner alone settled the draw, and the latest days of every live launch
-    read their undrawn entries as losers. A draw run at the close reads its
-    losers a week after its last entry; until then they wait at the rates.
-    Pending is the
-    demand still waiting on a draw: their open entries (eligible, not won, not
-    bought, in a draw not settled), one unit each on the draw, capped at the eligible units the export credits them (their
+    bought, or the release's launch day has passed (`as_of`, the feed's last
+    day, is after it), which settles a losing entry too - so what they paid
+    for is the answer: the pieces they bought in the release, 0 for a loser
+    or a winner who did not pay. The launch day is the feed's launch_date,
+    its latest value per release (a postponed launch keeps its final day); a
+    release the feed carries no launch day for settles a draw once it has a
+    winner and has taken no entries (eligible or not) for SETTLED_DAYS. Until
+    22 October 2026 a winner alone settled a draw, so from the first
+    pre-order given the window's undrawn entries read as losers. Pending is
+    the demand still waiting: their open entries (eligible, not won, not
+    bought, launch day not passed), one unit each on the draw, capped at the eligible units the export credits them (their
     maximum quantity, counted once) less what they bought, and split by the
     share of those open entries made as pre-orders. Each entrant's figures
     land on their eligible rows in proportion to the units the export puts
@@ -193,19 +195,26 @@ def conversion_parts(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | N
     draws = el.assign(draw=el["draw_id"].astype(str))
     per_draw = (draws.groupby(k + ["draw"], observed=True)
                      .agg(w=("winner", "any"), b=("draw_with_purchase", "any"), p=("pre_order", "any")).reset_index())
-    # a settled draw - a winner, and no entry on any of its rows for
-    # SETTLED_DAYS - has tried every claim in it, the losers' included (they
-    # will not convert); a draw with winners still taking entries is being
-    # run as they come in, so its open entries wait
+    # a settled draw has tried every claim in it, the losers' included (they
+    # will not convert): it has a winner and the release's launch day, the
+    # draw's day, has passed; with no launch day on the feed, it has taken
+    # no entry on any of its rows for SETTLED_DAYS. Before that an open
+    # entry waits: the pre-orders to be given, the rest for launch day
     if as_of is None:
         as_of = de["event_date"].max()
     last = (de.assign(draw=de["draw_id"].astype(str))
               .groupby(["simple_release_name", "draw"], observed=True)["event_date"].max()
               .rename("last_entry").reset_index())
     last["quiet"] = (as_of - last["last_entry"]).dt.days >= SETTLED_DAYS
-    per_draw = per_draw.merge(last[["simple_release_name", "draw", "quiet"]], on=["simple_release_name", "draw"], how="left")
+    if "launch_date" in de.columns:
+        launch = de.groupby("simple_release_name", observed=True)["launch_date"].max().rename("launch").reset_index()
+        last = last.merge(launch, on="simple_release_name", how="left")
+    else:
+        last["launch"] = pd.NaT
+    last["done"] = np.where(last["launch"].notna(), as_of.normalize() > last["launch"], last["quiet"])
+    per_draw = per_draw.merge(last[["simple_release_name", "draw", "done"]], on=["simple_release_name", "draw"], how="left")
     won = per_draw.groupby(["simple_release_name", "draw"], observed=True)["w"].transform("any")
-    per_draw["ran"] = won & per_draw["quiet"].fillna(False).astype(bool)
+    per_draw["ran"] = won & per_draw["done"].fillna(False).astype(bool)
     ran = per_draw["ran"]
     per_draw["open"] = ~per_draw["w"] & ~per_draw["b"] & ~ran
     per_draw["open_pre"] = per_draw["open"] & per_draw["p"]
