@@ -667,7 +667,8 @@ function lastDays(s, days) {
   const last = rows[rows.length - 1].date;
   const t = Date.parse(last + "T00:00:00Z");
   const within = rows.filter((d) => t - Date.parse(d.date + "T00:00:00Z") < days * 86400000);
-  return { rows: within, spend: sum(within.map((d) => d.spend)), entries: sum(within.map((d) => d.entries)), from: within[0].date, to: last };
+  return { rows: within, spend: sum(within.map((d) => d.spend)), entries: sum(within.map((d) => d.entries)),
+    converting: within.every((d) => d.converting !== undefined) ? sum(within.map((d) => d.converting)) : null, from: within[0].date, to: last };
 }
 const oneDay = (a) => !!(a && a.window === "1d");
 
@@ -678,18 +679,21 @@ EXPLAIN["paid.cpe"] = (a, { snap: s }) => {
   const one = !whole && oneDay(a);
   const v = whole ? p.cumCpe : one ? p.l1dCpe : p.l3dCpe;
   if (!finite(v)) return null;
-  let spend, entries, span;
+  let spend, entries, span, claimed = null;
   if (whole) {
     const rows = fullDays(s);
     spend = sum(rows.map((d) => d.spend)); entries = sum(rows.map((d) => d.entries));
+    if (rows.length && rows.every((d) => d.converting !== undefined)) claimed = sum(rows.map((d) => d.converting));
     const first = rows.find((d) => (d.spend ?? 0) > 0);
     span = first ? `from ${dayOf(first.date)} to ${dayOf(rows[rows.length - 1].date)}` : "";
   } else {
     const w = lastDays(s, one ? 1 : 3);
     if (!w) return null;
-    spend = w.spend; entries = w.entries; span = w.from === w.to ? `on ${dayOf(w.to)}` : `from ${dayOf(w.from)} to ${dayOf(w.to)}`;
+    spend = w.spend; entries = w.entries; claimed = w.converting; span = w.from === w.to ? `on ${dayOf(w.to)}` : `from ${dayOf(w.from)} to ${dayOf(w.to)}`;
   }
-  const conv = entries * (1 - drop);
+  // a snapshot from 20 October 2026 on carries each day's converting units:
+  // what the entrants bought where the claim was tried, the rates on the rest
+  const conv = claimed !== null ? claimed : entries * (1 - drop);
   return {
     where: "Paid ROI", when: null,
     name: whole ? "Cost per converting entry, whole campaign" : one ? "Cost per converting entry, last full day" : "Cost per converting entry, last 3 days",
@@ -698,7 +702,9 @@ EXPLAIN["paid.cpe"] = (a, { snap: s }) => {
     steps: [
       seg`Add up the spend on the paid campaign ${span}: ${eur(spend)}.`,
       seg`Count the paid entries ${one ? "that day" : "on those days"}: ${n(entries, 1)}.`,
-      seg`${pct(1 - drop)} of entries become orders, so ${n(entries, 1)} × ${pct(1 - drop)} = ${n(conv, 1)} converting entries.`,
+      claimed !== null
+        ? seg`Where a draw has been run, count what those entrants actually bought (a loser counts nothing); where it has not, ${pct(p.preorderRate ?? 0.95)} of pre-order entries and ${pct(1 - drop)} of other entries: ${n(conv, 1)} converting entries.`
+        : seg`${pct(1 - drop)} of entries become orders, so ${n(entries, 1)} × ${pct(1 - drop)} = ${n(conv, 1)} converting entries.`,
       seg`${eur(spend)} ÷ ${n(conv, 1)} = ${eur(v, 2)}.`,
     ],
     total: { v: eur(v, 2), label: "per converting entry" },

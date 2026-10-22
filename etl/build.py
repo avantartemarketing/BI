@@ -173,6 +173,11 @@ FUNNEL_COLS = FUNNEL_LABELS + [
     "days_since_announcement", "days_until_launch",
     "pct_days_since_announcement", "pct_days_until_launch",
 ]
+# What the eligible entry units turned into (etl/aggregate_events.py
+# CONV_COLUMNS): units bought by entrants whose claim was tried, and units
+# still waiting on a draw, pre-order or plain. Only the rebuilt file carries
+# them; without them the paid ROI reads entries x the entry rate (docs 7).
+CONV_COLS = ["Conv_Units_Claimed", "Conv_Units_Pending_Preorder", "Conv_Units_Pending_Draw"]
 
 
 # The build reads the export rebuilt from the event-level feeds by
@@ -208,7 +213,7 @@ def load_across_time() -> pd.DataFrame:
     key = None
     try:
         st = FUNNEL_FILE.stat()
-        key = {"path": str(FUNNEL_FILE), "mtime_ns": st.st_mtime_ns, "size": st.st_size, "cols": FUNNEL_COLS, "v": 1}
+        key = {"path": str(FUNNEL_FILE), "mtime_ns": st.st_mtime_ns, "size": st.st_size, "cols": FUNNEL_COLS + CONV_COLS, "v": 2}
         if cache.exists() and meta.exists() and json.loads(meta.read_text()) == key:
             df = pd.read_pickle(cache)
             print(f"funnel: {len(df)} rows from the cached parse of {FUNNEL_FILE.name}")
@@ -227,11 +232,14 @@ def load_across_time() -> pd.DataFrame:
 
 
 def _parse_across_time() -> pd.DataFrame:
-    df = pd.read_csv(FUNNEL_FILE, usecols=lambda c: c in FUNNEL_COLS,
+    df = pd.read_csv(FUNNEL_FILE, usecols=lambda c: c in FUNNEL_COLS or c in CONV_COLS,
                      dtype={c: "category" for c in FUNNEL_LABELS})
     missing = [c for c in FUNNEL_COLS if c not in df.columns]
     if missing:
         raise SystemExit(f"across_time.csv is missing columns the build needs: {missing}")
+    if not all(c in df.columns for c in CONV_COLS):
+        # the export (FUNNEL_SOURCE=export) or an older rebuild: no claims to read
+        df = df.drop(columns=[c for c in CONV_COLS if c in df.columns])
     df = df.rename(columns={"AA_session_custom_channel_group_split_touch": "channel"})
     df["event_date"] = pd.to_datetime(df["event_date"], format="%d/%m/%Y").dt.date
     # normalise channel case (feed says 'untracked'); the label is categorical
@@ -3016,6 +3024,23 @@ def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: dat
     return out
 
 
+def converting_units_day(frame: pd.DataFrame, channel: str, release: dict) -> pd.Series:
+    """A channel's converting units by day (docs 7), what the paid ROI is
+    priced on: the units bought by entrants whose claim has been tried (they
+    won, bought, or their draw has run, so a loser counts 0), plus the entry
+    units still waiting on a draw at the release's rates - pre-order entries
+    at the pre-order rate (0.95), the rest at the entry rate (0.8). A frame
+    without the claim columns (the upstream export) reads every eligible
+    entry unit at the entry rate, as the model did before (20 October 2026)."""
+    sub = frame[frame["channel"] == channel]
+    if all(c in sub.columns for c in CONV_COLS):
+        conv = (sub["Conv_Units_Claimed"] + sub["Conv_Units_Pending_Preorder"] * preorder_rate(release)
+                + sub["Conv_Units_Pending_Draw"] * entry_rate(release))
+    else:
+        conv = sub["Draw_Entries_Eligible_Units"] * entry_rate(release)
+    return conv.groupby(sub["event_date"]).sum()
+
+
 def entry_rate(release: dict) -> float:
     """The entry -> order rate of the release: its own (Target setting) when
     one is typed, else the panel's 0.8. One rate runs through the page: the
@@ -5329,24 +5354,25 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     spend_day = psp.groupby("spend_date")["spend"].sum()
     paid_entries_day = (win[win["channel"] == "Paid Social"]
                         .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
+    # priced per converting unit as the targeted pages are (docs 7)
+    paid_conv_day = converting_units_day(win, "Paid Social", rec)
     drop = round(1 - entry_rate(rec), 4)
     paid_daily, win3 = [], []
-    cum_spend = cum_pentries = 0.0
+    cum_spend = cum_pentries = cum_conv = 0.0
     for d in days:
         if d > min(full_through, launch_end):
             break
         s_, e_ = float(spend_day.get(d, 0.0)), float(paid_entries_day.get(d, 0.0))
-        cum_spend += s_; cum_pentries += e_
-        win3 = (win3 + [(s_, e_)])[-3:]
-        paid_daily.append({"date": d.isoformat(), "spend": round(s_, 2), "entries": e_, "roi": None, "roiArtist": None,
-                           "roi1": None, "roiArtist1": None})
-    s3, e3 = sum(x for x, _ in win3), sum(y for _, y in win3)
-    l3d_raw = s3 / e3 if e3 > 0 else None
-    l3d_cpe = l3d_raw / (1 - drop) if l3d_raw else None
-    s1, e1 = win3[-1] if win3 else (0.0, 0.0)
-    l1d_raw = s1 / e1 if e1 > 0 else None
-    l1d_cpe = l1d_raw / (1 - drop) if l1d_raw else None
-    cum_cpe = cum_spend / (cum_pentries * (1 - drop)) if cum_pentries else None
+        c_ = float(paid_conv_day.get(d, 0.0))
+        cum_spend += s_; cum_pentries += e_; cum_conv += c_
+        win3 = (win3 + [(s_, c_)])[-3:]
+        paid_daily.append({"date": d.isoformat(), "spend": round(s_, 2), "entries": e_, "converting": round(c_, 3),
+                           "roi": None, "roiArtist": None, "roi1": None, "roiArtist1": None})
+    s3, c3 = sum(x for x, _ in win3), sum(y for _, y in win3)
+    l3d_cpe = s3 / c3 if c3 > 0 else None
+    s1, c1 = win3[-1] if win3 else (0.0, 0.0)
+    l1d_cpe = s1 / c1 if c1 > 0 else None
+    cum_cpe = cum_spend / cum_conv if cum_conv > 0 else None
     # the part day so far: in the to-date figures, never in the rates
     part_spend = part_entries = 0.0
     if full_through < as_of <= launch_end:
@@ -5724,10 +5750,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     psp = rsp[(rsp["spend_date"] >= window_start) & (rsp["spend_date"] <= min(as_of, launch_end))]
     paid_entries_day = (win[win["channel"] == "Paid Social"]
                         .groupby("event_date")["Draw_Entries_Eligible_Units"].sum())
+    # what the ROI is priced on (docs 7): the paid entries' converting units,
+    # what was bought where the claim has been tried and the rates (0.95
+    # pre-order, 0.8 entry) on what still waits on a draw
+    paid_conv_day = converting_units_day(win, "Paid Social", release)
     spend_day = psp.groupby("spend_date")["spend"].sum()
     # a converting entry is one that becomes an order: the release's own
     # entry -> order rate (Target setting), else the panel's, the same rate
-    # the secured units and the targets' eligible entries are read at
+    # the secured units and the targets' eligible entries are read at; the
+    # forward cost path prices future entries at it
     drop, cann = round(1 - entry_rate(release), 4), cannibalisation_for(release, b)
     ppu_aa = aa_profit_per_unit(release, b)
     frame_conv, frame_profit = frame_terms(release, b)
@@ -5758,8 +5789,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # and 'roiArtist1' are the day's own reading on the same rule (the card's
     # 1d switch): one day's spend over that day's entries.
     paid_daily = []
-    cum_spend = cum_pentries = 0.0
+    cum_spend = cum_pentries = cum_conv = 0.0
     win3: list[tuple[float, float]] = []
+    conv3: list[float] = []
     # the clock the cost path runs on (docs §7): what the release's campaigns
     # had spent before each day, any spend ahead of the window included
     spent_before_window = float(rsp[rsp["spend_date"] < window_start]["spend"].sum()) if len(rsp) else 0.0
@@ -5777,24 +5809,27 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             break
         s = float(spend_day.get(d, 0.0))
         e = float(paid_entries_day.get(d, 0.0))
+        c = float(paid_conv_day.get(d, 0.0))
         to_close = (launch_end - d).days
         clock3.append((s, spent_before_window + cum_spend,
                        close_lift[to_close] if 0 <= to_close < len(close_lift) else 1.0))
-        cum_spend += s; cum_pentries += e
+        cum_spend += s; cum_pentries += e; cum_conv += c
         win3.append((s, e))
+        conv3.append(c)
         if len(win3) > 3:
             win3.pop(0)
+            conv3.pop(0)
             clock3.pop(0)
-        s3 = sum(x for x, _ in win3); e3 = sum(y for _, y in win3)
-        adj3 = (s3 / (e3 * (1 - drop))) if s3 > 0 and e3 > 0 else None
-        roi3 = None if s3 <= 0 else 0.0 if e3 <= 0 else party_roi(ppu_aa, aa_budget_share, adj3)
-        roi3_artist = (None if s3 <= 0 or artist_budget_share <= 0 else 0.0 if e3 <= 0
+        s3 = sum(x for x, _ in win3); c3 = sum(conv3)
+        adj3 = (s3 / c3) if s3 > 0 and c3 > 0 else None
+        roi3 = None if s3 <= 0 else 0.0 if c3 <= 0 else party_roi(ppu_aa, aa_budget_share, adj3)
+        roi3_artist = (None if s3 <= 0 or artist_budget_share <= 0 else 0.0 if c3 <= 0
                        else party_roi(ppu_artist, artist_budget_share, adj3))
-        adj1 = (s / (e * (1 - drop))) if s > 0 and e > 0 else None
-        roi1 = None if s <= 0 else 0.0 if e <= 0 else party_roi(ppu_aa, aa_budget_share, adj1)
-        roi1_artist = (None if s <= 0 or artist_budget_share <= 0 else 0.0 if e <= 0
+        adj1 = (s / c) if s > 0 and c > 0 else None
+        roi1 = None if s <= 0 else 0.0 if c <= 0 else party_roi(ppu_aa, aa_budget_share, adj1)
+        roi1_artist = (None if s <= 0 or artist_budget_share <= 0 else 0.0 if c <= 0
                        else party_roi(ppu_artist, artist_budget_share, adj1))
-        paid_daily.append({"date": d.isoformat(), "spend": round(s, 2), "entries": e,
+        paid_daily.append({"date": d.isoformat(), "spend": round(s, 2), "entries": e, "converting": round(c, 3),
                            "roi": round(roi3, 3) if roi3 is not None else None,
                            "roiArtist": round(roi3_artist, 3) if roi3_artist is not None else None,
                            "roi1": round(roi1, 3) if roi1 is not None else None,
@@ -5806,25 +5841,29 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         part_entries = float(paid_entries_day.get(as_of, 0.0))
     # trailing 3-calendar-day CPE (adjusted = per expected-converting unit);
     # CPE stays unknown when the window bought no entries - the ROI reads 0
-    s3 = sum(x for x, _ in win3); e3 = sum(y for _, y in win3)
+    s3 = sum(x for x, _ in win3); e3 = sum(y for _, y in win3); c3 = sum(conv3)
+    # the forward path's price: entries at the entry rate, what future
+    # entries are priced at (the cost path below)
     l3d_raw_cpe = s3 / e3 if e3 > 0 else None
     l3d_cpe = l3d_raw_cpe / (1 - drop) if l3d_raw_cpe else None
-    cum_adj_cpe = cum_spend / (cum_pentries * (1 - drop)) if cum_pentries else None
+    # the ROI's price: per converting unit, claims tried read as they came out
+    l3d_conv_cpe = s3 / c3 if c3 > 0 else None
+    cum_adj_cpe = cum_spend / cum_conv if cum_conv > 0 else None
     cum_roi = party_roi(ppu_aa, aa_budget_share, cum_adj_cpe)
-    l3d_roi = party_roi(ppu_aa, aa_budget_share, l3d_cpe) if l3d_cpe else (0.0 if s3 > 0 else None)
+    l3d_roi = party_roi(ppu_aa, aa_budget_share, l3d_conv_cpe) if l3d_conv_cpe else (0.0 if s3 > 0 else None)
     # the artist's reading of the same days: None throughout when the artist
     # carries none of the spend
     cum_roi_artist = party_roi(ppu_artist, artist_budget_share, cum_adj_cpe)
-    l3d_roi_artist = (party_roi(ppu_artist, artist_budget_share, l3d_cpe) if l3d_cpe
+    l3d_roi_artist = (party_roi(ppu_artist, artist_budget_share, l3d_conv_cpe) if l3d_conv_cpe
                       else (0.0 if s3 > 0 and artist_budget_share > 0 else None))
     # the last full day alone (the card's 1d switch): the same working on one
-    # day's spend and entries, the quickest read and the noisiest; unknown
-    # when that day bought no entries, nothing when it spent nothing
+    # day's spend and converting units, the quickest read and the noisiest;
+    # unknown when that day bought none, nothing when it spent nothing
     s1, e1 = win3[-1] if win3 else (0.0, 0.0)
-    l1d_raw_cpe = s1 / e1 if e1 > 0 else None
-    l1d_cpe = l1d_raw_cpe / (1 - drop) if l1d_raw_cpe else None
-    l1d_roi = party_roi(ppu_aa, aa_budget_share, l1d_cpe) if l1d_cpe else (0.0 if s1 > 0 else None)
-    l1d_roi_artist = (party_roi(ppu_artist, artist_budget_share, l1d_cpe) if l1d_cpe
+    c1 = conv3[-1] if conv3 else 0.0
+    l1d_conv_cpe = s1 / c1 if c1 > 0 else None
+    l1d_roi = party_roi(ppu_aa, aa_budget_share, l1d_conv_cpe) if l1d_conv_cpe else (0.0 if s1 > 0 else None)
+    l1d_roi_artist = (party_roi(ppu_artist, artist_budget_share, l1d_conv_cpe) if l1d_conv_cpe
                       else (0.0 if s1 > 0 and artist_budget_share > 0 else None))
 
     # ---- one forward cost path (docs §7), read by the paid projection, the
@@ -6529,10 +6568,11 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "unitsToDate": paid_ch["now"] if paid_ch else round((cum_pentries + part_entries) * (1 - drop), 1),
         "cumRoi": round(cum_roi, 3) if cum_roi else None,
         "l3dRoi": round(l3d_roi, 3) if l3d_roi is not None else None,
-        "l3dCpe": round(l3d_cpe, 2) if l3d_cpe else None,
+        "l3dCpe": round(l3d_conv_cpe, 2) if l3d_conv_cpe else None,
         "l1dRoi": round(l1d_roi, 3) if l1d_roi is not None else None,
-        "l1dCpe": round(l1d_cpe, 2) if l1d_cpe else None,
+        "l1dCpe": round(l1d_conv_cpe, 2) if l1d_conv_cpe else None,
         "cumCpe": round(cum_adj_cpe, 2) if cum_adj_cpe else None,
+        "convertingToDate": round(cum_conv, 1),
         "roiDeclineModel": {"start": round(l3d_roi, 3) if l3d_roi is not None else None,
                             "dailyFactor": daily_factor},
         "roiPath": roi_path,
@@ -6629,6 +6669,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # the terms every ROI above is read with, so the card can show its working
         "cannibalisation": cann,
         "dropOff": drop,
+        # the pre-order entries' rate, read where a draw has not been run yet
+        "preorderRate": preorder_rate(release),
         # paid runs from this many days after the announce to the close: the
         # plan by today and the daily rate are read over those days (docs 7)
         "paidStartDays": PAID_START_DAYS,
