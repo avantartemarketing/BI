@@ -881,59 +881,6 @@ app.post("/api/decisions", (req, res) => {
   res.json(entry);
 });
 
-// ---- the page layout: one arrangement of the release page's cards and section
-// headers for everyone (web/src/Layout.jsx; README "Arranging the page"). The
-// client owns the list of cards; here the shape is checked and the document
-// kept. No document means the default. `removed` names the cards taken off
-// the page, so the client can tell them from a card the code gained since the
-// save, which still joins everyone's page. ----
-const LAYOUT_PATH = process.env.LAYOUT_PATH || path.join(ROOT, "data", "layout.json");
-const keysIn = (items) => new Set(items.filter((it) => it.type === "card").map((it) => it.key));
-function readLayout() {
-  try { return JSON.parse(fs.readFileSync(LAYOUT_PATH, "utf8")); } catch { return { items: null, updatedAt: null, updatedBy: null }; }
-}
-function layoutProblem(items, removed) {
-  if (!Array.isArray(items) || items.length > 60) return "items is a list of at most 60 entries";
-  const keys = new Set();
-  for (const it of items) {
-    if (!it || typeof it !== "object") return "every entry is an object";
-    if (it.type === "card") {
-      if (typeof it.key !== "string" || !/^[a-z_]{1,32}$/.test(it.key)) return "a card entry names its card";
-      if (keys.has(it.key)) return `the card ${it.key} appears twice`;
-      keys.add(it.key);
-    } else if (it.type === "header") {
-      if (typeof it.text !== "string" || it.text.length > 80) return "a header carries up to 80 characters of text";
-    } else return "an entry is a card or a header";
-  }
-  if (removed !== undefined && (!Array.isArray(removed) || removed.length > 60
-      || removed.some((k) => typeof k !== "string" || !/^[a-z_]{1,32}$/.test(k)))) return "removed is a list of card names";
-  return null;
-}
-app.get("/api/layout", (_req, res) => res.json(readLayout()));
-app.post("/api/layout", route(async (req, res) => {
-  const items = req.body ? req.body.items : undefined;
-  const removed = req.body ? req.body.removed : undefined;
-  if (items === undefined) return res.status(400).json({ error: "items required: a list, or null for the default" });
-  if (items === null) {
-    fs.rmSync(LAYOUT_PATH, { force: true });
-    return res.json({ items: null, updatedAt: null, updatedBy: null });
-  }
-  const problem = layoutProblem(items, removed);
-  if (problem) return res.status(400).json({ error: problem });
-  const s = auth.sessionFrom(req);
-  const doc = {
-    items: items.map((it) => (it.type === "card" ? { type: "card", key: it.key } : { type: "header", text: it.text.trim() })),
-    removed: (removed || []).filter((k) => !keysIn(items).has(k)),
-    updatedAt: new Date().toISOString(),
-    updatedBy: (s && s.email) || null,
-  };
-  fs.mkdirSync(path.dirname(LAYOUT_PATH), { recursive: true });
-  const tmp = LAYOUT_PATH + ".tmp";
-  fs.writeFileSync(tmp, JSON.stringify(doc, null, 1));
-  fs.renameSync(tmp, LAYOUT_PATH);
-  res.json(doc);
-}));
-
 // ---- sell-through updates to Slack (server/slack.js) ----
 /* The release's channel, and the project manager who confirms its unit
  * economics ({channel, pm}: a Slack member ID, @handle or email; pm left
@@ -1017,7 +964,8 @@ app.post("/api/releases/:id/slack-economics", route(async (req, res) => {
  * horizon the page is on ({horizon: "today" | "close"}) and whether its
  * Direct switch is on Spread ({directSpread: true}), in which case the
  * message is composed from the snapshot with variants.direct_spread laid
- * over it, as the page's cards are (web/src/App.jsx), and says so;
+ * over it, as the page's cards are (web/src/ReleasePage.jsx), and says so;
+ * on a line's page ({line: <key>}) the line's variant is laid over instead;
  * {dryRun: true} returns the message instead of posting it. */
 app.post("/api/releases/:id/slack", route(async (req, res) => {
   const id = String(req.params.id).replace(/[^a-z0-9_]/g, "");
@@ -1028,8 +976,14 @@ app.post("/api/releases/:id/slack", route(async (req, res) => {
   const horizon = req.body && req.body.horizon === "close" ? "close" : "today";
   const variant = base.variants && base.variants.direct_spread;
   const spread = !!(req.body && req.body.directSpread === true && variant && typeof variant === "object");
-  const snap = spread ? { ...base, ...variant } : base;
-  const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon, direct: spread });
+  // a line's page posts that line: its variant laid over the snapshot as the page lays it (ReleasePage.jsx)
+  const lineKey = req.body && typeof req.body.line === "string" ? req.body.line.replace(/[^a-z0-9_]/gi, "") : "";
+  const lines = base.variants && base.variants.lines;
+  const lineVariant = lineKey && lines && typeof lines === "object"
+    ? ((spread && base.variants.lines_direct && base.variants.lines_direct[lineKey]) || lines[lineKey] || null) : null;
+  if (lineKey && !lineVariant) return res.status(400).json({ error: "unknown line" });
+  const snap = lineVariant ? { ...base, ...lineVariant } : spread ? { ...base, ...variant } : base;
+  const { text, blocks } = slack.composeSellThroughBlocks(snap, { horizon, direct: spread && !lineVariant });
   if (req.body && req.body.dryRun) return res.json({ channel: st.channel, text, blocks });
   try {
     await slack.postMessage(st.channel, text, blocks);

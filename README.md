@@ -156,12 +156,11 @@ Render's disk resets on every deploy. Seven things live on it and are lost witho
 | `data/users.json` | roles set in Permissions reset; people are re-added as users on their next Google sign-in | `USERS_PATH` on a persistent disk |
 | `data/inputs.saved.json` | targets edited in the dashboard revert to the repo defaults | `SAVED_INPUTS_PATH` on the disk |
 | `data/targets.log.jsonl`, `data/decisions.log.jsonl` | the audit trails restart | `TARGETS_LOG`, `DECISIONS_PATH` on the disk |
-| `data/layout.json` | the page goes back to its default arrangement (card order, section headers) | `LAYOUT_PATH` on the disk |
 | `data/slack.json` | the Slack channel set per release is forgotten; the Post to Slack button goes grey | `SLACK_STATE_PATH` on the disk |
 
 `SESSION_SECRET` is the one-line fix for re-logins and needs no disk. For the rest, add a
 persistent disk to the service (Render → the service → Disks → Add disk; 1 GB is plenty), mount it
-at `/var/data`, and set the eight variables under Environment (`render.yaml` carries the same disk
+at `/var/data`, and set the seven variables under Environment (`render.yaml` carries the same disk
 and paths for a service created from the blueprint). Until this is done the Target setting tab
 shows a red warning on every release, since every save would be lost on the next deploy. Set
 
@@ -172,7 +171,6 @@ USERS_PATH=/var/data/users.json
 SAVED_INPUTS_PATH=/var/data/inputs.saved.json
 TARGETS_LOG=/var/data/targets.log.jsonl
 DECISIONS_PATH=/var/data/decisions.log.jsonl
-LAYOUT_PATH=/var/data/layout.json
 SLACK_STATE_PATH=/var/data/slack.json
 ```
 
@@ -740,16 +738,6 @@ A completed launch can be replayed as it stood at any moment with
 rehearsed on Gregory Crewdson's launch before Bisa Butler's opens. Slack posts for TLs and
 a signup-led attribution of window sales are not built (spec §10).
 
-## Auditing the allocator tool with an admin export
-
-The release page has a **Draw audit** tab. Download a draw's entries from the admin
-(`draw-<draw id>-entries.csv`), drop the file on the tab and type the three numbers the
-allocator tool prints for that product: Sold, Entries and Expected Sales. The tab reads the
-file in the browser (nothing is uploaded; it shows counts and draw entry ids, never a name or
-an email) and says how many of the tool's entries can still be allocated, how many are winners
-whose payment failed, and whether the tool allocates more units than there are people to
-allocate to. The logic is `shared/drawAudit.mjs`, tested by `tests/draw_audit.mjs`.
-
 ## Posting sell-through to Slack
 
 The sell-through card has a **Post to Slack** button. It sends the card as a Block Kit
@@ -890,144 +878,71 @@ set `DECISIONS_PATH` if the log must survive deploys.
 
 ## What the dashboard shows
 
-One page per release (sidebar switches): entries vs targets, per-channel targets, the entry
-trajectory vs the across-time plan curve (or, switched to By channel, the projection alone with
-each channel group shaded under it by the units it contributes), funnel diagnostics with contribution
-decomposition, the page funnel (paid and organic release page → product page and product page →
-draw entry, each against the basket's median; docs §2.6), paid ROI + recommended daily spend
-(supply-cap vs ROI-floor), sell-through by product, projection-vs-target waterfall. Formulas for every module: docs §9. The
-Overview opens with the campaign clock, a thin strip from announcement to launch, blue to
-today and the days to launch on the right (the day of the window is in the strip's popup);
-it is a card like the others and moves with them.
+The app is laid out as Linear lays out a workspace (the redesign of 23 October 2026, from the
+"BI dashboard: every screen" design canvas): a sidebar on the left, one page on the right.
 
-**How a number is worked out.** Hold Shift and click any figure (or Tab to a headline figure
-and press Shift+Enter): a panel opens at the right with the figure, what it is in one sentence,
-the working as numbered steps with the page's own numbers, what it reads against, the data
-sources it comes from (each with how fresh it is on this page: green for a feed pulled on
-every refresh, reading to the day the page's data runs to, with the release's own last order
-or last day of spend named beside it where that is earlier, "to 24 Sep · last order 27 Aug";
-grey for an input somebody set; amber where the last refresh reported that feed failing), and
-anything worth knowing. A figure inside a step that has working of its own is a
-link down to it, with a crumb back; **Copy as text** puts the whole explanation on the
-clipboard. The page narrows beside the panel (to two columns, or one on a laptop) and
-shift-clicking another number swaps it; Esc or × closes it, and so does a new release or
-another tab. Holding Shift underlines every figure that can explain itself. The explanations
-live in `web/src/explain/explanations.mjs`, one builder per kind of figure reading the same
-snapshot fields the card reads, and the source catalogue in `web/src/explain/sources.mjs`;
-a card marks a figure with `<Ex k="…" arg={…}>`. `tests/explain.mjs` runs every builder
-against every snapshot on file and checks each lands on the figure its card prints.
+**The sidebar** (`web/src/Sidebar.jsx`) carries the workspace menu top left (Methodology,
+Permissions for admins, Sign out), a search button, Releases and Targets, then the releases in
+three groups - In flight, Upcoming and Recent - each row a dot in the release's state colour
+and the artist's name, nothing else; hovering a row shows a card with its state, its gap to
+target and when it closes or opens. Cmd+K (Ctrl+K) opens a command bar over every release,
+catalogue included (`CommandBar.jsx`). The groups come from `rows.mjs` off the index.
 
-**The page header.** The release's name with its type badge and any warning chip (no
-targets, a date assumed) on the left, the page's controls on the right, then a strip of
-labelled facts under a rule: Status with the sidebar's dot, Target and Edition where the
-release has them, and for a timed launch Opens, Closes and Window as well, then the Lead as
-an initial and a first name, with the freshness note at the strip's end. One value to a
-column, nothing in small print under it; the countdown, the time zone and where a name came
-from are in the hover. Chosen on the header's design canvas on 12 October 2026 (option A,
-the facts strip); until then the facts were grey chips after the name, two to a chip.
+**Releases** (`Releases.jsx`), the page the app opens on, lists every launch as Linear lists
+issues: views All / In flight / Upcoming / Recent / Closed with their counts, LE and TL pills
+to filter by type, and a header row over the columns - Launch, Type, Against target (a bar
+to the target with a tick at 100%), Status (the gap to target, or the state in words), Lead
+(an initial), Closes or opens.
 
-**On a phone or a tablet.** The same page, at the width there is: up to 900px the release
-list is a drawer opened from the menu button in the top bar (which names the release on
-screen, with its dot), the cards run two to a row on a tablet and one under the other on a
-phone, at their usual height, and a card's controls take a line of their own under its title
-where they do not fit beside it. The target-setting form goes to one field a row and its
-tables scroll sideways. On a touch screen a tap does what a hover does: a tap on a plot
-brings up its readout, which stays until the next tap elsewhere; a tap on a figure opens its
-explanation (there is no Shift to hold), and the panel is the whole screen; a tap on an
-element that only carries information shows its popup, while a button just does what it
-does. The layout editor is desktop-only (the arrangement is shared, and drag and drop does
-not run on a touch screen). Fields render at 16px on a touch screen so iOS does not zoom
-into one on focus. All of it is `tokens.css` ("a phone or a narrow tablet", "a touch
-screen"), the drawer in `App.jsx`, the touch readout in `hoverAt` (`ui.jsx`).
+**A release's page** (`ReleasePage.jsx`) has a header - the group as a crumb, the artist, the
+work, the type badge, the Overview and Targets tabs (Set targets on a release without
+targets), the freshness note and a **Display** menu that holds the settings that apply to
+every release (Direct: Channel or Spread, default Spread, kept per browser). Under it one
+quiet strip appears only when something is wrong (data older than the last full day, with a
+Retry; a coverage gap; no targets yet; an announce date assumed; a line's basis) and can be
+dismissed. Then the chips: the state with a progress ring (days left, Closed N days ago, the
+TL state), the dates, the window length on a timed launch, the lead, Last 90 days on a
+catalogue work, the horizon (Today or At close) on a live targeted release, and All lines on a
+release selling two lines. The cards sit in a two-column grid (`Overview.jsx`), every chart
+drawn by `charts.jsx` (line, column, bar, horizontal bar and waterfall charts with a hover
+readout and a key under each), each card with a figure, its unit and its deltas in the head
+and its own options behind a ⋯ menu:
 
-**Sell-through by product** (docs §6.3) is one row per product, drawn in one ramp of the
-page's blue, deepest to palest as the units get less certain: units paid (deep blue), draft
-orders an advisor raised that are not yet paid (blue; the draw's own pre-authorisation
-drafts are the entries, not drafts), the draw entries in hand counted on the product at the
-entry → order rate, or at the pre-order rate where the entrant's card is already authorised
-(light blue), and at close the units still to come (palest), against the product's
-edition. Nothing is hatched: the four tints are the whole key, and demand a product has no
-room for simply carries on past the point where the paler room behind the bar stops. At close the
-units still to come are the projection's further entrants, taken to look like the entrants so far and
-placed by the same allocation rule against the room left, so a full work's share is turned away
-rather than handed to the work with room (6 October 2026; before, the units were spread over the room
-left, and a lagging work read far too high once its stablemate was full: docs §6.3). The card
-is one row of the grid whatever the count: the rows share a fixed height, the bars growing
-from 14px for seven products to a 30px cap for three or fewer, each row carrying its units of
-the edition and its percentage in columns of their own, with the key beside the headline. It is
-the one card with no target or benchmark on it and no prose: the detail is in the popups. Units paid and draft
-orders per product come from the Shopify order lines in BigQuery (`data/units_paid.csv` over
-the page's window, and `data/orders_by_product.csv` for the drafts),
-joined to the draws through the product each draw's winners bought, or its entrants hold
-pre-authorisation drafts for until it has winners (docs 2.4); until every draw
-of a release is named that way the card wears an **Incomplete data** stamp, and the sales the
-draw cannot name a product for sit inside the sold segment split by edition size. The entries in hand are allocated the way the allocator would place them: an
-entrant who entered more products than their maximum quantity is counted on that many
-products only, placed for revenue: on the priciest of them until its expected orders reach
-its edition, over-allocating for the payments expected to fail so the most valuable editions
-show sold out first, then on whichever has the most room. Products come from the event feed's
-draws (one draw per product), each named by the Shopify title its winners bought, or its
-entrants hold pre-authorisation drafts for until it has winners, and sized by
-the Airtable record of that title (docs 2.4, 6.3). A name or edition typed against the draw id
-(`products: [{key: draw_id, name, edition}]` in the release's inputs) stands over those; a
-name typed with no draw id only names a draw the orders feed cannot place yet. The Target
-setting tab no longer lists the draws: it sets the entry → order and pre-order rates per
-release, which apply to every product. Until the feed has run once after
-a deploy the card shows the release as one row and says so. **Post to Slack** in the card's
-head sends the card as a message, these rows as a table of figures with the framing take-up
-above them, to the release's channel (see "Posting sell-through to Slack").
+- **Unit trajectory** (Signup trajectory on a timed launch before its window): secured
+  against the target curve and the benchmark curve, the projection dashed from today.
+- **Units by channel**: a column per channel, the target in pale grey behind, the actual in
+  indigo, the part above the target in lighter indigo, the benchmark a dotted tick; ⋯ swaps
+  units for a share of target.
+- **Gap to target**: a waterfall from the benchmark through organic traffic, organic
+  conversion, paid spend and paid efficiency to the actual (or the projection), the target a
+  dashed line; ⋯ swaps the drivers for the channels.
+- **Paid ROI**: the ROI by day with the daily spend as faint bars behind, 3d / 1d (6h / 1h
+  inside a timed launch's window) and AA / Artist switches in the head, the overall figure
+  beside the headline.
+- **Paid spend**: the spend to date "in total" against the budget's pace, the recommended
+  daily budget as light bars after today, Capped by in the head.
+- **Sell-through by product**: a row per work, paid, drafts and the draw's forecast
+  conversions on the edition (docs §6.3; the allocation rule and the Incomplete data stamp are
+  as before); ⋯ holds Post to Slack.
+- **Framing** (docs §6.4): the share of prints framed, buyers and entrants as bars with the
+  basket's rate as a tick.
+- **Email funnel**: open rate, click rate, release page to product page (when the release
+  has more than one work) and product page to entry, each against the basket.
+- **Where the buyers are** on a release with geography, **Signups to outcome** and the
+  **Sell-through** and **Framing forecast by work** on a timed launch (docs/TL_SPEC.md).
+- **Funnel by channel**, across both columns: sessions and conversion per channel against
+  the plan; ⋯ swaps the table for the waterfall of units each added or cost.
 
-**Framing** (docs §6.4) is frames per print on the prints a frame was on offer for. The
-headline counts the same units as the sell-through card, at the page's Today or At close:
-the paid prints and the frames bought with them, the drafts and the frames on them, and the
-draw's forecast conversions (at close the entries still to come) at the rate the entrants ask
-for. Below it, two bars on one 0 to 100% scale carry its
-two parts, the buyers (paid prints) and the entrants (the frames on the app's
-pre-authorisation drafts, which is what allocation brings), each with its number; the
-headline sits between them. The card carries no plan and no benchmark: nothing on it is a
-target. Prints with no framing option (the Lifesize Brillo Box) are left out and counted in the key. Hover
-the headline for the forecast by work and the buyers' bar for the paid rate by work. The card
-is off the page on a release nothing has been offered a frame on, and reads from the same
-orders feed as sell-through.
+An upcoming release shows what is known instead (Not live yet, the milestones, the works and
+their edition and price, Set targets); a release without targets shows its actuals alone.
 
-The hero (Units vs sellout) writes nothing around its bar: the fill prints its own figure at its tip, the
-track ends at the sellout with the room to it in plain grey, demand past the sellout runs on past the bar's
-end as the same solid fill, every mark says what it is and its figure on hover, and three rows under
-the bar name what is counted, the benchmark and the target, in that order (4 October 2026, from the
-routes page; a one-line key and a band of two tiles were tried the same day and dropped). Its headline delta is the gap to the target as a share of it ("−56% vs target"), the
-units on hover and in the explanation. Every card but sell-through and framing carries both references at once: the target as a fill in two tints of the actual's
-own blue (darker to whichever of target and benchmark is lower, lighter from the benchmark up
-to the target), the benchmark as a dotted outline over it, and the actual in front. A single
-`Compare Today | At close` toggle in the page header drives all of them, and the percentages and
-headline deltas read against the target (the hero's as a share of it). Plan curves are built from the release's own basket
-where it has enough members and fall back to the pooled panel curve per metric (docs §5.3).
-Paid ROI is the exception: no reference and no horizon.
+**The Agent**, bottom right of every release page (`Agent.jsx`), answers questions about the
+page's figures: the question goes to `POST /api/agent` with the release's id, the server
+puts the release's snapshot (trimmed of its bulky arrays) in front of the Claude API with the
+key in `ANTHROPIC_API_KEY`, and the answer comes back in a few sentences. Without the key the
+Agent says it is not configured. Suggested actions are not on the page yet (behind a
+`betaActions` flag until the agent that recommends them is designed).
 
-Beside it, a **Direct** switch (shown once the ETL has built the page both ways): *Channel*
-reads Direct as the funnel attributes it; *Spread* shares Direct's sessions, entries and units
-out over the other channels in proportion to their own, day by day, and reads the benchmark's
-channel split the same way (docs/DATA_MODEL.md 1.3). Totals and what has been sold do not
-move; the plan's pace shifts a little with the mix. The choice sticks per browser. A timed
-launch's page has the same switch in both of its states: Direct's signups and sessions spread
-before the window, its units and sessions inside it, the basket's launches read the same way and
-the plan's budgets held; its sell-through forecast keeps the feed's attribution
-(docs/TL_SPEC.md 3b).
-
-### Arranging the page
-
-**Edit layout**, at the right of the Overview / Target setting tabs, turns the page into a
-drag-and-drop board: drag a card to move it, **Add header** puts a section title at the top
-of the page to drag into place (a header ends one grid and starts the next, so each section
-packs on its own), the **×** on a card takes it off the page, and **Add a card** puts one back
-at the top. That list also holds the cards that are not on the page by default: **Funnel by
-channel, 2 × 2** is the funnel card's waterfall at two columns by two rows, the bars running
-across the card on a unit axis with the figures in a column of their own; take **Funnel by
-channel, 1 × 2** off and add the 2 × 2 to swap one for the other. **Save
-for everyone** keeps the arrangement for the whole team in `data/layout.json` (`LAYOUT_PATH`
-on Render, see above); the saved layout records the cards taken off, so they stay off. **Back
-to the default** restores the built-in order. The list of cards lives in `web/src/Layout.jsx`:
-a card added to the code later joins the end of everyone's page (the campaign clock, which
-belongs at the top, joins there), a strip such as the clock is a full-width row of its own
-between the grids, and a card a release has nothing for (No targets set on a targeted release,
-the clock on a catalogue release) is left out of that release's page and shows as a ghost while
-editing.
+**On a phone or a tablet.** The same pages at the width there is: up to 900px the sidebar is a
+drawer behind the menu button, the cards run one under the other, the header keeps the name
+and the tabs, and a tap on a plot brings up its readout.

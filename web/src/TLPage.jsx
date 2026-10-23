@@ -1,137 +1,40 @@
-/* The timed-launch page's own pieces (docs/TL_SPEC.md §4, §5, §9). The
- * cards are the LE cards, rendered through the shared layout in the state's
- * words (web/src/vocab.mjs): signups before the window opens, units inside
- * it. What a timed launch has that an LE has not lives here: the header's
- * chips (the state, the open and the close, the units target), the clock
- * strip that runs announce -> open -> close with hours inside the window, and
- * the pre-window's result once the window has opened. */
+/* The timed-launch page's own card (docs/TL_SPEC.md 4, 5, 9): what the
+ * pre-window's signups turned into once the window has opened. The cards
+ * are otherwise the LE cards in the state's words (web/src/vocab.mjs). The
+ * figures are the snapshot's signups block and the hero's signup target
+ * and benchmark; the header's chips and the clock strip live in
+ * ReleasePage.jsx. */
 import React from "react";
-import { Card, C, GROUP_DOTS, fmt, fmtPct, fmtDay, useTip, Fact } from "./ui.jsx";
+import { Card, Head, vsDelta } from "./ui.jsx";
+import { fmt, fmtPct } from "./format.mjs";
+import { People, Target, Bmk, Basket } from "./icons.jsx";
 
-const DAY_MS = 86400000;
-const when = (iso, withTime = true) => {
-  if (!iso) return "–";
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return String(iso);
-  const day = fmtDay(d, true);
-  if (!withTime || !/T/.test(String(iso))) return day;
-  const hm = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" });
-  return `${day} ${hm}`;
-};
-const hours = (h) => (h === null || h === undefined ? "" : h % 24 === 0 && h >= 72 ? `${h / 24} days` : `${Math.round(h)} hours`);
-const STATE_WORDS = {
-  upcoming: "Upcoming", signups: "Signups", window: "Window open", settling: "Settling", closed: "Closed",
-};
+const has = (v) => v !== null && v !== undefined;
 
-/* ---------------------------------------------------------------- header facts */
-
-/* The header's strip for a timed launch (the header's design canvas, option
- * A): the state with its dot, the open, the close, the window's length, the
- * units target and the edition, the lead. Each a labelled column; the state's
- * full timetable and the time zone are in the hovers. Before 12 October 2026
- * these were chips, two facts to a chip joined by a middle dot. */
-const STATE_DOT = { upcoming: C.blue, signups: C.blue, window: C.green, settling: C.muted, closed: C.muted };
-export function TLFacts({ snap, lead }) {
-  const st = snap.tlState;
-  const rows = [
-    { label: "Announced", value: when(snap.windowStart, false) },
-    ...(snap.earlyAccessOpen ? [{ label: snap.earlyAccessAssumed ? "Early access (expected)" : "Early access", value: when(snap.earlyAccessOpen) }] : []),
-    { label: "Opens", value: when(snap.windowOpen) },
-    { label: "Closes", value: when(snap.windowClose) },
-    { label: "Window", value: hours(snap.windowHours) },
-    { label: "Settles", value: when(snap.settleEnd, false) },
-  ];
-  const note = (snap.derived || {}).dates_note;
-  const tz = "Amsterdam time: Airtable's launch date at its launch time, else the feed's timestamp, else 14:00";
-  const econ = snap.economics || {};
-  return (
-    <>
-      <Fact label="Status" dot={STATE_DOT[st] || C.muted}
-        content={{ head: `${STATE_WORDS[st] || st} · ${snap.tlLabel || ""}`, rows, body: note || undefined }}>
-        {snap.tlLabel || STATE_WORDS[st]}
-      </Fact>
-      <Fact label="Opens" tip={`When the public window opens, ${tz}`}>{when(snap.windowOpen)}</Fact>
-      <Fact label={st === "settling" || st === "closed" ? "Closed" : "Closes"} tip={`When the public window closes, ${tz}`}>{when(snap.windowClose)}</Fact>
-      {hours(snap.windowHours) && <Fact label="Window" tip="How long the public window is open">{hours(snap.windowHours)}</Fact>}
-      {econ.units_target > 0 && <Fact label="Target" tip="Airtable's units target summed over the ticked works">{fmt(econ.units_target)} units</Fact>}
-      {econ.units_target > 0 && econ.edition_size > 0 && <Fact label="Edition" tip="The edition size over the ticked works">{fmt(econ.edition_size)}</Fact>}
-      {lead}
-    </>
-  );
-}
-/* the header's warnings, beside the name: no target, a date assumed */
-export function TLFlags({ snap }) {
-  const note = (snap.derived || {}).dates_note;
-  return (
-    <>
-      {!snap.targeted && (
-        <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
-          title="No units target in Airtable and none typed, so there is no signup target - the page shows actuals and the basket">No target</span>
-      )}
-      {(snap.derived || {}).dates_assumed && (
-        <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }} title={note || "A date is assumed"}>Dates assumed</span>
-      )}
-    </>
-  );
-}
-
-/* ---------------------------------------------------------------- the strip */
-
-export function TLStrip({ snap }) {
-  const t = useTip();
-  if (!snap.windowStart || !snap.salesOpen) return null;
-  const announce = new Date(snap.windowStart + "T00:00:00Z");
-  const open = new Date(snap.salesOpen);
-  const close = new Date(snap.windowClose);
-  const now = snap.builtAt ? new Date(snap.builtAt) : new Date();
-  const st = snap.tlState;
-  const inWindow = st === "window" || st === "settling" || st === "closed";
-  const a = inWindow ? open : announce, b = inWindow ? close : open;
-  const span = b - a;
-  const p = span > 0 ? Math.max(0, Math.min((now - a) / span, 1)) * 100 : 0;
-  const daysTo = Math.ceil((open - now) / DAY_MS);
-  const hoursLeft = (close - now) / 3600000;
-  const rows = [
-    { label: "Announced", value: when(snap.windowStart, false) },
-    { label: snap.earlyAccessAssumed ? "Early access expected" : snap.earlyAccessOpen ? "Early access" : "Sales open", value: when(snap.salesOpen) },
-    { label: "Public open", value: when(snap.windowOpen) },
-    { label: "Closes", value: when(snap.windowClose) },
-    { label: "Window", value: hours(snap.windowHours) },
-  ];
-  let right;
-  if (st === "upcoming" || st === "signups") right = <><b>{daysTo} {daysTo === 1 ? "day" : "days"} to the open</b> · {when(snap.salesOpen)}</>;
-  else if (st === "window") right = <><b>{Math.max(Math.ceil(hoursLeft), 0)} h left</b> · closes {when(snap.windowClose)}</>;
-  else if (st === "settling") right = <><b>Settling</b> · final {when(snap.settleEnd, false)}</>;
-  else right = <>Closed {when(snap.windowClose)}</>;
-  return (
-    <div className="launch-strip" {...t.props({ head: "Launch window", rows })}>
-      <span>{inWindow ? `Opened ${when(snap.salesOpen)}` : `Announced ${when(snap.windowStart, false)}`}</span>
-      <span className="track">
-        <span className="fill" style={{ width: `${p}%` }} />
-        {p > 0 && p < 100 && <span className="knob" style={{ left: `${p}%` }} />}
-        <span className="launch" />
-      </span>
-      <span>{right}</span>
-    </div>
-  );
-}
-
-/* The pre-window's result, once the window has opened: a card of the layout
- * (Layout.jsx tl_signups), on a timed launch only. */
 export function TLSignupsOutcome({ snap }) {
   const hero = snap.hero || {};
-  const row = { display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12.5, padding: "6px 0", borderBottom: `1px solid ${C.hairline}` };
   const sg = snap.signups || {};
+  const pre = sg.preWindow || 0;
+  const since = Math.max((sg.total || 0) - pre, 0);
+  const rows = [
+    { icon: <People />, l: "Signups before the open", v: fmt(pre), tip: "Every signup for the launch from the announce to the sales open" },
+    ...(hero.target ? [{ icon: <Target />, l: "Signup target", v: fmt(hero.target), tip: "The pre-window signup target: the units target at the basket's signup to order rate" }] : []),
+    ...(hero.benchmark ? [{ icon: <Bmk />, l: "Benchmark", v: fmt(hero.benchmark), tip: "The basket's median pre-window signups" }] : []),
+    { icon: <People />, l: "Signups since the open", v: fmt(since), tip: "Signups made after the sales open" },
+    { icon: <Basket w={14} />, l: "Signups that ordered", v: has(sg.converted) ? `${fmt(sg.converted)} · ${sg.total > 0 ? fmtPct(sg.converted / sg.total, 1) : "–"}` : "–", tip: "Signups the feed flags as converted, and their share of all signups" },
+  ];
   return (
-    <Card dot={GROUP_DOTS.outcome} title="Pre-window signups">
-      <div className="spacer-8" />
-      <div style={row}><span style={{ color: C.muted }}>Signups before the open</span><span className="num">{fmt(sg.preWindow || 0)}</span></div>
-      {hero.target ? <div style={row}><span style={{ color: C.muted }}>Signup target</span><span className="num">{fmt(hero.target)}</span></div> : null}
-      {hero.benchmark ? <div style={row}><span style={{ color: C.muted }}>Benchmark</span><span className="num">{fmt(hero.benchmark)}</span></div> : null}
-      <div style={row}><span style={{ color: C.muted }}>Signups since the open</span><span className="num">{fmt(Math.max((sg.total || 0) - (sg.preWindow || 0), 0))}</span></div>
-      <div style={{ ...row, borderBottom: "none" }}><span style={{ color: C.muted }}>Signups that converted (feed flag)</span><span className="num">{sg.converted !== null && sg.converted !== undefined ? `${fmt(sg.converted)} · ${sg.total > 0 ? fmtPct(sg.converted / sg.total, 1) : "–"}` : "–"}</span></div>
+    <Card title="Signups to outcome" aria="Signups to outcome">
+      <Head v={fmt(pre)} u="signups before the open" deltas={[vsDelta(pre, hero.target, "target", `${fmt(pre)} signups against the ${fmt(hero.target)} target at the open`)]} />
+      <div style={{ marginTop: 2 }}>
+        {rows.map((r) => (
+          <div className="prow" key={r.l} title={r.tip}>
+            <span className="ic">{r.icon}</span><span className="l">{r.l}</span><span className="v">{r.v}</span>
+          </div>
+        ))}
+      </div>
     </Card>
   );
 }
 
-export default TLFacts;
+export default TLSignupsOutcome;

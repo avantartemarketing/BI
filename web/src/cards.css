@@ -1,0 +1,28 @@
+/* The card modules' own styles, on top of tokens.css: the product rows of
+ * the sell-through card (a name, a bar on the edition, its figures), the
+ * icon rows of the signups-to-outcome card, and the Upcoming page's column.
+ * Imported by the modules that use them. */
+
+/* a product row: name, the bar on its edition, units and share */
+.prow.st { grid-template-columns: minmax(96px, 30%) minmax(0, 1fr) auto; column-gap: 12px; height: 38px; }
+.prow .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.prow .fig { font-variant-numeric: tabular-nums; color: var(--faint); font-size: 12.5px; white-space: nowrap; text-align: right; }
+.prow .fig b { color: var(--ink); font-weight: 500; margin-left: 10px; display: inline-block; min-width: 36px; }
+.prow.grp { height: 30px; }
+.prow.grp .nm { font-size: 11.5px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+.strack { position: relative; height: 12px; border-radius: 3px; background: #ededf0; overflow: hidden; }
+.strack i { position: absolute; top: 0; bottom: 0; }
+.strack s { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 2px solid var(--ink); text-decoration: none; }
+
+/* a fact row: label, value, a tag */
+.prow.fact { grid-template-columns: 140px minmax(0, 1fr) auto; }
+.prow.fact .l { color: var(--muted); }
+
+/* the Upcoming page: one column in the plain body */
+.upc { max-width: 640px; margin: 0 auto; padding: 24px 0 24px; display: flex; flex-direction: column; }
+.upc .ch { margin-top: 32px; }
+.upc .list { border-top: 1px solid #f0f0f2; }
+.upc .state-card .big { font-size: 15px; font-weight: 600; margin-top: 6px; }
+.upc .state-card .sub { font-size: 13px; color: var(--muted); }
+.upc .state-card .btns { display: flex; gap: 8px; margin-top: 14px; }
+.upc .state-card .sbtn { height: 30px; padding: 0 12px; font-size: 13px; }
