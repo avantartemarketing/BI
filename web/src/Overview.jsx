@@ -21,7 +21,8 @@ import Upcoming from "./modules/Upcoming.jsx";
 export default function Overview({ snap, base, horizon, onSetup, onOpen }) {
   const isTL = snap.type === "TL";
   const targeted = snap.targeted !== false;
-  if (snap.upcoming && !isTL) return <div className="body plain"><Upcoming snap={snap} onSetup={onSetup} /></div>;
+  // before the announce (a timed launch before its signups open too) the page shows what it knows
+  if (snap.upcoming || (isTL && snap.tlState === "upcoming")) return <div className="body plain"><Upcoming snap={snap} onSetup={onSetup} /></div>;
   const preWindow = isTL && (snap.tlState === "signups" || snap.tlState === "upcoming");
   const framingOn = !!(snap.framing && (snap.framing.prints > 0 || (snap.framing.works || []).length));
   return (

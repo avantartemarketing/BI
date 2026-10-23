@@ -8,7 +8,6 @@
  * per browser; a reading of one release (its horizon, its line) lives on its
  * page and resets with the release. */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { TipProvider } from "./ui.jsx";
 import Sidebar from "./Sidebar.jsx";
 import CommandBar from "./CommandBar.jsx";
 import Releases from "./Releases.jsx";
@@ -126,7 +125,7 @@ export default function App() {
 
   if (error) return <div style={{ padding: 40 }}>Failed to load: {error}</div>;
   return (
-    <TipProvider>
+    <>
       <div className="app">
         <Sidebar groups={groups} asOf={index && index.asOf} currentId={releaseId} view={route.view} me={me} open={nav} onClose={() => setNav(false)}
           onPick={pick} onReleases={() => go({ view: "releases" })} onPermissions={() => go({ view: "permissions" })}
@@ -143,6 +142,6 @@ export default function App() {
       </div>
       {palette && <CommandBar groups={groups} asOf={index && index.asOf} onPick={pick} onClose={() => setPalette(false)} />}
       {route.view === "release" && <AgentDock snap={snap} />}
-    </TipProvider>
+    </>
   );
 }

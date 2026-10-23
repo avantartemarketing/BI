@@ -603,13 +603,13 @@ target model. Targets are set from a **basket of comparable launches** (docs
 **target**, and the gap between them is the **stretch**. The target is the
 benchmark times one even uplift `K = edition_size / benchmark units`, applied
 to every volume in every channel on every day, with conversion rates held at
-the benchmark. The basket is picked in a modal (ready-made clusters, or a
-bespoke tick-list of past launches that can be saved); a release is never in
-its own basket.
+the benchmark. The basket is picked on a page of its own behind the basket
+pill (the nearest launches on a map of units sold against price, with the
+near misses to tick in); a release is never in its own basket.
 
 **A release selling two lines of work** (prints beside toy bricks on one
 page; `docs/METHODOLOGY.md` 7b, `docs/LINES_PLAN.md`) is split on this tab:
-with Edit figures on, the works sheet's Line row takes a name per work, and
+a Line name typed on each work in the side panel takes a name per work, and
 two names make two lines (a work with none typed goes to Other works; the
 release code is the same across both lines, so the split is typed, not read
 from Airtable). The tab then shows a card per line instead of one basket and
@@ -634,35 +634,29 @@ Notion log, then Airtable. What the page asks is which Meta campaigns are the re
 channels are in plan - Running paid, the artist's own channels - and which
 basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 
-Since 8 October 2026 the tab is one column (BENCHMARK_SPEC 8): `Save targets` and `Discard`
-with the state beside them, then the outcome as one strip of five figures - the target, the
-benchmark, the stretch, the paid budget (red past the 6% sense check) and the launch value,
-each with its detail on hover - then the form in four groups of label-and-control rows in the
-order the decisions are made, each group a white card with its title inside, and the actions
-again at the foot. **Works** is one sheet: the figures down the side (in the
-release, edition, sell-through, target units, the close, price, the profits per unit, the
-artist's revenue cut, the deal's shares, framing, frame price, frames per print, frame profit, the launch
-value, Avant Arte's take with framing and AA's share of paid spend), one column per work with
-its whole name on up to two lines, and All works as the first column, the release as a whole
-weighted by target units. The figure labels hold while the sheet scrolls sideways; a column's
-edge drags to widen it and a double-click puts it back. The figures are locked to Airtable's
-until **Edit figures** is on; then the cell is the input, selected whole on focus so typing
-replaces it, a typed one tinted with Airtable's figure on hover, and a figure typed under All
-works lands on every work. The tick on the first row leaves a work out or counts it again (it
-keeps its column, greyed); while editing a last row counts each work's typed figures with
-`Reset` beside them, or `Remove` on a work added by hand, whose name is typed in its header;
-the group's head offers `Add a work` and `Reset all`. **Target** holds the basket with `Change basket`, the Channels in plan switches, and the
-stretch as a three-way choice, even across channels, all from paid or custom, the coupled
-sliders appearing under Custom. **Launch** holds the three dates on one row, each with a
-one-word source tag in its box and a button for a date another feed has; the Meta campaigns;
-the campaign code only while no feed names one; the marketing lead and the Slack channel on
-one row. **Assumptions** is one line of the four figures with an Edit button. The strip and
-the chart recompute live in the browser via `shared/benchmarkModel.mjs` and
-`shared/economics.mjs`. There is no header strip of derived figures, no channel table and no
-copy on the tab, and no artist posting tier (retired on 7 October 2026: the artist-posts
-benchmark reads every completed campaign, and a save drops the field). The timed launches'
-tab keeps the Airtable-like grid of works.
-**Save** persists the inputs (`POST /api/inputs/:id`) and answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue, a first save included: the server removes the upcoming or actuals-only page the built one replaces) and the tab follows `GET /api/inputs/:id/build` until it is done, then reloads the page. A failed rebuild leaves the inputs saved and says so; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
+Since 23 October 2026 the tab is the project page of the redesign (`web/src/TargetSetting.jsx`,
+the timed launches' `TLTargets.jsx`, the shared pieces in `TargetsKit.jsx`): the title, then three
+pills - the basket (its name and size; pressed, it opens the picker page), the channels in plan
+(a multi-select menu: Running paid, the artist's own channels) and the stretch (even across
+channels, all from paid, or Custom, which opens the coupled sliders) - then **Works** as a list,
+one row a work with its target against its edition as a progress ring, its price and whether it
+frames; a row pressed puts the work's figures in the side panel (edition, sell-through, price, the
+profits per unit, the shares, framing and its frame rows, in the release or not, Reset or Remove,
+with every figure tagged by where it came from: Airtable, typed, the basket, a default). Under the
+works, the **basket** as rows that link to each launch's page, and the **Dates** (private room,
+announce, close; a lozenge names the date another feed has, "Funnel says 4 Sep", with Use beside
+it). The side panel carries the outcome (target, benchmark, stretch, launch value), the conversion
+rates, the paid plan (the Meta campaigns as a tick list with their spend and warnings, plus add by
+name; the paid budget with its share of the value; the cost per unit; cannibalisation; the
+campaign code only while no feed names one) and the team (the lead, the project manager, the
+Slack channel). The page's ⋯ menu holds Send unit economics to the PM and Reset to Airtable's
+figures. The strip under the header appears only when something is wrong (figures not durable,
+an edition mismatch, high untracked traffic, the release-level figures still in force). The
+figures recompute live in the browser via `shared/benchmarkModel.mjs` and `shared/economics.mjs`.
+There is no artist posting tier (retired on 7 October 2026).
+
+There is no Save button: every change **autosaves** (`POST /api/inputs/:id`, debounced) and a
+toast says Saved with an Undo. The server answers at once; the Python ETL rebuilds the release behind the answer (`build.py --release <id>`, one page, not the catalogue, a first save included: the server removes the upcoming or actuals-only page the built one replaces) and the header shows a Rebuilding lozenge while the tab follows `GET /api/inputs/:id/build`, then reloads the page. A failed rebuild leaves the inputs saved and the lozenge turns red with a Retry; the page catches up on the next refresh. The single-release build reuses the parsed funnel frame and the untracked norm from the last build and prints a `timing:` line, which the refresh status shows.
 
 ## Timed launches
 

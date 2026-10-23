@@ -1,0 +1,100 @@
+/* The targets page and the basket picker: what tokens.css does not carry.
+ * The layout classes (.split .tmain .tcol .pills .sec .sh .li .side .pr
+ * .val .q .tag .chipb .mixr and the picker's .pk-* .band .tick .mdot) are
+ * in tokens.css, written from the design canvas; this file adds the pieces
+ * the React pages need beside them: a date typed in place of a lozenge, the
+ * picker's own bars, the selected work's head, the strips of a page that
+ * has nothing saved yet. */
+
+/* ---------- the targets page ---------- */
+.tcol .ticon { display: block; }
+.li .img { color: var(--muted); flex: 0 0 auto; }
+.li .meta .loz { flex: 0 0 auto; }
+.li.still:hover { background: transparent; }
+.li.off .nm { color: var(--faint); text-decoration: line-through; }
+.li.off .img { color: var(--ghost); }
+.sh .loz { flex: 0 0 auto; }
+.sh .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sh .ib.sp { margin-left: auto; }
+/* a date typed in place: the lozenge shows the day as the page writes it,
+   the browser's own date box sits over it, unseen, so a click opens the
+   picker and typing lands in the box */
+.loz.dated { position: relative; cursor: pointer; overflow: hidden; }
+.loz.dated input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; margin: 0; }
+.loz.dated:focus-within { border-color: #c7cbf4; box-shadow: 0 0 0 3px var(--ind-tint); }
+.tpills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.tpills .pw { position: relative; }
+.pill.on { background: var(--ind-tint); border-color: var(--ind-tint-border); color: var(--ind-deep); }
+.pill .g { color: var(--faint); }
+.pill.on .g { color: var(--ind); }
+.pill:disabled { opacity: .55; cursor: default; }
+.mrow .cdot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.mrow.tall { height: auto; min-height: 32px; padding: 6px 10px; align-items: flex-start; }
+.mrow.tall .box { margin-top: 2px; }
+.mrow .col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mrow .col > span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.mrow .col .loz { height: 18px; align-self: flex-start; }
+.mixh { display: flex; align-items: center; height: 28px; padding: 0 8px; font-size: 12px; font-weight: 500; color: var(--faint); }
+.mixh .loz { margin-left: auto; }
+.mixr .nm { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.mixr.dis { opacity: .5; }
+.mixf { display: flex; justify-content: flex-end; padding: 6px 8px 2px; }
+.side .whead { display: flex; align-items: center; gap: 8px; height: 32px; margin-top: 4px; }
+.side .whead .nm { font-size: 13px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side .whead .ib { margin-left: auto; }
+.side .acts { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.pr .l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 8px; }
+.pr .val.ro { color: var(--ink); }
+.pr .val .ic svg { display: block; }
+.pr .val.edit .q { font-variant-numeric: tabular-nums; }
+.pr .val.num .q { text-align: left; }
+.pr .val .dot { width: 8px; height: 8px; border-radius: 50%; margin: 0 4px; flex: 0 0 8px; }
+.pr .val .loz { flex: 0 0 auto; }
+.pr .wrap { position: relative; min-width: 0; }
+.pr .chipb .tag { margin-left: 8px; }
+.pr .chipb.ro { cursor: default; }
+.pr .chipb.ro:hover { background: transparent; }
+.gh:first-child { margin-top: 4px; }
+.tmain .strip { margin: 0 -40px; }
+.tgap { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 0; color: var(--faint); font-size: 13px; text-align: center; }
+.tcol .empty-note { font-size: 12.5px; color: var(--faint); padding: 10px 0; }
+.lnrow { display: flex; flex-direction: column; gap: 6px; }
+.tagchip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 4px 0 8px; border: 1px solid var(--ind-tint-border); border-radius: 11px; background: var(--ind-tint); color: var(--ind-deep); font-size: 12px; white-space: nowrap; }
+.tagchip button { border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; padding: 0 4px; }
+.chips-in { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rng-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+/* ---------- the basket picker ---------- */
+.pkbar { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 12px 0 20px; border-bottom: 1px solid #efefef; flex-wrap: wrap; }
+.pkbar .crumb { font-size: 13px; color: var(--muted); }
+.pkbar .here { font-size: 13px; font-weight: 500; }
+.pkbar .vp { padding: 0 4px; }
+.pkbar .sp { flex: 1; }
+.pkrow { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--hairline); flex-wrap: wrap; }
+.pkrow .sp { flex: 1; }
+.pkrow .sv + .sv { margin-left: 12px; }
+.pkmap { border-bottom: 1px solid var(--hairline); }
+.pkmap .in { padding: 14px 24px 22px; }
+.pkplot { position: relative; }
+.pkplot svg { width: 100%; height: auto; display: block; overflow: visible; }
+.mdot:focus-visible { outline: 1.5px solid var(--ink); outline-offset: 3px; }
+.mdot.hv { outline: 1.5px solid var(--ink); outline-offset: 3px; }
+.pk-tr .n .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.pk-tr .n .me { width: 12px; height: 12px; border-radius: 50%; border: 2.5px solid #e8743b; box-sizing: border-box; display: inline-block; }
+.pk-tr > span:first-child { display: inline-flex; justify-content: center; }
+.pk-tr .later { color: var(--warm); }
+.pk-tr .old { color: var(--ghost); }
+.pk-th span:first-child, .pk-tr > span:first-child { text-align: center; }
+.pk-th span:last-child, .pk-tr > span:last-child { text-align: right; }
+.pk-tr > span:last-child { display: inline-flex; justify-content: flex-end; }
+.band .bdot { width: 8px; height: 8px; border-radius: 50%; background: var(--ind); }
+.band .bring { width: 8px; height: 8px; border-radius: 50%; border: 1.2px solid var(--faint); box-sizing: border-box; }
+.band .nt { margin-left: auto; font-weight: 400; color: var(--faint); }
+.pk-loading { padding: 40px; text-align: center; color: var(--faint); font-size: 13px; }
+.vp .vdot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+
+@media (max-width: 900px) {
+  .tmain .strip { margin: 0 -20px; }
+  .pkbar { padding: 0 12px; }
+  .pr { grid-template-columns: 100px minmax(0, 1fr); }
+}

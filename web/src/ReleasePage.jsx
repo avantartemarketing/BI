@@ -5,7 +5,8 @@
 import React, { useEffect, useState } from "react";
 import { initial as watchInitial, step as watchStep } from "../../shared/refreshWatch.mjs";
 import { freshness } from "../../shared/freshness.mjs";
-import { Avatar, Badge, Menu, MenuItem, Seg, useMenu, fmt, fmtDay } from "./ui.jsx";
+import { Avatar, Badge, Menu, MenuItem, Seg, useMenu } from "./ui.jsx";
+import { fmt, fmtDay } from "./format.mjs";
 import { Cal, Caret, Chev, Clock, Display, Hamburger, ProgressRing, Ring, Warn, X } from "./icons.jsx";
 import { wordsOf } from "./vocab.mjs";
 import { releaseClock } from "./sections.mjs";
@@ -58,7 +59,7 @@ function StatusChip({ snap, row, asOf }) {
     return <button className="chip" title={`Day ${snap.day} of ${snap.of}`}><ProgressRing pct={1} color={color} />{ago !== null && ago >= 0 ? `Closed ${ago === 0 ? "today" : ago === 1 ? "yesterday" : `${ago} days ago`}` : `Closed ${onDay(clock.launch, asOf)}`}</button>;
   }
   const left = Math.max(clock.daysLeft, 0);
-  return <button className="chip" title={`Day ${snap.day} of ${snap.of}`}><ProgressRing pct={snap.of > 0 ? (snap.day || 0) / snap.of : 0} color={color} />{left} day{left === 1 ? "" : "s"} left</button>;
+  return <button className="chip" title={`Day ${snap.day} of ${snap.of}`}><ProgressRing pct={snap.of > 0 ? (snap.day || 0) / snap.of : 0} color={color} />{left === 0 ? "Closes today" : `${left} day${left === 1 ? "" : "s"} left`}</button>;
 }
 
 function DatesChip({ snap }) {
