@@ -907,7 +907,7 @@ and its own options behind a ⋯ menu:
 - **Units by channel**: a column per channel, the target in pale grey behind, the actual in
   indigo, the part above the target in lighter indigo, the benchmark a dotted tick; ⋯ swaps
   units for a share of target.
-- **Gap to target**: a waterfall from the benchmark through organic traffic, organic
+- **Gap to target**: a waterfall from the benchmark, up the stretch to the target line, then through organic traffic, organic
   conversion, paid spend and paid efficiency to the actual (or the projection), the target a
   dashed line; ⋯ swaps the drivers for the channels.
 - **Paid ROI**: the ROI by day with the daily spend as faint bars behind, 3d / 1d (6h / 1h
@@ -921,10 +921,10 @@ and its own options behind a ⋯ menu:
 - **Framing** (docs §6.4): the share of prints framed, buyers and entrants as bars with the
   basket's rate as a tick.
 - **Email funnel**: open rate, click rate, release page to product page (when the release
-  has more than one work) and product page to entry, each against the basket.
+  has more than one work) and product page to entry, each as its deviation from the basket.
 - **Where the buyers are** on a release with geography, **Signups to outcome** and the
   **Sell-through** and **Framing forecast by work** on a timed launch (docs/TL_SPEC.md).
-- **Funnel by channel**, across both columns: sessions and conversion per channel against
+- **Funnel by channel**, beside it: sessions and conversion per channel against
   the plan; ⋯ swaps the table for the waterfall of units each added or cost.
 
 An upcoming release shows what is known instead (Not live yet, the milestones, the works and

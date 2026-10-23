@@ -1,5 +1,6 @@
-/* Email funnel: the release's email rates against the basket's, one bar a
- * stage, the basket a dotted tick. Open rate and click rate come from the
+/* Email funnel: each stage of the release's email funnel as its deviation
+ * from the basket's rate, a bar right of the basket line where this launch
+ * runs above it and left where below; the rates themselves in the readout. Open rate and click rate come from the
  * sends on file (snap.email); the page stages (release page to product page
  * when the release has more than one work, product page to signup, entry or
  * order) from the organic side of the pages feed (snap.pageFunnel). A stage
@@ -48,26 +49,32 @@ export default function EmailFunnel({ snap }) {
   if (!steps.length) {
     return <Card title="Email funnel" aria="Email funnel">{head}<div className="empty-state">No sends on file for this release yet</div></Card>;
   }
-  const xmax = Math.max(100, ...steps.map((s) => Math.max(s.v, s.ref || 0)));
-  const top = xmax > 100 ? Math.ceil(xmax / 25) * 25 : 100;
+  // each stage as its deviation from the basket's rate: a bar right of zero
+  // where this launch runs above it, left where below; a stage the basket
+  // has no reading for sits on the line in grey
+  const dev = steps.map((s) => (finite(s.ref) && s.ref > 0 ? (s.v / s.ref - 1) * 100 : 0));
+  const grey = steps.map((s, i) => (finite(s.ref) && s.ref > 0 ? null : i)).filter((i) => i !== null);
+  const lim = Math.max(25, ...dev.map((d) => Math.abs(d)));
+  const top = lim <= 50 ? 50 : lim <= 100 ? 100 : Math.ceil(lim / 100) * 100;
+  const xt = top <= 100 ? [-top, -top / 2, 0, top / 2, top] : [-top, 0, top];
+  const signedPc = (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d))}%`;
   return (
     <Card title="Email funnel" aria="Email funnel">
       {head}
-      <HBarChart H={34 + steps.length * 34} L={164} bh={12} xmin={0} xmax={top} xticks={[0, 25, 50, 75, 100].filter((t) => t <= top)} xfmt={(t) => `${t}%`}
-        rows={steps.map((s) => s.name)}
-        series={[{ color: COL.IND, vals: steps.map((s) => s.v) }, { color: COL.TRACK, vals: steps.map((s) => Math.max(0, top - s.v)) }]}
-        ticks={steps.map((s) => s.ref)} tickDa="1 3"
-        legend={[{ n: "This launch", k: sw(COL.IND) }, { n: "Basket", k: lk(COL.INK, "dotted") }]}
+      <HBarChart H={34 + steps.length * 34} L={164} bh={12} xmin={-top} xmax={top} xticks={xt} xfmt={(t) => (t === 0 ? "Basket" : signedPc(t))}
+        rows={steps.map((s) => s.name)} diverging vals={dev} greyRows={grey} posColor={COL.IND} negColor={COL.ORANGE}
+        legend={[{ n: "Above the basket", k: sw(COL.IND) }, { n: "Below the basket", k: sw(COL.ORANGE) }]}
         title={(i) => steps[i].name}
         rows2={(i) => {
           const s = steps[i];
-          const d = finite(s.ref) && s.ref > 0 ? Math.round((s.v / s.ref - 1) * 100) : null;
+          const has = finite(s.ref) && s.ref > 0;
           return [
-            { n: "This launch", v: `${pc(s.v)} · ${s.n}`, k: sw(COL.IND) },
-            s.ref != null ? { n: s.src === "sends" ? "Basket" : "Basket, organic sessions", v: `${pc(s.ref)}  ${d >= 0 ? "+" : "−"}${Math.abs(d)}%`, k: lk(COL.INK, "dotted") } : { n: "Basket", v: "no reading", k: lk(COL.INK, "dotted") },
+            { n: "This launch", v: `${pc(s.v)} · ${s.n}`, k: sw(has ? (dev[i] >= 0 ? COL.IND : COL.ORANGE) : COL.SOFT) },
+            has ? { n: s.src === "sends" ? "Basket" : "Basket, organic sessions", v: pc(s.ref), k: lk(COL.INK, "dotted") } : { n: "Basket", v: "no reading", k: lk(COL.INK, "dotted") },
+            ...(has ? [{ n: "Against the basket", v: signedPc(dev[i]), k: "" }] : []),
           ];
         }}
-        aria={`Email funnel: ${steps.map((s) => `${s.name} ${pc(s.v)}${s.ref != null ? ` against ${pc(s.ref)} in ${basketWords}` : ""}`).join("; ")}`} />
+        aria={`Email funnel against the basket: ${steps.map((s, i) => `${s.name} ${pc(s.v)}${finite(s.ref) && s.ref > 0 ? ` (${signedPc(dev[i])} against ${pc(s.ref)} in ${basketWords})` : ""}`).join("; ")}`} />
     </Card>
   );
 }

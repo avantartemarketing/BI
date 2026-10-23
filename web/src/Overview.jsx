@@ -39,8 +39,8 @@ export default function Overview({ snap, base, horizon, onSetup, onOpen }) {
         {!preWindow && (snap.sellthrough || snap.sales) && <SellThrough snap={snap} horizon={horizon} />}
         {!preWindow && framingOn && <Framing snap={snap} horizon={horizon} />}
         {snap.email && <EmailFunnel snap={snap} />}
-        {!isTL && snap.geo && <Geo snap={snap} />}
         <FunnelTable snap={snap} />
+        {!isTL && snap.geo && <Geo snap={snap} />}
       </div>
     </div>
   );

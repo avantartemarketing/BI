@@ -1,4 +1,4 @@
-/* Funnel by channel: the table at the foot of the page, one row a channel
+/* Funnel by channel: the table beside the email funnel, one row a channel
  * group - sessions and conversion, each against the plan (or the basket when
  * the release has no targets). The card's menu swaps the table for the
  * waterfall reading: the units each channel's traffic and conversion added
@@ -32,14 +32,14 @@ export default function FunnelTable({ snap }) {
     { label: "Table", radio: true, checked: mode === "table", icon: <Bars />, onClick: () => setMode("table") },
     { label: `Waterfall against the ${refWord}`, radio: true, checked: mode === "waterfall", icon: <Frame />, onClick: () => setMode("waterfall") },
   ];
-  if (!rows.length) return <Card wide title="Funnel by channel" menu={menu}><div className="empty-state">No sessions by channel yet</div></Card>;
+  if (!rows.length) return <Card title="Funnel by channel" menu={menu}><div className="empty-state">No sessions by channel yet</div></Card>;
   if (mode === "waterfall") {
     const vals = rows.flatMap((r) => [r.traffic || 0, r.conversion || 0]);
     const lim = Math.max(1, ...vals.map((v) => Math.abs(v)));
     const top = Math.ceil(lim / 5) * 5;
     const labels = rows.flatMap((r) => [`${r.name} · traffic`, `${r.name} · conversion`]);
     return (
-      <Card wide title="Funnel by channel" menu={menu}>
+      <Card title="Funnel by channel" menu={menu}>
         <HBarChart H={34 + labels.length * 26} L={190} bh={10} xmin={-top} xmax={top} xticks={[-top, 0, top]} xfmt={(t) => (t > 0 ? `+${t}` : String(t))}
           rows={labels} diverging vals={vals} posColor={COL.IND} negColor={COL.ORANGE}
           legend={[{ n: `${W.Unit} added`, k: sw(COL.IND) }, { n: `${W.Unit} lost`, k: sw(COL.ORANGE) }]}
@@ -57,7 +57,7 @@ export default function FunnelTable({ snap }) {
     );
   }
   return (
-    <Card wide title="Funnel by channel" menu={menu}>
+    <Card title="Funnel by channel" menu={menu}>
       <div style={{ overflowX: "auto" }}>
         <table>
           <thead><tr><th>Channel</th><th>Sessions</th><th>vs {refWord}</th><th>Conversion</th><th>vs {refWord}</th></tr></thead>

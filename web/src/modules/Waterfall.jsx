@@ -42,7 +42,11 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const outcome = (isToday ? view.actual : view.projection) ?? 0;
   const hasBm = !!snap.benchmark && has(view.benchmark) && Array.isArray(view.stepsBm);
   const start = hasBm ? view.benchmark : target;
-  const drivers = (hasBm ? view.stepsBm : view.steps || []).map((s) => [s.key === "oversubscribed" ? "Beyond sellout" : s.label, s.value ?? 0]);
+  // from the benchmark the first step is the stretch, up to the target line
+  // (benchmark x K), and the drivers then walk from the target by their
+  // contributions against the plan, so the line sits on top of the stretch
+  const stretch = hasBm ? [["Stretch", target - start]] : [];
+  const drivers = stretch.concat((view.steps || []).map((s) => [s.key === "oversubscribed" ? "Beyond sellout" : s.label, s.value ?? 0]));
   const cw = by === "channels" ? channelWalk(snap, { today: isToday }) : null;
   const chans = cw ? cw.steps.map((c) => [c.label, c.value]).concat(cw.beyond < 0 ? [["Beyond sellout", cw.beyond]] : []) : [];
   const steps = by === "channels" ? chans : drivers;
@@ -59,8 +63,8 @@ export default function Waterfall({ snap, horizon = "today" }) {
   const body = by === "channels"
     ? `From the ${hasBm ? "benchmark, the basket's median," : "target"} each channel steps by its own ${W.unit} against its own ${hasBm ? "benchmark" : "target"}, in the page's order; they add up to the release's demand, so on a sold-out release the last step, Beyond sellout, drops to the capped figure.`
     : isToday
-      ? `From the ${hasBm ? "benchmark, what launches like this one typically have by now," : "target"} the contributors sum exactly to the gap between it and the ${W.unit} ${W.securedLower} to date; the stretch is the distance to the target line.`
-      : `From the ${hasBm ? "benchmark, the basket's median at close," : "target"} the contributors sum exactly to the gap between it and the projection at close; demand beyond the sellout is the last step.`;
+      ? `From the ${hasBm ? "benchmark, what launches like this one typically have by now, the stretch steps up to the target line, and from there" : "target"} the contributors sum exactly to the gap between it and the ${W.unit} ${W.securedLower} to date.`
+      : `From the ${hasBm ? "benchmark, the basket's median at close, the stretch steps up to the target line, and from there" : "target"} the contributors sum exactly to the gap between it and the projection at close; demand beyond the sellout is the last step.`;
   return (
     <Card title={<span title={body}>Gap to target</span>} aria="Gap to target" menu={menu}>
       <Head v={fmtSigned(net)} u={`${W.unit} vs target${!isToday && !complete ? " at close" : ""}`}
