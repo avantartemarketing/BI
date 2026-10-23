@@ -72,7 +72,7 @@ export default function Waterfall({ snap, horizon = "today" }) {
         asideTip={`${isToday ? W.toDate : `${closeWord} at the ${W.closeWord}`}: ${fmt(outcome)} ${W.unit} against a ${fmt(target)} target${hasBm ? `, the basket's median ${fmt(start)}` : ", no basket to read against"}`} />
       <WaterfallChart H={262} L={40} ymin={ymin} ymax={ax.ymax} yticks={ax.ticks.filter((t) => t >= ymin)} yfmt={kfmt}
         start={start} startName={hasBm ? "Benchmark" : "Target"} steps={steps} endName={endName}
-        short={[hasBm ? "Benchmark" : "Target", ...steps.map((s) => brk(s[0])), endName]} target={target} unit={W.unit}
+        short={[hasBm ? "Benchmark" : "Target", ...steps.map((s) => brk(s[0])), endName]} target={target} targetFrom={hasBm && by === "drivers" ? 1 : 0} unit={W.unit}
         aria={`Gap to target: ${fmtSigned(net)} ${W.unit}; ${steps.map((s) => `${s[0]} ${fmtSigned(s[1])}`).join(", ")}`} />
     </Card>
   );

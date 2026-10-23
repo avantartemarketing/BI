@@ -296,10 +296,11 @@ export function HBarChart({ H, L = 110, R = 8, T = 4, B = 26, bh = 10, xmin = 0,
 /* ---------------------------------------------------------------- waterfall
  * A grey bar for the start (the benchmark), each step up in indigo or down in
  * orange from where the last left off, the result as an indigo bar; the target
- * a dashed line across with its figure at the end. steps: [[name, value]];
+ * a dashed line across with its figure at the end, from the column named by
+ * targetFrom (the step that rises to it) when one is. steps: [[name, value]];
  * short: the column labels (a "\n" breaks a line). */
 export function WaterfallChart({ H = 262, L = 36, R = 4, T = 10, B = 40, ymin = 0, ymax, yticks = [], yfmt = String, start, startName = "Benchmark",
-  steps = [], endName = "Actual", short, target, unit = "units", aria = "", fmtV = f0, fallbackW }) {
+  steps = [], endName = "Actual", short, target, targetFrom = 0, unit = "units", aria = "", fmtV = f0, fallbackW }) {
   const [ref, W] = useW(fallbackW);
   const [hover, setHover] = useState(null);
   const o = { W, H, L, R, T, B };
@@ -328,7 +329,8 @@ export function WaterfallChart({ H = 262, L = 36, R = 4, T = 10, B = 40, ymin = 
   paths.push({ d: base, fl: COL.GREY }); paths.push({ d: up, fl: COL.IND }); paths.push({ d: dn, fl: COL.ORANGE }); paths.push({ d: res, fl: COL.IND });
   paths.push({ d: con, st: "#c4c4c8", sw: 1 });
   if (target != null) {
-    paths.push({ d: `M${L} ${y(target).toFixed(1)}H${W - R}`, st: COL.INK, sw: 1.5, da: "4 4" });
+    // the line starts at the column that reaches it (the stretch), not over the columns before it
+    paths.push({ d: `M${(targetFrom > 0 ? x0(targetFrom) : L).toFixed(1)} ${y(target).toFixed(1)}H${W - R}`, st: COL.INK, sw: 1.5, da: "4 4" });
     labs.push({ t: `Target ${fmtV(target)}`, s: { right: P2(R, W), top: P2(y(target) - 15, H), color: COL.INK, fontWeight: 500, background: "rgba(255,255,255,.85)", padding: "0 2px" } });
   }
   const names = short || cols.map((c) => c.name);
