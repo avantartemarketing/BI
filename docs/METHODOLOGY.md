@@ -149,7 +149,7 @@ planned dates; where it names no lead, Airtable's field, then what was typed.
 | --- | --- |
 | Meta campaigns | Which ad campaigns the paid actuals are read from, summed. The draw campaign named for the code is ticked on its own |
 | Channels in plan | Running paid; the artist's own channels. A group switched off leaves the benchmark and the target, and the other channels carry the whole sellout |
-| Benchmark basket | The comparable past launches the release is measured against: the suggested basket (nearest in size and price, the artist's own launches first, recent ones preferred) or one picked by hand |
+| Benchmark basket | The comparable past launches the release is measured against: the suggested basket (the launches whose demand is nearest this edition's size, at a price nearest its own; the artist's own launches first, recent ones preferred) or one picked by hand |
 | Entry → order rate, pre-order → order rate | What share of entries in hand become orders on the sell-through card; empty means the panel's 80% and 95% |
 
 A release set up before the model went per product still carries the
@@ -301,8 +301,8 @@ on its Target setting tab, and shift-clicking a figure on its page shows the
 working with them.
 
 An edition of 300 at €1,500 a unit, so the launch value is €450,000. Its basket
-is the 8 launches nearest in size and price, whose median launch sold 240
-units: **K = 300 ÷ 240 = 1.25**. Each group's benchmark is its median share of
+is the 8 launches whose demand and price are nearest its 300 units at €1,500,
+and their median demand is 240 units: **K = 300 ÷ 240 = 1.25**. Each group's benchmark is its median share of
 units times those 240, and its target is that times K:
 
 | Group | Median share of units | Benchmark | Target (× 1.25) |
@@ -427,11 +427,20 @@ adjusted CPE     = spend / converting units           cost per converting unit
 ROI              = (1 − cannibalisation) × profit per unit / (adjusted CPE × budget share)
 ```
 
-**Claims tried read as they came out** (20 October 2026). An entrant's claim has
-been tried once one of their entries won, they bought, or the draw they entered
-has been run (it has a winner): from then on what they paid for is the answer -
-the pieces they bought in the release, nothing for a loser or a winner who did
-not pay. What still waits on a draw not yet run reads at the rates: the
+**Claims tried read as they came out** (20 October 2026). Pre-orders are given
+through the window as they come in (the entry wins and is charged); the draw is
+held on launch day, when the entries stop. An entrant's claim has been tried
+once one of their entries won, they bought, or the release's launch day has
+passed (the feed's last day is after it): from then on what they paid for is
+the answer - the pieces they bought in the release, nothing for a loser or a
+winner who did not pay. The launch day is the feed's `launch_date`, its latest
+value per release (a postponed launch keeps its final day); a release the feed
+carries no launch day for settles a draw once it has a winner and has taken no
+entries for seven days (`SETTLED_DAYS` in `etl/aggregate_events.py`). Until 22
+October 2026 a winner alone settled a draw, so from the first pre-order given
+the window's undrawn entries read as losers (Cai Guo-Qiang 2026 Q4 read 0 ROI
+on 21 October on four paid entries and €1,481 of spend). What still waits
+reads at the rates: the
 pre-order → order rate for entries made as pre-orders (0.95, the card already
 authorised) and the entry → order rate for the rest (0.8), both the Target
 setting tab's when typed. The waiting units are the entrant's open entries, one
@@ -666,8 +675,8 @@ nothing on its page moves. (Built 14 and 15 October 2026; the design is in
 
 **Each line is benchmarked and targeted on its own.** A line's target is its
 products' editions at their target sell-through, its price the average of
-its target units, and its basket the eight launches nearest *its* size and
-price (section 3), the artist's own first. Its K is its target over its
+its target units, and its basket the eight launches whose demand and price
+are nearest *its* size and price (section 3), the artist's own first. Its K is its target over its
 basket's median demand, and where its stretch comes from is set per line on
 the Target setting tab. A blended basket matched on the whole release would
 compare a EUR 2,500 print and a EUR 550 brick against the same launches, and

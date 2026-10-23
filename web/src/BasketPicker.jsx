@@ -3,7 +3,8 @@
  * benchmark is the median of a basket of comparable past launches, so
  * choosing the basket is the most consequential thing anyone does on the
  * targets page: it moves every reference mark on every card. Every launch
- * on file is a dot on a map of units sold against unit price, this launch
+ * on file is a dot on a map of units of demand (what it would have sold with
+ * enough supply, shared/basketRule.mjs sizeOf) against unit price, this launch
  * is the orange ring, and the basket is what is nearest to it; the list
  * under the map says the same thing in rows, the basket first, then the
  * near misses, with each launch's distance (the larger of its units
@@ -30,7 +31,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Menu, MenuItem, useMenu } from "./ui.jsx";
 import { fmt, fmtMoney, fmtPct } from "./format.mjs";
 import { Bars, Chev, Clock, Euro, Filter, People, Search, Undo, Wallet } from "./icons.jsx";
-import { similarMembers, ownMembers, releasePrice, releaseArtist, basketClock, MIN_MEMBERS, THIN_MEMBERS, NEAR } from "../../shared/basketRule.mjs";
+import { similarMembers, ownMembers, releasePrice, releaseArtist, basketClock, MIN_MEMBERS, THIN_MEMBERS, NEAR, sizeOf } from "../../shared/basketRule.mjs";
 import { applyChannelsOff } from "../../shared/benchmarkModel.mjs";
 import { colorFor, fmtMonth, hoursShort, liveProfile, median } from "./TargetsKit.jsx";
 
@@ -51,7 +52,7 @@ function tlProfile(rows) {
     paid_share: median(rows.map((r) => ((r.signup_shares || r.unit_shares || {}).paid))) };
 }
 
-/* The map: units sold across, price up, both on log scales; a dot is pressed
+/* The map: units of demand across, price up, both on log scales; a dot is pressed
  * to tick its launch. The axes run over nice bounds that cover the rows and
  * this launch. */
 const X_TICKS = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
@@ -67,7 +68,7 @@ const bounds = (vals, ticks) => {
 };
 function MapPlot({ rows, L, ticked, nearMiss, otherLength, reach, hov, setHov, toggle, tipOf }) {
   const W = 1000, H = 280, Lm = 48, R = 8, T = 8, B = 28;
-  const [X0, X1] = useMemo(() => bounds([...rows.map((r) => r.units), L.target], X_TICKS), [rows, L.target]);
+  const [X0, X1] = useMemo(() => bounds([...rows.map((r) => sizeOf(r)), L.target], X_TICKS), [rows, L.target]);
   const [Y0, Y1] = useMemo(() => bounds([...rows.map((r) => r.price), L.price], Y_TICKS), [rows, L.price]);
   const lx = (u) => Lm + (Math.log(Math.max(X0, Math.min(X1, u))) - Math.log(X0)) / (Math.log(X1) - Math.log(X0)) * (W - Lm - R);
   const ly = (p) => T + (1 - (Math.log(Math.max(Y0, Math.min(Y1, p))) - Math.log(Y0)) / (Math.log(Y1) - Math.log(Y0))) * (H - T - B);
@@ -91,18 +92,18 @@ function MapPlot({ rows, L, ticked, nearMiss, otherLength, reach, hov, setHov, t
           </svg>
           {xt.map((u) => <span key={`x${u}`} className="lab" style={{ left: pc(lx(u), W), top: pc(H - B + 9, H), transform: "translate(-50%,0)" }}>{fmt(u)}</span>)}
           {yt.map((p) => <span key={`y${p}`} className="lab" style={{ left: pc(Lm - 8, W), top: pc(ly(p), H), transform: "translate(-100%,-50%)" }}>€{p >= 1000 ? `${p / 1000}k` : p}</span>)}
-          <span className="lab" style={{ right: 0, top: pc(H - B - 14, H) }}>Units sold →</span>
+          <span className="lab" style={{ right: 0, top: pc(H - B - 14, H) }}>Units of demand →</span>
           <span className="lab" style={{ left: pc(Lm + 6, W), top: 0 }}>Price ↑</span>
           {rows.map((r) => {
-            if (!(r.price > 0) || !(r.units > 0) || r.later) return null;
+            if (!(r.price > 0) || !(sizeOf(r) > 0) || r.later) return null;
             const on = ticked.has(r.release_name), ms = nearMiss.has(r.release_name), other = otherLength && otherLength(r);
             const sz = on ? 11 : ms ? 8 : 6;
-            const style = { left: pc(lx(r.units), W), top: pc(ly(r.price), H), width: sz, height: sz,
+            const style = { left: pc(lx(sizeOf(r)), W), top: pc(ly(r.price), H), width: sz, height: sz,
               ...(on ? { background: "#5e6ad2", boxShadow: "0 0 0 1.5px #fff" } : ms ? { background: "#fff", boxShadow: "inset 0 0 0 1.2px #8a8a8e" } : other ? { background: "#fff", boxShadow: "inset 0 0 0 1px #d4d4d8" } : { background: "#dcdce0" }) };
             return <button key={r.release_name} className={`mdot${hov === r.release_name ? " hv" : ""}`} style={style} aria-label={`${on ? "Untick" : "Tick"} ${r.artist}${r.title ? `, ${r.title}` : ""}`} onClick={() => toggle(r.release_name)} onMouseEnter={() => setHov(r.release_name)} onMouseLeave={() => setHov(null)} />;
           })}
-          {tip && tip.price > 0 && tip.units > 0 && (
-            <div className="maptip" style={{ left: pc(lx(tip.units), W), top: pc(ly(tip.price), H) }}>
+          {tip && tip.price > 0 && sizeOf(tip) > 0 && (
+            <div className="maptip" style={{ left: pc(lx(sizeOf(tip)), W), top: pc(ly(tip.price), H) }}>
               <div style={{ fontWeight: 500 }}>{tip.artist}{tip.title && tip.title !== "Multiple" ? ` · ${tip.title}` : ""}</div>
               <div style={{ color: "#6b6b6f", marginTop: 2 }}>{tipOf(tip)}</div>
             </div>
@@ -168,7 +169,7 @@ export default function BasketPicker({ kind = "le", rows, releaseName, artist, b
   /* every launch's two distances and its worse one, whether it closed after
      this one (left out of the rule) and whether it is recent */
   const scored = useMemo(() => (rows || []).filter((r) => r.release_name !== releaseName).map((r) => {
-    const du = ratio(r.units, target), dp = r.price > 0 ? ratio(r.price, priceUsed) : 1;
+    const du = ratio(sizeOf(r), target), dp = r.price > 0 ? ratio(r.price, priceUsed) : 1;
     const end = day(r.window_end);
     return { ...r, du, dp, d: du === null || dp === null ? null : Math.max(du, dp), own: isOwn(r), color: colorFor(r.artist),
       later: !!(clock && clock.closed && end && end > clock.ref), recent: !!(clock && end && end >= clock.cutoff), same: lengthHours ? Number(r.window_hours) === Number(lengthHours) : true };

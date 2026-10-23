@@ -139,7 +139,7 @@ export default function PaidRoi({ snap }) {
   const dropOff = paid.dropOff ?? 0.2;
   const claims = daily.some((d) => d.converting !== undefined);
   const convWords = tl ? `the paid ${V.unit} on each day` : claims
-    ? `what paid entrants bought where their draw has been run, and ${pct(paid.preorderRate ?? 0.95)} of pre-order and ${pct(1 - dropOff)} of other entries still waiting on a draw`
+    ? `what paid entrants bought once given a pre-order or drawn on launch day, and ${pct(paid.preorderRate ?? 0.95)} of pre-order and ${pct(1 - dropOff)} of other entries still waiting`
     : `${pct(1 - dropOff)} of entries`;
   const splitAssumed = roiOk && paid.aaBudgetShareAssumed === true;
   const frameUplift = !tl && (snap.economics?.frameUpliftPerUnit ?? 0) > 0;

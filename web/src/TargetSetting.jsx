@@ -452,7 +452,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
               <Group>Line</Group>
               <EditRow id="ln-name" label="Name" text value={selLineRow.settings.name || ""} placeholder={selLineRow.line.name} tag={selLineRow.line.code || ""} tip="The line's name on the page. Blank: the words its works' titles share, else its Airtable release code." onCommit={(raw) => setLine(selLineRow.line.key, { name: raw })} />
               <Prop label="Target" tip="Its works' editions at their target sell-through"><Val ic={<Target />}>{fmt(selLineRow.line.edition_size)} units{selLineRow.line.unit_price ? ` at ${fmtMoney(selLineRow.line.unit_price, 0)}` : ""}</Val></Prop>
-              <Prop label="Basket" tip="The launches this line is benchmarked against: those nearest its own size and price, the artist's own first.">
+              <Prop label="Basket" tip="The launches this line is benchmarked against: those whose demand is nearest its own size, at a price nearest its own, the artist's own first.">
                 <button className="chipb" onClick={() => { setPickingLine(selLineRow.line.key); setRoute({ ...route, basket: true }); }}>{selLineRow.basketName}{selLineRow.basketN ? <span className="tag">{selLineRow.basketN} launches</span> : null}</button>
               </Prop>
               {selLineRow.profile && <Prop label="Benchmark"><Val ic={<Bmk />}>{fmt(selLineRow.profile.units)} units{selLineRow.k ? ` · ×${fmt(selLineRow.k, 2)}` : ""}</Val></Prop>}

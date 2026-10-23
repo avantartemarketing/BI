@@ -3027,7 +3027,8 @@ def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: dat
 def converting_units_day(frame: pd.DataFrame, channel: str, release: dict) -> pd.Series:
     """A channel's converting units by day (docs 7), what the paid ROI is
     priced on: the units bought by entrants whose claim has been tried (they
-    won, bought, or their draw has run, so a loser counts 0), plus the entry
+    won - a pre-order given through the window, or drawn on launch day -
+    bought, or launch day has passed, so a loser counts 0), plus the entry
     units still waiting on a draw at the release's rates - pre-order entries
     at the pre-order rate (0.95), the rest at the entry rate (0.8). A frame
     without the claim columns (the upstream export) reads every eligible
@@ -7021,7 +7022,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "basket": {"id": basket["id"], "kind": basket["kind"], "name": basket["name"],
                        "n": basket["n"], "thin": basket["thin"],
                        "suggestedId": basket["suggestedId"]},
-            # the launches the medians are read from, with units and price: the Benchmark basket card
+            # the launches the medians are read from, with the demand they were matched on, the units they sold and their price: the Benchmark basket card
             "members": baskets.basket_members(panel, basket.get("members")),
             "units": round(profile["units"], 1),
             # units are demand (baskets.demand_columns): what the basket's

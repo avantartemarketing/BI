@@ -209,7 +209,7 @@ def test_price_band() -> None:
 
         # the sentence names both axes and how close the members turned out
         desc = B.similar_desc(members, reach, on, 150, 1500)
-        assert "unit price of €1,500" in desc and f"x{reach:,.1f}" in desc
+        assert "demand to this edition's 150 units" in desc and "unit price to its €1,500" in desc and f"x{reach:,.1f}" in desc
         # a basket whose furthest member is miles away says so instead
         far = B.similar_desc(members, 9.0, on, 150, 1500)
         assert "Nothing on file is close to it" in far
