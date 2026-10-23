@@ -1,46 +1,21 @@
-/* The dashboard shell - sidebar, release page chrome, and the one place the page's
- * comparison horizon lives.
+/* The dashboard shell (the Linear redesign, October 2026): the sidebar, the
+ * releases list, a release's page, the permissions page, the command bar
+ * and the Agent. The address carries where the reader is (?release=<id>,
+ * &tab=targets, &basket=1, ?view=releases, ?view=permissions) so a page can
+ * be shared or reloaded.
  *
- * A single "Compare Today | At close" control in the page header is handed to
- * every container, so no card carries its own horizon toggle and the whole page
- * reads one moment at a time. It resets whenever the release changes, because a
- * horizon chosen while reading one launch says nothing about the next one. Both
- * references - target and benchmark - are on every card at once (BENCHMARK_SPEC
- * 7), so there is nothing else to choose up here.
- *
- * The sidebar dot is the other thing this file owns. BENCHMARK_SPEC 7 makes it
- * three-state so that "behind target but still doing what the matched basket
- * typically does" stops looking identical to "behind the basket as well" - the first
- * is a target worth holding, the second is a launch in trouble. */
-import React, { useEffect, useMemo, useState } from "react";
-import { initial as watchInitial, step as watchStep } from "../../shared/refreshWatch.mjs";
-import { freshness, TONE_COLOR } from "../../shared/freshness.mjs";
-import { C, fmt, fmtSigned, fmtPct, fmtDay, TipProvider, useTip, Fact } from "./ui.jsx";
-import HeroBar from "./modules/HeroBar.jsx";
-import LaunchStrip from "./modules/LaunchStrip.jsx";
-import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
-import FunnelByChannel, { FunnelByChannelWide } from "./modules/FunnelByChannel.jsx";
-import Trajectory from "./modules/Trajectory.jsx";
-import KeyDrivers from "./modules/KeyDrivers.jsx";
-import PaidRoi from "./modules/PaidRoi.jsx";
-import PaidSpend from "./modules/PaidSpend.jsx";
-import Framing from "./modules/Framing.jsx";
-import SellThrough from "./modules/SellThrough.jsx";
-import Geo from "./modules/Geo.jsx";
-import DrawAudit from "./modules/DrawAudit.jsx";
-import Waterfall from "./modules/Waterfall.jsx";
-import NoTargets from "./modules/NoTargets.jsx";
-import Upcoming from "./modules/Upcoming.jsx";
-import TargetSetting from "./TargetSetting.jsx";
-import TLTargets from "./TLTargets.jsx";
-import { TLFacts, TLFlags, TLSignupsOutcome } from "./TLPage.jsx";
-import SellForecast from "./modules/SellForecast.jsx";
-import BasketCard from "./modules/BasketCard.jsx";
+ * Settings that hold for every release (Direct spread) live here and stick
+ * per browser; a reading of one release (its horizon, its line) lives on its
+ * page and resets with the release. */
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { TipProvider } from "./ui.jsx";
+import Sidebar from "./Sidebar.jsx";
+import CommandBar from "./CommandBar.jsx";
+import Releases from "./Releases.jsx";
+import ReleasePage from "./ReleasePage.jsx";
 import Permissions from "./Permissions.jsx";
-import { PageLayout, LayoutBar, useLayout } from "./Layout.jsx";
-import { wordsOf } from "./vocab.mjs";
-import { releaseClock, sectionOf } from "./sections.mjs";
-import { ExplainProvider, ExplainHint, Ex } from "./explain/Explain.jsx";
+import AgentDock from "./Agent.jsx";
+import { sidebarGroups } from "./rows.mjs";
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -53,377 +28,26 @@ async function getJSON(url) {
   return r.json();
 }
 
-const STATUS_LABEL = { live: "in flight", upcoming: "upcoming", closed: "closed", catalogue: "catalogue" };
-
-/* Search across every release the funnel data mentions - artist, title,
- * quarter (the name's and the one it closes in), campaign code or id -
- * keeping the index's own order (in flight, then closed most recent first,
- * then catalogue by traffic). */
-function searchReleases(releases, q) {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return [];
-  const terms = needle.split(/\s+/);
-  return releases.filter((r) => {
-    const hay = `${r.name} ${r.releaseName} ${r.quarter || ""} ${closeQuarter(r) || ""} ${r.id}`.toLowerCase();
-    return terms.every((t) => hay.includes(t));
-  });
+/* the address -> where the reader is */
+function readRoute() {
+  const q = new URLSearchParams(window.location.search);
+  const id = q.get("release");
+  if (q.get("view") === "permissions") return { view: "permissions" };
+  if (id) return { view: "release", id, tab: q.get("tab") === "targets" ? "targets" : "overview", basket: q.get("basket") === "1" };
+  if (q.get("view") === "releases") return { view: "releases" };
+  return { view: null };
+}
+function writeRoute(r) {
+  const q = new URLSearchParams();
+  if (r.view === "permissions") q.set("view", "permissions");
+  else if (r.view === "release" && r.id) { q.set("release", r.id); if (r.tab === "targets") q.set("tab", "targets"); if (r.basket) q.set("basket", "1"); }
+  else q.set("view", "releases");
+  const s = "?" + q.toString();
+  if (s !== window.location.search) { try { window.history.pushState(null, "", s); } catch { /* not important */ } }
 }
 
-/* The quarter a dated release closes in ("2026 Q4"), from its window end.
- * The quarter in a release's name is the funnel export's and can disagree. */
-function closeQuarter(r) {
-  if (!r.windowEnd) return null;
-  const d = new Date(r.windowEnd + "T00:00:00Z");
-  return Number.isNaN(d.getTime()) ? null : `${d.getUTCFullYear()} Q${Math.floor(d.getUTCMonth() / 3) + 1}`;
-}
-
-export default function App() {
-  const [index, setIndex] = useState(null);
-  const [releaseId, setReleaseId] = useState(null);
-  const [snap, setSnap] = useState(null);
-  const [snapError, setSnapError] = useState(null); // { message, pending } for the selected release only
-  const [error, setError] = useState(null);
-  const [me, setMe] = useState(null); // { email, admin }
-  const [view, setView] = useState("release"); // "release" | "permissions" (app-level, not per-release)
-  const [query, setQuery] = useState("");
-  // the release list as a drawer on a phone (tokens.css, "a phone or a
-  // narrow tablet"): open from the top bar, closed by a pick, the scrim,
-  // its own x or Escape. Above 900px the flag does nothing.
-  const [nav, setNav] = useState(false);
-  useEffect(() => {
-    document.body.classList.toggle("nav-open", nav);
-    if (!nav) return undefined;
-    const key = (e) => { if (e.key === "Escape") setNav(false); };
-    window.addEventListener("keydown", key);
-    return () => { window.removeEventListener("keydown", key); document.body.classList.remove("nav-open"); };
-  }, [nav]);
-  const st = useRefreshStatus();
-
-  useEffect(() => {
-    fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {});
-  }, []);
-
-  const loadIndex = () => getJSON("/api/index").then((ix) => { setIndex(ix); return ix; });
-  useEffect(() => {
-    loadIndex().then((ix) => {
-      // ?release=<id> (the link in a Slack update) opens that release; else the first live one
-      const asked = new URLSearchParams(window.location.search).get("release");
-      const live = ix.releases.filter((r) => r.status === "live" || (!r.status && !r.complete));
-      const first = ix.releases.find((r) => r.id === asked) || live[0] || ix.releases[0];
-      setReleaseId(first?.id ?? null);
-    }).catch((e) => setError(String(e)));
-  }, []);
-
-  useEffect(() => {
-    if (!releaseId) return;
-    setSnap(null); setSnapError(null);
-    getJSON(`/api/releases/${releaseId}`).then(setSnap)
-      .catch((e) => setSnapError({ message: e.message, pending: !!e.pending }));
-  }, [releaseId]);
-
-  // a save that sets targets promotes the release: swap the page in and
-  // refresh the index so the sidebar's dot and status follow
-  // a save's rebuild lands whenever it lands, and the reader may have moved
-  // to another release by then: only the page on screen is swapped
-  const onScreen = React.useRef(releaseId);
-  useEffect(() => { onScreen.current = releaseId; }, [releaseId]);
-  const onSaved = (s) => { if (s && s.id === onScreen.current) setSnap(s); loadIndex().catch(() => {}); };
-  // a refresh landed: pull the current page and the index again
-  const onRefreshed = () => {
-    loadIndex().catch(() => {});
-    if (releaseId) getJSON(`/api/releases/${releaseId}`).then(setSnap).catch(() => {});
-  };
-
-  const groups = useMemo(() => {
-    if (!index) return { live: [], upcoming: [], all: [] };
-    // the build's status, except that a live release still to announce sits under Upcoming (sections.mjs)
-    const all = index.releases.map((r) => ({ ...r, status: sectionOf(r, index.asOf) }));
-    // in flight reads top to bottom by days to launch
-    const order = (r) => {
-      const c = releaseClock(r, index.asOf);
-      if (!c) return Infinity;
-      return c.opensIn > 0 ? 1e6 + c.opensIn : c.daysLeft;
-    };
-    const live = all.filter((r) => r.status === "live").sort((a, b) => order(a) - order(b));
-    // upcoming reads soonest first by the days its rows show: to the announce
-    // where that is ahead, else to the close (a launch Airtable alone knows
-    // whose announce has passed); before 8 October 2026 it sorted by the
-    // close, so a row at 4 days sat under one at 28
-    const soon = (r) => {
-      const c = releaseClock(r, index.asOf);
-      if (!c) return Infinity;
-      return c.opensIn > 0 ? c.opensIn : c.daysLeft;
-    };
-    const upcoming = all.filter((r) => r.status === "upcoming").sort((a, b) => soon(a) - soon(b));
-    return { live, upcoming, all };
-  }, [index]);
-  // an artist with two rows among those listed (Ai Weiwei's LE and timed
-  // launch of one quarter; her seven launches in a search): their rows keep
-  // the rest of the name (rowWords)
-  const twins = useMemo(() => twinSet([...groups.live, ...groups.upcoming]), [groups]);
-  const results = useMemo(() => searchReleases(groups.all, query), [groups, query]);
-  const resultTwins = useMemo(() => twinSet(results), [results]);
-  const current = groups.all.find((r) => r.id === releaseId);
-  const pinned = current && current.status !== "live" && current.status !== "upcoming" && view === "release" ? current : null;
-
-  if (error) return <div style={{ padding: 40 }}>Failed to load: {error}</div>;
-  const pick = (id) => {
-    setReleaseId(id); setView("release"); setNav(false);
-    // keep the address in step so the page can be shared or reloaded on this release
-    try { window.history.replaceState(null, "", `?release=${encodeURIComponent(id)}`); } catch { /* not important */ }
-  };
-
-  // what the phone's top bar says the page is on: the release, with its dot, or the settings page
-  const hereState = current ? rowState(current) : null;
-  const hereName = view === "permissions" ? "Permissions" : current ? (current.releaseName || current.name) : snapError ? (current?.name || "Release") : "Loading\u2026";
-  return (
-    <TipProvider>
-    <div className="app">
-      <header className="topbar">
-        <button className="menu" onClick={() => setNav(true)} aria-label="Open the release list" aria-expanded={nav} aria-controls="release-list">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-            <path d="M3 5.5h14M3 10h14M3 14.5h14" />
-          </svg>
-        </button>
-        <div className="here">
-          <span className="app-name">Launch Performance</span>
-          <span className="now">
-            {view !== "permissions" && current && (hereState
-              ? <span className="dot" style={{ background: STATE[hereState].color }} />
-              : <span className="dot hollow" />)}
-            {hereName}
-          </span>
-        </div>
-      </header>
-      {nav && <button className="sidebar-scrim" onClick={() => setNav(false)} aria-label="Close the release list" tabIndex={-1} />}
-      <nav className={`sidebar${nav ? " open" : ""}`} id="release-list">
-        <h1>Launch Performance<button className="sidebar-close" onClick={() => setNav(false)} aria-label="Close the release list">&#215;</button></h1>
-        <div className="section-label split">In flight{groups.live.length > 0 && <small>days to close</small>}</div>
-        {groups.live.length === 0 && <div className="hint">Nothing in flight</div>}
-        {groups.live.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} twin={twins.has(artistOf(r))} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
-        {groups.upcoming.length > 0 && (
-          <>
-            <div className="section-label split" title="Launches Airtable knows and the funnel report does not yet - set their targets before they open">Upcoming<small>days to open</small></div>
-            {groups.upcoming.map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} twin={twins.has(artistOf(r))} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
-          </>
-        )}
-        {pinned && (
-          <>
-            <div className="section-label">Viewing</div>
-            <ReleaseRow r={pinned} asOf={index?.asOf} active onClick={() => pick(pinned.id)} />
-          </>
-        )}
-        <div className="section-label">All releases</div>
-        <input
-          className="sidebar-search"
-          type="search"
-          placeholder={`Search ${groups.all.length} releases…`}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search releases"
-        />
-        {query.trim() && results.length === 0 && <div className="hint">No release matches</div>}
-        {results.slice(0, 30).map((r) => <ReleaseRow key={r.id} r={r} asOf={index?.asOf} twin={resultTwins.has(artistOf(r))} active={view === "release" && r.id === releaseId} onClick={() => pick(r.id)} />)}
-        {results.length > 30 && <div className="hint">{results.length - 30} more - keep typing</div>}
-        {me?.admin && (
-          <>
-            <div className="section-label">Settings</div>
-            <button
-              className={`release-row${view === "permissions" ? " active" : ""}`}
-              onClick={() => { setView("permissions"); setNav(false); }}
-              title="Manage who can sign in to the dashboard"
-            >
-              <span className="nm">Permissions</span>
-            </button>
-          </>
-        )}
-        <div style={{ marginTop: 20, padding: "0 12px" }}>
-          <a href="/methodology" target="_blank" rel="noreferrer"
-            style={{ fontSize: 11.5, color: "#6c6b68", textDecoration: "none" }}
-            title="How every target is derived - the full target-setting methodology">
-            Methodology ↗
-          </a>
-        </div>
-        <SessionFooter email={me?.email} />
-      </nav>
-      <main className="content">
-        {view === "permissions" && me?.admin ? <Permissions me={me} /> :
-          snap ? <ReleasePage snap={snap} onSaved={onSaved} st={st} onRefreshed={onRefreshed} index={groups.all} row={current} onOpen={pick} /> :
-          snapError ? (
-            <div style={{ color: "#6c6b68", maxWidth: 520, lineHeight: 1.5 }}>
-              {snapError.pending
-                ? <><b style={{ color: "#141413" }}>{current?.name || "This release"}</b> is listed but its page has not been built yet - the first data refresh after a deploy takes a few minutes. Try again shortly.</>
-                : <>Could not load this release: {snapError.message}</>}
-            </div>
-          ) : <div style={{ color: "#6c6b68" }}>Loading…</div>}
-      </main>
-    </div>
-    </TipProvider>
-  );
-}
-
-function SessionFooter({ email }) {
-  if (!email) return null;
-  return (
-    <div style={{ marginTop: 24, padding: "10px 12px", borderTop: "1px solid #f2f0ea", fontSize: 11.5, color: "#6c6b68", display: "flex", gap: 8, alignItems: "center" }}>
-      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={email}>{email}</span>
-      <a href="/auth/logout" style={{ color: "#6c6b68" }}>Sign out</a>
-    </div>
-  );
-}
-
-/* BENCHMARK_SPEC 7: the row dot is green at or ahead of target, amber behind target
- * but at or ahead of benchmark, red behind benchmark, hollow when nobody has set
- * targets. benchmarkPct is secured against the benchmark's own pace for today, so
- * the middle band is that sign and nothing else. Releases still on the lever model
- * carry no benchmarkPct: there the shortfall against target is all there is, and a
- * release within 10% of it is called amber rather than red. 1/K moves from +15% to
- * -54% across the launches on file, which is why the fixed boundary is only ever
- * the fallback. */
-const BEHIND_TARGET_TOLERANCE = -0.10;
-const STATE = {
-  green: { color: C.green, word: "at or ahead of target" },
-  amber: { color: C.amber, word: "behind target, at or ahead of benchmark" },
-  red: { color: C.red, word: "behind benchmark" },
-};
-
-function rowState(r) {
-  if (r.targeted === false) return null; // hollow: nothing to be ahead or behind of
-  const pct = r.statusPct;
-  if (pct === null || pct === undefined) return r.ok ? "green" : "red";
-  if (pct >= 0) return "green";
-  const bm = r.benchmarkPct;
-  if (bm === null || bm === undefined) return pct >= BEHIND_TARGET_TOLERANCE ? "amber" : "red";
-  return bm >= 0 ? "amber" : "red";
-}
-
-/* The sidebar's clock for a dated release, from the index alone: the launch is
- * the window's end, the announce date sits `of` days before it, and the build
- * date says how far each is. A release whose announce is still ahead has not
- * opened and lists after the ones in flight. */
-/* A release's name as a sidebar row sets it (rowWords): the artist alone;
- * the title, "Multiple" and the quarter are left to the hover, which carries
- * the full name. An artist with two rows in the list (`twin`) gets the
- * quarter after the name, "timed" added for a timed launch, since the artist
- * alone would not say which launch a row was (Ai Weiwei's LE and TL of one
- * quarter). Before 5 October 2026 the full name wrapped over two lines above
- * a date and the list ran to two screens; until 8 October a real title rode
- * in grey after the artist, on some rows and not others. */
-const QUARTER_RE = /^\d{4} Q\d$/;
-const nameParts = (r) => String(r.releaseName || r.name || r.artist || "").split(" \u00b7 ").map((p) => p.trim()).filter(Boolean);
-const artistOf = (r) => nameParts(r)[0] || "";
-/* the artists with more than one row in a list: their rows carry what tells them apart */
-function twinSet(rows) {
-  const n = new Map();
-  for (const r of rows) n.set(artistOf(r), (n.get(artistOf(r)) || 0) + 1);
-  return new Set([...n].filter(([, c]) => c > 1).map(([a]) => a));
-}
-/* A row's words: the artist alone, the same on every row - the work's title
- * and the quarter are the hover's, which carries the full name (8 October
- * 2026: a title on some rows and not others read as inconsistent). An artist
- * with two rows in a list gets the quarter after the name, and "timed" on a
- * timed launch, so the two can be told apart; never the title. */
-function rowWords(r, twin) {
-  const [artist, ...rest] = nameParts(r);
-  const kept = twin ? [...(r.type === "TL" ? ["timed"] : []), ...rest.filter((p) => QUARTER_RE.test(p))] : [];
-  return { artist: artist || "", rest: kept.join(" \u00b7 ") };
-}
-
-/* One release in the sidebar: the status dot, the artist on one line (the
- * quarter in grey after it only where the artist has two rows), and the days on the right, with a grey verb
- * before the count where it does not run to the section's own event (the
- * close in flight, the open upcoming): "opens" on a timed launch taking
- * signups, "announces" on one before its announce, "closes" on an upcoming
- * launch whose announce has passed. The date is in the hover with the
- * day-of-window and the pace; a date outside the page's year carries its
- * year, since a date without one put a launch of two Novembers ago beside
- * this spring's. The dot's meaning is its Pace row rather than a key under
- * the list. */
-function ReleaseRow({ r, asOf, active, onClick, twin = false }) {
-  const t = useTip();
-  const targeted = r.targeted !== false;
-  const state = rowState(r);
-  const status = r.status || (r.complete ? "closed" : "live");
-  const clock = status === "catalogue" ? null : releaseClock(r, asOf);
-  const pct = targeted && r.statusPct !== null && r.statusPct !== undefined ? Math.round(r.statusPct * 100) : null;
-  const rows = [];
-  if (status !== "catalogue") rows.push({ label: "Day", value: `${r.day} of ${r.of}` });
-  if (pct !== null) rows.push({ label: "vs target", value: `${pct >= 0 ? "+" : ""}${pct}%`, color: STATE[state].color });
-  const bmPct = targeted && r.benchmarkPct !== null && r.benchmarkPct !== undefined ? Math.round(r.benchmarkPct * 100) : null;
-  if (bmPct !== null) rows.push({ label: "vs benchmark", value: `${bmPct >= 0 ? "+" : ""}${bmPct}%` });
-  if (state) rows.push({ label: "Pace", value: STATE[state].word, color: STATE[state].color });
-  rows.push({ label: "Status", value: STATUS_LABEL[status] || status });
-  if (r.quarter) rows.push({ label: "Quarter", value: r.quarter });
-  // the name's quarter is upstream's; where the window closes in another, say so
-  const closesIn = status === "catalogue" ? null : closeQuarter(r);
-  if (closesIn && closesIn !== r.quarter) rows.push({ label: "Closes in", value: closesIn, color: C.amber });
-  // an upcoming launch whose window Airtable says has opened, with nothing in the funnel yet, does not "open soon"
-  if (!targeted) rows.push({ label: "Targets", value: status !== "upcoming" ? "not set - actuals only"
-    : clock && clock.opensIn > 0 ? "not set - opens soon" : "not set - announce passed, no funnel rows yet" });
-  if (status === "catalogue" && r.lastSeen) rows.push({ label: "Last traffic", value: r.lastSeen });
-  const content = { head: r.releaseName || r.name, rows };
-  // a day, with its year where that is not the page's own year
-  const thisYear = asOf ? Number(String(asOf).slice(0, 4)) : new Date().getUTCFullYear();
-  const on = (d) => (d.getUTCFullYear() === thisYear ? fmtDay(d) : `${fmtDay(d)} ${d.getUTCFullYear()}`);
-
-  // the figure on the right, the verb before it where the count is not to
-  // the section's own event, and the date for the hover
-  let when, count = null, verb = null;
-  if (!clock) when = status === "closed" ? "Closed" : "Catalogue";
-  else if (status === "upcoming" && clock.opensIn > 0) { when = `Opens ${on(clock.announce)}`; count = clock.opensIn; }
-  else if (status === "upcoming") { when = `Closes ${on(clock.launch)}`; count = Math.max(clock.daysLeft, 0); verb = "closes"; }
-  else if (clock.opensIn > 0) { when = `Opens ${on(clock.announce)}`; count = clock.opensIn; verb = "opens"; }
-  else if (status === "closed") when = `Closed ${on(clock.launch)}`;
-  else { when = `Closes ${on(clock.launch)}`; count = Math.max(clock.daysLeft, 0); }
-  // a launch whose works close on different days names each close; the
-  // count on the right is to the last (docs 1.6)
-  if (status !== "closed" && Array.isArray(r.closes) && r.closes.length > 1) {
-    when = `Closes ${r.closes.map((d) => on(new Date(d + "T00:00:00Z"))).join(" · ")}`;
-  }
-  // a timed launch's row says its state in words (docs/TL_SPEC.md §9): the
-  // days to the sales open while signups are watched, the hours left while
-  // the window is open, settling or closed after it; read on the clock, since
-  // a window is hours long and the index is rebuilt every refresh
-  let unit = "d";
-  if (r.type === "TL") {
-    const nowMs = Date.now();
-    const label = r.tlLabel ? r.tlLabel.charAt(0).toUpperCase() + r.tlLabel.slice(1) : null;
-    if (r.tlState === "signups" || r.tlState === "upcoming") {
-      // the days to the sales open while signups are watched, to the announce before it
-      const toMs = r.tlState === "upcoming" && r.windowStart ? Date.parse(r.windowStart + "T00:00:00Z") : r.salesOpen ? Date.parse(r.salesOpen) : NaN;
-      when = label || when;
-      count = Number.isFinite(toMs) ? Math.max(Math.ceil((toMs - nowMs) / 86400000), 0) : null;
-      verb = r.tlState === "upcoming" ? "announces" : "opens";
-    } else if (r.tlState === "window") {
-      const closeMs = r.windowClose ? Date.parse(r.windowClose) : NaN;
-      when = label || when;
-      count = Number.isFinite(closeMs) ? Math.max(Math.ceil((closeMs - nowMs) / 3600000), 0) : null;
-      unit = "h";
-      verb = "closes";
-    } else {
-      when = label || when;
-      count = null;
-    }
-    rows.splice(rows.findIndex((x) => x.label === "Status"), 1, { label: "Status", value: r.tlLabel || r.tlState });
-  }
-  // the date, under the status in the hover ("Closes 14 Oct"), now that the
-  // row no longer carries it; a timed launch's status row already has its words
-  if (clock && r.type !== "TL") {
-    const [word, ...date] = String(when).split(" ");
-    if (date.length) rows.splice(rows.findIndex((x) => x.label === "Status") + 1, 0, { label: word, value: date.join(" ") });
-  }
-  const words = rowWords(r, twin);
-  return (
-    <button className={`release-row${active ? " active" : ""}`} onClick={onClick} {...t.props(content)}>
-      {state
-        ? <span className="dot" style={{ background: STATE[state].color }} />
-        : <span className="dot hollow" />}
-      <span className="nm">{words.artist}{words.rest && <span className="rest"> · {words.rest}</span>}</span>
-      {count !== null && <span className="left">{verb && <small className="verb">{verb}</small>}{count}<small>{unit}</small></span>}
-      {clock && clock.opensIn > 0 && count === null && <span className="left none">·</span>}
-    </button>
-  );
-}
+const DIRECT_PREF = "directSpread";
+const readDirectPref = () => { try { return localStorage.getItem(DIRECT_PREF) !== "0"; } catch { return true; } };
 
 /* The server's refresh status, polled every 5 minutes (every 15 s while a
  * refresh is in flight). undefined = still asking, null = could not read it. */
@@ -431,368 +55,94 @@ function useRefreshStatus() {
   const [st, setSt] = useState(undefined);
   useEffect(() => {
     let live = true;
-    const poll = () => fetch("/api/refresh/status")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (live) setSt(d); })
-      .catch(() => { if (live) setSt(null); });
+    const poll = () => fetch("/api/refresh/status").then((r) => (r.ok ? r.json() : null)).then((d) => { if (live) setSt(d); }).catch(() => { if (live) setSt(null); });
     poll();
     const id = setInterval(poll, 5 * 60 * 1000);
     return () => { live = false; clearInterval(id); };
   }, []);
   useEffect(() => {
-    if (!st || !st.running) return;
-    const id = setInterval(() => fetch("/api/refresh/status")
-      .then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setSt(d); }).catch(() => {}), 15 * 1000);
+    if (!st || !st.running) return undefined;
+    const id = setInterval(() => fetch("/api/refresh/status").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setSt(d); }).catch(() => {}), 15 * 1000);
     return () => clearInterval(id);
   }, [st && st.running]);
   return st;
 }
 
-/* A page built from data older than the last full day is the committed
- * fallback (served after a deploy until the first refresh lands) or the
- * product of a refresh that has been failing. Both looked like "the numbers
- * are just low". Say which, how far behind, and what the refresh is doing
- * about it, with the time it started. Data through yesterday is normal until
- * the first refresh of the day and is not flagged. */
-function StaleBanner({ asOf, st, onRefreshed }) {
-  // whole days between the data's last day and today, on the calendar the
-  // reader is on: through the 21st read on the 23rd is two days behind
-  const now = new Date();
-  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  const ageDays = asOf ? Math.round((today - new Date(asOf + "T00:00:00Z").getTime()) / 86400000) : 0;
-  /* "this page reloads when it lands", below, has to hold for the first refresh
-     after a deploy as well as for the hourly ones - the rule and why it is not
-     the timestamp are in shared/refreshWatch.mjs. */
-  const watch = React.useRef(watchInitial());
-  useEffect(() => {
-    const r = watchStep(watch.current, st);
-    watch.current = r.state;
-    if (r.reload) onRefreshed();
-  }, [st && st.at, st && st.running]);
-  if (ageDays < 2) return null;
-  const through = fmtDay(new Date(asOf + "T00:00:00Z"), true);
-  const clock = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-  let what;
-  if (st === undefined) what = "Checking whether a refresh is running…";
-  else if (st && st.running) what = `A refresh started at ${clock(st.runningSince)} is running now; this page reloads itself when it lands. ` +
-    "The first refresh after a deploy takes several minutes.";
-  else if (st && st.at && st.ok === false) {
-    const failing = [st.etl, st.bigquery, st.sheet, st.airtable, st.notion, st.emails].map((v) => String(v || ""))
-      .find((v) => /failed|misconfigured|stale/i.test(v)) || String(st.etl || st.bigquery || st.sheet || "");
-    what = `The last refresh, at ${clock(st.at)}, failed: ${failing.slice(0, 160)}`;
-  }
-  else if (st && st.at) what = `The last refresh, at ${clock(st.at)}, succeeded but did not move this page - the source feed may not have newer rows for it.`;
-  else what = "No refresh has completed since the app started - the first one after a deploy takes several minutes.";
-  return (
-    <div role="status" style={{ margin: "14px 0 0", padding: "10px 14px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a",
-                                borderLeft: "3px solid #8a5f00", fontSize: 13, lineHeight: 1.5 }}>
-      <b>Built from data through {through}, {ageDays} days behind.</b> {what}
-    </div>
-  );
-}
-
-/* Every card counts units paid from the orders table, each order on the
- * channel of its purchase event (docs 6.3). An order the funnel never saw
- * still counts, on Untracked, but nothing says where it came from. When that
- * is more than a sliver of the window, the channel split is short of
- * evidence and the purchase tag is the thing to check: say so, with the
- * count. The threshold is the build's (NO_EVENT_WARN_SHARE, _MIN). */
-function CoverageBanner({ noEvent }) {
-  if (!noEvent || !noEvent.high) return null;
-  const pct = Math.round((noEvent.share || 0) * 100);
-  return (
-    <div role="status" style={{ margin: "14px 0 0", padding: "10px 14px", borderRadius: 10, background: "#fbf1e6", color: "#5a3f0a",
-                                borderLeft: "3px solid #8a5f00", fontSize: 13, lineHeight: 1.5 }}>
-      <b>{fmt(noEvent.count)} of {fmt(noEvent.total)} units paid ({pct}%) have no purchase event.</b> They count in
-      every total, on Untracked and shared out over the tracked channels, but their own channel is unknown - the
-      purchase tag may be missing on part of checkout.
-    </div>
-  );
-}
-
-/* The header's freshness line: the page's own age first (the day its data
- * runs to, when it was built), the pipeline's health second, in words a
- * reader can act on. It used to read the refresh's failure flag alone, so a
- * page rebuilt an hour ago read "Sources stale" because a later step of the
- * refresh had failed. The rule is shared/freshness.mjs, which
- * tests/freshness.mjs runs through its states; this only renders it. */
-function Freshness({ asOf, st, emailThrough, partial, builtAt, funnelNote }) {
-  const t = useTip();
-  const f = freshness({ asOf, partial, builtAt, st, emailThrough, funnelNote });
-  return (
-    <span className="freshness" style={{ color: TONE_COLOR[f.tone] }} {...t.props({ head: f.head, body: f.body, rows: f.rows })}>
-      {f.warn && <span aria-hidden="true">⚠ </span>}
-      {f.label}
-    </span>
-  );
-}
-
-/* One control, every container. Today reads actuals against the target and
- * benchmark for today; At close reads the projection against the target and
- * benchmark for the whole campaign. Cards with a single horizon - the funnels,
- * paid ROI, geo - ignore it and are not given it. */
-function HorizonToggle({ horizon, onChange, closeLabel = "At close" }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontSize: 12.5, color: "#6c6b68" }}>Compare</span>
-      <div className="seg" role="group" aria-label="Comparison horizon">
-        <button
-          className={horizon === "today" ? "active" : ""}
-          onClick={() => onChange("today")}
-          title="Actuals so far against the target and benchmark for today">Today</button>
-        <button
-          className={horizon === "close" ? "active" : ""}
-          onClick={() => onChange("close")}
-          title={`Projection ${closeLabel.toLowerCase()} against the target and benchmark for the campaign`}>{closeLabel}</button>
-      </div>
-    </div>
-  );
-}
-
-/* Direct as a channel of its own, or spread over the others (docs §1.3).
- * The ETL builds every page both ways and the blocks that differ ride under
- * snap.variants.direct_spread; laying them over the snapshot here makes the
- * switch instant and puts every card on the same attribution. It is a
- * methodology choice, not a reading of one launch, so it sticks per browser. */
-const DIRECT_PREF = "directSpread";
-// where the header's marketing lead chip read the name from (the snapshot's inputSources, docs 1.6)
-const LEAD_FROM = { notion: " · from the Notion log", airtable: " · from Airtable", typed: " · typed on the Target setting tab" };
-const readDirectPref = () => { try { return localStorage.getItem(DIRECT_PREF) === "1"; } catch { return false; } };
-function DirectToggle({ on, onChange, share, snap }) {
-  const pct = (x) => (x === null || x === undefined ? "–" : Math.round(100 * x) + "%");
-  const W = wordsOf(snap);
-  // a timed launch's switch speaks of signups before its window and units inside it (docs/TL_SPEC.md §3b)
-  const tip = W.tl
-    ? `Direct is ${pct(share && (W.state === "signups" ? share.signups : share.units))} of this launch's ${W.state === "signups" ? "signups" : "units"} and ${pct(share && share.sessions)} of its sessions as the feed attributes them. `
-      + `Spread shares Direct out over the other channels in proportion to their own volumes, ${W.stepWord} by ${W.stepWord}, and reads the basket's launches the same way. `
-      + "Totals, the signup target, what has been sold, the paid budget and the sell-through forecast do not move; the plan's split by channel follows the basket, and paid reads the signups it is given, at a cost rescaled to them."
-    : `Direct is ${pct(share && share.entries)} of this release's entries and ${pct(share && share.units)} of its units as the funnel attributes them. `
-      + "Spread shares Direct out over the other channels in proportion to their own volumes, day by day, and reads the benchmark's channel split the same way. "
-      + "Totals, what has been sold and the paid budget do not move; the plan's pace and the projections can shift a little with the channel mix, and paid reads the entries it is given, at a cost per unit rescaled to them.";
-  const spreadTitle = W.tl
-    ? "Direct's sessions, signups and units are shared out over the other channels in proportion to their own"
-    : "Direct's sessions, entries and units are shared out over the other channels in proportion to their own";
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }} title={tip}>
-      <span style={{ fontSize: 12.5, color: "#6c6b68" }}>Direct</span>
-      <div className="seg" role="group" aria-label="Direct attribution">
-        <button className={on ? "" : "active"} onClick={() => onChange(false)}
-          title={W.tl ? "Direct stays a channel of its own, as the TL feed attributes it" : "Direct stays a channel of its own, as the funnel export attributes it"}>Channel</button>
-        <button className={on ? "active" : ""} onClick={() => onChange(true)} title={spreadTitle}>Spread</button>
-      </div>
-    </div>
-  );
-}
-
-/* A release selling two lines of work on one page (docs/LINES_PLAN.md): the
- * page read for all of it, or for one line. The ETL builds each line's page
- * (variants.lines, and variants.lines_direct with Direct spread) and the
- * switch lays it over the snapshot. On a line's page the entries, units,
- * sell-through and paid are the line's own; the sessions are the shared
- * page's, since one email and one post reach one audience. */
-function LineToggle({ lines, value, onChange }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}
-      title="The page for the whole release, or for one line of work. A line's page reads its own draws, works and ad set; the sessions are the shared page's.">
-      <span style={{ fontSize: 12.5, color: "#6c6b68" }}>Line</span>
-      <div className="seg" role="group" aria-label="Line of work">
-        <button className={value ? "" : "active"} onClick={() => onChange(null)} title="Every line together: the release's page">All</button>
-        {lines.map((l) => (
-          <button key={l.key} className={value === l.key ? "active" : ""} onClick={() => onChange(l.key)}
-            title={`${l.name}: ${(l.products || []).join(", ")}`}>{l.name}</button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function LineBanner({ line, lines }) {
-  if (!line) return null;
-  const meta = (lines || []).find((l) => l.key === line.key) || {};
-  const basis = line.entriesBasis === "draws" ? "its entries are its own draws' by day and channel"
-    : line.entriesBasis === "share" ? "its entries are the release's shared out by its draws' entrants, until the event feed carries the draws by day"
-      : "no draw of its own is in the event feed yet, so it shows no entries";
-  const units = line.unitsBasis === "orders" || !line.unitsBasis ? "its units are its own works' orders" : `its units are the release's shared out by ${line.unitsBasis}`;
-  const paid = (line.adsets || []).length ? `paid is its ad set${line.adsets.length > 1 ? "s" : ""} (${line.adsets.join(", ")})` : "no ad set is named for it on the Target setting tab, so paid reads nothing";
-  return (
-    <div className="chip" style={{ display: "block", margin: "12px 0 0", padding: "8px 12px", background: "#f3f2ee", color: "#45433f", fontSize: 12.5, lineHeight: 1.45 }}>
-      <b>{line.name || meta.name || line.key}</b>: {basis}; {units}; {paid}. The sessions and the organic traffic are the shared page's, so its conversion is read on them.
-      {meta.benchmarkUnits ? ` Benchmarked on its own basket (${fmt(meta.benchmarkUnits)} units of demand).` : ""}
-    </div>
-  );
-}
-
-/* The header's strip for a release that is not a timed launch: its status
- * with the sidebar's dot, its target and edition where it has them, its lead.
- * `row` is the release's index row, which carries the status and the pace the
- * dot reads (rowState); without one the snapshot's own flags say the status. */
-function LEFacts({ snap, row, lead }) {
-  const status = snap.catalogue ? "catalogue" : snap.upcoming ? "upcoming" : row ? row.status : snap.complete ? "closed" : "live";
-  const state = row && snap.targeted !== false ? rowState(row) : null;
-  const word = (STATUS_LABEL[status] || status).replace(/^./, (c) => c.toUpperCase());
-  const content = snap.catalogue
-    ? { head: "Catalogue", body: "No campaign dates in the funnel export - showing the last 90 days of traffic" }
-    : snap.upcoming
-      ? { head: "Upcoming", body: "Known to Airtable; the funnel report has no rows for it yet" }
-      : { head: word, rows: [
-          ...(row && row.day ? [{ label: "Day", value: `${row.day} of ${row.of}` }] : []),
-          ...(state ? [{ label: "Pace", value: STATE[state].word, color: STATE[state].color }] : []),
-          ...(snap.targeted === false ? [{ label: "Targets", value: "not set - actuals only" }] : []),
-        ] };
-  const ed = snap.edition || {};
-  return (
-    <>
-      <Fact label="Status" dot={state ? STATE[state].color : null} content={content}>{word}</Fact>
-      {snap.targeted !== false && ed.target > 0 && (
-        <Fact label="Target" tip={ed.total > ed.target
-          ? "The target is part of the edition: the hero cap, the room and the sell-through read against the whole edition, the targets against the target"
-          : "The units target"}>
-          <span><Ex k="release.target">{fmt(ed.target)}</Ex> units</span>
-        </Fact>
-      )}
-      {snap.targeted !== false && ed.total > ed.target && (
-        <Fact label="Edition" tip={`The whole edition; the target is ${Math.round((100 * ed.target) / ed.total)}% of it`}>{fmt(ed.total)}</Fact>
-      )}
-      {lead}
-    </>
-  );
-}
-
-function ReleasePage({ snap, onSaved, st, onRefreshed, index, row, onOpen }) {
-  const [tab, setTab] = useState("overview");
-  const [horizon, setHorizon] = useState("today");
+export default function App() {
+  const [index, setIndex] = useState(null);
+  const [error, setError] = useState(null);
+  const [me, setMe] = useState(null);
+  const [route, setRoute] = useState(readRoute);
+  const [snap, setSnap] = useState(null);
+  const [snapError, setSnapError] = useState(null);
+  const [nav, setNav] = useState(false);
+  const [palette, setPalette] = useState(false);
   const [directSpread, setDirectSpreadState] = useState(readDirectPref);
   const setDirectSpread = (v) => { setDirectSpreadState(v); try { localStorage.setItem(DIRECT_PREF, v ? "1" : "0"); } catch { /* per-browser convenience only */ } };
-  const variant = snap.variants && snap.variants.direct_spread;
-  // the lines of work the release sells (docs/LINES_PLAN.md), and the one the
-  // page is read for; a line is a reading of one launch, so it does not stick
-  const lines = Array.isArray(snap.lines) && snap.lines.length && snap.variants && snap.variants.lines ? snap.lines : null;
-  const [lineKey, setLineKey] = useState(null);
-  const lineVariant = lines && lineKey
-    ? ((directSpread && snap.variants.lines_direct && snap.variants.lines_direct[lineKey]) || snap.variants.lines[lineKey] || null)
-    : null;
-  // the page the cards read: the snapshot, or the snapshot with Direct spread, or one line's page
-  const view = useMemo(() => (lineVariant ? { ...snap, ...lineVariant } : directSpread && variant ? { ...snap, ...variant } : snap),
-    [snap, variant, directSpread, lineVariant]);
-  // a new release is a new reading: start it on the tab and the horizon everyone shares
-  useEffect(() => { setTab("overview"); setHorizon("today"); setLineKey(null); }, [snap.id]);
-  const targeted = snap.targeted !== false;
-  const catalogue = !!snap.catalogue;
-  const upcoming = !!snap.upcoming;
-  // a timed launch (docs/TL_SPEC.md §4, §5): the LE cards on the shared
-  // layout, in the state's words - signups before its window, units inside
-  // it - with its own chips, clock strip and target setting
-  const isTL = snap.type === "TL";
-  // nothing to compare against without targets, and a catalogue page has no campaign
-  const showHorizon = targeted && !catalogue;
+  const st = useRefreshStatus();
 
-  /* The page's arrangement is shared and editable (Layout.jsx), so the cards
-   * are rendered by key in whatever order the layout says. A card a release has
-   * nothing for is left out of its page. Without targets every card is on its
-   * actual side, and the cards that only exist relative to a plan say so in
-   * place. */
-  const layout = useLayout();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const startEdit = () => { setDraft(layout.items); setSaveError(null); setEditing(true); };
-  const stopEdit = () => { setEditing(false); setDraft(null); setSaveError(null); };
-  const saveLayout = async () => {
-    setSaving(true); setSaveError(null);
-    try { await layout.save(draft); stopEdit(); } catch (e) { setSaveError(e.message); } finally { setSaving(false); }
+  useEffect(() => { fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {}); }, []);
+  const loadIndex = useCallback(() => getJSON("/api/index").then((ix) => { setIndex(ix); return ix; }), []);
+  useEffect(() => { loadIndex().catch((e) => setError(String(e))); }, [loadIndex]);
+  // the address opens the page it names; nothing named opens the releases list
+  useEffect(() => { if (route.view === null) setRoute({ view: "releases" }); }, [route.view]);
+  useEffect(() => { if (route.view) writeRoute(route); }, [route]);
+  useEffect(() => {
+    const back = () => setRoute(readRoute());
+    window.addEventListener("popstate", back);
+    return () => window.removeEventListener("popstate", back);
+  }, []);
+  // ⌘K opens the command bar; Escape closes the drawer
+  useEffect(() => {
+    const key = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setPalette((p) => !p); }
+      if (e.key === "Escape") setNav(false);
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
+  useEffect(() => { document.body.classList.toggle("nav-open", nav); }, [nav]);
+
+  const releaseId = route.view === "release" ? route.id : null;
+  useEffect(() => {
+    if (!releaseId) return;
+    setSnap(null); setSnapError(null);
+    getJSON(`/api/releases/${releaseId}`).then(setSnap).catch((e) => setSnapError({ message: e.message, pending: !!e.pending }));
+  }, [releaseId]);
+  // a save's rebuild lands whenever it lands: only the page on screen is swapped
+  const onScreen = React.useRef(releaseId);
+  useEffect(() => { onScreen.current = releaseId; }, [releaseId]);
+  const onSaved = (s) => { if (s && s.id === onScreen.current) setSnap(s); loadIndex().catch(() => {}); };
+  const onRefreshed = () => {
+    loadIndex().catch(() => {});
+    if (releaseId) getJSON(`/api/releases/${releaseId}`).then(setSnap).catch(() => {});
   };
-  useEffect(() => { if (tab !== "overview") stopEdit(); }, [tab]);
-  const renderCard = (key) => {
-    switch (key) {
-      case "clock": return <LaunchStrip snap={view} />;
-      case "hero": return <HeroBar snap={view} horizon={horizon} />;
-      case "channels": return <ChannelsVsTargets snap={view} horizon={horizon} />;
-      case "no_targets": return targeted ? null : <NoTargets snap={view} onSetup={() => setTab("targets")} />;
-      case "funnel": return <FunnelByChannel snap={view} />;
-      case "funnel_wide": return <FunnelByChannelWide snap={view} />;
-      // the trajectory draws one picture: both readings are already on it
-      case "trajectory": return <Trajectory snap={view} />;
-      case "drivers": return <KeyDrivers snap={view} />;
-      case "paid_roi": return <PaidRoi snap={view} />;
-      case "paid_spend": return <PaidSpend snap={view} horizon={horizon} />;
-      // a timed launch has no sales to show before its window opens
-      case "sell_through": return isTL && !view.sellthrough ? null : <SellThrough snap={view} horizon={horizon} />;
-      case "framing": return <Framing snap={view} horizon={horizon} />;
-      case "geo": return isTL ? null : <Geo snap={view} />;
-      case "waterfall": return <Waterfall snap={view} horizon={horizon} />;
-      case "tl_signups": return isTL && view.sales ? <TLSignupsOutcome snap={view} /> : null;
-      // a timed launch's forecast of the window's sales by work, before it opens
-      case "tl_forecast": return isTL && view.sellForecast ? <SellForecast snap={view} horizon={horizon} /> : null;
-      // the launches the benchmark is read from; a row opens that launch's page
-      case "basket": return <BasketCard snap={view} index={index} onOpen={onOpen} />;
-      default: return null;
-    }
-  };
+
+  const groups = useMemo(() => (index ? sidebarGroups(index.releases, index.asOf) : { all: [], live: [], upcoming: [], recent: [], closed: [], catalogue: [] }), [index]);
+  const current = groups.all.find((r) => r.id === releaseId) || null;
+
+  const pick = (id, tab) => { setRoute({ view: "release", id, tab: tab || "overview", basket: false }); setNav(false); setPalette(false); window.scrollTo(0, 0); };
+  const go = (r) => { setRoute(r); setNav(false); window.scrollTo(0, 0); };
+
+  if (error) return <div style={{ padding: 40 }}>Failed to load: {error}</div>;
   return (
-    <ExplainProvider snap={view} st={st} resetKey={`${snap.id}|${tab}`} enabled={!isTL}>
-      {/* The header (its design canvas, option A, 12 October 2026): the name
-          and the page's controls on one line, then a strip of labelled facts
-          with the freshness note at its end. Short of room the controls drop
-          under the name and the facts wrap; nothing breaks inside itself. A
-          warning (no targets, a date assumed) stays a tinted chip by the name.
-          Until then the facts were chips after the name, two to a chip. */}
-      <header className="page-header" style={{ marginBottom: 0 }}>
-        <div className="page-top">
-          <div className="page-identity">
-            <span className="name">{snap.artist} - {snap.title}</span>
-            <span className={`badge ${String(snap.type || "LE").toLowerCase()}`}>{snap.type || "LE"}</span>
-            {isTL && <TLFlags snap={snap} />}
-            {!targeted && !isTL && (
-              <span className="chip" style={{ background: "#fbf1e6", color: "#8a5f00" }}
-                title="Nobody has set targets for this release - the page shows actuals only">No targets</span>
-            )}
-          </div>
-          {(showHorizon || ((variant || lines) && tab === "overview")) && (
-            <div className="page-controls">
-              {showHorizon && <HorizonToggle horizon={horizon} onChange={setHorizon} closeLabel={wordsOf(snap).closeLabel} />}
-              {lines && tab === "overview" && <LineToggle lines={lines} value={lineKey} onChange={setLineKey} />}
-              {/* the switch lays the variant over the Overview's cards; the other
-                  tabs read Direct as a channel, so it is not offered there */}
-              {variant && tab === "overview" && <DirectToggle on={directSpread} onChange={setDirectSpread} share={snap.directShare} snap={snap} />}
-            </div>
-          )}
-        </div>
-        <div className="page-facts">
-          {(() => {
-            const lead = snap.marketingLead
-              ? <Fact label="Lead" person={snap.marketingLead} tip={`Marketing lead${LEAD_FROM[(snap.inputSources || {}).marketing_lead] || ""}${String(snap.marketingLead).includes("@") ? ` · ${snap.marketingLead}` : ""}`} />
-              : null;
-            return isTL ? <TLFacts snap={snap} lead={lead} /> : <LEFacts snap={snap} row={row} lead={lead} />;
-          })()}
-          <Freshness asOf={snap.asOf} st={st} emailThrough={snap.email && snap.email.feedThrough} builtAt={snap.builtAt}
-            partial={typeof snap.asOfFraction === "number" && snap.asOfFraction < 1} funnelNote={snap.funnelNote} />
-        </div>
-      </header>
-      <StaleBanner asOf={snap.asOf} st={st} onRefreshed={onRefreshed} />
-      <CoverageBanner noEvent={snap.untracked && snap.untracked.noEvent} />
-      {tab === "overview" && lineVariant && <LineBanner line={view.line} lines={lines} />}
-      <nav className="tabs" style={{ marginTop: 20 }}>
-        <button className={`tab${tab === "overview" ? " active" : ""}`} onClick={() => setTab("overview")}>Overview</button>
-        <button className={`tab${tab === "targets" ? " active" : ""}`} onClick={() => setTab("targets")}>{targeted ? "Target setting" : "Set up targets"}</button>
-        {!upcoming && !isTL && <button className={`tab${tab === "audit" ? " active" : ""}`} onClick={() => setTab("audit")} title="Check the allocator tool against an admin draw-entries export">Draw audit</button>}
-        {tab === "overview" && !editing && !upcoming && !isTL && <ExplainHint />}
-        {tab === "overview" && !editing && (
-          <button className="edit-link" onClick={startEdit} title="Move the cards and add section headers - saved for everyone">Edit layout</button>
+    <TipProvider>
+      <div className="app">
+        <Sidebar groups={groups} asOf={index && index.asOf} currentId={releaseId} view={route.view} me={me} open={nav} onClose={() => setNav(false)}
+          onPick={pick} onReleases={() => go({ view: "releases" })} onPermissions={() => go({ view: "permissions" })}
+          onTargets={() => { const id = releaseId || (groups.live[0] && groups.live[0].id); if (id) pick(id, "targets"); }}
+          onSearch={() => setPalette(true)} />
+        {route.view === "permissions" ? (
+          <Permissions me={me} onMenu={() => setNav(true)} />
+        ) : route.view === "release" ? (
+          <ReleasePage snap={snap} snapError={snapError} row={current} asOf={index && index.asOf} st={st} route={route} setRoute={setRoute}
+            directSpread={directSpread} setDirectSpread={setDirectSpread} onSaved={onSaved} onRefreshed={onRefreshed} onOpen={pick} onMenu={() => setNav(true)} />
+        ) : (
+          <Releases groups={groups} asOf={index && index.asOf} onPick={pick} />
         )}
-      </nav>
-      {tab === "targets" ? (isTL ? <TLTargets snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} /> : <TargetSetting snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} />)
-        : tab === "audit" && !upcoming && !isTL ? <DrawAudit snap={snap} /> : upcoming && !isTL ? (
-        <div style={{ maxWidth: 560, marginTop: 24 }}><Upcoming snap={snap} onSetup={() => setTab("targets")} /></div>
-      ) : (
-        <>
-          {editing && (
-            <LayoutBar items={draft} onChange={setDraft} saving={saving} error={saveError}
-              updatedAt={layout.updatedAt} updatedBy={layout.updatedBy} onCancel={stopEdit} onSave={saveLayout} />
-          )}
-          <PageLayout items={editing ? draft : layout.items} editing={editing} onChange={setDraft} render={renderCard} />
-        </>
-      )}
-    </ExplainProvider>
+      </div>
+      {palette && <CommandBar groups={groups} asOf={index && index.asOf} onPick={pick} onClose={() => setPalette(false)} />}
+      {route.view === "release" && <AgentDock snap={snap} />}
+    </TipProvider>
   );
 }

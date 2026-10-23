@@ -27,6 +27,7 @@ import {
 import { labelPx, textPx, timeAxis, nameLines, placeTip, placeBeside } from "./labels.mjs";
 import { Ex } from "./explain/Explain.jsx";
 import { describeStretch } from "../../shared/benchmarkModel.mjs";
+import { Dots, Up, Dn } from "./icons.jsx";
 
 /* Where the stretch comes from, in the cards' words: the shares the Target
  * setting tab placed on the channels, else the even uplift (BENCHMARK_SPEC 4.4). */
@@ -266,17 +267,137 @@ export function ragColor(pct) {
    the title, for a head whose right slot holds a figure that must never be
    cut (the card would clip it mid-number) or whose title would otherwise
    break onto two or three lines against the card's top edge. */
-export function Card({ tall, wide, dot, title, badge, right, children, style, wrapHead }) {
+/* A card of the redesign: the title on the left of its head, then any
+ * switch (`seg`), then the ⋯ menu (`menu`: [{ label, onClick, checked,
+ * icon, right, sep }]); the headline numbers go in a <Head> under it. */
+export function Card({ wide, title, seg, menu, right, children, style, aria, className, onClick }) {
+  const m = useMenu();
   return (
-    <div className={`card${tall ? " tall" : ""}${wide ? " wide" : ""}`} style={style}>
-      <div className={`mod-head${wrapHead ? " wrap" : ""}`}>
-        <span className="gdot" style={{ background: dot }} />
-        <span className="title">{title}</span>
-        {badge || null}
-        {right ? <span className="right">{right}</span> : null}
+    <section className={`card${wide ? " wide" : ""}${className ? " " + className : ""}`} style={style} aria-label={aria || (typeof title === "string" ? title : undefined)} onClick={onClick}>
+      <div className="ch">
+        <span className="t">{title}</span>
+        <span className="sp" />
+        {right || null}
+        {seg || null}
+        {menu && menu.length > 0 && (
+          <span style={{ position: "relative", display: "inline-flex" }}>
+            <button className="ib" aria-label={`${typeof title === "string" ? title : "Card"} options`} aria-haspopup="menu" aria-expanded={m.open} onClick={m.toggle}><Dots /></button>
+            <Menu open={m.open} onClose={m.close} style={{ top: 30, right: 0, minWidth: 220 }}>
+              {menu.map((it, i) => it.sep ? <div className="msep" key={i} /> : (
+                <MenuItem key={i} icon={it.icon} right={it.right} checked={it.checked} radio={it.radio} disabled={it.disabled}
+                  onClick={() => { m.close(); if (it.onClick) it.onClick(); }}>{it.label}</MenuItem>
+              ))}
+            </Menu>
+          </span>
+        )}
       </div>
       {children}
+    </section>
+  );
+}
+
+/* The headline in a card's head: the figure, its unit, the deltas (each
+ * { t, dir: "up" | "dn" | "flat" }) and a quiet aside with a hover. */
+export function Head({ v, u, deltas = [], aside, asideTip, children }) {
+  return (
+    <div className="hn">
+      <span className="hv">{v}</span>
+      {u ? <span className="hu">{u}</span> : null}
+      {deltas.filter(Boolean).map((d, i) => (
+        <span key={i} className={`dl ${d.dir || "flat"}`} title={d.tip}>{d.dir === "up" ? <Up /> : d.dir === "dn" ? <Dn /> : null}{d.t}</span>
+      ))}
+      {aside ? <span className="hs" title={asideTip}>{aside}</span> : null}
+      {children}
     </div>
+  );
+}
+/* a delta against a reference, as the head prints it: "48% vs target", up or down */
+export function vsDelta(actual, ref, word, tip) {
+  if (!(ref > 0) || actual === null || actual === undefined) return null;
+  const p = Math.round((actual / ref - 1) * 100);
+  if (!Number.isFinite(p)) return null;
+  return { t: `${Math.abs(p)}% vs ${word}`, dir: p >= 0 ? "up" : "dn", tip };
+}
+
+/* A two- or three-way switch in a card head: options [[key, label, tip]]. */
+export function Seg({ options, value, onChange, label, big }) {
+  return (
+    <span className={`seg${big ? " big" : ""}`} role="group" aria-label={label}>
+      {options.map(([k, l, tip]) => (
+        <button key={k} type="button" className={value === k ? "on" : ""} aria-pressed={value === k} title={tip} onClick={() => onChange(k)}>{l}</button>
+      ))}
+    </span>
+  );
+}
+
+/* A dropdown menu under a control: `useMenu` keeps it open or closed, `Menu`
+ * draws it (absolute, inside a relative wrapper) with a scrim behind it that
+ * closes it, Escape too. */
+export function useMenu() {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return undefined;
+    const key = (e) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [open]);
+  return useMemo(() => ({ open, toggle: (e) => { if (e && e.stopPropagation) e.stopPropagation(); setOpen((o) => !o); }, close: () => setOpen(false), show: () => setOpen(true) }), [open]);
+}
+export function Menu({ open, onClose, children, style, role = "menu", label, scroll }) {
+  if (!open) return null;
+  return (
+    <>
+      {createPortal(<button className="scrim" aria-label="Close the menu" onClick={(e) => { e.stopPropagation(); onClose(); }} />, document.body)}
+      <div className={`menu${scroll ? " scroll" : ""}`} role={role} aria-label={label} style={style} onClick={(e) => e.stopPropagation()}>{children}</div>
+    </>
+  );
+}
+export function MenuItem({ icon, children, right, onClick, checked, radio, checkbox, disabled, title }) {
+  const role = radio ? "menuitemradio" : checkbox || checked !== undefined ? "menuitemcheckbox" : "menuitem";
+  return (
+    <button className="mrow" role={role} aria-checked={checked !== undefined ? !!checked : undefined} disabled={disabled} title={title} onClick={onClick}>
+      {checkbox ? <span className={`box${checked ? " on" : ""}`}>{checked ? "✓" : ""}</span> : radio || checked !== undefined ? <span className="tk">{checked ? "✓" : ""}</span> : null}
+      {icon || null}
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{children}</span>
+      {right !== undefined && right !== null ? <span className="r">{right}</span> : null}
+    </button>
+  );
+}
+
+export function Switch({ on, onChange, label }) {
+  return <button className={`sw${on ? " on" : ""}`} role="switch" aria-checked={!!on} aria-label={label} onClick={() => onChange(!on)}><span /></button>;
+}
+export function Badge({ type }) {
+  const t = String(type || "LE").toUpperCase();
+  return <span className={`badge ${t.toLowerCase()}`}>{t}</span>;
+}
+/* a lozenge of the redesign: kind "ind" (indigo), "warm", "good", "ghost" or plain */
+export function Loz({ kind, children, tip, content, style, icon }) {
+  const t = useTip();
+  return <span className={`loz${kind ? " " + kind : ""}`} title={content ? undefined : tip} style={style} {...(content ? t.props(content) : {})}>{icon || null}{children}</span>;
+}
+/* a person's initial in a coloured disc, the colour from the name */
+const AV_COLS = ["#b8461d", "#0f7052", "#5e6ad2", "#8a5f00", "#6d3fa8", "#1877f2", "#3a3a3c", "#c2185b"];
+export function colorOf(name) {
+  let h = 0;
+  for (const ch of String(name || "")) h = (h * 31 + ch.charCodeAt(0)) % 997;
+  return AV_COLS[h % AV_COLS.length];
+}
+export function Avatar({ name, size = 16, title }) {
+  const shown = String(name || "").includes("@") ? String(name).split("@")[0] : String(name || "");
+  if (!shown) return <span className="av none" style={{ width: size, height: size, flex: `0 0 ${size}px` }} title={title || "No lead"} />;
+  return <span className="av" style={{ width: size, height: size, flex: `0 0 ${size}px`, background: colorOf(shown), fontSize: Math.round(size * 0.56) }} title={title || shown}>{shown[0].toUpperCase()}</span>;
+}
+/* the dark note at the foot of the page: a word on what just happened, with an undo */
+export function Note({ text, onUndo, onClose, bad }) {
+  if (!text) return null;
+  return createPortal(
+    <div className={`note${bad ? " bad" : ""}`} role="status">
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{text}</span>
+      {onUndo && <button onClick={onUndo}>Undo</button>}
+      <button aria-label="Dismiss" onClick={onClose}>×</button>
+    </div>,
+    document.body,
   );
 }
 

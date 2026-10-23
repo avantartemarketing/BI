@@ -7454,6 +7454,8 @@ def index_row(snap: dict, status: str) -> dict:
         "benchmarkPct": snap["hero"].get("benchmarkPct"),
         "lastSeen": (snap.get("derived") or {}).get("last_seen"),
         "sessions": (snap.get("totals") or {}).get("sessions"),
+        # the marketing lead, for the releases list's Lead column
+        "lead": snap.get("marketingLead"),
     }
 
 
