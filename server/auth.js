@@ -149,36 +149,42 @@ async function sendMagicLink(email, link) {
 const LOGIN_HTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in · Launch Performance</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #faf9f5; color: #141413; font-family: "Inter", -apple-system, sans-serif;
-         font-feature-settings: "cv05","ss01"; font-size: 13px;
-         min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-  .card { background: #fff; border: 1px solid #e5e4df; border-radius: 12px; padding: 32px; width: 360px; }
-  h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
-  p { font-size: 12.5px; color: #6c6b68; margin-top: 6px; line-height: 1.5; }
-  input { width: 100%; height: 36px; border: 1px solid #e5e4df; border-radius: 8px; padding: 0 12px;
-          font-family: inherit; font-size: 13px; margin-top: 12px; }
-  input:focus { outline: 2px solid #f7c4ad; outline-offset: -1px; }
-  button { width: 100%; margin-top: 12px; height: 36px; border-radius: 8px; border: 1px solid #141413;
-           background: #141413; color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-  button:hover { background: #2e2d2b; }
-  .msg { margin-top: 14px; font-size: 12.5px; display: none; color: #b8461d; }
-  .gbtn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 38px;
-          margin-top: 16px; border: 1px solid #e5e4df; border-radius: 8px; background: #fff; color: #141413;
-          font-family: inherit; font-size: 12.5px; font-weight: 600; text-decoration: none; }
-  .gbtn:hover { background: #faf9f5; }
-  .or { display: flex; align-items: center; gap: 10px; margin-top: 14px; color: #6c6b68; font-size: 12px; }
-  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: #e5e4df; }
+  html, body { min-height: 100%; }
+  body { background: #f4f4f4; color: #1b1b1c; font-family: Inter, -apple-system, "Segoe UI", sans-serif;
+         -webkit-font-smoothing: antialiased; font-size: 13px; min-height: 100vh;
+         display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .card { width: min(360px, 100%); background: #fff; border: 1px solid #e8e8e8; border-radius: 14px;
+          padding: 36px 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .mark { width: 36px; height: 36px; border-radius: 9px; background: #1b1b1c; color: #fff; display: inline-flex;
+          align-items: center; justify-content: center; font-size: 17px; font-weight: 600; }
+  h1 { font-size: 17px; font-weight: 600; margin-top: 16px; letter-spacing: -0.01em; }
+  .sub { font-size: 13px; color: #6b6b6f; margin-top: 4px; }
+  .gbtn { margin-top: 24px; width: 100%; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+          gap: 10px; border: 1px solid #e3e3e6; border-radius: 8px; background: #fff; font: inherit; font-size: 13.5px;
+          font-weight: 500; color: #1b1b1c; cursor: pointer; text-decoration: none; }
+  .gbtn:hover { background: #f6f6f7; }
+  .or { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 22px; color: #8a8a8e; font-size: 12px; white-space: nowrap; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: #ececec; }
+  form { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  input { width: 100%; height: 34px; border: 1px solid #e6e6e8; border-radius: 8px; padding: 0 10px;
+          font: inherit; font-size: 13px; color: #1b1b1c; background: #fff; outline: 0; }
+  input::placeholder { color: #a1a1aa; }
+  input:focus { border-color: #c7cbf4; box-shadow: 0 0 0 3px #eef0fc; }
+  button[type=submit] { height: 34px; border: 0; border-radius: 8px; background: #5e6ad2; color: #fff;
+          font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 2px; }
+  button[type=submit]:hover { background: #5560c6; }
+  .msg { margin-top: 14px; font-size: 12.5px; line-height: 1.45; display: none; color: #b8461d; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style></head><body>
 <div class="card">
-  <h1>Launch Performance</h1>
-  <p>Sign in with your __DOMAIN__ Google account.</p>
+  <span class="mark" aria-hidden="true">A</span>
+  <h1>Sign in to Launch Performance</h1>
+  <div class="sub">__DOMAIN__ accounts only</div>
   __GOOGLE__
   __FORM__
-  <div id="err" class="msg" __ERR__></div>
+  <div id="err" class="msg"__ERRSTYLE__>__ERRTEXT__</div>
 </div>
 <script>
   const form = document.getElementById('f');
@@ -197,17 +203,19 @@ const LOGIN_HTML = `<!doctype html>
   });
 </script></body></html>`.replaceAll("__DOMAIN__", DOMAIN);
 
-const G_LOGO = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">' +
-  '<path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/>' +
-  '<path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 7-10.3 7-17.7z"/>' +
-  '<path fill="#FBBC05" d="M10.5 28.6A14.5 14.5 0 0 1 9.7 24c0-1.6.3-3.1.8-4.6l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6.1z"/>' +
-  '<path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.6-4.1-13.5-9.9l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
+const G_LOGO = '<svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true">' +
+  '<path d="M17.6 9.2c0-.6-.1-1.2-.2-1.7H9v3.3h4.8a4.1 4.1 0 0 1-1.8 2.7v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.5z" fill="#4285F4"/>' +
+  '<path d="M9 18c2.4 0 4.5-.8 5.9-2.2l-2.9-2.2c-.8.5-1.8.9-3 .9-2.3 0-4.3-1.6-5-3.7H1v2.3A9 9 0 0 0 9 18z" fill="#34A853"/>' +
+  '<path d="M4 10.8a5.4 5.4 0 0 1 0-3.5V5H1a9 9 0 0 0 0 8z" fill="#FBBC05"/>' +
+  '<path d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6A9 9 0 0 0 1 5l3 2.3c.7-2.1 2.7-3.7 5-3.7z" fill="#EA4335"/></svg>';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 // the password form exists only while no Google client is configured
-const DEV_FORM = `<div class="or">no Google client configured - development sign-in</div>
+const DEV_FORM = `<div class="or">No Google client configured: development sign-in</div>
   <form id="f">
+    <label class="sr" for="email">Email address</label>
     <input id="email" type="email" placeholder="you@__DOMAIN__" autocomplete="email" required>
+    <label class="sr" for="pw">Password</label>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
     <button type="submit">Sign in with password</button>
   </form>`.replaceAll("__DOMAIN__", DOMAIN);
@@ -217,8 +225,8 @@ function loginHtml(error) {
   return LOGIN_HTML
     .replace("__GOOGLE__", g ? `<a class="gbtn" href="/auth/google">${G_LOGO}Continue with Google</a>` : "")
     .replace("__FORM__", g ? "" : DEV_FORM)
-    .replace("__ERR__", error ? `style="display:block">${esc(error)}` : ">")
-    .replace('<div id="err" class="msg" >', '<div id="err" class="msg">');
+    .replace("__ERRSTYLE__", error ? ' style="display:block"' : "")
+    .replace("__ERRTEXT__", error ? esc(error) : "");
 }
 
 function install(app) {
