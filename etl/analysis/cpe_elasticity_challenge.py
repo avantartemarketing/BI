@@ -352,6 +352,72 @@ for e in EPS_GRID:
     a = np.array(scores[e])
     print(f"   {e:.2f}   {np.median(np.abs(a)) * 100:6.0f}%        {np.median(a):+.2f}")
 
+# ---------------------------------------------------------------- 8b. backtest, the pair free
+print("\n8b. The same backtest with the wear-out on a grid too (median miss %, the bias in brackets)")
+W_GRID = (0.10, 0.15, 0.20, 0.25, 0.30)
+tab = {}
+for rel, g in d.groupby("rel"):
+    g = g.sort_values("date")
+    if len(g) < 14:
+        continue
+    for cut in cuts:
+        i = int(round(len(g) * cut))
+        if i < 3 or i >= len(g) - 1:
+            continue
+        win, rest = g.iloc[i - 3:i], g.iloc[i:]
+        if win.entries.sum() <= 0 or rest.entries.sum() <= 0:
+            continue
+        cpe_win = win.spend.sum() / win.entries.sum()
+        s_ref = win.spend.mean()
+        clock_ref = np.sum(np.log1p(win.spent_before / K) * win.spend) / win.spend.sum()
+        lift_win = np.exp(np.sum(np.array([np.log(lift[int(k)]) if k < CLOSE_DAYS else 0.0 for k in win.to_close]) * win.spend) / win.spend.sum())
+        lift_rest = np.array([lift[int(k)] if k < CLOSE_DAYS else 1.0 for k in rest.to_close])
+        for e in EPS_GRID:
+            for w in W_GRID:
+                m = ((rest.spend / s_ref) ** e) * np.exp(w * (np.log1p(rest.spent_before / K) - clock_ref)) * lift_win / lift_rest
+                tab.setdefault((e, w), []).append(np.log(float(np.sum(rest.spend / (cpe_win * m))) / rest.entries.sum()))
+print("   eps \\ wear " + "".join(f"{w:>14.2f}" for w in W_GRID))
+for e in EPS_GRID:
+    print(f"   {e:.2f}       " + "".join(f"{np.median(np.abs(tab[(e, w)])) * 100:5.0f}% ({np.median(tab[(e, w)]):+.2f})" for w in W_GRID))
+
+# ---------------------------------------------------------------- 9. the lag
+# entries attributed to a day may have been bought by the day before's spend:
+# the baseline with yesterday's log spend alongside today's
+m9 = (d.gap1 & d.ls_lag.notna()).values
+G9 = G[m9][:, G[m9].sum(0) > 0]
+res9 = build.poisson_fit(y[m9], np.column_stack([G9, ls[m9], d.ls_lag.values[m9], clock[m9]] + [c[m9] for c in close_cols]))
+if res9 is not None:
+    b9, c9 = res9
+    k9 = G9.shape[1]
+    s9 = np.sqrt(np.diag(c9))
+    print(f"\n9. The lag ({int(m9.sum())} days with a previous day): entries on today's budget {b9[k9]:.3f} +/- {s9[k9]:.3f}, "
+          f"on yesterday's {b9[k9 + 1]:.3f} +/- {s9[k9 + 1]:.3f}")
+    print(f"   the two together {b9[k9] + b9[k9 + 1]:.3f}: a sustained doubling costs {(2 ** (1 - b9[k9] - b9[k9 + 1]) - 1) * 100:.0f}% more an entry; "
+          f"a one-day doubling, read on its own day, {(2 ** (1 - b9[k9]) - 1) * 100:.0f}% more")
+    print("   (a large yesterday term means same-day tests, 3 and 4, read the penalty too high)")
+
+# ---------------------------------------------------------------- 4b. budget steps on two-day windows
+# the step day and the day after against the two days before, so an entry
+# that lands a day late is still counted on its budget
+d["spend2"] = d.spend + d.groupby("rel")["spend"].shift(-1)
+d["ent2"] = d.entries + d.groupby("rel")["entries"].shift(-1)
+d["spend2_lag"] = d.groupby("rel")["spend"].shift(1) + d.groupby("rel")["spend"].shift(2)
+d["ent2_lag"] = d.groupby("rel")["entries"].shift(1) + d.groupby("rel")["entries"].shift(2)
+d["gap_next"] = d.groupby("rel")["gap"].shift(-1)
+d["gap_prev"] = d.groupby("rel")["gap"].shift(1)
+d["clock2"] = w0 * (np.log1p((d.spent_before + d.groupby("rel")["spent_before"].shift(-1)) / 2 / K)
+                    - np.log1p((d.groupby("rel")["spent_before"].shift(1) + d.groupby("rel")["spent_before"].shift(2)) / 2 / K))
+m4 = d[(d.gap == 1) & (d.gap_next == 1) & (d.gap_prev == 1) & d.spend2_lag.notna() & d.ent2.notna()
+       & (d.to_close >= 3)].copy()   # clear of the close's lift
+m4["dls2"] = np.log(m4.spend2 / m4.spend2_lag)
+m4["deff2"] = np.log((m4.ent2 + 0.5) / m4.spend2) - np.log((m4.ent2_lag + 0.5) / m4.spend2_lag) + m4.clock2
+print("\n4b. Budget steps on two-day windows (the step day and the next against the two before, clear of the close)")
+for name, m in [("rises of 30%+", m4.dls2 >= STEP), ("cuts of 30%+", m4.dls2 <= -STEP)]:
+    g = m4[m]
+    e_imp = -np.sum(g.deff2 * g.dls2) / np.sum(g.dls2 ** 2)
+    print(f"   {name}: {len(g)} windows, budget x{np.exp(g.dls2.mean()):.2f}, entries a euro x{np.exp(g.deff2.mean()):.2f} "
+          f"(median x{np.exp(g.deff2.median()):.2f}); implied elasticity {e_imp:.3f}")
+
 # ---------------------------------------------------------------- what it means for the next euro
 print("\nWhat each elasticity means for the next euro, on a flat day with the wear-out at the baseline:")
 print("   marginal ROI over average ROI of the remaining spend is about (1 - eps - wear-out share)")
