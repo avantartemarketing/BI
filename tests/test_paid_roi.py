@@ -207,19 +207,18 @@ def sizing_as_documented(snap, label):
 
 for label, snap in (("profit share", S), ("revenue share", R), ("cannibalisation 35%", T)):
     sizing_as_documented(snap, label)
-# a floor no daily spend brings the price at the close under: the cut that
-# follows is held to 30% a day like any other, never a stop overnight. The
-# revenue share halves AA's ROI to about 0.5, which no longer does it on its
-# own: at an elasticity of 0.30 a small enough day prices its entries under
-# the floor's (27 October 2026), so the return is crushed further with a 90%
-# cannibalisation on top
+# a next euro that does not pay even on the smallest day (27 October 2026):
+# the spend that earns the most is nothing, and the cut that follows is held
+# to 30% a day like any other, never a stop overnight. The revenue share
+# halves AA's ROI to about 0.5, which is not enough on its own, so the return
+# is crushed further with a 90% cannibalisation on top
 cfg = copy.deepcopy(base)
 cfg["legacy_economics"]["artist_profit_share"] = 0
 cfg["cannibalisation"] = 0.9
 rb = run(cfg)["paid"]["budget"]
-check(rb["roiSpend"] == 0.0 and rb["cap"] == "roi_floor" and rb["paced"]
+check(rb["profitSpend"] == 0.0 and rb["cap"] == "marginal" and rb["paced"]
       and close(rb["recommended"], rb["current"] * (1 - build.BENCH["spend_rules"]["max_daily_change"]), 0.001),
-      f"a floor no spend meets is a paced cut: {rb['recommended']} from {rb['current']} (roi spend {rb['roiSpend']}, cap {rb['cap']})")
+      f"a next euro that never pays is a paced cut: {rb['recommended']} from {rb['current']} (profit spend {rb['profitSpend']}, cap {rb['cap']})")
 print(f"sizing as documented: gap {S['paid']['budget']['selloutGap']}, entries {S['paid']['budget']['entriesNeeded']}, "
       f"supply {S['paid']['budget']['supplySpend']}/day x {S['paid']['budget']['daysLeft']} = {S['paid']['budget']['budgetToSellOut']}")
 

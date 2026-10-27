@@ -26,3 +26,34 @@
 .upc .state-card .sub { font-size: 13px; color: var(--muted); }
 .upc .state-card .btns { display: flex; gap: 8px; margin-top: 14px; }
 .upc .state-card .sbtn { height: 30px; padding: 0 12px; font-size: 13px; }
+
+/* the Sell-through at close card: a work row (name, the bar on its edition
+ * with the range behind it, its share with the range after it in faint, or
+ * "Likely sells out" in green), and a confidence lozenge's dot and amber kind */
+.prow.cw { grid-template-columns: minmax(96px, 30%) minmax(0, 1fr) 112px; column-gap: 12px; height: 34px; }
+.prow.cw .fig { color: var(--ink); font-weight: 500; font-size: 13px; }
+.prow.cw .fig i { font-style: normal; font-weight: 400; color: var(--faint); font-size: 12px; margin-left: 4px; }
+.prow.cw .fig.good { color: var(--green); }
+.loz .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 6px; }
+.loz.amber { background: #fbf4e3; border-color: #efe3c2; color: var(--amber); }
+
+/* a quiet note box under a chart: the Paid spend card's one-line
+ * recommendation, and the Sell-through at close card's assumptions strip
+ * (a caption, then items on a baseline with a hairline between them) */
+.nbox { background: #fafafa; border: 1px solid #f0f0f2; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--text); }
+.nbox b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+.nbox.assume { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 24px; padding: 12px 14px; }
+.nbox.assume .cap { flex: 1 1 100%; font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+.nbox.assume .it { display: inline-flex; align-items: baseline; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.nbox.assume .it + .it { border-left: 1px solid #ececec; padding-left: 24px; }
+.nbox.assume .big { font-size: 16px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.nbox.assume .chg { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; color: var(--warm); font-weight: 500; font-variant-numeric: tabular-nums; }
+.nbox.assume .was { text-decoration: line-through; text-decoration-color: #c9c9cc; font-variant-numeric: tabular-nums; }
+
+/* the Spend levels table: the recommended row bold on the note's grey, the
+ * word after each daily spend in faint (the recommended one in indigo), and
+ * the share after the units in a fixed-width faint span */
+.recrow td { font-weight: 500; background: #fafafa; }
+.lvl-w { color: var(--faint); font-weight: 400; margin-left: 4px; }
+.recrow .lvl-w { color: var(--ind-deep); font-weight: 500; }
+.pctw { display: inline-block; min-width: 34px; text-align: right; margin-left: 8px; color: var(--faint); font-size: 12px; font-weight: 400; }

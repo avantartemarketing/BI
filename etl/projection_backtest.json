@@ -1,0 +1,54 @@
+{
+ "cuts": [
+  0.15,
+  0.3,
+  0.45,
+  0.6,
+  0.75,
+  0.9
+ ],
+ "lo": [
+  0.464,
+  0.645,
+  0.343,
+  0.944,
+  0.9,
+  1.357
+ ],
+ "hi": [
+  1.585,
+  1.407,
+  1.09,
+  1.666,
+  2.108,
+  3.806
+ ],
+ "median": [
+  1.0,
+  1.0,
+  0.995,
+  1.131,
+  1.307,
+  1.894
+ ],
+ "n": [
+  8,
+  8,
+  8,
+  8,
+  6,
+  6
+ ],
+ "asOf": "2026-10-27",
+ "releases": [
+  "abdulnasser_le_26",
+  "dali_le_26",
+  "glennligon_le_26",
+  "jamesjean_blossom_26",
+  "julianschnabel_le_26",
+  "mondrian_le_26",
+  "parra_le_26",
+  "zengfanzhi_le_26"
+ ],
+ "note": "the 10th and 90th percentiles of (what came) / (what the projection said was still to come), completed configured LE releases built as of each cut with the funnel's units"
+}

@@ -1816,6 +1816,79 @@ class CostPath:
         to the close, the close's lift included."""
         return sum(s / (self.cpe_now * m) for m in self.multipliers(s)) if s > 0 else 0.0
 
+    def multipliers_sched(self, sched, lifted: bool = True) -> list[float]:
+        """The price on each future day over the anchor's, on a day-by-day
+        spend (27 October 2026): each day's budget prices its own entries
+        through the elasticity, and the days before it add to the clock."""
+        base = self.k + self.clock_ref
+        out, before = [], 0.0
+        for i, s in enumerate(list(sched)[:self.n]):
+            lvl = (s / self.spend_ref) ** self.eps if (self.eps and self.spend_ref and s > 0) else 1.0
+            m = lvl * ((self.k + self.spent + before) / base) ** self.wear * self.anchor_lift
+            to_close = self.n - 1 - i
+            if lifted and to_close < len(self.lift):
+                m /= self.lift[to_close]
+            out.append(m)
+            before += s
+        return out
+
+    def units_sched(self, sched) -> float:
+        """Converting units a day-by-day spend buys to the close."""
+        return sum(s / (self.cpe_now * m) for s, m in zip(sched, self.multipliers_sched(sched)) if s > 0)
+
+    def profit(self, s: float, gain: float, cost_share: float, room: float = math.inf) -> float:
+        """What a flat daily spend s to the close earns the party: `gain` on
+        each converting unit it buys (no more than `room`, the units left to
+        sell) less its `cost_share` of the spend."""
+        return gain * min(self.units(s), room) - cost_share * s * self.n
+
+    def marginal_roi(self, s: float, gain: float, cost_share: float, room: float = math.inf) -> float | None:
+        """The return on the next euro at a flat daily spend s: the gain the
+        units bought by a slightly bigger day add, over what that costs."""
+        if s <= 0 or self.n <= 0 or cost_share <= 0:
+            return None
+        lo, hi = s * 0.99, s * 1.01
+        d_units = min(self.units(hi), room) - min(self.units(lo), room)
+        return gain * d_units / (cost_share * (hi - lo) * self.n)
+
+    def spend_for_profit(self, gain: float, cost_share: float, cap: float = math.inf, room: float = math.inf) -> float:
+        """The flat daily spend that earns the most (docs 7, 27 October 2026):
+        where the next euro returns what it costs, the marginal ROI 1, or the
+        `cap` (the spend that sells out) when every euro up to it still pays.
+        The profit is concave in the spend (an entry costs more the bigger the
+        day and the more has been spent), so a golden-section search finds the
+        peak; 0 when even the first euro does not pay."""
+        if self.n <= 0 or gain <= 0 or cost_share <= 0:
+            return 0.0
+        hi = min(cap, 1e7)
+        if hi <= 0:
+            return 0.0
+        f = lambda s: self.profit(s, gain, cost_share, room)   # noqa: E731
+        if f(1.0) <= 0.0:
+            return 0.0
+        # bracket the peak: double until the profit turns down or the cap binds
+        top = 1.0
+        while top < hi and f(top * 2) > f(top):
+            top *= 2
+        top = min(top * 2, hi)
+        a, z = 0.0, top
+        g = (math.sqrt(5) - 1) / 2
+        c, d = z - g * (z - a), a + g * (z - a)
+        fc, fd = f(c), f(d)
+        for _ in range(80):
+            if fc < fd:
+                a, c, fc = c, d, fd
+                d = a + g * (z - a)
+                fd = f(d)
+            else:
+                z, d, fd = d, c, fc
+                c = z - g * (z - a)
+                fc = f(c)
+            if z - a < 0.5:
+                break
+        best = (a + z) / 2
+        return min(best, cap) if f(best) > 0 else 0.0
+
     @staticmethod
     def _solve(f, target: float, lo: float = 1.0, hi: float = 1e9, iters: int = 80) -> float:
         """The daily spend at which an increasing f(spend) reaches target, by
@@ -1841,6 +1914,43 @@ class CostPath:
     def spend_for_cpe_close(self, cpe: float) -> float:
         """The flat daily spend at which the last day's price reaches `cpe`."""
         return self._solve(self.cpe_close, cpe)
+
+
+PROJECTION_BACKTEST = ROOT / "etl" / "projection_backtest.json"
+
+
+def load_projection_backtest() -> dict | None:
+    """Where completed launches landed around the projection of what was
+    still to come, by the share of the campaign run (the quantiles
+    etl/analysis/projection_backtest.py writes); None until it has run."""
+    try:
+        doc = json.loads(PROJECTION_BACKTEST.read_text())
+    except (OSError, ValueError):
+        return None
+    return doc if doc.get("cuts") and doc.get("lo") and doc.get("hi") else None
+
+
+def projection_range(frac: float, doc: dict | None = None) -> dict | None:
+    """The likely range on what is still to come at this share of the
+    campaign, as multipliers on the projection's still-to-come: the backtest's
+    10th and 90th percentiles, interpolated between its cuts and held at the
+    ends. None without a backtest."""
+    doc = load_projection_backtest() if doc is None else doc
+    if not doc:
+        return None
+    cuts, lo, hi, ns = doc["cuts"], doc["lo"], doc["hi"], doc.get("n") or [0] * len(doc["cuts"])
+    f = min(max(float(frac), 0.0), 1.0)
+    if f <= cuts[0]:
+        i, t = 0, 0.0
+    elif f >= cuts[-1]:
+        i, t = len(cuts) - 2, 1.0
+    else:
+        i = max(j for j in range(len(cuts) - 1) if cuts[j] <= f)
+        t = (f - cuts[i]) / (cuts[i + 1] - cuts[i]) if cuts[i + 1] > cuts[i] else 0.0
+    if len(cuts) == 1:
+        return {"lo": float(lo[0]), "hi": float(hi[0]), "n": int(ns[0])}
+    return {"lo": float(lo[i] + (lo[i + 1] - lo[i]) * t), "hi": float(hi[i] + (hi[i + 1] - hi[i]) * t),
+            "n": int(min(ns[i], ns[i + 1]))}
 
 
 def pdsa_for(release: dict, d: date) -> float:
@@ -6113,11 +6223,21 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # price of a converting unit, the entries that buy nothing priced in
         roi_spend = CostPath._solve(lambda s: cost.cpe_close(s) / frac_at_close(s), cpe_max)
 
-    # the workbook's pacing rules, transcribed into the benchmarks but never
-    # applied until now: cumulative ROI below 0.9 -> decrease, above 1.3 ->
-    # increase, between -> hold; daily change capped at 30%; changes under 10%
-    # ignored; the trailing 3-day ROI below target on each of the last 3 full
-    # days forces a decrease.
+    # the level paid is run at (docs 7, 27 October 2026): the flat daily spend
+    # that earns the most, where the next euro returns what it costs - the
+    # marginal ROI 1 on AA's profit per unit net of cannibalisation, over
+    # AA's share of the spend - capped at the spend that sells out, since
+    # entries past the sellout buy nothing. The ROI floor at the close, the
+    # cumulative-ROI bands and the forced decrease that set the level until
+    # then are gone: the floor's spend is kept for the card's working
+    gain = (1 - cann) * ppu_aa
+    room_left = (entries_needed * rate_u) if entries_needed not in (None, math.inf) else math.inf
+    profit_spend = None
+    if cost and days_left:
+        profit_spend = cost.spend_for_profit(gain, aa_budget_share, cap=supply_spend if supply_spend is not None else math.inf,
+                                             room=room_left)
+    # the workbook's cumulative-ROI band and the forced decrease are read for
+    # the card's working but no longer set the spend (27 October 2026)
     band = "hold"
     if cum_roi is not None:
         if cum_roi < rules["decrease_below_cum_roi"]:
@@ -6138,46 +6258,69 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     zero_pause = zero_days >= rules.get("zero_conversion_days_to_pause", 3)
     zero_cut = zero_days >= 1 and not zero_pause
 
-    recommended, cap, paced = None, None, False
+    recommended, cap, paced, level = None, None, False, None
     if supply_spend is not None and days_left:
-        unconstrained = min(supply_spend, roi_spend)
-        base = "supply" if supply_spend <= roi_spend else "roi_floor"
-        # nothing needed: the edition is secured without paid, so it stops. A
-        # floor no spend can meet (the cost path's price at the close is past
-        # it however small the day) is a cut like any other, held to 30% a
-        # day by the pacing rule below, unless nothing is running to cut
+        unconstrained = min(supply_spend, profit_spend)
+        base = "supply" if supply_spend <= profit_spend else "marginal"
+        level = unconstrained
+        # nothing needed: the edition is secured without paid, so it stops;
+        # a next euro that does not pay even on the smallest day stops it too,
+        # held to a 30% cut a day by the pacing rule below while it runs
         if unconstrained <= 0 and (base == "supply" or s0 <= 0):
             recommended, cap = 0.0, base
         elif zero_pause and s0 > 0:
-            recommended, cap = 0.0, "zero_conversion_pause"
+            recommended, cap, level = 0.0, "zero_conversion_pause", 0.0
         elif zero_cut and s0 > 0:
             recommended = min(unconstrained, s0 * (1 - rules.get("zero_conversion_decrease", 0.3)))
-            if recommended <= 0:                    # a floor no spend meets: still a paced cut
+            if recommended <= 0:
                 recommended, paced = s0 * (1 - rules["max_daily_change"]), True
             cap = "zero_conversion"
         elif s0 <= 0:
             recommended = min(unconstrained, plan_rate) if plan_rate else unconstrained
             cap = "plan_rate" if recommended < unconstrained else base   # first day: the plan's daily rate
         else:
+            # the pacing rule: never move the daily budget by more than 30% in
+            # a day, so the level is reached in steps (the schedule below)
             lo, hi = s0 * (1 - rules["max_daily_change"]), s0 * (1 + rules["max_daily_change"])
-            if forced or band == "decrease":
-                ceiling, band_cap = lo, ("forced_decrease" if forced else "roi_band_decrease")
-            elif band == "hold":
-                ceiling, band_cap = s0, "roi_band_hold"
-            else:
-                ceiling, band_cap = hi, "pacing"
-            recommended = min(unconstrained, ceiling)
-            cap = base if recommended == unconstrained else band_cap
+            recommended = min(unconstrained, hi)
+            cap = base if recommended == unconstrained else "pacing"
             if recommended < lo:                    # a cut is still limited to 30% a day
                 recommended, paced = lo, True
             if abs(recommended - s0) < rules["ignore_change_below"] * s0:
-                recommended, cap = s0, "hold_small_change"
+                recommended, cap, level = s0, "hold_small_change", s0
+    # the schedule the projection runs at (docs 6, 27 October 2026): today's
+    # part day at the run rate, then the recommendation and the days after it
+    # stepping toward the level by at most 30% a day; the part day counts for
+    # what is left of it inside paid_forward
+    schedule: list[float] = []
+    if level is not None and level != math.inf:
+        prev, first_full = s0, True
+        for d in future_days:
+            if d == as_of and as_of > full_through:
+                schedule.append(s0)                 # the rest of today at the run rate
+                continue
+            if first_full:
+                step = recommended if recommended not in (None, math.inf) else s0
+                first_full = False
+            elif prev > 0:
+                lo_s, hi_s = prev * (1 - rules["max_daily_change"]), prev * (1 + rules["max_daily_change"])
+                step = min(max(level, lo_s), hi_s)
+                if abs(step - level) < rules["ignore_change_below"] * max(level, 1e-9):
+                    step = level
+            else:
+                step = level if cap not in ("zero_conversion_pause",) else 0.0
+            schedule.append(step)
+            prev = step
+    else:
+        schedule = [s0] * len(future_days)
     cpe_rec = (cost.cpe_close(recommended) / frac_at_close(recommended)) if (cost and recommended) else None
+    marginal_today = cost.marginal_roi(s0, gain, aa_budget_share, room_left) if (cost and s0 > 0) else None
     final_day_roi = party_roi(ppu_aa, aa_budget_share, cpe_rec)
     final_day_roi_artist = party_roi(ppu_artist, artist_budget_share, cpe_rec)
-    # the chart's line: ROI at today's spend along the cost path, each party
-    # on the same path (a window that bought nothing reads 0 all the way)
-    path_now = cost.multipliers(s0) if cost else [1.0] * len(future_days)
+    # the chart's line: ROI along the cost path at the schedule the projection
+    # runs at, each party on the same path (a window that bought nothing
+    # reads 0 all the way)
+    path_now = cost.multipliers_sched(schedule) if cost else [1.0] * len(future_days)
     # the chart's line ahead is built once the projection is (roi_path, below paid_forward)
     # the rise to the close underneath the close's lift: the worst day, where
     # the floor is read (cpeAtClose), and the fallback factor's fall
@@ -6186,17 +6329,15 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     daily_factor = round((1 / wear_end) ** (1 / len(path_now)), 4) if path_now else 1.0
 
     # forward path: projected spend ÷ projected cost-per-entry per future day.
-    # Projections describe the CURRENT trajectory (the spend run rate as-is);
-    # the recommended budget is the intervention shown alongside, not the
-    # projection. The price follows the cost path at that spend, the path
-    # above. The run rate does not run blindly to the close, though (docs
-    # §5.4, 6 October 2026): it stops where the recommendation's own two
-    # limits say spending on would be wasted - the day the units it buys
-    # close the gap the organic channels leave to the sellout, and the day
-    # the price of a converting unit passes the ROI floor's. The flat run to
-    # the close is kept beside it, for the card's hover.
-    planned_spend = current_daily if current_daily > 0 else (
-        recommended if (days_left and recommended) else 0.0)
+    # The projection runs at the recommended spend (27 October 2026): the
+    # schedule above, today's run rate stepping to the level where the next
+    # euro returns what it costs. Until then it ran at the run rate as-is,
+    # with the recommendation beside it. The price follows the cost path at
+    # that schedule. It does not run blindly to the close (docs §5.4, 6
+    # October 2026): it stops where spending on would be wasted - the day the
+    # units it buys close the gap the organic channels leave to the sellout,
+    # and the day the price of a converting unit passes the ROI floor's. The
+    # run rate held flat to the close is kept beside it (ifContinued).
     e2o = entry_rate(release)
     # the days still to run at the run rate, on the entries' own clock: each
     # full day after the last one seen, today's for what is left of it. The
@@ -6205,8 +6346,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     rest_days = sum(((1 - seen) if (d == as_of and as_of > full_through) else 1.0)
                     for d in daterange(full_through + timedelta(days=1), launch_end))
 
-    def paid_forward(spend: float) -> dict:
-        """The paid projection at a flat daily spend (docs §5.4): the entries
+    def paid_forward(spend, floor_stop: bool = True) -> dict:
+        """The paid projection at a daily spend (docs §5.4), flat (a number)
+        or day by day (a list on future_days; floor_stop False leaves the ROI
+        floor out of its stops, as the schedule's run does since 27 October
+        2026: its level is set by the next euro paying, and a day past the
+        floor on the close can still be part of the spend that earns the
+        most): the entries
         each future day buys at the cost path's price for that spend, placed
         day by day with the organic course against the works' room (placed,
         the cohort rule), with the two stops the recommendation is sized by.
@@ -6224,14 +6370,17 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         (no spend history) the paid target's own trajectory stands in, and
         nothing stops it; with a price and no spend there is nothing to
         project, and the organic course alone fills the works."""
-        out = {"spend": spend or 0.0, "entries": 0.0, "future": {}, "spendFuture": 0.0,
+        sched = [float(x or 0.0) for x in spend] if isinstance(spend, (list, tuple)) else [float(spend or 0.0)] * len(future_days)
+        sched = (sched + [sched[-1] if sched else 0.0] * len(future_days))[:len(future_days)]
+        shares = [((1 - seen) if (d == as_of and as_of > full_through) else 1.0) for d in future_days]
+        out = {"spend": (max(sched) if sched else 0.0), "entries": 0.0, "future": {}, "spendFuture": 0.0,
                "stops": {"sellout": None, "roi_floor": None}, "flatEntries": 0.0,
-               "flatSpend": (spend or 0.0) * rest_days, "units": 0.0, "wasted": 0.0,
-               "fracs": [], "fill": {}, "fillFlat": {}, "fracAtStop": None}
+               "flatSpend": sum(s * sh for s, sh in zip(sched, shares)), "units": 0.0, "wasted": 0.0,
+               "fracs": [], "fill": {}, "fillFlat": {}, "fracAtStop": None, "schedule": sched}
         if complete:
             return out
-        path = cost.multipliers(spend) if (cost and spend) else []
-        floor_path = cost.multipliers(spend, lifted=False) if path else []
+        path = cost.multipliers_sched(sched) if (cost and any(s > 0 for s in sched)) else []
+        floor_path = cost.multipliers_sched(sched, lifted=False) if path else []
         priced = bool(l3d_raw_cpe)
         prev_curve = curve_value(rcurves, "paid", "entries", pdsa_today)
 
@@ -6250,7 +6399,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             o_d = max(organic_by_day.get(d, o_prev), o_prev)
             d_org, o_prev = o_d - o_prev, o_d
             if priced:
-                bought = (share * spend / (l3d_raw_cpe * path[i])) if path else 0.0
+                bought = (share * sched[i] / (l3d_raw_cpe * path[i])) if (path and sched[i] > 0) else 0.0
             else:
                 # no spend history yet: fall back to the paid target trajectory
                 cv = curve_value(rcurves, "paid", "entries", pdsa_for(release, d))
@@ -6275,7 +6424,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                     # over the share of the day's entries that converts: the
                     # floor reads that price, and a day whose entries buy
                     # nothing at all is past any floor
-                    if placed(d_run) < room_total - gap_tol and (fr <= 0 or l3d_cpe * floor_path[i] / fr > cpe_max * (1 + 1e-9)):
+                    if placed(d_run) < room_total - gap_tol and (fr <= 0 or (floor_stop and l3d_cpe * floor_path[i] / fr > cpe_max * (1 + 1e-9))):
                         out["stops"]["roi_floor"], stopped, take = d, True, 0.0
                     elif placed(d_after) >= room_total - gap_tol:
                         # the room runs out today: paid is cut to what the
@@ -6299,8 +6448,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 units += (placed(d_after) - placed(d_run)) * (take * rate_u) / (d_after - d_run)
                 out["fracAtStop"] = day_share(d_run, d_after)
                 cum += take
-                if priced and path:
-                    spent += share * spend * (take / bought)
+                if priced and path and bought > 0:
+                    spent += share * sched[i] * (take / bought)
             mark(out["fill"], d_run, d_after, d)
             d_run = d_after
             out["future"][d] = cum
@@ -6311,20 +6460,21 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                    wasted=max(cum - units / rate_u, 0.0))
         return out
 
-    fwd = paid_forward(planned_spend)
+    fwd = paid_forward(schedule, floor_stop=False)
     paid_future = fwd["future"]       # date -> cumulative projected entries beyond today
     future_cum = fwd["entries"]
-    # the same projection at the recommended spend, for the Slack update's
-    # line on the paid lever (paid.atRecommended)
-    fwd_rec = (paid_forward(recommended) if (recommended is not None and recommended != math.inf
-                                             and not complete) else None)
-    # the chart's line ahead: ROI at today's spend along the cost path, each
+    # the projection is the one at the recommended spend now, so the Slack
+    # update's line on the paid lever (paid.atRecommended) reads the same
+    # run; the run rate held flat to the close stands beside it (ifContinued)
+    fwd_rec = fwd if (recommended is not None and recommended != math.inf and not complete) else None
+    fwd_flat = paid_forward(s0) if not complete else None
+    # the chart's line ahead: ROI along the cost path at the schedule, each
     # party on the same path, over the share of each day's entries that still
     # buys a unit on the flat run at that spend (fracs), so it steps down on
     # the day a work fills; the works that fill on a day are named on its
     # point (full) for the chart to mark. A window that bought nothing reads
     # 0 all the way.
-    fwd_line = fwd if planned_spend == s0 else paid_forward(s0)
+    fwd_line = fwd
     fracs = fwd_line["fracs"] if len(fwd_line["fracs"]) == len(path_now) else [1.0] * len(path_now)
     full_on: dict[str, list[str]] = {}
     for w_, d_ in fwd_line["fillFlat"].items():
@@ -6530,6 +6680,16 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                                    bm_close=hero_bm if bench else None, orders=of_win, closed=closed)
         at_rec = {"units": round(spoken_for(st_rec) + float(st_rec.get("futureEntriesPredicted") or 0), 1),
                   "pct": st_rec.get("pct")}
+    # and the same with the run rate held flat to the close (ifContinued), so
+    # the Slack update can say what today's spend would have reached
+    at_flat = None
+    if fwd_flat is not None and not complete:
+        future_flat = max(hero_proj - hero_now + (fwd_flat["entries"] - future_cum) * rate_u, 0.0)
+        st_flat = sellthrough_block(release, name, units_sold, unconverted, inventory_left, future_flat,
+                                    expected_today=hero_exp, bm_today=hero_bm_today if bench else None,
+                                    bm_close=hero_bm if bench else None, orders=of_win, closed=closed)
+        at_flat = {"units": round(spoken_for(st_flat) + float(st_flat.get("futureEntriesPredicted") or 0), 1),
+                   "pct": st_flat.get("pct")}
     # the hero adopts the sell-through's count (docs 6.3½): what the orders
     # and draw feeds say is spoken for - units paid, drafts raised, the
     # winners the entries in hand imply by the per-product rule - and the
@@ -6537,6 +6697,138 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # the hero and every card reads one figure
     hero_now, hero_proj = adopt_sellthrough(sellthrough, channels_out, funnel_by_group, hero_now, hero_proj,
                                             complete, upb_plan, upb_actual)
+
+    # ---- the spend levels (docs 7, 27 October 2026): what each daily spend
+    # buys and earns, the Spend levels card. Four levels - none, half the
+    # recommended, the recommended, double - each the schedule scaled, run
+    # through the same placement; and the profit from the spend still to
+    # come at a flat daily spend, from nothing to two and a half times the
+    # level, with the same at the ends of the elasticity prior's width, so
+    # the card can show where the peak may sit
+    edition_all = float(edition_total(release))
+    levels_out = None
+    if cost and days_left and not complete and level is not None and level != math.inf and l3d_raw_cpe:
+        base_units = hero_proj - fwd["units"]          # the close without paid's units still to come
+        rows_out = []
+        for key, mult in (("none", 0.0), ("half", 0.5), ("recommended", 1.0), ("double", 2.0)):
+            f = fwd if key == "recommended" else paid_forward([s * mult for s in schedule])
+            spend_k = f["spendFuture"]
+            units_k = min(base_units + f["units"], edition_all) if edition_all else base_units + f["units"]
+            roi_k = (gain * f["units"] / (aa_budget_share * spend_k)) if (spend_k > 0 and aa_budget_share > 0) else None
+            lvl_k = level * mult
+            marg_k = cost.marginal_roi(lvl_k, gain, aa_budget_share, room_left) if lvl_k > 0 else None
+            rows_out.append({"key": key, "daily": round(lvl_k, 2), "unitsAtClose": round(units_k, 1),
+                             "pct": round(units_k / edition_all, 4) if edition_all else None,
+                             "spendToCome": round(spend_k, 2),
+                             "roi": round(roi_k, 2) if roi_k is not None else None,
+                             "marginal": round(marg_k, 2) if marg_k is not None else None})
+        sd = float(b.get("cpe_spend_elasticity_sd", 0.1) or 0.1)
+        alts = [CostPath(cost.cpe_now, cost.spend_ref, cost.clock_ref, cost.spent, cost.n, e_alt, wear, wear_k,
+                         lift=cost.lift, anchor_lift=cost.anchor_lift)
+                for e_alt in (max(eps - sd, 0.0), min(eps + sd, 0.9))]
+        top = max(level * 2.5, s0 * 1.2, 1.0)
+        curve = []
+        for i in range(41):
+            s_pt = top * i / 40
+            p_pt = cost.profit(s_pt, gain, aa_budget_share, room_left)
+            p_alt = [c_.profit(s_pt, gain, aa_budget_share, room_left) for c_ in alts]
+            curve.append({"daily": round(s_pt, 2), "profit": round(p_pt, 2),
+                          "lo": round(min(p_pt, *p_alt), 2), "hi": round(max(p_pt, *p_alt), 2)})
+        levels_out = {"today": round(s0, 2), "recommended": round(level, 2),
+                      "marginalToday": round(marginal_today, 2) if marginal_today is not None else None,
+                      "sellout": round(supply_spend, 2) if supply_spend not in (None, math.inf) else None,
+                      "daysLeft": days_left, "ppu": round(gain, 2), "cannibalisation": cann,
+                      "elasticity": eps, "elasticityBand": [round(max(eps - sd, 0.0), 3), round(min(eps + sd, 0.9), 3)],
+                      "rows": rows_out, "curve": curve}
+
+    # ---- the sell-through at close (27 October 2026): the projection with
+    # its likely range and a word on how sure it is, the release and each
+    # work, and the paid spend it assumes - the Sell-through at close card.
+    # The range is where completed launches landed around the projection of
+    # what was still to come, read at this point of the campaign
+    # (etl/analysis/projection_backtest.py); a closed release has none
+    close_forecast = None
+    if True:
+        tot = edition_all or None
+        now_u = min(hero_now, tot) if tot else hero_now
+        proj_u = now_u if complete else (min(hero_proj, tot) if tot else hero_proj)
+        rng = None if complete else projection_range(pdsa_today)
+        if complete:
+            lo_u = hi_u = proj_u
+        elif rng:
+            still = max(proj_u - now_u, 0.0)
+            lo_u, hi_u = now_u + still * rng["lo"], now_u + still * rng["hi"]
+            if tot:
+                lo_u, hi_u = min(max(lo_u, now_u), tot), min(max(hi_u, now_u), tot)
+        else:
+            lo_u = hi_u = None
+        width = ((hi_u - lo_u) / (2 * proj_u)) if (lo_u is not None and proj_u > 0) else None
+        in_hand_share = (now_u / proj_u) if proj_u > 0 else None
+        if complete:
+            conf, why = "high", "the campaign has closed"
+        elif width is None:
+            conf, why = None, "no completed launch to read the range from yet"
+        else:
+            conf = "high" if width <= 0.10 else "medium" if width <= 0.25 else "low"
+            why = (f"the range is {'within' if width <= 0.25 else 'wider than'} ±{10 if width <= 0.10 else 25}% of the projection"
+                   + (f", and {in_hand_share:.0%} of it is already sold or in hand" if in_hand_share is not None else ""))
+        works_out = []
+        for pr in (sellthrough.get("products") or []):
+            ed = pr.get("edition")
+            if not ed or not (ed > 0):
+                continue
+            t_w = float(pr.get("pct") or 0.0) * ed
+            u_w = t_w if complete else float(pr.get("pctClose") if pr.get("pctClose") is not None else pr.get("pct") or 0.0) * ed
+            if complete or not rng:
+                lo_w = hi_w = u_w if (complete or lo_u is None) else None
+            else:
+                still_w = max(u_w - t_w, 0.0)
+                lo_w, hi_w = min(max(t_w + still_w * rng["lo"], t_w), ed), min(max(t_w + still_w * rng["hi"], t_w), ed)
+            works_out.append({"name": pr.get("name"), "edition": ed, "today": round(t_w, 1), "units": round(u_w, 1),
+                              "lo": round(lo_w, 1) if lo_w is not None else None, "hi": round(hi_w, 1) if hi_w is not None else None,
+                              "pct": round(u_w / ed, 4), "pctLo": round(lo_w / ed, 4) if lo_w is not None else None,
+                              "pctHi": round(hi_w / ed, 4) if hi_w is not None else None, "pctToday": round(t_w / ed, 4),
+                              "sellsOut": bool(u_w >= ed - 0.5)})
+        daily_assumed = (level if (level is not None and level != math.inf) else recommended) if (cost and not complete) else None
+        if daily_assumed is not None:
+            if daily_assumed <= 0 < s0:
+                direction = "stop"
+            elif s0 <= 0 < daily_assumed:
+                direction = "start"
+            elif s0 > 0 and abs(daily_assumed - s0) < 0.01 * s0:
+                direction = "hold"
+            else:
+                direction = "cut" if daily_assumed < s0 else "raise"
+        else:
+            direction = "stop" if complete else None
+        paid_assumed = {
+            "daily": round(daily_assumed, 2) if daily_assumed is not None else None,
+            "today": round(s0, 2),
+            "change": round((daily_assumed - s0) / s0, 4) if (daily_assumed is not None and s0 > 0) else None,
+            "direction": direction,
+            "spendAtClose": round(cum_spend + part_spend + (fwd["spendFuture"] if not complete else 0.0), 2),
+            "budget": round(targets["paid"]["budget"], 2) if targets.get("paid") and targets["paid"].get("budget") else None,
+            "rule": ("The projection runs at the recommended spend: the level at which the next euro returns what it costs, "
+                     "capped at the spend that sells out, reached from today's by steps of up to 30% a day."),
+        }
+        close_forecast = {
+            "units": round(proj_u, 1), "edition": tot, "pct": round(proj_u / tot, 4) if tot else None,
+            "lo": round(lo_u, 1) if lo_u is not None else None, "hi": round(hi_u, 1) if hi_u is not None else None,
+            "pctLo": round(lo_u / tot, 4) if (lo_u is not None and tot) else None,
+            "pctHi": round(hi_u / tot, 4) if (hi_u is not None and tot) else None,
+            "today": round(now_u, 1), "pctToday": round(now_u / tot, 4) if tot else None,
+            "target": round(hero_target, 0) if hero_target else None,
+            "daysLeft": days_left, "confidence": conf, "confidenceWhy": why,
+            "built": {"sold": round(float(sellthrough.get("sold") or 0.0), 1),
+                      "inHand": round(float(sellthrough.get("inHandUnits") or 0.0), 1),
+                      "organic": round(max(proj_u - now_u - (fwd["units"] if not complete else 0.0), 0.0), 1),
+                      "paid": round(fwd["units"] if not complete else 0.0, 1)},
+            "works": works_out,
+            "paid": paid_assumed,
+            "range": ({"source": "backtest", "n": rng["n"], "fraction": round(pdsa_today, 3),
+                       "note": f"where 8 in 10 past launches landed, read from day {max(int(round(pdsa_today * L)), 1)}"}
+                      if rng else None),
+        }
 
     # ---- paid block output (docs §7; inputs computed above, before the channel loop)
     # the part day so far rides at the end of the series, marked, so the ROI
@@ -6597,6 +6889,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # the price at close over the window's, at today's spend
             "wearToClose": round(wear_end, 3),
             "paced": paced,
+            # the level the pacing steps toward (where the next euro returns
+            # what it costs, or the sellout), the schedule the projection runs
+            # at, and the return on the next euro at today's spend
+            "target": round(level, 2) if level not in (None, math.inf) else None,
+            "profitSpend": round(profit_spend, 2) if profit_spend not in (None, math.inf) else None,
+            "schedule": [{"date": d.isoformat(), "spend": round(s, 2)} for d, s in zip(future_days, schedule)],
+            "marginalToday": round(marginal_today, 3) if marginal_today is not None else None,
             # the cost curve in force and where it came from (campaign_cost_terms)
             "elasticity": eps,
             "wearout": wear,
@@ -6645,11 +6944,18 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # the two and its rule; and what the run rate would have bought and
         # cost had it run on to the close, for the card's hover
         "stops": paid_stops(fwd),
-        "ifContinued": None if complete else {
-            "entriesProjected": round(cum_pentries + part_entries + fwd["flatEntries"], 1),
-            "unitProjected": round(unit_proj + (fwd["flatEntries"] - future_cum) * e2o, 1),
-            "spendProjectedTotal": round(cum_spend + part_spend + fwd["flatSpend"], 2),
+        "ifContinued": None if (complete or fwd_flat is None) else {
+            "spend": round(s0, 2),
+            "entriesProjected": round(cum_pentries + part_entries + fwd_flat["flatEntries"], 1),
+            "unitProjected": round(unit_proj + (fwd_flat["flatEntries"] - future_cum) * e2o, 1),
+            "spendProjectedTotal": round(cum_spend + part_spend + fwd_flat["flatSpend"], 2),
+            # the same run with its stops, and the sell-through at close it
+            # reaches (the Slack update's line on the paid lever)
+            "stops": paid_stops(fwd_flat),
+            "sellThrough": at_flat,
         },
+        # what each daily spend buys and earns (the Spend levels card)
+        "levels": levels_out,
         # the same at the recommended spend, held to the close: what paid
         # would buy and cost, where it would stop, and the sell-through at
         # close it would take the release to (the Slack update's line on the
@@ -7000,6 +7306,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "email": email_out,
         "social": social_out,
         "sellthrough": sellthrough,
+        # the projection at close with its range and the paid spend it assumes
+        "closeForecast": close_forecast,
         # frames per print, against the plan's rate and the basket's (§6.4)
         "framing": framing_block(release, of_win, basket, b, st=sellthrough),
         "draw": draw,

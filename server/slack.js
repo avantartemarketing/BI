@@ -240,13 +240,19 @@ function model(snap, { horizon = "today", today, direct = false } = {}) {
   // recommendation or that figure, and nothing once the campaign is complete.
   const pb = (snap.paid && snap.paid.budget) || {};
   const ar = snap.paid && snap.paid.atRecommended;
+  const ic = snap.paid && snap.paid.ifContinued;
   const cur = finite(pb.current) ? num(pb.current) : 0;
   const rec = finite(pb.recommended) ? num(pb.recommended) : null;
   const recPct = ar && ar.sellThrough && finite(ar.sellThrough.pct) ? num(ar.sellThrough.pct) : null;
+  // the forecast runs at the recommended spend (27 October 2026); the
+  // sell-through today's spend held to the close would reach
+  // (paid.ifContinued.sellThrough) is the comparison the line gives
+  const heldPct = ic && ic.sellThrough && finite(ic.sellThrough.pct) ? num(ic.sellThrough.pct) : null;
   // what bound the recommendation (paid.budget.cap, the Paid card's "Capped
   // by" chip) rides along, so a cut or a stop can say why (leverLine)
   const lever = snap.complete || !(cur > 0) || rec === null || recPct === null || closePct === null ? null
     : { current: cur, recommended: rec, move: Math.round(rec) - Math.round(cur), pct: recPct, units: num(ar.sellThrough.units),
+        held: heldPct === null ? null : { pct: heldPct, units: num(ic.sellThrough.units) },
         cap: pb.cap || null, paced: !!pb.paced, floor: finite(pb.floor) ? num(pb.floor) : null,
         // paid switched off today while the feed shows other campaigns
         // spending: the current figure is the last day it ran (13 October 2026)
@@ -392,59 +398,54 @@ const closeLine = (m) => {
     ? `Projected at close: *${fmt(c.units)} units* on current results \`BETA\``
     : `Projected sell-through at close: *${pct(c.pct)}*, ${fmt(c.units)} of ${fmt(c.edition)} units on current results \`BETA\``;
 };
-/* The paid lever, the line under the close forecast (6 October 2026): the
- * forecast holds paid at its current daily spend, so the line says what the
- * Paid card's recommendation would mean for the close - room to increase
- * paid and the sell-through at close that might reach, no room, or a cut, a
- * stop or a pause and the sell-through it would leave. It is an update, not
- * an instruction, in the words agreed on 8 October 2026: "We may have to
- * decrease paid spend to stay ROI-positive, in which case the forecast
- * sell-through drops to 28.0% (168 units)". The reason is what bound the
- * recommendation (paid.budget.cap, the card's Capped by chip): the ROI at
- * close under the floor, the sellout on course without the spend (where the
- * line ends at the reason: the forecast does not move, and a stop says the
- * forecast already assumes it, since the gap to the edition is closed and the
- * paid path stops at once; the target being part of the edition changes
- * nothing, paid runs to the sellout, 9 October 2026), or the spend rules on
- * days that bought nothing or an ROI below the band. The
- * sell-through is given to one decimal and in units, so a move the
- * forecast's whole percentage hides still shows. Nothing without the
+/* The paid lever, the line under the close forecast (6 October 2026; since
+ * 27 October 2026 the forecast runs at the recommended spend): the line says
+ * the spend the forecast assumes - a raise or a cut from today's, a stop, a
+ * pause, or no move - with the reason the level was bound by (paid.budget.cap,
+ * the card's Capped by chip: the next euro paying for itself or not, the
+ * sellout on course without the spend, days that bought nothing), and the
+ * sell-through today's spend held to the close would have reached
+ * (paid.ifContinued.sellThrough), so the lever's worth shows. It is an
+ * update, not an instruction. On course to sell out the line ends at the
+ * reason, and a stop says the forecast already assumes it, since the gap to
+ * the edition is closed and the paid path stops at once (the target being
+ * part of the edition changes nothing, paid runs to the sellout, 9 October
+ * 2026). The sell-through is given to one decimal and in units, so a move
+ * the forecast's whole percentage hides still shows. Nothing without the
  * forecast line, a running campaign or a recommendation. */
 const eur = (v) => `€${fmt(v)}`;
 const pct1 = (v) => `${(Math.round(num(v) * 1000) / 10).toFixed(1)}%`;
 const leverLine = (m) => {
   const l = m.lever;
   if (m.close || !l) return null;
-  // paid off today: the figure is the last day it ran, and the forecast's
-  // run rate is that day's, so the line says so rather than "stays at"
+  // paid off today: the figure is the last day it ran, so the line says so
   const off = !!l.offToday;
-  const holds = off
-    ? `Paid is off today, after ${eur(l.current)} a day until yesterday. The forecast assumes it runs again at that rate.`
-    : `This assumes paid stays at ${eur(l.current)} a day.`;
-  const at = `*${pct1(l.pct)}* (${fmt(l.units)} units)`;
-  if (l.move > 0) return `${holds} There may be room to increase paid spend, in which case the forecast sell-through rises to ${at}.`;
+  const offNote = `Paid is off today, after ${eur(l.current)} a day until yesterday.`;
+  // the forecast runs at the recommended spend (27 October 2026): the line
+  // says what it assumes, why the level is where it is (the Paid card's
+  // Capped by chip), and what today's spend held to the close would reach
+  const held = l.held ? `; held at ${eur(l.current)} the forecast would be *${pct1(l.held.pct)}* (${fmt(l.held.units)} units)` : "";
+  const why = {
+    marginal: l.move > 0 ? "as the next euro still pays for itself" : "as the next euro returns less than it costs",
+    supply: l.move > 0 ? "to sell out by the close" : "as we are on course to sell out anyway",
+    zero_conversion_pause: "as it has bought no entries for three days",
+    zero_conversion: "as it bought no entries yesterday",
+  }[l.cap] || null;
+  if (l.move > 0) {
+    const to = off ? `The forecast assumes it runs again at ${eur(l.recommended)} a day` : `This assumes paid is raised to ${eur(l.recommended)} a day from ${eur(l.current)}`;
+    return `${off ? offNote + " " : ""}${to}${why ? `, ${why}` : ""}${held}.`;
+  }
   if (l.move < 0) {
     const stop = !(l.recommended > 0);
-    const verb = l.cap === "zero_conversion_pause" ? "pause" : stop ? "stop" : "decrease";
-    const drops = `in which case the forecast sell-through drops to ${at}`;
-    switch (l.cap) {
-      case "supply":
-        return stop
-          ? (off ? `Paid is off today, after ${eur(l.current)} a day until yesterday, and we are on course to sell out without it.`
-            : `This assumes paid stops now, as we are on course to sell out without it. Paid is at ${eur(l.current)} a day.`)
-          : `${holds} We may be able to ${verb} paid spend, as we are on course to sell out anyway.`;
-      case "roi_floor": {
-        const roi = l.floor === null || Math.abs(l.floor - 1) < 1e-9 ? "to stay ROI-positive" : `to keep ROI above ${Number(l.floor).toFixed(1)}`;
-        return `${holds} We may have to ${verb} paid spend ${roi}, ${drops}.`;
-      }
-      case "zero_conversion_pause": return `${holds} We may have to ${verb} paid spend, as it has bought no entries for three days, ${drops}.`;
-      case "zero_conversion": return `${holds} We may have to ${verb} paid spend, as it bought no entries yesterday, ${drops}.`;
-      case "roi_band_decrease": return `${holds} We may have to ${verb} paid spend, as cumulative ROI is under 0.9, ${drops}.`;
-      case "forced_decrease": return `${holds} We may have to ${verb} paid spend, as ROI has been under target for three days, ${drops}.`;
-      default: return `${holds} We may have to ${verb} paid spend, ${drops}.`;
+    if (l.cap === "supply" && stop) {
+      return off ? `${offNote.slice(0, -1)}, and we are on course to sell out without it.`
+        : `This assumes paid stops now, as we are on course to sell out without it. Paid is at ${eur(l.current)} a day.`;
     }
+    const verb = l.cap === "zero_conversion_pause" ? "pauses" : stop ? "stops now" : `is cut to ${eur(l.recommended)} a day from ${eur(l.current)}`;
+    const to = off ? `The forecast assumes it ${stop ? "stays off" : `runs again at ${eur(l.recommended)} a day`}` : `This assumes paid ${verb}`;
+    return `${off ? offNote + " " : ""}${to}${why ? `, ${why}` : ""}${l.cap === "supply" ? "" : held}.`;
   }
-  return `${holds} There is no room to increase paid spend.`;
+  return off ? `${offNote} The forecast assumes it runs again at that rate.` : `This assumes paid stays at ${eur(l.current)} a day: the next euro would not pay for more.`;
 };
 const unitsHeader = (m) => (m.close ? "Units at close *" : "Units sold *");
 const unitsFootnote = (m) => (m.close

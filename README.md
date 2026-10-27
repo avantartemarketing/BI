@@ -26,7 +26,10 @@ etl/                    Python pipeline
   pricing.py              the join from that file to the release panel (python3 etl/pricing.py
                           prints the matching report and the unmatched releases)
   release_features.py     one row per release from the daily funnel (data/app/release_features.csv)
-  analysis/               one-off studies behind documented decisions (cpe_elasticity.py,
+  analysis/               one-off studies behind documented decisions (cpe_elasticity.py and
+                          cpe_elasticity_challenge.py - the price of a bigger day,
+                          projection_backtest.py - the range on the projection at close, writes
+                          etl/projection_backtest.json which build.py reads,
                           tier_curve_probe.py, release_clusters.py - the baskets of comparables,
                           price_probe.py - whether price belongs in the basket; it does)
 data/

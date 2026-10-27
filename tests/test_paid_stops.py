@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""The two stops on the paid projection (docs 5.4, 6 October 2026): the run
-rate stops on the day the units placed, the organic course and paid's entries
-together, fill the room (day by day since 11 October 2026), and before the
-first day the price of a converting unit passes the ROI floor's; the flat
-run to the close is kept beside it
-(ifContinued), and the same projection at the recommended spend carries the
-sell-through at close the Slack update's paid line prints (atRecommended).
-On the synthetic funnel frame of test_partial_day, with the edition and the
-floor moved to make each stop bite.
+"""The paid projection and its two stops (docs 5.4, 6 October 2026; docs 7,
+27 October 2026). The projection runs at the recommended spend: today's run
+rate stepping by at most 30% a day to the level where the next euro returns
+what it costs, capped at the spend that sells out (budget.schedule), and the
+same run carries the sell-through at close the Slack update's paid line
+prints (atRecommended). At that spend the two stops - the day the units
+placed, the organic course and paid's entries together, fill the room (day
+by day since 11 October 2026), and the first day the price of a converting
+unit passes the ROI floor's - land on the close or not at all, so they show
+on the run rate held flat to the close, kept beside the projection with its
+own stops and sell-through at close (ifContinued). On the synthetic funnel
+frame of test_partial_day, with the edition and the floor moved to make each
+stop bite.
 python3 tests/test_paid_stops.py (needs pandas)"""
 import sys, json, pathlib, random
 from datetime import date, timedelta
@@ -69,6 +73,15 @@ def check(cond, msg):
     if not cond: failed += 1; print("FAIL", msg)
 def close(a, b, tol=0.05): return a is not None and b is not None and abs(a - b) <= tol
 def paid_row(snap): return next(c for c in snap["channels"] if c["key"] == "paid")
+def last_actual(ch): return [r["actual"] for r in ch["daily"] if r["actual"] is not None][-1]   # the path's start, to the 2 dp the rows carry
+def spends(snap): return [s["spend"] for s in snap["paid"]["budget"]["schedule"]]
+def cost_of(snap):
+    """The cost path rebuilt off the block (docs 7)."""
+    p_, b_ = snap["paid"], snap["paid"]["budget"]
+    return build.CostPath(p_["l3dCpe"], b_["spendAtWindow"], b_["spentAtWindow"], b_["spentSoFar"], b_["daysLeft"],
+                          b_["elasticity"], b_["wearout"], b_["wearoutK"], lift=b_["closeLift"], anchor_lift=b_["liftAtWindow"])
+NO_STOP = {"sellout": None, "roiFloor": None, "day": None, "rule": None}
+MAX_STEP = build.BENCH["spend_rules"]["max_daily_change"]
 e2o = build.entry_rate(cfg0)
 def with_bench(over, fn):
     """A build with benchmark terms moved (they are read live), put back after."""
@@ -86,37 +99,84 @@ first = (TODAY + timedelta(days=1)).isoformat()
 days_left = (launch - TODAY).days
 
 # ---- no stop: with the floor low the price never passes it and the gap is
-# far from closed, so the run rate runs to the close and the flat run is the
-# projection. (At the standard floor the fixture's ROI of about 1.06 puts the
-# price past the floor four days out, the case tested further down.)
+# far from closed, so nothing stops the run rate or the schedule. The fixture's
+# next euro at 500 a day returns less than it costs (a marginal ROI of about
+# 0.7), so the level is below today's spend and the recommendation is the
+# paced cut toward it (27 October 2026); the floor's spend is published for
+# the card's working but no longer sets the level. (At the standard floor the
+# fixture's ROI of about 1.06 puts the run rate's price past the floor four
+# days out, the case tested further down.)
 N = with_floor(0.5, lambda: run(cfg))
 p, b = N["paid"], N["paid"]["budget"]
-check(p["stops"] == {"sellout": None, "roiFloor": None, "day": None, "rule": None}, f"no stop with the floor low: {p['stops']}")
-check(close(p["spendProjectedTotal"], p["spendToDate"] + b["current"] * days_left, 0.01)
-      and p["ifContinued"]["spendProjectedTotal"] == p["spendProjectedTotal"],
-      f"the run rate to the close, and the flat run is the projection: {p['spendProjectedTotal']} vs {p['ifContinued']}")
-check(p["ifContinued"]["entriesProjected"] == p["entriesProjected"] and p["ifContinued"]["unitProjected"] == p["unitProjected"],
-      f"the flat run's entries and units are the projection's: {p['ifContinued']} vs {p['entriesProjected']}, {p['unitProjected']}")
-ar = p["atRecommended"]
-check(ar is not None and ar["spend"] == b["recommended"] and ar["sellThrough"] is not None and 0 <= ar["sellThrough"]["pct"] <= 1,
-      f"the projection at the recommended spend, with the sell-through at close: {ar}")
-check((ar["unitProjected"] >= p["unitProjected"] - 0.05) == (b["recommended"] >= b["current"]),
-      f"more spend, more units: {ar['unitProjected']} at {b['recommended']} vs {p['unitProjected']} at {b['current']}")
-check((ar["sellThrough"]["units"] >= N["hero"]["projected"] - 0.5) == (b["recommended"] >= b["current"]),
-      f"and a higher sell-through at close: {ar['sellThrough']} vs the hero's {N['hero']['projected']}")
-check(ar["stops"]["day"] is None, f"at a paced-up recommendation nothing stops either: {ar['stops']} ({b['cap']})")
-print(f"N: day {N['day']}/{N['of']} edition={N['edition']['target']} cur={b['current']} rec={b['recommended']} cap={b['cap']} gap={b['selloutGap']} "
-      f"organic={b['organicFuture']} cpe now={b['cpeNow']} close={b['cpeAtClose']} spend={p['spendToDate']}->{p['spendProjectedTotal']} "
-      f"units={p['unitsToDate']}->{p['unitProjected']} at rec={ar['sellThrough']}")
+ic, ar = p["ifContinued"], p["atRecommended"]
+check(p["stops"] == NO_STOP and ic["stops"] == NO_STOP, f"no stop with the floor low, at the schedule or the run rate: {p['stops']} {ic['stops']}")
+check(b["marginalToday"] is not None and b["marginalToday"] < 1 and b["profitSpend"] is not None and 0 < b["profitSpend"] < b["current"],
+      f"the next euro at today's spend returns less than it costs, so the level is below it: marginal {b['marginalToday']}, level {b['profitSpend']} vs {b['current']}")
+check(b["cap"] == "marginal" and b["target"] == b["profitSpend"] and b["supplySpend"] > b["profitSpend"],
+      f"the level is where the next euro returns what it costs, under the sellout's: {b['target']} ({b['cap']}) supply {b['supplySpend']}")
+check(b["paced"] and close(b["recommended"], b["current"] * (1 - MAX_STEP), 0.01) and b["recommended"] > b["target"],
+      f"the recommendation is the paced cut toward it: {b['recommended']} from {b['current']} toward {b['target']}")
+check(b["roiSpend"] is not None and b["roiSpend"] > b["recommended"] and b["band"] in ("increase", "hold", "decrease"),
+      f"the floor's spend and the band are published for the working, setting nothing: roi spend {b['roiSpend']}, band {b['band']}")
+sch, sp = b["schedule"], spends(N)
+check(len(sch) == days_left and sch[0]["date"] == first and sp[0] == b["recommended"],
+      f"the schedule runs from the day after the last full day, at the recommendation: {sch[:2]} of {len(sch)}")
+check(all(y <= x and y >= x * (1 - MAX_STEP) - 0.01 for x, y in zip(sp, sp[1:])) and sp[-1] == b["target"] and sp.count(b["target"]) >= 2,
+      f"and steps down by at most 30% a day to the level, then holds it: {sp}")
+check(close(p["spendProjectedTotal"], p["spendToDate"] + sum(sp), 0.1),
+      f"the projection runs at the schedule: {p['spendProjectedTotal']} vs {p['spendToDate']} + {sum(sp):.2f}")
+check(ar is not None and ar["spend"] == max(sp) and ar["spendProjectedTotal"] == p["spendProjectedTotal"] and ar["entriesProjected"] == p["entriesProjected"]
+      and ar["unitProjected"] == p["unitProjected"] and ar["stops"] == p["stops"],
+      f"the projection at the recommended spend is the same run: {ar} vs {p['spendProjectedTotal']}, {p['entriesProjected']}, {p['unitProjected']}")
+check(ar["sellThrough"] is not None and 0 <= ar["sellThrough"]["pct"] <= 1 and close(ar["sellThrough"]["units"], N["hero"]["projected"], 1.0),
+      f"with the sell-through at close, the hero's projection: {ar['sellThrough']} vs {N['hero']['projected']}")
+check(ic["spend"] == b["current"] and close(ic["spendProjectedTotal"], p["spendToDate"] + b["current"] * days_left, 0.01),
+      f"the run rate held flat to the close beside it: {ic} vs {p['spendToDate'] + b['current'] * days_left:.2f}")
+check((p["unitProjected"] < ic["unitProjected"]) == (b["recommended"] < b["current"]) and ic["unitProjected"] > p["unitProjected"] + 1,
+      f"more spend, more units: {ic['unitProjected']} at {b['current']} vs {p['unitProjected']} at the schedule")
+check((ar["sellThrough"]["units"] < ic["sellThrough"]["units"]) == (b["recommended"] < b["current"]) and ic["sellThrough"]["units"] > ar["sellThrough"]["units"] + 1,
+      f"and a higher sell-through at close: {ic['sellThrough']} at {b['current']} vs {ar['sellThrough']} at the schedule")
+# the ROI line ahead runs at the schedule too: with no work filling, each
+# point is the L3D over the schedule's price on the cost path rebuilt off the
+# block, which falls as the days shrink
+cost = cost_of(N)
+ms = cost.multipliers_sched(sp)
+check(len(p["roiPath"]) == days_left and all(close(r["roi"], p["l3dRoi"] / m, 0.01) for r, m in zip(p["roiPath"], ms))
+      and p["roiPath"][-1]["roi"] > p["roiPath"][0]["roi"] > p["l3dRoi"] * 0.9,
+      f"the ROI line ahead at the schedule, the cut pricing the days cheaper: {p['roiPath'][:2]}..{p['roiPath'][-1]} vs l3d {p['l3dRoi']} over {[round(m, 3) for m in ms[:2]]}")
+print(f"N: day {N['day']}/{N['of']} edition={N['edition']['target']} cur={b['current']} rec={b['recommended']} level={b['target']} cap={b['cap']} "
+      f"marginal={b['marginalToday']} gap={b['selloutGap']} organic={b['organicFuture']} cpe now={b['cpeNow']} close={b['cpeAtClose']} "
+      f"spend={p['spendToDate']}->{p['spendProjectedTotal']} flat {ic['spendProjectedTotal']} units={p['unitsToDate']}->{p['unitProjected']} "
+      f"flat {ic['unitProjected']} sell-through {ar['sellThrough']} flat {ic['sellThrough']}")
 
-# ---- the sellout stop: an edition the course fills a few days before the
+# ---- the sellout stop: an edition the run rate fills a few days before the
 # close, the organic channels and paid landing together (11 October 2026).
-# The organic course moves with the edition (the targets do, and not in
-# proportion), so the edition is found by fixed-point steps on the course
-# by the day aimed at: what is secured now, the organic channels' futures
-# along their curves (the shape read off their paths, which the hero's
-# adoption scales but never reshapes) and paid's flat run by that day
-flat_units = p["ifContinued"]["unitProjected"] - p["unitsToDate"]
+# The stop is the flat run's (ifContinued) since 27 October 2026: at the
+# recommended spend, which stops paid outright once the organic course alone
+# sells out, nothing stops. The organic course moves with the edition (the
+# targets do, and not in proportion), so the edition is found by fixed-point
+# steps on the course by the day aimed at: what is secured now, the organic
+# channels' futures along their curves (the shape read off their paths, which
+# the hero's adoption scales but never reshapes) and paid's flat run by that
+# day. The paid channel's path in N runs at N's schedule, so its days are
+# rescaled to the run rate on the cost path rebuilt off the block: a day's
+# entries go as its spend over its price
+flat_units = ic["unitProjected"] - p["unitsToDate"]
+m_flat = cost.multipliers(b["current"])
+rescale = [(b["current"] / mf) / (s / m) for s, m, mf in zip(sp, ms, m_flat)]
+def paid_flat(flat):
+    """Paid's units by day at the run rate, read off `flat`'s path at its schedule."""
+    pc = paid_row(flat)
+    rows = [r for r in pc["daily"] if r["proj"] is not None]
+    out, cum, prev = {}, 0.0, last_actual(pc)
+    for r, k in zip(rows, rescale):
+        cum += (r["proj"] - prev) * k
+        prev = r["proj"]
+        out[r["date"]] = cum
+    return out
+flat_N = paid_flat(N)
+check(len(flat_N) == days_left and close(flat_N[launch.isoformat()], flat_units, 0.1),
+      f"paid's path rescaled to the run rate lands on the flat run's units: {flat_N[launch.isoformat()]:.2f} vs {flat_units:.2f}")
 def gap_raw(snap, E): return E - snap["hero"]["now"] - snap["paid"]["budget"]["organicFuture"]
 def course(snap, d, flat):
     """The hero's course by day d at the run rate, unscaled, paid's flat run read off `flat`."""
@@ -126,8 +186,8 @@ def course(snap, d, flat):
     org = [c for c in snap["channels"] if c["key"] != "paid"]
     now_o, end_o = sum(c["now"] for c in org), sum(at(c, launch.isoformat()) for c in org)
     share = (sum(at(c, d.isoformat()) for c in org) - now_o) / (end_o - now_o) if end_o > now_o else 1.0
-    pc = paid_row(flat)
-    return snap["hero"]["now"] + snap["paid"]["budget"]["organicFuture"] * share + (at(pc, d.isoformat()) - pc["now"])
+    paid_by = paid_flat(flat)
+    return snap["hero"]["now"] + snap["paid"]["budget"]["organicFuture"] * share + max([v for k, v in paid_by.items() if k <= d.isoformat()], default=0.0)
 d_aim = TODAY + timedelta(days=7)        # the day the room should run out
 E1 = round(course(N, d_aim, N), 1)
 S = None
@@ -139,36 +199,40 @@ for _ in range(6):
         break
     E1 = E2
 p, b = S["paid"], S["paid"]["budget"]
-st = p["stops"]
-print(f"S: edition={cfgS['edition_size']} gap={b['selloutGap']} organic={b['organicFuture']} stops={st} "
-      f"spend={p['spendToDate']}->{p['spendProjectedTotal']} flat {p['ifContinued']['spendProjectedTotal']} "
-      f"entries={p['entriesToDate']:.1f}->{p['entriesProjected']} flat {p['ifContinued']['entriesProjected']} hero proj={S['hero']['projected']} rec={b['recommended']} ({b['cap']})")
+ic, ar = p["ifContinued"], p["atRecommended"]
+st = ic["stops"]
+print(f"S: edition={cfgS['edition_size']} gap={b['selloutGap']} organic={b['organicFuture']} flat stops={st} schedule stops={p['stops']} "
+      f"spend={p['spendToDate']}->{p['spendProjectedTotal']} flat {ic['spendProjectedTotal']} "
+      f"entries={p['entriesToDate']:.1f}->{p['entriesProjected']} flat {ic['entriesProjected']} hero proj={S['hero']['projected']} "
+      f"flat sell-through {ic['sellThrough']} rec={b['recommended']} ({b['cap']})")
 check(b["selloutGap"] <= 0.2 and b["organicFuture"] > E1 - S["hero"]["now"] - 0.5,
       f"the organic course alone covers the room by the close, so the gap reads 0 and paid only brings the sellout forward: "
       f"gap {b['selloutGap']}, organic {b['organicFuture']} for a room of {E1 - S['hero']['now']:.1f}")
 check(st["rule"] == "sellout" and st["sellout"] == st["day"] and st["roiFloor"] is None
-      and TODAY < date.fromisoformat(st["day"]) < launch, f"the sellout stop, before the close: {st}")
+      and TODAY < date.fromisoformat(st["day"]) < launch, f"the run rate's sellout stop, before the close: {st}")
 d_stop = date.fromisoformat(st["day"])
 check(abs((d_stop - d_aim).days) <= 1, f"on the day the course reaches the edition: {st['day']} vs {d_aim}")
 check(course(S, d_stop - timedelta(days=1), N) < E1 + 0.5 and course(S, d_stop, N) >= E1 - 1.0,
       f"the room runs out on that day and not the day before: {course(S, d_stop - timedelta(days=1), N):.1f}, {course(S, d_stop, N):.1f} vs {E1}")
-check((p["entriesProjected"] - p["entriesToDate"]) * e2o > 1.0 and p["entriesProjected"] < p["ifContinued"]["entriesProjected"],
-      f"paid buys units up to the stop and none after: {(p['entriesProjected'] - p['entriesToDate']) * e2o:.2f} units, {p['entriesProjected']} of {p['ifContinued']['entriesProjected']} entries")
-days_to_stop = (d_stop - TODAY).days      # the stop day's spend is cut to what the day's organic leaves still needed
-check(b["current"] * (days_to_stop - 1) - 0.01 <= p["spendProjectedTotal"] - p["spendToDate"] <= b["current"] * days_to_stop + 0.01,
-      f"the run rate to the stop, the stop day for the units still needed: {p['spendProjectedTotal'] - p['spendToDate']:.2f} over {days_to_stop} days at {b['current']}")
-check(close(p["ifContinued"]["spendProjectedTotal"], p["spendToDate"] + b["current"] * days_left, 0.01)
-      and p["ifContinued"]["entriesProjected"] > p["entriesProjected"] and p["ifContinued"]["unitProjected"] > p["unitProjected"],
-      f"the flat run to the close beside it: {p['ifContinued']} vs {p['spendProjectedTotal']}, {p['entriesProjected']}")
+check(close(ic["spendProjectedTotal"], p["spendToDate"] + b["current"] * days_left, 0.01)
+      and ic["entriesProjected"] > p["entriesProjected"] + 1 and ic["unitProjected"] > p["unitProjected"] + 1,
+      f"the flat run to the close, buying what the projection does not: {ic} vs {p['spendProjectedTotal']}, {p['entriesProjected']}")
+check(ic["sellThrough"]["pct"] <= 1 and close(ic["sellThrough"]["units"], cfgS["edition_size"], 1.5),
+      f"and reaching the sellout, earlier: {ic['sellThrough']} vs {cfgS['edition_size']}")
+check(b["cap"] == "supply" and b["recommended"] == 0.0 and b["target"] == 0.0 and all(s == 0.0 for s in spends(S)),
+      f"the recommendation stops paid, the organic course selling out without it, and the schedule is nothing: {b['recommended']} ({b['cap']}) from {b['current']}, {spends(S)[:3]}")
+check(p["stops"] == NO_STOP and p["spendProjectedTotal"] == p["spendToDate"] and close(p["entriesProjected"], p["entriesToDate"], 0.05)
+      and p["unitProjected"] == p["unitsToDate"],
+      f"so the projection spends and buys nothing more, and nothing stops it: {p['stops']} {p['spendProjectedTotal']} vs {p['spendToDate']}, {p['entriesProjected']} vs {p['entriesToDate']}")
 check(close(S["hero"]["projected"], cfgS["edition_size"], 1.5), f"the projection at close is the sellout: {S['hero']['projected']} vs {cfgS['edition_size']}")
 rows = [r for r in paid_row(S)["daily"] if r["proj"] is not None]
-after = [r["proj"] for r in rows if r["date"] >= st["day"]]
-check(len(after) >= 2 and max(after) - min(after) < 0.01 and all(r["proj"] <= after[0] + 0.01 for r in rows),
-      f"the paid channel's path is flat after the stop: {[(r['date'], r['proj']) for r in rows][-4:]}")
-check(b["cap"] == "supply" and b["recommended"] == 0.0, f"the recommendation stops paid, the organic course selling out without it: {b['recommended']} ({b['cap']}) from {b['current']}")
-ar = p["atRecommended"]
-check(ar["stops"]["roiFloor"] is None and (ar["stops"]["day"] is None or ar["stops"]["day"] == launch.isoformat() or b["paced"]),
-      f"at the recommended spend the sellout lands on the close or not at all (a paced cut earlier): {ar['stops']} paced={b['paced']}")
+projs = [r["proj"] for r in rows]
+# (the hero's adoption of the sell-through's count scales the channels'
+# paths by a hair, so the path is read against itself, not the last actual)
+check(len(rows) == days_left and max(projs) - min(projs) < 0.01 and abs(projs[0] - last_actual(paid_row(S))) < 0.01 * last_actual(paid_row(S)),
+      f"the paid channel's path is flat from the first day: {[(r['date'], r['proj']) for r in rows][:2]}..{rows[-1]['proj']} vs {last_actual(paid_row(S))}")
+check(ar["stops"] == NO_STOP and ar["spendProjectedTotal"] == p["spendProjectedTotal"],
+      f"at the recommended spend nothing stops, the run being the projection: {ar['stops']} {ar['spendProjectedTotal']}")
 check(ar["sellThrough"]["pct"] <= 1 and close(ar["sellThrough"]["units"], S["hero"]["projected"], 1.5),
       f"and the sell-through at close is the sellout still: {ar['sellThrough']} vs {S['hero']['projected']}")
 # ---- the gap is to the whole edition, never the target (9 October 2026):
@@ -178,19 +242,19 @@ check(ar["sellThrough"]["pct"] <= 1 and close(ar["sellThrough"]["units"], S["her
 cfgT = dict(cfgS, edition_size=round(E1 * 0.8), edition_total=E1)
 T = with_floor(0.5, lambda: run(cfgT))
 pt, bt = T["paid"], T["paid"]["budget"]
-print(f"T: target={cfgT['edition_size']} of {cfgT['edition_total']} gap={bt['selloutGap']} organic={bt['organicFuture']} stops={pt['stops']} "
+print(f"T: target={cfgT['edition_size']} of {cfgT['edition_total']} gap={bt['selloutGap']} organic={bt['organicFuture']} flat stops={pt['ifContinued']['stops']} "
       f"hero proj={T['hero']['projected']} rec={bt['recommended']} ({bt['cap']})")
 check(T["edition"]["target"] == cfgT["edition_size"] and close(float(T["edition"]["total"]), E1, 1), f"the target inside the edition: {T['edition']}")
 check(close(bt["selloutGap"], max(gap_raw(T, E1), 0.0), 1),
       f"the gap reads the whole edition: {bt['selloutGap']} vs {gap_raw(T, E1):.2f} (to the target it would be {gap_raw(T, cfgT['edition_size']):.2f})")
 check(T["hero"]["projected"] > cfgT["edition_size"] + 1, f"and the projection runs past the target: {T['hero']['projected']} vs {cfgT['edition_size']}")
-check(pt["stops"]["rule"] == "sellout" and close(T["hero"]["projected"], E1, 1.5),
-      f"the run rate stops at the edition and the projection at close is the edition: {pt['stops']} {T['hero']['projected']} vs {E1}")
+check(pt["ifContinued"]["stops"]["rule"] == "sellout" and close(T["hero"]["projected"], E1, 1.5),
+      f"the run rate stops at the edition and the projection at close is the edition: {pt['ifContinued']['stops']} {T['hero']['projected']} vs {E1}")
 # ---- a work spoken for turns paid entries away (10 October 2026): a per-work
 # feed whose entrants mostly want a work already full. The entrants paid
 # brings look like them, so only the share for the other work buys a unit:
 # the yield reads that share, the entries needed close the gap over it, the
-# ROI line ahead falls by it, and the run rate wastes the rest
+# ROI line ahead falls by it, and the schedule's run wastes the rest
 nameY = cfg0["release_name"]
 E1i = int(round(E1))
 feedY = {"draws": [{"id": "dA", "first": announce.isoformat(), "last": None, "entrants": 100, "eligible": 100, "winners": 0, "sold": 0, "open": 100, "wonUnpaid": 0, "purchaseUnits": 0.0},
@@ -214,13 +278,15 @@ check(by["entriesNeeded"] is not None and 2 * by["selloutGap"] / e2o < by["entri
       f"the entries needed close the gap over that share, well over the gap at the rate: {by['entriesNeeded']} vs {by['selloutGap'] / e2o:.1f}")
 check(bool(py["roiPath"]) and py["l3dRoi"] is not None and py["roiPath"][0]["roi"] < 0.6 * py["l3dRoi"],
       f"the ROI line ahead falls by the share: {py['roiPath'][:1]} vs {py['l3dRoi']}")
-check((by["wastedEntries"] or 0) > 0, f"the run rate's entries for the full work buy nothing: {by['wastedEntries']}")
+check((by["wastedEntries"] or 0) > 0, f"the schedule's entries for the full work buy nothing: {by['wastedEntries']}")
 # ---- a work with room today that fills part way (11 October 2026): the
 # entrants placed day by day, the organic course along its curves and paid's
 # entries on top, fill Work A on a day before the close. Until then every
-# entry converts and the ROI line ahead is the cost path's alone; from that
-# day only the share for Work B does (two entrants in three), so the line
-# steps down there, the point names the work, and the card dates it
+# entry converts and the ROI line ahead is the cost path's alone, at the
+# schedule (27 October 2026: here a paced rise, which prices the days dearer,
+# so the line falls along it); from that day only the share for Work B does
+# (two entrants in three), so the line steps down there, the point names the
+# work, and the card dates it
 feedZ = {"draws": [{"id": "dA", "first": announce.isoformat(), "last": None, "entrants": 20, "eligible": 20, "winners": 0, "sold": 0, "open": 20, "wonUnpaid": 0, "purchaseUnits": 0.0},
                    {"id": "dB", "first": announce.isoformat(), "last": None, "entrants": 40, "eligible": 40, "winners": 0, "sold": 0, "open": 40, "wonUnpaid": 0, "purchaseUnits": 0.0}],
          "entrants": 60, "eligible": 60, "allocated": False,
@@ -233,8 +299,12 @@ finally:
 pz, bz = Z["paid"], Z["paid"]["budget"]
 zpath = pz["roiPath"]
 k = next((i for i, r in enumerate(zpath) if r.get("full")), None)
+# the share of each day's entries the line carries: its ROI over the cost
+# path's at the schedule, rebuilt off the block
+zm = cost_of(Z).multipliers_sched(spends(Z))
+zshare = [r["roi"] * m / pz["l3dRoi"] for r, m in zip(zpath, zm)] if pz["l3dRoi"] else []
 print(f"Z: yield now={bz['yieldNow']} at close={bz['yieldAtClose']} full={bz['fullWorks']} stops={pz['stops']} wasted={bz['wastedEntries']} "
-      f"step at {k}: {zpath[k - 1:k + 2] if k else None} l3d={pz['l3dRoi']}")
+      f"rec={bz['recommended']} ({bz['cap']}) step at {k}: {zpath[k - 1:k + 2] if k else None} l3d={pz['l3dRoi']} shares={[round(x, 3) for x in zshare]}")
 check(bz["yieldNow"] is not None and bz["yieldNow"] >= 0.999, f"every entry converts today: yield {bz['yieldNow']}")
 check(len(bz["fullWorks"]) == 1 and bz["fullWorks"][0]["name"] == "Work A" and bz["fullWorks"][0]["date"] is not None
       and TODAY < date.fromisoformat(bz["fullWorks"][0]["date"]) < launch, f"Work A fills on a day before the close: {bz['fullWorks']}")
@@ -242,71 +312,85 @@ check(k is not None and 1 <= k < len(zpath) - 1 and zpath[k]["full"] == ["Work A
       f"the line's point on that day names the work: {k} {zpath[k] if k is not None else None} vs {bz['fullWorks']}")
 if k is not None and 1 <= k < len(zpath) - 1:
     before, on, after = zpath[k - 1]["roi"], zpath[k]["roi"], zpath[k + 1]["roi"]
-    check(all(r["roi"] >= 0.85 * zpath[0]["roi"] for r in zpath[:k]), f"the line ahead holds until that day: {[r['roi'] for r in zpath[:k]]}")
-    check(after < on <= before and after < 0.75 * before, f"and steps down on it: {before} -> {on} -> {after}")
-    check(0.55 < (bz["yieldAtClose"] or 0) < 0.8, f"to Work B's share of the entrants: {bz['yieldAtClose']}")
+    check(all(abs(x - 1.0) < 0.01 for x in zshare[:k]), f"the line ahead is the cost path's alone until that day: {[round(x, 3) for x in zshare[:k]]}")
+    check(after < on <= before and after < 0.75 * before and zshare[k + 1] < zshare[k] < zshare[k - 1],
+          f"and steps down on it: {before} -> {on} -> {after}, carrying {[round(x, 3) for x in zshare[k - 1:k + 2]]} of the entries")
+    check(0.55 < (bz["yieldAtClose"] or 0) < 0.8 and all(abs(x - bz["yieldAtClose"]) < 0.02 for x in zshare[k + 1:]),
+          f"to Work B's share of the entrants: {bz['yieldAtClose']} vs {[round(x, 3) for x in zshare[k + 1:]]}")
 check((bz["wastedEntries"] or 0) > 0, f"the entries for Work A after it fills buy nothing: {bz['wastedEntries']}")
 # the same on a part day: today counts for what is left of it, in the flat run
-# and the stopped one alike
+# and the schedule alike, whose first entry is the rest of today at the run rate
 P = with_floor(0.5, lambda: run(cfgS, through=TODAY, part=0.4, full_through=TODAY - timedelta(days=1), seen=0.4375))
 pp, pb = P["paid"], P["paid"]["budget"]
 rest = (launch - (TODAY - timedelta(days=1))).days - 0.4375
 check(close(pp["ifContinued"]["spendProjectedTotal"], pp["spendToDate"] + pb["current"] * rest, 0.01),
       f"part day: the flat run counts the rest of today: {pp['ifContinued']['spendProjectedTotal']} vs {pp['spendToDate'] + pb['current'] * rest:.2f}")
-check(pp["stops"]["rule"] == "sellout" and pp["spendProjectedTotal"] < pp["ifContinued"]["spendProjectedTotal"]
+check(pp["ifContinued"]["stops"]["rule"] == "sellout" and TODAY < date.fromisoformat(pp["ifContinued"]["stops"]["day"]) < launch
       and pp["entriesProjected"] >= pp["entriesToDate"] - 0.05,
-      f"part day: the stop, and the entries in hand kept: {pp['stops']} {pp['spendProjectedTotal']} < {pp['ifContinued']['spendProjectedTotal']}")
+      f"part day: the run rate's stop, and the entries in hand kept: {pp['ifContinued']['stops']} {pp['entriesProjected']} vs {pp['entriesToDate']}")
+check(pb["schedule"][0] == {"date": TODAY.isoformat(), "spend": pb["current"]} and pb["recommended"] == 0.0 and all(s == 0.0 for s in spends(P)[1:])
+      and close(pp["spendProjectedTotal"], pp["spendToDate"] + pb["current"] * (1 - 0.4375), 0.01),
+      f"part day: the schedule opens with the rest of today at the run rate, then the recommendation: {pb['schedule'][:2]} {pp['spendProjectedTotal']} vs {pp['spendToDate'] + pb['current'] * (1 - 0.4375):.2f}")
 
-# ---- the ROI floor stop. A floor the price is already past stops paid now:
-# nothing more is spent or bought, the recommendation is the paced cut
-# (test_paid_roi), and the flat run stands beside it
+# ---- the ROI floor stop (27 October 2026). A floor the price is already past
+# stops the run rate now, on the flat run: nothing more is bought on it, and
+# its sell-through at close reads that. The floor no longer sets the
+# recommendation: the fixture's next euro does not pay, so the recommendation
+# is the paced cut of N, the floor's spend (0, no day meets it) published for
+# the working only. The projection is the schedule's run, the one the Slack
+# update reads
 F = with_floor(1000.0, lambda: run(cfg))
 p, b = F["paid"], F["paid"]["budget"]
-check(p["stops"]["rule"] == "roi_floor" and p["stops"]["roiFloor"] == first and p["stops"]["day"] == first and p["stops"]["sellout"] is None,
-      f"a floor the price is past: paid stops now: {p['stops']}")
-check(p["spendProjectedTotal"] == p["spendToDate"] and close(p["entriesProjected"], p["entriesToDate"], 0.05)
-      and p["unitProjected"] == p["unitsToDate"], f"nothing more spent or bought: {p['spendProjectedTotal']} vs {p['spendToDate']}, {p['entriesProjected']} vs {p['entriesToDate']}")
-check(p["ifContinued"]["spendProjectedTotal"] > p["spendToDate"] and p["ifContinued"]["unitProjected"] > p["unitProjected"],
-      f"the flat run beside it: {p['ifContinued']}")
-check(b["roiSpend"] == 0.0 and b["cap"] == "roi_floor" and b["paced"], f"the recommendation is the paced cut: {b['recommended']} ({b['cap']}, paced {b['paced']})")
-check(p["atRecommended"]["stops"]["rule"] == "roi_floor" and p["atRecommended"]["spendProjectedTotal"] == p["spendToDate"],
-      f"at the paced spend the floor still stops it now: {p['atRecommended']['stops']}")
-print(f"F: cpe now={b['cpeNow']} floor's price {(1 - p['cannibalisation']) * p['profitPerUnitAA'] / (1000.0 * p['aaBudgetShare']):.2f} stops={p['stops']}")
+ic, ar = p["ifContinued"], p["atRecommended"]
+bN, icN = N["paid"]["budget"], N["paid"]["ifContinued"]
+check(ic["stops"]["rule"] == "roi_floor" and ic["stops"]["roiFloor"] == first and ic["stops"]["day"] == first and ic["stops"]["sellout"] is None,
+      f"a floor the price is past: the run rate stops now: {ic['stops']}")
+check(ic["spendProjectedTotal"] == icN["spendProjectedTotal"] and ic["sellThrough"]["units"] < icN["sellThrough"]["units"] - 1
+      and close(ic["sellThrough"]["units"], F["hero"]["now"] + bN["organicFuture"], 2.0),
+      f"the flat run's sell-through at close buys nothing more, the organic course alone: {ic['sellThrough']} vs {icN['sellThrough']}, now {F['hero']['now']} + organic {bN['organicFuture']}")
+check(b["roiSpend"] == 0.0 and b["cap"] == "marginal" and b["paced"] and b["recommended"] == bN["recommended"] and b["target"] == bN["target"]
+      and spends(F) == spends(N) and b["marginalToday"] == bN["marginalToday"],
+      f"the floor no longer sets the level: the paced cut of N, the floor's spend for the working: {b['recommended']} ({b['cap']}, paced {b['paced']}, roi spend {b['roiSpend']}) vs N {bN['recommended']} ({bN['cap']})")
+check(ar["spendProjectedTotal"] == p["spendProjectedTotal"] and ar["stops"] == p["stops"] and ar["unitProjected"] == p["unitProjected"]
+      and p["spendProjectedTotal"] <= p["spendToDate"] + sum(spends(F)) + 0.01,
+      f"the projection is the schedule's run: {ar['stops']} {ar['spendProjectedTotal']} vs {p['stops']} {p['spendProjectedTotal']}")
+print(f"F: cpe now={b['cpeNow']} floor's price {(1 - p['cannibalisation']) * p['profitPerUnitAA'] / (1000.0 * p['aaBudgetShare']):.2f} "
+      f"flat stops={ic['stops']} schedule stops={p['stops']} spend={p['spendToDate']}->{p['spendProjectedTotal']} rec={b['recommended']} ({b['cap']})")
 
-# ---- a floor the price reaches part way to the close: the stop lands on the
-# day the path's price (before the close's lift, where the floor is read)
-# first passes it, the spend runs on the days before, and at the floor's own
-# spend - the recommendation, unpaced when it is within 30% of today's - the
-# price meets the floor on the close, so nothing stops before it. The floor is
-# set from the cost path rebuilt off the block (docs 7), at a spend of 400
-pN, bN = N["paid"], N["paid"]["budget"]
-cost = build.CostPath(pN["l3dCpe"], bN["spendAtWindow"], bN["spentAtWindow"], bN["spentSoFar"], bN["daysLeft"],
-                      bN["elasticity"], bN["wearout"], bN["wearoutK"], lift=bN["closeLift"], anchor_lift=bN["liftAtWindow"])
+# ---- a floor the price reaches part way to the close: the run rate's stop
+# lands on the day the path's price (before the close's lift, where the floor
+# is read) first passes it, on the flat run, the floor set from the cost path
+# rebuilt off the block (docs 7) at a spend of 400. The floor no longer sets
+# the recommendation (27 October 2026): the level is where the next euro
+# returns what it costs, the paced cut of N again, and at the schedule's
+# smaller days the price stays under the floor's all the way, so nothing
+# stops the projection, which runs to the close
+pN = N["paid"]
 cpe_floor = cost.cpe_close(400.0)
 floor_400 = (1 - pN["cannibalisation"]) * pN["profitPerUnitAA"] / (cpe_floor * pN["aaBudgetShare"])
-# the target ROI is taken down so the forced-decrease rule (three days under
-# it) does not cap the recommendation under the floor's spend
-M = with_bench({"roi_floor": floor_400, "target_roi_aa": 0.0}, lambda: run(cfg))
+M = with_floor(floor_400, lambda: run(cfg))
 p, b = M["paid"], M["paid"]["budget"]
-d_stop = date.fromisoformat(p["stops"]["day"]) if p["stops"]["day"] else None
+ic, ar = p["ifContinued"], p["atRecommended"]
+d_stop = date.fromisoformat(ic["stops"]["day"]) if ic["stops"]["day"] else None
 floor_path = cost.multipliers(b["current"], lifted=False)
 i_cross = next((i for i, m in enumerate(floor_path) if pN["l3dCpe"] * m > cpe_floor), None)
 want_day = TODAY + timedelta(days=1 + i_cross) if i_cross is not None else None
-print(f"M: floor={floor_400:.3f} floor's price={cpe_floor:.2f} cpe now={b['cpeNow']} close={b['cpeAtClose']} stops={p['stops']} "
-      f"want {want_day} spend={p['spendToDate']}->{p['spendProjectedTotal']} rec={b['recommended']} ({b['cap']}, paced {b['paced']}) roi spend={b['roiSpend']}")
-check(p["stops"]["rule"] == "roi_floor" and d_stop is not None and TODAY + timedelta(days=1) < d_stop <= launch,
-      f"a floor met part way: the stop on the day the price passes it: {p['stops']}")
+sched_floor = cost.multipliers_sched(spends(M), lifted=False)
+print(f"M: floor={floor_400:.3f} floor's price={cpe_floor:.2f} cpe now={b['cpeNow']} close={b['cpeAtClose']} flat stops={ic['stops']} "
+      f"want {want_day} schedule stops={p['stops']} spend={p['spendToDate']}->{p['spendProjectedTotal']} flat {ic['spendProjectedTotal']} "
+      f"rec={b['recommended']} ({b['cap']}, paced {b['paced']}) roi spend={b['roiSpend']} sell-through {ar['sellThrough']} flat {ic['sellThrough']}")
+check(ic["stops"]["rule"] == "roi_floor" and d_stop is not None and TODAY + timedelta(days=1) < d_stop <= launch,
+      f"a floor met part way: the run rate's stop on the day the price passes it: {ic['stops']}")
 check(want_day is not None and d_stop == want_day, f"the day the path rebuilt off the block passes the floor: {d_stop} vs {want_day}")
-ran = (d_stop - TODAY).days - 1 if d_stop else 0
-check(close(p["spendProjectedTotal"], p["spendToDate"] + b["current"] * ran, 0.01),
-      f"the run rate over the {ran} days before it: {p['spendProjectedTotal']} vs {p['spendToDate'] + b['current'] * ran:.2f}")
-check(b["cap"] == "roi_floor" and not b["paced"] and close(b["recommended"], 400.0, 2.0) and close(b["roiSpend"], 400.0, 2.0),
-      f"the recommendation is the floor's spend, unpaced: {b['recommended']} ({b['cap']}, paced {b['paced']}, roi spend {b['roiSpend']})")
-ar = p["atRecommended"]
-check(ar["stops"]["day"] is None or ar["stops"]["day"] == launch.isoformat(),
-      f"at the floor's spend the price meets the floor on the close, so nothing stops before it: {ar['stops']}")
-check(ar["spendProjectedTotal"] > p["spendProjectedTotal"] and ar["unitProjected"] > p["unitProjected"],
-      f"and the lower spend, run to the close, buys more than the higher one stopped: {ar['spendProjectedTotal']} / {ar['unitProjected']} vs {p['spendProjectedTotal']} / {p['unitProjected']}")
+check(b["cap"] == "marginal" and b["paced"] and b["recommended"] == bN["recommended"] and b["target"] == bN["target"] and close(b["roiSpend"], 400.0, 2.0),
+      f"the floor no longer sets the recommendation, the paced cut of N; the floor's spend is published for the working: "
+      f"{b['recommended']} ({b['cap']}, paced {b['paced']}, roi spend {b['roiSpend']}) vs N {bN['recommended']}")
+check(all(pN["l3dCpe"] * m <= cpe_floor for m in sched_floor) and p["stops"] == NO_STOP and ar["stops"] == NO_STOP
+      and close(p["spendProjectedTotal"], p["spendToDate"] + sum(spends(M)), 0.1),
+      f"at the schedule's smaller days the price stays under the floor's, so nothing stops the projection, run to the close: "
+      f"{[round(pN['l3dCpe'] * m) for m in sched_floor]} vs {cpe_floor:.0f}, {p['stops']}, {p['spendProjectedTotal']}")
+check(ar["sellThrough"]["units"] > ic["sellThrough"]["units"] + 0.5 and ic["sellThrough"]["units"] < icN["sellThrough"]["units"] - 0.5,
+      f"and the cut, run to the close, takes the release further than the run rate stopped at the floor: {ar['sellThrough']} vs {ic['sellThrough']} (unstopped {icN['sellThrough']})")
 
 # ---- paid switched off today (13 October 2026): nothing spent on this
 # campaign so far today while another campaign in the feed has spent, well

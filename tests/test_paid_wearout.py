@@ -3,7 +3,11 @@
 are recovered from its days and shrunk to the panel's, the path prices a
 bigger budget dearer both at once and as it adds up, the spends the
 recommendation solves for land where they should, and the paid block
-publishes one path for the ROI chart, the projection and the floor.
+publishes one path for the ROI chart, the projection and the floor. The
+chart's line ahead runs at the schedule the projection runs at (27 October
+2026): today's run rate stepping by at most 30% a day to the level where the
+next euro returns what it costs; the rise to the close the floor reads, and
+the fallback factor, stay at today's spend held flat.
 python3 tests/test_paid_wearout.py (needs pandas)"""
 import sys, json, pathlib, copy, math
 from datetime import date, timedelta
@@ -166,14 +170,37 @@ lifts = bud["closeLift"]
 applied = B["cpe_close_lift"] if B.get("cpe_close_lift_applied") else []
 check(lifts == applied and bud["liftAtWindow"] == 1.0,
       f"the block carries the lift the path applies ({applied}), none in the window: {lifts} {bud['liftAtWindow']}")
+# the schedule the line runs at (27 October 2026): the synthetic campaign's
+# next euro pays (its marginal ROI is above 1), so the level is above the run
+# rate and the schedule climbs to it by steps of at most 30% a day, then holds
+sched = [s["spend"] for s in bud["schedule"]]
+check(bud["marginalToday"] > 1 and bud["target"] > bud["current"] and bud["cap"] == "pacing"
+      and close(bud["recommended"], bud["current"] * (1 + B["spend_rules"]["max_daily_change"]), 0.001),
+      f"the next euro pays, so the recommendation is the paced rise toward the level: {bud['recommended']} from {bud['current']} toward {bud['target']} ({bud['cap']}, marginal {bud['marginalToday']})")
+check(len(sched) == bud["daysLeft"] and sched[0] == bud["recommended"] and sched[-1] == bud["target"]
+      and all(x <= y <= x * (1 + B["spend_rules"]["max_daily_change"]) + 0.01 for x, y in zip(sched, sched[1:])),
+      f"the schedule steps up by at most 30% a day to the level, then holds it: {sched}")
 body = path[:-len(lifts)] if lifts else path
 check(len(path) == bud["daysLeft"] and all(b < a for a, b in zip(body, body[1:])),
-      "the ROI line falls every day at today's spend" + (" until the close's last days" if lifts else ", to the close"))
+      "the ROI line falls every day along the climbing schedule" + (" until the close's last days" if lifts else ", to the close"))
 if lifts:
     check(path[-1] > path[-len(lifts) - 1], "and rises on them, the deadline's rush")
+# the line is the L3D over the schedule's price on the cost path rebuilt off
+# the block, each day's budget pricing its own entries and the days before
+# it on the clock, the close's lift in; it ends at the L3D over the
+# schedule's rise to the close, times the close day's lift
+cost = build.CostPath(paid["l3dCpe"], bud["spendAtWindow"], bud["spentAtWindow"], bud["spentSoFar"], bud["daysLeft"],
+                      bud["elasticity"], bud["wearout"], bud["wearoutK"], lift=bud["closeLift"], anchor_lift=bud["liftAtWindow"])
+ms, mu_s = cost.multipliers_sched(sched, lifted=True), cost.multipliers_sched(sched, lifted=False)
+check(all(close(a, paid["l3dRoi"] / m, 0.01) for a, m in zip(path, ms)),
+      f"the line is the L3D over the schedule's price on the path rebuilt off the block: {path} vs {[round(paid['l3dRoi'] / m, 3) for m in ms]}")
 end_lift = lifts[0] if lifts else 1.0
-check(close(path[-1], paid["l3dRoi"] * end_lift / bud["wearToClose"], 0.01),
-      f"the line ends at the L3D over the path's rise (times the close day's lift when applied): {path[-1]} vs {paid['l3dRoi']} x {end_lift} / {bud['wearToClose']}")
+check(close(path[-1], paid["l3dRoi"] * end_lift / mu_s[-1], 0.01),
+      f"the line ends at the L3D over the schedule's rise (times the close day's lift when applied): {path[-1]} vs {paid['l3dRoi']} x {end_lift} / {mu_s[-1]:.3f}")
+# the rise to the close the floor reads, and the price at close, stay at
+# today's spend held flat: a climbing schedule rises past it
+check(close(bud["wearToClose"], cost.multipliers(bud["current"], lifted=False)[-1], 0.001) and mu_s[-1] > bud["wearToClose"] * 1.1,
+      f"the rise to the close is read at today's spend, flat, under the schedule's: {bud['wearToClose']} vs {cost.multipliers(bud['current'], lifted=False)[-1]:.3f}, schedule {mu_s[-1]:.3f}")
 check(close(bud["cpeAtClose"], bud["cpeNow"] * bud["wearToClose"], 0.01), "the price at close is the window's times the same rise")
 if bud["recommended"] and bud["recommended"] > bud["current"] * 1.01:
     check(bud["cpeAtRecommended"] > bud["cpeAtClose"], "a bigger recommended budget ends the path dearer")

@@ -1975,6 +1975,23 @@ and `pct` are the per-product figures summed (each capped at the release's inven
 the card's rows and its headline are one sum; without it they are the release-level figures
 as before (`inHandUnits × rate`, capped). The hero adopts the headline (§6.3½), and the funnel's channels are scaled to it.
 
+### 6.3b Sell-through at close (the Sell-through at close card)
+
+`closeForecast` (27 October 2026, METHODOLOGY §7c) is the projection at close with its likely
+range and the paid spend it assumes: `units` (= `hero.projected`), `edition`, `pct`, `lo` / `hi`
+and `pctLo` / `pctHi` (the range: today's units plus what is still to come times the backtest's
+10th and 90th percentile multipliers at this share of the campaign, held between today's units and
+the edition), `today` / `pctToday`, `target`, `daysLeft`, `confidence` (`high` within ±10% of the
+projection, `medium` within ±25%, `low` wider; null without a backtest) and `confidenceWhy`,
+`built` (`sold`, `inHand`, `organic`, `paid`: what the projection is made of), `works[]` (per
+product with an edition: `name`, `edition`, `today`, `units`, `lo`, `hi`, the same as shares,
+`sellsOut` when the projection fills it), `paid` (`daily` the level the projection runs at, `today`,
+`change`, `direction` cut / raise / hold / stop / start, `spendAtClose`, `budget`, `rule` in
+words) and `range` (`source` backtest, `n`, `fraction`, `note`). A closed release carries `units`
+= `today`, `lo` = `hi` = `units`, `confidence` high and `paid.direction` stop. The multipliers are
+`etl/projection_backtest.json`, written by `etl/analysis/projection_backtest.py` and read by
+`projection_range`.
+
 ### 6.4 Framing take-up (the Framing card)
 
 **The measure is frames per print, on the prints a frame was on offer for.** A frame is a
@@ -2116,12 +2133,20 @@ quantity the CPE and the ROI are priced on. At close, `spendProjectedTotal` is `
 share of today still to come, up to the day the run rate stops (§5.4), and `entriesProjected` is
 `entriesToDate` plus the entries that spend buys on the same days, so neither reads below its
 figure to date. `stops` says where it stops: `sellout` and `roiFloor` (the day each would stop it,
-ISO dates or null), `day` the first of the two and `rule` which; `ifContinued` carries the flat
-run to the close beside it (`entriesProjected`, `unitProjected`, `spendProjectedTotal`), for the
-card's hover; `atRecommended` the same projection at the recommended daily spend (`spend`), with
-its own `stops` and `sellThrough` (`units`, `pct`: the sell-through at close with paid at that
-spend and the organic channels as they are, placed by the sell-through's own rule), the figure the
-Slack update's paid line prints. All three are null once the campaign is complete. `daily[]` runs over the full days the rules read;
+ISO dates or null), `day` the first of the two and `rule` which. Since 27 October 2026 the
+projection runs at the recommended spend (`budget.schedule`, METHODOLOGY §6), so `atRecommended`
+is the same run (`spend`, its `stops` and `sellThrough`: `units`, `pct`, the sell-through at close
+with paid at that spend and the organic channels as they are, placed by the sell-through's own
+rule), and `ifContinued` is today's spend held flat to the close beside it (`spend`,
+`entriesProjected`, `unitProjected`, `spendProjectedTotal`, its own `stops` and `sellThrough`), the
+comparison the Slack update's paid line prints. All three are null once the campaign is complete.
+`levels` is the Spend levels card's block (METHODOLOGY §7): `today`, `recommended` (the level),
+`marginalToday` (the return on the next euro at today's spend), `sellout` (the flat spend that
+sells out, null when none can), `daysLeft`, `ppu` (AA's profit on a paid unit net of
+cannibalisation), `cannibalisation`, `elasticity` and `elasticityBand`, `rows[]` (`key` none /
+half / recommended / double, `daily`, `unitsAtClose`, `pct`, `spendToCome`, `roi`, `marginal`) and
+`curve[]` (`daily`, `profit`, `lo`, `hi`: the profit from the spend still to come at a flat daily
+spend, and the same with the elasticity at the ends of its band). `daily[]` runs over the full days the rules read;
 on a live day the as-of day so far rides at the end as one more row marked `partial: true`
 (its spend and entries, no ROI point), so the Paid ROI chart's bars sum to `spendToDate` and
 the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip that row.
@@ -2233,15 +2258,21 @@ nothing extra is needed to secure sell-out, whatever the current ROI.
 This maps 1:1 onto the design's Paid module contract:
 `roiDeclineModel = { start: today's actual ROI, dailyFactor }` (dailyFactor: the path's average fall a day,
 `(1 / wearToClose)^(1 / days left)`; the card draws `roiPath` and uses the factor only for a snapshot without one);
-`recommended = min(spend at ROI floor, spend at supply
-cap)`, then paced by the rules above, and `cap` names what bound it: `supply` or `roi_floor` (the
-lower of the two stood), `pacing` (the +30% a day ceiling when the band says increase),
-`roi_band_hold`, `roi_band_decrease`, `forced_decrease`, `plan_rate` (no spend yet to price
-from: the first day runs at the plan's daily rate), `zero_conversion` (the last day spent and
-bought no entries: −30%), `zero_conversion_pause` (three such days: 0) or `hold_small_change` (a
-move under 10%); `paced` marks a cut held to 30% a day. A floor no daily spend can meet (the
-path's price at the close is past it however small the day, `roiSpend` 0) is cut towards the
-same way, never stopped overnight; only a gap already filled stops paid at once (`supply`, 0). Supply cap = the budget-to-sell-out
+since 27 October 2026 the level is `target = min(profitSpend, supplySpend)`: `profitSpend` the
+flat daily spend that earns the most, where the next euro returns what it costs (METHODOLOGY §7),
+`supplySpend` the spend that sells out; `recommended` is tomorrow's step toward it under the
+pacing rules (±30% a day, moves under 10% ignored), `schedule[]` (`date`, `spend`) the daily spend
+the projection runs at, from today's part day at the run rate through the steps to the level,
+and `marginalToday` the return on the next euro at today's spend. `cap` names what bound the
+recommendation: `marginal` or `supply` (which of the two set the level), `pacing` (the +30% a day
+ceiling), `plan_rate` (no spend yet to price from: the first day runs at the plan's daily rate),
+`zero_conversion` (the last day spent and bought no entries: −30%), `zero_conversion_pause` (three
+such days: 0) or `hold_small_change` (a move under 10%); `paced` marks a cut held to 30% a day.
+`roiSpend` (the spend at which the path ends on the ROI floor), `band` and `forcedDecrease` are
+published as readings and no longer set the spend (until 27 October 2026 the level was
+`min(roiSpend, supplySpend)` and the band and the forced decrease capped it). A next euro that
+does not pay even on the smallest day (`profitSpend` 0) is cut towards the same way, never
+stopped overnight; only a gap already filled stops paid at once (`supply`, 0). Supply cap = the budget-to-sell-out
 logic (spending beyond it buys entries exceeding the units left); ROI floor = the spend at which
 the ROI at close ends on `roi_floor` (1.0).
 

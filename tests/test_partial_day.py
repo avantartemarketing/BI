@@ -130,14 +130,23 @@ F = run(launch, 1.0, launch, launch, 1.0)
 check(F["complete"] and F["asOfFraction"] == 1.0, "launch day full: complete")
 
 # ---- the projections at close on a part day: the spend to date (today so far
-# included) plus the run rate over the full days after today and the rest of
-# today, and the entries in hand today counted, as the units beside them are
+# included) plus the schedule's spend over the full days after today and the
+# rest of today at the run rate (since 27 October 2026 the projection runs
+# at the recommended schedule; the run rate held flat is ifContinued), and
+# the entries in hand today counted, as the units beside them are
 rest = (launch - TODAY).days + (1 - 0.4375)
 want = pd_["spendToDate"] + pd_["budget"]["current"] * rest
-check(abs(pd_["spendProjectedTotal"] - want) < 0.01,
-      f"spend at close = spend to date + the run rate x {rest} days: {pd_['spendProjectedTotal']} vs {want:.2f}")
-check(abs(B["paid"]["spendProjectedTotal"] - (B["paid"]["spendToDate"] + 500.0 * (launch - (TODAY - timedelta(days=1))).days)) < 0.01,
-      f"on a full day, every day left at the run rate: {B['paid']['spendProjectedTotal']}")
+ic = pd_["ifContinued"]
+check(abs(ic["spendProjectedTotal"] - want) < 0.01,
+      f"the run rate held: spend to date + the run rate x {rest} days: {ic['spendProjectedTotal']} vs {want:.2f}")
+sched = pd_["budget"]["schedule"]
+check(sched and sched[0]["date"] == TODAY.isoformat() and sched[0]["spend"] == pd_["budget"]["current"],
+      f"the schedule starts with the rest of today at the run rate: {sched[:2]}")
+want_s = pd_["spendToDate"] + sum(s["spend"] * ((1 - 0.4375) if s["date"] == TODAY.isoformat() else 1.0) for s in sched)
+check(pd_["stops"]["day"] is not None or abs(pd_["spendProjectedTotal"] - want_s) < 0.05,   # the schedule is published to the cent
+      f"spend at close = spend to date + the schedule's spend, the rest of today at the run rate: {pd_['spendProjectedTotal']} vs {want_s:.2f}")
+check(abs(B["paid"]["ifContinued"]["spendProjectedTotal"] - (B["paid"]["spendToDate"] + 500.0 * (launch - (TODAY - timedelta(days=1))).days)) < 0.01,
+      f"on a full day, every day left at the run rate (held): {B['paid']['ifContinued']['spendProjectedTotal']}")
 check(C["paid"]["spendProjectedTotal"] >= C["paid"]["spendToDate"] and F["paid"]["spendProjectedTotal"] == F["paid"]["spendToDate"],
       "a complete campaign's spend at close is its spend")
 G = run(launch, 0.9, launch, launch - timedelta(days=1), 0.9)          # the last day, nine tenths seen

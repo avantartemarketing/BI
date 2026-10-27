@@ -18,6 +18,7 @@ import { fmt, fmtMoney, fmtSigned, fmtDay, dayLabel, dayElapsed, paidDayFrac } f
 import { paidUnits } from "../figures.mjs";
 import { wordsOf, hourClock } from "../vocab.mjs";
 import { stepTicks, stepOf } from "./clock.mjs";
+import "../cards.css";
 
 const has = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const money = (v) => fmtMoney(Math.round(v ?? 0));
@@ -32,7 +33,29 @@ const CAPS = {
   zero_conversion: ["Zero", "Zero conversion yesterday", "The LE spend rules: a day that spent and bought no entries cuts the budget by 30%."],
   zero_conversion_pause: ["Pause", "3 days of zero conversion - pause", "The LE spend rules: three days of spend with no entries pause the campaign."],
   hold_small_change: ["Steady", "Change under 10% - hold", "The recommendation is within 10% of today's spend, which the rules treat as no change."],
+  marginal: ["Next euro", "Next euro returns 1.0", "The level at which the next euro of spend returns what it costs: more would buy entries dearer than they are worth, less leaves profit on the table. Reached from today's spend by steps of up to 30% a day."],
 };
+
+/* The one-line note under the chart: what to do with the daily spend from
+ * tomorrow, from the projection's paid assumption (closeForecast.paid: the
+ * daily spend it runs at, today's, the change and its direction), falling
+ * back to the budget's recommendation against its current. */
+function spendNote(cp, rec, cur) {
+  const daily = cp && has(cp.daily) ? cp.daily : rec;
+  const today = cp && has(cp.today) ? cp.today : cur;
+  if (!has(daily)) return null;
+  const change = cp && has(cp.change) ? cp.change : has(today) && today > 0 ? (daily - today) / today : null;
+  const dir = cp && cp.direction ? cp.direction : daily === 0 ? "stop" : !has(today) || today === 0 ? "start" : change !== null && Math.abs(change) < 0.005 ? "hold" : change < 0 ? "cut" : "raise";
+  const pct = change !== null ? `${Math.round(Math.abs(change) * 100)}%` : null;
+  const level = <b>{money(daily)} a day</b>;
+  // the pacing rule holds a move to 30% a day, so the level is reached in
+  // steps: tomorrow's step (rec) is named when it is not the level itself
+  const stepped = has(rec) && Math.round(rec) !== Math.round(daily) && dir !== "stop";
+  if (dir === "stop") return <>Stop{stepped ? <>, in steps from tomorrow ({money(rec)} first)</> : " from tomorrow"}{has(today) ? <>, from today's {money(today)}</> : null}.</>;
+  if (dir === "start") return <>Start at {level}{stepped ? <> in steps from tomorrow ({money(rec)} first)</> : " from tomorrow"}.</>;
+  if (dir === "hold") return <>Hold at {level} from tomorrow.</>;
+  return <>{dir === "raise" ? "Raise" : "Cut"} to {level}{pct && has(today) ? <>, {pct} {dir === "raise" ? "over" : "under"} today's {money(today)}</> : null}{stepped ? <>, in steps from tomorrow ({money(rec)} first)</> : " from tomorrow"}.</>;
+}
 
 export default function PaidSpend({ snap, horizon = "today" }) {
   const V = wordsOf(snap);
@@ -73,7 +96,17 @@ export default function PaidSpend({ snap, horizon = "today" }) {
   const rec = complete || noCampaign ? null
     : tl ? (spendBudget !== null && left > 0 ? Math.max((spendBudget - spendNow) / left, 0) : null)
     : has(budget.recommended) ? budget.recommended : null;
-  const recVals = Array.from({ length: n }, (_, i) => (rec !== null && i > today ? rec : null));
+  // the bars ahead: the schedule the projection runs at (today's step, then
+  // up to 30% a day toward the level, budget.schedule), else the
+  // recommendation flat to the close
+  const schedByStep = new Map();
+  for (const x of budget.schedule || []) {
+    const s = stepOf(snap, x.date);
+    if (s !== null && has(x.spend)) schedByStep.set(Math.round(s), x.spend);
+  }
+  const recVals = Array.from({ length: n }, (_, i) => (rec !== null && i > today ? (schedByStep.has(i) ? schedByStep.get(i) : rec) : null));
+  // the legend's figure: the level the steps reach, else the recommendation
+  const paceVal = !tl && has(budget.target) ? budget.target : rec;
   const cur = has(budget.current) ? budget.current : null;
   const d = cur !== null && rec !== null ? Math.round(rec) - Math.round(cur) : null;
 
@@ -112,6 +145,8 @@ export default function PaidSpend({ snap, horizon = "today" }) {
     return <Card title={title}><div className="empty-state">{noCampaign ? "No Meta campaign matched to this release: set one on the Targets tab" : "No paid spend yet"}</div></Card>;
   }
   const paceName = tl ? `Pace to the ${V.closeWord}` : "Recommended";
+  // the note under the chart: a draw launch with a recommendation to act on
+  const note = !tl && !complete && !noCampaign && rec !== null ? spendNote(snap.closeForecast ? snap.closeForecast.paid : null, rec, cur) : null;
   return (
     <Card title={title} aria="Paid spend by day">
       <Head v={fmtMoney(spendNow, 0)} u="in total"
@@ -125,13 +160,13 @@ export default function PaidSpend({ snap, horizon = "today" }) {
         refs={planPace !== null ? [{ name: "Plan pace", color: COL.DARK, da: "4 4", vals: Array.from({ length: n }, (_, i) => (i >= (paid.paidStartDays ?? 1) ? planPace : null)) }] : []}
         legend={[
           { n: "Spend", v: fmtMoney(spendNow, 0), k: sw(COL.IND) },
-          ...(rec !== null ? [{ n: paceName, v: `${money(rec)} a ${hours ? "hour" : "day"}`, k: sw(COL.LIGHT), tip: tl ? `The ${V.state === "signups" ? "pre-window" : "window"} budget left, spread evenly over the time left to the ${V.closeWord}: pacing, not a recommendation` : capTip }] : []),
+          ...(rec !== null ? [{ n: paceName, v: `${money(paceVal)} a ${hours ? "hour" : "day"}`, k: sw(COL.LIGHT), tip: tl ? `The ${V.state === "signups" ? "pre-window" : "window"} budget left, spread evenly over the time left to the ${V.closeWord}: pacing, not a recommendation` : capTip }] : []),
           ...(planPace !== null ? [{ n: "Plan pace", v: `${money(planPace)} a ${hours ? "hour" : "day"}`, k: lk(COL.DARK, "dashed"), tip: `The budget of ${money(spendBudget)} planned evenly over the ${paidDays} days paid runs` }] : []),
         ]}
         title={(i) => dayLabel(snap, i, true) + (!complete && i === today ? ", today" : "")}
         rows={(i) => {
           const r = byStep.get(i);
-          if (!r) return i > today && rec !== null ? [{ n: paceName, v: `${money(rec)} a ${hours ? "hour" : "day"}`, k: sw(COL.LIGHT) }] : [{ n: "Spend", v: "€0", k: sw(COL.IND) }];
+          if (!r) return i > today && rec !== null ? [{ n: paceName, v: `${money(recVals[i] ?? rec)} a ${hours ? "hour" : "day"}`, k: sw(COL.LIGHT) }] : [{ n: "Spend", v: "€0", k: sw(COL.IND) }];
           return [
             { n: r.partial ? "Spend so far today" : "Spend", v: fmtMoney(r.spend, 0), k: sw(COL.IND) },
             ...(has(r.entries) ? [{ n: tl ? `Paid ${V.unit}` : "Entries", v: fmt(r.entries), k: { width: 8, flex: "0 0 8px" } }] : []),
@@ -140,6 +175,7 @@ export default function PaidSpend({ snap, horizon = "today" }) {
           ];
         }}
         aria={`Paid spend by day: ${fmtMoney(spendNow, 0)} in total${spendTarget !== null ? ` against ${money(spendTarget)} planned` : ""}`} />
+      {note && <div className="nbox" title={budget.target !== undefined && has(budget.target) && Math.round(budget.target) !== Math.round(rec) ? `The first step toward ${money(budget.target)} a day, the level the pacing works toward` : undefined}>{note}</div>}
     </Card>
   );
 }

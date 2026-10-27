@@ -369,10 +369,15 @@ plan by any day is the even daily share of its target (§6).
 
 ## 6. Forward projections
 
-Projections describe the **current trajectory** - the paid-spend recommendation
-is the intervention shown alongside, never baked into the projection. The
-trajectory does stop where the recommendation's own limits say spending on
-would be wasted (Paid, below).
+The organic channels project their **current trajectory**. Paid projects at
+the **recommended spend** (27 October 2026): the schedule that steps from
+today's spend to the level where the next euro returns what it costs (§7), so
+the projection at close, the Spend levels card and the Paid spend card read
+one assumption, which the Sell-through at close card states in a line. Until
+then paid projected the run rate as-is, with the recommendation beside it.
+Today's spend held flat to the close stays beside the projection
+(`paid.ifContinued`, with its own stops and sell-through at close), so the
+Slack update can say what the lever is worth.
 
 **Organic channels.** The remaining volume follows the channel's historic
 entry-timed shape (§5); its level scales with demonstrated performance, trusted
@@ -388,12 +393,12 @@ Early in a campaign (w small) the projection is essentially the plan; late on, i
 scales with what the channel actually delivered. The daily path to that endpoint
 is shaped by the curve, not drawn straight.
 
-**Paid.** Projection = projected spend ÷ projected efficiency, day by day:
-current daily spend run-rate, divided by a cost-per-entry that starts at the
-trailing-3-day CPE and rises by **the campaign's own daily drift**, the same every
-day to the close: fitted on its own days once it has 8 with spend and an entry,
-shrunk to a 2.5%-a-day prior and held between 0 and 10% a day (the prior alone
-until then; §7). Projected entries convert to units at 0.8.
+**Paid.** Projection = projected spend ÷ projected efficiency, day by day: the
+schedule's spend on each future day (today's part day at the run rate, then
+the recommendation, then steps of at most 30% a day toward the level, §7),
+divided by the cost path's price for that day (§7: each day's budget prices
+its own entries through the elasticity, and the days before it add to the
+wear-out clock). Projected entries convert to units at 0.8.
 Today counts for what is left of it, so the spend projected at close is the spend
 to date, today so far included, plus the last full day's spend over the full days
 after today and the rest of today, and the entries in hand today stay in.
@@ -636,15 +641,38 @@ day before.
 
 ```
 sell-out s  : Σ over the days left of s / cpe(day, s) = units still to secure
-ROI-floor s : cpe(close, s) = (1 − cannibalisation) × AA profit/unit ÷ (floor × AA budget share)
-target      = min(sell-out s, ROI-floor s)
+profit(s)   : (1 − cannibalisation) × AA profit/unit × units(s) − AA budget share × s × days left
+level       : the s that earns the most, where the next euro returns what it costs
+              (marginal ROI 1), capped at sell-out s
 ```
 
-A release that could only sell out by spending fifty times today's budget is
-told so by the ROI floor, which binds long before the supply figure does. A
-floor no daily spend can meet, because the spend already made has worn the
-price past it, is a cut like any other, held to 30% a day; only a gap already
-filled stops paid at once.
+**The level is where the next euro pays for itself** (27 October 2026). The
+profit from the spend still to come is concave in the daily spend, because an
+entry costs more the bigger the day and the more has been spent, so it has
+one peak: the spend at which the return on the next euro is exactly 1
+(`CostPath.spend_for_profit`). Above it every further euro buys entries worth
+less than they cost; below it profit is left on the table. The sellout caps
+it, since entries past the sellout buy nothing. Until then the level was the
+spend at which the path ended on the ROI floor at the close, a floor on the
+worst day, and the workbook's cumulative-ROI bands (below 0.9 cut, above 1.3
+raise) and forced decrease sat on top; the floor's spend is still published
+for the card's working (`budget.roiSpend`) and the band read (`budget.band`),
+but neither sets the spend. The return on the next euro is roughly
+(1 − eps − w/2) times the average return on the remaining spend, so the band's
+"raise above 1.3" was a fixed stand-in for marginal ROI 1 at the old pair; the
+model now reads it directly. A release that could only sell out by spending
+fifty times today's budget is told so by the peak, which comes long before
+the supply figure does. A next euro that does not pay even on the smallest
+day puts the level at nothing, a cut like any other, held to 30% a day; only
+a gap already filled stops paid at once.
+
+**The spend levels** (the Spend levels card, `paid.levels`). Four levels, none,
+half the level, the level and double, each the schedule scaled and run through
+the same placement, with the units at close, the spend to come, the ROI on it
+and the return on the next euro; and the profit from the spend still to come
+at a flat daily spend from nothing to two and a half times the level, with the
+same at the ends of the elasticity prior's width (0.20 and 0.40), so the card
+can show where the peak may sit.
 
 **One forward path.** That single path serves the paid projection on the
 trajectory and the Paid ROI chart's dotted line (both at today's spend) and the
@@ -675,16 +703,50 @@ after three such days. The two zero-conversion rules are applied as written;
 which of the two step-size regimes LE should run under is an open question for
 the paid team.
 
-**Pacing rules:** target ROI (AA) **1.1**, floor **1.0**. Cumulative ROI below
-0.9 → decrease; 0.9–1.3 → hold (never raise); above 1.3 → increase. Daily
-changes are capped at ±30% and changes under 10% are ignored. The trailing
-3-day ROI below target on each of the last three full days forces a decrease. The recommendation is
-the target above, paced by these rules from today's spend; the card's
-"Capped by" names which one bound it in a word (Sellout, Floor, Pacing, Hold,
-Decrease, Forced, Plan, Zero, Pause, Steady), with the rule in full at the head
-of its tooltip and the unconstrained figures beneath. With no spend yet there is no price to anchor on: the
-first day starts at the plan's daily rate. ROI shown against the
-recommendation is the ROI at the close at that spend level's cost per entry.
+**Pacing rules:** daily changes are capped at ±30% and changes under 10% are
+ignored (27 October 2026: the cumulative-ROI bands and the forced decrease no
+longer apply, above). The recommendation is the level, paced by these rules
+from today's spend: tomorrow's step, with the schedule stepping on to the
+level (`budget.target`, `budget.schedule`). The card's "Capped by" names what
+bound it in a word (Next euro, Sellout, Pacing, Plan, Zero, Pause, Steady),
+with the rule in full at the head of its tooltip and the unconstrained
+figures beneath. With no spend yet there is no price to anchor on: the first
+day starts at the plan's daily rate. ROI shown against the recommendation is
+the ROI at the close at that spend level's cost per entry.
+
+## 7c. The sell-through at close and its range
+
+The Sell-through at close card (`closeForecast`, 27 October 2026) prints the
+projection at close (§6) with a likely range and a word on how sure it is, the
+release and each work, and the paid spend it assumes (§6: the recommended
+schedule, as a daily figure against today's and the total at close).
+
+The range is read from where completed launches landed around the projection
+of what was still to come (`etl/analysis/projection_backtest.py`, written to
+`etl/projection_backtest.json`): every configured LE release whose campaign
+has closed is built as the dashboard would have built it at 15, 30, 45, 60, 75
+and 90% of the way from the announce to the close, the funnel and the spend
+cut at that day and the orders feed's totals and the draws' counts set aside
+(they are the final figures and would leak the answer), and each cut's
+projection of what was still to come is read against what did come. The 10th
+and 90th percentiles of that ratio by cut are the range's multipliers on the
+still-to-come, interpolated to the day; the card calls it where 8 in 10 past
+launches landed. The confidence word follows from the range's width around
+the projection: within ±10% high, within ±25% medium, wider low; a closed
+release reads high with no range.
+
+What the first run says (8 releases, 48 cuts): the projection is unbiased
+through the middle of a campaign (median ratio 1.0 at 15 to 45%, the 10th to
+90th percentiles 0.35 to 1.6) and **reads low in the last quarter** (median
+1.1 at 60%, 1.3 at 75%, 1.9 at 90%; 90th percentiles 1.7, 2.1 and 3.8): the
+last days bring more than the entry-timed curve and the entries in hand at
+0.8 say, on draws that sell out (Mondrian, Dali) and on ones that do not
+(Schnabel 146 projected at day 22 of 24, 166 at the close). So late in a
+campaign the range sits above the projection, which is the honest reading
+until the projection's last days are recalibrated (a multiplier on the
+still-to-come by campaign fraction, the backtest's median, would do it; not
+applied without the owner's say-so). The panel is thin, so the percentiles
+are near the ends of what was seen; the n is published with the range.
 
 ## 7b. A release selling two lines of work on one page
 

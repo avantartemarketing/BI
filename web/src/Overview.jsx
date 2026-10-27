@@ -4,6 +4,8 @@
  * it knows instead (Upcoming, no targets, catalogue). */
 import React from "react";
 import Trajectory from "./modules/Trajectory.jsx";
+import SellThroughClose from "./modules/SellThroughClose.jsx";
+import SpendLevels from "./modules/SpendLevels.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
 import Waterfall from "./modules/Waterfall.jsx";
 import PaidRoi from "./modules/PaidRoi.jsx";
@@ -29,6 +31,8 @@ export default function Overview({ snap, base, horizon, onSetup, onOpen }) {
     <div className="body">
       <div className="grid2">
         <Trajectory snap={snap} horizon={horizon} />
+        {!isTL && snap.closeForecast && <SellThroughClose snap={snap} />}
+        {!isTL && snap.paid && snap.paid.levels && <SpendLevels snap={snap} />}
         <ChannelsVsTargets snap={snap} horizon={horizon} />
         {targeted && <Waterfall snap={snap} horizon={horizon} />}
         {isTL && !preWindow && snap.sales && <TLSignupsOutcome snap={snap} />}

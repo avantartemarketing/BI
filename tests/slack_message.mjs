@@ -320,53 +320,55 @@ if (fs.existsSync(dir)) {
     if (print && /schnabel|warhol/.test(f)) console.log("\n" + asText(composeSellThroughBlocks(s)));
   }
 }
-// the paid lever under the beta line (6 October 2026, the words agreed 8 October): the forecast
-// holds paid at its current daily spend, so the line says what the Paid card's recommendation
-// would mean for the close - room to increase, no room, a cut, a stop or a pause - with the reason
-// it was bound by, to one decimal and in units; nothing without a running campaign, a
-// recommendation, the figure at the recommended spend, on an At close update or once the
-// campaign is complete
+// the paid lever under the beta line (6 October 2026, the words agreed 8 October; since 27 October
+// 2026 the forecast runs at the recommended spend): the line says the spend the forecast assumes -
+// a raise, a cut, a stop, a pause or no move from today's - with the reason the level was bound
+// by, and the sell-through today's spend held to the close would reach, to one decimal and in
+// units; nothing without a running campaign, a recommendation, the figure at the recommended
+// spend, on an At close update or once the campaign is complete
 {
-  const withPaid = (current, recommended, pct, units, extra = {}, budget = {}) => ({ ...snap, ...extra,
-    paid: { budget: { current, recommended, cap: "pacing", floor: 1, ...budget }, atRecommended: recommended === null ? null : { spend: recommended, sellThrough: pct === null ? null : { pct, units } } } });
+  const withPaid = (current, recommended, pct, units, extra = {}, budget = {}, held = { pct: 0.30, units: 180 }) => ({ ...snap, ...extra,
+    paid: { budget: { current, recommended, cap: "pacing", floor: 1, ...budget },
+      atRecommended: recommended === null ? null : { spend: recommended, sellThrough: pct === null ? null : { pct, units } },
+      ifContinued: held === null ? null : { spend: current, sellThrough: held } } });
   const sectionsOf = (s, o = {}) => parts(composeSellThroughBlocks(s, { today: "2026-09-17", ...o }).blocks).sections;
   const line = (s, o) => sectionsOf(s, o)[3] ?? null;
-  const up = composeSellThroughBlocks(withPaid(1000, 1500, 0.3605, 216.3), { today: "2026-09-17" });
+  const up = composeSellThroughBlocks(withPaid(1000, 1500, 0.3605, 216.3, {}, { cap: "marginal" }), { today: "2026-09-17" });
   check(parts(up.blocks).types === "header section section table section section context context", `the lever line is its own section under the beta line: ${parts(up.blocks).types}`);
   check(parts(up.blocks).sections[2].endsWith("`BETA`"), "the beta line stays as it was");
-  const H = "This assumes paid stays at €1,000 a day. ";
-  check(line(withPaid(1000, 1500, 0.3605, 216.3)) === H + "There may be room to increase paid spend, in which case the forecast sell-through rises to *36.1%* (216 units).",
-    `room to increase: ${line(withPaid(1000, 1500, 0.3605, 216.3))}`);
-  check(line(withPaid(1000, 1500, 0.3141, 188.5)) === H + "There may be room to increase paid spend, in which case the forecast sell-through rises to *31.4%* (189 units).",
-    `a small move still shows, to one decimal: ${line(withPaid(1000, 1500, 0.3141, 188.5))}`);
-  check(line(withPaid(1000, 1000, 0.31, 186)) === H + "There is no room to increase paid spend.", `no room: ${line(withPaid(1000, 1000, 0.31, 186))}`);
-  check(line(withPaid(1000, 1000.4, 0.31, 186)) === H + "There is no room to increase paid spend.", "a move that rounds to nothing is no move");
-  // a cut, a stop or a pause with the reason the recommendation was bound by (the Paid card's chip)
+  // the forecast runs at the recommended spend (27 October 2026): the line says what it assumes,
+  // why the level is where it is, and what today's spend held to the close would reach
+  const HELD = "; held at €1,000 the forecast would be *30.0%* (180 units).";
+  check(line(withPaid(1000, 1500, 0.3605, 216.3, {}, { cap: "marginal" })) === "This assumes paid is raised to €1,500 a day from €1,000, as the next euro still pays for itself" + HELD,
+    `a raise, the next euro paying: ${line(withPaid(1000, 1500, 0.3605, 216.3, {}, { cap: "marginal" }))}`);
+  check(line(withPaid(1000, 1500, 0.3141, 188.5)) === "This assumes paid is raised to €1,500 a day from €1,000" + HELD,
+    `a raise the pacing binds names no reason: ${line(withPaid(1000, 1500, 0.3141, 188.5))}`);
+  check(line(withPaid(1000, 1000, 0.31, 186)) === "This assumes paid stays at €1,000 a day: the next euro would not pay for more.", `no move: ${line(withPaid(1000, 1000, 0.31, 186))}`);
+  check(line(withPaid(1000, 1000.4, 0.31, 186)) === "This assumes paid stays at €1,000 a day: the next euro would not pay for more.", "a move that rounds to nothing is no move");
+  // a cut, a stop or a pause with the reason the level was bound by (the Paid card's chip)
   const cut = (cap, extra = {}, budget = {}) => line(withPaid(1000, 700, 0.28, 168, extra, { cap, ...budget }));
   const stop = (cap, extra = {}) => line(withPaid(1000, 0, 0.25, 150, extra, { cap }));
-  const D = "in which case the forecast sell-through drops to *28.0%* (168 units).";
-  check(cut("roi_floor") === H + "We may have to decrease paid spend to stay ROI-positive, " + D, `a cut for ROI: ${cut("roi_floor")}`);
-  check(cut("roi_floor", {}, { floor: 1.2 }) === H + "We may have to decrease paid spend to keep ROI above 1.2, " + D, `a cut for a floor above 1: ${cut("roi_floor", {}, { floor: 1.2 })}`);
-  check(stop("roi_floor") === H + "We may have to stop paid spend to stay ROI-positive, in which case the forecast sell-through drops to *25.0%* (150 units).", `a stop for ROI: ${stop("roi_floor")}`);
-  // on course to sell out: the line ends at the reason, since the forecast does not move; a
-  // stop says the forecast already assumes it (the gap to the edition is closed, so the paid
-  // path stops at once); the fixture's target inside its edition changes nothing (9 October 2026)
-  check(cut("supply") === H + "We may be able to decrease paid spend, as we are on course to sell out anyway.", `a cut, selling out anyway: ${cut("supply")}`);
+  check(cut("marginal") === "This assumes paid is cut to €700 a day from €1,000, as the next euro returns less than it costs" + HELD, `a cut, the next euro not paying: ${cut("marginal")}`);
+  check(stop("marginal") === "This assumes paid stops now, as the next euro returns less than it costs" + HELD, `a stop, the next euro not paying: ${stop("marginal")}`);
+  // on course to sell out: the line ends at the reason; a stop says the forecast already assumes
+  // it (the gap to the edition is closed, so the paid path stops at once); the fixture's target
+  // inside its edition changes nothing (9 October 2026)
+  check(cut("supply") === "This assumes paid is cut to €700 a day from €1,000, as we are on course to sell out anyway.", `a cut, selling out anyway: ${cut("supply")}`);
   check(stop("supply") === "This assumes paid stops now, as we are on course to sell out without it. Paid is at €1,000 a day.", `a stop, selling out without it: ${stop("supply")}`);
   const whole = { edition: { target: 600, total: 600 } };
   check(cut("supply", whole) === cut("supply") && stop("supply", whole) === stop("supply"), "the same with the target the whole edition");
   // paid switched off today (13 October 2026): the figure is the last day it ran, and the line says so
-  const offUp = line(withPaid(1288, 1500, 0.3605, 216.3, {}, { offToday: true }));
-  check(offUp === "Paid is off today, after €1,288 a day until yesterday. The forecast assumes it runs again at that rate. There may be room to increase paid spend, in which case the forecast sell-through rises to *36.1%* (216 units).",
+  const offUp = line(withPaid(1288, 1500, 0.3605, 216.3, {}, { offToday: true, cap: "marginal" }));
+  check(offUp === "Paid is off today, after €1,288 a day until yesterday. The forecast assumes it runs again at €1,500 a day, as the next euro still pays for itself; held at €1,288 the forecast would be *30.0%* (180 units).",
     `off today, room to run more: ${offUp}`);
   const offStop = line(withPaid(1288, 0, 0.25, 150, {}, { cap: "supply", offToday: true }));
   check(offStop === "Paid is off today, after €1,288 a day until yesterday, and we are on course to sell out without it.", `off today, selling out without it: ${offStop}`);
-  check(stop("zero_conversion_pause") === H + "We may have to pause paid spend, as it has bought no entries for three days, in which case the forecast sell-through drops to *25.0%* (150 units).", `a pause: ${stop("zero_conversion_pause")}`);
-  check(cut("zero_conversion") === H + "We may have to decrease paid spend, as it bought no entries yesterday, " + D, `a cut, nothing bought yesterday: ${cut("zero_conversion")}`);
-  check(cut("roi_band_decrease") === H + "We may have to decrease paid spend, as cumulative ROI is under 0.9, " + D, `a cut by the ROI band: ${cut("roi_band_decrease")}`);
-  check(cut("forced_decrease") === H + "We may have to decrease paid spend, as ROI has been under target for three days, " + D, `a forced cut: ${cut("forced_decrease")}`);
-  check(cut("pacing") === H + "We may have to decrease paid spend, " + D, `a cut with no reason to name: ${cut("pacing")}`);
-  check(stop(null) === H + "We may have to stop paid spend, in which case the forecast sell-through drops to *25.0%* (150 units).", `a stop with no reason to name: ${stop(null)}`);
+  check(stop("zero_conversion_pause") === "This assumes paid pauses, as it has bought no entries for three days" + HELD, `a pause: ${stop("zero_conversion_pause")}`);
+  check(cut("zero_conversion") === "This assumes paid is cut to €700 a day from €1,000, as it bought no entries yesterday" + HELD, `a cut, nothing bought yesterday: ${cut("zero_conversion")}`);
+  check(cut("pacing") === "This assumes paid is cut to €700 a day from €1,000" + HELD, `a cut with no reason to name: ${cut("pacing")}`);
+  check(stop(null) === "This assumes paid stops now" + HELD, `a stop with no reason to name: ${stop(null)}`);
+  check(line(withPaid(1000, 700, 0.28, 168, {}, { cap: "marginal" }, null)) === "This assumes paid is cut to €700 a day from €1,000, as the next euro returns less than it costs.",
+    "without the held figure the line ends at the reason");
   check(line(withPaid(0, 1500, 0.36, 216)) === null && line(withPaid(null, 1500, 0.36, 216)) === null, "no line without a running campaign");
   check(line(withPaid(1000, null, 0.36, 216)) === null && line(withPaid(1000, 1500, null, 216)) === null, "no line without a recommendation or its figure");
   check(line(withPaid(1000, 1500, 0.36, 216, { complete: true })) === null, "no line once the campaign is complete");
