@@ -35,7 +35,6 @@ import { similarMembers, ownMembers, releasePrice, releaseArtist, basketClock, M
 import { applyChannelsOff } from "../../shared/benchmarkModel.mjs";
 import { colorFor, fmtMonth, hoursShort, liveProfile, median } from "./TargetsKit.jsx";
 
-const SIMILAR_NAME = "Similar size and shape";   // etl/baskets.py SIMILAR_NAME: the basket with id similar_size
 const NEAR_MISSES = 8;
 const YEAR_MS = 365 * 86400000;
 const ratio = (a, b) => (a > 0 && b > 0 ? Math.max(a / b, b / a) : null);
@@ -126,7 +125,7 @@ export default function BasketPicker({ kind = "le", rows, releaseName, artist, b
   const [draft, setDraft] = useState({ units: targetUnits > 0 ? String(targetUnits) : "", price: unitPrice > 0 ? String(unitPrice) : "" });
   const [ticked, setTicked] = useState(() => new Set(((current && current.members) || currentMembers || []).filter((m) => m !== releaseName)));
   const seedRef = useRef(null);
-  const [seed, setSeed] = useState(null);           // the suggestion in force: {id, name, kind, members}
+  const [seed, setSeed] = useState(null);           // the suggestion in force: {id, kind, members}
   const tickedRef = useRef(null);
   tickedRef.current = ticked;
   const am = useMenu();
@@ -156,7 +155,7 @@ export default function BasketPicker({ kind = "le", rows, releaseName, artist, b
   /* Ticks that still equal the previous suggestion (or are empty) move to
      the new one; ticks someone has edited are theirs and stay. */
   useEffect(() => {
-    const next = rule && rule.members.length ? { id: "similar_size", name: SIMILAR_NAME, kind: "ready", members: rule.members } : null;
+    const next = rule && rule.members.length ? { id: "similar_size", kind: "ready", members: rule.members } : null;
     const prev = seedRef.current, cur = tickedRef.current;
     const untouched = !cur.size || (prev && cur.size === prev.members.length && prev.members.every((m) => cur.has(m)));
     seedRef.current = next; setSeed(next);
@@ -197,8 +196,9 @@ export default function BasketPicker({ kind = "le", rows, releaseName, artist, b
   const toggle = (name) => setTicked((prev) => { const next = new Set(prev); if (next.has(name)) next.delete(name); else next.add(name); return next; });
   const use = () => {
     if (members.length < MIN_MEMBERS) return;
-    if (untouched && seed) onPick({ kind: "ready", id: seed.id, name: seed.name, n: seed.members.length, members: seed.members, profile: liveAll, preferRecent: recent });
-    else onPick({ kind: "bespoke", name: `${seed ? seed.name : "Basket"} (edited)`, n: members.length, members: members.map((m) => m.release_name), profile: liveAll, preferRecent: recent });
+    // a basket has no name: it is its launches, as suggested or as ticked
+    if (untouched && seed) onPick({ kind: "ready", id: seed.id, n: seed.members.length, members: seed.members, profile: liveAll, preferRecent: recent });
+    else onPick({ kind: "bespoke", n: members.length, members: members.map((m) => m.release_name), profile: liveAll, preferRecent: recent });
   };
   // Enter uses the basket, Escape goes back; neither while a box is being typed in
   useEffect(() => {
