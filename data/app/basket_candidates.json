@@ -1,5 +1,5 @@
 {
- "asOf": "2026-10-01",
+ "asOf": "2026-10-27",
  "rows": [
   {
    "release_name": "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
@@ -201,7 +201,7 @@
     "paid": 0.0047410430294664
    },
    "entries": 263.0,
-   "units_per_buyer": 1.125,
+   "units_per_buyer": 1.1254752851711027,
    "private_room_share": 0.2558922558922559,
    "cost_per_paid_unit": 32.67229685845204,
    "price": 650.0,
@@ -253,7 +253,7 @@
     "paid": 0.0047846889952153
    },
    "entries": 519.0,
-   "units_per_buyer": 1.1529411764705881,
+   "units_per_buyer": 1.1547619047619047,
    "private_room_share": 0.0834752981260647,
    "cost_per_paid_unit": 123.17439269714934,
    "price": 700.0,
@@ -305,7 +305,7 @@
     "paid": 0.0139532348612852
    },
    "entries": 841.0,
-   "units_per_buyer": 1.366153846153846,
+   "units_per_buyer": 1.3636363636363635,
    "private_room_share": 0.2002262443438914,
    "cost_per_paid_unit": 18.97593422238076,
    "price": 500.0,
@@ -513,7 +513,7 @@
     "paid": 0.0042461005199306
    },
    "entries": 152.0,
-   "units_per_buyer": 1.0051020408163265,
+   "units_per_buyer": 1.0051546391752577,
    "private_room_share": 0.1989795918367347,
    "cost_per_paid_unit": 173.0330941037023,
    "price": 850.0,
@@ -565,7 +565,7 @@
     "paid": 0.0038874203078836
    },
    "entries": 159.0,
-   "units_per_buyer": 1.0274725274725274,
+   "units_per_buyer": 1.0271739130434783,
    "private_room_share": 0.149171270718232,
    "cost_per_paid_unit": 197.4743424951001,
    "price": 1025.0,
@@ -721,7 +721,7 @@
     "paid": 0.0058124174372523
    },
    "entries": 253.0,
-   "units_per_buyer": 1.0206185567010309,
+   "units_per_buyer": 1.0205479452054795,
    "private_room_share": 0.1245674740484429,
    "cost_per_paid_unit": 153.09270890619123,
    "price": 600.0,
@@ -877,7 +877,7 @@
     "paid": 0.003221649484536
    },
    "entries": 84.0,
-   "units_per_buyer": 1.247191011235955,
+   "units_per_buyer": 1.25,
    "private_room_share": 0.1531531531531531,
    "cost_per_paid_unit": 328.1017775611343,
    "price": 1250.0,
@@ -981,7 +981,7 @@
     "paid": 0.0038996490315871
    },
    "entries": 393.0,
-   "units_per_buyer": 1.016359918200409,
+   "units_per_buyer": 1.0183673469387755,
    "private_room_share": 0.2808080808080808,
    "cost_per_paid_unit": 137.3390092879257,
    "price": 1275.0,
@@ -1085,7 +1085,7 @@
     "paid": 0.0524130773222625
    },
    "entries": 1177.0,
-   "units_per_buyer": 1.1797346200241254,
+   "units_per_buyer": 1.179951690821256,
    "private_room_share": 0.0570824524312896,
    "cost_per_paid_unit": 111.14231035067169,
    "price": 541.5428167020524,
@@ -1345,7 +1345,7 @@
     "paid": 0.001235103898437
    },
    "entries": 483.0,
-   "units_per_buyer": 1.0138888888888888,
+   "units_per_buyer": 1.0138248847926268,
    "private_room_share": 0.146774193548387,
    "cost_per_paid_unit": 477.7958882828226,
    "price": 2200.0,
@@ -1397,7 +1397,7 @@
     "paid": 0.0056471651231082
    },
    "entries": 183.0,
-   "units_per_buyer": 1.0138888888888888,
+   "units_per_buyer": 1.0140845070422535,
    "private_room_share": 0.1575342465753424,
    "cost_per_paid_unit": 142.77282019227383,
    "price": 1650.0,
@@ -1501,7 +1501,7 @@
     "paid": 0.0099786172487526
    },
    "entries": 113.0,
-   "units_per_buyer": 1.1318681318681318,
+   "units_per_buyer": 1.1304347826086956,
    "private_room_share": 0.1538461538461538,
    "cost_per_paid_unit": 18.1366471380273,
    "price": 1500.0,
@@ -1570,16 +1570,16 @@
    "window_end": "2026-03-20",
    "campaign_days": 27.0,
    "units": 468.0,
-   "demand": 491.2,
+   "demand": 495.2,
    "unmet_units": 6.0,
-   "payment_failed_units": 23.0,
+   "payment_failed_units": 28.0,
    "sold_short": false,
    "demand_shares": {
-    "aa_email": 0.31889627388335684,
-    "aa_social": 0.05432273948504432,
+    "aa_email": 0.319085660542961,
+    "aa_social": 0.0543448260567084,
     "referral_artist": 0.0,
-    "search_direct_other": 0.35979624623901835,
-    "paid": 0.26698474039258047
+    "search_direct_other": 0.35902458241046625,
+    "paid": 0.2675449309898644
    },
    "sessions": 150129.0,
    "paid_share": 0.8590653258289098,
@@ -1605,9 +1605,9 @@
     "paid": 0.0008694167145363
    },
    "entries": 337.0,
-   "units_per_buyer": 1.072494669509595,
+   "units_per_buyer": 1.0874200426439233,
    "private_room_share": 0.0277777777777777,
-   "cost_per_paid_unit": 542.079118053914,
+   "cost_per_paid_unit": 536.5746026026228,
    "price": 3000.0,
    "edition_size": 666.0,
    "cluster": 0,
@@ -1709,7 +1709,7 @@
     "paid": 0.0029756000793493
    },
    "entries": 306.0,
-   "units_per_buyer": 1.073943661971831,
+   "units_per_buyer": 1.0736842105263158,
    "private_room_share": 0.402027027027027,
    "cost_per_paid_unit": 79.677328789038,
    "price": 1500.0,
@@ -1813,7 +1813,7 @@
     "paid": 0.0017025934146119
    },
    "entries": 208.0,
-   "units_per_buyer": 1.2421875,
+   "units_per_buyer": 1.2384615384615385,
    "private_room_share": 0.5039370078740157,
    "cost_per_paid_unit": null,
    "price": 8500.0,
@@ -2177,7 +2177,7 @@
     "paid": 0.0060300749990578
    },
    "entries": 1532.0,
-   "units_per_buyer": 1.0245649948822928,
+   "units_per_buyer": 1.0265848670756645,
    "private_room_share": 0.0770010131712259,
    "cost_per_paid_unit": 61.237566013186616,
    "price": 1500.0,
@@ -2229,7 +2229,7 @@
     "paid": null
    },
    "entries": 182.0,
-   "units_per_buyer": 1.4408602150537635,
+   "units_per_buyer": 1.425531914893617,
    "private_room_share": 0.1637931034482758,
    "cost_per_paid_unit": null,
    "price": 8000.0,
@@ -2697,7 +2697,7 @@
     "paid": null
    },
    "entries": 198.0,
-   "units_per_buyer": 1.0199004975124377,
+   "units_per_buyer": 1.0198019801980198,
    "private_room_share": 0.445,
    "cost_per_paid_unit": null,
    "price": 850.0,
@@ -2714,16 +2714,16 @@
    "window_end": "2025-06-29",
    "campaign_days": 35.0,
    "units": 291.0,
-   "demand": 578.2,
+   "demand": 579.8,
    "unmet_units": 349.0,
-   "payment_failed_units": 10.0,
+   "payment_failed_units": 12.0,
    "sold_short": true,
    "demand_shares": {
-    "aa_email": 0.2651738840586807,
-    "aa_social": 0.030353059616423796,
+    "aa_email": 0.26504229359349685,
+    "aa_social": 0.03034354673606502,
     "referral_artist": 0.0,
-    "search_direct_other": 0.4912174957889388,
-    "paid": 0.2132555605359568
+    "search_direct_other": 0.4910808598181502,
+    "paid": 0.213533299852288
    },
    "sessions": 84811.0,
    "paid_share": 0.8018034009017004,
@@ -2751,7 +2751,7 @@
    "entries": 452.0,
    "units_per_buyer": 1.1833910034602075,
    "private_room_share": 0.2783505154639175,
-   "cost_per_paid_unit": 216.07531880954932,
+   "cost_per_paid_unit": 215.19877323883674,
    "price": 6000.0,
    "edition_size": 450.0,
    "cluster": 0,
