@@ -1,6 +1,6 @@
 /* The dashboard shell (the Linear redesign, October 2026): the sidebar, the
  * releases list, a release's page, the permissions page, the command bar
- * and the Agent. The address carries where the reader is (?release=<id>,
+ * and the Agent (on every page but Permissions). The address carries where the reader is (?release=<id>,
  * &tab=targets, &basket=1, ?view=releases, ?view=permissions) so a page can
  * be shared or reloaded.
  *
@@ -141,7 +141,10 @@ export default function App() {
         )}
       </div>
       {palette && <CommandBar groups={groups} asOf={index && index.asOf} onPick={pick} onClose={() => setPalette(false)} />}
-      {route.view === "release" && <AgentDock snap={snap} />}
+      {route.view !== "permissions" && (
+        <AgentDock snap={route.view === "release" ? snap : null}
+          context={{ view: route.view, release: releaseId, tab: route.tab, display: directSpread ? "spread" : "channel" }} />
+      )}
     </>
   );
 }

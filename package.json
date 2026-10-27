@@ -10,6 +10,7 @@
     "etl": "python3 etl/extract_spend.py && python3 etl/extract_content.py && python3 etl/aggregate_events.py && python3 etl/aggregate_tl.py && python3 etl/build.py"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
     "express": "^4.21.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
