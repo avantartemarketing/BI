@@ -535,11 +535,12 @@ course might have filled the work later: the sale is real, the fill a
 forecast. Without a per-work feed every entry converts until the gap is
 closed, as before.
 
-**Price rises as the spend adds up.** Within a campaign, what a euro buys falls
-as the campaign's total spend grows: each doubling of what it has spent makes
-the next entry about 18% dearer (15% fewer entries a euro). A bigger day costs
-a little more on top, and the draw's last two days buy more, as the deadline
-pulls people in. On a future day, at a flat daily spend s:
+**Price rises as the spend adds up, and with the size of the day.** Within a
+campaign, what a euro buys falls as the campaign's total spend grows: each
+doubling of what it has spent makes the next entry about 15% dearer (13% fewer
+entries a euro). A bigger day costs more on top: doubling a day's budget makes
+each of its entries about 23% dearer. The draw's last two days buy more, as the
+deadline pulls people in. On a future day, at a flat daily spend s:
 
 ```
 cpe(day, s) = cpe_window × lift_window × (s / spend_window)^eps
@@ -548,9 +549,10 @@ cpe(day, s) = cpe_window × lift_window × (s / spend_window)^eps
 
 `cpe_window` is the trailing three days' price, paid at that window's daily
 spend (`spend_window`) and at its place on the clock (`spent at the window`,
-its spend-weighted spend so far). The wear-out `w` is 0.24 and `K` €100; the
-elasticity `eps` to the day's budget is 0.08 (doubling the day's budget makes
-an entry about 6% dearer). `lift(day)` is the close's: ×1.53 on the close day
+its spend-weighted spend so far). The wear-out `w` is 0.20 and `K` €100; the
+elasticity `eps` to the day's budget is 0.30 (doubling the day's budget makes
+an entry about 23% dearer; see the challenge below for why it is not the plain
+fit's 0.15). `lift(day)` is the close's: ×1.53 on the close day
 and ×1.40 the day before (95% ranges ×1.26 to ×1.87 and ×1.07 to ×1.83), 1
 before that, where the day before those reads ×1.07 ± 0.14 and nothing earlier
 shows. `lift_window` takes it back out of a trailing window that itself fell
@@ -601,6 +603,31 @@ every version under-predicted the last fifth of a campaign by about a fifth;
 with it, on the 29 campaigns with 14 days up to their close, the miss falls
 from 46% to 42% overall and the bias from −7% to +2% (−18% to −3% in the last
 fifth).
+
+**The day's-budget penalty, challenged (27 October 2026).** The fit above read
+the elasticity at 0.08 in September (a doubled day 6% dearer), and 0.15 on the
+47 campaigns and 814 campaign-days of today's export. Both read low, because
+the budget is set by people watching the price: a cheaper-than-expected day is
+followed by a bigger budget, and cheapness persists from one day to the next
+(the residuals' autocorrelation is +0.23), so the fit sees big days that were
+cheap because they were made big on cheap days. Read in ways that sidestep
+that (`etl/analysis/cpe_elasticity_challenge.py`): consecutive days alone,
+conditional on the pair's entries, give 0.27 ± 0.05; two-day windows around
+budget steps of 30% or more give 0.36 on 194 rises and 0.33 on 81 cuts; and a
+backtest that cuts each campaign at 40, 60 and 80% of its run, anchors on the
+trailing three days as the dashboard does and predicts the rest of its entries
+from the spend it actually had misses least between 0.25 and 0.35 (30%
+against 36% at the old pair), with no bias where the old pair over-predicted
+entries by 8%. Meta's own price barely moves with the day's budget (impressions
+a euro fall 6% per doubling): the penalty is in what an impression is worth,
+the extra impressions a bigger day buys reaching people who enter less.
+Entries do not lag the spend that bought them (yesterday's budget adds 0.03 to
+today's), so the same-day readings stand. The prior is therefore 0.30 ± 0.10
+and the wear-out 0.20 ± 0.13 (today's plain fit, flat on the backtest from
+0.15 to 0.25). What it means for the next euro: the return on it is roughly
+(1 − eps − w/2) times the average return on the remaining spend, 0.6 at the
+new pair against 0.8 at the old, so the old pair overstated the marginal
+return by about a third and sized the budget too high.
 
 The ROI floor reads the price at the close underneath the lift, the path's
 worst day: the deadline's rush is a bonus on the last two days, and a budget
