@@ -636,11 +636,12 @@ basket it is measured against (BENCHMARK_SPEC 4.3, 8).
 
 Since 23 October 2026 the tab is the project page of the redesign (`web/src/TargetSetting.jsx`,
 the timed launches' `TLTargets.jsx`, the shared pieces in `TargetsKit.jsx`): the title, then three
-pills - the basket (its name and size; pressed, it opens the picker page), the channels in plan
+pills - the basket (how many launches, and `edited` once the suggestion has been; a basket has no
+name, it is its launches; pressed, it opens the picker page), the channels in plan
 (a multi-select menu: Running paid, the artist's own channels) and the stretch (even across
 channels, all from paid, or Custom, which opens the coupled sliders) - then **Works** as a list,
-one row a work with its target against its edition as a progress ring, its price and whether it
-frames; a row pressed puts the work's figures in the side panel (edition, sell-through, price, the
+one row a work with its target against its edition as a progress ring, its price, whether it
+frames and, in amber, how many of its unit economics are missing; a row pressed puts the work's figures in the side panel (edition, sell-through, price, the
 profits per unit, the shares, framing and its frame rows, in the release or not, Reset or Remove,
 with every figure tagged by where it came from: Airtable, typed, the basket, a default). Under the
 works, the **basket** as rows that link to each launch's page, and the **Dates** (private room,
@@ -651,7 +652,13 @@ name; the paid budget with its share of the value; the cost per unit; cannibalis
 campaign code only while no feed names one) and the team (the lead, the project manager, the
 Slack channel). The page's ⋯ menu holds Send unit economics to the PM and Reset to Airtable's
 figures. The strip under the header appears only when something is wrong (figures not durable,
-an edition mismatch, high untracked traffic, the release-level figures still in force). The
+an edition mismatch, high untracked traffic, the release-level figures still in force, a work's
+unit economics incomplete: `economicsGaps` in `TargetsKit.jsx` names what a work in the release
+lacks of the figures the paid ROI reads per unit - its edition or, on a timed launch, its units
+target, the price, the artist's and Avant Arte's profit, a profit or revenue share, and the frame
+profit when a frame is offered - and the strip names the work and the figures, or counts the
+works when several, with Open to put the first in the side panel; it waits while release-level
+figures are in force, since the works' figures carry nothing until those are dropped). The
 figures recompute live in the browser via `shared/benchmarkModel.mjs` and `shared/economics.mjs`.
 There is no artist posting tier (retired on 7 October 2026).
 

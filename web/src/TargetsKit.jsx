@@ -19,7 +19,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loz, Menu, MenuItem, Note, Switch, useMenu } from "./ui.jsx";
 import { fmt, fmtDay, fmtMoney } from "./format.mjs";
-import { Arrow, Basket, Cal, Diamond, Dots, Img, Lines, Meta, Plus, ProgressRing, Scatter, Send, Spinner, Undo, X } from "./icons.jsx";
+import { Arrow, Basket, Cal, Diamond, Dots, Img, Lines, Meta, Plus, ProgressRing, Scatter, Send, Spinner, Undo, Warn, X } from "./icons.jsx";
 import { GROUPS } from "../../shared/benchmarkModel.mjs";
 
 /* ---------- words and formats ---------- */
@@ -229,8 +229,10 @@ export function Strip({ icon, text, sx, action, onDismiss }) {
 }
 
 /* ---------- the pills under the title ---------- */
-export function BasketPill({ name, n, onClick }) {
-  return <button className="pill" onClick={onClick} title="The launches this release is benchmarked against: the benchmark is their median, per metric and per channel. Opens the picker."><Basket />{name}<span className="g">{n}</span></button>;
+/* The basket has no name: it is the launches in it, so the pill says how
+ * many and whether someone has edited the suggestion. */
+export function BasketPill({ n, edited, onClick }) {
+  return <button className="pill" onClick={onClick} title={`The launches this release is benchmarked against: the benchmark is their median, per metric and per channel. ${edited ? "Edited from the suggestion" : "The suggested launches"}. Opens the picker.`}><Basket />{n ? `${n} launch${n === 1 ? "" : "es"}` : "Basket"}{edited ? <span className="g">edited</span> : null}</button>;
 }
 /* Channels in plan: a multi-select menu, one row a channel. A channel left
  * out leaves the benchmark and the target: the basket is read on its other
@@ -327,9 +329,44 @@ export function WorkRow({ w, on, onPick, unitWord = "" }) {
         <Loz kind={w.over ? "warm" : undefined} tip={w.over ? "The target is more than the edition; editions cap nothing on a timed launch" : w.tip} icon={<ProgressRing pct={pct} color={w.over ? "#e8743b" : "#5e6ad2"} />}>{w.target === null || w.target === undefined ? "–" : fmt(w.target)} / {w.edition ? fmt(w.edition) : "–"}{unitWord}</Loz>
         <Loz tip="Unit price">{w.price ? fmtMoney(w.price) : "–"}</Loz>
         {w.framed && <Loz tip="Framing offered" icon={<FrameIc />}>Framed</Loz>}
+        {w.gaps && w.gaps.length > 0 && !w.excluded && <Loz kind="warm" tip={`Unit economics missing: ${w.gaps.join(", ")}. Press the row to type them.`}>{w.gaps.length} missing</Loz>}
       </span>
     </button>
   );
+}
+/* What a work's unit economics still lack: the figures the ROI model and
+ * the Slack post to the project manager read per unit (price, the two
+ * profits, the deal's share, the frame profit when a frame is offered) and
+ * the volume the target is worked from. A work out of the release lacks
+ * nothing, since it counts nothing. */
+export function economicsGaps(p, { tl = false } = {}) {
+  if (!p || p.excluded) return [];
+  const gaps = [];
+  if (tl ? !(p.units_target > 0) : !(p.edition > 0)) gaps.push(tl ? "units target" : "edition");
+  if (!(p.unit_price > 0)) gaps.push("price");
+  if (p.artist_profit_per_unit === null || p.artist_profit_per_unit === undefined) gaps.push("artist profit");
+  if (p.aa_profit_per_unit === null || p.aa_profit_per_unit === undefined) gaps.push("AA profit");
+  if ((p.aa_profit_share === null || p.aa_profit_share === undefined) && (p.aa_revenue_share === null || p.aa_revenue_share === undefined)) gaps.push("profit or revenue share");
+  if (p.framing_available && (p.frame_profit_per_unit === null || p.frame_profit_per_unit === undefined)) gaps.push("frame profit");
+  return gaps;
+}
+/* The strip under the header when a work's unit economics are incomplete:
+ * one work named with what it lacks, several counted with the figures they
+ * lack by how many lack them. Open puts the first in the side panel. */
+export function economicsStrip(all_rows, onOpen) {
+  const rows = all_rows.filter((r) => !r.excluded);
+  const short = rows.filter((r) => r.gaps && r.gaps.length);
+  if (!short.length) return null;
+  const name = (r) => `${r.name}: ${r.gaps.join(", ")}`;
+  // several works: the figures by how many lack them, the ones every short work lacks first
+  const counts = new Map();
+  for (const r of short) for (const g of r.gaps) counts.set(g, (counts.get(g) || 0) + 1);
+  const all = [...counts].filter(([, c]) => c === short.length).map(([g]) => g);
+  const some = [...counts].filter(([, c]) => c < short.length).map(([g, c]) => `${c} lack the ${g}`);
+  const text = short.length === 1 ? `Unit economics incomplete on ${name(short[0])}` : `Unit economics incomplete on ${short.length === rows.length ? "every work" : `${short.length} of ${rows.length} works`}`;
+  const sx = short.length === 1 ? "The paid ROI and the post to the PM read these per unit"
+    : [all.length ? `${short.length === rows.length ? "All" : "Each"} lack${short.length === rows.length ? "" : "s"} ${all.join(", ")}` : "", ...some].filter(Boolean).join(" · ");
+  return { key: "econ", icon: <Warn />, text, sx, action: <button className="sbtn" onClick={() => onOpen(short[0].key)} title={`Put ${short[0].name}'s figures in the side panel to type them`}>Open{short.length > 1 ? " the first" : ""}</button> };
 }
 const FrameIc = () => <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#8a8a8e" strokeWidth="1.4" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="1" /><rect x="5" y="5" width="6" height="6" /></svg>;
 export function AddWorkButton({ onClick }) {

@@ -27,7 +27,7 @@ import { nameOf } from "./rows.mjs";
 import BasketPicker from "./BasketPicker.jsx";
 import {
   AddWorkButton, BasketIcon, BasketPill, BasketRow, CampaignsProp, CH, ChannelsPill, DateRow, EditRow, Group, HeadStatus, PickButton, Prop,
-  RadioPill, Section, Strip, StretchPill, SaveNote, SwitchRow, TeamGroup, TitleIcon, Val, WorkRow, cellText, clamp, fmtDate, fmtWhen, hoursShort,
+  RadioPill, Section, Strip, StretchPill, SaveNote, SwitchRow, TeamGroup, TitleIcon, Val, WorkRow, cellText, clamp, economicsGaps, economicsStrip, fmtDate, fmtWhen, hoursShort,
   hoursWords, median, memberRows, membersOf, norm, signed, useAutosave, useCandidates, useEconomicsItem, useIndexRows, useInputs, useSlackDoc, PCT,
 } from "./TargetsKit.jsx";
 import { resolveProducts, releaseEconomics } from "../../shared/economics.mjs";
@@ -36,7 +36,6 @@ import { similarMembers, THIN_MEMBERS } from "../../shared/basketRule.mjs";
 import "./targets.css";
 
 const CANDIDATES_URL = "/api/tl/baskets/candidates";
-const SIMILAR_NAME = "Similar size and shape";
 const LENGTHS = [["24", "24 hours"], ["48", "48 hours"], ["72", "3 days"], ["168", "7 days"]];
 const PAID_COST_MIN_MEMBERS = 3;   // etl/tl.py: a basket's cost medians need three launches with spend
 const typedKeys = (p) => Object.keys(p.sources || {}).filter((k) => k !== "currency" && k !== "line" && p.sources[k] === "typed");
@@ -203,7 +202,8 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
     || (spec && spec.kind === "ready" && (baskets.find((x) => x.id === spec.id) || {}).members) || null;
   const memberNames = pick ? pick.members : membersOf({ spec, built: builtMembers, rule: rule ? rule.members : [] });
   const members = useMemo(() => memberRows(memberNames, cands), [memberNames.join("|"), cands]);
-  const basketName = pick ? pick.name : (bm && bm.basket && bm.basket.name) || (spec && spec.name) || (spec && spec.kind === "bespoke" ? "Bespoke basket" : SIMILAR_NAME);
+  // the basket has no name: the pill says how many launches, and whether the suggestion was edited
+  const basketEdited = pick ? pick.kind === "bespoke" : !!(spec && spec.kind === "bespoke");
   // a pick's medians over the panel's rows (the ready basket's from the
   // page when the rows are not here); else the page's basket, read whole;
   // else a preview of the suggestion
@@ -294,7 +294,7 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
   });
   const onPick = (chosen) => {
     setPick(chosen);
-    setInp({ ...inp, benchmark_basket: chosen.kind === "bespoke" ? { kind: "bespoke", members: chosen.members, name: chosen.name } : { kind: "ready", id: chosen.id }, prefer_recent: chosen.preferRecent !== false });
+    setInp({ ...inp, benchmark_basket: chosen.kind === "bespoke" ? { kind: "bespoke", members: chosen.members } : { kind: "ready", id: chosen.id }, prefer_recent: chosen.preferRecent !== false });
     setRoute({ ...route, basket: false });
   };
 
@@ -324,7 +324,7 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
   const { artist, work } = nameOf({ releaseName: snap.releaseName, artist: snap.artist, title: snap.title });
   const title = `${work && work !== "Multiple" ? work : artist} targets`;
   const workRows = products.map((p, i) => ({ key: rowKey(p, i), name: p.name || "unnamed", target: p.units_target, edition: p.edition, price: p.unit_price_eur, framed: p.framing_available, excluded: p.excluded, manual: !p.airtable_id,
-    over: !!(p.units_target && p.edition && p.units_target > p.edition), tip: p.units_target ? `Units target ${fmt(p.units_target)}${p.edition ? ` of an edition of ${fmt(p.edition)}` : ""}` : "No units target: Airtable holds none for this work" }));
+    gaps: economicsGaps(p, { tl: true }), over: !!(p.units_target && p.edition && p.units_target > p.edition), tip: p.units_target ? `Units target ${fmt(p.units_target)}${p.edition ? ` of an edition of ${fmt(p.edition)}` : ""}` : "No units target: Airtable holds none for this work" }));
   const selP = sel !== null ? products.find((p, i) => rowKey(p, i) === sel) : null;
   const openRelease = (name) => { const r = index.find((x) => x.releaseName === name); return r ? () => setRoute({ view: "release", id: r.id, tab: "overview", basket: false }) : null; };
   const pct1 = (v) => (v === null || v === undefined || v === "" ? "" : String(Math.round(Number(v) * 1000) / 10));
@@ -345,6 +345,8 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
   else if (meta.creating && !auto.dirty) strips.push({ key: "creating", icon: <Ring />, text: "Timed launch on Airtable's target and the suggested basket", sx: `${sd.dates_note || dv.dates_note || "Check the dates and the campaigns"}; the first change here makes the targets yours` });
   if (releaseUnits) strips.push({ key: "units", icon: <Ring />, text: `A units target of ${fmt(releaseUnits)} is typed for the launch as a whole`, sx: airtableUnits ? `It stands over the works' ${fmt(airtableUnits)}` : "It stands over the works' targets", action: <button className="sbtn" onClick={() => setInp({ ...inp, units_target: null })} title="Drop the launch-level target: the works' targets carry it.">Use the works' targets</button> });
   if (slack.state.state === "failed" || slack.state.state === "warn") strips.push({ key: "slack", icon: <Warn />, text: slack.state.state === "failed" ? "The Slack channel was not saved" : "Slack channel saved, but not for long", sx: slack.state.error });
+  // a work whose unit economics are incomplete: the figures the paid ROI reads per unit
+  { const es = economicsStrip(workRows, (key) => setSel(key)); if (es) strips.push(es); }
 
   const workField = (p, r) => {
     if (closedFor(p, r.key)) return <Prop key={r.key} label={r.label} tip={r.key === "aa_revenue_share" ? "Closed: this work has an AA profit share." : "Closed: this work has an AA revenue share."}><span className="val ro"><span className="ic">{r.glyph}</span><span className="dim">–</span></span></Prop>;
@@ -363,7 +365,7 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
             <TitleIcon />
             <h1>{title}</h1>
             <div className="tpills">
-              <BasketPill name={basketName} n={members.length || (bm && bm.basket ? bm.basket.n : 0)} onClick={() => setRoute({ ...route, basket: true })} />
+              <BasketPill n={members.length || (bm && bm.basket ? bm.basket.n : 0)} edited={basketEdited} onClick={() => setRoute({ ...route, basket: true })} />
               <ChannelsPill off={off} setOff={setOff} />
               <StretchPill mode={stretchMode} onMode={onStretchMode} shares={shares} active={activeGroups} paidOff={paidOff} disabled={!profile} unitWord="signups"
                 onSlide={(key, v) => setInp({ ...inp, stretch_from: rebalanceShares(shares, key, v, activeGroups) })} stretchOf={stretchOf} />
@@ -376,7 +378,7 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
               {!products.length && <div className="empty-note">No works yet: Airtable has no record matched to this launch{at.note ? ` (${at.note})` : ""}. Add one by hand with the plus.</div>}
             </Section>
 
-            <Section title={basketName} icon={<BasketIcon />} count={members.length} aria="Basket"
+            <Section title="Basket" icon={<BasketIcon />} count={members.length} aria="Basket"
               lozes={profile ? <><Loz kind="ind" tip="The basket's median units their windows sold">{fmt(profile.units)} units</Loz><Loz tip="The basket's median signups before their windows opened">{fmt(profile.signups)} signups</Loz></> : null}
               action={<PickButton onClick={() => setRoute({ ...route, basket: true })} />}>
               {members.slice().sort((x, y) => (y.units || 0) - (x.units || 0)).map((r) => <BasketRow key={r.release_name} r={{ ...r, unitsTip: "Units its window sold" }} onOpen={openRelease(r.release_name)}

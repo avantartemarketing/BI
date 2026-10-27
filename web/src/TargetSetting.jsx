@@ -33,8 +33,8 @@ import { nameOf } from "./rows.mjs";
 import BasketPicker from "./BasketPicker.jsx";
 import {
   AddWorkButton, BasketIcon, BasketPill, BasketRow, CampaignsProp, CH, ChannelsPill, DateRow, EditRow, Group, HeadStatus, PickButton,
-  Prop, Section, Strip, StretchPill, SaveNote, SwitchRow, TeamGroup, TitleIcon, Val, WorkRow, cellText, clamp, fmtDate, liveProfile, memberRows, membersOf, norm,
-  signed, useAutosave, useCandidates, useEconomicsItem, useIndexRows, useInputs, useSlackDoc, PCT,
+  Prop, Section, Strip, StretchPill, SaveNote, SwitchRow, TeamGroup, TitleIcon, Val, WorkRow, cellText, clamp, economicsGaps, economicsStrip, fmtDate, liveProfile,
+  memberRows, membersOf, norm, signed, useAutosave, useCandidates, useEconomicsItem, useIndexRows, useInputs, useSlackDoc, PCT,
 } from "./TargetsKit.jsx";
 import { resolveProducts, releaseEconomics, releaseLines, LEGACY_KEYS } from "../../shared/economics.mjs";
 import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf, rebalanceShares, stretchWeights } from "../../shared/benchmarkModel.mjs";
@@ -42,7 +42,6 @@ import { similarMembers } from "../../shared/basketRule.mjs";
 import "./targets.css";
 
 const CANDIDATES_URL = "/api/baskets/candidates";
-const SIMILAR_NAME = "Similar size and shape";   // etl/baskets.py SIMILAR_NAME: the basket with id similar_size
 const typedKeys = (p) => Object.keys(p.sources || {}).filter((k) => k !== "currency" && k !== "line" && p.sources[k] === "typed");
 
 /* Inputs saved under earlier shapes: the Referral Artist row of the retired
@@ -164,7 +163,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
   const builtMembers = (bm && bm.basket && Array.isArray(bm.basket.members) && bm.basket.members) || (bm && Array.isArray(bm.members) ? bm.members.map((m) => m.name || m.release_name) : null);
   const memberNames = pick ? pick.members : membersOf({ spec, built: builtMembers, rule: rule ? rule.members : [] });
   const members = useMemo(() => memberRows(memberNames, cands), [memberNames.join("|"), cands]);
-  const basketName = pick ? pick.name : (bm && bm.basket && bm.basket.name) || (spec && spec.name) || (spec && spec.kind === "bespoke" ? "Bespoke basket" : SIMILAR_NAME);
+  // the basket has no name: the pill says how many launches, and whether the suggestion was edited
+  const basketEdited = pick ? pick.kind === "bespoke" : !!(spec && spec.kind === "bespoke");
   // the basket's profile: the pick's preview, else the page's medians read
   // without the channels set aside, else a preview of the suggestion
   const prof = pick && pick.profile ? pick.profile : bm ? profileOf(bm) : members.length ? liveProfile(members) : null;
@@ -270,7 +270,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
     }
     return next;
   });
-  const basketSpecOf = (chosen) => (chosen.kind === "bespoke" ? { kind: "bespoke", members: chosen.members, name: chosen.name } : { kind: chosen.kind, id: chosen.id });
+  const basketSpecOf = (chosen) => (chosen.kind === "bespoke" ? { kind: "bespoke", members: chosen.members } : { kind: chosen.kind, id: chosen.id });
   const onPick = (chosen) => {
     setPick(chosen);
     // the picker's recency switch is a release input: the rule reads it on every rebuild
@@ -330,9 +330,9 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
     const lcpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : lprof && Number(lprof.cost_per_purchase) > 0 ? Number(lprof.cost_per_purchase) : panelCpp;
     const lT = lprof && lprof.units > 0 ? benchmarkTargets(lprof, { edition_size: ln.edition_size, unit_price: ln.unit_price || 0, cost_per_purchase: lcpp, units_per_buyer: 0, entry_conversion_rate: inp.entry_conversion_rate, stretch_from: settings.stretch_from || null }, b) : null;
     const summary = (snap.lines || []).find((x) => x.key === ln.key) || null;
-    const name = picked ? picked.name : lbm && lbm.basket ? lbm.basket.name : settings.benchmark_basket && settings.benchmark_basket.name ? settings.benchmark_basket.name : SIMILAR_NAME;
+    const edited = picked ? picked.kind === "bespoke" : !!(settings.benchmark_basket && settings.benchmark_basket.kind === "bespoke");
     const n = picked ? (picked.members || []).length : lbm && lbm.basket ? lbm.basket.n : null;
-    return { line: ln, settings, profile: lprof, T: lT, k: lprof && lprof.units > 0 ? ln.edition_size / lprof.units : null, basketName: name, basketN: n, summary, cpp: lcpp };
+    return { line: ln, settings, profile: lprof, T: lT, k: lprof && lprof.units > 0 ? ln.edition_size / lprof.units : null, basketEdited: edited, basketN: n, summary, cpp: lcpp };
   });
   const knownAdsets = (meta.meta_campaigns || []).filter((c) => (inp.campaign_names || []).includes(c.name)).flatMap((c) => (c.adsets || []).map((a) => ({ ...a, campaign: c.name })));
   const pickingRow = pickingLine ? lineRows.find((r) => r.line.key === pickingLine) : null;
@@ -357,7 +357,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
   const { artist, work } = nameOf({ releaseName: snap.releaseName, artist: snap.artist, title: snap.title });
   const title = `${work && work !== "Multiple" ? work : artist} targets`;
   const workRows = products.map((p, i) => ({ key: rowKey(p, i), name: p.name || "unnamed", target: p.edition ? p.target_units : null, edition: p.edition, price: p.unit_price_eur, framed: p.framing_available, excluded: p.excluded, manual: !p.airtable_id, over: false,
-    tip: p.edition ? `Target ${fmt(p.target_units)} of the edition of ${fmt(p.edition)}: ${Math.round(100 * p.target_sellthrough)}% sell-through` : "No edition yet" }));
+    // the works' figures carry nothing while the release-level ones are in force: nothing is missing from them yet
+    gaps: inp.legacy_economics ? [] : economicsGaps(p), tip: p.edition ? `Target ${fmt(p.target_units)} of the edition of ${fmt(p.edition)}: ${Math.round(100 * p.target_sellthrough)}% sell-through` : "No edition yet" }));
+  // a work whose unit economics are incomplete: the figures the paid ROI reads per unit
+  { const es = economicsStrip(workRows, (key) => { setSel(key); setSelLine(null); }); if (es) strips.push(es); }
   const selP = sel !== null ? products.find((p, i) => rowKey(p, i) === sel) : null;
   const selLineRow = selLine ? lineRows.find((r) => r.line.key === selLine) : null;
   const openRelease = (name) => { const r = index.find((x) => x.releaseName === name); return r ? () => setRoute({ view: "release", id: r.id, tab: "overview", basket: false }) : null; };
@@ -385,7 +388,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
             <TitleIcon />
             <h1>{title}</h1>
             <div className="tpills">
-              <BasketPill name={basketName} n={members.length || (bm && bm.basket ? bm.basket.n : 0)} onClick={() => { setPickingLine(null); setRoute({ ...route, basket: true }); }} />
+              <BasketPill n={members.length || (bm && bm.basket ? bm.basket.n : 0)} edited={basketEdited} onClick={() => { setPickingLine(null); setRoute({ ...route, basket: true }); }} />
               <ChannelsPill off={off} setOff={setOff} />
               {!lineRows.length && <StretchPill mode={stretchMode} onMode={onStretchMode} shares={shares} active={activeGroups} paidOff={paidOff} disabled={!profile}
                 onSlide={(key, v) => setInp({ ...inp, stretch_from: rebalanceShares(shares, key, v, activeGroups) })} stretchOf={stretchOf} />}
@@ -403,7 +406,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
                     <Lines /><span className="nm">{r.settings.name || r.line.name}</span><span className="sub">{r.line.productNames.length} work{r.line.productNames.length === 1 ? "" : "s"}</span>
                     <span className="meta">
                       <Loz tip="Its target">{fmt(r.line.edition_size)} units</Loz>
-                      <Loz kind="ghost" tip="Its basket">{r.basketName}{r.basketN ? ` ${r.basketN}` : ""}</Loz>
+                      <Loz kind="ghost" tip={r.basketEdited ? "Its basket, edited from the suggestion" : "Its basket, the suggested launches"}>{r.basketN ? `${r.basketN} launches` : "Basket"}{r.basketEdited ? " · edited" : ""}</Loz>
                       {r.k && <Loz kind="ind" tip="Its uplift over its basket's median">×{fmt(r.k, 2)}</Loz>}
                     </span>
                   </button>
@@ -411,7 +414,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
               </Section>
             )}
 
-            <Section title={basketName} icon={<BasketIcon />}
+            <Section title="Basket" icon={<BasketIcon />}
               count={members.length} aria="Basket"
               lozes={bmUnits ? <Loz kind="ind" tip={`The basket's median units of demand, the channels not in plan set aside: the benchmark${k ? `, ×${fmt(k, 2)} to the target` : ""}`}>{fmt(Math.round(bmUnits * 10) / 10, bmUnits < 100 ? 1 : 0)} units</Loz> : null}
               action={<PickButton onClick={() => { setPickingLine(null); setRoute({ ...route, basket: true }); }} />}>
@@ -453,7 +456,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
               <EditRow id="ln-name" label="Name" text value={selLineRow.settings.name || ""} placeholder={selLineRow.line.name} tag={selLineRow.line.code || ""} tip="The line's name on the page. Blank: the words its works' titles share, else its Airtable release code." onCommit={(raw) => setLine(selLineRow.line.key, { name: raw })} />
               <Prop label="Target" tip="Its works' editions at their target sell-through"><Val ic={<Target />}>{fmt(selLineRow.line.edition_size)} units{selLineRow.line.unit_price ? ` at ${fmtMoney(selLineRow.line.unit_price, 0)}` : ""}</Val></Prop>
               <Prop label="Basket" tip="The launches this line is benchmarked against: those whose demand is nearest its own size, at a price nearest its own, the artist's own first.">
-                <button className="chipb" onClick={() => { setPickingLine(selLineRow.line.key); setRoute({ ...route, basket: true }); }}>{selLineRow.basketName}{selLineRow.basketN ? <span className="tag">{selLineRow.basketN} launches</span> : null}</button>
+                <button className="chipb" onClick={() => { setPickingLine(selLineRow.line.key); setRoute({ ...route, basket: true }); }}>{selLineRow.basketN ? `${selLineRow.basketN} launches` : "Basket"}<span className="tag">{selLineRow.basketEdited ? "Edited" : "Suggested"}</span></button>
               </Prop>
               {selLineRow.profile && <Prop label="Benchmark"><Val ic={<Bmk />}>{fmt(selLineRow.profile.units)} units{selLineRow.k ? ` · ×${fmt(selLineRow.k, 2)}` : ""}</Val></Prop>}
               <Prop label="Stretch" tip="How this line's gap to its basket's median is shared out across the channels.">
