@@ -56,6 +56,19 @@ check(!/order_id,|customer_id,|aa_account_id/.test(units.slice(units.lastIndexOf
 check(!/user_email|customer_email/.test(units), "no address column is named in the units query");
 check(bq.UNITS_PAID_HEADER.join(",") === "release,product_title,order_date,channel,purchase_event,units_paid,units_private_room,prints_offered_paid,frames_paid", "the units file's columns");
 check(path.dirname(bq.UNITS_PAID) === path.dirname(bq.ORDERS_BY_PRODUCT), "the units file lives beside orders_by_product.csv, from the same pull");
+// the orders-by-country feed (28 October 2026): the same paid lines by the
+// country the order ships to, else is billed to - counts per release and
+// country, no street, city, id or address column
+const byCountry = bq.unitsByCountrySql();
+check(byCountry.startsWith("WITH " + bq.orderLinesCtes()), "units by country shares the line rules too");
+check(/COALESCE\(NULLIF\(TRIM\(shopify_order_shipping_address_country\), ''\), NULLIF\(TRIM\(shopify_order_billing_address_country\), ''\)\) AS country/.test(bq.orderLinesCtes()),
+  "a line's country is where the order ships, else where it is billed");
+check(/WHERE l\.paid AND l\.order_date IS NOT NULL/.test(byCountry) && /SUM\(l\.quantity\) AS units_paid, COUNT\(DISTINCT l\.order_id\) AS orders/.test(byCountry)
+  && /GROUP BY l\.release, country/.test(byCountry), "units by country counts the paid lines and their orders per release and country");
+check(!/city|province|address1|address2|zip|customer_id,|aa_account_id/.test(byCountry.slice(byCountry.lastIndexOf("SELECT l.release"))) && !/user_email|customer_email/.test(byCountry),
+  "the select list carries the country alone, no finer address and no id");
+check(bq.UNITS_BY_COUNTRY_HEADER.join(",") === "release,country,units_paid,orders", "the country file's columns");
+check(path.dirname(bq.UNITS_BY_COUNTRY) === path.dirname(bq.UNITS_PAID), "the country file lives beside the units file, from the same pull");
 // one name per product (docs/DATA_MODEL.md 2.4): each Shopify product goes by
 // the title on its latest line, so a renamed work, if only in its capitals,
 // is one product; two products under one title stay one (a private-room

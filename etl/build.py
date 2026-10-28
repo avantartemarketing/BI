@@ -2709,6 +2709,75 @@ def load_units_feed() -> dict | None:
     return feed or None
 
 
+UNITS_BY_COUNTRY_FILE = DATA / "units_by_country.csv"
+_COUNTRY_FEED: dict | None = None
+# the ISO codes the orders carry, in the names the card prints
+COUNTRY_NAMES = {
+    "GB": "United Kingdom", "US": "United States", "DE": "Germany", "NL": "Netherlands", "FR": "France", "CH": "Switzerland",
+    "BE": "Belgium", "IT": "Italy", "ES": "Spain", "AT": "Austria", "SE": "Sweden", "DK": "Denmark", "NO": "Norway", "FI": "Finland",
+    "IE": "Ireland", "PT": "Portugal", "PL": "Poland", "CZ": "Czechia", "LU": "Luxembourg", "GR": "Greece", "HU": "Hungary",
+    "CA": "Canada", "MX": "Mexico", "BR": "Brazil", "AR": "Argentina", "CL": "Chile", "CO": "Colombia",
+    "AU": "Australia", "NZ": "New Zealand", "JP": "Japan", "KR": "South Korea", "CN": "China", "HK": "Hong Kong", "TW": "Taiwan",
+    "SG": "Singapore", "MY": "Malaysia", "TH": "Thailand", "ID": "Indonesia", "PH": "Philippines", "VN": "Vietnam", "IN": "India",
+    "AE": "United Arab Emirates", "SA": "Saudi Arabia", "QA": "Qatar", "IL": "Israel", "TR": "Turkey", "ZA": "South Africa",
+    "RU": "Russia", "UA": "Ukraine", "RO": "Romania", "BG": "Bulgaria", "HR": "Croatia", "SI": "Slovenia", "SK": "Slovakia",
+    "LT": "Lithuania", "LV": "Latvia", "EE": "Estonia", "IS": "Iceland", "MT": "Malta", "CY": "Cyprus", "MC": "Monaco",
+    "LI": "Liechtenstein", "PR": "Puerto Rico", "KY": "Cayman Islands", "BM": "Bermuda", "BS": "Bahamas", "JE": "Jersey",
+    "GG": "Guernsey", "IM": "Isle of Man", "GI": "Gibraltar", "AD": "Andorra", "MA": "Morocco", "EG": "Egypt", "NG": "Nigeria",
+    "KE": "Kenya", "PE": "Peru", "UY": "Uruguay", "CR": "Costa Rica", "PA": "Panama", "DO": "Dominican Republic",
+}
+
+
+def load_units_by_country() -> dict:
+    """data/units_by_country.csv, per release: the units paid and the orders
+    they came on by the country the order ships to (server/bigquery.js
+    unitsByCountrySql; counts only). Empty when the file is missing."""
+    global _COUNTRY_FEED
+    if _COUNTRY_FEED is None:
+        feed: dict = {}
+        p = UNITS_BY_COUNTRY_FILE
+        if p.exists():
+            try:
+                df = pd.read_csv(p, dtype={"release": str, "country": str})
+                df = df[df["release"].notna()].copy()
+                df["units"] = pd.to_numeric(df["units_paid"], errors="coerce").fillna(0.0)
+                df["orders"] = pd.to_numeric(df["orders"], errors="coerce").fillna(0.0)
+                df["country"] = df["country"].fillna("").astype(str).str.strip()
+                for name, g in df.groupby("release"):
+                    feed[name] = [{"code": r.country or None, "units": float(r.units), "orders": float(r.orders)}
+                                  for r in g.itertuples(index=False)]
+            except Exception as e:  # noqa: BLE001
+                print(f"warning: ignoring {p.name}: {e} - no orders by country")
+        _COUNTRY_FEED = feed
+    return _COUNTRY_FEED
+
+
+def geo_block(name: str) -> dict | None:
+    """The Orders by country card's block: units paid and orders by the
+    country the order ships to, named, largest first; the orders without a
+    country as one row at the end. None when the feed has nothing for the
+    release."""
+    rows = load_units_by_country().get(name)
+    if not rows:
+        return None
+    named: dict[str, dict] = {}
+    for r in rows:
+        if r["units"] <= 0:
+            continue
+        raw_c = (r["code"] or "").strip()
+        # the feed carries full names; a two-letter code is named from the table
+        label = (COUNTRY_NAMES.get(raw_c.upper(), raw_c) if len(raw_c) == 2 else raw_c) if raw_c else "Unknown"
+        d = named.setdefault(label, {"country": label, "code": raw_c.upper() if len(raw_c) == 2 else None, "units": 0.0, "orders": 0.0})
+        d["units"] += r["units"]; d["orders"] += r["orders"]
+    out = sorted(named.values(), key=lambda d: (d["country"] == "Unknown", -d["units"], d["country"]))
+    if not out:
+        return None
+    for d in out:
+        d["units"], d["orders"] = round(d["units"], 1), round(d["orders"])
+    return {"unit": "units", "rows": out, "total": round(sum(d["units"] for d in out), 1),
+            "orders": round(sum(d["orders"] for d in out)), "source": "orders"}
+
+
 def units_rows(name: str) -> pd.DataFrame | None:
     """The release's rows in the units feed; an empty frame for a release the
     orders feed knows (by its products or drafts) with nothing paid, which is
@@ -5579,7 +5648,7 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
         "email": email_out, "social": social_out,
         "sellthrough": sellthrough,
         "framing": framing_block(rec, of_win, None, b, st=sellthrough),
-        "draw": None, "geo": None, "waterfall": None,
+        "draw": None, "geo": geo_block(rec["release_name"]), "waterfall": None,
         "totals": {"sessions": round(float(upto["Sessions_Total"].sum())), "units": round(units_sold),
                    "entries": round(float(upto["Draw_Entries_Eligible_Units"].sum()))},
         "benchmarks": {"chargeDropOff": 1 - e2o, "cannibalisation": b["cannibalisation"], "targetBuffer": b["target_buffer"],
@@ -7325,7 +7394,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # frames per print, against the plan's rate and the basket's (§6.4)
         "framing": framing_block(release, of_win, basket, b, st=sellthrough),
         "draw": draw,
-        "geo": None,  # country dim not in any feed yet (docs §12)
+        "geo": geo_block(name),   # units paid by the country the order ships to (Orders by country)
         "waterfall": waterfall,
         "benchmarks": {
             "chargeDropOff": round(1 - entry_rate(release), 4),

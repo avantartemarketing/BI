@@ -783,7 +783,7 @@ production model has to serve. Everything else in a table is never selected.
 | `LE_Funnel_Report` | `server/bigquery.js` (orders and units feeds: the live entries behind a person's draft, §2.4) | event_name, simple_release_name, aa_account_id, draw_id, draw_with_purchase, draw_entry_eligible, winner, event_date | `data/orders_by_product.csv`, `data/units_paid.csv` (only through which drafts count; aggregates only) |
 | `Collector_Concept` | `server/bigquery.js` (the same link, account to Shopify customer) | aa_account_id, shopify_customer_id | `data/orders_by_product.csv`, `data/units_paid.csv` (joined inside BigQuery; no column of it leaves) |
 | `meta_ads_insights_export` | `server/bigquery.js` (spend feed) | campaign_name, spend_date, impressions, reach, link_clicks, spend | `data/spend_daily.csv`: paid spend by campaign × day |
-| `Order_Line_Concept` | `server/bigquery.js` (orders feed, §2.4) | simple_release_name, release_name, product_title, shopify_product_id, sku, quantity, order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_product_variant_price, shopify_product_type, is_test_order, launch_date, shopify_order_created_date_CET, shopify_draft_order_created_at, shopify_order_id, order_lineitem_id, refund_processed_at, customer_id, framing_offered, shopify_order_facilitator, shopify_order_tags (the last four joined and filtered on inside BigQuery; none leaves) | `data/orders_by_product.csv`, `data/draw_products.csv`, `data/units_paid.csv` |
+| `Order_Line_Concept` | `server/bigquery.js` (orders feed, §2.4) | simple_release_name, release_name, product_title, shopify_product_id, sku, quantity, order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_product_variant_price, shopify_product_type, is_test_order, launch_date, shopify_order_created_date_CET, shopify_draft_order_created_at, shopify_order_id, order_lineitem_id, refund_processed_at, customer_id, framing_offered, shopify_order_facilitator, shopify_order_tags (the last four joined and filtered on inside BigQuery; none leaves) | `data/orders_by_product.csv`, `data/draw_products.csv`, `data/units_paid.csv`, `data/units_by_country.csv` (units paid and orders per release by the country the order ships to, else is billed to; since 28 October 2026) |
 
 Granted and profiled, not yet read: `Order_Concept` (order level: basket size and items,
 first-time buyer, totals, country - units per buyer and buyer mix per release),
@@ -2345,7 +2345,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Paid ROI | series | §7 daily ROI (AA); decline model start = today's ROI |
 | Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), paced by the spend rules, `cap` naming the rule that bound it; Implement → append-only decision log |
 | Sell-through by product | rows | §6.3: per product sold / entries in hand allocated by the maximum-quantity rule × the entry → order rate / (at close) units still to come, against the product's edition; no target or benchmark drawn |
-| Entries by country | top 5 | geo split of entries (requires country dim in the daily feed - **currently missing; needs adding to the BigQuery export**) |
+| Orders by country | top 5 | units paid by the country the order ships to, from the orders feed (`data/units_by_country.csv`, since 28 October 2026); entries by country would need `Collector_Concept` |
 | Framing | buyers, entrants | §6.4: frames per print on the prints a frame was on offer for, paid orders and the app's pre-authorisation drafts; no plan or benchmark on the card |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
 
@@ -2648,8 +2648,11 @@ The four that were live arguments, recorded so they are not relitigated from the
 
 ## 12. Open items (need product/user decisions)
 
-- **Country dimension** for "Entries by country": not present in any current feed; add
-  geo to the BigQuery funnel export.
+- **Country dimension**: orders by country are on the page since 28 October 2026
+  (`data/units_by_country.csv`, the units paid by the country the order ships to, counted on the
+  orders feed's paid lines inside BigQuery; `geo` on the snapshot, the Orders by country card).
+  Entries by country would come the same way from `Collector_Concept`, which carries the
+  collector's country; not read yet.
 - **Per-channel trajectory curves** stabilise as clean completed releases accrue (currently 18);
   until n is sufficient per channel, fall back to the all-channel curve.
 - Whether the "Paid" display channel is a separate lens vs AA Meta (design mock conflates them;

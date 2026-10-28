@@ -33,6 +33,8 @@ etl/                    Python pipeline
                           tier_curve_probe.py, release_clusters.py - the baskets of comparables,
                           price_probe.py - whether price belongs in the basket; it does)
 data/
+  units_by_country.csv    units paid per release by the country the order ships to (counts
+                          only; the Orders by country card), pulled with the orders pair
   spend_daily.csv         extracted spend facts: Meta's spend, in euros, the page's currency
   content_posts.csv       extracted content facts (manual Emplifi export; see below)
   notion_posts.csv        posts by release, date and channel, from the Notion log (live)

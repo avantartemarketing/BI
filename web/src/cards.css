@@ -57,3 +57,9 @@
 .lvl-w { color: var(--faint); font-weight: 400; margin-left: 4px; }
 .recrow .lvl-w { color: var(--ind-deep); font-weight: 500; }
 .pctw { display: inline-block; min-width: 34px; text-align: right; margin-left: 8px; color: var(--faint); font-size: 12px; font-weight: 400; }
+
+/* The Overview's section headings (28 October 2026): a quiet label across
+ * both columns, a little air above it, so the page reads as the outcome,
+ * the channels and the funnel, and paid. */
+.sect { font-size: 11.5px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); padding: 8px 2px 0; }
+.grid2 > .sect:first-child { padding-top: 0; }

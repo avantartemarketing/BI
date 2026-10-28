@@ -91,6 +91,8 @@ const DRAW_PRODUCTS = path.join(ROOT, "data", "draw_products.csv");
 // the other two, written in the same commit, so a deploy's committed copy
 // resets all three together (etl/build.py checks they are from one pull)
 const UNITS_PAID = path.join(ROOT, "data", "units_paid.csv");
+// units paid per release x country the order ships to (unitsByCountrySql)
+const UNITS_BY_COUNTRY = path.join(ROOT, "data", "units_by_country.csv");
 // claims a draw round has made that the order table has not caught up with
 // (drawClaimsSql); written with the orders files, never committed (a claims
 // file from another moment than the orders would count a sale twice)
@@ -483,6 +485,9 @@ const orderLinesCtes = () =>
   "    TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), shopify_draft_order_created_at, HOUR) AS draft_age_hours,\n" +
   "    COALESCE(shopify_order_facilitator, '') AS facilitator,\n" +
   "    REGEXP_CONTAINS(UPPER(COALESCE(sku, '')), r'-DRAW$') AS draw_sku,\n" +
+  // where the order ships, else where it is billed: the country alone, for
+  // the orders-by-country count (unitsByCountrySql); never a street or a city
+  "    COALESCE(NULLIF(TRIM(shopify_order_shipping_address_country), ''), NULLIF(TRIM(shopify_order_billing_address_country), '')) AS country,\n" +
   // refund_id is carried on every line of an order that has a refund, so it
   // cannot say which line came back: a partly refunded order (nearly always
   // a frame or the shipping refunded, the piece kept) stays paid, and only an
@@ -692,6 +697,26 @@ const unitsPaidSql = () => {
     "ORDER BY l.release, l.product_title, l.order_date, channel";
   for (const f of FORBIDDEN_COLUMNS) {
     if (sql.toLowerCase().includes(f)) throw new Error(`units query must not mention ${f}`);
+  }
+  return sql;
+};
+
+/* units_by_country.csv: the units paid per release by the country the order
+ * ships to (else is billed to), with the orders they came on - the Orders by
+ * country card (28 October 2026). The same paid lines as units_paid.csv, so
+ * a release's units here add up to its units paid there. Counts per release
+ * and country only: no order, customer or address leaves BigQuery. */
+const UNITS_BY_COUNTRY_HEADER = ["release", "country", "units_paid", "orders"];
+const unitsByCountrySql = () => {
+  const sql = "WITH " + orderLinesCtes() + "\n" +
+    "SELECT l.release, COALESCE(l.country, '') AS country,\n" +
+    "  SUM(l.quantity) AS units_paid, COUNT(DISTINCT l.order_id) AS orders\n" +
+    "FROM typed l\n" +
+    "WHERE l.paid AND l.order_date IS NOT NULL\n" +
+    "GROUP BY l.release, country\n" +
+    "ORDER BY l.release, units_paid DESC, country";
+  for (const f of FORBIDDEN_COLUMNS) {
+    if (sql.toLowerCase().includes(f)) throw new Error(`units by country query must not mention ${f}`);
   }
   return sql;
 };
@@ -1632,6 +1657,7 @@ async function pull({ write = true, full = false, events = true, only = null } =
     ordersNote = "orders skipped (BQ_ORDERS=off)";
   } else {
     const t1 = new Tmp(ORDERS_BY_PRODUCT, write), t2 = new Tmp(DRAW_PRODUCTS, write), t3 = new Tmp(UNITS_PAID, write);
+    const t5 = new Tmp(UNITS_BY_COUNTRY, write);
     try {
       const a = await streamTable(token, ordersSql(), SINCE, passthroughWriter(ORDERS_HEADER, "orders"), t1);
       if (a.rows < 10) throw new Error(`orders query returned ${a.rows} rows - not overwriting`);
@@ -1642,6 +1668,9 @@ async function pull({ write = true, full = false, events = true, only = null } =
       const c = await streamTable(token, unitsPaidSql(), SINCE, passthroughWriter(UNITS_PAID_HEADER, "units paid"), t3);
       if (c.rows < 10) throw new Error(`units paid query returned ${c.rows} rows - not overwriting`);
       guardShrink("units paid query", c.rows, UNITS_PAID);
+      // the same paid lines by the country they ship to, written with them
+      const g = await streamTable(token, unitsByCountrySql(), SINCE, passthroughWriter(UNITS_BY_COUNTRY_HEADER, "units by country"), t5);
+      if (g.rows < 10) throw new Error(`units by country query returned ${g.rows} rows - not overwriting`);
       // the claims still landing, from the same moment as the orders: a file
       // from another moment would count a sale twice, so when its query fails
       // the file is written empty (no claims) rather than kept
@@ -1655,13 +1684,13 @@ async function pull({ write = true, full = false, events = true, only = null } =
         claimsNote = ` (claims in flight unavailable, none counted: ${String(e.message || e).replace(/\s+/g, " ").slice(0, 100)})`;
       }
       if (write) {
-        t1.commit(ORDERS_BY_PRODUCT); t2.commit(DRAW_PRODUCTS); t3.commit(UNITS_PAID);
+        t1.commit(ORDERS_BY_PRODUCT); t2.commit(DRAW_PRODUCTS); t3.commit(UNITS_PAID); t5.commit(UNITS_BY_COUNTRY);
         if (claimsNote) fs.writeFileSync(DRAW_CLAIMS, DRAW_CLAIMS_HEADER.join(",") + "\n"); else t4.commit(DRAW_CLAIMS);
-      } else { t1.discard(); t2.discard(); t3.discard(); t4.discard(); }
-      orders = { rows: a.rows, draws: b.rows, units: c.rows, claims, bytes: a.bytes + b.bytes + c.bytes, cached: a.cached && b.cached && c.cached };
-      ordersNote = `orders ${a.rows} products, ${b.rows} draws named, ${c.rows} unit rows by day and channel, ${claims} draw(s) with claims in flight${claimsNote}`;
+      } else { t1.discard(); t2.discard(); t3.discard(); t4.discard(); t5.discard(); }
+      orders = { rows: a.rows, draws: b.rows, units: c.rows, countries: g.rows, claims, bytes: a.bytes + b.bytes + c.bytes + g.bytes, cached: a.cached && b.cached && c.cached && g.cached };
+      ordersNote = `orders ${a.rows} products, ${b.rows} draws named, ${c.rows} unit rows by day and channel, ${g.rows} by country, ${claims} draw(s) with claims in flight${claimsNote}`;
     } catch (e) {
-      t1.discard(); t2.discard(); t3.discard();
+      t1.discard(); t2.discard(); t3.discard(); t5.discard();
       ordersNote = `orders unavailable, keeping the last files (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`;
     }
   }
@@ -1796,6 +1825,7 @@ module.exports = {
   SOURCES, ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
   DRAW_CLAIMS, DRAW_CLAIMS_HEADER, drawClaimsSql,
   UNITS_PAID, UNITS_PAID_HEADER, unitsPaidSql, orderLinesCtes,
+  UNITS_BY_COUNTRY, UNITS_BY_COUNTRY_HEADER, unitsByCountrySql,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,
   LE_BROWSING, BROWSING_META, BROWSING_HEADER, browsingSql, browsingWriter, pullIncremental, FUNNEL_FEED, BROWSING_FEED,
   LE_PAGES, PAGES_META, PAGES_HEADER, PAGES_COUNTS, pagesSql, pagesNamesSql, pagesWriter, PAGES_FEED,
@@ -1840,7 +1870,7 @@ if (require.main === module) {
     const out = await pull({ write, full, only });
     console.log(out.summary);
     const wrote = [out.funnelRows !== null && ACROSS_TIME, out.spendRows !== null && SPEND_DAILY,
-                   out.ordersRows !== null && `${ORDERS_BY_PRODUCT} + ${DRAW_PRODUCTS} + ${UNITS_PAID}`,
+                   out.ordersRows !== null && `${ORDERS_BY_PRODUCT} + ${DRAW_PRODUCTS} + ${UNITS_PAID} + ${UNITS_BY_COUNTRY}`,
                    out.eventsRows !== null && LE_EVENTS, out.browsingRows !== null && LE_BROWSING,
                    out.pagesRows !== null && LE_PAGES,
                    out.tlRows !== null && `${TL_EVENTS} + ${TL_BROWSING} + ${TL_UNITS} + ${TL_BUYERS} + ${TL_SIGNUP_PRODUCTS}`].filter(Boolean);
