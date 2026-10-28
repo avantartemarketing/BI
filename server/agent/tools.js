@@ -671,8 +671,8 @@ const TOOL_DEFS = [
       type: "object",
       properties: {
         type: { type: "string", enum: ["line", "bar", "stacked_bar", "hbar", "scatter"] },
-        title: { type: "string" },
-        subtitle: { type: "string", description: "Unit and window, e.g. \"Units paid per day, 3-30 Sep 2026\"" },
+        title: { type: "string", description: "Plain words, e.g. \"Units sold each day\"" },
+        subtitle: { type: "string", description: "Unit and dates, e.g. \"Units, 3-30 Sep 2026\"" },
         x: { type: "array", items: { type: "string" }, description: "Category labels (dates, names); not for scatter" },
         series: {
           type: "array",
@@ -695,7 +695,7 @@ const TOOL_DEFS = [
         x_format: { type: "string", enum: ["number", "percent", "euro", "units"], description: "Scatter only" },
         x_label: { type: "string" },
         y_label: { type: "string" },
-        source: { type: "string", description: "Where the numbers came from, e.g. \"units_paid table\"" },
+        source: { type: "string", description: "Where the numbers came from, in plain words, e.g. \"Shopify orders\" or \"Meta ad spend\" (never a table name)" },
       },
       required: ["type", "title"],
       additionalProperties: false,

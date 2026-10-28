@@ -130,16 +130,20 @@ The catalogue in the prompt lists each table's grain and columns. How they conne
 - A question about a figure on the page: read the snapshot field the card reads (table in 4)
   and quote it. Do not recompute it from the tables: the snapshot applies the window, the
   Direct display, the draw allocation and the 0.8 rate, and a recomputation will differ.
-- A question across releases or over time: query the tables, name the table and the window.
+- A question across releases or over time: query the tables; say the dates covered when it matters.
   For a ranking of live releases against target use the `releases` table (`statusPct`).
-- A question about how something is worked out: read the doc section (read_docs) and
-  explain it with the release's own numbers.
-- Say how fresh the data is when it matters (`asOf`; partial last day when `asOfFraction` < 1).
+- A question about how something is worked out: read the doc section (read_docs), then give
+  the idea in a sentence or two of plain English with one example from the release's numbers.
+- Say how fresh the data is only when it changes the answer (`asOf`; partial last day when
+  `asOfFraction` < 1), in a few words.
+- Whatever the question, answer in plain English and briefly: the field names, table names
+  and doc terms in this guide are for finding the numbers, not for the reply (the prompt's
+  writing rules have the translations).
 - If the data cannot answer (a field is null, a table lacks the column, a release's page is
   not built), say so plainly rather than estimate.
 - Charts: a line for a series over days, columns or stacked columns to compare groups, a
   horizontal bar for a ranking, a scatter for a relationship across releases. Label the unit
-  and window in the subtitle and name the source.
+  and dates in the subtitle and name the source in words ("Shopify orders").
 
 ## 7. Traps in the data
 

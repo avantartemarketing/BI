@@ -61,18 +61,29 @@ function install(app, { ROOT, DATA, SOURCES, readSnapshot, sessionEmail }) {
       lines.push("The reader is not on a release page.");
     }
     lines.push(`Their Direct display is ${ctx && ctx.display === "channel" ? "Channel (Direct as its own channel)" : "Spread (Direct spread over the other channels)"}; get_release applies it unless you pass display.`);
+    lines.push("Reply in plain English and keep it short: the answer first, two to four sentences, no field, table or doc names, no jargon, only the numbers that matter, rounded.");
     return lines.join(" ");
   }
 
-  /* a few words on what a tool call is doing, for the chat's status line */
+  /* a few words on what a tool call is doing, for the chat's status line, in the reader's words */
+  const PLAIN = {
+    releases: "the list of launches", units_paid: "units sold by day", orders_by_product: "orders by work", draw_products: "the draws",
+    spend_daily: "ad spend", content_posts: "social posts", email_sends: "email sends", release_clusters: "past launches",
+    release_pricing: "editions and prices", release_people: "entrants and buyers", release_windows: "campaign dates",
+    tl_panel: "past timed launches", tl_signups_by_product: "signups", tl_units_hourly: "sales by hour", tl_buyers: "buyers",
+  };
+  const nameOf = (id) => {
+    const r = id && (tools.readIndex().releases || []).find((x) => x.id === id);
+    return r ? r.artist || r.releaseName : "the release";
+  };
   function statusOf(name, input) {
     const i = input || {};
     switch (name) {
       case "list_releases": return i.search ? `Looking up releases matching "${i.search}"` : "Looking through the releases";
-      case "get_release": return `Reading the ${i.id || "release"} page${Array.isArray(i.fields) && i.fields.length ? ` (${i.fields.slice(0, 3).join(", ")})` : ""}`;
-      case "describe_table": return `Looking at the ${i.table || ""} table`;
-      case "query_table": return `Querying ${i.table || "a table"}`;
-      case "read_docs": return i.search ? `Searching the docs for "${i.search}"` : i.section ? `Reading ${i.doc} ${i.section}` : `Reading ${i.doc || "the docs"}`;
+      case "get_release": return `Reading ${nameOf(i.id)}'s page`;
+      case "describe_table":
+      case "query_table": return `Checking ${PLAIN[i.table] || "the data"}`;
+      case "read_docs": return "Checking how the dashboard works this out";
       case "make_chart": return "Drawing a chart";
       default: return "Working";
     }
