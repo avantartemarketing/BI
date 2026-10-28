@@ -6752,6 +6752,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # and the same with the run rate held flat to the close (ifContinued), so
     # the Slack update can say what today's spend would have reached
     at_flat = None
+    st_flat = st_none = fwd_none = None
     if fwd_flat is not None and not complete:
         future_flat = max(hero_proj - hero_now + (fwd_flat["entries"] - future_cum) * rate_u, 0.0)
         st_flat = sellthrough_block(release, name, units_sold, unconverted, inventory_left, future_flat,
@@ -6759,6 +6760,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                                     bm_close=hero_bm if bench else None, orders=of_win, closed=closed)
         at_flat = {"units": round(spoken_for(st_flat) + float(st_flat.get("futureEntriesPredicted") or 0), 1),
                    "pct": st_flat.get("pct")}
+        # and with no more paid at all (the Sell-through at close card's
+        # third reading): the organic course alone from here
+        fwd_none = paid_forward([0.0] * len(future_days))
+        future_none = max(hero_proj - hero_now + (fwd_none["entries"] - future_cum) * rate_u, 0.0)
+        st_none = sellthrough_block(release, name, units_sold, unconverted, inventory_left, future_none,
+                                    expected_today=hero_exp, bm_today=hero_bm_today if bench else None,
+                                    bm_close=hero_bm if bench else None, orders=of_win, closed=closed)
     # the hero adopts the sell-through's count (docs 6.3½): what the orders
     # and draw feeds say is spoken for - units paid, drafts raised, the
     # winners the entries in hand imply by the per-product rule - and the
@@ -6855,59 +6863,98 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             conf = "high" if width <= 0.10 else "medium" if width <= 0.25 else "low"
             why = (f"the range is {'within' if width <= 0.25 else 'wider than'} ±{10 if width <= 0.10 else 25}% of the projection"
                    + (f", and {in_hand_share:.0%} of it is already sold or in hand" if in_hand_share is not None else ""))
-        works_out = []
-        for pr in (sellthrough.get("products") or []):
-            ed = pr.get("edition")
-            if not ed or not (ed > 0):
-                continue
-            t_w = float(pr.get("pct") or 0.0) * ed
-            u_w = t_w if complete else float(pr.get("pctClose") if pr.get("pctClose") is not None else pr.get("pct") or 0.0) * ed
-            if complete or not rng:
-                lo_w = hi_w = u_w if (complete or lo_u is None) else None
-            else:
-                still_w = max(u_w - t_w, 0.0)
-                lo_w, hi_w = min(max(t_w + still_w * rng["lo"], t_w), ed), min(max(t_w + still_w * rng["hi"], t_w), ed)
-            works_out.append({"name": pr.get("name"), "edition": ed, "today": round(t_w, 1), "units": round(u_w, 1),
+        def ranged(now_x: float, proj_x: float, cap: float | None) -> tuple:
+            """The likely range on a projection: the still-to-come times the
+            backtest's multipliers, held between today's units and the cap."""
+            if complete:
+                return proj_x, proj_x
+            if not rng:
+                return None, None
+            still_x = max(proj_x - now_x, 0.0)
+            lo_x, hi_x = now_x + still_x * rng["lo"], now_x + still_x * rng["hi"]
+            if cap:
+                lo_x, hi_x = min(max(lo_x, now_x), cap), min(max(hi_x, now_x), cap)
+            return lo_x, hi_x
+
+        def works_for(st_block: dict) -> list[dict]:
+            out_w = []
+            for pr in (st_block.get("products") or []):
+                ed = pr.get("edition")
+                if not ed or not (ed > 0):
+                    continue
+                t_w = float(pr.get("pct") or 0.0) * ed
+                u_w = t_w if complete else float(pr.get("pctClose") if pr.get("pctClose") is not None else pr.get("pct") or 0.0) * ed
+                lo_w, hi_w = ranged(t_w, u_w, ed)
+                out_w.append({"name": pr.get("name"), "edition": ed, "today": round(t_w, 1), "units": round(u_w, 1),
                               "lo": round(lo_w, 1) if lo_w is not None else None, "hi": round(hi_w, 1) if hi_w is not None else None,
                               "pct": round(u_w / ed, 4), "pctLo": round(lo_w / ed, 4) if lo_w is not None else None,
                               "pctHi": round(hi_w / ed, 4) if hi_w is not None else None, "pctToday": round(t_w / ed, 4),
                               "sellsOut": bool(u_w >= ed - 0.5)})
+            return out_w
+
+        def direction_of(daily: float | None) -> str | None:
+            if daily is None:
+                return "stop" if complete else None
+            if daily <= 0 < s0:
+                return "stop"
+            if s0 <= 0 < daily:
+                return "start"
+            if s0 > 0 and abs(daily - s0) < 0.01 * s0:
+                return "hold"
+            return "cut" if daily < s0 else "raise"
+
+        budget_paid = round(targets["paid"]["budget"], 2) if targets.get("paid") and targets["paid"].get("budget") else None
+
+        def scenario(st_block: dict, f: dict | None, daily: float | None, proj_x: float, words: str) -> dict:
+            """The projection at close under one paid assumption (28 October
+            2026): the release, the works, the range, and the spend it rests on."""
+            proj_x = min(proj_x, tot) if tot else proj_x
+            lo_x, hi_x = ranged(now_u, proj_x, tot)
+            paid_units = f["units"] if (f is not None and not complete) else 0.0
+            return {
+                "units": round(proj_x, 1), "pct": round(proj_x / tot, 4) if tot else None,
+                "lo": round(lo_x, 1) if lo_x is not None else None, "hi": round(hi_x, 1) if hi_x is not None else None,
+                "pctLo": round(lo_x / tot, 4) if (lo_x is not None and tot) else None,
+                "pctHi": round(hi_x / tot, 4) if (hi_x is not None and tot) else None,
+                "built": {"sold": round(float(st_block.get("sold") or 0.0), 1),
+                          "inHand": round(float(st_block.get("inHandUnits") or 0.0), 1),
+                          "organic": round(max(proj_x - now_u - paid_units, 0.0), 1),
+                          "paid": round(paid_units, 1)},
+                "works": works_for(st_block),
+                "paid": {
+                    "daily": round(daily, 2) if daily is not None else None,
+                    "today": round(s0, 2),
+                    "change": round((daily - s0) / s0, 4) if (daily is not None and s0 > 0) else None,
+                    "direction": direction_of(daily),
+                    "spendAtClose": round(cum_spend + part_spend + (f["spendFuture"] if (f is not None and not complete) else 0.0), 2),
+                    "budget": budget_paid,
+                    "rule": words,
+                },
+            }
+
         daily_assumed = (level if (level is not None and level != math.inf) else recommended) if (cost and not complete) else None
-        if daily_assumed is not None:
-            if daily_assumed <= 0 < s0:
-                direction = "stop"
-            elif s0 <= 0 < daily_assumed:
-                direction = "start"
-            elif s0 > 0 and abs(daily_assumed - s0) < 0.01 * s0:
-                direction = "hold"
-            else:
-                direction = "cut" if daily_assumed < s0 else "raise"
-        else:
-            direction = "stop" if complete else None
-        paid_assumed = {
-            "daily": round(daily_assumed, 2) if daily_assumed is not None else None,
-            "today": round(s0, 2),
-            "change": round((daily_assumed - s0) / s0, 4) if (daily_assumed is not None and s0 > 0) else None,
-            "direction": direction,
-            "spendAtClose": round(cum_spend + part_spend + (fwd["spendFuture"] if not complete else 0.0), 2),
-            "budget": round(targets["paid"]["budget"], 2) if targets.get("paid") and targets["paid"].get("budget") else None,
-            "rule": ("The projection runs at the recommended spend: the level at which the next euro returns what it costs, "
-                     "capped at the spend that sells out, reached from today's by steps of up to 30% a day."),
-        }
+        rec_sc = scenario(sellthrough, fwd, daily_assumed, proj_u,
+                          "The projection runs at the recommended spend: the level at which the next euro returns what it costs, "
+                          "capped at the spend that sells out, reached from today's by steps of up to 30% a day.")
+        scenarios = None
+        if not complete and st_flat is not None and st_none is not None and cost:
+            u_flat = spoken_for(st_flat) + float(st_flat.get("futureEntriesPredicted") or 0)
+            u_none = spoken_for(st_none) + float(st_none.get("futureEntriesPredicted") or 0)
+            scenarios = {
+                "recommended": rec_sc,
+                "current": scenario(st_flat, fwd_flat, s0, u_flat, "Today's daily spend held to the close, stopped where spending on would be wasted."),
+                "none": scenario(st_none, fwd_none, 0.0, u_none, "No more paid spend from now: the organic course alone."),
+            }
         close_forecast = {
-            "units": round(proj_u, 1), "edition": tot, "pct": round(proj_u / tot, 4) if tot else None,
-            "lo": round(lo_u, 1) if lo_u is not None else None, "hi": round(hi_u, 1) if hi_u is not None else None,
-            "pctLo": round(lo_u / tot, 4) if (lo_u is not None and tot) else None,
-            "pctHi": round(hi_u / tot, 4) if (hi_u is not None and tot) else None,
+            **rec_sc,
+            "edition": tot,
             "today": round(now_u, 1), "pctToday": round(now_u / tot, 4) if tot else None,
             "target": round(hero_target, 0) if hero_target else None,
             "daysLeft": days_left, "confidence": conf, "confidenceWhy": why,
-            "built": {"sold": round(float(sellthrough.get("sold") or 0.0), 1),
-                      "inHand": round(float(sellthrough.get("inHandUnits") or 0.0), 1),
-                      "organic": round(max(proj_u - now_u - (fwd["units"] if not complete else 0.0), 0.0), 1),
-                      "paid": round(fwd["units"] if not complete else 0.0, 1)},
-            "works": works_out,
-            "paid": paid_assumed,
+            # the same projection under each paid assumption, for the card's
+            # toggle: recommended (the figures above), today's spend held,
+            # no more paid; None on a closed release or without a price
+            "scenarios": scenarios,
             "range": ({"source": "backtest", "n": rng["n"], "fraction": round(pdsa_today, 3),
                        "note": f"where 8 in 10 past launches landed, read from day {max(int(round(pdsa_today * L)), 1)}"}
                       if rng else None),

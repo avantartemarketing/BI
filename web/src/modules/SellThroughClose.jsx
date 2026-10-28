@@ -12,8 +12,8 @@
  * confidence reason - is on the aside's hover. A closed release has the
  * projection equal to its units, so the range and the paid assumption are
  * left off. */
-import React from "react";
-import { Card, Head, Loz } from "../ui.jsx";
+import React, { useState } from "react";
+import { Card, Head, Loz, Seg } from "../ui.jsx";
 import { COL, Keys, sw, kfmt } from "../charts.jsx";
 import { Up, Dn } from "../icons.jsx";
 import { fmt, fmtPct, fmtMoney } from "../format.mjs";
@@ -55,10 +55,17 @@ function RangeBar({ xmax, today, units, lo, hi, target, big, title }) {
 /* the scale a bar is read on: the edition, else the furthest figure on it */
 const scaleOf = (r) => (has(r.edition) && r.edition > 0 ? r.edition : Math.max(1, ...[r.hi, r.units, r.target, r.today].filter(has)));
 
+// the paid assumptions the card can read the close under (closeForecast.scenarios)
+const MODES = [["recommended", "Recommended"], ["current", "Today's"], ["none", "No more paid"]];
+
 export default function SellThroughClose({ snap }) {
-  const cf = snap.closeForecast;
+  const base = snap.closeForecast;
+  const [mode, setMode] = useState("recommended");
   const title = "Sell-through at close";
-  if (!cf || !has(cf.units)) return <Card title={title}><div className="empty-state">No projection at close yet</div></Card>;
+  if (!base || !has(base.units)) return <Card title={title}><div className="empty-state">No projection at close yet</div></Card>;
+  // the reading under the chosen paid assumption; the block's own figures are the recommended one's
+  const scenarios = base.scenarios && base.scenarios.recommended && base.scenarios.current && base.scenarios.none ? base.scenarios : null;
+  const cf = scenarios && scenarios[mode] ? { ...base, ...scenarios[mode] } : base;
   const complete = !!snap.complete || (has(cf.lo) && has(cf.hi) && cf.lo === cf.hi && cf.units === cf.today);
   const byPct = has(cf.pct);
   const ranged = !complete && has(cf.lo) && has(cf.hi);
@@ -90,9 +97,17 @@ export default function SellThroughClose({ snap }) {
   // the paid assumption: the change from today's spend, as a share of it
   const dir = paid ? paid.direction : null;
   const chg = paid && has(paid.change) ? Math.round(Math.abs(paid.change) * 100) : null;
-  const showChange = paid && has(paid.today) && paid.today !== paid.daily;
+  const showChange = paid && has(paid.today) && paid.today !== paid.daily && dir !== "stop";
+  const dirWord = dir === "stop" ? "stops now" : dir === "hold" ? "held" : dir === "start" ? "from nothing" : null;
+  // the toggle: the three paid assumptions, each with its daily figure
+  const seg = scenarios && !complete
+    ? <Seg label="Paid assumption" value={mode} onChange={setMode}
+        options={MODES.map(([k, l]) => [k, k === "none" ? l : `${l} ${money(scenarios[k].paid && scenarios[k].paid.daily)}`,
+          k === "recommended" ? "The level at which the next euro of paid spend returns what it costs, reached from today's by steps of up to 30% a day"
+            : k === "current" ? "Today's daily spend held to the close" : "No more paid spend from now: the organic course alone"])} />
+    : null;
   return (
-    <Card title={title} aria={title}>
+    <Card title={title} aria={title} seg={seg}>
       <Head v={byPct ? fmtPct(cf.pct, 0) : fmt(cf.units)} u={complete ? (byPct ? "at the close" : "units at the close") : byPct ? "projected" : "units projected"} aside={aside} asideTip={working}>
         {rangeWord && <Loz kind="ind" tip={range && range.note ? `${fmt(cf.lo)}-${fmt(cf.hi)} units: ${range.note}` : `${fmt(cf.lo)}-${fmt(cf.hi)} units`}>{rangeWord}</Loz>}
         {confWord && <Loz kind={confKind} tip={cf.confidenceWhy || undefined} icon={<span className="dot" />}>{confWord} confidence</Loz>}
@@ -113,7 +128,7 @@ export default function SellThroughClose({ snap }) {
                 <span className="nm">{w.name}</span>
                 <RangeBar xmax={scaleOf(w)} today={w.today} units={w.units} lo={wr ? w.lo : null} hi={wr ? w.hi : null} target={null} />
                 {w.sellsOut
-                  ? <span className="fig good">Likely sells out</span>
+                  ? <span className="fig good">{complete ? "Sold out" : "Likely sells out"}</span>
                   : <span className="fig">{has(w.pct) ? fmtPct(w.pct, 0) : fmt(w.units)}{wr && <i>{has(w.pctLo) && has(w.pctHi) ? `${Math.round(w.pctLo * 100)}-${Math.round(w.pctHi * 100)}` : `${fmt(w.lo)}-${fmt(w.hi)}`}</i>}</span>}
               </div>
             );
@@ -122,16 +137,17 @@ export default function SellThroughClose({ snap }) {
       )}
       {paid && has(paid.daily) && !complete && (
         <div className="nbox assume" title={paid.rule || undefined}>
-          <span className="cap">Paid social assumptions</span>
-          <span className="it">Daily <span className="big">{money(paid.daily)}</span>
+          <span className="cap">Paid social</span>
+          <span className="it"><span className="big">{money(paid.daily)}</span> a day
             {showChange && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 6 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 2 }}>
                 {chg !== null && chg > 0 && <span className="chg">{dir === "raise" || dir === "start" ? <Up /> : <Dn />}{chg}%</span>}
                 <span className="was">{money(paid.today)}</span>
               </span>
             )}
+            {dirWord && <span style={{ marginLeft: 2 }}>· {dirWord}</span>}
           </span>
-          {has(paid.spendAtClose) && <span className="it" title={has(paid.budget) ? `Spend to date plus the schedule's spend to the close, against a budget of ${money(paid.budget)}` : "Spend to date plus the schedule's spend to the close"}>Total at close <span className="big">{kmoney(paid.spendAtClose)}</span></span>}
+          {has(paid.spendAtClose) && <span className="it" title={has(paid.budget) ? `Spend to date plus the spend to the close under this assumption, against a budget of ${money(paid.budget)}` : "Spend to date plus the spend to the close under this assumption"}><span className="big">{kmoney(paid.spendAtClose)}</span> by the close</span>}
         </div>
       )}
     </Card>

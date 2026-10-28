@@ -1987,8 +1987,12 @@ projection, `medium` within ±25%, `low` wider; null without a backtest) and `co
 product with an edition: `name`, `edition`, `today`, `units`, `lo`, `hi`, the same as shares,
 `sellsOut` when the projection fills it), `paid` (`daily` the level the projection runs at, `today`,
 `change`, `direction` cut / raise / hold / stop / start, `spendAtClose`, `budget`, `rule` in
-words) and `range` (`source` backtest, `n`, `fraction`, `note`). A closed release carries `units`
-= `today`, `lo` = `hi` = `units`, `confidence` high and `paid.direction` stop. The multipliers are
+words) and `range` (`source` backtest, `n`, `fraction`, `note`). `scenarios` (since 28 October
+2026) carries the same projection under each paid assumption, for the card's toggle:
+`recommended` (the block's own figures), `current` (today's daily spend held to the close) and
+`none` (no more paid: the organic course alone), each with `units`, `pct`, `lo` / `hi`, `pctLo` /
+`pctHi`, `built`, `works[]` and `paid`; null on a closed release or without a paid price. A closed
+release carries `units` = `today`, `lo` = `hi` = `units`, `confidence` high and `paid.direction` stop. The multipliers are
 `etl/projection_backtest.json`, written by `etl/analysis/projection_backtest.py` and read by
 `projection_range`.
 

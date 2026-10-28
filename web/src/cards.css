@@ -42,8 +42,8 @@
  * (a caption, then items on a baseline with a hairline between them) */
 .nbox { background: #fafafa; border: 1px solid #f0f0f2; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--text); }
 .nbox b { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
-.nbox.assume { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 24px; padding: 12px 14px; }
-.nbox.assume .cap { flex: 1 1 100%; font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+.nbox.assume { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; padding: 10px 14px; }
+.nbox.assume .cap { flex: 0 0 auto; font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
 .nbox.assume .it { display: inline-flex; align-items: baseline; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .nbox.assume .it + .it { border-left: 1px solid #ececec; padding-left: 24px; }
 .nbox.assume .big { font-size: 16px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
