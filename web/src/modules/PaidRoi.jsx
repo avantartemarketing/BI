@@ -30,7 +30,10 @@ const H = 250, L = 36, R = 8, T = 10, B = 26;
 const tick = (t) => (t >= 1000 ? `${Math.round(t / 100) / 10}k` : String(Math.round(t * 100) / 100));
 
 /* the daily spend as faint bars behind the line's plot, in the bottom third,
- * drawn in the same pixels the line chart measures */
+ * drawn in the same pixels the line chart measures: the days spent solid
+ * grey (today so far paler), the days ahead at the recommended schedule an
+ * outline, so what is planned reads apart from what was spent */
+const AHEAD_STROKE = "#b4bbec";
 function SpendBars({ W, bars, n, top }) {
   if (!(W > 0) || !bars.length) return null;
   const N = Math.max(1, n - 1), step = (W - L - R) / N, bw = Math.max(2, step * 0.6);
@@ -40,11 +43,14 @@ function SpendBars({ W, bars, n, top }) {
     <svg viewBox={`0 0 ${W} ${H}`} style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "auto", display: "block" }} aria-hidden="true">
       {bars.map((b) => {
         const h = Math.max(1, (b.v / top) * band);
-        return <rect key={b.i} x={(x(b.i) - bw / 2).toFixed(1)} y={(H - B - h).toFixed(1)} width={bw.toFixed(1)} height={h.toFixed(1)} rx="1.5" fill={b.partial ? COL.PALE : COL.TRACK} />;
+        return b.ahead
+          ? <rect key={b.i} x={(x(b.i) - bw / 2 + 0.5).toFixed(1)} y={(H - B - h + 0.5).toFixed(1)} width={Math.max(1, bw - 1).toFixed(1)} height={Math.max(1, h - 1).toFixed(1)} rx="1.5" fill="#f6f7fd" stroke={AHEAD_STROKE} strokeWidth="1" strokeDasharray="2 2" />
+          : <rect key={b.i} x={(x(b.i) - bw / 2).toFixed(1)} y={(H - B - h).toFixed(1)} width={bw.toFixed(1)} height={h.toFixed(1)} rx="1.5" fill={b.partial ? COL.PALE : COL.TRACK} />;
       })}
     </svg>
   );
 }
+const aheadKey = { width: 10, height: 10, flex: "0 0 10px", borderRadius: 2, background: "#f6f7fd", border: `1px dashed ${AHEAD_STROKE}`, boxSizing: "border-box" };
 
 export default function PaidRoi({ snap }) {
   const [partyPref, setPartyPref] = useState(() => readPref(PARTY_PREF, ["aa", "artist"], "aa"));
@@ -123,16 +129,30 @@ export default function PaidRoi({ snap }) {
   const decline = !showModel ? [] : pathPts.length
     ? [{ s: anchor.s, v: anchor.v }, ...pathPts.filter((p) => p.s > anchor.s)]
     : Array.from({ length: of - anchor.s + 1 }, (_, i) => ({ s: anchor.s + i, v: anchor.v * Math.pow(factor, i) }));
+  // the spend ahead: the schedule the projection runs at (budget.schedule,
+  // the recommended spend reached in steps), by step; a day with nothing on
+  // it has no ROI to draw, so the path ends where the spend does
+  const schedByStep = new Map();
+  if (!tl && !complete) {
+    for (const x of (paid.budget || {}).schedule || []) {
+      const s = stepOf(snap, x.date);
+      if (s !== null && has(x.spend)) schedByStep.set(Math.round(s), x.spend);
+    }
+  }
   const projVals = Array.from({ length: n }, () => null);
-  decline.forEach((p) => { projVals[p.s] = p.v; });
-  const declineEnd = decline.length ? decline[decline.length - 1].v : null;
+  decline.forEach((p) => { if (!(schedByStep.has(p.s) && p.s > today && schedByStep.get(p.s) <= 0)) projVals[p.s] = p.v; });
+  const declinePts = decline.filter((p) => has(projVals[p.s]));
+  const declineEnd = declinePts.length ? declinePts[declinePts.length - 1].v : null;
+  const aheadBars = [...schedByStep.entries()].filter(([s, v]) => s > today && s <= of && v > 0).map(([s, v]) => ({ i: s, v, ahead: true }));
+  const aheadLevel = aheadBars.length ? aheadBars[aheadBars.length - 1].v : null;
+  const stopsAhead = !complete && schedByStep.size > 0 && !aheadBars.length;
   // the days a work fills (docs 7): the ETL names the work on that day's point
   const fullByStep = new Map(pathPts.filter((p) => Array.isArray(p.full) && p.full.length && p.s > (anchor ? anchor.s : -1)).map((p) => [p.s, p.full]));
 
   // ----- the scale: the line, the path and the target, from zero -----
   const vals = [...roiVals, ...projVals, P.target].filter(has);
   const ax = niceAxis(Math.max(0.5, ...vals) * 1.08);
-  const spendTop = Math.max(1, ...pts.map((p) => p.spend));
+  const spendTop = Math.max(1, ...pts.map((p) => p.spend), ...aheadBars.map((b) => b.v));
 
   // ----- the head -----
   const leadVal = !roiOk ? (complete ? cpeTotal : cpeRecent) : complete ? P.cum : P.recent;
@@ -175,11 +195,15 @@ export default function PaidRoi({ snap }) {
   const lineName = roiOk ? `ROI, ${winWords}` : `€ per ${unitWord}, ${winWords}`;
   const lineVals = roiOk ? roiVals : Array.from({ length: n }, (_, i) => { const p = byStep.get(i); return p && !p.partial && has(p.cost) ? p.cost : null; });
   const hasLine = lineVals.some(has);
+  const aheadWords = aheadLevel !== null ? `${fmtMoney(aheadLevel, 0)} a ${hours ? "hour" : "day"}` : null;
   const legend = [
     ...(hasLine ? [{ n: lineName, k: lk(COL.IND), tip: `${P.label} ROI ${winWords} ${fmt(P.recent, 2)}${has(P.target) ? ` · target ${fmt(P.target, 2)}` : ""}` }] : []),
-    ...(showModel ? [{ n: "Projected", v: has(declineEnd) ? fmt(declineEnd, 2) : "", k: lk(COL.IND, "dashed"), tip: `Projected ${P.label} ROI at the ${V.closeWord} ${fmt(declineEnd, 2)}${short ? " (the cost path from the last full day's price)" : ""}` }] : []),
+    ...(showModel && has(declineEnd) ? [{ n: `ROI ahead, at the ${V.closeWord}`, v: fmt(declineEnd, 2), k: lk(COL.IND, "dashed"),
+      tip: `${P.label} ROI projected day by day at the recommended spend${aheadWords ? ` (${aheadWords})` : ""}, ending at ${fmt(declineEnd, 2)} at the ${V.closeWord}${short ? "; the cost path from the last full day's price" : ""}` }] : []),
     ...(has(P.target) && roiOk ? [{ n: "Target", v: fmt(P.target, 2), k: lk(COL.DARK, "dashed") }] : []),
-    { n: "Daily spend", k: sw(COL.TRACK), tip: `Spend by day on its own scale, up to ${fmtMoney(spendTop)}` },
+    { n: "Spend", k: sw(COL.TRACK), tip: `Spend by day on its own scale, up to ${fmtMoney(spendTop)}` },
+    ...(aheadBars.length ? [{ n: "Spend ahead", v: aheadWords, k: aheadKey, tip: `The recommended spend the projection runs at, from tomorrow to the ${V.closeWord}: today's spend stepping to ${aheadWords} by at most 30% a day` }] : []),
+    ...(stopsAhead ? [{ n: "Paid stops: no spend ahead", k: { width: 0 }, tip: "The recommendation is to spend nothing more, so there is no ROI to project" }] : []),
     ...(paidOff ? [{ n: `Paid off since ${V.stepWord} ${lastSpendStep}`, k: { width: 0 }, tip: `No paid spend since ${V.stepWord} ${lastSpendStep}: the line ends where the spend did` }] : []),
   ];
   // a release selling two lines of work, each on its own ad set (docs/LINES_PLAN.md)
@@ -195,13 +219,13 @@ export default function PaidRoi({ snap }) {
         aside={complete ? (has(P.recent) && roiOk ? `${fmt(P.recent, 2)} ${winShort} at the close` : "") : roiOk ? `${fmt(P.cum, 2)} overall` : `${fmtMoney(cpeTotal, 2)} overall`}
         asideTip={working.join("\n")} />
       <div ref={ref} style={{ position: "relative" }}>
-        <SpendBars W={boxW} bars={pts.filter((p) => p.spend > 0).map((p) => ({ i: p.s, v: p.spend, partial: p.partial }))} n={n} top={spendTop} />
+        <SpendBars W={boxW} bars={[...pts.filter((p) => p.spend > 0).map((p) => ({ i: p.s, v: p.spend, partial: p.partial })), ...aheadBars]} n={n} top={spendTop} />
         <div style={{ position: "relative" }}>
           <LineChart H={H} L={L} R={R} T={T} B={B} n={n} ymax={ax.ymax} yticks={ax.ticks} yfmt={(t) => (roiOk ? `${tick(t)}×` : `€${tick(t)}`)} xticks={stepTicks(snap, of)}
             marks={complete ? [] : [today]} legend={legend}
             series={[
               ...(has(P.target) && roiOk ? [{ name: "Target", color: COL.DARK, w: 1.5, da: "4 4", vals: Array.from({ length: n }, () => P.target) }] : []),
-              ...(showModel ? [{ name: "Projected", color: COL.IND, w: 1.5, da: "4 4", vals: projVals }] : []),
+              ...(showModel ? [{ name: "ROI ahead", color: COL.IND, w: 1.5, da: "4 4", vals: projVals }] : []),
               ...(hasLine ? [{ name: lineName, color: COL.IND, w: 2, vals: lineVals }] : []),
             ]}
             dotAt={(i) => (has(lineVals[i]) ? lineVals[i] : has(projVals[i]) ? projVals[i] : null)}
@@ -210,9 +234,10 @@ export default function PaidRoi({ snap }) {
               const p = byStep.get(i);
               const out = [];
               if (has(lineVals[i])) out.push({ n: roiOk ? `${P.label} ROI (${winLabel})` : `€ per ${unitWord} (${winLabel})`, v: roiOk ? `${fmt(lineVals[i], 2)}×` : fmtMoney(lineVals[i], 2), k: lk(COL.IND) });
-              else if (has(projVals[i])) out.push({ n: "ROI projected", v: `${fmt(projVals[i], 2)}×`, k: lk(COL.IND, "dashed") });
+              else if (has(projVals[i])) out.push({ n: "ROI ahead", v: `${fmt(projVals[i], 2)}×`, k: lk(COL.IND, "dashed") });
               if (has(P.target) && roiOk) out.push({ n: "Target", v: `${fmt(P.target, 2)}×`, k: lk(COL.DARK, "dashed") });
               if (p) out.push({ n: "Spend", v: fmtMoney(p.spend, 0), k: sw(COL.TRACK) });
+              else if (i > today && schedByStep.has(i)) out.push({ n: "Spend ahead", v: schedByStep.get(i) > 0 ? fmtMoney(schedByStep.get(i), 0) : "nothing: paid stops", k: aheadKey });
               if (p && has(p.entries)) out.push({ n: tl ? `Paid ${V.unit}` : "Entries", v: fmt(p.entries), k: { width: 8, flex: "0 0 8px" } });
               if (fullByStep.has(i)) out.push({ n: "Full from this day", v: fullByStep.get(i).join(", "), k: { width: 8, flex: "0 0 8px" } });
               return out;
