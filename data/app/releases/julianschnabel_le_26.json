@@ -61,7 +61,7 @@
   "closed": true,
   "firstPaid": "2026-08-28"
  },
- "completeThrough": "2026-10-26",
+ "completeThrough": "2026-10-27",
  "asOfFraction": 1.0,
  "targetingMode": "benchmark",
  "edition": {
@@ -101,9 +101,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 302.22,
-    "frame_uplift_per_unit": 137.69,
+    "frame_uplift_per_unit": 137.93,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -147,9 +147,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 302.22,
-    "frame_uplift_per_unit": 137.69,
+    "frame_uplift_per_unit": 137.93,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -193,9 +193,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 302.22,
-    "frame_uplift_per_unit": 137.69,
+    "frame_uplift_per_unit": 137.93,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -225,7 +225,7 @@
    "note": "titles: Don\u2019t Let It Bring You Down, It\u2019s Only Castles Burning (For Neil Young) I / Don\u2019t Let It Bring You Down, It\u2019s Only Castl"
   },
   "framingAvailable": true,
-  "frameConversion": 0.4556,
+  "frameConversion": 0.4564,
   "frameProfitPerUnit": null,
   "frameUpliftPerUnit": 0.0
  },
@@ -4423,7 +4423,7 @@
   "frames": 89.0,
   "rate": 0.5394,
   "entrants": null,
-  "plan": 0.4556,
+  "plan": 0.4564,
   "benchmark": {
    "rate": 0.4711,
    "n": 6,
@@ -4546,7 +4546,158 @@
   "asOf": "2026-09-27"
  },
  "draw": null,
- "geo": null,
+ "geo": {
+  "unit": "units",
+  "rows": [
+   {
+    "country": "United States",
+    "code": null,
+    "units": 98.0,
+    "orders": 90
+   },
+   {
+    "country": "Germany",
+    "code": null,
+    "units": 16.0,
+    "orders": 5
+   },
+   {
+    "country": "United Kingdom",
+    "code": null,
+    "units": 9.0,
+    "orders": 7
+   },
+   {
+    "country": "Italy",
+    "code": null,
+    "units": 8.0,
+    "orders": 6
+   },
+   {
+    "country": "France",
+    "code": null,
+    "units": 5.0,
+    "orders": 5
+   },
+   {
+    "country": "United Arab Emirates",
+    "code": null,
+    "units": 5.0,
+    "orders": 5
+   },
+   {
+    "country": "Canada",
+    "code": null,
+    "units": 4.0,
+    "orders": 4
+   },
+   {
+    "country": "Sweden",
+    "code": null,
+    "units": 4.0,
+    "orders": 3
+   },
+   {
+    "country": "Austria",
+    "code": null,
+    "units": 3.0,
+    "orders": 3
+   },
+   {
+    "country": "Belgium",
+    "code": null,
+    "units": 3.0,
+    "orders": 1
+   },
+   {
+    "country": "Greece",
+    "code": null,
+    "units": 3.0,
+    "orders": 3
+   },
+   {
+    "country": "Netherlands",
+    "code": null,
+    "units": 3.0,
+    "orders": 1
+   },
+   {
+    "country": "Denmark",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Mexico",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Spain",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Bulgaria",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Cyprus",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Czech Republic",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Hong Kong",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Japan",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Norway",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Portugal",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Singapore",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Switzerland",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   }
+  ],
+  "total": 176.0,
+  "orders": 148,
+  "source": "orders"
+ },
  "waterfall": {
   "target": 600.0,
   "projection": 165.0,
@@ -8323,5 +8474,5 @@
    }
   }
  },
- "builtAt": "2026-10-27T18:16:35+00:00"
+ "builtAt": "2026-10-28T13:37:39+00:00"
 }

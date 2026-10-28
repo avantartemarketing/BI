@@ -1,6 +1,77 @@
 {
- "asOf": "2026-10-04",
+ "asOf": "2026-10-27",
  "rows": [
+  {
+   "release_name": "Bisa Butler \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "Bisa Butler",
+   "title": "Multiple",
+   "quarter": "2026 Q4",
+   "window_start": "2026-09-15",
+   "window_end": "2026-10-15",
+   "campaign_days": 27.0,
+   "window_hours": 48.0,
+   "units": 1422.0,
+   "demand": 1422.0,
+   "sold_short": false,
+   "unmet_units": 0.0,
+   "payment_failed_units": 0.0,
+   "demand_shares": {
+    "aa_email": 0.2302771855010661,
+    "aa_social": 0.04051172707889126,
+    "referral_artist": 0.04619758351101635,
+    "search_direct_other": 0.2892679459843639,
+    "paid": 0.3937455579246624
+   },
+   "unit_shares": {
+    "aa_email": 0.2302771855010661,
+    "aa_social": 0.04051172707889126,
+    "referral_artist": 0.04619758351101635,
+    "search_direct_other": 0.2892679459843639,
+    "paid": 0.3937455579246624
+   },
+   "sess_shares": {
+    "aa_email": 0.038879086302358125,
+    "aa_social": 0.00758807116967553,
+    "referral_artist": 0.018722457387721752,
+    "search_direct_other": 0.04512859738024668,
+    "paid": 0.889681787759998
+   },
+   "convs": {
+    "aa_email": 0.08495416946121172,
+    "aa_social": 0.2004581901489118,
+    "referral_artist": 0.10352831940575673,
+    "search_direct_other": 0.11325115562403698,
+    "paid": 0.0819484744570474
+   },
+   "signup_shares": {
+    "aa_email": 0.03895837605085093,
+    "aa_social": 0.017941357391839247,
+    "referral_artist": 0.022862415419315153,
+    "search_direct_other": 0.060282960836579864,
+    "paid": 0.8599548903014148
+   },
+   "s2o": {
+    "aa_email": 0.3736842105263158,
+    "aa_social": 0.2342857142857143,
+    "referral_artist": 0.2062780269058296,
+    "search_direct_other": 0.19047619047619047,
+    "paid": 0.053171196948020985
+   },
+   "sessions": 115049.0,
+   "paid_share": 0.889681787759998,
+   "signups": 10418.0,
+   "entries": 10418.0,
+   "signup_order_rate": 0.0759262814359762,
+   "units_per_buyer": 1.1542207792207793,
+   "cost_per_paid_unit": 17.42006123474843,
+   "cost_per_signup": 9.229898120966125,
+   "price": 750.0,
+   "edition_size": 600.0,
+   "units_target": 1000.0,
+   "early_access": true,
+   "cluster": null,
+   "cluster_name": ""
+  },
   {
    "release_name": "Gregory Crewdson \u00b7 Multiple \u00b7 2026 Q2",
    "artist": "Gregory Crewdson",
@@ -10,61 +81,61 @@
    "window_end": "2026-07-02",
    "campaign_days": 19.0,
    "window_hours": 48.0,
-   "units": 2872.0,
-   "demand": 2872.0,
+   "units": 2871.0,
+   "demand": 2871.0,
    "sold_short": false,
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.3455535390199637,
-    "aa_social": 0.045372050816696916,
-    "referral_artist": 0.033030852994555354,
-    "search_direct_other": 0.308529945553539,
-    "paid": 0.267513611615245
+    "aa_email": 0.3454281567489115,
+    "aa_social": 0.045718432510885344,
+    "referral_artist": 0.030841799709724237,
+    "search_direct_other": 0.3109579100145138,
+    "paid": 0.26705370101596515
    },
    "unit_shares": {
-    "aa_email": 0.3455535390199637,
-    "aa_social": 0.045372050816696916,
-    "referral_artist": 0.033030852994555354,
-    "search_direct_other": 0.308529945553539,
-    "paid": 0.267513611615245
+    "aa_email": 0.3454281567489115,
+    "aa_social": 0.045718432510885344,
+    "referral_artist": 0.030841799709724237,
+    "search_direct_other": 0.3109579100145138,
+    "paid": 0.26705370101596515
    },
    "sess_shares": {
-    "aa_email": 0.3135430916552668,
-    "aa_social": 0.014637482900136799,
-    "referral_artist": 0.011080711354309165,
-    "search_direct_other": 0.47578659370725035,
-    "paid": 0.18495212038303693
+    "aa_email": 0.3136369853645192,
+    "aa_social": 0.014635480782382712,
+    "referral_artist": 0.01107919573245794,
+    "search_direct_other": 0.4755847353303242,
+    "paid": 0.18506360279031597
    },
    "convs": {
-    "aa_email": 0.2547993019197208,
+    "aa_email": 0.25556040122110774,
     "aa_social": null,
     "referral_artist": null,
-    "search_direct_other": 0.1242093156986774,
+    "search_direct_other": 0.12395743457003164,
     "paid": null
    },
    "signup_shares": {
-    "aa_email": 0.1697674418604651,
-    "aa_social": 0.051744186046511625,
-    "referral_artist": 0.029069767441860465,
-    "search_direct_other": 0.12558139534883722,
-    "paid": 0.6238372093023256
+    "aa_email": 0.17029933158965416,
+    "aa_social": 0.05172914850334205,
+    "referral_artist": 0.02906131938390003,
+    "search_direct_other": 0.12525428654460913,
+    "paid": 0.6236559139784946
    },
    "s2o": {
-    "aa_email": 0.6386986301369864,
-    "aa_social": 0.24719101123595505,
+    "aa_email": 0.6382252559726962,
+    "aa_social": 0.25280898876404495,
     "referral_artist": 0.14,
-    "search_direct_other": 0.47453703703703703,
-    "paid": 0.13932898415657036
+    "search_direct_other": 0.4733178654292343,
+    "paid": 0.13886300093196646
    },
-   "sessions": 7310.0,
-   "paid_share": 0.18495212038303693,
+   "sessions": 7311.0,
+   "paid_share": 0.18506360279031597,
    "signups": 6524.0,
    "entries": 6524.0,
    "signup_order_rate": 0.14852851011649296,
-   "units_per_buyer": 1.7044510385756677,
-   "cost_per_paid_unit": 19.202637903185995,
-   "cost_per_signup": 9.561069458642347,
+   "units_per_buyer": 1.7048693586698338,
+   "cost_per_paid_unit": 19.711573966065746,
+   "cost_per_signup": 9.56384883929893,
    "price": 525.0,
    "edition_size": 3061.0,
    "units_target": 1500.0,
@@ -81,38 +152,38 @@
    "window_end": "2026-06-04",
    "campaign_days": 20.0,
    "window_hours": 48.0,
-   "units": 1019.0,
-   "demand": 1019.0,
+   "units": 1018.0,
+   "demand": 1018.0,
    "sold_short": false,
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.20468431771894094,
-    "aa_social": 0.019348268839103868,
-    "referral_artist": 0.021384928716904276,
-    "search_direct_other": 0.31466395112016293,
-    "paid": 0.439918533604888
+    "aa_email": 0.20489296636085627,
+    "aa_social": 0.019367991845056064,
+    "referral_artist": 0.021406727828746176,
+    "search_direct_other": 0.31396534148827726,
+    "paid": 0.44036697247706424
    },
    "unit_shares": {
-    "aa_email": 0.20468431771894094,
-    "aa_social": 0.019348268839103868,
-    "referral_artist": 0.021384928716904276,
-    "search_direct_other": 0.31466395112016293,
-    "paid": 0.439918533604888
+    "aa_email": 0.20489296636085627,
+    "aa_social": 0.019367991845056064,
+    "referral_artist": 0.021406727828746176,
+    "search_direct_other": 0.31396534148827726,
+    "paid": 0.44036697247706424
    },
    "sess_shares": {
-    "aa_email": 0.07950564047279868,
+    "aa_email": 0.0795184743130687,
     "aa_social": 0.005621222038270511,
     "referral_artist": 0.005030865385849408,
     "search_direct_other": 0.03649944172794825,
-    "paid": 0.8733428303751332
+    "paid": 0.8733299965348631
    },
    "convs": {
-    "aa_email": 0.05456012913640032,
+    "aa_email": 0.05455132343447385,
     "aa_social": 0.13013698630136986,
     "referral_artist": 0.10204081632653061,
     "search_direct_other": 0.08157524613220815,
-    "paid": 0.05043350477590007
+    "paid": 0.050434245911034695
    },
    "signup_shares": {
     "aa_email": 0.08245913637472554,
@@ -129,12 +200,12 @@
     "paid": 0.057983682983682984
    },
    "sessions": 77919.0,
-   "paid_share": 0.8733428303751332,
+   "paid_share": 0.8733299965348631,
    "signups": 4254.0,
    "entries": 4254.0,
    "signup_order_rate": 0.08062999529854255,
-   "units_per_buyer": 1.2721598002496879,
-   "cost_per_paid_unit": 14.696425980338812,
+   "units_per_buyer": 1.2725,
+   "cost_per_paid_unit": 14.695853758169934,
    "cost_per_signup": 9.618423734332586,
    "price": 850.0,
    "edition_size": 1110.0,
@@ -172,17 +243,17 @@
     "paid": 0.0759493670886076
    },
    "sess_shares": {
-    "aa_email": 0.461549815498155,
-    "aa_social": 0.01948339483394834,
-    "referral_artist": 0.027158671586715866,
-    "search_direct_other": 0.06391143911439115,
-    "paid": 0.4278966789667897
+    "aa_email": 0.4614817001180638,
+    "aa_social": 0.01948051948051948,
+    "referral_artist": 0.02715466351829988,
+    "search_direct_other": 0.0640495867768595,
+    "paid": 0.42783353010625735
    },
    "convs": {
     "aa_email": 0.03197953309881676,
     "aa_social": 0.06060606060606061,
     "referral_artist": 0.059782608695652176,
-    "search_direct_other": 0.06928406466512702,
+    "search_direct_other": 0.06912442396313365,
     "paid": 0.02966540186271128
    },
    "signup_shares": {
@@ -199,8 +270,8 @@
     "search_direct_other": 0.23333333333333334,
     "paid": 0.06976744186046512
    },
-   "sessions": 6775.0,
-   "paid_share": 0.4278966789667897,
+   "sessions": 6776.0,
+   "paid_share": 0.42783353010625735,
    "signups": 243.0,
    "entries": 243.0,
    "signup_order_rate": 0.1111111111111111,
@@ -229,45 +300,45 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.38954869358669836,
+    "aa_email": 0.3919239904988123,
     "aa_social": 0.028503562945368172,
     "referral_artist": 0.023752969121140142,
-    "search_direct_other": 0.2589073634204275,
+    "search_direct_other": 0.25653206650831356,
     "paid": 0.2992874109263658
    },
    "unit_shares": {
-    "aa_email": 0.38954869358669836,
+    "aa_email": 0.3919239904988123,
     "aa_social": 0.028503562945368172,
     "referral_artist": 0.023752969121140142,
-    "search_direct_other": 0.2589073634204275,
+    "search_direct_other": 0.25653206650831356,
     "paid": 0.2992874109263658
    },
    "sess_shares": {
-    "aa_email": 0.10146162417251098,
+    "aa_email": 0.10149439601494396,
     "aa_social": 0.006324965589565445,
     "referral_artist": 0.012830176312512289,
-    "search_direct_other": 0.047732188503637675,
+    "search_direct_other": 0.04769941666120469,
     "paid": 0.8316510454217736
    },
    "convs": {
-    "aa_email": 0.05054909560723514,
+    "aa_email": 0.05069422021310946,
     "aa_social": 0.13989637305699482,
     "referral_artist": 0.08045977011494253,
-    "search_direct_other": 0.09406110538963268,
+    "search_direct_other": 0.09378220542768807,
     "paid": 0.043779800606848725
    },
    "signup_shares": {
-    "aa_email": 0.10697197539302802,
+    "aa_email": 0.10731373889268626,
     "aa_social": 0.01845522898154477,
     "referral_artist": 0.0215311004784689,
-    "search_direct_other": 0.0936431989063568,
+    "search_direct_other": 0.09330143540669857,
     "paid": 0.7593984962406015
    },
    "s2o": {
-    "aa_email": 0.28115015974440893,
+    "aa_email": 0.28343949044585987,
     "aa_social": 0.1111111111111111,
     "referral_artist": 0.1746031746031746,
-    "search_direct_other": 0.15693430656934307,
+    "search_direct_other": 0.15384615384615385,
     "paid": 0.05310531053105311
    },
    "sessions": 61028.0,
@@ -276,7 +347,7 @@
    "entries": 3039.0,
    "signup_order_rate": 0.087857847976308,
    "units_per_buyer": 1.0404761904761906,
-   "cost_per_paid_unit": 34.728304341523526,
+   "cost_per_paid_unit": 34.64919658675924,
    "cost_per_signup": 12.41520090311104,
    "price": 1000.0,
    "edition_size": 463.0,
@@ -294,34 +365,34 @@
    "window_end": "2026-04-30",
    "campaign_days": 20.0,
    "window_hours": 48.0,
-   "units": 322.0,
-   "demand": 322.0,
+   "units": 321.0,
+   "demand": 321.0,
    "sold_short": false,
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.42586750788643535,
-    "aa_social": 0.07886435331230283,
-    "referral_artist": 0.012618296529968454,
-    "search_direct_other": 0.2744479495268139,
-    "paid": 0.2082018927444795
+    "aa_email": 0.4272151898734177,
+    "aa_social": 0.0759493670886076,
+    "referral_artist": 0.012658227848101266,
+    "search_direct_other": 0.27531645569620256,
+    "paid": 0.2088607594936709
    },
    "unit_shares": {
-    "aa_email": 0.42586750788643535,
-    "aa_social": 0.07886435331230283,
-    "referral_artist": 0.012618296529968454,
-    "search_direct_other": 0.2744479495268139,
-    "paid": 0.2082018927444795
+    "aa_email": 0.4272151898734177,
+    "aa_social": 0.0759493670886076,
+    "referral_artist": 0.012658227848101266,
+    "search_direct_other": 0.27531645569620256,
+    "paid": 0.2088607594936709
    },
    "sess_shares": {
-    "aa_email": 0.13258730598669624,
-    "aa_social": 0.011744733924611974,
-    "referral_artist": 0.0010740022172949003,
-    "search_direct_other": 0.04684035476718403,
-    "paid": 0.8077536031042128
+    "aa_email": 0.13261735666031527,
+    "aa_social": 0.011744327039667418,
+    "referral_artist": 0.001073965009527109,
+    "search_direct_other": 0.0468387320284081,
+    "paid": 0.8077256192620821
    },
    "convs": {
-    "aa_email": 0.05252155735563104,
+    "aa_email": 0.052507836990595615,
     "aa_social": 0.1976401179941003,
     "referral_artist": null,
     "search_direct_other": 0.060650887573964495,
@@ -341,13 +412,13 @@
     "search_direct_other": 0.2804878048780488,
     "paid": 0.08273381294964029
    },
-   "sessions": 28864.0,
-   "paid_share": 0.8077536031042128,
+   "sessions": 28865.0,
+   "paid_share": 0.8077256192620821,
    "signups": 955.0,
    "entries": 955.0,
    "signup_order_rate": 0.15078534031413612,
-   "units_per_buyer": 1.3879310344827587,
-   "cost_per_paid_unit": 34.10837662337662,
+   "units_per_buyer": 1.3896103896103895,
+   "cost_per_paid_unit": 34.106700651373544,
    "cost_per_signup": 32.396140532600086,
    "price": 763.1578947368421,
    "edition_size": 342.0,
@@ -385,41 +456,41 @@
     "paid": 0.21052631578947367
    },
    "sess_shares": {
-    "aa_email": 0.16428862617203424,
-    "aa_social": 0.014824148537968351,
+    "aa_email": 0.16431350750416898,
+    "aa_social": 0.014823049842505095,
     "referral_artist": 0.0,
-    "search_direct_other": 0.04954971648815921,
-    "paid": 0.7713375088018382
+    "search_direct_other": 0.049471928849360754,
+    "paid": 0.7713915138039652
    },
    "convs": {
-    "aa_email": 0.04556733588991654,
+    "aa_email": 0.04555705908885882,
     "aa_social": 0.09,
     "referral_artist": null,
-    "search_direct_other": 0.06581899775617053,
-    "paid": 0.042233219622351416
+    "search_direct_other": 0.06441947565543071,
+    "paid": 0.04232321291314373
    },
    "signup_shares": {
     "aa_email": 0.16735708367854185,
     "aa_social": 0.029826014913007456,
     "referral_artist": 0.0016570008285004142,
-    "search_direct_other": 0.07290803645401822,
-    "paid": 0.728251864125932
+    "search_direct_other": 0.07125103562551781,
+    "paid": 0.7299088649544325
    },
    "s2o": {
     "aa_email": 0.18811881188118812,
     "aa_social": 0.1111111111111111,
     "referral_artist": null,
-    "search_direct_other": 0.17045454545454544,
-    "paid": 0.034129692832764506
+    "search_direct_other": 0.1744186046511628,
+    "paid": 0.0340522133938706
    },
-   "sessions": 26983.0,
-   "paid_share": 0.7713375088018382,
+   "sessions": 26985.0,
+   "paid_share": 0.7713915138039652,
    "signups": 1282.0,
    "entries": 1282.0,
    "signup_order_rate": 0.06942277691107644,
    "units_per_buyer": 1.2222222222222223,
    "cost_per_paid_unit": 25.584987373737373,
-   "cost_per_signup": 10.397497422081184,
+   "cost_per_signup": 10.373893568682586,
    "price": 500.0,
    "edition_size": 246.0,
    "units_target": 480.0,
@@ -456,35 +527,35 @@
     "paid": 0.34908700322234154
    },
    "sess_shares": {
-    "aa_email": 0.09986757136811064,
-    "aa_social": 0.007645364315262059,
-    "referral_artist": 0.018430788974292463,
-    "search_direct_other": 0.056917006839870575,
-    "paid": 0.8171392685024642
+    "aa_email": 0.09988258744504819,
+    "aa_social": 0.00764546869453622,
+    "referral_artist": 0.018431040602899816,
+    "search_direct_other": 0.05689047866095077,
+    "paid": 0.817150424596565
    },
    "convs": {
-    "aa_email": 0.060833902939166094,
+    "aa_email": 0.06096227446692182,
     "aa_social": 0.2375,
     "referral_artist": 0.08074074074074074,
-    "search_direct_other": 0.08131446390021588,
+    "search_direct_other": 0.08111351091912647,
     "paid": 0.04689823400664962
    },
    "signup_shares": {
-    "aa_email": 0.11609705191755805,
+    "aa_email": 0.11635794416905818,
     "aa_social": 0.03469866944951735,
     "referral_artist": 0.028437255413514217,
-    "search_direct_other": 0.08844247325854422,
+    "search_direct_other": 0.0881815810070441,
     "paid": 0.7323245499608662
    },
    "s2o": {
-    "aa_email": 0.29213483146067415,
+    "aa_email": 0.2914798206278027,
     "aa_social": 0.22556390977443608,
     "referral_artist": 0.13761467889908258,
-    "search_direct_other": 0.2890855457227139,
+    "search_direct_other": 0.28994082840236685,
     "paid": 0.09262557890986818
    },
-   "sessions": 73247.0,
-   "paid_share": 0.8171392685024642,
+   "sessions": 73246.0,
+   "paid_share": 0.817150424596565,
    "signups": 3920.0,
    "entries": 3920.0,
    "signup_order_rate": 0.1364795918367347,
@@ -598,41 +669,41 @@
     "paid": 0.24456521739130435
    },
    "sess_shares": {
-    "aa_email": 0.15127388535031847,
-    "aa_social": 0.015351951657684142,
-    "referral_artist": 0.021558059774620286,
-    "search_direct_other": 0.07145190266209374,
-    "paid": 0.7403642005552834
+    "aa_email": 0.15128006206361522,
+    "aa_social": 0.015352578498223838,
+    "referral_artist": 0.021436446041402966,
+    "search_direct_other": 0.07145482013800988,
+    "paid": 0.7404760932587481
    },
    "convs": {
     "aa_email": 0.04156545209176788,
     "aa_social": 0.09840425531914894,
-    "referral_artist": 0.10984848484848485,
+    "referral_artist": 0.10857142857142857,
     "search_direct_other": 0.06971428571428571,
-    "paid": 0.047372194341807755
+    "paid": 0.047422111938240974
    },
    "signup_shares": {
     "aa_email": 0.12520325203252033,
     "aa_social": 0.03008130081300813,
-    "referral_artist": 0.04715447154471545,
+    "referral_artist": 0.046341463414634146,
     "search_direct_other": 0.0991869918699187,
-    "paid": 0.6983739837398374
+    "paid": 0.6991869918699187
    },
    "s2o": {
     "aa_email": 0.22077922077922077,
     "aa_social": 0.16216216216216217,
-    "referral_artist": 0.20689655172413793,
+    "referral_artist": 0.21052631578947367,
     "search_direct_other": 0.319672131147541,
-    "paid": 0.08032596041909197
+    "paid": 0.08023255813953488
    },
-   "sessions": 24492.0,
-   "paid_share": 0.7403642005552834,
+   "sessions": 24491.0,
+   "paid_share": 0.7404760932587481,
    "signups": 1297.0,
    "entries": 1297.0,
    "signup_order_rate": 0.12490362374710871,
    "units_per_buyer": 1.3745704467353952,
-   "cost_per_paid_unit": 31.634706075533657,
-   "cost_per_signup": 15.826784654836134,
+   "cost_per_paid_unit": 32.43356228956229,
+   "cost_per_signup": 15.808381416865394,
    "price": 1000.0,
    "edition_size": 671.0,
    "units_target": 450.0,
@@ -669,41 +740,41 @@
     "paid": 0.35789473684210527
    },
    "sess_shares": {
-    "aa_email": 0.117096018735363,
-    "aa_social": 0.012405848471422242,
-    "referral_artist": 0.00018988543578707514,
-    "search_direct_other": 0.05390636538177522,
-    "paid": 0.8164018819756524
+    "aa_email": 0.11709354825098105,
+    "aa_social": 0.012384488796995654,
+    "referral_artist": 0.00018988142959618548,
+    "search_direct_other": 0.05392632600531668,
+    "paid": 0.8164057555171105
    },
    "convs": {
     "aa_email": 0.05333333333333334,
-    "aa_social": 0.12755102040816327,
+    "aa_social": 0.12776831345826234,
     "referral_artist": null,
-    "search_direct_other": 0.07475538160469668,
-    "paid": 0.05553689107119783
+    "search_direct_other": 0.07472613458528951,
+    "paid": 0.05556129832540831
    },
    "signup_shares": {
-    "aa_email": 0.10914454277286136,
-    "aa_social": 0.02765486725663717,
-    "referral_artist": 0.0003687315634218289,
-    "search_direct_other": 0.07042772861356932,
-    "paid": 0.7924041297935103
+    "aa_email": 0.10910431256911168,
+    "aa_social": 0.027644673792849243,
+    "referral_artist": 0.00036859565057132326,
+    "search_direct_other": 0.07040176925912274,
+    "paid": 0.792480648728345
    },
    "s2o": {
     "aa_email": 0.20608108108108109,
     "aa_social": 0.013333333333333334,
     "referral_artist": null,
     "search_direct_other": 0.16230366492146597,
-    "paid": 0.05072126570497906
+    "paid": 0.05069767441860465
    },
-   "sessions": 47397.0,
-   "paid_share": 0.8164018819756524,
+   "sessions": 47398.0,
+   "paid_share": 0.8164057555171105,
    "signups": 2850.0,
    "entries": 2850.0,
    "signup_order_rate": 0.07157894736842105,
    "units_per_buyer": 1.1203438395415473,
    "cost_per_paid_unit": 17.07262760065859,
-   "cost_per_signup": 9.999292537532758,
+   "cost_per_signup": 9.99832704365565,
    "price": 451.74537987679673,
    "edition_size": 487.0,
    "units_target": 750.0,
@@ -729,52 +800,52 @@
     "aa_email": 0.29048582995951416,
     "aa_social": 0.06275303643724696,
     "referral_artist": 0.0020242914979757085,
-    "search_direct_other": 0.17813765182186234,
-    "paid": 0.4665991902834008
+    "search_direct_other": 0.17611336032388664,
+    "paid": 0.4686234817813765
    },
    "unit_shares": {
     "aa_email": 0.29048582995951416,
     "aa_social": 0.06275303643724696,
     "referral_artist": 0.0020242914979757085,
-    "search_direct_other": 0.17813765182186234,
-    "paid": 0.4665991902834008
+    "search_direct_other": 0.17611336032388664,
+    "paid": 0.4686234817813765
    },
    "sess_shares": {
-    "aa_email": 0.051667596719080854,
-    "aa_social": 0.016939694382228608,
+    "aa_email": 0.051675240985498826,
+    "aa_social": 0.016893828783720772,
     "referral_artist": 0.0035163625522676716,
-    "search_direct_other": 0.0792633984879641,
-    "paid": 0.8486129478584588
+    "search_direct_other": 0.07919460009020235,
+    "paid": 0.8487199675883104
    },
    "convs": {
-    "aa_email": 0.07737831040094689,
-    "aa_social": 0.1592960288808664,
+    "aa_email": 0.07781065088757397,
+    "aa_social": 0.1588235294117647,
     "referral_artist": 0.04565217391304348,
-    "search_direct_other": 0.04793133378339281,
-    "paid": 0.05591237062326034
+    "search_direct_other": 0.04777992277992278,
+    "paid": 0.0559413476001333
    },
    "signup_shares": {
-    "aa_email": 0.06880673595579528,
-    "aa_social": 0.04644125772924615,
-    "referral_artist": 0.0027627943691619526,
-    "search_direct_other": 0.06538613340349954,
-    "paid": 0.8166030785422971
+    "aa_email": 0.06917411888479748,
+    "aa_social": 0.0461599158337717,
+    "referral_artist": 0.002761704366123093,
+    "search_direct_other": 0.06509731720147291,
+    "paid": 0.8168069437138348
    },
    "s2o": {
-    "aa_email": 0.29636711281070743,
-    "aa_social": 0.1359773371104816,
+    "aa_email": 0.2946768060836502,
+    "aa_social": 0.13675213675213677,
     "referral_artist": null,
-    "search_direct_other": 0.1790744466800805,
-    "paid": 0.0712099242790398
+    "search_direct_other": 0.17575757575757575,
+    "paid": 0.07148607309611979
    },
    "sessions": 130817.0,
-   "paid_share": 0.8486129478584588,
+   "paid_share": 0.8487199675883104,
    "signups": 8058.0,
    "entries": 8058.0,
    "signup_order_rate": 0.09171010176222388,
    "units_per_buyer": 1.0,
-   "cost_per_paid_unit": 16.794690863122174,
-   "cost_per_signup": 9.253774153218071,
+   "cost_per_paid_unit": 16.722143602374345,
+   "cost_per_signup": 9.251464522687092,
    "price": 675.0,
    "edition_size": 1073.0,
    "units_target": 1000.0,
@@ -811,41 +882,41 @@
     "paid": 0.11570247933884298
    },
    "sess_shares": {
-    "aa_email": 0.13428930715560602,
-    "aa_social": 0.016002758396884635,
-    "referral_artist": 0.007788414733084537,
-    "search_direct_other": 0.03796852182378712,
-    "paid": 0.8039509978906377
+    "aa_email": 0.13427719518873857,
+    "aa_social": 0.016003732175817936,
+    "referral_artist": 0.007788888663515953,
+    "search_direct_other": 0.03790998154195655,
+    "paid": 0.804020202429971
    },
    "convs": {
-    "aa_email": 0.031113124905603383,
+    "aa_email": 0.03126888217522659,
     "aa_social": 0.08745247148288973,
     "referral_artist": 0.041666666666666664,
-    "search_direct_other": 0.04487179487179487,
-    "paid": 0.017634593067258692
+    "search_direct_other": 0.0444087747458534,
+    "paid": 0.017659375867201493
    },
    "signup_shares": {
-    "aa_email": 0.19180633147113593,
-    "aa_social": 0.06424581005586592,
-    "referral_artist": 0.0148975791433892,
-    "search_direct_other": 0.0782122905027933,
-    "paid": 0.6508379888268156
+    "aa_email": 0.1925581395348837,
+    "aa_social": 0.0641860465116279,
+    "referral_artist": 0.014883720930232559,
+    "search_direct_other": 0.07720930232558139,
+    "paid": 0.6511627906976745
    },
    "s2o": {
-    "aa_email": 0.14563106796116504,
+    "aa_email": 0.14492753623188406,
     "aa_social": 0.07246376811594203,
     "referral_artist": null,
-    "search_direct_other": 0.07142857142857142,
-    "paid": 0.024320457796852647
+    "search_direct_other": 0.07228915662650602,
+    "paid": 0.024285714285714285
    },
-   "sessions": 49304.0,
-   "paid_share": 0.8039509978906377,
+   "sessions": 49301.0,
+   "paid_share": 0.804020202429971,
    "signups": 1150.0,
    "entries": 1150.0,
    "signup_order_rate": 0.051304347826086956,
    "units_per_buyer": 1.2429906542056075,
    "cost_per_paid_unit": 103.48861111111111,
-   "cost_per_signup": 22.50994976674752,
+   "cost_per_signup": 22.49872173913043,
    "price": 1500.0,
    "edition_size": 203.0,
    "units_target": 500.0,
@@ -882,41 +953,41 @@
     "paid": 0.32598425196850395
    },
    "sess_shares": {
-    "aa_email": 0.09983371706318751,
-    "aa_social": 0.012982860066513174,
-    "referral_artist": 0.03892726187430715,
-    "search_direct_other": 0.06079986356271851,
-    "paid": 0.7874562974332736
+    "aa_email": 0.09987848295563562,
+    "aa_social": 0.013004455624960028,
+    "referral_artist": 0.038906772976314834,
+    "search_direct_other": 0.06075852218219029,
+    "paid": 0.7874517662608992
    },
    "convs": {
-    "aa_email": 0.048046124279308135,
-    "aa_social": 0.1297208538587849,
-    "referral_artist": 0.10021905805038335,
-    "search_direct_other": 0.060659186535764374,
-    "paid": 0.0455086902376956
+    "aa_email": 0.04823906083244397,
+    "aa_social": 0.12950819672131147,
+    "referral_artist": 0.10027397260273972,
+    "search_direct_other": 0.06070175438596491,
+    "paid": 0.045509922300132656
    },
    "signup_shares": {
-    "aa_email": 0.09611277231952157,
-    "aa_social": 0.03374626228107646,
-    "referral_artist": 0.07817172148654421,
-    "search_direct_other": 0.0739000427167877,
-    "paid": 0.7180692011960701
+    "aa_email": 0.09649871904355252,
+    "aa_social": 0.033731853116994025,
+    "referral_artist": 0.07813834329632792,
+    "search_direct_other": 0.07386848847139198,
+    "paid": 0.7177625960717335
    },
    "s2o": {
-    "aa_email": 0.28888888888888886,
+    "aa_email": 0.28761061946902655,
     "aa_social": 0.21518987341772153,
     "referral_artist": 0.14754098360655737,
     "search_direct_other": 0.30057803468208094,
     "paid": 0.1023200475907198
    },
-   "sessions": 46908.0,
-   "paid_share": 0.7874562974332736,
+   "sessions": 46907.0,
+   "paid_share": 0.7874517662608992,
    "signups": 2466.0,
    "entries": 2466.0,
    "signup_order_rate": 0.13746958637469586,
    "units_per_buyer": 1.080327868852459,
    "cost_per_paid_unit": 17.468031034987558,
-   "cost_per_signup": 11.495242447795674,
+   "cost_per_signup": 11.50015284610742,
    "price": 500.0,
    "edition_size": 837.0,
    "units_target": 800.0,
@@ -953,40 +1024,40 @@
     "paid": 0.18040089086859687
    },
    "sess_shares": {
-    "aa_email": 0.22212277775517678,
-    "aa_social": 0.024246369146902078,
-    "referral_artist": 0.0425531914893617,
-    "search_direct_other": 0.11911639070827061,
-    "paid": 0.5919612709002888
+    "aa_email": 0.2225386493083808,
+    "aa_social": 0.02436940602115541,
+    "referral_artist": 0.04247355573637104,
+    "search_direct_other": 0.11867371847030106,
+    "paid": 0.5919446704637917
    },
    "convs": {
-    "aa_email": 0.03901098901098901,
-    "aa_social": 0.1610738255033557,
-    "referral_artist": 0.14722753346080306,
-    "search_direct_other": 0.054986338797814206,
-    "paid": 0.04199024122053467
+    "aa_email": 0.03893967093235832,
+    "aa_social": 0.16193656093489148,
+    "referral_artist": 0.14655172413793102,
+    "search_direct_other": 0.055193692149468634,
+    "paid": 0.041993127147766325
    },
    "signup_shares": {
     "aa_email": 0.17246963562753037,
-    "aa_social": 0.07773279352226721,
-    "referral_artist": 0.12469635627530365,
+    "aa_social": 0.07854251012145749,
+    "referral_artist": 0.12388663967611337,
     "search_direct_other": 0.13036437246963561,
     "paid": 0.49473684210526314
    },
    "s2o": {
     "aa_email": 0.26291079812206575,
-    "aa_social": 0.3229166666666667,
-    "referral_artist": 0.2532467532467532,
+    "aa_social": 0.31958762886597936,
+    "referral_artist": 0.2549019607843137,
     "search_direct_other": 0.39751552795031053,
     "paid": 0.11947626841243862
    },
-   "sessions": 24581.0,
-   "paid_share": 0.5919612709002888,
+   "sessions": 24580.0,
+   "paid_share": 0.5919446704637917,
    "signups": 1282.0,
    "entries": 1282.0,
    "signup_order_rate": 0.20904836193447737,
    "units_per_buyer": 1.0382882882882882,
-   "cost_per_paid_unit": 26.13349864886346,
+   "cost_per_paid_unit": 26.359762706429375,
    "cost_per_signup": 7.1060800942675995,
    "price": 661.1435726210351,
    "edition_size": 599.0,
@@ -1010,55 +1081,55 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.3707482993197279,
+    "aa_email": 0.36904761904761907,
     "aa_social": 0.03231292517006803,
     "referral_artist": 0.003401360544217687,
-    "search_direct_other": 0.28741496598639454,
+    "search_direct_other": 0.2891156462585034,
     "paid": 0.30612244897959184
    },
    "unit_shares": {
-    "aa_email": 0.3707482993197279,
+    "aa_email": 0.36904761904761907,
     "aa_social": 0.03231292517006803,
     "referral_artist": 0.003401360544217687,
-    "search_direct_other": 0.28741496598639454,
+    "search_direct_other": 0.2891156462585034,
     "paid": 0.30612244897959184
    },
    "sess_shares": {
-    "aa_email": 0.14176997337779332,
+    "aa_email": 0.1416086266706107,
     "aa_social": 0.013499341167612337,
     "referral_artist": 0.0002958022965014656,
-    "search_direct_other": 0.04993680587302014,
-    "paid": 0.7944980772850727
+    "search_direct_other": 0.04999058810874768,
+    "paid": 0.7946056417565278
    },
    "convs": {
-    "aa_email": 0.07113050075872535,
+    "aa_email": 0.07102164830991264,
     "aa_social": 0.17928286852589642,
     "referral_artist": null,
-    "search_direct_other": 0.08185245018847603,
-    "paid": 0.05635471314943307
+    "search_direct_other": 0.08230231307154384,
+    "paid": 0.05638092659650073
    },
    "signup_shares": {
-    "aa_email": 0.16411378555798686,
-    "aa_social": 0.03938730853391685,
-    "referral_artist": 0.001312910284463895,
-    "search_direct_other": 0.06652078774617068,
-    "paid": 0.7286652078774617
+    "aa_email": 0.16360454943132108,
+    "aa_social": 0.03937007874015748,
+    "referral_artist": 0.0013123359580052493,
+    "search_direct_other": 0.06692913385826772,
+    "paid": 0.7287839020122485
    },
    "s2o": {
-    "aa_email": 0.33066666666666666,
+    "aa_email": 0.32887700534759357,
     "aa_social": 0.16666666666666666,
     "referral_artist": null,
-    "search_direct_other": 0.34210526315789475,
-    "paid": 0.0894894894894895
+    "search_direct_other": 0.3464052287581699,
+    "paid": 0.0894357743097239
    },
    "sessions": 37187.0,
-   "paid_share": 0.7944980772850727,
+   "paid_share": 0.7946056417565278,
    "signups": 2423.0,
    "entries": 2423.0,
    "signup_order_rate": 0.1411473380107305,
    "units_per_buyer": 1.0187074829931972,
    "cost_per_paid_unit": 53.35032888888889,
-   "cost_per_signup": 6.475269718748877,
+   "cost_per_signup": 6.474215117330465,
    "price": 1300.0,
    "edition_size": 629.0,
    "units_target": 850.0,
@@ -1095,32 +1166,32 @@
     "paid": 0.0728744939271255
    },
    "sess_shares": {
-    "aa_email": 0.3356739429094795,
+    "aa_email": 0.3360810054444614,
     "aa_social": 0.01887752505978731,
     "referral_artist": 0.09525263318577316,
-    "search_direct_other": 0.072202717142421,
+    "search_direct_other": 0.07179565460743907,
     "paid": 0.47799318170253907
    },
    "convs": {
-    "aa_email": 0.0241018644838563,
+    "aa_email": 0.024224072672218017,
     "aa_social": 0.07008086253369272,
     "referral_artist": 0.05502136752136752,
-    "search_direct_other": 0.03241719520789288,
-    "paid": 0.021183734298488396
+    "search_direct_other": 0.03118355776045358,
+    "paid": 0.021290185224611454
    },
    "signup_shares": {
-    "aa_email": 0.29831144465290804,
+    "aa_email": 0.300187617260788,
     "aa_social": 0.04878048780487805,
     "referral_artist": 0.19324577861163228,
-    "search_direct_other": 0.08630393996247655,
-    "paid": 0.37335834896810505
+    "search_direct_other": 0.0825515947467167,
+    "paid": 0.37523452157598497
    },
    "s2o": {
-    "aa_email": 0.1949685534591195,
+    "aa_email": 0.19375,
     "aa_social": null,
     "referral_artist": 0.1553398058252427,
-    "search_direct_other": 0.30434782608695654,
-    "paid": 0.07035175879396985
+    "search_direct_other": 0.3181818181818182,
+    "paid": 0.07
    },
    "sessions": 19653.0,
    "paid_share": 0.47799318170253907,
@@ -1129,7 +1200,7 @@
    "signup_order_rate": 0.14412811387900357,
    "units_per_buyer": 1.0,
    "cost_per_paid_unit": 55.95536121673004,
-   "cost_per_signup": 12.654830111411147,
+   "cost_per_signup": 12.591555960854093,
    "price": 593.6016949152543,
    "edition_size": 472.0,
    "units_target": 600.0,
@@ -1155,52 +1226,52 @@
     "aa_email": 0.30383480825958703,
     "aa_social": 0.04424778761061947,
     "referral_artist": 0.1592920353982301,
-    "search_direct_other": 0.2536873156342183,
-    "paid": 0.23893805309734514
+    "search_direct_other": 0.25663716814159293,
+    "paid": 0.2359882005899705
    },
    "unit_shares": {
     "aa_email": 0.30383480825958703,
     "aa_social": 0.04424778761061947,
     "referral_artist": 0.1592920353982301,
-    "search_direct_other": 0.2536873156342183,
-    "paid": 0.23893805309734514
+    "search_direct_other": 0.25663716814159293,
+    "paid": 0.2359882005899705
    },
    "sess_shares": {
-    "aa_email": 0.12120749338220321,
-    "aa_social": 0.023620443901445735,
-    "referral_artist": 0.04907350845041743,
-    "search_direct_other": 0.07381388719201792,
-    "paid": 0.7322846670739157
+    "aa_email": 0.12121366390062618,
+    "aa_social": 0.02357073766736242,
+    "referral_artist": 0.049076006719951125,
+    "search_direct_other": 0.07407218856590134,
+    "paid": 0.7320674031461589
    },
    "convs": {
     "aa_email": 0.052078958420831586,
-    "aa_social": 0.1810344827586207,
+    "aa_social": 0.17926565874730022,
     "referral_artist": 0.11825726141078838,
-    "search_direct_other": 0.07310344827586207,
-    "paid": 0.05637817170663886
+    "search_direct_other": 0.07353951890034365,
+    "paid": 0.0564673157162726
    },
    "signup_shares": {
-    "aa_email": 0.10008071025020178,
-    "aa_social": 0.06779661016949153,
-    "referral_artist": 0.09200968523002422,
-    "search_direct_other": 0.08555286521388217,
-    "paid": 0.6545601291364003
+    "aa_email": 0.1,
+    "aa_social": 0.06693548387096775,
+    "referral_artist": 0.09193548387096774,
+    "search_direct_other": 0.08629032258064516,
+    "paid": 0.6548387096774193
    },
    "s2o": {
     "aa_email": 0.3709677419354839,
-    "aa_social": 0.13095238095238096,
+    "aa_social": 0.13253012048192772,
     "referral_artist": 0.21929824561403508,
-    "search_direct_other": 0.25471698113207547,
-    "paid": 0.07891491985203453
+    "search_direct_other": 0.2523364485981308,
+    "paid": 0.07881773399014778
    },
-   "sessions": 19644.0,
-   "paid_share": 0.7322846670739157,
+   "sessions": 19643.0,
+   "paid_share": 0.7320674031461589,
    "signups": 1294.0,
    "entries": 1294.0,
    "signup_order_rate": 0.13446676970633695,
    "units_per_buyer": 1.1057692307692308,
-   "cost_per_paid_unit": 25.72819080316271,
-   "cost_per_signup": 6.914727767539454,
+   "cost_per_paid_unit": 26.648639008620687,
+   "cost_per_signup": 6.9117861140085735,
    "price": 0.0,
    "edition_size": 0.0,
    "units_target": null,
@@ -1244,25 +1315,25 @@
     "paid": 0.7747878787878788
    },
    "convs": {
-    "aa_email": 0.05877448937057107,
-    "aa_social": 0.20981507823613088,
-    "referral_artist": 0.08805870580386925,
+    "aa_email": 0.058982909545644016,
+    "aa_social": 0.21052631578947367,
+    "referral_artist": 0.0877251501000667,
     "search_direct_other": 0.0750256937307297,
-    "paid": 0.036425740508969545
+    "paid": 0.036477889027951606
    },
    "signup_shares": {
-    "aa_email": 0.11828859060402684,
-    "aa_social": 0.12374161073825503,
-    "referral_artist": 0.11073825503355705,
-    "search_direct_other": 0.061241610738255035,
-    "paid": 0.5859899328859061
+    "aa_email": 0.11855886049434436,
+    "aa_social": 0.12400502723083369,
+    "referral_artist": 0.11018014243820695,
+    "search_direct_other": 0.0611646418098031,
+    "paid": 0.5860913280268119
    },
    "s2o": {
-    "aa_email": 0.1879432624113475,
-    "aa_social": 0.09152542372881356,
-    "referral_artist": 0.19696969696969696,
+    "aa_email": 0.1872791519434629,
+    "aa_social": 0.09121621621621621,
+    "referral_artist": 0.19771863117870722,
     "search_direct_other": 0.23972602739726026,
-    "paid": 0.08589835361488905
+    "paid": 0.08577555396711938
    },
    "sessions": 49500.0,
    "paid_share": 0.7747878787878788,
@@ -1271,7 +1342,7 @@
    "signup_order_rate": 0.11733870967741936,
    "units_per_buyer": 1.0042826552462527,
    "cost_per_paid_unit": 18.92905926295574,
-   "cost_per_signup": 7.323821183642365,
+   "cost_per_signup": 7.32255414581844,
    "price": 600.0,
    "edition_size": 492.0,
    "units_target": 200.0,
@@ -1310,22 +1381,22 @@
    "sess_shares": {
     "aa_email": 0.4094346416996759,
     "aa_social": 0.03168887288440764,
-    "referral_artist": 0.03348937702556716,
-    "search_direct_other": 0.06733885487936622,
+    "referral_artist": 0.03330932661145121,
+    "search_direct_other": 0.06751890529348217,
     "paid": 0.45804825351098305
    },
    "convs": {
     "aa_email": 0.0158311345646438,
     "aa_social": 0.07954545454545454,
-    "referral_artist": 0.10215053763440861,
-    "search_direct_other": 0.06149732620320856,
+    "referral_artist": 0.0972972972972973,
+    "search_direct_other": 0.064,
     "paid": 0.018474842767295597
    },
    "signup_shares": {
     "aa_email": 0.2589928057553957,
     "aa_social": 0.10071942446043165,
-    "referral_artist": 0.1366906474820144,
-    "search_direct_other": 0.16546762589928057,
+    "referral_artist": 0.12949640287769784,
+    "search_direct_other": 0.17266187050359713,
     "paid": 0.3381294964028777
    },
    "s2o": {
@@ -1379,41 +1450,41 @@
     "paid": 0.21761658031088082
    },
    "sess_shares": {
-    "aa_email": 0.18541858548645113,
-    "aa_social": 0.020311212370934122,
-    "referral_artist": 0.014154830578312084,
-    "search_direct_other": 0.1850307819089631,
-    "paid": 0.5950845896553396
+    "aa_email": 0.18542757417102967,
+    "aa_social": 0.02006980802792321,
+    "referral_artist": 0.014155516773317821,
+    "search_direct_other": 0.18523366298235408,
+    "paid": 0.5951134380453752
    },
    "convs": {
     "aa_email": 0.06065359477124183,
-    "aa_social": 0.19331742243436753,
+    "aa_social": 0.1932367149758454,
     "referral_artist": 0.3493150684931507,
-    "search_direct_other": 0.02436468430704742,
-    "paid": 0.05514825676115999
+    "search_direct_other": 0.024600889819419,
+    "paid": 0.0552297165200391
    },
    "signup_shares": {
-    "aa_email": 0.19578059071729959,
-    "aa_social": 0.06835443037974684,
-    "referral_artist": 0.08607594936708861,
-    "search_direct_other": 0.07848101265822785,
-    "paid": 0.5713080168776371
+    "aa_email": 0.19561551433389546,
+    "aa_social": 0.06745362563237774,
+    "referral_artist": 0.08600337268128162,
+    "search_direct_other": 0.07925801011804384,
+    "paid": 0.5716694772344013
    },
    "s2o": {
     "aa_email": 0.1939655172413793,
-    "aa_social": 0.14814814814814814,
+    "aa_social": 0.15,
     "referral_artist": 0.10784313725490197,
-    "search_direct_other": 0.13978494623655913,
-    "paid": 0.053175775480059084
+    "search_direct_other": 0.13829787234042554,
+    "paid": 0.05309734513274336
    },
-   "sessions": 20629.0,
-   "paid_share": 0.5950845896553396,
+   "sessions": 20628.0,
+   "paid_share": 0.5951134380453752,
    "signups": 1255.0,
    "entries": 1255.0,
    "signup_order_rate": 0.09402390438247012,
    "units_per_buyer": 1.005050505050505,
    "cost_per_paid_unit": 61.70227087820053,
-   "cost_per_signup": 6.996665332760539,
+   "cost_per_signup": 6.992241417809588,
    "price": 650.0,
    "edition_size": 283.0,
    "units_target": 225.0,
@@ -1450,18 +1521,18 @@
     "paid": 0.3394919168591224
    },
    "sess_shares": {
-    "aa_email": 0.08466329831314995,
-    "aa_social": 0.011027347822600049,
-    "referral_artist": 0.006068382922982329,
-    "search_direct_other": 0.05235651081348411,
-    "paid": 0.8458844601277836
+    "aa_email": 0.08466103507271172,
+    "aa_social": 0.011000320786997433,
+    "referral_artist": 0.006068220701454234,
+    "search_direct_other": 0.05239520958083832,
+    "paid": 0.8458752138579982
    },
    "convs": {
     "aa_email": 0.020208399115882538,
-    "aa_social": 0.11636363636363636,
+    "aa_social": 0.1166464155528554,
     "referral_artist": 0.06167400881057269,
-    "search_direct_other": 0.04442175134031146,
-    "paid": 0.027558308577207508
+    "search_direct_other": 0.044387755102040814,
+    "paid": 0.027557873113692028
    },
    "signup_shares": {
     "aa_email": 0.05898617511520737,
@@ -1477,8 +1548,8 @@
     "search_direct_other": 0.1896551724137931,
     "paid": 0.05963302752293578
    },
-   "sessions": 74814.0,
-   "paid_share": 0.8458844601277836,
+   "sessions": 74816.0,
+   "paid_share": 0.8458752138579982,
    "signups": 2269.0,
    "entries": 2269.0,
    "signup_order_rate": 0.08197443807844866,
@@ -1521,41 +1592,41 @@
     "paid": 0.21100917431192662
    },
    "sess_shares": {
-    "aa_email": 0.04408263187900332,
-    "aa_social": 0.013145980750528186,
-    "referral_artist": 0.16554881116066938,
-    "search_direct_other": 0.03306616586739998,
-    "paid": 0.7441564103423991
+    "aa_email": 0.04403011351251656,
+    "aa_social": 0.013128552505826528,
+    "referral_artist": 0.16557401787361042,
+    "search_direct_other": 0.033098036585570326,
+    "paid": 0.7441692795224761
    },
    "convs": {
-    "aa_email": 0.03195131228604032,
-    "aa_social": 0.1836734693877551,
-    "referral_artist": 0.08832168540463892,
-    "search_direct_other": 0.09888438133874239,
-    "paid": 0.09062640829202344
+    "aa_email": 0.031607006854531605,
+    "aa_social": 0.1839080459770115,
+    "referral_artist": 0.08850632911392405,
+    "search_direct_other": 0.09878419452887538,
+    "paid": 0.09064281368992633
    },
    "signup_shares": {
-    "aa_email": 0.015798382546548806,
-    "aa_social": 0.02708294150836938,
-    "referral_artist": 0.16400225691179238,
-    "search_direct_other": 0.03667481662591687,
-    "paid": 0.7564416024073726
+    "aa_email": 0.015604436924233878,
+    "aa_social": 0.02707275803722504,
+    "referral_artist": 0.16431660086482422,
+    "search_direct_other": 0.03666102650874224,
+    "paid": 0.7563451776649747
    },
    "s2o": {
-    "aa_email": 0.23809523809523808,
+    "aa_email": 0.24096385542168675,
     "aa_social": 0.027777777777777776,
-    "referral_artist": 0.05733944954128441,
+    "referral_artist": 0.057208237986270026,
     "search_direct_other": 0.08717948717948718,
-    "paid": 0.011685728493286921
+    "paid": 0.011682823763360677
    },
-   "sessions": 59638.0,
-   "paid_share": 0.7441564103423991,
+   "sessions": 59641.0,
+   "paid_share": 0.7441692795224761,
    "signups": 5610.0,
    "entries": 5610.0,
    "signup_order_rate": 0.024777183600713012,
    "units_per_buyer": 1.0717703349282297,
-   "cost_per_paid_unit": 18.917898869948285,
-   "cost_per_signup": 3.932451919966034,
+   "cost_per_paid_unit": 19.00160638707195,
+   "cost_per_signup": 3.9329532594001604,
    "price": 500.0,
    "edition_size": 313.0,
    "units_target": 500.0,
@@ -1578,55 +1649,55 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.4096958174904943,
+    "aa_email": 0.40874524714828897,
     "aa_social": 0.03612167300380228,
     "referral_artist": 0.04277566539923954,
     "search_direct_other": 0.34600760456273766,
-    "paid": 0.16539923954372623
+    "paid": 0.16634980988593157
    },
    "unit_shares": {
-    "aa_email": 0.4096958174904943,
+    "aa_email": 0.40874524714828897,
     "aa_social": 0.03612167300380228,
     "referral_artist": 0.04277566539923954,
     "search_direct_other": 0.34600760456273766,
-    "paid": 0.16539923954372623
+    "paid": 0.16634980988593157
    },
    "sess_shares": {
     "aa_email": 0.027955371693619155,
     "aa_social": 0.0026325686348251222,
     "referral_artist": 0.1877898959508587,
-    "search_direct_other": 0.19631440391124483,
-    "paid": 0.5853077598094522
+    "search_direct_other": 0.1961890435000627,
+    "paid": 0.5854331202206343
    },
    "convs": {
     "aa_email": null,
     "aa_social": null,
     "referral_artist": 0.1081441922563418,
-    "search_direct_other": 0.16538952745849297,
-    "paid": 0.47933176269008354
+    "search_direct_other": 0.16613418530351437,
+    "paid": 0.4867237687366167
    },
    "signup_shares": {
-    "aa_email": 0.12223291626564003,
-    "aa_social": 0.0247032402951556,
-    "referral_artist": 0.0519730510105871,
-    "search_direct_other": 0.08309271735643246,
-    "paid": 0.7179980750721848
+    "aa_email": 0.12035566846617973,
+    "aa_social": 0.023817084788821847,
+    "referral_artist": 0.05144490314385519,
+    "search_direct_other": 0.08256589393458241,
+    "paid": 0.7218164496665608
    },
    "s2o": {
-    "aa_email": 0.6325459317585301,
-    "aa_social": 0.2857142857142857,
+    "aa_email": 0.633245382585752,
+    "aa_social": 0.28,
     "referral_artist": 0.09259259259259259,
-    "search_direct_other": 0.5019305019305019,
-    "paid": 0.043789097408400354
+    "search_direct_other": 0.5,
+    "paid": 0.04399472063352398
    },
    "sessions": 7977.0,
-   "paid_share": 0.5853077598094522,
+   "paid_share": 0.5854331202206343,
    "signups": 11213.0,
    "entries": 11213.0,
    "signup_order_rate": 0.046285561401944175,
    "units_per_buyer": 1.2359679266895762,
-   "cost_per_paid_unit": 71.93495739379854,
-   "cost_per_signup": 4.8033748229805076,
+   "cost_per_paid_unit": 72.44764090669477,
+   "cost_per_signup": 4.777965199246099,
    "price": 750.0,
    "edition_size": 1509.0,
    "units_target": 1200.0,
@@ -1663,32 +1734,32 @@
     "paid": 0.3581267217630854
    },
    "sess_shares": {
-    "aa_email": 0.132163804213461,
+    "aa_email": 0.13219010546803084,
     "aa_social": 0.012729807211804002,
     "referral_artist": 2.6301254569842983e-05,
-    "search_direct_other": 0.049078141027327,
+    "search_direct_other": 0.049051839772757164,
     "paid": 0.8060019462928382
    },
    "convs": {
-    "aa_email": 0.026865671641791045,
+    "aa_email": 0.02686032630322324,
     "aa_social": 0.2231404958677686,
     "referral_artist": null,
-    "search_direct_other": 0.08467309753483387,
-    "paid": 0.10585739924946973
+    "search_direct_other": 0.08418230563002681,
+    "paid": 0.10592266275085659
    },
    "signup_shares": {
-    "aa_email": 0.037037037037037035,
-    "aa_social": 0.02962962962962963,
+    "aa_email": 0.03702687877125617,
+    "aa_social": 0.029621503017004936,
     "referral_artist": 0.0,
-    "search_direct_other": 0.04334705075445816,
-    "paid": 0.8899862825788751
+    "search_direct_other": 0.04306088864509051,
+    "paid": 0.8902907295666483
    },
    "s2o": {
     "aa_email": 0.28888888888888886,
     "aa_social": 0.12037037037037036,
     "referral_artist": null,
-    "search_direct_other": 0.13924050632911392,
-    "paid": 0.033600493218249074
+    "search_direct_other": 0.14012738853503184,
+    "paid": 0.033579790511398644
    },
    "sessions": 38021.0,
    "paid_share": 0.8060019462928382,
@@ -1696,8 +1767,8 @@
    "entries": 3810.0,
    "signup_order_rate": 0.048556430446194225,
    "units_per_buyer": 1.2098360655737705,
-   "cost_per_paid_unit": 20.231139462163853,
-   "cost_per_signup": 3.036506148237327,
+   "cost_per_paid_unit": 20.176460706860706,
+   "cost_per_signup": 3.0354677737833597,
    "price": 500.0,
    "edition_size": 437.0,
    "units_target": 400.0,
@@ -1714,61 +1785,61 @@
    "window_end": "2025-07-10",
    "campaign_days": 27.0,
    "window_hours": 168.0,
-   "units": 279.0,
-   "demand": 279.0,
+   "units": 278.0,
+   "demand": 278.0,
    "sold_short": false,
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.23684210526315788,
-    "aa_social": 0.06015037593984962,
-    "referral_artist": 0.05639097744360902,
-    "search_direct_other": 0.20676691729323307,
-    "paid": 0.4398496240601504
+    "aa_email": 0.23773584905660378,
+    "aa_social": 0.06037735849056604,
+    "referral_artist": 0.05660377358490566,
+    "search_direct_other": 0.2037735849056604,
+    "paid": 0.44150943396226416
    },
    "unit_shares": {
-    "aa_email": 0.23684210526315788,
-    "aa_social": 0.06015037593984962,
-    "referral_artist": 0.05639097744360902,
-    "search_direct_other": 0.20676691729323307,
-    "paid": 0.4398496240601504
+    "aa_email": 0.23773584905660378,
+    "aa_social": 0.06037735849056604,
+    "referral_artist": 0.05660377358490566,
+    "search_direct_other": 0.2037735849056604,
+    "paid": 0.44150943396226416
    },
    "sess_shares": {
     "aa_email": 0.1199419568822554,
     "aa_social": 0.018076285240464344,
     "referral_artist": 0.03130182421227198,
-    "search_direct_other": 0.03142620232172471,
-    "paid": 0.7992537313432836
+    "search_direct_other": 0.03134328358208955,
+    "paid": 0.7993366500829188
    },
    "convs": {
     "aa_email": 0.03767715174559281,
     "aa_social": 0.16972477064220184,
     "referral_artist": 0.0913907284768212,
-    "search_direct_other": 0.1424802110817942,
-    "paid": 0.06753812636165578
+    "search_direct_other": 0.14153439153439154,
+    "paid": 0.06758298755186722
    },
    "signup_shares": {
     "aa_email": 0.06558363417569193,
     "aa_social": 0.044524669073405534,
     "referral_artist": 0.04151624548736462,
-    "search_direct_other": 0.06498194945848375,
-    "paid": 0.7833935018050542
+    "search_direct_other": 0.06438026474127558,
+    "paid": 0.7839951865222623
    },
    "s2o": {
     "aa_email": 0.23853211009174313,
     "aa_social": 0.24324324324324326,
     "referral_artist": 0.07246376811594203,
-    "search_direct_other": 0.2037037037037037,
-    "paid": 0.07987711213517665
+    "search_direct_other": 0.205607476635514,
+    "paid": 0.07981580966999233
    },
    "sessions": 24120.0,
-   "paid_share": 0.7992537313432836,
+   "paid_share": 0.7993366500829188,
    "signups": 1761.0,
    "entries": 1761.0,
    "signup_order_rate": 0.09994321408290743,
-   "units_per_buyer": 1.021978021978022,
-   "cost_per_paid_unit": 18.719214762465644,
-   "cost_per_signup": 5.438822516532029,
+   "units_per_buyer": 1.0183150183150182,
+   "cost_per_paid_unit": 18.648841774636825,
+   "cost_per_signup": 5.43464843938964,
    "price": 500.0,
    "edition_size": 290.0,
    "units_target": 300.0,
@@ -1838,7 +1909,7 @@
    "entries": 526.0,
    "signup_order_rate": 0.03231939163498099,
    "units_per_buyer": 1.1818181818181819,
-   "cost_per_paid_unit": 50.207094339622635,
+   "cost_per_paid_unit": 53.219519999999996,
    "cost_per_signup": 8.523842216572547,
    "price": 450.0,
    "edition_size": 73.0,
@@ -1876,17 +1947,17 @@
     "paid": 0.29375
    },
    "sess_shares": {
-    "aa_email": 0.15989144569457794,
-    "aa_social": 0.01911008085034206,
-    "referral_artist": 0.029852433991066886,
-    "search_direct_other": 0.07593147509470233,
-    "paid": 0.7152145643693107
+    "aa_email": 0.15990048626031889,
+    "aa_social": 0.019111161370575596,
+    "referral_artist": 0.02985412190433111,
+    "search_direct_other": 0.07587922650684156,
+    "paid": 0.7152550039579328
    },
    "convs": {
     "aa_email": 0.04137199434229137,
     "aa_social": 0.1804733727810651,
     "referral_artist": 0.08901515151515152,
-    "search_direct_other": 0.06999255398361877,
+    "search_direct_other": 0.07004470938897168,
     "paid": 0.05035573122529644
    },
    "signup_shares": {
@@ -1903,13 +1974,13 @@
     "search_direct_other": 0.24468085106382978,
     "paid": 0.10518053375196232
    },
-   "sessions": 17687.0,
-   "paid_share": 0.7152145643693107,
+   "sessions": 17686.0,
+   "paid_share": 0.7152550039579328,
    "signups": 1036.0,
    "entries": 1036.0,
    "signup_order_rate": 0.13223938223938225,
    "units_per_buyer": 1.1164383561643836,
-   "cost_per_paid_unit": 44.62088722013628,
+   "cost_per_paid_unit": 44.71831273808419,
    "cost_per_signup": 12.62291951291951,
    "price": 700.0,
    "edition_size": 430.0,
@@ -1948,40 +2019,40 @@
    },
    "sess_shares": {
     "aa_email": 0.16445638504630158,
-    "aa_social": 0.010975191494226592,
+    "aa_social": 0.010860866582828399,
     "referral_artist": 0.0,
     "search_direct_other": 0.1549102549445524,
-    "paid": 0.6696581685149194
+    "paid": 0.6697724934263176
    },
    "convs": {
     "aa_email": 0.0764685436218283,
-    "aa_social": 0.18229166666666666,
+    "aa_social": 0.17894736842105263,
     "referral_artist": null,
     "search_direct_other": 0.06494464944649446,
-    "paid": 0.0630815194195476
+    "paid": 0.06324144405564565
    },
    "signup_shares": {
-    "aa_email": 0.18803418803418803,
-    "aa_social": 0.029914529914529916,
+    "aa_email": 0.18787361229718189,
+    "aa_social": 0.029035012809564473,
     "referral_artist": 0.0,
-    "search_direct_other": 0.15042735042735042,
-    "paid": 0.6316239316239316
+    "search_direct_other": 0.1502988898377455,
+    "paid": 0.6327924850555081
    },
    "s2o": {
     "aa_email": 0.3181818181818182,
-    "aa_social": 0.17142857142857143,
+    "aa_social": 0.17647058823529413,
     "referral_artist": null,
     "search_direct_other": 0.2159090909090909,
-    "paid": 0.08389715832205684
+    "paid": 0.08367071524966262
    },
    "sessions": 17494.0,
-   "paid_share": 0.6696581685149194,
+   "paid_share": 0.6697724934263176,
    "signups": 1248.0,
    "entries": 1248.0,
    "signup_order_rate": 0.14262820512820512,
    "units_per_buyer": 1.113888888888889,
    "cost_per_paid_unit": 108.82539560583275,
-   "cost_per_signup": 14.475989512855211,
+   "cost_per_signup": 14.44925726236202,
    "price": 1300.0,
    "edition_size": 524.0,
    "units_target": 400.0,
@@ -2004,46 +2075,46 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.35507246376811596,
+    "aa_email": 0.358695652173913,
     "aa_social": 0.04710144927536232,
     "referral_artist": 0.043478260869565216,
-    "search_direct_other": 0.2644927536231884,
+    "search_direct_other": 0.2608695652173913,
     "paid": 0.2898550724637681
    },
    "unit_shares": {
-    "aa_email": 0.35507246376811596,
+    "aa_email": 0.358695652173913,
     "aa_social": 0.04710144927536232,
     "referral_artist": 0.043478260869565216,
-    "search_direct_other": 0.2644927536231884,
+    "search_direct_other": 0.2608695652173913,
     "paid": 0.2898550724637681
    },
    "sess_shares": {
-    "aa_email": 0.095144086274972,
+    "aa_email": 0.09543874123401497,
     "aa_social": 0.024986740526843066,
     "referral_artist": 0.011432612410866875,
-    "search_direct_other": 0.03479875066297366,
+    "search_direct_other": 0.0345040957039307,
     "paid": 0.8336378101243443
    },
    "convs": {
-    "aa_email": 0.049860637968411274,
+    "aa_email": 0.05032417412781723,
     "aa_social": 0.13797169811320756,
     "referral_artist": 0.11597938144329897,
-    "search_direct_other": 0.15156646909398813,
-    "paid": 0.056517743531740425
+    "search_direct_other": 0.15286080273270708,
+    "paid": 0.056553089212498235
    },
    "signup_shares": {
-    "aa_email": 0.07663017610661589,
-    "aa_social": 0.055687767729652546,
-    "referral_artist": 0.021418372203712517,
-    "search_direct_other": 0.0851975249881009,
-    "paid": 0.7610661589719181
+    "aa_email": 0.07747148288973384,
+    "aa_social": 0.0556083650190114,
+    "referral_artist": 0.02138783269961977,
+    "search_direct_other": 0.08507604562737643,
+    "paid": 0.7604562737642585
    },
    "s2o": {
-    "aa_email": 0.2919254658385093,
+    "aa_email": 0.294478527607362,
     "aa_social": 0.09401709401709402,
     "referral_artist": 0.2,
-    "search_direct_other": 0.17318435754189945,
-    "paid": 0.04002501563477173
+    "search_direct_other": 0.16759776536312848,
+    "paid": 0.04
    },
    "sessions": 33938.0,
    "paid_share": 0.8336378101243443,
@@ -2052,7 +2123,7 @@
    "signup_order_rate": 0.07288888888888889,
    "units_per_buyer": 1.0254545454545454,
    "cost_per_paid_unit": 86.47797302158273,
-   "cost_per_signup": 12.017655762629422,
+   "cost_per_signup": 12.027293911111112,
    "price": 750.0,
    "edition_size": 299.0,
    "units_target": 650.0,
@@ -2090,39 +2161,39 @@
    },
    "sess_shares": {
     "aa_email": 0.47676303701702244,
-    "aa_social": 0.06781950824101594,
-    "referral_artist": 0.07700621453661173,
-    "search_direct_other": 0.09578492299378547,
-    "paid": 0.28262631721156445
+    "aa_social": 0.06754931099702784,
+    "referral_artist": 0.07727641178059984,
+    "search_direct_other": 0.09592002161577952,
+    "paid": 0.2824912185895704
    },
    "convs": {
     "aa_email": 0.025786341739869652,
-    "aa_social": 0.21912350597609562,
-    "referral_artist": 0.35964912280701755,
-    "search_direct_other": 0.09590973201692525,
-    "paid": 0.05449330783938815
+    "aa_social": 0.218,
+    "referral_artist": 0.36013986013986016,
+    "search_direct_other": 0.09577464788732394,
+    "paid": 0.054519368723098996
    },
    "signup_shares": {
     "aa_email": 0.15476190476190477,
-    "aa_social": 0.1870748299319728,
-    "referral_artist": 0.3486394557823129,
+    "aa_social": 0.18537414965986396,
+    "referral_artist": 0.35034013605442177,
     "search_direct_other": 0.11564625850340136,
     "paid": 0.19387755102040816
    },
    "s2o": {
     "aa_email": 0.23076923076923078,
-    "aa_social": 0.1,
-    "referral_artist": 0.12195121951219512,
+    "aa_social": 0.10091743119266056,
+    "referral_artist": 0.12135922330097088,
     "search_direct_other": 0.16176470588235295,
     "paid": 0.09649122807017543
    },
    "sessions": 7402.0,
-   "paid_share": 0.28262631721156445,
+   "paid_share": 0.2824912185895704,
    "signups": 630.0,
    "entries": 630.0,
    "signup_order_rate": 0.12698412698412698,
    "units_per_buyer": 1.1567164179104477,
-   "cost_per_paid_unit": 71.89987261146499,
+   "cost_per_paid_unit": 72.82761290322581,
    "cost_per_signup": 13.774444444444445,
    "price": 600.0,
    "edition_size": 219.0,
@@ -2146,49 +2217,49 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.26280623608017817,
+    "aa_email": 0.26057906458797325,
     "aa_social": 0.030438010393466965,
-    "referral_artist": 0.025241276911655532,
-    "search_direct_other": 0.3422420193021529,
-    "paid": 0.3392724573125464
+    "referral_artist": 0.025983667409057165,
+    "search_direct_other": 0.3429844097995546,
+    "paid": 0.340014847809948
    },
    "unit_shares": {
-    "aa_email": 0.26280623608017817,
+    "aa_email": 0.26057906458797325,
     "aa_social": 0.030438010393466965,
-    "referral_artist": 0.025241276911655532,
-    "search_direct_other": 0.3422420193021529,
-    "paid": 0.3392724573125464
+    "referral_artist": 0.025983667409057165,
+    "search_direct_other": 0.3429844097995546,
+    "paid": 0.340014847809948
    },
    "sess_shares": {
-    "aa_email": 0.1414714780276331,
-    "aa_social": 0.014939338177962136,
-    "referral_artist": 0.02286124192995041,
-    "search_direct_other": 0.1390699560240776,
-    "paid": 0.6816579858403767
+    "aa_email": 0.14138232175160625,
+    "aa_social": 0.014939804129499095,
+    "referral_artist": 0.02289314453246834,
+    "search_direct_other": 0.13910548312644253,
+    "paid": 0.6816792464599838
    },
    "convs": {
-    "aa_email": 0.05489417989417989,
+    "aa_email": 0.05404809177145378,
     "aa_social": 0.17954070981210857,
-    "referral_artist": 0.12551159618008187,
-    "search_direct_other": 0.06100022426553039,
-    "paid": 0.08597181551976574
+    "referral_artist": 0.12806539509536785,
+    "search_direct_other": 0.061210762331838565,
+    "paid": 0.08606332357247438
    },
    "signup_shares": {
-    "aa_email": 0.09658650116369279,
-    "aa_social": 0.03335919317300233,
-    "referral_artist": 0.035686578743211794,
-    "search_direct_other": 0.10550814584949574,
-    "paid": 0.7288595810705973
+    "aa_email": 0.09499806126405584,
+    "aa_social": 0.033346258239627766,
+    "referral_artist": 0.03644823575029081,
+    "search_direct_other": 0.1058549825513765,
+    "paid": 0.7293524621946491
    },
    "s2o": {
-    "aa_email": 0.4859437751004016,
+    "aa_email": 0.4775510204081633,
     "aa_social": 0.2558139534883721,
-    "referral_artist": 0.2391304347826087,
-    "search_direct_other": 0.4338235294117647,
-    "paid": 0.18520489622139436
+    "referral_artist": 0.24468085106382978,
+    "search_direct_other": 0.43956043956043955,
+    "paid": 0.18553960659223817
    },
-   "sessions": 32063.0,
-   "paid_share": 0.6816579858403767,
+   "sessions": 32062.0,
+   "paid_share": 0.6816792464599838,
    "signups": 2690.0,
    "entries": 2690.0,
    "signup_order_rate": 0.23568773234200743,
@@ -2231,41 +2302,41 @@
     "paid": 0.3176470588235294
    },
    "sess_shares": {
-    "aa_email": 0.09316574193378738,
-    "aa_social": 0.01036051434431618,
-    "referral_artist": 0.03423702963527834,
-    "search_direct_other": 0.07607352283783428,
-    "paid": 0.7861631912487839
+    "aa_email": 0.09322078468496897,
+    "aa_social": 0.010360786788682025,
+    "referral_artist": 0.034237929946355314,
+    "search_direct_other": 0.07604922688545282,
+    "paid": 0.7861312716945409
    },
    "convs": {
-    "aa_email": 0.04346598927462602,
+    "aa_email": 0.04344146685472496,
     "aa_social": 0.14974619289340102,
     "referral_artist": 0.08141321044546851,
-    "search_direct_other": 0.0808848945731075,
-    "paid": 0.06552496906044085
+    "search_direct_other": 0.08091286307053942,
+    "paid": 0.06556280314433852
    },
    "signup_shares": {
-    "aa_email": 0.06130573248407643,
-    "aa_social": 0.023487261146496817,
-    "referral_artist": 0.04219745222929936,
-    "search_direct_other": 0.09315286624203821,
-    "paid": 0.7798566878980892
+    "aa_email": 0.06128133704735376,
+    "aa_social": 0.02347791484281735,
+    "referral_artist": 0.04218066056506168,
+    "search_direct_other": 0.0931157978511739,
+    "paid": 0.7799442896935933
    },
    "s2o": {
     "aa_email": 0.33766233766233766,
     "aa_social": 0.22033898305084745,
     "referral_artist": 0.22641509433962265,
     "search_direct_other": 0.2863247863247863,
-    "paid": 0.0816743236345074
+    "paid": 0.08163265306122448
    },
-   "sessions": 38029.0,
-   "paid_share": 0.7861631912487839,
+   "sessions": 38028.0,
+   "paid_share": 0.7861312716945409,
    "signups": 2635.0,
    "entries": 2635.0,
    "signup_order_rate": 0.1206831119544592,
    "units_per_buyer": 1.3521367521367522,
-   "cost_per_paid_unit": 40.11496877940296,
-   "cost_per_signup": 7.325021227381433,
+   "cost_per_paid_unit": 42.00672667831071,
+   "cost_per_signup": 7.324198495527243,
    "price": 524.8247663551402,
    "edition_size": 856.0,
    "units_target": null,
@@ -2288,55 +2359,55 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.25512887953708574,
-    "aa_social": 0.02524986849026828,
+    "aa_email": 0.2556549184639663,
+    "aa_social": 0.0241977906365071,
     "referral_artist": 0.022093634928984744,
-    "search_direct_other": 0.3108890057864282,
-    "paid": 0.38663861125723303
+    "search_direct_other": 0.3103629668595476,
+    "paid": 0.3876906891109942
    },
    "unit_shares": {
-    "aa_email": 0.25512887953708574,
-    "aa_social": 0.02524986849026828,
+    "aa_email": 0.2556549184639663,
+    "aa_social": 0.0241977906365071,
     "referral_artist": 0.022093634928984744,
-    "search_direct_other": 0.3108890057864282,
-    "paid": 0.38663861125723303
+    "search_direct_other": 0.3103629668595476,
+    "paid": 0.3876906891109942
    },
    "sess_shares": {
     "aa_email": 0.06703306841695993,
-    "aa_social": 0.008013390797780502,
+    "aa_social": 0.007947491202404016,
     "referral_artist": 0.006945817352681454,
-    "search_direct_other": 0.07289813240546703,
-    "paid": 0.8451095910271111
+    "search_direct_other": 0.07287177256731643,
+    "paid": 0.8452018504606382
    },
    "convs": {
     "aa_email": 0.07687770349980338,
-    "aa_social": 0.16282894736842105,
+    "aa_social": 0.16086235489220563,
     "referral_artist": 0.09297912713472485,
-    "search_direct_other": 0.09925872355812693,
-    "paid": 0.0948051340434491
+    "search_direct_other": 0.0991137637909206,
+    "paid": 0.09487275449101797
    },
    "signup_shares": {
-    "aa_email": 0.054555602065020234,
-    "aa_social": 0.01381331100879029,
-    "referral_artist": 0.006836891307381052,
-    "search_direct_other": 0.07660108832147342,
-    "paid": 0.848193107297335
+    "aa_email": 0.054540382201143815,
+    "aa_social": 0.01353047844887711,
+    "referral_artist": 0.006834983958711118,
+    "search_direct_other": 0.07644022876272841,
+    "paid": 0.8486539266285396
    },
    "s2o": {
     "aa_email": 0.3452685421994885,
-    "aa_social": 0.21212121212121213,
+    "aa_social": 0.20618556701030927,
     "referral_artist": 0.24489795918367346,
-    "search_direct_other": 0.2659380692167577,
-    "paid": 0.08932390195755881
+    "search_direct_other": 0.2645985401459854,
+    "paid": 0.08941485864562787
    },
    "sessions": 75873.0,
-   "paid_share": 0.8451095910271111,
+   "paid_share": 0.8452018504606382,
    "signups": 7425.0,
    "entries": 7425.0,
-   "signup_order_rate": 0.11595959595959596,
+   "signup_order_rate": 0.11582491582491583,
    "units_per_buyer": 1.263843648208469,
-   "cost_per_paid_unit": 19.05918700500728,
-   "cost_per_signup": 6.506165637290822,
+   "cost_per_paid_unit": 19.00746600906425,
+   "cost_per_signup": 6.50263278744048,
    "price": 752.1511068334937,
    "edition_size": 2078.0,
    "units_target": null,
@@ -2360,48 +2431,48 @@
    "payment_failed_units": 0.0,
    "demand_shares": {
     "aa_email": 0.2558139534883721,
-    "aa_social": 0.07493540051679587,
+    "aa_social": 0.07751937984496124,
     "referral_artist": 0.002583979328165375,
-    "search_direct_other": 0.3695090439276486,
+    "search_direct_other": 0.3669250645994832,
     "paid": 0.2971576227390181
    },
    "unit_shares": {
     "aa_email": 0.2558139534883721,
-    "aa_social": 0.07493540051679587,
+    "aa_social": 0.07751937984496124,
     "referral_artist": 0.002583979328165375,
-    "search_direct_other": 0.3695090439276486,
+    "search_direct_other": 0.3669250645994832,
     "paid": 0.2971576227390181
    },
    "sess_shares": {
-    "aa_email": 0.090588183382606,
-    "aa_social": 0.03812381414640604,
-    "referral_artist": 0.003927105855358955,
-    "search_direct_other": 0.07174690023386136,
-    "paid": 0.7956139963817677
+    "aa_email": 0.09058418637486763,
+    "aa_social": 0.038298623367454994,
+    "referral_artist": 0.003926932580303565,
+    "search_direct_other": 0.0716113660430639,
+    "paid": 0.79557889163431
    },
    "convs": {
     "aa_email": 0.04578665367754506,
-    "aa_social": 0.11342592592592593,
+    "aa_social": 0.11405529953917051,
     "referral_artist": null,
-    "search_direct_other": 0.08610086100861009,
+    "search_direct_other": 0.08564386937769562,
     "paid": 0.0324995840496922
    },
    "signup_shares": {
     "aa_email": 0.10173160173160173,
-    "aa_social": 0.10606060606060606,
+    "aa_social": 0.10714285714285714,
     "referral_artist": 0.006493506493506494,
-    "search_direct_other": 0.15151515151515152,
+    "search_direct_other": 0.15043290043290045,
     "paid": 0.6341991341991342
    },
    "s2o": {
     "aa_email": 0.35106382978723405,
-    "aa_social": 0.17346938775510204,
+    "aa_social": 0.18181818181818182,
     "referral_artist": null,
-    "search_direct_other": 0.3,
+    "search_direct_other": 0.2949640287769784,
     "paid": 0.1348122866894198
    },
-   "sessions": 22663.0,
-   "paid_share": 0.7956139963817677,
+   "sessions": 22664.0,
+   "paid_share": 0.79557889163431,
    "signups": 962.0,
    "entries": 962.0,
    "signup_order_rate": 0.18191268191268192,
@@ -2432,53 +2503,53 @@
    "demand_shares": {
     "aa_email": 0.3076923076923077,
     "aa_social": 0.06020066889632107,
-    "referral_artist": 0.18729096989966554,
+    "referral_artist": 0.18394648829431437,
     "search_direct_other": 0.20735785953177258,
-    "paid": 0.23745819397993312
+    "paid": 0.2408026755852843
    },
    "unit_shares": {
     "aa_email": 0.3076923076923077,
     "aa_social": 0.06020066889632107,
-    "referral_artist": 0.18729096989966554,
+    "referral_artist": 0.18394648829431437,
     "search_direct_other": 0.20735785953177258,
-    "paid": 0.23745819397993312
+    "paid": 0.2408026755852843
    },
    "sess_shares": {
-    "aa_email": 0.044808132513833566,
-    "aa_social": 0.003190281357581875,
-    "referral_artist": 0.015464753699464682,
-    "search_direct_other": 0.04010381932553487,
-    "paid": 0.896433013103585
+    "aa_email": 0.04482454085035056,
+    "aa_social": 0.003190166357262585,
+    "referral_artist": 0.015392102085323432,
+    "search_direct_other": 0.04012039723879386,
+    "paid": 0.8964727934682696
    },
    "convs": {
-    "aa_email": 0.047868061142397424,
+    "aa_email": 0.04784881383192602,
     "aa_social": 0.12429378531073447,
-    "referral_artist": 0.07459207459207459,
-    "search_direct_other": 0.05213483146067416,
-    "paid": 0.039971850809289236
+    "referral_artist": 0.07494145199063232,
+    "search_direct_other": 0.05211141060197664,
+    "paid": 0.040109370916182475
    },
    "signup_shares": {
-    "aa_email": 0.05153746210480727,
-    "aa_social": 0.009527934170636639,
-    "referral_artist": 0.027717626678215677,
-    "search_direct_other": 0.05023819835426591,
-    "paid": 0.8609787786920745
+    "aa_email": 0.051381692573402415,
+    "aa_social": 0.009499136442141624,
+    "referral_artist": 0.027633851468048358,
+    "search_direct_other": 0.05008635578583765,
+    "paid": 0.8613989637305699
    },
    "s2o": {
     "aa_email": 0.31092436974789917,
     "aa_social": null,
     "referral_artist": 0.296875,
     "search_direct_other": 0.1810344827586207,
-    "paid": 0.032696177062374245
+    "paid": 0.03258145363408521
    },
-   "sessions": 55481.0,
-   "paid_share": 0.896433013103585,
+   "sessions": 55483.0,
+   "paid_share": 0.8964727934682696,
    "signups": 2441.0,
    "entries": 2441.0,
    "signup_order_rate": 0.06308889799262597,
    "units_per_buyer": 1.0147058823529411,
-   "cost_per_paid_unit": 66.05592699861138,
-   "cost_per_signup": 15.082992926835903,
+   "cost_per_paid_unit": 65.13848356807512,
+   "cost_per_signup": 15.075635537019528,
    "price": 1000.0,
    "edition_size": 376.0,
    "units_target": null,
@@ -2502,54 +2573,54 @@
    "payment_failed_units": 0.0,
    "demand_shares": {
     "aa_email": 0.28321678321678323,
-    "aa_social": 0.08216783216783216,
+    "aa_social": 0.08041958041958042,
     "referral_artist": 0.0,
     "search_direct_other": 0.23426573426573427,
-    "paid": 0.40034965034965037
+    "paid": 0.4020979020979021
    },
    "unit_shares": {
     "aa_email": 0.28321678321678323,
-    "aa_social": 0.08216783216783216,
+    "aa_social": 0.08041958041958042,
     "referral_artist": 0.0,
     "search_direct_other": 0.23426573426573427,
-    "paid": 0.40034965034965037
+    "paid": 0.4020979020979021
    },
    "sess_shares": {
-    "aa_email": 0.1210365681342904,
-    "aa_social": 0.03990278641270559,
+    "aa_email": 0.12106482789803877,
+    "aa_social": 0.03984626688520884,
     "referral_artist": 0.0,
-    "search_direct_other": 0.04558299892612898,
-    "paid": 0.793477646526875
+    "search_direct_other": 0.045554739162380606,
+    "paid": 0.7935341660543718
    },
    "convs": {
-    "aa_email": 0.0534671958907308,
-    "aa_social": 0.14447592067988668,
+    "aa_email": 0.0534547152194211,
+    "aa_social": 0.14397163120567377,
     "referral_artist": null,
-    "search_direct_other": 0.09857408555486671,
-    "paid": 0.051285704109979346
+    "search_direct_other": 0.09863523573200993,
+    "paid": 0.05131766381766382
    },
    "signup_shares": {
     "aa_email": 0.11269685039370078,
-    "aa_social": 0.10039370078740158,
+    "aa_social": 0.09990157480314961,
     "referral_artist": 0.0,
     "search_direct_other": 0.07824803149606299,
-    "paid": 0.7086614173228346
+    "paid": 0.7091535433070866
    },
    "s2o": {
     "aa_email": 0.3231441048034934,
-    "aa_social": 0.23039215686274508,
+    "aa_social": 0.22660098522167488,
     "referral_artist": null,
     "search_direct_other": 0.27044025157232704,
-    "paid": 0.13055555555555556
+    "paid": 0.1311589174184594
    },
    "sessions": 35386.0,
-   "paid_share": 0.793477646526875,
+   "paid_share": 0.7935341660543718,
    "signups": 2121.0,
    "entries": 2121.0,
    "signup_order_rate": 0.1687883074021688,
    "units_per_buyer": 1.0265339966832505,
-   "cost_per_paid_unit": 47.12720035670558,
-   "cost_per_signup": 12.143858557284299,
+   "cost_per_paid_unit": 46.92229948558947,
+   "cost_per_signup": 12.135431174524214,
    "price": 900.0,
    "edition_size": 667.0,
    "units_target": null,
@@ -2586,35 +2657,35 @@
     "paid": 0.2961165048543689
    },
    "sess_shares": {
-    "aa_email": 0.09920694945653348,
+    "aa_email": 0.09912051342999763,
     "aa_social": 0.012576441860967652,
-    "referral_artist": 0.01162564556907319,
+    "referral_artist": 0.01158242755580526,
     "search_direct_other": 0.029366640015558484,
-    "paid": 0.8472243230978672
+    "paid": 0.847353977137671
    },
    "convs": {
-    "aa_email": 0.031365715530385536,
+    "aa_email": 0.03117505995203837,
     "aa_social": 0.08075601374570447,
-    "referral_artist": 0.11338289962825279,
+    "referral_artist": 0.11194029850746269,
     "search_direct_other": 0.07211184694628403,
-    "paid": 0.07417042874996811
+    "paid": 0.07423558513758192
    },
    "signup_shares": {
-    "aa_email": 0.04419889502762431,
-    "aa_social": 0.014426028238182934,
-    "referral_artist": 0.0187231430325353,
-    "search_direct_other": 0.030079803560466543,
-    "paid": 0.892572130141191
+    "aa_email": 0.043878490334458425,
+    "aa_social": 0.014421601718318503,
+    "referral_artist": 0.01841055538508745,
+    "search_direct_other": 0.030070573795642836,
+    "paid": 0.8932187787664928
    },
    "s2o": {
-    "aa_email": 0.19444444444444445,
+    "aa_email": 0.1958041958041958,
     "aa_social": 0.0425531914893617,
-    "referral_artist": 0.13114754098360656,
+    "referral_artist": 0.13333333333333333,
     "search_direct_other": 0.1836734693877551,
-    "paid": 0.020976616231086657
+    "paid": 0.02095499828237719
    },
    "sessions": 46277.0,
-   "paid_share": 0.8472243230978672,
+   "paid_share": 0.847353977137671,
    "signups": 3410.0,
    "entries": 3410.0,
    "signup_order_rate": 0.035483870967741936,
@@ -2645,53 +2716,53 @@
    "demand_shares": {
     "aa_email": 0.25643564356435644,
     "aa_social": 0.10495049504950495,
-    "referral_artist": 0.0702970297029703,
+    "referral_artist": 0.06930693069306931,
     "search_direct_other": 0.2524752475247525,
-    "paid": 0.31584158415841584
+    "paid": 0.31683168316831684
    },
    "unit_shares": {
     "aa_email": 0.25643564356435644,
     "aa_social": 0.10495049504950495,
-    "referral_artist": 0.0702970297029703,
+    "referral_artist": 0.06930693069306931,
     "search_direct_other": 0.2524752475247525,
-    "paid": 0.31584158415841584
+    "paid": 0.31683168316831684
    },
    "sess_shares": {
-    "aa_email": 0.08410799665843124,
-    "aa_social": 0.018769662821492686,
-    "referral_artist": 0.1151952507065285,
-    "search_direct_other": 0.055384724764934855,
-    "paid": 0.7265423650486127
+    "aa_email": 0.08410949164592961,
+    "aa_social": 0.01876999644507643,
+    "referral_artist": 0.11516174902239602,
+    "search_direct_other": 0.055279061500177744,
+    "paid": 0.7266797013864202
    },
    "convs": {
-    "aa_email": 0.0805156382079459,
+    "aa_email": 0.08030431107354184,
     "aa_social": 0.29545454545454547,
-    "referral_artist": 0.07282826724270945,
-    "search_direct_other": 0.11328626444159179,
-    "paid": 0.25780409041980623
+    "referral_artist": 0.07269640376601327,
+    "search_direct_other": 0.11350482315112541,
+    "paid": 0.25798008952376295
    },
    "signup_shares": {
-    "aa_email": 0.031602521566025214,
-    "aa_social": 0.025879230258792303,
-    "referral_artist": 0.039150630391506305,
-    "search_direct_other": 0.029280026542800264,
-    "paid": 0.8740875912408759
+    "aa_email": 0.0315012849208323,
+    "aa_social": 0.02586421288236757,
+    "referral_artist": 0.03904501367818951,
+    "search_direct_other": 0.02926303572908895,
+    "paid": 0.8743264527895217
    },
    "s2o": {
-    "aa_email": 0.42782152230971127,
+    "aa_email": 0.42894736842105263,
     "aa_social": 0.30128205128205127,
-    "referral_artist": 0.1292372881355932,
+    "referral_artist": 0.12738853503184713,
     "search_direct_other": 0.35694050991501414,
-    "paid": 0.031410134750427025
+    "paid": 0.03147814544420214
    },
-   "sessions": 56261.0,
-   "paid_share": 0.7265423650486127,
+   "sessions": 56260.0,
+   "paid_share": 0.7266797013864202,
    "signups": 12593.0,
    "entries": 12593.0,
    "signup_order_rate": 0.061859763360597154,
    "units_per_buyer": 1.0028011204481793,
-   "cost_per_paid_unit": 27.203062410418944,
-   "cost_per_signup": 1.3145747107076589,
+   "cost_per_paid_unit": 27.118052840386387,
+   "cost_per_signup": 1.314215575569738,
    "price": 700.0,
    "edition_size": 1176.0,
    "units_target": null,
@@ -2715,54 +2786,54 @@
    "payment_failed_units": 0.0,
    "demand_shares": {
     "aa_email": 0.19654231119199272,
-    "aa_social": 0.026387625113739762,
+    "aa_social": 0.025477707006369428,
     "referral_artist": 0.0,
     "search_direct_other": 0.4021838034576888,
-    "paid": 0.37488626023657873
+    "paid": 0.37579617834394907
    },
    "unit_shares": {
     "aa_email": 0.19654231119199272,
-    "aa_social": 0.026387625113739762,
+    "aa_social": 0.025477707006369428,
     "referral_artist": 0.0,
     "search_direct_other": 0.4021838034576888,
-    "paid": 0.37488626023657873
+    "paid": 0.37579617834394907
    },
    "sess_shares": {
     "aa_email": 0.15063437139561708,
-    "aa_social": 0.027643214148404458,
+    "aa_social": 0.02756632064590542,
     "referral_artist": 0.0,
     "search_direct_other": 0.05955401768550558,
-    "paid": 0.7621683967704729
+    "paid": 0.7622452902729719
    },
    "convs": {
-    "aa_email": 0.08907605921388463,
-    "aa_social": 0.17663421418636996,
+    "aa_email": 0.0888208269525268,
+    "aa_social": 0.17573221757322174,
     "referral_artist": null,
-    "search_direct_other": 0.12201420271142673,
-    "paid": 0.09155569007263922
+    "search_direct_other": 0.12265978050355068,
+    "paid": 0.09159689296882881
    },
    "signup_shares": {
-    "aa_email": 0.1407258064516129,
-    "aa_social": 0.05120967741935484,
+    "aa_email": 0.1403225806451613,
+    "aa_social": 0.050806451612903224,
     "referral_artist": 0.0,
-    "search_direct_other": 0.07620967741935483,
-    "paid": 0.7318548387096774
+    "search_direct_other": 0.07661290322580645,
+    "paid": 0.7322580645161291
    },
    "s2o": {
-    "aa_email": 0.2521489971346705,
-    "aa_social": 0.14173228346456693,
+    "aa_email": 0.25287356321839083,
+    "aa_social": 0.1349206349206349,
     "referral_artist": null,
-    "search_direct_other": 0.3333333333333333,
-    "paid": 0.10137741046831956
+    "search_direct_other": 0.33157894736842103,
+    "paid": 0.10187224669603524
    },
    "sessions": 26010.0,
-   "paid_share": 0.7621683967704729,
+   "paid_share": 0.7622452902729719,
    "signups": 2604.0,
    "entries": 2604.0,
    "signup_order_rate": 0.13632872503840246,
    "units_per_buyer": 1.0387453874538746,
-   "cost_per_paid_unit": 73.71509419476632,
-   "cost_per_signup": 1.977636101272465,
+   "cost_per_paid_unit": 73.53660728388311,
+   "cost_per_signup": 1.9765470946087684,
    "price": 1000.0,
    "edition_size": 1163.0,
    "units_target": null,
@@ -2832,7 +2903,7 @@
    "entries": 918.0,
    "signup_order_rate": 0.144880174291939,
    "units_per_buyer": 1.065040650406504,
-   "cost_per_paid_unit": 66.19328571428572,
+   "cost_per_paid_unit": 66.36344840249724,
    "cost_per_signup": 7.440169594043067,
    "price": 350.0,
    "edition_size": 716.0,
@@ -2856,31 +2927,31 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.15979381443298968,
-    "aa_social": 0.07216494845360824,
-    "referral_artist": 0.041237113402061855,
-    "search_direct_other": 0.28350515463917525,
-    "paid": 0.44329896907216493
+    "aa_email": 0.17676767676767677,
+    "aa_social": 0.0707070707070707,
+    "referral_artist": 0.045454545454545456,
+    "search_direct_other": 0.2676767676767677,
+    "paid": 0.4393939393939394
    },
    "unit_shares": {
-    "aa_email": 0.15979381443298968,
-    "aa_social": 0.07216494845360824,
-    "referral_artist": 0.041237113402061855,
-    "search_direct_other": 0.28350515463917525,
-    "paid": 0.44329896907216493
+    "aa_email": 0.17676767676767677,
+    "aa_social": 0.0707070707070707,
+    "referral_artist": 0.045454545454545456,
+    "search_direct_other": 0.2676767676767677,
+    "paid": 0.4393939393939394
    },
    "sess_shares": {
-    "aa_email": 0.37366003062787134,
-    "aa_social": 0.016845329249617153,
-    "referral_artist": 0.0015313935681470138,
-    "search_direct_other": 0.5359877488514548,
-    "paid": 0.07197549770290965
+    "aa_email": 0.37423312883435583,
+    "aa_social": 0.01687116564417178,
+    "referral_artist": 0.0015337423312883436,
+    "search_direct_other": 0.5352760736196319,
+    "paid": 0.07208588957055215
    },
    "convs": {
     "aa_email": 0.07377049180327869,
     "aa_social": null,
     "referral_artist": null,
-    "search_direct_other": 0.21142857142857144,
+    "search_direct_other": 0.21203438395415472,
     "paid": null
    },
    "signup_shares": {
@@ -2897,13 +2968,13 @@
     "search_direct_other": 0.22972972972972974,
     "paid": 0.1452991452991453
    },
-   "sessions": 653.0,
-   "paid_share": 0.07197549770290965,
+   "sessions": 652.0,
+   "paid_share": 0.07208588957055215,
    "signups": 378.0,
    "entries": 378.0,
    "signup_order_rate": 0.17195767195767195,
    "units_per_buyer": 1.106280193236715,
-   "cost_per_paid_unit": 66.9270857905864,
+   "cost_per_paid_unit": 67.52188747731397,
    "cost_per_signup": 11.024977954144621,
    "price": 0.0,
    "edition_size": 0.0,
@@ -2927,55 +2998,55 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.2714148219441771,
-    "aa_social": 0.02598652550529355,
-    "referral_artist": 0.05293551491819057,
-    "search_direct_other": 0.2521655437921078,
-    "paid": 0.397497593840231
+    "aa_email": 0.2846441947565543,
+    "aa_social": 0.024344569288389514,
+    "referral_artist": 0.052434456928838954,
+    "search_direct_other": 0.24625468164794007,
+    "paid": 0.39232209737827717
    },
    "unit_shares": {
-    "aa_email": 0.2714148219441771,
-    "aa_social": 0.02598652550529355,
-    "referral_artist": 0.05293551491819057,
-    "search_direct_other": 0.2521655437921078,
-    "paid": 0.397497593840231
+    "aa_email": 0.2846441947565543,
+    "aa_social": 0.024344569288389514,
+    "referral_artist": 0.052434456928838954,
+    "search_direct_other": 0.24625468164794007,
+    "paid": 0.39232209737827717
    },
    "sess_shares": {
-    "aa_email": 0.12641611534903208,
-    "aa_social": 0.01647843315237314,
-    "referral_artist": 0.02574755180058303,
-    "search_direct_other": 0.03602911655349381,
-    "paid": 0.7953287831445179
+    "aa_email": 0.12644881999720708,
+    "aa_social": 0.016460689847786623,
+    "referral_artist": 0.025747102360005585,
+    "search_direct_other": 0.03595866499092305,
+    "paid": 0.7953847228040777
    },
    "convs": {
-    "aa_email": 0.05854736260701464,
-    "aa_social": 0.1281779661016949,
+    "aa_email": 0.059083379348426286,
+    "aa_social": 0.1283138918345705,
     "referral_artist": 0.0759322033898305,
-    "search_direct_other": 0.12209302325581395,
-    "paid": 0.0667881129011018
+    "search_direct_other": 0.12087378640776698,
+    "paid": 0.0668041961111355
    },
    "signup_shares": {
-    "aa_email": 0.10728744939271255,
-    "aa_social": 0.030617408906882592,
-    "referral_artist": 0.02834008097165992,
-    "search_direct_other": 0.06376518218623482,
-    "paid": 0.7699898785425101
+    "aa_email": 0.10824481537683359,
+    "aa_social": 0.03060192210419828,
+    "referral_artist": 0.02832574607991907,
+    "search_direct_other": 0.0629742033383915,
+    "paid": 0.7698533131006575
    },
    "s2o": {
-    "aa_email": 0.28537735849056606,
+    "aa_email": 0.2897196261682243,
     "aa_social": 0.09917355371900827,
     "referral_artist": 0.16071428571428573,
-    "search_direct_other": 0.2976190476190476,
-    "paid": 0.10515938218862964
+    "search_direct_other": 0.2931726907630522,
+    "paid": 0.10512483574244415
    },
-   "sessions": 57287.0,
-   "paid_share": 0.7953287831445179,
+   "sessions": 57288.0,
+   "paid_share": 0.7953847228040777,
    "signups": 4217.0,
    "entries": 4217.0,
    "signup_order_rate": 0.1297130661607778,
    "units_per_buyer": 1.0392344497607655,
-   "cost_per_paid_unit": 33.04390324065672,
-   "cost_per_signup": 5.055011028004188,
+   "cost_per_paid_unit": 33.479817010118104,
+   "cost_per_signup": 5.055907744044584,
    "price": 850.0,
    "edition_size": 1106.0,
    "units_target": null,
@@ -2998,55 +3069,55 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.3991031390134529,
-    "aa_social": 0.03139013452914798,
-    "referral_artist": 0.008968609865470852,
-    "search_direct_other": 0.3273542600896861,
-    "paid": 0.23318385650224216
+    "aa_email": 0.3938053097345133,
+    "aa_social": 0.048672566371681415,
+    "referral_artist": 0.008849557522123894,
+    "search_direct_other": 0.3185840707964602,
+    "paid": 0.23008849557522124
    },
    "unit_shares": {
-    "aa_email": 0.3991031390134529,
-    "aa_social": 0.03139013452914798,
-    "referral_artist": 0.008968609865470852,
-    "search_direct_other": 0.3273542600896861,
-    "paid": 0.23318385650224216
+    "aa_email": 0.3938053097345133,
+    "aa_social": 0.048672566371681415,
+    "referral_artist": 0.008849557522123894,
+    "search_direct_other": 0.3185840707964602,
+    "paid": 0.23008849557522124
    },
    "sess_shares": {
-    "aa_email": 0.2563650113435846,
-    "aa_social": 0.05318880766322158,
+    "aa_email": 0.2701325178389399,
+    "aa_social": 0.05581039755351682,
     "referral_artist": 0.0,
-    "search_direct_other": 0.07663221578018654,
-    "paid": 0.6138139652130074
+    "search_direct_other": 0.077217125382263,
+    "paid": 0.5968399592252803
    },
    "convs": {
-    "aa_email": 0.06588003933136677,
-    "aa_social": 0.15165876777251186,
+    "aa_email": 0.06320754716981132,
+    "aa_social": 0.1187214611872146,
     "referral_artist": null,
-    "search_direct_other": 0.05592105263157895,
-    "paid": 0.06611909650924025
+    "search_direct_other": 0.07260726072607261,
+    "paid": 0.07344150298889837
    },
    "signup_shares": {
-    "aa_email": 0.24187725631768953,
-    "aa_social": 0.11552346570397112,
+    "aa_email": 0.23344947735191637,
+    "aa_social": 0.09059233449477352,
     "referral_artist": 0.0,
-    "search_direct_other": 0.061371841155234655,
-    "paid": 0.5812274368231047
+    "search_direct_other": 0.07665505226480836,
+    "paid": 0.5993031358885017
    },
    "s2o": {
-    "aa_email": 0.3283582089552239,
-    "aa_social": 0.21875,
+    "aa_email": 0.3880597014925373,
+    "aa_social": null,
     "referral_artist": null,
     "search_direct_other": null,
-    "paid": 0.09937888198757763
+    "paid": 0.09302325581395349
    },
-   "sessions": 3967.0,
-   "paid_share": 0.6138139652130074,
-   "signups": 338.0,
-   "entries": 338.0,
-   "signup_order_rate": 0.15384615384615385,
+   "sessions": 3924.0,
+   "paid_share": 0.5968399592252803,
+   "signups": 357.0,
+   "entries": 357.0,
+   "signup_order_rate": 0.15406162464985995,
    "units_per_buyer": 1.0316205533596838,
-   "cost_per_paid_unit": 88.87236811081638,
-   "cost_per_signup": 29.83102374214414,
+   "cost_per_paid_unit": 90.06796050692603,
+   "cost_per_signup": 27.391524167806658,
    "price": 650.0,
    "edition_size": 274.0,
    "units_target": null,
@@ -3083,17 +3154,17 @@
     "paid": 0.047619047619047616
    },
    "sess_shares": {
-    "aa_email": 0.16263736263736264,
-    "aa_social": 0.09523809523809523,
-    "referral_artist": 0.37875457875457874,
-    "search_direct_other": 0.10659340659340659,
-    "paid": 0.25677655677655675
+    "aa_email": 0.16257781032588794,
+    "aa_social": 0.09520322226290737,
+    "referral_artist": 0.37861589161479314,
+    "search_direct_other": 0.10692054192603442,
+    "paid": 0.25668253387037715
    },
    "convs": {
     "aa_email": 0.04504504504504504,
     "aa_social": 0.046153846153846156,
     "referral_artist": 0.01644100580270793,
-    "search_direct_other": 0.037800687285223365,
+    "search_direct_other": 0.03767123287671233,
     "paid": 0.024251069900142655
    },
    "signup_shares": {
@@ -3110,8 +3181,8 @@
     "search_direct_other": null,
     "paid": null
    },
-   "sessions": 2730.0,
-   "paid_share": 0.25677655677655675,
+   "sessions": 2731.0,
+   "paid_share": 0.25668253387037715,
    "signups": 96.0,
    "entries": 96.0,
    "signup_order_rate": 0.15625,
@@ -3140,55 +3211,55 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.27206946454413894,
-    "aa_social": 0.05499276410998553,
+    "aa_email": 0.2691751085383502,
+    "aa_social": 0.053545586107091175,
     "referral_artist": 0.0955137481910275,
-    "search_direct_other": 0.3111432706222865,
-    "paid": 0.2662807525325615
+    "search_direct_other": 0.3053545586107091,
+    "paid": 0.276410998552822
    },
    "unit_shares": {
-    "aa_email": 0.27206946454413894,
-    "aa_social": 0.05499276410998553,
+    "aa_email": 0.2691751085383502,
+    "aa_social": 0.053545586107091175,
     "referral_artist": 0.0955137481910275,
-    "search_direct_other": 0.3111432706222865,
-    "paid": 0.2662807525325615
+    "search_direct_other": 0.3053545586107091,
+    "paid": 0.276410998552822
    },
    "sess_shares": {
-    "aa_email": 0.13950126490784243,
-    "aa_social": 0.023129743404409108,
-    "referral_artist": 0.043874232020238525,
-    "search_direct_other": 0.12041922659920491,
-    "paid": 0.673075533068305
+    "aa_email": 0.13911407064273307,
+    "aa_social": 0.0225825130283729,
+    "referral_artist": 0.04393456861609728,
+    "search_direct_other": 0.12015055008685582,
+    "paid": 0.674218297625941
    },
    "convs": {
-    "aa_email": 0.06373056994818653,
-    "aa_social": 0.165625,
-    "referral_artist": 0.15650741350906094,
-    "search_direct_other": 0.0858343337334934,
-    "paid": 0.06582903780068729
+    "aa_email": 0.06451612903225806,
+    "aa_social": 0.1762820512820513,
+    "referral_artist": 0.15980230642504117,
+    "search_direct_other": 0.0825301204819277,
+    "paid": 0.06570048309178744
    },
    "signup_shares": {
-    "aa_email": 0.11976630963972736,
-    "aa_social": 0.05160662122687439,
-    "referral_artist": 0.09250243427458617,
-    "search_direct_other": 0.13924050632911392,
-    "paid": 0.5968841285296982
+    "aa_email": 0.12097560975609756,
+    "aa_social": 0.05365853658536585,
+    "referral_artist": 0.09463414634146342,
+    "search_direct_other": 0.13365853658536586,
+    "paid": 0.5970731707317073
    },
    "s2o": {
-    "aa_email": 0.5934959349593496,
-    "aa_social": 0.37735849056603776,
-    "referral_artist": 0.35789473684210527,
-    "search_direct_other": 0.4755244755244755,
-    "paid": 0.2300163132137031
+    "aa_email": 0.5967741935483871,
+    "aa_social": 0.41818181818181815,
+    "referral_artist": 0.35051546391752575,
+    "search_direct_other": 0.48905109489051096,
+    "paid": 0.2369281045751634
    },
-   "sessions": 13835.0,
-   "paid_share": 0.673075533068305,
-   "signups": 1319.0,
-   "entries": 1319.0,
-   "signup_order_rate": 0.266868840030326,
+   "sessions": 13816.0,
+   "paid_share": 0.674218297625941,
+   "signups": 1318.0,
+   "entries": 1318.0,
+   "signup_order_rate": 0.2716236722306525,
    "units_per_buyer": 1.0978552278820375,
-   "cost_per_paid_unit": 18.064347073495895,
-   "cost_per_signup": 9.356956713709904,
+   "cost_per_paid_unit": 17.40230293991228,
+   "cost_per_signup": 9.361091275154475,
    "price": 0.0,
    "edition_size": 0.0,
    "units_target": null,
@@ -3296,17 +3367,17 @@
     "paid": 0.29133858267716534
    },
    "sess_shares": {
-    "aa_email": 0.22148116067561716,
+    "aa_email": 0.22156777825898658,
     "aa_social": 0.06097877869207449,
     "referral_artist": 0.029969683845820702,
-    "search_direct_other": 0.11702035513209182,
+    "search_direct_other": 0.1169337375487224,
     "paid": 0.5705500216543958
    },
    "convs": {
-    "aa_email": 0.050058662495111456,
+    "aa_email": 0.05003909304143862,
     "aa_social": 0.125,
     "referral_artist": 0.11560693641618497,
-    "search_direct_other": 0.025166543301258327,
+    "search_direct_other": 0.025185185185185185,
     "paid": 0.04478518293608623
    },
    "signup_shares": {
@@ -3367,15 +3438,15 @@
     "paid": 0.2535107169253511
    },
    "sess_shares": {
-    "aa_email": 0.11814855948258966,
-    "aa_social": 0.03191350362579212,
+    "aa_email": 0.11817350405016984,
+    "aa_social": 0.03194408152599948,
     "referral_artist": 0.0,
-    "search_direct_other": 0.19932057228718886,
-    "paid": 0.6506173646044293
+    "search_direct_other": 0.19930755160700286,
+    "paid": 0.6505748628168277
    },
    "convs": {
-    "aa_email": 0.07381808128283107,
-    "aa_social": 0.21494370522006143,
+    "aa_email": 0.07379767827529021,
+    "aa_social": 0.2147239263803681,
     "referral_artist": null,
     "search_direct_other": 0.07882661422484431,
     "paid": 0.04608896475549754
@@ -3394,8 +3465,8 @@
     "search_direct_other": 0.4677754677754678,
     "paid": 0.2178649237472767
    },
-   "sessions": 30614.0,
-   "paid_share": 0.6506173646044293,
+   "sessions": 30616.0,
+   "paid_share": 0.6505748628168277,
    "signups": 2143.0,
    "entries": 2143.0,
    "signup_order_rate": 0.3028464769015399,
@@ -3438,17 +3509,17 @@
     "paid": 0.31354091238233167
    },
    "sess_shares": {
-    "aa_email": 0.1414685089974293,
-    "aa_social": 0.03550771208226221,
-    "referral_artist": 0.12303181233933162,
-    "search_direct_other": 0.0676413881748072,
-    "paid": 0.6323505784061697
+    "aa_email": 0.14146282684660802,
+    "aa_social": 0.035506285897899344,
+    "referral_artist": 0.12302687070731413,
+    "search_direct_other": 0.06767883680764751,
+    "paid": 0.632325179740531
    },
    "convs": {
     "aa_email": 0.119534355479841,
     "aa_social": 0.14592760180995476,
     "referral_artist": 0.0920666013712047,
-    "search_direct_other": 0.12292161520190023,
+    "search_direct_other": 0.1228486646884273,
     "paid": 0.05278536492409325
    },
    "signup_shares": {
@@ -3465,8 +3536,8 @@
     "search_direct_other": 0.3719806763285024,
     "paid": 0.2527075812274368
    },
-   "sessions": 24896.0,
-   "paid_share": 0.6323505784061697,
+   "sessions": 24897.0,
+   "paid_share": 0.632325179740531,
    "signups": 2116.0,
    "entries": 2116.0,
    "signup_order_rate": 0.2896975425330813,
@@ -3495,52 +3566,52 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.2033898305084746,
-    "aa_social": 0.1016949152542373,
+    "aa_email": 0.22033898305084745,
+    "aa_social": 0.11016949152542373,
     "referral_artist": 0.0,
-    "search_direct_other": 0.6864406779661016,
+    "search_direct_other": 0.6610169491525424,
     "paid": 0.00847457627118644
    },
    "unit_shares": {
-    "aa_email": 0.2033898305084746,
-    "aa_social": 0.1016949152542373,
+    "aa_email": 0.22033898305084745,
+    "aa_social": 0.11016949152542373,
     "referral_artist": 0.0,
-    "search_direct_other": 0.6864406779661016,
+    "search_direct_other": 0.6610169491525424,
     "paid": 0.00847457627118644
    },
    "sess_shares": {
-    "aa_email": 0.23073047858942067,
-    "aa_social": 0.19445843828715365,
-    "referral_artist": 0.031234256926952142,
-    "search_direct_other": 0.2947103274559194,
-    "paid": 0.24886649874055417
+    "aa_email": 0.23058133854421103,
+    "aa_social": 0.20175867122618465,
+    "referral_artist": 0.033707865168539325,
+    "search_direct_other": 0.29262335124572547,
+    "paid": 0.24132877381533951
    },
    "convs": {
-    "aa_email": 0.08078602620087336,
-    "aa_social": 0.04145077720207254,
+    "aa_email": 0.07838983050847458,
+    "aa_social": 0.053268765133171914,
     "referral_artist": null,
-    "search_direct_other": 0.07521367521367521,
+    "search_direct_other": 0.07178631051752922,
     "paid": 0.004048582995951417
    },
    "signup_shares": {
-    "aa_email": 0.37373737373737376,
-    "aa_social": 0.16161616161616163,
+    "aa_email": 0.3557692307692308,
+    "aa_social": 0.21153846153846154,
     "referral_artist": 0.0,
-    "search_direct_other": 0.4444444444444444,
-    "paid": 0.020202020202020204
+    "search_direct_other": 0.41346153846153844,
+    "paid": 0.019230769230769232
    },
    "s2o": {
-    "aa_email": 0.21621621621621623,
+    "aa_email": 0.2702702702702703,
     "aa_social": null,
     "referral_artist": null,
-    "search_direct_other": 0.3181818181818182,
+    "search_direct_other": 0.4186046511627907,
     "paid": null
    },
-   "sessions": 1985.0,
-   "paid_share": 0.24886649874055417,
-   "signups": 124.0,
-   "entries": 124.0,
-   "signup_order_rate": 0.24193548387096775,
+   "sessions": 2047.0,
+   "paid_share": 0.24132877381533951,
+   "signups": 122.0,
+   "entries": 122.0,
+   "signup_order_rate": 0.319672131147541,
    "units_per_buyer": 1.0193548387096774,
    "cost_per_paid_unit": null,
    "cost_per_signup": null,
@@ -3580,35 +3651,35 @@
     "paid": 0.10865561694290976
    },
    "sess_shares": {
-    "aa_email": 0.1714445271779598,
-    "aa_social": 0.05156366344005957,
-    "referral_artist": 0.21574832464631422,
-    "search_direct_other": 0.08432613551749814,
-    "paid": 0.4769173492181683
+    "aa_email": 0.17150567653080215,
+    "aa_social": 0.051554066629443514,
+    "referral_artist": 0.21580122836404245,
+    "search_direct_other": 0.08431044109436069,
+    "paid": 0.4768285873813512
    },
    "convs": {
-    "aa_email": 0.0732899022801303,
+    "aa_email": 0.07433532284319046,
     "aa_social": 0.032490974729241874,
-    "referral_artist": 0.032355478861087146,
-    "search_direct_other": 0.0772626931567329,
+    "referral_artist": 0.03234152652005175,
+    "search_direct_other": 0.07505518763796909,
     "paid": 0.0273224043715847
    },
    "signup_shares": {
-    "aa_email": 0.3082191780821918,
+    "aa_email": 0.3127853881278539,
     "aa_social": 0.0410958904109589,
     "referral_artist": 0.17123287671232876,
-    "search_direct_other": 0.1598173515981735,
+    "search_direct_other": 0.1552511415525114,
     "paid": 0.319634703196347
    },
    "s2o": {
-    "aa_email": 0.9703703703703703,
+    "aa_email": 0.9708029197080292,
     "aa_social": null,
     "referral_artist": 0.4533333333333333,
-    "search_direct_other": 0.6857142857142857,
+    "search_direct_other": 0.6764705882352942,
     "paid": 0.2642857142857143
    },
-   "sessions": 10744.0,
-   "paid_share": 0.4769173492181683,
+   "sessions": 10746.0,
+   "paid_share": 0.4768285873813512,
    "signups": 719.0,
    "entries": 719.0,
    "signup_order_rate": 0.3894297635605007,
@@ -3637,55 +3708,55 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.4095940959409594,
-    "aa_social": 0.05166051660516605,
+    "aa_email": 0.4117647058823529,
+    "aa_social": 0.05514705882352941,
     "referral_artist": 0.0,
-    "search_direct_other": 0.47232472324723246,
-    "paid": 0.06642066420664207
+    "search_direct_other": 0.47058823529411764,
+    "paid": 0.0625
    },
    "unit_shares": {
-    "aa_email": 0.4095940959409594,
-    "aa_social": 0.05166051660516605,
+    "aa_email": 0.4117647058823529,
+    "aa_social": 0.05514705882352941,
     "referral_artist": 0.0,
-    "search_direct_other": 0.47232472324723246,
-    "paid": 0.06642066420664207
+    "search_direct_other": 0.47058823529411764,
+    "paid": 0.0625
    },
    "sess_shares": {
-    "aa_email": 0.5332920408795293,
-    "aa_social": 0.06534530814493651,
+    "aa_email": 0.5592807071014935,
+    "aa_social": 0.06370009143553794,
     "referral_artist": 0.0,
-    "search_direct_other": 0.19696500464540107,
-    "paid": 0.20439764633013316
+    "search_direct_other": 0.190795489180128,
+    "paid": 0.1862237122828406
    },
    "convs": {
-    "aa_email": 0.078397212543554,
-    "aa_social": 0.037914691943127965,
+    "aa_email": 0.07738419618528611,
+    "aa_social": 0.06220095693779904,
     "referral_artist": null,
-    "search_direct_other": 0.05188679245283019,
-    "paid": 0.04393939393939394
+    "search_direct_other": 0.0463258785942492,
+    "paid": 0.031096563011456628
    },
    "signup_shares": {
-    "aa_email": 0.6585365853658537,
-    "aa_social": 0.03902439024390244,
+    "aa_email": 0.6995073891625616,
+    "aa_social": 0.06403940886699508,
     "referral_artist": 0.0,
-    "search_direct_other": 0.16097560975609757,
-    "paid": 0.14146341463414633
+    "search_direct_other": 0.14285714285714285,
+    "paid": 0.09359605911330049
    },
    "s2o": {
-    "aa_email": 0.1925925925925926,
+    "aa_email": 0.22535211267605634,
     "aa_social": null,
     "referral_artist": null,
-    "search_direct_other": 0.30303030303030304,
+    "search_direct_other": null,
     "paid": null
    },
-   "sessions": 3229.0,
-   "paid_share": 0.20439764633013316,
-   "signups": 223.0,
-   "entries": 223.0,
-   "signup_order_rate": 0.22869955156950672,
+   "sessions": 3281.0,
+   "paid_share": 0.1862237122828406,
+   "signups": 225.0,
+   "entries": 225.0,
+   "signup_order_rate": 0.24,
    "units_per_buyer": 1.042483660130719,
-   "cost_per_paid_unit": 221.2873130677848,
-   "cost_per_signup": 21.012896242461732,
+   "cost_per_paid_unit": 235.16880503144657,
+   "cost_per_signup": 31.477108771929828,
    "price": 1360.0,
    "edition_size": 332.0,
    "units_target": 150.0,
@@ -3793,14 +3864,14 @@
     "paid": 0.0
    },
    "sess_shares": {
-    "aa_email": 0.395093608779858,
-    "aa_social": 0.21368624919302776,
-    "referral_artist": 0.18076178179470626,
-    "search_direct_other": 0.210458360232408,
+    "aa_email": 0.39548387096774196,
+    "aa_social": 0.2135483870967742,
+    "referral_artist": 0.18064516129032257,
+    "search_direct_other": 0.2103225806451613,
     "paid": 0.0
    },
    "convs": {
-    "aa_email": 0.049019607843137254,
+    "aa_email": 0.048939641109298535,
     "aa_social": 0.12386706948640483,
     "referral_artist": 0.06428571428571428,
     "search_direct_other": 0.07668711656441718,
@@ -3820,7 +3891,7 @@
     "search_direct_other": null,
     "paid": null
    },
-   "sessions": 1549.0,
+   "sessions": 1550.0,
    "paid_share": 0.0,
    "signups": 122.0,
    "entries": 122.0,
@@ -3850,52 +3921,52 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.23167848699763594,
-    "aa_social": 0.06382978723404255,
-    "referral_artist": 0.23167848699763594,
-    "search_direct_other": 0.4728132387706856,
+    "aa_email": 0.2169811320754717,
+    "aa_social": 0.06839622641509434,
+    "referral_artist": 0.25235849056603776,
+    "search_direct_other": 0.46226415094339623,
     "paid": 0.0
    },
    "unit_shares": {
-    "aa_email": 0.23167848699763594,
-    "aa_social": 0.06382978723404255,
-    "referral_artist": 0.23167848699763594,
-    "search_direct_other": 0.4728132387706856,
+    "aa_email": 0.2169811320754717,
+    "aa_social": 0.06839622641509434,
+    "referral_artist": 0.25235849056603776,
+    "search_direct_other": 0.46226415094339623,
     "paid": 0.0
    },
    "sess_shares": {
-    "aa_email": 0.20874661857529306,
-    "aa_social": 0.10459873760144274,
-    "referral_artist": 0.04238052299368801,
-    "search_direct_other": 0.6442741208295762,
+    "aa_email": 0.19814814814814816,
+    "aa_social": 0.10138888888888889,
+    "referral_artist": 0.0375,
+    "search_direct_other": 0.662962962962963,
     "paid": 0.0
    },
    "convs": {
-    "aa_email": 0.15334773218142547,
-    "aa_social": 0.21982758620689655,
+    "aa_email": 0.14953271028037382,
+    "aa_social": 0.2100456621004566,
     "referral_artist": null,
-    "search_direct_other": 0.07067879636109167,
+    "search_direct_other": 0.07332402234636871,
     "paid": null
    },
    "signup_shares": {
-    "aa_email": 0.2204968944099379,
-    "aa_social": 0.15838509316770186,
-    "referral_artist": 0.30745341614906835,
-    "search_direct_other": 0.3136645962732919,
+    "aa_email": 0.18991097922848665,
+    "aa_social": 0.13649851632047477,
+    "referral_artist": 0.3620178041543027,
+    "search_direct_other": 0.3115727002967359,
     "paid": 0.0
    },
    "s2o": {
-    "aa_email": 0.4225352112676056,
-    "aa_social": 0.4117647058823529,
-    "referral_artist": 0.37373737373737376,
-    "search_direct_other": 0.504950495049505,
+    "aa_email": 0.46875,
+    "aa_social": 0.5217391304347826,
+    "referral_artist": 0.38524590163934425,
+    "search_direct_other": 0.49523809523809526,
     "paid": null
    },
-   "sessions": 2218.0,
+   "sessions": 2160.0,
    "paid_share": 0.0,
-   "signups": 349.0,
-   "entries": 349.0,
-   "signup_order_rate": 0.4297994269340974,
+   "signups": 364.0,
+   "entries": 364.0,
+   "signup_order_rate": 0.44505494505494503,
    "units_per_buyer": 1.0187110187110187,
    "cost_per_paid_unit": null,
    "cost_per_signup": null,
@@ -3935,34 +4006,34 @@
     "paid": 0.0
    },
    "sess_shares": {
-    "aa_email": 0.22068230277185502,
-    "aa_social": 0.1535181236673774,
+    "aa_email": 0.2198329482850542,
+    "aa_social": 0.15354540607783898,
     "referral_artist": 0.0,
-    "search_direct_other": 0.6257995735607675,
+    "search_direct_other": 0.6266216456371068,
     "paid": 0.0
    },
    "convs": {
-    "aa_email": 0.11352657004830918,
+    "aa_email": 0.11317704122877931,
     "aa_social": 0.1423611111111111,
     "referral_artist": null,
-    "search_direct_other": 0.05394662123793299,
+    "search_direct_other": 0.054169030062393646,
     "paid": null
    },
    "signup_shares": {
-    "aa_email": 0.3098901098901099,
+    "aa_email": 0.3076923076923077,
     "aa_social": 0.2703296703296703,
     "referral_artist": 0.002197802197802198,
-    "search_direct_other": 0.4175824175824176,
+    "search_direct_other": 0.4197802197802198,
     "paid": 0.0
    },
    "s2o": {
-    "aa_email": 0.3333333333333333,
+    "aa_email": 0.32857142857142857,
     "aa_social": 0.35772357723577236,
     "referral_artist": null,
-    "search_direct_other": 0.3368421052631579,
+    "search_direct_other": 0.3403141361256545,
     "paid": null
    },
-   "sessions": 5628.0,
+   "sessions": 5627.0,
    "paid_share": 0.0,
    "signups": 489.0,
    "entries": 489.0,
@@ -4148,34 +4219,34 @@
     "paid": 0.0
    },
    "sess_shares": {
-    "aa_email": 0.27028316894686605,
-    "aa_social": 0.06633789373210308,
+    "aa_email": 0.2701972010178117,
+    "aa_social": 0.06631679389312978,
     "referral_artist": 0.0,
-    "search_direct_other": 0.6633789373210308,
+    "search_direct_other": 0.6634860050890585,
     "paid": 0.0
    },
    "convs": {
-    "aa_email": 0.0824014125956445,
-    "aa_social": 0.11270983213429256,
+    "aa_email": 0.08298999411418481,
+    "aa_social": 0.11031175059952038,
     "referral_artist": null,
-    "search_direct_other": 0.07913669064748201,
+    "search_direct_other": 0.07909875359539789,
     "paid": null
    },
    "signup_shares": {
-    "aa_email": 0.27079303675048355,
-    "aa_social": 0.09090909090909091,
+    "aa_email": 0.2727272727272727,
+    "aa_social": 0.08897485493230174,
     "referral_artist": 0.0,
     "search_direct_other": 0.6382978723404256,
     "paid": 0.0
    },
    "s2o": {
-    "aa_email": 0.2857142857142857,
-    "aa_social": 0.40425531914893614,
+    "aa_email": 0.2907801418439716,
+    "aa_social": 0.391304347826087,
     "referral_artist": null,
     "search_direct_other": 0.37272727272727274,
     "paid": null
    },
-   "sessions": 6286.0,
+   "sessions": 6288.0,
    "paid_share": 0.0,
    "signups": 602.0,
    "entries": 602.0,
@@ -4205,52 +4276,52 @@
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.35451505016722407,
-    "aa_social": 0.2040133779264214,
+    "aa_email": 0.367003367003367,
+    "aa_social": 0.11784511784511785,
     "referral_artist": 0.0,
-    "search_direct_other": 0.43812709030100333,
-    "paid": 0.0033444816053511705
+    "search_direct_other": 0.5117845117845118,
+    "paid": 0.003367003367003367
    },
    "unit_shares": {
-    "aa_email": 0.35451505016722407,
-    "aa_social": 0.2040133779264214,
+    "aa_email": 0.367003367003367,
+    "aa_social": 0.11784511784511785,
     "referral_artist": 0.0,
-    "search_direct_other": 0.43812709030100333,
-    "paid": 0.0033444816053511705
+    "search_direct_other": 0.5117845117845118,
+    "paid": 0.003367003367003367
    },
    "sess_shares": {
-    "aa_email": 0.31133501259445845,
-    "aa_social": 0.19093198992443325,
+    "aa_email": 0.319672131147541,
+    "aa_social": 0.19262295081967212,
     "referral_artist": 0.0,
-    "search_direct_other": 0.49773299748110833,
+    "search_direct_other": 0.48770491803278687,
     "paid": 0.0
    },
    "convs": {
-    "aa_email": 0.11812297734627832,
-    "aa_social": 0.11873350923482849,
+    "aa_email": 0.11538461538461539,
+    "aa_social": 0.09574468085106383,
     "referral_artist": null,
-    "search_direct_other": 0.09412955465587045,
+    "search_direct_other": 0.0976890756302521,
     "paid": null
    },
    "signup_shares": {
-    "aa_email": 0.3443396226415094,
-    "aa_social": 0.21226415094339623,
+    "aa_email": 0.35467980295566504,
+    "aa_social": 0.17733990147783252,
     "referral_artist": 0.0,
-    "search_direct_other": 0.4386792452830189,
-    "paid": 0.0047169811320754715
+    "search_direct_other": 0.458128078817734,
+    "paid": 0.009852216748768473
    },
    "s2o": {
-    "aa_email": 0.2876712328767123,
-    "aa_social": 0.26666666666666666,
+    "aa_email": 0.20833333333333334,
+    "aa_social": 0.2777777777777778,
     "referral_artist": null,
-    "search_direct_other": 0.3333333333333333,
+    "search_direct_other": 0.3548387096774194,
     "paid": null
    },
-   "sessions": 1985.0,
+   "sessions": 1952.0,
    "paid_share": 0.0,
-   "signups": 227.0,
-   "entries": 227.0,
-   "signup_order_rate": 0.3039647577092511,
+   "signups": 218.0,
+   "entries": 218.0,
+   "signup_order_rate": 0.29357798165137616,
    "units_per_buyer": 1.1164383561643836,
    "cost_per_paid_unit": null,
    "cost_per_signup": null,
@@ -4290,38 +4361,38 @@
     "paid": 0.0
    },
    "sess_shares": {
-    "aa_email": 0.213986013986014,
-    "aa_social": 0.05314685314685315,
-    "referral_artist": 0.008391608391608392,
-    "search_direct_other": 0.7244755244755244,
+    "aa_email": 0.20748613678373382,
+    "aa_social": 0.054528650646950096,
+    "referral_artist": 0.00831792975970425,
+    "search_direct_other": 0.7296672828096118,
     "paid": 0.0
    },
    "convs": {
-    "aa_email": 0.10675381263616558,
-    "aa_social": 0.10526315789473684,
+    "aa_email": 0.1091314031180401,
+    "aa_social": 0.1016949152542373,
     "referral_artist": null,
-    "search_direct_other": 0.021879021879021878,
+    "search_direct_other": 0.023432552248258392,
     "paid": null
    },
    "signup_shares": {
-    "aa_email": 0.5051546391752577,
-    "aa_social": 0.12371134020618557,
-    "referral_artist": 0.020618556701030927,
-    "search_direct_other": 0.35051546391752575,
+    "aa_email": 0.49,
+    "aa_social": 0.12,
+    "referral_artist": 0.02,
+    "search_direct_other": 0.37,
     "paid": 0.0
    },
    "s2o": {
-    "aa_email": 0.12244897959183673,
+    "aa_email": 0.14285714285714285,
     "aa_social": null,
     "referral_artist": null,
-    "search_direct_other": 0.38235294117647056,
+    "search_direct_other": 0.35135135135135137,
     "paid": null
    },
-   "sessions": 2145.0,
+   "sessions": 2164.0,
    "paid_share": 0.0,
-   "signups": 105.0,
-   "entries": 105.0,
-   "signup_order_rate": 0.19047619047619047,
+   "signups": 108.0,
+   "entries": 108.0,
+   "signup_order_rate": 0.19444444444444445,
    "units_per_buyer": 1.0,
    "cost_per_paid_unit": null,
    "cost_per_signup": null,
@@ -4361,17 +4432,17 @@
     "paid": 0.007220216606498195
    },
    "sess_shares": {
-    "aa_email": 0.44774851316907394,
-    "aa_social": 0.06740300198244123,
-    "referral_artist": 0.08836023789294817,
-    "search_direct_other": 0.3964882469555367,
+    "aa_email": 0.4478753541076487,
+    "aa_social": 0.06742209631728045,
+    "referral_artist": 0.08838526912181303,
+    "search_direct_other": 0.3963172804532578,
     "paid": 0.0
    },
    "convs": {
     "aa_email": 0.16888045540796964,
     "aa_social": 0.13445378151260504,
     "referral_artist": 0.10576923076923077,
-    "search_direct_other": 0.09285714285714286,
+    "search_direct_other": 0.09292351679771266,
     "paid": null
    },
    "signup_shares": {
@@ -4388,7 +4459,7 @@
     "search_direct_other": 0.3076923076923077,
     "paid": null
    },
-   "sessions": 3531.0,
+   "sessions": 3530.0,
    "paid_share": 0.0,
    "signups": 506.0,
    "entries": 506.0,
@@ -4412,35 +4483,35 @@
    "window_end": "2023-04-29",
    "campaign_days": 17.0,
    "window_hours": 24.0,
-   "units": 1249.0,
-   "demand": 1249.0,
+   "units": 488.0,
+   "demand": 488.0,
    "sold_short": false,
    "unmet_units": 0.0,
    "payment_failed_units": 0.0,
    "demand_shares": {
-    "aa_email": 0.08903467666354264,
-    "aa_social": 0.11246485473289597,
+    "aa_email": 0.09290953545232274,
+    "aa_social": 0.10513447432762836,
     "referral_artist": 0.0,
-    "search_direct_other": 0.7985004686035614,
+    "search_direct_other": 0.8019559902200489,
     "paid": 0.0
    },
    "unit_shares": {
-    "aa_email": 0.08903467666354264,
-    "aa_social": 0.11246485473289597,
+    "aa_email": 0.09290953545232274,
+    "aa_social": 0.10513447432762836,
     "referral_artist": 0.0,
-    "search_direct_other": 0.7985004686035614,
+    "search_direct_other": 0.8019559902200489,
     "paid": 0.0
    },
    "sess_shares": {
-    "aa_email": 0.06125290023201856,
-    "aa_social": 0.1345707656612529,
+    "aa_email": 0.061224489795918366,
+    "aa_social": 0.1349721706864564,
     "referral_artist": 0.0,
-    "search_direct_other": 0.8041763341067285,
+    "search_direct_other": 0.8038033395176253,
     "paid": 0.0
    },
    "convs": {
     "aa_email": 0.11363636363636363,
-    "aa_social": 0.07931034482758621,
+    "aa_social": 0.07903780068728522,
     "referral_artist": null,
     "search_direct_other": 0.07847663012117714,
     "paid": null
@@ -4459,12 +4530,12 @@
     "search_direct_other": 0.3088235294117647,
     "paid": null
    },
-   "sessions": 2155.0,
+   "sessions": 2156.0,
    "paid_share": 0.0,
    "signups": 193.0,
    "entries": 193.0,
    "signup_order_rate": 0.31088082901554404,
-   "units_per_buyer": 5.502202643171806,
+   "units_per_buyer": 2.149779735682819,
    "cost_per_paid_unit": null,
    "cost_per_signup": null,
    "price": 750.0,
@@ -4503,17 +4574,17 @@
     "paid": 0.005994005994005994
    },
    "sess_shares": {
-    "aa_email": 0.16252983293556086,
-    "aa_social": 0.1279236276849642,
-    "referral_artist": 0.07124105011933174,
-    "search_direct_other": 0.6371121718377089,
-    "paid": 0.0011933174224343676
+    "aa_email": 0.16246866419959413,
+    "aa_social": 0.1279694401336994,
+    "referral_artist": 0.07126656320878597,
+    "search_direct_other": 0.6371015876805539,
+    "paid": 0.001193744777366599
    },
    "convs": {
-    "aa_email": 0.16519823788546256,
+    "aa_email": 0.16531961792799413,
     "aa_social": 0.13899253731343283,
     "referral_artist": 0.051926298157453935,
-    "search_direct_other": 0.09402509833302117,
+    "search_direct_other": 0.09406033352070452,
     "paid": null
    },
    "signup_shares": {
@@ -4530,8 +4601,8 @@
     "search_direct_other": 0.4760956175298805,
     "paid": null
    },
-   "sessions": 8380.0,
-   "paid_share": 0.0011933174224343676,
+   "sessions": 8377.0,
+   "paid_share": 0.001193744777366599,
    "signups": 995.0,
    "entries": 995.0,
    "signup_order_rate": 0.40804020100502514,
@@ -4574,35 +4645,35 @@
     "paid": 0.007168458781362007
    },
    "sess_shares": {
-    "aa_email": 0.2790532879818594,
-    "aa_social": 0.1736111111111111,
+    "aa_email": 0.2787303386708233,
+    "aa_social": 0.1735865098483775,
     "referral_artist": 0.0,
-    "search_direct_other": 0.5459183673469388,
-    "paid": 0.001417233560090703
+    "search_direct_other": 0.5462661187473431,
+    "paid": 0.0014170327334561428
    },
    "convs": {
-    "aa_email": 0.13306246825799897,
+    "aa_email": 0.1337061514997458,
     "aa_social": 0.10693877551020409,
     "referral_artist": null,
-    "search_direct_other": 0.09190031152647975,
+    "search_direct_other": 0.09182879377431907,
     "paid": null
    },
    "signup_shares": {
-    "aa_email": 0.3484042553191489,
-    "aa_social": 0.17420212765957446,
+    "aa_email": 0.34926958831341304,
+    "aa_social": 0.17397078353253653,
     "referral_artist": 0.0,
-    "search_direct_other": 0.47074468085106386,
-    "paid": 0.006648936170212766
+    "search_direct_other": 0.4701195219123506,
+    "paid": 0.006640106241699867
    },
    "s2o": {
-    "aa_email": 0.4122137404580153,
+    "aa_email": 0.41064638783269963,
     "aa_social": 0.366412213740458,
     "referral_artist": null,
     "search_direct_other": 0.423728813559322,
     "paid": null
    },
-   "sessions": 7056.0,
-   "paid_share": 0.001417233560090703,
+   "sessions": 7057.0,
+   "paid_share": 0.0014170327334561428,
    "signups": 787.0,
    "entries": 787.0,
    "signup_order_rate": 0.39644218551461247,
@@ -4645,17 +4716,17 @@
     "paid": 0.007751937984496124
    },
    "sess_shares": {
-    "aa_email": 0.16363636363636364,
-    "aa_social": 0.2096590909090909,
-    "referral_artist": 0.41761363636363635,
-    "search_direct_other": 0.20852272727272728,
-    "paid": 0.0005681818181818182
+    "aa_email": 0.16372939169982945,
+    "aa_social": 0.20977828311540647,
+    "referral_artist": 0.4178510517339397,
+    "search_direct_other": 0.20807276861853324,
+    "paid": 0.0005685048322910744
    },
    "convs": {
     "aa_email": 0.1701388888888889,
     "aa_social": 0.0975609756097561,
     "referral_artist": 0.07210884353741497,
-    "search_direct_other": 0.16076294277929154,
+    "search_direct_other": 0.16120218579234974,
     "paid": null
    },
    "signup_shares": {
@@ -4672,8 +4743,8 @@
     "search_direct_other": 0.5084745762711864,
     "paid": null
    },
-   "sessions": 1760.0,
-   "paid_share": 0.0005681818181818182,
+   "sessions": 1759.0,
+   "paid_share": 0.0005685048322910744,
    "signups": 205.0,
    "entries": 205.0,
    "signup_order_rate": 0.36097560975609755,
@@ -4787,35 +4858,35 @@
     "paid": 0.004024767801857585
    },
    "sess_shares": {
-    "aa_email": 0.39019308237255174,
-    "aa_social": 0.08306709265175719,
-    "referral_artist": 0.059035977219058206,
-    "search_direct_other": 0.46756493957494094,
-    "paid": 0.00013890818169190166
+    "aa_email": 0.390084710456881,
+    "aa_social": 0.08304402166365782,
+    "referral_artist": 0.059019580613803635,
+    "search_direct_other": 0.4677128176642133,
+    "paid": 0.00013886960144424384
    },
    "convs": {
-    "aa_email": 0.16197935208259168,
+    "aa_email": 0.16162335350658597,
     "aa_social": 0.15217391304347827,
     "referral_artist": 0.06823529411764706,
-    "search_direct_other": 0.12002376708259062,
+    "search_direct_other": 0.12024940617577197,
     "paid": null
    },
    "signup_shares": {
-    "aa_email": 0.46286876907426244,
+    "aa_email": 0.46185147507629704,
     "aa_social": 0.09257375381485249,
     "referral_artist": 0.029501525940996948,
-    "search_direct_other": 0.41098677517802645,
+    "search_direct_other": 0.41200406917599186,
     "paid": 0.004069175991861648
    },
    "s2o": {
-    "aa_email": 0.5494505494505495,
+    "aa_email": 0.5484581497797357,
     "aa_social": 0.6263736263736264,
     "referral_artist": null,
-    "search_direct_other": 0.5816831683168316,
+    "search_direct_other": 0.582716049382716,
     "paid": null
    },
-   "sessions": 7199.0,
-   "paid_share": 0.00013890818169190166,
+   "sessions": 7201.0,
+   "paid_share": 0.00013886960144424384,
    "signups": 1053.0,
    "entries": 1053.0,
    "signup_order_rate": 0.5555555555555556,
@@ -4858,14 +4929,14 @@
     "paid": 0.01615508885298869
    },
    "sess_shares": {
-    "aa_email": 0.22266469450449425,
-    "aa_social": 0.08317214700193423,
-    "referral_artist": 0.2828535669586984,
-    "search_direct_other": 0.36249857776766414,
-    "paid": 0.04881101376720901
+    "aa_email": 0.22248776601798112,
+    "aa_social": 0.0831910777284625,
+    "referral_artist": 0.2829179469671105,
+    "search_direct_other": 0.3625810856947764,
+    "paid": 0.048822123591669514
    },
    "convs": {
-    "aa_email": 0.0684721512519162,
+    "aa_email": 0.06854219948849105,
     "aa_social": 0.22024623803009577,
     "referral_artist": 0.08567980691874497,
     "search_direct_other": 0.15128688010043942,
@@ -4885,8 +4956,8 @@
     "search_direct_other": 0.3091286307053942,
     "paid": null
    },
-   "sessions": 8789.0,
-   "paid_share": 0.04881101376720901,
+   "sessions": 8787.0,
+   "paid_share": 0.048822123591669514,
    "signups": 1059.0,
    "entries": 1059.0,
    "signup_order_rate": 0.28895184135977336,
@@ -4929,17 +5000,17 @@
     "paid": 0.0
    },
    "sess_shares": {
-    "aa_email": 0.04414306608163808,
-    "aa_social": 0.15503257545539156,
+    "aa_email": 0.044137197553842066,
+    "aa_social": 0.15501196490295135,
     "referral_artist": 0.0,
-    "search_direct_other": 0.5569738066746444,
-    "paid": 0.24385055178832601
+    "search_direct_other": 0.557032704068067,
+    "paid": 0.2438181334751396
    },
    "convs": {
     "aa_email": null,
     "aa_social": null,
     "referral_artist": null,
-    "search_direct_other": 0.00023872045834328001,
+    "search_direct_other": 0.00023866348448687351,
     "paid": null
    },
    "signup_shares": {
@@ -4956,8 +5027,8 @@
     "search_direct_other": null,
     "paid": null
    },
-   "sessions": 7521.0,
-   "paid_share": 0.24385055178832601,
+   "sessions": 7522.0,
+   "paid_share": 0.2438181334751396,
    "signups": 800.0,
    "entries": 800.0,
    "signup_order_rate": 0.025,

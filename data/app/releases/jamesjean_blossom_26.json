@@ -60,7 +60,7 @@
   "closed": true,
   "firstPaid": "2026-07-28"
  },
- "completeThrough": "2026-10-26",
+ "completeThrough": "2026-10-27",
  "asOfFraction": 1.0,
  "targetingMode": "benchmark",
  "edition": {
@@ -100,9 +100,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 84.075,
-    "frame_uplift_per_unit": 38.3,
+    "frame_uplift_per_unit": 38.37,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -146,7 +146,7 @@
     "framing_available": false,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": null,
     "frame_uplift_per_unit": 0.0,
     "aa_budget_share": 0.5,
@@ -178,7 +178,7 @@
    "note": "titles: Blossom Kannyu / Blossom Vessel"
   },
   "framingAvailable": true,
-  "frameConversion": 0.4556,
+  "frameConversion": 0.4564,
   "frameProfitPerUnit": null,
   "frameUpliftPerUnit": 0.0
  },
@@ -3204,7 +3204,7 @@
   "frames": 137.0,
   "rate": 0.4676,
   "entrants": null,
-  "plan": 0.4556,
+  "plan": 0.4564,
   "benchmark": {
    "rate": 0.478,
    "n": 8,
@@ -3289,7 +3289,212 @@
   "asOf": "2026-08-22"
  },
  "draw": null,
- "geo": null,
+ "geo": {
+  "unit": "units",
+  "rows": [
+   {
+    "country": "United States",
+    "code": null,
+    "units": 354.0,
+    "orders": 345
+   },
+   {
+    "country": "Canada",
+    "code": null,
+    "units": 31.0,
+    "orders": 29
+   },
+   {
+    "country": "Australia",
+    "code": null,
+    "units": 30.0,
+    "orders": 30
+   },
+   {
+    "country": "United Kingdom",
+    "code": null,
+    "units": 21.0,
+    "orders": 20
+   },
+   {
+    "country": "Singapore",
+    "code": null,
+    "units": 16.0,
+    "orders": 16
+   },
+   {
+    "country": "New Zealand",
+    "code": null,
+    "units": 15.0,
+    "orders": 14
+   },
+   {
+    "country": "Germany",
+    "code": null,
+    "units": 14.0,
+    "orders": 12
+   },
+   {
+    "country": "Mexico",
+    "code": null,
+    "units": 12.0,
+    "orders": 12
+   },
+   {
+    "country": "Netherlands",
+    "code": null,
+    "units": 12.0,
+    "orders": 11
+   },
+   {
+    "country": "Switzerland",
+    "code": null,
+    "units": 12.0,
+    "orders": 12
+   },
+   {
+    "country": "France",
+    "code": null,
+    "units": 8.0,
+    "orders": 8
+   },
+   {
+    "country": "Japan",
+    "code": null,
+    "units": 8.0,
+    "orders": 7
+   },
+   {
+    "country": "Hong Kong",
+    "code": null,
+    "units": 6.0,
+    "orders": 6
+   },
+   {
+    "country": "Taiwan",
+    "code": null,
+    "units": 6.0,
+    "orders": 6
+   },
+   {
+    "country": "Belgium",
+    "code": null,
+    "units": 4.0,
+    "orders": 4
+   },
+   {
+    "country": "Norway",
+    "code": null,
+    "units": 4.0,
+    "orders": 4
+   },
+   {
+    "country": "United Arab Emirates",
+    "code": null,
+    "units": 4.0,
+    "orders": 4
+   },
+   {
+    "country": "Cyprus",
+    "code": null,
+    "units": 3.0,
+    "orders": 3
+   },
+   {
+    "country": "Poland",
+    "code": null,
+    "units": 3.0,
+    "orders": 3
+   },
+   {
+    "country": "Spain",
+    "code": null,
+    "units": 3.0,
+    "orders": 3
+   },
+   {
+    "country": "Thailand",
+    "code": null,
+    "units": 3.0,
+    "orders": 2
+   },
+   {
+    "country": "Italy",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Austria",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "China",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Colombia",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Czech Republic",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Denmark",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Indonesia",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Ireland",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Luxembourg",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Portugal",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Saudi Arabia",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Sweden",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   }
+  ],
+  "total": 582.0,
+  "orders": 564,
+  "source": "orders"
+ },
  "waterfall": {
   "target": 600.0,
   "projection": 580.0,
@@ -5533,5 +5738,5 @@
    }
   }
  },
- "builtAt": "2026-10-27T18:16:29+00:00"
+ "builtAt": "2026-10-28T13:37:32+00:00"
 }

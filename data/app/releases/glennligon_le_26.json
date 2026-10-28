@@ -60,7 +60,7 @@
   "closed": true,
   "firstPaid": "2026-08-14"
  },
- "completeThrough": "2026-10-26",
+ "completeThrough": "2026-10-27",
  "asOfFraction": 1.0,
  "targetingMode": "benchmark",
  "edition": {
@@ -100,9 +100,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 289.554,
-    "frame_uplift_per_unit": 131.92,
+    "frame_uplift_per_unit": 132.15,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -146,9 +146,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 289.554,
-    "frame_uplift_per_unit": 131.92,
+    "frame_uplift_per_unit": 132.15,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -178,7 +178,7 @@
    "note": "titles: Untitled (Black on Black) / Untitled (White on White)"
   },
   "framingAvailable": true,
-  "frameConversion": 0.4556,
+  "frameConversion": 0.4564,
   "frameProfitPerUnit": null,
   "frameUpliftPerUnit": 0.0
  },
@@ -3737,7 +3737,7 @@
   "frames": 108.0,
   "rate": 0.72,
   "entrants": null,
-  "plan": 0.4556,
+  "plan": 0.4564,
   "benchmark": {
    "rate": 0.5302,
    "n": 5,
@@ -3840,7 +3840,116 @@
   "asOf": "2026-09-19"
  },
  "draw": null,
- "geo": null,
+ "geo": {
+  "unit": "units",
+  "rows": [
+   {
+    "country": "United States",
+    "code": null,
+    "units": 110.0,
+    "orders": 97
+   },
+   {
+    "country": "United Kingdom",
+    "code": null,
+    "units": 11.0,
+    "orders": 11
+   },
+   {
+    "country": "Japan",
+    "code": null,
+    "units": 5.0,
+    "orders": 4
+   },
+   {
+    "country": "Germany",
+    "code": null,
+    "units": 4.0,
+    "orders": 3
+   },
+   {
+    "country": "Italy",
+    "code": null,
+    "units": 3.0,
+    "orders": 2
+   },
+   {
+    "country": "Netherlands",
+    "code": null,
+    "units": 3.0,
+    "orders": 2
+   },
+   {
+    "country": "Hong Kong",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Singapore",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Switzerland",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Taiwan",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Canada",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "France",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Greece",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Liechtenstein",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Mauritius",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Saudi Arabia",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "South Korea",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   }
+  ],
+  "total": 151.0,
+  "orders": 134,
+  "source": "orders"
+ },
  "waterfall": {
   "target": 150.0,
   "projection": 150.0,
@@ -7207,5 +7316,5 @@
    }
   }
  },
- "builtAt": "2026-10-27T18:16:24+00:00"
+ "builtAt": "2026-10-28T13:37:25+00:00"
 }

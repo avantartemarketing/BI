@@ -61,7 +61,7 @@
   "closed": true,
   "firstPaid": "2026-07-22"
  },
- "completeThrough": "2026-10-26",
+ "completeThrough": "2026-10-27",
  "asOfFraction": 1.0,
  "targetingMode": "benchmark",
  "edition": {
@@ -101,9 +101,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 165.4,
-    "frame_uplift_per_unit": 75.36,
+    "frame_uplift_per_unit": 75.49,
     "aa_budget_share": 1.0,
     "deal": "revenue share",
     "sources": {
@@ -147,9 +147,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 165.7,
-    "frame_uplift_per_unit": 75.49,
+    "frame_uplift_per_unit": 75.63,
     "aa_budget_share": 1.0,
     "deal": "revenue share",
     "sources": {
@@ -193,9 +193,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 161.6,
-    "frame_uplift_per_unit": 73.62,
+    "frame_uplift_per_unit": 73.75,
     "aa_budget_share": 1.0,
     "deal": "revenue share",
     "sources": {
@@ -225,7 +225,7 @@
    "note": "titles: Composition with Large Red Plane, Yellow, Black, Gray, and Blue / Composition with Red, Yellow, Black, Blue, and Gray /"
   },
   "framingAvailable": true,
-  "frameConversion": 0.4556,
+  "frameConversion": 0.4564,
   "frameProfitPerUnit": null,
   "frameUpliftPerUnit": 0.0
  },
@@ -5517,7 +5517,7 @@
   "frames": 579.0,
   "rate": 0.6694,
   "entrants": null,
-  "plan": 0.4556,
+  "plan": 0.4564,
   "benchmark": {
    "rate": 0.4781,
    "n": 7,
@@ -5640,7 +5640,248 @@
   "asOf": "2026-08-20"
  },
  "draw": null,
- "geo": null,
+ "geo": {
+  "unit": "units",
+  "rows": [
+   {
+    "country": "United States",
+    "code": null,
+    "units": 357.0,
+    "orders": 318
+   },
+   {
+    "country": "United Kingdom",
+    "code": null,
+    "units": 131.0,
+    "orders": 118
+   },
+   {
+    "country": "Netherlands",
+    "code": null,
+    "units": 59.0,
+    "orders": 43
+   },
+   {
+    "country": "Australia",
+    "code": null,
+    "units": 35.0,
+    "orders": 29
+   },
+   {
+    "country": "Singapore",
+    "code": null,
+    "units": 26.0,
+    "orders": 25
+   },
+   {
+    "country": "Canada",
+    "code": null,
+    "units": 25.0,
+    "orders": 23
+   },
+   {
+    "country": "Italy",
+    "code": null,
+    "units": 22.0,
+    "orders": 19
+   },
+   {
+    "country": "Hong Kong",
+    "code": null,
+    "units": 21.0,
+    "orders": 19
+   },
+   {
+    "country": "Germany",
+    "code": null,
+    "units": 20.0,
+    "orders": 20
+   },
+   {
+    "country": "Switzerland",
+    "code": null,
+    "units": 20.0,
+    "orders": 20
+   },
+   {
+    "country": "France",
+    "code": null,
+    "units": 19.0,
+    "orders": 17
+   },
+   {
+    "country": "Belgium",
+    "code": null,
+    "units": 15.0,
+    "orders": 15
+   },
+   {
+    "country": "Spain",
+    "code": null,
+    "units": 15.0,
+    "orders": 15
+   },
+   {
+    "country": "United Arab Emirates",
+    "code": null,
+    "units": 14.0,
+    "orders": 14
+   },
+   {
+    "country": "Japan",
+    "code": null,
+    "units": 12.0,
+    "orders": 8
+   },
+   {
+    "country": "Sweden",
+    "code": null,
+    "units": 8.0,
+    "orders": 8
+   },
+   {
+    "country": "Austria",
+    "code": null,
+    "units": 7.0,
+    "orders": 5
+   },
+   {
+    "country": "Ireland",
+    "code": null,
+    "units": 7.0,
+    "orders": 7
+   },
+   {
+    "country": "New Zealand",
+    "code": null,
+    "units": 7.0,
+    "orders": 5
+   },
+   {
+    "country": "Portugal",
+    "code": null,
+    "units": 7.0,
+    "orders": 6
+   },
+   {
+    "country": "Greece",
+    "code": null,
+    "units": 6.0,
+    "orders": 6
+   },
+   {
+    "country": "South Korea",
+    "code": null,
+    "units": 6.0,
+    "orders": 6
+   },
+   {
+    "country": "Taiwan",
+    "code": null,
+    "units": 6.0,
+    "orders": 4
+   },
+   {
+    "country": "Norway",
+    "code": null,
+    "units": 5.0,
+    "orders": 5
+   },
+   {
+    "country": "Denmark",
+    "code": null,
+    "units": 4.0,
+    "orders": 4
+   },
+   {
+    "country": "Iceland",
+    "code": null,
+    "units": 4.0,
+    "orders": 4
+   },
+   {
+    "country": "Mexico",
+    "code": null,
+    "units": 4.0,
+    "orders": 4
+   },
+   {
+    "country": "Croatia",
+    "code": null,
+    "units": 3.0,
+    "orders": 3
+   },
+   {
+    "country": "Israel",
+    "code": null,
+    "units": 3.0,
+    "orders": 3
+   },
+   {
+    "country": "Malta",
+    "code": null,
+    "units": 3.0,
+    "orders": 1
+   },
+   {
+    "country": "Poland",
+    "code": null,
+    "units": 3.0,
+    "orders": 1
+   },
+   {
+    "country": "Luxembourg",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Romania",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Bulgaria",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Czech Republic",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Estonia",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Hungary",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Jersey",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "South Africa",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   }
+  ],
+  "total": 884.0,
+  "orders": 785,
+  "source": "orders"
+ },
  "waterfall": {
   "target": 900.0,
   "projection": 865.0,
@@ -9367,5 +9608,5 @@
    }
   }
  },
- "builtAt": "2026-10-27T18:16:51+00:00"
+ "builtAt": "2026-10-28T13:37:56+00:00"
 }

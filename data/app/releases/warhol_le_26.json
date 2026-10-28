@@ -83,7 +83,7 @@
   "closed": true,
   "firstPaid": "2026-09-01"
  },
- "completeThrough": "2026-10-26",
+ "completeThrough": "2026-10-27",
  "asOfFraction": 1.0,
  "targetingMode": "benchmark",
  "edition": {
@@ -123,9 +123,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 252.5,
-    "frame_uplift_per_unit": 115.04,
+    "frame_uplift_per_unit": 115.24,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -169,9 +169,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 247.1,
-    "frame_uplift_per_unit": 112.58,
+    "frame_uplift_per_unit": 112.78,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -215,7 +215,7 @@
     "framing_available": false,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": null,
     "frame_uplift_per_unit": 0.0,
     "aa_budget_share": null,
@@ -261,9 +261,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 261.0,
-    "frame_uplift_per_unit": 118.91,
+    "frame_uplift_per_unit": 119.12,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -307,9 +307,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 248.7,
-    "frame_uplift_per_unit": 113.31,
+    "frame_uplift_per_unit": 113.51,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -353,9 +353,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 252.5,
-    "frame_uplift_per_unit": 115.04,
+    "frame_uplift_per_unit": 115.24,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -399,9 +399,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4556,
+    "frame_conversion": 0.4564,
     "frame_profit_per_unit": 247.1,
-    "frame_uplift_per_unit": 112.58,
+    "frame_uplift_per_unit": 112.78,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -431,24 +431,24 @@
    "note": "titles: Brillo Box Collectable (Lifesize) / Brillo Box Collectable (Green Landscape) / Brillo Box Collectable (Green Portrait) /"
   },
   "framingAvailable": true,
-  "frameConversion": 0.4556,
+  "frameConversion": 0.4564,
   "frameProfitPerUnit": null,
   "frameUpliftPerUnit": 0.0
  },
  "currency": "units",
  "hero": {
-  "now": 1226.0,
+  "now": 1223.0,
   "expectedToday": 2440.0,
-  "delta": -1214.0,
-  "projected": 1226.0,
+  "delta": -1217.0,
+  "projected": 1223.0,
   "target": 2440.0,
   "oversubscribedUnits": 0,
-  "statusPct": -0.4975,
+  "statusPct": -0.4988,
   "ok": false,
   "benchmark": 1147.0,
   "benchmarkToday": 1147.0,
   "stretch": 1293.0,
-  "benchmarkPct": 0.0685
+  "benchmarkPct": 0.0659
  },
  "targets": {
   "edition_size": 2440,
@@ -634,14 +634,14 @@
   {
    "key": "aa_email",
    "name": "AA Email",
-   "now": 226.7,
+   "now": 229.0,
    "exp": 865.3,
-   "proj": 226.7,
+   "proj": 229.0,
    "target": 865.3,
    "parts": [
     {
      "name": "AA Email Man",
-     "value": 221.4
+     "value": 223.7
     },
     {
      "name": "AA Email Auto",
@@ -812,49 +812,49 @@
     },
     {
      "date": "2026-09-24",
-     "actual": 185.43,
+     "actual": 185.44,
      "plan": 723.33,
      "proj": null,
      "bm": 340.14
     },
     {
      "date": "2026-09-25",
-     "actual": 185.43,
+     "actual": 185.44,
      "plan": 730.09,
      "proj": null,
      "bm": 343.32
     },
     {
      "date": "2026-09-26",
-     "actual": 185.43,
+     "actual": 185.44,
      "plan": 731.79,
      "proj": null,
      "bm": 344.12
     },
     {
      "date": "2026-09-27",
-     "actual": 185.43,
+     "actual": 185.44,
      "plan": 731.79,
      "proj": null,
      "bm": 344.12
     },
     {
      "date": "2026-09-28",
-     "actual": 185.43,
+     "actual": 185.44,
      "plan": 742.47,
      "proj": null,
      "bm": 349.14
     },
     {
      "date": "2026-09-29",
-     "actual": 185.43,
+     "actual": 185.44,
      "plan": 781.66,
      "proj": null,
      "bm": 367.57
     },
     {
      "date": "2026-09-30",
-     "actual": 226.73,
+     "actual": 228.96,
      "plan": 865.31,
      "proj": null,
      "bm": 406.91
@@ -1322,18 +1322,18 @@
   {
    "key": "search_direct_other",
    "name": "Search etc.",
-   "now": 370.7,
+   "now": 360.5,
    "exp": 836.0,
-   "proj": 370.7,
+   "proj": 360.5,
    "target": 836.0,
    "parts": [
     {
      "name": "Direct",
-     "value": 248.1
+     "value": 245.8
     },
     {
      "name": "Organic Search",
-     "value": 85.4
+     "value": 77.5
     },
     {
      "name": "Referral Other",
@@ -1540,21 +1540,21 @@
     },
     {
      "date": "2026-09-28",
-     "actual": 228.46,
+     "actual": 228.47,
      "plan": 710.3,
      "proj": null,
      "bm": 334.01
     },
     {
      "date": "2026-09-29",
-     "actual": 228.46,
+     "actual": 228.47,
      "plan": 760.39,
      "proj": null,
      "bm": 357.57
     },
     {
      "date": "2026-09-30",
-     "actual": 370.68,
+     "actual": 360.5,
      "plan": 836.0,
      "proj": null,
      "bm": 393.13
@@ -1566,14 +1566,14 @@
   {
    "key": "paid",
    "name": "Paid",
-   "now": 615.9,
+   "now": 620.9,
    "exp": 653.4,
-   "proj": 615.9,
+   "proj": 620.9,
    "target": 653.4,
    "parts": [
     {
      "name": "Paid Social",
-     "value": 615.9
+     "value": 620.9
     }
    ],
    "daily": [
@@ -1719,70 +1719,70 @@
     },
     {
      "date": "2026-09-21",
-     "actual": 228.16,
+     "actual": 227.15,
      "plan": 427.21,
      "proj": null,
      "bm": 200.89
     },
     {
      "date": "2026-09-22",
-     "actual": 232.16,
+     "actual": 231.15,
      "plan": 452.34,
      "proj": null,
      "bm": 212.71
     },
     {
      "date": "2026-09-23",
-     "actual": 232.16,
+     "actual": 231.15,
      "plan": 477.47,
      "proj": null,
      "bm": 224.53
     },
     {
      "date": "2026-09-24",
-     "actual": 284.68,
+     "actual": 283.67,
      "plan": 502.6,
      "proj": null,
      "bm": 236.35
     },
     {
      "date": "2026-09-25",
-     "actual": 291.68,
+     "actual": 290.67,
      "plan": 527.73,
      "proj": null,
      "bm": 248.16
     },
     {
      "date": "2026-09-26",
-     "actual": 291.68,
+     "actual": 290.67,
      "plan": 552.86,
      "proj": null,
      "bm": 259.98
     },
     {
      "date": "2026-09-27",
-     "actual": 291.68,
+     "actual": 290.67,
      "plan": 577.99,
      "proj": null,
      "bm": 271.8
     },
     {
      "date": "2026-09-28",
-     "actual": 377.49,
+     "actual": 376.49,
      "plan": 603.12,
      "proj": null,
      "bm": 283.61
     },
     {
      "date": "2026-09-29",
-     "actual": 377.49,
+     "actual": 376.49,
      "plan": 628.25,
      "proj": null,
      "bm": 295.43
     },
     {
      "date": "2026-09-30",
-     "actual": 615.94,
+     "actual": 620.89,
      "plan": 653.38,
      "proj": null,
      "bm": 307.25
@@ -1796,21 +1796,21 @@
   "aa_email": {
    "sessions_actual": 11926.0,
    "sessions_expected": 22883.4,
-   "conv_actual": 0.019011403655877914,
+   "conv_actual": 0.019198390072111354,
    "conv_expected": 0.037813858574540435,
    "contrib_traffic": -414.3,
-   "contrib_conversion": -224.2,
-   "bps_actual": 0.014733059952632065,
+   "contrib_conversion": -222.0,
+   "bps_actual": 0.01487796677437762,
    "bps_expected": 0.02572508244815926,
-   "contrib_buyers": -192.7,
-   "contrib_per_buyer": -31.5,
+   "contrib_buyers": -190.2,
+   "contrib_per_buyer": -31.9,
    "sessions_benchmark": 10760.8,
    "conv_benchmark": 0.03781385857454043,
    "conv_benchmark_today": 0.03781385857454043,
    "contrib_traffic_bm": 44.1,
-   "contrib_conversion_bm": -224.2,
-   "contrib_buyers_bm": -192.7,
-   "contrib_per_buyer_bm": -31.5
+   "contrib_conversion_bm": -222.0,
+   "contrib_buyers_bm": -190.2,
+   "contrib_per_buyer_bm": -31.9
   },
   "aa_social": {
    "sessions_actual": 906.0,
@@ -1853,40 +1853,40 @@
   "search_direct_other": {
    "sessions_actual": 13845.0,
    "sessions_expected": 11830.3,
-   "conv_actual": 0.02677356446370531,
+   "conv_actual": 0.026038280967858433,
    "conv_expected": 0.07066616895028212,
    "contrib_traffic": 142.4,
-   "contrib_conversion": -607.7,
-   "bps_actual": 0.020748416978010577,
+   "contrib_conversion": -617.9,
+   "bps_actual": 0.02017860235397867,
    "bps_expected": 0.048074782396460396,
-   "contrib_buyers": -556.1,
-   "contrib_per_buyer": -51.6,
+   "contrib_buyers": -567.7,
+   "contrib_per_buyer": -50.2,
    "sessions_benchmark": 5563.1,
    "conv_benchmark": 0.07066616895028212,
    "conv_benchmark_today": 0.07066616895028212,
    "contrib_traffic_bm": 585.2,
-   "contrib_conversion_bm": -607.7,
-   "contrib_buyers_bm": -556.1,
-   "contrib_per_buyer_bm": -51.6
+   "contrib_conversion_bm": -617.9,
+   "contrib_buyers_bm": -567.7,
+   "contrib_per_buyer_bm": -50.2
   },
   "paid": {
    "sessions_actual": 239029.0,
    "sessions_expected": 43035.5,
-   "conv_actual": 0.002576842140493413,
+   "conv_actual": 0.002597550924783185,
    "conv_expected": 0.015182308220267449,
    "contrib_traffic": 2975.6,
-   "contrib_conversion": -3013.1,
-   "bps_actual": 0.0019969472234429315,
+   "contrib_conversion": -3008.1,
+   "bps_actual": 0.002012995683935905,
    "bps_expected": 0.01032865053826348,
-   "contrib_buyers": -2927.4,
-   "contrib_per_buyer": -85.7,
+   "contrib_buyers": -2921.7,
+   "contrib_per_buyer": -86.4,
    "sessions_benchmark": 20237.3,
    "conv_benchmark": 0.015182308220267447,
    "conv_benchmark_today": 0.015182308220267447,
    "contrib_traffic_bm": 3321.8,
-   "contrib_conversion_bm": -3013.1,
-   "contrib_buyers_bm": -2927.4,
-   "contrib_per_buyer_bm": -85.7
+   "contrib_conversion_bm": -3008.1,
+   "contrib_buyers_bm": -2921.7,
+   "contrib_per_buyer_bm": -86.4
   }
  },
  "pageFunnel": {
@@ -2234,7 +2234,7 @@
   ],
   "spendToDate": 271879.28,
   "entriesToDate": 724.7079885448134,
-  "unitsToDate": 615.9,
+  "unitsToDate": 620.9,
   "cumRoi": 2.943,
   "l3dRoi": 11.525,
   "l3dCpe": 112.27,
@@ -2297,7 +2297,7 @@
    "zeroConversionDays": 0,
    "cumRoi": 2.943,
    "entriesNeeded": null,
-   "selloutGap": 4874.0,
+   "selloutGap": 4877.0,
    "organicFuture": 0.0,
    "organicUnits": 0.0,
    "yieldNow": null,
@@ -2308,7 +2308,7 @@
   },
   "unitTarget": 653.3786030665874,
   "entriesProjected": 724.7,
-  "unitProjected": 615.9,
+  "unitProjected": 620.9,
   "spendBudget": 76548.76,
   "spendProjectedTotal": 271879.28,
   "stops": {
@@ -2358,9 +2358,9 @@
    "total": 1180.0
   },
   "units": {
-   "share": 0.0408,
-   "count": 50.0,
-   "total": 1226.0
+   "share": 0.0491,
+   "count": 60.0,
+   "total": 1223.0
   },
   "normal": {
    "recentMonths": 18,
@@ -2379,14 +2379,14 @@
   "noEvent": {
    "share": 0.0,
    "count": 0.0,
-   "total": 1226.0,
+   "total": 1223.0,
    "high": false
   }
  },
  "directShare": {
   "sessions": 0.0237,
   "entries": 0.1727,
-  "units": 0.2024
+  "units": 0.201
  },
  "email": {
   "sends": 6,
@@ -2457,16 +2457,16 @@
  },
  "sellthrough": {
   "edition": 6100,
-  "sold": 1226.0,
+  "sold": 1223.0,
   "conversion": 0.8,
   "preorderConversion": 0.95,
   "inHandUnits": 0.0,
   "drafts": 0.0,
-  "unitsPaidOrders": 1226.0,
+  "unitsPaidOrders": 1223.0,
   "ordersAsOf": "2026-10-16",
   "soldPredicted": 0.0,
   "futureEntriesPredicted": 0.0,
-  "pct": 0.201,
+  "pct": 0.2005,
   "benchmarkUnits": 1147.4,
   "products": [
    {
@@ -2481,11 +2481,11 @@
      "open": 0,
      "won": 0
     },
-    "sold": 327.0,
+    "sold": 326.0,
     "soldAssumed": 0.0,
     "drafts": 0.0,
     "winnerDrafts": 0.0,
-    "winnerDraftsLapsed": 1.0,
+    "winnerDraftsLapsed": 0.0,
     "allocated": 0,
     "pinned": 0,
     "fixed": 0,
@@ -2493,12 +2493,12 @@
     "claims": 0.0,
     "predicted": 0.0,
     "shown": 0.0,
-    "room": 673.0,
+    "room": 674.0,
     "oversubscribed": 0.0,
     "futurePredicted": 0.0,
     "futureOversubscribed": 0.0,
-    "pct": 0.327,
-    "pctClose": 0.327,
+    "pct": 0.326,
+    "pctClose": 0.326,
     "expectedToday": 400.0,
     "benchmarkToday": 188.1,
     "benchmarkClose": 188.1
@@ -2549,7 +2549,7 @@
      "open": 0,
      "won": 0
     },
-    "sold": 102.0,
+    "sold": 101.0,
     "soldAssumed": 0.0,
     "drafts": 0.0,
     "winnerDrafts": 0.0,
@@ -2561,12 +2561,12 @@
     "claims": 0.0,
     "predicted": 0.0,
     "shown": 0.0,
-    "room": 898.0,
+    "room": 899.0,
     "oversubscribed": 0.0,
     "futurePredicted": 0.0,
     "futureOversubscribed": 0.0,
-    "pct": 0.102,
-    "pctClose": 0.102,
+    "pct": 0.101,
+    "pctClose": 0.101,
     "expectedToday": 400.0,
     "benchmarkToday": 188.1,
     "benchmarkClose": 188.1
@@ -2651,11 +2651,11 @@
      "open": 0,
      "won": 0
     },
-    "sold": 317.0,
+    "sold": 316.0,
     "soldAssumed": 0.0,
     "drafts": 0.0,
     "winnerDrafts": 0.0,
-    "winnerDraftsLapsed": 1.0,
+    "winnerDraftsLapsed": 0.0,
     "allocated": 0,
     "pinned": 0,
     "fixed": 0,
@@ -2663,12 +2663,12 @@
     "claims": 0.0,
     "predicted": 0.0,
     "shown": 0.0,
-    "room": 683.0,
+    "room": 684.0,
     "oversubscribed": 0.0,
     "futurePredicted": 0.0,
     "futureOversubscribed": 0.0,
-    "pct": 0.317,
-    "pctClose": 0.317,
+    "pct": 0.316,
+    "pctClose": 0.316,
     "expectedToday": 400.0,
     "benchmarkToday": 188.1,
     "benchmarkClose": 188.1
@@ -2708,7 +2708,7 @@
     "benchmarkClose": 188.1
    }
   ],
-  "attributedSold": 1226.0,
+  "attributedSold": 1223.0,
   "unattributedSold": 0.0,
   "allocation": {
    "entrants": 0,
@@ -7361,61 +7361,13 @@
     "lastDraft": "2026-09-30"
    },
    "Brillo Box Collectable (White Landscape)": {
-    "printsOffered": 317.0,
-    "frames": 251.5,
+    "printsOffered": 316.0,
+    "frames": 250.5,
     "entrantPrints": 0.0,
     "entrantFrames": 0.0,
     "draftPrints": 0.0,
     "draftFrames": 0.0,
-    "unitsPaid": 317.0,
-    "drafts": 0.0,
-    "draftCustomers": 1.0,
-    "entryDrafts": 1.0,
-    "entrantDrafts": 0.0,
-    "winnerDrafts": 0.0,
-    "winnerDraftsLapsed": 1.0,
-    "refunded": 0.0,
-    "fromDrafts": 299.0,
-    "privateRoom": 20.0,
-    "listPrice": 750.0,
-    "edition": 1000,
-    "firstOrder": "2026-09-01",
-    "framePrice": 375.0,
-    "lastOrder": "2026-10-23",
-    "lastDraft": "2026-10-19"
-   },
-   "Brillo Box Collectable (White Portrait)": {
-    "printsOffered": 327.0,
-    "frames": 190.0,
-    "entrantPrints": 0.0,
-    "entrantFrames": 0.0,
-    "draftPrints": 0.0,
-    "draftFrames": 0.0,
-    "unitsPaid": 327.0,
-    "drafts": 0.0,
-    "draftCustomers": 2.0,
-    "entryDrafts": 2.0,
-    "entrantDrafts": 0.0,
-    "winnerDrafts": 0.0,
-    "winnerDraftsLapsed": 1.0,
-    "refunded": 0.0,
-    "fromDrafts": 286.0,
-    "privateRoom": 39.0,
-    "listPrice": 750.0,
-    "edition": 1000,
-    "firstOrder": "2026-09-01",
-    "framePrice": 375.0,
-    "lastOrder": "2026-10-15",
-    "lastDraft": "2026-10-19"
-   },
-   "Brillo Box Collectable (Yellow Landscape)": {
-    "printsOffered": 102.0,
-    "frames": 61.0,
-    "entrantPrints": 0.0,
-    "entrantFrames": 0.0,
-    "draftPrints": 0.0,
-    "draftFrames": 0.0,
-    "unitsPaid": 102.0,
+    "unitsPaid": 316.0,
     "drafts": 0.0,
     "draftCustomers": 1.0,
     "entryDrafts": 1.0,
@@ -7423,7 +7375,55 @@
     "winnerDrafts": 0.0,
     "winnerDraftsLapsed": 0.0,
     "refunded": 0.0,
-    "fromDrafts": 93.0,
+    "fromDrafts": 299.0,
+    "privateRoom": 20.0,
+    "listPrice": 750.0,
+    "edition": 1000,
+    "firstOrder": "2026-09-01",
+    "framePrice": 375.0,
+    "lastOrder": "2026-10-27",
+    "lastDraft": "2026-10-19"
+   },
+   "Brillo Box Collectable (White Portrait)": {
+    "printsOffered": 326.0,
+    "frames": 189.0,
+    "entrantPrints": 0.0,
+    "entrantFrames": 0.0,
+    "draftPrints": 0.0,
+    "draftFrames": 0.0,
+    "unitsPaid": 326.0,
+    "drafts": 0.0,
+    "draftCustomers": 2.0,
+    "entryDrafts": 2.0,
+    "entrantDrafts": 0.0,
+    "winnerDrafts": 0.0,
+    "winnerDraftsLapsed": 0.0,
+    "refunded": 0.0,
+    "fromDrafts": 286.0,
+    "privateRoom": 39.0,
+    "listPrice": 750.0,
+    "edition": 1000,
+    "firstOrder": "2026-09-01",
+    "framePrice": 375.0,
+    "lastOrder": "2026-10-27",
+    "lastDraft": "2026-10-19"
+   },
+   "Brillo Box Collectable (Yellow Landscape)": {
+    "printsOffered": 101.0,
+    "frames": 60.0,
+    "entrantPrints": 0.0,
+    "entrantFrames": 0.0,
+    "draftPrints": 0.0,
+    "draftFrames": 0.0,
+    "unitsPaid": 101.0,
+    "drafts": 0.0,
+    "draftCustomers": 1.0,
+    "entryDrafts": 1.0,
+    "entrantDrafts": 0.0,
+    "winnerDrafts": 0.0,
+    "winnerDraftsLapsed": 0.0,
+    "refunded": 0.0,
+    "fromDrafts": 92.0,
     "privateRoom": 7.0,
     "listPrice": 750.0,
     "edition": 1000,
@@ -7468,26 +7468,26 @@
   },
   "unitsOutsideWindow": {
    "before": 0.0,
-   "after": 4.0,
+   "after": 6.0,
    "pending": 0.0
   }
  },
  "closeForecast": {
-  "units": 1226.0,
+  "units": 1223.0,
   "edition": 6100.0,
-  "pct": 0.201,
-  "lo": 1226.0,
-  "hi": 1226.0,
-  "pctLo": 0.201,
-  "pctHi": 0.201,
-  "today": 1226.0,
-  "pctToday": 0.201,
+  "pct": 0.2005,
+  "lo": 1223.0,
+  "hi": 1223.0,
+  "pctLo": 0.2005,
+  "pctHi": 0.2005,
+  "today": 1223.0,
+  "pctToday": 0.2005,
   "target": 2440.0,
   "daysLeft": 0,
   "confidence": "high",
   "confidenceWhy": "the campaign has closed",
   "built": {
-   "sold": 1226.0,
+   "sold": 1223.0,
    "inHand": 0.0,
    "organic": 0.0,
    "paid": 0.0
@@ -7496,14 +7496,14 @@
    {
     "name": "Brillo Box Collectable (White Portrait)",
     "edition": 1000.0,
-    "today": 327.0,
-    "units": 327.0,
-    "lo": 327.0,
-    "hi": 327.0,
-    "pct": 0.327,
-    "pctLo": 0.327,
-    "pctHi": 0.327,
-    "pctToday": 0.327,
+    "today": 326.0,
+    "units": 326.0,
+    "lo": 326.0,
+    "hi": 326.0,
+    "pct": 0.326,
+    "pctLo": 0.326,
+    "pctHi": 0.326,
+    "pctToday": 0.326,
     "sellsOut": false
    },
    {
@@ -7522,14 +7522,14 @@
    {
     "name": "Brillo Box Collectable (Yellow Landscape)",
     "edition": 1000.0,
-    "today": 102.0,
-    "units": 102.0,
-    "lo": 102.0,
-    "hi": 102.0,
-    "pct": 0.102,
-    "pctLo": 0.102,
-    "pctHi": 0.102,
-    "pctToday": 0.102,
+    "today": 101.0,
+    "units": 101.0,
+    "lo": 101.0,
+    "hi": 101.0,
+    "pct": 0.101,
+    "pctLo": 0.101,
+    "pctHi": 0.101,
+    "pctToday": 0.101,
     "sellsOut": false
    },
    {
@@ -7561,14 +7561,14 @@
    {
     "name": "Brillo Box Collectable (White Landscape)",
     "edition": 1000.0,
-    "today": 317.0,
-    "units": 317.0,
-    "lo": 317.0,
-    "hi": 317.0,
-    "pct": 0.317,
-    "pctLo": 0.317,
-    "pctHi": 0.317,
-    "pctToday": 0.317,
+    "today": 316.0,
+    "units": 316.0,
+    "lo": 316.0,
+    "hi": 316.0,
+    "pct": 0.316,
+    "pctLo": 0.316,
+    "pctHi": 0.316,
+    "pctToday": 0.316,
     "sellsOut": false
    },
    {
@@ -7597,11 +7597,11 @@
   "range": null
  },
  "framing": {
-  "prints": 1126,
-  "frames": 773.0,
-  "rate": 0.6865,
+  "prints": 1123,
+  "frames": 770.0,
+  "rate": 0.6857,
   "entrants": null,
-  "plan": 0.4556,
+  "plan": 0.4564,
   "benchmark": {
    "rate": 0.4766,
    "n": 6,
@@ -7610,9 +7610,9 @@
   "works": [
    {
     "name": "Brillo Box Collectable (White Landscape)",
-    "prints": 317,
-    "frames": 251.5,
-    "rate": 0.7934
+    "prints": 316,
+    "frames": 250.5,
+    "rate": 0.7927
    },
    {
     "name": "Brillo Box Collectable (Green Landscape)",
@@ -7628,15 +7628,15 @@
    },
    {
     "name": "Brillo Box Collectable (Yellow Landscape)",
-    "prints": 102,
-    "frames": 61.0,
-    "rate": 0.598
+    "prints": 101,
+    "frames": 60.0,
+    "rate": 0.5941
    },
    {
     "name": "Brillo Box Collectable (White Portrait)",
-    "prints": 327,
-    "frames": 190.0,
-    "rate": 0.581
+    "prints": 326,
+    "frames": 189.0,
+    "rate": 0.5798
    },
    {
     "name": "Brillo Box Collectable (Green Portrait)",
@@ -7653,14 +7653,14 @@
   },
   "forecast": {
    "today": {
-    "prints": 1126.0,
-    "frames": 773.0,
-    "rate": 0.6865,
+    "prints": 1123.0,
+    "frames": 770.0,
+    "rate": 0.6857,
     "notOffered": 100.0,
     "parts": {
      "paid": {
-      "prints": 1126.0,
-      "frames": 773.0
+      "prints": 1123.0,
+      "frames": 770.0
      },
      "drafts": {
       "prints": 0.0,
@@ -7673,14 +7673,14 @@
     }
    },
    "close": {
-    "prints": 1126.0,
-    "frames": 773.0,
-    "rate": 0.6865,
+    "prints": 1123.0,
+    "frames": 770.0,
+    "rate": 0.6857,
     "notOffered": 100.0,
     "parts": {
      "paid": {
-      "prints": 1126.0,
-      "frames": 773.0
+      "prints": 1123.0,
+      "frames": 770.0
      },
      "drafts": {
       "prints": 0.0,
@@ -7701,14 +7701,14 @@
      "key": "draw_3I8BqzpjYbFGbAtPTXTaJYjFMKE",
      "name": "Brillo Box Collectable (White Portrait)",
      "today": {
-      "prints": 327.0,
-      "frames": 190.0,
-      "rate": 0.581
+      "prints": 326.0,
+      "frames": 189.0,
+      "rate": 0.5798
      },
      "close": {
-      "prints": 327.0,
-      "frames": 190.0,
-      "rate": 0.581
+      "prints": 326.0,
+      "frames": 189.0,
+      "rate": 0.5798
      }
     },
     {
@@ -7729,14 +7729,14 @@
      "key": "draw_3I8C57gBOa3ZCNyeHv0Uqc0kVjC",
      "name": "Brillo Box Collectable (Yellow Landscape)",
      "today": {
-      "prints": 102.0,
-      "frames": 61.0,
-      "rate": 0.598
+      "prints": 101.0,
+      "frames": 60.0,
+      "rate": 0.5941
      },
      "close": {
-      "prints": 102.0,
-      "frames": 61.0,
-      "rate": 0.598
+      "prints": 101.0,
+      "frames": 60.0,
+      "rate": 0.5941
      }
     },
     {
@@ -7757,14 +7757,14 @@
      "key": "draw_3I8BmRtNcY0bM7DWHyWbw8GuGc5",
      "name": "Brillo Box Collectable (White Landscape)",
      "today": {
-      "prints": 317.0,
-      "frames": 251.5,
-      "rate": 0.7934
+      "prints": 316.0,
+      "frames": 250.5,
+      "rate": 0.7927
      },
      "close": {
-      "prints": 317.0,
-      "frames": 251.5,
-      "rate": 0.7934
+      "prints": 316.0,
+      "frames": 250.5,
+      "rate": 0.7927
      }
     },
     {
@@ -7786,10 +7786,233 @@
   "asOf": "2026-10-16"
  },
  "draw": null,
- "geo": null,
+ "geo": {
+  "unit": "units",
+  "rows": [
+   {
+    "country": "United States",
+    "code": null,
+    "units": 681.0,
+    "orders": 546
+   },
+   {
+    "country": "United Kingdom",
+    "code": null,
+    "units": 164.0,
+    "orders": 139
+   },
+   {
+    "country": "Canada",
+    "code": null,
+    "units": 41.0,
+    "orders": 34
+   },
+   {
+    "country": "Germany",
+    "code": null,
+    "units": 35.0,
+    "orders": 26
+   },
+   {
+    "country": "Hong Kong",
+    "code": null,
+    "units": 30.0,
+    "orders": 16
+   },
+   {
+    "country": "Netherlands",
+    "code": null,
+    "units": 30.0,
+    "orders": 17
+   },
+   {
+    "country": "Italy",
+    "code": null,
+    "units": 26.0,
+    "orders": 21
+   },
+   {
+    "country": "Australia",
+    "code": null,
+    "units": 25.0,
+    "orders": 25
+   },
+   {
+    "country": "Belgium",
+    "code": null,
+    "units": 19.0,
+    "orders": 17
+   },
+   {
+    "country": "Sweden",
+    "code": null,
+    "units": 18.0,
+    "orders": 13
+   },
+   {
+    "country": "Switzerland",
+    "code": null,
+    "units": 16.0,
+    "orders": 16
+   },
+   {
+    "country": "Mexico",
+    "code": null,
+    "units": 15.0,
+    "orders": 12
+   },
+   {
+    "country": "United Arab Emirates",
+    "code": null,
+    "units": 15.0,
+    "orders": 11
+   },
+   {
+    "country": "Denmark",
+    "code": null,
+    "units": 14.0,
+    "orders": 9
+   },
+   {
+    "country": "France",
+    "code": null,
+    "units": 14.0,
+    "orders": 13
+   },
+   {
+    "country": "Japan",
+    "code": null,
+    "units": 13.0,
+    "orders": 10
+   },
+   {
+    "country": "Singapore",
+    "code": null,
+    "units": 12.0,
+    "orders": 12
+   },
+   {
+    "country": "South Korea",
+    "code": null,
+    "units": 11.0,
+    "orders": 7
+   },
+   {
+    "country": "Portugal",
+    "code": null,
+    "units": 7.0,
+    "orders": 5
+   },
+   {
+    "country": "Austria",
+    "code": null,
+    "units": 6.0,
+    "orders": 6
+   },
+   {
+    "country": "Norway",
+    "code": null,
+    "units": 6.0,
+    "orders": 6
+   },
+   {
+    "country": "Greece",
+    "code": null,
+    "units": 4.0,
+    "orders": 2
+   },
+   {
+    "country": "New Zealand",
+    "code": null,
+    "units": 4.0,
+    "orders": 2
+   },
+   {
+    "country": "Spain",
+    "code": null,
+    "units": 4.0,
+    "orders": 4
+   },
+   {
+    "country": "Ireland",
+    "code": null,
+    "units": 3.0,
+    "orders": 3
+   },
+   {
+    "country": "Cyprus",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Czech Republic",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Estonia",
+    "code": null,
+    "units": 2.0,
+    "orders": 1
+   },
+   {
+    "country": "Kenya",
+    "code": null,
+    "units": 2.0,
+    "orders": 1
+   },
+   {
+    "country": "Malta",
+    "code": null,
+    "units": 2.0,
+    "orders": 2
+   },
+   {
+    "country": "Croatia",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Guernsey",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Iceland",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Israel",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Monaco",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   },
+   {
+    "country": "Poland",
+    "code": null,
+    "units": 1.0,
+    "orders": 1
+   }
+  ],
+  "total": 1229.0,
+  "orders": 986,
+  "source": "orders"
+ },
  "waterfall": {
   "target": 2440.0,
-  "projection": 1226.0,
+  "projection": 1223.0,
   "steps": [
    {
     "key": "organic_traffic",
@@ -7799,7 +8022,7 @@
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": -866.0
+    "value": -874.0
    },
    {
     "key": "paid_spend",
@@ -7809,7 +8032,7 @@
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -1704.0
+    "value": -1699.0
    }
   ],
   "closeScale": null,
@@ -7819,7 +8042,7 @@
    "benchmark": 1147.0,
    "stretch": 1293.0,
    "target": 2440.0,
-   "actual": 1226.0,
+   "actual": 1223.0,
    "steps": [
     {
      "key": "organic_traffic",
@@ -7829,7 +8052,7 @@
     {
      "key": "organic_conversion",
      "label": "Organic conversion",
-     "value": -866.0
+     "value": -874.0
     },
     {
      "key": "paid_spend",
@@ -7839,7 +8062,7 @@
     {
      "key": "paid_efficiency",
      "label": "Paid efficiency",
-     "value": -1704.0
+     "value": -1699.0
     }
    ],
    "stepsBm": [
@@ -7851,7 +8074,7 @@
     {
      "key": "organic_conversion",
      "label": "Organic conversion",
-     "value": -866.0
+     "value": -874.0
     },
     {
      "key": "paid_spend",
@@ -7861,7 +8084,7 @@
     {
      "key": "paid_efficiency",
      "label": "Paid efficiency",
-     "value": -1705.0
+     "value": -1700.0
     }
    ]
   },
@@ -7874,7 +8097,7 @@
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": -866.0
+    "value": -874.0
    },
    {
     "key": "paid_spend",
@@ -7884,7 +8107,7 @@
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -1705.0
+    "value": -1700.0
    }
   ],
   "closeScaleBm": null
@@ -8309,14 +8532,14 @@
     {
      "key": "aa_email",
      "name": "AA Email",
-     "now": 271.9,
+     "now": 273.7,
      "exp": 1105.0,
-     "proj": 271.9,
+     "proj": 273.7,
      "target": 1105.0,
      "parts": [
       {
        "name": "AA Email Man",
-       "value": 265.3
+       "value": 267.0
       },
       {
        "name": "AA Email Auto",
@@ -8417,21 +8640,21 @@
       },
       {
        "date": "2026-09-14",
-       "actual": 191.67,
+       "actual": 191.68,
        "plan": 790.72,
        "proj": null,
        "bm": 371.83
       },
       {
        "date": "2026-09-15",
-       "actual": 191.67,
+       "actual": 191.68,
        "plan": 847.68,
        "proj": null,
        "bm": 398.62
       },
       {
        "date": "2026-09-16",
-       "actual": 195.04,
+       "actual": 195.05,
        "plan": 862.35,
        "proj": null,
        "bm": 405.52
@@ -8445,91 +8668,91 @@
       },
       {
        "date": "2026-09-18",
-       "actual": 200.42,
+       "actual": 200.43,
        "plan": 866.59,
        "proj": null,
        "bm": 407.51
       },
       {
        "date": "2026-09-19",
-       "actual": 200.42,
+       "actual": 200.43,
        "plan": 870.85,
        "proj": null,
        "bm": 409.51
       },
       {
        "date": "2026-09-20",
-       "actual": 200.42,
+       "actual": 200.43,
        "plan": 877.2,
        "proj": null,
        "bm": 412.5
       },
       {
        "date": "2026-09-21",
-       "actual": 208.02,
+       "actual": 208.04,
        "plan": 883.34,
        "proj": null,
        "bm": 415.39
       },
       {
        "date": "2026-09-22",
-       "actual": 212.39,
+       "actual": 212.41,
        "plan": 889.97,
        "proj": null,
        "bm": 418.51
       },
       {
        "date": "2026-09-23",
-       "actual": 213.41,
+       "actual": 213.42,
        "plan": 909.21,
        "proj": null,
        "bm": 427.55
       },
       {
        "date": "2026-09-24",
-       "actual": 216.0,
+       "actual": 216.01,
        "plan": 923.66,
        "proj": null,
        "bm": 434.35
       },
       {
        "date": "2026-09-25",
-       "actual": 216.0,
+       "actual": 216.01,
        "plan": 932.28,
        "proj": null,
        "bm": 438.4
       },
       {
        "date": "2026-09-26",
-       "actual": 216.0,
+       "actual": 216.01,
        "plan": 934.46,
        "proj": null,
        "bm": 439.43
       },
       {
        "date": "2026-09-27",
-       "actual": 216.0,
+       "actual": 216.01,
        "plan": 934.46,
        "proj": null,
        "bm": 439.43
       },
       {
        "date": "2026-09-28",
-       "actual": 216.0,
+       "actual": 216.01,
        "plan": 948.1,
        "proj": null,
        "bm": 445.84
       },
       {
        "date": "2026-09-29",
-       "actual": 216.0,
+       "actual": 216.01,
        "plan": 998.14,
        "proj": null,
        "bm": 469.37
       },
       {
        "date": "2026-09-30",
-       "actual": 271.95,
+       "actual": 273.7,
        "plan": 1104.95,
        "proj": null,
        "bm": 519.6
@@ -8757,7 +8980,7 @@
       },
       {
        "date": "2026-09-30",
-       "actual": 14.39,
+       "actual": 14.4,
        "plan": 104.35,
        "proj": null,
        "bm": 49.07
@@ -8997,14 +9220,14 @@
     {
      "key": "search_direct_other",
      "name": "Search etc.",
-     "now": 165.8,
+     "now": 156.8,
      "exp": 391.8,
-     "proj": 165.8,
+     "proj": 156.8,
      "target": 391.8,
      "parts": [
       {
        "name": "Organic Search",
-       "value": 116.6
+       "value": 107.6
       },
       {
        "name": "Referral Other",
@@ -9162,70 +9385,70 @@
       },
       {
        "date": "2026-09-21",
-       "actual": 79.14,
+       "actual": 79.15,
        "plan": 235.0,
        "proj": null,
        "bm": 110.51
       },
       {
        "date": "2026-09-22",
-       "actual": 79.14,
+       "actual": 79.15,
        "plan": 247.21,
        "proj": null,
        "bm": 116.25
       },
       {
        "date": "2026-09-23",
-       "actual": 79.14,
+       "actual": 79.15,
        "plan": 255.43,
        "proj": null,
        "bm": 120.11
       },
       {
        "date": "2026-09-24",
-       "actual": 79.14,
+       "actual": 79.15,
        "plan": 269.76,
        "proj": null,
        "bm": 126.85
       },
       {
        "date": "2026-09-25",
-       "actual": 82.49,
+       "actual": 82.5,
        "plan": 284.07,
        "proj": null,
        "bm": 133.58
       },
       {
        "date": "2026-09-26",
-       "actual": 82.49,
+       "actual": 82.5,
        "plan": 295.71,
        "proj": null,
        "bm": 139.06
       },
       {
        "date": "2026-09-27",
-       "actual": 82.49,
+       "actual": 82.5,
        "plan": 315.12,
        "proj": null,
        "bm": 148.19
       },
       {
        "date": "2026-09-28",
-       "actual": 100.87,
+       "actual": 100.89,
        "plan": 332.87,
        "proj": null,
        "bm": 156.53
       },
       {
        "date": "2026-09-29",
-       "actual": 100.87,
+       "actual": 100.89,
        "plan": 356.35,
        "proj": null,
        "bm": 167.57
       },
       {
        "date": "2026-09-30",
-       "actual": 165.76,
+       "actual": 156.77,
        "plan": 391.78,
        "proj": null,
        "bm": 184.23
@@ -9237,14 +9460,14 @@
     {
      "key": "paid",
      "name": "Paid",
-     "now": 772.6,
+     "now": 776.8,
      "exp": 834.3,
-     "proj": 772.6,
+     "proj": 776.8,
      "target": 834.3,
      "parts": [
       {
        "name": "Paid Social",
-       "value": 772.6
+       "value": 776.8
       }
      ],
      "daily": [
@@ -9390,70 +9613,70 @@
       },
       {
        "date": "2026-09-21",
-       "actual": 279.28,
+       "actual": 278.23,
        "plan": 545.52,
        "proj": null,
        "bm": 256.53
       },
       {
        "date": "2026-09-22",
-       "actual": 288.01,
+       "actual": 286.96,
        "plan": 577.61,
        "proj": null,
        "bm": 271.62
       },
       {
        "date": "2026-09-23",
-       "actual": 288.01,
+       "actual": 286.96,
        "plan": 609.7,
        "proj": null,
        "bm": 286.71
       },
       {
        "date": "2026-09-24",
-       "actual": 354.04,
+       "actual": 352.99,
        "plan": 641.79,
        "proj": null,
        "bm": 301.8
       },
       {
        "date": "2026-09-25",
-       "actual": 361.85,
+       "actual": 360.81,
        "plan": 673.88,
        "proj": null,
        "bm": 316.89
       },
       {
        "date": "2026-09-26",
-       "actual": 361.85,
+       "actual": 360.81,
        "plan": 705.97,
        "proj": null,
        "bm": 331.98
       },
       {
        "date": "2026-09-27",
-       "actual": 361.85,
+       "actual": 360.81,
        "plan": 738.06,
        "proj": null,
        "bm": 347.07
       },
       {
        "date": "2026-09-28",
-       "actual": 467.93,
+       "actual": 466.88,
        "plan": 770.15,
        "proj": null,
        "bm": 362.16
       },
       {
        "date": "2026-09-29",
-       "actual": 467.93,
+       "actual": 466.88,
        "plan": 802.24,
        "proj": null,
        "bm": 377.25
       },
       {
        "date": "2026-09-30",
-       "actual": 772.61,
+       "actual": 776.84,
        "plan": 834.33,
        "proj": null,
        "bm": 392.34
@@ -9467,30 +9690,30 @@
     "aa_email": {
      "sessions_actual": 12463.7,
      "sessions_expected": 25290.1,
-     "conv_actual": 0.021819535796880722,
+     "conv_actual": 0.02195976553150751,
      "conv_expected": 0.043691161919308316,
      "contrib_traffic": -560.4,
-     "contrib_conversion": -272.6,
-     "bps_actual": 0.01690924746288547,
+     "contrib_conversion": -270.9,
+     "bps_actual": 0.017017919769507048,
      "bps_expected": 0.029723460789236385,
-     "contrib_buyers": -234.8,
-     "contrib_per_buyer": -37.8,
+     "contrib_buyers": -232.8,
+     "contrib_per_buyer": -38.1,
      "sessions_benchmark": 11892.6,
      "conv_benchmark": 0.04369116191930832,
      "conv_benchmark_today": 0.04369116191930832,
      "contrib_traffic_bm": 25.0,
-     "contrib_conversion_bm": -272.6,
-     "contrib_buyers_bm": -234.8,
-     "contrib_per_buyer_bm": -37.8
+     "contrib_conversion_bm": -270.9,
+     "contrib_buyers_bm": -232.8,
+     "contrib_per_buyer_bm": -38.1
     },
     "aa_social": {
      "sessions_actual": 949.1,
      "sessions_expected": 1769.7,
-     "conv_actual": 0.015161256048654839,
+     "conv_actual": 0.01517166826498945,
      "conv_expected": 0.058963269200729626,
      "contrib_traffic": -48.4,
      "contrib_conversion": -41.6,
-     "bps_actual": 0.011749353091715329,
+     "bps_actual": 0.011757422133342887,
      "bps_expected": 0.04011320237557148,
      "contrib_buyers": -39.6,
      "contrib_per_buyer": -2.0,
@@ -9524,40 +9747,40 @@
     "search_direct_other": {
      "sessions_actual": 7833.4,
      "sessions_expected": 4719.9,
-     "conv_actual": 0.02116079306558224,
+     "conv_actual": 0.020012973397363944,
      "conv_expected": 0.08300667330260385,
      "contrib_traffic": 258.4,
-     "contrib_conversion": -484.5,
-     "bps_actual": 0.016398748799596057,
+     "contrib_conversion": -493.5,
+     "bps_actual": 0.015509235521525085,
      "bps_expected": 0.0564701301309306,
-     "contrib_buyers": -461.4,
-     "contrib_per_buyer": -23.1,
+     "contrib_buyers": -471.6,
+     "contrib_per_buyer": -21.8,
      "sessions_benchmark": 2219.5,
      "conv_benchmark": 0.08300667330260385,
      "conv_benchmark_today": 0.08300667330260385,
      "contrib_traffic_bm": 466.0,
-     "contrib_conversion_bm": -484.5,
-     "contrib_buyers_bm": -461.4,
-     "contrib_per_buyer_bm": -23.1
+     "contrib_conversion_bm": -493.5,
+     "contrib_buyers_bm": -471.6,
+     "contrib_per_buyer_bm": -21.8
     },
     "paid": {
      "sessions_actual": 244459.7,
      "sessions_expected": 47561.6,
-     "conv_actual": 0.0031604643778974837,
+     "conv_actual": 0.003177782968453861,
      "conv_expected": 0.01754205232459158,
      "contrib_traffic": 3454.0,
-     "contrib_conversion": -3515.7,
-     "bps_actual": 0.002449230577634138,
+     "contrib_conversion": -3511.5,
+     "bps_actual": 0.0024626517766986955,
      "bps_expected": 0.011934004076057892,
-     "contrib_buyers": -3408.2,
-     "contrib_per_buyer": -107.5,
+     "contrib_buyers": -3403.4,
+     "contrib_per_buyer": -108.1,
      "sessions_benchmark": 22365.7,
      "conv_benchmark": 0.01754205232459158,
      "conv_benchmark_today": 0.01754205232459158,
      "contrib_traffic_bm": 3896.0,
-     "contrib_conversion_bm": -3515.7,
-     "contrib_buyers_bm": -3408.2,
-     "contrib_per_buyer_bm": -107.5
+     "contrib_conversion_bm": -3511.5,
+     "contrib_buyers_bm": -3403.4,
+     "contrib_per_buyer_bm": -108.1
     }
    },
    "paid": {
@@ -9865,7 +10088,7 @@
     ],
     "spendToDate": 271879.28,
     "entriesToDate": 867.8932523232778,
-    "unitsToDate": 772.6,
+    "unitsToDate": 776.8,
     "cumRoi": 3.559,
     "l3dRoi": 14.038,
     "l3dCpe": 92.17,
@@ -9928,7 +10151,7 @@
      "zeroConversionDays": 0,
      "cumRoi": 3.559,
      "entriesNeeded": null,
-     "selloutGap": 4874.0,
+     "selloutGap": 4877.0,
      "organicFuture": 0.0,
      "organicUnits": 0.0,
      "yieldNow": null,
@@ -9939,7 +10162,7 @@
     },
     "unitTarget": 834.328419731567,
     "entriesProjected": 867.9,
-    "unitProjected": 772.6,
+    "unitProjected": 776.8,
     "spendBudget": 76548.76,
     "spendProjectedTotal": 271879.28,
     "stops": {
@@ -9980,7 +10203,7 @@
    },
    "waterfall": {
     "target": 2440.0,
-    "projection": 1226.0,
+    "projection": 1223.0,
     "steps": [
      {
       "key": "organic_traffic",
@@ -9990,7 +10213,7 @@
      {
       "key": "organic_conversion",
       "label": "Organic conversion",
-      "value": -799.0
+      "value": -806.0
      },
      {
       "key": "paid_spend",
@@ -10000,7 +10223,7 @@
      {
       "key": "paid_efficiency",
       "label": "Paid efficiency",
-      "value": -2189.0
+      "value": -2185.0
      }
     ],
     "closeScale": null,
@@ -10010,7 +10233,7 @@
      "benchmark": 1147.0,
      "stretch": 1293.0,
      "target": 2440.0,
-     "actual": 1226.0,
+     "actual": 1223.0,
      "steps": [
       {
        "key": "organic_traffic",
@@ -10020,7 +10243,7 @@
       {
        "key": "organic_conversion",
        "label": "Organic conversion",
-       "value": -799.0
+       "value": -806.0
       },
       {
        "key": "paid_spend",
@@ -10030,7 +10253,7 @@
       {
        "key": "paid_efficiency",
        "label": "Paid efficiency",
-       "value": -2189.0
+       "value": -2185.0
       }
      ],
      "stepsBm": [
@@ -10042,17 +10265,17 @@
       {
        "key": "organic_conversion",
        "label": "Organic conversion",
-       "value": -799.0
+       "value": -806.0
       },
       {
        "key": "paid_spend",
        "label": "Paid spend",
-       "value": 2573.0
+       "value": 2572.0
       },
       {
        "key": "paid_efficiency",
        "label": "Paid efficiency",
-       "value": -2191.0
+       "value": -2186.0
       }
      ]
     },
@@ -10065,17 +10288,17 @@
      {
       "key": "organic_conversion",
       "label": "Organic conversion",
-      "value": -799.0
+      "value": -806.0
      },
      {
       "key": "paid_spend",
       "label": "Paid spend",
-      "value": 2573.0
+      "value": 2572.0
      },
      {
       "key": "paid_efficiency",
       "label": "Paid efficiency",
-      "value": -2191.0
+      "value": -2186.0
      }
     ],
     "closeScaleBm": null
@@ -10316,5 +10539,5 @@
    }
   }
  },
- "builtAt": "2026-10-27T18:16:10+00:00"
+ "builtAt": "2026-10-28T13:37:11+00:00"
 }
