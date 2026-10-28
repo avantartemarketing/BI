@@ -942,11 +942,27 @@ and its own options behind a ⋯ menu:
 An upcoming release shows what is known instead (Not live yet, the milestones, the works and
 their edition and price, Set targets); a release without targets shows its actuals alone.
 
-**The Agent**, bottom right of every release page (`Agent.jsx`), answers questions about the
-page's figures: the question goes to `POST /api/agent` with the release's id, the server
-puts the release's snapshot (trimmed of its bulky arrays) in front of the Claude API with the
-key in `ANTHROPIC_API_KEY`, and the answer comes back in a few sentences. Without the key the
-Agent says it is not configured. Suggested actions are not on the page yet (behind a
+**The Agent**, bottom right of every page but Permissions (`Agent.jsx`), answers questions
+about the data: how a release is doing, what a figure means and how it is worked out, and
+questions across launches that no card shows. It reads the release snapshots (with the
+reader's Direct display, so its figures match the screen), the tables under `data/` (units
+paid by day and channel, orders by product, spend, social posts, email sends, the LE and TL
+panels, the index), and the docs: `docs/AGENT_GUIDE.md` (how the dashboard is built, card by
+card) and `docs/METHODOLOGY.md` are always in front of it, the rest it reads by section. It
+can draw line, bar, stacked, horizontal-bar and scatter charts in the chat, with the
+dashboard's chart components (`AgentChart.jsx`). It cannot change anything: its six tools
+(`server/agent/tools.js`) only read, and a chart lives only in the chat. On a release page
+the chat's scope switch picks This release or All launches; the thread is kept for the tab.
+
+The server (`server/agent/`) runs the tool loop through the Claude API with the key in
+`ANTHROPIC_API_KEY` and streams status lines, the answer and its charts back as server-sent
+events. Optional: `AGENT_MODEL` and `AGENT_EFFORT` (default medium) to change the model or how
+hard it thinks, `AGENT_HOURLY_LIMIT` (default 60 questions per person per hour). The docs and
+the tool definitions sit behind a prompt-cache breakpoint, so the follow-up calls in one
+question read them from the cache. Logs carry the release id, the steps, the tokens and the
+time, never the questions or the answers. Without the key the Agent says it is not
+configured. `node tests/agent_tools.mjs` checks the tools on the committed data.
+Suggested actions are not on the page yet (behind a
 `betaActions` flag until the agent that recommends them is designed).
 
 **On a phone or a tablet.** The same pages at the width there is: up to 900px the sidebar is a

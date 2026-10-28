@@ -160,86 +160,13 @@ const route = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).ca
   if (!res.headersSent) res.status(500).json({ error: "Something went wrong saving that - nothing was changed." });
 });
 
-// ---- the Agent (web/src/Agent.jsx): questions about a release, answered
-// from its snapshot through the Claude API. The snapshot goes as compact JSON
-// with the bulky arrays trimmed; the key is read from the environment and
-// never logged, nor are the messages - only the release id and the status.
-const AGENT_MODEL = "claude-sonnet-5-5";
-const AGENT_SYSTEM = [
-  "You are the Launch Performance analyst for Avant Arte, answering questions about one release of theirs.",
-  "Answer in a few plain sentences, in British English, with no headings, lists or markdown.",
-  "Use only the release snapshot given as JSON: it is the whole of what you know about the release.",
-  "When the snapshot does not carry the answer, say so plainly. Never invent, estimate or extrapolate a figure that is not in the snapshot.",
-  "Figures in the snapshot are the dashboard's own; quote them as they are, rounded sensibly, with their unit (units, entries, euros, days).",
-].join(" ");
-/* The snapshot for the agent: the release's page as /api/releases/:id serves
- * it, less the arrays that would swamp the context. `lines` and `variants`
- * are per-product detail; the daily series keep their last 14 points; the
- * email sequence keeps the names of the sends. Over about 60 kB every array
- * is capped at 20 items. The snapshots carry no personal data (no addresses:
- * the ETL aggregates before it writes), and nothing here adds any. */
-function agentContext(snap) {
-  const clone = JSON.parse(JSON.stringify(snap));
-  delete clone.variants;
-  delete clone.lines;
-  delete clone.slack;
-  if (clone.benchmarks && clone.benchmarks.emailRefCohort) delete clone.benchmarks.emailRefCohort.releases;
-  const tail = (a, n) => (Array.isArray(a) && a.length > n ? a.slice(-n) : a);
-  if (Array.isArray(clone.channels)) {
-    for (const ch of clone.channels) if (ch && ch.daily) ch.daily = tail(ch.daily, 14);
-  }
-  if (clone.paid && clone.paid.daily) clone.paid.daily = tail(clone.paid.daily, 14);
-  if (clone.email && Array.isArray(clone.email.sequence)) {
-    clone.email.sequence = clone.email.sequence.map((e) => (e && typeof e === "object" ? e.name : e));
-  }
-  const capArrays = (v) => {
-    if (Array.isArray(v)) return v.slice(0, 20).map(capArrays);
-    if (v && typeof v === "object") { for (const k of Object.keys(v)) v[k] = capArrays(v[k]); }
-    return v;
-  };
-  let text = JSON.stringify(clone);
-  if (text.length > 60000) text = JSON.stringify(capArrays(clone));
-  return text;
-}
-app.post("/api/agent", route(async (req, res) => {
-  const body = req.body || {};
-  const id = String(body.release || "").replace(/[^a-z0-9_]/g, "");
-  const answer = (status, payload) => { console.log(`agent: ${id || "-"} ${status}`); res.status(status).json(payload); };
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return answer(503, { error: "The agent is not configured" });
-  if (!id) return answer(400, { error: "Open a release to ask about it" });
-  const messages = Array.isArray(body.messages) ? body.messages
-    .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) })) : [];
-  if (!messages.length || messages[messages.length - 1].role !== "user") return answer(400, { error: "Ask a question" });
-  const snap = readSnapshot(id);
-  if (!snap) return answer(404, { error: "This release has no page to answer from yet" });
-  const system = [
-    { type: "text", text: AGENT_SYSTEM },
-    { type: "text", text: `The release snapshot:\n${agentContext(snap)}`, cache_control: { type: "ephemeral" } },
-  ];
-  let r;
-  try {
-    r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "x-api-key": key, "anthropic-version": "2026-10-21", "content-type": "application/json" },
-      body: JSON.stringify({ model: AGENT_MODEL, max_tokens: 600, output_config: { effort: "low" }, system, messages: messages.slice(-20) }),
-      signal: AbortSignal.timeout(60000),
-    });
-  } catch (e) {
-    return answer(502, { error: e.name === "TimeoutError" ? "The agent took too long, try again" : "The agent could not be reached" });
-  }
-  if (r.status === 429 || r.status === 529) return answer(503, { error: "The agent is busy, try again in a moment" });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    const kind = d && d.error && d.error.type;
-    if (kind === "overloaded_error" || kind === "rate_limit_error") return answer(503, { error: "The agent is busy, try again in a moment" });
-    return answer(502, { error: "The agent could not answer" });
-  }
-  if (d.stop_reason === "refusal") return answer(200, { text: "The agent declined to answer that one." });
-  const text = (d.content || []).filter((b) => b && b.type === "text").map((b) => b.text).join("").trim();
-  answer(200, { text: text || "The snapshot does not carry an answer to that." });
-}));
+// ---- the Agent (server/agent/, web/src/Agent.jsx): questions about the
+// data, answered through the Claude API with read-only tools over the
+// snapshots, the tables and the docs. It cannot change the dashboard.
+require("./agent").install(app, {
+  ROOT, DATA, SOURCES: process.env.SOURCES_PATH, readSnapshot,
+  sessionEmail: (req) => { const s = auth.sessionFrom(req); return s && s.email; },
+});
 
 // the display groups a release can set aside - "not running paid", "the
 // artist has no channels of their own" (BENCHMARK_SPEC 4.3; etl/baskets.py GROUPS)
