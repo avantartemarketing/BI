@@ -20,7 +20,12 @@ const has = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const money = (v) => fmtMoney(Math.round(v ?? 0));
 // money in thousands to one decimal (€5.6k), whole euros under a thousand
 const kmoney = (v) => (has(v) && v > 0 ? (v >= 1000 ? `€${(v / 1000).toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k` : money(v)) : "–");
-const WORDS = { none: "no paid", half: "half", recommended: "recommended", double: "double" };
+const WORDS = { none: "no paid", half: "half", recommended: "recommended", double: "double", today: "today's, held" };
+const STOP = {
+  supply: ["Edition spoken for", "Paid stops: the edition is spoken for without it, so a further entry buys nothing."],
+  marginal: ["Next euro under 1.0", "Paid stops: even the smallest day's next euro returns less than it costs."],
+  zero_conversion_pause: ["No entries for 3 days", "Paid pauses: three days of spend have bought no entries."],
+};
 const H = 190, L = 40, R = 10, T = 14, B = 26;
 
 /* a daily spend's place on the curve, as a fractional index between the
@@ -66,7 +71,9 @@ export default function SpendLevels({ snap }) {
   const lv = snap.paid && snap.paid.levels;
   const title = "Spend levels";
   const curve = lv && Array.isArray(lv.curve) ? lv.curve.filter((p) => p && has(p.daily) && has(p.profit)) : [];
-  if (!lv || !has(lv.recommended) || curve.length < 2) return <Card title={title}><div className="empty-state">No spend levels yet: they need a paid campaign with spend and a profit split</div></Card>;
+  // paid stops (the level is nothing): no curve to draw, the stop and its reason instead
+  const stop = !!lv && has(lv.recommended) && lv.recommended <= 0;
+  if (!lv || !has(lv.recommended) || (!stop && curve.length < 2)) return <Card title={title}><div className="empty-state">No spend levels yet: they need a paid campaign with spend and a profit split</div></Card>;
   const W = Math.max(240, Math.round(boxW || 520));
   const rows = Array.isArray(lv.rows) ? lv.rows.filter((r) => r && has(r.daily)) : [];
   const rec = lv.recommended, today = has(lv.today) ? lv.today : null;
@@ -89,14 +96,33 @@ export default function SpendLevels({ snap }) {
     "The curve is AA's profit from the spend still to come at a flat daily spend; ROI is that profit over AA's share of the spend, the next euro's return the slope of it.",
   ].join("\n");
 
+  if (stop) {
+    const [word, why] = STOP[lv.stop] || STOP.marginal;
+    const next = has(lv.marginalToday) && today !== null && today > 0 ? ` At today's ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}.` : "";
+    return (
+      <Card title={title} aria={title}>
+        <Head v={money(0)} u="a day recommended" aside={today !== null && today > 0 ? `today ${money(today)} · a stop` : ""} asideTip={working}>
+          <Loz kind="warm" tip={why}>{word}</Loz>
+        </Head>
+        <div className="nbox">{why}{next}</div>
+        <LevelsTable rows={rows} />
+      </Card>
+    );
+  }
+
   // ----- the scale -----
+  // the axis spans the whole curve, the band included, so a profit that goes
+  // negative gets a few ticks below zero rather than one tick step repeated
+  // down to it; at most a handful of ticks either way
   const top = Math.max(1, ...curve.map((p) => Math.max(p.profit, p.hi ?? p.profit)));
-  const ax = niceAxis(top * 1.05);
-  const step = ax.ticks.length > 1 ? ax.ticks[1] - ax.ticks[0] : ax.ymax;
   const low = Math.min(0, ...curve.map((p) => Math.min(p.profit, p.lo ?? p.profit)));
+  const ax = niceAxis((top - low) * 1.05);
+  const step = ax.ticks.length > 1 ? ax.ticks[1] - ax.ticks[0] : ax.ymax;
   const ymin = low < 0 ? -Math.ceil(-low / step) * step : 0;
+  const ymaxV = Math.max(step, Math.ceil(top / step) * step);
   const yticks = [];
-  for (let v = ymin; v <= ax.ymax + 1e-9; v += step) yticks.push(v);
+  for (let v = ymin; v <= ymaxV + 1e-9 && yticks.length < 12; v += step) yticks.push(v);
+  ax.ymax = ymaxV;
   const n = curve.length, N = n - 1;
   const x = (i) => L + (i * (W - L - R)) / N;
   const y = (v) => T + (1 - (v - ymin) / (ax.ymax - ymin)) * (H - T - B);
@@ -154,25 +180,32 @@ export default function SpendLevels({ snap }) {
         </div>
       </div>
       <Keys legend={legend} />
-      {rows.length > 0 && (
-        <div style={{ overflowX: "auto" }}>
-          <table>
-            <thead>
-              <tr><th>Daily spend</th><th>Units at close</th><th>Spend to come</th><th>ROI on it</th></tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.key} className={r.key === "recommended" ? "recrow" : undefined} title={has(r.marginal) ? `At ${money(r.daily)} a day the next euro returns ${fmt(r.marginal, 1)}` : undefined}>
-                  <td>{money(r.daily)}<span className="lvl-w">{WORDS[r.key] || r.key}</span></td>
-                  <td>{fmt(r.unitsAtClose)}<span className="pctw">{has(r.pct) ? fmtPct(r.pct, 0) : ""}</span></td>
-                  <td className={has(r.spendToCome) && r.spendToCome > 0 ? undefined : "dim"}>{kmoney(r.spendToCome)}</td>
-                  <td className={has(r.roi) ? undefined : "dim"}>{has(r.roi) ? fmt(r.roi, 1) : "–"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <LevelsTable rows={rows} />
     </Card>
+  );
+}
+
+/* The levels, one row each: the daily spend and its word, the units at
+ * close with the share of the edition, the spend to come and the ROI on it. */
+function LevelsTable({ rows }) {
+  if (!rows.length) return null;
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table>
+        <thead>
+          <tr><th>Daily spend</th><th>Units at close</th><th>Spend to come</th><th>ROI on it</th></tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key} className={r.key === "recommended" ? "recrow" : undefined} title={has(r.marginal) ? `At ${money(r.daily)} a day the next euro returns ${fmt(r.marginal, 1)}` : undefined}>
+              <td>{money(r.daily)}<span className="lvl-w">{WORDS[r.key] || r.key}</span></td>
+              <td>{fmt(r.unitsAtClose)}<span className="pctw">{has(r.pct) ? fmtPct(r.pct, 0) : ""}</span></td>
+              <td className={has(r.spendToCome) && r.spendToCome > 0 ? undefined : "dim"}>{kmoney(r.spendToCome)}</td>
+              <td className={has(r.roi) ? undefined : "dim"}>{has(r.roi) ? fmt(r.roi, 1) : "–"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

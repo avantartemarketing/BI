@@ -6709,32 +6709,46 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     levels_out = None
     if cost and days_left and not complete and level is not None and level != math.inf and l3d_raw_cpe:
         base_units = hero_proj - fwd["units"]          # the close without paid's units still to come
-        rows_out = []
-        for key, mult in (("none", 0.0), ("half", 0.5), ("recommended", 1.0), ("double", 2.0)):
-            f = fwd if key == "recommended" else paid_forward([s * mult for s in schedule])
+        stop = level <= 0                               # paid stops: nothing to buy, or a next euro that does not pay
+
+        def level_row(key: str, lvl_k: float, f: dict) -> dict:
             spend_k = f["spendFuture"]
             units_k = min(base_units + f["units"], edition_all) if edition_all else base_units + f["units"]
             roi_k = (gain * f["units"] / (aa_budget_share * spend_k)) if (spend_k > 0 and aa_budget_share > 0) else None
-            lvl_k = level * mult
             marg_k = cost.marginal_roi(lvl_k, gain, aa_budget_share, room_left) if lvl_k > 0 else None
-            rows_out.append({"key": key, "daily": round(lvl_k, 2), "unitsAtClose": round(units_k, 1),
-                             "pct": round(units_k / edition_all, 4) if edition_all else None,
-                             "spendToCome": round(spend_k, 2),
-                             "roi": round(roi_k, 2) if roi_k is not None else None,
-                             "marginal": round(marg_k, 2) if marg_k is not None else None})
+            return {"key": key, "daily": round(lvl_k, 2), "unitsAtClose": round(units_k, 1),
+                    "pct": round(units_k / edition_all, 4) if edition_all else None,
+                    "spendToCome": round(spend_k, 2),
+                    "roi": round(roi_k, 2) if roi_k is not None else None,
+                    "marginal": round(marg_k, 2) if marg_k is not None else None}
+
+        rows_out = [level_row("none", 0.0, paid_forward([0.0] * len(schedule)))]
+        if stop:
+            # the stop against today's spend held to the close, the only
+            # comparison that means anything when the level is nothing
+            if s0 > 0 and fwd_flat is not None:
+                rows_out.append(level_row("today", s0, fwd_flat))
+        else:
+            for key, mult in (("half", 0.5), ("recommended", 1.0), ("double", 2.0)):
+                f = fwd if key == "recommended" else paid_forward([s * mult for s in schedule])
+                rows_out.append(level_row(key, level * mult, f))
         sd = float(b.get("cpe_spend_elasticity_sd", 0.1) or 0.1)
-        alts = [CostPath(cost.cpe_now, cost.spend_ref, cost.clock_ref, cost.spent, cost.n, e_alt, wear, wear_k,
-                         lift=cost.lift, anchor_lift=cost.anchor_lift)
-                for e_alt in (max(eps - sd, 0.0), min(eps + sd, 0.9))]
-        top = max(level * 2.5, s0 * 1.2, 1.0)
         curve = []
-        for i in range(41):
-            s_pt = top * i / 40
-            p_pt = cost.profit(s_pt, gain, aa_budget_share, room_left)
-            p_alt = [c_.profit(s_pt, gain, aa_budget_share, room_left) for c_ in alts]
-            curve.append({"daily": round(s_pt, 2), "profit": round(p_pt, 2),
-                          "lo": round(min(p_pt, *p_alt), 2), "hi": round(max(p_pt, *p_alt), 2)})
+        if not stop:
+            alts = [CostPath(cost.cpe_now, cost.spend_ref, cost.clock_ref, cost.spent, cost.n, e_alt, wear, wear_k,
+                             lift=cost.lift, anchor_lift=cost.anchor_lift)
+                    for e_alt in (max(eps - sd, 0.0), min(eps + sd, 0.9))]
+            top = max(level * 2.5, s0 * 1.2, 1.0)
+            for i in range(41):
+                s_pt = top * i / 40
+                p_pt = cost.profit(s_pt, gain, aa_budget_share, room_left)
+                p_alt = [c_.profit(s_pt, gain, aa_budget_share, room_left) for c_ in alts]
+                curve.append({"daily": round(s_pt, 2), "profit": round(p_pt, 2),
+                              "lo": round(min(p_pt, *p_alt), 2), "hi": round(max(p_pt, *p_alt), 2)})
         levels_out = {"today": round(s0, 2), "recommended": round(level, 2),
+                      # why paid stops, when it does: the edition spoken for
+                      # without it, or a next euro that does not pay
+                      "stop": (cap if cap in ("supply", "marginal", "zero_conversion_pause") else "marginal") if stop else None,
                       "marginalToday": round(marginal_today, 2) if marginal_today is not None else None,
                       "sellout": round(supply_spend, 2) if supply_spend not in (None, math.inf) else None,
                       "daysLeft": days_left, "ppu": round(gain, 2), "cannibalisation": cann,
