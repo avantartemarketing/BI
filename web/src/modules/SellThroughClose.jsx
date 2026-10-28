@@ -66,9 +66,12 @@ export default function SellThroughClose({ snap }) {
   // the reading under the chosen paid assumption; the block's own figures are the recommended one's
   const scenarios = base.scenarios && base.scenarios.recommended && base.scenarios.current && base.scenarios.none ? base.scenarios : null;
   const cf = scenarios && scenarios[mode] ? { ...base, ...scenarios[mode] } : base;
-  const complete = !!snap.complete || (has(cf.lo) && has(cf.hi) && cf.lo === cf.hi && cf.units === cf.today);
+  // closed means the campaign has closed, never that the figures agree: a
+  // launch sold out before its close reads today = at close = the edition
+  // and still carries its toggle and its paid assumption
+  const complete = !!snap.complete;
   const byPct = has(cf.pct);
-  const ranged = !complete && has(cf.lo) && has(cf.hi);
+  const ranged = !complete && has(cf.lo) && has(cf.hi) && cf.hi > cf.lo;
   const rangeWord = ranged ? (has(cf.pctLo) && has(cf.pctHi) ? `${Math.round(cf.pctLo * 100)}-${Math.round(cf.pctHi * 100)}% likely` : `${fmt(cf.lo)}-${fmt(cf.hi)} likely`) : null;
   const [confWord, confKind] = CONF[cf.confidence] || [null, null];
   const days = has(cf.daysLeft) ? cf.daysLeft : null;
