@@ -1932,16 +1932,17 @@ the row's hover, "Beyond the edition, no room" (6 October 2026; drawn past the s
 winners' tint it read as one more kind of unit). `Post to Slack` sends those rows as a Slack message
 composed on the server from the same snapshot (`server/slack.js`): the artist as a header;
 the works' shared title and the campaign day on one line; the table's title; Slack's `table`
-block (the Work column wrapping, the figures right-aligned), one row per work with its units
-sold (today, or projected at close; the column's asterisk points to a footnote at the bottom:
-paid units, drafts and the forecast conversions from draw entries), its target (typed per product on the
+block (the Work column wrapping, the figures right-aligned), one row per work with its paid
+units, then all its units (headed "All units *", today, or projected at close; the column's
+asterisk points to a footnote at the bottom: paid units, drafts and the forecast conversions
+from draw entries), its target (typed per product on the
 Target setting tab when targets are set that way, else the release's target split by edition
-share, the rule the references follow), how far along the target it is, its framed units
-and its framing conversion (the row's `framing.forecast`, §6.4, at the horizon: frames per
-print on the same units as the units column, so the asterisk's footnote covers both; a dash
-for a work with no frame on offer; the columns left out where the release has no framing
-option or the snapshot no forecast), and a bold Total row adding them up (the forecast's own
-totals, the rows' frames before rounding); then, in small type, the day the figures
+share, the rule the references follow), how far along the target it is, and its frame %
+(the row's `framing.forecast`, §6.4, at the horizon: frames per print on the same units as
+the all-units column; a dash for a work with no frame on offer; the column left out where
+the release has no framing option or the snapshot no forecast; the frames count column came
+out on 29 October 2026, when the paid units went in), and a bold Total row adding them up
+(the frame % the forecast's own total, on the rows' frames before rounding); then, in small type, the day the figures
 run to (the page's `asOf`, "so far" while `asOfFraction` is under 1), the attribution when the
 page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still
 to come) and the two framing readings behind the table's figure (`framing.rate` on the paid

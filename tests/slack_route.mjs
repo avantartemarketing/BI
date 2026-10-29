@@ -144,7 +144,7 @@ seen.length = 0;
 r = await post(RELEASE, { horizon: "close", dryRun: true });
 d = await r.json().catch(() => ({}));
 check(r.ok && Array.isArray(d.blocks) && d.channel === "sales-updates", `dry run returns the message (${r.status})`);
-check(/: \d+% projected at close, /.test(d.text || "") && d.blocks.find((b) => b.type === "table").rows[0][1].text === "Units at close *", `at close: ${d.text}`);
+check(/: \d+% projected at close, /.test(d.text || "") && d.blocks.find((b) => b.type === "table").rows[0][1].text === "Paid units" && d.blocks.find((b) => b.type === "table").rows[0][2].text === "All units at close *", `at close: ${d.text}`);
 check(seen.length === 0, "a dry run calls nothing");
 
 // ---- the page's Direct switch: on Spread the message is the snapshot with its

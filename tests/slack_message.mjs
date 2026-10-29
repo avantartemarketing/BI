@@ -91,21 +91,21 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
   check(p.sections[1] === "*Sell-through by work*", `the table's title above it: ${p.sections[1]}`);
   check(t.column_settings.length === 8 && t.column_settings[0].is_wrapped === true && t.column_settings[0].align === "left"
     && t.column_settings.slice(1).every((c) => c.align === "right" && !c.is_wrapped), `the Work column wraps, the figures sit right: ${JSON.stringify(t.column_settings)}`);
-  check(t.rows[0].every((c) => c.type === "raw_text") && rowsOf(m.blocks)[0] === "Work|Units sold *|Target|% target|Total units|% sell-through|Frames *|Frame %", `the header row, plain text: ${rowsOf(m.blocks)[0]}`);
-  check(rowsOf(m.blocks)[1] === "I|62|120|52%|200|31%|31|49%", `the first work: ${rowsOf(m.blocks)[1]}`);
-  check(rowsOf(m.blocks)[2] === "II|40|100|40%|200|20%|17|41%", `the second: ${rowsOf(m.blocks)[2]}`);
-  check(rowsOf(m.blocks)[3] === "III|24|133|18%|200|12%|11|48%", `the third, its target the release's split by edition: ${rowsOf(m.blocks)[3]}`);
-  check(rowsOf(m.blocks)[4] === "Total|126|353|36%|600|21%|58|46%", `the Total row adds the rows up, the frames before rounding: ${rowsOf(m.blocks)[4]}`);
+  check(t.rows[0].every((c) => c.type === "raw_text") && rowsOf(m.blocks)[0] === "Work|Paid units|All units *|Target|% target|Total units|% sell-through|Frame %", `the header row, plain text: ${rowsOf(m.blocks)[0]}`);
+  check(rowsOf(m.blocks)[1] === "I|46|62|120|52%|200|31%|49%", `the first work: ${rowsOf(m.blocks)[1]}`);
+  check(rowsOf(m.blocks)[2] === "II|32|40|100|40%|200|20%|41%", `the second: ${rowsOf(m.blocks)[2]}`);
+  check(rowsOf(m.blocks)[3] === "III|16|24|133|18%|200|12%|48%", `the third, its target the release's split by edition: ${rowsOf(m.blocks)[3]}`);
+  check(rowsOf(m.blocks)[4] === "Total|94|126|353|36%|600|21%|46%", `the Total row adds the rows up: ${rowsOf(m.blocks)[4]}`);
   check(t.rows[4].every((c) => c.type === "rich_text" && c.elements[0].elements[0].style.bold === true), "the Total row is bold");
   const r = t.rows[1];
   // every cell is one of the two types Slack's table reads: raw_number cells
   // posted, and showed blank on the phone app
   check(t.rows.every((row) => row.every((c) => c.type === "raw_text" || c.type === "rich_text")), "every cell is raw_text or rich_text");
-  check(r[0].type === "raw_text" && r[1].type === "raw_text" && r[1].text === "62", `units as their words: ${JSON.stringify(r[1])}`);
-  check(r[3].text === "52%" && r[5].text === "31%" && r[7].text === "49%", `shares as shares: ${JSON.stringify(r[3])} ${JSON.stringify(r[5])}`);
-  check(r[6].type === "raw_text" && r[6].text === "31", `framed units: ${JSON.stringify(r[4])}`);
-  // the framed units are on the units column's own units: never more than the row's units
-  check(rowsOf(m.blocks).slice(1).every((x) => { const c = x.split("|"); return Number(c[6]) <= Number(c[1]); }), "no row frames more than it counts");
+  check(r[0].type === "raw_text" && r[1].type === "raw_text" && r[1].text === "46" && r[2].type === "raw_text" && r[2].text === "62", `units as their words: ${JSON.stringify(r[1])} ${JSON.stringify(r[2])}`);
+  check(r[4].text === "52%" && r[6].text === "31%" && r[7].text === "49%", `shares as shares: ${JSON.stringify(r[4])} ${JSON.stringify(r[6])}`);
+  // the paid units are part of all units: never more than the row's units
+  check(rowsOf(m.blocks).slice(1).every((x) => { const c = x.split("|"); return Number(c[1]) <= Number(c[2]); }), "no row pays for more than it counts");
+  check(!rowsOf(m.blocks)[0].includes("Frames"), "no frames count column");
   check(p.contexts[0] === "Figures to 17 Sep. Paid 94, awaiting payment 5, expected from the draw 27. 43% of paid prints took a frame, 40 of 94; entrants asked for frames on 67% of their pre-authorised prints.", `the small type: ${p.contexts[0]}`);
   check(p.contexts[1] === "* Includes paid units, drafts and forecast conversions from draw entries.", `the footnote last: ${p.contexts[1]}`);
   check(m.text === "Test Artist: 21% sold through, 126 of 600 units", `notification text: ${m.text}`);
@@ -116,10 +116,10 @@ const at = (o) => composeSellThroughBlocks(snap, { today: "2026-09-17", ...o });
 {
   const m = at({ horizon: "close" });
   const p = parts(m.blocks);
-  check(p.sections[1] === "*Projected at close by work*" && rowsOf(m.blocks)[0] === "Work|Units at close *|Target|% target|Total units|% sell-through|Frames *|Frame %", `close header: ${rowsOf(m.blocks)[0]}`);
+  check(p.sections[1] === "*Projected at close by work*" && rowsOf(m.blocks)[0] === "Work|Paid units|All units at close *|Target|% target|Total units|% sell-through|Frame %", `close header: ${rowsOf(m.blocks)[0]}`);
   check(p.types === "header section section table context context" && !JSON.stringify(m.blocks).includes("BETA"), `no beta line on the At close update, whose table is the projection: ${p.types}`);
-  check(rowsOf(m.blocks)[1] === "I|82|120|69%|200|41%|44|54%", `close row, the forecast at close: ${rowsOf(m.blocks)[1]}`);
-  check(rowsOf(m.blocks)[4] === "Total|186|353|53%|600|31%|99|53%", `close total: ${rowsOf(m.blocks)[4]}`);
+  check(rowsOf(m.blocks)[1] === "I|46|82|120|69%|200|41%|54%", `close row, the forecast at close: ${rowsOf(m.blocks)[1]}`);
+  check(rowsOf(m.blocks)[4] === "Total|94|186|353|53%|600|31%|53%", `close total: ${rowsOf(m.blocks)[4]}`);
   check(p.contexts[0].includes("expected from the draw 27, still to come 60."), `close totals: ${p.contexts[0]}`);
   check(m.text === "Test Artist: 31% projected at close, 186 of 600 units", `close text: ${m.text}`);
 }
@@ -163,14 +163,14 @@ check(parts(at({ today: "2026-10-30" }).blocks).sections[0].endsWith("day 24 of 
   const noFrameOnII = { ...snap, framing: { ...snap.framing, forecast: { ...fc,
     today: { prints: 86, frames: 41.9, rate: 0.4872, notOffered: 40.2 },
     products: fc.products.filter((r) => r.key !== "d2") } } };
-  check(at(noFrameOnII)[2] === "II|40|100|40%|200|20%|-|-", `no frame on offer, a dash: ${at(noFrameOnII)[2]}`);
-  check(at(noFrameOnII)[4] === "Total|126|353|36%|600|21%|42|49%", `the Total is the forecast's own, on the works with one: ${at(noFrameOnII)[4]}`);
+  check(at(noFrameOnII)[2] === "II|32|40|100|40%|200|20%|-", `no frame on offer, a dash: ${at(noFrameOnII)[2]}`);
+  check(at(noFrameOnII)[4] === "Total|94|126|353|36%|600|21%|49%", `the Total is the forecast's own, on the works with one: ${at(noFrameOnII)[4]}`);
   // the row is found by its draw, whatever the names
   const renamed = { ...snap, sellthrough: { ...snap.sellthrough, products: snap.sellthrough.products.map((q, i) => ({ ...q, name: ["Print", "Vase", "Jar"][i] })) } };
   // (renamed, the rows lose the targets typed by name and take the split; the framing stays)
-  check(at(renamed)[1] === "Print|62|133|47%|200|31%|31|49%" && at(renamed)[2] === "Vase|40|133|30%|200|20%|17|41%", `by the draw: ${at(renamed).slice(1, 3).join(" / ")}`);
+  check(at(renamed)[1] === "Print|46|62|133|47%|200|31%|49%" && at(renamed)[2] === "Vase|32|40|133|30%|200|20%|41%", `by the draw: ${at(renamed).slice(1, 3).join(" / ")}`);
   const swapped = { ...snap, framing: { ...snap.framing, forecast: { ...fc, products: fc.products.map((r) => ({ ...r, key: { d1: "d2", d2: "d1", d3: "d3" }[r.key] })) } } };
-  check(at(swapped)[1] === "I|62|120|52%|200|31%|17|41%", `a row takes the forecast of its own draw: ${at(swapped)[1]}`);
+  check(at(swapped)[1] === "I|46|62|120|52%|200|31%|41%", `a row takes the forecast of its own draw: ${at(swapped)[1]}`);
   for (const [label, s] of [
     ["no framing option", { ...snap, economics: { ...snap.economics, framingAvailable: false } }],
     ["no print with a frame on offer", { ...snap, framing: null }],
@@ -178,14 +178,14 @@ check(parts(at({ today: "2026-10-30" }).blocks).sections[0].endsWith("day 24 of 
     ["a block built before the forecast", { ...snap, framing: (({ forecast: _f, ...rest }) => rest)(snap.framing) }],
   ]) {
     const p = parts(composeSellThroughBlocks(s, { today: "2026-09-17" }).blocks);
-    check(p.table.column_settings.length === 6 && p.table.rows.every((r) => r.length === 6) && at(s)[0] === "Work|Units sold *|Target|% target|Total units|% sell-through" && at(s)[4] === "Total|126|353|36%|600|21%",
+    check(p.table.column_settings.length === 7 && p.table.rows.every((r) => r.length === 7) && at(s)[0] === "Work|Paid units|All units *|Target|% target|Total units|% sell-through" && at(s)[4] === "Total|94|126|353|36%|600|21%",
       `${label}: four columns: ${at(s)[0]} / ${at(s)[4]}`);
   }
   // a block built before the forecast still has its sentence: the readings are observed
   check(parts(composeSellThroughBlocks({ ...snap, framing: (({ forecast: _f, ...rest }) => rest)(snap.framing) }, { today: "2026-09-17" }).blocks).contexts[0].includes("43% of paid prints took a frame"), "the sentence without the forecast");
   // nothing on offer counted yet: the columns are there, dashes in them
   const none = { ...snap, framing: { ...snap.framing, forecast: { today: { prints: 0, frames: 0, rate: null, notOffered: 126.2 }, close: { prints: 0, frames: 0, rate: null, notOffered: 186.2 }, products: [] } } };
-  check(at(none)[1] === "I|62|120|52%|200|31%|-|-" && at(none)[4] === "Total|126|353|36%|600|21%|-|-", `nothing on offer yet: ${at(none)[4]}`);
+  check(at(none)[1] === "I|46|62|120|52%|200|31%|-" && at(none)[4] === "Total|94|126|353|36%|600|21%|-", `nothing on offer yet: ${at(none)[4]}`);
 }
 
 // targets: a work's own from the tab, matched by name or by the short title starting the
@@ -198,14 +198,14 @@ check(parts(at({ today: "2026-10-30" }).blocks).sections[0].endsWith("day 24 of 
     { name: "Tableau No.1 with Red, Blue, Yellow, Black, and Gray", edition: 200, target_units: 90 },
   ] }, sellthrough: { ...snap.sellthrough, products: snap.sellthrough.products.map((q, i) => ({ ...q, name: ["Composition with Red, Yellow", "Composition with Large Red Plane", "Tableau no.1"][i] })) } };
   const bp = rowsOf(composeSellThroughBlocks(byPrefix, { today: "2026-09-17" }).blocks);
-  check(bp[1].startsWith("Composition with Red, Yellow|62|150|") && bp[2].startsWith("Composition with Large Red Plane|40|100|") && bp[3].startsWith("Tableau no.1|24|90|"), `matched where the short title starts the long: ${bp.slice(1, 4).join(" / ")}`);
+  check(bp[1].startsWith("Composition with Red, Yellow|46|62|150|") && bp[2].startsWith("Composition with Large Red Plane|32|40|100|") && bp[3].startsWith("Tableau no.1|16|24|90|"), `matched where the short title starts the long: ${bp.slice(1, 4).join(" / ")}`);
   // a short title that starts two long ones is left to the split, never guessed
   const twice = { ...byPrefix, sellthrough: { ...byPrefix.sellthrough, products: byPrefix.sellthrough.products.map((q, i) => (i === 0 ? { ...q, name: "Composition with" } : q)) } };
-  check(rowsOf(composeSellThroughBlocks(twice, { today: "2026-09-17" }).blocks)[1] === "Composition with|62|133|47%|200|31%|31|49%", `an ambiguous title takes the split: ${rowsOf(composeSellThroughBlocks(twice, { today: "2026-09-17" }).blocks)[1]}`);
+  check(rowsOf(composeSellThroughBlocks(twice, { today: "2026-09-17" }).blocks)[1] === "Composition with|46|62|133|47%|200|31%|49%", `an ambiguous title takes the split: ${rowsOf(composeSellThroughBlocks(twice, { today: "2026-09-17" }).blocks)[1]}`);
   const split = { ...snap, economics: { ...snap.economics, products: [] } };
-  check(rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[1] === "I|62|133|47%|200|31%|31|49%" && rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[4] === "Total|126|399|32%|600|21%|58|46%", `the release's target split by edition: ${rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[4]}`);
+  check(rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[1] === "I|46|62|133|47%|200|31%|49%" && rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[4] === "Total|94|126|399|32%|600|21%|46%", `the release's target split by edition: ${rowsOf(composeSellThroughBlocks(split, { today: "2026-09-17" }).blocks)[4]}`);
   const none = { ...split, edition: { total: 600 } };
-  check(rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[1] === "I|62|-|-|200|31%|31|49%" && rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[4] === "Total|126|-|-|600|21%|58|46%", `no target at all: ${rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[4]}`);
+  check(rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[1] === "I|46|62|-|-|200|31%|49%" && rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[4] === "Total|94|126|-|-|600|21%|46%", `no target at all: ${rowsOf(composeSellThroughBlocks(none, { today: "2026-09-17" }).blocks)[4]}`);
 }
 
 // the headline's edition is the card's, the release's own, when the works' editions add up to
@@ -226,7 +226,7 @@ check(parts(at({ today: "2026-10-30" }).blocks).sections[0].endsWith("day 24 of 
       `the percentage is the printed units over the printed edition: ${text}`);
   }
   // the works' split of the release's target still reads the works' own editions
-  check(rowsOf(composeSellThroughBlocks(mismatch, { today: "2026-09-17" }).blocks)[3] === "III|24|133|18%|200|12%|11|48%", "the target split is by the works' editions");
+  check(rowsOf(composeSellThroughBlocks(mismatch, { today: "2026-09-17" }).blocks)[3] === "III|16|24|133|18%|200|12%|48%", "the target split is by the works' editions");
   // a release without an edition of its own: the works' editions stand in, and at close the
   // percentage is read off the units rather than the missing pct
   const noEdition = { ...snap, sellthrough: { ...snap.sellthrough, edition: null, pct: null } };
@@ -261,15 +261,15 @@ check(parts(at({ today: "2026-10-30" }).blocks).sections[0].endsWith("day 24 of 
   check(p.types === "header section section table section context context context", `bare blocks: ${p.types}`);
   check(p.sections[0] === "Day 3 of 20" && p.contexts[1] === "_Incomplete data: products_", `bare lines: ${p.sections[0]} / ${p.contexts[1]}`);
   check(p.sections[2] === "Projected sell-through at close: *22%*, 22 of 100 units on current results `BETA`", `bare beta line, nothing still to come: ${p.sections[2]}`);
-  check(rowsOf(m.blocks).length === 2 && rowsOf(m.blocks)[1] === "X · Y · 2026 Q1|22|80|28%|100|22%", `bare row, no Total, no framing block so no framing columns: ${rowsOf(m.blocks).join(" / ")}`);
+  check(rowsOf(m.blocks).length === 2 && rowsOf(m.blocks)[1] === "X · Y · 2026 Q1|12|22|80|28%|100|22%", `bare row, no Total, no framing block so no framing columns: ${rowsOf(m.blocks).join(" / ")}`);
   // with the framing block, the release's own forecast in the one row
   const framed = composeSellThroughBlocks({ ...bare, framing: { prints: 12, frames: 6, rate: 0.5, entrants: null, plan: 0.35, benchmark: null, works: [], notOffered: { units: 0, works: [] },
     forecast: { today: { prints: 22, frames: 12.2, rate: 0.5545, notOffered: 0 }, close: { prints: 22, frames: 12.2, rate: 0.5545, notOffered: 0 }, products: [] } } }, { today: "2026-09-17" });
-  check(rowsOf(framed.blocks)[0] === "Work|Units sold *|Target|% target|Total units|% sell-through|Frames *|Frame %" && rowsOf(framed.blocks)[1] === "X · Y · 2026 Q1|22|80|28%|100|22%|12|55%", `bare row with framing: ${rowsOf(framed.blocks)[1]}`);
+  check(rowsOf(framed.blocks)[0] === "Work|Paid units|All units *|Target|% target|Total units|% sell-through|Frame %" && rowsOf(framed.blocks)[1] === "X · Y · 2026 Q1|12|22|80|28%|100|22%|55%", `bare row with framing: ${rowsOf(framed.blocks)[1]}`);
   // and without an edition at all: units, dashes for the rest
   const units = composeSellThroughBlocks({ id: "x", releaseName: "X", asOf: "2026-09-17", day: 3, of: 20,
     sellthrough: { sold: 12, drafts: 0, soldPredicted: 8, incomplete: ["products"] } }, { today: "2026-09-17" });
-  check(rowsOf(units.blocks)[1] === "X|20|-|-|-|-" && units.text === "X: 20 units spoken for", `units only: ${rowsOf(units.blocks)[1]} ${units.text}`);
+  check(rowsOf(units.blocks)[1] === "X|12|20|-|-|-|-" && units.text === "X: 20 units spoken for", `units only: ${rowsOf(units.blocks)[1]} ${units.text}`);
 }
 
 // the real snapshots on disk, if any: both horizons compose, every row as wide as the header

@@ -749,14 +749,15 @@ a signup-led attribution of window sales are not built (spec §10).
 The sell-through card has a **Post to Slack** button. It sends the card as a Block Kit
 message to the channel set for that release: the artist as the header; the works' shared
 title and the campaign day on one line ("Brillo Box Collectable, day 20 of 27"); the table's
-title; Slack's `table` block, one row per work with its units sold (at close, the projection),
+title; Slack's `table` block, one row per work with its paid units, all its units (paid,
+drafts and the draw's forecast conversions, the asterisk's footnote; at close, the projection),
 its target, how far along the target it is, its total units (the edition) and its sell-through
-on them (capped at 100%, as the headline is), its frames and its frame %
-(frames per print on the same units as the units column: the paid prints and their frames,
+on them (capped at 100%, as the headline is), and its frame %
+(frames per print on the same units as the all-units column: the paid prints and their frames,
 the drafts and theirs, the draw's forecast conversions at the rate the entrants ask for; the
-Framing card's headline; a dash for a work with no frame on offer; the two columns are left
+Framing card's headline; a dash for a work with no frame on offer; the column is left
 out on a release without a framing option), and a bold **Total** row adding them up (the
-frames before rounding, so the Total is the card's own figure), the Work column
+frame % on the frames before rounding, so the Total is the card's own figure), the Work column
 wrapping rather than cropping and the figures right-aligned (Slack's `data_table` block takes
 no column settings and cut the names off); on a Today update, under the table at full size, the
 close forecast marked `BETA` ("Projected sell-through at close: 24%, 1,449 of 6,100 units on
