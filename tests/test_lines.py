@@ -181,7 +181,8 @@ check(close(P["benchmark"]["sessionsByGroup"]["aa_email"], bm["sessionsByGroup"]
 # ---- targets: K per line, units summed, sessions the larger line's, conversion derived
 T, TP, TB = snap["targets"], P["targets"], B["targets"]
 check(TP["edition_size"] == 300 and TB["edition_size"] == 900 and T["edition_size"] == 1200, "each line is targeted at its own edition")
-check(close(TP["k"], 300 / pu, 1e-6) and close(TB["k"], 900 / bu, 1e-6) and close(T["k"], 1200 / (pu + bu), 1e-6), f"K per line, the release's the ratio of the sums: {TP['k']:.3f}, {TB['k']:.3f}, {T['k']:.3f}")
+# the units are printed to the tenth, K is read on the unrounded figure (sets counted in prints leave fractions)
+check(close(TP["k"], 300 / pu, 5e-4) and close(TB["k"], 900 / bu, 5e-4) and close(T["k"], 1200 / (pu + bu), 5e-4), f"K per line, the release's the ratio of the sums: {TP['k']:.3f}, {TB['k']:.3f}, {T['k']:.3f}")
 check(set(T["lines"]) == {"Lego2026", "LegoMF"} and close(T["lines"]["Lego2026"]["k"], TP["k"]), "the combined targets carry each line's")
 gt, gp, gb = snap["groupTargets"], P["groupTargets"], B["groupTargets"]
 for g in baskets.GROUPS:

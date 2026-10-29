@@ -1112,6 +1112,27 @@ the edition's size against the comparables' demand, so a launch that sold out sh
 comparable for the editions its demand would have filled, not for the one it happened to have
 (`docs/BENCHMARK_SPEC.md` §3.1 has the leave-one-out check).
 
+**Units are prints, so a set counts as the prints in it** (`baskets.in_prints`, on the panel as
+it loads, after the guards and before demand; since 29 October 2026). The edition is counted
+in prints (§4a.2½ leaves a set out of `edition_size`), but the funnel counts a set as one unit:
+Woo Kuk Won 2024 Q4 sold 36 + 36 prints and 16 diptychs, 104 prints of an edition of 100, and
+the funnel read 85. `set_pieces` reads each launch's products in `data/orders_by_product.csv`:
+a title made of two or more of the launch's single titles joined by "&", "and" or a comma is
+that many prints ("Once in my Life" beside "Once" and "in my Life" has no joiner and is a work
+of its own); else a set word decides (diptych or pair 2, triptych or trio 3, quartet 4, "Set
+of N" N, "Full set" every print); a set whose parts the launch does not also sell (Judy
+Chicago's Reincarnation Triptych, its only product) is the edition's own unit and stays 1.
+`prints_per_unit` is the launch's paid lines weighted by their prints over its paid lines, and
+every unit column in `PRINT_COLUMNS` (sold, by route and by group, entry units, unmet and
+failed-payment units, pieces per buyer, units per session) is multiplied by it; `funnel_units`
+keeps the funnel's own count. The entries carry no product here, so the unmet units take the
+sales' mix: an approximation, which over-reads a launch whose losing entrants wanted singles
+more than its buyers did, and under-reads the other way. On 29 October 2026 it moved 11 of
+the 106 draw launches; sold now lands on the edition where the launch sold out (Ai Weiwei
+2025 Q4 200 of 200, Murakami 2026 Q2 1,171 of 1,200, Woo Kuk Won 2024 Q4 100.5 of 100), and
+Woo Kuk Won 2024 Q4's demand went from 249 to 294. A live release's own secured units are
+still counted as the funnel counts them.
+
 The suggested basket, `similar_size` ("Similar size and shape"), is the **`SIMILAR_N` = 8
 launches nearest this one on units of demand and unit price** (`similar_members`): the artist's own
 earlier launches first, when within ×3 on both axes, then the nearest of everything else, with

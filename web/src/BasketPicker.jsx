@@ -249,7 +249,8 @@ export default function BasketPicker({ kind = "le", rows, releaseName, artist, b
         <span className="n"><span className="dot" style={{ background: r.color }} /><span className="nm">{r.artist}{r.title && r.title !== "Multiple" ? <span className="t"> · {r.title}</span> : null}{r.own && <span className="t"> · own</span>}</span></span>
         {tl && <span><span className={`dist${r.same ? "" : " after"}`} title={r.same ? "The same window length" : "Another window length"}>{hoursShort(r.window_hours)}</span></span>}
         <span>{r.edition_size > 0 ? fmt(r.edition_size) : "–"}</span>
-        <span title={r.sold_short && r.demand > r.units ? `Sold out with more wanted: the benchmark counts its demand of ${fmt(r.demand)}` : undefined}>{fmt(r.units)}</span>
+        <span title={r.prints_per_unit > 1 ? `Counted in prints: a set sold counts as the prints in it (${fmt(r.units / r.prints_per_unit)} as the funnel counts them)` : undefined}>{fmt(r.units)}</span>
+        {!tl && <span className={r.sold_short && r.demand > r.units ? "" : "old"} title={r.sold_short && r.demand > r.units ? `Sold out with more wanted: ${fmt(r.units)} sold, and ${fmt(r.demand - r.units)} more from the entrants left without one, at the entry to order rate. The benchmark counts this` : "Did not sell out: its demand is its sales"}>{fmt(r.demand || r.units)}</span>}
         <span>{r.price > 0 ? fmtMoney(r.price) : "–"}</span>
         <span className={r.later ? "later" : !r.recent ? "old" : ""} title={r.later ? "Closed after this launch: left out of the rule" : !r.recent ? "Older than eighteen months" : undefined}>{fmtMonth(r.window_end)}</span>
         <span><span className={`dist${r.later ? " after" : on ? " in" : ""}`} title={r.d !== null ? `${x2(r.du)} on units · ${x2(r.dp)} on price` : "No distance: a figure is missing"}>{r.later ? "After" : x2(r.d)}</span></span>
@@ -308,12 +309,12 @@ export default function BasketPicker({ kind = "le", rows, releaseName, artist, b
         <>
           <MapPlot rows={scored} L={{ ...L, price: priceUsed }} ticked={ticked} nearMiss={nearMiss} otherLength={lengthHours ? (r) => !r.same : null} reach={reach} hov={hov} setHov={setHov} toggle={toggle} tipOf={tipOf} />
           <div>
-            <div className={`pk-grid pk-th${tl ? " tl" : ""}`}><span /><span>Launch</span>{tl && <span>Window</span>}<span>Edition</span><span>Sold</span><span>Price</span><span>Closed</span><span>Distance</span></div>
+            <div className={`pk-grid pk-th${tl ? " tl" : ""}`}><span /><span>Launch</span>{tl && <span>Window</span>}<span>Edition</span><span>Sold</span>{!tl && <span>Demand</span>}<span>Price</span><span>Closed</span><span>Distance</span></div>
             <div className={`pk-grid pk-tr me${tl ? " tl" : ""}`}>
               <span><span className="me" /></span>
               <span className="n"><span className="nm">{crumbArtist}{L.name && L.name.split(" · ")[1] && L.name.split(" · ")[1] !== "Multiple" ? <span className="t"> · {L.name.split(" · ")[1]}</span> : null}</span></span>
               {tl && <span><span className="dist">{hoursShort(lengthHours)}</span></span>}
-              <span>{target > 0 ? fmt(target) : "–"}</span><span style={{ color: "#a1a1aa" }}>target</span><span>{priceUsed > 0 ? fmtMoney(priceUsed) : "–"}</span><span>{launchEnd ? fmtMonth(launchEnd) : ""}</span><span />
+              <span>{target > 0 ? fmt(target) : "–"}</span><span style={{ color: "#a1a1aa" }}>target</span>{!tl && <span />}<span>{priceUsed > 0 ? fmtMoney(priceUsed) : "–"}</span><span>{launchEnd ? fmtMonth(launchEnd) : ""}</span><span />
             </div>
             {!placeable && <div className="empty"><People w={22} />Both a target and a price are needed before there is anything to be near to. Type them above and the basket appears.</div>}
             {placeable && groups.map((g) => (

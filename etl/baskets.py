@@ -277,6 +277,119 @@ def _join_people(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+# ---------------------------------------------------------------- sets counted in prints
+# An edition is counted in prints (etl/pricing.py leaves a set out of
+# edition_size: its parts are already in it), but the funnel counts a set as
+# one unit: a diptych order is one unit of an edition of two prints' worth.
+# Woo Kuk Won 2024 Q4 sold 36 + 36 prints and 16 diptychs, 104 prints of an
+# edition of 100, and the funnel read 85. Before demand is read, each launch's
+# unit counts are put in prints by the orders feed's own mix: its paid lines
+# weighted by the prints in each, over its paid lines. The draw's entries
+# carry no product here, so the unmet units take the same mix as the sales.
+ORDERS_BY_PRODUCT_PATH = DATA / "orders_by_product.csv"
+SET_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8}
+SET_RE = re.compile(r"set of|diptych|triptych|\bpairs?\b|\btrio\b|\bquartet\b|combined product|full set", re.I)
+# a title made of other titles joins them: "A & B", "A and B", "A, B, C"
+JOIN_RE = re.compile(r"&|\band\b|,", re.I)
+# the columns counted in units of the edition, which a set's prints scale
+PRINT_COLUMNS = (
+    ["tot_total_product_units", "tot_product_units_draw", "tot_product_units_preorder_app",
+     "tot_product_units_private_room", "tot_product_units_presale_offered", "tot_product_units_other",
+     "tot_draw_entries_total_units", "tot_draw_entries_total_units_no_conv", "tot_draw_entries_eligible_units",
+     "payment_failed_units", "purchased_units", "units_per_buyer", "units_per_session"]
+    + [f"units_{g}" for g in GROUPS] + [f"conv_sess_unit_{g}" for g in GROUPS]
+)
+
+
+def _title_key(title: object) -> str:
+    """A title as words: lower case, apostrophes dropped, the rest of the
+    punctuation a space, so "A Moment's Pleasure #2" and "A Moments
+    Pleasure #2" are one name; letters and numerals beyond ASCII stay
+    ("From Point \u2160" is not "From Point \u2161")."""
+    t = re.sub(r"['\u2019`]", "", str(title or "").lower())
+    return " " + " ".join(re.sub(r"[\W_]+", " ", t).split()) + " "
+
+
+def set_pieces(titles: list[str]) -> dict[str, int]:
+    """The prints in each of one launch's products: 1 for a print, the parts
+    for a set. A set is a title made of two or more of the launch's other
+    titles joined by "&", "and" or a comma ("A & B", "A and B [Diptych]";
+    "Once in my Life" beside "Once" and "in my Life" is a work of its own),
+    else one with a set word: a diptych or pair is 2, a triptych or trio 3,
+    a quartet 4, "Set of N" N, "Full set" every print. A set whose parts the
+    launch does not also sell (Judy
+    Chicago's Reincarnation Triptych, the only product) is the edition's own
+    unit, so it stays 1."""
+    keys = {t: _title_key(t) for t in titles}
+    plain = [t for t in titles if not SET_RE.search(str(t))]
+
+    def parts(t: str, among: list[str]) -> list[str]:
+        if not JOIN_RE.search(str(t)):
+            return []
+        return list({keys[o] for o in among if keys[o].strip() and keys[o] != keys[t] and keys[o] in keys[t]})
+
+    # the singles are the plain titles not made of others; a set's parts are
+    # singles only, so a set of four holding a pair's title is still four
+    singles = [t for t in plain if len(parts(t, plain)) < 2]
+    made_of = {t: parts(t, singles) for t in titles}
+    out = {}
+    for t in titles:
+        n = 1
+        if len(made_of[t]) >= 2:
+            n = len(made_of[t])
+        elif SET_RE.search(str(t)):
+            low = str(t).lower()
+            m = re.search(r"set of (\d+|" + "|".join(SET_WORDS) + r")\b", low)
+            if m:
+                n = int(m.group(1)) if m.group(1).isdigit() else SET_WORDS[m.group(1)]
+            elif "triptych" in low or re.search(r"\btrio\b", low):
+                n = 3
+            elif "quartet" in low:
+                n = 4
+            elif "full set" in low:
+                n = len(singles)
+            else:
+                n = 2
+        out[t] = n if 1 < n <= len(singles) else 1
+    return out
+
+
+def prints_per_unit(path: pathlib.Path | str | None = None) -> dict[str, float]:
+    """Each launch's prints per funnel unit, from the orders feed: its paid
+    lines weighted by set_pieces, over its paid lines. Only launches that sold
+    a set are listed; every other reads 1."""
+    try:
+        o = pd.read_csv(path or ORDERS_BY_PRODUCT_PATH, usecols=["release", "product_title", "units_paid"])
+    except (OSError, ValueError):
+        return {}
+    o["units_paid"] = pd.to_numeric(o["units_paid"], errors="coerce").fillna(0.0)
+    out = {}
+    for name, g in o.groupby("release"):
+        pieces = set_pieces([str(t) for t in g["product_title"].fillna("")])
+        lines = float(g["units_paid"].sum())
+        prints = float((g["units_paid"] * g["product_title"].fillna("").astype(str).map(pieces)).sum())
+        if lines > 0 and prints > lines:
+            out[str(name)] = prints / lines
+    return out
+
+
+def in_prints(df: pd.DataFrame, factors: dict[str, float] | None = None) -> pd.DataFrame:
+    """The panel's unit counts in prints (the note above SET_RE): each
+    PRINT_COLUMNS value times its launch's prints_per_unit. Adds
+    prints_per_unit (1 for a launch without a set) and funnel_units, the
+    funnel's own count before it."""
+    f = factors if factors is not None else prints_per_unit()
+    out = df.copy()
+    k = out["release_name"].astype(str).map(f).fillna(1.0).astype(float)
+    out["prints_per_unit"] = k
+    if "tot_total_product_units" in out.columns:
+        out["funnel_units"] = pd.to_numeric(out["tot_total_product_units"], errors="coerce")
+    for col in PRINT_COLUMNS:
+        if col in out.columns:
+            out[col] = pd.to_numeric(out[col], errors="coerce") * k
+    return out
+
+
 # a launch sold out short when the demand it had ran this far past its sales
 SOLD_SHORT_FACTOR = 1.1
 
@@ -459,7 +572,7 @@ def load_panel() -> pd.DataFrame:
         df, GUARDED["rates"] = guard_rates(df)
     except Exception as e:  # noqa: BLE001
         GUARDED["skipped"].append(f"rates check: {e}")
-    df = demand_columns(_join_people(df))
+    df = demand_columns(in_prints(_join_people(df)))
     df["artist"] = df["artist"].astype(str)
     _panel_cache = df.reset_index(drop=True)
     return _panel_cache
@@ -807,6 +920,8 @@ def candidate_rows(panel: pd.DataFrame) -> list[dict]:
             "window_end": _day(r.get("window_end")),
             "campaign_days": _num(r.get("campaign_days")),
             "units": _num(r.get("tot_total_product_units")),
+            # prints per funnel unit (in_prints): over 1 where the launch sold sets
+            "prints_per_unit": _num(r.get("prints_per_unit")) or 1.0,
             # what the launch would have sold with enough supply, the
             # benchmark's units (demand_columns), the two counts behind the
             # difference, and each group's share of it

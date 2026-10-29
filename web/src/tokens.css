@@ -289,7 +289,7 @@ tbody tr:hover td { background: #fafafa; }
 .act .k { display: inline-flex; align-items: center; justify-content: center; height: 16px; min-width: 16px; padding: 0 3px; border-radius: 3px; background: rgba(255,255,255,.2); font-size: 11px; }
 .find { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid #e6e6e8; border-radius: 14px; background: var(--card); color: var(--faint); }
 .find input { border: 0; outline: 0; font: inherit; font-size: 12.5px; width: 140px; background: transparent; color: var(--ink); }
-.pk-grid { display: grid; grid-template-columns: 28px minmax(0, 1fr) 72px 64px 80px 84px 76px; align-items: center; column-gap: 8px; }
+.pk-grid { display: grid; grid-template-columns: 28px minmax(0, 1fr) 72px 64px 72px 80px 84px 76px; align-items: center; column-gap: 8px; }
 .pk-grid.tl { grid-template-columns: 28px minmax(0, 1fr) 56px 64px 64px 72px 76px 72px; }
 .pk-th { height: 32px; font-size: 11.5px; color: var(--faint); border-bottom: 1px solid #efefef; padding: 0 20px; }
 .pk-th span { text-align: right; }
@@ -318,7 +318,8 @@ tbody tr:hover td { background: #fafafa; }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 56px 0; color: var(--faint); font-size: 13px; }
 .mdot { position: absolute; border: 0; padding: 0; border-radius: 50%; transform: translate(-50%, -50%); cursor: pointer; }
 .maptip { position: absolute; z-index: 2; background: var(--card); border: 1px solid #e6e6e8; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.08); padding: 7px 10px; font-size: 12px; white-space: nowrap; pointer-events: none; transform: translate(14px, -50%); }
-@media (max-width: 900px) { .pk-grid { grid-template-columns: 28px minmax(0, 1fr) 56px 56px 72px 72px; } .pk-grid > :nth-child(6) { display: none; } }
+@media (max-width: 900px) { .pk-grid { grid-template-columns: 28px minmax(0, 1fr) 56px 56px 72px 72px; } .pk-grid > :nth-child(6) { display: none; }
+  .pk-grid:not(.tl) { grid-template-columns: 28px minmax(0, 1fr) 48px 48px 56px 64px 64px; } .pk-grid:not(.tl) > :nth-child(6) { display: block; } .pk-grid:not(.tl) > :nth-child(7) { display: none; } }
 
 /* ---------- permissions and the states ---------- */
 .mrow2 { display: grid; grid-template-columns: 28px minmax(0, 1fr) 140px 28px; align-items: center; column-gap: 12px; height: 48px; border-bottom: 1px solid #f4f4f5; font-size: 13px; }
