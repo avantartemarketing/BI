@@ -311,7 +311,7 @@ export function RadioPill({ icon, label, value, options, onChange, tip, width = 
 export function Section({ title, icon, count, lozes, action, children, aria }) {
   return (
     <section className="sec" aria-label={aria || (typeof title === "string" ? title : undefined)}>
-      <div className="sh">{icon || null}<span className="t">{title}</span>{count !== undefined && count !== null ? <Loz kind="ghost">{count}</Loz> : null}{lozes || null}{action ? <span className="ib sp" style={{ display: "inline-flex", padding: 0, background: "transparent" }}>{action}</span> : null}</div>
+      <div className="sh">{icon || null}<span className="t">{title}</span>{count !== undefined && count !== null ? <Loz kind="ghost">{count}</Loz> : null}{lozes || null}{action ? <span className="ib sp" style={{ display: "inline-flex", width: "auto", padding: 0, background: "transparent" }}>{action}</span> : null}</div>
       <div className="rule" />
       {children}
     </section>
@@ -390,7 +390,7 @@ export function BasketRow({ r, onOpen, extra }) {
   );
 }
 export function PickButton({ onClick }) {
-  return <button className="ib" aria-label="Pick launches" title="Pick the launches on the map" onClick={onClick}><Scatter /></button>;
+  return <button className="sbtn" title="Choose the launches the benchmark is taken from" onClick={onClick}><Scatter />Set benchmarks</button>;
 }
 /* One date: the milestone's name, the other reading a feed has for it with
  * one click to take it, and the date itself, typed in place unless the
