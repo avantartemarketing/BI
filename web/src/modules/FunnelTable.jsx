@@ -48,7 +48,7 @@ export default function FunnelTable({ snap }) {
             const r = rows[Math.floor(i / 2)];
             const traffic = i % 2 === 0;
             return [
-              { n: traffic ? `Sessions vs ${refWord}` : `Conversion vs ${refWord}`, v: signed(traffic ? r.vsSess : r.vsConv), k: "" },
+              { n: traffic ? `Sessions vs ${refWord}` : `Conversion vs ${refWord}`, v: signed(traffic ? r.vsSess : r.vsConv), k: null },
               { n: `${W.Unit} ${vals[i] >= 0 ? "added" : "lost"}`, v: fmt(Math.abs(vals[i]), 1), k: sw(vals[i] >= 0 ? COL.IND : COL.ORANGE) },
             ];
           }}

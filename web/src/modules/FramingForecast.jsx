@@ -42,7 +42,7 @@ export default function FramingForecast({ snap, horizon = "today" }) {
           const w = works[i];
           return [
             { n: "Frames", v: fmt(w.frames), k: sw(COL.IND) },
-            { n: "Take-up", v: `${Math.round(rate * 100)}% · ${src}`, k: "" },
+            { n: "Take-up", v: `${Math.round(rate * 100)}% · ${src}`, k: null },
             { n: "Range", v: `${fmt(w.frames * band[0])}–${fmt(w.frames * band[1])}`, k: sw(COL.PALE) },
           ];
         }}

@@ -10,6 +10,22 @@ import { Dots, Up, Dn } from "./icons.jsx";
 /* A card of the redesign: the title on the left of its head, then any
  * switch (`seg`), then the ⋯ menu (`menu`: [{ label, onClick, checked,
  * icon, right, sep }]); the headline numbers go in a <Head> under it. */
+/* A card's body behind an error boundary: a card that throws while it
+ * draws is the one card lost, with its name and the error in the console,
+ * instead of the whole page unmounting (React unmounts the tree at the
+ * nearest boundary, and without one that was the app itself: a tooltip
+ * row with a string for a style blanked every overview on 29 October 2026). */
+class CardBody extends React.Component {
+  constructor(props) { super(props); this.state = { failed: false }; }
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error) { console.error(`card "${this.props.name || "untitled"}" could not be drawn:`, error); }
+  componentDidUpdate(prev) { if (this.state.failed && prev.children !== this.props.children) this.setState({ failed: false }); }
+  render() {
+    if (this.state.failed) return <div className="card-failed">This card could not be drawn.</div>;
+    return this.props.children;
+  }
+}
+
 export function Card({ wide, title, seg, menu, right, children, style, aria, className, onClick }) {
   const m = useMenu();
   return (
@@ -31,7 +47,7 @@ export function Card({ wide, title, seg, menu, right, children, style, aria, cla
           </span>
         )}
       </div>
-      {children}
+      <CardBody name={typeof title === "string" ? title : aria}>{children}</CardBody>
     </section>
   );
 }

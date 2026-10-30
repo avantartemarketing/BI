@@ -79,7 +79,7 @@ function Frame({ o, paths, labs, hits, tip, legend, dot, aria, setHover, plotRef
         {tip.on && (
           <div className="tip" style={tip.s}>
             <div className="tt">{tip.title}</div>
-            {tip.rows.map((r, i) => <div className="tr" key={i}><span style={r.k} />{r.n}<b>{r.v}</b></div>)}
+            {tip.rows.map((r, i) => <div className="tr" key={i}><span style={r.k && typeof r.k === "object" ? r.k : undefined} />{r.n}<b>{r.v}</b></div>)}
           </div>
         )}
       </div>
@@ -92,7 +92,7 @@ export function Keys({ legend, style }) {
   return (
     <div className="keys" style={style}>
       {legend.map((g, i) => (
-        <span className="key" key={i} title={g.tip}><span style={g.k} />{g.n}{g.v !== undefined && g.v !== "" && g.v !== null && <b className="kv">{g.v}</b>}</span>
+        <span className="key" key={i} title={g.tip}><span style={g.k && typeof g.k === "object" ? g.k : undefined} />{g.n}{g.v !== undefined && g.v !== "" && g.v !== null && <b className="kv">{g.v}</b>}</span>
       ))}
     </div>
   );

@@ -71,7 +71,7 @@ export default function EmailFunnel({ snap }) {
           return [
             { n: "This launch", v: `${pc(s.v)} · ${s.n}`, k: sw(has ? (dev[i] >= 0 ? COL.IND : COL.ORANGE) : COL.SOFT) },
             has ? { n: s.src === "sends" ? "Basket" : "Basket, organic sessions", v: pc(s.ref), k: lk(COL.INK, "dotted") } : { n: "Basket", v: "no reading", k: lk(COL.INK, "dotted") },
-            ...(has ? [{ n: "Against the basket", v: signedPc(dev[i]), k: "" }] : []),
+            ...(has ? [{ n: "Against the basket", v: signedPc(dev[i]), k: null }] : []),
           ];
         }}
         aria={`Email funnel against the basket: ${steps.map((s, i) => `${s.name} ${pc(s.v)}${finite(s.ref) && s.ref > 0 ? ` (${signedPc(dev[i])} against ${pc(s.ref)} in ${basketWords})` : ""}`).join("; ")}`} />
