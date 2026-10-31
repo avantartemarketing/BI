@@ -43,7 +43,7 @@ def sign_in() -> None:
 
 def run(sql: str) -> list[dict]:
     out = subprocess.run(["bq", f"--project_id={PROJECT}", "query", "--use_legacy_sql=false", "--format=json",
-                          "--max_rows=1000", sql], capture_output=True, text=True)
+                          "--max_rows=1000"], input=sql, capture_output=True, text=True)
     if out.returncode != 0:
         sys.exit(out.stderr.strip()[-2000:])
     return json.loads(out.stdout or "[]")
