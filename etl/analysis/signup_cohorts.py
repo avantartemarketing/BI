@@ -46,7 +46,11 @@ def run(sql: str) -> list[dict]:
                           "--max_rows=1000"], input=sql, capture_output=True, text=True)
     if out.returncode != 0:
         sys.exit(out.stderr.strip()[-2000:])
-    return json.loads(out.stdout or "[]")
+    rows = json.loads(out.stdout or "[]")
+    # a script (DECLARE ...; SELECT ...) comes back as one result set a statement
+    while rows and isinstance(rows[0], list):
+        rows = rows[-1]
+    return rows
 
 
 def main() -> None:
