@@ -13,7 +13,9 @@
  * Slack as a message composed on the server from the same snapshot
  * (server/slack.js), at the page's horizon and, on a line's page, for that
  * line. A release selling two lines of work lists the rows under a header
- * per line. */
+ * per line. Rows that are variants of one work ("Toy Brick (Red)", "Toy
+ * Brick (Blue)") show only the variant, the shared name in the header and
+ * the full name in the hover. */
 import React, { useState } from "react";
 import { Card, Head, Loz, Note } from "../ui.jsx";
 import { Keys, COL, sw } from "../charts.jsx";
@@ -33,6 +35,22 @@ function segmentsOf(row, close) {
   segs.push({ key: "inhand", v: row.shown ?? 0, color: SEG.winners });
   if (close && (row.futurePredicted ?? 0) > 0) segs.push({ key: "future", v: row.futurePredicted, color: SEG.future });
   return segs.filter((x) => x.v > 0);
+}
+
+/* rows named "Base (Variant)" or "Base - Variant" with one shared base:
+ * that base and each row's variant, or null when the names are not of
+ * that shape */
+function variantsOf(rows) {
+  if (rows.length < 2) return null;
+  const parts = rows.map((r) => {
+    const n = String(r.name || "").trim();
+    const m = n.match(/^(.+?)\s*\(([^()]+)\)$/) || n.match(/^(.+?)\s+[-\u2013:]\s+(.+)$/);
+    return m ? { base: m[1].trim(), variant: m[2].trim() } : null;
+  });
+  if (parts.some((x) => !x)) return null;
+  const base = parts[0].base;
+  if (parts.some((x) => x.base.toLowerCase() !== base.toLowerCase())) return null;
+  return { base, names: new Map(rows.map((r, i) => [r.key, parts[i].variant])) };
 }
 
 function Bar({ row, close, maxV, tick }) {
@@ -165,7 +183,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
       )}
     </>
   );
-  const row = (r) => {
+  const row = (r, short) => {
     const over = overOf(r);
     const tip = [
       `${r.name}${finite(r.edition) ? ` · ${tl ? "units target" : "edition"} ${fmt(r.edition)}` : ""}`,
@@ -179,31 +197,47 @@ export default function SellThrough({ snap, horizon = "today" }) {
     const pctRow = close ? r.pctClose : r.pct;
     return (
       <div className="prow st" key={r.key} title={tip}>
-        <span className="nm">{r.name}</span>
+        <span className="nm">{short || r.name}</span>
         <Bar row={r} close={close} maxV={maxFor(r)} tick={tl ? r.edition : null} />
         <span className="fig">{finite(r.edition) && r.edition > 0 ? `${fmt(unitsOf(r))} of ${fmt(r.edition)}` : fmt(unitsOf(r))}<b>{finite(pctRow) ? `${Math.round(pctRow * 100)}%` : ""}</b></span>
       </div>
     );
   };
-  const groupHead = (g) => {
+  const groupHead = (g, base, figs = true) => {
     const ed = g.rows.every((r) => finite(r.edition) && r.edition > 0) ? g.rows.reduce((s, r) => s + r.edition, 0) : null;
     const u = g.rows.reduce((s, r) => s + unitsOf(r), 0);
+    const sameName = base && namesTitle(base, g.name);
     return (
-      <div className="prow st grp" key={`line:${g.key}`} title={`${g.name}: ${g.rows.length} work${g.rows.length === 1 ? "" : "s"}, read together`}>
-        <span className="nm">{g.name}</span><span />
-        <span className="fig">{ed ? `${fmt(u)} of ${fmt(ed)}` : fmt(u)}<b>{ed ? `${Math.round(Math.min(u / ed, 1) * 100)}%` : ""}</b></span>
+      <div className="prow st grp" key={`line:${g.key}`} title={`${g.name}${base && !sameName ? ` (${base})` : ""}: ${g.rows.length} work${g.rows.length === 1 ? "" : "s"}, read together`}>
+        <span className="nm">{g.name}</span>
+        {figs ? <span className="fig">{ed ? `${fmt(u)} of ${fmt(ed)}` : fmt(u)}<b>{ed ? `${Math.round(Math.min(u / ed, 1) * 100)}%` : ""}</b></span> : <span />}
       </div>
     );
   };
+  // a group's rows, each by its variant when the group's rows are variants of one work
+  const groupRows = (g) => {
+    const v = variantsOf(g.rows);
+    const shown = g.rows.map((r) => (v ? v.names.get(r.key) : null));
+    for (let i = 0; i < g.rows.length; i++) longest = Math.max(longest, String(shown[i] || g.rows[i].name || "").length);
+    return { v, rows: g.rows.map((r, i) => row(r, shown[i])) };
+  };
+  let longest = 0;   // the longest name a row shows, to size the name column
+  const body = (() => {
+    if (groups) return groups.map((g) => {
+      const { v, rows: rs } = groupRows(g);
+      return <div className="stgrp" key={`g:${g.key}`}>{groupHead(g, v && v.base)}{rs}</div>;
+    });
+    const { v, rows: rs } = groupRows({ rows });
+    // one list of variants: their shared name heads it, the head above already carries the figures
+    return v ? <div className="stgrp">{groupHead({ key: "_all", name: v.base, rows }, v.base, false)}{rs}</div> : rs;
+  })();
   const editionLeft = edition !== null ? Math.max(edition - headUnits, 0) : null;
   return (
     <Card title={W.sellThroughTitle} menu={menu} right={right} aria={W.sellThroughTitle}>
       <Head v={fmt(headUnits)} u={edition ? `of ${fmt(edition)}${st.editionWord ? ` ${st.editionWord}` : ""} ${tl ? "sold" : "spoken for"}` : "units, no edition size set"}
         aside={[headPct !== null ? `${Math.round(headPct * 100)}%` : null, draftsAll ? `${fmt(draftsAll)} awaiting payment` : null].filter(Boolean).join(" · ")}
         asideTip={method} />
-      <div>
-        {(groups ? groups.flatMap((g) => [groupHead(g), ...g.rows.map(row)]) : rows.map(row))}
-      </div>
+      <div style={{ "--nmw": `${Math.min(Math.max(longest, 8), 30)}ch` }}>{body}</div>
       <Keys legend={[
         { n: "Paid", v: fmt(sold), k: sw(SEG.paid), tip: paidTip },
         ...(draftsAll !== null && draftsAll > 0 ? [{ n: tl ? "Awaiting payment" : "Drafts", v: fmt(draftsAll), k: sw(SEG.drafts), tip: draftsTip }] : []),

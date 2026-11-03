@@ -4,12 +4,19 @@
  * Imported by the modules that use them. */
 
 /* a product row: name, the bar on its edition, units and share */
-.prow.st { grid-template-columns: minmax(96px, 30%) minmax(0, 1fr) auto; column-gap: 12px; height: 38px; }
+.prow.st { grid-template-columns: min(var(--nmw, 30%), 42%) minmax(0, 1fr) auto; column-gap: 12px; height: 38px; }
 .prow .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
 .prow .fig { font-variant-numeric: tabular-nums; color: var(--faint); font-size: 12.5px; white-space: nowrap; text-align: right; }
 .prow .fig b { color: var(--ink); font-weight: 500; margin-left: 10px; display: inline-block; min-width: 36px; }
 .prow.grp { height: 30px; }
 .prow.grp .nm { font-size: 11.5px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+/* a line's header in the sell-through card: its name across the name and bar
+ * columns, its figures quiet, the line's rows set apart from the next line's */
+.prow.st.grp { grid-template-columns: minmax(0, 1fr) auto; height: 28px; align-items: end; padding-bottom: 6px; }
+.prow.st.grp .fig { font-size: 12px; }
+.prow.st.grp .fig b { color: var(--faint); font-weight: 400; }
+.stgrp + .stgrp { margin-top: 14px; }
+.stgrp > .prow:last-child { border-bottom: 0; }
 .strack { position: relative; height: 12px; border-radius: 3px; background: #ededf0; overflow: hidden; }
 .strack i { position: absolute; top: 0; bottom: 0; }
 .strack s { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 2px solid var(--ink); text-decoration: none; }
