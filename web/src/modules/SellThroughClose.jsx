@@ -5,11 +5,12 @@
  * bar for the release: today's units deep, the units at close light, the
  * range a pale band behind, the units target a dashed tick; then the same
  * bar per work, a work the projection fills marked "Likely sells out".
- * Under it the paid assumption the projection rests on: the daily spend it
- * runs at (the recommended level, reached from today's by steps of up to
- * 30% a day) against today's, and the spend at close. The working - what
- * the projection is built from, the paid rule, the range's source and the
- * confidence reason - is on the aside's hover. A closed release has the
+ * The head carries the share at close, a confidence lozenge and the daily
+ * spend the projection assumes (the recommended level, reached from today's
+ * by steps of up to 30% a day); its change from today's and the spend at
+ * close are on that lozenge's hover. The working - what the projection is
+ * built from, the range's source and the confidence reason - is on the
+ * confidence lozenge's hover. A closed release has the
  * projection equal to its units, so the range and the paid assumption are
  * left off. The works sit under a header per line of work, variants of one
  * work by their variant (workGroups.mjs), each with its share at close;
@@ -17,7 +18,6 @@
 import React, { useState } from "react";
 import { Card, Head, Loz, Seg } from "../ui.jsx";
 import { COL, Keys, sw, kfmt } from "../charts.jsx";
-import { Up, Dn } from "../icons.jsx";
 import { fmt, fmtPct, fmtMoney } from "../format.mjs";
 import { groupByLine, shownNames } from "../workGroups.mjs";
 import "../cards.css";
@@ -75,7 +75,6 @@ export default function SellThroughClose({ snap }) {
   const [confWord, confKind] = CONF[cf.confidence] || [null, null];
   const days = has(cf.daysLeft) ? cf.daysLeft : null;
   const daysWord = complete ? "closed" : days === null ? "" : days === 1 ? "1 day left" : `${fmt(days)} days left`;
-  const aside = daysWord;
   const b = cf.built || {};
   const paid = cf.paid || null;
   const range = cf.range || null;
@@ -126,6 +125,16 @@ export default function SellThroughClose({ snap }) {
   const chg = paid && has(paid.change) ? Math.round(Math.abs(paid.change) * 100) : null;
   const showChange = paid && has(paid.today) && paid.today !== paid.daily && dir !== "stop";
   const dirWord = dir === "stop" ? "stops now" : dir === "hold" ? "held" : dir === "start" ? "from nothing" : null;
+  // the paid assumption's daily spend, its change from today's and the spend at close on hover
+  const spendTip = paid ? [
+    showChange && chg !== null && chg > 0 ? `${dir === "raise" || dir === "start" ? "Up" : "Down"} ${chg}% from ${money(paid.today)} a day today` : null,
+    dirWord ? `Paid ${dirWord}` : null,
+    has(paid.spendAtClose) ? `${kmoney(paid.spendAtClose)} spent by close${has(paid.budget) ? `, against a budget of ${money(paid.budget)}` : ""}` : null,
+    paid.rule || null,
+  ].filter(Boolean).join("\n") : "";
+  const spendLoz = paid && has(paid.daily) && !complete
+    ? <Loz tip={spendTip || undefined}>{paid.daily > 0 ? `${money(paid.daily)} a day` : "No paid spend"}</Loz>
+    : null;
   // the toggle: the three paid assumptions, each with its daily figure
   const seg = scenarios && !complete
     ? <Seg label="Paid assumption" value={mode} onChange={setMode}
@@ -135,9 +144,10 @@ export default function SellThroughClose({ snap }) {
     : null;
   return (
     <Card title={title} aria={title} seg={seg}>
-      <Head v={byPct ? fmtPct(cf.pct, 0) : fmt(cf.units)} u={complete ? (byPct ? "at the close" : "units at the close") : byPct ? "projected" : "units projected"} aside={aside} asideTip={working}>
+      <Head v={byPct ? fmtPct(cf.pct, 0) : fmt(cf.units)} u={complete ? (byPct ? "at the close" : "units at the close") : byPct ? null : "units"}>
         {confWord && <Loz kind={confKind} icon={<span className="dot" />}
-          tip={[`${has(cf.edition) ? `${fmt(cf.units)} of ${fmt(cf.edition)}` : `${fmt(cf.units)} units`} projected`, rangeWord ? `${rangeWord} (${fmt(cf.lo)}-${fmt(cf.hi)})${range && range.note ? `: ${range.note}` : ""}` : null, cf.confidenceWhy || null].filter(Boolean).join("\n")}>{confWord} confidence</Loz>}
+          tip={[rangeWord ? `${rangeWord} (${fmt(cf.lo)}-${fmt(cf.hi)})${range && range.note ? `: ${range.note}` : ""}` : null, cf.confidenceWhy || null, "", working].filter((x) => x !== null).join("\n")}>{confWord} confidence</Loz>}
+        {spendLoz}
       </Head>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <RangeBar xmax={xmax} today={cf.today} units={cf.units} lo={ranged ? cf.lo : null} hi={ranged ? cf.hi : null} target={cf.target}
@@ -145,20 +155,6 @@ export default function SellThroughClose({ snap }) {
         <Keys legend={legend} />
       </div>
       {works.length > 0 && <div style={{ "--nmw": `${Math.min(Math.max(nameLen, 8), 30)}ch`, marginTop: 8 }}>{worksBody}</div>}
-      {paid && has(paid.daily) && !complete && (
-        <div className="nbox assume" title={paid.rule || undefined}>
-          <span className="cap">Paid social</span>
-          <span className="it"><span className="big">{money(paid.daily)}</span> a day
-            {showChange && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 2 }}>
-                {chg !== null && chg > 0 && <span className="chg" title={`From ${money(paid.today)} a day today`}>{dir === "raise" || dir === "start" ? <Up /> : <Dn />}{chg}%</span>}
-              </span>
-            )}
-            {dirWord && <span style={{ marginLeft: 2 }}>· {dirWord}</span>}
-          </span>
-          {has(paid.spendAtClose) && <span className="it" title={has(paid.budget) ? `Spend to date plus the spend to the close under this assumption, against a budget of ${money(paid.budget)}` : "Spend to date plus the spend to the close under this assumption"}><span className="big">{kmoney(paid.spendAtClose)}</span> by close</span>}
-        </div>
-      )}
     </Card>
   );
 }
