@@ -186,7 +186,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const row = (r, short) => {
     const over = overOf(r);
     const tip = [
-      `${r.name}${finite(r.edition) ? ` · ${tl ? "units target" : "edition"} ${fmt(r.edition)}` : ""}`,
+      `${r.name}${finite(r.edition) ? ` · ${fmt(unitsOf(r))} of ${fmt(r.edition)}` : ` · ${fmt(unitsOf(r))}`}`,
       `Paid ${fmt((r.sold ?? 0) + (r.soldAssumed ?? 0))}`,
       `${tl ? "Awaiting payment" : "Drafts"} ${fmt(r.drafts ?? 0)}`,
       ...(tl ? (finite(r.orders) ? [`Orders ${fmt(r.orders)}`] : []) : [`Draw winners (estimate) ${fmt(r.shown ?? 0)}`]),
@@ -199,18 +199,18 @@ export default function SellThrough({ snap, horizon = "today" }) {
       <div className="prow st" key={r.key} title={tip}>
         <span className="nm">{short || r.name}</span>
         <Bar row={r} close={close} maxV={maxFor(r)} tick={tl ? r.edition : null} />
-        <span className="fig">{finite(r.edition) && r.edition > 0 ? `${fmt(unitsOf(r))} of ${fmt(r.edition)}` : fmt(unitsOf(r))}<b>{finite(pctRow) ? `${Math.round(pctRow * 100)}%` : ""}</b></span>
+        <span className="fig"><b>{finite(pctRow) ? `${Math.round(pctRow * 100)}%` : fmt(unitsOf(r))}</b></span>
       </div>
     );
   };
-  const groupHead = (g, base, figs = true) => {
+  const groupHead = (g, base) => {
     const ed = g.rows.every((r) => finite(r.edition) && r.edition > 0) ? g.rows.reduce((s, r) => s + r.edition, 0) : null;
     const u = g.rows.reduce((s, r) => s + unitsOf(r), 0);
     const sameName = base && namesTitle(base, g.name);
+    const figs = ed ? `${fmt(u)} of ${fmt(ed)}, ${Math.round(Math.min(u / ed, 1) * 100)}%` : fmt(u);
     return (
-      <div className="prow st grp" key={`line:${g.key}`} title={`${g.name}${base && !sameName ? ` (${base})` : ""}: ${g.rows.length} work${g.rows.length === 1 ? "" : "s"}, read together`}>
+      <div className="prow st grp" key={`line:${g.key}`} title={`${g.name}${base && !sameName ? ` (${base})` : ""}: ${figs}`}>
         <span className="nm">{g.name}</span>
-        {figs ? <span className="fig">{ed ? `${fmt(u)} of ${fmt(ed)}` : fmt(u)}<b>{ed ? `${Math.round(Math.min(u / ed, 1) * 100)}%` : ""}</b></span> : <span />}
       </div>
     );
   };
@@ -229,21 +229,19 @@ export default function SellThrough({ snap, horizon = "today" }) {
     });
     const { v, rows: rs } = groupRows({ rows });
     // one list of variants: their shared name heads it, the head above already carries the figures
-    return v ? <div className="stgrp">{groupHead({ key: "_all", name: v.base, rows }, v.base, false)}{rs}</div> : rs;
+    return v ? <div className="stgrp">{groupHead({ key: "_all", name: v.base, rows }, v.base)}{rs}</div> : rs;
   })();
-  const editionLeft = edition !== null ? Math.max(edition - headUnits, 0) : null;
-  return (
+    return (
     <Card title={W.sellThroughTitle} menu={menu} right={right} aria={W.sellThroughTitle}>
-      <Head v={fmt(headUnits)} u={edition ? `of ${fmt(edition)}${st.editionWord ? ` ${st.editionWord}` : ""} ${tl ? "sold" : "spoken for"}` : "units, no edition size set"}
-        aside={[headPct !== null ? `${Math.round(headPct * 100)}%` : null, draftsAll ? `${fmt(draftsAll)} awaiting payment` : null].filter(Boolean).join(" · ")}
+      <Head v={fmt(headUnits)} u={edition ? `of ${fmt(edition)}${st.editionWord ? ` ${st.editionWord}` : ""}` : "units, no edition size set"}
+        aside={headPct !== null ? `${Math.round(headPct * 100)}%` : null}
         asideTip={method} />
       <div style={{ "--nmw": `${Math.min(Math.max(longest, 8), 30)}ch` }}>{body}</div>
-      <Keys legend={[
-        { n: "Paid", v: fmt(sold), k: sw(SEG.paid), tip: paidTip },
-        ...(draftsAll !== null && draftsAll > 0 ? [{ n: tl ? "Awaiting payment" : "Drafts", v: fmt(draftsAll), k: sw(SEG.drafts), tip: draftsTip }] : []),
-        ...(!tl ? [{ n: "Draw winners (estimate)", v: fmt(inHandAll), k: sw(SEG.winners), tip: inHandTip }] : []),
-        ...(close && futureAll > 0 ? [{ n: "Still to come", v: fmt(futureAll), k: sw(SEG.future), tip: "The projection's further units, spread over the products with room left" }] : []),
-        ...(editionLeft !== null ? [{ n: tl ? "Target left" : "Edition left", v: fmt(editionLeft), k: sw("#e4e4e8") }] : []),
+      <Keys style={{ marginTop: 20 }} legend={[
+        { n: "Paid", k: sw(SEG.paid), tip: `${fmt(sold)} paid\n${paidTip}` },
+        ...(draftsAll !== null && draftsAll > 0 ? [{ n: tl ? "Awaiting payment" : "Drafts", k: sw(SEG.drafts), tip: `${fmt(draftsAll)} ${tl ? "awaiting payment" : "drafts"}\n${draftsTip}` }] : []),
+        ...(!tl ? [{ n: "Likely winners", k: sw(SEG.winners), tip: `${fmt(inHandAll)} draw winners (estimate)\n${inHandTip}` }] : []),
+        ...(close && futureAll > 0 ? [{ n: "Still to come", k: sw(SEG.future), tip: `${fmt(futureAll)}: the projection's further units, spread over the products with room left` }] : []),
         ...(tl ? [{ n: "Target", k: { width: 2, height: 11, flex: "0 0 2px", background: COL.INK } }] : []),
       ]} />
       <Note text={note ? note.text : ""} bad={note ? note.bad : false} onClose={() => setNote(null)} />
