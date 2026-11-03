@@ -172,6 +172,11 @@ export default function ReleasePage({ snap, snapError, row, asOf, st, route, set
   const lines = Array.isArray(snap.lines) && snap.lines.length && snap.variants && snap.variants.lines ? snap.lines : null;
   const lineVariant = lines && lineKey ? ((directSpread && snap.variants.lines_direct && snap.variants.lines_direct[lineKey]) || snap.variants.lines[lineKey] || null) : null;
   const view = lineVariant ? { ...snap, ...lineVariant } : directSpread && variant ? { ...snap, ...variant } : snap;
+  // on the All lines view, each line's own reading, for the cards that run per line (paid: an ad set per line)
+  const lineViews = lines && !lineKey ? lines.map((l) => {
+    const v = (directSpread && snap.variants.lines_direct && snap.variants.lines_direct[l.key]) || snap.variants.lines[l.key];
+    return v ? { key: l.key, name: l.name, snap: { ...snap, ...v } } : null;
+  }).filter(Boolean) : null;
   const isTL = snap.type === "TL";
   const targeted = snap.targeted !== false;
   const W = wordsOf(snap);
@@ -211,7 +216,7 @@ export default function ReleasePage({ snap, snapError, row, asOf, st, route, set
             {showHorizon && <HorizonChip horizon={horizon} onChange={setHorizon} closeLabel={W.closeLabel} />}
             {lines && <LineChip lines={lines} value={lineKey} onChange={setLineKey} />}
           </div>
-          <Overview snap={view} base={snap} horizon={snap.complete ? "close" : horizon} onSetup={() => setTab("targets")} onOpen={onOpen} />
+          <Overview snap={view} base={snap} lineViews={lineViews} horizon={snap.complete ? "close" : horizon} onSetup={() => setTab("targets")} onOpen={onOpen} />
         </>
       )}
       {tab === "targets" && (isTL

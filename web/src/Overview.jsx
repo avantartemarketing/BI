@@ -3,7 +3,9 @@
  * outcome (the trajectory; sell-through today and at close; framing and
  * where the orders ship), the channels and the funnel (channels against
  * targets and the gap; the funnel by channel and the email funnel) and paid
- * (ROI and the spend levels). The Paid spend card is gone: its spend by day
+ * (ROI and the spend levels; on a release selling lines of work, the All
+ * lines view shows the pair once per line, each on its line's ad set and
+ * with its own recommendation). The Paid spend card is gone: its spend by day
  * is on the Paid ROI chart, its recommendation on the Spend levels card. A
  * card a release has nothing for is left out; before a release has numbers
  * the page shows what it knows instead (Upcoming, no targets, catalogue). */
@@ -28,7 +30,7 @@ import "./cards.css";
 /* a section's heading, across both columns */
 const Sect = ({ children }) => <div className="wide sect">{children}</div>;
 
-export default function Overview({ snap, base, horizon, onSetup, onOpen }) {
+export default function Overview({ snap, base, horizon, onSetup, onOpen, lineViews }) {
   const isTL = snap.type === "TL";
   const targeted = snap.targeted !== false;
   // before the announce (a timed launch before its signups open too) the page shows what it knows
@@ -38,6 +40,8 @@ export default function Overview({ snap, base, horizon, onSetup, onOpen }) {
   const geoOn = !isTL && !!(snap.geo && (Array.isArray(snap.geo) ? snap.geo.length : (snap.geo.rows || []).length));
   const paidOn = !!snap.paid;
   const levelsOn = !isTL && paidOn && !!snap.paid.levels;
+  // a release selling lines of work, on the All lines view: paid per line, each its own ad set
+  const paidLines = !isTL && Array.isArray(lineViews) && lineViews.length > 1 ? lineViews.filter((l) => l.snap.paid) : [];
   return (
     <div className="body">
       <div className="grid2">
@@ -54,7 +58,13 @@ export default function Overview({ snap, base, horizon, onSetup, onOpen }) {
         {targeted && <Waterfall snap={snap} horizon={horizon} />}
         <FunnelTable snap={snap} />
         {snap.email && <EmailFunnel snap={snap} />}
-        {paidOn && (
+        {paidLines.length > 0 ? paidLines.map((l) => (
+          <React.Fragment key={`paid:${l.key}`}>
+            <Sect>Paid · {l.name}</Sect>
+            <PaidRoi snap={l.snap} horizon={horizon} />
+            {l.snap.paid.levels && <SpendLevels snap={l.snap} />}
+          </React.Fragment>
+        )) : paidOn && (
           <>
             <Sect>Paid</Sect>
             <PaidRoi snap={snap} horizon={horizon} />
