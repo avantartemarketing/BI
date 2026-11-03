@@ -22,6 +22,7 @@ import { Keys, COL, sw } from "../charts.jsx";
 import { fmt, fmtDay } from "../format.mjs";
 import { inDraw } from "../../../shared/sellThrough.mjs";
 import { wordsOf } from "../vocab.mjs";
+import { namesTitle, groupByLine, shownNames } from "../workGroups.mjs";
 import { Slack } from "../icons.jsx";
 import "../cards.css";
 
@@ -35,22 +36,6 @@ function segmentsOf(row, close) {
   segs.push({ key: "inhand", v: row.shown ?? 0, color: SEG.winners });
   if (close && (row.futurePredicted ?? 0) > 0) segs.push({ key: "future", v: row.futurePredicted, color: SEG.future });
   return segs.filter((x) => x.v > 0);
-}
-
-/* rows named "Base (Variant)" or "Base - Variant" with one shared base:
- * that base and each row's variant, or null when the names are not of
- * that shape */
-function variantsOf(rows) {
-  if (rows.length < 2) return null;
-  const parts = rows.map((r) => {
-    const n = String(r.name || "").trim();
-    const m = n.match(/^(.+?)\s*\(([^()]+)\)$/) || n.match(/^(.+?)\s+[-\u2013:]\s+(.+)$/);
-    return m ? { base: m[1].trim(), variant: m[2].trim() } : null;
-  });
-  if (parts.some((x) => !x)) return null;
-  const base = parts[0].base;
-  if (parts.some((x) => x.base.toLowerCase() !== base.toLowerCase())) return null;
-  return { base, names: new Map(rows.map((r, i) => [r.key, parts[i].variant])) };
 }
 
 function Bar({ row, close, maxV, tick }) {
@@ -132,21 +117,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   ].join("\n");
 
   // a release selling two lines of work (docs/LINES_PLAN.md): a header per line
-  const lineDefs = !snap.line && Array.isArray(snap.lines) && snap.lines.length > 1 && fromFeed ? snap.lines : null;
-  const namesTitle = (name, title) => {
-    const a = String(name || "").trim().toLowerCase(), b = String(title || "").trim().toLowerCase();
-    return !!a && !!b && (a === b || (a.length >= 4 && b.length >= 4 && (b.startsWith(a) || a.startsWith(b))));
-  };
-  const groups = lineDefs ? (() => {
-    const out = lineDefs.map((l) => ({ key: l.key, name: l.name, rows: [] }));
-    const rest = { key: "_rest", name: "Other works", rows: [] };
-    for (const r of rows) {
-      const g = out.find((l) => (lineDefs.find((d) => d.key === l.key).products || []).some((n) => namesTitle(n, r.name)));
-      (g || rest).rows.push(r);
-    }
-    if (rest.rows.length) out.push(rest);
-    return out.filter((g) => g.rows.length);
-  })() : null;
+  const groups = fromFeed ? groupByLine(snap, rows) : null;
 
   // ----- Post to Slack: the server composes the message from the same snapshot -----
   const channel = (snap.slack && snap.slack.channel) || null;
@@ -214,24 +185,23 @@ export default function SellThrough({ snap, horizon = "today" }) {
       </div>
     );
   };
+  let longest = 0;   // the longest name a row shows, to size the name column
   // a group's rows, each by its variant when the group's rows are variants of one work
   const groupRows = (g) => {
-    const v = variantsOf(g.rows);
-    const shown = g.rows.map((r) => (v ? v.names.get(r.key) : null));
-    for (let i = 0; i < g.rows.length; i++) longest = Math.max(longest, String(shown[i] || g.rows[i].name || "").length);
-    return { v, rows: g.rows.map((r, i) => row(r, shown[i])) };
+    const sn = shownNames(g.rows);
+    longest = Math.max(longest, sn.longest);
+    return { v: sn.base ? { base: sn.base } : null, rows: g.rows.map((r, i) => row(r, sn.names[i])) };
   };
-  let longest = 0;   // the longest name a row shows, to size the name column
   const body = (() => {
     if (groups) return groups.map((g) => {
       const { v, rows: rs } = groupRows(g);
       return <div className="stgrp" key={`g:${g.key}`}>{groupHead(g, v && v.base)}{rs}</div>;
     });
     const { v, rows: rs } = groupRows({ rows });
-    // one list of variants: their shared name heads it, the head above already carries the figures
+    // one list of variants: their shared name heads it
     return v ? <div className="stgrp">{groupHead({ key: "_all", name: v.base, rows }, v.base)}{rs}</div> : rs;
   })();
-    return (
+  return (
     <Card title={W.sellThroughTitle} menu={menu} right={right} aria={W.sellThroughTitle}>
       <Head v={fmt(headUnits)} u={edition ? `of ${fmt(edition)}${st.editionWord ? ` ${st.editionWord}` : ""}` : "units, no edition size set"}
         aside={headPct !== null ? `${Math.round(headPct * 100)}%` : null}
